@@ -61,20 +61,8 @@ testHoldoutTypeValidation <- function() {
     column <- "embarked"
     te_cols <- list(column)
     encoding_map <- h2o.target_encode_fit(data, te_cols, "survived")
-    Log.info("Expect that holdout_type `LeaveOneOut` will be converted to `loo` and no error will be throwned")
-    transformed <- h2o.target_encode_transform(data, te_cols, "survived", encoding_map, blended_avg=FALSE,  holdout_type = "LeaveOneOut",   is_train_or_valid=TRUE)
-
-    Log.info("Expect that holdout_type FKold will be converted to `kfold` and no error will be throwned")
-    data <- getTitanicData()
-    data$fold <- h2o.kfold_column(data, nfolds = 5, seed = 1234)
-    encoding_map <- h2o.target_encode_fit(data, te_cols, "survived", fold_column="fold")
-    transformed <- h2o.target_encode_transform(data, te_cols, "survived", encoding_map, blended_avg=FALSE,  holdout_type = "KFold", fold_column="fold",  is_train_or_valid=TRUE)
-
-    Log.info("Expect that holdout_type None will be converted to `none` and no error will be throwned")
-    data <- getTitanicData()
-    encoding_map <- h2o.target_encode_fit(data, te_cols, "survived")
-    transformed <- h2o.target_encode_transform(data, te_cols, "survived", encoding_map, blended_avg=FALSE,  holdout_type = "None", is_train_or_valid=TRUE)
-
+    Log.info("Expect that holdout_type `UnknownType` will not be accepted and error will be throwned")
+    expect_error(h2o.target_encode_transform(data, te_cols, "survived", encoding_map, blended_avg=FALSE,  holdout_type = "UnknownType"))
 }
 
 
@@ -110,7 +98,7 @@ testIndexesToNames <- function() {
     te_cols <- list( 11) # embarked
     response_col <- 2 # "survived"
     encoding_map <- h2o.target_encode_fit(data, te_cols, response_col)
-    transformed <- h2o.target_encode_transform(data, te_cols, response_col, encoding_map, blended_avg=FALSE,  holdout_type = "LeaveOneOut",   is_train_or_valid=TRUE)
+    transformed <- h2o.target_encode_transform(data, te_cols, response_col, encoding_map, blended_avg=FALSE,  holdout_type = "loo")
 
 }
 
@@ -127,13 +115,13 @@ testNoiseParameter <- function() {
 
     Log.info("Expect that noise will be added if we are using noise parameter. Default noise is 0.01")
     transformed_without_noise <- h2o.target_encode_transform(data, te_cols, "survived", encoding_map, blended_avg=FALSE,
-    holdout_type = "LeaveOneOut", is_train_or_valid=TRUE, noise = 0, seed = 1234)
+    holdout_type = "loo", noise = 0, seed = 1234)
 
     transformed_with_default_noise <- h2o.target_encode_transform(data, te_cols, "survived", encoding_map, blended_avg=FALSE,
-    holdout_type = "LeaveOneOut", is_train_or_valid=TRUE, seed = 1234)
+    holdout_type = "loo", seed = 1234)
 
     transformed_with_noise <- h2o.target_encode_transform(data, te_cols, "survived", encoding_map, blended_avg=FALSE,
-    holdout_type = "LeaveOneOut", is_train_or_valid=TRUE, noise = 0.015, seed = 1234)
+    holdout_type = "loo", noise = 0.015, seed = 1234)
     diff <- transformed_with_noise$embarked_te - transformed_without_noise$embarked_te
 
     .check_vector_is_within_range(diff$embarked_te, 0.01)

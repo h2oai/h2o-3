@@ -29,11 +29,11 @@ class TargetEncoder(object):
 
     Sample usage:
 
-    targetEncoder = TargetEncoder(x=te_columns, y=responseColumnName, blended_avg=True, inflection_point=3, smoothing=1)
-    targetEncoder.fit(trainFrame) 
-    encodedTrain = targetEncoder.transform(frame=trainFrame, holdout_type="kfold", seed=1234, is_train_or_valid=True)
-    encodedValid = targetEncoder.transform(frame=validFrame, holdout_type="none", noise=0.0, is_train_or_valid=True)
-    encodedTest = targetEncoder.transform(frame=testFrame, holdout_type="none", noise=0.0, is_train_or_valid=False)
+    >>> targetEncoder = TargetEncoder(x=te_columns, y=responseColumnName, blended_avg=True, inflection_point=3, smoothing=1)
+    >>> targetEncoder.fit(trainFrame) 
+    >>> encodedTrain = targetEncoder.transform(frame=trainFrame, holdout_type="kfold", seed=1234, is_train_or_valid=True)
+    >>> encodedValid = targetEncoder.transform(frame=validFrame, holdout_type="none", noise=0.0, is_train_or_valid=True)
+    >>> encodedTest = targetEncoder.transform(frame=testFrame, holdout_type="none", noise=0.0, is_train_or_valid=False)
     """
 
     #-------------------------------------------------------------------------------------------------------------------
@@ -45,15 +45,15 @@ class TargetEncoder(object):
         """
         Creates instance of the TargetEncoder class and setting parameters that will be used in both `train` and `transform` methods.
 
-        :param List[str] or List[int] x: List of categorical column names or indices that we want apply target encoding to
+        :param List[str] or List[int] x: List of categorical column names or indices that we want apply target encoding to.
 
-        :param str or int y: response column name or index we will create encodings with
-        :param str or int fold_column: fold column if we want to use 'kfold' holdout_type
-        :param boolean blending_avg: (deprecated) whether to use blending or not. Default value is set to True.
-        :param boolean blended_avg: whether to use blending or not. Default value is set to True.
-        :param double inflection_point: parameter for blending. Used to calculate `lambda`. Parameter determines half of the minimal sample size
+        :param str or int y: the name or column index of the response variable in the data.
+        :param str or int fold_column: the name or column index of the fold column in the data.
+        :param boolean blending_avg: (deprecated) whether to perform blended average. Defaults to TRUE.
+        :param boolean blended_avg: whether to perform blended average. Defaults to TRUE.
+        :param double inflection_point: parameter for blending. Used to calculate `lambda`. Determines half of the minimal sample size
             for which we completely trust the estimate based on the sample in the particular level of categorical variable.
-        :param double smoothing: parameter for blending. Used to calculate `lambda`. The parameter f controls the rate of transition between
+        :param double smoothing: parameter for blending. Used to calculate `lambda`. Controls the rate of transition between
             the particular level's posterior probability and the prior probability. For smoothing values approaching infinity it becomes a hard
             threshold between the posterior and the prior probability.
 
@@ -75,7 +75,7 @@ class TargetEncoder(object):
         """
         Returns encoding map as an object that maps 'column_name' -> 'frame_with_encoding_map_for_this_column_name'
 
-        :param frame frame: frame you want to generate encoding map for target encoding based on.
+        :param frame frame: An H2OFrame object with which to create the target encoding map
         """
         self._teColumns = list(map(lambda i: frame.names[i], self._teColumns)) if all(isinstance(n, int) for n in self._teColumns) else self._teColumns
         self._responseColumnName = frame.names[self._responseColumnName] if isinstance(self._responseColumnName, int) else self._responseColumnName
@@ -86,7 +86,7 @@ class TargetEncoder(object):
 
         return self._encodingMap
 
-    def transform(self, frame = None, holdout_type = None, noise = -1, seed = -1):
+    def transform(self, frame=None, holdout_type=None, noise=-1, seed=-1):
         """
         Apply transformation to `te_columns` based on the encoding maps generated during `TargetEncoder.fit()` call.
         You must not pass encodings manually from `.fit()` method because they are being stored internally
@@ -99,8 +99,8 @@ class TargetEncoder(object):
                 2) "loo" - leave one out. Current row's response value is subtracted from the pre-calculated per-level frequencies.
                 3) "none" - we do not holdout anything. Using whole frame for training
                 
-        :param float noise: amount of noise to add to the final target encodings.
-        :param int seed: set to fixed value for reproducibility.
+        :param float noise: the amount of random noise added to the target encoding.  This helps prevent overfitting. Defaults to 0.01 * range of y.
+        :param int seed: a random seed used to generate draws from the uniform distribution for random noise. Defaults to -1.
         """
         assert_is_type(holdout_type, "kfold", "loo", "none")
 

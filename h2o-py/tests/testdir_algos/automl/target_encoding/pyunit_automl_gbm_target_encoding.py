@@ -28,7 +28,6 @@ def titanic_without_te(frame = None, seeds = None):
                                                stopping_metric="AUC",
                                                stopping_tolerance=0.001,
                                                distribution="multinomial",
-                                               # why AUC is different for quasibinomial and multinomial?
                                                seed=1234)
       air_model.train(x=myX, y=targetColumnName,
                       training_frame=ds['train'], validation_frame=ds['valid'])
@@ -68,7 +67,6 @@ def titanic_with_te_kfoldstrategy(frame = None, seeds = None):
                                                stopping_metric="AUC",
                                                stopping_tolerance=0.001,
                                                distribution="multinomial",
-                                               # why AUC is different for quasibinomial and multinomial?
                                                seed=1234)
       air_model.train(x=myX, y=targetColumnName,
                       training_frame=encodedTrain, validation_frame=encodedValid)
@@ -108,7 +106,6 @@ def titanic_with_te_loostrategy(frame = None, seeds = None):
                                              stopping_metric="AUC",
                                              stopping_tolerance=0.001,
                                              distribution="multinomial",
-                                             # why AUC is different for quasibinomial and multinomial?
                                              seed=1234)
     air_model.train(x=myX, y=targetColumnName,
                     training_frame=encodedTrain, validation_frame=encodedValid)
@@ -148,7 +145,6 @@ def titanic_with_te_nonestrategy(frame = None, seeds = None):
                                              stopping_metric="AUC",
                                              stopping_tolerance=0.001,
                                              distribution="multinomial",
-                                             # why AUC is different for quasibinomial and multinomial?
                                              seed=1234)
     air_model.train(x=myX, y=targetColumnName,
                     training_frame=encodedTrain, validation_frame=encodedValid)
