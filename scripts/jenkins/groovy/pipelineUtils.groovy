@@ -80,7 +80,7 @@ class PipelineUtils {
                 if (distributionStr.startsWith(dockerizedDist)) {
                     def distributionName = dockerizedDist
                     def distributionVersion = distributionStr.replaceFirst(dockerizedDist, '')
-                    def hiveVersion = distributionName.toLowerCase() == 'cdh' && distributionVersion == '6.0' ? HIVE_VERSION_2_1_1_CDH_6_0 : HIVE_VERSION_2_2
+                    def hiveVersion = distributionName.toLowerCase() == 'cdh' && distributionVersion.startsWith('6.') ? HIVE_VERSION_2_1_1_CDH_6_0 : HIVE_VERSION_2_2
                     distributionsToBuild += [
                         name: distributionName,
                         version: distributionVersion,
