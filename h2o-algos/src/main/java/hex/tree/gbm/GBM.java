@@ -1,5 +1,6 @@
 package hex.tree.gbm;
 
+import hex.KeyValue;
 import hex.genmodel.utils.DistributionFamily;
 import hex.Distribution;
 import hex.ModelCategory;
@@ -15,7 +16,9 @@ import water.fvec.*;
 import water.util.*;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Random;
+import java.util.Set;
 
 /** Gradient Boosted Trees
  *
@@ -148,6 +151,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       error("_max_abs_leafnode_pred", "max_abs_leafnode_pred must be larger than 0.");
     if (_parms._pred_noise_bandwidth < 0)
       error("_pred_noise_bandwidth", "pred_noise_bandwidth must be >= 0.");
+
+    if ((_train != null) && (_parms._monotone_constraints != null)) {
+      TreeUtils.checkMonotoneConstraints(this, _train, _parms._monotone_constraints);
+    }
   }
 
   // ----------------------
@@ -344,7 +351,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // ESL2, page 387.  Step 2b ii.
       // One Big Loop till the ktrees are of proper depth.
       // Adds a layer to the trees each pass.
-      growTrees(ktrees, leaves, _rand);
+      growTrees(ktrees, leaves, _rand, _parms.constraints(_train));
       for (int k = 0; k < _nclass; k++) {
         if (DEV_DEBUG && ktrees[k]!=null) {
           System.out.println("Grew trees. Updated NIDs for class " + k + ":\n" + new Frame(new String[]{"NIDS"},new Vec[]{vec_nids(_train, k)}).toTwoDimTable());
@@ -412,7 +419,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
      * @param leaves workspace to store the leaf node starting index (k-dimensional - one per tree)
      * @param rand PRNG for reproducibility
      */
-    private void growTrees(DTree[] ktrees, int[] leaves, Random rand) {
+    private void growTrees(DTree[] ktrees, int[] leaves, Random rand, Constraints cs) {
       // Initial set of histograms.  All trees; one leaf per tree (the root
       // leaf); all columns
       DHistogram hcs[][][] = new DHistogram[_nclass][1/*just root leaf*/][_ncols];
@@ -427,7 +434,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if (_model._output._distribution[k] != 0) {
           ktrees[k] = new DTree(_train, _ncols, _mtry, _mtry_per_tree, rseed, _parms);
           DHistogram[] hist = DHistogram.initialHist(_train, _ncols, adj_nbins, hcs[k][0], rseed, _parms, getGlobalQuantilesKeys());
-          new UndecidedNode(ktrees[k], DTree.NO_PARENT, hist); // The "root" node
+          new UndecidedNode(ktrees[k], DTree.NO_PARENT, hist, cs); // The "root" node
         }
       }
 

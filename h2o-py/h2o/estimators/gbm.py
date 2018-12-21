@@ -39,7 +39,8 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                       "checkpoint", "sample_rate", "sample_rate_per_class", "col_sample_rate",
                       "col_sample_rate_change_per_level", "col_sample_rate_per_tree", "min_split_improvement",
                       "histogram_type", "max_abs_leafnode_pred", "pred_noise_bandwidth", "categorical_encoding",
-                      "calibrate_model", "calibration_frame", "custom_metric_func", "export_checkpoints_dir"}
+                      "calibrate_model", "calibration_frame", "custom_metric_func", "export_checkpoints_dir",
+                      "monotone_constraints"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -877,5 +878,21 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     def export_checkpoints_dir(self, export_checkpoints_dir):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
+
+
+    @property
+    def monotone_constraints(self):
+        """
+        A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a
+        decreasing constraint.
+
+        Type: ``dict``.
+        """
+        return self._parms.get("monotone_constraints")
+
+    @monotone_constraints.setter
+    def monotone_constraints(self, monotone_constraints):
+        assert_is_type(monotone_constraints, None, dict)
+        self._parms["monotone_constraints"] = monotone_constraints
 
 

@@ -1,7 +1,8 @@
 import sys
+import os
 sys.path.insert(1,"../../")
 import h2o
-import math
+import tempfile
 from tests import pyunit_utils
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
@@ -31,7 +32,11 @@ def partial_plot_test_with_user_splits():
                           75.21052631578948, 77.10526315789474]
     user_splits['RACE'] = ["Black"]
     # pdp without weight or NA
-    pdpOrig = gbm_model.partial_plot(data=data,cols=['AGE', 'RACE', 'DCAPS'],server=True, plot=True)
+    file, filename = tempfile.mkstemp(suffix=".png")
+    pdpOrig = gbm_model.partial_plot(data=data,cols=['AGE', 'RACE', 'DCAPS'],server=True, plot=True, save_to_file=filename)
+    assert os.path.getsize(filename) > 0
+    os.unlink(filename)
+
     pdpUserSplit = gbm_model.partial_plot(data=data,cols=['AGE', 'RACE', 'DCAPS'],server=True, plot=True,
                                           user_splits=user_splits)
 
