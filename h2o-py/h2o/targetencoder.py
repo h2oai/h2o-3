@@ -49,7 +49,8 @@ class TargetEncoder(object):
 
         :param str or int y: response column name or index we will create encodings with
         :param str or int fold_column: fold column if we want to use 'kfold' holdout_type
-        :param boolean blended_avg: whether to use blending or not
+        :param boolean blending_avg: (deprecated) whether to use blending or not. Default value is set to True.
+        :param boolean blended_avg: whether to use blending or not. Default value is set to True.
         :param double inflection_point: parameter for blending. Used to calculate `lambda`. Parameter determines half of the minimal sample size
             for which we completely trust the estimate based on the sample in the particular level of categorical variable.
         :param double smoothing: parameter for blending. Used to calculate `lambda`. The parameter f controls the rate of transition between
