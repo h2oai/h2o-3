@@ -155,8 +155,8 @@ def init(url=None, ip=None, port=None, name=None, https=None, insecure=None, use
     :param ip: The ip address (or host name) of the server where H2O is running.
     :param port: Port number that H2O service is listening to.
     :param name: cloud name. If None while connecting to an existing cluster it will not check the cloud name.
-    If set then will connect only if the target cloud name matches. If no instance is found and decides to start a local
-    one then this will be used as the cloud name or a random one will be generated if set to None.
+                 If set then will connect only if the target cloud name matches. If no instance is found and decides to start a local
+                 one then this will be used as the cloud name or a random one will be generated if set to None.
     :param https: Set to True to connect via https:// instead of http://.
     :param insecure: When using https, setting this to True will disable SSL certificates verification.
     :param username: Username and
@@ -167,8 +167,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, insecure=None, use
     :param nthreads: "Number of threads" option when launching a new h2o server.
     :param ice_root: Directory for temporary files for the new h2o server.
     :param log_dir: Directory for H2O logs to be stored if a new instance is started. Ignored if connecting to an existing node.
-    :param log_level: The logger level for H2O if a new instance is started. One of TRACE,DEBUG,INFO,WARN,ERRR,FATA.
-    Default is INFO. Ignored if connecting to an existing node.
+    :param log_level: The logger level for H2O if a new instance is started. One of TRACE,DEBUG,INFO,WARN,ERRR,FATA. Default is INFO. Ignored if connecting to an existing node.
     :param enable_assertions: Enable assertions in Java for the new h2o server.
     :param max_mem_size: Maximum memory to use for the new h2o server. Integer input will be evaluated as gigabytes.  Other units can be specified by passing in a string (e.g. "160M" for 160 megabytes).
     :param min_mem_size: Minimum memory to use for the new h2o server. Integer input will be evaluated as gigabytes.  Other units can be specified by passing in a string (e.g. "160M" for 160 megabytes).
