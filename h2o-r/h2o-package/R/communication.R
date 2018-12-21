@@ -176,7 +176,7 @@
         if(binary){
           payload = as(buf, "raw") #Return binary payload as is for output such as MOJOs and genmodel.jar
         }else{
-          payload = rawToChar(as(buf, "raw")) #convert binary payload to text for other REST calls as they expect text responses
+          payload = paste0(rawToChar(as(buf, "raw"), multiple = TRUE), collapse = "")  #convert binary payload to text for other REST calls as they expect text responses
         }
     }
   } else if (! missing(fileUploadInfo)) {
