@@ -563,7 +563,7 @@ public class RapidsTest extends TestUtil {
       ParseSetup ps = ParseSetup.guessSetup(new Key[]{nfs._key}, false, 1);
       ps.getColumnTypes()[1] = Vec.T_CAT;
       ParseDataset.parse(Key.make( "census.hex"), new Key[]{nfs._key}, true, ps);
-      
+
       exec_str("(assign census.hex (colnames= census.hex\t[0 1 2 3 4 5 6 7 8] \n" +
                "['Community.Area.Number' 'COMMUNITY.AREA.NAME' \"PERCENT.OF.HOUSING.CROWDED\" \r\n" +
                " \"PERCENT.HOUSEHOLDS.BELOW.POVERTY\" \"PERCENT.AGED.16..UNEMPLOYED\" " +

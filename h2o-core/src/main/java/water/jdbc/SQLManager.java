@@ -32,7 +32,7 @@ public class SQLManager {
   private static final String TMP_TABLE_ENABLED = H2O.OptArgs.SYSTEM_PROP_PREFIX + "sql.tmp_table.enabled";
 
   /**
-   * @param connection_url (Input) 
+   * @param connection_url (Input)
    * @param table (Input)
    * @param select_query (Input)
    * @param username (Input)
@@ -241,7 +241,7 @@ public class SQLManager {
     switch(databaseType) {
       case SQL_SERVER_DB_TYPE: //syntax supported since SQLServer 2008
         return "SELECT TOP(1) " + columns + " FROM " + table;
-        
+
       case ORACLE_DB_TYPE:
         return "SELECT " + columns + " FROM " + table + " FETCH NEXT 1 ROWS ONLY";
 
@@ -282,7 +282,7 @@ public class SQLManager {
         sqlText += " ORDER BY ROW_NUMBER() OVER (ORDER BY (SELECT 0))";
         sqlText += " OFFSET " + start + " ROWS FETCH NEXT " + length + " ROWS ONLY";
         break;
-        
+
       case ORACLE_DB_TYPE:
         sqlText += " OFFSET " + start + " ROWS FETCH NEXT " + length + " ROWS ONLY";
         break;
