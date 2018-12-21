@@ -7,6 +7,7 @@ import water.fvec.Frame;
 import water.rapids.Env;
 import water.rapids.ast.AstBuiltin;
 import water.rapids.ast.AstRoot;
+import water.rapids.ast.params.AstStr;
 import water.rapids.ast.params.AstStrList;
 import water.rapids.vals.ValFrame;
 
@@ -35,23 +36,22 @@ public class AstTargetEncoderTransform extends AstBuiltin<AstTargetEncoderTransf
   @Override
   public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
 
-    String[] encodingMapKeys = getEncodingMapKeys(asts);
+    String[] encodingMapKeys = getEncodingMapKeys(env, stk, asts);
     Frame[] encodingMapFrames = getEncodingMapFrames(env, stk, asts);
     Frame frame = getFrameToTransform(env, stk, asts);
-    String[] teColumnsToEncode = getTEColumns(asts);
+    String[] teColumnsToEncode = getTEColumns(env, stk, asts);
     byte dataLeakageHandlingStrategy = getDataLeakageHandlingStrategy(env, stk, asts);
     String targetColumnName = getTargetColumnName(env, stk, asts);
     String foldColumnName = getFoldColumnName(env, stk, asts);
     boolean withBlending = getWithBlending(env, stk, asts);
-    double inflectionPoint = getInflectionPoint(env, stk, asts);
-    double smoothing = getSmoothing(env, stk, asts);
+
+    BlendingParams params = withBlending ? getBlendingParams(env, stk, asts) : null;
+
     double noise = getNoise(env, stk, asts);
     double seed = getSeed(env, stk, asts);
     boolean withImputationForOriginalColumns = true;
 
-    BlendingParams params = new BlendingParams(inflectionPoint, smoothing);
-
-    TargetEncoder tec = new TargetEncoder(teColumnsToEncode, params);
+    TargetEncoder tec = params == null ? new TargetEncoder(teColumnsToEncode) : new TargetEncoder(teColumnsToEncode, params);
 
     Map<String, Frame> encodingMap = reconstructEncodingMap(encodingMapKeys, encodingMapFrames);
 
@@ -62,6 +62,12 @@ public class AstTargetEncoderTransform extends AstBuiltin<AstTargetEncoderTransf
       return new ValFrame(tec.applyTargetEncoding(frame, targetColumnName, encodingMap, dataLeakageHandlingStrategy,
               foldColumnName, withBlending, noise, withImputationForOriginalColumns, (long) seed));
     }
+  }
+
+  private BlendingParams getBlendingParams(Env env, Env.StackHelp stk, AstRoot[] asts) {
+      double inflectionPoint = getInflectionPoint(env, stk, asts);
+      double smoothing = getSmoothing(env, stk, asts);
+      return new BlendingParams(inflectionPoint, smoothing);
   }
 
   private Map<String, Frame> reconstructEncodingMap(String[] encodingMapKeys, Frame[] encodingMapFrames) {
@@ -75,22 +81,12 @@ public class AstTargetEncoderTransform extends AstBuiltin<AstTargetEncoderTransf
   }
 
   //TODO why can't we use stk.track(asts[1].exec(env)).getStrs(); ?
-  private String[] getEncodingMapKeys(AstRoot asts[]) {
-    if (asts[1] instanceof AstStrList) {
-      AstStrList teColumns = ((AstStrList) asts[1]);
-      return teColumns._strs;
-    }
-    else throw new IllegalStateException("Couldn't parse `encodingMapKeys` parameter");
+  private String[] getEncodingMapKeys(Env env, Env.StackHelp stk, AstRoot asts[]) {
+    return getArgAsStrings(env, stk, asts[1]);
   }
 
   private Frame[] getEncodingMapFrames(Env env, Env.StackHelp stk, AstRoot asts[]) {
-    String[] frameKeys = null;
-    if (asts[2] instanceof AstStrList) {
-      AstStrList teColumns = ((AstStrList) asts[2]);
-      frameKeys = teColumns._strs;
-    } else {
-      throw new IllegalStateException("Encoding frames should be provided as a list of keys");
-    }
+    String[] frameKeys = getArgAsStrings(env, stk, asts[2]);
 
     Frame[] framesWithEncodings = new Frame[frameKeys.length];
     int i = 0;
@@ -100,16 +96,26 @@ public class AstTargetEncoderTransform extends AstBuiltin<AstTargetEncoderTransf
     return framesWithEncodings;
   }
 
+  private String[] getArgAsStrings(Env env, Env.StackHelp stk, AstRoot ast) {
+    String[] frameKeys;
+    if (ast instanceof AstStrList) {
+      AstStrList teColumns = ((AstStrList) ast);
+      frameKeys = teColumns._strs;
+    }  else if( ast instanceof AstStr) {
+      String teColumn = stk.track(ast.exec(env)).getStr();
+      frameKeys = new String[]{teColumn};
+    } else {
+      throw new IllegalStateException("Failed to parse ast parameter: " + ast.toString());
+    }
+    return frameKeys;
+  }
+
   private Frame getFrameToTransform(Env env, Env.StackHelp stk, AstRoot asts[]) {
     return stk.track(asts[3].exec(env)).getFrame();
   }
 
-  private String[] getTEColumns( AstRoot asts[]) {
-    if (asts[4] instanceof AstStrList) {
-      AstStrList teColumns = ((AstStrList) asts[4]);
-      return teColumns._strs;
-    }
-    else throw new IllegalStateException("Couldn't parse `teColumns` parameter");
+  private String[] getTEColumns(Env env, Env.StackHelp stk, AstRoot asts[]) {
+    return getArgAsStrings(env, stk, asts[4]);
   }
 
   private byte getDataLeakageHandlingStrategy(Env env, Env.StackHelp stk, AstRoot asts[]) {

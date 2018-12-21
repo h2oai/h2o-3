@@ -192,6 +192,11 @@ pfr <- function(x) { chk.H2OFrame(x); .pfr(x) }
     .set(x,"nrow",res$num_rows)
     .set(x,"ncol",res$num_cols)
     # No data set, none fetched.  So no column names, nor preview data nor column types
+  } else if( !is.null(res$map_keys) ) {
+    .set(x,"map_keys",res$map_keys)
+    .set(x,"frames",res$frames)
+  } else {
+    .set(x,"unmatched_response",res)
   }
   # Now clear all internal DAG nodes, allowing GC to reclaim them
   .clear.impl(x)

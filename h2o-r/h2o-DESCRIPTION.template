@@ -69,6 +69,7 @@ Collate:
          'communication.R'
          'kvstore.R'
          'frame.R'
+         'targetencoder.R'
          'import.R'
          'isolationforest.R'
          'parse.R'
