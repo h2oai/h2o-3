@@ -4,9 +4,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
-import water.fvec.Frame;
-import water.fvec.NFSFileVec;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 import water.rapids.ast.AstRoot;
@@ -15,6 +13,7 @@ import water.rapids.ast.params.AstStr;
 import water.rapids.vals.ValFrame;
 import water.util.ArrayUtils;
 import water.util.FileUtils;
+import water.util.FrameUtils;
 import water.util.Log;
 
 import java.io.File;
@@ -695,6 +694,40 @@ public class RapidsTest extends TestUtil {
       val.getFrame().delete();
     } finally {
       fr.delete();
+    }
+  }
+
+  @Test
+  public void testAstDistance_euclidean() {
+    Frame a = null;
+    Frame b = null;
+    Frame distanceFrame = null;
+    try {
+
+      a = Scope.track(new TestFrameBuilder()
+              .withName("a")
+              .withColNames("C1")
+              .withVecTypes(Vec.T_NUM)
+              .withDataForCol(0, ard(2, 2))
+              .build());
+      b = Scope.track(new TestFrameBuilder()
+              .withName("b")
+              .withColNames("C1")
+              .withVecTypes(Vec.T_NUM)
+              .withDataForCol(0, ard(2, 4))
+              .build());
+
+      Val val = Rapids.exec("(distance a b 'l2')");
+      assertNotNull(val);
+      distanceFrame = val.getFrame();
+      assertEquals(0, distanceFrame.vec(0).at(0), 0D);
+      assertEquals(0, distanceFrame.vec(0).at(1), 0D);
+      assertEquals(2, distanceFrame.vec(1).at(0), 0D);
+      assertEquals(2, distanceFrame.vec(1).at(1), 0D);
+    } finally {
+      if (a != null) a.remove();
+      if (b != null) b.remove();
+      if (distanceFrame != null) distanceFrame.remove();
     }
   }
 
