@@ -1,15 +1,15 @@
 <!DOCTYPE html>
-<html class="no-js">
-  <head>
-    <meta charset="utf-8">
+<!-- saved from url=(0060)http://h2o-release.s3.amazonaws.com/h2o/rel-xia/2/index.html -->
+<html class="no-js"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>
       Download H2O SUBST_PROJECT_VERSION
     </title>
     <meta name="description" content="">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=0, minimum-scale=1.0, maximum-scale=1.0">
 
-    <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,300' rel='stylesheet' type='text/css'>
+    <link href="./Latest Stable Release_files/css" rel="stylesheet" type="text/css">
     <style type="text/css">
       /* Reset */
       html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre, a, abbr, acronym, address, big, cite, code, del, dfn, em, img, ins, kbd, q, s, samp, small, strike, strong, tt, var, b, u, i, center, dl, dt, dd, ol, ul, li, fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td, article, aside, canvas, details, embed, figure, figcaption, footer, header, hgroup, menu, nav, output, ruby, section, summary, time, mark, audio, video { margin: 0;    padding: 0;    border: 0;    font-size: 100%;    font: inherit;    vertical-align: baseline; } /* HTML5 display-role reset for older browsers */
@@ -161,6 +161,9 @@
       #documentation {
         border-top: 1px solid #ddd;
       }
+
+      .mktoModalMain{width: 100% !important}
+
 
     </style>
     <script>
@@ -333,12 +336,12 @@
           dist = hadoop_distributions[i];
           var url = location.href;
           var url2 = url.substring(0, url.lastIndexOf("/"));
+          out += "<p class='get-started-p mono'>";
           out += "wget ";
           out += url2;
           out += "/";
           out += dist.zip_file_path;
-          out += "<br/>";
-          out += "\n";
+          out += "</p>";
         }
         out += "</ul>\n";
 
@@ -367,42 +370,56 @@
         readBuildInfoJsonFile();
       }
     </script>
+    <link rel="stylesheet" type="text/css" href="static/css/main.css">
+    <link rel="stylesheet" type="text/css" href="static/css/bleeding-edge.css">
+    <link rel="stylesheet" href="https://use.typekit.net/gbq5zcz.css">
   </head>
-  <body>
+  <body cz-shortcut-listen="true">
 
     <!--[if lt IE 8]>
       <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
     <![endif]-->
     <div id="container">
-      <div id="title">
-        <p class="links">
-          <a href="http://h2o.ai">H<sub>2</sub>O.ai</a> | <a href="https://github.com/h2oai/h2o-dev">Github</a>
-        </p>
-        <h1><span>H<sub>2</sub>O</span></h1>
-        <p class="version">Version SUBST_PROJECT_VERSION</p>
+      <div id="header">
+          <a href="http://h2o.ai/" id="logo">
+            <img src="https://www.h2o.ai/wp-content/themes/h2o2018/templates/dist/images/h2o_logo.svg"/>
+          </a>
+          <p class="links">
+            <a href="http://h2o.ai/">H2O.ai</a> | <a href="https://github.com/h2oai/h2o-dev">Github</a>
+          </p>
       </div>
-      <div id="subtitle">
-        <p>Fast Scalable Machine Learning API<br/>For Smarter Applications</p>
+      <div id="title">
+        <div class="bg-img">
+          <img src="static/assets/banner.png"/>
+        </div>
+        <div id="banner-content">
+          <h1>H2O</h1>
+          <p class="version">Version SUBST_PROJECT_VERSION</p>
+          <div id="subtitle">
+            <p>Fast Scalable Machine Learning API<br>For Smarter Applications</p>
+          </div>
+        </div>
       </div>
       <div id="content">
-        <div id="tabs">
-          &nbsp; <span id="quickstart-zip-tab" class="active">Download and Run</span>
-          <span id = "quickstart-r-tab">Install in R</span>
-          <span id = "quickstart-py-tab">Install in Python</span>
-          <span id = "quickstart-hadoop-tab">Install on Hadoop</span>
-          <span id = "quickstart-maven-tab">Use from Maven</span>
+        <div id="tabs" class="latest-release">
+          <span id="quickstart-zip-tab" class="active">Download and Run</span>
+          <span id="quickstart-r-tab">Install in R</span>
+          <span id="quickstart-py-tab">Install in Python</span>
+          <span id="quickstart-hadoop-tab">Install on Hadoop</span>
+          <span id="quickstart-maven-tab">Use from Maven</span>
         </div>
-        <!-- Clipboard Icon !-->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/octicons/2.4.1/octicons.min.css">
-        <script type="text/javascript" src="ZeroClipboard.min.js"></script>
-        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0-alpha1/jquery.min.js"></script>
-        <script src="//app-ab12.marketo.com/js/forms2/js/forms2.min.js"></script>
+        <script type="text/javascript" src="./Download H2O 3.23.0.4496_files/ZeroClipboard.min.js"></script>
+        <script type="text/javascript" src="./Download H2O 3.23.0.4496_files/jquery.min.js"></script>
+        <script src="./Download H2O 3.23.0.4496_files/forms2.min.js"></script>
+
         <form id="mktoForm_1016"></form>
 
         <script></script>
 
           <script type="text/javascript">
             $(document).ready(function () {
+
                   document.getElementById('download-zip').addEventListener('click', function(){setTimeout(function() {location.href='h2o-SUBST_PROJECT_VERSION.zip'}, 500)})
                   var firstAdd=false;
                   ZeroClipboard.config({moviePath:'ZeroClipboard.swf'});
@@ -417,6 +434,7 @@
                           if($(".mktoModalMain").first().html().indexOf('class="abc"')==-1)
                           {
                             $(".mktoModalMain").first().prepend('<img alt="Deep Learning Booklet" itemprop="image" src="https://s3.amazonaws.com/titlepages.leanpub.com/deeplearning/large?1437107332" style="float:left">');
+                            $('.mktoModalMain').addClass('width100');
                             $(".mktoModalMain form").wrap('<div class="abc" style="width:330px;float:left;margin-left:10px"></div>');
                             $(".abc").first().prepend('<h1 style="text-align:center;margin-top:12px;font-size:19px">Copied!</h1><p style="margin: 17px 12px 14px 12px;text-align:center;font-size: 13px;">Sign up below to get access to our Deep Learning book.</p>');
                           }
@@ -435,6 +453,7 @@
                           if($(".mktoModalMain").first().html().indexOf('class="abc"')==-1)
                           {
                             $(".mktoModalMain").first().prepend('<img alt="Deep Learning Booklet" itemprop="image" src="https://s3.amazonaws.com/titlepages.leanpub.com/deeplearning/large?1437107332" style="float:left">');
+
                             $(".mktoModalMain form").wrap('<div class="abc" style="width:330px;float:left;margin-left:10px"></div>');
                             $(".abc").first().prepend('<h1 style="text-align:center;margin-top:12px;font-size:19px">Downloading...</h1><p style="margin: 17px 12px 14px 12px;text-align:center;font-size: 13px;">Sign up below to get access to our Deep Learning book.</p>');
                           }
@@ -493,152 +512,161 @@
         <div id="panels">
           <div id="quickstart-zip">
             <div id="downloads">
-              <a id="download-zip" class="download-button" href="h2o-SUBST_PROJECT_VERSION.zip">Download H<sub>2</sub>O</a>
+              <a id="download-zip" class="btn-yellow" href="http://h2o-release.s3.amazonaws.com/h2o/rel-xia/2/h2o-SUBST_PROJECT_VERSION.zip">Download H2O</a>
             </div>
-            <h2>Get started with H<sub>2</sub>O in 3 easy steps</h2>
-            <p>1. Download H<sub>2</sub>O. This is a zip file that contains everything you need to get started.</p>
-            <p>2. From your terminal, run:</p>
+            <h2 class="get-started firststep">Get started with H2O in 3 easy steps</h2>
+            <p class="get-started-p">1. Download H2O. This is a zip file that contains everything you need to get started.</p>
+            <p class="get-started-p">2. From your terminal, run:</p>
 
-            <button class="btn copy_button" id="btnCopy1" data-copied-hint="Copied!" data-clipboard-target='to_copy1'>
+            <button class="btn copy_button" id="btnCopy1" data-copied-hint="Copied!" data-clipboard-target="to_copy1">
               <span class="octicon octicon-clippy"></span>
             </button>
             <p class="terminal" id="to_copy1">
-              cd ~/Downloads<br/>
-              unzip h2o-SUBST_PROJECT_VERSION.zip<br/>
-              cd h2o-SUBST_PROJECT_VERSION<br/>
-              java -jar h2o.jar<br/>
+              cd ~/Downloads<br>
+              unzip h2o-SUBST_PROJECT_VERSION.zip<br>
+              cd h2o-SUBST_PROJECT_VERSION<br>
+              java -jar h2o.jar<br>
             </p>
-            <p>3. Point your browser to <a href="http://localhost:54321/" target="_blank">http://localhost:54321</a>
-          </div>
+            <p class="get-started-p">3. Point your browser to <a href="http://localhost:54321/" target="_blank">http://localhost:54321</a>
+          </p></div>
 
             <div id="quickstart-py" style="display:none">
-                <h2>Use H<sub>2</sub>O directly from Python</h2>
+                <h2  class="get-started firststep">Use H2O directly from Python</h2>
 
-                <p>1. Prerequisite:    Python 2.7.x, 3.5.x, or 3.6.x</p>
-                <p>2. Install dependencies (prepending with `sudo` if needed):</p>
-                 <button class="btn copy_button" id="btnCopy8" data-copied-hint="Copied!" data-clipboard-target='to_copy8'>
+                <p  class="get-started-p">1. Prerequisite:    Python 2.7.x, 3.5.x, or 3.6.x</p>
+                <p  class="get-started-p">2. Install dependencies (prepending with `sudo` if needed):</p>
+                 <button class="btn copy_button" id="btnCopy8" data-copied-hint="Copied!" data-clipboard-target="to_copy8">
               <span class="octicon octicon-clippy"></span>
             </button>
                 <p class="terminal" id="to_copy8">
-                    pip install requests<br/>
-                    pip install tabulate<br/>
-                    pip install "colorama>=0.3.8"<br/>
+                    pip install requests<br>
+                    pip install tabulate<br>
+                    pip install "colorama&gt;=0.3.8"<br>
                     pip install future
                 </p>
-                <p>At the command line, copy and paste these commands one line at a time:</p>
-                  <button class="btn copy_button" id="btnCopy2" data-copied-hint="Copied!" data-clipboard-target='to_copy2'>
+                <p  class="get-started-p">At the command line, copy and paste these commands one line at a time:</p>
+                  <button class="btn copy_button" id="btnCopy2" data-copied-hint="Copied!" data-clipboard-target="to_copy2">
                     <span class="octicon octicon-clippy"></span>
                   </button>
                 <p class="terminal" id="to_copy2">
-                    <em># The following command removes the H<sub>2</sub>O module for Python.</em><br/>
-                    pip uninstall h2o<br/>
-                    <br/>
-                    <em># Next, use pip to install this version of the  H<sub>2</sub>O Python module.</em><br/>
-                    pip install <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/Python/SUBST_WHEEL_FILE_NAME<br/>
-            </div>
+                    <em># The following command removes the H2O module for Python.</em><br>
+                    pip uninstall h2o<br>
+                    <br>
+                    <em># Next, use pip to install this version of the  H2O Python module.</em><br>
+                    pip install <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>http://h2o-release.s3.amazonaws.com/h2o/rel-xia/2/Python/h2o-SUBST_PROJECT_VERSION-py2.py3-none-any.whl<br>
+            </p></div>
 
             <div id="quickstart-r" style="display:none">
-                <h2>Use H<sub>2</sub>O directly from R</h2>
+                <h2 class="get-started firststep">Use H2O directly from R</h2>
 
-                <p>Copy and paste these commands into R one line at a time:</p>
-                  <button class="btn copy_button" id="btnCopy3" data-copied-hint="Copied!" data-clipboard-target='to_copy3'>
+                <p  class="get-started-p">Copy and paste these commands into R one line at a time:</p>
+                  <button class="btn copy_button" id="btnCopy3" data-copied-hint="Copied!" data-clipboard-target="to_copy3">
                     <span class="octicon octicon-clippy"></span>
                   </button>
-                <p class="terminal" id="to_copy3"data-clipboard-target='to_copy3'>
-                    <em># The following two commands remove any previously installed H<sub>2</sub>O packages for R.</em><br/>
-                    if ("package:h2o" %in% search()) { detach("package:h2o", unload=TRUE) }<br/>
-                    if ("h2o" %in% rownames(installed.packages())) { remove.packages("h2o") }<br/>
-                    <br/>
-                    <em># Next, we download packages that H<sub>2</sub>O depends on.</em><br/>
-                    pkgs &lt;- c("RCurl","jsonlite")<br/>
-                    for (pkg in pkgs) {<br/>
-                      if (! (pkg %in% rownames(installed.packages()))) { install.packages(pkg) }<br/>
-                    }<br/>
-                    <br/>
-                    <em># Now we download, install and initialize the H<sub>2</sub>O package for R.</em><br/>
-                    install.packages("h2o", type="source", repos="<script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/R")<br/>
-                    <br/>
-                    <em># Finally, let's load H2O and start up an H2O cluster</em><br/>
-                    library(h2o)<br/>
-                    h2o.init()<br/>
-            </div>
+                <p class="terminal" id="to_copy3" data-clipboard-target="to_copy3">
+                    <em># The following two commands remove any previously installed H2O packages for R.</em><br>
+                    if ("package:h2o" %in% search()) { detach("package:h2o", unload=TRUE) }<br>
+                    if ("h2o" %in% rownames(installed.packages())) { remove.packages("h2o") }<br>
+                    <br>
+                    <em># Next, we download packages that H2O depends on.</em><br>
+                    pkgs &lt;- c("RCurl","jsonlite")<br>
+                    for (pkg in pkgs) {<br>
+                      if (! (pkg %in% rownames(installed.packages()))) { install.packages(pkg) }<br>
+                    }<br>
+                    <br>
+                    <em># Now we download, install and initialize the H2O package for R.</em><br>
+                    install.packages("h2o", type="source", repos="<script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>http://h2o-release.s3.amazonaws.com/h2o/rel-xia/2/R")<br>
+                    <br>
+                    <em># Finally, let's load H2O and start up an H2O cluster</em><br>
+                    library(h2o)<br>
+                    h2o.init()<br>
+            </p></div>
 
           <div id="quickstart-hadoop" style="display:none">
-            <h2>Run H<sub>2</sub>O on Hadoop in just 3 steps</h2>
-            <p>1. Download H<sub>2</sub>O for your version of Hadoop. This is a zip file that contains everything you need to get started.</p>
-            <button class="btn copy_button" id="btnCopy4" data-copied-hint="Copied!" data-clipboard-target='to_copy4'>
+            <h2  class="get-started firststep">Run H2O on Hadoop in just 3 steps</h2>
+            <p  class="get-started-p">1. Download H2O for your version of Hadoop. This is a zip file that contains everything you need to get started.</p>
+            <button class="btn copy_button" id="btnCopy4" data-copied-hint="Copied!" data-clipboard-target="to_copy4">
               <span class="octicon octicon-clippy"></span>
             </button>
-            <p class="terminal" id="to_copy4"></p>
-            <p>2. Unpack the zip file and launch a 6g instance of H<sub>2</sub>O: </p>
-             <button class="btn copy_button" id="btnCopy7" data-copied-hint="Copied!" data-clipboard-target='to_copy7'>
+            <p class="terminal" id="to_copy4"><ul></ul></p>
+            <p  class="get-started-p">2. Unpack the zip file and launch a 6g instance of H2O: </p>
+             <button class="btn copy_button" id="btnCopy7" data-copied-hint="Copied!" data-clipboard-target="to_copy7">
               <span class="octicon octicon-clippy"></span>
             </button>
             <p class="terminal" id="to_copy7">
-                unzip h2o-SUBST_PROJECT_VERSION-*.zip<br/>
-                cd h2o-SUBST_PROJECT_VERSION-*<br/>
-                hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g<br/>
+                unzip h2o-SUBST_PROJECT_VERSION-*.zip<br>
+                cd h2o-SUBST_PROJECT_VERSION-*<br>
+                hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -output hdfsOutputDirName<br>
             </p>
-            <p>3. Point your browser to H2O (see "Open H2O Flow in your web browser" in the output below):</p>
-            <button class="btn copy_button" id="btnCopy5" data-copied-hint="Copied!" data-clipboard-target='to_copy5'>
+            <p  class="get-started-p">3. Point your browser to H2O (see "Open H2O Flow in your web browser" in the output below):</p>
+            <button class="btn copy_button" id="btnCopy5" data-copied-hint="Copied!" data-clipboard-target="to_copy5">
               <span class="octicon octicon-clippy"></span>
             </button>
             <p class="terminal" id="to_copy5">
-                Determining driver host interface for mapper->driver callback...<br/>
-                [Possible callback IP address: 172.16.2.181]<br/>
-                [Possible callback IP address: 127.0.0.1]<br/>
-                ...<br/>
-                Waiting for H2O cluster to come up...<br/>
-                H2O node 172.16.2.188:54321 requested flatfile<br/>
-                Sending flatfiles to nodes...<br/>
-                    [Sending flatfile to node 172.16.2.188:54321]<br/>
-                H2O node 172.16.2.188:54321 reports H2O cluster size 1<br/>
-                H2O cluster (1 nodes) is up<br/>
-                (Note: Use the -disown option to exit the driver after cluster formation)<br/>
-                <br/>
-                <em>Open H2O Flow in your web browser: http://172.16.2.188:54321</em><br/>
-                <br/>
-                (Press Ctrl-C to kill the cluster)<br/>
-                Blocking until the H2O cluster shuts down...<br/>
+                Determining driver host interface for mapper-&gt;driver callback...<br>
+                [Possible callback IP address: 172.16.2.181]<br>
+                [Possible callback IP address: 127.0.0.1]<br>
+                ...<br>
+                Waiting for H2O cluster to come up...<br>
+                H2O node 172.16.2.188:54321 requested flatfile<br>
+                Sending flatfiles to nodes...<br>
+                    [Sending flatfile to node 172.16.2.188:54321]<br>
+                H2O node 172.16.2.188:54321 reports H2O cluster size 1<br>
+                H2O cluster (1 nodes) is up<br>
+                (Note: Use the -disown option to exit the driver after cluster formation)<br>
+                <br>
+                <em>Open H2O Flow in your web browser: http://172.16.2.188:54321</em><br>
+                <br>
+                (Press Ctrl-C to kill the cluster)<br>
+                Blocking until the H2O cluster shuts down...<br>
             </p>
           </div>
 
           <div id="quickstart-maven" style="display:none">
-              <h2>Gradle-style specification for Maven artifacts</h2>
+              <h2  class="get-started firststep">Gradle-style specification for Maven artifacts</h2>
 
-              <p>See the <a href="https://github.com/h2oai/h2o-droplets">h2o-droplets github repository</a> for a working example.</p>
-              <button class="btn copy_button" id="btnCopy6" data-copied-hint="Copied!" data-clipboard-target='to_copy6'>
+              <p  class="get-started-p">See the <a href="https://github.com/h2oai/h2o-droplets">h2o-droplets github repository</a> for a working example.</p>
+              <button class="btn copy_button" id="btnCopy6" data-copied-hint="Copied!" data-clipboard-target="to_copy6">
               <span class="octicon octicon-clippy"></span>
             </button>
               <p class="terminal" id="to_copy6">
-def h2oProjectVersion = "SUBST_PROJECT_VERSION"</br>
-</br>
-repositories {</br>
-&nbsp;maven {</br>
-&nbsp;&nbsp;url "<script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/maven/repo/"</br>
-&nbsp;}</br>
-}</br>
-</br>
-dependencies {</br>
-&nbsp;compile "ai.h2o:h2o-algos:${h2oProjectVersion}"</br>
-&nbsp;compile "ai.h2o:h2o-app:${h2oProjectVersion}"</br>
-&nbsp;compile "ai.h2o:h2o-core:${h2oProjectVersion}"</br>
-&nbsp;compile "ai.h2o:h2o-genmodel:${h2oProjectVersion}"</br>
-&nbsp;compile "ai.h2o:h2o-persist-hdfs:${h2oProjectVersion}"</br>
-&nbsp;compile "ai.h2o:h2o-web:${h2oProjectVersion}"</br>
-}</br>
-          </div>
+def h2oProjectVersion = "SUBST_PROJECT_VERSION"<br>
+<br>
+repositories {<br>
+&nbsp;maven {<br>
+&nbsp;&nbsp;url "<script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>http://h2o-release.s3.amazonaws.com/h2o/rel-xia/2/maven/repo/"<br>
+&nbsp;}<br>
+}<br>
+<br>
+dependencies {<br>
+&nbsp;compile "ai.h2o:h2o-algos:${h2oProjectVersion}"<br>
+&nbsp;compile "ai.h2o:h2o-app:${h2oProjectVersion}"<br>
+&nbsp;compile "ai.h2o:h2o-core:${h2oProjectVersion}"<br>
+&nbsp;compile "ai.h2o:h2o-genmodel:${h2oProjectVersion}"<br>
+&nbsp;compile "ai.h2o:h2o-persist-hdfs:${h2oProjectVersion}"<br>
+&nbsp;compile "ai.h2o:h2o-web:${h2oProjectVersion}"<br>
+}<br>
+          </p></div>
 
         </div>
         <div id="documentation">
-          <h2>User Documentation</h2>
-          <div id="user_documentation"></div>
-          <h2>Developer Documentation</h2>
-          <div id="developer_documentation"></div>
-          <h2>Booklets</h2>
-          <div id="booklets"></div>
+          <h2 class="get-started">User Documentation</h2>
+          <div id="user_documentation">
+</div>
+          <h2 class="get-started">Developer Documentation</h2>
+          <div id="developer_documentation">
+</div>
+          <h2 class="get-started">Booklets</h2>
+          <div id="booklets">
+</div>
         </div>
       </div>
     </div>
-  </body>
+
+</body>
+  <script type="text/javascript">
+
+
+
+  </script>
 </html>

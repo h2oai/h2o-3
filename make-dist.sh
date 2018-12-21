@@ -160,6 +160,8 @@ cp -rp h2o-algos/build/docs/javadoc target/docs-website/h2o-algos
 cp -rp h2o-genmodel/build/docs/javadoc target/docs-website/h2o-genmodel
 cp -rp h2o-scala/build/h2o-scala_2.10/docs/scaladoc target/docs-website/h2o-scala_2.10
 cp -rp h2o-scala/build/h2o-scala_2.11/docs/scaladoc target/docs-website/h2o-scala_2.11
+cp -rp h2o-dist/static target/static
+
 
 # Copy content of distribution site
 cp h2o-dist/* target/ 2>/dev/null || true
