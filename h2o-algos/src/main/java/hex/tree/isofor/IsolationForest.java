@@ -98,25 +98,25 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
   }
 
   @Override
-  protected DTree.DecidedNode makeDecided(DTree.UndecidedNode udn, DHistogram hs[]) {
-    return new IFDecidedNode(udn, hs);
+  protected DTree.DecidedNode makeDecided(DTree.UndecidedNode udn, DHistogram hs[], Constraints cs) {
+    return new IFDecidedNode(udn, hs, cs);
   }
 
   private class IFDecidedNode extends DTree.DecidedNode {
 
-    private IFDecidedNode(DTree.UndecidedNode n, DHistogram[] hs) {
-      super(n, hs);
+    private IFDecidedNode(DTree.UndecidedNode n, DHistogram[] hs, Constraints cs) {
+      super(n, hs, cs);
     }
 
     @Override
-    public DTree.Split bestCol(DTree.UndecidedNode u, DHistogram hs[]) {
+    public DTree.Split bestCol(DTree.UndecidedNode u, DHistogram hs[], Constraints cs) {
       if( hs == null ) return null;
       final int maxCols = u._scoreCols == null /* all cols */ ? hs.length : u._scoreCols.length;
       List<FindSplits> findSplits = new ArrayList<>();
       for (int i=0; i<maxCols; i++) {
         int col = u._scoreCols == null ? i : u._scoreCols[i];
         if( hs[col]==null || hs[col].nbins() <= 1 ) continue;
-        findSplits.add(new FindSplits(hs, col, u));
+        findSplits.add(new FindSplits(hs, cs, col, u));
       }
       Collections.shuffle(findSplits, _rand);
       for (FindSplits fs : findSplits) {
@@ -189,7 +189,7 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
 
       // Initially setup as-if an empty-split had just happened
       final DTree tree = ktrees[0];
-      new UndecidedNode(tree, -1, DHistogram.initialHist(_train, _ncols, adj_nbins, hcs[0][0], rseed, _parms, getGlobalQuantilesKeys())); // The "root" node
+      new UndecidedNode(tree, -1, DHistogram.initialHist(_train, _ncols, adj_nbins, hcs[0][0], rseed, _parms, getGlobalQuantilesKeys()), null); // The "root" node
 
       // ----
       // One Big Loop till the ktrees are of proper depth.

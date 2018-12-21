@@ -241,19 +241,23 @@ public class SharedTreeNode {
   }
 
   public void print() {
-    System.out.println("        Node " + nodeNumber);
-    System.out.println("            weight:      " + weight);
-    System.out.println("            depth:       " + depth);
-    System.out.println("            colId:       " + colId);
-    System.out.println("            colName:     " + ((colName != null) ? colName : ""));
-    System.out.println("            leftward:    " + leftward);
-    System.out.println("            naVsRest:    " + naVsRest);
-    System.out.println("            splitVal:    " + splitValue);
-    System.out.println("            isBitset:    " + isBitset());
-    System.out.println("            predValue:   " + predValue);
-    System.out.println("            squaredErr:  " + squaredError);
-    System.out.println("            leftChild:   " + ((leftChild != null) ? leftChild.getName() : ""));
-    System.out.println("            rightChild:  " + ((rightChild != null) ? rightChild.getName() : ""));
+    print(System.out, null);
+  }
+
+  public void print(PrintStream out, String description) {
+    out.println("        Node " + nodeNumber + (description != null ? " (" + description + ")" : ""));
+    out.println("            weight:      " + weight);
+    out.println("            depth:       " + depth);
+    out.println("            colId:       " + colId);
+    out.println("            colName:     " + ((colName != null) ? colName : ""));
+    out.println("            leftward:    " + leftward);
+    out.println("            naVsRest:    " + naVsRest);
+    out.println("            splitVal:    " + splitValue);
+    out.println("            isBitset:    " + isBitset());
+    out.println("            predValue:   " + predValue);
+    out.println("            squaredErr:  " + squaredError);
+    out.println("            leftChild:   " + ((leftChild != null) ? leftChild.getName() : ""));
+    out.println("            rightChild:  " + ((rightChild != null) ? rightChild.getName() : ""));
   }
 
   void printEdges() {

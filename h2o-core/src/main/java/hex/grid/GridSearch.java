@@ -339,26 +339,10 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     // Build a new model
     // THIS IS BLOCKING call since we do not have enough information about free resources
     // FIXME: we should allow here any launching strategy (not only sequential)
-    Model m = (Model)startBuildModel(result,params, grid).dest().get();
+    assert grid.getModel(params) == null;
+    Model m = ModelBuilder.trainModelNested(_job, result, params, null);
     grid.putModel(checksum, result);
     return m;
-  }
-
-  /**
-   * Triggers model building process but do not block on it.
-   *
-   * @param params parameters for a new model
-   * @param grid   resulting grid object
-   * @return A Future of a model run with these parameters, typically built on demand and not cached
-   * - expected to be an expensive operation.  If the model in question is "in progress", a 2nd
-   * build will NOT be kicked off. This is a non-blocking call.
-   */
-  private ModelBuilder startBuildModel(Key result, MP params, Grid<MP> grid) {
-    if (grid.getModel(params) != null) return null;
-    ModelBuilder mb = ModelBuilder.make(params.algoName(), _job, result);
-    mb._parms = params;
-    mb.trainModelNested(null);
-    return mb;
   }
 
   /**

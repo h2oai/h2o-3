@@ -611,6 +611,7 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
 
     static void checkConsistency(AuxInfo auxInfo, SharedTreeNode node) {
       boolean ok = true;
+      boolean weight_ok = true;
       ok &= (auxInfo.nid == node.getNodeNumber());
       double sum = 0;
       if (node.leftChild!=null) {
@@ -629,14 +630,20 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
       }
       if (node.parent!=null) {
         ok &= (auxInfo.pid == node.parent.getNodeNumber());
-        ok &= (Math.abs(node.getWeight() - sum) < 1e-5 * (node.getWeight() + sum));
+        weight_ok = (Math.abs(node.getWeight() - sum) < 1e-5 * (node.getWeight() + sum));
+        ok &= weight_ok;
       }
       if (!ok) {
-        System.out.println("\nTree inconsistency found:");
-        node.print();
-        node.leftChild.print();
-        node.rightChild.print();
-        System.out.println(auxInfo.toString());
+        System.err.println("\nTree inconsistency found:");
+        if (node.depth == 1 && !weight_ok) {
+          System.err.println("Note: this is a known issue for DRF and Isolation Forest models, " +
+                  "please refer to https://0xdata.atlassian.net/browse/PUBDEV-6140");
+        }
+        node.print(System.err, "parent");
+        node.leftChild.print(System.err, "left child");
+        node.rightChild.print(System.err, "right child");
+        System.err.println("Auxiliary tree info:");
+        System.err.println(auxInfo.toString());
       }
     }
 

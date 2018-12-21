@@ -681,15 +681,15 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   private final int getXGBoostClassIndex(final String treeClass) {
     final ModelCategory modelCategory = _output.getModelCategory();
-    if (treeClass == null && ModelCategory.Regression.equals(modelCategory)) return 0;
-    if (treeClass == null && !ModelCategory.Regression.equals(modelCategory)) {
+    if(ModelCategory.Regression.equals(modelCategory) && (treeClass != null && !treeClass.isEmpty())){
+      throw new IllegalArgumentException("There should be no tree class specified for regression.");
+    }
+    if ((treeClass == null || treeClass.isEmpty()) && ModelCategory.Regression.equals(modelCategory)) return 0;
+    if ((treeClass == null || treeClass.isEmpty()) && !ModelCategory.Regression.equals(modelCategory)) {
       throw new IllegalArgumentException("Non-regressional models require tree class specified.");
     }
 
     final String[] domain = _output._domains[_output._domains.length - 1];
-    if(ModelCategory.Regression.equals(modelCategory) && treeClass != null){
-      throw new IllegalArgumentException("There should be no tree class specified for regression.");
-    }
     final int treeClassIndex = ArrayUtils.find(domain, treeClass);
 
     if (ModelCategory.Binomial.equals(modelCategory) && treeClassIndex != 0) {

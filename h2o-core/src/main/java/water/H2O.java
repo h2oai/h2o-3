@@ -20,10 +20,7 @@ import water.parser.DecryptionTool;
 import water.parser.ParserService;
 import water.persist.PersistManager;
 import water.server.ServletUtils;
-import water.util.Log;
-import water.util.NetworkUtils;
-import water.util.OSUtils;
-import water.util.PrettyPrint;
+import water.util.*;
 import water.webserver.iface.WebServer;
 
 import java.io.BufferedWriter;
@@ -51,8 +48,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -1267,14 +1262,54 @@ final public class H2O {
     return task;
   }
 
-  public static abstract class H2OFuture<T> implements Future<T> {
-    public final T getResult(){
+  /**
+   * Executes a runnable on a regular H2O Node (= not on a client).
+   * If the current H2O Node is a regular node, the runnable will be executed directly (RemoteRunnable#run will be invoked).
+   * If the current H2O Node is a client node, the runnable will be send to a leader node of the cluster and executed there.
+   * The caller shouldn't make any assumptions on where the code will be run.
+   * @param runnable code to be executed
+   * @param <T> RemoteRunnable
+   * @return executed runnable (will be a different instance if executed remotely).
+   */
+  public static <T extends RemoteRunnable> T runOnH2ONode(T runnable) {
+    H2ONode node = H2O.ARGS.client ? H2O.CLOUD.leader() : H2O.SELF;
+    return runOnH2ONode(node, runnable);
+  }
+
+  // package-private for unit tests
+  static <T extends RemoteRunnable> T runOnH2ONode(H2ONode node, T runnable) {
+    if (node == H2O.SELF) {
+      // run directly
+      runnable.run();
+      return runnable;
+    } else {
+      RunnableWrapperTask<T> task = new RunnableWrapperTask<>(runnable);
       try {
-        return get();
-      } catch (InterruptedException | ExecutionException e) {
-        throw new RuntimeException(e);
+        return new RPC<>(node, task).call().get()._runnable;
+      } catch (DistributedException e) {
+        Log.trace("Exception in calling runnable on a remote node",  e);
+        Throwable cause = e.getCause();
+        throw cause instanceof RuntimeException ? (RuntimeException) cause : e;
       }
     }
+  }
+
+  private static class RunnableWrapperTask<T extends RemoteRunnable> extends DTask<RunnableWrapperTask<T>> {
+    private final T _runnable;
+    private RunnableWrapperTask(T runnable) {
+      _runnable = runnable;
+    }
+    @Override
+    public void compute2() {
+      _runnable.setupOnRemote();
+      _runnable.run();
+      tryComplete();
+    }
+  }
+
+  public abstract static class RemoteRunnable<T extends RemoteRunnable> extends Iced<T> {
+    public void setupOnRemote() {}
+    public abstract void run();
   }
 
   /** Simple wrapper over F/J {@link CountedCompleter} to support priority

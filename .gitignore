@@ -107,7 +107,6 @@ native
 
 # Ignore Jupyter Notebook project files
 *.ipynb_checkpoints/
-*.ipynb
 
 h2o-docs/src/booklets/source/DeepLearningBooklet.top
 
