@@ -29,7 +29,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xia/3/index.ht
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6109'>PUBDEV-6109</a>] - In Flow, fixed an issue that caused POJOs, MOJOs, and genmodel.jar to fail to download. This occurred when Flow was launched via Enterprise Steam and in any deployment where user_context was specified. 
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6111'>PUBDEV-6111</a>] - Fixed the formula used for calculating L2 distance. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6111'>PUBDEV-6111</a>] - Fixed the formula used for calculating L2 distance.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6117'>PUBDEV-6117</a>] - The Python client now allows users to enable XGBoost compare with any H2O frame. The convert_H2OFrame_2_DMatrix method accepts any H2O frame and can convert it to valid data for native XGBoost. 
 </li>
