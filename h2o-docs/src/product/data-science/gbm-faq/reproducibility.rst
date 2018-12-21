@@ -9,13 +9,13 @@ Reproducibility
 
  As long as you set the seed, GBM is deterministic up to floating point rounding errors (out-of-order atomic addition of multiple threads during histogram building). This means that if you set a seed, your results will be reproducible (even if, for example, you change the number of nodes in your cluster, change the way you ingest data, or change the number of files your data lives in, among many other examples).
  
- - **How to guarantee reproducibility in single node cluster?**
+- **How to guarantee reproducibility in single node cluster?**
 
  The following criteria must be met to guarantee reproducibility in a single node cluster:
  
  - same training data
  
-   - Note: if you have H2O import a whole directory with multiple files instead of a single file, we do not guarantee reproducibility because the data may be shuffled during import
+   - **Note**: If you have H2O import a whole directory with multiple files instead of a single file, we do not guarantee reproducibility because the data may be shuffled during import.
    
  - same parameters used to train the model
  - same seed set (this is required when any sampling is done)
