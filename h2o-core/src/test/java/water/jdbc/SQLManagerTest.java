@@ -110,7 +110,7 @@ public class SQLManagerTest {
             SQLManager.buildSelectSingleRowSql("oracle","mytable","*"));
 
     // SQL Server
-    Assert.assertEquals("SELECT * FROM mytable FETCH NEXT 1 ROWS ONLY",
+    Assert.assertEquals("SELECT TOP(1) * FROM mytable",
             SQLManager.buildSelectSingleRowSql("sqlserver", "mytable", "*"));
 
     // Teradata
@@ -130,7 +130,7 @@ public class SQLManagerTest {
             SQLManager.buildSelectChunkSql("oracle", "mytable", 0, 1310, "*", null));
 
     // SQL Server
-    Assert.assertEquals("SELECT * FROM mytable OFFSET 0 ROWS FETCH NEXT 1310 ROWS ONLY",
+    Assert.assertEquals("SELECT * FROM mytable ORDER BY ROW_NUMBER() OVER (ORDER BY (SELECT 0)) OFFSET 0 ROWS FETCH NEXT 1310 ROWS ONLY",
             SQLManager.buildSelectChunkSql("sqlserver", "mytable", 0, 1310, "*", null));
 
     // Teradata
