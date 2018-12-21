@@ -355,7 +355,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     if (null == this.trainingFrame) {
       // when nfolds>0, let trainingFrame be the original frame
-      this.trainingFrame = origTrainingFrame;
+      // but cloning to keep an internal ref just in case the original ref gets deleted from client side
+      // (can occur in some corner cases with Python GC for example if frame get's out of scope during an AutoML rerun)
+      this.trainingFrame = new Frame(origTrainingFrame);
+      DKV.put(this.trainingFrame);
     }
 
     this.responseColumn = trainingFrame.vec(buildSpec.input_spec.response_column);
