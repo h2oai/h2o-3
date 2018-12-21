@@ -47,23 +47,20 @@ encoding_map <- h2o.target_encode_fit(full_train, te_cols, "IsDepDelayed")
 
 
 # Apply Leave One Out Encoding Map on Training, Validation, Testing Data
-loo_train <- h2o.target_encode_transform(frame=loo_train, x = te_cols, y = "IsDepDelayed",
-                                        encoding_map=encoding_map, holdout_type = "LeaveOneOut",
-                                        blending=TRUE, inflection_point = 10, smoothing=5,
-                                        is_train_or_valid=TRUE,
-                                        noise=-1, seed = 1234)
+loo_train <- h2o.target_encode_transform(frame = loo_train, x = te_cols, y = "IsDepDelayed",
+                                        target_encode_map = encoding_map, holdout_type = "loo",
+                                        blended_avg = TRUE, inflection_point = 10, smoothing = 5,
+                                        noise = -1, seed = 1234)
 
-loo_valid <- h2o.target_encode_transform(frame=loo_valid, x = te_cols, y = "IsDepDelayed",
-                                        encoding_map=encoding_map, holdout_type = "None",
-                                        blending=TRUE, inflection_point = 10, smoothing=5,
-                                        is_train_or_valid=TRUE,
-                                        noise=0, seed = 1234)
+loo_valid <- h2o.target_encode_transform(frame = loo_valid, x = te_cols, y = "IsDepDelayed",
+                                        target_encode_map = encoding_map, holdout_type = "none",
+                                        blended_avg = TRUE, inflection_point = 10, smoothing = 5,
+                                        noise = 0, seed = 1234)
 
-loo_test <- h2o.target_encode_transform(frame=loo_test, x = te_cols, y = "IsDepDelayed",
-                                        encoding_map=encoding_map, holdout_type = "None",
-                                        blending=TRUE, inflection_point = 10, smoothing=5,
-                                        is_train_or_valid=FALSE,
-                                        noise=0, seed = 1234)
+loo_test <- h2o.target_encode_transform(frame = loo_test, x = te_cols, y = "IsDepDelayed",
+                                        target_encode_map = encoding_map, holdout_type = "none",
+                                        blended_avg = TRUE, inflection_point = 10, smoothing = 5,
+                                        noise = 0, seed = 1234)
 
 print("Run GBM with Leave One Out Target Encoding")
 myX <- setdiff(colnames(loo_test), c(te_cols, "IsDepDelayed", "IsDepDelayed_REC"))
@@ -94,21 +91,18 @@ encoding_map <- h2o.target_encode_fit(kfold_train, te_cols, "IsDepDelayed", "fol
 
 # Apply Encoding Map on Training, Validation, Testing Data
 kfold_train <- h2o.target_encode_transform(frame=kfold_train, x = te_cols, y = "IsDepDelayed",
-                                        encoding_map=encoding_map, holdout_type = "KFold", fold_column = "fold",
-                                        blending=TRUE, inflection_point = 10, smoothing=5,
-                                        is_train_or_valid=TRUE,
+                                        target_encode_map=encoding_map, holdout_type = "kfold", fold_column = "fold",
+                                        blended_avg=TRUE, inflection_point = 10, smoothing=5,
                                         noise=-1, seed = 1234)
 
 kfold_valid <- h2o.target_encode_transform(frame=kfold_valid, x = te_cols, y = "IsDepDelayed",
-                                        encoding_map=encoding_map, holdout_type = "None", fold_column = "fold",
-                                        blending=TRUE, inflection_point = 10, smoothing=5,
-                                        is_train_or_valid=TRUE,
+                                        target_encode_map=encoding_map, holdout_type = "none", fold_column = "fold",
+                                        blended_avg=TRUE, inflection_point = 10, smoothing=5,
                                         noise=0, seed = 1234)
 
 kfold_test <- h2o.target_encode_transform(frame=kfold_test, x = te_cols, y = "IsDepDelayed",
-                                        encoding_map=encoding_map, holdout_type = "None", fold_column = "fold",
-                                        blending=TRUE, inflection_point = 10, smoothing=5,
-                                        is_train_or_valid=FALSE,
+                                        target_encode_map=encoding_map, holdout_type = "none", fold_column = "fold",
+                                        blended_avg=TRUE, inflection_point = 10, smoothing=5,
                                         noise=0, seed = 1234)
 
 print("Run GBM with Cross Validation Target Encoding")
@@ -138,21 +132,18 @@ encoding_map <- h2o.target_encode_fit(te_holdout, te_cols, "IsDepDelayed")
 
 # Apply Encoding Map on Training, Validation, and Testing Data
 holdout_train <- h2o.target_encode_transform(frame=holdout_train, x = te_cols, y = "IsDepDelayed",
-                                            encoding_map=encoding_map, holdout_type = "None",
-                                            blending=TRUE, inflection_point = 10, smoothing=5,
-                                            is_train_or_valid=TRUE,
+                                            target_encode_map=encoding_map, holdout_type = "none",
+                                            blended_avg=TRUE, inflection_point = 10, smoothing=5,
                                             noise=0, seed = 1234)
 
 holdout_valid <- h2o.target_encode_transform(frame=holdout_valid, x = te_cols, y = "IsDepDelayed",
-                                            encoding_map=encoding_map, holdout_type = "None",
-                                            blending=TRUE, inflection_point = 10, smoothing=5,
-                                            is_train_or_valid=TRUE,
+                                            target_encode_map=encoding_map, holdout_type = "none",
+                                            blended_avg=TRUE, inflection_point = 10, smoothing=5,
                                             noise=0, seed = 1234)
 
 holdout_test <- h2o.target_encode_transform(frame=holdout_test, x = te_cols, y = "IsDepDelayed",
-                                            encoding_map=encoding_map, holdout_type = "None",
-                                            blending=TRUE, inflection_point = 10, smoothing=5,
-                                            is_train_or_valid=FALSE,
+                                            target_encode_map=encoding_map, holdout_type = "none",
+                                            blended_avg=TRUE, inflection_point = 10, smoothing=5,
                                             noise=0, seed = 1234)
 
 print("Run GBM with Target Encoding on Holdout")

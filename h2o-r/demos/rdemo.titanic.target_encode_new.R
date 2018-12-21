@@ -17,8 +17,8 @@ test <- splits[[4]]
 print("Run GBM without Target Encoding as Baseline")
 
 myX <- setdiff(colnames(train), c("survived", "name", "ticket", "boat", "body"))
-te_cols <- list("embarked")
-# te_cols <- list("cabin", "embarked", "home.dest")
+# te_cols <- list("embarked")
+te_cols <- list("cabin", "embarked", "home.dest")
 inflection_point <- 3
 smoothing <- 1
 
@@ -49,24 +49,20 @@ encoding_map <- h2o.target_encode_fit(loo_train, te_cols, "survived")
 
 # Apply Leave One Out Encoding Map on Training, Validation, Testing Data
 loo_train <- h2o.target_encode_transform(frame=loo_train, x = te_cols, y = "survived",
-                                        encoding_map=encoding_map, holdout_type = "LeaveOneOut",
-                                        blending=TRUE, inflection_point = inflection_point, smoothing=smoothing,
-                                        is_train_or_valid=TRUE,
+                                        target_encode_map=encoding_map, holdout_type = "loo",
+                                        blended_avg=TRUE, inflection_point = inflection_point, smoothing=smoothing,
                                         noise=-1, seed = 1234)
 
-head(loo_train, 100)
 h2o.exportFile(loo_train, "titanic_loo_train_new.csv", force = TRUE)
 
 loo_valid <- h2o.target_encode_transform(frame=loo_valid, x = te_cols, y = "survived",
-                                        encoding_map=encoding_map, holdout_type = "None",
-                                        blending=TRUE, inflection_point = inflection_point, smoothing=smoothing,
-                                        is_train_or_valid=TRUE,
+                                        target_encode_map=encoding_map, holdout_type = "none",
+                                        blended_avg=TRUE, inflection_point = inflection_point, smoothing=smoothing,
                                         noise=0)
 
 loo_test <- h2o.target_encode_transform(frame=loo_test, x = te_cols, y = "survived",
-                                        encoding_map=encoding_map, holdout_type = "None",
-                                        blending=TRUE, inflection_point = inflection_point, smoothing=smoothing,
-                                        is_train_or_valid=FALSE,
+                                        target_encode_map=encoding_map, holdout_type = "none",
+                                        blended_avg=TRUE, inflection_point = inflection_point, smoothing=smoothing,
                                         noise=0)
 
 print("Run GBM with Leave One Out Target Encoding")
@@ -99,25 +95,21 @@ encoding_map <- h2o.target_encode_fit(kfold_train, te_cols, "survived", "fold")
 
 # Apply Encoding Map on Training, Validation, Testing Data
 kfold_train <- h2o.target_encode_transform(frame=kfold_train, x = te_cols, y = "survived",
-                                        encoding_map=encoding_map, holdout_type = "KFold", fold_column = "fold",
-                                        blending=TRUE, inflection_point = inflection_point, smoothing=smoothing,
-                                        is_train_or_valid=TRUE,
+                                        target_encode_map=encoding_map, holdout_type = "kfold", fold_column = "fold",
+                                        blended_avg=TRUE, inflection_point = inflection_point, smoothing=smoothing,
                                         noise=-1, seed = 1234)
 
 kfold_valid <- h2o.target_encode_transform(frame=kfold_valid, x = te_cols, y = "survived",
-                                        encoding_map=encoding_map, holdout_type = "None", fold_column = "fold",
-                                        blending=TRUE, inflection_point = inflection_point, smoothing=smoothing,
-                                        is_train_or_valid=TRUE,
+                                        target_encode_map=encoding_map, holdout_type = "none", fold_column = "fold",
+                                        blended_avg=TRUE, inflection_point = inflection_point, smoothing=smoothing,
                                         noise=0)
 
 kfold_test <- h2o.target_encode_transform(frame=kfold_test, x = te_cols, y = "survived",
-                                        encoding_map=encoding_map, holdout_type = "None", fold_column = "fold",
-                                        blending=TRUE, inflection_point = inflection_point, smoothing=smoothing,
-                                        is_train_or_valid=FALSE,
+                                        target_encode_map=encoding_map, holdout_type = "none", fold_column = "fold",
+                                        blended_avg=TRUE, inflection_point = inflection_point, smoothing=smoothing,
                                         noise=0)
 
 print("Run GBM with Cross Validation Target Encoding")
-myX
 kfold_te_gbm <- h2o.gbm(x = myX, y = "survived",
                     training_frame = kfold_train, validation_frame = kfold_valid,
                     ntrees = 1000, score_tree_interval = 10, model_id = "kfold_te_gbm",
@@ -144,21 +136,18 @@ encoding_map <- h2o.target_encode_fit(te_holdout, te_cols, "survived")
 
 # Apply Encoding Map on Training, Validation, and Testing Data
 holdout_train <- h2o.target_encode_transform(frame=holdout_train, x = te_cols, y = "survived",
-                                            encoding_map=encoding_map, holdout_type = "None",
-                                            blending=TRUE, inflection_point = inflection_point, smoothing=smoothing,
-                                            is_train_or_valid=TRUE,
+                                            target_encode_map=encoding_map, holdout_type = "none",
+                                            blended_avg=TRUE, inflection_point = inflection_point, smoothing=smoothing,
                                             noise=0, seed = 1234)
 
 holdout_valid <- h2o.target_encode_transform(frame=holdout_valid, x = te_cols, y = "survived",
-                                            encoding_map=encoding_map, holdout_type = "None",
-                                            blending=TRUE, inflection_point = inflection_point, smoothing=smoothing,
-                                            is_train_or_valid=TRUE,
+                                            target_encode_map=encoding_map, holdout_type = "none",
+                                            blended_avg=TRUE, inflection_point = inflection_point, smoothing=smoothing,
                                             noise=0)
 
 holdout_test <- h2o.target_encode_transform(frame=holdout_test, x = te_cols, y = "survived",
-                                            encoding_map=encoding_map, holdout_type = "None",
-                                            blending=TRUE, inflection_point = inflection_point, smoothing=smoothing,
-                                            is_train_or_valid=FALSE,
+                                            target_encode_map=encoding_map, holdout_type = "none",
+                                            blended_avg=TRUE, inflection_point = inflection_point, smoothing=smoothing,
                                             noise=0)
 
 print("Run GBM with Target Encoding on Holdout")
