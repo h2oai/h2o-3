@@ -358,6 +358,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       // but cloning to keep an internal ref just in case the original ref gets deleted from client side
       // (can occur in some corner cases with Python GC for example if frame get's out of scope during an AutoML rerun)
       this.trainingFrame = new Frame(origTrainingFrame);
+      this.trainingFrame._key = Key.make("automl_training_" + origTrainingFrame._key);
       DKV.put(this.trainingFrame);
     }
 
