@@ -175,7 +175,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, insecure=None, use
     :param ignore_config: Indicates whether a processing of a .h2oconfig file should be conducted or not. Default value is False.
     :param extra_classpath: List of paths to libraries that should be included on the Java classpath when starting H2O from Python.
     :param kwargs: (all other deprecated attributes)
-    :param jvm_custom_args Customer, user-defined argument's for the JVM H2O is instantiated in. Ignored if there is an instance of H2O already running and the client connects to it.
+    :param jvm_custom_args: Customer, user-defined argument's for the JVM H2O is instantiated in. Ignored if there is an instance of H2O already running and the client connects to it.
     """
     global h2oconn
     assert_is_type(url, str, None)
