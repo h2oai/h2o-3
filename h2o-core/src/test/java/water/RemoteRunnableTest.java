@@ -11,7 +11,7 @@ public class RemoteRunnableTest extends TestUtil {
 
   @Rule
   public ExpectedException thrown = ExpectedException.none();
-  
+
   @BeforeClass
   static public void setup() {
     stall_till_cloudsize(5);
@@ -93,5 +93,5 @@ public class RemoteRunnableTest extends TestUtil {
       throw new IllegalStateException("Failing intentionally");
     }
   }
-  
+
 }
