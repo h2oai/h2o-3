@@ -1,21 +1,25 @@
 package ai.h2o.automl;
 
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.Key;
 import water.fvec.Frame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.util.Date;
 import java.util.Random;
 
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
+import static water.TestUtil.parse_test_file;
 
-public class AutoMLTest extends water.TestUtil {
-
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class AutoMLTest {
+  
 
   @Test public void test_basic_automl_behaviour_using_cv() {
     AutoML aml=null;

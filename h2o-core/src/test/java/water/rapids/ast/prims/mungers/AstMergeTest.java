@@ -3,6 +3,7 @@ package water.rapids.ast.prims.mungers;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
@@ -10,17 +11,17 @@ import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.rapids.Rapids;
 import water.rapids.Val;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
+
+import static water.TestUtil.*;
 
 /***
  * This test is written by Andrey Spiridonov in JIRA PUBDEV-5924.
  */
-public class AstMergeTest extends TestUtil {
-
-  @BeforeClass
-  static public void setup() {
-    stall_till_cloudsize(1);
-  }
-
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class AstMergeTest{
 
   @Ignore
   @Test(timeout = 100000) // This merge is not going to finish in reasonable time. Check if it is n*log(n)

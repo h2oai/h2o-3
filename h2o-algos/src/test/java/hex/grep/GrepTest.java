@@ -1,6 +1,7 @@
 package hex.grep;
 
 import org.junit.*;
+import org.junit.runner.RunWith;
 import water.DKV;
 import water.Job;
 import water.Key;
@@ -8,13 +9,15 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
-import water.util.FileUtils;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.io.File;
 import static org.junit.Assert.*;
 
+@RunWith(H2ORunner.class)
+@CloudSize(1)
 public class GrepTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void testIris() {
     GrepModel kmm = null;

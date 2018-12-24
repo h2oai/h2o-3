@@ -12,22 +12,26 @@ import hex.tree.gbm.GBMModel;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.DKV;
 import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
 import static org.junit.Assert.assertTrue;
+import static water.TestUtil.parse_test_file;
 
-public class StackedEnsembleTest extends TestUtil {
-
-    @BeforeClass public static void stall() { stall_till_cloudsize(1); }
-
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class StackedEnsembleTest {
+    
     private abstract class PrepData { abstract int prep(Frame fr); }
 
     static final String ignored_aircols[] = new String[] { "DepTime", "ArrTime", "AirTime", "ArrDelay", "DepDelay", "TaxiIn",

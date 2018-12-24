@@ -3,14 +3,18 @@ package water.fvec;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.AutoBuffer;
 import water.IcedUtils;
 import water.TestUtil;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.util.Arrays;
 
+@RunWith(H2ORunner.class)
+@CloudSize(1)
 public class CUDChunkTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
   @Test
   public void test_inflate_impl() {
     NewChunk nc = new NewChunk(null, 0);

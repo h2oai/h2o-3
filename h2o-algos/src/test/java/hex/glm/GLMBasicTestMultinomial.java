@@ -12,20 +12,26 @@ import hex.glm.GLMModel.GLMParameters.Solver;
 import hex.optimization.ADMM;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static water.TestUtil.parse_test_file;
 
 /**
  * Created by tomasnykodym on 10/28/15.
  */
-public class GLMBasicTestMultinomial extends TestUtilSharedResources {
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class GLMBasicTestMultinomial {
   static Frame _covtype;
   static Frame _train;
   static Frame _test;
@@ -36,7 +42,6 @@ public class GLMBasicTestMultinomial extends TestUtilSharedResources {
 
   @BeforeClass
   public static void setup() {
-    stall_till_cloudsize(1);
     _covtype = parse_test_file("smalldata/covtype/covtype.20k.data");
     _covtype.replace(_covtype.numCols()-1,_covtype.lastVec().toCategoricalVec()).remove();
     Key[] keys = new Key[]{Key.make("train"),Key.make("test")};

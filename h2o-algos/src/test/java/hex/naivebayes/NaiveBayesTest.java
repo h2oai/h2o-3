@@ -4,17 +4,21 @@ import hex.SplitFrame;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.DKV;
 import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import hex.naivebayes.NaiveBayesModel.NaiveBayesParameters;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.util.concurrent.ExecutionException;
 
+@RunWith(H2ORunner.class)
+@CloudSize(1)
 public class NaiveBayesTest extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void testIris() throws InterruptedException, ExecutionException {
     NaiveBayesModel model = null;

@@ -3,16 +3,20 @@ package water;
 import jsr166y.CountedCompleter;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.api.TimelineHandler;
 import water.api.schemas3.TimelineV3;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.util.HashSet;
 import java.util.Set;
 
 import static junit.framework.TestCase.assertEquals;
 
-public class TimelineTest extends TestUtil{
-  public TimelineTest() { super(5); }
+@RunWith(H2ORunner.class)
+@CloudSize(5)
+public class TimelineTest{
 
   // Simple class to test the timeline.  We want to send this task around and
   // see that timeline shows this and in correct order.  An instance is sent

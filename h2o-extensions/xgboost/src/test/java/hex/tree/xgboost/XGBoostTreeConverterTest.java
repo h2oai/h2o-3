@@ -11,25 +11,30 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
 import water.DKV;
 import water.ExtensionManager;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.io.ByteArrayInputStream;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static water.TestUtil.parse_test_file;
 
-public class XGBoostTreeConverterTest extends TestUtil {
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class XGBoostTreeConverterTest {
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
     @BeforeClass
     public static void stall() {
-        stall_till_cloudsize(1);
 
         // we need to check for XGBoost backend availability after H2O is initialized, since we
         // XGBoost is a core extension and they are registered as part of the H2O's class main method

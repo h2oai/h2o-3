@@ -4,11 +4,16 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 import org.junit.Ignore;
 import java.io.File;
+
+import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.*;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
-public class ParseExceptionTest extends TestUtil {
-  static public void setup() { stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class ParseExceptionTest {
 
   @Test @Ignore public void testParserRecoversFromException() {
     Throwable ex = null;

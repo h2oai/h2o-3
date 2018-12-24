@@ -3,16 +3,22 @@ package water.fvec;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.Futures;
 import water.TestUtil;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import static org.junit.Assert.assertTrue;
+import static water.TestUtil.ar;
+import static water.TestUtil.vec;
 import static water.fvec.Vec.makeCon;
 import static water.fvec.Vec.makeSeq;
 
 /** This test tests stability of Vec API. */
-public class VecTest extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class VecTest{
 
   /** Test toCategoricalVec call to return correct domain. */
   @Test public void testToCategorical() {

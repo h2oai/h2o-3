@@ -1,6 +1,9 @@
 package water;
 
 import org.junit.*;
+import org.junit.runner.RunWith;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.JSONUtils;
 
 import java.io.Serializable;
@@ -8,9 +11,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 
+@RunWith(H2ORunner.class)
+@CloudSize(1)
 public class AutoSerialTest extends Iced {
-  @BeforeClass public static void stall() { TestUtil.stall_till_cloudsize(1); }
-  @After public void checkLeakedKeys() { TestUtil.performLeakedKeysCheck();}
+
 
   byte _byte, _bytes[];
   short _short, _shorts[];

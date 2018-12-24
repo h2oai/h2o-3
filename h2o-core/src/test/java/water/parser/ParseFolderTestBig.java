@@ -4,17 +4,23 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import org.junit.*;
+import org.junit.runner.RunWith;
 import water.Job;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.FileUtils;
 
-public class ParseFolderTestBig extends TestUtil {
-  @BeforeClass static public void setup() { stall_till_cloudsize(1); }
+import static water.TestUtil.parse_test_file;
+import static water.TestUtil.parse_test_folder;
 
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class ParseFolderTestBig {
   // "dataset directory is not usually available"
   @Test @Ignore
   public void testCovtype() {

@@ -7,14 +7,16 @@ import hex.ModelMetricsRegression;
 import hex.SplitFrame;
 import hex.tree.SharedTreeModel;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.Triple;
@@ -26,8 +28,9 @@ import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 
+@RunWith(H2ORunner.class)
+@CloudSize(1)
 public class DRFTest extends TestUtil {
-  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
   abstract static class PrepData { abstract int prep(Frame fr); }
 

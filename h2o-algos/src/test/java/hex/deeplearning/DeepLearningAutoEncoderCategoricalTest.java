@@ -7,8 +7,8 @@ import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.AutoEncoderModelPrediction;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
@@ -16,14 +16,16 @@ import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.parser.ParseDataset;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.Log;
 
 import java.io.IOException;
 
-public class DeepLearningAutoEncoderCategoricalTest extends TestUtil {
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class DeepLearningAutoEncoderCategoricalTest {
   static final String PATH = "smalldata/airlines/AirlinesTrain.csv.zip";
-
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   @Test
   public void run() {

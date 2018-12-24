@@ -4,10 +4,14 @@ package water.parser;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import static org.junit.Assert.assertTrue;
+import static water.TestUtil.parse_test_folder;
 
 /**
  * Test suite for orc parser.
@@ -18,7 +22,9 @@ import static org.junit.Assert.assertTrue;
  * -- Requested by Tomas N.
  *
  */
-public class ParseTestMultiFileOrc extends TestUtil {
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class ParseTestMultiFileOrc {
 
     private double EPSILON = 1e-9;
     private long ERRORMARGIN = 1000L;  // error margin when compare timestamp.
@@ -34,13 +40,10 @@ public class ParseTestMultiFileOrc extends TestUtil {
         Assume.assumeTrue("Java6 is not supported", !System.getProperty("java.version", "NA").startsWith("1.6"));
     }
 
-    @BeforeClass
-    static public void setup() { TestUtil.stall_till_cloudsize(1); }
-
     @Test
     public void testParseMultiFileOrcs() {
         for(final boolean disableParallelParse:new boolean[]{false,true}) {
-            final ParseSetupTransformer pst = new ParseSetupTransformer() {
+            final TestUtil.ParseSetupTransformer pst = new TestUtil.ParseSetupTransformer() {
                 @Override
                 public ParseSetup transformSetup(ParseSetup guessedSetup) {
                     guessedSetup.disableParallelParse = disableParallelParse;

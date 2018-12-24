@@ -3,6 +3,7 @@ package water.rapids.ast.prims.reducers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.DKV;
 import water.Key;
 import water.TestUtil;
@@ -12,21 +13,26 @@ import water.fvec.Vec;
 import water.rapids.Rapids;
 import water.rapids.Val;
 import water.rapids.vals.ValFrame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.util.ArrayList;
 
 import static org.junit.Assert.*;
+import static water.TestUtil.*;
 
 
 /**
  * Test the AstSumAxis.java class
  */
-public class AstSumAxisTest extends TestUtilSharedResources {
+
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class AstSumAxisTest{
     private static Vec vi1, vd1, vd2, vd3, vs1, vt1, vt2, vc1, vc2;
     private static ArrayList<Frame> allFrames;
 
     @BeforeClass public static void setup() {
-        stall_till_cloudsize(1);
         vi1 = TestUtil.ivec(-1, -2, 0, 2, 1);
         vd1 = TestUtil.dvec(1.5, 2.5, 3.5, 4.5, 8.0);
         vd2 = TestUtil.dvec(0.2, 0.4, 0.6, 0.8, 1.0);

@@ -5,12 +5,16 @@ import org.junit.*;
 
 import java.util.concurrent.ExecutionException;
 import jsr166y.CountedCompleter;
+import org.junit.runner.RunWith;
 import water.fvec.Chunk;
 import water.fvec.FileVec;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
-public class MRThrow extends TestUtil {
-  @BeforeClass static public void setup() { stall_till_cloudsize(5);}
+@RunWith(H2ORunner.class)
+@CloudSize(5)
+public class MRThrow {
 
   @Test public void testLots() {
     for( int i=0; i<10; i++ )

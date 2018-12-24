@@ -5,6 +5,7 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.DKV;
 import water.Key;
 import water.TestUtil;
@@ -13,15 +14,19 @@ import water.fvec.Frame;
 import water.parser.BufferedString;
 import water.rapids.Rapids;
 import water.rapids.Val;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 
+import static water.TestUtil.*;
 
-public class StratifiedSplitTest extends TestUtilSharedResources {
+
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class StratifiedSplitTest {
     private static Frame f = null, fr1 = null, fanimal = null, fr2 = null;
 
-    @BeforeClass public static void setup() {
-        stall_till_cloudsize(1);
-    }
+
 
     @AfterClass public static void teardown() {
         f.delete(); fr1.delete(); fanimal.delete(); fr2.delete();

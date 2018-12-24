@@ -1,7 +1,6 @@
 package hex.tree.drf;
 
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -15,21 +14,25 @@ import java.util.Set;
 import hex.Model;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
+import org.junit.runner.RunWith;
 import water.DKV;
 import water.Job;
 import water.Key;
-import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.test.util.GridTestUtils;
 import water.util.ArrayUtils;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static water.TestUtil.parse_test_file;
 import static water.util.ArrayUtils.interval;
 
-public class DRFGridTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class DRFGridTest {
 
   @Test public void testCarsGrid() {
     Grid<DRFModel.DRFParameters> grid = null;

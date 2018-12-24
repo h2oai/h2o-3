@@ -40,7 +40,7 @@ public class TestUtil extends Iced {
   /** Minimal cloud size to start test. */
   protected static int MINCLOUDSIZE = Integer.parseInt(System.getProperty("cloudSize", "1"));
   /** Default time in ms to wait for clouding */
-  protected static int DEFAULT_TIME_FOR_CLOUDING = 30000 /* ms */;
+  public static int DEFAULT_TIME_FOR_CLOUDING = 30000 /* ms */;
 
   public TestUtil() { this(1); }
   public TestUtil(int minCloudSize) {
@@ -197,7 +197,7 @@ public class TestUtil extends Iced {
    * @param num_factor
    * @return
    */
-  protected static Frame generate_enum_only(int numCols, int numRows, int num_factor, double missingfrac) {
+  public static Frame generate_enum_only(int numCols, int numRows, int num_factor, double missingfrac) {
     CreateFrame cf = new CreateFrame();
     cf.rows= numRows;
     cf.cols = numCols;
@@ -236,7 +236,7 @@ public class TestUtil extends Iced {
    * @param numRows
    * @return
    */
-  protected static Frame generate_int_only(int numCols, int numRows, int iRange, double missingfrac) {
+  public static Frame generate_int_only(int numCols, int numRows, int iRange, double missingfrac) {
     CreateFrame cf = new CreateFrame();
     cf.rows= numRows;
     cf.cols = numCols;
@@ -413,11 +413,11 @@ public class TestUtil extends Iced {
     return ParseDataset.parse(outputKey, new Key[]{nfs._key}, true, guessedSetup);
   }
 
-  protected Frame parse_test_file( Key outputKey, String fname, boolean guessSetup) {
+  public static Frame parse_test_file( Key outputKey, String fname, boolean guessSetup) {
     return parse_test_file(outputKey, fname, guessSetup, null);
   }
 
-  protected Frame parse_test_file( Key outputKey, String fname, boolean guessSetup, int[] skippedColumns) {
+  public static Frame parse_test_file( Key outputKey, String fname, boolean guessSetup, int[] skippedColumns) {
     NFSFileVec nfs = makeNfsFileVec(fname);
     ParseSetup guessParseSetup = ParseSetup.guessSetup(new Key[]{nfs._key},false,1);
     if (skippedColumns != null) {
@@ -427,15 +427,15 @@ public class TestUtil extends Iced {
     return ParseDataset.parse(outputKey, new Key[]{nfs._key}, true, ParseSetup.guessSetup(new Key[]{nfs._key},false,1));
   }
 
-  protected Frame parse_test_file( String fname, String na_string, int check_header, byte[] column_types) {
+  public static Frame parse_test_file( String fname, String na_string, int check_header, byte[] column_types) {
     return parse_test_file(fname, na_string, check_header, column_types, null, null);
   }
 
-  protected Frame parse_test_file( String fname, String na_string, int check_header, byte[] column_types, ParseSetupTransformer transformer) {
+  public static Frame parse_test_file( String fname, String na_string, int check_header, byte[] column_types, ParseSetupTransformer transformer) {
     return parse_test_file( fname, na_string, check_header, column_types, transformer,null);
   }
 
-  protected Frame parse_test_file( String fname, String na_string, int check_header, byte[] column_types, ParseSetupTransformer transformer, int[] skippedColumns) {
+  public static Frame parse_test_file( String fname, String na_string, int check_header, byte[] column_types, ParseSetupTransformer transformer, int[] skippedColumns) {
     NFSFileVec nfs = makeNfsFileVec(fname);
 
     Key[] res = {nfs._key};
@@ -475,14 +475,14 @@ public class TestUtil extends Iced {
   /** Find & parse a folder of CSV files.  NPE if file not found.
    *  @param fname Test filename
    *  @return      Frame or NPE */
-  protected Frame parse_test_folder( String fname ) {
+  public static Frame parse_test_folder( String fname ) {
     return parse_test_folder(fname, null);
   }
 
   /** Find & parse a folder of CSV files.  NPE if file not found.
    *  @param fname Test filename
    *  @return      Frame or NPE */
-  protected Frame parse_test_folder( String fname, int[] skippedColumns ) {
+  public static Frame parse_test_folder( String fname, int[] skippedColumns ) {
     File folder = FileUtils.locateFile(fname);
     File[] files = contentsOf(fname, folder);
     Arrays.sort(files);
@@ -501,7 +501,7 @@ public class TestUtil extends Iced {
    * @param na_string string for NA in a column
    * @return
    */
-  protected static Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types,
+  public static Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types,
                                             ParseSetupTransformer transformer) {
     return parse_test_folder(fname, na_string, check_header, column_types, transformer, null);
   }
@@ -513,7 +513,7 @@ public class TestUtil extends Iced {
    * @param na_string string for NA in a column
    * @return
    */
-  protected static Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types,
+  public static Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types,
                                             ParseSetupTransformer transformer, int[] skipped_columns) {
     File folder = FileUtils.locateFile(fname);
     File[] files = contentsOf(fname, folder);
@@ -874,7 +874,7 @@ public class TestUtil extends Iced {
       UDPRebooted.T.shutdown.send(H2O.SELF);
   }
 
-  protected static class Cmp1 extends MRTask<Cmp1> {
+  public static class Cmp1 extends MRTask<Cmp1> {
     final double _epsilon;
     public Cmp1( double epsilon ) { _epsilon = epsilon; }
     public boolean _unequal;
@@ -1018,20 +1018,20 @@ public class TestUtil extends Iced {
    * @param columnName column's name to be factorized
    * @return Frame with factorized column
    */
-  public Frame asFactor(Frame frame, String columnName) {
+  public static Frame asFactor(Frame frame, String columnName) {
     Vec vec = frame.vec(columnName);
     frame.replace(frame.find(columnName), vec.toCategoricalVec());
     vec.remove();
     return frame;
   }
 
-  public void printOutFrameAsTable(Frame fr, boolean rollups, long limit) {
+  public static void printOutFrameAsTable(Frame fr, boolean rollups, long limit) {
     assert limit <= Integer.MAX_VALUE;
     TwoDimTable twoDimTable = fr.toTwoDimTable(0, (int) limit, rollups);
     System.out.println(twoDimTable.toString(2, true));
   }
 
-  public void printOutColumnsMetadata(Frame fr) {
+  public static void printOutColumnsMetadata(Frame fr) {
     for (String header : fr.toTwoDimTable().getColHeaders()) {
       String type = fr.vec(header).get_type_str();
       int cardinality = fr.vec(header).cardinality();

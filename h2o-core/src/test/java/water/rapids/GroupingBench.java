@@ -6,8 +6,11 @@ import hex.CreateFrame;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.*;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 import water.util.RandomUtils;
 
@@ -136,8 +139,9 @@ class WriteOrder extends MRTask<WriteOrder> {
     }
 }
 
-public class GroupingBench extends TestUtil {
-    @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class GroupingBench {
 
     @Ignore @Test public void runGroupingBench() {
         // Simplified version of tests in runit_quantile_1_golden.R. There we test probs=seq(0,1,by=0.01)

@@ -4,20 +4,26 @@ import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import org.junit.Assert;
 import org.junit.Ignore;
+import org.junit.runner.RunWith;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.Log;
 
 import java.util.Date;
 
 import static hex.genmodel.utils.DistributionFamily.gaussian;
+import static water.TestUtil.parse_test_file;
 
 /**
  * This class is used to capture TCP packets while training a model
  * The result is then used to check if SSL encryption is working properly
  */
 @Ignore
-public class SSLEncryptionTest extends TestUtil {
+@RunWith(H2ORunner.class)
+@CloudSize(4)
+public class SSLEncryptionTest {
 
     public static void main(String[] args) {
         if (args.length == 1) {
@@ -30,12 +36,10 @@ public class SSLEncryptionTest extends TestUtil {
     }
 
     public static void testGBMRegressionGaussianNonSSL() {
-        stall_till_cloudsize(4);
         testGBMRegressionGaussian();
     }
 
     public static void testGBMRegressionGaussianSSL(String prop) {
-        stall_till_cloudsize(new String[] {"-internal_security_conf", prop}, 4);
         testGBMRegressionGaussian();
     }
 

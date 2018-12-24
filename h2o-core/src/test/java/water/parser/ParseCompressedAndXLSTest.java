@@ -1,19 +1,24 @@
 package water.parser;
 
 import static org.junit.Assert.*;
+import static water.TestUtil.parse_test_file;
 import static water.parser.DefaultParserProviders.XLS_INFO;
 
 import org.junit.*;
 import java.io.File;
 
+import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.Vec;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.FileUtils;
 
-public class ParseCompressedAndXLSTest extends TestUtil {
-  @BeforeClass static public void setup() { stall_till_cloudsize(5); }
+@RunWith(H2ORunner.class)
+@CloudSize(5)
+public class ParseCompressedAndXLSTest{
 
   @Test public void testIris(){
     Frame k1 = null,k2 = null,k3 = null, k4 = null;

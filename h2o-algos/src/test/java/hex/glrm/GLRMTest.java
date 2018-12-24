@@ -11,9 +11,9 @@ import hex.glrm.GLRMModel.GLRMParameters;
 import hex.pca.PCA;
 import hex.pca.PCAModel;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.UploadFileVec;
@@ -21,6 +21,8 @@ import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.rapids.Rapids;
 import water.rapids.Val;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 import water.util.FileUtils;
 import water.util.FrameUtils;
@@ -37,9 +39,10 @@ import java.util.concurrent.ExecutionException;
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertTrue;
 
+@RunWith(H2ORunner.class)
+@CloudSize(1)
 public class GLRMTest extends TestUtil {
   public final double TOLERANCE = 1e-6;
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   public double errStddev(double[] expected, double[] actual) {
     double err = 0;

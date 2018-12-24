@@ -1,6 +1,7 @@
 package hex.deeplearning;
 
 import hex.FrameSplitter;
+import org.junit.runner.RunWith;
 import water.TestUtil;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import org.junit.Assert;
@@ -10,6 +11,8 @@ import water.*;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.FileUtils;
 import water.util.FrameUtils;
 import water.util.Log;
@@ -18,9 +21,10 @@ import java.util.*;
 
 import static water.util.FrameUtils.generateNumKeys;
 
-public class DeepLearningMissingTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
-
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class DeepLearningMissingTest {
+  
   @Test public void run() {
     long seed = 1234;
 

@@ -1,15 +1,18 @@
 package hex;
 
-import org.junit.Assert;
-import org.junit.BeforeClass;
+import org.junit.Assert;;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.*;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
+
+import static water.TestUtil.parse_test_file;
 
 
 // test cases:
@@ -19,9 +22,10 @@ import java.util.Arrays;
 // (dont) standardize predictor columns
 
 // data info tests with interactions
-public class DataInfoTest extends TestUtil {
-
-  @BeforeClass static public void setup() {  stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class DataInfoTest {
+  
 
 
   @Test public void testAirlines1() { // just test that it works at all

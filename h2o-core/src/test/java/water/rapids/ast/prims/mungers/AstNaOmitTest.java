@@ -9,13 +9,12 @@ import water.rapids.Val;
 import water.util.ArrayUtils;
 
 import static org.junit.Assert.assertEquals;
+import static water.TestUtil.ar;
+import static water.TestUtil.ard;
 
 /**
  */
-public class AstNaOmitTest extends TestUtil {
-
-  @BeforeClass
-  static public void setup() { stall_till_cloudsize(1); }
+public class AstNaOmitTest{
 
   /** Test written by Nidhi to test that NaOmit actaully remove the rows with NAs in them. */
   @Test public void TestNaOmit() {

@@ -3,19 +3,24 @@ package hex;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.DKV;
 import water.H2O;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 
+import static water.TestUtil.*;
 import static water.fvec.FrameTestUtil.assertValues;
 import static water.fvec.FrameTestUtil.createFrame;
 import static water.util.FrameUtils.generateNumKeys;
 
-public class FrameSplitterTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class FrameSplitterTest {
 
   @Test public void splitTinyFrame() {
     Frame   dataset = null;

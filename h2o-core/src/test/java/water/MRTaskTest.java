@@ -1,7 +1,10 @@
 package water;
 
 import org.junit.*;
+import org.junit.runner.RunWith;
 import water.fvec.*;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.PrettyPrint;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -9,8 +12,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class MRTaskTest extends TestUtil {
-  @BeforeClass static public void setup() { stall_till_cloudsize(5); }
+@RunWith(H2ORunner.class)
+@CloudSize(5)
+public class MRTaskTest {
 
   // test we reduce asap and do not produce more than tree_depth + P unreduced results
   @Test public void test_reductions(){

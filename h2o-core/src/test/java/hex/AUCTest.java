@@ -2,12 +2,18 @@ package hex;
 
 import java.util.Arrays;
 import org.junit.*;
+import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.Frame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 
-public class AUCTest extends TestUtil {
-  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
+import static water.TestUtil.parse_test_file;
+
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class AUCTest {
 
   @Test public void testAUC0() {
     double auc0 = AUC2.perfectAUC(new double[]{0,0.5,0.5,1}, new double[]{0,0,1,1});

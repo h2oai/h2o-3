@@ -5,30 +5,32 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
 import water.Job;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
 
 import static org.junit.Assert.*;
+import static water.TestUtil.assertStringVecEquals;
+import static water.TestUtil.assertVecEquals;
 
-public class SQLManagerIntegTest extends TestUtil {
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class SQLManagerIntegTest{
 
   @Rule
   public TemporaryFolder tmp = new TemporaryFolder();
 
   private String connectionString;
-
-  @BeforeClass
-  public static void setup() {
-    stall_till_cloudsize(1);
-  }
 
   @BeforeClass
   public static void initDB() throws ClassNotFoundException {

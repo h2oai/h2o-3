@@ -2,16 +2,21 @@ package water.util;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.TestUtil;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
+
 import static org.junit.Assert.*;
 import static water.util.ArrayUtils.*;
 
 /**
  * Test FrameUtils interface.
  */
-public class ArrayUtilsTest extends TestUtil {
-  @BeforeClass
-  static public void setup() {  stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class ArrayUtilsTest {
+
 
   @Test
   public void testAppendBytes() {

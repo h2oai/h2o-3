@@ -13,9 +13,12 @@ import java.util.Arrays;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 
+import org.junit.runner.RunWith;
 import water.DKV;
 import water.Key;
 import water.TestUtil;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import static water.udf.DkvClassLoader.readJarEntry;
 import static water.udf.JFuncUtils.loadTestJar;
@@ -23,11 +26,10 @@ import static water.udf.JFuncUtils.loadTestJar;
 /**
  * Test DkvClassLoader.
  */
-public class DkvClassLoaderTest extends TestUtil {
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class DkvClassLoaderTest {
   
-  @BeforeClass
-  static public void setup() { stall_till_cloudsize(1); }
-
   @Test
   public void testClassLoadFromKey() throws Exception {
     String testJar = "water/udf/cfunc_test.jar";

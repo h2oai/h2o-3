@@ -11,14 +11,18 @@ import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.ast.prims.advmath.AstKFold;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 
 import static org.junit.Assert.assertEquals;
+import static water.TestUtil.parse_test_file;
 
 /**
  * This test is intended to corroborate the documented description of cross-validated
@@ -29,8 +33,9 @@ import static org.junit.Assert.assertEquals;
  * checks that each *_cv_n contain predictions consistent with the fold column on the
  * original frame.
  */
-public class XValPredictionsCheck extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class XValPredictionsCheck {
 
   @Test public void testXValPredictions() {
     final int nfolds = 3;

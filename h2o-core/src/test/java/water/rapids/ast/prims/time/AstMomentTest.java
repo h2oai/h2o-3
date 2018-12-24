@@ -2,6 +2,7 @@ package water.rapids.ast.prims.time;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
@@ -11,19 +12,20 @@ import water.parser.ParseTime;
 import water.rapids.Rapids;
 import water.rapids.Session;
 import water.rapids.Val;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.Log;
 
 import java.util.Random;
 
 import static org.junit.Assert.*;
+import static water.TestUtil.*;
 
 /**
  */
-public class AstMomentTest extends TestUtil {
-  @BeforeClass public static void setup() {
-    stall_till_cloudsize(1);
-  }
-
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class AstMomentTest {
 
   @Test public void generalTest() {
     AstMoment am = new AstMoment();

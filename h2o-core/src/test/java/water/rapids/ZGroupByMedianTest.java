@@ -2,16 +2,21 @@ package water.rapids;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.Key;
 import water.Keyed;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.rapids.vals.ValFrame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import static org.junit.Assert.assertTrue;
+import static water.TestUtil.parse_test_file;
 
-public class ZGroupByMedianTest extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
+@RunWith(H2ORunner.class)
+@CloudSize(5)
+public class ZGroupByMedianTest {
 
   // Note that if this median test runs before the testSplitCats and/or testGroupbyTableSpeed,
   // we will encounter the leaked key errors. This has been captured in JIRA PUBDEV-PUBDEV-5090.

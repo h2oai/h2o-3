@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.junit.runner.RunWith;
 import water.Job;
 import water.Key;
 import water.TestUtil;
@@ -19,11 +20,14 @@ import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import water.parser.orc.OrcParserProvider;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 import water.util.FileUtils;
 import water.util.Log;
 
 import static org.junit.Assert.assertEquals;
+import static water.TestUtil.makeNfsFileVec;
 import static water.parser.OrcTestUtils.compareOrcAndH2OFrame;
 import static water.util.FileUtils.*;
 
@@ -36,7 +40,9 @@ import static water.util.FileUtils.*;
  * by using core Java commands off the Orc file itself.  No multi-threading is used in reading
  * off the Orc file using core Java commands.
  */
-public class ParseTestOrc extends TestUtil {
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class ParseTestOrc {
 
     int totalFilesTested = 0;
     int numberWrong = 0;
@@ -77,8 +83,6 @@ public class ParseTestOrc extends TestUtil {
 //          "smalldata/parser/orc/version1999.orc" // contain only orc header, no column and no row, total file size is 0.
     };
 
-    @BeforeClass
-    static public void setup() { TestUtil.stall_till_cloudsize(1); }
 
     @BeforeClass
     static public void _preconditionJavaVersion() { // NOTE: the `_` force execution of this check after setup

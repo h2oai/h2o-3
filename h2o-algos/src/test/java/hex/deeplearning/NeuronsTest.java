@@ -3,13 +3,17 @@ package hex.deeplearning;
 import static hex.deeplearning.Neurons.*;
 
 import org.junit.*;
+import org.junit.runner.RunWith;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.PrettyPrint;
 import java.util.Random;
 
+@RunWith(H2ORunner.class)
+@CloudSize(1)
 public class NeuronsTest extends water.TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   @Ignore
   @Test

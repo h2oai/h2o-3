@@ -2,6 +2,9 @@ package water;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 
 import java.util.Random;
@@ -13,10 +16,10 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by tomas on 11/6/16.
  */
-public class LocalMRTest extends TestUtil {
-
-  @BeforeClass
-  static public void setup() { stall_till_cloudsize(3); }
+@RunWith(H2ORunner.class)
+@CloudSize(3)
+public class LocalMRTest {
+  
   private static class MrFunTest1 extends MrFun<MrFunTest1>{
     int _exId;
     public int [] _val;

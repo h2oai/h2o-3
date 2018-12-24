@@ -4,6 +4,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.junit.runner.RunWith;
 import water.DKV;
 import water.MRTask;
 import water.TestUtil;
@@ -11,19 +12,22 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static water.TestUtil.ar;
+import static water.TestUtil.parse_test_file;
 import static water.udf.JFuncUtils.getSkippingClassloader;
 import static water.udf.JFuncUtils.loadTestFunc;
 import static water.util.FrameUtils.delete;
 
-public class JFuncTest extends TestUtil {
-
-  @BeforeClass
-  static public void setup() { stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class JFuncTest {
 
   @Test
   public void testFunc2Invocation() throws Exception {
@@ -67,7 +71,7 @@ public class JFuncTest extends TestUtil {
         }
       }.doAll(Vec.T_NUM, inFr).outputFrame();
       // Verify identity
-      Cmp1 comparator = new Cmp1(1e-10).doAll(inFr.vec(1), outFr.vec(0));
+      TestUtil.Cmp1 comparator = new TestUtil.Cmp1(1e-10).doAll(inFr.vec(1), outFr.vec(0));
       Assert.assertFalse("Identity function produces identity results",
                          comparator._unequal);
     } finally {
@@ -100,7 +104,7 @@ public class JFuncTest extends TestUtil {
         }
       }.doAll(Vec.T_NUM, inFr.vec(1), inFr.vec(2)).outputFrame();
       // Verify identity
-      Cmp1 comparator = new Cmp1(1e-10).doAll(expFr.vec(0), outFr.vec(0));
+      TestUtil.Cmp1 comparator = new TestUtil.Cmp1(1e-10).doAll(expFr.vec(0), outFr.vec(0));
       Assert.assertFalse("Identity function produces identity results",
                          comparator._unequal);
     } finally {

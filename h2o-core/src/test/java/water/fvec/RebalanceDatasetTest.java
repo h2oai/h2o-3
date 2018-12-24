@@ -1,16 +1,22 @@
 package water.fvec;
 
 import static org.junit.Assert.*;
+import static water.TestUtil.ard;
+
 import org.junit.*;
 
+import org.junit.runner.RunWith;
 import water.*;
 import water.parser.ParseDataset;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.FileUtils;
 import water.util.FrameUtils;
 import water.util.Log;
 
-public class RebalanceDatasetTest extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class RebalanceDatasetTest {
   @Test public void testProstate(){
     NFSFileVec[] nfs = new NFSFileVec[]{
             TestUtil.makeNfsFileVec("smalldata/logreg/prostate.csv"),

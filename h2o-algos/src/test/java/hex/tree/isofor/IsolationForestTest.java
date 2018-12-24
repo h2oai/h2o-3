@@ -1,18 +1,18 @@
 package hex.tree.isofor;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.Scope;
-import water.TestUtil;
 import water.fvec.Frame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import static org.junit.Assert.*;
+import static water.TestUtil.parse_test_file;
 
-public class IsolationForestTest extends TestUtil {
-
-  @BeforeClass() public static void setup() {
-    stall_till_cloudsize(1);
-  }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class IsolationForestTest {
 
   @Test
   public void testBasic() {

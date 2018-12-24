@@ -3,18 +3,22 @@ package water;
 import static org.junit.Assert.assertFalse;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.api.schemas3.TwoDimTableV3;
 import water.fvec.Frame;
 import water.parser.ParseDataset;
 import water.parser.ParserTest;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.Log;
 import water.util.TwoDimTable;
 
 import static org.junit.Assert.assertTrue;
 import static water.util.TwoDimTable.emptyDouble;
 
-public class TwoDimTableTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class TwoDimTableTest {
 
   @Test
   public void run0() {

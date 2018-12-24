@@ -147,7 +147,7 @@ public class H2ORunner extends BlockJUnit4ClassRunner {
         }
 
         for (Key key : leakedKeysSet) {
-            Log.err(String.format("Key '%s'", key.toString()));
+            Log.err(String.format("Key '%s' of type '%d'", key.toString(), key.type()));
         }
     }
 

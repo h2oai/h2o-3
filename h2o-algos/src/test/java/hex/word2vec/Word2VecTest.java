@@ -1,14 +1,16 @@
 package hex.word2vec;
 
 import org.junit.*;
+import org.junit.runner.RunWith;
 import water.DKV;
 import water.Key;
 import water.Scope;
-import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.parser.BufferedString;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 import water.util.Log;
 
@@ -18,11 +20,11 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assume.assumeThat;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
+import static water.TestUtil.*;
 
-public class Word2VecTest extends TestUtil {
-
-  @BeforeClass()
-  public static void setup() { stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class Word2VecTest {
 
   @Test
   public void testW2V_SG_HSM_small() {

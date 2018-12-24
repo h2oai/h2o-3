@@ -3,21 +3,26 @@ package water.fvec;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.MRTask;
 import water.Scope;
 import water.TestUtil;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.Log;
 import water.util.PrettyPrint;
 
 import static org.junit.Assert.assertTrue;
+import static water.TestUtil.parse_test_file;
 
 /***
  * This test is written to measure the speed with which NewChunks are written for various data types:
  * integer, long and double
  */
 
-public class NewChunkSpeedTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class NewChunkSpeedTest {
   int rowNumber = 1000000;
   int rowInterval = 1000;
   double tolerance = 1e-10;

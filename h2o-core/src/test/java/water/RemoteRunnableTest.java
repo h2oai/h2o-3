@@ -4,18 +4,18 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import static org.junit.Assert.*;
 
-public class RemoteRunnableTest extends TestUtil {
+@RunWith(H2ORunner.class)
+@CloudSize(5)
+public class RemoteRunnableTest{
 
   @Rule
   public ExpectedException thrown = ExpectedException.none();
-
-  @BeforeClass
-  static public void setup() {
-    stall_till_cloudsize(5);
-  }
 
   @Test
   public void testRunOnH2ONode_local() {

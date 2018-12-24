@@ -4,10 +4,13 @@ import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.TwoDimTable;
 
 import java.util.Arrays;
@@ -15,14 +18,11 @@ import java.util.Map;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static water.TestUtil.*;
 
-public class TargetEncodingKFoldStrategyTest extends TestUtil {
-
-
-  @BeforeClass
-  public static void setup() {
-    stall_till_cloudsize(1);
-  }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class TargetEncodingKFoldStrategyTest {
 
   private Frame fr = null;
 

@@ -4,12 +4,16 @@ import hex.CreateFrame;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.*;
 import water.api.schemas3.TwoDimTableV3;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.*;
 
-public class ChunkSummaryTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class ChunkSummaryTest {
 
   @Test public void run() {
     CreateFrame cf = new CreateFrame();

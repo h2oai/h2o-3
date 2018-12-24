@@ -7,23 +7,25 @@ package hex.DTMatrix;
 
 import hex.DMatrix;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.Key;
-import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.ArrayUtils;
-import water.util.VecUtils;
 
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
 
 import static java.lang.Math.abs;
+import static water.TestUtil.*;
 
-public class DMatrixTest extends TestUtil {
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class DMatrixTest {
     public static final double TOLERANCE = 1e-6;
-    @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
 
     /*

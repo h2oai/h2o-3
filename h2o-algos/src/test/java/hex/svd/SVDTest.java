@@ -2,31 +2,33 @@ package hex.svd;
 
 import hex.DataInfo;
 import hex.SplitFrame;
-import hex.pca.PCA;
-import hex.pca.PCAModel;
+
 import hex.svd.SVDModel.SVDParameters;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.Ignore;
+import org.junit.runner.RunWith;
 import water.DKV;
 import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.FrameUtils;
 import water.util.Log;
 
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 
-public class SVDTest extends TestUtil {
-  public static final double TOLERANCE = 1e-6;
+import static water.TestUtil.ard;
+import static water.TestUtil.parse_test_file;
 
-  @BeforeClass public static void setup() {
-    stall_till_cloudsize(1);
-  }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class SVDTest {
+  public static final double TOLERANCE = 1e-6;
 
   @Test public void testArrests() throws InterruptedException, ExecutionException {
     // Expected right singular values and vectors

@@ -4,20 +4,25 @@ import hex.glm.GLMModel;
 import hex.splitframe.ShuffleSplitFrame;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.Key;
 import water.MRTask;
 import water.TestUtil;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.util.Random;
+
+import static water.TestUtil.parse_test_file;
 // data info tests with interactions
 
 
-public class DataInfoTestAdapt extends TestUtil {
-
-  @BeforeClass static public void setup() {  stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class DataInfoTestAdapt {
 
   @Test public void testInteractionTrainTestSplitAdapt() {
     DataInfo dinfo=null, scoreInfo=null;

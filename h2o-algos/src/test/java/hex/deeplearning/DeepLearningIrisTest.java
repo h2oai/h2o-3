@@ -7,14 +7,16 @@ import hex.deeplearning.DeepLearningModel.DeepLearningParameters.InitialWeightDi
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Loss;
 import hex.genmodel.GenModel;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.DKV;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.MathUtils;
@@ -22,11 +24,13 @@ import water.util.RandomUtils;
 
 import java.util.Random;
 
-public class DeepLearningIrisTest extends TestUtil {
+import static water.TestUtil.parse_test_file;
+
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class DeepLearningIrisTest {
   static final String PATH = "smalldata/iris/iris.csv";
   Frame _train, _test;
-
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   // Default run is the short run
   @Test public void run() throws Exception { runFraction(0.05f); }

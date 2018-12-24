@@ -4,19 +4,20 @@ import hex.tree.gbm.GBMModel;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.Iced;
 import water.TestUtil;
 import water.api.SchemaServer;
 import water.api.schemas3.FrameV3;
 import water.api.schemas3.SchemaV3;
 import water.fvec.Frame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.PojoUtils;
 
-public class PojoUtilsTest extends TestUtil {
-  @BeforeClass()
-  public static void setup() {
-    stall_till_cloudsize(1);
-  }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class PojoUtilsTest {
 
   @Test
   public void testGetFieldValue() {

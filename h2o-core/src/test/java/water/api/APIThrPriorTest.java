@@ -5,22 +5,26 @@ import hex.schemas.ModelBuilderSchema;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.*;
 import water.api.schemas3.ModelParametersSchemaV3;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.io.IOException;
 import java.util.Properties;
 
+import static water.TestUtil.parse_test_file;
+
 
 /** Test that short, interactive work runs at a higher priority than long
  *  running model-building work. */
-public class APIThrPriorTest extends TestUtil {
-  @BeforeClass static public void setup() { 
-    stall_till_cloudsize(5);
-    H2O.finalizeRegistration();
-  }
+@RunWith(H2ORunner.class)
+@CloudSize(5)
+public class APIThrPriorTest {
+
 
   @Test public void testAPIThrPriorities() throws IOException {
     Frame fr = null;

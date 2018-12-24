@@ -4,14 +4,20 @@ import hex.CreateFrame;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.Key;
 import water.Scope;
 import water.TestUtil;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.util.Arrays;
 
-public class InteractionWrappedVecTest extends TestUtil {
-  @BeforeClass static public void setup() {  stall_till_cloudsize(1); }
+import static water.TestUtil.*;
+
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class InteractionWrappedVecTest {
 
   @Test public void testIris() { // basic "can i construct the vec" test
     Frame fr=null;

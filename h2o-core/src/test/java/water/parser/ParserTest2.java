@@ -4,23 +4,25 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.PrettyPrint;
 import water.util.StringUtils;
 
 import java.util.Random;
 import java.util.UUID;
 
+import static water.TestUtil.*;
 import static water.parser.DefaultParserProviders.CSV_INFO;
 
-public class ParserTest2 extends TestUtil {
-  @BeforeClass
-  public static void setup() {
-    stall_till_cloudsize(1);
-  }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class ParserTest2  {
   private final char[] SEPARATORS = new char[] {',', ' '};
 
   private static void testParsed(Frame fr, String[][] expected) {

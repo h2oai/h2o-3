@@ -2,16 +2,22 @@ package water.fvec;
 
 import org.junit.*;
 
+import org.junit.runner.RunWith;
 import water.Scope;
 import water.TestUtil;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.RandomUtils;
 
 import java.util.Random;
 
-public class CategoricalWrappedVecTest extends TestUtil {
-  @BeforeClass static public void setup() {  stall_till_cloudsize(1); }
+import static water.TestUtil.*;
+
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class CategoricalWrappedVecTest {
 
   @Test public void testAdaptToDoubleDomain(){
     Vec v0 = Vec.makeCon(Vec.newKey(),3.14,2.7,0.33333,-123.456,1.65e9,-500.50);

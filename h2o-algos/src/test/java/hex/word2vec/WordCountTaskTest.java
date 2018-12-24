@@ -1,13 +1,17 @@
 package hex.word2vec;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
-import water.TestUtil;
+import org.junit.runner.RunWith;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.parser.BufferedString;
+
+import static water.TestUtil.parse_test_file;
 import static water.util.FileUtils.*;
+
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.IcedLong;
 
 import java.util.Map;
@@ -17,10 +21,9 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.*;
 import static org.junit.Assume.assumeThat;
 
-public class WordCountTaskTest extends TestUtil {
-
-  @BeforeClass()
-  public static void setup() { stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class WordCountTaskTest{
 
   @Test
   public void testWordCount() {

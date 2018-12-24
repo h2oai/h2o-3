@@ -2,25 +2,28 @@ package water.persist;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.FileVec;
 import water.fvec.Frame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.FileUtils;
 
 import java.net.URI;
 
 import static junit.framework.TestCase.assertEquals;
+import static water.TestUtil.assertVecEquals;
 
 /**
  * Created by tomas on 6/27/16.
  */
-public class PersistS3Test extends TestUtil {
+@RunWith(H2ORunner.class)
+@CloudSize(5)
+public class PersistS3Test {
 
-
-  @BeforeClass
-  public static void setup() { stall_till_cloudsize(5); }
-
+  
   private static class XORTask extends MRTask<XORTask> {
     long _res = 0;
 

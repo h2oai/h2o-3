@@ -4,6 +4,9 @@ import org.junit.Ignore;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Activation;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Loss;
+import org.junit.runner.RunWith;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 import water.util.RandomUtils;
 
@@ -18,6 +21,8 @@ import java.util.Random;
  * <nl>
  * http://channel9.msdn.com/Events/Build/2013/2-401
  */
+@RunWith(H2ORunner.class)
+@CloudSize(1)
 @Ignore
 public class DeepLearningMLPReference {
   static final DecimalFormat _format = new DecimalFormat("0.000");

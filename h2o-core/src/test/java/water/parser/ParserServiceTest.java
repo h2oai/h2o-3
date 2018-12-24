@@ -6,16 +6,18 @@ import org.junit.Test;
 
 import java.util.List;
 
+import org.junit.runner.RunWith;
 import water.MRTask;
 import water.TestUtil;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 /**
  * Test parser service.
  */
-public class ParserServiceTest extends TestUtil {
-
-  @BeforeClass
-  static public void setup() { TestUtil.stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class ParserServiceTest{
 
   // A list of REGISTERED core provider names in the expected order based on priorities.
   // Warning: The order is fixed in the test to detect any changes in the code!!!

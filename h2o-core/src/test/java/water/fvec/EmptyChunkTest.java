@@ -3,8 +3,12 @@ package water.fvec;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.TestUtil;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
+import static water.TestUtil.ar;
 import static water.fvec.FrameTestUtil.createFrame;
 
 /**
@@ -14,10 +18,9 @@ import static water.fvec.FrameTestUtil.createFrame;
  * But it also serves to test chunk layouts with 0-length chunks.
  *
  */
-public class EmptyChunkTest extends TestUtil {
-  @BeforeClass
-  static public void setup() {  stall_till_cloudsize(1); }
-
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class EmptyChunkTest{
   /**
    * Scenario: chunk(2-rows)|chunk(0 rows)|chunk(2-rows)|chunk(0 rows) - trailing empty chunk should be removed
    */

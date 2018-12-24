@@ -4,15 +4,17 @@ import org.apache.commons.io.output.NullOutputStream;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.io.Serializable;
 
 import static org.junit.Assert.*;
 
-public class AutoBufferTest extends TestUtil {
-
-  @BeforeClass()
-  public static void setup() { stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class AutoBufferTest {
 
   @Test
   public void testOutputStreamBigDataBigChunks() {

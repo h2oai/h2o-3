@@ -4,19 +4,24 @@ import hex.PartialDependence;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.DKV;
 import water.Key;
 import water.Scope;
-import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.Log;
 import water.util.TwoDimTable;
 
-public class PartialDependenceTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+import static water.TestUtil.equalTwoDimTables;
+import static water.TestUtil.parse_test_file;
+
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class PartialDependenceTest {
 
   @Test public void prostateBinary() {
     Frame fr=null;

@@ -4,13 +4,19 @@ import org.joda.time.DateTime;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
-public class ParseTimeTest extends TestUtil {
-  @BeforeClass static public void setup() { stall_till_cloudsize(1); }
+import static water.TestUtil.parse_test_file;
+
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class ParseTimeTest {
   private double[] d(double... ds) { return ds; }
 
   @Test

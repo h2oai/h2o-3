@@ -13,12 +13,15 @@ import hex.splitframe.ShuffleSplitFrame;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.junit.*;
+import org.junit.runner.RunWith;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.FileUtils;
 import water.util.Log;
 import water.util.StringUtils;
@@ -30,14 +33,14 @@ import java.util.Arrays;
 
 import static hex.deepwater.DeepWaterParameters.Network.*;
 import static hex.genmodel.algos.deepwater.DeepwaterMojoModel.createDeepWaterBackend;
+import static water.TestUtil.*;
 
-public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public abstract class DeepWaterAbstractIntegrationTest{
 
   protected BackendTrain backend;
   abstract DeepWaterParameters.Backend getBackend();
-
-  @BeforeClass
-  static public void stall() { stall_till_cloudsize(1); }
 
   @BeforeClass
   public static void checkBackend() { Assume.assumeTrue(DeepWater.haveBackend()); }

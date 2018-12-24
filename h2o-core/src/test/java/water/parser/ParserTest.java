@@ -3,12 +3,17 @@ package water.parser;
 import org.apache.commons.lang.RandomStringUtils;
 import org.junit.Assert;
 import static org.junit.Assert.assertEquals;
+import static water.TestUtil.*;
+
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.*;
 import water.api.schemas3.ParseSetupV3;
 import water.fvec.*;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.FileUtils;
 import water.util.Log;
 import water.util.StringUtils;
@@ -20,8 +25,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 
-public class ParserTest extends TestUtil {
-  @BeforeClass static public void setup() { stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class ParserTest {
   private final double NaN = Double.NaN;
   private final char[] SEPARATORS = new char[] {',', ' '};
 

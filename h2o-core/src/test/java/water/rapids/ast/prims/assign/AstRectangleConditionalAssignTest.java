@@ -2,6 +2,7 @@ package water.rapids.ast.prims.assign;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.Key;
 import water.MRTask;
 import water.TestUtil;
@@ -12,15 +13,18 @@ import water.fvec.Vec;
 import water.rapids.Rapids;
 import water.rapids.Val;
 import water.rapids.vals.ValFrame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static water.TestUtil.*;
 
-public class AstRectangleConditionalAssignTest extends TestUtil {
-
-  @BeforeClass static public void setup() { stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class AstRectangleConditionalAssignTest {
 
   @Test public void testConditionalAssignNumber() {
     Frame fr = makeTestFrame();

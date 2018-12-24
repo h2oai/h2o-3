@@ -4,18 +4,22 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.DKV;
 import water.Futures;
 import water.TestUtil;
 import water.parser.BufferedString;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.util.Arrays;
 import java.util.Random;
 
 import static org.junit.Assert.*;
 
-public class NewChunkTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class NewChunkTest {
   final int K = 1 + (int)(new Random().nextFloat() * (FileVec.DFLT_CHUNK_SIZE >> 4));
   private AppendableVec av;
   NewChunk nc;

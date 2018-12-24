@@ -3,14 +3,18 @@ package hex;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.TestUtil;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.Log;
 
 import java.util.Random;
 
-public class GainsLiftTest extends TestUtil {
-  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class GainsLiftTest{
 
   @Test public void constant() {
     int len = 100000;

@@ -1,14 +1,20 @@
 package hex;
 
 import org.junit.*;
+import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 
-public class ModelAdaptTest extends TestUtil {
+import static water.TestUtil.parse_test_file;
+import static water.TestUtil.vec;
 
-  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class ModelAdaptTest {
 
   // Private junk model class to test Adaption logic
   private static class AModel extends Model {

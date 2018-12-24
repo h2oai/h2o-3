@@ -4,6 +4,7 @@ import hex.DMatrix;
 import hex.SplitFrame;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.DKV;
 import water.Key;
 import water.Scope;
@@ -11,6 +12,8 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.rapids.Rapids;
 import water.rapids.Val;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.FrameUtils;
 import water.util.Log;
 
@@ -18,19 +21,18 @@ import java.util.Arrays;
 import java.util.Random;
 
 import static org.junit.Assert.assertTrue;
+import static water.TestUtil.isIdenticalUpToRelTolerance;
+import static water.TestUtil.parse_test_file;
 
 /**
  * Test the AstTopN.java class
  */
-public class AstTopNTest extends TestUtil {
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class AstTopNTest {
   static Frame _train;    // store training data
   double _tolerance = 1e-12;
   public Random _rand = new Random();
-
-  @BeforeClass
-  public static void setup() {   // randomly generate a frame here.
-    stall_till_cloudsize(1);
-  }
 
   //--------------------------------------------------------------------------------------------------------------------
   // Tests

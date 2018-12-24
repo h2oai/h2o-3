@@ -2,17 +2,21 @@ package water.fvec;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.TestUtil;
 import water.parser.BufferedString;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.TwoDimTable;
 
 import java.util.Random;
 
 import static org.junit.Assert.*;
+import static water.TestUtil.*;
 
-public class TestFrameBuilderTest extends TestUtil {
-  @BeforeClass
-  public static void setup() { stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class TestFrameBuilderTest {
   private static double DELTA = 0.00001;
 
   @Test

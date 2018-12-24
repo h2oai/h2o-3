@@ -2,7 +2,10 @@ package water;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.parser.BufferedString;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.IcedDouble;
 import water.util.IcedHashMapGeneric;
 import water.util.IcedLong;
@@ -17,8 +20,9 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by tomas on 8/10/16.
  */
-public class IcedHasMapGenericTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class IcedHasMapGenericTest {
 
   @Test
   public void testSerialization(){

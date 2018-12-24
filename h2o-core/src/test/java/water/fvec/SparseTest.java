@@ -12,8 +12,7 @@ import water.util.UnsafeUtils;
 /**
  * Created by tomasnykodym on 3/28/14.
  */
-public class SparseTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+public class SparseTest {
 
   private static void test_at(Chunk c, double [] vals, int [] nzs_ary){
     Random rnd = new Random(54321);
@@ -194,7 +193,6 @@ public class SparseTest extends TestUtil {
     double [] float_vals;
     double [] double_vals;
     int [] nzs_ary;
-    stall_till_cloudsize(1);
     valsZeroSmall = new double[1024];
     valsZero = new double[1024];
     valsNA = new double[1024];

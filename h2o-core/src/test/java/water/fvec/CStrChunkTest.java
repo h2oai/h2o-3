@@ -2,17 +2,22 @@ package water.fvec;
 
 import org.junit.*;
 
+import org.junit.runner.RunWith;
 import water.IcedUtils;
 import water.TestUtil;
 import water.parser.BufferedString;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.*;
+import static water.TestUtil.parse_test_file;
 
-public class CStrChunkTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class CStrChunkTest {
   @Test
   public void test_addStr() {
     for (int l=0; l<2; ++l) {

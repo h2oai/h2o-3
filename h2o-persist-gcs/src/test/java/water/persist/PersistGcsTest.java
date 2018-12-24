@@ -2,22 +2,23 @@ package water.persist;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.FileVec;
 import water.fvec.Frame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.FileUtils;
 
 import java.net.URI;
 
 import static junit.framework.TestCase.assertEquals;
+import static water.TestUtil.assertVecEquals;
 
-public class PersistGcsTest extends TestUtil {
-  @BeforeClass
-  public static void setup() {
-    stall_till_cloudsize(1);
-  }
-
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class PersistGcsTest {
   private static class XORTask extends MRTask<XORTask> {
     long _res = 0;
 

@@ -3,8 +3,11 @@ package water.fvec;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.*;
 import water.exceptions.H2OConcurrentModificationException;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 import water.util.FileUtils;
 import water.util.StringUtils;
@@ -15,8 +18,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 
+@RunWith(H2ORunner.class)
+@CloudSize(1)
 public class FVecTest extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
   static final double EPSILON = 1e-6;
 
   public static  Key makeByteVec(Key k, String... data) {

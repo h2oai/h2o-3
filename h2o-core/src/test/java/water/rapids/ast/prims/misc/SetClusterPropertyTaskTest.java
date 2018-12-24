@@ -2,20 +2,20 @@ package water.rapids.ast.prims.misc;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.MRTask;
 import water.TestUtil;
 import water.rapids.Rapids;
 import water.rapids.Val;
 import water.rapids.vals.ValStr;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import static org.junit.Assert.*;
 
-public class SetClusterPropertyTaskTest extends TestUtil {
-
-  @BeforeClass
-  public static void setup() {
-    stall_till_cloudsize(5);
-  }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class SetClusterPropertyTaskTest {
 
   @Test
   public void testSetClusterProperty() {

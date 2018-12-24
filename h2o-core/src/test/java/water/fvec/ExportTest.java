@@ -4,8 +4,11 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
 import water.*;
 import water.parser.ParseDataset;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.Log;
 
 import java.io.File;
@@ -15,15 +18,14 @@ import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static water.TestUtil.parse_test_file;
 
-public class ExportTest extends TestUtil {
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class ExportTest {
 
   @Rule
   public TemporaryFolder tmpFolder = new TemporaryFolder();
-
-  @BeforeClass public static void setup() {
-    stall_till_cloudsize(1);
-  }
 
   @Test public void testExport() throws IOException {
     Frame fr = parse_test_file("smalldata/airlines/airlineUUID.csv");

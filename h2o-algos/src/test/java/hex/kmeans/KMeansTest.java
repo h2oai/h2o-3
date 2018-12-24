@@ -5,14 +5,16 @@ import hex.ModelMetricsClustering;
 import hex.SplitFrame;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import org.junit.*;
+import org.junit.runner.RunWith;
 import water.DKV;
 import water.Key;
 import water.Scope;
-import water.TestUtil;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.*;
 
 import java.io.File;
@@ -22,10 +24,12 @@ import java.util.Random;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static water.TestUtil.*;
 
-public class KMeansTest extends TestUtil {
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class KMeansTest {
   public final double threshold = 1e-6;
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   // Run KMeans with a given seed, & check all clusters are non-empty
   private static KMeansModel doSeed( KMeansModel.KMeansParameters parms, long seed ) {

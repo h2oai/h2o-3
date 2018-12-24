@@ -4,10 +4,13 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.FileUtils;
 
 import java.io.File;
@@ -18,18 +21,18 @@ import java.lang.reflect.Method;
  * All test functionality specific for udf (not actually), 
  * not kosher enough to be allowed for the general public
  */
-public class UdfTestBase extends TestUtil {
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class UdfTestBase{
 
   {
     ClassLoader loader = getClass().getClassLoader();
     loader.setDefaultAssertionStatus(true);
   }
   
-  int requiredCloudSize() { return 1; }
-  
+
   @Before
   public void hi() {
-    stall_till_cloudsize(requiredCloudSize());
     Scope.enter();
   }
 

@@ -3,7 +3,6 @@ package hex.glrm;
 import hex.genmodel.algos.glrm.GlrmInitialization;
 import hex.genmodel.algos.glrm.GlrmLoss;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -15,18 +14,18 @@ import hex.DataInfo;
 import hex.Model;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
+import org.junit.runner.RunWith;
 import water.Job;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 
+@RunWith(H2ORunner.class)
+@CloudSize(1)
 public class GLRMGridTest extends TestUtil {
-
-  @BeforeClass()
-  public static void setup() {
-    stall_till_cloudsize(1);
-  }
 
   @Test
   public void testMultipleGridInvocation() {

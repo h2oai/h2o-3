@@ -6,6 +6,7 @@ import hex.tree.gbm.GBMModel;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.DKV;
 import water.Key;
 import water.Scope;
@@ -14,6 +15,10 @@ import water.fvec.Frame;
 import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
 import hex.StackedEnsembleModel;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
+
+import static water.TestUtil.parse_test_file;
 
 /***
  * The main purpose of this test is to ensure the checksum() of a training frame is preserved throughout the
@@ -21,9 +26,10 @@ import hex.StackedEnsembleModel;
  * wrong score method. However, stacked ensembles does not need fold column to be passed in explicitly. Rather, a user
  * just needs to pass in the training frame, response name, and the base models. 
  */
-public class CheckSumTest extends TestUtil {
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class CheckSumTest {
     
-    @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
     @Test public void checkSumTest() {
 

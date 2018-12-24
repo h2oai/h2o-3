@@ -3,6 +3,7 @@ package hex.coxph;
 import hex.DataInfo;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.DKV;
 import water.Scope;
 import water.TestUtil;
@@ -10,13 +11,17 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import static org.junit.Assert.*;
+import static water.TestUtil.ar;
+import static water.TestUtil.ard;
 
-public class EfronDJKTermTaskTest extends TestUtil {
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class EfronDJKTermTaskTest {
 
-  @BeforeClass
-  public static void setup() { stall_till_cloudsize(1); }
 
   @Test
   public void testDJKTermMatrix() throws Exception {

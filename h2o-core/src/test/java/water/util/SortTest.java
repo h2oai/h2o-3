@@ -7,8 +7,7 @@ import water.TestUtil;
 import java.util.Arrays;
 import java.util.Random;
 
-public class SortTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+public class SortTest {
 
   @Test public void runSmall() {
     int[] idxs = new int[]{0,1,2,3,4};

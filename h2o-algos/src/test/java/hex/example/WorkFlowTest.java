@@ -12,16 +12,20 @@ import org.joda.time.MutableDateTime;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.*;
 import water.parser.ParseDataset;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.io.File;
 import java.util.Arrays;
 
 @Ignore("Test DS end-to-end workflow; not intended as a junit yet")
-public class WorkFlowTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class WorkFlowTest{
 
   // Test DS end-to-end workflow on a small dataset
   @Test

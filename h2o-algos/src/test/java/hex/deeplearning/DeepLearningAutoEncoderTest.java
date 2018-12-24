@@ -7,10 +7,13 @@ import hex.genmodel.easy.prediction.AutoEncoderModelPrediction;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.*;
 import water.parser.BufferedString;
 import water.parser.ParseDataset;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.Log;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.genmodel.easy.EasyPredictModelWrapper;
@@ -18,7 +21,9 @@ import hex.genmodel.easy.EasyPredictModelWrapper;
 import java.io.IOException;
 import java.util.HashSet;
 
-public class DeepLearningAutoEncoderTest extends TestUtil {
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class DeepLearningAutoEncoderTest {
   /*
     Visualize outliers with the following R code (from smalldata/anomaly dir):
 
@@ -31,7 +36,6 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
   static final String PATH = "smalldata/anomaly/ecg_discord_train.csv"; //first 20 points
   static final String PATH2 = "smalldata/anomaly/ecg_discord_test.csv"; //first 22 points
 
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   @Test
   public void run() {

@@ -3,6 +3,7 @@ package water.rapids.ast.prims.advmath;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.H2O;
 import water.TestUtil;
 import water.fvec.Frame;
@@ -10,15 +11,18 @@ import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.rapids.Rapids;
 import water.rapids.Val;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.TwoDimTable;
 
 import java.util.Random;
 
 import static org.junit.Assert.assertTrue;
+import static water.TestUtil.ard;
 
-public class AstKFoldTest extends TestUtil {
-    @BeforeClass
-    static public void setup() { stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class AstKFoldTest {
 
     private Frame fr = null;
 

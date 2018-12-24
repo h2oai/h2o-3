@@ -3,6 +3,7 @@ package water.rapids;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.*;
 import water.parser.ParseDataset;
@@ -11,6 +12,8 @@ import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstNumList;
 import water.rapids.ast.params.AstStr;
 import water.rapids.vals.ValFrame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 import water.util.FileUtils;
 import water.util.FrameUtils;
@@ -21,11 +24,12 @@ import java.util.Arrays;
 import java.util.Random;
 
 import static org.junit.Assert.*;
+import static water.TestUtil.*;
 import static water.rapids.Rapids.IllegalASTException;
 
-
-public class RapidsTest extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class RapidsTest {
 
   @Test public void bigSlice() {
     // check that large slices do something sane

@@ -1,16 +1,17 @@
 package water;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.util.ArrayList;
 import java.util.Collection;
 
 import static org.junit.Assert.assertEquals;
-public class UnknownHeartbeatTest extends TestUtil{
-  @BeforeClass() public static void setup() {
-    stall_till_cloudsize(1);
-  }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class UnknownHeartbeatTest{
 
   @Test
   public void testIgnoreUnknownHeartBeat() {

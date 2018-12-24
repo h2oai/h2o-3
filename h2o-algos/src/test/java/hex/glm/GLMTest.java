@@ -10,14 +10,16 @@ import hex.glm.GLMModel.GLMParameters.Solver;
 import hex.glm.GLMModel.GLMWeightsFun;
 import hex.glm.GLMTask.*;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.fvec.*;
 import water.parser.BufferedString;
 import water.parser.ParseDataset;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 
 import java.util.Arrays;
@@ -26,10 +28,12 @@ import java.util.Random;
 import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.*;
+import static water.TestUtil.parse_test_file;
 
-public class GLMTest  extends TestUtil {
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class GLMTest {
 
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   public static void testScoring(GLMModel m, Frame fr) {
     Scope.enter();

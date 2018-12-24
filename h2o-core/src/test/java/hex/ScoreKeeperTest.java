@@ -3,17 +3,19 @@ package hex;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.TestUtil;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.Log;
 
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Random;
 
-public class ScoreKeeperTest extends TestUtil {
-  @BeforeClass
-  public static void stall() { stall_till_cloudsize(1); }
-
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class ScoreKeeperTest {
   // implement early stopping logic from scratch
   static boolean stopEarly(double[] val, int k, double tolerance, boolean moreIsBetter, boolean verbose) {
     if (val.length-1 < 2*k) return false; //need 2k scoring events (+1 to skip the very first one, which might be full of NaNs)

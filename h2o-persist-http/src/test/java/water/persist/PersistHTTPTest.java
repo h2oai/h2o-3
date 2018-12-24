@@ -6,9 +6,12 @@ import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.*;
 import water.parser.ParseDataset;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -18,13 +21,12 @@ import java.util.Collections;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.junit.Assert.*;
+import static water.TestUtil.isBitIdentical;
+import static water.TestUtil.parse_test_file;
 
-public class PersistHTTPTest extends TestUtil {
-
-  @BeforeClass
-  public static void setup() {
-    stall_till_cloudsize(5);
-  }
+@RunWith(H2ORunner.class)
+@CloudSize(5)
+public class PersistHTTPTest {
 
   @Test
   public void importFilesEager() throws Exception {

@@ -3,22 +3,21 @@ package ai.h2o.automl;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.fvec.Frame;
-import water.util.Log;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.TwoDimTable;
 
-import static hex.genmodel.utils.DistributionFamily.gaussian;
+import static water.TestUtil.parse_test_file;
 
-public class LeaderboardTest extends water.TestUtil {
+
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class LeaderboardTest {
 
   // TODO: plenty of tests to write for this class
-
-  @BeforeClass
-  public static void setup() {
-    stall_till_cloudsize(1);
-  }
 
   @Test
   public void test_toTwoDimTable_with_empty_models_and_without_sort_metric() {

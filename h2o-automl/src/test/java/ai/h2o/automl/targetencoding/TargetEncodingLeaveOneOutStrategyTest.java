@@ -6,27 +6,21 @@ import org.junit.Ignore;
 import org.junit.Test;
 import water.Job;
 import water.Key;
-import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.util.TwoDimTable;
 
 import java.io.File;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static water.TestUtil.ar;
 
-public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
+public class TargetEncodingLeaveOneOutStrategyTest {
 
-
-  @BeforeClass
-  public static void setup() {
-    stall_till_cloudsize(1);
-  }
 
   private Frame fr = null;
 

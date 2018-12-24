@@ -3,11 +3,14 @@ package hex.createframe;
 import hex.createframe.recipes.SimpleCreateFrameRecipe;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.Scope;
 import water.TestUtil;
 import water.api.schemas4.input.CreateFrameSimpleIV4;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.Log;
 
 import static hex.createframe.recipes.SimpleCreateFrameRecipe.ResponseType;
@@ -16,12 +19,9 @@ import static org.junit.Assert.*;
 /**
  * Test for the {@link SimpleCreateFrameRecipe} class.
  */
-public class SimpleCreateFrameRecipeTest extends TestUtil {
-
-  @BeforeClass() public static void setup() {
-    stall_till_cloudsize(1);
-  }
-
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class SimpleCreateFrameRecipeTest{
 
   /** Test that the frame with all default arguments can be constructed. */
   @Test

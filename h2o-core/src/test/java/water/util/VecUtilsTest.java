@@ -8,12 +8,12 @@ import water.DKV;
 import water.TestUtil;
 import water.fvec.Frame;
 
+import static water.TestUtil.parse_test_file;
+
 /**
  * Test VecUtils interface.
  */
-public class VecUtilsTest extends TestUtil {
-  @BeforeClass
-  static public void setup() {  stall_till_cloudsize(1); }
+public class VecUtilsTest {
 
   @Test
   public void testStringVec2Categorical() {

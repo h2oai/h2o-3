@@ -6,9 +6,9 @@ import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.ClassSamplingMethod;
 import hex.genmodel.utils.DistributionFamily;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.DKV;
 import water.H2O;
 import water.Key;
@@ -19,6 +19,8 @@ import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.rapids.Rapids;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.Log;
 
 import java.util.Arrays;
@@ -26,8 +28,9 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Random;
 
+@RunWith(H2ORunner.class)
+@CloudSize(1)
 public class DeepLearningProstateTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void run() throws Exception { runFraction(0.00002f); }
 

@@ -3,13 +3,19 @@ package water.parser;
 import org.junit.*;
 
 import java.io.File;
+
+import org.junit.runner.RunWith;
 import water.Key;
-import water.TestUtil;
+
 import water.fvec.Frame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.FileIntegrityChecker;
 import water.util.FileUtils;
 
-public class ParseProgressTest extends TestUtil {
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class ParseProgressTest {
   // Attempt a multi-jvm parse of covtype.
   // Silently exits if it cannot find covtype.
   @Test public void testCovtype() {

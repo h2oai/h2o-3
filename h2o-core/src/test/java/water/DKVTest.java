@@ -4,8 +4,11 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.H2O.H2OCallback;
 import water.H2O.H2OCountedCompleter;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.IcedInt;
 import water.util.IcedInt.AtomicIncrementAndGet;
 
@@ -19,12 +22,9 @@ import java.util.Random;
  *
  * Test that our DKV follows java mm.
  */
+@RunWith(H2ORunner.class)
+@CloudSize(1)
 public class DKVTest extends TestUtil {
-  @BeforeClass()
-  public static void setup() {
-    stall_till_cloudsize(1);
-  }
-
 
   private static class TestMM extends MRTask<TestMM> {
     final Key [] _keys;

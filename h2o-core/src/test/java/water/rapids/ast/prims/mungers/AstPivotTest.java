@@ -3,6 +3,7 @@ package water.rapids.ast.prims.mungers;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.TestFrameBuilder;
@@ -11,11 +12,16 @@ import water.fvec.Vec;
 import water.rapids.Rapids;
 import water.rapids.Val;
 import water.rapids.vals.ValFrame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 import water.rapids.Session;
-public class AstPivotTest  extends TestUtil {
-    @BeforeClass
-    static public void setup() { stall_till_cloudsize(1); }
+
+import static water.TestUtil.*;
+
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class AstPivotTest {
 
     @Test public void TestPivot() {
         Scope.enter();

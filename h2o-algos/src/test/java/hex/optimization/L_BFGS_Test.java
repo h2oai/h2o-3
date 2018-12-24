@@ -7,28 +7,25 @@ import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMWeightsFun;
 import hex.optimization.OptimizationUtils.GradientInfo;
 import hex.optimization.OptimizationUtils.GradientSolver;
-import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.Frame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static water.TestUtil.parse_test_file;
 
 /**
 * Created by tomasnykodym on 9/16/14.
 */
-public class L_BFGS_Test  extends TestUtil {
-  @BeforeClass
-  public static void setup() {
-    stall_till_cloudsize(1);
-    try {
-      Thread.sleep(100);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    }
-  }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class L_BFGS_Test {
+
 
   // test on Rosenbrock's function (known optimum at (a,a^2), minimum = 0)
   @Test

@@ -3,6 +3,7 @@ package hex.deeplearning;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.DKV;
 import water.H2O;
 import water.Key;
@@ -13,6 +14,8 @@ import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.FileUtils;
 
 /**
@@ -20,9 +23,9 @@ import water.util.FileUtils;
  * produced by Spark - dataset divided into
  * many small chunks,  some of theam are empty.
  */
-public class DeepLearningScoreTest extends TestUtil {
-  @BeforeClass
-  public static void setup() { stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class DeepLearningScoreTest {
 
   /** Load simple dataset, rebalance to a number of chunks > number of rows, and run deep learning */
   @Test public void testPubDev928() {

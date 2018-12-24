@@ -7,22 +7,28 @@ import hex.genmodel.algos.glrm.GlrmLoss;
 import hex.genmodel.algos.glrm.GlrmRegularizer;
 import hex.glrm.GLRMModel.GLRMParameters;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.DKV;
 import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 import water.util.Log;
 
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
 
-public class GLRMCategoricalTest extends TestUtil {
+import static water.TestUtil.ard;
+import static water.TestUtil.parse_test_file;
+
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class GLRMCategoricalTest {
   public final double TOLERANCE = 1e-6;
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   private static String colFormat(String[] cols, String format) {
     int[] idx = new int[cols.length];

@@ -2,12 +2,15 @@ package water.parser.parquet;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.DKV;
 import water.Key;
 import water.MRTask;
 import water.TestUtil;
 import water.fvec.*;
 import water.persist.VecDataInputStream;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -17,10 +20,9 @@ import java.util.Random;
 
 import static org.junit.Assert.*;
 
-public class VecDataInputStreamTest extends TestUtil {
-
-  @BeforeClass
-  static public void setup() { TestUtil.stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class VecDataInputStreamTest {
 
   @Test
   public void testReadVecAsInputStream() throws Exception {

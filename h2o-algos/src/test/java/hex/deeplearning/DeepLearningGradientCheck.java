@@ -8,19 +8,22 @@ import hex.FrameTask;
 import hex.ModelMetricsRegression;
 import hex.genmodel.utils.DistributionFamily;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.Log;
 import water.util.PrettyPrint;
 
 import java.util.Random;
 
+@RunWith(H2ORunner.class)
+@CloudSize(1)
 public class DeepLearningGradientCheck extends TestUtil {
-  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
   static final float MAX_TOLERANCE = 2e-2f;
   static final float MAX_FAILED_COUNT = 30;

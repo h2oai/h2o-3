@@ -11,10 +11,13 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.VecUtils;
 
 import java.util.Arrays;
@@ -22,11 +25,14 @@ import java.util.HashMap;
 import java.util.Random;
 
 import static org.junit.Assert.*;
+import static water.TestUtil.parse_test_file;
 
 /**
  * Created by tomasnykodym on 4/26/15.
  */
-public class GLMBasicTestBinomial extends TestUtilSharedResources {
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class GLMBasicTestBinomial {
   static Frame _prostateTrain; // prostate_cat_replaced
   static Frame _prostateTrainUpsampled; // prostate_cat_replaced
   static Frame _prostateTest; // prostate_cat_replaced
@@ -1170,42 +1176,50 @@ public class GLMBasicTestBinomial extends TestUtilSharedResources {
     params._lambda = new double[]{0};
     params._beta_epsilon = 1e-4;
     GLM job0 = null;
+    GLMModel model = null;
     try {
       params._solver = Solver.L_BFGS;
       job0 = new GLM(params);
-      GLMModel model = job0.trainModel().get();
+      model = job0.trainModel().get();
       assertFalse("should've thrown, p-values only supported with IRLSM",true);
     } catch(H2OModelBuilderIllegalArgumentException t) {
+    } finally {
+      if (model != null) model.remove();
     }
     boolean naive_descent_exception_thrown = false;
     try {
       params._solver = Solver.COORDINATE_DESCENT_NAIVE;
       job0 = new GLM(params);
-      GLMModel model = job0.trainModel().get();
+      model = job0.trainModel().get();
       assertFalse("should've thrown, p-values only supported with IRLSM",true);
     } catch(H2OIllegalArgumentException e) {
       naive_descent_exception_thrown = true;
+    } finally {
+      if (model != null) model.remove();
     }
     assertTrue(naive_descent_exception_thrown);
     try {
       params._solver = Solver.COORDINATE_DESCENT;
       job0 = new GLM(params);
-      GLMModel model = job0.trainModel().get();
+      model = job0.trainModel().get();
       assertFalse("should've thrown, p-values only supported with IRLSM",true);
     } catch(H2OModelBuilderIllegalArgumentException t) {
+    } finally {
+      if (model != null) model.remove();
     }
     params._solver = Solver.IRLSM;
     try {
       params._lambda = new double[]{1};
       job0 = new GLM(params);
-      GLMModel model = job0.trainModel().get();
+      model = job0.trainModel().get();
       assertFalse("should've thrown, p-values only supported with no regularization",true);
     } catch(H2OModelBuilderIllegalArgumentException t) {
+    } finally {
+      if (model != null) model.remove();
     }
     params._lambda_search = false;
     params._lambda = new double[]{0};
     GLM job = new GLM(params);
-    GLMModel model = null;
     Frame predictTrain = null;
     Frame predictTest = null;
     try {
@@ -1305,7 +1319,7 @@ public class GLMBasicTestBinomial extends TestUtilSharedResources {
       double[] zvals_expected = new double[]{-2.99223901, 1.24208800, -0.14610616, 0.04428674, -0.46826589, 2.24843259, 3.13779030, 1.44550154, 1.18227779, 2.71377864, -1.11887108, 4.67333842};
       double[] pvals_expected = new double[]{2.769394e-03, 2.142041e-01, 8.838376e-01, 9.646758e-01, 6.395945e-01, 2.454862e-02, 1.702266e-03, 1.483171e-01, 2.370955e-01, 6.652060e-03, 2.631951e-01, 2.963429e-06};
       String[] names_actual = model._output.coefficientNames();
-      HashMap<String, Integer> coefMap = new HashMap<>();
+      final HashMap<String, Integer> coefMap = new HashMap<>();
       for (int i = 0; i < names_expected.length; ++i)
         coefMap.put(names_expected[i], i);
       double[] stder_actual = model._output.stdErr();
@@ -1331,46 +1345,49 @@ public class GLMBasicTestBinomial extends TestUtilSharedResources {
     params._lambda = new double[]{0};
     params._beta_epsilon = 1e-4;
     job = new GLM(params);
-    model = job.trainModel().get();
+    
+    try {
+      model = job.trainModel().get();
 
-    String [] names = model._output.coefficientNames();
-    double [] p_values = model._output.pValues();
-    for(int i = 0; i < names.length; ++i)
-      System.out.println(names[i] + ": " + p_values[i]);
-    System.out.println();
-    System.out.println(model.generateSummary(params._train,10));
-    System.out.println(model._output._training_metrics);
-    Frame predict = model.score(_airlinesTrain);
-    Vec.Reader r = predict.vec("StdErr").new Reader();
-    int fails = 0;
-    for(int i = 0; i < airlines_train_se_fit.length; ++i) {
-      if(Math.abs(airlines_train_se_fit[i] - r.at(i)) > 1e-4){
-        // NOTE: our vcov matrix is slightly different from R's. Does not matter for most std errs but outliers do not match.
-        System.out.println("Mismatch at row " + i + ": " + airlines_train_se_fit[i] + " != " + r.at(i));
-        if(airlines_train_se_fit[i] < 100 )fails++;
+      String[] names = model._output.coefficientNames();
+      double[] p_values = model._output.pValues();
+      for (int i = 0; i < names.length; ++i)
+        System.out.println(names[i] + ": " + p_values[i]);
+      System.out.println();
+      System.out.println(model.generateSummary(params._train, 10));
+      System.out.println(model._output._training_metrics);
+      Frame predict = model.score(_airlinesTrain);
+      Vec.Reader r = predict.vec("StdErr").new Reader();
+      int fails = 0;
+      for (int i = 0; i < airlines_train_se_fit.length; ++i) {
+        if (Math.abs(airlines_train_se_fit[i] - r.at(i)) > 1e-4) {
+          // NOTE: our vcov matrix is slightly different from R's. Does not matter for most std errs but outliers do not match.
+          System.out.println("Mismatch at row " + i + ": " + airlines_train_se_fit[i] + " != " + r.at(i));
+          if (airlines_train_se_fit[i] < 100) fails++;
+        }
       }
-    }
 
-    assertEquals(0,fails);
-    predict.delete();
-    predict = model.score(_airlinesTest);
-    r = predict.vec("StdErr").new Reader();
-    fails = 0;
-    for(int i = 0; i < airlines_test_se_fit.length; ++i) {
-      if(Math.abs(airlines_test_se_fit[i] - r.at(i)) > 1e-4 ){
-        // NOTE: our vcov matrix is slightly different from R's. Does not matter for most std errs but outliers do not match.
-        System.out.println("Mismatch at row " + i + ": " + airlines_test_se_fit[i] + " != " + r.at(i));
-        if(airlines_test_se_fit[i] < 100 )fails++;
+      assertEquals(0, fails);
+      predict.remove();
+      predict = model.score(_airlinesTest);
+      r = predict.vec("StdErr").new Reader();
+      fails = 0;
+      for (int i = 0; i < airlines_test_se_fit.length; ++i) {
+        if (Math.abs(airlines_test_se_fit[i] - r.at(i)) > 1e-4) {
+          // NOTE: our vcov matrix is slightly different from R's. Does not matter for most std errs but outliers do not match.
+          System.out.println("Mismatch at row " + i + ": " + airlines_test_se_fit[i] + " != " + r.at(i));
+          if (airlines_test_se_fit[i] < 100) fails++;
+        }
       }
+      assertEquals(0, fails);
+      predict.remove();
+    } finally {
+      model.remove();
     }
-    assertEquals(0,fails);
-    predict.delete();
-    model.delete();
   }
 
   @BeforeClass
   public static void setup() {
-    stall_till_cloudsize(1);
     _prostateTrain = parse_test_file("smalldata/glm_test/prostate_cat_train.csv");
     _prostateTest  = parse_test_file("smalldata/glm_test/prostate_cat_test.csv");
     _prostateTrainUpsampled = parse_test_file("smalldata/glm_test/prostate_cat_train_upsampled.csv");

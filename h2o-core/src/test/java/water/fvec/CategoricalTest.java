@@ -2,6 +2,7 @@ package water.fvec;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.H2O;
 import water.Key;
 import water.MRTask;
@@ -9,14 +10,19 @@ import water.TestUtil;
 import water.parser.BufferedString;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.VecUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import static water.TestUtil.parse_test_file;
 
-public class CategoricalTest extends TestUtil{
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class CategoricalTest{
 
   @Test public void testCancelSparseCategoricals() {
     Frame frame = null;

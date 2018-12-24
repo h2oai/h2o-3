@@ -6,24 +6,24 @@ import hex.genmodel.utils.DistributionFamily;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import org.junit.*;
+import org.junit.runner.RunWith;
 import water.Key;
-import water.TestUtil;
 import water.Scope;
 import water.fvec.Frame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.util.Map;
 
 import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
+import static water.TestUtil.*;
 
 /*
   Be aware that `smalldata/gbm_test/titanic_*.csv` files are not present in the repo. Replace with your own splits.
  */
-public class TargetEncodingTitanicBenchmark extends TestUtil {
-
-
-  @BeforeClass public static void setup() {
-    stall_till_cloudsize(1);
-  }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class TargetEncodingTitanicBenchmark {
 
   @Test
   public void KFoldHoldoutTypeTest() {

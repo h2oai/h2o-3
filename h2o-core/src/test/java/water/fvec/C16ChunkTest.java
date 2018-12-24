@@ -2,18 +2,22 @@ package water.fvec;
 
 import org.junit.*;
 
+import org.junit.runner.RunWith;
 import water.TestUtil;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.util.Arrays;
 import java.util.UUID;
 
 import static org.junit.Assert.fail;
 
-public class C16ChunkTest extends TestUtil {
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class C16ChunkTest{
 
   static UUID u(long lo, long hi) { return new UUID(hi, lo);}
 
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
   UUID[] sampleVals = new UUID[]{
       u(6, 6),
       u(C16Chunk._LO_NA, C16Chunk._HI_NA + 1),

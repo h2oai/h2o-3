@@ -15,6 +15,8 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.file.Paths;
 
+import static water.TestUtil.parse_test_file;
+
 public class DeepWaterMXNetIntegrationTest extends DeepWaterAbstractIntegrationTest {
 
   static long copy(InputStream var0, OutputStream var1) throws IOException {

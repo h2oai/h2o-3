@@ -5,10 +5,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-public class ScopeTest extends TestUtil {
-
-  @BeforeClass()
-  public static void setup() { stall_till_cloudsize(1); }
+public class ScopeTest {
 
   @Test
   public void testTrackGeneric() {

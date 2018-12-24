@@ -2,9 +2,12 @@ package water;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.io.IOException;
 import java.nio.channels.ByteChannel;
@@ -12,12 +15,12 @@ import java.nio.channels.ByteChannel;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static water.TestUtil.ar;
+import static water.TestUtil.ard;
 
-public class ExternalFrameReaderClientTest extends TestUtil{
-    @BeforeClass()
-    public static void setup() {
-        stall_till_cloudsize(3);
-    }
+@RunWith(H2ORunner.class)
+@CloudSize(3)
+public class ExternalFrameReaderClientTest{
 
     // We keep this one for assertion errors occurred in different threads
     private volatile AssertionError exc;

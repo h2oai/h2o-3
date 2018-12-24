@@ -1,9 +1,11 @@
 package hex.tree;
 
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.*;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.*;
 
 import java.util.Arrays;
@@ -12,13 +14,13 @@ import java.util.Random;
 /**
  * PUBDEV-451: Prove that histogram addition of float-casted doubles leads to reproducible AND accurate histogram counts
  */
-public class HistogramTest extends TestUtil {
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class HistogramTest {
   final static int BUCKETS = 100;      //how many histogram buckets
   final static int THREADS = 100;      //how many threads
   final static int THREAD_LOOPS = 100; //how much work per thread
-
-  @BeforeClass
-  public static void stall() { stall_till_cloudsize(1); }
+  
 
   @Test
   public void run() {

@@ -5,14 +5,22 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import org.junit.*;
+import org.junit.runner.RunWith;
 import water.fvec.Frame;
 import water.fvec.Vec;
+
+import static water.TestUtil.parse_test_file;
+import static water.TestUtil.stall_till_cloudsize;
 import static water.util.FileUtils.*;
+
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.Log;
 
 @Ignore
-public class OOMTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class OOMTest{
 
   @Test public void testClean() throws InterruptedException {
     final int log_rows_per_chk = 6;

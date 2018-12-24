@@ -3,23 +3,25 @@ package hex.createframe;
 import hex.createframe.recipes.OriginalCreateFrameRecipe;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.TestUtil;
 import water.api.schemas4.input.CreateFrameOriginalIV4;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.Log;
 
 import static org.junit.Assert.*;
+import static water.TestUtil.isBitIdentical;
 
 
 /**
  * Test for the {@link OriginalCreateFrameRecipe} class (and the overall {@link CreateFrameExecutor} mechanism).
  */
-public class OriginalCreateFrameRecipeTest extends TestUtil {
-
-  @BeforeClass() public static void setup() {
-    stall_till_cloudsize(1);
-  }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class OriginalCreateFrameRecipeTest {
 
   /**
    * Simple initial test: verify that the random frame can be created, that it has the correct
