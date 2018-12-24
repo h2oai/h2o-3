@@ -4,7 +4,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.internal.AssumptionViolatedException;
 import org.junit.internal.runners.model.EachTestNotifier;
-import org.junit.internal.runners.statements.RunAfters;
 import org.junit.runner.Description;
 import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.BlockJUnit4ClassRunner;
@@ -33,6 +32,7 @@ public class H2ORunner extends BlockJUnit4ClassRunner {
         testClass = getTestClass();
         initKeys = new HashSet<>();
         TestUtil.stall_till_cloudsize(calculateCloudSize());
+        new CollectInitKeysTask().doAllNodes();
     }
 
 

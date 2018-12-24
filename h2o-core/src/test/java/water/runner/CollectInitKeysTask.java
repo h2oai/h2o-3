@@ -9,6 +9,5 @@ public class CollectInitKeysTask extends MRTask<CollectInitKeysTask> {
     @Override
     protected void setupLocal() {
         LocalTestRuntime.initKeys.addAll(H2O.localKeySet());
-
     }
 }
