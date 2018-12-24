@@ -11,11 +11,19 @@ import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.Statement;
 import org.junit.runners.model.TestClass;
+import water.H2O;
 import water.Key;
 import water.TestUtil;
+import water.Value;
+import water.fvec.Frame;
+import water.fvec.Vec;
+import water.util.Log;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
+import static org.junit.Assert.assertFalse;
 
 public class H2ORunner extends BlockJUnit4ClassRunner {
     private TestClass testClass;
@@ -93,10 +101,54 @@ public class H2ORunner extends BlockJUnit4ClassRunner {
 
     private void checkLeakedKeys(Description description) {
         CheckKeysTask checkKeysTask = new CheckKeysTask().doAllNodes();
-        if(checkKeysTask.leakedKeys.length > 0){
-            throw new IllegalStateException(String.format("Test method '%s.%s' leaked %d keys.", description.getTestClass().getName(), description.getMethodName(), checkKeysTask.leakedKeys.length));
+        if (checkKeysTask.leakedKeys.length == 0) {
+            return;
         }
-        
+
+        printLeakedKeys(checkKeysTask.leakedKeys);
+        throw new IllegalStateException(String.format("Test method '%s.%s' leaked %d keys.", description.getTestClass().getName(), description.getMethodName(), checkKeysTask.leakedKeys.length));
+    }
+
+
+    private void printLeakedKeys(final Key[] leakedKeys) {
+        Set<Key> leakedKeysSet = new HashSet<>(leakedKeys.length);
+
+        for (Key k : leakedKeys) {
+            leakedKeysSet.add(k);
+        }
+
+        for (Key key : leakedKeys) {
+
+            final Value keyValue = Value.STORE_get(key);
+            if (keyValue != null && keyValue.isFrame()) {
+                Frame frame = (Frame) key.get();
+                Log.err(String.format("Leaked frame with key '%s'. This frame contains the following vectors:", frame._key.toString()));
+
+                for (Key vecKey : frame.keys()) {
+                    if (!leakedKeysSet.contains(vecKey)) continue;
+                    Log.err(String.format("   Vector '%s'. This vector contains the following chunks:", vecKey.toString()));
+
+                    final Vec vec = (Vec) vecKey.get();
+                    for (int i = 0; i < vec.nChunks(); i++) {
+                        final Key chunkKey = vec.chunkKey(i);
+                        if (!leakedKeysSet.contains(chunkKey)) continue;
+                        Log.err(String.format("       Chunk id %d, key '%s'", i, chunkKey));
+                        leakedKeysSet.remove(chunkKey);
+                    }
+                    
+                    leakedKeysSet.remove(vecKey);
+                }
+                leakedKeysSet.remove(key);
+            }
+        }
+
+        if (!leakedKeysSet.isEmpty()) {
+            Log.err(String.format("%nThere are also %d more leaked keys:", leakedKeysSet.size()));
+        }
+
+        for (Key key : leakedKeysSet) {
+            Log.err(String.format("Key '%s'", key.toString()));
+        }
     }
 
 
