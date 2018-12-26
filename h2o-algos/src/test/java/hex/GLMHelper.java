@@ -1,11 +1,13 @@
 package hex;
 
 import hex.glm.GLMModel;
+import org.junit.Ignore;
 import water.Job;
 import water.Scope;
 import water.fvec.Frame;
 
-// to be able to access package-private methods in GLM 
+// to be able to access package-private methods in GLM
+@Ignore
 public class GLMHelper {
   
   public static void runBigScore(GLMModel model,
