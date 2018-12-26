@@ -1,5 +1,6 @@
 package hex.ensemble;
 
+import hex.GLMHelper;
 import hex.Model;
 import hex.StackedEnsembleModel;
 import hex.genmodel.utils.DistributionFamily;
@@ -12,16 +13,18 @@ import hex.tree.gbm.GBMModel;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.DKV;
-import water.Key;
-import water.Scope;
-import water.TestUtil;
+import water.*;
+import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class StackedEnsembleTest extends TestUtil {
@@ -148,7 +151,7 @@ public class StackedEnsembleTest extends TestUtil {
                 false, DistributionFamily.bernoulli, StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm.deeplearning);
     }
 
-
+    
 
     @Test public void testBasicEnsembleGLMMetalearner() {
 
@@ -212,6 +215,75 @@ public class StackedEnsembleTest extends TestUtil {
 
     }
 
+    @Test
+    public void testPubDev6157() {
+        try {
+            Scope.enter();
+
+            // 1. Create synthetic training frame and train multinomial GLM
+            Vec v = Vec.makeConN((long) 1e5, H2O.ARGS.nthreads * 4);
+            Scope.track(v);
+            final int nclasses = 4; // #of response classes in iris_wheader + 1
+            
+            byte[] types = new byte[]{Vec.T_NUM, Vec.T_CAT};
+            String[][] domains = new String[types.length][];
+            domains[domains.length - 1] = new String[nclasses];
+            for (int i = 0; i < nclasses; i++)
+                domains[domains.length - 1][i] = "Level" + i; 
+            
+            final Frame training = new MRTask() {
+                @Override
+                public void map(Chunk[] cs, NewChunk[] ncs) {
+                    Random r = new Random();
+                    NewChunk predictor = ncs[0];
+                    NewChunk response = ncs[1];
+                    for (int i = 0; i < cs[0]._len; i++) {
+                        long rowNum = (cs[0].start() + i);
+                        predictor.addNum(r.nextDouble()); // noise
+                        long respValue;
+                        if (rowNum % 2 == 0) {
+                            respValue = nclasses - 1;
+                        } else {
+                            respValue = rowNum % nclasses;
+                        }
+                        response.addNum(respValue); // more than 50% rows have last class as the response value
+                    }
+                }
+            }.doAll(types, v).outputFrame(Key.<Frame>make(), null, domains);
+            Scope.track(training);
+
+            GLMModel.GLMParameters parms = new GLMModel.GLMParameters();
+            parms._train = training._key;
+            parms._response_column = training.lastVecName();
+            parms._family = GLMModel.GLMParameters.Family.multinomial;
+            parms._max_iterations = 1;
+            parms._seed = 42;
+            parms._auto_rebalance = false;
+
+            GLM glm = new GLM(parms);
+            final GLMModel model = glm.trainModelOnH2ONode().get();
+            Scope.track_generic(model);
+            assertNotNull(model);
+
+            final Job j = new Job<>(Key.make(), parms.javaName(), parms.algoName());
+            j.start(new H2O.H2OCountedCompleter() {
+                @Override
+                public void compute2() {
+                    GLMHelper.runBigScore(model, training, false, false, j);
+                    tryComplete();
+                }
+            }, 1).get();
+
+            // 2. Train multinomial Stacked Ensembles with GLM metalearner - it should not crash 
+            basicEnsemble("./smalldata/iris/iris_wheader.csv",
+                    null,
+                    new StackedEnsembleTest.PrepData() { int prep(Frame fr) {return fr.find("class"); }
+                    },
+                    false, DistributionFamily.multinomial, StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm.glm);
+        } finally {
+            Scope.exit();
+        }
+    }
 
     // ==========================================================================
     public StackedEnsembleModel.StackedEnsembleOutput basicEnsemble(String training_file, String validation_file, StackedEnsembleTest.PrepData prep, boolean dupeTrainingFrameToValidationFrame, DistributionFamily family, StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm metalearner_algo) {
