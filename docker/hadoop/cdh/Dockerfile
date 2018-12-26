@@ -42,7 +42,7 @@ deb [arch=amd64] http://archive.cloudera.com/cdh5/ubuntu/trusty/amd64/cdh trusty
 deb-src http://archive.cloudera.com/cdh5/ubuntu/trusty/amd64/cdh trusty-cdh${VERSION} contrib\n" > /etc/apt/sources.list.d/cloudera.list && \
         wget http://archive.cloudera.com/cdh5/ubuntu/trusty/amd64/cdh/archive.key -O archive.key \
         ;; \
-    6.0) \
+    6.*) \
         echo "# Packages for Cloudera's Distribution of Hadoop, Version ${VERSION}.0\n\
 deb [arch=amd64] http://archive.cloudera.com/cdh6/${VERSION}.0/ubuntu1604/apt xenial-cdh${VERSION}.0 contrib\n" > /etc/apt/sources.list.d/cloudera.list && \
         wget https://archive.cloudera.com/cdh6/${VERSION}.0/ubuntu1604/apt/archive.key -O archive.key \
