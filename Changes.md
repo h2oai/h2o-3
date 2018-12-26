@@ -2,7 +2,7 @@
 
 ## H2O
 
-### Xu (3.22.1.1) - 12/28/2018
+### Xu (3.22.1.1) - 12/27/2018
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-xu/1/index.html</a>
 
@@ -16,6 +16,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/1/index.htm
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6081'>PUBDEV-6081</a>] - Reduced the Invocation JMH level setup/teardown to only the training model.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6124'>PUBDEV-6124</a>] - In XGBoost, the default value of L2 regularization for tree models is now 1, which is consistent with native XGBoost.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6157'>PUBDEV-6157</a>] - Fixed an issue that caused Stacked Ensembles to fail with GLM metalearner when the same H2O instance was used to train a GLM multinomial classification model with more classes than what is used in Stacked Ensembles. (STILL OPEN)
 </li>
 </ul>
     
@@ -37,7 +39,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/1/index.htm
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6085'>PUBDEV-6085</a>] - Added a test that runs multiple `nfolds>0` DRF models in parallel.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6153'>PUBDEV-6153</a>] - Added support for CDH 6.1 (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6153'>PUBDEV-6153</a>] - Added support for CDH 6.1
 </li>
 </ul>
     
@@ -53,11 +55,11 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/1/index.htm
 <h4>Docs</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6048'>PUBDEV-6048</a>] - Added documentation for the new stopping_metric options. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6048'>PUBDEV-6048</a>] - Added documentation for the new stopping_metric options.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6154'>PUBDEV-6154</a>] - Added CDH 6 and 6.1 to list of supported Hadoop versions. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6154'>PUBDEV-6154</a>] - Added CDH 6 and 6.1 to list of supported Hadoop versions. 
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6156'>PUBDEV-6156</a>] - In the XGBoost chapter, updated the default value for reg_lambda to be 1. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6156'>PUBDEV-6156</a>] - In the XGBoost chapter, updated the default value for reg_lambda to be 1.
 </li>
 </ul>
 
