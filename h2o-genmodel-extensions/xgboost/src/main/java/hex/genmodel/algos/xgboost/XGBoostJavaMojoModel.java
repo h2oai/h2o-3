@@ -12,6 +12,7 @@ import hex.genmodel.MojoModel;
 import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
+import hex.genmodel.utils.ArrayUtils;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 
 import java.io.ByteArrayInputStream;
@@ -73,6 +74,17 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel {
   public SharedTreeGraph convert(final int treeNumber, final String treeClass) {
     GradBooster booster = _predictor.getBooster();
     return _computeGraph(booster, treeNumber);
+  }
+
+  @Override
+  public float[] getLeafNodeAssignments(double[] doubles) {
+    FVec row = _1hotFactory.fromArray(doubles);
+    int[] leafs = _predictor.predictLeaf(row);
+    float[] leafsAsFloats = new float[leafs.length];
+    for (int i =0 ;i < leafs.length; i++) {
+      leafsAsFloats[i] = leafs[i];
+    }
+    return leafsAsFloats;
   }
 
   private static class RegObjFunction extends ObjFunction {

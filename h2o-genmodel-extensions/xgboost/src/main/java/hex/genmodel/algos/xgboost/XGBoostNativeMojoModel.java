@@ -3,6 +3,7 @@ package hex.genmodel.algos.xgboost;
 import biz.k11i.xgboost.Predictor;
 import biz.k11i.xgboost.gbm.GradBooster;
 
+import biz.k11i.xgboost.util.FVec;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.tree.SharedTreeGraph;
@@ -73,6 +74,43 @@ public final class XGBoostNativeMojoModel extends XGBoostMojoModel {
     }
 
     return toPreds(doubles, out, preds, nclasses, _priorClassDistrib, _defaultThreshold);
+  }
+
+  @Override
+  public float[] getLeafNodeAssignments(double[] doubles) {
+   
+    return getLeafNodeAssignments(doubles,    _booster, _nums, _cats, _catOffsets, _useAllFactorLevels,
+                                  _nclasses, _priorClassDistrib, _defaultThreshold, _sparse);
+  }
+
+  public static float[] getLeafNodeAssignments(double[] doubles,
+                                Booster _booster, int _nums, int _cats,
+                                int[] _catOffsets, boolean _useAllFactorLevels,
+                                int nclasses, double[] _priorClassDistrib,
+                                double _defaultThreshold, final boolean _sparse) {
+    int cats = _catOffsets == null ? 0 : _catOffsets[_cats];
+    // convert dense doubles to expanded floats
+    final float[] floats = new float[_nums + cats]; //TODO: use thread-local storage
+    GenModel.setInput(doubles, floats, _nums, _cats, _catOffsets, null, null, _useAllFactorLevels, _sparse /*replace NA with 0*/);
+    float[] out;
+    DMatrix dmat = null;
+    try {
+      dmat = new DMatrix(floats,1, floats.length, _sparse ? 0 : Float.NaN);
+      final DMatrix row = dmat;
+      BoosterHelper.BoosterOp<float[]> predictOp = new BoosterHelper.BoosterOp<float[]>() {
+        @Override
+        public float[] apply(Booster booster) throws XGBoostError {
+          return booster.predictLeaf(row,0)[0];
+        }
+      };
+      out = BoosterHelper.doWithLocalRabit(predictOp, _booster);
+    } catch (XGBoostError xgBoostError) {
+      throw new IllegalStateException("Failed XGBoost prediction.", xgBoostError);
+    } finally {
+      BoosterHelper.dispose(dmat);
+    }
+    return out;
+   
   }
 
   @Override

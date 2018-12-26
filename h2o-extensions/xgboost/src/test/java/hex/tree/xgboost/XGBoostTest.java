@@ -1397,6 +1397,9 @@ public class XGBoostTest extends TestUtil {
       XGBoostMojoModel mojo = getMojo(model);
       assertTrue(mojo instanceof XGBoostNativeMojoModel);
 
+      float[] leafIndices = mojo.getLeafNodeAssignments(new double[] {1.0,2.0});
+      assert leafIndices.length == 7;
+      
       String[] dump = ((XGBoostNativeMojoModel) mojo).getBoosterDump(false, "text");
       assertEquals(parms._ntrees, dump.length);
     } finally {
