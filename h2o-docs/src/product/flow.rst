@@ -829,6 +829,8 @@ The available options vary depending on the selected model. If an option is only
     - lift_top_group
     - misclassification
     - mean_per_class_error
+    - custom
+    - custom_increasing
 
 -  **stopping_rounds**: (GBM, DRF, DL, XGBoost, AutoML) Stops training when the option selected for **stopping_metric** doesn’t improve for the specified number of training rounds, based on a simple moving average. To disable this feature, specify 0. The metric is computed on the validation data (if provided); otherwise, training data is used.
 
