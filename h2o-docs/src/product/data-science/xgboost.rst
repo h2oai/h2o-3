@@ -168,7 +168,7 @@ Defining an XGBoost Model
 
 -  **skip_drop**: When ``booster="dart"``, specify a float value from 0 to 1 for the skip drop. This determines the probability of skipping the dropout procedure during a boosting iteration. If a dropout is skipped, new trees are added in the same manner as "gbtree". Note that non-zero ``skip_drop`` has higher priority than ``rate_drop`` or ``one_drop``. This value defaults to 0.0.
 
--  **reg_lambda**: Specify a value for L2 regularization. This defaults to 0.
+-  **reg_lambda**: Specify a value for L2 regularization. This defaults to 1.
 
 -  **reg_alpha**: Specify a value for L1 regularization. This defaults to 0.
 
