@@ -24,7 +24,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/1/index.htm
 <h4>New Feature</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5261'>PUBDEV-5261</a>] - Users can now specify `custom` and `custom_increasing` when setting the `stopping_criteria` parameter. 
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5261'>PUBDEV-5261</a>] - Users can now specify `custom` and `custom_increasing` when setting the `stopping_criteria` parameter in GBM and DRF. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5770'>PUBDEV-5770</a>] - Checkpoints can now be exported when running Grid Search or AutomL. 
 </li>
@@ -55,7 +55,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/1/index.htm
 <h4>Docs</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6048'>PUBDEV-6048</a>] - Added documentation for the new stopping_metric options.
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6048'>PUBDEV-6048</a>] - Added documentation for the new stopping_metric options in GBM and DRF.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6154'>PUBDEV-6154</a>] - Added CDH 6 and 6.1 to list of supported Hadoop versions. 
 </li>
