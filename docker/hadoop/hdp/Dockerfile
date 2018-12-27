@@ -15,8 +15,8 @@ ENV DISTRIBUTION='hdp' \
     MASTER='yarn-client' \
     HADOOP_HOME=/usr/hdp/current/hadoop-client/ \
     HADOOP_CONF_DIR=/etc/hadoop/conf \
-    HADOOP_DAEMON=/usr/hdp/2*/hadoop/sbin/hadoop-daemon.sh \
-    YARN_DAEMON=/usr/hdp/2*/hadoop-yarn/sbin/yarn-daemon.sh \
+    HADOOP_DAEMON=/usr/hdp/*/hadoop/sbin/hadoop-daemon.sh \
+    YARN_DAEMON=/usr/hdp/*/hadoop-yarn/sbin/yarn-daemon.sh \
     MAPRED_USER=mapred \
     YARN_USER=yarn \
     HDFS_USER=hdfs \
@@ -59,15 +59,19 @@ ENV \
   PATH=/usr/lib/jvm/java-current-oracle/bin:${PATH}
 
 # Chown folders
-RUN chown hdfs:hdfs /usr/hdp/2*/hadoop && \
-    chown yarn:yarn /usr/hdp/2*/hadoop-yarn && \
-    chown yarn:yarn /usr/hdp/2*/hadoop-mapreduce && \
+RUN HDP_VERSION=$(ls /usr/hdp/ | grep -e '^2\|^3') && \
+    chown hdfs:hdfs /usr/hdp/${HDP_VERSION}/hadoop && \
+    chown yarn:yarn /usr/hdp/${HDP_VERSION}/hadoop-yarn && \
+    chown yarn:yarn /usr/hdp/${HDP_VERSION}/hadoop-mapreduce && \
     chown -R root:hadoop /usr/hdp/current/hadoop-yarn*/bin/container-executor && \
-    chmod -R 6050 /usr/hdp/current/hadoop-yarn*/bin/container-executor
+    chmod -R 6050 /usr/hdp/current/hadoop-yarn*/bin/container-executor && \
+    mkdir -p /usr/hdp/${HDP_VERSION}/hadoop/logs && \
+    chown hdfs:hdfs /usr/hdp/${HDP_VERSION}/hadoop/logs && \
+    chmod a+w /usr/hdp/${HDP_VERSION}/hadoop/logs
 
 # Copy conf.pseudo to hadoop conf folder
-RUN rm /usr/hdp/2*/hadoop/conf/* && \
-    cp /usr/hdp/2*/etc/hadoop/conf.pseudo/* /usr/hdp/2*/hadoop/conf/
+RUN rm /usr/hdp/*/hadoop/conf/* && \
+    cp /usr/hdp/*/etc/hadoop/conf.pseudo/* /usr/hdp/*/hadoop/conf/
 
 # Copy configs
 COPY ${PATH_PREFIX}/conf/ ${HADOOP_CONF_DIR}
