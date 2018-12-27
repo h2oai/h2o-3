@@ -1,15 +1,13 @@
 <!DOCTYPE html>
-<!-- saved from url=(0060)http://h2o-release.s3.amazonaws.com/h2o/rel-xia/2/index.html -->
-<html class="no-js"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-
+<html class="no-js">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>
       Download H2O SUBST_PROJECT_VERSION
     </title>
     <meta name="description" content="">
     <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=0, minimum-scale=1.0, maximum-scale=1.0">
-
-    <link href="./Latest Stable Release_files/css" rel="stylesheet" type="text/css">
     <style type="text/css">
       /* Reset */
       html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre, a, abbr, acronym, address, big, cite, code, del, dfn, em, img, ins, kbd, q, s, samp, small, strike, strong, tt, var, b, u, i, center, dl, dt, dd, ol, ul, li, fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td, article, aside, canvas, details, embed, figure, figcaption, footer, header, hgroup, menu, nav, output, ruby, section, summary, time, mark, audio, video { margin: 0;    padding: 0;    border: 0;    font-size: 100%;    font: inherit;    vertical-align: baseline; } /* HTML5 display-role reset for older browsers */
@@ -382,10 +380,10 @@
     <div id="container">
       <div id="header">
           <a href="http://h2o.ai/" id="logo">
-            <img src="https://www.h2o.ai/wp-content/themes/h2o2018/templates/dist/images/h2o_logo.svg"/>
+            <img src="static/assets/h2o_logo.svg"/>
           </a>
           <p class="links">
-            <a href="http://h2o.ai/">H2O.ai</a> | <a href="https://github.com/h2oai/h2o-dev">Github</a>
+            <a href="http://h2o.ai/">H2O.ai</a> | <a href="https://github.com/h2oai/h2o-3">Github</a>
           </p>
       </div>
       <div id="title">
@@ -409,9 +407,9 @@
           <span id="quickstart-maven-tab">Use from Maven</span>
         </div>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/octicons/2.4.1/octicons.min.css">
-        <script type="text/javascript" src="./Download H2O 3.23.0.4496_files/ZeroClipboard.min.js"></script>
-        <script type="text/javascript" src="./Download H2O 3.23.0.4496_files/jquery.min.js"></script>
-        <script src="./Download H2O 3.23.0.4496_files/forms2.min.js"></script>
+        <script type="text/javascript" src="static/scripts/ZeroClipboard.min.js"></script>
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0-alpha1/jquery.min.js"></script>
+        <script src="https://app-ab12.marketo.com/js/forms2/js/forms2.min.js"></script>
 
         <form id="mktoForm_1016"></form>
 
@@ -512,7 +510,7 @@
         <div id="panels">
           <div id="quickstart-zip">
             <div id="downloads">
-              <a id="download-zip" class="btn-yellow" href="http://h2o-release.s3.amazonaws.com/h2o/rel-xia/2/h2o-SUBST_PROJECT_VERSION.zip">Download H2O</a>
+              <a id="download-zip" class="btn-yellow" href="h2o-SUBST_PROJECT_VERSION.zip">Download H2O</a>
             </div>
             <h2 class="get-started firststep">Get started with H2O in 3 easy steps</h2>
             <p class="get-started-p">1. Download H2O. This is a zip file that contains everything you need to get started.</p>
@@ -552,8 +550,8 @@
                     <em># The following command removes the H2O module for Python.</em><br>
                     pip uninstall h2o<br>
                     <br>
-                    <em># Next, use pip to install this version of the  H2O Python module.</em><br>
-                    pip install <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>http://h2o-release.s3.amazonaws.com/h2o/rel-xia/2/Python/h2o-SUBST_PROJECT_VERSION-py2.py3-none-any.whl<br>
+                    <em># Next, use pip to install this version of the H2O Python module.</em><br>
+                    pip install <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/Python/h2o-SUBST_PROJECT_VERSION-py2.py3-none-any.whl<br>
             </p></div>
 
             <div id="quickstart-r" style="display:none">
@@ -575,7 +573,7 @@
                     }<br>
                     <br>
                     <em># Now we download, install and initialize the H2O package for R.</em><br>
-                    install.packages("h2o", type="source", repos="<script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>http://h2o-release.s3.amazonaws.com/h2o/rel-xia/2/R")<br>
+                    install.packages("h2o", type="source", repos="<script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/R")<br>
                     <br>
                     <em># Finally, let's load H2O and start up an H2O cluster</em><br>
                     library(h2o)<br>
@@ -634,7 +632,7 @@ def h2oProjectVersion = "SUBST_PROJECT_VERSION"<br>
 <br>
 repositories {<br>
 &nbsp;maven {<br>
-&nbsp;&nbsp;url "<script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>http://h2o-release.s3.amazonaws.com/h2o/rel-xia/2/maven/repo/"<br>
+&nbsp;&nbsp;url "<script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/maven/repo/"<br>
 &nbsp;}<br>
 }<br>
 <br>
