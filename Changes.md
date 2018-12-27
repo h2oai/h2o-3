@@ -2,6 +2,67 @@
 
 ## H2O
 
+### Xu (3.22.1.1) - 12/27/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-xu/1/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5236'>PUBDEV-5236</a>] - PCA tests now work correctly with the "from h2o.estimators.pca import H2OPrincipalComponentAnalysisEstimator" import statement.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5956'>PUBDEV-5956</a>] - Fixed an AutoMLTest test that was leaking keys in KeepCrossValidationFoldAssignment test.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6081'>PUBDEV-6081</a>] - Reduced the Invocation JMH level setup/teardown to only the training model.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6124'>PUBDEV-6124</a>] - In XGBoost, the default value of L2 regularization for tree models is now 1, which is consistent with native XGBoost.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6157'>PUBDEV-6157</a>] - Fixed an issue that caused Stacked Ensembles to fail with GLM metalearner when the same H2O instance was used to train a GLM multinomial classification model with more classes than what is used in Stacked Ensembles.
+</li>
+</ul>
+    
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5261'>PUBDEV-5261</a>] - Users can now specify `custom` and `custom_increasing` when setting the `stopping_criteria` parameter in GBM and DRF. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5770'>PUBDEV-5770</a>] - Checkpoints can now be exported when running Grid Search or AutomL. 
+</li>
+</ul>
+        
+<h4>Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5894'>PUBDEV-5894</a>] - Added support for CDH 6.0, which includes Hadoop 3 support. Be sure to review <a href="https://www.cloudera.com/documentation/enterprise/6/release-notes/topics/rg_cdh_600_release_notes.html">https://www.cloudera.com/documentation/enterprise/6/release-notes/topics/rg_cdh_600_release_notes.html</a> for more information.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5953'>PUBDEV-5953</a>] - Fixed an AutoMLTest that was leaking keys.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6085'>PUBDEV-6085</a>] - Added a test that runs multiple `nfolds>0` DRF models in parallel.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6153'>PUBDEV-6153</a>] - Added support for CDH 6.1
+</li>
+</ul>
+    
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5820'>PUBDEV-5820</a>] - Hadoop builds now work with Jetty 8 and 9.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5897'>PUBDEV-5897</a>] - R examples in the R package docs now  use Hadley's style guide.
+</li>
+</ul>
+                                                            
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6048'>PUBDEV-6048</a>] - Added documentation for the new stopping_metric options in GBM and DRF.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6154'>PUBDEV-6154</a>] - Added CDH 6 and 6.1 to list of supported Hadoop versions. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6156'>PUBDEV-6156</a>] - In the XGBoost chapter, updated the default value for reg_lambda to be 1.
+</li>
+</ul>
+
 ### Xia (3.22.0.3) - 12/21/2018
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xia/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-xia/3/index.html</a>
