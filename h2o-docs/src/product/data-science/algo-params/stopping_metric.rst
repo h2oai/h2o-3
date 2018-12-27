@@ -30,8 +30,8 @@ Available options for ``stopping_metric`` include the following:
 - ``lift_top_group``
 - ``misclassification``
 - ``mean_per_class_error``
-- ``custom`` (for custom metric functions where "less is better". It is expected that the lower bound is 0.)
-- ``custom_increasing`` (for custom metric functions where "more is better")
+- ``custom`` (for custom metric functions where "less is better". It is expected that the lower bound is 0.) Note that this is currently only supported in GBM and DRF. 
+- ``custom_increasing`` (for custom metric functions where "more is better".) Note that this is currently only supported in GBM and DRF. 
 
 **Note**: ``stopping_rounds`` must be enabled for ``stopping_metric`` or ``stopping_tolerance`` to work.
 

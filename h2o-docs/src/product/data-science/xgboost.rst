@@ -75,8 +75,6 @@ Defining an XGBoost Model
     - ``lift_top_group``
     - ``misclassification``
     - ``mean_per_class_error``
-    - ``custom``
-    - ``custom_increasing``
 
 -  `stopping_tolerance <algo-params/stopping_tolerance.html>`__: Specify the relative tolerance for the metric-based stopping to stop training if the improvement is less than this value. This value defaults to 0.001.
 
