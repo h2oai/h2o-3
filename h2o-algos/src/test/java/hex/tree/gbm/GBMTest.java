@@ -3273,6 +3273,46 @@ public class GBMTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testCustomEarlyStoppingValidation() {
+    try {
+      Scope.enter();
+      Frame training = Scope.track(parse_test_file("./smalldata/junit/cars.csv"));
+      String response = "economy (mpg)";
+
+      ScoreKeeper.StoppingMetric[] customStoppingMetrics = new ScoreKeeper.StoppingMetric[]{
+              ScoreKeeper.StoppingMetric.custom, ScoreKeeper.StoppingMetric.custom_increasing
+      };
+      for (ScoreKeeper.StoppingMetric stoppingMetric : customStoppingMetrics) {
+        GBMModel model = null;
+        try {
+          GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+          parms._train = training._key;
+          parms._response_column = response;
+          parms._ignored_columns = new String[]{"name"};
+          parms._stopping_rounds = 2;
+          parms._stopping_metric = stoppingMetric;
+
+          model = new hex.tree.gbm.GBM(parms).trainModel().get();
+          fail("Custom stopping " + " shouldn't work without a custom metric");
+        } catch (H2OModelBuilderIllegalArgumentException e) {
+          if (e.getMessage() == null || !e.getMessage().contains("ERRR on field: _stopping_metric: " +
+                  "Custom metric function needs to be defined in order to use it for early stopping.")) {
+            throw e;
+          }
+          // suppress the expected exception
+        } finally {
+          if (model != null) {
+            model.delete();
+          }
+        }
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+
   // PUBDEV-3482
   @Test public void testQuasibinomial(){
     Scope.enter();

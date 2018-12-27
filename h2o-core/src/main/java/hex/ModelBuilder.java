@@ -1341,6 +1341,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         }
       }
     }
+    if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.custom || _parms._stopping_metric == ScoreKeeper.StoppingMetric.custom_increasing) {
+      if (_parms._custom_metric_func == null) {
+        error("_stopping_metric", "Custom metric function needs to be defined in order to use it for early stopping.");
+      }
+    }
     if (_parms._max_runtime_secs < 0) {
       error("_max_runtime_secs", "Max runtime (in seconds) must be greater than 0 (or 0 for unlimited).");
     }
