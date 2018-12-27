@@ -1,6 +1,10 @@
 package ai.h2o.automl;
 
 import ai.h2o.automl.UserFeedbackEvent.Stage;
+import ai.h2o.automl.targetencoding.AllCategoricalTEApplicationStrategy;
+import ai.h2o.automl.targetencoding.BlendingParams;
+import ai.h2o.automl.targetencoding.TEApplicationStrategy;
+import ai.h2o.automl.targetencoding.TargetEncoder;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ScoreKeeper.StoppingMetric;
@@ -175,12 +179,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   public static AutoML makeAutoML(Key<AutoML> key, Date startTime, AutoMLBuildSpec buildSpec) {
 
-    AutoML autoML = new AutoML(key, startTime, buildSpec);
-
-    if (null == autoML.trainingFrame)
-      throw new H2OIllegalArgumentException("No training data has been specified, either as a path or a key.");
-
-    return autoML;
+    return new AutoML(key, startTime, buildSpec);
   }
 
   public static class AutoMLKeyV3 extends KeyV3<Iced, AutoMLKeyV3, AutoML> {
@@ -271,28 +270,90 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       }
 
       userFeedback.info(Stage.Workflow, "Build control seed: " + buildSpec.build_control.stopping_criteria.seed() +
-          (buildSpec.build_control.stopping_criteria.seed() == -1 ? " (random)" : ""));
+              (buildSpec.build_control.stopping_criteria.seed() == -1 ? " (random)" : ""));
 
       handleDatafileParameters(buildSpec);
 
-    if (this.buildSpec.build_control.stopping_criteria.stopping_tolerance() == AUTO_STOPPING_TOLERANCE) {
-      this.buildSpec.build_control.stopping_criteria.set_default_stopping_tolerance_for_frame(this.trainingFrame);
-      userFeedback.info(Stage.Workflow, "Setting stopping tolerance adaptively based on the training frame: " +
-              this.buildSpec.build_control.stopping_criteria.stopping_tolerance());
-    } else {
-      userFeedback.info(Stage.Workflow, "Stopping tolerance set by the user: " + this.buildSpec.build_control.stopping_criteria.stopping_tolerance());
-      double default_tolerance = AutoMLBuildSpec.AutoMLStoppingCriteria.default_stopping_tolerance_for_frame(this.trainingFrame);
-      if (this.buildSpec.build_control.stopping_criteria.stopping_tolerance() < 0.7 * default_tolerance){
-        userFeedback.warn(Stage.Workflow, "Stopping tolerance set by the user is < 70% of the recommended default of " + default_tolerance + ", so models may take a long time to converge or may not converge at all.");
-      }
-    }
+//      performAutoFeatureEngineering();
+
+      handleCVParameters(buildSpec);
+
+      handleEarlyStoppingParameters(buildSpec);
 
       String sort_metric = buildSpec.input_spec.sort_metric == null ? null : buildSpec.input_spec.sort_metric.toLowerCase();
       leaderboard = Leaderboard.getOrMakeLeaderboard(projectName(), userFeedback, this.leaderboardFrame, sort_metric);
+
     } catch (Exception e) {
       deleteWithChildren(); //cleanup potentially leaked keys
       throw e;
     }
+  }
+
+  private void performAutoFeatureEngineering() {
+    // Hardcoded default startegy for now
+    TEApplicationStrategy defaultTEApplicationStrategy = new AllCategoricalTEApplicationStrategy(this.trainingFrame);
+    performAutoTargetEncoding(defaultTEApplicationStrategy);
+  }
+
+  //TODO maybe to minimise coupling it is better to introduce AutoMLTEEncodingHelper that will take AutoML instance and return transformed one
+  private void performAutoTargetEncoding(TEApplicationStrategy strategy) {
+    
+    boolean hasCategoricalVecs = false;
+    for(Vec vec : trainingFrame.vecs()) {
+      if(vec.isCategorical()) {
+        hasCategoricalVecs = true;
+        break;
+      }
+    }
+    
+    if(hasCategoricalVecs) {
+
+      //TODO Either perform random grid search over parameters or introduce evolutionary selection algo
+      BlendingParams blendingParams = new BlendingParams(5, 1);
+      String[] columnsToEncode = strategy.getColumnsToEncode();
+      boolean withBlendedAvg = true;
+      boolean imputeNAsWithNewCategory = true;
+      int seed = 1234; // TODO make it a parameter for users to set
+      byte holdoutType = TargetEncoder.DataLeakageHandlingStrategy.KFold;
+
+      TargetEncoder tec = new TargetEncoder(columnsToEncode, blendingParams);
+
+      Frame trainingFrame = getTrainingFrame();
+      String responseColumnName = trainingFrame.name(trainingFrame.find(getResponseColumn()));
+      String foldColumnName = trainingFrame.name(trainingFrame.find(getFoldColumn()));
+
+      Map<String, Frame> encodingMap = tec.prepareEncodingMap(trainingFrame, responseColumnName, foldColumnName, imputeNAsWithNewCategory);
+      switch (holdoutType) {
+        case TargetEncoder.DataLeakageHandlingStrategy.KFold:
+          this.trainingFrame = tec.applyTargetEncoding(trainingFrame, responseColumnName, encodingMap, holdoutType, foldColumnName, withBlendedAvg, imputeNAsWithNewCategory, seed);
+          this.validationFrame = tec.applyTargetEncoding(getValidationFrame(), responseColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName, withBlendedAvg, imputeNAsWithNewCategory, seed);
+          this.leaderboardFrame = tec.applyTargetEncoding(getLeaderboardFrame(), responseColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName, withBlendedAvg, imputeNAsWithNewCategory, seed);
+          break;
+        case TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut:
+          //TODO
+      }
+    }
+  }
+  
+  private void handleEarlyStoppingParameters(AutoMLBuildSpec buildSpec) {
+    if (buildSpec.build_control.stopping_criteria.stopping_tolerance() == AUTO_STOPPING_TOLERANCE) {
+      buildSpec.build_control.stopping_criteria.set_default_stopping_tolerance_for_frame(this.trainingFrame);
+      userFeedback.info(Stage.Workflow, "Setting stopping tolerance adaptively based on the training frame: " +
+              buildSpec.build_control.stopping_criteria.stopping_tolerance());
+    } else {
+      userFeedback.info(Stage.Workflow, "Stopping tolerance set by the user: " + buildSpec.build_control.stopping_criteria.stopping_tolerance());
+      double default_tolerance = AutoMLBuildSpec.AutoMLStoppingCriteria.default_stopping_tolerance_for_frame(this.trainingFrame);
+      if (buildSpec.build_control.stopping_criteria.stopping_tolerance() < 0.7 * default_tolerance){
+        userFeedback.warn(Stage.Workflow, "Stopping tolerance set by the user is < 70% of the recommended default of " + default_tolerance + ", so models may take a long time to converge or may not converge at all.");
+      }
+    }
+  }
+
+  private void handleCVParameters(AutoMLBuildSpec buildSpec) {
+    if (null != buildSpec.input_spec.fold_column && 5 != buildSpec.build_control.nfolds)
+      throw new H2OIllegalArgumentException("Cannot specify fold_column and a non-default nfolds value at the same time.");
+    if (null != buildSpec.input_spec.fold_column)
+      userFeedback.warn(Stage.Workflow, "Custom fold column, " + buildSpec.input_spec.fold_column + ", will be used. nfolds value will be ignored.");
   }
 
 
@@ -481,6 +542,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     this.validationFrame = DKV.getGet(buildSpec.input_spec.validation_frame);
     this.blendingFrame = DKV.getGet(buildSpec.input_spec.blending_frame);
     this.leaderboardFrame = DKV.getGet(buildSpec.input_spec.leaderboard_frame);
+
+    if (null == this.origTrainingFrame)
+      throw new H2OIllegalArgumentException("No training data has been specified, either as a path or a key.");
 
     Map<String, Frame> compatible_frames = new LinkedHashMap(){{
       put("training", origTrainingFrame);
