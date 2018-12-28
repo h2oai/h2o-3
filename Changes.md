@@ -2,7 +2,7 @@
 
 ## H2O
 
-### Xu (3.22.1.1) - 12/27/2018
+### Xu (3.22.1.1) - 12/28/2018
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-xu/1/index.html</a>
 
