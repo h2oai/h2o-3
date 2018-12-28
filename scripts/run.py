@@ -294,7 +294,6 @@ class H2OCloudNode(object):
         self.ldap_config_path = ldap_config_path
         self.jvm_opts = jvm_opts
 
-        self.port = -1
         self.pid = -1
         self.output_file_name = ""
         self.child = None
@@ -303,9 +302,9 @@ class H2OCloudNode(object):
         self.test_ssl = test_ssl
 
         # Choose my base port number here.  All math is done here.  Every node has the same
-        # base_port and calculates it's own my_base_port.
+        # base_port and calculates it's own port.
         ports_per_node = 2
-        self.my_base_port = \
+        self.port = \
             self.base_port + \
             (self.cloud_num * self.nodes_per_cloud * ports_per_node) + \
             (self.node_num * ports_per_node)
@@ -345,8 +344,8 @@ class H2OCloudNode(object):
         cmd += ["-cp", classpath,
                main_class,
                "-name", self.cloud_name,
-               "-baseport", str(self.my_base_port),
-               "-ga_opt_out"]
+               "-port", str(self.port),
+               "-ip", self.ip]
 
         if self.ldap_config_path is not None:
             cmd.append('-login_conf')
@@ -515,7 +514,6 @@ class H2OCloudNode(object):
         s = ""
         s += "    node {}\n".format(self.node_num)
         s += "        xmx:          {}\n".format(self.xmx)
-        s += "        my_base_port: {}\n".format(self.my_base_port)
         s += "        port:         {}\n".format(self.port)
         s += "        pid:          {}\n".format(self.pid)
         return s
