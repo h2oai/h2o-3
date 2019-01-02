@@ -112,7 +112,7 @@ h2o.target_encode_transform <- function(frame, x, y, target_encode_map, holdout_
 
     transformed <- .eval.driver(.newExpr("target.encoder.transform", .arrayArgumentHelper(emKeys), .arrayArgumentHelper(emFrameKeys),
                                 frame, .arrayArgumentHelper(x), .quote(tolower(holdout_type)), .quote(y), .quote(fold_column_name),
-                                blended_avg, inflection_point, smoothing, noise, seed, TRUE)
+                                blended_avg, inflection_point, smoothing, noise, seed)
     )
     return(transformed)
 }
