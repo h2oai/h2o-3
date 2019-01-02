@@ -1,0 +1,778 @@
+
+<!DOCTYPE html>
+<html lang="en-US" xmlns:fb="https://www.facebook.com/2008/fbml" xmlns:addthis="https://www.addthis.com/help/api-spec"  prefix="og: http://ogp.me/ns#">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=0, minimum-scale=1.0, maximum-scale=1.0">
+  <title>Enterprise Steam Releases</title>
+
+  <link rel="canonical" href="http://docs.h2o.ai" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="H2O.ai Documentation" />
+  <meta property="og:url" content="http://docs.h2o.ai" />
+  <meta property="og:site_name" content="H2O.ai" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="H2O.ai Documentation" />
+  <!-- / Yoast SEO plugin. -->
+
+  <link rel='dns-prefetch' href='../assets/addthis/s7.addthis.com' />
+  <link rel='dns-prefetch' href='../assets/addthis/s.w.org' />
+
+  <style type="text/css">
+    img.wp-smiley,
+    img.emoji {
+      display: inline !important;
+      border: none !important;
+      box-shadow: none !important;
+      height: 1em !important;
+      width: 1em !important;
+      margin: 0 .07em !important;
+      vertical-align: -0.1em !important;
+      background: none !important;
+      padding: 0 !important;
+    }
+  </style>
+
+  <link rel='stylesheet' id='bodhi-svgs-attachment-css'  href='../assets/styleseets/svgs-attachment.css' type='text/css' media='all' />
+<!--  <link rel='stylesheet' href='../assets/stylesheets/style.css?ver=4.6.1' type='text/css' media='all' />
+  <link rel='stylesheet' id='addthis_all_pages-css'  href='../assets/stylesheets/addthis_wordpress_public.min.css?ver=4.9.7' type='text/css' media='all' /> -->
+  <link rel='stylesheet' id='megamenu-css' href='../assets/maxmegamenu/maxmegamenu_style.css?ver=5b6e52' type='text/css' media='all' />
+  <script type='text/javascript' src='../assets/javascripts/jquery.js?ver=1.12.4'></script>
+  <script type='text/javascript' src='../assets/javascripts/jquery-migrate.min.js?ver=1.4.1'></script>
+  <script type='text/javascript'>
+  /* <![CDATA[ */
+  var cssTarget = "img.style-svg";
+  var ForceInlineSVGActive = "false";
+  /* ]]> */
+  </script>
+  <script type='text/javascript' src='../assets/javascripts/svgs-inline-min.js'></script>
+  <link rel='https://api.w.org/' href='../assets/addthis/wp-json' />
+  <link rel="EditURI" type="application/rsd+xml" title="RSD" href="../assets/addthis/xmlrpc.php?rsd" />
+  <link rel="wlwmanifest" type="application/wlwmanifest+xml" href="../assets/wp-includes/wlwmanifest.xml" /> 
+  <link rel='shortlink' href='https://www.h2o.ai/?p=2579' />
+  <link rel="apple-touch-icon" sizes="180x180" href="../assets/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="../assets/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="../assets/imagesfavicon-16x16.png">
+  <link rel="manifest" href="../assets/manifest/site.webmanifest" />
+  <link rel="mask-icon" href="../assets/addthis/safari-pinned-tab.svg" color="#5bbad5">
+  <link rel="shortcut icon" href="../assets/images/favicon.ico">
+  <meta name="msapplication-TileColor" content="#da532c">
+  <meta name="msapplication-config" content="../assets/addthis/browserconfig.xml" />
+  <meta name="theme-color" content="#ffffff"><link rel="icon" href="../assets/images/favicon-150x150.png" sizes="32x32" />
+  <link rel="icon" href="../assets/images/favicon.png" sizes="192x192" />
+  <link rel="apple-touch-icon-precomposed" href="../assets/images/favicon.png" />
+  <meta name="msapplication-TileImage" content="../assets/images/favicon.png" />
+
+    <!-- Typekit fonts -->
+    <link rel="stylesheet" href="../assets/stylesheets/gbq5zcz.css" />
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="../assets/stylesheets/main.css" />
+    <link rel='stylesheet' href='../assets/vendor/bootstrap.min.css' type='text/css' />
+    <link rel="stylesheet" href="../assets/stylesheets/global.css" />
+
+
+
+    <!-- Marketo forms script-->
+    <script src="../assets/javascripts/forms2.min.js"></script>
+</head>
+
+<body class="page-template-default page page-id-2579 page-parent h2o" ng-app="h2oApp">
+  <header>
+  <div class="container">
+    <div class="hamburger">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+    <div class="logo">
+      <a href="https://www.h2o.ai">
+        <img src="../assets/images/h2o_logo.svg" alt="Navigation Logo">
+      </a>
+    </div>
+    <nav>
+      <div class="nav-wrapper">
+        <!-- Top Navigation -->
+        <div class="top-nav">
+          <ul>
+            <li class="search-button top-list">
+              <img src="../assets/images/search_button.svg" alt="search button"/>
+            </li>
+            <li class="top-list"><a href="https://www.h2o.ai/blog/" data-attr="Blog"><span>Blog</span></a></li>
+            <li class="top-list"><a href="https://www.h2o.ai/community/" data-attr="Community"><span>Communities</span></a></li>
+            <li class="top-list"><a href="https://www.h2o.ai/academic/" data-attr="Academics"><span>Academic</span></a></li>
+            <li class="top-list"><a href="http://docs.h2o.ai" data-attr="Documentation"><span>Documentation</span></a></li>
+            <li class="top-list"><a href="https://www.h2o.ai/download/" data-attr="Downloads"><span>Downloads</span></a></li>
+            <li class="top-list"><a href="https://www.h2o.ai/company/contact/" data-attr="Contact Us"><span>Contact Us</span></a></li>
+          </ul>
+        </div>
+
+        <!-- Main Navigation -->
+        <div class="main-nav">
+          <ul>
+            <li>
+                <a href="https://www.h2o.ai/products/" data-attr="Products"><span>Products</span></a>
+              <div class="sub-nav">
+                <h6><a href="https://www.h2o.ai/products/" class="link-text">Product Overview</a></h6>
+                <div class="two-third">
+                  <ul>
+                    <li class="heading">Open Source Platforms</li>
+                    <li><a href="https://www.h2o.ai/products/h2o/">
+                        <span class="title">H2O</span>
+                        <span class="description">The #1 open source machine learning platform.</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="https://www.h2o.ai/products/h2o-sparkling-water/">
+                        <span class="title">Sparkling Water</span>
+                        <span class="description">H2O open source integration with Spark.</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="https://www.h2o.ai/products/h2o4gpu/">
+                        <span class="title">H2O4GPU</span>
+                        <span class="description">H2O open source optimized for NVIDIA GPU.</span>
+                      </a>
+                    </li>
+                  </ul>
+                  <ul>
+                    <li class="heading">Enterprise Platforms</li>
+                    <li>
+                      <a href="https://www.h2o.ai/products/h2o-driverless-ai/">
+                        <span class="title">Driverless AI</span>
+                        <span class="description">The automatic machine learning platform.</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="https://www.h2o.ai/enterprise-support/">
+                        <span class="title">Enterprise Support</span>
+                        <span class="description">Get help and technology from the experts in H2O.</span>
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+                <div class="one-third">
+                  <ul>
+                    <li>
+                      <a href="https://www.h2o.ai/try-driverless-ai/">
+                        <span class="title">Getting Started</span>
+                        <span class="description">Get H2O Driverless AI for a 21 free trial today.</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="https://www.h2o.ai/download/">
+                        <span class="title">Downloads</span>
+                        <span class="description">Download the latest and greatest that H2O.ai has to offer.</span>
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </li>
+            <li>
+              <a href="/solutions/" data-attr="Solutions"><span>Solutions</span></a>
+              <div class="sub-nav">
+                <h6><a href="/solutions/" class="link-text">Solutions Overview</a></h6>
+                <div class="two-third">
+                  <ul>
+                    <li class="heading">By Industry</li>
+                    <li><a href="https://www.h2o.ai/financial-services/">
+                        <span class="title">Financial Services</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="https://www.h2o.ai/insurance/">
+                        <span class="title">Insurance</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="https://www.h2o.ai/healthcare/">
+                        <span class="title">Healthcare</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="https://www.h2o.ai/marketing/">
+                        <span class="title">Marketing</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="https://www.h2o.ai/telecom/">
+                        <span class="title">Telecom</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="https://www.h2o.ai/manufacturing/">
+                        <span class="title">Manufacturing</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="https://www.h2o.ai/retail/">
+                        <span class="title">Retail</span>
+                      </a>
+                    </li>
+                  </ul>
+                  <ul>
+                    <li class="heading">By Use Cases</li>
+                    <li>
+                      <a href="https://www.h2o.ai/solutions/usecases">
+                        <span class="title">View All Use Cases</span>
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+                <div class="one-third">
+                  <ul>
+                    <li>
+                      <a href="https://www.h2o.ai/products/h2o/">
+                        <span class="title">Why H2O.ai</span>
+                        <span class="description">We are the open source leader in AI with the mission to democratize AI.</span>
+                      </a>
+                    </li>
+
+                  </ul>
+                </div>
+              </div>
+            </li>
+            <li>
+              <a href="https://www.h2o.ai/customer-stories/" data-attr="Customers"><span>Customers</span></a>
+              <div class="sub-nav">
+                <h6><a href="https://www.h2o.ai/customer-stories/" class="link-text">Customers Overview</a></h6>
+                <div class="two-third">
+                  <ul>
+                    <li class="heading">H2O In Action</li>
+                    <li><a href="https://www.h2o.ai/customer-stories/">
+                        <span class="title">View All Case Studies</span>
+                      </a></li>
+                  </ul>
+                  <ul>
+                    <li class="heading">Customer Stories By Industry</li>
+                    <li>
+                      <a href="https://www.h2o.ai/customer-stories/?industry=financial-services">
+                        <span class="title">Financial Services</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="https://www.h2o.ai/customer-stories/?industry=insurance">
+                        <span class="title">Insurance</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="https://www.h2o.ai/customer-stories/?industry=healthcare">
+                        <span class="title">Healthcare</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="https://www.h2o.ai/customer-stories/?industry=marketing">
+                        <span class="title">Marketing</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="https://www.h2o.ai/customer-stories/?industry=telecom">
+                        <span class="title">Telecom</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="https://www.h2o.ai/customer-stories/?industry=manufacturing">
+                        <span class="title">Manufacturing</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="https://www.h2o.ai/customer-stories/?industry=retail">
+                        <span class="title">Retail</span>
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+                <div class="one-third">
+                  <ul>
+                    <li>
+                      <a href="https://www.h2o.ai/customer-stories/">
+                        <span class="title">Featured Case Study</span>
+                        <span class="description"> PayPal uses H2O Driverless AI to detect fraud more accurately.</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="https://www.h2o.ai/gartner-magic-quadrant/">
+                        <span class="title">Gartner names H2O.ai a leader.</span>
+                        <span class="description">H2O.ai is a leader in the magic quadrant for machine learning and data science platforms. Get the report.</span>
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </li>
+            <li><a href="https://www.h2o.ai/partners/" data-attr="Partners"><span>Partners</span></a>
+            </li>
+            <li><a href="https://support.h2o.ai/support/home" data-attr="Support"><span>Support</span></a>
+              <div class="sub-nav">
+                <h6><a href="https://support.h2o.ai/support/home" class="link-text">Support Overview</a></h6>
+                <div class="two-third">
+                  <ul>
+                    <li class="heading">Support</li>
+                    <li>
+                      <a href="https://www.h2o.ai/support-index/">
+                        <span class="title">Support Home</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="https://support.h2o.ai/support/login">
+                        <span class="title">Customer Portal</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="https://support.h2o.ai/support/solutions">
+                        <span class="title">Knowledge Base</span>
+                      </a>
+                    </li>
+                  </ul>
+                  <ul>
+                    <li class="heading">Documentation</li>
+                    <li>
+                      <a href="http://docs.h2o.ai/#driverless-ai">
+                        <span class="title">Driverless AI</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="http://docs.h2o.ai/#h2o">
+                        <span class="title">H2O-3</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="http://docs.h2o.ai/#sparkling-water">
+                        <span class="title">Sparkling Water</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="http://docs.h2o.ai/#h2o4gpu">
+                        <span class="title">H2O4GPU</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="http://docs.h2o.ai/#enterprise-steam">
+                        <span class="title">Enterprise Steam</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="http://docs.h2o.ai/#steam">
+                        <span class="title">Steam</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="http://docs.h2o.ai/#resources">
+                        <span class="title">Additional Resources</span>
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+                <div class="one-third">
+                  <ul>
+                    <li>
+                      <a href="https://www.h2o.ai/enterprise-support">
+                        <span class="title">Enterprise Support</span>
+                        <span class="description">Get help and technology from the experts in H2O.</span>
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </li>
+            <li class="company"><a href="/company/" data-attr="Company"><span>Company</span></a>
+              <div class="sub-nav">
+                <h6><a href="https://www.h2o.ai/company/" class="link-text">Company Overview</a></h6>
+                <div class="two-third">
+                  <ul>
+                    <li class="heading">Why H2O.ai</li>
+                    <li>
+                      <a href="https://www.h2o.ai/company/doing-good/">
+                        <span class="title">Doing Good</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="https://www.h2o.ai/company/awards">
+                        <span class="title">Awards</span>
+                      </a>
+                    </li>
+                  </ul>
+                  <ul>
+                    <li class="heading">Who Is H2O.ai</li>
+                    <li>
+                      <a href="https://www.h2o.ai/company/team/">
+                        <span class="title">Team</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="https://www.h2o.ai/company/">
+                        <span class="title">About Us</span>
+                      </a>
+                    </li>
+                  </ul>
+                  <ul>
+                    <li class="heading">Press</li>
+                    <li>
+                      <a href="https://www.h2o.ai/company/news/">
+                        <span class="title">In the News</span>
+                      </a>
+                    </li>
+                  </ul>
+                  <ul>
+                    <li class="heading">Events</li>
+                    <li>
+                      <a href="https://www.h2o.ai/events-overview/">
+                        <span class="title">All Events</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="http://h2oworld.h2o.ai/h2o-world-san-francisco">
+                        <span class="title">H2O World</span>
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </li>
+            <li class="search-responsive">
+              <form action="https://www.h2o.ai/">
+                <input type="text" placeholder="Start your search here..." name="s" class="search-text">
+                <input class="btn-default" type="submit" value="Search">
+              </form>
+            </li>
+            <li class="try-btn"><a href="https://www.h2o.ai/try-driverless-ai/" class="btn-default">Free Trial</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+   </div>
+
+
+  <!-- Search Form -->
+  <div class="search-div">
+    <div class="container">
+      <div class="close-icon">
+        <span class="icon">
+          <img src="../assets/images/cancel.svg" alt="Search Close"/>
+        </span>
+        <h6>Return to page</h6>
+      </div>
+      <form action="/">
+        <input type="text" placeholder="Start your search here..." name="s" class="search-text">
+        <input class="btn-default" type="submit" value="Search">
+      </form>
+    </div>
+  </div>
+</header>
+
+  <!-- Header background/banner for white header background -->
+  <div class="header-bg">
+  </div>
+  <section class="gbpr-popup">
+    <div class="container">
+      <p>By using this website you agree to our use of cookies. <a href="https://www.h2o.ai/privacy">Read H2O.ai’s privacy policy.</a>
+        <span class="close-popup"><img src="../assets/images/close_popup.svg" alt="Close icon"></span>
+      </p>
+    </div>
+  </section>
+
+  <section class="no-padding banner-fourth-level">
+    <div class="bg-img">
+      <img width="1400" height="240" src="../assets/images/third_level_banner.jpg" class="attachment-full size-full" alt="Banner background" src="../assets/images/third_level_banner.jpg 1400w, assets/images/third_level_banner-300x51.jpg 300w, assets/images/third_level_banner-768x132.jpg 768w, assets/images/third_level_banner-1024x176.jpg 1024w, assets/imags/third_level_banner-350x60.jpg 350w" sizes="(max-width: 1400px) 100vw, 1400px" />  
+    </div>
+    <div class="v-middle-wrapper">
+      <div class="v-middle-inner container">
+        <div class="v-middle">
+          <div class="content text-left">
+              <h2 class="wow fadeInUp" data-wow-delay=".3s"><span class="bg-black text-yellow">Enterprise Steam</span> Releases</h2>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+<!-- Driverless AI section -->
+
+<section class="download-products bg-white " id="driverless-ai">
+  <div class="container">
+    <div class="column-wrapper">
+      <div class="col-two left text-left">
+        <h4 class="underline-yellow wow wefadeInUp">Enterprise Steam Prior Releases</h4>
+        <div style="padding-top: 18px;">
+          <h6>Below are links to build pages for prior releases.</h6>
+          <p class="prior"><a href="https://s3.amazonaws.com/steam-release/enterprise-steam/STEAM-1.4.1.74/index.html">1.4.1</a></p>
+          <p class="prior"><a href="https://s3.amazonaws.com/steam-release/enterprise-steam/STEAM-1.4.0.71/index.html">1.4.0</a></p>
+          <p class="prior"><a href="https://s3.amazonaws.com/steam-release/enterprise-steam/STEAM-1.2.5.51/index.html">1.2.5</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!--Begin Footer -->
+
+<section class="footer">
+  <div class="container">
+    <div class="footer-wrap">
+      <div class="col-four-outer">
+        
+        <div class="col-four">
+          <span>Why H2O.ai</span>
+          <ul class="internal-links">
+            <li><a href="https://www.h2o.ai/company/" class="link">About Us</a></li>
+            <li><a href="https://www.h2o.ai/company/team/" class="link">The Team</a></li>
+            <li><a href="https://www.h2o.ai/company/doing-good/" class="link">H2O.ai Gives Back</a></li>
+            <li><a href="https://www.h2o.ai/company/news/" class="link">News</a></li>
+          </ul>
+        </div>
+        <div class="col-four">
+          <span>Products</span>
+          <ul class="internal-links">
+            <li><a href="https://www.h2o.ai/products/h2o/" class="link">H2O</a></li>
+            <li><a href="https://www.h2o.ai/products/h2o-driverless-ai/" class="link">Driverless AI</a></li>
+            <li><a href="https://www.h2o.ai/products/h2o-sparkling-water/" class="link">Sparkling Water</a></li>
+            <li><a href="https://www.h2o.ai/products/h2o4gpu/" class="link">H2O4GPU</a></li>
+          </ul>
+        </div>
+        <div class="col-four">
+          <span>Getting Going</span>
+          <ul class="internal-links">
+            <li><a href="http://docs.h2o.ai/" class="link">Documentation</a></li>
+            <li><a href="https://www.h2o.ai/events-overview/" class="link">Events</a></li>
+            <li><a href="https://www.h2o.ai/events-overview/?event-cat=webinars" class="link">Webinars</a></li>
+            <li><a href="https://www.h2o.ai/solutions/usecases/" class="link">Use Cases</a></li>
+            <li><a href="https://www.h2o.ai/customer-stories/" class="link">Customers</a></li>
+          </ul>
+        </div>
+        <div class="col-four">
+          <span>Quick Links</span>
+          <ul class="internal-links">
+            <li><a href="https://www.h2o.ai/careers/" class="link">Careers</a></li>
+            <li><a href="https://www.h2o.ai/company/contact/" class="link">Contact Us</a></li>
+            <li><a href="https://www.h2o.ai/community/" class="link">Communities</a></li>
+            <li><a href="https://www.h2o.ai/download/" class="link">Downloads</a></li>
+            <li><a href="https://www.h2o.ai/resources/" class="link">Resources</a></li>
+            <li><a href="https://www.h2o.ai/academic/" class="link">Academics</a></li>
+          </ul>
+        </div>
+        
+      </div>
+      <div class="sign-up">
+        <p>Catch up on the latest products updates, community events and other news.</p>
+        <div class="sign-up-mail">
+
+          <!-- Marketo form -->
+          <form data-formId="1349" style="margin: 0 auto;" data-formInstance="two"></form>
+        </div>
+
+        <div class="social-share">
+          <ul>
+            <li>
+              <a href="https://gitter.im/h2oai/h2o-3" target="_blank">
+                  <!--<img src="/templates/dist/images/homepage/Gitter.svg" alt="social-icon">-->
+
+                <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+                     viewBox="0 0 200 200" style="enable-background:new 0 0 200 200;" xml:space="preserve">
+                <style type="text/css">
+                  .st0{fill:#FFFFFF;}
+                </style>
+                <path class="st0" d="M100,0C44.8,0,0,44.8,0,100s44.8,100,100,100s100-44.8,100-100S155.2,0,100,0z M73.6,117.7H63.1V40h10.5V117.7z
+                      M94.6,160H84.1V57.8h10.5V160z M115.9,160h-10.5V57.8h10.5V160z M136.9,117.7h-10.5V57.8h10.5V117.7z"/>
+                </svg>
+              </a>
+            </li>
+            <li>
+              <a href="https://github.com/h2oai" target="_blank">
+                  <!--<img src="/templates/dist/images/homepage/Github.svg" alt="social-icons">-->
+                <svg version="1.1" id="Layer_2" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+                     viewBox="0 0 400 400" style="enable-background:new 0 0 400 400;" xml:space="preserve">
+                <style type="text/css">
+                  .st0{fill:#FFFFFF;}
+                </style>
+                <g id="Dark_Blue">
+                </g>
+                <g id="Logo__x2014__FIXED">
+                <g>
+                <path class="st0" d="M200.6,0C90.5,0,1.2,89.3,1.2,199.4c0,88.1,57.1,162.9,136.4,189.2c10,1.8,13.6-4.3,13.6-9.6
+                      c0-4.8-0.2-20.5-0.3-37.1c-55.5,12.1-67.2-23.5-67.2-23.5c-9.1-23-22.1-29.2-22.1-29.2c-18.1-12.4,1.4-12.1,1.4-12.1
+                      c20,1.4,30.6,20.6,30.6,20.6c17.8,30.5,46.7,21.7,58,16.6c1.8-12.9,7-21.7,12.7-26.7c-44.3-5-90.9-22.1-90.9-98.6
+                      c0-21.8,7.8-39.6,20.5-53.5c-2.1-5-8.9-25.3,1.9-52.8c0,0,16.7-5.4,54.9,20.4c15.9-4.4,33-6.6,49.9-6.7c16.9,0.1,34,2.3,50,6.7
+                      c38.1-25.8,54.8-20.4,54.8-20.4c10.9,27.5,4,47.8,2,52.8c12.8,14,20.5,31.8,20.5,53.5c0,76.6-46.7,93.5-91.1,98.4
+                      c7.2,6.2,13.5,18.3,13.5,36.9c0,26.7-0.2,48.2-0.2,54.7c0,5.3,3.6,11.5,13.7,9.6C342.9,362.2,400,287.5,400,199.4
+                      C400,89.3,310.7,0,200.6,0z"/>
+                <path class="st0" d="M76.7,286.3c-0.4,1-2,1.3-3.4,0.6c-1.4-0.7-2.3-2-1.8-3c0.4-1,2-1.3,3.4-0.6C76.4,284,77.2,285.3,76.7,286.3
+                      L76.7,286.3z"/>
+                <path class="st0" d="M84.8,295.3c-1,0.9-2.8,0.5-4.1-0.9c-1.3-1.4-1.5-3.3-0.6-4.1c1-0.9,2.8-0.5,4.1,0.9
+                      C85.5,292.6,85.8,294.4,84.8,295.3L84.8,295.3z"/>
+                <path class="st0" d="M92.6,306.8c-1.2,0.9-3.2,0.1-4.5-1.7c-1.2-1.8-1.2-3.9,0-4.8s3.2-0.1,4.5,1.7
+                      C93.9,303.8,93.9,306,92.6,306.8L92.6,306.8z"/>
+                <path class="st0" d="M103.4,317.9c-1.1,1.2-3.4,0.9-5.1-0.8c-1.7-1.6-2.2-3.9-1.1-5.1s3.5-0.9,5.2,0.8
+                      C104,314.4,104.6,316.7,103.4,317.9L103.4,317.9z"/>
+                <path class="st0" d="M118.3,324.4c-0.5,1.6-2.7,2.3-5,1.6c-2.3-0.7-3.7-2.5-3.3-4.1c0.5-1.6,2.7-2.3,5-1.6
+                      C117.2,321,118.7,322.8,118.3,324.4L118.3,324.4z"/>
+                <path class="st0" d="M134.6,325.6c0.1,1.6-1.9,3-4.2,3c-2.4,0.1-4.3-1.3-4.3-2.9c0-1.7,1.9-3,4.3-3.1
+                      C132.6,322.6,134.6,323.9,134.6,325.6L134.6,325.6z"/>
+                <path class="st0" d="M149.8,323c0.3,1.6-1.4,3.3-3.7,3.7c-2.3,0.4-4.5-0.6-4.8-2.2s1.4-3.3,3.7-3.7
+                      C147.4,320.4,149.5,321.3,149.8,323L149.8,323z"/>
+                </g>
+                </g>
+                <g id="Annotations">
+                </g>
+                </svg>
+              </a>
+            </li>
+            <li>
+              <a href="https://twitter.com/h2oai" target="_blank">
+                <svg version="1.1" id="Layer_3" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+                     viewBox="0 0 400 400" style="enable-background:new 0 0 400 400;" xml:space="preserve">
+                <style type="text/css">
+                  .st0{fill:#FFFFFF;}
+                </style>
+                <g id="Dark_Blue_1">
+                <circle class="st0 bg-hover" cx="200" cy="200" r="200"/>
+                </g>
+                <g id="Logo__x2014__FIXED_1">
+                <path class="" style="fill: #000;" d="M163.4,305.5c88.7,0,137.2-73.5,137.2-137.2c0-2.1,0-4.2-0.1-6.2c9.4-6.8,17.6-15.3,24.1-25
+                      c-8.6,3.8-17.9,6.4-27.7,7.6c10-6,17.6-15.4,21.2-26.7c-9.3,5.5-19.6,9.5-30.6,11.7c-8.8-9.4-21.3-15.2-35.2-15.2
+                      c-26.6,0-48.2,21.6-48.2,48.2c0,3.8,0.4,7.5,1.3,11c-40.1-2-75.6-21.2-99.4-50.4c-4.1,7.1-6.5,15.4-6.5,24.2
+                      c0,16.7,8.5,31.5,21.5,40.1c-7.9-0.2-15.3-2.4-21.8-6c0,0.2,0,0.4,0,0.6c0,23.4,16.6,42.8,38.7,47.3c-4,1.1-8.3,1.7-12.7,1.7
+                      c-3.1,0-6.1-0.3-9.1-0.9c6.1,19.2,23.9,33.1,45,33.5c-16.5,12.9-37.3,20.6-59.9,20.6c-3.9,0-7.7-0.2-11.5-0.7
+                      C110.8,297.5,136.2,305.5,163.4,305.5"/>
+                </g>
+                <g id="Annotations_1">
+                </g>
+                </svg>
+              </a>
+            </li>
+            <li>
+              <a href="https://www.linkedin.com/company/0xdata/" target="_blank">
+                  <!--<img src="/templates/dist/images/homepage/LinkedIn.svg" alt="linkdin">-->
+                <svg version="1.1" id="Layer_4" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+                     viewBox="0 0 400 400" style="enable-background:new 0 0 400 400;" xml:space="preserve">
+                <style type="text/css">
+                  .st0{fill:#FFFFFF;}
+                </style>
+                <g id="Dark_Blue_2">
+                </g>
+                <g id="Logo__x2014__FIXED_2">
+                <path class="st0" d="M200,0C89.5,0,0,89.5,0,200s89.5,200,200,200s200-89.5,200-200S310.5,0,200,0z M146,294.4h-42.2V158.7H146
+                      V294.4z M124.9,140.1c-13.6,0-24.5-11-24.5-24.5s10.9-24.5,24.5-24.5c13.5,0,24.5,11,24.5,24.5
+                      C149.3,129.1,138.3,140.1,124.9,140.1z M304,294.4h-42.2v-66c0-15.7-0.3-36-21.9-36c-22,0-25.3,17.2-25.3,34.9v67.2h-42.1V158.7
+                      h40.4v18.6h0.6c5.6-10.7,19.4-21.9,39.9-21.9c42.7,0,50.6,28.1,50.6,64.7V294.4z"/>
+                </g>
+                <g id="Annotations_2">
+                </g>
+                </svg>
+
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <div class="footer-logo">
+          <div class="copyright">
+            <div class="img-box">
+              <a href="/">
+                <img src="../assets/images/h2o_logo.svg" alt="H2O Logo">
+              </a>
+            </div>
+            <p>Copyright © 2018 H2O.ai. All rights reserved.</p>
+            <ul class="links-legal">
+              <li><a href="/privacy">Privacy Policy</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+
+<!-- Add video overlay on all pages created by us -->
+<section class="video-overlay no-padding">
+  <div class="outer-box">
+    <div class="container-outer">
+      <iframe src="" allowfullscreen="allowfullscreen" 
+              mozallowfullscreen="mozallowfullscreen" 
+              msallowfullscreen="msallowfullscreen" 
+              oallowfullscreen="oallowfullscreen" 
+              webkitallowfullscreen="webkitallowfullscreen">           
+      </iframe>
+      <button id="close-video" type="button" class="close-btn"><img src="../assets/images/close-btn.png" alt="Close button"></button>
+    </div>
+  </div>
+</section>
+<!-- Call all scripts in footer to avoid render blocking -->
+<script type="text/javascript" src="../assets/javascripts/jquery.min.js"></script>
+<script type="text/javascript" src="../assets/javascripts/plugins.js"></script>
+<script type="text/javascript" src="../assets/javascripts/global.js"></script>
+<script type="text/javascript" src="../assets/javascripts/main.js"></script>
+
+<!-- Load google maps API asynchronously with deferred for legacy support -->
+<!--<script src="../assets/javascripts/google.maps" async defer></script>-->
+
+<!-- Angular scripts -->
+<!-- TODO: Automate & compile the app assets -->
+<!-- 1 file for angular's main files -->
+<script type="text/javascript" src="../assets/javascripts/angular.min.js"></script>
+<script type="text/javascript" src="../assets/javascripts/angular-sanitize.min.js"></script>
+
+<!-- 1 file for all of these files combined -->
+<script type="text/javascript" src="../assets/javascripts/app.js"></script>
+<script type="text/javascript" src="../assets/javascripts/filters.js"></script>
+<script type="text/javascript" src="../assets/javascripts/directive.js"></script>
+<script type="text/javascript" src="../assets/javascripts/customerCtrl.js"></script>
+<script type="text/javascript" src="../assets/javascripts/blogCtrl.js"></script>
+<script type="text/javascript" src="../assets/javascripts/eventsCtrl.js"></script>
+<script type="text/javascript" src="../assets/javascripts/newsCtrl.js"></script>
+<script type="text/javascript" src="../assets/javascripts/usecasesCtrl.js"></script>
+
+<script data-cfasync="false" type="text/javascript">if (window.addthis_product === undefined) { window.addthis_product = "wpp"; } if (window.wp_product_version === undefined) { window.wp_product_version = "wpp-6.1.6"; } if (window.wp_blog_version === undefined) { window.wp_blog_version = "4.9.7"; } if (window.addthis_share === undefined) { window.addthis_share = {}; } if (window.addthis_config === undefined) { window.addthis_config = {"data_track_clickback":true,"ui_atversion":"300"}; } if (window.addthis_plugin_info === undefined) { window.addthis_plugin_info = {"info_status":"enabled","cms_name":"WordPress","plugin_name":"Share Buttons by AddThis","plugin_version":"6.1.6","plugin_mode":"AddThis","anonymous_profile_id":"wp-175df95b63dbe232ffb43b1cdbf39490","page_info":{"template":"pages","post_type":""},"sharing_enabled_on_post_via_metabox":false}; } 
+                    (function() {
+                      var first_load_interval_id = setInterval(function () {
+                        if (typeof window.addthis !== 'undefined') {
+                          window.clearInterval(first_load_interval_id);
+                          if (typeof window.addthis_layers !== 'undefined' && Object.getOwnPropertyNames(window.addthis_layers).length > 0) {
+                            window.addthis.layers(window.addthis_layers);
+                          }
+                          if (Array.isArray(window.addthis_layers_tools)) {
+                            for (i = 0; i < window.addthis_layers_tools.length; i++) {
+                              window.addthis.layers(window.addthis_layers_tools[i]);
+                            }
+                          }
+                        }
+                     },1000)
+                    }());
+</script>
+<script type='text/javascript' src='../assets/addthis/addthis_widget.js?ver=4.9.7#pubid=ra-5b4db5e927ab6841'></script>
+<script type='text/javascript'>
+/* <![CDATA[ */
+var countVars = {"disqusShortname":"h2o-ai"};
+/* ]]> */
+</script>
+<script type='text/javascript' src='../assets/javascripts/comment_count.js?ver=3.0.16'></script>
+<script type='text/javascript' src='../assets/javascripts/wp-embed.min.js?ver=4.9.7'></script>
+
+  <!-- Back to top -->
+<!--  <script type="text/javascript">
+      $(window).load(function() {
+        $(".MCDropDownHotSpot").click();
+      });     
+      $(window).scroll(function() {
+        if ($(this).scrollTop()) {
+          $('#toTop').fadeIn();
+        } else {
+          $('#toTop').fadeOut();
+        }
+      });
+      $('#toTop').on('click', function(){
+        $('html, body').animate({scrollTop : 0},800);
+        return false;
+      });
+  </script>
+-->
+
+  </body>
+</html>
