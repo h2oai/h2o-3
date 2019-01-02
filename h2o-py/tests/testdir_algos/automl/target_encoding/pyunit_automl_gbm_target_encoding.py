@@ -53,7 +53,7 @@ def titanic_with_te_kfoldstrategy(frame = None, seeds = None):
 
       teColumns = ["home.dest", "cabin", "embarked"]
       targetEncoder = TargetEncoder(x= teColumns, y= targetColumnName,
-                                    fold_column= foldColumnName, blending_avg= True, inflection_point = 3, smoothing = 1)
+                                    fold_column= foldColumnName, blended_avg= True, inflection_point = 3, smoothing = 1)
       targetEncoder.fit(frame=ds['train'])
 
       encodedTrain = targetEncoder.transform(frame=ds['train'], holdout_type="kfold", seed=1234)
@@ -93,7 +93,7 @@ def titanic_with_te_loostrategy(frame = None, seeds = None):
 
     teColumns = ["home.dest", "cabin", "embarked"]
     targetEncoder = TargetEncoder(x= teColumns, y= targetColumnName,
-                                  fold_column= foldColumnName, blending_avg= True, inflection_point = 3, smoothing = 1)
+                                  fold_column= foldColumnName, blended_avg= True, inflection_point = 3, smoothing = 1)
     targetEncoder.fit(frame=ds['train'])
 
     encodedTrain = targetEncoder.transform(frame=ds['train'], holdout_type="loo", seed=1234)
@@ -133,7 +133,7 @@ def titanic_with_te_nonestrategy(frame = None, seeds = None):
 
     teColumns = ["home.dest", "cabin", "embarked"]
     targetEncoder = TargetEncoder(x= teColumns, y= targetColumnName,
-                                  blending_avg= True, inflection_point = 3, smoothing = 1)
+                                  blended_avg= True, inflection_point = 3, smoothing = 1)
     targetEncoder.fit(frame=holdout)
 
     encodedTrain = targetEncoder.transform(frame=train, holdout_type="none", noise=0.0)

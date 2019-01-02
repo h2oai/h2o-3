@@ -1,5 +1,5 @@
 from __future__ import print_function
-import sys, os, time
+import sys, os, time, warnings
 sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
 from tests import pyunit_utils
@@ -23,7 +23,7 @@ def test_target_encoding_fit_method():
 
     teColumns = ["home.dest", "cabin", "embarked"]
     targetEncoder = TargetEncoder(x= teColumns, y= targetColumnName,
-                                  fold_column= foldColumnName, blending_avg= True, inflection_point = 3, smoothing = 1)
+                                  fold_column= foldColumnName, blended_avg= True, inflection_point = 3, smoothing = 1)
     trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic.csv"), header=1)
 
     trainingFrame[targetColumnName] = trainingFrame[targetColumnName].asfactor()
@@ -41,7 +41,7 @@ def test_target_encoding_transform_kfold():
 
     teColumns = ["home.dest", "cabin", "embarked"]
     targetEncoder = TargetEncoder(x= teColumns, y= targetColumnName,
-                                  fold_column= foldColumnName, blending_avg= True, inflection_point = 3, smoothing = 1)
+                                  fold_column= foldColumnName, blended_avg= True, inflection_point = 3, smoothing = 1)
     trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic.csv"), header=1)
 
     trainingFrame[targetColumnName] = trainingFrame[targetColumnName].asfactor()
@@ -62,7 +62,7 @@ def test_target_encoding_transform_loo():
 
     teColumns = ["home.dest", "cabin", "embarked"]
     targetEncoder = TargetEncoder(x= teColumns, y= targetColumnName,
-                                  fold_column='', blending_avg= True, inflection_point = 3, smoothing = 1)
+                                  fold_column='', blended_avg= True, inflection_point = 3, smoothing = 1)
     trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic.csv"), header=1)
 
     trainingFrame[targetColumnName] = trainingFrame[targetColumnName].asfactor()
@@ -82,7 +82,7 @@ def test_target_encoding_transform_none():
 
     teColumns = ["home.dest", "cabin", "embarked"]
     targetEncoder = TargetEncoder(x= teColumns, y= targetColumnName,
-                                  blending_avg= True, inflection_point = 3, smoothing = 1)
+                                  blended_avg= True, inflection_point = 3, smoothing = 1)
     trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic.csv"), header=1)
 
     trainingFrame[targetColumnName] = trainingFrame[targetColumnName].asfactor()
@@ -105,7 +105,7 @@ def test_target_encoding_transform_none_blending():
     trainingFrame[targetColumnName] = trainingFrame[targetColumnName].asfactor()
     
     targetEncoderWithBlending = TargetEncoder(x= teColumns, y= targetColumnName,
-                                              blending_avg= True, inflection_point = 3, smoothing = 1)
+                                              blended_avg= True, inflection_point = 3, smoothing = 1)
     
     targetEncoderWithBlending.fit(frame=trainingFrame)
 
@@ -114,7 +114,7 @@ def test_target_encoding_transform_none_blending():
     frameWithBlendedEncodingsOnly = encodedFrameWithBlending[teColumnsEncoded]
 
     targetEncoderWithoutBlending = TargetEncoder(x= teColumns, y= targetColumnName,
-                                                 blending_avg= False, inflection_point = 3, smoothing = 1)
+                                                 blended_avg= False, inflection_point = 3, smoothing = 1)
 
     targetEncoderWithoutBlending.fit(frame=trainingFrame)
 
@@ -140,7 +140,7 @@ def test_target_encoding_seed_is_working():
     trainingFrame[targetColumnName] = trainingFrame[targetColumnName].asfactor()
 
     targetEncoder = TargetEncoder(x= teColumns, y= targetColumnName,
-                                  blending_avg= True, inflection_point = 3, smoothing = 1)
+                                  blended_avg= True, inflection_point = 3, smoothing = 1)
 
     targetEncoder.fit(frame=trainingFrame)
 
@@ -178,7 +178,7 @@ def test_target_encoding_default_noise_is_applied():
     trainingFrame[targetColumnName] = trainingFrame[targetColumnName].asfactor()
 
     targetEncoder = TargetEncoder(x= teColumns, y= targetColumnName,
-                                  blending_avg= True, inflection_point = 3, smoothing = 1)
+                                  blended_avg= True, inflection_point = 3, smoothing = 1)
 
     targetEncoder.fit(frame=trainingFrame)
 
@@ -205,6 +205,47 @@ def test_target_encoding_default_noise_is_applied():
     except AssertionError:
         print('Good, encodings are different as expected. Default noise is working')
 
+def test_ability_to_pass_column_parameters_as_indexes():
+    print("Check that we can pass indices for specifying columns")
+    targetColumnIdx = 1 
+    targetColumnName = "survived"
+    foldColumnIdx = 14
+    foldColumnName = "kfold_column" 
+
+    teColumns = [13] # 13 stands for `home.dest`
+    targetEncoder = TargetEncoder(x= teColumns, y= targetColumnIdx,
+                                  fold_column= foldColumnIdx, blended_avg= True, inflection_point = 3, smoothing = 1)
+    trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic.csv"), header=1)
+
+    trainingFrame[targetColumnName] = trainingFrame[targetColumnName].asfactor()
+    trainingFrame[foldColumnName] = trainingFrame.kfold_column(n_folds=5, seed=1234)
+    
+    encodingMap = targetEncoder.fit(frame=trainingFrame)
+    assert encodingMap.map_keys['string'] == ["home.dest"]
+    assert encodingMap.frames[0]['num_rows'] == 583
+
+
+def test_that_both_deprecated_and_new_parameters_are_working_together():
+    print("Check that both deprecated and new parameters are working together")
+    targetColumnName = "survived"
+
+    teColumns = ["home.dest", "cabin", "embarked"]
+    targetEncoder = TargetEncoder(x= teColumns, y= targetColumnName, blending_avg= False)
+    targetEncoderNewConstructor = TargetEncoder(x= teColumns, y= targetColumnName, blended_avg= False)
+    targetEncoderDefault = TargetEncoder(x= teColumns, y= targetColumnName)
+
+    assert targetEncoder._blending == False
+    assert targetEncoder._blending == targetEncoderNewConstructor._blending
+    assert targetEncoderDefault._blending == True
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        TargetEncoder(x= teColumns, y= targetColumnName, blending_avg= False)
+        assert len(w) == 1
+        assert issubclass(w[-1].category, DeprecationWarning)
+        assert "Parameter blending_avg is deprecated; use blended_avg instead" == str(w[-1].message)
+    
+
 testList = [
     test_target_encoding_parameters,
     test_target_encoding_fit_method,
@@ -213,7 +254,9 @@ testList = [
     test_target_encoding_transform_none,
     test_target_encoding_transform_none_blending,
     test_target_encoding_default_noise_is_applied,
-    test_target_encoding_seed_is_working
+    test_target_encoding_seed_is_working,
+    test_ability_to_pass_column_parameters_as_indexes,
+    test_that_both_deprecated_and_new_parameters_are_working_together
 ]
 
 if __name__ == "__main__":

@@ -10,6 +10,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from h2o.expr import ExprNode
 from h2o.frame import H2OFrame
 from h2o.utils.typechecks import (assert_is_type)
+import warnings
 
 __all__ = ("TargetEncoder", )
 
@@ -28,25 +29,28 @@ class TargetEncoder(object):
 
     Sample usage:
 
-    >>> targetEncoder = TargetEncoder(x=e_columns, y=responseColumnName, blending=True, inflection_point=3, smoothing=1)
-    >>> targetEncoder.fit(frame) 
-    >>> encodedValid = targetEncoder.transform(frame=frame, holdout_type="kfold", seed=1234)
-    >>> encodedTest = targetEncoder.transform(frame=testFrame, holdout_type="none", noise=0.0, seed=1234)
+    targetEncoder = TargetEncoder(x=te_columns, y=responseColumnName, blended_avg=True, inflection_point=3, smoothing=1)
+    targetEncoder.fit(trainFrame) 
+    encodedTrain = targetEncoder.transform(frame=trainFrame, holdout_type="kfold", seed=1234, is_train_or_valid=True)
+    encodedValid = targetEncoder.transform(frame=validFrame, holdout_type="none", noise=0.0, is_train_or_valid=True)
+    encodedTest = targetEncoder.transform(frame=testFrame, holdout_type="none", noise=0.0, is_train_or_valid=False)
     """
 
     #-------------------------------------------------------------------------------------------------------------------
     # Construction
     #-------------------------------------------------------------------------------------------------------------------
 
-    def __init__(self, x=None, y=None, fold_column='', blending_avg=True, inflection_point=3, smoothing=1):
+    def __init__(self, x=None, y=None, fold_column='', blended_avg=True, inflection_point=3, smoothing=1, **kwargs):
+
         """
         Creates instance of the TargetEncoder class and setting parameters that will be used in both `train` and `transform` methods.
 
-        :param List[str] x: List of categorical column names that we want apply target encoding to
+        :param List[str] or List[int] x: List of categorical column names or indices that we want apply target encoding to
 
-        :param str y: response column we will create encodings with
-        :param str fold_column: fold column if we want to use 'kfold' holdout_type
-        :param boolean blending_avg: whether to use blending or not
+        :param str or int y: response column name or index we will create encodings with
+        :param str or int fold_column: fold column if we want to use 'kfold' holdout_type
+        :param boolean blending_avg: (deprecated) whether to use blending or not. Default value is set to True.
+        :param boolean blended_avg: whether to use blending or not. Default value is set to True.
         :param double inflection_point: parameter for blending. Used to calculate `lambda`. Parameter determines half of the minimal sample size
             for which we completely trust the estimate based on the sample in the particular level of categorical variable.
         :param double smoothing: parameter for blending. Used to calculate `lambda`. The parameter f controls the rate of transition between
@@ -54,11 +58,15 @@ class TargetEncoder(object):
             threshold between the posterior and the prior probability.
 
         """
-
         self._teColumns = x
         self._responseColumnName = y
         self._foldColumnName = fold_column
-        self._blending = blending_avg
+        if 'blending_avg' in kwargs:
+            warnings.warn("Parameter blending_avg is deprecated; use blended_avg instead", category=DeprecationWarning)
+            self._blending = kwargs.get('blending_avg')
+        else:
+            self._blending = blended_avg
+
         self._inflectionPoint = inflection_point
         self._smoothing = smoothing
 
@@ -69,6 +77,10 @@ class TargetEncoder(object):
 
         :param frame frame: frame you want to generate encoding map for target encoding based on.
         """
+        self._teColumns = list(map(lambda i: frame.names[i], self._teColumns)) if all(isinstance(n, int) for n in self._teColumns) else self._teColumns
+        self._responseColumnName = frame.names[self._responseColumnName] if isinstance(self._responseColumnName, int) else self._responseColumnName
+        self._foldColumnName = frame.names[self._foldColumnName] if isinstance(self._foldColumnName, int) else self._foldColumnName
+        
         self._encodingMap = ExprNode("target.encoder.fit", frame, self._teColumns, self._responseColumnName,
                                      self._foldColumnName)._eager_map_frame()
 
