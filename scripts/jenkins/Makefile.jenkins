@@ -43,7 +43,9 @@ test-py-smoke:
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testlist ../../tests/pyunitSmokeTestList --numclouds 6 --jvm.xmx 3g
 
 test-py-init:
-	export NO_GCE_CHECK=True && cd h2o-py/tests/testdir_jira && python h2o.init_test_HOQE-16.py
+	export NO_GCE_CHECK=True && cd h2o-py/tests/testdir_apis/H2O_Init \
+	 && python h2o.init_test.py \ 
+	 && python h2o.init_test_HOQE-16.py
 
 test-py-booklets:
 	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --wipeall --norun
