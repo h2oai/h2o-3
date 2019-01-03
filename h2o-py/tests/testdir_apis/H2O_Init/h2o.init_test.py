@@ -73,7 +73,7 @@ def h2oinitname():
         print("error message type is {0} and the error message is {1}\n".format(e.__class__.__name__, e.args[0]))
 
     try:
-        h2o.init(strict_version_check=False, port=54327, name="test3", as_port=True)
+        h2o.init(strict_version_check=False, port=60000, name="test3", as_port=True)
         assert h2o.cluster().cloud_name == "test3"
     except H2OConnectionError as e:
         print("error message type is {0} and the error message is {1}\n".format(e.__class__.__name__, e.args[0]))
