@@ -58,7 +58,7 @@ Example
 
   R is connected to the H2O cluster: 
       H2O cluster uptime:         2 seconds 812 milliseconds 
-      H2O cluster version:        3.20.0.1 
+      H2O cluster version:        3.22.1.2 
       H2O cluster version age:    9 days  
       H2O cluster name:           H2O_started_from_R_techwriter_awt197 
       H2O cluster total nodes:    1 
@@ -115,7 +115,7 @@ Example
   Connecting to H2O server at http://127.0.0.1:54323... successful.
   --------------------------  ---------------------------------
   H2O cluster uptime:         02 secs
-  H2O cluster version:        3.20.0.1
+  H2O cluster version:        3.22.1.2
   H2O cluster version age:    9 days
   H2O cluster name:           H2O_from_python_techwriter_pu6lbs
   H2O cluster total nodes:    1
