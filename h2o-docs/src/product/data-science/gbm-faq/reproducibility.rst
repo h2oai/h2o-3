@@ -223,3 +223,7 @@ Reproducibility
  8. Use the selected IP address to connect to H2O from R, Python, or Flow and re-train the model you are interested in reproducing. 
    
   **Note**: If you are using Flow, this means you must open Flow in a new browser with the IP and port selected.
+
+.. Floating point problems - precision vs. accuracy, roundoff error, statistical error
+.. Role in map-reduce computation - operation order,  
+.. Role in GBM - scoring intervals and early stopping, creating histograms
