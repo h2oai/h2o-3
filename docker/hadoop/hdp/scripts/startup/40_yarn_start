@@ -2,7 +2,7 @@
 
 set -e -x
 
-HDP_VERSION=$(ls /usr/hdp/ | grep 2)
+HDP_VERSION=$(ls /usr/hdp/ | grep -e '^2\|^3')
 
 sudo -E -u hdfs hadoop fs -mkdir -p /hdp/apps/${HDP_VERSION}/mapreduce/
 sudo -E -u hdfs hadoop fs -put -f /usr/hdp/current/hadoop-client/mapreduce.tar.gz /hdp/apps/${HDP_VERSION}/mapreduce/

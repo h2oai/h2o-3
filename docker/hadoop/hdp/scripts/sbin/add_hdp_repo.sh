@@ -15,29 +15,39 @@ function print_green {
 }
 
 case "${1}" in
+  3.1)
+    major_version="3"
+    hdp_version="3.1.0.0"
+    ubuntu_repo_version="14"
+    ;;
+  3.0)
+    major_version="3"
+    hdp_version="3.0.1.0"
+    ubuntu_repo_version="14"
+    ;;
   2.6)
+    major_version="2"
     hdp_version="2.6.1.0"
-    # minor_version="129"
     ubuntu_repo_version="14"
     ;;
   2.5)
+    major_version="2"
     hdp_version="2.5.6.0"
-    # minor_version="40"
     ubuntu_repo_version="14"
     ;;
   2.4)
+    major_version="2"
     hdp_version="2.4.3.0"
-    # minor_version="227"
     ubuntu_repo_version="14"
     ;;
   2.3)
+    major_version="2"
     hdp_version="2.3.6.0"
-    # minor_version="3796"
     ubuntu_repo_version="14"
     ;;
   2.2)
+    major_version="2"
     hdp_version="2.2.9.0"
-    # minor_version="3393"
     ubuntu_repo_version="12"
     ;;
   *)
@@ -50,6 +60,6 @@ export UBUNTU_REPO_VERSION=${ubuntu_repo_version}
 
 echo -e "Building for HDP version ${GREEN}${hdp_version}${NC}"
 
-wget http://public-repo-1.hortonworks.com/HDP/ubuntu${ubuntu_repo_version}/2.x/updates/${hdp_version}/hdp.list -O /etc/apt/sources.list.d/hdp.list
+wget http://public-repo-1.hortonworks.com/HDP/ubuntu${ubuntu_repo_version}/${major_version}.x/updates/${hdp_version}/hdp.list -O /etc/apt/sources.list.d/hdp.list
 gpg --keyserver keyserver.ubuntu.com --recv-keys B9733A7A07513CAD
 gpg -a --export 07513CAD | apt-key add -

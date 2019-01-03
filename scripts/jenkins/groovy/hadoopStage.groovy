@@ -99,7 +99,6 @@ private GString getH2OStartupCmd_kerberos(final stageConfig) {
  * @return the cmd used to start H2O in given mode
  */
 private GString getH2OStartupCmd(final stageConfig) {
-    hadoopVersion = stageConfig.customData.distribution == 'cdh' && stageConfig.customData.version.startsWith('6.') ? '3' : '2'
     switch (stageConfig.customData.mode) {
         case H2O_HADOOP_STARTUP_MODE_HADOOP:
             return getH2OStartupCmd_hadoop(stageConfig)

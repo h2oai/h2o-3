@@ -89,6 +89,11 @@ RUN service hadoop-hdfs-namenode init
 
 # Copy scripts
 COPY ${PATH_PREFIX}/../common/startup ${PATH_PREFIX}/scripts/startup /etc/startup/
+RUN \
+    case ${VERSION} in \
+        6.*) echo 'echo "FIXME: HIVE is disabled for CDH 6.X"' > /etc/startup/$(basename /etc/startup/*_hive_start) ;; \
+    esac
+
 
 # Copy sudoers so we can start hadoop stuff without root access to container
 COPY ${PATH_PREFIX}/../common/sudoers/jenkins /etc/sudoers.d/jenkins

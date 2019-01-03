@@ -1,6 +1,6 @@
 #! /bin/bash
 
-HDP_VERSION=$(ls /usr/hdp/ | grep 2)
+HDP_VERSION=$(ls /usr/hdp/ | grep -e '^2\|^3')
 echo "Generating yarn-site.xml for HDP ${HDP_VERSION}"
 echo '''
 <configuration>
