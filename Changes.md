@@ -37,6 +37,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xia/3/index.ht
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6122'>PUBDEV-6122</a>] - Users can now save PDP plots. 
 </li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6123'>PUBDEV-6123</a>] - Fixed an issue that resulted in a SQL exception when connecting H2O to a SQL server and importing a table. 
+</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6137'>PUBDEV-6137</a>] - Fixed an issue with GCS support on Hadoop environments. 
 </li>
 </ul>
