@@ -14,7 +14,7 @@ import water.rapids.ast.prims.mungers.AstGroup;
 
 import java.util.Random;
 
-class TargetEncoderFrameHelper {
+public class TargetEncoderFrameHelper {
 
   /** @return the expanded with constant vector Frame, for flow-coding */
   static Frame addCon(Frame fr, String appendedColumnName, long constant ) { fr.add(appendedColumnName, Vec.makeCon(constant, fr.numRows(), Vec.T_NUM)); return fr; }
@@ -56,6 +56,15 @@ class TargetEncoderFrameHelper {
     predicateFrame.delete();
     fr.remove("predicate");
     return filtered;
+  }
+
+  //Note: It could be a good thing to have this method in Frame's API.
+  public static Frame factorColumn(Frame fr, String columnName) {
+    int columnIndex = fr.find(columnName);
+    Vec vec = fr.vec(columnIndex);
+    fr.replace(columnIndex, vec.toCategoricalVec());
+    vec.remove();
+    return fr;
   }
 
   /** return a frame with unique values from the specified column */

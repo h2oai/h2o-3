@@ -1,6 +1,4 @@
-package ai.h2o.automl.targetencoding;
-
-import water.fvec.Frame;
+package ai.h2o.automl.targetencoding.strategy;
 
 public interface TEApplicationStrategy {
   String[] getColumnsToEncode();

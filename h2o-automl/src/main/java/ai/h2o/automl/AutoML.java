@@ -1,9 +1,9 @@
 package ai.h2o.automl;
 
 import ai.h2o.automl.UserFeedbackEvent.Stage;
-import ai.h2o.automl.targetencoding.AllCategoricalTEApplicationStrategy;
+import ai.h2o.automl.targetencoding.strategy.AllCategoricalTEApplicationStrategy;
 import ai.h2o.automl.targetencoding.BlendingParams;
-import ai.h2o.automl.targetencoding.TEApplicationStrategy;
+import ai.h2o.automl.targetencoding.strategy.TEApplicationStrategy;
 import ai.h2o.automl.targetencoding.TargetEncoder;
 import hex.Model;
 import hex.ModelBuilder;
@@ -290,27 +290,21 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   private void performAutoFeatureEngineering() {
+    String responseColumnName = this.trainingFrame.name(this.trainingFrame.find(this.responseColumn)); // Question: can we add .name(Vec vec) to Frame's API?
+
     // Hardcoded default startegy for now
-    TEApplicationStrategy defaultTEApplicationStrategy = new AllCategoricalTEApplicationStrategy(this.trainingFrame);
+    TEApplicationStrategy defaultTEApplicationStrategy = new AllCategoricalTEApplicationStrategy(this.trainingFrame, responseColumnName);
     performAutoTargetEncoding(defaultTEApplicationStrategy);
   }
 
   //TODO maybe to minimise coupling it is better to introduce AutoMLTEEncodingHelper that will take AutoML instance and return transformed one
   private void performAutoTargetEncoding(TEApplicationStrategy strategy) {
-    
-    boolean hasCategoricalVecs = false;
-    for(Vec vec : trainingFrame.vecs()) {
-      if(vec.isCategorical()) {
-        hasCategoricalVecs = true;
-        break;
-      }
-    }
-    
-    if(hasCategoricalVecs) {
+   
+    String[] columnsToEncode = strategy.getColumnsToEncode();
+    if(columnsToEncode.length > 0) {
 
       //TODO Either perform random grid search over parameters or introduce evolutionary selection algo
       BlendingParams blendingParams = new BlendingParams(5, 1);
-      String[] columnsToEncode = strategy.getColumnsToEncode();
       boolean withBlendedAvg = true;
       boolean imputeNAsWithNewCategory = true;
       int seed = 1234; // TODO make it a parameter for users to set
@@ -325,13 +319,21 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       Map<String, Frame> encodingMap = tec.prepareEncodingMap(trainingFrame, responseColumnName, foldColumnName, imputeNAsWithNewCategory);
       switch (holdoutType) {
         case TargetEncoder.DataLeakageHandlingStrategy.KFold:
-          this.trainingFrame = tec.applyTargetEncoding(trainingFrame, responseColumnName, encodingMap, holdoutType, foldColumnName, withBlendedAvg, imputeNAsWithNewCategory, seed);
-          this.validationFrame = tec.applyTargetEncoding(getValidationFrame(), responseColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName, withBlendedAvg, imputeNAsWithNewCategory, seed);
-          this.leaderboardFrame = tec.applyTargetEncoding(getLeaderboardFrame(), responseColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName, withBlendedAvg, imputeNAsWithNewCategory, seed);
+          
+          Frame tmpFrame = tec.applyTargetEncoding(trainingFrame, responseColumnName, encodingMap, holdoutType, foldColumnName, withBlendedAvg, imputeNAsWithNewCategory, seed);
+          this.trainingFrame.delete();
+          this.trainingFrame = tmpFrame;
+          DKV.put(this.trainingFrame);
+          
+          if(this.validationFrame != null)
+            this.validationFrame = tec.applyTargetEncoding(getValidationFrame(), responseColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName, withBlendedAvg, imputeNAsWithNewCategory, seed);
+          if(this.leaderboardFrame != null)
+            this.leaderboardFrame = tec.applyTargetEncoding(getLeaderboardFrame(), responseColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName, withBlendedAvg, imputeNAsWithNewCategory, seed);
           break;
         case TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut:
           //TODO
       }
+//      encodingMapCleanUp(encodingMap);
     }
   }
   
