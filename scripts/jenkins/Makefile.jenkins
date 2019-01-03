@@ -44,7 +44,7 @@ test-py-smoke:
 
 test-py-init:
 	export NO_GCE_CHECK=True && cd h2o-py/tests/testdir_apis/H2O_Init \
-	 && python h2o.init_test.py \ 
+	 && python h2o.init_test.py \
 	 && python h2o.init_test_HOQE-16.py
 
 test-py-booklets:
