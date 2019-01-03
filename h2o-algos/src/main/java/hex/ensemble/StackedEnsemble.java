@@ -58,7 +58,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
   @Override
   protected StackedEnsembleDriver trainModelImpl() {
-    return _driver = new StackedEnsembleDriver();
+    return _driver = _parms._blending == null ? new StackedEnsembleCVStackingDriver() : new StackedEnsembleBlendingDriver();
   }
 
   @Override
@@ -82,7 +82,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
     }
   }
 
-  private class StackedEnsembleDriver extends Driver {
+  private abstract class StackedEnsembleDriver extends Driver {
 
     /**
      * Prepare a "level one" frame for a given set of models, predictions-frames and actuals.  Used for preparing
@@ -157,14 +157,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         if (null == aModel)
           throw new H2OIllegalArgumentException("Failed to find base model: " + k);
 
-        if (null == aModel._output._cross_validation_holdout_predictions_frame_id)
-          throw new H2OIllegalArgumentException("Failed to find the xval predictions frame id. . .  Looks like keep_cross_validation_predictions wasn't set when building the models.");
-
-        Frame aFrame = DKV.getGet(aModel._output._cross_validation_holdout_predictions_frame_id);
-
-        if (null == aFrame)
-          throw new H2OIllegalArgumentException("Failed to find the xval predictions frame. . .  Looks like keep_cross_validation_predictions wasn't set when building the models, or the frame was deleted.");
-
+        Frame aFrame = getPredictionFrameForBaseModel(aModel);
         baseModels.add(aModel);
         if (!aModel._output.isMultinomialClassifier()) {
           baseModelPredictions.add(aFrame);
@@ -176,14 +169,18 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         }
       }
 
-      return prepareLevelOneFrame(levelOneKey, baseModels.toArray(new Model[0]), baseModelPredictions.toArray(new Frame[0]), _model._parms.train());
+      return prepareLevelOneFrame(levelOneKey, baseModels.toArray(new Model[0]), baseModelPredictions.toArray(new Frame[0]), getActualTrainingFrame());
     }
 
+    protected abstract Frame getActualTrainingFrame();
+    
+    protected abstract Frame getPredictionFrameForBaseModel(Model model);
+    
     private Key<Frame> buildPredsKey(Key model_key, long model_checksum, Key frame_key, long frame_checksum) {
       return Key.make("preds_" + model_checksum + "_on_" + frame_checksum);
     }
 
-    private Key<Frame> buildPredsKey(Model model, Frame frame) {
+    protected Key<Frame> buildPredsKey(Model model, Frame frame) {
       return frame == null || model == null ? null : buildPredsKey(model._key, model.checksum(), frame._key, frame.checksum());
     }
 
@@ -284,6 +281,42 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
                     "but must be one of 'glm', 'gbm', 'randomForest', or 'deeplearning'.");
       }
     } // computeImpl
+  }
+  
+  private class StackedEnsembleCVStackingDriver extends StackedEnsembleDriver {
+
+    @Override
+    protected Frame getActualTrainingFrame() {
+      return _model._parms.train();
+    }
+
+    @Override
+    protected Frame getPredictionFrameForBaseModel(Model model) {
+      if (null == model._output._cross_validation_holdout_predictions_frame_id)
+        throw new H2OIllegalArgumentException("Failed to find the xval predictions frame id. . .  Looks like keep_cross_validation_predictions wasn't set when building the models.");
+
+      Frame fr = DKV.getGet(model._output._cross_validation_holdout_predictions_frame_id);
+
+      if (null == fr)
+        throw new H2OIllegalArgumentException("Failed to find the xval predictions frame. . .  Looks like keep_cross_validation_predictions wasn't set when building the models, or the frame was deleted.");
+
+      return fr;
+    }
+    
+  }
+  
+  private class StackedEnsembleBlendingDriver extends StackedEnsembleDriver {
+
+    @Override
+    protected Frame getActualTrainingFrame() {
+      return _model._parms.blending();
+    }
+
+    @Override
+    protected Frame getPredictionFrameForBaseModel(Model model) {
+      Key<Frame> predsKey = buildPredsKey(model, getActualTrainingFrame());
+      return model.score(getActualTrainingFrame(), predsKey.toString()); 
+    }
   }
 
   private MetalearnerAlgorithm getActualMetalearnerAlgo(MetalearnerAlgorithm metalearner_algo) {

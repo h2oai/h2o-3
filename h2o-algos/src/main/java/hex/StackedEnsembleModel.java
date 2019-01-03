@@ -13,7 +13,6 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.nbhm.NonBlockingHashSet;
 import water.udf.CFuncRef;
-import water.util.IcedHashMap;
 import water.util.Log;
 import water.util.ReflectionUtils;
 
@@ -34,16 +33,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
   public String responseColumn = null;
   private NonBlockingHashSet<String> names = null;  // keep columns as a set for easier comparison
-  //public int nfolds = -1; //From 1st base model
-
-  // Get from 1st base model (should be identical across base models)
-  public int basemodel_nfolds = -1;  //From 1st base model
-  public Parameters.FoldAssignmentScheme basemodel_fold_assignment;  //From 1st base model
-  public String basemodel_fold_column;  //From 1st base model
-
-  public long seed = -1; //From 1st base model
-
-
+  
   // TODO: add a separate holdout dataset for the ensemble
   // TODO: add a separate overall cross-validation for the ensemble, including _fold_column and FoldAssignmentScheme / _fold_assignment
 
@@ -63,9 +53,12 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     public boolean _keep_levelone_frame = false;
 
     // Metalearner params
+    //for stacking using cross-validation
     public int _metalearner_nfolds;
     public Parameters.FoldAssignmentScheme _metalearner_fold_assignment;
     public String _metalearner_fold_column;
+    //the training frame used for blending (from which predictions columns are computed): theoretically, we could directly use training frame for this...
+    public Key<Frame> _blending;
 
     //What to use as a metalearner (GLM, GBM, DRF, or DeepLearning)
     public enum MetalearnerAlgorithm {
@@ -109,6 +102,8 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
           break;
       }
     }
+    
+    public final Frame blending() { return _blending == null ? null : _blending.get(); }
 
   }
 
@@ -322,7 +317,17 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
     Model aModel = null;
     boolean beenHere = false;
-    trainingFrameRows = _parms.train().numRows();
+    boolean blending_mode = _parms._blending != null;
+    boolean cv_required_on_base_model = !blending_mode;
+    
+    //following variables are collected from the 1st base model (should be identical across base models), i.e. when beenHere=false
+    int basemodel_nfolds = -1;
+    Parameters.FoldAssignmentScheme basemodel_fold_assignment = null;
+    String basemodel_fold_column = null;
+    long seed = -1;
+    //end 1st model collected fields
+    
+    trainingFrameRows = blending_mode ? _parms.blending().numRows() : _parms.train().numRows();
 
     for (Key<Model> k : _parms._base_models) {
       aModel = DKV.getGet(k);
@@ -342,44 +347,49 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
         // NOTE: if we loosen this restriction and fold_column is set add a check below.
         Frame aTrainingFrame = aModel._parms.train();
-        if (trainingFrameRows != aTrainingFrame.numRows() && !this._parms._is_cv_model)
+        if (trainingFrameRows != aTrainingFrame.numRows() && !this._parms._is_cv_model && !blending_mode)
           throw new H2OIllegalArgumentException("Base models are inconsistent: they use different size(number of rows) training frames.  Found number of rows: " + trainingFrameRows + " and: " + aTrainingFrame.numRows() + ".");
 
         if (! responseColumn.equals(aModel._parms._response_column))
           throw new H2OIllegalArgumentException("Base models are inconsistent: they use different response columns.  Found: " + responseColumn + " and: " + aModel._parms._response_column + ".");
-
-        // TODO: we currently require xval; loosen this iff we add a separate holdout dataset for the ensemble
-
-        if (aModel._parms._fold_assignment != basemodel_fold_assignment) {
-          if ((aModel._parms._fold_assignment == AUTO && basemodel_fold_assignment == Random) ||
-                  (aModel._parms._fold_assignment == Random && basemodel_fold_assignment == AUTO)) {
-            // A-ok
-          } else {
-            throw new H2OIllegalArgumentException("Base models are inconsistent: they use different fold_assignments.");
-          }
+        
+        if (blending_mode && _parms._blending.equals(aModel._parms._train)) {
+          throw new H2OIllegalArgumentException("Base model `"+k+"` was trained with the StackedEnsemble blending frame.");
         }
 
-        // If we have a fold_column make sure nfolds from base models are consistent
-        if (aModel._parms._fold_column == null && basemodel_nfolds != aModel._parms._nfolds)
-          throw new H2OIllegalArgumentException("Base models are inconsistent: they use different values for nfolds.");
+        // TODO: we currently require xval; loosen this iff we add a separate holdout dataset for the ensemble
+        if (cv_required_on_base_model) {
+          if (aModel._parms._fold_assignment != basemodel_fold_assignment) {
+            if ((aModel._parms._fold_assignment == AUTO && basemodel_fold_assignment == Random) ||
+                (aModel._parms._fold_assignment == Random && basemodel_fold_assignment == AUTO)) {
+              // A-ok
+            } else {
+              throw new H2OIllegalArgumentException("Base models are inconsistent: they use different fold_assignments.");
+            }
+          }
 
-        // If we don't have a fold_column require nfolds > 1
-        if (aModel._parms._fold_column == null && aModel._parms._nfolds < 2)
-          throw new H2OIllegalArgumentException("Base model does not use cross-validation: " + aModel._parms._nfolds);
+          // If we have a fold_column make sure nfolds from base models are consistent
+          if (aModel._parms._fold_column == null && basemodel_nfolds != aModel._parms._nfolds)
+            throw new H2OIllegalArgumentException("Base models are inconsistent: they use different values for nfolds.");
 
-        // NOTE: we already check that the training_frame checksums are the same, so
-        // we don't need to check the Vec checksums here:
-        if (aModel._parms._fold_column != null &&
-                ! aModel._parms._fold_column.equals(basemodel_fold_column))
-          throw new H2OIllegalArgumentException("Base models are inconsistent: they use different fold_columns.");
+          // If we don't have a fold_column require nfolds > 1
+          if (aModel._parms._fold_column == null && aModel._parms._nfolds < 2)
+            throw new H2OIllegalArgumentException("Base model does not use cross-validation: " + aModel._parms._nfolds);
 
-        if (aModel._parms._fold_column == null &&
-                basemodel_fold_assignment == Random &&
-                aModel._parms._seed != seed)
-          throw new H2OIllegalArgumentException("Base models are inconsistent: they use random-seeded k-fold cross-validation but have different seeds.");
+          // NOTE: we already check that the training_frame checksums are the same, so
+          // we don't need to check the Vec checksums here:
+          if (aModel._parms._fold_column != null &&
+              ! aModel._parms._fold_column.equals(basemodel_fold_column))
+            throw new H2OIllegalArgumentException("Base models are inconsistent: they use different fold_columns.");
 
-        if (! aModel._parms._keep_cross_validation_predictions)
-          throw new H2OIllegalArgumentException("Base model does not keep cross-validation predictions: " + aModel._parms._nfolds);
+          if (aModel._parms._fold_column == null &&
+              basemodel_fold_assignment == Random &&
+              aModel._parms._seed != seed)
+            throw new H2OIllegalArgumentException("Base models are inconsistent: they use random-seeded k-fold cross-validation but have different seeds.");
+
+          if (! aModel._parms._keep_cross_validation_predictions)
+            throw new H2OIllegalArgumentException("Base model does not keep cross-validation predictions: " + aModel._parms._nfolds);
+        }
 
         // In GLM, we get _family instead of _distribution.
         // Further, we have Family.binomial instead of DistributionFamily.bernoulli.
