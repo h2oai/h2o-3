@@ -11,6 +11,7 @@ def models_stress_test():
     for i in range(0,1000):
         xgb = H2OXGBoostEstimator(ntrees = 1, max_depth= 2)
         xgb.train(x = ["Origin","Distance"],y="IsDepDelayed", training_frame=data)
+        h2o.remove(xgb)
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(models_stress_test)
