@@ -288,23 +288,22 @@ public class StackedEnsembleTest extends TestUtil {
     }
     
     @Test public void testBlending() {
-//        basicEnsemble("./smalldata/junit/cars.csv",
-//            null,
-//            new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
-//            false, DistributionFamily.gaussian, MetalearnerAlgorithm.AUTO, true);
-//
-//        basicEnsemble("./smalldata/iris/iris_wheader.csv",
-//            null,
-//            new StackedEnsembleTest.PrepData() { int prep(Frame fr) {return fr.find("class"); }
-//            },
-//            false, DistributionFamily.multinomial, MetalearnerAlgorithm.AUTO, true);
+        basicEnsemble("./smalldata/junit/cars.csv",
+            null,
+            new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
+            false, DistributionFamily.gaussian, MetalearnerAlgorithm.AUTO, true);
+
+        basicEnsemble("./smalldata/iris/iris_wheader.csv",
+            null,
+            new StackedEnsembleTest.PrepData() { int prep(Frame fr) {return fr.find("class"); }
+            },
+            false, DistributionFamily.multinomial, MetalearnerAlgorithm.AUTO, true);
 
         basicEnsemble("./smalldata/logreg/prostate_train.csv",
             "./smalldata/logreg/prostate_test.csv",
             new StackedEnsembleTest.PrepData() { int prep(Frame fr) { return fr.find("CAPSULE"); }
             },
-            false, DistributionFamily.bernoulli, MetalearnerAlgorithm.AUTO, true);
-
+            false, DistributionFamily.bernoulli, MetalearnerAlgorithm.AUTO, false);
     }
 
 

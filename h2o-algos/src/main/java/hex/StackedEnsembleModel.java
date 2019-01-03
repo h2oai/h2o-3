@@ -49,8 +49,10 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
     // base_models is a list of base model keys to ensemble (must have been cross-validated)
     public Key<Model> _base_models[] = new Key[0];
-    // Should we keep the level-one frame of cv preds + repsonse col?
+    // Should we keep the level-one frame of cv preds + response col?
     public boolean _keep_levelone_frame = false;
+    // internal flag if we want to avoid having the
+    public boolean _keep_base_model_predictions = false;
 
     // Metalearner params
     //for stacking using cross-validation
@@ -114,7 +116,13 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     public StackedEnsembleOutput(Job job) { _job = job; }
     // The metalearner model (e.g., a GLM that has a coefficient for each of the base_learners).
     public Model _metalearner;
-    public Frame _levelone_frame_id;
+    public Frame _levelone_frame_id; //set only if StackedEnsembleParameters#_keep_levelone_frame=true
+    
+    //Set of base model predictions that have been cached in DKV to avoid scoring the same model multiple times,
+    // it is then the responsibility of the client code to delete those frames from DKV.
+    //This especially useful when building SE models incrementally (e.g. in AutoML).
+    //The Set is instantiated and filled only if StackedEnsembleParameters#_keep_base_model_predictions=true.
+    public NonBlockingHashSet<Key<Frame>> _base_model_predictions; 
   }
 
   /**
@@ -327,7 +335,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     long seed = -1;
     //end 1st model collected fields
     
-    trainingFrameRows = blending_mode ? _parms.blending().numRows() : _parms.train().numRows();
+    trainingFrameRows = _parms.train().numRows();
 
     for (Key<Model> k : _parms._base_models) {
       aModel = DKV.getGet(k);
@@ -347,15 +355,15 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
         // NOTE: if we loosen this restriction and fold_column is set add a check below.
         Frame aTrainingFrame = aModel._parms.train();
-        if (trainingFrameRows != aTrainingFrame.numRows() && !this._parms._is_cv_model && !blending_mode)
+        if (trainingFrameRows != aTrainingFrame.numRows() && !this._parms._is_cv_model)
           throw new H2OIllegalArgumentException("Base models are inconsistent: they use different size(number of rows) training frames.  Found number of rows: " + trainingFrameRows + " and: " + aTrainingFrame.numRows() + ".");
 
         if (! responseColumn.equals(aModel._parms._response_column))
           throw new H2OIllegalArgumentException("Base models are inconsistent: they use different response columns.  Found: " + responseColumn + " and: " + aModel._parms._response_column + ".");
         
-        if (blending_mode && _parms._blending.equals(aModel._parms._train)) {
-          throw new H2OIllegalArgumentException("Base model `"+k+"` was trained with the StackedEnsemble blending frame.");
-        }
+//        if (blending_mode && _parms._blending.equals(aModel._parms._train)) {
+//          throw new H2OIllegalArgumentException("Base model `"+k+"` was trained with the StackedEnsemble blending frame.");
+//        }
 
         // TODO: we currently require xval; loosen this iff we add a separate holdout dataset for the ensemble
         if (cv_required_on_base_model) {
@@ -433,8 +441,21 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       throw new H2OIllegalArgumentException("When creating a StackedEnsemble you must specify one or more models; " + _parms._base_models.length + " were specified but none of those were found: " + Arrays.toString(_parms._base_models));
 
   }
+  
+  //TODO: change visibility once moved to hex.ensemble
+  public void deleteBaseModelPredictions() {
+    if (_output._base_model_predictions != null) {
+      for (Key<Frame> key : _output._base_model_predictions) {
+        if (_output._levelone_frame_id != null && key.get() != null)
+          Frame.deleteTempFrameAndItsNonSharedVecs(key.get(), _output._levelone_frame_id);
+        else
+          key.remove();
+      }
+    }
+  }
 
   @Override protected Futures remove_impl(Futures fs ) {
+    deleteBaseModelPredictions(); 
     if (_output._metalearner != null)
       _output._metalearner.remove(fs);
     if (_output._levelone_frame_id != null)
