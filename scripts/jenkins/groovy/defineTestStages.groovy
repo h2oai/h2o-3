@@ -320,20 +320,33 @@ def call(final pipelineContext) {
       timeoutValue: 10, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [ // These run with reduced number of file descriptors for early detection of FD leaks
-      stageName: 'XGBoost Stress tests', target: 'test-pyunit-xgboost-stress', pythonVersion: '3.5', timeoutValue: 20,
+      stageName: 'XGBoost Stress tests', target: 'test-pyunit-xgboost-stress', pythonVersion: '3.5', timeoutValue: 40,
       component: pipelineContext.getBuildConfig().COMPONENT_PY, customDockerArgs: [ '--ulimit nofile=100:100' ]
     ]
   ]
 
   def HADOOP_STAGES = []
   for (distribution in pipelineContext.getBuildConfig().getSupportedHadoopDistributions()) {
+    def target
+    def ldapConfigPath
+    if (distribution.name == 'cdh' && distribution.version.startsWith('6.')) {
+      target = 'test-hadoop-3-smoke'
+      ldapConfigPath = 'scripts/jenkins/config/ldap-jetty-9.txt'
+    } else if (distribution.name == 'hdp' && distribution.version.startsWith('3.')) {
+      target = 'test-hadoop-3-smoke'
+      ldapConfigPath = 'scripts/jenkins/config/ldap-jetty-9.txt'
+    } else {
+      target = 'test-hadoop-2-smoke'
+      ldapConfigPath = 'scripts/jenkins/config/ldap-jetty-8.txt'
+    }
+
     def stageTemplate = [
-      target: distribution.name == 'cdh' && distribution.version.startsWith('6.') ? 'test-hadoop-3-smoke' : 'test-hadoop-2-smoke', timeoutValue: 25, component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+      target: target, timeoutValue: 25, component: pipelineContext.getBuildConfig().COMPONENT_ANY,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_HADOOP, pipelineContext.getBuildConfig().COMPONENT_PY],
       customData: [
         distribution: distribution.name,
         version: distribution.version,
-        ldapConfigPath: 'scripts/jenkins/config/ldap-jetty-' + (distribution.name == 'cdh' && distribution.version.startsWith('6.') ? '9' : '8') + '.txt',
+        ldapConfigPath: ldapConfigPath,
         kerberosUserName: 'jenkins@H2O.AI',
         kerberosPrincipal: 'HTTP/localhost@H2O.AI',
         kerberosConfigPath: 'scripts/jenkins/config/kerberos.conf',
