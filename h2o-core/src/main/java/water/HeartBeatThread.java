@@ -136,6 +136,7 @@ public class HeartBeatThread extends Thread {
       // Fake it now.
       long now = System.currentTimeMillis();
       H2O.SELF._last_heard_from = now;
+      System.out.println("_last_heard_from (3): " + H2O.SELF._key.getIpPortString() + " = " + H2O.SELF._last_heard_from);
 
       // Look for napping Nodes & propose removing from Cloud
       for( H2ONode h2o : cloud._memary ) {

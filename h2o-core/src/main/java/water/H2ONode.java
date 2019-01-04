@@ -131,6 +131,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     _key = key;
     _unique_idx = unique_idx;
     _last_heard_from = System.currentTimeMillis();
+    System.out.println("_last_heard_from (1): " + key.getIpPortString() + " = " + _last_heard_from);
     _heartbeat = new HeartBeat();
     _timestamp = timestamp;
     _client = H2O.decodeIsClient(timestamp);
@@ -182,6 +183,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     _client = true;
     _timestamp = timestamp;
     _last_heard_from = System.currentTimeMillis();
+    System.out.println("_last_heard_from (2): " + _key.getIpPortString() + " = " + _last_heard_from);
 
     startSendThread();
     oldSendThread._stopRequested = true; // Dispose of the old thread
