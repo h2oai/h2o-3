@@ -9,9 +9,9 @@ from tests import pyunit_utils
 def models_stress_test():
     data = h2o.import_file(pyunit_utils.locate("smalldata/testng/airlines_train.csv"))
     # Ulimit of stress tests should be set low enough, e.g. 100, in case of file descriptors leaks, this test should fail.
-    num_models = 1000 
+    num_models = 1000
     start = timer()
-    
+
     for i in range(0,num_models):
         xgb = H2OXGBoostEstimator(ntrees = 1, max_depth= 2)
         xgb.train(x = ["Origin","Distance"],y="IsDepDelayed", training_frame=data)
