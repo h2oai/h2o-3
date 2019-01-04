@@ -53,7 +53,6 @@ public class TargetEncodingIntegrationWithAutoMLTest extends water.TestUtil {
     AutoML aml=null;
     Frame fr=null;
     Model leader = null;
-    
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
       fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
@@ -75,12 +74,10 @@ public class TargetEncodingIntegrationWithAutoMLTest extends water.TestUtil {
 
       leader = aml.leader();
 
-//      Frame trainingFrame = aml.getTrainingFrame();
-//      assert !isBitIdentical(trainingFrame, fr):" Two frames should be different.";
-//      trainingFrame.delete();
+      Frame trainingFrame = aml.getTrainingFrame();
+      assert !isBitIdentical(trainingFrame, fr):" Two frames should be different.";
 
     } finally {
-      // Cleanup
       if(leader!=null) leader.delete();
       if(aml!=null) aml.delete();
       if(fr != null) fr.delete();
