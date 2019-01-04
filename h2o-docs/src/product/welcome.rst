@@ -424,6 +424,8 @@ Supported Versions
 -  HDP 2.4
 -  HDP 2.5
 -  HDP 2.6
+-  HDP 3.0
+-  HDP 3.1
 -  MapR 4.0
 -  MapR 5.0
 -  MapR 5.1
