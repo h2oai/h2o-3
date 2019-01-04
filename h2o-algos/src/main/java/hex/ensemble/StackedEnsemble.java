@@ -262,12 +262,11 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         if (null == model._output._cross_validation_holdout_predictions_frame_id)
           throw new H2OIllegalArgumentException("Failed to find the xval predictions frame id. . .  Looks like keep_cross_validation_predictions wasn't set when building the models.");
 
-        Frame holdout = DKV.getGet(model._output._cross_validation_holdout_predictions_frame_id);
+        fr = DKV.getGet(model._output._cross_validation_holdout_predictions_frame_id);
 
-        if (null == holdout)
+        if (null == fr)
           throw new H2OIllegalArgumentException("Failed to find the xval predictions frame. . .  Looks like keep_cross_validation_predictions wasn't set when building the models, or the frame was deleted.");
         
-        fr = new Frame(holdout); //cloning to avoid removal of stored holdout predictions frame
       } else {
         fr = buildPredictionsForBaseModel(model, actualsFrame);
       }

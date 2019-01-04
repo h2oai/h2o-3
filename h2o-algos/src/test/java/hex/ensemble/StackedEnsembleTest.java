@@ -319,6 +319,7 @@ public class StackedEnsembleTest extends TestUtil {
         StackedEnsembleModel stackedEnsembleModel = null;
         Frame training_frame = null, validation_frame = null, blending_frame = null;
         Frame preds = null;
+        long seed = 42*42;
         try {
             Scope.enter();
             training_frame = parse_test_file(training_file);
@@ -333,8 +334,7 @@ public class StackedEnsembleTest extends TestUtil {
                 Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(
                     training_frame,
                     new Key[]{Key.make(training_frame._key + "_train"), Key.make(training_frame._key + "_blending")},
-                    new double[] {0.6, 0.4},
-                    42*42);
+                    new double[] {0.6, 0.4}, seed);
                 training_frame.remove();
                 training_frame = splits[0];
                 blending_frame = splits[1];
@@ -372,6 +372,7 @@ public class StackedEnsembleTest extends TestUtil {
             gbmParameters._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
             gbmParameters._keep_cross_validation_predictions = true;
             gbmParameters._nfolds = 5;
+            gbmParameters._seed = seed;
             if( dupeTrainingFrameToValidationFrame ) {        // Make a validation frame that's a clone of the training data
                 validation_frame = new Frame(training_frame);
                 DKV.put(validation_frame);
@@ -395,6 +396,7 @@ public class StackedEnsembleTest extends TestUtil {
             drfParameters._min_rows = 1;
             drfParameters._nbins = 50;
             drfParameters._score_each_iteration = true;
+            drfParameters._seed = seed;
             if (!blending_mode) {
                 drfParameters._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
                 drfParameters._keep_cross_validation_predictions = true;
@@ -415,6 +417,7 @@ public class StackedEnsembleTest extends TestUtil {
             stackedEnsembleParameters._response_column = training_frame._names[idx];
             stackedEnsembleParameters._metalearner_algorithm = metalearner_algo;
             stackedEnsembleParameters._base_models = new Key[] {gbm._key,drf._key};
+            stackedEnsembleParameters._seed = seed;
             // Invoke Stacked Ensemble and block till end
             StackedEnsemble stackedEnsembleJob = new StackedEnsemble(stackedEnsembleParameters);
             // Get the stacked ensemble
