@@ -29,6 +29,8 @@
 #' @param metalearner_fold_column Column with cross-validation fold index assignment per observation for cross-validation of the metalearner.
 #' @param keep_levelone_frame \code{Logical}. Keep level one frame used for metalearner training. Defaults to FALSE.
 #' @param metalearner_params Parameters for metalearner algorithm Defaults to NULL.
+#' @param blending_frame Frame used to compute the predictions that serve as the training frame for the metalearner (triggers blending
+#'        mode if provided)
 #' @param seed Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number)
 #'        Defaults to -1 (time-based random number).
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
@@ -47,6 +49,7 @@ h2o.stackedEnsemble <- function(x, y, training_frame,
                                 metalearner_fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
                                 metalearner_fold_column = NULL,
                                 keep_levelone_frame = FALSE,
+                                blending_frame = NULL,
                                 seed = -1,
                                 export_checkpoints_dir = NULL,
                                 metalearner_params = NULL 
@@ -119,6 +122,8 @@ h2o.stackedEnsemble <- function(x, y, training_frame,
     parms$metalearner_fold_column <- metalearner_fold_column
   if (!missing(keep_levelone_frame))
     parms$keep_levelone_frame <- keep_levelone_frame
+  if (!missing(blending_frame))
+    parms$blending_frame <- blending_frame
   if (!missing(seed))
     parms$seed <- seed
   if (!missing(export_checkpoints_dir))

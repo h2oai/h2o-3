@@ -13,7 +13,6 @@ import water.TestUtil;
 import water.fvec.Frame;
 import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
-import hex.StackedEnsembleModel;
 
 /***
  * The main purpose of this test is to ensure the checksum() of a training frame is preserved throughout the

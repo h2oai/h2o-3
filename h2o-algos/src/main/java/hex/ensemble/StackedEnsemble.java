@@ -3,8 +3,6 @@ package hex.ensemble;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelCategory;
-import hex.StackedEnsembleModel;
-import static hex.StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm;
 
 import water.DKV;
 import water.Job;
@@ -215,8 +213,8 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         levelOneValidationFrame = prepareLevelOneFrame(levelOneValidKey, _model._parms._base_models, _model._parms.valid(), false);
       }
 
-      MetalearnerAlgorithm metalearnerAlgoSpec = _model._parms._metalearner_algorithm;
-      MetalearnerAlgorithm metalearnerAlgoImpl = getActualMetalearnerAlgo(metalearnerAlgoSpec);
+      Metalearner.Algorithm metalearnerAlgoSpec = _model._parms._metalearner_algorithm;
+      Metalearner.Algorithm metalearnerAlgoImpl = Metalearner.getActualMetalearnerAlgo(metalearnerAlgoSpec);
 
       // Compute metalearner
       if(metalearnerAlgoImpl != null) {
@@ -230,21 +228,21 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         
         Metalearner metalearner = Metalearner.createInstance(metalearnerAlgoSpec);
         metalearner.init(
-            levelOneTrainingFrame, 
-            levelOneValidationFrame, 
-            _model._parms._metalearner_parameters, 
-            _model, 
-            _job,
-            metalearnerKey, 
-            metalearnerJob, 
-            _parms,
-            hasMetaLearnerParams,
-            metalearnerSeed
+          levelOneTrainingFrame, 
+          levelOneValidationFrame, 
+          _model._parms._metalearner_parameters, 
+          _model, 
+          _job,
+          metalearnerKey, 
+          metalearnerJob, 
+          _parms,
+          hasMetaLearnerParams,
+          metalearnerSeed
         );
         metalearner.compute();
       } else {
-            throw new H2OIllegalArgumentException("Invalid `metalearner_algorithm`. Passed in " + metalearnerAlgoSpec + " " +
-                    "but must be one of 'glm', 'gbm', 'randomForest', or 'deeplearning'.");
+        throw new H2OIllegalArgumentException("Invalid `metalearner_algorithm`. Passed in " + metalearnerAlgoSpec + 
+            " but must be one of 'glm', 'gbm', 'randomForest', or 'deeplearning'.");
       }
     } // computeImpl
   }
@@ -288,20 +286,6 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
     @Override
     protected Frame getPredictionsForBaseModel(Model model, Frame actualsFrame, boolean isTrainingFrame) {
       return buildPredictionsForBaseModel(model, actualsFrame);
-    }
-  }
-
-  private MetalearnerAlgorithm getActualMetalearnerAlgo(MetalearnerAlgorithm metalearner_algo) {
-    switch (metalearner_algo) {
-      case AUTO:
-        return MetalearnerAlgorithm.glm;
-      case gbm:
-      case glm:
-      case drf:
-      case deeplearning:
-        return metalearner_algo;
-      default:
-        return null;
     }
   }
 

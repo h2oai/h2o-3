@@ -52,7 +52,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         self._parms = {}
         names_list = {"model_id", "training_frame", "response_column", "validation_frame", "base_models",
                       "metalearner_algorithm", "metalearner_nfolds", "metalearner_fold_assignment",
-                      "metalearner_fold_column", "keep_levelone_frame", "metalearner_params", "seed",
+                      "metalearner_fold_column", "keep_levelone_frame", "metalearner_params", "blending_frame", "seed",
                       "export_checkpoints_dir"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
@@ -238,6 +238,22 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
             self._parms["metalearner_params"] = str(json.dumps(metalearner_params))
         else:
             self._parms["metalearner_params"] = None
+
+
+    @property
+    def blending_frame(self):
+        """
+        Frame used to compute the predictions that serve as the training frame for the metalearner (triggers blending
+        mode if provided)
+
+        Type: ``H2OFrame``.
+        """
+        return self._parms.get("blending_frame")
+
+    @blending_frame.setter
+    def blending_frame(self, blending_frame):
+        assert_is_type(blending_frame, None, H2OFrame)
+        self._parms["blending_frame"] = blending_frame
 
 
     @property

@@ -1,6 +1,6 @@
 package hex.schemas;
 
-import hex.StackedEnsembleModel;
+import hex.ensemble.StackedEnsembleModel;
 import water.api.API;
 import water.api.schemas3.KeyV3;
 import water.api.schemas3.ModelOutputSchemaV3;
