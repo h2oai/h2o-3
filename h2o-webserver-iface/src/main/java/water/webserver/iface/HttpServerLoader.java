@@ -13,16 +13,16 @@ public class HttpServerLoader {
     final ServiceLoader<HttpServerFacade> serviceLoader = ServiceLoader.load(HttpServerFacade.class);
     final Iterator<HttpServerFacade> iter = serviceLoader.iterator();
     if (! iter.hasNext()) {
-      throw new IllegalStateException("No implementation of HttpServerFacade found on classpath");
+      throw new IllegalStateException("HTTP Server cannot be loaded: No implementation of HttpServerFacade found on classpath. Please refer to https://0xdata.atlassian.net/browse/TN-13 for details.");
     }
     INSTANCE = iter.next();
     if (iter.hasNext()) {
       final StringBuilder sb = new StringBuilder(INSTANCE.getClass().getName());
       while (iter.hasNext()) {
-        sb.append(",");
+        sb.append(", ");
         sb.append(iter.next().getClass().getName());
       }
-      throw new IllegalStateException("Multiple implementations of HttpServerFacade found on classpath: " + sb);
+      throw new IllegalStateException("HTTP Server cannot be loaded: Multiple implementations of HttpServerFacade found on classpath: " + sb + ". Please refer to https://0xdata.atlassian.net/browse/TN-13 for details.");
     }
   }
 }
