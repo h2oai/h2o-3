@@ -2,6 +2,19 @@
 
 ## H2O
 
+### Xia (3.22.0.4) - 1/4/2019
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xia/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-xia/4/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6109'>PUBDEV-6109</a>] - In Flow, fixed an issue that caused POJOs, MOJOs, and genmodel.jar to fail to download. This occurred when Flow was launched via Enterprise Steam and in any deployment where user_context was specified.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6166'>PUBDEV-6166</a>] - On the external backedn, H2O now explicitly passes the timestamp from the Spark Driver node.
+</li>
+</ul>
+
 ### Xu (3.22.1.1) - 12/28/2018
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-xu/1/index.html</a>
@@ -97,6 +110,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xia/3/index.ht
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6120'>PUBDEV-6120</a>] - H2O XGBoost now reports correct variable importances. The variable importances are computed from the gains of their respective loss functions during tree construction.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6122'>PUBDEV-6122</a>] - Users can now save PDP plots. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6123'>PUBDEV-6123</a>] - Fixed an issue that resulted in a SQL exception when connecting H2O to a SQL server and importing a table. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6137'>PUBDEV-6137</a>] - Fixed an issue with GCS support on Hadoop environments. 
 </li>
