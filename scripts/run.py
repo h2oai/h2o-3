@@ -262,7 +262,7 @@ class H2OCloudNode(object):
     """
 
     def __init__(self, is_client, cloud_num, nodes_per_cloud, node_num, cloud_name, h2o_jar, ip, base_port,
-                 xmx, cp, output_dir, test_ssl, ldap_config_path, jvm_opts):
+                 xmx, cp, output_dir, test_ssl, ldap_config_path, jvm_opts, flatfile):
         """
         Create a node in a cloud.
 
@@ -278,6 +278,7 @@ class H2OCloudNode(object):
         :param output_dir: The directory where we can create an output file for this process.
         :param ldap_config_path: path to LDAP config, if none, no LDAP will be used.
         :param jvm_opts: str with additional JVM options.
+        :param flatfile: path to flatfile (optional) 
         :return The node object.
         """
         self.is_client = is_client
@@ -293,6 +294,7 @@ class H2OCloudNode(object):
         self.output_dir = output_dir
         self.ldap_config_path = ldap_config_path
         self.jvm_opts = jvm_opts
+        self.flatfile = flatfile
 
         self.pid = -1
         self.output_file_name = ""
@@ -346,6 +348,8 @@ class H2OCloudNode(object):
                "-name", self.cloud_name,
                "-port", str(self.port),
                "-ip", self.ip]
+        if self.flatfile is not None:
+            cmd += ["-flatfile", self.flatfile]
 
         if self.ldap_config_path is not None:
             cmd.append('-login_conf')
@@ -556,21 +560,29 @@ class H2OCloud(object):
 
         if use_client:
             actual_nodes_per_cloud = self.nodes_per_cloud + 1
+            self.flatfile = os.path.join(self.output_dir, "flatfile_" + str(self.cloud_num) + ".txt")
+            open(self.flatfile, "w").close()
         else:
             actual_nodes_per_cloud = self.nodes_per_cloud
+            self.flatfile = None
 
         for node_num in range(actual_nodes_per_cloud):
             is_client = False
             if use_client:
                 if node_num == (actual_nodes_per_cloud - 1):
                     is_client = True
+                # Client is created last - we already have the full list of nodes 
+                with open(self.flatfile, "a") as ff:
+                    for node in self.nodes:
+                        ff.write("%s:%s\n" % (node.ip, node.port))
             node = H2OCloudNode(is_client,
                                 self.cloud_num, actual_nodes_per_cloud, node_num,
                                 self.cloud_name,
                                 self.h2o_jar,
                                 "127.0.0.1", self.base_port,
                                 self.xmx, self.cp, self.output_dir,
-                                self.test_ssl, self.ldap_config_path, self.jvm_opts)
+                                self.test_ssl, self.ldap_config_path, self.jvm_opts,
+                                self.flatfile)
             if is_client:
                 self.client_nodes.append(node)
             else:
