@@ -31,6 +31,15 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   transient private SocketChannelFactory _socketFactory;
   transient private H2OSecurityManager _security;
 
+  public String debugInfo() {
+    String info = _removed_from_cloud + "; " + this.hashCode();
+    H2ONode interned = INTERN.get(_key);
+    if (interned != null) {
+      info += "; interned = " + _removed_from_cloud + "; " + interned.hashCode();
+    }
+    return info;
+  }
+
   transient short _unique_idx; // Dense integer index, skipping 0.  NOT cloud-wide unique.
   transient boolean _announcedLostContact;  // True if heartbeat published a no-contact msg
   transient public long _last_heard_from; // Time in msec since we last heard from this Node

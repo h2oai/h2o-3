@@ -222,7 +222,7 @@ public class TCPReceiverThread extends Thread {
           int res = _chan.read(_bb); // Slide position forward (up to limit)
           if (res <= 0) throw new IOException("Didn't read any data: res=" + res);         // no eof & progress made
           _h2o._last_heard_from = System.currentTimeMillis();
-          System.out.println("_last_heard_from (5): " + _h2o._key.getIpPortString() + " = " + _h2o._last_heard_from);
+          System.out.println("_last_heard_from (5): " + _h2o._key.getIpPortString() + " = " + _h2o._last_heard_from  + " | " + _h2o.debugInfo());
         }
         _bb.flip();             // Limit to amount of data, position to 0
       }
@@ -273,7 +273,7 @@ public class TCPReceiverThread extends Thread {
     // Record the last time we heard from any given Node
     TimeLine.record_recv(ab, false, drop);
     final long now = ab._h2o._last_heard_from = System.currentTimeMillis();
-    System.out.println("_last_heard_from (6): " + ab._h2o._key.getIpPortString() + " = " + ab._h2o._last_heard_from);
+    System.out.println("_last_heard_from (6): " + ab._h2o._key.getIpPortString() + " = " + ab._h2o._last_heard_from + " | " + ab._h2o.debugInfo());
 
     // Snapshots are handled *IN THIS THREAD*, to prevent more UDP packets from
     // being handled during the dump.  Also works for packets from outside the
