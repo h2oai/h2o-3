@@ -10,7 +10,12 @@ class ClientDisconnectCheckThread extends Thread {
   }
 
   private boolean isTimeoutExceeded(H2ONode client, long timeout) {
-    return (System.currentTimeMillis() - client._last_heard_from) >= timeout;
+    long lastHeardFrom = client._last_heard_from;
+    boolean timedOut = (System.currentTimeMillis() - lastHeardFrom) >= timeout;
+    if (timedOut) {
+      System.out.println("TIMEOUT: " + lastHeardFrom + ", currenct time millis: " + System.currentTimeMillis() + " | " + client.debugInfo());
+    }
+    return timedOut;
   }
 
   /**
