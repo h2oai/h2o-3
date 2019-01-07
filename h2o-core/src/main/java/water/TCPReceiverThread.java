@@ -235,8 +235,10 @@ public class TCPReceiverThread extends Thread {
       try {
         //noinspection InfiniteLoopStatement
         while (true) {
+          System.out.println(System.currentTimeMillis() + "; Waiting for a message from " + _h2o);
           idle = true; // OK to have remote suicide while idle; happens during normal shutdown
           int sz = read(2).getChar(); // 2 bytes of next-message-size
+          System.out.println(System.currentTimeMillis() + "; Received a message of size " + sz + "B from " + _h2o);
           idle = false;
           assert sz < AutoBuffer.BBP_SML._size : "Incoming message is too big, should've been sent by TCP-BIG, got " + sz + " bytes";
           byte[] ary = MemoryManager.malloc1(Math.max(16,sz));
