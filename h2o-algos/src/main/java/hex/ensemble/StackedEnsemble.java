@@ -66,7 +66,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
     return true;
   }
 
-  public static void addModelPredictionsToLevelOneFrame(Model aModel, Frame aModelsPredictions, Frame levelOneFrame) {
+  static void addModelPredictionsToLevelOneFrame(Model aModel, Frame aModelsPredictions, Frame levelOneFrame) {
     if (aModel._output.isBinomialClassifier()) {
       // GLM uses a different column name than the other algos
       Vec preds = aModelsPredictions.vec(2); // Predictions column names have been changed. . .

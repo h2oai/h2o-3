@@ -272,7 +272,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     }
   }
 
-  public void checkAndInheritModelProperties() {
+  void checkAndInheritModelProperties() {
     if (null == _parms._base_models || 0 == _parms._base_models.length)
       throw new H2OIllegalArgumentException("When creating a StackedEnsemble you must specify one or more models; found 0.");
 
