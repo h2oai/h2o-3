@@ -3,14 +3,8 @@ package water.persist;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 
-import java.io.EOFException;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.SocketTimeoutException;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.io.*;
+import java.net.*;
 import java.util.ArrayList;
 import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
@@ -36,6 +30,8 @@ public final class PersistHdfs extends Persist {
   public static final Configuration CONF;
   /** Root path of HDFS */
   private final Path _iceRoot;
+  
+  private static final String DEFAULT_CHARSET = "utf-8";
 
   /**
    * Filter out hidden files/directories (dot files, eg.: .crc).
@@ -286,24 +282,39 @@ public final class PersistHdfs extends Persist {
   }
 
   public static void addFolder(Path p, ArrayList<String> keys,ArrayList<String> failed) throws IOException {
-    FileSystem fs = FileSystem.get(p.toUri(), PersistHdfs.CONF);
+    FileSystem fs = null;
+    final AmazonCredentials amazonCredentials = extractAmazonCredentials(p.toString());
+    try {
+      fs = FileSystem.get(new URI(p.toString()), PersistHdfs.CONF);
+    } catch (URISyntaxException e) {
+      throw new IllegalArgumentException("Given S3 URI is malformed. Please check special characters and encoding.", e);
+    }
     if(!fs.exists(p)){
       failed.add("Path does not exist: '" + p.toString() + "'");
       return;
     }
-    addFolder(fs, p, keys, failed);
+    addFolder(fs, p, keys, failed, amazonCredentials);
   }
 
-  private static void addFolder(FileSystem fs, Path p, ArrayList<String> keys, ArrayList<String> failed) {
+  private static void addFolder(FileSystem fs, Path p, ArrayList<String> keys, ArrayList<String> failed, final AmazonCredentials amazonCredentials) {
     if (fs == null) return;
     Futures futures = new Futures();
     try {
       for( FileStatus file : fs.listStatus(p, HIDDEN_FILE_FILTER) ) {
         Path pfs = file.getPath();
-        if(file.isDirectory()) {
-          addFolder(fs, pfs, keys, failed);
+        if(file.isDirectory() && !isDuplicatedRootFolderPresent(file, p)) {
+          addFolder(fs, pfs, keys, failed, amazonCredentials);
         } else if (file.getLen() > 0){
-          Key k = HDFSFileVec.make(pfs.toString(), file.getLen(), futures);
+          Key k;
+          if(amazonCredentials != null) {
+            URI uri = pfs.toUri();
+            //Decode the concatenated credentials in case those contain encoded chars. URI constructor is going to encode
+            // them once again
+            uri = new URI(uri.getScheme(), URLDecoder.decode(amazonCredentials.concatenated, DEFAULT_CHARSET), uri.getHost(), uri.getPort(), uri.getPath(),uri.getQuery(), uri.getFragment());
+            k = HDFSFileVec.make(uri.toString(), file.getLen(), futures);
+          } else {
+            k = HDFSFileVec.make(pfs.toString(), file.getLen(), futures);
+          }
           keys.add(k.toString());
           Log.debug("PersistHdfs: DKV.put(" + k + ")");
         }
@@ -315,34 +326,34 @@ public final class PersistHdfs extends Persist {
       futures.blockForPending();
     }
   }
+  
+  private static boolean isDuplicatedRootFolderPresent(final FileStatus fileStatus, final Path referencePath){
+    return fileStatus.getPath().getName().equals(referencePath.getName());
+  }
 
   @Override
   public Key uriToKey(URI uri) throws IOException {
     assert "hdfs".equals(uri.getScheme()) || "s3".equals(uri.getScheme())
             || "s3n".equals(uri.getScheme()) || "s3a".equals(uri.getScheme()) : "Expected hdfs, s3 s3n, or s3a scheme, but uri is " + uri;
 
+      final String uriWithCredentials = encodeCredentialsIfPresent(uri.toString());
+      if(uriWithCredentials != null) {
+        uri = URI.create(uriWithCredentials);
+      }
+
     FileSystem fs = FileSystem.get(uri, PersistHdfs.CONF);
     FileStatus[] fstatus = fs.listStatus(new Path(uri));
     assert fstatus.length == 1 : "Expected uri to single file, but uri is " + uri;
-
-    return HDFSFileVec.make(fstatus[0].getPath().toString(), fstatus[0].getLen());
+    // The FileSystem API may return the path with decoded credentials - thus it is required to re-encode.
+    return HDFSFileVec.make(encodeCredentialsIfPresent(fstatus[0].getPath().toString()), fstatus[0].getLen());
   }
-
-  public static FileSystem getFS(String path) throws IOException {
-    try {
-      return getFS(new URI(path));
-    } catch (URISyntaxException e) {
-      throw new RuntimeException(e);
-    }
-  }
-  public static FileSystem getFS(URI uri) throws IOException {
-    return FileSystem.get(uri, PersistHdfs.CONF);
-  }
-
+  
+  
   // Is there a bucket name without a trailing "/" ?
+  private static final Pattern BUCKET_ONLY_PATTERN = Pattern.compile("s3n://.@{0,1}[^/]*");
   private boolean isBareS3NBucketWithoutTrailingSlash(String s) {
     String s2 = s.toLowerCase();
-    Matcher m = Pattern.compile("s3n://[^/]*").matcher(s2);
+    Matcher m = BUCKET_ONLY_PATTERN.matcher(s2);
     return m.matches();
   }
 //  // We don't handle HDFS style S3 storage, just native storage.  But all users
@@ -375,35 +386,71 @@ public final class PersistHdfs extends Persist {
       if ("maprfs:".equals(s)) return array;
     }
     try {
+      filter = encodeCredentialsIfPresent(filter);
       Path p = new Path(filter);
       Path expand = p;
+      final URI uri = new URI(p.toString());
+      final AmazonCredentials amazonCredentials = extractAmazonCredentials(p.toString());
+      final String encodedCredentials = encodeCredentialsInUri(amazonCredentials);
+      final URI comparedUri = new URI(uri.getScheme(), encodeCredentialsInUri(amazonCredentials), uri.getHost(), uri.getPort(),
+              uri.getPath(), uri.getQuery(), uri.getFragment());
+      final String comparedPath = comparedUri.toString();
       if( !filter.endsWith("/") ) expand = p.getParent();
-      FileSystem fs = FileSystem.get(p.toUri(), conf);
+      FileSystem fs = FileSystem.get(uri, conf);
       for( FileStatus file : fs.listStatus(expand) ) {
-        Path fp = file.getPath();
-        if( fp.toString().startsWith(p.toString()) ) {
-          array.add(fp.toString());
+        final URI s3File = file.getPath().toUri();
+        final String s3FilePathString;
+        if(s3File.getUserInfo() == null && uri.getUserInfo() != null){
+          // If the original URI contained user Info, it should be inserted into the returned URI,
+          // as the client library does not include it since version 2.8.x
+          URI fetchUri = new URI(s3File.getScheme(), encodedCredentials, s3File.getHost(), s3File.getPort(),
+                  s3File.getPath(), s3File.getQuery(), s3File.getFragment());
+          s3FilePathString = fetchUri.toString();
+        } else {
+          s3FilePathString = s3File.toString();
+        }
+        
+        if( s3FilePathString.startsWith(comparedPath) ) {
+          array.add(s3FilePathString);
         }
         if( array.size() == limit) break;
       }
-    } catch (Exception e) {
-      Log.trace(e);
     } catch (Throwable t) {
-      Log.warn(t);
+      Log.err(t);
     }
 
     return array;
   }
 
+
+  private static String encodeCredentialsInUri(final AmazonCredentials amazonCredentials) {
+    if (amazonCredentials == null) return null;
+
+    try {
+      final String keyIdEncoded = URLDecoder.decode(amazonCredentials.accessKeyId, DEFAULT_CHARSET);
+      final String secretKeyEncoded = URLDecoder.decode(amazonCredentials.secretAccessKey, DEFAULT_CHARSET);
+
+      final StringBuilder credentialsBuilder = new StringBuilder(keyIdEncoded);
+      credentialsBuilder.append(':');
+      credentialsBuilder.append(secretKeyEncoded);
+
+      return credentialsBuilder.toString();
+      
+    } catch (UnsupportedEncodingException e) {
+      throw new IllegalStateException("Unsupported UTF-8 encoding.", e);
+    }
+  }
+  
   @Override
-  public void importFiles(String path, String pattern, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
+  public void   importFiles(String path, String pattern, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
+    path = encodeCredentialsIfPresent(path);
 //    path = convertS3toS3N(path);
 
     // Fix for S3 kind of URL
     if (isBareS3NBucketWithoutTrailingSlash(path)) {
       path += "/";
     }
-    Log.info("ImportHDFS processing (" + path + ")");
+    Log.info("ImportHDFS processing (" + redactAmazonCredentials(path) + ")");
 
     // List of processed files
     try {
@@ -413,6 +460,71 @@ public final class PersistHdfs extends Persist {
       // write barrier was here : DKV.write_barrier();
     } catch (IOException e) {
       throw new HDFSIOException(path, PersistHdfs.CONF.toString(), e);
+    }
+  }
+  
+  private static final Pattern CREDENTIALS_PATTERN = Pattern.compile("s3[an]://(.[^:]*):{0,1}(.[^@]*)@{1}.*");
+  private static final class AmazonCredentials{
+    private final String accessKeyId;
+    private final String secretAccessKey;
+    private final String concatenated;
+
+    public AmazonCredentials(String accessKeyId, String secretAccessKey) {
+      this.accessKeyId = accessKeyId;
+      this.secretAccessKey = secretAccessKey;
+      
+      final StringBuilder stringBuilder = new StringBuilder(accessKeyId);
+      stringBuilder.append(':');
+      stringBuilder.append(secretAccessKey);
+      
+      concatenated = stringBuilder.toString();
+    }
+  }
+  
+  private static final String redactAmazonCredentials(final String uri){
+    final Matcher matcher = CREDENTIALS_PATTERN.matcher(uri);
+    if(!matcher.matches()) return uri;
+
+    String encodedCredentialsPath = uri.replace(matcher.group(1), "SECRETKEYID");
+    return encodedCredentialsPath.replace(matcher.group(2), "SECRETKEY");
+  }
+  
+  
+  private static final AmazonCredentials extractAmazonCredentials(final String uri){
+    final Matcher matcher = CREDENTIALS_PATTERN.matcher(uri);
+    
+    if(!matcher.matches()) return null;
+
+    return new AmazonCredentials(matcher.group(1), matcher.group(2));
+  }
+  private static String encodeCredentialsIfPresent(final String originalPath){
+    final Matcher matcher = CREDENTIALS_PATTERN.matcher(originalPath);
+    if(!matcher.matches()) return originalPath;
+
+    final String accesKeyId = matcher.group(1);
+    final String secretKey = matcher.group(2);
+
+    try {
+      final String encodedAccesKeyId;
+      // Both might be already pre-encoded when retrieved from FileSystem or from previous stages
+      // Encoding again would malform the credentials, thus pre-checked first
+      if(URLDecoder.decode(accesKeyId, DEFAULT_CHARSET).equals(accesKeyId)) {
+        encodedAccesKeyId = URLEncoder.encode(accesKeyId, DEFAULT_CHARSET);
+      } else encodedAccesKeyId = accesKeyId;
+      
+      final String encodedSecretKey;
+      
+      if(URLDecoder.decode(secretKey, DEFAULT_CHARSET).equals(secretKey)){
+         encodedSecretKey = URLEncoder.encode(secretKey, DEFAULT_CHARSET);
+      } else encodedSecretKey = secretKey;
+
+      String encodedCredentialsPath = originalPath.replace(accesKeyId, encodedAccesKeyId);
+      encodedCredentialsPath = encodedCredentialsPath.replace(secretKey, encodedSecretKey);
+      
+      return encodedCredentialsPath;
+
+    } catch (UnsupportedEncodingException e) {
+      throw new IllegalStateException("UTF-8 encoding is unsupported, unable to encode S3 credential in URI.");
     }
   }
 

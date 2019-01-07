@@ -1,12 +1,5 @@
 description = "H2O Persist S3"
 
-//apply plugin: "io.spring.dependency-management"
-
-//dependencyManagement {
-//  imports {
-//    mavenBom 'com.amazonaws:aws-java-sdk-bom:1.10.47'
-//  }
-//}
 
 dependencies {
   compile project(":h2o-core")
