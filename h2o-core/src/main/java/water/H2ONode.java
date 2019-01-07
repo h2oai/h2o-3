@@ -507,8 +507,11 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
               bb = _msgQ.poll();  // Go get more, same batch
             }
             sendBuffer();         // Send final trailing BBs
-          } catch (IllegalMonitorStateException imse) { /* ignore */
-          } catch (InterruptedException e) { /*ignore*/ }
+          } catch (IllegalMonitorStateException imse) {
+            imse.printStackTrace(); /* ignore */
+          } catch (InterruptedException e) { 
+            e.printStackTrace(); /*ignore*/
+          }
         }
       } catch(Throwable t) { throw Log.throwErr(t); }
       if(_chan != null) {
@@ -540,6 +543,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
           _chan = null;
           retries++;
           final int sleep = Math.min(5000,retries << 1);
+          System.out.println("Sleeping for " + sleep);
           try {Thread.sleep(sleep);} catch (InterruptedException e) {/*ignored*/}
         }
       }

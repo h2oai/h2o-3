@@ -338,7 +338,7 @@ public class NetworkInit {
         }
         bb.reset();
         if (H2O.ARGS.client) {
-          System.out.println("Sending message to: " + h2o.debugInfo());
+          System.out.println("Sending message to: " + h2o.toDebugString() + " (" + h2o.debugInfo() + "), time=" + System.currentTimeMillis());
         }
         h2o.sendMessage(bb, priority);
       }
