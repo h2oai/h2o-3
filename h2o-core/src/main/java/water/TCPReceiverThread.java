@@ -246,8 +246,10 @@ public class TCPReceiverThread extends Thread {
           assert (0xFF & sentinel) == 0xef : "Missing expected sentinel (0xef) at the end of the message from " + _h2o + ", likely out of sync, size = " + sz + ", position = " + _bb.position() +", bytes = " + printBytes(_bb, _bb.position(), sz);
           // package the raw bytes into an array and pass it on to FJQ for further processing
           basic_packet_handling(new AutoBuffer(_h2o, ary, 0, sz));
+          System.out.println(System.currentTimeMillis() + "; Received a message of size " + sz + "B from " + _h2o + ":" + getName());
         }
       } catch(Throwable t) {
+        t.printStackTrace();
         if( !idle || !(t instanceof IOException) ) {
           t.printStackTrace();
           Log.err(t);
