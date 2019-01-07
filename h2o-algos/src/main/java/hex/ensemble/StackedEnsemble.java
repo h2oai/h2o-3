@@ -177,10 +177,10 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       if (preds == null) {
         preds =  model.score(frame, predsKey.toString());
       }
-      if (_model._output._base_model_predictions == null)
-        _model._output._base_model_predictions = new NonBlockingHashSet<>();
+      if (_model._output._base_model_predictions_keys == null)
+        _model._output._base_model_predictions_keys = new NonBlockingHashSet<>();
       
-      _model._output._base_model_predictions.add(predsKey);
+      _model._output._base_model_predictions_keys.add(predsKey.toString());
       //predictions are cleaned up by metalearner if necessary
       return preds;
     }

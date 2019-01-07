@@ -116,7 +116,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     // it is then the responsibility of the client code to delete those frames from DKV.
     //This especially useful when building SE models incrementally (e.g. in AutoML).
     //The Set is instantiated and filled only if StackedEnsembleParameters#_keep_base_model_predictions=true.
-    public NonBlockingHashSet<Key<Frame>> _base_model_predictions; 
+    public NonBlockingHashSet<String> _base_model_predictions_keys; 
   }
 
   /**
@@ -430,8 +430,9 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
   
   //TODO: change visibility to package after moving current file to hex.ensemble package
   public void deleteBaseModelPredictions() {
-    if (_output._base_model_predictions != null) {
-      for (Key<Frame> key : _output._base_model_predictions) {
+    if (_output._base_model_predictions_keys != null) {
+      for (String skey : _output._base_model_predictions_keys) {
+        Key<Frame> key = Key.make(skey);
         if (_output._levelone_frame_id != null && key.get() != null)
           Frame.deleteTempFrameAndItsNonSharedVecs(key.get(), _output._levelone_frame_id);
         else
