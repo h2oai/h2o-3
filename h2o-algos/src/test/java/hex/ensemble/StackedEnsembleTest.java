@@ -2,6 +2,7 @@ package hex.ensemble;
 
 import hex.GLMHelper;
 import hex.Model;
+import hex.ModelMetrics;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
@@ -289,6 +290,14 @@ public class StackedEnsembleTest extends TestUtil {
             new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
             false, DistributionFamily.gaussian, Metalearner.Algorithm.AUTO, true);
 
+        basicEnsemble("./smalldata/airlines/allyears2k_headers.zip",
+            null,
+            new StackedEnsembleTest.PrepData() { int prep(Frame fr) {
+                for( String s : ignored_aircols ) fr.remove(s).remove();
+                return fr.find("IsArrDelayed"); }
+            },
+            false, DistributionFamily.bernoulli, Metalearner.Algorithm.AUTO, true);
+        
         basicEnsemble("./smalldata/iris/iris_wheader.csv",
             null,
             new StackedEnsembleTest.PrepData() { int prep(Frame fr) {return fr.find("class"); }
@@ -299,7 +308,7 @@ public class StackedEnsembleTest extends TestUtil {
             "./smalldata/logreg/prostate_test.csv",
             new StackedEnsembleTest.PrepData() { int prep(Frame fr) { return fr.find("CAPSULE"); }
             },
-            false, DistributionFamily.bernoulli, Metalearner.Algorithm.AUTO, false);
+            false, DistributionFamily.bernoulli, Metalearner.Algorithm.AUTO, true);
     }
 
 
@@ -334,7 +343,8 @@ public class StackedEnsembleTest extends TestUtil {
                 Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(
                     training_frame,
                     new Key[]{Key.make(training_frame._key + "_train"), Key.make(training_frame._key + "_blending")},
-                    new double[] {0.6, 0.4}, seed);
+                    new double[] {0.6, 0.4}, 
+                    seed);
                 training_frame.remove();
                 training_frame = splits[0];
                 blending_frame = splits[1];
@@ -416,19 +426,35 @@ public class StackedEnsembleTest extends TestUtil {
             stackedEnsembleParameters._blending = blending_frame == null ? null : blending_frame._key;
             stackedEnsembleParameters._response_column = training_frame._names[idx];
             stackedEnsembleParameters._metalearner_algorithm = metalearner_algo;
-            stackedEnsembleParameters._base_models = new Key[] {gbm._key,drf._key};
+            stackedEnsembleParameters._base_models = new Key[] {gbm._key, drf._key};
             stackedEnsembleParameters._seed = seed;
             // Invoke Stacked Ensemble and block till end
             StackedEnsemble stackedEnsembleJob = new StackedEnsemble(stackedEnsembleParameters);
             // Get the stacked ensemble
             stackedEnsembleModel = stackedEnsembleJob.trainModel().get();
 
-            preds = stackedEnsembleModel.score(training_frame);
-            final boolean predsTheSame = stackedEnsembleModel.testJavaScoring(training_frame, preds, 1e-15, 0.01);
+            Frame training_clone = new Frame(training_frame);
+            DKV.put(training_clone);
+            preds = stackedEnsembleModel.score(training_clone);
+            final boolean predsTheSame = stackedEnsembleModel.testJavaScoring(training_clone, preds, 1e-15, 0.01);
             Assert.assertTrue(predsTheSame);
             Assert.assertTrue(stackedEnsembleJob.isStopped());
 
-            //return
+            ModelMetrics training_metrics = stackedEnsembleModel._output._training_metrics;
+            ModelMetrics training_clone_metrics = ModelMetrics.getFromDKV(stackedEnsembleModel, training_clone);
+            Assert.assertEquals(training_metrics.mse(), training_clone_metrics.mse(), 1e-15);
+            training_clone.remove();
+            
+            if (validation_frame != null) {
+                ModelMetrics validation_metrics = stackedEnsembleModel._output._validation_metrics;
+                Frame validation_clone = new Frame(validation_frame);
+                DKV.put(validation_clone);
+                stackedEnsembleModel.score(validation_clone).remove();
+                ModelMetrics validation_clone_metrics = ModelMetrics.getFromDKV(stackedEnsembleModel, validation_clone);
+                Assert.assertEquals(validation_metrics.mse(), validation_clone_metrics.mse(), 1e-15);
+                validation_clone.remove();
+            }
+            
             return stackedEnsembleModel._output;
 
         } finally {

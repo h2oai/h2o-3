@@ -10,7 +10,6 @@ import hex.tree.drf.DRFModel;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.nbhm.NonBlockingHashSet;
 import water.udf.CFuncRef;
 import water.util.Log;
@@ -179,13 +178,13 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     throw new UnsupportedOperationException("StackedEnsembleModel.makeMetricBuilder should never be called!");
   }
 
-  public ModelMetrics doScoreMetricsOneFrame(Frame frame, Job job) {
+  ModelMetrics doScoreMetricsOneFrame(Frame frame, Job job) {
       Frame pred = this.predictScoreImpl(frame, new Frame(frame), null, job, true, CFuncRef.from(_parms._custom_metric_func));
       pred.remove();
       return ModelMetrics.getFromDKV(this, frame);
   }
 
-  public void doScoreOrCopyMetrics(Job job) {
+  void doScoreOrCopyMetrics(Job job) {
     // To get ensemble training metrics, the training frame needs to be re-scored since
     // training metrics from metalearner are not equal to ensemble training metrics.
     // The training metrics for the metalearner do not reflect true ensemble training metrics because
@@ -193,11 +192,11 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     // training metrics, we have to re-score the training frame on all the base models, then send these
     // biased preds through to the metalearner, and then compute the metrics there.
     this._output._training_metrics = doScoreMetricsOneFrame(this._parms.train(), job);
+    
     // Validation metrics can be copied from metalearner (may be null).
     // Validation frame was already piped through so there's no need to re-do that to get the same results.
-    // TODO: Look into whether we should deepClone validation metrics instead
-    //this._output._validation_metrics = this._output._metalearner._output._validation_metrics.deepCloneWithDifferentModelAndFrame(this, this._output._metalearner._parms.valid());  #valid or train?
     this._output._validation_metrics = this._output._metalearner._output._validation_metrics;
+    
     // Cross-validation metrics can be copied from metalearner (may be null).
     // For cross-validation metrics, we use metalearner cross-validation metrics as a proxy for the ensemble
     // cross-validation metrics -- the true k-fold cv metrics for the ensemble would require training k sets of
@@ -205,10 +204,11 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     // computationally expensive and awkward from the standpoint of the existing Stacked Ensemble API.
     // More info: https://0xdata.atlassian.net/browse/PUBDEV-3971
     // Need to do DeepClone because otherwise framekey is incorrect (metalearner train is levelone not train)
-    if (null != this._output._metalearner._output._cross_validation_metrics)
-      this._output._cross_validation_metrics = this._output._metalearner._output._cross_validation_metrics.deepCloneWithDifferentModelAndFrame(this, this._output._metalearner._parms.train());
+    if (null != this._output._metalearner._output._cross_validation_metrics) {
+      this._output._cross_validation_metrics = this._output._metalearner._output._cross_validation_metrics
+              .deepCloneWithDifferentModelAndFrame(this, this._output._metalearner._parms.train());
+    }
   }
-
 
   private DistributionFamily distributionFamily(Model aModel) {
     // TODO: hack alert: In DRF, _parms._distribution is always set to multinomial.  Yay.
