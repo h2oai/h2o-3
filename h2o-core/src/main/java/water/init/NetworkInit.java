@@ -273,7 +273,9 @@ public class NetworkInit {
   // disabled).
   public static void multicast( ByteBuffer bb , byte priority) {
     try { multicast2(bb, priority); }
-    catch (Exception ie) {}
+    catch (Exception ie) {
+      ie.printStackTrace();
+    }
   }
 
   static private void multicast2( ByteBuffer bb, byte priority ) {
@@ -335,6 +337,9 @@ public class NetworkInit {
           continue;
         }
         bb.reset();
+        if (H2O.ARGS.client) {
+          System.out.println("Sending message to: " + h2o.debugInfo());
+        }
         h2o.sendMessage(bb, priority);
       }
     }
