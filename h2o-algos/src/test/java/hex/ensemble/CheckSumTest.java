@@ -1,5 +1,6 @@
 package hex.ensemble;
 
+import hex.StackedEnsembleModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;

@@ -1,9 +1,8 @@
-package hex.ensemble;
+package hex;
 
-import hex.Distribution;
-import hex.Model;
-import hex.ModelCategory;
-import hex.ModelMetrics;
+import hex.ensemble.Metalearner;
+import hex.ensemble.StackedEnsemble;
+import hex.ensemble.StackedEnsembleMojoWriter;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMModel;
 import hex.tree.drf.DRFModel;
@@ -61,7 +60,15 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     //the training frame used for blending (from which predictions columns are computed): theoretically, we could directly use training frame for this...
     public Key<Frame> _blending;
 
-    public Metalearner.Algorithm _metalearner_algorithm = Metalearner.Algorithm.AUTO;
+    //What to use as a metalearner (GLM, GBM, DRF, or DeepLearning)
+    public enum MetalearnerAlgorithm {
+      AUTO,
+      glm,
+      gbm,
+      drf,
+      deeplearning
+    }
+    public MetalearnerAlgorithm _metalearner_algorithm = MetalearnerAlgorithm.AUTO;
     public String _metalearner_params = new String(); //used for clients code-gen only.
     public Model.Parameters _metalearner_parameters;
     public long _seed;
@@ -77,7 +84,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
      * initialize {@link #_metalearner_parameters} with default parameters for the given algorithm
      * @param algo the metalearner algorithm we want to use and for which parameters are initialized.
      */
-    public void initMetalearnerParams(Metalearner.Algorithm algo) {
+    public void initMetalearnerParams(MetalearnerAlgorithm algo) {
       _metalearner_algorithm = algo;
       _metalearner_parameters = Metalearner.createParameters(algo);
     }
@@ -178,13 +185,13 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     throw new UnsupportedOperationException("StackedEnsembleModel.makeMetricBuilder should never be called!");
   }
 
-  ModelMetrics doScoreMetricsOneFrame(Frame frame, Job job) {
+  public ModelMetrics doScoreMetricsOneFrame(Frame frame, Job job) {
       Frame pred = this.predictScoreImpl(frame, new Frame(frame), null, job, true, CFuncRef.from(_parms._custom_metric_func));
       pred.remove();
       return ModelMetrics.getFromDKV(this, frame);
   }
 
-  void doScoreOrCopyMetrics(Job job) {
+  public void doScoreOrCopyMetrics(Job job) {
     // To get ensemble training metrics, the training frame needs to be re-scored since
     // training metrics from metalearner are not equal to ensemble training metrics.
     // The training metrics for the metalearner do not reflect true ensemble training metrics because
@@ -392,7 +399,8 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
   }
   
-  void deleteBaseModelPredictions() {
+  //TODO: change visibility to package after moving current file to hex.ensemble package
+  public void deleteBaseModelPredictions() {
     if (_output._base_model_predictions != null) {
       for (Key<Frame> key : _output._base_model_predictions) {
         if (_output._levelone_frame_id != null && key.get() != null)

@@ -4,6 +4,8 @@ import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 
+import hex.StackedEnsembleModel;
+import hex.StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm;
 import water.DKV;
 import water.Job;
 import water.Key;
@@ -213,8 +215,8 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         levelOneValidationFrame = prepareLevelOneFrame(levelOneValidKey, _model._parms._base_models, _model._parms.valid(), false);
       }
 
-      Metalearner.Algorithm metalearnerAlgoSpec = _model._parms._metalearner_algorithm;
-      Metalearner.Algorithm metalearnerAlgoImpl = Metalearner.getActualMetalearnerAlgo(metalearnerAlgoSpec);
+      MetalearnerAlgorithm metalearnerAlgoSpec = _model._parms._metalearner_algorithm;
+      MetalearnerAlgorithm metalearnerAlgoImpl = Metalearner.getActualMetalearnerAlgo(metalearnerAlgoSpec);
 
       // Compute metalearner
       if(metalearnerAlgoImpl != null) {

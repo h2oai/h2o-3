@@ -3,7 +3,9 @@ package hex.ensemble;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelCategory;
-import hex.ensemble.StackedEnsembleModel.StackedEnsembleParameters;
+import hex.StackedEnsembleModel;
+import hex.StackedEnsembleModel.StackedEnsembleParameters;
+import hex.StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm;
 import hex.deeplearning.DeepLearning;
 import hex.deeplearning.DeepLearningModel;
 import hex.glm.GLM;
@@ -22,18 +24,10 @@ import water.util.Log;
 
 public abstract class Metalearner<B extends ModelBuilder<M, P, ?>, M extends Model<M, P, ?>, P extends Model.Parameters> {
 
-  public enum Algorithm {
-    AUTO,
-    deeplearning,
-    drf,
-    gbm,
-    glm,
-  }
-
-  static Algorithm getActualMetalearnerAlgo(Algorithm algo) {
+  static MetalearnerAlgorithm getActualMetalearnerAlgo(MetalearnerAlgorithm algo) {
     switch (algo) {
       case AUTO:
-        return Algorithm.glm;
+        return MetalearnerAlgorithm.glm;
       case gbm:
       case glm:
       case drf:
@@ -44,7 +38,7 @@ public abstract class Metalearner<B extends ModelBuilder<M, P, ?>, M extends Mod
     }
   }
   
-  static Model.Parameters createParameters(Algorithm algo) {
+  public static Model.Parameters createParameters(MetalearnerAlgorithm algo) {
     switch (algo) {
       case deeplearning:
         return new DeepLearningModel.DeepLearningParameters();
@@ -59,7 +53,7 @@ public abstract class Metalearner<B extends ModelBuilder<M, P, ?>, M extends Mod
     }
   }
   
-  static Metalearner createInstance(Algorithm algo) {
+  static Metalearner createInstance(MetalearnerAlgorithm algo) {
     switch (algo) {
       case deeplearning:
         return new DLMetalearner();

@@ -2,6 +2,7 @@ package hex.ensemble;
 
 import hex.Model;
 import hex.MultiModelMojoWriter;
+import hex.StackedEnsembleModel;
 import water.DKV;
 
 import java.io.IOException;

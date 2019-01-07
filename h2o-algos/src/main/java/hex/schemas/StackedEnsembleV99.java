@@ -1,9 +1,9 @@
 package hex.schemas;
 
 import com.google.gson.reflect.TypeToken;
-import hex.ensemble.Metalearner;
+import hex.StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm;
 import hex.ensemble.StackedEnsemble;
-import hex.ensemble.StackedEnsembleModel;
+import hex.StackedEnsembleModel;
 import hex.tree.gbm.GBMModel;
 import hex.tree.drf.DRFModel;
 import hex.deeplearning.DeepLearningModel;
@@ -58,7 +58,7 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
             help = "Type of algorithm to use as the metalearner. " +
                     "Options include 'AUTO' (GLM with non negative weights; if validation_frame is present, a lambda search is performed), 'glm' (GLM with default parameters), 'gbm' (GBM with default parameters), " +
                     "'drf' (Random Forest with default parameters), or 'deeplearning' (Deep Learning with default parameters).")
-    public Metalearner.Algorithm metalearner_algorithm;
+    public MetalearnerAlgorithm metalearner_algorithm;
 
     // For ensemble metalearner cross-validation
     @API(level = API.Level.critical, direction = API.Direction.INOUT, 
