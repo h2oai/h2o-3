@@ -4,8 +4,6 @@ import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 
-import hex.StackedEnsembleModel;
-import hex.StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm;
 import water.DKV;
 import water.Job;
 import water.Key;
@@ -19,7 +17,6 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import water.nbhm.NonBlockingHashSet;
 import water.util.ArrayUtils;
 import water.util.Log;
 
@@ -226,8 +223,8 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         levelOneValidationFrame = prepareLevelOneFrame(levelOneValidKey, _model._parms._base_models, _model._parms.valid(), false);
       }
 
-      MetalearnerAlgorithm metalearnerAlgoSpec = _model._parms._metalearner_algorithm;
-      MetalearnerAlgorithm metalearnerAlgoImpl = Metalearner.getActualMetalearnerAlgo(metalearnerAlgoSpec);
+      Metalearner.Algorithm metalearnerAlgoSpec = _model._parms._metalearner_algorithm;
+      Metalearner.Algorithm metalearnerAlgoImpl = Metalearner.getActualMetalearnerAlgo(metalearnerAlgoSpec);
 
       // Compute metalearner
       if(metalearnerAlgoImpl != null) {
@@ -255,7 +252,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         metalearner.compute();
       } else {
         throw new H2OIllegalArgumentException("Invalid `metalearner_algorithm`. Passed in " + metalearnerAlgoSpec + 
-            " but must be one of " + Arrays.toString(MetalearnerAlgorithm.values()));
+            " but must be one of " + Arrays.toString(Metalearner.Algorithm.values()));
       }
     } // computeImpl
   }

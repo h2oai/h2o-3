@@ -1,15 +1,15 @@
-package hex;
+package hex.ensemble;
 
-import hex.ensemble.Metalearner;
-import hex.ensemble.StackedEnsemble;
-import hex.ensemble.StackedEnsembleMojoWriter;
+import hex.Distribution;
+import hex.Model;
+import hex.ModelCategory;
+import hex.ModelMetrics;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMModel;
 import hex.tree.drf.DRFModel;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.nbhm.NonBlockingHashSet;
 import water.udf.CFuncRef;
 import water.util.Log;
@@ -32,14 +32,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
   public String responseColumn = null;
   private NonBlockingHashSet<String> names = null;  // keep columns as a set for easier comparison
-  //public int nfolds = -1; //From 1st base model
-
-  // Get from 1st base model (should be identical across base models)
-  public int basemodel_nfolds = -1;  //From 1st base model
-  public Parameters.FoldAssignmentScheme basemodel_fold_assignment;  //From 1st base model
-  public String basemodel_fold_column;  //From 1st base model
-
-  public long seed = -1; //From 1st base model
   
   public enum StackingStrategy {
     cross_validation,
@@ -74,15 +66,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     //the training frame used for blending (from which predictions columns are computed)
     public Key<Frame> _blending;
 
-    //What to use as a metalearner (GLM, GBM, DRF, or DeepLearning)
-    public enum MetalearnerAlgorithm {
-      AUTO,
-      glm,
-      gbm,
-      drf,
-      deeplearning
-    }
-    public MetalearnerAlgorithm _metalearner_algorithm = MetalearnerAlgorithm.AUTO;
+    public Metalearner.Algorithm _metalearner_algorithm = Metalearner.Algorithm.AUTO;
     public String _metalearner_params = new String(); //used for clients code-gen only.
     public Model.Parameters _metalearner_parameters;
     public long _seed;
@@ -98,7 +82,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
      * initialize {@link #_metalearner_parameters} with default parameters for the given algorithm
      * @param algo the metalearner algorithm we want to use and for which parameters are initialized.
      */
-    public void initMetalearnerParams(MetalearnerAlgorithm algo) {
+    public void initMetalearnerParams(Metalearner.Algorithm algo) {
       _metalearner_algorithm = algo;
       _metalearner_parameters = Metalearner.createParameters(algo);
     }
@@ -135,44 +119,26 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
    */
   @Override
   protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
-    // Build up the names & domains.
-    String[] names = makeScoringNames();
-    String[][] domains = new String[names.length][];
-    domains[0] = names.length == 1 ? null : computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
-
-    // TODO: optimize these DKV lookups:
     Frame levelOneFrame = new Frame(Key.<Frame>make("preds_levelone_" + this._key.toString() + fr._key));
-    int baseIdx = 0;
-    Frame[] base_prediction_frames = new Frame[this._parms._base_models.length];
 
     // TODO: don't score models that have 0 coefficients / aren't used by the metalearner.
+    //   also we should be able to parallelize scoring of base models
     for (Key<Model> baseKey : this._parms._base_models) {
-      Model base = baseKey.get();  // TODO: cacheme!
+      Model base = baseKey.get(); 
 
-      // adapt fr for each base_model
-
-      // TODO: cache: don't need to call base.adaptTestForTrain() if the
-      // base_model has the same names and domains as one we've seen before.
-      // Such base_models can share their adapted frame.
-      Frame adaptedFrame = new Frame(fr);
-      base.adaptTestForTrain(adaptedFrame, true, computeMetrics);
-
-      // TODO: parallel scoring for the base_models
-      BigScore baseBs = (BigScore) base.makeBigScoreTask(domains, names, adaptedFrame,
-                                                         computeMetrics, true,
-                                                         j, customMetricFunc).doAll(names.length, Vec.T_NUM, adaptedFrame);
-      Frame basePreds = baseBs.outputFrame(Key.<Frame>make("preds_base_" + this._key.toString() + fr._key), names, domains);
+      Frame basePreds = base.score(
+          fr,
+          "preds_base_" + this._key.toString() + fr._key,
+          j,
+          false
+      );
+      
       //Need to remove 'predict' column from multinomial since it contains outcome
       if (base._output.isMultinomialClassifier()) {
         basePreds.remove("predict");
       }
-      base_prediction_frames[baseIdx] = basePreds;
       StackedEnsemble.addModelPredictionsToLevelOneFrame(base, basePreds, levelOneFrame);
       DKV.remove(basePreds._key); //Cleanup
-
-      Frame.deleteTempFrameAndItsNonSharedVecs(adaptedFrame, fr);
-
-      baseIdx++;
     }
 
     // Add response column to level one frame
@@ -184,33 +150,23 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     // Score the dataset, building the class distribution & predictions
 
     Model metalearner = this._output._metalearner;
-    Frame levelOneAdapted = new Frame(levelOneFrame);
-    metalearner.adaptTestForTrain(levelOneAdapted, true, computeMetrics);
-
-    String[] metaNames = metalearner.makeScoringNames();
-    String[][] metaDomains = new String[metaNames.length][];
-    metaDomains[0] = metaNames.length == 1 ? null : !computeMetrics ? metalearner._output._domains[metalearner._output._domains.length-1] : levelOneAdapted.lastVec().domain();
-
-    BigScore metaBs = (BigScore) metalearner.makeBigScoreTask(metaDomains,
-                                                              metaNames,
-                                                              levelOneAdapted,
-                                                              computeMetrics,
-                                                              true,
-                                                              j,
-                                                              CFuncRef.from(_parms._custom_metric_func)).
-            doAll(metaNames.length, Vec.T_NUM, levelOneAdapted);
-
+    Frame predictFr = metalearner.score(
+        levelOneFrame, 
+        destination_key, 
+        j, 
+        computeMetrics, 
+        CFuncRef.from(_parms._custom_metric_func)
+    );
     if (computeMetrics) {
-      ModelMetrics mmMetalearner = metaBs._mb.makeModelMetrics(metalearner, levelOneFrame, levelOneAdapted, metaBs.outputFrame());
-      // This has just stored a ModelMetrics object for the (metalearner, preds_levelone) Model/Frame pair.
+      // #score has just stored a ModelMetrics object for the (metalearner, preds_levelone) Model/Frame pair.
       // We need to be able to look it up by the (this, fr) pair.
       // The ModelMetrics object for the metalearner will be removed when the metalearner is removed.
-      ModelMetrics mmStackedEnsemble = mmMetalearner.deepCloneWithDifferentModelAndFrame(this, fr);
+      Key<ModelMetrics>[] mms = metalearner._output.getModelMetrics();
+      ModelMetrics lastComputedMetric = mms[mms.length - 1].get();
+      ModelMetrics mmStackedEnsemble = lastComputedMetric.deepCloneWithDifferentModelAndFrame(this, fr);
       this.addModelMetrics(mmStackedEnsemble);
     }
-
-    Frame.deleteTempFrameAndItsNonSharedVecs(levelOneAdapted, levelOneFrame);
-    return metaBs.outputFrame(Key.<Frame>make(destination_key), metaNames, metaDomains);
+    return predictFr;
   }
 
 
@@ -228,13 +184,13 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     throw new UnsupportedOperationException("StackedEnsembleModel.makeMetricBuilder should never be called!");
   }
 
-  public ModelMetrics doScoreMetricsOneFrame(Frame frame, Job job) {
+  ModelMetrics doScoreMetricsOneFrame(Frame frame, Job job) {
       Frame pred = this.predictScoreImpl(frame, new Frame(frame), null, job, true, CFuncRef.from(_parms._custom_metric_func));
       pred.remove();
       return ModelMetrics.getFromDKV(this, frame);
   }
 
-  public void doScoreOrCopyMetrics(Job job) {
+  void doScoreOrCopyMetrics(Job job) {
     // To get ensemble training metrics, the training frame needs to be re-scored since
     // training metrics from metalearner are not equal to ensemble training metrics.
     // The training metrics for the metalearner do not reflect true ensemble training metrics because
@@ -242,11 +198,11 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     // training metrics, we have to re-score the training frame on all the base models, then send these
     // biased preds through to the metalearner, and then compute the metrics there.
     this._output._training_metrics = doScoreMetricsOneFrame(this._parms.train(), job);
+    
     // Validation metrics can be copied from metalearner (may be null).
     // Validation frame was already piped through so there's no need to re-do that to get the same results.
-    // TODO: Look into whether we should deepClone validation metrics instead
-    //this._output._validation_metrics = this._output._metalearner._output._validation_metrics.deepCloneWithDifferentModelAndFrame(this, this._output._metalearner._parms.valid());  #valid or train?
     this._output._validation_metrics = this._output._metalearner._output._validation_metrics;
+    
     // Cross-validation metrics can be copied from metalearner (may be null).
     // For cross-validation metrics, we use metalearner cross-validation metrics as a proxy for the ensemble
     // cross-validation metrics -- the true k-fold cv metrics for the ensemble would require training k sets of
@@ -254,10 +210,11 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     // computationally expensive and awkward from the standpoint of the existing Stacked Ensemble API.
     // More info: https://0xdata.atlassian.net/browse/PUBDEV-3971
     // Need to do DeepClone because otherwise framekey is incorrect (metalearner train is levelone not train)
-    if (null != this._output._metalearner._output._cross_validation_metrics)
-      this._output._cross_validation_metrics = this._output._metalearner._output._cross_validation_metrics.deepCloneWithDifferentModelAndFrame(this, this._output._metalearner._parms.train());
+    if (null != this._output._metalearner._output._cross_validation_metrics) {
+      this._output._cross_validation_metrics = this._output._metalearner._output._cross_validation_metrics
+              .deepCloneWithDifferentModelAndFrame(this, this._output._metalearner._parms.train());
+    }
   }
-
 
   private DistributionFamily distributionFamily(Model aModel) {
     // TODO: hack alert: In DRF, _parms._distribution is always set to multinomial.  Yay.
@@ -326,6 +283,14 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     boolean beenHere = false;
     boolean blending_mode = _parms._blending != null;
     boolean cv_required_on_base_model = !blending_mode;
+    
+    //following variables are collected from the 1st base model (should be identical across base models), i.e. when beenHere=false
+    int basemodel_nfolds = -1;
+    Parameters.FoldAssignmentScheme basemodel_fold_assignment = null;
+    String basemodel_fold_column = null;
+    long seed = -1;
+    //end 1st model collected fields
+    
     trainingFrameRows = _parms.train().numRows();
 
     for (Key<Model> k : _parms._base_models) {
@@ -435,8 +400,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
   }
   
-  //TODO: change visibility to package after moving current file to hex.ensemble package
-  public void deleteBaseModelPredictions() {
+  void deleteBaseModelPredictions() {
     if (_output._base_model_predictions_keys != null) {
       for (Key<Frame> key : _output._base_model_predictions_keys) {
         if (_output._levelone_frame_id != null && key.get() != null)
