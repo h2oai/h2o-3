@@ -531,7 +531,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
         try {
           ByteChannel chan = _chan == null ? (_chan=openChan()) : _chan;
           chan.write(_bb);
-          System.out.println(System.currentTimeMillis() + "; Sent buffer = " + _bb);
+          System.out.println(System.currentTimeMillis() + "; Sent buffer = " + bbHashCode + "; " + H2ONode.this.toDebugString());
         } catch(IOException ioe) {
           _bb.rewind();           // Position to zero; limit unchanged; retry the operation
           // Log if not shutting down, and not middle-of-cloud-formation where
