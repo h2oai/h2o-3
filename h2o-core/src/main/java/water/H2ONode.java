@@ -491,6 +491,8 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
           @Override public int compare( ByteBuffer bb1, ByteBuffer bb2 ) { return bb1.position() - bb2.position(); }
         });
 
+    int bbHashCode;
+    
     @Override public void run(){
       try {
         while (!_stopRequested) {            // Forever loop
@@ -504,7 +506,9 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
               _bb.putChar((char)bb.limit());
               _bb.put(bb.array(),0,bb.limit()); // Jam this BB into the existing batch BB, all in one go (it all fits)
               _bb.put((byte)0xef);// Sentinel byte
-              bb = _msgQ.poll();  // Go get more, same batch
+              // bb = _msgQ.poll();  // Go get more, same batch
+              bbHashCode = System.identityHashCode(bb);
+              bb = null;
             }
             sendBuffer();         // Send final trailing BBs
           } catch (IllegalMonitorStateException imse) {
@@ -527,6 +531,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
         try {
           ByteChannel chan = _chan == null ? (_chan=openChan()) : _chan;
           chan.write(_bb);
+          System.out.println(System.currentTimeMillis() + "; Sent buffer = " + _bb);
         } catch(IOException ioe) {
           _bb.rewind();           // Position to zero; limit unchanged; retry the operation
           // Log if not shutting down, and not middle-of-cloud-formation where

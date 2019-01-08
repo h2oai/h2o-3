@@ -423,14 +423,14 @@ public final class AutoBuffer {
           // even start (much less close()) until this packet is sent.
           if( _bb.position() < MTU) {
             if (_heartbeat) {
-              System.out.println("UDP Send for a heartbeat: " + _bb.hashCode());
+              System.out.println("UDP Send for a heartbeat: " + System.identityHashCode(_bb));
             }
             return udpSend();
           }
           // oops - Big Write, switch to TCP and finish out there
         }
       }
-      System.out.println("TCP Send for a heartbeat: " + _bb.hashCode());
+      System.out.println("TCP Send for a heartbeat: " + System.identityHashCode(_bb.hashCode()));
       // Force AutoBuffer 'close' calls to order; i.e. block readers until
       // writers do a 'close' - by writing 1 more byte in the close-call which
       // the reader will have to wait for.
