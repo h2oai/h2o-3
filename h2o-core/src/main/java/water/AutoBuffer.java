@@ -421,10 +421,16 @@ public final class AutoBuffer {
           // For small-packet write, send via UDP.  Since nothing is sent until
           // now, this close() call trivially orders - since the reader will not
           // even start (much less close()) until this packet is sent.
-          if( _bb.position() < MTU) return udpSend();
+          if( _bb.position() < MTU) {
+            if (_heartbeat) {
+              System.out.println("UDP Send for a heartbeat: " + _bb.hashCode());
+            }
+            return udpSend();
+          }
           // oops - Big Write, switch to TCP and finish out there
         }
       }
+      System.out.println("TCP Send for a heartbeat: " + _bb.hashCode());
       // Force AutoBuffer 'close' calls to order; i.e. block readers until
       // writers do a 'close' - by writing 1 more byte in the close-call which
       // the reader will have to wait for.
@@ -1029,6 +1035,15 @@ public final class AutoBuffer {
    */
   AutoBuffer putUdp(UDP.udp type) {
     return putUdp(type, H2O.H2O_PORT);
+  }
+
+  boolean _heartbeat;
+  
+  AutoBuffer putHeartbeat(UDP.udp type) {
+    putUdp(type, H2O.H2O_PORT);
+    _heartbeat = true;
+    System.out.println(System.currentTimeMillis() + "; Heartbeat size" + _bb.position());
+    return this;
   }
 
   AutoBuffer putTask(UDP.udp type, int tasknum) {
