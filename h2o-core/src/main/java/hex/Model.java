@@ -847,6 +847,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return _dist.deviance(w, y, f);
   }
 
+  public double likelihood(double w, double y, double f) {
+    return 0.0; // place holder.  This function is overridden in GLM.
+  }
+
   public ScoringInfo[] scoring_history() { return scoringInfo; }
 
   /**

@@ -34,10 +34,11 @@
 #'        data frame. This is typically the number of times a row is repeated, but non-integer values are supported as
 #'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 #' @param family Family. Use binomial for classification with logistic regression, others are for regression problems. Must be
-#'        one of: "gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie".
-#'        Defaults to gaussian.
+#'        one of: "gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie",
+#'        "negativebinomial". Defaults to gaussian.
 #' @param tweedie_variance_power Tweedie variance power Defaults to 0.
 #' @param tweedie_link_power Tweedie link power Defaults to 1.
+#' @param theta Theta Defaults to 1e-10.
 #' @param solver AUTO will set the solver based on given data and the other parameters. IRLSM is fast on on problems with small
 #'        number of predictors and for lambda-search with L1 penalty, L_BFGS scales better for datasets with many
 #'        columns. Must be one of: "AUTO", "IRLSM", "L_BFGS", "COORDINATE_DESCENT_NAIVE", "COORDINATE_DESCENT",
@@ -153,9 +154,10 @@ h2o.glm <- function(x, y, training_frame,
                     score_each_iteration = FALSE,
                     offset_column = NULL,
                     weights_column = NULL,
-                    family = c("gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie"),
+                    family = c("gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial"),
                     tweedie_variance_power = 0,
                     tweedie_link_power = 1,
+                    theta = 1e-10,
                     solver = c("AUTO", "IRLSM", "L_BFGS", "COORDINATE_DESCENT_NAIVE", "COORDINATE_DESCENT", "GRADIENT_DESCENT_LH", "GRADIENT_DESCENT_SQERR"),
                     alpha = NULL,
                     lambda = NULL,
@@ -264,6 +266,8 @@ h2o.glm <- function(x, y, training_frame,
     parms$tweedie_variance_power <- tweedie_variance_power
   if (!missing(tweedie_link_power))
     parms$tweedie_link_power <- tweedie_link_power
+  if (!missing(theta))
+    parms$theta <- theta
   if (!missing(solver))
     parms$solver <- solver
   if (!missing(alpha))

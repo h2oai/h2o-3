@@ -388,11 +388,20 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             error("_family", H2O.technote(2, "Multinomial requires a categorical response with at least 3 levels (for 2 class problem use family=binomial."));
           break;
         case poisson:
-          if (_nclass != 1) error("_family", "Poisson requires the response to be numeric.");
+        case negativebinomial:  
+          if (_nclass != 1) error("_family", "Poisson and Negative Binomial require the response" +
+                  " to be numeric.");
           if (_response.min() < 0)
-            error("_family", "Poisson requires response >= 0");
+            error("_family", "Poisson and Negative Binomial require response >= 0");
           if (!_response.isInt())
-            warn("_family", "Poisson expects non-negative integer response, got floats.");
+            warn("_family", "Poisson and Negative Binomial expect non-negative integer response," +
+                    " got floats.");
+          if (_parms._family.equals(Family.negativebinomial))
+            if (_parms._theta <= 0 || _parms._theta > 1)
+              error("_family", "Illegal Negative Binomial theta value.  Valid theta values be > 0" +
+                      " and <= 1.");
+            else
+              _parms._invTheta = 1 / _parms._theta;
           break;
         case gamma:
           if (_nclass != 1) error("_distribution", H2O.technote(2, "Gamma requires the response to be numeric."));
@@ -479,8 +488,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _state._ymu = MemoryManager.malloc8d(_nclass);
           for (int i = 0; i < _state._ymu.length; ++i)
             _state._ymu[i] = _priorClassDist[i];
-        } else
-          _state._ymu = new double[]{_parms._intercept?_train.lastVec().mean():_parms.linkInv(0)};
+        } else {
+          _state._ymu = new double[]{_parms._intercept ? _train.lastVec().mean() : _parms.linkInv(0)};
+        }
       }
       BetaConstraint bc = (_parms._beta_constraints != null)?new BetaConstraint(_parms._beta_constraints.get()):new BetaConstraint();
       if((bc.hasBounds() || bc.hasProximalPenalty()) && _parms._compute_p_values)
@@ -821,7 +831,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               ls = (_state.l1pen() == 0 && !_state.activeBC().hasBounds())
                  ? new MoreThuente(_state.gslvr(),_state.beta(), _state.ginfo())
                  : new SimpleBacktrackingLS(_state.gslvr(),_state.beta().clone(), _state.l1pen(), _state.ginfo());
-            if (!ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd))) {
+            if (!ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd))) { // ls.getX() get the old beta value
               Log.info(LogMsg("Ls failed " + ls));
               return;
             }
@@ -832,12 +842,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "+" + (t4 - t3) + "=" + (t4 - t1) + "ms, step = " + ls.step() + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
           } else
             Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "=" + (t3 - t1) + "ms, step = " + 1 + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
+          
         }
       } catch(NonSPDMatrixException e) {
         Log.warn(LogMsg("Got Non SPD matrix, stopped."));
       }
     }
-
+    
     private void fitLBFGS() {
       double [] beta = _state.beta();
       final double l1pen = _state.l1pen();
@@ -1240,6 +1251,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         else
           _dinfo.addResponse(new String[]{"__glm_sumExp", "__glm_maxRow"}, vecs);
       }
+      
       double oldDevTrain = _nullDevTrain;
       double oldDevTest = _nullDevTest;
       double [] devHistoryTrain = new double[5];
@@ -1882,6 +1894,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           gt = new GLMBinomialGradientTask(_job == null?null:_job._key,_dinfo,_parms,_l2pen, beta).doAll(_dinfo._adaptedFrame);
         else if(_parms._family == Family.gaussian && _parms._link == Link.identity)
           gt = new GLMGaussianGradientTask(_job == null?null:_job._key,_dinfo,_parms,_l2pen, beta).doAll(_dinfo._adaptedFrame);
+        else if (_parms._family.equals(Family.negativebinomial))
+          gt =  new GLMNegativeBinomialGradientTask(_job == null?null:_job._key,_dinfo,
+                  _parms,_l2pen, beta).doAll(_dinfo._adaptedFrame);
         else if(_parms._family == Family.poisson && _parms._link == Link.log)
           gt = new GLMPoissonGradientTask(_job == null?null:_job._key,_dinfo,_parms,_l2pen, beta).doAll(_dinfo._adaptedFrame);
         else if(_parms._family == Family.quasibinomial)
