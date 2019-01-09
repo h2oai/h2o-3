@@ -95,7 +95,7 @@ Example
 	# import the airlines dataset:
 	# This dataset is used to classify whether a flight will be delayed 'YES' or not "NO"
 	# original data can be found at http://www.transtats.bts.gov/
-	airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+	airlines = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
 
 	# convert columns to factors
 	airlines["Year"]= airlines["Year"].asfactor()
@@ -109,7 +109,7 @@ Example
 	response = "IsDepDelayed"
 
 	# split into train and validation sets 
-	train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+	train, valid = airlines.split_frame(ratios=[.8], seed=1234)
 
 	# try using the `stopping_metric` parameter: 
 	# since this is a classification problem we will look at the AUC
@@ -117,10 +117,10 @@ Example
 	# train your model, where you specify the stopping_metric, stopping_rounds, 
 	# and stopping_tolerance
 	# initialize the estimator then train the model
-	airlines_gbm = H2OGradientBoostingEstimator(stopping_metric = "auc", stopping_rounds = 3,
-	                                            stopping_tolerance = 1e-2,
-	                                            seed =1234)
-	airlines_gbm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
+	airlines_gbm = H2OGradientBoostingEstimator(stopping_metric="AUC", stopping_rounds=3,
+	                                            stopping_tolerance=1e-2,
+	                                            seed=1234)
+	airlines_gbm.train(x=predictors, y=response, training_frame=train, validation_frame=valid)
 
 	# print the auc for the validation data
 	airlines_gbm.auc(valid=True)
@@ -155,4 +155,4 @@ Example
 	                                     stopping_metric="custom",
 	                                     stopping_tolerance=0.1,
 	                                     stopping_rounds=3)
-	model.train(x=predictors, y=response, training_frame train, validation_frame = valid)
+	model.train(x=predictors, y=response, training_frame=train, validation_frame=valid)
