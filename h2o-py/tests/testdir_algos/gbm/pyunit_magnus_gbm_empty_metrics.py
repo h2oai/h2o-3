@@ -16,7 +16,7 @@ def test_gbm_mangus():
                                                stopping_rounds=3,
                                                seed=1234, score_tree_interval=10,
                                                learn_rate=0.1,
-                                               stopping_metric="rmse")
+                                               stopping_metric="RMSE")
 
 
     model_original.train(x=xname, y="response", training_frame=train)

@@ -24,7 +24,7 @@ def test_custom_metric_early_stopping():
     (ftrain, fvalid, _) = dataset_prostate()
     model_expected = H2OGradientBoostingEstimator(model_id="prostate", ntrees=1000, max_depth=5,
                                                   score_each_iteration=True,
-                                                  stopping_metric="mae",
+                                                  stopping_metric="MAE",
                                                   stopping_tolerance=0.1,
                                                   stopping_rounds=3,
                                                   seed=123)

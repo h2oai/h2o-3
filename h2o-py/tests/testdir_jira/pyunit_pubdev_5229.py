@@ -18,7 +18,7 @@ def pubdev_5167():
                                                                      epochs=50,
                                                                      shuffle_training_data=True,
                                                                      score_each_iteration=True,
-                                                                     stopping_metric='auc',
+                                                                     stopping_metric='AUC',
                                                                      stopping_rounds=5,
                                                                      stopping_tolerance=.01,
                                                                      use_all_factor_levels=False,
