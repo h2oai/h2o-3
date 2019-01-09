@@ -6,19 +6,19 @@ Test harness.
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-import sys
+import getpass
+import multiprocessing
 import os
+import platform
+import random
+import re
+import requests
 import shutil
 import signal
-import time
-import random
-import getpass
-import re
-import subprocess
-import requests
 import socket
-import multiprocessing
-import platform
+import subprocess
+import sys
+import time
 
 if sys.version_info[0] < 3:
     # noinspection PyPep8Naming
@@ -730,7 +730,9 @@ class Test(object):
         self.ip = ip
         self.port = port
 
-        if is_rdemo(self.test_name) or is_runit(self.test_name) or is_rbooklet(self.test_name):
+        if g_dry_run:
+            cmd = self._dryrun_test_cmd(self.test_name, self.ip, self.port, self.on_hadoop, self.hadoop_namenode)
+        elif is_rdemo(self.test_name) or is_runit(self.test_name) or is_rbooklet(self.test_name):
             cmd = self._rtest_cmd(self.test_name, self.ip, self.port, self.on_hadoop, self.hadoop_namenode)
         elif (is_ipython_notebook(self.test_name) or is_pydemo(self.test_name) or is_pyunit(self.test_name) or
               is_pybooklet(self.test_name)):
@@ -899,6 +901,15 @@ class Test(object):
         """
         return os.path.join(self.output_dir, self.output_file_name)
 
+    @staticmethod
+    def _dryrun_test_cmd(test_name, ip, port, on_hadoop, hadoop_namenode):
+        cmd = ["printf", "DRYRUN: %s %s %s %s\n", 
+               test_name, 
+               ip + ":" + str(port), 
+               "on-hadoop" if on_hadoop else "", 
+               "namenode: "+ hadoop_namenode if hadoop_namenode else ""]
+        return cmd
+    
     @staticmethod
     def _rtest_cmd(test_name, ip, port, on_hadoop, hadoop_namenode):
         if is_runit(test_name):
@@ -2616,6 +2627,9 @@ def main(argv):
     global g_os
     global g_job_name
     global g_test_ssl
+    global g_dry_run
+
+    g_dry_run = True
 
     g_script_name = os.path.basename(argv[0])
 
