@@ -163,18 +163,18 @@ pack-r-generated-docs:
 test-package-js:
 	zip -q -r test-package-js \
 		$(JENKINS_MAKEFILE_PATH) tests/ignoreFlowSmokeTestList scripts/run.py \
-		h2o-web/lib/h2o-flow/build/js/headless-test.js
+		h2o-web
 
-test-phantom-js-smoke:
+test-flow-headless-smoke:
 	./scripts/run.py --wipeall --geterrs --test h2o-web/lib/h2o-flow/build/js/headless-test.js --jvm.xmx 4g --pto 14400 --ptt test-small --excludelist tests/ignoreFlowSmokeTestList
 
-test-phantom-js-small:
+test-flow-headless-small:
 	./scripts/run.py --wipeall --geterrs --test h2o-web/lib/h2o-flow/build/js/headless-test.js --jvm.xmx 4g --pto 14400 --ptt test-small
 
-test-phantom-js-medium:
+test-flow-headless-medium:
 	./scripts/run.py --wipeall --geterrs --test h2o-web/lib/h2o-flow/build/js/headless-test.js --jvm.xmx 20g --pto 14400 --ptt test-medium
 
-test-phantom-js:
+test-flow-headless:
 	cd h2o-web && ../scripts/run.py --wipeall --geterrs --test lib/h2o-flow/build/js/headless-test.js --jvm.xmx 4g
 
 test-info:
@@ -223,6 +223,12 @@ test-package-java:
 		h2o-jaas-pam/build/libs/h2o-jaas-pam-*.jar \
 		h2o-scala/src/ \
 		h2o-scala/build/h2o-scala_2.*/libs/h2o-scala_2.*.jar \
+		h2o-webserver-iface/src/ \
+		h2o-webserver-iface/build/libs/h2o-webserver-iface-*.jar \
+		h2o-jetty-8/src/ \
+		h2o-jetty-8/build/libs/h2o-jetty-8-*.jar \
+		h2o-jetty-9/src/ \
+		h2o-jetty-9/build/libs/h2o-jetty-9-*.jar \
 		scripts/run.py py/ scripts/test-xgb-gpu-smoke.sh \
 		sort_crash.csv tests/doOnlyJunitSmokeTestList \
 		jacoco/*.jar
@@ -323,10 +329,29 @@ benchmark:
 
 test-package-hadoop:
 	zip -q -r test-package-hadoop \
-		scripts/jenkins/ldap-conf.txt h2o-hadoop/tests/python/ h2o-hadoop/h2o-*-assembly/build/libs/h2odriver.jar \
+		scripts/jenkins/config/ \
+		h2o-hadoop-2/tests/python/ h2o-hadoop-2/h2o-*-assembly/build/libs/h2odriver.jar \
+		h2o-hadoop-3/tests/python/ h2o-hadoop-3/h2o-*-assembly/build/libs/h2odriver.jar \
+		h2o-hadoop-common/tests/python/
 
-test-hadoop-smoke:
-	cd h2o-hadoop/tests/python && ../../../scripts/run.py --wipeall --usecloud "$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
+
+test-hadoop-common-smoke-ldap:
+	cd h2o-hadoop-common/tests/python && ../../../scripts/run.py --wipeall --usecloud "$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
+
+test-hadoop-common-smoke-kerb:
+	cd h2o-hadoop-common/tests/python && ../../../scripts/run.py --wipeall --usecloud "$$CLOUD_IP:$$CLOUD_PORT" --kerb.principal $$KERB_PRINCIPAL
+
+test-hadoop-2-smoke-ldap: test-hadoop-common-smoke-ldap
+	cd h2o-hadoop-2/tests/python && ../../../scripts/run.py --wipeall --usecloud "$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
+
+test-hadoop-3-smoke-ldap: test-hadoop-common-smoke-ldap
+	cd h2o-hadoop-3/tests/python && ../../../scripts/run.py --wipeall --usecloud "$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
+
+test-hadoop-2-smoke-kerb: test-hadoop-common-smoke-kerb
+	cd h2o-hadoop-2/tests/python && ../../../scripts/run.py --wipeall --usecloud "$$CLOUD_IP:$$CLOUD_PORT" --kerb.principal $$KERB_PRINCIPAL
+
+test-hadoop-3-smoke-kerb: test-hadoop-common-smoke-kerb
+	cd h2o-hadoop-3/tests/python && ../../../scripts/run.py --wipeall --usecloud "$$CLOUD_IP:$$CLOUD_PORT" --kerb.principal $$KERB_PRINCIPAL
 
 coverage-junit-algos-jenkins:
 	$(call sed_test_scripts)

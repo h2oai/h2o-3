@@ -55,7 +55,8 @@ public class DRFV3 extends SharedTreeV3<DRF, DRFV3, DRFV3.DRFParametersV3> {
                 "calibrate_model",
                 "calibration_frame",
                 "distribution",
-                "custom_metric_func"
+                "custom_metric_func",
+                "export_checkpoints_dir"
         };
 
         // Input fields

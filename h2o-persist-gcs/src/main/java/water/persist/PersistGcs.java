@@ -278,9 +278,13 @@ public final class PersistGcs extends Persist {
     return storageProvider.getStorage().delete(fromBlob);
   }
 
+  private String[] split(String path) {
+    return GcsBlob.removePrefix(path).split("/", 2);
+  }
+
   @Override
   public boolean exists(String path) {
-    final String bk[] = GcsBlob.removePrefix(path).split("/", 2);
+    final String bk[] = split(path);
     if (bk.length == 1) {
       return storageProvider.getStorage().get(bk[0]).exists();
     } else if (bk.length == 2) {
@@ -288,6 +292,22 @@ public final class PersistGcs extends Persist {
       return blob != null && blob.exists();
     } else {
       return false;
+    }
+  }
+
+  @Override
+  public boolean isDirectory(String path) {
+    final String bk[] = split(path);
+    return bk.length == 1;
+  }
+
+  @Override
+  public String getParent(String path) {
+    final String bk[] = split(path);
+    if (bk.length > 0) {
+      return bk[0];
+    } else {
+      return null;
     }
   }
 
@@ -313,8 +333,7 @@ public final class PersistGcs extends Persist {
    */
   @Override
   public PersistEntry[] list(String path) {
-    final String input = GcsBlob.removePrefix(path);
-    final String[] bk = input.split("/", 2);
+    final String bk[] = split(path);
     int substrLen = bk.length == 2 ? bk[1].length() : 0;
     List<PersistEntry> results = new ArrayList<>();
     try {
@@ -336,8 +355,7 @@ public final class PersistGcs extends Persist {
   @Override
   public boolean mkdirs(String path) {
     try {
-      final String input = GcsBlob.removePrefix(path);
-      final String[] bk = input.split("/", 2);
+      final String bk[] = split(path);
       if (bk.length > 0) {
         Bucket b = storageProvider.getStorage().get(bk[0]);
         if (b == null || !b.exists()) {

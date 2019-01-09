@@ -100,11 +100,13 @@ public class GridSearchHandler<G extends Grid<MP>,
     Key<Grid> destKey = gss.grid_id != null ? gss.grid_id.key() : null;
     // Create target grid search object (keep it private for now)
     // Start grid search and return the schema back with job key
-    Job<Grid> gsJob = GridSearch.startGridSearch(destKey,
-                                                 params,
-                                                 sortedMap,
-                                                 new DefaultModelParametersBuilderFactory<MP, P>(),
-                                                 (HyperSpaceSearchCriteria)gss.search_criteria.createAndFillImpl());
+    Job<Grid> gsJob = GridSearch.startGridSearch(
+        destKey,
+        params,
+        sortedMap,
+        new DefaultModelParametersBuilderFactory<MP, P>(),
+        (HyperSpaceSearchCriteria) gss.search_criteria.createAndFillImpl()
+    );
 
     // Fill schema with job parameters
     // FIXME: right now we have to remove grid parameters which we sent back

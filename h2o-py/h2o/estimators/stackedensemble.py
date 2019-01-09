@@ -52,7 +52,8 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         self._parms = {}
         names_list = {"model_id", "training_frame", "response_column", "validation_frame", "base_models",
                       "metalearner_algorithm", "metalearner_nfolds", "metalearner_fold_assignment",
-                      "metalearner_fold_column", "keep_levelone_frame", "metalearner_params", "seed"}
+                      "metalearner_fold_column", "keep_levelone_frame", "metalearner_params", "seed",
+                      "export_checkpoints_dir"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -252,6 +253,21 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     def seed(self, seed):
         assert_is_type(seed, None, int)
         self._parms["seed"] = seed
+
+
+    @property
+    def export_checkpoints_dir(self):
+        """
+        Automatically export generated models to this directory.
+
+        Type: ``str``.
+        """
+        return self._parms.get("export_checkpoints_dir")
+
+    @export_checkpoints_dir.setter
+    def export_checkpoints_dir(self, export_checkpoints_dir):
+        assert_is_type(export_checkpoints_dir, None, str)
+        self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
 
 

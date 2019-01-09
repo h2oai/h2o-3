@@ -3,6 +3,8 @@ package hex;
 import hex.genmodel.utils.DistributionFamily;
 import jsr166y.CountedCompleter;
 import water.*;
+import water.api.FSIOException;
+import water.api.HDFSIOException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
@@ -10,6 +12,7 @@ import water.rapids.ast.prims.advmath.AstKFold;
 import water.udf.CFuncRef;
 import water.util.*;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.*;
 
@@ -213,6 +216,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         Scope.enter();
         _parms.read_lock_frames(_job); // Fetch & read-lock input frames
         computeImpl();
+        saveModelCheckpointIfConfigured();
       } finally {
         setFinalState();
         _parms.read_unlock_frames(_job);
@@ -231,6 +235,17 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (res != null && res._output != null) {
       res._output._job = _job;
       res._output.stopClock();
+    }
+  }
+
+  private void saveModelCheckpointIfConfigured() {
+    Model model = _result.get();
+    if (model != null && !StringUtils.isNullOrEmpty(model._parms._export_checkpoints_dir)) {
+      try {
+        model.exportBinaryModel(model._parms._export_checkpoints_dir + "/" + model._key.toString(), true);
+      } catch (FSIOException | HDFSIOException | IOException e) {
+        throw new H2OIllegalArgumentException("export_checkpoints_dir", "saveModelIfConfigured", e);
+      }
     }
   }
 
@@ -498,7 +513,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }.doAll(2*N,Vec.T_NUM,folds_and_weights).outputFrame().vecs();
 
     if (_parms._keep_cross_validation_fold_assignment)
-      DKV.put(new Frame(Key.<Frame>make("cv_fold_assignment_" + _result.toString()), new String[]{"fold_assignment"}, new Vec[]{foldAssignment.makeCopy()}));
+      DKV.put(new Frame(Key.<Frame>make("cv_fold_assignment_" + _result.toString()), new String[]{"fold_assignment"}, new Vec[]{foldAssignment}));
     if( _parms._fold_column == null && !_parms._keep_cross_validation_fold_assignment) foldAssignment.remove();
     if( origWeightsName == null ) origWeight.remove(); // Cleanup temp
 
@@ -1157,8 +1172,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
 
     // Check that at least some columns are not-constant and not-all-NAs
-    if( _train.numCols() == 0 )
-      error("_train","There are no usable columns to generate model");
+    if (_train.numCols() == 0)
+      error("_train", "There are no usable columns to generate model");
 
     if(isSupervised()) {
       if(_response != null) {
@@ -1326,8 +1341,18 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         }
       }
     }
+    if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.custom || _parms._stopping_metric == ScoreKeeper.StoppingMetric.custom_increasing) {
+      if (_parms._custom_metric_func == null) {
+        error("_stopping_metric", "Custom metric function needs to be defined in order to use it for early stopping.");
+      }
+    }
     if (_parms._max_runtime_secs < 0) {
       error("_max_runtime_secs", "Max runtime (in seconds) must be greater than 0 (or 0 for unlimited).");
+    }
+    if (!StringUtils.isNullOrEmpty(_parms._export_checkpoints_dir)) {
+      if(!H2O.getPM().isWritableDirectory(_parms._export_checkpoints_dir)) {
+        error("_export_checkpoints_dir", "Checpoints directory path must point to a writable path.");
+      }
     }
   }
 

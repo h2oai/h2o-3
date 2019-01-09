@@ -11,8 +11,6 @@ import java.util.Set;
 
 import static org.junit.Assert.*;
 
-import static org.junit.Assert.assertTrue;
-
 /**
  * Tests for Frame.java
  */

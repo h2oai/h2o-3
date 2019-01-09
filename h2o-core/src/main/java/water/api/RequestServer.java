@@ -1,22 +1,53 @@
 package water.api;
 
-import water.*;
+import water.DKV;
+import water.H2O;
+import water.H2OError;
+import water.H2OModelBuilderError;
+import water.H2ONode;
+import water.RPC;
+import water.UDPRebooted;
 import water.api.schemas3.H2OErrorV3;
 import water.api.schemas3.H2OModelBuilderErrorV3;
 import water.api.schemas99.AssemblyV99;
-import water.exceptions.*;
+import water.exceptions.H2OAbstractRuntimeException;
+import water.exceptions.H2OFailException;
+import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2OModelBuilderIllegalArgumentException;
+import water.exceptions.H2ONotFoundArgumentException;
 import water.init.NodePersistentStorage;
 import water.nbhm.NonBlockingHashMap;
 import water.rapids.Assembly;
-import water.util.*;
+import water.server.ServletUtils;
+import water.util.GetLogsFromNode;
+import water.util.HttpResponseStatus;
+import water.util.IcedHashMapGeneric;
+import water.util.JCodeGen;
+import water.util.Log;
+import water.util.PojoUtils;
+import water.util.StringUtils;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -235,7 +266,7 @@ public class RequestServer extends HttpServlet {
    */
   public void doGeneric(String method, HttpServletRequest request, HttpServletResponse response) {
     try {
-      JettyHTTPD.startTransaction(request.getHeader("User-Agent"));
+      ServletUtils.startTransaction(request.getHeader("User-Agent"));
 
       // Note that getServletPath does an un-escape so that the %24 of job id's are turned into $ characters.
       String uri = request.getServletPath();
@@ -299,7 +330,7 @@ public class RequestServer extends HttpServlet {
       String choppedNanoStatus = resp.status.substring(0, 3);
       assert (choppedNanoStatus.length() == 3);
       int sc = Integer.parseInt(choppedNanoStatus);
-      JettyHTTPD.setResponseStatus(response, sc);
+      ServletUtils.setResponseStatus(response, sc);
 
       response.setContentType(resp.mimeType);
 
@@ -315,11 +346,11 @@ public class RequestServer extends HttpServlet {
 
     } catch (IOException e) {
       e.printStackTrace();
-      JettyHTTPD.setResponseStatus(response, 500);
+      ServletUtils.setResponseStatus(response, 500);
       Log.err(e);
       // Trying to send an error message or stack trace will produce another IOException...
     } finally {
-      JettyHTTPD.logRequest(method, request, response);
+      ServletUtils.logRequest(method, request, response);
       // Handle shutdown if it was requested.
       if (H2O.getShutdownRequested()) {
         (new Thread() {
@@ -344,7 +375,7 @@ public class RequestServer extends HttpServlet {
           }
         }).start();
       }
-      JettyHTTPD.endTransaction();
+      ServletUtils.endTransaction();
     }
   }
 

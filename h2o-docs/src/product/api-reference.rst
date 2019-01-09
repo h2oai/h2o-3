@@ -9,7 +9,7 @@ The links below point to more detailed API/developer documentation.
 
 - `R User HTML <../h2o-r/docs/index.html>`_ and `R User PDF <../h2o-r/h2o_package.pdf>`_ : This document provides the list of available functions that can be used when configuring H2O through R.
 	
-- `Python <../h2o-py/docs/index.html>`_: This document provides the list of available functions that can be used when configuring H2O through R.
+- `Python <../h2o-py/docs/index.html>`_: This document provides the list of available functions that can be used when configuring H2O through Python.
 	
 - `h2o-core Javadoc <../h2o-core/javadoc/index.html>`_: The definitive Java API guide for the core components of H2O.
 

@@ -13,27 +13,10 @@ COPY ${PATH_PREFIX}/../common/kerberos/00_kerberos_init /etc/startup/
 COPY ${PATH_PREFIX}/../common/hive-kerberos/hive-site.xml ${HIVE_HOME}/conf
 
 RUN \
-    mkdir -p /var/log/kerberos && \
-    kdb5_util create -P h2o && \
-    kadmin.local -q 'addprinc -pw h2o hdfs/localhost@H2O.AI' && \
-    kadmin.local -q 'addprinc -pw h2o mapred/localhost@H2O.AI' && \
-    kadmin.local -q 'addprinc -pw h2o yarn/localhost@H2O.AI' && \
-    kadmin.local -q 'addprinc -pw h2o HTTP/localhost@H2O.AI' && \
-    kadmin.local -q 'addprinc -pw h2o hive/localhost@H2O.AI' && \
-    kadmin.local -q 'addprinc -pw h2o jenkins@H2O.AI' && \
-    kadmin.local -q 'addprinc -pw h2o root@H2O.AI' && \
-    cd ${HADOOP_CONF_DIR} && \
-    kadmin.local -q 'xst -norandkey -k hdfs.keytab hdfs/localhost@H2O.AI HTTP/localhost@H2O.AI' && \
-    chown hdfs:hdfs hdfs.keytab && \
-    kadmin.local -q 'xst -norandkey -k yarn.keytab yarn/localhost@H2O.AI HTTP/localhost@H2O.AI' && \
-    chown yarn:hadoop yarn.keytab && \
-    kadmin.local -q 'xst -norandkey -k mapred.keytab mapred/localhost@H2O.AI HTTP/localhost@H2O.AI' && \
-    chown mapred:mapred mapred.keytab && \
-    kadmin.local -q 'xst -norandkey -k hive.keytab hive/localhost@H2O.AI HTTP/localhost@H2O.AI' && \
-    chown hive:hive hive.keytab && \
-    chmod 400 *.keytab && \
+    chmod +x /usr/sbin/krb-init-kadmin.sh && \
     chmod +x /usr/sbin/krb-edit-hadoop-confs.sh && \
     sync && \
+    /usr/sbin/krb-init-kadmin.sh mapred:mapred && \
     /usr/sbin/krb-edit-hadoop-confs.sh && \
     chown root:hadoop /usr/lib/hadoop-yarn/bin/container-executor && \
     chmod 6050 /usr/lib/hadoop-yarn/bin/container-executor && \

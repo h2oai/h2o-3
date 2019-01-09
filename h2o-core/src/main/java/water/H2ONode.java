@@ -401,13 +401,13 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
    * In case of TCPReceiverThread.TCP_EXTERNAL, we need to keep in mind that this method is executed in environment
    * where H2O is not running, but it is just on the classpath so users can establish connection with the external H2O
    * cluster.
-   * 
+   *
    * If socket channel factory is set, the communication will considered to be secured - this depends on the
    * configuration of the {@link SocketChannelFactory}. In case of the factory is null, the communication won't be secured.
    * @return new socket channel
    */
   public static ByteChannel openChan(byte tcpType, SocketChannelFactory socketFactory, InetAddress originAddr, int originPort, short nodeTimeStamp) throws IOException {
-    // This method can't internally use static fields which depends on initialized H2O cluster in case of 
+    // This method can't internally use static fields which depends on initialized H2O cluster in case of
     //communication to the external H2O cluster
     // Must make a fresh socket
     SocketChannel sock = SocketChannel.open();

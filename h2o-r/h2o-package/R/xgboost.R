@@ -34,7 +34,7 @@
 #'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 0.
 #' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression) Must be one of:
 #'        "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification",
-#'        "mean_per_class_error". Defaults to AUTO.
+#'        "mean_per_class_error", "custom", "custom_increasing". Defaults to AUTO.
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.001.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
@@ -46,6 +46,7 @@
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
 #' @param quiet_mode \code{Logical}. Enable quiet mode Defaults to TRUE.
+#' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @param ntrees (same as n_estimators) Number of trees. Defaults to 50.
 #' @param max_depth Maximum tree depth. Defaults to 6.
 #' @param min_rows (same as min_child_weight) Fewest allowed (weighted) observations in a leaf. Defaults to 1.
@@ -81,7 +82,7 @@
 #' @param grow_policy Grow policy - depthwise is standard GBM, lossguide is LightGBM Must be one of: "depthwise", "lossguide".
 #'        Defaults to depthwise.
 #' @param booster Booster type Must be one of: "gbtree", "gblinear", "dart". Defaults to gbtree.
-#' @param reg_lambda L2 regularization Defaults to 0.0.
+#' @param reg_lambda L2 regularization Defaults to 1.0.
 #' @param reg_alpha L1 regularization Defaults to 0.0.
 #' @param dmatrix_type Type of DMatrix. For sparse, NAs and 0 are treated equally. Must be one of: "auto", "dense", "sparse".
 #'        Defaults to auto.
@@ -104,7 +105,7 @@ h2o.xgboost <- function(x, y, training_frame,
                         offset_column = NULL,
                         weights_column = NULL,
                         stopping_rounds = 0,
-                        stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error"),
+                        stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
                         stopping_tolerance = 0.001,
                         max_runtime_secs = 0,
                         seed = -1,
@@ -112,6 +113,7 @@ h2o.xgboost <- function(x, y, training_frame,
                         tweedie_power = 1.5,
                         categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                         quiet_mode = TRUE,
+                        export_checkpoints_dir = NULL,
                         ntrees = 50,
                         max_depth = 6,
                         min_rows = 1,
@@ -143,7 +145,7 @@ h2o.xgboost <- function(x, y, training_frame,
                         tree_method = c("auto", "exact", "approx", "hist"),
                         grow_policy = c("depthwise", "lossguide"),
                         booster = c("gbtree", "gblinear", "dart"),
-                        reg_lambda = 0.0,
+                        reg_lambda = 1.0,
                         reg_alpha = 0.0,
                         dmatrix_type = c("auto", "dense", "sparse"),
                         backend = c("auto", "gpu", "cpu"),
@@ -228,6 +230,8 @@ h2o.xgboost <- function(x, y, training_frame,
     parms$categorical_encoding <- categorical_encoding
   if (!missing(quiet_mode))
     parms$quiet_mode <- quiet_mode
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
   if (!missing(ntrees))
     parms$ntrees <- ntrees
   if (!missing(max_depth))

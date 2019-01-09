@@ -53,8 +53,9 @@ warnings.filterwarnings('ignore', category=DeprecationWarning, module='.*/IPytho
 
 h2oconn = None  # type: H2OConnection
 
+
 def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_certificates=None, auth=None,
-            proxy=None,cookies=None, verbose=True, config=None):
+            proxy=None, cookies=None, verbose=True, config=None):
     """
     Connect to an existing H2O server, remote or local.
 
@@ -67,8 +68,8 @@ def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_ce
     :param port: Port number that H2O service is listening to.
     :param https: Set to True to connect via https:// instead of http://.
     :param verify_ssl_certificates: When using https, setting this to False will disable SSL certificates verification.
-    :param auth: Either a (username, password) pair for basic authentication, or one of the requests.auth
-                 authenticator objects.
+    :param auth: Either a (username, password) pair for basic authentication, an instance of h2o.auth.SpnegoAuth
+                 or one of the requests.auth authenticator objects.
     :param proxy: Proxy server address.
     :param cookies: Cookie (or list of) to add to request
     :param verbose: Set to False to disable printing connection status messages.
@@ -84,7 +85,7 @@ def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_ce
     else:
         h2oconn = H2OConnection.open(server=server, url=url, ip=ip, port=port, https=https,
                                      auth=auth, verify_ssl_certificates=verify_ssl_certificates,
-                                     proxy=proxy,cookies=cookies,
+                                     proxy=proxy, cookies=cookies,
                                      verbose=verbose)
         if verbose:
             h2oconn.cluster.show_status()

@@ -4,8 +4,10 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Futures;
+import water.Scope;
 import water.TestUtil;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static water.fvec.Vec.makeCon;
 import static water.fvec.Vec.makeSeq;
@@ -27,6 +29,24 @@ public class VecTest extends TestUtil {
     String[] domains = vec.domain();
     Assert.assertArrayEquals(null, domains);
     vec.remove();
+  }
+
+  @Test public void makeCopy() {
+    Vec copyOfVec = null;
+    Vec expected = null;
+    try {
+      Scope.enter();
+      Vec originalVec = vec(1, 2, 3, 4, 5);
+      copyOfVec = originalVec.makeCopy();
+      Scope.untrack(copyOfVec._key);
+      Scope.exit();
+      expected = vec(1, 2, 3, 4, 5);
+      assertVecEquals(expected, copyOfVec, 1e-5);
+    } finally {
+      if( copyOfVec !=null ) copyOfVec.remove();
+      if( expected !=null ) expected.remove();
+    }
+
   }
 
   private void testToCategoricalDomainMatch(Vec f, String[] expectedDomain) {

@@ -32,7 +32,7 @@ def call(final pipelineContext) {
       component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'PhantomJS Smoke', target: 'test-phantom-js-smoke',timeoutValue: 20,
+      stageName: 'Flow Headless Smoke', target: 'test-flow-headless-smoke',timeoutValue: 20,
       component: pipelineContext.getBuildConfig().COMPONENT_JS
     ],
     [
@@ -148,7 +148,7 @@ def call(final pipelineContext) {
       timeoutValue: 15, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'PhantomJS', target: 'test-phantom-js',
+      stageName: 'Flow Headless', target: 'test-flow-headless',
       timeoutValue: 75, component: pipelineContext.getBuildConfig().COMPONENT_JS
     ],
     [
@@ -247,11 +247,11 @@ def call(final pipelineContext) {
       timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'PhantomJS Small', target: 'test-phantom-js-small',
+      stageName: 'Flow Headless Small', target: 'test-flow-headless-small',
       timeoutValue: 75, component: pipelineContext.getBuildConfig().COMPONENT_JS
     ],
     [
-      stageName: 'PhantomJS Medium', target: 'test-phantom-js-medium',
+      stageName: 'Flow Headless Medium', target: 'test-flow-headless-medium',
       timeoutValue: 75, component: pipelineContext.getBuildConfig().COMPONENT_JS
     ]
   ]
@@ -320,20 +320,37 @@ def call(final pipelineContext) {
       timeoutValue: 10, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [ // These run with reduced number of file descriptors for early detection of FD leaks
-      stageName: 'XGBoost Stress tests', target: 'test-pyunit-xgboost-stress', pythonVersion: '3.5', timeoutValue: 20,
+      stageName: 'XGBoost Stress tests', target: 'test-pyunit-xgboost-stress', pythonVersion: '3.5', timeoutValue: 40,
       component: pipelineContext.getBuildConfig().COMPONENT_PY, customDockerArgs: [ '--ulimit nofile=100:100' ]
     ]
   ]
 
   def HADOOP_STAGES = []
   for (distribution in pipelineContext.getBuildConfig().getSupportedHadoopDistributions()) {
+    def target
+    def ldapConfigPath
+    if (distribution.name == 'cdh' && distribution.version.startsWith('6.')) {
+      target = 'test-hadoop-3-smoke'
+      ldapConfigPath = 'scripts/jenkins/config/ldap-jetty-9.txt'
+    } else if (distribution.name == 'hdp' && distribution.version.startsWith('3.')) {
+      target = 'test-hadoop-3-smoke'
+      ldapConfigPath = 'scripts/jenkins/config/ldap-jetty-9.txt'
+    } else {
+      target = 'test-hadoop-2-smoke'
+      ldapConfigPath = 'scripts/jenkins/config/ldap-jetty-8.txt'
+    }
+
     def stageTemplate = [
-      target: 'test-hadoop-smoke', timeoutValue: 25, component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+      target: target, timeoutValue: 25, component: pipelineContext.getBuildConfig().COMPONENT_ANY,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_HADOOP, pipelineContext.getBuildConfig().COMPONENT_PY],
       customData: [
         distribution: distribution.name,
         version: distribution.version,
-        ldapConfigPath: 'scripts/jenkins/ldap-conf.txt'
+        ldapConfigPath: ldapConfigPath,
+        kerberosUserName: 'jenkins@H2O.AI',
+        kerberosPrincipal: 'HTTP/localhost@H2O.AI',
+        kerberosConfigPath: 'scripts/jenkins/config/kerberos.conf',
+        kerberosPropertiesPath: 'scripts/jenkins/config/kerberos.properties',
       ], pythonVersion: '2.7', nodeLabel: 'docker && micro',
       customDockerArgs: [ '--privileged' ],
       executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopStage.groovy'

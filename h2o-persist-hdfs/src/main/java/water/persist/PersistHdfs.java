@@ -463,6 +463,12 @@ public final class PersistHdfs extends Persist {
   }
 
   @Override
+  public String getParent(String path) {
+    Path p = new Path(path);
+    return p.getParent().toUri().toString();
+  }
+
+  @Override
   public boolean isDirectory(String path) {
     Path p = new Path(path);
     URI uri = p.toUri();

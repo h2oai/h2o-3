@@ -199,7 +199,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
     - ``lift_top_group``
     - ``misclassification``
     - ``mean_per_class_error``
-
+    
 -  `stopping_tolerance <algo-params/stopping_tolerance.html>`__: Specify the relative tolerance for the
    metric-based stopping to stop training if the improvement is less
    than this value.

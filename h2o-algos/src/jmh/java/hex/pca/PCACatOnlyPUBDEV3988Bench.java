@@ -50,7 +50,7 @@ public class PCACatOnlyPUBDEV3988Bench {
     new Runner(opt).run();
   }
 
-  @Setup(Level.Invocation)
+  @Setup(Level.Iteration)
   public void setup() {
     water.util.Log.setLogLevel(logLevel);
     stall_till_cloudsize(1);
@@ -77,9 +77,6 @@ public class PCACatOnlyPUBDEV3988Bench {
       paramsCatOnlyPUBDEV3988._impute_missing = true;   // Don't skip rows with NA entries, but impute using mean of column
       paramsCatOnlyPUBDEV3988._seed = seed;
 
-      if (!train()) {                               // prepare the model for scoring
-        throw new RuntimeException("PCA model failed to be trained.");
-      }
     } catch (RuntimeException e) {
       if (trainingFrame != null) {
         trainingFrame.delete();
@@ -88,6 +85,20 @@ public class PCACatOnlyPUBDEV3988Bench {
     }
   }
 
+  @Setup(Level.Invocation)
+  public void setupInvocation() {
+    try {
+      if (!train()) {                               // prepare the model for scoring
+        throw new RuntimeException("PCA model failed to be trained.");
+      }
+    } catch (RuntimeException e) {
+        if (trainingFrame != null) {
+          trainingFrame.delete();
+        }
+      throw e;
+    }
+  }
+  
   @Benchmark
   public boolean measureImputeMissingScoring() throws Exception {
     if (!score()) {
@@ -96,13 +107,17 @@ public class PCACatOnlyPUBDEV3988Bench {
     return true;
   }
 
-  @TearDown(Level.Invocation)
+  @TearDown(Level.Iteration)
   public void tearDown() {
-    if (pcaModel != null) {
-      pcaModel.remove();
-    }
     if (trainingFrame != null) {
       trainingFrame.delete();
+    }
+  }
+  
+  @TearDown(Level.Invocation)
+  public void tearDownInvocation() {
+    if (pcaModel != null) {
+      pcaModel.remove();
     }
   }
 

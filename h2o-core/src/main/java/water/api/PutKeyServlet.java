@@ -1,21 +1,16 @@
 package water.api;
 
 import org.apache.commons.io.IOUtils;
-import org.eclipse.jetty.server.Response;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.UUID;
+import water.DKV;
+import water.Key;
+import water.Value;
+import water.server.ServletUtils;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import water.DKV;
-import water.JettyHTTPD;
-import water.Key;
-import water.Value;
-import water.fvec.UploadFileVec;
+import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * Upload any value to K/V store.
@@ -29,7 +24,7 @@ public class PutKeyServlet extends HttpServlet {
 
   @Override
   protected void doPost(HttpServletRequest request, HttpServletResponse response) {
-    String uri = JettyHTTPD.getDecodedUri(request);
+    String uri = ServletUtils.getDecodedUri(request);
     
     try {
       String destKey = paramDestinationKey(request, response);
@@ -38,7 +33,7 @@ public class PutKeyServlet extends HttpServlet {
         return;
       }
 
-      InputStream is = JettyHTTPD.extractPartInputStream(request, response);
+      InputStream is = ServletUtils.extractPartInputStream(request, response);
       if (is == null) {
         return;
       }
@@ -62,9 +57,9 @@ public class PutKeyServlet extends HttpServlet {
       response.setContentType("application/json");
       response.getWriter().write(responsePayload);
     } catch (Exception e) {
-      JettyHTTPD.sendErrorResponse(response, e, uri);
+      ServletUtils.sendErrorResponse(response, e, uri);
     } finally {
-      JettyHTTPD.logRequest("POST", request, response);
+      ServletUtils.logRequest("POST", request, response);
     }
   }
 
@@ -80,7 +75,7 @@ public class PutKeyServlet extends HttpServlet {
 
   private boolean validate(String destKey, Boolean overwrite, HttpServletResponse response) throws IOException {
     if (destKey == null) {
-      JettyHTTPD.sendResponseError(response, Response.SC_BAD_REQUEST, "The field 'destination_frame` is compulsory!");
+      ServletUtils.sendResponseError(response, HttpServletResponse.SC_BAD_REQUEST, "The field 'destination_frame` is compulsory!");
       return false;
     }
     return true;

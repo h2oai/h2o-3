@@ -25,7 +25,8 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         self._parms = {}
         names_list = {"model_id", "training_frame", "validation_frame", "ignored_columns", "ignore_const_cols",
                       "score_each_iteration", "transform", "pca_method", "pca_impl", "k", "max_iterations",
-                      "use_all_factor_levels", "compute_metrics", "impute_missing", "seed", "max_runtime_secs"}
+                      "use_all_factor_levels", "compute_metrics", "impute_missing", "seed", "max_runtime_secs",
+                      "export_checkpoints_dir"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -269,3 +270,32 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         self._parms["max_runtime_secs"] = max_runtime_secs
 
 
+    @property
+    def export_checkpoints_dir(self):
+        """
+        Automatically export generated models to this directory.
+
+        Type: ``str``.
+        """
+        return self._parms.get("export_checkpoints_dir")
+
+    @export_checkpoints_dir.setter
+    def export_checkpoints_dir(self, export_checkpoints_dir):
+        assert_is_type(export_checkpoints_dir, None, str)
+        self._parms["export_checkpoints_dir"] = export_checkpoints_dir
+
+
+
+    def init_for_pipeline(self):
+        """
+        Returns H2OPCA object which implements fit and transform method to be used in sklearn.Pipeline properly.
+        All parameters defined in self.__params, should be input parameters in H2OPCA.__init__ method.
+
+        :returns: H2OPCA object
+        """
+        import inspect
+        from h2o.transforms.decomposition import H2OPCA
+        # check which parameters can be passed to H2OPCA init
+        var_names = list(dict(inspect.getmembers(H2OPCA.__init__.__code__))['co_varnames'])
+        parameters = {k: v for k, v in self._parms.items() if k in var_names}
+        return H2OPCA(**parameters)

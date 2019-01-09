@@ -24,7 +24,6 @@ def comparison_test():
                        'seed': h2oParamsS["seed"],
                        'booster': 'gbtree',
                        'objective': 'multi:softprob',
-                       'lambda': 0.0,
                        'eta': h2oParamsS["learn_rate"],
                        'grow_policy': 'depthwise',
                        'alpha': 0.0,

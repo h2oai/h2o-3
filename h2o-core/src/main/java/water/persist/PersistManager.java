@@ -1,6 +1,9 @@
 package water.persist;
 
+import org.joda.time.Period;
 import water.*;
+import water.api.FSIOException;
+import water.api.HDFSIOException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.parser.BufferedString;
 import water.util.FileUtils;
@@ -25,22 +28,23 @@ import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
  * on what is on the classpath.
  */
 public class PersistManager {
-  final static public int MAX_BACKENDS = 8;
+
+  public static final int MAX_BACKENDS = 8;
 
   /** Property which enable HDFS as default fallback persistent layer. For example,
    * if swift fs is regirestered properly under HDFS and user specifies swift based URI, the persist
    * layer forwards the request through HDFS API. */
-  final static String PROP_ENABLE_HDFS_FALLBACK = SYSTEM_PROP_PREFIX + "persist.enable.hdfs.fallback";
+  private static final String PROP_ENABLE_HDFS_FALLBACK = SYSTEM_PROP_PREFIX + "persist.enable.hdfs.fallback";
 
   /** Persistence schemes; used as file prefixes eg "hdfs://some_hdfs_path/some_file" */
-  public static class Schemes {
-    public static final String FILE = "file";
-    public static final String HDFS = "hdfs";
-    public static final String S3   = "s3";
-    public static final String S3N  = "s3n";
-    public static final String S3A  = "s3a";
-    public static final String GCS  = "gs";
-    public static final String NFS  = "nfs";
+  public interface Schemes {
+    String FILE = "file";
+    String HDFS = "hdfs";
+    String S3   = "s3";
+    String S3N  = "s3n";
+    String S3A  = "s3a";
+    String GCS  = "gs";
+    String NFS  = "nfs";
   }
 
   public static class PersistStatsEntry {
@@ -125,8 +129,8 @@ public class PersistManager {
 //      }
     }
 
-    I[Value.ICE ] = ice;
-    I[Value.NFS ] = new PersistNFS();
+    I[Value.ICE] = ice;
+    I[Value.NFS] = new PersistNFS();
 
     try {
       Class klass = Class.forName("water.persist.PersistHTTP");
@@ -471,6 +475,61 @@ public class PersistManager {
     }
 
     return new CheckLocalDirTask(path).doAllNodes()._result;
+  }
+
+  /**
+   * Check whether given path represents a writable directory. If such path does not exist
+   * it will try to create the directory and if successful it is safe to assume that such
+   * directory is writable.
+   * @param path Path to check if a writable directory
+   * @return true if given path is a writable directory, false otherwise
+   */
+  public boolean isWritableDirectory(String path) {
+    URI pathAsUri = FileUtils.getURI(path);
+    Persist persist = getPersistForURI(pathAsUri);
+    String pathUriStr = pathAsUri.toString();
+    if (persist.isDirectory(pathUriStr)) {
+      return isDirectoryWritable(persist, path);
+    } else if (persist.exists(pathUriStr)) {
+      // exists but its not a directory
+      return false;
+    } else {
+      String existingParent = getExistingParent(persist, pathUriStr);
+      if (existingParent != null) {
+        return isDirectoryWritable(persist, existingParent);
+      } else {
+        return false;
+      }
+    }
+  }
+
+  /*
+  Check that a directory is writable by creating and deleting a file.
+   */
+  private boolean isDirectoryWritable(Persist persist, String path) {
+    OutputStream os = null;
+    try {
+      String testFileUriStr = FileUtils.getURI(path + "/.h2oWriteCheck").toString();
+      os = persist.create(testFileUriStr, true);
+      os.close();
+      persist.delete(testFileUriStr);
+      return true;
+    } catch (IOException | HDFSIOException | FSIOException e) {
+      return false;
+    } finally {
+      FileUtils.close(os);
+    }
+  }
+
+  private String getExistingParent(Persist persist, String path) {
+    String parent = persist.getParent(path);
+    if (parent == null) {
+      return null;
+    } else if (persist.exists(parent)) {
+      return parent;
+    } else {
+      return getExistingParent(persist, parent);
+    }
   }
 
   private static class CheckLocalDirTask extends MRTask<CheckLocalDirTask> {

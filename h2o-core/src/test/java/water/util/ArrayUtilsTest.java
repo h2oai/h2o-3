@@ -1,18 +1,23 @@
 package water.util;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
-import water.TestUtil;
-import static org.junit.Assert.*;
-import static water.util.ArrayUtils.*;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static water.util.ArrayUtils.append;
+import static water.util.ArrayUtils.countNonzeros;
+import static water.util.ArrayUtils.decodeAsInt;
+import static water.util.ArrayUtils.encodeAsInt;
+import static water.util.ArrayUtils.remove;
+import static water.util.ArrayUtils.toDouble;
 
 /**
  * Test FrameUtils interface.
  */
-public class ArrayUtilsTest extends TestUtil {
-  @BeforeClass
-  static public void setup() {  stall_till_cloudsize(1); }
-
+public class ArrayUtilsTest {
   @Test
   public void testAppendBytes() {
     byte[] sut = {1, 2, 3};

@@ -97,7 +97,7 @@ public class ExternalFrameWriterClientTest extends TestUtil {
             assertEquals(frame.vec(2).get_type(), Vec.T_STR);
             assertEquals(frame.vec(3).get_type(), Vec.T_TIME);
             assertEquals(frame.numRows(), 1000 * connStrings.length);
-            
+
             BufferedString buff = new BufferedString();
             for (int i = 0; i < connStrings.length; i++) { // Writer segment (=chunk)
                 for (int localRow = 0; localRow < 997; localRow++) { // Local row in segment
@@ -232,7 +232,7 @@ public class ExternalFrameWriterClientTest extends TestUtil {
                 return new int[] {VEC_LEN, VEC_LEN};
             }
         };
-        
+
         final String[] nodes = getH2ONodes();
         // we will open 2 connection per h2o node
         final String[] connStrings = ArrayUtils.join(nodes, nodes);

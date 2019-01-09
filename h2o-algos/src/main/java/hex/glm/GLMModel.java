@@ -316,7 +316,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       }
     }
 
-    public GLMParameters(){
+    public GLMParameters() {
       this(Family.gaussian, Link.family_default);
       assert _link == Link.family_default;
       _stopping_rounds = 3;
@@ -948,13 +948,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
      */
     public double [][] vcov(){return _vcov;}
 
-    
     @Override
     public int nclasses() {
       return _nclasses;
     }
-
-
 
     @Override
     public String[] classNames() {
@@ -1122,7 +1119,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       if (o != 0) throw H2O.unimpl("Offset is not implemented for multinomial/ordinal.");
       double[] eta = _eta.get();
       Arrays.fill(preds, 0.0);
-      if (eta == null || eta.length < _output.nclasses()) _eta.set(eta = MemoryManager.malloc8d(_output.nclasses()));
+      if (eta == null || eta.length != _output.nclasses()) _eta.set(eta = MemoryManager.malloc8d(_output.nclasses()));
       final double[][] bm = _output._global_beta_multinomial;
       double sumExp = 0;
       double maxRow = 0;

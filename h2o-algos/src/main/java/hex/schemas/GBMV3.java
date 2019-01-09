@@ -1,6 +1,5 @@
 package hex.schemas;
 
-import hex.Distribution;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel.GBMParameters;
 import water.api.API;
@@ -65,6 +64,7 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
       "calibrate_model",
       "calibration_frame",
       "custom_metric_func",
+      "export_checkpoints_dir",
       "monotone_constraints"
 //      "use_new_histo_tsk",
 //      "col_block_sz",

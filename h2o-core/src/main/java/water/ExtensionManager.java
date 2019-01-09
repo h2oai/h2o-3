@@ -4,11 +4,15 @@ package water;
 import water.api.RequestServer;
 import water.api.RestApiExtension;
 import water.api.SchemaServer;
-import water.server.RequestAuthExtension;
 import water.util.Log;
 import water.util.StringUtils;
+import water.webserver.iface.RequestAuthExtension;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.ServiceLoader;
 
 public class ExtensionManager {
 

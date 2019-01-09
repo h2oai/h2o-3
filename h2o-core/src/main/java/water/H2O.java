@@ -10,12 +10,18 @@ import water.UDPRebooted.ShutdownTsk;
 import water.api.RequestServer;
 import water.exceptions.H2OFailException;
 import water.exceptions.H2OIllegalArgumentException;
-import water.init.*;
+import water.init.AbstractBuildVersion;
+import water.init.AbstractEmbeddedH2OConfig;
+import water.init.JarHash;
+import water.init.NetworkInit;
+import water.init.NodePersistentStorage;
 import water.nbhm.NonBlockingHashMap;
 import water.parser.DecryptionTool;
 import water.parser.ParserService;
 import water.persist.PersistManager;
+import water.server.ServletUtils;
 import water.util.*;
+import water.webserver.iface.WebServer;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -24,8 +30,23 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Field;
-import java.net.*;
-import java.util.*;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.MulticastSocket;
+import java.net.NetworkInterface;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -136,16 +157,22 @@ final public class H2O {
             "          Use Jetty HashLoginService\n" +
             "\n" +
             "    -ldap_login\n" +
-            "          Use Jetty LdapLoginService\n" +
+            "          Use Jetty Ldap login module\n" +
             "\n" +
             "    -kerberos_login\n" +
-            "          Use Kerberos LoginService\n" +
+            "          Use Jetty Kerberos login module\n" +
+            "\n" +
+            "    -spnego_login\n" +
+            "          Use Jetty SPNEGO login service\n" +
             "\n" +
             "    -pam_login\n" +
-            "          Use PAM LoginService\n" +
+            "          Use Jetty PAM login module\n" +
             "\n" +
             "    -login_conf <filename>\n" +
             "          LoginService configuration file\n" +
+            "\n" +
+            "    -spnego_properties <filename>\n" +
+            "          SPNEGO login module configuration file\n" +
             "\n" +
             "    -form_auth\n" +
             "          Enables Form-based authentication for Flow (default is Basic authentication)\n" +
@@ -207,17 +234,23 @@ final public class H2O {
     /** -hash_login enables HashLoginService */
     public boolean hash_login = false;
 
-    /** -ldap_login enables LdapLoginService */
+    /** -ldap_login enables ldaploginmodule */
     public boolean ldap_login = false;
 
-    /** -kerberos_login enables KerberosLoginService */
+    /** -kerberos_login enables krb5loginmodule */
     public boolean kerberos_login = false;
 
-    /** -pam_login enables PAMLoginService */
+    /** -kerberos_login enables SpnegoLoginService */
+    public boolean spnego_login = false;
+
+    /** -pam_login enables pamloginmodule */
     public boolean pam_login = false;
 
     /** -login_conf is login configuration service file on local filesystem */
     public String login_conf = null;
+
+    /** -spnego_properties is SPNEGO configuration file on local filesystem */
+    public String spnego_properties = null;
 
     /** -form_auth enables Form-based authentication */
     public boolean form_auth = false;
@@ -389,9 +422,6 @@ final public class H2O {
       return hdfs_skip;
     }
 
-    public static int getSysPropInt(String suffix, int defaultValue) {
-      return Integer.getInteger(SYSTEM_PROP_PREFIX + suffix, defaultValue);
-    }
   }
 
   public static void parseFailed(String message) {
@@ -451,7 +481,7 @@ final public class H2O {
     parseH2OArgumentsTo(args, ARGS);
   }
 
-  static OptArgs parseH2OArgumentsTo(String[] args, OptArgs trgt) {
+  public static OptArgs parseH2OArgumentsTo(String[] args, OptArgs trgt) {
     for (int i = 0; i < args.length; i++) {
       OptString s = new OptString(args[i]);
       if (s.matches("h") || s.matches("help")) {
@@ -587,12 +617,19 @@ final public class H2O {
       else if (s.matches("kerberos_login")) {
         trgt.kerberos_login = true;
       }
+      else if (s.matches("spnego_login")) {
+        trgt.spnego_login = true;
+      }
       else if (s.matches("pam_login")) {
         trgt.pam_login = true;
       }
       else if (s.matches("login_conf")) {
         i = s.incrementAndCheck(i, args);
         trgt.login_conf = args[i];
+      }
+      else if (s.matches("spnego_properties")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.spnego_properties = args[i];
       }
       else if (s.matches("form_auth")) {
         trgt.form_auth = true;
@@ -650,12 +687,13 @@ final public class H2O {
     if (ARGS.hash_login) login_arg_count++;
     if (ARGS.ldap_login) login_arg_count++;
     if (ARGS.kerberos_login) login_arg_count++;
+    if (ARGS.spnego_login) login_arg_count++;
     if (ARGS.pam_login) login_arg_count++;
     if (login_arg_count > 1) {
-      parseFailed("Can only specify one of -hash_login, -ldap_login, -kerberos_login and -pam_login");
+      parseFailed("Can only specify one of -hash_login, -ldap_login, -kerberos_login, -spnego_login and -pam_login");
     }
 
-    if (ARGS.hash_login || ARGS.ldap_login || ARGS.kerberos_login || ARGS.pam_login) {
+    if (ARGS.hash_login || ARGS.ldap_login || ARGS.kerberos_login || ARGS.pam_login || ARGS.spnego_login) {
       if (H2O.ARGS.login_conf == null) {
         parseFailed("Must specify -login_conf argument");
       }
@@ -663,6 +701,15 @@ final public class H2O {
       if (H2O.ARGS.form_auth) {
         parseFailed("No login method was specified. Form-based authentication can only be used in conjunction with of a LoginService.\n" +
                 "Pick a LoginService by specifying '-<method>_login' option.");
+      }
+    }
+
+    if (ARGS.spnego_login) {
+      if (H2O.ARGS.spnego_properties == null) {
+        parseFailed("Must specify -spnego_properties argument");
+      }
+      if (H2O.ARGS.form_auth) {
+        parseFailed("Form-based authentication not supported when SPNEGO login is enabled.");
       }
     }
 
@@ -727,7 +774,7 @@ final public class H2O {
 
 
   public static void closeAll() {
-    try { H2O.getJetty().stop(); } catch( Exception ignore ) { }
+    try { H2O.getWebServer().stop(); } catch( Exception ignore ) { }
     try { NetworkInit._tcpSocket.close(); } catch( IOException ignore ) { }
     PersistManager PM = H2O.getPM();
     if( PM != null ) PM.getIce().cleanUp();
@@ -896,7 +943,7 @@ final public class H2O {
     sb.append(desc).append("_model_");
 
     // Append user agent string if we can figure it out.
-    String source = JettyHTTPD.getUserAgent();
+    String source = ServletUtils.getUserAgent();
     if (source != null) {
       StringBuilder ua = new StringBuilder();
 
@@ -1504,12 +1551,12 @@ final public class H2O {
   // as part of joining the cluster so all nodes have the same value.
   public static final long CLUSTER_ID = System.currentTimeMillis();
 
-  private static JettyHTTPD jetty;
-  public static void setJetty(JettyHTTPD value) {
-    jetty = value;
+  private static WebServer webServer;
+  public static void setWebServer(WebServer value) {
+    webServer = value;
   }
-  public static JettyHTTPD getJetty() {
-    return jetty;
+  public static WebServer getWebServer() {
+    return webServer;
   }
 
   /** If logging has not been setup yet, then Log.info will only print to
@@ -1575,7 +1622,7 @@ final public class H2O {
       Log.info("If you have trouble connecting, try SSH tunneling from your local machine (e.g., via port 55555):\n" +
               "  1. Open a terminal and run 'ssh -L 55555:localhost:"
               + API_PORT + " " + System.getProperty("user.name") + "@" + SELF_ADDRESS.getHostAddress() + "'\n" +
-              "  2. Point your browser to " + jetty.getScheme() + "://localhost:55555");
+              "  2. Point your browser to " + NetworkInit.h2oHttpView.getScheme() + "://localhost:55555");
     }
 
     // Create the starter Cloud with 1 member
@@ -1636,7 +1683,7 @@ final public class H2O {
    */
   public static void startServingRestApi() {
     if (!H2O.ARGS.disable_web) {
-      jetty.acceptRequests();
+      NetworkInit.h2oHttpView.acceptRequests();
     }
   }
 

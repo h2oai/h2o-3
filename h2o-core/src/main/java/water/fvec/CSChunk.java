@@ -52,6 +52,7 @@ public abstract class CSChunk extends Chunk {
     return x == NA?naImpute:_isDecimal?(_bias + x)/_scale:(_bias + x)*_scale;
   }
 
+  protected final long get8(int x) { return (_bias + x)*(long)(_scale); }
 
   @Override public final boolean hasFloat(){ return _isDecimal || _scale < 1; }
 
@@ -65,7 +66,7 @@ public abstract class CSChunk extends Chunk {
     _scale = PrettyPrint.pow10(1,_isDecimal?-x:x);
   }
 
-  @Override protected final long at8_impl( int i ) {
+  @Override protected long at8_impl( int i ) {
     double res = atd_impl(i); // note: |mantissa| <= 4B => double is ok
     if(Double.isNaN(res)) throw new IllegalArgumentException("at8_abs but value is missing");
     return (long)res;

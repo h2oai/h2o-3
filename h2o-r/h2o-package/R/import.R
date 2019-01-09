@@ -59,18 +59,17 @@
 #' @examples
 #' \donttest{
 #' h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
-#' prosPath = system.file("extdata", "prostate.csv", package = "h2o")
-#' prostate.hex = h2o.importFile(path = prosPath, destination_frame = "prostate.hex")
-#' class(prostate.hex)
-#' summary(prostate.hex)
+#' prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate = h2o.importFile(path = prostate_path)
+#' class(prostate)
+#' summary(prostate)
 #'
 #' #Import files with a certain regex pattern by utilizing h2o.importFolder()
 #' #In this example we import all .csv files in the directory prostate_folder
-#' prosPath = system.file("extdata", "prostate_folder", package = "h2o")
-#' prostate_pattern.hex = h2o.importFolder(path = prosPath, pattern = ".*.csv",
-#'                         destination_frame = "prostate.hex")
-#' class(prostate_pattern.hex)
-#' summary(prostate_pattern.hex)
+#' prostate_path = system.file("extdata", "prostate_folder", package = "h2o")
+#' prostate_pattern = h2o.importFolder(path = prostate_path, pattern = ".*.csv")
+#' class(prostate_pattern)
+#' summary(prostate_pattern)
 #' }
 
 
@@ -290,12 +289,12 @@ h2o.import_sql_select<- function(connection_url, select_query, username, passwor
 #' \dontrun{
 #' # library(h2o)
 #' # h2o.init()
-#' # prosPath = system.file("extdata", "prostate.csv", package = "h2o")
-#' # prostate.hex = h2o.importFile(path = prosPath, destination_frame = "prostate.hex")
-#' # prostate.glm = h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
-#' #   training_frame = prostate.hex, family = "binomial", alpha = 0.5)
-#' # glmmodel.path = h2o.saveModel(prostate.glm, dir = "/Users/UserName/Desktop")
-#' # glmmodel.load = h2o.loadModel(glmmodel.path)
+#' # prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
+#' # prostate = h2o.importFile(path = prostate_path)
+#' # prostate_glm = h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
+#' #   training_frame = prostate, family = "binomial", alpha = 0.5)
+#' # glmmodel_path = h2o.saveModel(prostate_glm, dir = "/Users/UserName/Desktop")
+#' # glmmodel_load = h2o.loadModel(glmmodel_path)
 #' }
 #' @export
 h2o.loadModel <- function(path) {

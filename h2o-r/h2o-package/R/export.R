@@ -32,13 +32,12 @@
 #'\dontrun{
 #' library(h2o)
 #' h2o.init()
-#' irisPath <- system.file("extdata", "iris.csv", package = "h2o")
-#' iris.hex <- h2o.uploadFile(path = irisPath)
+#' iris_hf <- as.h2o(iris)
 #'
 #' # These aren't real paths
-#' # h2o.exportFile(iris.hex, path = "/path/on/h2o/server/filesystem/iris.csv")
-#' # h2o.exportFile(iris.hex, path = "hdfs://path/in/hdfs/iris.csv")
-#' # h2o.exportFile(iris.hex, path = "s3n://path/in/s3/iris.csv")
+#' # h2o.exportFile(iris_hf, path = "/path/on/h2o/server/filesystem/iris.csv")
+#' # h2o.exportFile(iris_hf, path = "hdfs://path/in/hdfs/iris.csv")
+#' # h2o.exportFile(iris_hf, path = "s3n://path/in/s3/iris.csv")
 #' }
 #' @export
 h2o.exportFile <- function(data, path, force = FALSE, parts = 1) {
@@ -83,13 +82,12 @@ h2o.exportHDFS <- function(object, path, force=FALSE) { h2o.exportFile(object,pa
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
-#' irisPath <- system.file("extdata", "iris_wheader.csv", package = "h2o")
-#' iris.hex <- h2o.uploadFile(path = irisPath)
+#' iris_hf <- as.h2o(iris)
 #'
-#' myFile <- paste(getwd(), "my_iris_file.csv", sep = .Platform$file.sep)
-#' h2o.downloadCSV(iris.hex, myFile)
-#' file.info(myFile)
-#' file.remove(myFile)
+#' file_path <- paste(getwd(), "my_iris_file.csv", sep = .Platform$file.sep)
+#' h2o.downloadCSV(iris_hf, file_path)
+#' file.info(file_path)
+#' file.remove(file_path)
 #' }
 #' @export
 h2o.downloadCSV <- function(data, filename) {
@@ -135,12 +133,11 @@ h2o.downloadCSV <- function(data, filename) {
 #' \dontrun{
 #' # library(h2o)
 #' # h2o.init()
-#' # prostate.hex <- h2o.importFile(path = paste("https://raw.github.com",
-#' #    "h2oai/h2o-2/master/smalldata/logreg/prostate.csv", sep = "/"),
-#' #    destination_frame = "prostate.hex")
-#' # prostate.glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
-#' #    training_frame = prostate.hex, family = "binomial", alpha = 0.5)
-#' # h2o.saveModel(object = prostate.glm, path = "/Users/UserName/Desktop", force=TRUE)
+#' # prostate <- h2o.importFile(path = paste("https://raw.github.com",
+#' #    "h2oai/h2o-2/master/smalldata/logreg/prostate.csv", sep = "/"))
+#' # prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
+#' #    training_frame = prostate, family = "binomial", alpha = 0.5)
+#' # h2o.saveModel(object = prostate_glm, path = "/Users/UserName/Desktop", force = TRUE)
 #' }
 #' @export
 h2o.saveModel <- function(object, path="", force=FALSE) {
@@ -167,10 +164,10 @@ h2o.saveModel <- function(object, path="", force=FALSE) {
 #' \dontrun{
 #' # library(h2o)
 #' # h2o.init()
-#' # prostate.hex <- h2o.uploadFile(path = system.file("extdata", "prostate.csv", package="h2o"))
-#' # prostate.glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
-#' #                         training_frame = prostate.hex, family = "binomial", alpha = 0.5)
-#' # h2o.saveMojo(object = prostate.glm, path = "/Users/UserName/Desktop", force=TRUE)
+#' # prostate <- h2o.uploadFile(path = system.file("extdata", "prostate.csv", package="h2o"))
+#' # prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
+#' #                         training_frame = prostate, family = "binomial", alpha = 0.5)
+#' # h2o.saveMojo(object = prostate_glm, path = "/Users/UserName/Desktop", force = TRUE)
 #' }
 #' @export
 h2o.saveMojo <- function(object, path="", force=FALSE) {
@@ -196,10 +193,10 @@ h2o.saveMojo <- function(object, path="", force=FALSE) {
 #' \dontrun{
 #' # library(h2o)
 #' # h2o.init()
-#' # prostate.hex <- h2o.uploadFile(path = system.file("extdata", "prostate.csv", package="h2o"))
-#' # prostate.glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
-#' #                         training_frame = prostate.hex, family = "binomial", alpha = 0.5)
-#' # h2o.saveModelDetails(object = prostate.glm, path = "/Users/UserName/Desktop", force=TRUE)
+#' # prostate <- h2o.uploadFile(path = system.file("extdata", "prostate.csv", package = "h2o"))
+#' # prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
+#' #                         training_frame = prostate, family = "binomial", alpha = 0.5)
+#' # h2o.saveModelDetails(object = prostate_glm, path = "/Users/UserName/Desktop", force = TRUE)
 #' }
 #' @export
 h2o.saveModelDetails <- function(object, path="", force=FALSE) {
