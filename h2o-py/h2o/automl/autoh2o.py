@@ -27,8 +27,8 @@ class H2OAutoML(object):
     :param str stopping_metric: Specifies the metric to use for early stopping. Defaults to ``"AUTO"``.
       The available options are:
       ``"AUTO"`` (This defaults to ``"logloss"`` for classification, ``"deviance"`` for regression),
-      ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``, ``"lift_top_group"``,
-      ``"misclassification"``, ``"mean_per_class_error"``, ``"r2"``.
+      ``"deviance"``, ``"logloss"``, ``"MSE"``, ``"RMSE"``, ``"MAE"``, ``"RMSE"``, ``"AUC"``, ``"lift_top_group"``,
+      ``"misclassification"``, ``"mean_per_class_error"``.
     :param float stopping_tolerance: This option specifies the relative tolerance for the metric-based stopping
       to stop the AutoML run if the improvement is less than this value. This value defaults to ``0.001``
       if the dataset is at least 1 million rows; otherwise it defaults to a value determined by the size of the dataset
@@ -54,10 +54,10 @@ class H2OAutoML(object):
       significantly more memory in the H2O cluster. Defaults to ``False``.
     :param keep_cross_validation_fold_assignment: Whether to keep fold assignments in the models. Deleting them will save memory 
       in the H2O cluster. This option defaults to ``False``.
-    :param sort_metric: Metric to sort the leaderboard by. Defaults to ``"AUTO"`` (This defaults to ``auc`` for binomial classification, 
+    :param sort_metric: Metric to sort the leaderboard by. Defaults to ``"AUTO"`` (This defaults to ``AUC`` for binomial classification, 
       ``mean_per_class_error`` for multinomial classification, ``deviance`` for regression). For binomial classification choose between 
-      ``auc``, ``"logloss"``, ``"mean_per_class_error"``, ``"rmse"``, ``"mse"``.  For regression choose between ``"deviance"``, ``"rmse"``, 
-      ``"mse"``, ``"mae"``, ``"rmlse"``. For multinomial classification choose between ``"mean_per_class_error"``, ``"logloss"``, ``"rmse"``, ``"mse"``.
+      ``AUC``, ``"logloss"``, ``"mean_per_class_error"``, ``"RMSE"``, ``"MSE"``.  For regression choose between ``"deviance"``, ``"RMSE"``, 
+      ``"MSE"``, ``"MAE"``, ``"RMSLE"``. For multinomial classification choose between ``"mean_per_class_error"``, ``"logloss"``, ``"RMSE"``, ``"MSE"``.
     :param export_checkpoints_dir: Path to a directory where every model will be stored in binary form.
 
     :examples:
