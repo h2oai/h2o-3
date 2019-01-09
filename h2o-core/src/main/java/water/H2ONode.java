@@ -53,34 +53,10 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     if (_sendThread == null) { // send thread can only be null if H2ONode was serialized
       throw new IllegalStateException("Cannot invoke stop on a deserialized H2ONode.");
     }
-    if (gracePeriod == 0) { // stop instantly
-      _sendThread.stopSending();
-    } else {
-      new StopSendThreadTask(_sendThread, gracePeriod);
-    }
+    _sendThread.stopSending(gracePeriod);
     _removed_from_cloud = true;
   }
 
-  private class StopSendThreadTask extends H2O.H2OCountedCompleter<StopSendThreadTask> {
-    private transient UDP_TCP_SendThread _sendThread;
-    private long _delay;
-    private StopSendThreadTask(UDP_TCP_SendThread sendThread, long delay) {
-      _sendThread = sendThread;
-      _delay = delay;
-    }
-    @Override
-    public void compute2() {
-      assert _sendThread != null;
-      try {
-        Thread.sleep(_delay);
-      } catch (InterruptedException e) {
-        Log.trace(e);
-      }
-      _sendThread.stopSending();
-      tryComplete();
-    }
-  }
-  
   private void startSendThread() {
     _sendThread = new UDP_TCP_SendThread(); // Launch the UDP send thread
     _sendThread.start();
@@ -206,22 +182,30 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   private synchronized void refreshClient(short timestamp) {
     assert timestamp != 0 && H2O.decodeIsClient(timestamp);
 
-    if (_timestamp != 0) {
+    boolean wasKnownClient = _timestamp != 0;
+
+    if (wasKnownClient) {
       Log.info("Client reconnected with a new timestamp=" + _timestamp + ", old client: " + toDebugString());
+    } else {
+      Log.info("Node " + _key + " identified as client node, timestamp=" + _timestamp);
     }
     _client = true;
     _timestamp = timestamp;
     _last_heard_from = System.currentTimeMillis();
 
-    refreshSendThread();
-  }
-
-  private void refreshSendThread() {
     UDP_TCP_SendThread oldSendThread = _sendThread;
     startSendThread();
-    oldSendThread.stopSending(); // we can just drop the messages - we are talking to a brand new client 
+    if (wasKnownClient) {
+      oldSendThread.stopSending(0L); // we can just drop the messages - we are talking to a brand new client
+    } else {
+      oldSendThread.stopSending(gracePeriod()); // we want to avoid losing messages
+    }
   }
 
+  private long gracePeriod() {
+    return SEND_THREAD_STOP_DELAY_COEF * H2O.ARGS.clientDisconnectTimeout;
+  }
+  
   boolean removeClient() {
     assert _timestamp == 0 || H2O.decodeIsClient(_timestamp);
     boolean removed = INTERN.remove(_key, this);
@@ -234,7 +218,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     //   We want to give the thread a chance to finish sending current messages (if the client is not really inactive 
     //   and we were just not getting the heartbeat)
     // The grace period is chosen to be a multiple of the client disconnect timeout.
-    long gracePeriod = SEND_THREAD_STOP_DELAY_COEF * H2O.ARGS.clientDisconnectTimeout;
+    long gracePeriod = gracePeriod();
     Log.warn("Will keep trying to deliver unsent messages to " + _key + " for the next " + (gracePeriod / 1000) + "s. " +
             "You might see error messages reported by thread " + _sendThread.getName() + " if the client is not reachable.");
     stopSendThread(gracePeriod);
@@ -543,7 +527,15 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
       _msgQ.put(bb);
     }
 
-    private void stopSending() {
+    void stopSending(long delay) {
+      if (delay == 0) {
+        requestStop();
+      } else {
+        H2O.submitTask(new StopSendThreadTask(this, delay));
+      }
+    }
+    
+    private void requestStop() {
       _stopRequested = true;
       // note: priority of the POISON_PILL doesn't matter - it is just something to unblock the thread waiting for a message
       _msgQ.put(POISON_PILL);
@@ -617,6 +609,26 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     // Open channel on first write attempt
     private ByteChannel openChan() throws IOException {
       return H2ONode.openChan(TCPReceiverThread.TCP_SMALL, _socketFactory, _key.getAddress(), _key.getPort(), H2O.SELF._timestamp);
+    }
+  }
+
+  private static class StopSendThreadTask extends H2O.H2OCountedCompleter<StopSendThreadTask> {
+    private transient UDP_TCP_SendThread _sendThread;
+    private long _delay;
+    private StopSendThreadTask(UDP_TCP_SendThread sendThread, long delay) {
+      _sendThread = sendThread;
+      _delay = delay;
+    }
+    @Override
+    public void compute2() {
+      assert _sendThread != null;
+      try {
+        Thread.sleep(_delay);
+      } catch (InterruptedException e) {
+        Log.trace(e);
+      }
+      _sendThread.requestStop();
+      tryComplete();
     }
   }
 
