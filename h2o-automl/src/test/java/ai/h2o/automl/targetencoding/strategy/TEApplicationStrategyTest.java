@@ -15,7 +15,7 @@ public class TEApplicationStrategyTest extends water.TestUtil {
     try {
       fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
 
-      TEApplicationStrategy strategy = new AllCategoricalTEApplicationStrategy(fr, "survived");
+      TEApplicationStrategy strategy = new AllCategoricalTEApplicationStrategy(fr, fr.vec("survived"));
       assertArrayEquals(new String[]{"sex", "cabin", "embarked", "home.dest"}, strategy.getColumnsToEncode());
 
     } finally {
