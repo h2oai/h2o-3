@@ -1,8 +1,10 @@
 package ai.h2o.automl.targetencoding.strategy;
 
 import ai.h2o.automl.targetencoding.TargetEncodingParams;
+import water.Iced;
 
-public interface TEParamsSelectionStrategy {
-  TargetEncodingParams getBestParams();
+//TODO Either perform random grid search over parameters or introduce evolutionary selection algo, or just fixed/default values
+public abstract class TEParamsSelectionStrategy extends Iced {
+  public abstract TargetEncodingParams getBestParams();
 }
 

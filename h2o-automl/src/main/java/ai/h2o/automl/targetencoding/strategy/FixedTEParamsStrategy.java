@@ -2,11 +2,11 @@ package ai.h2o.automl.targetencoding.strategy;
 
 import ai.h2o.automl.targetencoding.TargetEncodingParams;
 
-public class FixedTEParamsSelectionStrategy implements TEParamsSelectionStrategy {
+public class FixedTEParamsStrategy extends TEParamsSelectionStrategy {
   
   private TargetEncodingParams _params;
   
-  public FixedTEParamsSelectionStrategy(TargetEncodingParams params) {
+  public FixedTEParamsStrategy(TargetEncodingParams params) {
     this._params = params; 
   }
 

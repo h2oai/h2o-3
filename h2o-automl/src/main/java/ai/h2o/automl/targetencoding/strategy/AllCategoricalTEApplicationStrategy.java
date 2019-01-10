@@ -5,7 +5,7 @@ import water.fvec.Vec;
 
 import java.util.ArrayList;
 
-public class AllCategoricalTEApplicationStrategy implements TEApplicationStrategy {
+public class AllCategoricalTEApplicationStrategy extends TEApplicationStrategy {
   
   private Frame _frame;
   private String _responseColumnName;

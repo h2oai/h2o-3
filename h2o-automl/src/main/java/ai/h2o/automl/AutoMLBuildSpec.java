@@ -1,5 +1,7 @@
 package ai.h2o.automl;
 
+import ai.h2o.automl.targetencoding.strategy.TEApplicationStrategy;
+import ai.h2o.automl.targetencoding.strategy.TEParamsSelectionStrategy;
 import hex.ScoreKeeper;
 import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
 import water.Iced;
@@ -159,6 +161,9 @@ public class AutoMLBuildSpec extends Iced {
     public String weights_column;
     public String[] ignored_columns;
     public String sort_metric;
+    //TODO consider introducing `te_spec` parameters group
+    public TEApplicationStrategy target_encoding_application_strategy;
+    public TEParamsSelectionStrategy target_encoding_params_selection_strategy;
   }
 
   /**

@@ -1,20 +1,40 @@
 package ai.h2o.automl.targetencoding;
 
-public class TargetEncodingParams {
+import water.Iced;
+
+public class TargetEncodingParams extends Iced {
+
   private boolean _withBlendedAvg;
   private BlendingParams _blendingParams;
-  private double _holdoutType;
-  private boolean imputeNAsWithNewCategory = true;
+  private byte _holdoutType;
 
-  public TargetEncodingParams( BlendingParams blendingParams, double holdoutType) {
+  private boolean _imputeNAsWithNewCategory = true;
+
+  public TargetEncodingParams( BlendingParams blendingParams, byte holdoutType) {
     if(blendingParams != null) this._withBlendedAvg = true;
     this._blendingParams = blendingParams;
     this._holdoutType = holdoutType;
   }
   
-  public TargetEncodingParams( double holdoutType) {
+  public TargetEncodingParams( byte holdoutType) {
     this._withBlendedAvg = false;
     this._blendingParams = null;
     this._holdoutType = holdoutType;
+  }
+
+  public BlendingParams getBlendingParams() {
+    return _blendingParams;
+  }
+
+  public byte getHoldoutType() {
+    return _holdoutType;
+  }
+
+  public boolean isWithBlendedAvg() {
+    return _withBlendedAvg;
+  }
+
+  public boolean isImputeNAsWithNewCategory() {
+    return _imputeNAsWithNewCategory;
   }
 }

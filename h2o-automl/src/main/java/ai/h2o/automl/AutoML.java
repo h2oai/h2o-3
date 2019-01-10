@@ -1,10 +1,8 @@
 package ai.h2o.automl;
 
 import ai.h2o.automl.UserFeedbackEvent.Stage;
-import ai.h2o.automl.targetencoding.strategy.AllCategoricalTEApplicationStrategy;
-import ai.h2o.automl.targetencoding.BlendingParams;
 import ai.h2o.automl.targetencoding.strategy.TEApplicationStrategy;
-import ai.h2o.automl.targetencoding.TargetEncoder;
+import ai.h2o.automl.targetencoding.strategy.TEParamsSelectionStrategy;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ScoreKeeper.StoppingMetric;
@@ -290,15 +288,21 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   private void performAutoFeatureEngineering() {
-    // Hardcoded default strategy for now
-    TEApplicationStrategy defaultTEApplicationStrategy = new AllCategoricalTEApplicationStrategy(this.trainingFrame, getResponseColumn());
+
+    AutoMLBuildSpec buildSpec = getBuildSpec();
+
+    TEApplicationStrategy defaultTEApplicationStrategy = buildSpec.input_spec.target_encoding_application_strategy;
+    TEParamsSelectionStrategy defaultTEParamsSelectionStrategy = buildSpec.input_spec.target_encoding_params_selection_strategy; 
+    
     AutoMLTargetEncodingAssistant teAssistant = new AutoMLTargetEncodingAssistant(getTrainingFrame(),
             getValidationFrame(),
             getLeaderboardFrame(),
             getResponseColumn(),
             getFoldColumn(),
             getBuildSpec(),
+            defaultTEParamsSelectionStrategy,
             defaultTEApplicationStrategy);
+    
     teAssistant.performAutoTargetEncoding();
   }
   
