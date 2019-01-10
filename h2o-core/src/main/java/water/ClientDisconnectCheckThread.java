@@ -1,7 +1,5 @@
 package water;
 
-import water.util.Log;
-
 class ClientDisconnectCheckThread extends Thread {
 
   public ClientDisconnectCheckThread() {
@@ -17,7 +15,7 @@ class ClientDisconnectCheckThread extends Thread {
    * This method checks whether the client is disconnected from this node due to some problem such as client or network
    * is unreachable.
    */
-  private void handleClientDisconnect(H2ONode client) {
+  static void handleClientDisconnect(H2ONode client) {
     if(client != H2O.SELF) {
       if (H2O.isFlatfileEnabled()) {
         H2O.removeNodeFromFlatfile(client);
