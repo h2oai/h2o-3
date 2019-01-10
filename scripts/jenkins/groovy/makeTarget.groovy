@@ -106,10 +106,10 @@ private void execMake(final String buildAction, final String h2o3dir) {
 
     cd ${h2o3dir}
     echo "Linking small and bigdata"
-    rm -f smalldata
-    ln -s -f /home/0xdiag/smalldata
-    rm -f bigdata
-    ln -s -f /home/0xdiag/bigdata
+    rm -fv smalldata
+    ln -s -f -v /home/0xdiag/smalldata
+    rm -fv bigdata
+    ln -s -f -v /home/0xdiag/bigdata
 
     # The Gradle fails if there is a special character, in these variables
     unset CHANGE_AUTHOR_DISPLAY_NAME
