@@ -7,6 +7,7 @@ public class TargetEncodingParams extends Iced {
   private boolean _withBlendedAvg;
   private BlendingParams _blendingParams;
   private byte _holdoutType;
+  private double _noiseLevel;
 
   private boolean _imputeNAsWithNewCategory = true;
 
@@ -28,6 +29,10 @@ public class TargetEncodingParams extends Iced {
 
   public byte getHoldoutType() {
     return _holdoutType;
+  }
+
+  public double getNoiseLevel() {
+    return _noiseLevel;
   }
 
   public boolean isWithBlendedAvg() {

@@ -19,6 +19,7 @@ public class AutoMLBuildSpec extends Iced {
    */
   public AutoMLBuildSpec() {
     this.input_spec = new AutoMLInput();
+    this.te_spec = new AutoMLTEControl();
     this.build_control = new AutoMLBuildControl();
     this.build_models = new AutoMLBuildModels();
   }
@@ -161,9 +162,16 @@ public class AutoMLBuildSpec extends Iced {
     public String weights_column;
     public String[] ignored_columns;
     public String sort_metric;
-    //TODO consider introducing `te_spec` parameters group
-    public TEApplicationStrategy target_encoding_application_strategy;
-    public TEParamsSelectionStrategy target_encoding_params_selection_strategy;
+  }
+
+  /**
+   * The specification of the parameters for Automatic Target Encoding
+   */
+  static final public class AutoMLTEControl extends Iced {
+
+    public TEApplicationStrategy application_strategy;
+    public TEParamsSelectionStrategy params_selection_strategy;
+    public long seed = -1;
   }
 
   /**
@@ -174,8 +182,9 @@ public class AutoMLBuildSpec extends Iced {
     public Algo[] include_algos;
   }
 
-  public AutoMLBuildControl build_control;
-  public AutoMLInput input_spec;
+  public AutoMLBuildSpec.AutoMLBuildControl build_control;
+  public AutoMLBuildSpec.AutoMLInput input_spec;
+  public AutoMLBuildSpec.AutoMLTEControl te_spec;
   public AutoMLBuildSpec.AutoMLBuildModels build_models;
 
   // output

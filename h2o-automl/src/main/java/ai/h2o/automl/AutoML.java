@@ -291,8 +291,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     AutoMLBuildSpec buildSpec = getBuildSpec();
 
-    TEApplicationStrategy defaultTEApplicationStrategy = buildSpec.input_spec.target_encoding_application_strategy;
-    TEParamsSelectionStrategy defaultTEParamsSelectionStrategy = buildSpec.input_spec.target_encoding_params_selection_strategy; 
+    TEApplicationStrategy defaultTEApplicationStrategy = buildSpec.te_spec.application_strategy;
+    TEParamsSelectionStrategy defaultTEParamsSelectionStrategy = buildSpec.te_spec.params_selection_strategy; 
     
     AutoMLTargetEncodingAssistant teAssistant = new AutoMLTargetEncodingAssistant(getTrainingFrame(),
             getValidationFrame(),
