@@ -98,6 +98,10 @@ test-r-small-client-mode:
 	cd h2o-r/tests/ && rm -f -r testdir_hdfs
 	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --client --testsize s --numclouds 4 --jvm.xmx 4g --excludelist ../../tests/runitAutoMLList
 
+test-r-small-client-mode-attack:
+	cd h2o-r/tests/ && rm -f -r testdir_hdfs
+	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --client --testsize s --numclouds 4 --jvm.opts '-Dsys.ai.h2o.debug.clientDisconnectAttack=true' --jvm.xmx 4g --excludelist ../../tests/runitAutoMLList
+
 test-r-small-automl:
 	cd h2o-r/tests/ && rm -f -r testdir_hdfs
 	cd h2o-r/tests/ && rm -f -r testdir_demos
