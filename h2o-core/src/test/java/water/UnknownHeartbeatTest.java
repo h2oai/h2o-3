@@ -1,12 +1,14 @@
 package water;
 
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Collection;
 
 import static org.junit.Assert.assertEquals;
+@Ignore
 public class UnknownHeartbeatTest extends TestUtil{
   @BeforeClass() public static void setup() {
     stall_till_cloudsize(1);
