@@ -1,8 +1,10 @@
 package water;
 
 import org.junit.*;
+import water.util.Log;
 
 import java.net.InetAddress;
+import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
@@ -26,14 +28,14 @@ public class ClientReconnectSimulationTest extends TestUtil{
     hb._cloud_name_hash = H2O.SELF._heartbeat._cloud_name_hash;
     hb._client = true;
     hb._jar_md5 = H2O.SELF._heartbeat._jar_md5;
-
+    
     H2ONode node = H2ONode.intern(FAKE_NODE_ADDRESS, 65456, (short)-100);
     node._heartbeat = hb;
-
+    
     assertSame(node, H2ONode.intern(FAKE_NODE_ADDRESS, 65456, (short)-101));
 
     // Verify number of clients
-    assertEquals(1, H2O.getClients().length);
+    assertEquals(1, getClients().length);
   }
 
   @Test
@@ -49,9 +51,9 @@ public class ClientReconnectSimulationTest extends TestUtil{
             ._heartbeat = hb;
 
     // Verify number of clients
-    assertEquals(1, H2O.getClients().length);
+    assertEquals(1, getClients().length);
     waitForClientsDisconnect();
-    assertEquals(0, H2O.getClients().length);
+    assertEquals(0, getClients().length);
   }
 
   @Test
@@ -69,7 +71,7 @@ public class ClientReconnectSimulationTest extends TestUtil{
             ._heartbeat = hb;
 
     // make sure H2O sees only one client node
-    assertEquals(1, H2O.getClients().length);
+    assertEquals(1, getClients().length);
 
     // second client from another node re-connects
     H2ONode
@@ -80,7 +82,13 @@ public class ClientReconnectSimulationTest extends TestUtil{
             ._heartbeat = hb;
 
     // we should see 2 clients nodes now
-    assertEquals(2, H2O.getClients().length);
+    assertEquals(2, getClients().length);
+  }
+
+  static H2ONode[] getClients() {
+    H2ONode[] clients = H2O.getClients();
+    Log.info("Current clients: " + Arrays.toString(clients));
+    return clients;
   }
 
   @After
