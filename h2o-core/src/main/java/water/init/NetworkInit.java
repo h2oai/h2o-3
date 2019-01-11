@@ -331,7 +331,7 @@ public class NetworkInit {
       nodes.addAll(water.Paxos.PROPOSED.values());
       bb.mark();
       for( H2ONode h2o : nodes ) {
-        if(h2o.removedFromCloud()) {
+        if(h2o.isRemovedFromCloud()) {
           continue;
         }
         bb.reset();

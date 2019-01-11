@@ -41,6 +41,8 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
 
   transient private short _timestamp; // 0 means unknown
 
+  transient private boolean _removed_from_cloud;
+
   public final boolean isClient() {
     return _heartbeat._client || H2O.decodeIsClient(_timestamp);
   }
@@ -49,11 +51,12 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     return _timestamp;
   }
   
-  public final boolean removedFromCloud() {
-    return _sendThread == null;
+  public final boolean isRemovedFromCloud() {
+    return _removed_from_cloud;
   }
 
   void removeFromCloud() {
+    _removed_from_cloud = true;
     stopSendThread();
   }
 
@@ -170,7 +173,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   static H2ONode[] getClients(){
     ArrayList<H2ONode> clients = new ArrayList<>(INTERN.size());
     for( Map.Entry<H2Okey, H2ONode> entry : INTERN.entrySet()){
-      if (entry.getValue().isClient() && ! entry.getValue().removedFromCloud()) {
+      if (entry.getValue().isClient() && ! entry.getValue().isRemovedFromCloud()) {
         clients.add(entry.getValue());
       }
     }
@@ -179,7 +182,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
 
   static H2ONode getClientByIPPort(String ipPort){
     for( Map.Entry<H2Okey, H2ONode> entry : INTERN.entrySet()){
-      if (entry.getValue().isClient() && entry.getValue().removedFromCloud() && entry.getValue().getIpPortString().equals(ipPort)) {
+      if (entry.getValue().isClient() && entry.getValue().isRemovedFromCloud() && entry.getValue().getIpPortString().equals(ipPort)) {
         return entry.getValue();
       }
     }
@@ -189,6 +192,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   private void refreshClient(short timestamp) {
     assert timestamp == 0 || H2O.decodeIsClient(timestamp); 
 
+    _removed_from_cloud = false;
     if (_sendThread == null || (timestamp != 0 && _timestamp != timestamp)) {
       startSendThread();
     }
@@ -409,7 +413,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     UDP_TCP_SendThread sendThread = _sendThread;
     if (sendThread == null) {
       sendThread = startSendThread();
-      Log.warn("Adding node " + this + " back to the cloud because we want to communicate with it.");
+      Log.warn("Node " + this + " is not active in the cloud anymore but we want to communicate with it.");
     }
     assert sendThread != null;
     sendThread.sendMessage(bb, msg_priority);
@@ -512,7 +516,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     // We deliver messages to regular nodes only if the are part of the cloud
     // and to always to clients 
     private boolean keepSending() {
-      return !removedFromCloud() || isClient();
+      return !isRemovedFromCloud() || isClient();
     }
 
     @Override public void run(){
