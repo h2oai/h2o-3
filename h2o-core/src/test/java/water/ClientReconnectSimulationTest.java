@@ -7,7 +7,6 @@ import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 
-@Ignore
 public class ClientReconnectSimulationTest extends TestUtil{
 
   private InetAddress FAKE_NODE_ADDRESS;

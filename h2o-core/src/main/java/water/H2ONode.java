@@ -212,7 +212,8 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     assert _timestamp == 0 || H2O.decodeIsClient(_timestamp);
 
     Log.info("Removing client: " + toDebugString());
-    boolean removed = _sendThread != null;
+    boolean removed = !_removed_from_cloud;
+    _removed_from_cloud = true;
     stopSendThread();
 
     return removed;
