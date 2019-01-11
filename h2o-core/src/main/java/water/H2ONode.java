@@ -197,8 +197,6 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   }
 
   private void refreshClient(short timestamp) {
-    assert timestamp == 0 || H2O.decodeIsClient(timestamp); 
-
     boolean reconnected = _timestamp != 0 && timestamp != 0 && _timestamp != timestamp;
     if (reconnected) {
       Log.info("Client reconnected with a new timestamp=" + timestamp + ", old client: " + toDebugString());
@@ -214,12 +212,9 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   }
 
   boolean removeClient() {
-    assert _timestamp == 0 || H2O.decodeIsClient(_timestamp);
-
     Log.info("Removing client: " + toDebugString());
     boolean removed = !_removed_from_cloud;
     removeFromCloud();
-
     return removed;
   }
 
