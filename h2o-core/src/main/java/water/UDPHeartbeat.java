@@ -12,10 +12,12 @@ class UDPHeartbeat extends UDP {
       // Do not update self-heartbeat object
       // The self-heartbeat is the sole holder of racey cloud-concensus hashes
       // and if we update it here we risk dropping an update.
-      ab._h2o._heartbeat = new HeartBeat().read(ab);
-      if(ab._h2o._heartbeat._cloud_name_hash != H2O.SELF._heartbeat._cloud_name_hash){
+      HeartBeat hb = new HeartBeat().read(ab);
+      if (hb._cloud_name_hash != H2O.SELF._heartbeat._cloud_name_hash) {
         return ab;
       }
+      assert ab._h2o != null;
+      ab._h2o.setHeartBeat(hb);
       Paxos.doHeartbeat(ab._h2o);
     }
     return ab;
