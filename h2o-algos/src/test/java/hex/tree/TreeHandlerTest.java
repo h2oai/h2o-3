@@ -15,6 +15,7 @@ import water.api.schemas3.KeyV3;
 import water.fvec.Frame;
 
 import java.util.*;
+import java.util.regex.Pattern;
 
 import static org.junit.Assert.*;
 
@@ -60,6 +61,8 @@ public class TreeHandlerTest extends TestUtil {
             assertEquals(sharedTreeSubgraph.nodesArray.size(), treeProperties._thresholds.length);
             assertEquals(sharedTreeSubgraph.nodesArray.size(), treeProperties._features.length);
             assertEquals(sharedTreeSubgraph.nodesArray.size(), treeProperties._nas.length);
+            final Pattern rootNodeSplitColPattern = Pattern.compile(".* and splits on column '.+'.*");
+            assertTrue(rootNodeSplitColPattern.matcher(treeProperties._descriptions[0]).matches());
 
             final int[] leftChildren = treeProperties._leftChildren;
             final int[] rightChildren = treeProperties._rightChildren;
