@@ -63,23 +63,19 @@ public class ClientReconnectSimulationTest extends TestUtil{
     hb._client = true;
     hb._jar_md5 = H2O.SELF._heartbeat._jar_md5;
 
-    H2ONode
-            .intern(FAKE_NODE_ADDRESS, 65456, (short)-100)
-            ._heartbeat = hb;
-    H2ONode
-            .intern(FAKE_NODE_ADDRESS, 65456, (short)-101)
-            ._heartbeat = hb;
+    H2ONode n1 = H2ONode.intern(FAKE_NODE_ADDRESS, 65456, (short)-100);
+    n1._heartbeat = hb;
+    H2ONode n2 = H2ONode.intern(FAKE_NODE_ADDRESS, 65456, (short)-101);
+    assertSame(n1, n2);
 
     // make sure H2O sees only one client node
     assertEquals(1, getClients().length);
 
     // second client from another node re-connects
-    H2ONode
-            .intern(FAKE_NODE_ADDRESS, 65458, (short)-100)
-            ._heartbeat = hb;
-    H2ONode
-            .intern(FAKE_NODE_ADDRESS, 65458, (short)-101)
-            ._heartbeat = hb;
+    H2ONode n3 = H2ONode.intern(FAKE_NODE_ADDRESS, 65458, (short)-100);
+    n3._heartbeat = hb;
+    H2ONode n4 = H2ONode.intern(FAKE_NODE_ADDRESS, 65458, (short)-101);
+    assertSame(n3, n4);
 
     // we should see 2 clients nodes now
     assertEquals(2, getClients().length);
