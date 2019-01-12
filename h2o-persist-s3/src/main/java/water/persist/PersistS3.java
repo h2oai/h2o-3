@@ -6,11 +6,14 @@ import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
 import com.amazonaws.auth.*;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+import com.amazonaws.internal.StaticCredentialsProvider;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.S3ClientOptions;
 import com.amazonaws.services.s3.model.*;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.lang.builder.ToStringBuilder;
 import water.*;
 import water.fvec.FileVec;
 import water.fvec.S3FileVec;
@@ -25,35 +28,74 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.SocketTimeoutException;
 import java.net.URI;
+import java.security.MessageDigest;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
 
 /** Persistence backend for S3 */
 public final class PersistS3 extends Persist {
-  private static final String HELP = "You can specify a credentials properties file with the -aws_credentials command line switch.";
 
   private static final String KEY_PREFIX = "s3://";
   private static final int KEY_PREFIX_LEN = KEY_PREFIX.length();
 
   private static final Object _lock = new Object();
   private static volatile AmazonS3 _s3;
+  private static volatile byte[] _credentialsDigest = null;
+  private static final MessageDigest _messageDigest = DigestUtils.getSha256Digest();
+  private static final Pattern URL_CREDENTIALS_PATTERN = Pattern.compile("s3://(.[^:]*):{0,1}(.[^@]*)@{1}(.*)");
 
+  /**
+   * Creates an Amazon S3 client using default chain of credential providers, without incorporating access key ID and
+   * secret access key. This kind of {@link AmazonS3} client is constructed for any purpose but 'GET' operations,
+   * where in-url credentials are not supported.
+   *
+   * @return An instance of {@link AmazonS3Client}
+   */
   public static AmazonS3 getClient() {
-    if( _s3 == null ) {
-      synchronized( _lock ) {
-        if( _s3 == null ) {
-          try {
-            H2OAWSCredentialsProviderChain c = new H2OAWSCredentialsProviderChain();
-            ClientConfiguration cc = s3ClientCfg();
-            _s3 = configureClient(new AmazonS3Client(c, cc));
-          } catch( Throwable e ) {
-            e.printStackTrace();
-            StringBuilder msg = new StringBuilder();
-            msg.append(e.getMessage() + "\n");
-            msg.append("Unable to load S3 credentials.");
-            throw new RuntimeException(msg.toString());
-          }
+    return getClient(null, null);
+  }
+
+  /**
+   * Creates an Amazon S3 client using default chain of credential providers, enhanced with static credentials providers
+   * based on accessKeyId and accessSecretKey pair - if provided.
+   *
+   * Any time accessKeyId and accessSecretKey arguments are provided, their value is hashed and compared to those used to
+   * create existing client. If the credentials are not equal (comparison includes null values), new client is constructed.
+   *
+   * @param accessKeyId Secret access Key ID. If null, treated as not provided and not used in the credential providers chain.
+   * @param accessSecretKey Secret access key. If null, treated as not provided and not used in the credential providers chain.
+   * @return An instance of {@link AmazonS3}, either newly constructed or existing instance
+   */
+  public static AmazonS3 getClient(final String accessKeyId, final String accessSecretKey) {
+
+    final byte[] digest;
+    // When users specify credentials in URL, these credentials might be different than those provided in configuration
+    // or provided in previous URL used. If the credentials are different, we must build a new client with new credentials.
+    // Not providing credentials also correctly results in new client construction (users may want to continue with values from config).
+    // Storing these values in memory for comparison is potentially dangerous. Instead, a hash of those two values is stored.
+    if (accessKeyId != null && accessSecretKey != null) {
+      StringBuilder keyDigestBuilder = new StringBuilder(accessKeyId);
+      keyDigestBuilder.append(accessSecretKey);
+      digest = _messageDigest.digest(keyDigestBuilder.toString().getBytes());
+    } else {
+      digest = null;
+    }
+
+    synchronized (_lock) {
+      if (_s3 == null || digest != _credentialsDigest) {
+        try {
+          H2OAWSCredentialsProviderChain c = new H2OAWSCredentialsProviderChain(accessKeyId, accessSecretKey);
+          ClientConfiguration cc = s3ClientCfg();
+          _s3 = configureClient(new AmazonS3Client(c, cc));
+        } catch( Throwable e ) {
+          e.printStackTrace();
+          StringBuilder msg = new StringBuilder();
+          msg.append(e.getMessage() + "\n");
+          msg.append("Unable to load S3 credentials.");
+          throw new RuntimeException(msg.toString());
         }
       }
     }
@@ -64,13 +106,23 @@ public final class PersistS3 extends Persist {
    * credentials provider.
    */
   public static class H2OAWSCredentialsProviderChain extends AWSCredentialsProviderChain {
-    public H2OAWSCredentialsProviderChain() {
-      super(new H2OArgCredentialsProvider(),
-          new InstanceProfileCredentialsProvider(),
-          new EnvironmentVariableCredentialsProvider(),
-          new SystemPropertiesCredentialsProvider(),
-          new ProfileCredentialsProvider());
+    public H2OAWSCredentialsProviderChain(final String accessKeyId, final String accessSecretKey) {
+      super(getProviders(accessKeyId, accessSecretKey));
     }
+
+    private static List<AWSCredentialsProvider> getProviders(final String accessKeyId, final String accessSecretKey) {
+      final List<AWSCredentialsProvider> providers = new ArrayList<>();
+      if (accessKeyId != null && accessSecretKey != null) {
+        providers.add(new StaticCredentialsProvider(new BasicAWSCredentials(accessKeyId, accessSecretKey)));
+      }
+      providers.add(new H2OArgCredentialsProvider());
+      providers.add(new InstanceProfileCredentialsProvider());
+      providers.add(new EnvironmentVariableCredentialsProvider());
+      providers.add(new SystemPropertiesCredentialsProvider());
+      providers.add(new ProfileCredentialsProvider());
+      return providers;
+    }
+
   }
 
   /** A simple credentials provider reading file-based credentials from given
@@ -87,11 +139,11 @@ public final class PersistS3 extends Persist {
         return new PropertiesCredentials(credentials);
       } catch (IOException e) {
         Log.debug(
-            "Unable to load AWS credentials from file " + credentials + 
-                "; exists? " + credentials.exists() + ", canRead? " + credentials.canRead() + 
-                ", size=" + credentials.length() + "; problem: " + e.getMessage());
+                "Unable to load AWS credentials from file " + credentials +
+                        "; exists? " + credentials.exists() + ", canRead? " + credentials.canRead() +
+                        ", size=" + credentials.length() + "; problem: " + e.getMessage());
         throw new AmazonClientException(
-            "PersistS3. Unable to load AWS credentials from file " + credentials + ": " + e.getMessage());
+                "PersistS3. Unable to load AWS credentials from file " + credentials + ": " + e.getMessage());
       }
     }
 
@@ -127,9 +179,9 @@ public final class PersistS3 extends Persist {
 
   @Override
   public InputStream open(String path) {
-    String[] bk = decodePath(path);
-    GetObjectRequest r = new GetObjectRequest(bk[0], bk[1]);
-    S3Object s3obj = getClient().getObject(r);
+    final S3Path s3Path = decodePath(path);
+    GetObjectRequest r = new GetObjectRequest(s3Path.bucketName, s3Path.itemName);
+    S3Object s3obj = getClient(s3Path.accessKeyId, s3Path.accessSecretKey).getObject(r);
     return s3obj.getObjectContent();
   }
 
@@ -162,9 +214,9 @@ public final class PersistS3 extends Persist {
   public void importFiles(String path, String pattern, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
     Log.info("ImportS3 processing (" + path + ")");
     // List of processed files
-    AmazonS3 s3 = getClient();
-    String [] parts = decodePath(path);
-    ObjectListing currentList = s3.listObjects(parts[0], parts[1]);
+    final S3Path s3Path = decodePath(path);
+    AmazonS3 s3 = getClient(s3Path.accessKeyId, s3Path.accessSecretKey);
+    ObjectListing currentList = s3.listObjects(s3Path.bucketName, s3Path.itemName);
     processListing(currentList, files, fails,true);
     while(currentList.isTruncated()){
       currentList = s3.listNextBatchOfObjects(currentList);
@@ -283,18 +335,55 @@ public final class PersistS3 extends Persist {
    * @param s generic s3 path (e.g., "s3://bucketname/my/directory/file.ext")
    * @return array of { bucket name, key }
    */
-  private static String [] decodePath(String s) {
+  private static S3Path decodePath(String s) {
     assert s.startsWith(KEY_PREFIX) && s.indexOf('/') >= 0 : "Attempting to decode non s3 key: " + s;
-    s = s.substring(KEY_PREFIX_LEN);
+    final Matcher matcher = URL_CREDENTIALS_PATTERN.matcher(s);
+    final S3Path s3Path = new S3Path();
+
+    // If there are credentials (access key ID, secret key) in the URL, extract them.
+    if (matcher.matches()) {
+      s3Path.accessKeyId = matcher.group(1);
+      s3Path.accessSecretKey = matcher.group(2);
+      s = matcher.group(3);
+    } else {
+      s = s.substring(KEY_PREFIX_LEN);
+    }
+
+    // Extract bucket name and file name.
     int dlm = s.indexOf('/');
-    if(dlm < 0) return new String[]{s,null};
-    String bucket = s.substring(0, dlm);
-    String key = s.substring(dlm + 1);
-    return new String[] { bucket, key };
+    if (dlm < 0) {
+      s3Path.bucketName = s;
+    } else {
+      s3Path.bucketName = s.substring(0, dlm);
+      s3Path.itemName = s.substring(dlm + 1);
+    }
+
+
+    return s3Path;
   }
+
+  private static final class S3Path {
+
+    String bucketName;
+    String itemName;
+    String accessKeyId;
+    String accessSecretKey;
+
+    @Override
+    public String toString() {
+      return new ToStringBuilder(this)
+              .append("bucketName", bucketName)
+              .append("itemName", itemName)
+              .append("accessKeyId", accessKeyId)
+              .append("accessSecretKey", accessSecretKey)
+              .toString();
+    }
+  }
+
   private static String[] decodeKeyImpl(Key k) {
     String s = new String((k._kb[0] == Key.CHK)?Arrays.copyOfRange(k._kb, Vec.KEY_PREFIX_LEN, k._kb.length):k._kb);
-    return decodePath(s);
+    final S3Path s3Path = decodePath(s);
+    return new String[]{s3Path.bucketName, s3Path.itemName};
   }
 
   // Gets the S3 object associated with the key that can read length bytes from offset
@@ -303,13 +392,6 @@ public final class PersistS3 extends Persist {
     GetObjectRequest r = new GetObjectRequest(bk[0], bk[1]);
     r.setRange(offset, offset + length - 1); // Range is *inclusive* according to docs???
     return getClient().getObject(r);
-  }
-
-  // Gets the object metadata associated with given key.
-  private static ObjectMetadata getObjectMetadataForKey(Key k) {
-    String[] bk = decodeKey(k);
-    assert (bk.length == 2);
-    return getClient().getObjectMetadata(bk[0], bk[1]);
   }
 
   /** S3 socket timeout property name */
@@ -324,11 +406,11 @@ public final class PersistS3 extends Persist {
   public final static String S3_FORCE_HTTP = SYSTEM_PROP_PREFIX + "persist.s3.force.http";
   /** S3 end-point, for example: "https://localhost:9000 */
   public final static String S3_END_POINT = SYSTEM_PROP_PREFIX + "persist.s3.endPoint";
-  /** S3 region, for example "us-east-1",
-   * see {@link com.amazonaws.regions.Region#getRegion(com.amazonaws.regions.Regions)} for region list */
+  /**
+   * S3 region, for example "us-east-1"
+   */
   public final static String S3_REGION = SYSTEM_PROP_PREFIX + "persist.s3.region";
-  /** Enable S3 path style access via setting the property to true.
-   * See: {@link com.amazonaws.services.s3.S3ClientOptions#setPathStyleAccess(boolean)} */
+  /** Enable S3 path style access via setting the property to true.*/
   public final static String S3_ENABLE_PATH_STYLE = SYSTEM_PROP_PREFIX + "persist.s3.enable.path.style";
 
 
@@ -371,18 +453,18 @@ public final class PersistS3 extends Persist {
 
   @Override
   public Key uriToKey(URI uri) throws IOException {
-    AmazonS3 s3 = getClient();
+    S3Path s3Path = decodePath(uri.toString());
+    AmazonS3 s3 = getClient(s3Path.accessKeyId, s3Path.accessSecretKey);
     // Decompose URI into bucket, key
-    String [] parts = decodePath(uri.toString());
     try {
-      ObjectMetadata om = s3.getObjectMetadata(parts[0], parts[1]);
+      ObjectMetadata om = s3.getObjectMetadata(s3Path.bucketName, s3Path.itemName);
       // Voila: create S3 specific key pointing to the file
-      return S3FileVec.make(encodePath(parts[0], parts[1]), om.getContentLength());
+      return S3FileVec.make(encodePath(s3Path.bucketName, s3Path.itemName), om.getContentLength());
     } catch (AmazonServiceException e) {
       if (e.getErrorCode().contains("404")) {
         throw new IOException(e);
       } else {
-        Log.err("AWS failed for " + Arrays.toString(parts) + ": " + e.getMessage());
+        Log.err("AWS failed for " + s3Path.toString() + ": " + e.getMessage());
         throw e;
       }
     }
@@ -458,16 +540,16 @@ public final class PersistS3 extends Persist {
   HashMap<String,KeyCache> _keyCaches = new HashMap<>();
   @Override
   public List<String> calcTypeaheadMatches(String filter, int limit) {
-    String [] parts = decodePath(filter);
-    if(parts[1] != null) { // bucket and key prefix
-      if(_keyCaches.get(parts[0]) == null) {
-        if(!getClient().doesBucketExist(parts[0]))
+    final S3Path s3Path = decodePath(filter);
+    if (s3Path.itemName != null) { // bucket and key prefix
+      if (_keyCaches.get(s3Path.bucketName) == null) {
+        if (!getClient(s3Path.accessKeyId, s3Path.accessSecretKey).doesBucketExist(s3Path.bucketName))
           return new ArrayList<>();
-        _keyCaches.put(parts[0], new KeyCache(parts[0]));
+        _keyCaches.put(s3Path.bucketName, new KeyCache(s3Path.bucketName));
       }
-      return _keyCaches.get(parts[0]).fetch(parts[1],limit);
+      return _keyCaches.get(s3Path.bucketName).fetch(s3Path.itemName, limit);
     } else { // no key, only bucket prefix
-      return _bucketCache.fetch(parts[0],limit);
+      return _bucketCache.fetch(s3Path.bucketName, limit);
     }
   }
 }
