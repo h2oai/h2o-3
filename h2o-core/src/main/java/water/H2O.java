@@ -841,16 +841,7 @@ final public class H2O {
 
   //-------------------------------------------------------------------------------------------------------------------
 
-  public static final AbstractBuildVersion ABV;
-  static {
-    AbstractBuildVersion abv = AbstractBuildVersion.UNKNOWN_VERSION;
-    try {
-      Class klass = Class.forName("water.init.BuildVersion");
-      java.lang.reflect.Constructor constructor = klass.getConstructor();
-      abv = (AbstractBuildVersion) constructor.newInstance();
-    } catch (Exception ignore) { }
-    ABV = abv;
-  }
+  public static final AbstractBuildVersion ABV = AbstractBuildVersion.getBuildVersion();
 
   //-------------------------------------------------------------------------------------------------------------------
 
