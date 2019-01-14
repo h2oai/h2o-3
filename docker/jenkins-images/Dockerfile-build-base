@@ -14,7 +14,8 @@ RUN \
         texlive-formats-extra \
         texlive-generic-extra \
         python-virtualenv \
-        nodejs && \
+        nodejs \
+        libkrb5-dev && \
     apt-get clean && \
     apt-get autoremove -y && \
     rm -rf /var/cache/apt/*
