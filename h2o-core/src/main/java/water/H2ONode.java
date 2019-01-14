@@ -56,8 +56,8 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   }
 
   // Does this node technically correspond to a possible client? It doesn't say anything if the node can be part of the cluster
-  // We intern all nodes that are trying to communicate with us.
-  private boolean isClientNode() {
+  // We intern all nodes that are trying to communicate with us regardless if they belong to the cluster or not.
+  private boolean isPossibleClient() {
     return H2O.decodeIsClient(_timestamp) || isClient();
   }
 
@@ -196,16 +196,21 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     return null;
   }
 
-  private void refreshClient(short timestamp) {
-    boolean reconnected = _timestamp != 0 && timestamp != 0 && _timestamp != timestamp;
-    if (reconnected) {
-      Log.info("Client reconnected with a new timestamp=" + timestamp + ", old client: " + toDebugString());
+  private void refreshClient(short newTimestamp) {
+    boolean respawned = _timestamp != 0 && newTimestamp != 0 && _timestamp != newTimestamp;
+    if (respawned) {
+      Log.info("Client reconnected with a new timestamp=" + newTimestamp + ", old client: " + toDebugString());
       if (_sendThread != null) {
+        // We generally assume a lost client will eventually re-connect and we will want to deliver all the messages - 
+        // see the isActive() method in the UDP_TCP_SendThread. However, when we detect a client was re-spawned 
+        // (and thus lost its previous state) we don't need to keep sending the old messages. That is why we kill the old 
+        // thread right away by injecting a new fresh instance. The old thread will detect it is not active and will 
+        // give the new one chance to start delivering messages.
         startSendThread();
       }
     }
-    if (timestamp != 0) { // timestamp 0 should quickly transition into non-0 and stay this way
-      _timestamp = timestamp;
+    if (newTimestamp != 0) { // timestamp 0 should quickly transition into non-0 and stay this way
+      _timestamp = newTimestamp;
     }
     _removed_from_cloud = false;
     _last_heard_from = System.currentTimeMillis();
@@ -224,7 +229,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     final boolean foundClientNode = H2O.decodeIsClient(timestamp);
     H2ONode h2o = INTERN.get(key);
     if (h2o != null) {
-      if (foundClientNode || h2o.isClientNode()) {
+      if (foundClientNode || h2o.isPossibleClient()) {
         h2o.refreshClient(timestamp);
       }
       return h2o;
@@ -239,7 +244,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     h2o = new H2ONode(key, (short) idx, timestamp);
     H2ONode old = INTERN.putIfAbsent(key, h2o);
     if (old != null) {
-      if (foundClientNode && old.isClientNode()) {
+      if (foundClientNode && old.isPossibleClient()) {
         old.refreshClient(timestamp);
       }
       return old;
@@ -408,10 +413,16 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   // is specifically not any of the above channels.  This channel is limited to
   // messages which are presented in their entirety (not streamed) thus never
   // need another (nested) TCP channel.
-  private transient UDP_TCP_SendThread _sendThread = null; // null if Node was removed from cloud
+  private transient UDP_TCP_SendThread _sendThread = null; // null if Node was removed from cloud or we didn't need to communicate with it yet
   public final void sendMessage(ByteBuffer bb, byte msg_priority) {
     UDP_TCP_SendThread sendThread = _sendThread;
     if (sendThread == null) {
+      // Sending threads are created lazily.
+      // This is because we will intern all client nodes including the ones that have nothing to do with the cluster.
+      // By delaying the initialization to the point when we actually want to send a message, we initialize the sending
+      // thread just for the nodes that are really part of the cluster.
+      // The other reason is client disconnect - when removing client we kill the reference to the sending thread, if we
+      // still do need to communicate with the client later - we just recreate the thread.
       if (_removed_from_cloud) {
         Log.warn("Node " + this + " is not active in the cloud anymore but we want to communicate with it." +
                 "Re-opening the communication channel.");
@@ -513,13 +524,13 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     }
 
     private boolean isActive() {
-      return _sendThread == this || (_sendThread == null && isClientNode());
+      return _sendThread == this || (_sendThread == null && isPossibleClient());
     }
 
     // We deliver messages to regular nodes only if the are part of the cloud
     // and to always to clients 
     private boolean keepSending() {
-      return !isRemovedFromCloud() || isClientNode();
+      return !isRemovedFromCloud() || isPossibleClient();
     }
 
     @Override public void run(){
