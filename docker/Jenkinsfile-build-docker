@@ -16,7 +16,7 @@ properties([
     ])
 ])
 
-IMAGE_NAME_PREFIX = 'docker.h2o.ai/opsh2oai/h2o-3'
+IMAGE_NAME_PREFIX = 'harbor.h2o.ai/opsh2oai/h2o-3'
 GPU_SUFFIX = params.useGpu ? '-gpu' : ''
 
 UBUNTU_BASE_IMAGE = 'ubuntu:16.04'
@@ -43,7 +43,7 @@ ansiColor('xterm') {
                 currentBuild.displayName = "v${currentVersion} #${currentBuild.number}"
 
                 if (!params.forceBuild) {
-                    if (pipelineContext.getUtils().dockerImageExistsInRegistry(this, 'docker.h2o.ai', 'opsh2oai/h2o-3/dev-base', "${currentVersion}")) {
+                    if (pipelineContext.getUtils().dockerImageExistsInRegistry(this, 'harbor.h2o.ai', 'opsh2oai/h2o-3/dev-base', "${currentVersion}")) {
                         error "Image already exists. Use forceBuild if you wish to overwrite."
                     }
                 } else {
@@ -52,7 +52,7 @@ ansiColor('xterm') {
 
                 dir('docker') {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'AWS S3 Credentials', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-                        docker.image('docker.h2o.ai/s3cmd').inside("-e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}") {
+                        docker.image('harbor.h2o.ai/s3cmd').inside("-e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}") {
                             sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-7/x64-linux/jdk1.7.0_80.zip"
                             sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-10/x64-linux/jdk-10.0.2_linux-x64_bin.tar.gz"
                         }
@@ -137,7 +137,7 @@ def pullPreviousVersionIfRequired(final pipelineContext, final String image) {
     if (previousVersion <= 0) {
         previousVersion = 1
     }
-    if (pipelineContext.getUtils().dockerImageExistsInRegistry(this, 'docker.h2o.ai', "opsh2oai/h2o-3/${image}", "${previousVersion}")) {
+    if (pipelineContext.getUtils().dockerImageExistsInRegistry(this, 'harbor.h2o.ai', "opsh2oai/h2o-3/${image}", "${previousVersion}")) {
         retryWithDelay(3 /* retries */, 120 /* delay in sec */) {
             sh "docker pull ${IMAGE_NAME_PREFIX}/${image}:${previousVersion}"
         }
