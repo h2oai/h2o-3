@@ -13,7 +13,7 @@ properties(
         parameters(
             [
                 string(defaultValue: 'master', description: 'Branch to checkout', name: 'gitBranch'),
-                string(name: 'dockerRegistry', defaultValue: 'docker.h2o.ai'),
+                string(name: 'dockerRegistry', defaultValue: 'harbor.h2o.ai'),
                 booleanParam(name: 'force', defaultValue: false, description: 'If false and image with version specified by BuildConfig exists in repository, then the build fails.')
             ]
         )
