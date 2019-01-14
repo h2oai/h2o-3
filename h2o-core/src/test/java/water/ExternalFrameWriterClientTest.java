@@ -312,7 +312,7 @@ public class ExternalFrameWriterClientTest extends TestUtil {
                 @Override
                 public void run() {
                     try {
-                        ByteChannel sock = ExternalFrameUtils.getConnection(writeEndpoints[currentIndex], H2O.SELF._timestamp);
+                        ByteChannel sock = ExternalFrameUtils.getConnection(writeEndpoints[currentIndex], H2O.SELF.getTimestamp());
                         try {
                             ExternalFrameWriterClient writer = new ExternalFrameWriterClient(sock);
                             writer.createChunks(op.frameName(), op.colTypes(),  currentIndex, op.nrows(), op.maxVecSizes());

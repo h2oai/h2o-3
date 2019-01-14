@@ -124,6 +124,10 @@ def call(final pipelineContext) {
       timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
+      stageName: 'R3.4 Small Client Mode Disconnect Attack', target: 'test-r-small-client-mode-attack', rVersion: '3.4.1',
+      timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
+    ],
+    [
       stageName: 'R3.4 Small AutoML', target: 'test-r-small-automl', rVersion: '3.4.1',
       timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
