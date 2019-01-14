@@ -294,7 +294,7 @@ public class TCPReceiverThread extends Thread {
     // Check cloud membership; stale ex-members are "fail-stop" - we mostly
     // ignore packets from them (except paxos packets).
     boolean is_member = cloud.contains(ab._h2o);
-    boolean is_client = ab._h2o._client;
+    boolean is_client = ab._h2o.isClient();
 
     // Some non-Paxos packet from a non-member.  Probably should record & complain.
     // Filter unknown-packet-reports.  In bad situations of poisoned Paxos

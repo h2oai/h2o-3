@@ -2129,7 +2129,14 @@ final public class H2O {
     Log.info("Registered parsers: " + Arrays.toString(ParserService.INSTANCE.getAllProviderNames(true)));
 
     // Start thread checking client disconnections
-    new ClientDisconnectCheckThread().start();
+    if (Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.clientDisconnectAttack")) {
+      // for development only!
+      Log.warn("Client Random Disconnect attack is enabled - use only for debugging! More warnings to follow ;)");
+      new ClientRandomDisconnectThread().start();
+    } else {
+      // regular mode of operation
+      new ClientDisconnectCheckThread().start();
+    }
 
     long time12 = System.currentTimeMillis();
     Log.debug("Timing within H2O.main():");

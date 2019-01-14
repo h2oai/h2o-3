@@ -1007,7 +1007,7 @@ public final class AutoBuffer {
    * @param senderPort port of the sender of the datagram
    */
   AutoBuffer putUdp(UDP.udp type, int senderPort){
-    return putUdp(type, senderPort, H2O.SELF._timestamp);
+    return putUdp(type, senderPort, H2O.SELF.getTimestamp());
   }
 
   AutoBuffer putUdp(UDP.udp type, int senderPort, short timestamp){
@@ -1037,7 +1037,7 @@ public final class AutoBuffer {
   AutoBuffer putTask(int ctrl, int tasknum) {
     assert _bb.position() == 0;
     putSp(_bb.position()+1+2+2+4);
-    _bb.put((byte)ctrl).putShort(H2O.SELF._timestamp).putChar((char)H2O.H2O_PORT).putInt(tasknum);
+    _bb.put((byte)ctrl).putShort(H2O.SELF.getTimestamp()).putChar((char)H2O.H2O_PORT).putInt(tasknum);
     return this;
   }
 
