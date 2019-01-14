@@ -29,8 +29,7 @@ public class UDPClientEvent extends UDP {
             Log.info("Client reported via broadcast message " + ce.clientNode + " from " + ab._h2o);
 
             // It is important to propagate Client's HeartBeat information to the rest of the nodes
-            H2ONode client = ce.clientNode;
-            client._heartbeat = ce.clientHeartBeat;
+            ce.clientNode.setHeartBeat(ce.clientHeartBeat);
 
             H2O.addNodeToFlatfile(ce.clientNode);
           }

@@ -102,6 +102,10 @@ test-r-small: lookup-automl-tests lookup-hdfs-tests lookup-demos-tests
 test-r-small-client-mode: lookup-automl-tests lookup-hdfs-tests
 	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --client --testsize s --numclouds 4 --jvm.xmx 4g --excludelist .lookup.txt
 
+test-r-small-client-mode-attack: lookup-automl-tests lookup-hdfs-tests
+        export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --client --testsize s --numclouds 4 --jvm.opts '-Dsys.ai.h2o.debug.clientDisconnectAttack=true' --jvm.xmx 4g --excludelist .loo
+kup.txt
+
 test-r-small-automl: lookup-automl-tests
 	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --testsize s --geterrs --numclouds 4 --jvm.xmx 4g --testlist .lookup.txt
 
