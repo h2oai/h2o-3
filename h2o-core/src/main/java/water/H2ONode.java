@@ -226,15 +226,15 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   // Create and/or re-use an H2ONode.  Each gets a unique dense index, and is
   // *interned*: there is only one per InetAddress.
   static private H2ONode intern(H2Okey key, short timestamp) {
-    final boolean foundClientNode = H2O.decodeIsClient(timestamp);
+    final boolean foundPossibleClient = H2O.decodeIsClient(timestamp);
     H2ONode h2o = INTERN.get(key);
     if (h2o != null) {
-      if (foundClientNode || h2o.isPossibleClient()) {
+      if (foundPossibleClient || h2o.isPossibleClient()) {
         h2o.refreshClient(timestamp);
       }
       return h2o;
     } else {
-      if (foundClientNode) {
+      if (foundPossibleClient) {
         // We don't know if this client belongs to this cloud yet, at this point it is just a candidate
         Log.info("New (possible) client found, timestamp=" + timestamp);
       }
@@ -244,7 +244,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     h2o = new H2ONode(key, (short) idx, timestamp);
     H2ONode old = INTERN.putIfAbsent(key, h2o);
     if (old != null) {
-      if (foundClientNode && old.isPossibleClient()) {
+      if (foundPossibleClient && old.isPossibleClient()) {
         old.refreshClient(timestamp);
       }
       return old;
