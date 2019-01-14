@@ -80,7 +80,7 @@ Interpreting a K-Means Model
 
 By default, the following output displays:
 
--  A graph of the scoring history (number of iterations vs. average within the cluster's sum of squares)
+-  A graph of the scoring history (number of iterations vs. within the cluster's sum of squares)
 -  Output (model category, validation metrics if applicable, and centers std)
 -  Model Summary Model Summary (number of clusters, number of categorical columns, number of iterations, total within sum of squares, total sum of squares, total between the sum of squares. Note that Flow also returns the number of rows.)
 -  Scoring history (duration, number of iterations, number of reassigned observations, number of within cluster sum of squares)
