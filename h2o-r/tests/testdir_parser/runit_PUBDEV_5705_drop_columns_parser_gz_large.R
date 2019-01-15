@@ -4,12 +4,14 @@ setwd(normalizePath(dirname(
 source("../../scripts/h2o-r-test-setup.R")
 
 # Tests parsing with skipped columns
-test.parseSkippedColumnsgzip<- function() {
+test.parseSkippedColumnsgz<- function() {
   f1 <-
-    h2o.importFile(locate("smalldata/airlines/AirlinesTrain.csv"))
-  fileName <- locate("smalldata/airlines/AirlinesTrain.csv.zip")
+    h2o.importFile(locate("bigdata/laptop/parser/year2005.csv"))
+  fileName <- locate("bigdata/laptop/parser/year2005.csv.gz")
 
   fullFrameR <- as.data.frame(f1) # takes too long
+  skip_front <- c(1)
+  skip_end <- c(h2o.ncol(f1))
   set.seed(12345)
   onePermute <- sample(h2o.ncol(f1))
   skipall <- onePermute
@@ -34,8 +36,7 @@ test.parseSkippedColumnsgzip<- function() {
 
   # skip 90% of the columns randomly
   print("Testing skipping 90% of columns")
-  assertCorrectSkipColumns(fileName, fullFrameR, skip90Per, TRUE, h2o.getTypes(f1)) # test importFile
-  assertCorrectSkipColumns(fileName, fullFrameR, skip90Per, FALSE, h2o.getTypes(f1)) # test uploadFile
+  assertCorrectSkipColumns(fileName, fullFrameR, skip90Per, TRUE, h2o.getTypes(f1),columns_skipped=3) # test importFile
 }
 
-doTest("Test Zip Parse with skipped columns", test.parseSkippedColumnsgzip)
+doTest("Test gz parser with skipped columns", test.parseSkippedColumnsgz)

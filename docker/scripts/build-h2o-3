@@ -23,7 +23,7 @@ cd h2o-3
 git checkout ${H2O_BRANCH}
 
 echo '###### Build H2O-3 ######'
-printenv
+printenv | sort
 make -f scripts/jenkins/Makefile.jenkins warmup-caches
 
 echo '###### Cleanup ######'

@@ -20,7 +20,7 @@ try {
                 env.PYTHON_VERSION = '3.5'
                 env.R_VERSION = '3.4.1'
 
-                sh 'printenv'
+                sh 'printenv | sort'
 
                 final String CHECKOUT_STAGE_NAME = 'Checkout'
                 stage(CHECKOUT_STAGE_NAME) {
