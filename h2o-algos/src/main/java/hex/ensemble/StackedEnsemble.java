@@ -9,6 +9,7 @@ import hex.StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm;
 import water.DKV;
 import water.Job;
 import water.Key;
+import water.Scope;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
@@ -176,6 +177,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       Frame preds = DKV.getGet(predsKey);
       if (preds == null) {
         preds =  model.score(frame, predsKey.toString());
+        Scope.untrack(preds.keysList());
       }
       if (_model._output._base_model_predictions_keys == null)
         _model._output._base_model_predictions_keys = new NonBlockingHashSet<>();
@@ -185,6 +187,8 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       return preds;
     }
 
+    protected abstract StackedEnsembleModel.StackingStrategy strategy();
+    
     protected abstract Frame getActualTrainingFrame();
     
     protected abstract Frame getPredictionsForBaseModel(Model model, Frame actualsFrame, boolean isTrainingFrame);
@@ -203,12 +207,13 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(StackedEnsemble.this);
 
       _model = new StackedEnsembleModel(dest(), _parms, new StackedEnsembleModel.StackedEnsembleOutput(StackedEnsemble.this));
+      _model._output._stacking_strategy = strategy();
       _model.delete_and_lock(_job); // and clear & write-lock it (smashing any prior)
 
       _model.checkAndInheritModelProperties();
 
       String levelOneTrainKey = "levelone_training_" + _model._key.toString();
-      Frame levelOneTrainingFrame = prepareLevelOneFrame(levelOneTrainKey, _parms._base_models, getActualTrainingFrame(), true);
+      Frame levelOneTrainingFrame = prepareLevelOneFrame(levelOneTrainKey, _model._parms._base_models, getActualTrainingFrame(), true);
       Frame levelOneValidationFrame = null;
       if (_model._parms.valid() != null) {
         String levelOneValidKey = "levelone_validation_" + _model._key.toString();
@@ -252,6 +257,11 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
   private class StackedEnsembleCVStackingDriver extends StackedEnsembleDriver {
 
     @Override
+    protected StackedEnsembleModel.StackingStrategy strategy() {
+      return StackedEnsembleModel.StackingStrategy.cross_validation;
+    }
+
+    @Override
     protected Frame getActualTrainingFrame() {
       return _model._parms.train();
     }
@@ -278,6 +288,11 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
   }
   
   private class StackedEnsembleBlendingDriver extends StackedEnsembleDriver {
+
+    @Override
+    protected StackedEnsembleModel.StackingStrategy strategy() {
+      return StackedEnsembleModel.StackingStrategy.blending;
+    }
 
     @Override
     protected Frame getActualTrainingFrame() {

@@ -10,142 +10,172 @@ sys.path.insert(1,"../../../")  # allow us to run this standalone
 from h2o.estimators.random_forest import H2ORandomForestEstimator
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
 from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
-from tests import pyunit_utils
+from tests import pyunit_utils as pu
+from tests.pyunit_utils import assert_warn
 
 
-def stackedensemble_guassian_test():
-    """This test check the following (for guassian regression):
-    1) That H2OStackedEnsembleEstimator executes w/o errors on a 3-model manually constructed ensemble.
-    2) That .predict() works on a stack.
-    3) That .model_performance() works on a stack.
-    4) That the training and test performance is better on ensemble vs the base learners.
-    5) That the validation_frame arg on H2OStackedEnsembleEstimator works correctly.
-    """
+seed = 1
 
-    col_types = ["numeric", "numeric", "numeric", "enum", "enum", "numeric", "numeric", "numeric", "numeric"]
-    dat = h2o.upload_file(path=pyunit_utils.locate("smalldata/extdata/prostate.csv"),
-                          destination_frame="prostate_hex",
-                          col_types= col_types)
-    train, test = dat.split_frame(ratios=[.8], seed=1)
-    print(train.summary())
+class StackedEnsembleTest(object):
 
-    # Identify predictors and response
-    x = ["CAPSULE","GLEASON","RACE","DPROS","DCAPS","PSA","VOL"]
-    y = "AGE"
+    def prepare_data(self):
+        col_types = ["numeric", "numeric", "numeric", "enum", "enum", "numeric", "numeric", "numeric", "numeric"]
+        dat = h2o.upload_file(path=pu.locate("smalldata/extdata/prostate.csv"),
+                              destination_frame="prostate_hex",
+                              col_types=col_types)
+        train, test = dat.split_frame(ratios=[.8], seed=1)
+        x = ["CAPSULE", "GLEASON", "RACE", "DPROS", "DCAPS", "PSA", "VOL"]
+        y = "AGE"
+        return pu.ns(x=x, y=y, train=train, test=test)
 
-    # set number of folds
-    nfolds = 5
+    def train_base_models(self, dataset):
+        nfolds = 3
+        gbm = H2OGradientBoostingEstimator(distribution="gaussian",
+                                           max_depth=3,
+                                           learn_rate=0.2,
+                                           nfolds=nfolds,
+                                           fold_assignment="Modulo",
+                                           keep_cross_validation_predictions=True,
+                                           seed=seed)
+        gbm.train(x=dataset.x, y=dataset.y, training_frame=dataset.train)
 
-
-    # train and cross-validate a GBM
-    my_gbm = H2OGradientBoostingEstimator(distribution="gaussian",
-                                          max_depth=3, 
-                                          learn_rate=0.2,
-                                          nfolds=nfolds, 
-                                          fold_assignment="Modulo",
-                                          keep_cross_validation_predictions=True,
-                                          seed=1)
-    my_gbm.train(x=x, y=y, training_frame=train)
-
-    # evaluate the performance
-    perf_gbm_train = my_gbm.model_performance(train=True)
-    perf_gbm_test = my_gbm.model_performance(test_data=test)
-    print("GBM training performance: ")
-    print(perf_gbm_train)
-    print("GBM test performance: ")
-    print(perf_gbm_test)
-
-    # train and cross-validate a RF
-    my_rf = H2ORandomForestEstimator(ntrees=30, 
-                                     nfolds=nfolds, 
-                                     fold_assignment="Modulo",
-                                     keep_cross_validation_predictions=True, 
-                                     seed=1)
-
-    my_rf.train(x=x, y=y, training_frame=train)
-
-    # evaluate performance
-    perf_rf_train = my_rf.model_performance(train=True)
-    perf_rf_test = my_rf.model_performance(test_data=test)
-    print("RF training performance: ")
-    print(perf_rf_train)
-    print("RF test performance: ")
-    print(perf_rf_test)
-
-    # Train and cross-validate an extremely-randomized RF
-    my_xrf = H2ORandomForestEstimator(ntrees=50, 
+        rf = H2ORandomForestEstimator(ntrees=10,
                                       nfolds=nfolds,
-                                      histogram_type="Random", 
                                       fold_assignment="Modulo",
-                                      keep_cross_validation_predictions=True, 
-                                      seed=1)
+                                      keep_cross_validation_predictions=True,
+                                      seed=seed)
+        rf.train(x=dataset.x, y=dataset.y, training_frame=dataset.train)
+        
+        xrf = H2ORandomForestEstimator(ntrees=20,
+                                       nfolds=nfolds,
+                                       histogram_type="Random",
+                                       fold_assignment="Modulo",
+                                       keep_cross_validation_predictions=True,
+                                       seed=seed)
+        xrf.train(x=dataset.x, y=dataset.y, training_frame=dataset.train)
+        
+        return [gbm, rf, xrf]
 
-    my_xrf.train(x=x, y=y, training_frame=train)
-
-    # evaluate performance
-    perf_xrf_train = my_xrf.model_performance(train=True)
-    perf_xrf_test = my_xrf.model_performance(test_data=test)
-    print("XRF training performance: ")
-    print(perf_xrf_train)
-    print("XRF test performance: ")
-    print(perf_xrf_test)
-
-    # Train a stacked ensemble using the GBM and GLM above
-    stack = H2OStackedEnsembleEstimator(model_id="my_ensemble_guassian",
-                                        base_models=[my_gbm.model_id,  my_rf.model_id, my_xrf.model_id])
-
-    stack.train(x=x, y=y, training_frame=train, validation_frame=test)  # also test that validation_frame is working
-
-    # Check that prediction works
-    pred = stack.predict(test_data= test)
-    assert pred.nrow == test.nrow, "expected " + str(pred.nrow) + " to be equal to " + str(test.nrow)
-    assert pred.ncol == 1, "expected " + str(pred.ncol) + " to be equal to 1 but it was equal to " + str(pred.ncol)
-
-    # Does predict() have ugly side effects?
-    pred = stack.predict(test_data= test)
-    assert pred.nrow == test.nrow, "expected " + str(pred.nrow) + " to be equal to " + str(test.nrow)
-    assert pred.ncol == 1, "expected " + str(pred.ncol) + " to be equal to 1 but it was equal to " + str(pred.ncol)
-
-    # Evaluate ensemble performance
-    perf_stack_train = stack.model_performance()
-    perf_stack_test = stack.model_performance(test_data=test)
-
-    # Does performance() have ugly side effects?
-    perf_stack_train = stack.model_performance()
-    perf_stack_test = stack.model_performance(test_data=test)
-
-    # Training RMSE for each base learner
-    baselearner_best_rmse_train = min(perf_gbm_train.rmse(), perf_rf_train.rmse(), perf_xrf_train.rmse())
-    stack_rmse_train = perf_stack_train.rmse()
-    print("Best Base-learner Training RMSE:  {0}".format(baselearner_best_rmse_train))
-    print("Ensemble Training RMSE:  {0}".format(stack_rmse_train))
-    #assert stack_rmse_train < baselearner_best_rmse_train, "expected stack_rmse_train would be less than " \
-    #                                                     " found it wasn't baselearner_best_rmse_train"
-
-    # Check that stack perf is better (smaller) than the best (smaller) base learner perf:
-    # Test RMSE for each base learner
-    baselearner_best_rmse_test = min(perf_gbm_test.rmse(), perf_rf_test.rmse(), perf_xrf_test.rmse())
-    stack_rmse_test = perf_stack_test.rmse()
-    print("Best Base-learner Test RMSE:  {0}".format(baselearner_best_rmse_test))
-    print("Ensemble Test RMSE:  {0}".format(stack_rmse_test))
-    assert stack_rmse_test < baselearner_best_rmse_test, "expected stack_rmse_test would be less than " \
-                                                       " baselearner_best_rmse_test, found it wasn't  " \
-                                                       "baselearner_best_rmse_test = "+ \
-                                                       str(baselearner_best_rmse_test) + ",stack_rmse_test " \
-                                                                                              " = "+ str(stack_rmse_test)
-
-    # Check that passing `test` as a validation_frame produces the same metric as stack.model_performance(test)
-    # since the metrics object is not exactly the same, we can just test that RSME is the same
-    perf_stack_validation_frame = stack.model_performance(valid=True)
-    assert stack_rmse_test == perf_stack_validation_frame.rmse(), "expected stack_rmse_test to be the same as " \
-                                                                "perf_stack_validation_frame.rmse() found they were not " \
-                                                                "perf_stack_validation_frame.rmse() = " + \
-                                                                str(perf_stack_validation_frame.rmse()) + \
-                                                                "stack_rmse_test was " + str(stack_rmse_test)
-
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(stackedensemble_guassian_test)
-else:
-    stackedensemble_guassian_test()
+    def train_stacked_ensemble(self, dataset, base_models, valid=False):
+        se = H2OStackedEnsembleEstimator(base_models=[m.model_id for m in base_models], seed=seed)
+        se.train(x=dataset.x, y=dataset.y,
+                 training_frame=dataset.train, 
+                 validation_frame=dataset.test if valid else None)
+        return se
 
 
+class StackedEnsembleBlendingTest(StackedEnsembleTest):
+
+    def prepare_data(self):
+        ds = super(self.__class__, self).prepare_data()
+        train, blend = ds.train.split_frame(ratios=[.7], seed=seed)
+        return ds.extend(train=train, blend=blend)
+
+    def train_base_models(self, dataset):
+        gbm = H2OGradientBoostingEstimator(distribution="gaussian",
+                                           max_depth=3,
+                                           learn_rate=0.2,
+                                           seed=seed)
+        gbm.train(x=dataset.x, y=dataset.y, training_frame=dataset.train)
+
+        rf = H2ORandomForestEstimator(ntrees=10,
+                                      seed=seed)
+        rf.train(x=dataset.x, y=dataset.y, training_frame=dataset.train)
+        
+        xrf = H2ORandomForestEstimator(ntrees=20,
+                                       histogram_type="Random",
+                                       seed=seed)
+        xrf.train(x=dataset.x, y=dataset.y, training_frame=dataset.train)
+        return [gbm, rf, xrf]
+
+    def train_stacked_ensemble(self, dataset, base_models, valid=False):
+        se = H2OStackedEnsembleEstimator(base_models=[m.model_id for m in base_models], seed=seed)
+        se.train(x=dataset.x, y=dataset.y,
+                 training_frame=dataset.train,
+                 validation_frame=dataset.test if valid else None,
+                 blending_frame=dataset.blend)
+        return se
+
+
+
+def test_suite_stackedensemble_gaussian(blending=False):
+    t = StackedEnsembleTest() if not blending else StackedEnsembleBlendingTest()
+    
+    def test_predict_on_se_model():
+        ds = t.prepare_data()
+        models = t.train_base_models(ds)
+        se = t.train_stacked_ensemble(ds, models)
+        
+        for i in range(2): # repeat predict to verify consistency
+            pred = se.predict(test_data=ds.test)
+            assert pred.nrow == ds.test.nrow, "expected " + str(pred.nrow) + " to be equal to " + str(ds.test.nrow)
+            assert pred.ncol == 1, "expected " + str(pred.ncol) + " to be equal to 1 but it was equal to " + str(pred.ncol)
+
+        
+    def test_se_performance_is_better_than_individual_models():
+        ds = t.prepare_data()
+        base_models = t.train_base_models(ds)
+
+        def compute_perf(model):
+            perf = pu.ns(
+                train=model.model_performance(train=True),
+                test=model.model_performance(test_data=ds.test)
+            )
+            print("{} training performance: ".format(model.model_id))
+            print(perf.train)
+            print("{} test performance: ".format(model.model_id))
+            print(perf.test)
+            return perf
+
+        base_perfs = {}
+        for model in base_models:
+            base_perfs[model.model_id] = compute_perf(model)
+
+        
+        se = t.train_stacked_ensemble(ds, base_models)
+        perf_se = compute_perf(se)
+
+
+        # Check that stack perf is better (smaller) than the best (smaller) base learner perf:
+        # Training RMSE for each base learner
+        baselearner_best_rmse_train = min([perf.train.rmse() for perf in base_perfs.values()])
+        stack_rmse_train = perf_se.train.rmse()
+        print("Best Base-learner Training RMSE:  {}".format(baselearner_best_rmse_train))
+        print("Ensemble Training RMSE:  {}".format(stack_rmse_train))
+        assert_warn(stack_rmse_train < baselearner_best_rmse_train,
+            "expected SE training RMSE would be smaller than the best of base learner training RMSE, but obtained: " \
+            "RMSE (SE) = {}, RMSE (best base learner) = {}".format(stack_rmse_train, baselearner_best_rmse_train))
+
+        # Test RMSE for each base learner
+        baselearner_best_rmse_test = min([perf.test.rmse() for perf in base_perfs.values()])
+        stack_rmse_test = perf_se.test.rmse()
+        print("Best Base-learner Test RMSE:  {}".format(baselearner_best_rmse_test))
+        print("Ensemble Test RMSE:  {}".format(stack_rmse_test))
+        assert_warn(stack_rmse_test < baselearner_best_rmse_test,
+            "expected SE test RMSE would be smaller than the best of base learner test RMSE, but obtained: " \
+            "RMSE (SE) = {}, RMSE (best base learner) = {}".format(stack_rmse_test, baselearner_best_rmse_test))
+        
+        
+    def test_validation_frame_produces_same_metric_as_perf_test():
+        ds = t.prepare_data()
+        models = t.train_base_models(ds)
+        se = t.train_stacked_ensemble(ds, models, valid=True)
+        se_perf = se.model_performance(test_data=ds.test)
+        se_perf_validation_frame = se.model_performance(valid=True)
+        # since the metrics object is not exactly the same, we can just test that RSME is the same
+        assert se_perf.rmse() == se_perf_validation_frame.rmse(), \
+            "expected SE test RMSE to be the same as SE validation frame RMSE, but obtained: " \
+            "RMSE (perf on test) = {}, RMSE (test passed as validation frame) = {}".format(se_perf.rmse(), se_perf_validation_frame.rmse())
+
+    
+    return [
+        test_predict_on_se_model,
+        test_se_performance_is_better_than_individual_models,
+        test_validation_frame_produces_same_metric_as_perf_test
+    ]
+
+
+pu.run_tests([
+    test_suite_stackedensemble_gaussian(),
+    test_suite_stackedensemble_gaussian(blending=True)
+])

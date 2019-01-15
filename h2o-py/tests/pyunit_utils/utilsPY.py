@@ -3,6 +3,7 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import range
 from past.builtins import basestring
+from functools import reduce
 from scipy.sparse import csr_matrix
 import sys, os
 import pandas as pd
@@ -48,6 +49,32 @@ from h2o.utils.typechecks import assert_is_type
 import datetime
 import time # needed to randomly generate time
 import uuid # call uuid.uuid4() to generate unique uuid numbers
+
+
+class Namespace:
+    """
+    simplistic namespace class allowing to create bag/namespace objects that are easily extendable in a functional way
+    """
+    @staticmethod
+    def add(namespace, **kwargs):
+        for k, v in kwargs.items():
+            setattr(namespace, k, v)
+        return namespace
+
+    def __init__(self, **kwargs):
+        Namespace.add(self, **kwargs)
+
+    def extend(self, **kwargs):
+        """
+        :param kwargs: attributes extending the current namespace
+        :return: a new namespace containing same attributes as the original + the extended ones
+        """
+        return Namespace.add(copy.copy(self), **kwargs)
+
+
+def ns(**kwargs):
+    return Namespace(**kwargs)
+
 
 def gen_random_uuid(numberUUID):
     uuidVec = numberUUID*[None]
@@ -496,6 +523,20 @@ def standalone_test(test):
     h2o.log_and_echo("")
     h2o.log_and_echo("------------------------------------------------------------")
     test()
+
+def run_tests(tests, run_in_isolation=True):
+    #flatten in case of nested tests/test suites
+    all_tests = reduce(lambda l, r: (l.extend(r) if isinstance(r, (list, tuple)) else l.append(r)) or l, tests, [])
+    if run_in_isolation:
+        for test in all_tests: standalone_test(test)
+    else:
+        for test in all_tests: test()
+
+def assert_warn(predicate, message):
+    try:
+        assert predicate, message
+    except AssertionError as e:
+        print("WARN: {}".format(str(e)))
 
 def make_random_grid_space(algo, ncols=None, nrows=None):
     """

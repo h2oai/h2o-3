@@ -12,7 +12,6 @@ from h2o.estimators.gbm import H2OGradientBoostingEstimator
 from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
 from tests import pyunit_utils as pu
 
-
 seed = 1
 
 class StackedEnsembleTest(object):
@@ -23,8 +22,7 @@ class StackedEnsembleTest(object):
         target = "response"
         for fr in [train, test]:
             fr[target] = fr[target].asfactor()
-        train, valid = train.split_frame(ratios=[.8], seed=seed)
-        return pu.ns(x=train.columns, y=target, train=train, valid=valid, test=test)
+        return pu.ns(x=train.columns, y=target, train=train, test=test)
 
     def train_base_models(self, dataset):
         nfolds = 3
@@ -51,9 +49,9 @@ class StackedEnsembleTest(object):
         se = H2OStackedEnsembleEstimator(base_models=[m.model_id for m in base_models], seed=seed)
         se.train(x=dataset.x, y=dataset.y,
                  training_frame=dataset.train,
-                 validation_frame=dataset.valid if valid else None)
+                 validation_frame=dataset.test if valid else None)
         return se
-
+    
 
 class StackedEnsembleBlendingTest(StackedEnsembleTest):
 
@@ -65,6 +63,9 @@ class StackedEnsembleBlendingTest(StackedEnsembleTest):
     def train_base_models(self, dataset):
         gbm = H2OGradientBoostingEstimator(distribution="bernoulli",
                                            ntrees=10,
+                                           max_depth=3,
+                                           min_rows=2,
+                                           learn_rate=0.2,
                                            seed=seed)
         gbm.train(x=dataset.x, y=dataset.y, training_frame=dataset.train)
 
@@ -77,49 +78,54 @@ class StackedEnsembleBlendingTest(StackedEnsembleTest):
         se = H2OStackedEnsembleEstimator(base_models=[m.model_id for m in base_models], seed=seed)
         se.train(x=dataset.x, y=dataset.y,
                  training_frame=dataset.train,
-                 validation_frame=dataset.valid if valid else None,
+                 validation_frame=dataset.test if valid else None,
                  blending_frame=dataset.blend)
         return se
 
 
-def test_suite_stackedensemble_validation_frame(blending=False):
-    t = StackedEnsembleTest() if not blending else StackedEnsembleBlendingTest()
-    
-    def test_validation_metrics_are_computed_when_providing_validation_frame():
-        ds = t.prepare_data()
-        base_models = t.train_base_models(ds)
-        se_valid = t.train_stacked_ensemble(ds, base_models, valid=True)
-        
-        assert se_valid.model_performance(valid=True) is not None
-        assert type(se_valid.model_performance(valid=True)) == h2o.model.metrics_base.H2OBinomialModelMetrics
-        assert type(se_valid.auc(valid=True)) == float
-                    
-        
-    def test_a_better_model_is_produced_with_validation_frame():
-        ds = t.prepare_data()
-        base_models = t.train_base_models(ds)
-        se_no_valid = t.train_stacked_ensemble(ds, base_models, valid=False)
-        se_valid = t.train_stacked_ensemble(ds, base_models, valid=True)
+def test_suite_stackedensemble_blending_frame():
+    t = StackedEnsembleBlendingTest()
 
-        assert se_no_valid.model_performance(valid=True) is None
-        assert se_valid.model_performance(valid=True) is not None
+    def test_passing_blending_frame_triggers_blending_mode():
+        ds = t.prepare_data()
+        base_models = t.train_base_models(ds)
+        se = t.train_stacked_ensemble(ds, base_models)
+        assert se.stacking_strategy() == 'blending'
         
-        se_no_valid_perf = se_no_valid.model_performance(test_data=ds.test)
-        se_valid_perf = se_valid.model_performance(test_data=ds.test)
-        tolerance = 1e-3  # ad hoc tolerance as there's no guarantee perf will actually be better with validation frame 
-        assert se_no_valid_perf.auc() < se_valid_perf.auc() or (se_no_valid_perf.auc() - se_valid_perf.auc()) < tolerance, \
-            "Expected that a better model would be produced when passing a validation frame, bot obtained: " \
-            "AUC (no validation) = {}, AUC (validation frame) = {}".format(se_no_valid_perf.auc(), se_valid_perf.auc())
-        
+    def test_blending_mode_usually_performs_worse_than_CV_stacking_mode():
+        blending_tester = t
+        cv_stacking_tester = StackedEnsembleTest()
+
+        perfs = {}
+        for tester in [blending_tester, cv_stacking_tester]:
+            ds = tester.prepare_data()
+            base_models = tester.train_base_models(ds)
+            se_model = tester.train_stacked_ensemble(ds, base_models)
+            perf = se_model.model_performance(test_data=ds.test)
+            perfs[se_model.stacking_strategy()] = perf
+            
+        # this performance difference is not guaranteed, but usually expected
+        assert perfs['blending'].auc() < perfs['cross_validation'].auc(), \
+            "SE blending should perform worse than CV stacking, but obtained: " \
+            "AUC (blending) = {}, AUC (CV stacking) = {}".format(perfs['blending'].auc(), perfs['cross_validation'].auc())
+    
+    def test_training_frame_is_still_required_in_blending_mode():
+        ds = t.prepare_data()
+        base_models = t.train_base_models(ds)
+        try:
+            t.train_stacked_ensemble(ds.extend(train=None), base_models)
+            assert False, "StackedEnsemble training without training_frame should have raised an exception"
+        except Exception as e:
+            assert "Training frame required for stackedensemble algorithm" in str(e), "Wrong error message {}".format(str(e))
+    
     
     return [
-        test_validation_metrics_are_computed_when_providing_validation_frame,
-        test_a_better_model_is_produced_with_validation_frame
+        test_passing_blending_frame_triggers_blending_mode,
+        test_blending_mode_usually_performs_worse_than_CV_stacking_mode,
+        test_training_frame_is_still_required_in_blending_mode
     ]
-    
-    
-pu.run_tests([
-    test_suite_stackedensemble_validation_frame(),
-    test_suite_stackedensemble_validation_frame(blending=True)
-])
 
+
+pu.run_tests([
+    test_suite_stackedensemble_blending_frame(),
+])

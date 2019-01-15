@@ -2,6 +2,7 @@ package hex.schemas;
 
 import hex.StackedEnsembleModel;
 import water.api.API;
+import water.api.EnumValuesProvider;
 import water.api.schemas3.KeyV3;
 import water.api.schemas3.ModelOutputSchemaV3;
 import water.api.schemas3.ModelSchemaV3;
@@ -14,8 +15,17 @@ public class StackedEnsembleModelV99 extends ModelSchemaV3<StackedEnsembleModel,
 
     @API(help="Level one frame used for metalearner training.", direction = API.Direction.OUTPUT)
     KeyV3.FrameKeyV3 levelone_frame_id;
+
+    @API(help="The stacking strategy used for training.", valuesProvider = StackingStrategyProvider.class, direction = API.Direction.OUTPUT)
+    StackedEnsembleModel.StackingStrategy stacking_strategy;
   }
 
+  public static class StackingStrategyProvider extends EnumValuesProvider<StackedEnsembleModel.StackingStrategy> {
+    public StackingStrategyProvider() {
+      super(StackedEnsembleModel.StackingStrategy.class);
+    }
+  }
+  
   public StackedEnsembleV99.StackedEnsembleParametersV99 createParametersSchema() { return new StackedEnsembleV99.StackedEnsembleParametersV99(); }
   public StackedEnsembleModelOutputV99 createOutputSchema() { return new StackedEnsembleModelOutputV99(); }
 

@@ -74,7 +74,5 @@ def stackedensemble_metalearner_seed_test():
     meta_gbm4 = h2o.get_model(stack_gbm4.metalearner()['name'])
     assert meta_gbm3.rmse(train=True) != meta_gbm4.rmse(train=True), "RMSE should NOT match if diff seed"
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(stackedensemble_metalearner_seed_test)
-else:
-    stackedensemble_metalearner_seed_test()
+
+pyunit_utils.run_tests([stackedensemble_metalearner_seed_test])

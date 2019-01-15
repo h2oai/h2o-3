@@ -40,7 +40,11 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
   public String basemodel_fold_column;  //From 1st base model
 
   public long seed = -1; //From 1st base model
-
+  
+  public enum StackingStrategy {
+    cross_validation,
+    blending
+  }
 
   // TODO: add a separate holdout dataset for the ensemble
   // TODO: add a separate overall cross-validation for the ensemble, including _fold_column and FoldAssignmentScheme / _fold_assignment
@@ -67,7 +71,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     public int _metalearner_nfolds;
     public Parameters.FoldAssignmentScheme _metalearner_fold_assignment;
     public String _metalearner_fold_column;
-    //the training frame used for blending (from which predictions columns are computed): theoretically, we could directly use training frame for this...
+    //the training frame used for blending (from which predictions columns are computed)
     public Key<Frame> _blending;
 
     //What to use as a metalearner (GLM, GBM, DRF, or DeepLearning)
@@ -111,6 +115,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     // The metalearner model (e.g., a GLM that has a coefficient for each of the base_learners).
     public Model _metalearner;
     public Frame _levelone_frame_id; //set only if StackedEnsembleParameters#_keep_levelone_frame=true
+    public StackingStrategy _stacking_strategy;
     
     //Set of base model predictions that have been cached in DKV to avoid scoring the same model multiple times,
     // it is then the responsibility of the client code to delete those frames from DKV.
@@ -342,10 +347,12 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         // NOTE: if we loosen this restriction and fold_column is set add a check below.
         Frame aTrainingFrame = aModel._parms.train();
         if (trainingFrameRows != aTrainingFrame.numRows() && !this._parms._is_cv_model)
-          throw new H2OIllegalArgumentException("Base models are inconsistent: they use different size(number of rows) training frames.  Found number of rows: " + trainingFrameRows + " and: " + aTrainingFrame.numRows() + ".");
+          throw new H2OIllegalArgumentException("Base models are inconsistent: they use different size (number of rows) training frames." +
+              " Found: "+trainingFrameRows+" (StackedEnsemble) and "+aTrainingFrame.numRows()+" (model "+k+").");
 
         if (! responseColumn.equals(aModel._parms._response_column))
-          throw new H2OIllegalArgumentException("Base models are inconsistent: they use different response columns.  Found: " + responseColumn + " and: " + aModel._parms._response_column + ".");
+          throw new H2OIllegalArgumentException("Base models are inconsistent: they use different response columns." +
+              " Found: "+responseColumn+"(StackedEnsemble) and "+aModel._parms._response_column+" (model "+k+").");
         
 //        if (blending_mode && _parms._blending.equals(aModel._parms._train)) {
 //          throw new H2OIllegalArgumentException("Base model `"+k+"` was trained with the StackedEnsemble blending frame.");

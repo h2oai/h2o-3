@@ -15,7 +15,7 @@ from h2o.frame import H2OFrame
 from h2o.job import H2OJob
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.shared_utils import quoted
-from h2o.utils.typechecks import assert_is_type, is_type, numeric
+from h2o.utils.typechecks import assert_is_type, is_type, numeric, FunctionType
 from ..model.autoencoder import H2OAutoEncoderModel
 from ..model.binomial import H2OBinomialModel
 from ..model.clustering import H2OClusteringModel
@@ -104,7 +104,14 @@ class H2OEstimator(ModelBase):
         :param float max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
         :param bool verbose: Print scoring history to stdout. Defaults to False.
         """
+        self._train(x=x, y=y, training_frame=training_frame, offset_column=offset_column, fold_column=fold_column,
+                    weights_column=weights_column, validation_frame=validation_frame, max_runtime_secs=max_runtime_secs, 
+                    ignored_columns=ignored_columns, model_id=model_id, verbose=verbose)
 
+
+    def _train(self, x=None, y=None, training_frame=None, offset_column=None, fold_column=None,
+              weights_column=None, validation_frame=None, max_runtime_secs=None, ignored_columns=None,
+              model_id=None, verbose=False, extend_parms_fn=None):
         assert_is_type(training_frame, None, H2OFrame)
         assert_is_type(validation_frame, None, H2OFrame)
         assert_is_type(y, None, int, str)
@@ -116,9 +123,10 @@ class H2OEstimator(ModelBase):
         assert_is_type(max_runtime_secs, None, numeric)
         assert_is_type(model_id, None, str)
         assert_is_type(verbose, bool)
+        assert_is_type(extend_parms_fn, None, FunctionType)
 
         if self._requires_training_frame() and training_frame is None:
-            raise H2OValueError("Training frame required for %s algorithm, but none was given.", self.algo)
+            raise H2OValueError("Training frame required for %s algorithm, but none was given." % self.algo)
 
         training_frame_exists = training_frame is None
         if training_frame_exists:
@@ -220,7 +228,11 @@ class H2OEstimator(ModelBase):
                                  [quoted(col) for col in parms["interactions"]])
         parms["interaction_pairs"] = (None if "interaction_pairs" not in parms or parms["interaction_pairs"] is None else
                                  [tuple(map(quoted, ip)) for ip in parms["interaction_pairs"]])
-
+    
+        # internal hook allowing subclasses to extend train parms 
+        if extend_parms_fn is not None:
+            extend_parms_fn(parms)
+            
         parms = {k: H2OEstimator._keyify_if_h2oframe(parms[k]) for k in parms}
         if ("stopping_metric" in parms.keys()) and ("r2" in parms["stopping_metric"]):
             raise H2OValueError("r2 cannot be used as an early stopping_metric yet.  Check this JIRA https://0xdata.atlassian.net/browse/PUBDEV-5381 for progress.")

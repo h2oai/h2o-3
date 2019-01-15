@@ -33,15 +33,15 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
       "training_frame",
       "response_column",
       "validation_frame",
+      "blending_frame",
       "base_models",
       "metalearner_algorithm",
       "metalearner_nfolds",
       "metalearner_fold_assignment",
       "metalearner_fold_column",
-      "keep_levelone_frame",
       "metalearner_params",
-      "blending_frame",
       "seed",
+      "keep_levelone_frame",
       "export_checkpoints_dir"
     };
 
