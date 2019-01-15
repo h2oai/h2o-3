@@ -28,8 +28,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 
 public final class H2ONode extends Iced<H2ONode> implements Comparable {
+
   transient private SocketChannelFactory _socketFactory;
   transient private H2OSecurityManager _security;
+  transient private PriorityBlockingQueue<ByteBuffer> _outgoingMsgQ;
 
   transient short _unique_idx; // Dense integer index, skipping 0.  NOT cloud-wide unique.
   transient boolean _announcedLostContact;  // True if heartbeat published a no-contact msg
@@ -37,23 +39,46 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   transient public volatile HeartBeat _heartbeat;  // My health info.  Changes 1/sec.
   transient public int _tcp_readers;               // Count of started TCP reader threads
 
-  public transient short _timestamp;
-  public transient boolean _client;
+  transient private short _timestamp; // 0 means unknown
 
-  public boolean _removed_from_cloud;
+  transient private boolean _removed_from_cloud;
 
-  void stopSendThread() {
-    if (_sendThread != null) {
-      _sendThread._stopRequested = true;
-      _sendThread = null;
-    }
-    _removed_from_cloud = true;
+  public final boolean isClient() {
+    return _heartbeat._client;
   }
 
-  private void startSendThread() {
-    _sendThread = new UDP_TCP_SendThread(); // Launch the UDP send thread
-    _sendThread.start();
-    _removed_from_cloud = false;
+  public final short getTimestamp() {
+    return _timestamp;
+  }
+
+  public final boolean isRemovedFromCloud() {
+    return _removed_from_cloud;
+  }
+
+  // Does this node technically correspond to a possible client? It doesn't say anything if the node can be part of the cluster
+  // We intern all nodes that are trying to communicate with us regardless if they belong to the cluster or not.
+  private boolean isPossibleClient() {
+    return H2O.decodeIsClient(_timestamp) || isClient();
+  }
+
+  void setHeartBeat(HeartBeat hb) {
+    _heartbeat = hb;
+  }
+  
+  void removeFromCloud() {
+    _removed_from_cloud = true;
+    stopSendThread();
+  }
+
+  private void stopSendThread() {
+    _sendThread = null;
+  }
+
+  private UDP_TCP_SendThread startSendThread() {
+    UDP_TCP_SendThread newSendThread = new UDP_TCP_SendThread(); // Launch the UDP send thread  
+    _sendThread = newSendThread;
+    newSendThread.start();
+    return newSendThread;
   }
 
   // A JVM is uniquely named by machine IP address and port#
@@ -133,10 +158,10 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     _last_heard_from = System.currentTimeMillis();
     _heartbeat = new HeartBeat();
     _timestamp = timestamp;
-    _client = H2O.decodeIsClient(timestamp);
-
     _security = H2OSecurityManager.instance();
     _socketFactory = SocketChannelFactory.instance(_security);
+    _outgoingMsgQ = makeOutgoingMessageQueue();
+    _sendThread = null; // initialized lazily
   }
 
   public boolean isHealthy() { return isHealthy(System.currentTimeMillis()); }
@@ -155,7 +180,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   static H2ONode[] getClients(){
     ArrayList<H2ONode> clients = new ArrayList<>(INTERN.size());
     for( Map.Entry<H2Okey, H2ONode> entry : INTERN.entrySet()){
-      if (entry.getValue()._client) {
+      if (entry.getValue().isClient() && !entry.getValue().isRemovedFromCloud()) {
         clients.add(entry.getValue());
       }
     }
@@ -164,66 +189,64 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
 
   static H2ONode getClientByIPPort(String ipPort){
     for( Map.Entry<H2Okey, H2ONode> entry : INTERN.entrySet()){
-      if (entry.getValue()._client && entry.getValue().getIpPortString().equals(ipPort)) {
+      if (entry.getValue().isClient() && !entry.getValue().isRemovedFromCloud() && entry.getValue().getIpPortString().equals(ipPort)) {
         return entry.getValue();
       }
     }
     return null;
   }
 
-  private synchronized void refreshClient(short timestamp) {
-    assert timestamp != 0 && H2O.decodeIsClient(timestamp);
-
-    UDP_TCP_SendThread oldSendThread = _sendThread;
-
-    if (_timestamp != 0) {
-      Log.info("Client reconnected with a new timestamp=" + _timestamp + ", old client: " + toDebugString());
+  private void refreshClient(short newTimestamp) {
+    boolean respawned = _timestamp != 0 && newTimestamp != 0 && _timestamp != newTimestamp;
+    if (respawned) {
+      Log.info("Client reconnected with a new timestamp=" + newTimestamp + ", old client: " + toDebugString());
+      if (_sendThread != null) {
+        // We generally assume a lost client will eventually re-connect and we will want to deliver all the messages - 
+        // see the isActive() method in the UDP_TCP_SendThread. However, when we detect a client was re-spawned 
+        // (and thus lost its previous state) we don't need to keep sending the old messages. That is why we kill the old 
+        // thread right away by injecting a new fresh instance. The old thread will detect it is not active and will 
+        // give the new one chance to start delivering messages.
+        startSendThread();
+      }
     }
-    _client = true;
-    _timestamp = timestamp;
+    if (newTimestamp != 0) { // timestamp 0 should quickly transition into non-0 and stay this way
+      _timestamp = newTimestamp;
+    }
+    _removed_from_cloud = false;
     _last_heard_from = System.currentTimeMillis();
-
-    startSendThread();
-    oldSendThread._stopRequested = true; // Dispose of the old thread
   }
 
   boolean removeClient() {
-    assert _timestamp == 0 || H2O.decodeIsClient(_timestamp);
-    boolean removed = INTERN.remove(_key, this);
-    if (removed) {
-      Log.info("Removing client: " + toDebugString());
-    } else {
-      Log.debug("Attempted to remove a client which was already superseded by another client: " + toDebugString());
-    }
-    stopSendThread(); // Stop the sending thread
+    Log.info("Removing client: " + toDebugString());
+    boolean removed = !_removed_from_cloud;
+    removeFromCloud();
     return removed;
   }
 
   // Create and/or re-use an H2ONode.  Each gets a unique dense index, and is
   // *interned*: there is only one per InetAddress.
   static private H2ONode intern(H2Okey key, short timestamp) {
-    boolean isClient = H2O.decodeIsClient(timestamp);
+    final boolean foundClientNode = H2O.decodeIsClient(timestamp);
     H2ONode h2o = INTERN.get(key);
     if (h2o != null) {
-      if (isClient && timestamp != h2o._timestamp) {
+      if (foundClientNode || h2o.isPossibleClient()) {
         h2o.refreshClient(timestamp);
       }
       return h2o;
     } else {
-      if (isClient) {
-        Log.info("New client connected, timestamp=" + timestamp);
+      if (foundClientNode) {
+        // We don't know if this client belongs to this cloud yet, at this point it is just a candidate
+        Log.info("New (possible) client found, timestamp=" + timestamp);
       }
     }
     final int idx = UNIQUE.getAndIncrement();
     assert idx < Short.MAX_VALUE;
     h2o = new H2ONode(key, (short) idx, timestamp);
-    h2o.startSendThread(); // never intern a H2ONode that cannot be used right away
     H2ONode old = INTERN.putIfAbsent(key, h2o);
     if (old != null) {
-      if (isClient && timestamp != old._timestamp) {
+      if (foundClientNode && old.isPossibleClient()) {
         old.refreshClient(timestamp);
       }
-      h2o.stopSendThread(); // expensive but shouldn't happen often
       return old;
     }
     synchronized (H2O.class) {
@@ -310,7 +333,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
 
   public String toDebugString() {
     String base = _key.toString();
-    if (! _client) {
+    if (! isClient()) {
       return base;
     }
     StringBuilder sb = new StringBuilder(base);
@@ -390,8 +413,25 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   // is specifically not any of the above channels.  This channel is limited to
   // messages which are presented in their entirety (not streamed) thus never
   // need another (nested) TCP channel.
-  private transient UDP_TCP_SendThread _sendThread = null; // set notnull if properly interned, and done before first sendMessage
-  public void sendMessage( ByteBuffer bb, byte msg_priority ) { _sendThread.sendMessage(bb,msg_priority); }
+  private transient UDP_TCP_SendThread _sendThread = null; // null if Node was removed from cloud or we didn't need to communicate with it yet
+  public final void sendMessage(ByteBuffer bb, byte msg_priority) {
+    UDP_TCP_SendThread sendThread = _sendThread;
+    if (sendThread == null) {
+      // Sending threads are created lazily.
+      // This is because we will intern all client nodes including the ones that have nothing to do with the cluster.
+      // By delaying the initialization to the point when we actually want to send a message, we initialize the sending
+      // thread just for the nodes that are really part of the cluster.
+      // The other reason is client disconnect - when removing client we kill the reference to the sending thread, if we
+      // still do need to communicate with the client later - we just recreate the thread.
+      if (_removed_from_cloud) {
+        Log.warn("Node " + this + " is not active in the cloud anymore but we want to communicate with it." +
+                "Re-opening the communication channel.");
+      }
+      sendThread = startSendThread();
+    }
+    assert sendThread != null;
+    sendThread.sendMessage(bb, msg_priority);
+  }
 
   /**
    * Returns a new connection of type {@code tcpType}, the type can be either
@@ -437,16 +477,24 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     return openChan(tcpType, socketFactory, InetAddress.getByName(originAddr), originPort, nodeTimeStamp);
   }
 
+  private static PriorityBlockingQueue<ByteBuffer> makeOutgoingMessageQueue() {
+    return new PriorityBlockingQueue<>(11,new Comparator<ByteBuffer>() {
+      // Secret back-channel priority: the position field (capped at bb.limit)
+      @Override public int compare( ByteBuffer bb1, ByteBuffer bb2 ) { return bb1.position() - bb2.position(); }
+    });
+  }
+  
   // Private thread serving (actually ships the bytes over) small msg Q.
   // Buffers the small messages together and sends the bytes over via TCP channel.
+  private static String SEND_THREAD_NAME_PREFIX = "UDP-TCP-SEND-";
   class UDP_TCP_SendThread extends Thread {
 
-    volatile boolean _stopRequested;
     private ByteChannel _chan;  // Lazily made on demand; closed & reopened on error
+
     private final ByteBuffer _bb; // Reusable output large buffer
 
-    public UDP_TCP_SendThread(){
-      super("UDP-TCP-SEND-" + H2ONode.this);
+    UDP_TCP_SendThread(){
+      super(SEND_THREAD_NAME_PREFIX + H2ONode.this);
       _bb = AutoBuffer.BBP_BIG.make();
     }
 
@@ -457,8 +505,9 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
      *  @param bb Message to send
      *  @param msg_priority priority (e.g. NACK and ACKACK beat most other priorities
      */
-    public void sendMessage(ByteBuffer bb, byte msg_priority) {
+    private void sendMessage(ByteBuffer bb, byte msg_priority) {
       assert bb.position()==0 && bb.limit() > 0;
+
       // Secret back-channel priority: the position field (capped at bb.limit);
       // this is to avoid making Yet Another Object per send.
 
@@ -471,20 +520,28 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
       if( msg_priority > bb.limit() ) msg_priority = (byte)bb.limit();
       bb.position(msg_priority);
 
-      _msgQ.put(bb);
+      _outgoingMsgQ.put(bb);
     }
 
-    private final PriorityBlockingQueue<ByteBuffer> _msgQ
-      = new PriorityBlockingQueue<>(11,new Comparator<ByteBuffer>() {
-          // Secret back-channel priority: the position field (capped at bb.limit)
-          @Override public int compare( ByteBuffer bb1, ByteBuffer bb2 ) { return bb1.position() - bb2.position(); }
-        });
+    private boolean isActive() {
+      return _sendThread == this || (_sendThread == null && isPossibleClient());
+    }
+
+    // We deliver messages to regular nodes only if the are part of the cloud
+    // and to always to clients 
+    private boolean keepSending() {
+      return !isRemovedFromCloud() || isPossibleClient();
+    }
 
     @Override public void run(){
       try {
-        while (!_stopRequested) {            // Forever loop
+        while (isActive()) {            // Forever loop
           try {
-            ByteBuffer bb = _msgQ.take(); // take never returns null but blocks instead
+            ByteBuffer bb = _outgoingMsgQ.take(); // take never returns null but blocks instead
+            if (! isActive()) {
+              _outgoingMsgQ.put(bb); // put back and give someone else a chance to deliver
+              break; // terminate
+            }
             while( bb != null ) {         // while have an BB to process
               assert !bb.isDirect() : "Direct BBs already got recycled";
               assert bb.limit()+1+2 <= _bb.capacity() : "Small message larger than the output buffer";
@@ -493,7 +550,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
               _bb.putChar((char)bb.limit());
               _bb.put(bb.array(),0,bb.limit()); // Jam this BB into the existing batch BB, all in one go (it all fits)
               _bb.put((byte)0xef);// Sentinel byte
-              bb = _msgQ.poll();  // Go get more, same batch
+              bb = _outgoingMsgQ.poll();  // Go get more, same batch
             }
             sendBuffer();         // Send final trailing BBs
           } catch (IllegalMonitorStateException imse) { /* ignore */
@@ -509,7 +566,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     void sendBuffer(){
       int retries = 0;
       _bb.flip();                 // limit set to old position; position set to 0
-      while( !_stopRequested && _bb.hasRemaining()) {
+      while (keepSending() && _bb.hasRemaining()) {
         try {
           ByteChannel chan = _chan == null ? (_chan=openChan()) : _chan;
           chan.write(_bb);
@@ -520,7 +577,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
           // comes up - such as when not all nodes mentioned in a flatfile will be
           // booted.  Basically the ERRR log will show endless repeat attempts to
           // connect to the missing node
-          if( !_stopRequested && !H2O.getShutdownRequested() && (Paxos._cloudLocked || retries++ > 300) ) {
+          if( keepSending() && !H2O.getShutdownRequested() && (Paxos._cloudLocked || retries++ > 300) ) {
             Log.err("Got IO error when sending batch UDP bytes: ",ioe);
             retries = 150;      // Throttle the pace of error msgs
           }
@@ -528,7 +585,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
             try { _chan.close(); } catch (Throwable t) {/*ignored*/}
           _chan = null;
           retries++;
-          final int sleep = Math.min(5000,retries << 1);
+          final int sleep = Math.max(5000,retries << 1);
           try {Thread.sleep(sleep);} catch (InterruptedException e) {/*ignored*/}
         }
       }

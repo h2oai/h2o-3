@@ -161,7 +161,7 @@ public abstract class Paxos {
         for(H2ONode n: H2O.getFlatfile()){
           if(!n._heartbeat._client && !PROPOSED.containsKey(n._key)){
             Log.info("Flatile::" + n._key + " not active in this cloud. Removing it from the list.");
-            n.stopSendThread();
+            n.removeFromCloud();
           }
         }
       }

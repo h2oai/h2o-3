@@ -60,7 +60,7 @@ public class ExternalFrameReaderClientTest extends TestUtil{
                     @Override
                     public void run() {
                         try {
-                            ByteChannel sock = ExternalFrameUtils.getConnection(nodes[currentChunkIdx % nodes.length], H2O.SELF._timestamp);
+                            ByteChannel sock = ExternalFrameUtils.getConnection(nodes[currentChunkIdx % nodes.length], H2O.SELF.getTimestamp());
                             ExternalFrameReaderClient reader = new ExternalFrameReaderClient(sock, frameName, currentChunkIdx, selectedColumnIndices, expectedTypes);
 
                             int rowsRead = 0;
