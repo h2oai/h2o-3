@@ -25,12 +25,12 @@ def check_tree(tree, tree_number, tree_class = None):
 
 
 def irf_tree_Test():
+    cat_frame = h2o.create_frame(cols=10, categorical_fraction=1, seed=42)
+    # check all columns are categorical
+    assert set(cat_frame.types.values()) == set(['enum'])
 
-    prostate = h2o.import_file(path=pyunit_utils.locate("smalldata/prostate/prostate.csv"))
-    prostate["RACE"] = prostate["RACE"].asfactor()
-    iso_model = H2OIsolationForestEstimator()
-    iso_model.train(training_frame = prostate, x = list(set(prostate.col_names) - set(["ID", "CAPSULE"])))
-
+    iso_model = H2OIsolationForestEstimator(seed=42)
+    iso_model.train(training_frame=cat_frame)
 
     tree = H2OTree(iso_model, 5)
     check_tree(tree, 5, None)
