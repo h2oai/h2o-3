@@ -148,7 +148,9 @@ public class TreeHandler extends Handler {
                 StringBuilder rootDescriptionBuilder = new StringBuilder();
                 rootDescriptionBuilder.append("Root node has id ");
                 rootDescriptionBuilder.append(node.getNodeNumber());
-                rootDescriptionBuilder.append(". ");
+                rootDescriptionBuilder.append(" and splits on column '");
+                rootDescriptionBuilder.append(node.getColName());
+                rootDescriptionBuilder.append("'. ");
                 fillNodeSplitTowardsChildren(rootDescriptionBuilder, node);
                 nodesDescriptions[pointer] = rootDescriptionBuilder.toString();
                 visitedRoot = true;
@@ -181,9 +183,9 @@ public class TreeHandler extends Handler {
         nodeDescriptionBuilder.append("Node has id ");
         nodeDescriptionBuilder.append(node.getNodeNumber());
         if (node.getColName() != null) {
-            nodeDescriptionBuilder.append(" and splits on column [");
+            nodeDescriptionBuilder.append(" and splits on column '");
             nodeDescriptionBuilder.append(node.getColName());
-            nodeDescriptionBuilder.append("]. ");
+            nodeDescriptionBuilder.append("'. ");
         } else {
             nodeDescriptionBuilder.append(" and is a terminal node. ");
         }
