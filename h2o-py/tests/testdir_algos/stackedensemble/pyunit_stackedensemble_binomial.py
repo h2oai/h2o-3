@@ -146,11 +146,11 @@ def test_suite_stackedensemble_binomial(blending=False):
             "expected SE test AUC to be the same as SE validation frame AUC, but obtained: " \
             "AUC (perf on test) = {}, AUC (test passed as validation frame) = {}".format(se_perf.auc(), se_perf_validation_frame.auc())
         
-    return [
+    return [pu.tag_test(test, 'blending' if blending else None) for test in [
         test_predict_on_se_model,
         test_se_performance_is_better_than_individual_models,
         test_validation_frame_produces_same_metric_as_perf_test
-    ]
+    ]]
 
 
 pu.run_tests([

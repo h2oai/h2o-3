@@ -121,11 +121,11 @@ def test_suite_stackedensemble_training_frame(blending=False):
             assert "Base models are inconsistent: they use different size (number of rows) training frames" in str(e), "wrong error message: {}".format(str(e))
             # raise e
     
-    return [
+    return [pu.tag_test(test, 'blending' if blending else None) for test in [
         test_base_models_can_use_different_x,
         test_base_models_can_use_different_compatible_training_frames,
         test_se_fails_when_base_models_use_incompatible_training_frames
-    ]
+    ]]
 
 
 pu.run_tests([

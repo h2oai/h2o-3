@@ -104,9 +104,9 @@ def test_suite_stackedensemble_binary_model(blending=False):
         assert pred_diff["p0"].min() > -1e-11
         assert pred_diff["p1"].min() > -1e-11
     
-    return [
+    return [pu.tag_test(test, 'blending' if blending else None) for test in [
         test_saved_binary_model_produces_same_predictions_as_original
-    ]
+    ]]
     
 
 pu.run_tests([

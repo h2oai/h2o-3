@@ -112,10 +112,10 @@ def test_suite_stackedensemble_validation_frame(blending=False):
             "AUC (no validation) = {}, AUC (validation frame) = {}".format(se_no_valid_perf.auc(), se_valid_perf.auc())
         
     
-    return [
+    return [pu.tag_test(test, 'blending' if blending else None) for test in [
         test_validation_metrics_are_computed_when_providing_validation_frame,
         test_a_better_model_is_produced_with_validation_frame
-    ]
+    ]]
     
     
 pu.run_tests([

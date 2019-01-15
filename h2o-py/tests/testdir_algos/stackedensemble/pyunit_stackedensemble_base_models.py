@@ -88,9 +88,9 @@ def test_suite_stackedensemble_base_models(blending=False):
         # Eval train AUC to assess equivalence
         assert se1.auc() == se2.auc()
         
-    return [
+    return [pu.tag_test(test, 'blending' if blending else None) for test in [
         test_base_models_can_be_passed_as_objects_or_as_ids
-    ]
+    ]]
 
 
 pu.run_tests([

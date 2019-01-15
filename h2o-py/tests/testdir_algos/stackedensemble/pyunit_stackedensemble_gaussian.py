@@ -168,11 +168,11 @@ def test_suite_stackedensemble_gaussian(blending=False):
             "RMSE (perf on test) = {}, RMSE (test passed as validation frame) = {}".format(se_perf.rmse(), se_perf_validation_frame.rmse())
 
     
-    return [
+    return [pu.tag_test(test, 'blending' if blending else None) for test in [
         test_predict_on_se_model,
         test_se_performance_is_better_than_individual_models,
         test_validation_frame_produces_same_metric_as_perf_test
-    ]
+    ]]
 
 
 pu.run_tests([

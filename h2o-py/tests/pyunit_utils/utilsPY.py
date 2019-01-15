@@ -519,7 +519,7 @@ def standalone_test(test):
 
     h2o.log_and_echo("------------------------------------------------------------")
     h2o.log_and_echo("")
-    h2o.log_and_echo("STARTING TEST")
+    h2o.log_and_echo("STARTING TEST "+test.__name__)
     h2o.log_and_echo("")
     h2o.log_and_echo("------------------------------------------------------------")
     test()
@@ -527,10 +527,18 @@ def standalone_test(test):
 def run_tests(tests, run_in_isolation=True):
     #flatten in case of nested tests/test suites
     all_tests = reduce(lambda l, r: (l.extend(r) if isinstance(r, (list, tuple)) else l.append(r)) or l, tests, [])
-    if run_in_isolation:
-        for test in all_tests: standalone_test(test)
-    else:
-        for test in all_tests: test()
+    for test in all_tests:
+        header = "Running {}{}".format(test.__name__, "" if not hasattr(test, 'tag') else " [{}]".format(test.tag))
+        print("\n"+('='*len(header))+"\n"+header)
+        if run_in_isolation:
+            standalone_test(test)
+        else:
+            test()
+            
+def tag_test(test, tag):
+    if tag is not None:
+        test.tag = tag
+    return test
 
 def assert_warn(predicate, message):
     try:

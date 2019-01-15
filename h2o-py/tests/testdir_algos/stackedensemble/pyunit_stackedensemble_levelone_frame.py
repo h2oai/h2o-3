@@ -108,11 +108,11 @@ def test_suite_stackedensemble_levelone_frame(blending=False):
         assert level_one_frame.nrows == se_training_frame.nrows, \
             "The number of rows in the level one frame should match train number of rows. "
     
-    return [
+    return [pu.tag_test(test, 'blending' if blending else None) for test in [
         test_levelone_frame_not_accessible_with__keep_levelone_frame__False,
         test_levelone_frame_accessible_with__keep_levelone_frame__True,
         test_levelone_frame_has_expected_dimensions
-    ]
+    ]]
 
 
 pu.run_tests([
