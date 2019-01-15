@@ -12,6 +12,8 @@ def call(final pipelineContext, final Closure body) {
           '**/results/failed/*.txt',
           '**/results/*.code',
           '**/results/failed/*.code',
+          '**/results/failed/*.code',
+          '**/java*_*.out.txt.zip',
   ]
 
   final List<String> FILES_TO_ARCHIVE_ON_SUCCESS = [
@@ -86,6 +88,7 @@ def call(final pipelineContext, final Closure body) {
       pipelineContext.getUtils().archiveJUnitResults(this, config.h2o3dir)
     }
     if (config.archiveFiles) {
+      execMake("make -f ${config.makefilePath} compress-huge-logfiles", config.h2o3dir)
       pipelineContext.getUtils().archiveStageFiles(this,
               config.h2o3dir,
               success ? FILES_TO_ARCHIVE_ON_SUCCESS : FILES_TO_ARCHIVE_ON_FAILURE,
