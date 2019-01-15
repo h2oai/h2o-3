@@ -33,7 +33,7 @@ test.parseSkippedColumnsgz<- function() {
         x
     )
   print(e2)
-  
+
   # skip 90% of the columns randomly
   print("Testing skipping 90% of columns")
   assertCorrectSkipColumns(fileName, fullFrameR, skip90Per, TRUE, h2o.getTypes(f1),columns_skipped=3) # test importFile
