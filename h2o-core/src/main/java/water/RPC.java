@@ -385,10 +385,10 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
           _computedAndReplied = true;   // After the final handshake, set computed+replied bit
           break;                        // Break out of retry loop
         } catch( AutoBuffer.AutoBufferException e ) {
-          if( !_client._client ) // Report on servers only; clients allowed to be flaky
+          if( !_client.isClient() ) // Report on servers only; clients allowed to be flaky
             Log.info("IOException during ACK, "+e._ioe.getMessage()+", t#"+_tsknum+" AB="+ab+", waiting and retrying...");
           ab.drainClose();
-          if( _client._client ) // Dead client will not accept a TCP ACK response?
+          if( _client.isClient() ) // Dead client will not accept a TCP ACK response?
             this.CAS_DT(dt,null);          // cancel the ACK
           try { Thread.sleep(100); } catch (InterruptedException ignore) {}
         } catch( Throwable e ) { // Custom serializer just barfed?
