@@ -33,10 +33,10 @@ def call(final pipelineContext, final stageConfig) {
         ls -alh
         
         echo "Linking small and bigdata"
-        rm -f smalldata
-        ln -s -f /home/0xdiag/smalldata
-        rm -f bigdata
-        ln -s -f /home/0xdiag/bigdata
+        rm -fv smalldata
+        ln -s -f -v /home/0xdiag/smalldata
+        rm -fv bigdata
+        ln -s -f -v /home/0xdiag/bigdata
         
         if [ "${stageConfig.activatePythonEnv}" = 'true' ]; then
             echo "Activating Python ${stageConfig.pythonVersion}"

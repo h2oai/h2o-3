@@ -173,7 +173,7 @@ class PipelineUtils {
             unstashFiles(context, buildConfig.getStashNameForTestPackage(component))
             unstashFiles(context, buildConfig.H2O_JAR_STASH_NAME)
         }
-        context.sh "cd ${stageDir}/h2o-3 && unzip -q -o test-package-${component}.zip && rm test-package-${component}.zip"
+        context.sh "cd ${stageDir}/h2o-3 && unzip -q -o test-package-${component}.zip && rm -v test-package-${component}.zip"
     }
 
     void archiveStageFiles(final context, final String h2o3dir, final List<String> archiveFiles, final List<String> excludeFiles) {
