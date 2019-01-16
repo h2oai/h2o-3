@@ -150,16 +150,17 @@ class H2OTree():
 
             if left_node != -1:
                 left_levels = []
-                for lvl_index in levels[left_node]:
-                    left_levels.append(domain[lvl_index])
+                if levels[left_node] is not None:
+                    for lvl_index in levels[left_node]:
+                        left_levels.append(domain[lvl_index])
 
                 string_levels[left_node] = left_levels
 
             if right_node != -1:
                 right_levels = []
-
-                for lvl_index in levels[right_node]:
-                    right_levels.append(domain[lvl_index])
+                if levels[right_node] is not None:
+                    for lvl_index in levels[right_node]:
+                        right_levels.append(domain[lvl_index])
 
                 string_levels[right_node] = right_levels
 
