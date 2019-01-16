@@ -13,7 +13,7 @@ def call(final pipelineContext, final Closure body) {
           '**/results/*.code',
           '**/results/failed/*.code',
           '**/results/failed/*.code',
-          '**/java*_*.out.txt.zip',
+          '**/java*_*.out.txt.gz',
   ]
 
   final List<String> FILES_TO_ARCHIVE_ON_SUCCESS = [
