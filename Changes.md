@@ -2,19 +2,6 @@
 
 ## H2O
 
-### Xia (3.22.0.4) - 1/4/2019
-
-Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xia/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-xia/4/index.html</a>
-
-<h4>Bug</h4>
-
-<ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6109'>PUBDEV-6109</a>] - In Flow, fixed an issue that caused POJOs, MOJOs, and genmodel.jar to fail to download. This occurred when Flow was launched via Enterprise Steam and in any deployment where user_context was specified.
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6166'>PUBDEV-6166</a>] - On the external backedn, H2O now explicitly passes the timestamp from the Spark Driver node.
-</li>
-</ul>
-
 ### Xu (3.22.1.1) - 12/28/2018
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-xu/1/index.html</a>
@@ -73,6 +60,30 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/1/index.htm
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6154'>PUBDEV-6154</a>] - Added CDH 6 and 6.1 to list of supported Hadoop versions. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6156'>PUBDEV-6156</a>] - In the XGBoost chapter, updated the default value for reg_lambda to be 1.
+</li>
+</ul>
+
+### Xia (3.22.0.5) - 1/16/2019
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xia/5/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-xia/5/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6198'>PUBDEV-6198</a>] - Fixed an H2O hang issue in Sparkling Water deployments.
+</li>
+</ul>
+
+### Xia (3.22.0.4) - 1/4/2019
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xia/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-xia/4/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6109'>PUBDEV-6109</a>] - In Flow, fixed an issue that caused POJOs, MOJOs, and genmodel.jar to fail to download. This occurred when Flow was launched via Enterprise Steam and in any deployment where user_context was specified.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6166'>PUBDEV-6166</a>] - On the external backedn, H2O now explicitly passes the timestamp from the Spark Driver node.
 </li>
 </ul>
 
