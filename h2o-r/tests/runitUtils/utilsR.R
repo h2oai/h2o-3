@@ -376,6 +376,36 @@ function(testDesc, test) {
     PASS()
 }
 
+doSuite<-
+function(suiteDesc, suite, run_in_isolation=TRUE) {
+    suiteTest <- function() {
+        warnings <- c()
+        errors <- c()
+        lapply(suite$tests, function(test_name) {
+          cat("\n")
+          cat("Running", test_name, "\n")
+          if(run_in_isolation) h2o.removeAll()
+          tryCatch(
+              test_that(test_name, withWarnings(do.call(test_name, list(), envir=suite$envir))),
+              warning = function(w) warnings <<- c(warnings, w),
+              error = function(e) errors <<- c(errors, e$message)
+          )  
+          # do.call(test_name, list(), envir=envir)
+        })
+        if(length(warnings) > 0)
+            warning(paste("\n", warnings, "\n"))
+        if(length(errors) > 0)
+            stop(paste("Failing tests:\n", errors, "\n"), call. = FALSE)
+    }
+    doTest(suiteDesc, suiteTest)
+}
+
+makeSuite<-
+function(..., envir=parent.frame()) {
+    tests <- all.vars(substitute(c(...)))
+    list(tests=tests, envir=envir)
+}
+
 setupSeed<-
 function(seed = NULL, master_seed = FALSE) {
     possible_seed_path <- paste("./Rsandbox_", TEST.NAME, "/seed", sep = "")
