@@ -13,7 +13,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/2/index.htm
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6162'>PUBDEV-6162</a>] - Fixed an issue that made users unable to parse data from S3 bucket. (STILL OPEN)
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6177'>PUBDEV-6177</a>] - Fixed an issue that caused H2OTree to fail with Isolation Forest models trained on data with categorical columns. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6177'>PUBDEV-6177</a>] - Fixed an issue that caused H2OTree to fail with Isolation Forest models trained on data with categorical columns. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6178'>PUBDEV-6178</a>] - When a new tree is assembled from a model, the root node now includes information about the split feature in the description array.
 </li>
@@ -30,6 +30,12 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/2/index.htm
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6200'>PUBDEV-6200</a>] - Splitting frames now works correctly in Flow. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6201'>PUBDEV-6201</a>] - Import SQL Table now works correctly in Flow. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6203'>PUBDEV-6203</a>] - Fixed an issue with imports in Flow. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6204'>PUBDEV-6204</a>] - Fixed interaction pairs for GLM in Flow. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6206'>PUBDEV-6206</a>] - Fixed broken "Combine predictions with frame" in Flow. (STILL OPEN)
 </li>
 </ul>
     
@@ -56,14 +62,14 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/2/index.htm
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6188'>PUBDEV-6188</a>] - Implemented secret key credentials for s3:// AWS protocol. (STILL OPEN)
 </li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6205'>PUBDEV-6205</a>] - Renamed .jade files to .pug. (STILL OPEN)
+</li>
 </ul>
                 
 <h4>Docs</h4>
 
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6165'>PUBDEV-6165</a>] - Added HDP 3.0 and 3.1 to list of supported Hadoop versions.
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6173'>PUBDEV-6173</a>] - Added to docs how to start h2o on hadoop when want to use the JDBC connector. (STILL OPEN)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6190'>PUBDEV-6190</a>] - Updated wording for Kmeans Scoring History Graph. This graph shows the number of iterations vs. within the cluster’s sum of squares.
 </li>
