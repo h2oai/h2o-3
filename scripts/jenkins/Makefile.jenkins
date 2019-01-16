@@ -25,7 +25,7 @@ warmup-caches:
 	./gradlew cpLibs $$ADDITIONAL_GRADLE_OPTS
 
 compress-huge-logfiles:
-	find * -type f -name 'java*.out.txt' -exec zip -jm {}.zip {} \;
+	find * -type f -name 'java*.out.txt' -exec gzip {} \;
 
 test-package-py:
 	zip -q -r test-package-py.zip h2o-py/tests/ h2o-py/demos/ \
