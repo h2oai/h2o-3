@@ -15,89 +15,64 @@ from tests import pyunit_utils as pu
 
 seed = 1
 
-class StackedEnsembleTest(object):
 
-    def prepare_data(self):
-        train = h2o.import_file(path=pu.locate("smalldata/iris/iris_train.csv"))
-        target = "species"
-        train[target] = train[target].asfactor()
-        return pu.ns(x=train.columns, y=target, train=train)
+def prepare_data(blending=False):
+    fr = h2o.import_file(path=pu.locate("smalldata/iris/iris_train.csv"))
+    target = "species"
+    fr[target] = fr[target].asfactor()
+    ds = pu.ns(x=fr.columns, y=target, train=fr)
 
-    def train_base_models(self, dataset):
-        nfolds = 3
-        gbm = H2OGradientBoostingEstimator(distribution="multinomial",
-                                           ntrees=10,
-                                           nfolds=nfolds,
-                                           fold_assignment="Modulo",
-                                           keep_cross_validation_predictions=True,
-                                           seed=seed)
-        gbm.train(x=dataset.x, y=dataset.y, training_frame=dataset.train)
-
-        rf = H2ORandomForestEstimator(ntrees=10,
-                                      nfolds=nfolds,
-                                      fold_assignment="Modulo",
-                                      keep_cross_validation_predictions=True,
-                                      seed=seed)
-        rf.train(x=dataset.x, y=dataset.y, training_frame=dataset.train)
-        return [gbm, rf]
-
-    def train_stacked_ensemble(self, dataset, base_models, keep_levelone_frame=False):
-        se = H2OStackedEnsembleEstimator(base_models=[m.model_id for m in base_models], 
-                                         keep_levelone_frame=keep_levelone_frame,
-                                         seed=seed)
-        se.train(x=dataset.x, y=dataset.y, training_frame=dataset.train)
-        return se
-
-
-class StackedEnsembleBlendingTest(StackedEnsembleTest):
-
-    def prepare_data(self):
-        ds = super(self.__class__, self).prepare_data()
-        train, blend = ds.train.split_frame(ratios=[.7], seed=seed)
+    if blending:
+        train, blend = fr.split_frame(ratios=[.7], seed=seed)
         return ds.extend(train=train, blend=blend)
+    else:
+        return ds
 
-    def train_base_models(self, dataset):
-        gbm = H2OGradientBoostingEstimator(distribution="multinomial",
-                                           ntrees=10,
-                                           seed=seed)
-        gbm.train(x=dataset.x, y=dataset.y, training_frame=dataset.train)
 
-        rf = H2ORandomForestEstimator(ntrees=10,
-                                      seed=seed)
-        rf.train(x=dataset.x, y=dataset.y, training_frame=dataset.train)
-        return [gbm, rf]
+def train_base_models(dataset, **kwargs):
+    model_args = kwargs if hasattr(dataset, 'blend') else dict(nfolds=3, fold_assignment="Modulo", keep_cross_validation_predictions=True, **kwargs)
 
-    def train_stacked_ensemble(self, dataset, base_models, keep_levelone_frame=False):
-        se = H2OStackedEnsembleEstimator(base_models=[m.model_id for m in base_models], 
-                                         keep_levelone_frame=keep_levelone_frame,
-                                         seed=seed)
-        se.train(x=dataset.x, y=dataset.y,
-                 training_frame=dataset.train,
-                 blending_frame=dataset.blend)
-        return se
+    gbm = H2OGradientBoostingEstimator(distribution="multinomial",
+                                       ntrees=10,
+                                       seed=seed,
+                                       **model_args)
+    gbm.train(x=dataset.x, y=dataset.y, training_frame=dataset.train)
+
+    rf = H2ORandomForestEstimator(ntrees=10,
+                                  seed=seed,
+                                  **model_args)
+    rf.train(x=dataset.x, y=dataset.y, training_frame=dataset.train)
+    return [gbm, rf]
+
+
+def train_stacked_ensemble(dataset, base_models, **kwargs):
+    se = H2OStackedEnsembleEstimator(base_models=base_models, seed=seed, **kwargs)
+    se.train(x=dataset.x, y=dataset.y,
+             training_frame=dataset.train,
+             blending_frame=dataset.blend if hasattr(dataset, 'blend') else None)
+    return se
 
 
 def test_suite_stackedensemble_levelone_frame(blending=False):
-    t = StackedEnsembleTest() if not blending else StackedEnsembleBlendingTest()
 
     def test_levelone_frame_not_accessible_with__keep_levelone_frame__False():
-        ds = t.prepare_data()
-        models = t.train_base_models(ds)
-        se = t.train_stacked_ensemble(ds, models)
+        ds = prepare_data(blending)
+        models = train_base_models(ds)
+        se = train_stacked_ensemble(ds, models)
         assert se.levelone_frame_id() is None, \
             "Level one frame should not be available when keep_levelone_frame is False."
     
     def test_levelone_frame_accessible_with__keep_levelone_frame__True():
-        ds = t.prepare_data()
-        models = t.train_base_models(ds)
-        se = t.train_stacked_ensemble(ds, models, keep_levelone_frame=True)
+        ds = prepare_data(blending)
+        models = train_base_models(ds)
+        se = train_stacked_ensemble(ds, models, keep_levelone_frame=True)
         assert se.levelone_frame_id() is not None, \
             "Level one frame should be available when keep_levelone_frame is True."
     
     def test_levelone_frame_has_expected_dimensions():
-        ds = t.prepare_data()
-        models = t.train_base_models(ds)
-        se = t.train_stacked_ensemble(ds, models, keep_levelone_frame=True)
+        ds = prepare_data(blending)
+        models = train_base_models(ds)
+        se = train_stacked_ensemble(ds, models, keep_levelone_frame=True)
         level_one_frame = h2o.get_frame(se.levelone_frame_id()["name"])
         
         se_training_frame = ds.blend if blending else ds.train

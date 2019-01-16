@@ -16,95 +16,65 @@ from tests.pyunit_utils import assert_warn
 
 seed = 1
 
-class StackedEnsembleTest(object):
 
-    def prepare_data(self):
-        col_types = ["numeric", "numeric", "numeric", "enum", "enum", "numeric", "numeric", "numeric", "numeric"]
-        dat = h2o.upload_file(path=pu.locate("smalldata/extdata/prostate.csv"),
-                              destination_frame="prostate_hex",
-                              col_types=col_types)
-        train, test = dat.split_frame(ratios=[.8], seed=1)
-        x = ["CAPSULE", "GLEASON", "RACE", "DPROS", "DCAPS", "PSA", "VOL"]
-        y = "AGE"
-        return pu.ns(x=x, y=y, train=train, test=test)
+def prepare_data(blending=False):
+    col_types = ["numeric", "numeric", "numeric", "enum", "enum", "numeric", "numeric", "numeric", "numeric"]
+    dat = h2o.upload_file(path=pu.locate("smalldata/extdata/prostate.csv"),
+                          destination_frame="prostate_hex",
+                          col_types=col_types)
+    train, test = dat.split_frame(ratios=[.8], seed=1)
+    x = ["CAPSULE", "GLEASON", "RACE", "DPROS", "DCAPS", "PSA", "VOL"]
+    y = "AGE"
+    ds = pu.ns(x=x, y=y, train=train, test=test)
 
-    def train_base_models(self, dataset):
-        nfolds = 3
-        gbm = H2OGradientBoostingEstimator(distribution="gaussian",
-                                           max_depth=3,
-                                           learn_rate=0.2,
-                                           nfolds=nfolds,
-                                           fold_assignment="Modulo",
-                                           keep_cross_validation_predictions=True,
-                                           seed=seed)
-        gbm.train(x=dataset.x, y=dataset.y, training_frame=dataset.train)
-
-        rf = H2ORandomForestEstimator(ntrees=10,
-                                      nfolds=nfolds,
-                                      fold_assignment="Modulo",
-                                      keep_cross_validation_predictions=True,
-                                      seed=seed)
-        rf.train(x=dataset.x, y=dataset.y, training_frame=dataset.train)
-        
-        xrf = H2ORandomForestEstimator(ntrees=20,
-                                       nfolds=nfolds,
-                                       histogram_type="Random",
-                                       fold_assignment="Modulo",
-                                       keep_cross_validation_predictions=True,
-                                       seed=seed)
-        xrf.train(x=dataset.x, y=dataset.y, training_frame=dataset.train)
-        
-        return [gbm, rf, xrf]
-
-    def train_stacked_ensemble(self, dataset, base_models, valid=False):
-        se = H2OStackedEnsembleEstimator(base_models=[m.model_id for m in base_models], seed=seed)
-        se.train(x=dataset.x, y=dataset.y,
-                 training_frame=dataset.train, 
-                 validation_frame=dataset.test if valid else None)
-        return se
-
-
-class StackedEnsembleBlendingTest(StackedEnsembleTest):
-
-    def prepare_data(self):
-        ds = super(self.__class__, self).prepare_data()
-        train, blend = ds.train.split_frame(ratios=[.7], seed=seed)
+    if blending:
+        train, blend = train.split_frame(ratios=[.7], seed=seed)
         return ds.extend(train=train, blend=blend)
+    else:
+        return ds
 
-    def train_base_models(self, dataset):
-        gbm = H2OGradientBoostingEstimator(distribution="gaussian",
-                                           max_depth=3,
-                                           learn_rate=0.2,
-                                           seed=seed)
-        gbm.train(x=dataset.x, y=dataset.y, training_frame=dataset.train)
 
-        rf = H2ORandomForestEstimator(ntrees=10,
-                                      seed=seed)
-        rf.train(x=dataset.x, y=dataset.y, training_frame=dataset.train)
-        
-        xrf = H2ORandomForestEstimator(ntrees=20,
-                                       histogram_type="Random",
-                                       seed=seed)
-        xrf.train(x=dataset.x, y=dataset.y, training_frame=dataset.train)
-        return [gbm, rf, xrf]
+def train_base_models(dataset, **kwargs):
+    model_args = kwargs if hasattr(dataset, 'blend') else dict(nfolds=3, fold_assignment="Modulo", keep_cross_validation_predictions=True, **kwargs)
 
-    def train_stacked_ensemble(self, dataset, base_models, valid=False):
-        se = H2OStackedEnsembleEstimator(base_models=[m.model_id for m in base_models], seed=seed)
-        se.train(x=dataset.x, y=dataset.y,
-                 training_frame=dataset.train,
-                 validation_frame=dataset.test if valid else None,
-                 blending_frame=dataset.blend)
-        return se
+    gbm = H2OGradientBoostingEstimator(distribution="gaussian",
+                                       ntrees=10,
+                                       max_depth=3,
+                                       min_rows=2,
+                                       learn_rate=0.2,
+                                       seed=seed,
+                                       **model_args)
+    gbm.train(x=dataset.x, y=dataset.y, training_frame=dataset.train)
 
+    rf = H2ORandomForestEstimator(ntrees=10,
+                                  seed=seed,
+                                  **model_args)
+    rf.train(x=dataset.x, y=dataset.y, training_frame=dataset.train)
+    
+    xrf = H2ORandomForestEstimator(ntrees=20,
+                                   histogram_type="Random",
+                                   seed=seed,
+                                   **model_args)
+    xrf.train(x=dataset.x, y=dataset.y, training_frame=dataset.train)
+    
+    return [gbm, rf, xrf] 
+
+
+def train_stacked_ensemble(dataset, base_models, **kwargs):
+    se = H2OStackedEnsembleEstimator(base_models=base_models, seed=seed)
+    se.train(x=dataset.x, y=dataset.y,
+             training_frame=dataset.train,
+             blending_frame=dataset.blend if hasattr(dataset, 'blend') else None,
+             **kwargs)
+    return se
 
 
 def test_suite_stackedensemble_gaussian(blending=False):
-    t = StackedEnsembleTest() if not blending else StackedEnsembleBlendingTest()
     
     def test_predict_on_se_model():
-        ds = t.prepare_data()
-        models = t.train_base_models(ds)
-        se = t.train_stacked_ensemble(ds, models)
+        ds = prepare_data(blending)
+        models = train_base_models(ds)
+        se = train_stacked_ensemble(ds, models)
         
         for i in range(2): # repeat predict to verify consistency
             pred = se.predict(test_data=ds.test)
@@ -113,8 +83,8 @@ def test_suite_stackedensemble_gaussian(blending=False):
 
         
     def test_se_performance_is_better_than_individual_models():
-        ds = t.prepare_data()
-        base_models = t.train_base_models(ds)
+        ds = prepare_data(blending)
+        base_models = train_base_models(ds)
 
         def compute_perf(model):
             perf = pu.ns(
@@ -132,7 +102,7 @@ def test_suite_stackedensemble_gaussian(blending=False):
             base_perfs[model.model_id] = compute_perf(model)
 
         
-        se = t.train_stacked_ensemble(ds, base_models)
+        se = train_stacked_ensemble(ds, base_models)
         perf_se = compute_perf(se)
 
 
@@ -157,9 +127,9 @@ def test_suite_stackedensemble_gaussian(blending=False):
         
         
     def test_validation_frame_produces_same_metric_as_perf_test():
-        ds = t.prepare_data()
-        models = t.train_base_models(ds)
-        se = t.train_stacked_ensemble(ds, models, valid=True)
+        ds = prepare_data(blending)
+        models = train_base_models(ds)
+        se = train_stacked_ensemble(ds, models, validation_frame=ds.test)
         se_perf = se.model_performance(test_data=ds.test)
         se_perf_validation_frame = se.model_performance(valid=True)
         # since the metrics object is not exactly the same, we can just test that RSME is the same

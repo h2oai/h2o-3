@@ -13,7 +13,6 @@ from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
 from tests import pyunit_utils as pu
 
 seed = 1
-base_models_cv_args = dict(nfolds=3, fold_assignment="Modulo", keep_cross_validation_predictions=True)
 
 
 def prepare_data(blending=True):
@@ -32,18 +31,19 @@ def prepare_data(blending=True):
     
     
 def train_base_models(dataset, **kwargs):
+    model_args = kwargs if hasattr(dataset, 'blend') else dict(nfolds=3, fold_assignment="Modulo", keep_cross_validation_predictions=True, **kwargs)
     gbm = H2OGradientBoostingEstimator(distribution="bernoulli",
                                        ntrees=10,
                                        max_depth=3,
                                        min_rows=2,
                                        learn_rate=0.2,
                                        seed=seed,
-                                       **kwargs)
+                                       **model_args)
     gbm.train(x=dataset.x, y=dataset.y, training_frame=dataset.train)
 
     rf = H2ORandomForestEstimator(ntrees=20,
                                   seed=seed,
-                                  **kwargs)
+                                  **model_args)
     rf.train(x=dataset.x, y=dataset.y, training_frame=dataset.train)
     return [gbm, rf]
 
@@ -52,6 +52,7 @@ def train_stacked_ensemble(dataset, base_models, **kwargs):
     se = H2OStackedEnsembleEstimator(base_models=[m.model_id for m in base_models], seed=seed)
     se.train(x=dataset.x, y=dataset.y,
              training_frame=dataset.train,
+             blending_frame=dataset.blend if hasattr(dataset, 'blend') else None,
              **kwargs)
     return se
 
@@ -59,7 +60,7 @@ def train_stacked_ensemble(dataset, base_models, **kwargs):
 def test_passing_blending_frame_triggers_blending_mode():
     ds = prepare_data(blending=True)
     base_models = train_base_models(ds)
-    se = train_stacked_ensemble(ds, base_models, blending_frame=ds.blend)
+    se = train_stacked_ensemble(ds, base_models)
     assert se.stacking_strategy() == 'blending'
     
     
@@ -67,8 +68,8 @@ def test_blending_mode_usually_performs_worse_than_CV_stacking_mode():
     perfs = {}
     for blending in [True, False]:
         ds = prepare_data(blending=blending)
-        base_models = train_base_models(ds, **(dict() if blending else base_models_cv_args))
-        se_model = train_stacked_ensemble(ds, base_models, **(dict(blending_frame=ds.blend) if blending else dict()))
+        base_models = train_base_models(ds)
+        se_model = train_stacked_ensemble(ds, base_models)
         perf = se_model.model_performance(test_data=ds.test)
         perfs[se_model.stacking_strategy()] = perf
         
@@ -82,7 +83,7 @@ def test_training_frame_is_still_required_in_blending_mode():
     ds = prepare_data(blending=True)
     base_models = train_base_models(ds)
     try:
-        train_stacked_ensemble(ds.extend(train=None), base_models, blending_frame=ds.blend)
+        train_stacked_ensemble(ds.extend(train=None), base_models)
         assert False, "StackedEnsemble training without training_frame should have raised an exception"
     except Exception as e:
         assert "Training frame required for stackedensemble algorithm" in str(e), "Wrong error message {}".format(str(e))
