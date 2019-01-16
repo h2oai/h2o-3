@@ -13,119 +13,83 @@ from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
 from tests import pyunit_utils as pu
 
 seed = 1
+base_models_cv_args = dict(nfolds=3, fold_assignment="Modulo", keep_cross_validation_predictions=True)
 
-class StackedEnsembleTest(object):
 
-    def prepare_data(self):
-        train = h2o.import_file(path=pu.locate("smalldata/testng/higgs_train_5k.csv"))
-        test = h2o.import_file(path=pu.locate("smalldata/testng/higgs_test_5k.csv"))
-        target = "response"
-        for fr in [train, test]:
-            fr[target] = fr[target].asfactor()
-        return pu.ns(x=train.columns, y=target, train=train, test=test)
-
-    def train_base_models(self, dataset):
-        nfolds = 3
-        gbm = H2OGradientBoostingEstimator(distribution="bernoulli",
-                                           ntrees=10,
-                                           max_depth=3,
-                                           min_rows=2,
-                                           learn_rate=0.2,
-                                           nfolds=nfolds,
-                                           fold_assignment="Modulo",
-                                           keep_cross_validation_predictions=True,
-                                           seed=seed)
-        gbm.train(x=dataset.x, y=dataset.y, training_frame=dataset.train)
-
-        rf = H2ORandomForestEstimator(ntrees=20,
-                                      nfolds=nfolds,
-                                      fold_assignment="Modulo",
-                                      keep_cross_validation_predictions=True,
-                                      seed=seed)
-        rf.train(x=dataset.x, y=dataset.y, training_frame=dataset.train)
-        return [gbm, rf]
-
-    def train_stacked_ensemble(self, dataset, base_models, valid=False):
-        se = H2OStackedEnsembleEstimator(base_models=[m.model_id for m in base_models], seed=seed)
-        se.train(x=dataset.x, y=dataset.y,
-                 training_frame=dataset.train,
-                 validation_frame=dataset.test if valid else None)
-        return se
+def prepare_data(blending=True):
+    train = h2o.import_file(path=pu.locate("smalldata/testng/higgs_train_5k.csv"))
+    test = h2o.import_file(path=pu.locate("smalldata/testng/higgs_test_5k.csv"))
+    target = "response"
+    for fr in [train, test]:
+        fr[target] = fr[target].asfactor()
+    ds = pu.ns(x=train.columns, y=target, train=train, test=test)
     
-
-class StackedEnsembleBlendingTest(StackedEnsembleTest):
-
-    def prepare_data(self):
-        ds = super(self.__class__, self).prepare_data()
-        train, blend = ds.train.split_frame(ratios=[.7], seed=seed)
+    if blending:
+        train, blend = train.split_frame(ratios=[.7], seed=seed)
         return ds.extend(train=train, blend=blend)
+    else:
+        return ds
+    
+    
+def train_base_models(dataset, **kwargs):
+    gbm = H2OGradientBoostingEstimator(distribution="bernoulli",
+                                       ntrees=10,
+                                       max_depth=3,
+                                       min_rows=2,
+                                       learn_rate=0.2,
+                                       seed=seed,
+                                       **kwargs)
+    gbm.train(x=dataset.x, y=dataset.y, training_frame=dataset.train)
 
-    def train_base_models(self, dataset):
-        gbm = H2OGradientBoostingEstimator(distribution="bernoulli",
-                                           ntrees=10,
-                                           max_depth=3,
-                                           min_rows=2,
-                                           learn_rate=0.2,
-                                           seed=seed)
-        gbm.train(x=dataset.x, y=dataset.y, training_frame=dataset.train)
-
-        rf = H2ORandomForestEstimator(ntrees=20,
-                                      seed=seed)
-        rf.train(x=dataset.x, y=dataset.y, training_frame=dataset.train)
-        return [gbm, rf]
-
-    def train_stacked_ensemble(self, dataset, base_models, valid=False):
-        se = H2OStackedEnsembleEstimator(base_models=[m.model_id for m in base_models], seed=seed)
-        se.train(x=dataset.x, y=dataset.y,
-                 training_frame=dataset.train,
-                 validation_frame=dataset.test if valid else None,
-                 blending_frame=dataset.blend)
-        return se
+    rf = H2ORandomForestEstimator(ntrees=20,
+                                  seed=seed,
+                                  **kwargs)
+    rf.train(x=dataset.x, y=dataset.y, training_frame=dataset.train)
+    return [gbm, rf]
 
 
-def test_suite_stackedensemble_blending_frame():
-    t = StackedEnsembleBlendingTest()
+def train_stacked_ensemble(dataset, base_models, **kwargs):
+    se = H2OStackedEnsembleEstimator(base_models=[m.model_id for m in base_models], seed=seed)
+    se.train(x=dataset.x, y=dataset.y,
+             training_frame=dataset.train,
+             **kwargs)
+    return se
 
-    def test_passing_blending_frame_triggers_blending_mode():
-        ds = t.prepare_data()
-        base_models = t.train_base_models(ds)
-        se = t.train_stacked_ensemble(ds, base_models)
-        assert se.stacking_strategy() == 'blending'
+
+def test_passing_blending_frame_triggers_blending_mode():
+    ds = prepare_data(blending=True)
+    base_models = train_base_models(ds)
+    se = train_stacked_ensemble(ds, base_models, blending_frame=ds.blend)
+    assert se.stacking_strategy() == 'blending'
+    
+    
+def test_blending_mode_usually_performs_worse_than_CV_stacking_mode():
+    perfs = {}
+    for blending in [True, False]:
+        ds = prepare_data(blending=blending)
+        base_models = train_base_models(ds, **(dict() if blending else base_models_cv_args))
+        se_model = train_stacked_ensemble(ds, base_models, **(dict(blending_frame=ds.blend) if blending else dict()))
+        perf = se_model.model_performance(test_data=ds.test)
+        perfs[se_model.stacking_strategy()] = perf
         
-    def test_blending_mode_usually_performs_worse_than_CV_stacking_mode():
-        blending_tester = t
-        cv_stacking_tester = StackedEnsembleTest()
+    # this performance difference is not guaranteed, but usually expected
+    assert perfs['blending'].auc() < perfs['cross_validation'].auc(), \
+        "SE blending should perform worse than CV stacking, but obtained: " \
+        "AUC (blending) = {}, AUC (CV stacking) = {}".format(perfs['blending'].auc(), perfs['cross_validation'].auc())
 
-        perfs = {}
-        for tester in [blending_tester, cv_stacking_tester]:
-            ds = tester.prepare_data()
-            base_models = tester.train_base_models(ds)
-            se_model = tester.train_stacked_ensemble(ds, base_models)
-            perf = se_model.model_performance(test_data=ds.test)
-            perfs[se_model.stacking_strategy()] = perf
-            
-        # this performance difference is not guaranteed, but usually expected
-        assert perfs['blending'].auc() < perfs['cross_validation'].auc(), \
-            "SE blending should perform worse than CV stacking, but obtained: " \
-            "AUC (blending) = {}, AUC (CV stacking) = {}".format(perfs['blending'].auc(), perfs['cross_validation'].auc())
-    
-    def test_training_frame_is_still_required_in_blending_mode():
-        ds = t.prepare_data()
-        base_models = t.train_base_models(ds)
-        try:
-            t.train_stacked_ensemble(ds.extend(train=None), base_models)
-            assert False, "StackedEnsemble training without training_frame should have raised an exception"
-        except Exception as e:
-            assert "Training frame required for stackedensemble algorithm" in str(e), "Wrong error message {}".format(str(e))
-    
-    
-    return [
-        test_passing_blending_frame_triggers_blending_mode,
-        test_blending_mode_usually_performs_worse_than_CV_stacking_mode,
-        test_training_frame_is_still_required_in_blending_mode
-    ]
+
+def test_training_frame_is_still_required_in_blending_mode():
+    ds = prepare_data(blending=True)
+    base_models = train_base_models(ds)
+    try:
+        train_stacked_ensemble(ds.extend(train=None), base_models, blending_frame=ds.blend)
+        assert False, "StackedEnsemble training without training_frame should have raised an exception"
+    except Exception as e:
+        assert "Training frame required for stackedensemble algorithm" in str(e), "Wrong error message {}".format(str(e))
 
 
 pu.run_tests([
-    test_suite_stackedensemble_blending_frame(),
+    test_passing_blending_frame_triggers_blending_mode,
+    test_blending_mode_usually_performs_worse_than_CV_stacking_mode,
+    test_training_frame_is_still_required_in_blending_mode
 ])
