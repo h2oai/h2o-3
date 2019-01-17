@@ -5,6 +5,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
 import water.fvec.*;
+import water.rapids.Merge;
 
 import static org.junit.Assert.assertEquals;
 
@@ -106,6 +107,38 @@ public class BroadcastJoinTest extends TestUtil {
     }
   }
 
+  // Shows that we will loose original order due to grouping otherwise this(swapping left and right frames) would be a possible workaround 
+  @Test(expected = AssertionError.class)
+  public void mergeWillUseRightFramesOrderAndGroupByValues() {
+    Scope.enter();
+    try {
+      Frame fr = new TestFrameBuilder()
+              .withName("leftFrame")
+              .withColNames("ColA", "ColB")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM)
+              .withDataForCol(0, ar("a", "b", "c", "e", "a"))
+              .withDataForCol(1, ard(-1, 2, 3, 4, 7))
+              .build();
+
+      Frame holdoutEncodingMap = new TestFrameBuilder()
+              .withName("holdoutEncodingMap")
+              .withColNames("ColB", "ColC")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM)
+              .withDataForCol(0, ar("c", "a", "e", "b"))
+              .withDataForCol(1, ard(2, 3, 4, 5))
+              .build();
+
+      //Note: we end up with the order from the `right` frame
+      int[][] levelMaps = {CategoricalWrappedVec.computeMap(holdoutEncodingMap.vec(0).domain(), fr.vec(0).domain())};
+      Frame res = Merge.merge(holdoutEncodingMap, fr, new int[]{0}, new int[]{0}, false, levelMaps);
+      printOutFrameAsTable(res, false, res.numRows());
+      
+      //We expect this assertion to fail
+      assertStringVecEquals(cvec("a", "b", "c", "e", "a"), res.vec("ColB"));
+    } finally {
+      Scope.exit();
+    }
+  }
     
   @After
   public void afterEach() {
