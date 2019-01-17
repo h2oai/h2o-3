@@ -5,9 +5,11 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.util.IcedHashMap;
 
-public class BroadcastJoinForTargetEncoder {
-
+class BroadcastJoinForTargetEncoder {
+  
   static class CompositeLookupKey {
+    // Note: Consider using indexes of levels instead of strings to save space. It will probably require 
+    // to use CategoricalWrappedVec.computeMap() since indexes for levels could differ in both frames for the same level values.
     private String _levelValue;
     private Long _foldValue;
 
@@ -32,20 +34,20 @@ public class BroadcastJoinForTargetEncoder {
   }
 
   static class EncodingData {
-    private long numerator;
-    private long denominator;
+    private long _numerator;
+    private long _denominator;
     
     EncodingData(long numerator, long denominator) {
-      this.numerator = numerator;
-      this.denominator = denominator;
+      this._numerator = numerator;
+      this._denominator = denominator;
     }
 
     long getNumerator() {
-      return numerator;
+      return _numerator;
     }
 
     long getDenominator() {
-      return denominator;
+      return _denominator;
     }
   }
 
