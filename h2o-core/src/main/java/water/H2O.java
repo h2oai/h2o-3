@@ -1944,7 +1944,9 @@ final public class H2O {
       return false;
     }
 
-    // NOTE for developers: make sure that the following whitelist is logically consistent with whitelist in R code - see function .h2o.check_java_version in connection.R
+    // Notes: 
+    // - make sure that the following whitelist is logically consistent with whitelist in R code - see function .h2o.check_java_version in connection.R
+    // - upgrade of the javassist library should be considered when adding support for a new java version
     if (JAVA_VERSION.isKnown() && !isUserEnabledJavaVersion() && (JAVA_VERSION.getMajor()<7 || JAVA_VERSION.getMajor()>11)) {
       System.err.println("Only Java 7, 8, 9, 10 and 11 are supported, system version is " + System.getProperty("java.version"));
       return true;
