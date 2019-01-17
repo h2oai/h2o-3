@@ -35,7 +35,7 @@ def ignored_columns():
         assert False, "It should throw H2OValueError: "+message
     except Exception as e:
         assert message in e.args, "It should throw H2OValueError: "+message
-        
+
     airlines_gbm.train(y=response, training_frame=train, validation_frame=valid)
 
     # get the ignored columns from the model JSON
