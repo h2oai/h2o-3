@@ -46,7 +46,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   private Countdown _build_model_countdown;
   private Countdown _build_step_countdown;
   private void startClock() {
-    _build_model_countdown = new Countdown((long)(_parms._max_runtime_secs * 1000), true);
+    _build_model_countdown = Countdown.fromSeconds(_parms._max_runtime_secs);
+    _build_model_countdown.start();
   }
   protected boolean timeout() {
     return _build_step_countdown != null ? _build_step_countdown.timedOut() : _build_model_countdown.timedOut();

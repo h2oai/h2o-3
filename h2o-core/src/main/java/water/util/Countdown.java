@@ -1,16 +1,19 @@
 package water.util;
 
-import java.io.Serializable;
+import water.Iced;
 
 /**
  * Simple countdown to encapsulate timeouts and durations.
  * time_limit_millis <= 0 is interpreted as infinite countdown (no timeout)
  */
-public class Countdown implements Serializable {
+public class Countdown extends Iced<Countdown> {
 
   private long _time_limit_millis;
   private long _start_time;
-
+  
+  public static Countdown fromSeconds(double seconds) {
+    return new Countdown(seconds <= 0 ? 0 : Math.round(seconds * 1000) + 1);
+  }
 
   public Countdown(long time_limit_millis) {
     _time_limit_millis = time_limit_millis;
