@@ -4,12 +4,11 @@ import water.*;
 import water.fvec.*;
 import water.fvec.task.FillNAWithLongValueTask;
 import water.fvec.task.FillNAWithDoubleValueTask;
-import water.rapids.Merge;
 import water.rapids.Rapids;
 import water.rapids.Val;
 import water.rapids.ast.prims.mungers.AstGroup;
-import water.util.FrameUtils;
 import water.util.Log;
+
 import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.*;
 
 import java.util.*;
@@ -253,45 +252,23 @@ public class TargetEncoder {
         }
     }
 
-    Frame mergeByTEAndFoldColumns(Frame a, Frame holdoutEncodeMap, int teColumnIndexOriginal, int foldColumnIndexOriginal, int teColumnIndex) {
+    Frame mergeByTEAndFoldColumns(Frame leftFrame, Frame holdoutEncodeMap, int teColumnIndexOriginal, int foldColumnIndexOriginal, int teColumnIndex) {
+      addNumeratorAndDenominatorTo(leftFrame);
+
       int foldColumnIndexInEncodingMap = holdoutEncodeMap.find("foldValueForMerge");
-      return merge(a, holdoutEncodeMap, new int[]{teColumnIndexOriginal, foldColumnIndexOriginal}, new int[]{teColumnIndex, foldColumnIndexInEncodingMap});
+      return BroadcastJoinForTargetEncoder.join(leftFrame, new int[]{teColumnIndexOriginal}, foldColumnIndexOriginal, holdoutEncodeMap, new int[]{teColumnIndex}, foldColumnIndexInEncodingMap);
     }
 
-    static class GCForceTask extends MRTask<GCForceTask> {
-      @Override
-      protected void setupLocal() {
-        System.gc();
+    Frame mergeByTEColumn(Frame leftFrame, Frame holdoutEncodeMap, int teColumnIndexOriginal, int teColumnIndex) {
+      addNumeratorAndDenominatorTo(leftFrame);
+      return BroadcastJoinForTargetEncoder.join(leftFrame, new int[]{teColumnIndexOriginal}, -1, holdoutEncodeMap, new int[]{teColumnIndex}, -1);
       }
-    }
-
-    // Custom extract from AstMerge's implementation for a particular case `(merge l r TRUE FALSE [] [] 'auto' )`
-    Frame merge(Frame l, Frame r, int[] byLeft, int[] byRite) {
-      boolean allLeft = true;
-      // See comments in the original implementation in AstMerge.java
-      new GCForceTask().doAllNodes();
-
-      int ncols = byLeft.length;
-      l.moveFirst(byLeft);
-      r.moveFirst(byRite);
-
-      int[][] id_maps = new int[ncols][];
-      for (int i = 0; i < ncols; i++) {
-        Vec lv = l.vec(i);
-        Vec rv = r.vec(i);
-
-        if (lv.isCategorical()) {
-          assert rv.isCategorical();
-          id_maps[i] = CategoricalWrappedVec.computeMap(lv.domain(), rv.domain());
-        }
-      }
-      int cols[] = new int[ncols];
-      for (int i = 0; i < ncols; i++) cols[i] = i;
-      return register(Merge.merge(l, r, cols, cols, allLeft, id_maps));
-    }
-
-    Frame mergeByTEColumn(Frame a, Frame b, int teColumnIndexOriginal, int teColumnIndex) {
-      return merge(a, b, new int[]{teColumnIndexOriginal}, new int[]{teColumnIndex});
+  
+    private void addNumeratorAndDenominatorTo(Frame leftFrame) {
+      Vec emptyNumerator = Vec.makeZero(leftFrame.numRows());
+      leftFrame.add("numerator", emptyNumerator);
+      Vec emptyDenominator = Vec.makeZero(leftFrame.numRows());
+      leftFrame.add("denominator", emptyDenominator);
     }
 
     Frame imputeWithMean(Frame fr, int columnIndex, double mean) {
@@ -322,7 +299,6 @@ public class TargetEncoder {
       fr.add(appendedColumnName, zeroVec);
       int encodingsColumnIdx = fr.find(appendedColumnName);
       new CalcEncodingsWithBlending(numeratorIndex, denominatorIndex, globalMeanForTargetClass, _blendingParams, encodingsColumnIdx).doAll(fr);
-      zeroVec.remove();
       return fr;
     }
 
@@ -373,7 +349,6 @@ public class TargetEncoder {
       fr.add(appendedColumnName, zeroVec);
       int encodingsColumnIdx = fr.find(appendedColumnName);
       new CalcEncodings(numeratorIndex, denominatorIndex, globalMeanForTargetClass, encodingsColumnIdx).doAll( fr);
-      zeroVec.remove();
       return fr;
     }
 
@@ -572,9 +547,9 @@ public class TargetEncoder {
                     Scope.exit();
                   }
                   // End of the preparation phase
-
+                  
                   dataWithMergedAggregationsK = mergeByTEAndFoldColumns(dataWithAllEncodings, holdoutEncodeMap, teColumnIndex, foldColumnIndex, teColumnIndexInEncodingMap);
-
+                  
                   Frame withEncodingsFrameK = calculateEncoding(dataWithMergedAggregationsK, encodingMapForCurrentTEColumn, targetColumnName, newEncodedColumnName, withBlendedAvg);
 
                   Frame withAddedNoiseEncodingsFrameK = applyNoise(withEncodingsFrameK, newEncodedColumnName, noiseLevel, seed);
@@ -587,10 +562,8 @@ public class TargetEncoder {
                   Frame imputedEncodingsFrameK = imputeWithMean(withAddedNoiseEncodingsFrameK, withAddedNoiseEncodingsFrameK.find(newEncodedColumnName), priorMeanFromTrainingDataset);
 
                   removeNumeratorAndDenominatorColumns(imputedEncodingsFrameK);
-
-                  dataWithAllEncodings.delete();
                   dataWithAllEncodings = imputedEncodingsFrameK;
-
+                  
                 } catch (Exception ex ) {
                   if (dataWithMergedAggregationsK != null) dataWithMergedAggregationsK.delete();
                   throw ex;
@@ -621,7 +594,6 @@ public class TargetEncoder {
 
                   removeNumeratorAndDenominatorColumns(imputedEncodingsFrameL);
 
-                  dataWithAllEncodings.delete();
                   dataWithAllEncodings = imputedEncodingsFrameL;
 
                 } catch (Exception ex) {
@@ -652,7 +624,6 @@ public class TargetEncoder {
 
                   removeNumeratorAndDenominatorColumns(imputedEncodingsFrameN);
 
-                  dataWithAllEncodings.delete();
                   dataWithAllEncodings = imputedEncodingsFrameN;
 
                 } catch (Exception ex) {

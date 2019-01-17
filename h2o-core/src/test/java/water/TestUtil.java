@@ -985,6 +985,10 @@ public class TestUtil extends Iced {
     return frame;
   }
 
+  public void printOutFrameAsTable(Frame fr) {
+    printOutFrameAsTable(fr, false, fr.numRows());
+  }
+  
   public void printOutFrameAsTable(Frame fr, boolean rollups, long limit) {
     assert limit <= Integer.MAX_VALUE;
     TwoDimTable twoDimTable = fr.toTwoDimTable(0, (int) limit, rollups);
