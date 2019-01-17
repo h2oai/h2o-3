@@ -539,7 +539,7 @@ private setReleaseJobProperties(final pipelineContext) {
             env.DO_RELEASE = true
         }
     }
-    sh 'env'
+    sh "printenv | sort"
 }
 
 private printReleaseConfiguration(final pipelineContext) {
