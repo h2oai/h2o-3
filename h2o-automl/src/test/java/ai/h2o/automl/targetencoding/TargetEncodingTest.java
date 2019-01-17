@@ -539,11 +539,9 @@ public class TargetEncodingTest extends TestUtil {
         double lambda3 = 1.0 / (1.0 + (Math.exp((20.0 - 2) / 10)));
         double te3 = (1.0 - lambda3) * globalMean + (lambda3 * 2 / 2);
 
-//        printOutFrameAsTable(resultWithEncoding, true, resultWithEncoding.numRows());
-
         assertEquals(te1, resultWithEncoding.vec(4).at(0), 1e-5);
-        assertEquals(te3, resultWithEncoding.vec(4).at(1), 1e-5);
-        assertEquals(te2, resultWithEncoding.vec(4).at(2), 1e-5);
+        assertEquals(te2, resultWithEncoding.vec(4).at(1), 1e-5);
+        assertEquals(te3, resultWithEncoding.vec(4).at(2), 1e-5);
 
 
       } finally {
@@ -678,7 +676,7 @@ public class TargetEncodingTest extends TestUtil {
 
       fr = new TestFrameBuilder()
               .withName("testFrame")
-              .withColNames("ColA", "ColB")
+              .withColNames("ColA", "fold")
               .withVecTypes(Vec.T_CAT, Vec.T_NUM)
               .withDataForCol(0, ar("a", "b", "a"))
               .withDataForCol(1, ar(1,1,2))
@@ -686,23 +684,28 @@ public class TargetEncodingTest extends TestUtil {
 
       Frame holdoutEncodingMap = new TestFrameBuilder()
               .withName("holdoutEncodingMap")
-              .withColNames("ColA", "ColC", "foldValueForMerge")
-              .withVecTypes(Vec.T_CAT, Vec.T_STR, Vec.T_NUM)
+              .withColNames("ColA", "foldValueForMerge", "numerator", "denominator")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
               .withDataForCol(0, ar("a", "b", "a"))
-              .withDataForCol(1, ar("yes", "no", "yes"))
-              .withDataForCol(2, ar(1, 2, 2))
+              .withDataForCol(1, ar(1, 2, 2))
+              .withDataForCol(2, ar(22, 55, 88))
+              .withDataForCol(3, ar(33, 66, 99))
               .build();
 
       String[] teColumns = {""};
       TargetEncoder tec = new TargetEncoder(teColumns);
 
       Frame merged = tec.mergeByTEAndFoldColumns(fr, holdoutEncodingMap, 0, 1, 0);
-//      printOutFrameAsTable(merged);
-      Vec expecteds = svec("yes", "yes", null);
-      assertStringVecEquals(expecteds, merged.vec("ColC"));
+      
+      Vec expectedStr = svec("22", null, "88");
+      Vec expected = expectedStr.toNumericVec();
+      Vec actualNumerator = merged.vec("numerator");
+      assertVecEquals(expected, actualNumerator, 1e-5);
 
-      expecteds.remove();
+      expectedStr.remove();
+      expected.remove();
       merged.delete();
+      actualNumerator.remove();
       holdoutEncodingMap.delete();
     }
 
