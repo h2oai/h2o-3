@@ -7,7 +7,7 @@ import water.*;
 import water.fvec.*;
 import water.rapids.Merge;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public class BroadcastJoinTest extends TestUtil {
 
@@ -58,6 +58,8 @@ public class BroadcastJoinTest extends TestUtil {
       assertEquals(42, joined.vec("numerator").at(1), 1e-5);
       assertEquals(44, joined.vec("denominator").at(0), 1e-5);
       assertEquals(84, joined.vec("denominator").at(1), 1e-5);
+      assertTrue(joined.vec("numerator").isNA(2));
+      assertTrue(joined.vec("denominator").isNA(2));
       Scope.exit();
       printOutFrameAsTable(fr, false, fr.numRows());
     } finally {
