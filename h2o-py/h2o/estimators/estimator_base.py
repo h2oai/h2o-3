@@ -155,6 +155,8 @@ class H2OEstimator(ModelBase):
         if not training_frame_exists:
             assert_is_type(y, str, None)
             ignored_columns_set = set()
+            if ignored_columns is None and "ignored_columns" in parms:
+                ignored_columns = parms['ignored_columns']
             if ignored_columns is not None:
                 if x is not None:
                     raise H2OValueError("Properties x and ignored_columns cannot be specified simultaneously")
