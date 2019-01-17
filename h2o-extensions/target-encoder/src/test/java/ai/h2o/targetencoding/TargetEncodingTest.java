@@ -598,8 +598,8 @@ public class TargetEncodingTest extends TestUtil {
         double te3 = (1.0 - lambda3) * globalMean + (lambda3 * 2 / 2);
 
         assertEquals(te1, resultWithEncoding.vec(4).at(0), 1e-5);
-        assertEquals(te3, resultWithEncoding.vec(4).at(1), 1e-5);
-        assertEquals(te2, resultWithEncoding.vec(4).at(2), 1e-5);
+        assertEquals(te2, resultWithEncoding.vec(4).at(1), 1e-5);
+        assertEquals(te3, resultWithEncoding.vec(4).at(2), 1e-5);
 
       } finally {
         Scope.exit();
@@ -736,32 +736,37 @@ public class TargetEncodingTest extends TestUtil {
       try {
         Scope.enter();
         final Frame fr = new TestFrameBuilder()
-                .withColNames("ColA", "ColB")
-                .withVecTypes(Vec.T_CAT, Vec.T_NUM)
-                .withDataForCol(0, ar("a", "b", "a"))
-                .withDataForCol(1, ar(1, 1, 2))
-                .build();
+              .withName("testFrame")
+              .withColNames("ColA", "fold")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM)
+              .withDataForCol(0, ar("a", "b", "a"))
+              .withDataForCol(1, ar(1,1,2))
+              .build();
         Scope.track(fr);
 
         Frame holdoutEncodingMap = new TestFrameBuilder()
-                .withColNames("ColA", "ColC", "foldValueForMerge")
-                .withVecTypes(Vec.T_CAT, Vec.T_STR, Vec.T_NUM)
-                .withDataForCol(0, ar("a", "b", "a"))
-                .withDataForCol(1, ar("yes", "no", "yes"))
-                .withDataForCol(2, ar(1, 2, 2))
-                .build();
+              .withName("holdoutEncodingMap")
+              .withColNames("ColA", "foldValueForMerge", "numerator", "denominator")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
+              .withDataForCol(0, ar("a", "b", "a"))
+              .withDataForCol(1, ar(1, 2, 2))
+              .withDataForCol(2, ar(22, 55, 88))
+              .withDataForCol(3, ar(33, 66, 99))
+              .build();
         Scope.track(holdoutEncodingMap);
 
         String[] teColumns = {""};
         TargetEncoder tec = new TargetEncoder(teColumns);
 
-        final Frame merged = tec.mergeByTEAndFoldColumns(fr, holdoutEncodingMap, 0, 1, 0);
+        Frame merged = tec.mergeByTEAndFoldColumns(fr, holdoutEncodingMap, 0, 1, 0);
         Scope.track(merged);
-//      printOutFrameAsTable(merged);
-        Vec expecteds = svec("yes", "yes", null);
-        assertStringVecEquals(expecteds, merged.vec("ColC"));
 
-        expecteds.remove();
+        Vec expectedStr = svec("22", null, "88");
+        Vec expected = expectedStr.toNumericVec();
+        Vec actualNumerator = merged.vec("numerator");
+        assertVecEquals(expected, actualNumerator, 1e-5);
+
+        expectedStr.remove();
       } finally {
         Scope.exit();
       }
