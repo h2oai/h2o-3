@@ -8,6 +8,8 @@ import hex.StackedEnsembleModel.StackedEnsembleParameters;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
+import hex.grid.Grid;
+import hex.grid.GridSearch;
 import hex.splitframe.ShuffleSplitFrame;
 import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
@@ -22,10 +24,7 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 
 import static hex.StackedEnsembleModel.StackedEnsembleParameters.*;
 import static org.junit.Assert.assertNotNull;
@@ -313,6 +312,108 @@ public class StackedEnsembleTest extends TestUtil {
             },
             false, DistributionFamily.bernoulli, MetalearnerAlgorithm.AUTO, true);
     }
+    
+    @Test
+    public void testBaseModelPredictionsCaching() {
+      Grid grid = null;
+      List<StackedEnsembleModel> seModels = new ArrayList<>();
+      List<Frame> frames = new ArrayList<>();
+      try {
+        Scope.enter();
+        long seed = 6 << 6 << 6;
+        Frame train = parse_test_file("./smalldata/junit/cars.csv");
+        String target = "economy (mpg)";
+        Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(
+            train,
+            new Key[]{
+                Key.make(train._key + "_train"),
+                Key.make(train._key + "_blending"),
+                Key.make(train._key + "_valid"),
+            },
+            new double[]{0.5, 0.3, 0.2},
+            seed);
+        train.remove();
+        train = splits[0];
+        Frame blend = splits[1];
+        Frame valid = splits[2];
+        frames.addAll(Arrays.asList(train, blend, valid));
+
+        //generate a few base models
+        GBMModel.GBMParameters params = new GBMModel.GBMParameters();
+        params._distribution = DistributionFamily.gaussian;
+        params._train = train._key;
+        params._response_column = target;
+        params._seed = seed;
+        Job<Grid> gridSearch = GridSearch.startGridSearch(null, params, new HashMap<String, Object[]>() {{
+          put("_ntrees", new Integer[]{3, 5});
+          put("_learn_rate", new Double[]{0.1, 0.2});
+        }});
+        grid = gridSearch.get();
+        Model[] models = grid.getModels();
+        Assert.assertEquals(4, models.length);
+
+        StackedEnsembleModel.StackedEnsembleParameters seParams = new StackedEnsembleModel.StackedEnsembleParameters();
+        seParams._distribution = DistributionFamily.bernoulli;
+        seParams._train = train._key;
+        seParams._blending = blend._key;
+        seParams._response_column = target;
+        seParams._base_models = grid.getModelKeys();
+        seParams._seed = seed;
+
+        //running a first blending SE without keeping predictions
+        seParams._keep_base_model_predictions = false;
+        StackedEnsemble seJob = new StackedEnsemble(seParams);
+        StackedEnsembleModel seModel = seJob.trainModel().get();
+        seModels.add(seModel);
+        Assert.assertNull(seModel._output._base_model_predictions_keys);
+
+        //running another SE, but this time caching predictions
+        seParams._keep_base_model_predictions = true;
+        seJob = new StackedEnsemble(seParams);
+        seModel = seJob.trainModel().get();
+        seModels.add(seModel);
+        Assert.assertNotNull(seModel._output._base_model_predictions_keys);
+        Assert.assertEquals(models.length, seModel._output._base_model_predictions_keys.size());
+        
+        Set<String> first_se_pred_keys = seModel._output._base_model_predictions_keys;
+        for (String k: first_se_pred_keys) {
+          Assert.assertNotNull("prediction key is not stored in DKV", DKV.get(k));
+        }
+        
+        //running again another SE, caching predictions, and checking that no new prediction is created
+        seParams._keep_base_model_predictions = true;
+        seJob = new StackedEnsemble(seParams);
+        seModel = seJob.trainModel().get();
+        seModels.add(seModel);
+        Assert.assertNotNull(seModel._output._base_model_predictions_keys);
+        Assert.assertEquals(models.length, seModel._output._base_model_predictions_keys.size());
+        Assert.assertEquals(first_se_pred_keys, seModel._output._base_model_predictions_keys);
+        
+        //running a last SE, with validation frame, and check that new predictions are added
+        seParams._keep_base_model_predictions = true;
+        seParams._valid = valid._key;
+        seJob = new StackedEnsemble(seParams);
+        seModel = seJob.trainModel().get();
+        seModels.add(seModel);
+        Assert.assertNotNull(seModel._output._base_model_predictions_keys);
+        Assert.assertEquals(models.length * 2, seModel._output._base_model_predictions_keys.size());
+        Assert.assertTrue(seModel._output._base_model_predictions_keys.containsAll(first_se_pred_keys));
+        
+        seModel.deleteBaseModelPredictions();
+        Assert.assertNull(seModel._output._base_model_predictions_keys);
+        for (String k: first_se_pred_keys) {
+          Assert.assertNull(DKV.get(k));
+        }
+      } finally {
+        Scope.exit();
+        if (grid != null) {
+          grid.delete();
+        }
+        for (Model m: seModels) m.delete();
+        for (Frame f: frames) f.remove();
+      }
+    }
+
 
 
     // ==========================================================================

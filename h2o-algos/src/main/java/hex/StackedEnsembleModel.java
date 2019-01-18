@@ -445,6 +445,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         else
           key.remove();
       }
+      _output._base_model_predictions_keys = null;
     }
   }
 
