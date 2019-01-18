@@ -76,7 +76,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             ],
             'redhat': [
                 COORDINATE_DESCENT: [
-                    'train_time_min': 34,
+                    'train_time_min': 33,
                     'train_time_max': 40
                 ],
                 IRLSM: [
@@ -132,7 +132,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                     'train_time_max': 32
                 ],
                 200: [
-                    'train_time_min': 125,
+                    'train_time_min': 124,
                     'train_time_max': 140
                 ]
             ],
@@ -172,7 +172,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             ],
             'higgs': [
                 100: [
-                    'train_time_min': 200,
+                    'train_time_min': 198,
                     'train_time_max': 218
                 ]
             ]
