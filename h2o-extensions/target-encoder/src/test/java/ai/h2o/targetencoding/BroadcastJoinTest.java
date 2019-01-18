@@ -6,8 +6,11 @@ import org.junit.Test;
 import water.*;
 import water.fvec.*;
 import water.rapids.Merge;
+import water.util.IcedHashMap;
 
 import static org.junit.Assert.*;
+import static ai.h2o.automl.targetencoding.BroadcastJoinForTargetEncoder.*;
+
 
 public class BroadcastJoinTest extends TestUtil {
 
@@ -61,7 +64,6 @@ public class BroadcastJoinTest extends TestUtil {
       assertTrue(joined.vec("numerator").isNA(2));
       assertTrue(joined.vec("denominator").isNA(2));
       Scope.exit();
-      printOutFrameAsTable(fr, false, fr.numRows());
     } finally {
       if(rightFr != null) rightFr.delete();
     }
@@ -107,6 +109,30 @@ public class BroadcastJoinTest extends TestUtil {
     } finally {
       if(rightFr != null) rightFr.delete();
     }
+  }
+
+  @Test
+  public void icedHashMapPutAllTest() {
+
+    IcedHashMap<CompositeLookupKey, EncodingData> mapOne = new IcedHashMap<>();
+    IcedHashMap<CompositeLookupKey, EncodingData> mapTwo = new IcedHashMap<>();
+
+    CompositeLookupKey keyOne = new CompositeLookupKey("a", 0);
+    EncodingData valueOne = new EncodingData(11, 22);
+    mapOne.put(keyOne, valueOne);
+    
+    CompositeLookupKey keyTwo = new CompositeLookupKey("b", 0);
+    EncodingData valueTwo = new EncodingData(11, 33);
+    mapTwo.put(keyTwo, valueTwo);
+
+    IcedHashMap<CompositeLookupKey, EncodingData> finalMap = new IcedHashMap<>();
+    
+    finalMap.putAll(mapOne);
+    finalMap.putAll(mapTwo);
+    
+    assertTrue(finalMap.containsKey(keyOne) && finalMap.containsKey(keyTwo));
+    assertEquals(finalMap.get(keyOne) , valueOne);
+    assertEquals(finalMap.get(keyTwo) , valueTwo);
   }
 
   // Shows that we will loose original order due to grouping otherwise this(swapping left and right frames) would be a possible workaround 

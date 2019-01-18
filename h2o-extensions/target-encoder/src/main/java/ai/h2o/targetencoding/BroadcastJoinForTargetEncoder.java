@@ -53,12 +53,10 @@ class BroadcastJoinForTargetEncoder {
 
   static class FrameWithEncodingDataToHashMap extends MRTask<FrameWithEncodingDataToHashMap> {
 
-    IcedHashMap<CompositeLookupKey, EncodingData> getEncodingDataMap() {
-      return _encodingDataMap;
-    }
-
-    IcedHashMap<CompositeLookupKey, EncodingData> _encodingDataMap = new IcedHashMap<>();
+    IcedHashMap<CompositeLookupKey, EncodingData> _encodingDataMapPerNode = new IcedHashMap<>();
     int _categoricalColumnIdx, _foldColumnIdx, _numeratorIdx, _denominatorIdx;
+
+    IcedHashMap<CompositeLookupKey, EncodingData> _encodingDataMapFinal = new IcedHashMap<>();
 
     FrameWithEncodingDataToHashMap(int categoricalColumnIdx, int foldColumnId, int numeratorIdx, int denominatorIdx) {
       this._categoricalColumnIdx = categoricalColumnIdx;
@@ -69,6 +67,7 @@ class BroadcastJoinForTargetEncoder {
 
     @Override
     public void map(Chunk[] cs) {
+      System.out.println(Thread.currentThread().getName());
       Chunk categoricalChunk = cs[_categoricalColumnIdx];
       Chunk numeratorChunk = cs[_numeratorIdx];
       Chunk denominatorChunk = cs[_denominatorIdx];
@@ -76,8 +75,21 @@ class BroadcastJoinForTargetEncoder {
         long levelValue = categoricalChunk.at8(i);
         String factor = categoricalChunk.vec().factor(levelValue);
         long foldValue = _foldColumnIdx != -1 ? cs[_foldColumnIdx].at8(i) : -1;
-        _encodingDataMap.put(new CompositeLookupKey(factor, foldValue), new EncodingData(numeratorChunk.at8(i), denominatorChunk.at8(i)));
+        _encodingDataMapPerNode.put(new CompositeLookupKey(factor, foldValue), new EncodingData(numeratorChunk.at8(i), denominatorChunk.at8(i)));
       }
+    }
+
+    @Override
+    public void reduce(FrameWithEncodingDataToHashMap mrt) {
+      _encodingDataMapFinal.putAll(mrt.getEncodingDataMap());
+    }
+    
+    IcedHashMap<CompositeLookupKey, EncodingData> getEncodingDataMap() {
+      return _encodingDataMapPerNode;
+    }
+
+    public IcedHashMap<CompositeLookupKey, EncodingData> getEncodingDataMapFinal() {
+      return _encodingDataMapFinal;
     }
   }
 
