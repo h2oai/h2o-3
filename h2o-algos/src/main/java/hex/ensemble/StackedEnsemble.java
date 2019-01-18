@@ -188,7 +188,10 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
     }
 
     protected abstract StackedEnsembleModel.StackingStrategy strategy();
-    
+
+    /**
+     * @return the frame that is used to compute the predictions for the level-one training frame.
+     */
     protected abstract Frame getActualTrainingFrame();
     
     protected abstract Frame getPredictionsForBaseModel(Model model, Frame actualsFrame, boolean isTrainingFrame);
@@ -249,7 +252,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         metalearner.compute();
       } else {
         throw new H2OIllegalArgumentException("Invalid `metalearner_algorithm`. Passed in " + metalearnerAlgoSpec + 
-            " but must be one of 'glm', 'gbm', 'randomForest', or 'deeplearning'.");
+            " but must be one of " + Arrays.toString(MetalearnerAlgorithm.values()));
       }
     } // computeImpl
   }
