@@ -1,8 +1,12 @@
 package ai.h2o.automl.targetencoding;
 
+import com.pholser.junit.quickcheck.Property;
+import com.pholser.junit.quickcheck.generator.InRange;
+import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.*;
 import water.rapids.Merge;
@@ -11,9 +15,8 @@ import water.util.IcedHashMap;
 import static org.junit.Assert.*;
 import static ai.h2o.automl.targetencoding.BroadcastJoinForTargetEncoder.*;
 
-
+@RunWith(JUnitQuickcheck.class)
 public class BroadcastJoinTest extends TestUtil {
-
 
   @BeforeClass
   public static void setup() {
@@ -67,6 +70,27 @@ public class BroadcastJoinTest extends TestUtil {
     } finally {
       if(rightFr != null) rightFr.delete();
     }
+  }
+
+  class CompositeLookupKeyTest {
+    private String _levelValue;
+    private Long _foldValue;
+
+    CompositeLookupKeyTest(String levelValue, long fold) {
+      this._levelValue = levelValue;
+      this._foldValue = fold;
+    }
+  }
+
+  @Property(trials = 1000)
+  public void hashCodeForLocalClassTest(String randomString, @InRange(minInt = 0, maxInt = 100)int randomInt) {
+    String levelValue = randomString.length() == 0 ? "a" : randomString.substring(0,1);
+    System.out.println(levelValue + randomInt);
+    CompositeLookupKeyTest lookupKey = new CompositeLookupKeyTest(levelValue, randomInt);
+    int expected = lookupKey.hashCode();
+    CompositeLookupKeyTest lookupKey2 = new CompositeLookupKeyTest(levelValue, randomInt);
+    int actual = lookupKey2.hashCode();
+    assertNotEquals(expected, actual);
   }
 
   @Test
