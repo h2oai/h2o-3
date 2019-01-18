@@ -10,8 +10,10 @@ import water.util.FileUtils;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.List;
 
 import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
@@ -144,6 +146,50 @@ public class PersistS3Test extends TestUtil {
         frame.remove();
       }
     }
-    
+
+  }
+
+  @Test
+  public void testS3calcTypeaheadMatchesSingleFile() throws Exception {
+    // This test is only runnable in environment with Amazon credentials properly set {AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY}
+    final String accessKey = System.getenv(AWS_ACCESS_KEY_PROPERTY_NAME);
+    final String secretKey = System.getenv(AWS_SECRET_KEY_PROPERTY_NAME);
+
+    assumeTrue(accessKey != null);
+    assumeTrue(secretKey != null);
+
+    StringBuilder s3UrlBuilder = new StringBuilder("s3://");
+    s3UrlBuilder.append(accessKey);
+    s3UrlBuilder.append(":");
+    s3UrlBuilder.append(secretKey);
+    s3UrlBuilder.append("@test.0xdata.com/h2o-unit-tests/iris.csv");
+
+    PersistS3 persistS3 = new PersistS3();
+    final List<String> strings = persistS3.calcTypeaheadMatches(s3UrlBuilder.toString(), 10);
+
+    assertNotNull(strings);
+    assertEquals(1,strings.size()); // Only single file returned
+    assertEquals(s3UrlBuilder.toString(), strings.get(0));
+  }
+
+  @Test
+  public void testS3calcTypeaheadMatchesBucketOnly() {
+    // This test is only runnable in environment with Amazon credentials properly set {AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY}
+    final String accessKey = System.getenv(AWS_ACCESS_KEY_PROPERTY_NAME);
+    final String secretKey = System.getenv(AWS_SECRET_KEY_PROPERTY_NAME);
+
+    assumeTrue(accessKey != null);
+    assumeTrue(secretKey != null);
+
+    StringBuilder s3UrlBuilder = new StringBuilder("s3://");
+    s3UrlBuilder.append(accessKey);
+    s3UrlBuilder.append(":");
+    s3UrlBuilder.append(secretKey);
+    s3UrlBuilder.append("@test.0xdata.com");
+
+    PersistS3 persistS3 = new PersistS3();
+    final List<String> strings = persistS3.calcTypeaheadMatches(s3UrlBuilder.toString(), 10);
+
+    assertNotNull(strings);
   }
 }

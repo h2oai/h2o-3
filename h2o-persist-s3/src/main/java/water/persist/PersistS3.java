@@ -40,7 +40,6 @@ public final class PersistS3 extends Persist {
 
   private static final String KEY_PREFIX = "s3://";
   private static final int KEY_PREFIX_LEN = KEY_PREFIX.length();
-
   private static final Object _lock = new Object();
   private static volatile AmazonS3 _s3;
   private static volatile byte[] _credentialsDigest = null;
@@ -85,7 +84,8 @@ public final class PersistS3 extends Persist {
     }
 
     synchronized (_lock) {
-      if (_s3 == null || digest != _credentialsDigest) {
+      if (_s3 == null || !Arrays.equals(digest,_credentialsDigest)) {
+        _credentialsDigest = digest;
         try {
           H2OAWSCredentialsProviderChain c = new H2OAWSCredentialsProviderChain(accessKeyId, accessSecretKey);
           ClientConfiguration cc = s3ClientCfg();
@@ -114,12 +114,14 @@ public final class PersistS3 extends Persist {
       final List<AWSCredentialsProvider> providers = new ArrayList<>();
       if (accessKeyId != null && accessSecretKey != null) {
         providers.add(new StaticCredentialsProvider(new BasicAWSCredentials(accessKeyId, accessSecretKey)));
+      } else {
+        // There is no need to specify other providers once the credentials are directly known (e.g. from URL)
+        providers.add(new H2OArgCredentialsProvider());
+        providers.add(new InstanceProfileCredentialsProvider());
+        providers.add(new EnvironmentVariableCredentialsProvider());
+        providers.add(new SystemPropertiesCredentialsProvider());
+        providers.add(new ProfileCredentialsProvider());
       }
-      providers.add(new H2OArgCredentialsProvider());
-      providers.add(new InstanceProfileCredentialsProvider());
-      providers.add(new EnvironmentVariableCredentialsProvider());
-      providers.add(new SystemPropertiesCredentialsProvider());
-      providers.add(new ProfileCredentialsProvider());
       return providers;
     }
 
@@ -378,6 +380,15 @@ public final class PersistS3 extends Persist {
               .append("accessSecretKey", accessSecretKey)
               .toString();
     }
+    
+    public String concatCredentialsToURIForm(){
+      if(accessKeyId == null || accessSecretKey == null) return null;
+      final StringBuilder stringBuilder = new StringBuilder(accessKeyId);
+      stringBuilder.append(':');
+      stringBuilder.append(accessSecretKey);
+      
+      return stringBuilder.toString();
+    }
   }
 
   private static String[] decodeKeyImpl(Key k) {
@@ -477,10 +488,14 @@ public final class PersistS3 extends Persist {
     long _lastUpdated = 0;
     long _timeoutMillis = 5*60*1000;
     String [] _cache = new String[0];
+    protected AmazonS3 _client;
 
-    public boolean containsKey(String k) { return Arrays.binarySearch(_cache,k) >= 0;}
+    public Cache(final AmazonS3 client) {
+      _client = client;
+    }
+    
     protected String [] update(){
-      List<Bucket> l = getClient().listBuckets();
+      List<Bucket> l = getCacheClient().listBuckets();
       String [] cache = new String[l.size()];
       int i = 0;
       for (Bucket b : l) cache[i++] = b.getName();
@@ -488,10 +503,23 @@ public final class PersistS3 extends Persist {
       return _cache = cache;
     }
 
+    protected AmazonS3 getCacheClient() {
+      return _client;
+    }
 
-    protected String wrapKey(String s) {return "s3://" + s;}
 
-    public ArrayList<String> fetch(String filter, int limit) {
+    protected String wrapKey(String s, final String credentials) {
+      StringBuilder stringBuilder = new StringBuilder("s3://");
+      if(credentials != null && !credentials.isEmpty()){
+        stringBuilder.append(credentials);
+        stringBuilder.append('@');
+      }
+      stringBuilder.append(s);
+      
+      return stringBuilder.toString();
+    }
+
+    public ArrayList<String> fetch(String filter, int limit, final String credentials) {
       String [] cache = _cache;
       if(System.currentTimeMillis() > _lastUpdated + _timeoutMillis) {
         cache = update();
@@ -501,7 +529,7 @@ public final class PersistS3 extends Persist {
       int i = Arrays.binarySearch(cache, filter);
       if (i < 0) i = -i - 1;
       while (i < cache.length && cache[i].startsWith(filter) && (limit < 0 || res.size() < limit))
-        res.add(wrapKey(cache[i++]));
+        res.add(wrapKey(cache[i++], credentials));
       return res;
     }
   }
@@ -510,14 +538,28 @@ public final class PersistS3 extends Persist {
 
     private final String _keyPrefix;
     private final String _bucket;
-    public KeyCache(String bucket){
+
+    public KeyCache(String bucket, final AmazonS3 client, String credentials) {
+      super(client);
       _bucket = bucket;
-      _keyPrefix = super.wrapKey(bucket) + "/";
+      _keyPrefix = assembleKeyPrefix(bucket, credentials);
+    }
+    
+    private String assembleKeyPrefix(final String bucket, final String credentials){
+      StringBuilder stringBuilder = new StringBuilder("s3://");
+      if(credentials != null && !credentials.isEmpty()){
+        stringBuilder.append(credentials);
+        stringBuilder.append('@');
+      }
+      stringBuilder.append(bucket);
+      stringBuilder.append('/');
+      
+      return stringBuilder.toString();
     }
 
     @Override
     protected String [] update(){
-      AmazonS3 s3 = getClient();
+      AmazonS3 s3 = getCacheClient();
       ObjectListing currentList = s3.listObjects(_bucket,"");
       ArrayList<String> res = new ArrayList<>();
       processListing(currentList, res, null, false);
@@ -528,28 +570,35 @@ public final class PersistS3 extends Persist {
       Collections.sort(res);
       return _cache = res.toArray(new String[res.size()]);
     }
+
     @Override
-    protected String wrapKey(String s) {
+    protected String wrapKey(String s, String credentials) {
       return _keyPrefix + s;
     }
   }
 
 
-
-  Cache _bucketCache = new Cache();
+  HashMap<String, Cache> _bucketCaches = new HashMap<>();
   HashMap<String,KeyCache> _keyCaches = new HashMap<>();
   @Override
   public List<String> calcTypeaheadMatches(String filter, int limit) {
     final S3Path s3Path = decodePath(filter);
+    final AmazonS3 client = getClient(s3Path.accessKeyId, s3Path.accessSecretKey);
     if (s3Path.itemName != null) { // bucket and key prefix
       if (_keyCaches.get(s3Path.bucketName) == null) {
-        if (!getClient(s3Path.accessKeyId, s3Path.accessSecretKey).doesBucketExist(s3Path.bucketName))
+        if (!client.doesBucketExist(s3Path.bucketName))
           return new ArrayList<>();
-        _keyCaches.put(s3Path.bucketName, new KeyCache(s3Path.bucketName));
+        _keyCaches.put(s3Path.bucketName, new KeyCache(s3Path.bucketName, client, s3Path.concatCredentialsToURIForm()));
       }
-      return _keyCaches.get(s3Path.bucketName).fetch(s3Path.itemName, limit);
+      return _keyCaches.get(s3Path.bucketName).fetch(s3Path.itemName, limit, s3Path.concatCredentialsToURIForm());
     } else { // no key, only bucket prefix
-      return _bucketCache.fetch(s3Path.bucketName, limit);
+      Cache bucketCache = _bucketCaches.get(s3Path.bucketName);
+      if (bucketCache == null) {
+        bucketCache = new Cache(client);
+        _bucketCaches.put(s3Path.bucketName, bucketCache);
+      }
+
+      return bucketCache.fetch(s3Path.bucketName, limit, s3Path.concatCredentialsToURIForm());
     }
   }
 }
