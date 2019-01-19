@@ -2,6 +2,76 @@
 
 ## H2O
 
+### Xu (3.22.1.2) - 1/18/2019
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-xu/2/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6109'>PUBDEV-6109</a>] - In Flow, fixed an issue that caused POJOs, MOJOs, and genmodel.jar to fail to download. This occurred when Flow was launched via Enterprise Steam and in any deployment where user_context was specified.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6177'>PUBDEV-6177</a>] - Fixed an issue that caused H2OTree to fail with Isolation Forest models trained on data with categorical columns. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6178'>PUBDEV-6178</a>] - When a new tree is assembled from a model, the root node now includes information about the split feature in the description array.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6181'>PUBDEV-6181</a>] -  Fixed an issue where Flow failed to provide the ability to ignore certain columns.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6192'>PUBDEV-6192</a>] - In Flow, fixed an issue where users were not able to select a frame when splitting a dataset. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6197'>PUBDEV-6197</a>] - Setting the `ignored_columns` parameter via the Python API now works correctly.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6198'>PUBDEV-6198</a>] - Fixed an issue that caused H2O to hang in Sparkling Water deployments.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6200'>PUBDEV-6200</a>] - Splitting frames now works correctly in Flow. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6201'>PUBDEV-6201</a>] - Import SQL Table now works correctly in Flow.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6203'>PUBDEV-6203</a>] - Fixed an issue with imports in Flow.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6204'>PUBDEV-6204</a>] - Fixed interaction pairs for GLM in Flow.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6206'>PUBDEV-6206</a>] - Fixed broken "Combine predictions with frame" in Flow.
+</li>
+</ul>
+    
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6146'>PUBDEV-6146</a>] - Added support for HDP 3.1.
+</li>
+</ul>
+        
+<h4>Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6171'>PUBDEV-6171</a>] - Fixed the pyunit_pubdev_3500_max_k_large.py unit test.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6172'>PUBDEV-6172</a>] - Fixed the runit_PUBDEV_5705_drop_columns_parser_gz.R unit test. 
+</li>
+</ul>
+    
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6167'>PUBDEV-6167</a>] - Increased the XGBoost stress test timeout.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6188'>PUBDEV-6188</a>] - Implemented secret key credentials for s3:// AWS protocol. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6205'>PUBDEV-6205</a>] - Renamed .jade files to .pug. 
+</li>
+</ul>
+                
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6165'>PUBDEV-6165</a>] - Added HDP 3.0 and 3.1 to list of supported Hadoop versions.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6190'>PUBDEV-6190</a>] - Updated wording for Kmeans Scoring History Graph. This graph shows the number of iterations vs. within the cluster’s sum of squares.
+</li>
+</ul>
+
+
 ### Xu (3.22.1.1) - 12/28/2018
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-xu/1/index.html</a>
@@ -63,17 +133,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/1/index.htm
 </li>
 </ul>
 
-### Xia (3.22.0.5) - 1/16/2019
-
-Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xia/5/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-xia/5/index.html</a>
-
-<h4>Bug</h4>
-
-<ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6198'>PUBDEV-6198</a>] - Fixed an H2O hang issue in Sparkling Water deployments.
-</li>
-</ul>
-
 ### Xia (3.22.0.4) - 1/4/2019
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xia/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-xia/4/index.html</a>
@@ -83,7 +142,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xia/4/index.ht
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6109'>PUBDEV-6109</a>] - In Flow, fixed an issue that caused POJOs, MOJOs, and genmodel.jar to fail to download. This occurred when Flow was launched via Enterprise Steam and in any deployment where user_context was specified.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6166'>PUBDEV-6166</a>] - On the external backedn, H2O now explicitly passes the timestamp from the Spark Driver node.
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6166'>PUBDEV-6166</a>] - On the external backend, H2O now explicitly passes the timestamp from the Spark Driver node.
 </li>
 </ul>
 
