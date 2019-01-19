@@ -11,31 +11,31 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/2/index.htm
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6109'>PUBDEV-6109</a>] - In Flow, fixed an issue that caused POJOs, MOJOs, and genmodel.jar to fail to download. This occurred when Flow was launched via Enterprise Steam and in any deployment where user_context was specified.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6162'>PUBDEV-6162</a>] - Fixed an issue that made users unable to parse data from S3 bucket. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6162'>PUBDEV-6162</a>] - Fixed an issue that made users unable to parse data from S3 bucket when using URL-encoded credentials in S3A URLs. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6177'>PUBDEV-6177</a>] - Fixed an issue that caused H2OTree to fail with Isolation Forest models trained on data with categorical columns. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6178'>PUBDEV-6178</a>] - When a new tree is assembled from a model, the root node now includes information about the split feature in the description array.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6181'>PUBDEV-6181</a>] -  Fixed an issue where Flow failed to provide the ability to ignore certain columns. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6181'>PUBDEV-6181</a>] -  Fixed an issue where Flow failed to provide the ability to ignore certain columns.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6187'>PUBDEV-6187</a>] -  H2O Flow now launches correctly from Rstudio Server. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6187'>PUBDEV-6187</a>] - H2O Flow now launches correctly from Rstudio Server. (STILL OPEN)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6192'>PUBDEV-6192</a>] - In Flow, fixed an issue where users were not able to select a frame when splitting a dataset. 
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6197'>PUBDEV-6197</a>] - Setting the `ignored_columns` parameter via the Python API now works correctly. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6197'>PUBDEV-6197</a>] - Setting the `ignored_columns` parameter via the Python API now works correctly.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6198'>PUBDEV-6198</a>] - Fixed an issue that caused H2O to hang in Sparkling Water deployments.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6200'>PUBDEV-6200</a>] - Splitting frames now works correctly in Flow. 
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6201'>PUBDEV-6201</a>] - Import SQL Table now works correctly in Flow. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6201'>PUBDEV-6201</a>] - Import SQL Table now works correctly in Flow.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6203'>PUBDEV-6203</a>] - Fixed an issue with imports in Flow. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6203'>PUBDEV-6203</a>] - Fixed an issue with imports in Flow.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6204'>PUBDEV-6204</a>] - Fixed interaction pairs for GLM in Flow. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6204'>PUBDEV-6204</a>] - Fixed interaction pairs for GLM in Flow.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6206'>PUBDEV-6206</a>] - Fixed broken "Combine predictions with frame" in Flow. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6206'>PUBDEV-6206</a>] - Fixed broken "Combine predictions with frame" in Flow.
 </li>
 </ul>
     
@@ -51,7 +51,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/2/index.htm
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6171'>PUBDEV-6171</a>] - Fixed the pyunit_pubdev_3500_max_k_large.py unit test.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6172'>PUBDEV-6172</a>] - Fixed the runit_PUBDEV_5705_drop_columns_parser_gz.R unit test. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6172'>PUBDEV-6172</a>] - Fixed the runit_PUBDEV_5705_drop_columns_parser_gz.R unit test. 
 </li>
 </ul>
     
@@ -62,7 +62,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/2/index.htm
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6188'>PUBDEV-6188</a>] - Implemented secret key credentials for s3:// AWS protocol. (STILL OPEN)
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6205'>PUBDEV-6205</a>] - Renamed .jade files to .pug. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6205'>PUBDEV-6205</a>] - Renamed .jade files to .pug. 
 </li>
 </ul>
                 
