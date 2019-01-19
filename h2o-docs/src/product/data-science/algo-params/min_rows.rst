@@ -9,7 +9,9 @@ Description
 
 This option specifies the minimum number of observations for a leaf in order to split. For example, if a user specifies ``min_rows = 500``, and the data has 500 TRUEs and 400 FALSEs, then the algorithm won’t split because it requires 500 responses on both sides. In addition, a single tree will stop splitting when there are no more splits that satisfy the ``min_rows`` parameter, if it reaches ``max_depth``, or if there are no splits that satisfy this ``min_split_improvement`` parameter.
 
-The default value for ``min_rows`` is 10, so this option rarely affects the GBM splits because GBMs are typically shallow, but the concept still applies.
+For DRF, XGBoost, and Isolation Forest, this value defaults to 1.
+
+For GBM, the default value for ``min_rows`` is 10, so this option rarely affects the GBM splits because GBMs are typically shallow, but the concept still applies.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
