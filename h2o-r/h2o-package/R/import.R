@@ -305,3 +305,25 @@ h2o.loadModel <- function(path) {
   res
   h2o.getModel(res$model_id$name)
 }
+
+#'
+#' Creates a new Amazon S3 client internally with specified credentials.
+#'
+#' There are no validations done to the credentials. Incorrect credentials are thus revealed with first S3 import call.
+#'
+#' @param secretKeyId Amazon S3 Secret Key ID (provided by Amazon)
+#' @param secretAccessKey Amazon S3 Secret Access Key (provided by Amazon)
+#' 
+#' @export
+h2o.setS3Credentials <- function(secretKeyId, secretAccessKey){
+  if(is.null(secretKeyId)) stop("Secret key ID must not be null.")
+  if(is.null(secretAccessKey)) stop("Secret acces key must not be null.")
+  if(!is.character(secretKeyId) || nchar(secretKeyId) == 0) stop("Secret key ID must be a non-empty character string.")
+  if(!is.character(secretAccessKey) || nchar(secretAccessKey) == 0) stop("Secret access key must a non-empty character string.")
+  parms <- list()
+  parms$secret_key_id <- secretKeyId
+  parms$secret_access_key = secretAccessKey
+  
+  res <- .h2o.__remoteSend("Persist", method = "GET", .params = parms, h2oRestApiVersion = 3)
+  print("Credentials successfully set.")
+}
