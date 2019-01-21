@@ -6,6 +6,7 @@ import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
 import com.amazonaws.auth.*;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+import com.amazonaws.internal.StaticCredentialsProvider;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
@@ -26,6 +27,9 @@ import java.io.InputStream;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
 
@@ -35,13 +39,41 @@ public final class PersistS3 extends Persist {
 
   private static final String KEY_PREFIX = "s3://";
   private static final int KEY_PREFIX_LEN = KEY_PREFIX.length();
+  private static final int LOCK_TIMEOUT_SEC = 60;
 
-  private static final Object _lock = new Object();
+  private static final Lock _lock = new ReentrantLock();
+  
   private static volatile AmazonS3 _s3;
+
+  public static void changeClientCredentials(final String accesKeyId, final String accessSecretKey) {
+
+    try {
+      final boolean lockAcquired = _lock.tryLock(LOCK_TIMEOUT_SEC, TimeUnit.SECONDS);
+      if (!lockAcquired) {
+        throw new IllegalStateException(String.format("Could not acquire lock to change S3 client in %d seconds", LOCK_TIMEOUT_SEC));
+      }
+
+      final H2OAWSCredentialsProviderChain credentialsProviderChain = new H2OAWSCredentialsProviderChain(accesKeyId, accessSecretKey);
+      final ClientConfiguration clientConfiguration = new ClientConfiguration();
+      _s3 = configureClient(new AmazonS3Client(credentialsProviderChain, clientConfiguration));
+      _bucketCache = new Cache();
+      _keyCaches = new HashMap<>();
+    } catch (InterruptedException e) {
+      throw new IllegalStateException("Interrupt signal received while waiting to acqure S3 client locks.", e);
+    } finally {
+      _lock.unlock();
+    }
+
+  }
+  
 
   public static AmazonS3 getClient() {
     if( _s3 == null ) {
-      synchronized( _lock ) {
+      try {
+        final boolean lockAcquired = _lock.tryLock(LOCK_TIMEOUT_SEC, TimeUnit.SECONDS);
+        if (!lockAcquired)
+          throw new IllegalStateException(String.format("Could not acquire lock to change S3 client in %d seconds", LOCK_TIMEOUT_SEC));
+
         if( _s3 == null ) {
           try {
             H2OAWSCredentialsProviderChain c = new H2OAWSCredentialsProviderChain();
@@ -55,6 +87,10 @@ public final class PersistS3 extends Persist {
             throw new RuntimeException(msg.toString());
           }
         }
+      } catch (InterruptedException e) {
+        throw new IllegalStateException("Interrupt signal received while waiting to acqure S3 client locks in getClient() method.", e);
+      } finally {
+        _lock.unlock();
       }
     }
     return _s3;
@@ -64,12 +100,36 @@ public final class PersistS3 extends Persist {
    * credentials provider.
    */
   public static class H2OAWSCredentialsProviderChain extends AWSCredentialsProviderChain {
+
+    public H2OAWSCredentialsProviderChain(final String accessKeyId, final String accessSecretKey) {
+      super(constructStaticCredentialsProviderChain(accessKeyId, accessSecretKey));
+
+    }
+
     public H2OAWSCredentialsProviderChain() {
-      super(new H2OArgCredentialsProvider(),
-          new InstanceProfileCredentialsProvider(),
-          new EnvironmentVariableCredentialsProvider(),
-          new SystemPropertiesCredentialsProvider(),
-          new ProfileCredentialsProvider());
+      super(constructProviderChain());
+
+    }
+
+    private static List<AWSCredentialsProvider> constructStaticCredentialsProviderChain(final String accesKeyId, final String accesSecretKey) {
+      final List<AWSCredentialsProvider> providers = new ArrayList<>();
+      providers.add(new StaticCredentialsProvider(new BasicAWSCredentials(accesKeyId, accesSecretKey)));
+      return providers;
+    }
+
+
+    private static List<AWSCredentialsProvider> constructProviderChain() {
+      final List<AWSCredentialsProvider> providers = new ArrayList<>();
+
+      // There is no need to specify other providers once the credentials are directly known (e.g. from URL)
+      providers.add(new H2OArgCredentialsProvider());
+      providers.add(new InstanceProfileCredentialsProvider());
+      providers.add(new EnvironmentVariableCredentialsProvider());
+      providers.add(new SystemPropertiesCredentialsProvider());
+      providers.add(new ProfileCredentialsProvider());
+
+      return providers;
+
     }
   }
 
@@ -453,21 +513,45 @@ public final class PersistS3 extends Persist {
   }
 
 
-
-  Cache _bucketCache = new Cache();
-  HashMap<String,KeyCache> _keyCaches = new HashMap<>();
+  static volatile Cache _bucketCache = new Cache();
+  static volatile HashMap<String, KeyCache> _keyCaches = new HashMap<>();
   @Override
   public List<String> calcTypeaheadMatches(String filter, int limit) {
     String [] parts = decodePath(filter);
     if(parts[1] != null) { // bucket and key prefix
-      if(_keyCaches.get(parts[0]) == null) {
-        if(!getClient().doesBucketExist(parts[0]))
-          return new ArrayList<>();
-        _keyCaches.put(parts[0], new KeyCache(parts[0]));
+      try {
+        final boolean lockAcquired = _lock.tryLock(LOCK_TIMEOUT_SEC, TimeUnit.SECONDS);
+        if (!lockAcquired) {
+          throw new IllegalStateException(String.format("Unable to obtain lock to find file in key cache in %d seconds.", LOCK_TIMEOUT_SEC));
+        }
+        if (_keyCaches.get(parts[0]) == null) {
+          if (!getClient().doesBucketExist(parts[0])) return new ArrayList<>();
+          
+          _keyCaches.put(parts[0], new KeyCache(parts[0]));
+
+          return _keyCaches.get(parts[0]).fetch(parts[1], limit);
+        } else {
+          return _keyCaches.get(parts[0]).fetch(parts[1],limit);
+        }
+        
+      } catch (InterruptedException e) {
+        throw new IllegalStateException(String.format("Obtained interrupt signal while waiting for lock in order to access bucket cache.", LOCK_TIMEOUT_SEC), e);
+      } finally {
+        _lock.unlock();
       }
-      return _keyCaches.get(parts[0]).fetch(parts[1],limit);
+
     } else { // no key, only bucket prefix
-      return _bucketCache.fetch(parts[0],limit);
+      try {
+        final boolean lockAcquired = _lock.tryLock(LOCK_TIMEOUT_SEC, TimeUnit.SECONDS);
+        if (!lockAcquired) {
+          throw new IllegalStateException(String.format("Unable to obtain lock to find file in bucket cache in %d seconds.", LOCK_TIMEOUT_SEC));
+        }
+        return _bucketCache.fetch(parts[0], limit);
+      } catch (InterruptedException e) {
+        throw new IllegalStateException(String.format("Obtained interrupt signal while waiting for lock in order to access bucket cache.", LOCK_TIMEOUT_SEC), e);
+      } finally {
+        _lock.unlock();
+      }
     }
   }
 }
