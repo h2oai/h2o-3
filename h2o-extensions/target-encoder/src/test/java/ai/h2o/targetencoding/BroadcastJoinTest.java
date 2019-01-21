@@ -10,6 +10,7 @@ import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.*;
 import water.rapids.Merge;
+import water.util.DistributedException;
 import water.util.IcedHashMap;
 
 import static org.junit.Assert.*;
@@ -42,7 +43,7 @@ public class BroadcastJoinTest extends TestUtil {
 
       rightFr = new TestFrameBuilder()
               .withName("testFrame2")
-              .withColNames("ColA", "fold", "numerator", "denominator")
+              .withColNames("ColA", "fold", TargetEncoder.NUMERATOR_COL_NAME, TargetEncoder.DENOMINATOR_COL_NAME)
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
               .withDataForCol(0, ar("a", "b", "c"))
               .withDataForCol(1, ar(1, 0, 0))
@@ -51,45 +52,35 @@ public class BroadcastJoinTest extends TestUtil {
               .build();
 
       emptyNumerator = Vec.makeZero(fr.numRows());
-      fr.add("numerator", emptyNumerator);
+      fr.add(TargetEncoder.NUMERATOR_COL_NAME, emptyNumerator);
       emptyDenominator = Vec.makeZero(fr.numRows());
-      fr.add("denominator", emptyDenominator);
+      fr.add(TargetEncoder.DENOMINATOR_COL_NAME, emptyDenominator);
       
       Frame joined = BroadcastJoinForTargetEncoder.join(fr, new int[]{0}, 1, rightFr, new int[]{0}, 1);
 
       Scope.enter();
       assertStringVecEquals(cvec("a", "c", "b"), joined.vec("ColA"));
-      assertEquals(22, joined.vec("numerator").at(0), 1e-5);
-      assertEquals(42, joined.vec("numerator").at(1), 1e-5);
-      assertEquals(44, joined.vec("denominator").at(0), 1e-5);
-      assertEquals(84, joined.vec("denominator").at(1), 1e-5);
-      assertTrue(joined.vec("numerator").isNA(2));
-      assertTrue(joined.vec("denominator").isNA(2));
+      assertEquals(22, joined.vec(TargetEncoder.NUMERATOR_COL_NAME).at(0), 1e-5);
+      assertEquals(42, joined.vec(TargetEncoder.NUMERATOR_COL_NAME).at(1), 1e-5);
+      assertEquals(44, joined.vec(TargetEncoder.DENOMINATOR_COL_NAME).at(0), 1e-5);
+      assertEquals(84, joined.vec(TargetEncoder.DENOMINATOR_COL_NAME).at(1), 1e-5);
+      assertTrue(joined.vec(TargetEncoder.NUMERATOR_COL_NAME).isNA(2));
+      assertTrue(joined.vec(TargetEncoder.DENOMINATOR_COL_NAME).isNA(2));
       Scope.exit();
     } finally {
       if(rightFr != null) rightFr.delete();
     }
   }
+  
 
-  class CompositeLookupKeyTest {
-    private String _levelValue;
-    private Long _foldValue;
-
-    CompositeLookupKeyTest(String levelValue, long fold) {
-      this._levelValue = levelValue;
-      this._foldValue = fold;
-    }
-  }
-
-  @Property(trials = 1000)
-  public void hashCodeForLocalClassTest(String randomString, @InRange(minInt = 0, maxInt = 100)int randomInt) {
+  @Property(trials = 200)
+  public void hashCodeTest(String randomString, @InRange(minInt = 0, maxInt = 100)int randomInt) {
     String levelValue = randomString.length() == 0 ? "a" : randomString.substring(0,1);
-    System.out.println(levelValue + randomInt);
-    CompositeLookupKeyTest lookupKey = new CompositeLookupKeyTest(levelValue, randomInt);
+    CompositeLookupKey lookupKey = new CompositeLookupKey(levelValue, randomInt);
     int expected = lookupKey.hashCode();
-    CompositeLookupKeyTest lookupKey2 = new CompositeLookupKeyTest(levelValue, randomInt);
+    CompositeLookupKey lookupKey2 = new CompositeLookupKey(levelValue, randomInt);
     int actual = lookupKey2.hashCode();
-    assertNotEquals(expected, actual);
+    assertEquals(expected, actual);
   }
 
   @Test
@@ -109,7 +100,7 @@ public class BroadcastJoinTest extends TestUtil {
 
       rightFr = new TestFrameBuilder()
               .withName("testFrame2")
-              .withColNames("ColA", "numerator", "denominator")
+              .withColNames("ColA", TargetEncoder.NUMERATOR_COL_NAME, TargetEncoder.DENOMINATOR_COL_NAME)
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_NUM)
               .withDataForCol(0, ar("a", "b", "c"))
               .withDataForCol(1, ar(22, 33, 42))
@@ -117,16 +108,16 @@ public class BroadcastJoinTest extends TestUtil {
               .build();
 
       emptyNumerator = Vec.makeZero(fr.numRows());
-      fr.add("numerator", emptyNumerator);
+      fr.add(TargetEncoder.NUMERATOR_COL_NAME, emptyNumerator);
       emptyDenominator = Vec.makeZero(fr.numRows());
-      fr.add("denominator", emptyDenominator);
+      fr.add(TargetEncoder.DENOMINATOR_COL_NAME, emptyDenominator);
 
       Frame joined = BroadcastJoinForTargetEncoder.join(fr, new int[]{0}, -1, rightFr, new int[]{0}, -1);
 
       Scope.enter();
       assertStringVecEquals(cvec("a", "c", "b"), joined.vec("ColA"));
-      assertVecEquals(vec(22, 42, 33), joined.vec("numerator"), 1e-5);
-      assertVecEquals(vec(44, 84, 66), joined.vec("denominator"), 1e-5);
+      assertVecEquals(vec(22, 42, 33), joined.vec(TargetEncoder.NUMERATOR_COL_NAME), 1e-5);
+      assertVecEquals(vec(44, 84, 66), joined.vec(TargetEncoder.DENOMINATOR_COL_NAME), 1e-5);
       Scope.exit();
       printOutFrameAsTable(fr, false, fr.numRows());
     } finally {
@@ -158,7 +149,7 @@ public class BroadcastJoinTest extends TestUtil {
     assertEquals(finalMap.get(keyTwo) , valueTwo);
   }
 
-  // Shows that we will loose original order due to grouping otherwise this(swapping left and right frames) would be a possible workaround 
+  // Shows that with Merge.merge method we will loose original order due to grouping otherwise this(swapping left and right frames) would be a possible workaround 
   @Test(expected = AssertionError.class)
   public void mergeWillUseRightFramesOrderAndGroupByValues() {
     Scope.enter();
@@ -189,6 +180,42 @@ public class BroadcastJoinTest extends TestUtil {
     } finally {
       Scope.exit();
     }
+  }
+
+
+  @Test(expected = DistributedException.class)
+  public void foldValuesThatAreBiggerThanIntegerWillCauseExceptionTest() {
+    long biggerThanIntMax = Integer.MAX_VALUE + 1;
+    fr = new TestFrameBuilder()
+            .withName("testFrame")
+            .withColNames("ColA", "fold", TargetEncoder.NUMERATOR_COL_NAME, TargetEncoder.DENOMINATOR_COL_NAME)
+            .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
+            .withDataForCol(0, ar("a", "b", "c"))
+            .withDataForCol(1, ar(biggerThanIntMax, 33, 42))
+            .withDataForCol(2, ar(44, 66, 84))
+            .withDataForCol(3, ar(88, 132, 168))
+            .build();
+
+    new FrameWithEncodingDataToHashMap(0, 1, 2, 3)
+            .doAll(fr)
+            .getEncodingDataMap();
+  }
+
+  @Property(trials = 200)
+  public void foldValuesThatAreInRangeWouldNotCauseExceptionTest(@InRange(minInt = 0)int randomInt) {
+    fr = new TestFrameBuilder()
+            .withName("testFrame")
+            .withColNames("ColA", "fold", TargetEncoder.NUMERATOR_COL_NAME, TargetEncoder.DENOMINATOR_COL_NAME)
+            .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
+            .withDataForCol(0, ar("a", "b", "c"))
+            .withDataForCol(1, ar(randomInt, 33, 42))
+            .withDataForCol(2, ar(44, 66, 84))
+            .withDataForCol(3, ar(88, 132, 168))
+            .build();
+
+    new FrameWithEncodingDataToHashMap(0, 1, 2, 3)
+            .doAll(fr)
+            .getEncodingDataMap();
   }
     
   @After

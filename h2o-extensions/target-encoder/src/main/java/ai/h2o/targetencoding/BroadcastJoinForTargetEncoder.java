@@ -5,31 +5,33 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.util.IcedHashMap;
 
+import java.util.Objects;
+
 class BroadcastJoinForTargetEncoder {
   
   static class CompositeLookupKey {
     // Note: Consider using indexes of levels instead of strings to save space. It will probably require 
     // to use CategoricalWrappedVec.computeMap() since indexes for levels could differ in both frames for the same level values.
     private String _levelValue;
-    private Long _foldValue;
+    private int _foldValue;
 
-    CompositeLookupKey(String levelValue, long fold) {
+    CompositeLookupKey(String levelValue, int fold) {
       this._levelValue = levelValue;
       this._foldValue = fold;
     }
 
     @Override
-    public boolean equals(Object obj) {
-      if (obj != null && obj instanceof CompositeLookupKey) {
-        CompositeLookupKey s = (CompositeLookupKey) obj;
-        return _levelValue.equals(s._levelValue) && _foldValue.equals(s._foldValue);
-      }
-      return false;
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      CompositeLookupKey lookupKey = (CompositeLookupKey) o;
+      return _foldValue == lookupKey._foldValue &&
+              _levelValue.equals(lookupKey._levelValue);
     }
 
     @Override
     public int hashCode() {
-      return (_levelValue + _foldValue).hashCode();
+      return Objects.hash(_levelValue, _foldValue);
     }
   }
 
@@ -51,6 +53,9 @@ class BroadcastJoinForTargetEncoder {
     }
   }
 
+  private static String FOLD_VALUE_IS_OUT_OF_RANGE_MSG = "Fold value should be a non-negative integer (i.e. should belong to [0, Integer.MAX_VALUE] range)";
+
+
   static class FrameWithEncodingDataToHashMap extends MRTask<FrameWithEncodingDataToHashMap> {
 
     IcedHashMap<CompositeLookupKey, EncodingData> _encodingDataMapPerNode = new IcedHashMap<>();
@@ -67,14 +72,19 @@ class BroadcastJoinForTargetEncoder {
 
     @Override
     public void map(Chunk[] cs) {
-      System.out.println(Thread.currentThread().getName());
       Chunk categoricalChunk = cs[_categoricalColumnIdx];
       Chunk numeratorChunk = cs[_numeratorIdx];
       Chunk denominatorChunk = cs[_denominatorIdx];
       for (int i = 0; i < categoricalChunk.len(); i++) {
         long levelValue = categoricalChunk.at8(i);
         String factor = categoricalChunk.vec().factor(levelValue);
-        long foldValue = _foldColumnIdx != -1 ? cs[_foldColumnIdx].at8(i) : -1;
+
+        int foldValue = -1;
+        if(_foldColumnIdx != -1) {
+          long foldValueFromVec = cs[_foldColumnIdx].at8(i);
+          assert foldValueFromVec <= Integer.MAX_VALUE && foldValueFromVec >= 0 : FOLD_VALUE_IS_OUT_OF_RANGE_MSG;
+          foldValue = (int) foldValueFromVec;
+        }
         _encodingDataMapPerNode.put(new CompositeLookupKey(factor, foldValue), new EncodingData(numeratorChunk.at8(i), denominatorChunk.at8(i)));
       }
     }
@@ -104,8 +114,8 @@ class BroadcastJoinForTargetEncoder {
    * @return
    */
   static Frame join(Frame leftFrame, int[] leftCatColumnsIdxs, int leftFoldColumnIdx, Frame broadcastedFrame, int[] rightCatColumnsIdxs, int rightFoldColumnIdx) {
-    int numeratorIdx = broadcastedFrame.find("numerator");
-    int denominatorIdx = broadcastedFrame.find("denominator");
+    int numeratorIdx = broadcastedFrame.find(TargetEncoder.NUMERATOR_COL_NAME);
+    int denominatorIdx = broadcastedFrame.find(TargetEncoder.DENOMINATOR_COL_NAME);
 
     IcedHashMap<CompositeLookupKey, EncodingData> encodingDataMap = new FrameWithEncodingDataToHashMap(rightCatColumnsIdxs[0], rightFoldColumnIdx, numeratorIdx, denominatorIdx)
             .doAll(broadcastedFrame)
@@ -135,7 +145,14 @@ class BroadcastJoinForTargetEncoder {
       for (int i = 0; i < num.len(); i++) {
         long levelValue = categoricalChunk.at8(i);
         String factor = categoricalChunk.vec().factor(levelValue);
-        long foldValue = _foldColumnIdx != -1 ? cs[_foldColumnIdx].at8(i) : -1;
+        
+        int foldValue = -1;
+        if(_foldColumnIdx != -1) {
+          long foldValueFromVec = cs[_foldColumnIdx].at8(i);
+          assert foldValueFromVec <= Integer.MAX_VALUE && foldValueFromVec >= 0 : FOLD_VALUE_IS_OUT_OF_RANGE_MSG;
+          foldValue = (int) foldValueFromVec;
+        }
+        
         CompositeLookupKey lookupKey = new CompositeLookupKey(factor, foldValue);
         EncodingData encodingData = _encodingDataMap.get(lookupKey);
         if(encodingData == null) {

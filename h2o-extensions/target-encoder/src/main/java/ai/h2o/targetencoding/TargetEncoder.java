@@ -306,9 +306,9 @@ public class TargetEncoder extends Iced<TargetEncoder>{
   
     private void addNumeratorAndDenominatorTo(Frame leftFrame) {
       Vec emptyNumerator = Vec.makeZero(leftFrame.numRows());
-      leftFrame.add("numerator", emptyNumerator);
+      leftFrame.add(NUMERATOR_COL_NAME, emptyNumerator);
       Vec emptyDenominator = Vec.makeZero(leftFrame.numRows());
-      leftFrame.add("denominator", emptyDenominator);
+      leftFrame.add(DENOMINATOR_COL_NAME, emptyDenominator);
     }
 
     Frame imputeWithMean(Frame fr, int columnIndex, double mean) {
