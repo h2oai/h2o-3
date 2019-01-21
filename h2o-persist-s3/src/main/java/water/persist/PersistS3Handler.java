@@ -27,8 +27,6 @@ public class PersistS3Handler extends Handler {
         if(s3Credentials.secret_key_id.isEmpty()) throw new IllegalArgumentException("The field 'SECRET_KEY_ID' may not be empty.");
         if(s3Credentials.secret_access_key.isEmpty()) throw new IllegalArgumentException("The field 'SECRET_ACCESS_KEY' may not be empty.");
         
-        
-        PersistS3.changeClientCredentials(s3Credentials.secret_key_id, s3Credentials.secret_access_key);
     }
     
 }
