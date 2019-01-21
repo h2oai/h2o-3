@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.*;
 
 import static hex.genmodel.utils.DistributionFamily.*;
@@ -441,18 +442,18 @@ public class GBMTest extends TestUtil {
 
       GBMModel gbm = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
       Frame stagedProbabilities = Scope.track(gbm.scoreStagedPredictions(train, target));
+      Frame predictions = gbm.score(train);
       try {
         GbmMojoModel mojoModel = (GbmMojoModel) gbm.toMojo();
         EasyPredictModelWrapper model = new EasyPredictModelWrapper(
                 new EasyPredictModelWrapper.Config().setModel(mojoModel).setEnableStagedProbabilities(true)
         );
         // test for the first 10 rows in training data
-        for (int r = 0; r < 10; r++) {
+        for(int r = 0; r < 10; r++) {
           double[] stagedProbabilitiesRow = new double[stagedProbabilities.numCols()];
-          for (int c = 0; c < stagedProbabilities.numCols(); c++) {
+          for(int c = 0; c < stagedProbabilities.numCols(); c++) {
             stagedProbabilitiesRow[c] = stagedProbabilities.vec(c).at(r);
           }
-
           RowData tmpRow = new RowData();
           BufferedString bStr = new BufferedString();
           for (int c = 0; c < train.numCols(); c++) {
@@ -465,12 +466,16 @@ public class GBMTest extends TestUtil {
           BinomialModelPrediction tmpPrediction = model.predictBinomial(tmpRow);
           double[] mojoStageProbabilitiesRow = tmpPrediction.stageProbabilities;
           assertArrayEquals(stagedProbabilitiesRow, mojoStageProbabilitiesRow, 1e-15);
+          
+          double final_prediction = predictions.vec(1).at(r);
+          assertEquals(final_prediction, stagedProbabilitiesRow[stagedProbabilitiesRow.length-1], 1e-15);
         }
         } catch(IOException | PredictException ex){
           fail(ex.toString());
         } finally{
           gbm.delete();
           if (stagedProbabilities != null) stagedProbabilities.delete();
+          if (predictions != null) predictions.delete();
       }
     } finally {
       Scope.exit();
@@ -497,6 +502,7 @@ public class GBMTest extends TestUtil {
 
       GBMModel gbm = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
       Frame stagedProbabilities = Scope.track(gbm.scoreStagedPredictions(train, target));
+      Frame predictions = gbm.score(train);
       try {
         GbmMojoModel mojoModel = (GbmMojoModel) gbm.toMojo();
         EasyPredictModelWrapper model = new EasyPredictModelWrapper(
@@ -518,16 +524,20 @@ public class GBMTest extends TestUtil {
               tmpRow.put(train.names()[c], train.vec(c).at(r));
             }
           }
-
+          
           MultinomialModelPrediction tmpPrediction = model.predictMultinomial(tmpRow);
           double[] mojoStageProbabilitiesRow = tmpPrediction.stageProbabilities;
           assertArrayEquals(stagedProbabilitiesRow, mojoStageProbabilitiesRow, 1e-15);
+
+          double[] final_prediction = {predictions.vec(1).at(r), predictions.vec(2).at(r), predictions.vec(3).at(r)};
+          assertArrayEquals(final_prediction, Arrays.copyOfRange(stagedProbabilitiesRow, stagedProbabilitiesRow.length-3, stagedProbabilitiesRow.length), 1e-15);
         }
       } catch (IOException | PredictException ex) {
         fail(ex.toString());
       } finally {
         gbm.delete();
         if (stagedProbabilities != null) stagedProbabilities.delete();
+        if (predictions != null) predictions.delete();
       }
     } finally {
       Scope.exit();
