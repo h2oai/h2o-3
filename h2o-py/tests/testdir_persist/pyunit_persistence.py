@@ -1,6 +1,7 @@
 import h2o
 import os
 
+from h2o.exceptions import H2OValueError
 from h2o.persist import set_s3_credentials
 
 from tests import pyunit_utils
@@ -25,6 +26,38 @@ def s3_access_test():
     except Exception as e:
         assert type(e) is h2o.exceptions.H2OServerError
         assert e.args[0].find("Error: The AWS Access Key Id you provided does not exist in our records. (Service: Amazon S3; Status Code: 403; Error Code: InvalidAccessKeyId;") != -1
+
+    try:
+        set_s3_credentials("", "abcd")
+        assert False
+    except Exception as e:
+        assert type(e) is H2OValueError
+        assert e.args[0].find("Secret key ID must not be empty") != -1
+
+    try:
+        set_s3_credentials("abcd", "")
+        assert False
+    except Exception as e:
+        assert type(e) is H2OValueError
+        assert e.args[0].find("Secret access key must not be empty") != -1
+
+    try:
+        set_s3_credentials(None, "abcd")
+        assert False
+    except Exception as e:
+        assert type(e) is H2OValueError
+        assert e.args[0].find("Secret key ID must be specified") != -1
+
+    try:
+        set_s3_credentials("abcd", None)
+        assert False
+    except Exception as e:
+        assert type(e) is H2OValueError
+        assert e.args[0].find("Secret access key must be specified") != -1
+        
+        
+        
+        
 
 
 if __name__ == "__main__":
