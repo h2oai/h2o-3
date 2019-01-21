@@ -77,12 +77,12 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
 
     private boolean canAllocate = true;
-    private final LinkedList<Work> allocations = new LinkedList<>();
+    private Work[] allocations = new Work[0];
 
     WorkAllocations allocate(Algo algo, int count, JobType type, int workShare) {
       if (!canAllocate) throw new IllegalStateException("can't allocate new work");
 
-      allocations.add(new Work(algo, count, type, workShare));
+      allocations = ArrayUtils.append(allocations, new Work(algo, count, type, workShare));
       return this;
     }
 
@@ -91,10 +91,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
 
     void remove(Algo algo) {
-      final Iterator<Work> iter = allocations.iterator();
-      while (iter.hasNext()) {
-        if (algo.equals(iter.next().algo)) iter.remove();
+      List<Work> filtered = new ArrayList<>(allocations.length);
+      for (Work alloc : allocations) {
+        if (algo.equals(alloc.algo)) {
+          filtered.add(alloc);
+        }
       }
+      allocations = filtered.toArray(new Work[0]);
     }
 
     Work getAllocation(Algo algo, JobType workType) {
@@ -104,7 +107,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       return null;
     }
 
-    private int sum(List<Work> workItems) {
+    private int sum(Work[] workItems) {
       int tot = 0;
       for (Work item : workItems) {
         tot += (item.count * item.share);
@@ -114,14 +117,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     int remainingWork() {
       return sum(allocations);
-    }
-
-    int remainingWork(JobType type) {
-      List<Work> selected = new ArrayList<>(allocations.size());
-      for (Work item : allocations) {
-        if (item.type == type) selected.add(item);
-      }
-      return sum(selected);
     }
 
   }
