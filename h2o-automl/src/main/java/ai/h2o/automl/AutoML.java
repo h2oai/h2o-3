@@ -93,7 +93,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     void remove(Algo algo) {
       List<Work> filtered = new ArrayList<>(allocations.length);
       for (Work alloc : allocations) {
-        if (algo.equals(alloc.algo)) {
+        if (!algo.equals(alloc.algo)) {
           filtered.add(alloc);
         }
       }
