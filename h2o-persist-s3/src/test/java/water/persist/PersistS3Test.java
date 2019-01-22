@@ -38,7 +38,7 @@ public class PersistS3Test extends TestUtil {
 
   @BeforeClass
   public static void setup() {
-    stall_till_cloudsize(1);
+    stall_till_cloudsize(5);
   }
 
   @After
