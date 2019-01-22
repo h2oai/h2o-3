@@ -315,7 +315,7 @@ h2o.loadModel <- function(path) {
 #' @param secretAccessKey Amazon S3 Secret Access Key (provided by Amazon)
 #' 
 #' @export
-h2o.setS3Credentials <- function(secretKeyId, secretAccessKey){
+h2o.set_s3_credentials <- function(secretKeyId, secretAccessKey){
   if(is.null(secretKeyId)) stop("Secret key ID must not be null.")
   if(is.null(secretAccessKey)) stop("Secret acces key must not be null.")
   if(!is.character(secretKeyId) || nchar(secretKeyId) == 0) stop("Secret key ID must be a non-empty character string.")
