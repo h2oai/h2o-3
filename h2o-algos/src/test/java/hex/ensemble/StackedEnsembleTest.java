@@ -375,8 +375,8 @@ public class StackedEnsembleTest extends TestUtil {
         Assert.assertNotNull(seModel._output._base_model_predictions_keys);
         Assert.assertEquals(models.length, seModel._output._base_model_predictions_keys.size());
         
-        Set<String> first_se_pred_keys = seModel._output._base_model_predictions_keys;
-        for (String k: first_se_pred_keys) {
+        Set<Key<Frame>> first_se_pred_keys = seModel._output._base_model_predictions_keys;
+        for (Key k: first_se_pred_keys) {
           Assert.assertNotNull("prediction key is not stored in DKV", DKV.get(k));
         }
         
@@ -401,7 +401,7 @@ public class StackedEnsembleTest extends TestUtil {
         
         seModel.deleteBaseModelPredictions();
         Assert.assertNull(seModel._output._base_model_predictions_keys);
-        for (String k: first_se_pred_keys) {
+        for (Key k: first_se_pred_keys) {
           Assert.assertNull(DKV.get(k));
         }
       } finally {
