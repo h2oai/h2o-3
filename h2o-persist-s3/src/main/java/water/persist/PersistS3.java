@@ -67,7 +67,6 @@ public final class PersistS3 extends Persist {
   
 
   public static AmazonS3 getClient() {
-    if( _s3 == null ) {
       try {
         final boolean lockAcquired = _lock.tryLock(LOCK_TIMEOUT_SEC, TimeUnit.SECONDS);
         if (!lockAcquired)
@@ -91,7 +90,6 @@ public final class PersistS3 extends Persist {
       } finally {
         _lock.unlock();
       }
-    }
     return _s3;
   }
 
