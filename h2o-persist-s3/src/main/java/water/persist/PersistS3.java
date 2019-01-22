@@ -6,7 +6,6 @@ import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
 import com.amazonaws.auth.*;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
-import com.amazonaws.internal.StaticCredentialsProvider;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
@@ -113,7 +112,7 @@ public final class PersistS3 extends Persist {
 
     private static List<AWSCredentialsProvider> constructStaticCredentialsProviderChain(final String accesKeyId, final String accesSecretKey) {
       final List<AWSCredentialsProvider> providers = new ArrayList<>();
-      providers.add(new StaticCredentialsProvider(new BasicAWSCredentials(accesKeyId, accesSecretKey)));
+      providers.add(new H2OStaticCredentialsProvider(accesKeyId, accesSecretKey));
       return providers;
     }
 
@@ -130,6 +129,28 @@ public final class PersistS3 extends Persist {
 
       return providers;
 
+    }
+  }
+
+  /**
+   * Holds basic credentials (Secret key ID + Secret access key) pair.
+   */
+  private static final class H2OStaticCredentialsProvider implements AWSCredentialsProvider{
+    
+    private final AWSCredentials awsCredentials;
+
+    private H2OStaticCredentialsProvider(final String secretKeyId, final String secretAccessKey) {
+      this.awsCredentials = new BasicAWSCredentials(secretKeyId, secretAccessKey);
+    }
+
+    @Override
+    public AWSCredentials getCredentials() {
+      return awsCredentials;
+    }
+
+    @Override
+    public void refresh() {
+      // No actions taken on refresh
     }
   }
 
