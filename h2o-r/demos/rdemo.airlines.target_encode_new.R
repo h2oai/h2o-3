@@ -33,7 +33,7 @@ default_gbm <- h2o.gbm(x = myX, y = "IsDepDelayed",
 ############################################## LeaveOneOut #############################################################
 print("Perform Leave One Out Target Encoding on cabin, embarked, and home.dest")
 
-te_cols <- list("Origin", "Dest")
+te_cols <- c("Origin", "Dest")
 # For this model we will calculate LOO Target Encoding on the full train
 # There is possible data leakage since we are creating the encoding map on the training and applying it to the training
 # To mitigate the effect of data leakage without creating a holdout data, we remove the existing value of the row (holdout_type = LeaveOneOut)
