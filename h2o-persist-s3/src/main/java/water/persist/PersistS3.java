@@ -45,7 +45,7 @@ public final class PersistS3 extends Persist {
   
   private static volatile AmazonS3 _s3;
 
-  public static void changeClientCredentials(final String accesKeyId, final String accessSecretKey) {
+  public static void changeClientCredentials(final String secretKeyId, final String secretAccessKey) {
 
     try {
       final boolean lockAcquired = _lock.tryLock(LOCK_TIMEOUT_SEC, TimeUnit.SECONDS);
@@ -53,7 +53,7 @@ public final class PersistS3 extends Persist {
         throw new IllegalStateException(String.format("Could not acquire lock to change S3 client in %d seconds", LOCK_TIMEOUT_SEC));
       }
 
-      final H2OAWSCredentialsProviderChain credentialsProviderChain = new H2OAWSCredentialsProviderChain(accesKeyId, accessSecretKey);
+      final H2OAWSCredentialsProviderChain credentialsProviderChain = new H2OAWSCredentialsProviderChain(secretKeyId, secretAccessKey);
       final ClientConfiguration clientConfiguration = new ClientConfiguration();
       _s3 = configureClient(new AmazonS3Client(credentialsProviderChain, clientConfiguration));
       _bucketCache = new Cache();
@@ -101,8 +101,8 @@ public final class PersistS3 extends Persist {
    */
   public static class H2OAWSCredentialsProviderChain extends AWSCredentialsProviderChain {
 
-    public H2OAWSCredentialsProviderChain(final String accessKeyId, final String accessSecretKey) {
-      super(constructStaticCredentialsProviderChain(accessKeyId, accessSecretKey));
+    public H2OAWSCredentialsProviderChain(final String secretKeyId, final String secretAccessKey) {
+      super(constructStaticCredentialsProviderChain(secretKeyId, secretAccessKey));
 
     }
 
