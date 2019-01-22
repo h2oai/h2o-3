@@ -150,6 +150,8 @@ public class h2odriver extends Configured implements Tool {
   static String keytabPath = null;
   static boolean reportHostname = false;
   static boolean driverDebug = false;
+  static String hiveHost = null;
+  static String hivePrincipal = null;
 
   String proxyUrl = null;
   // Runtime state that might be touched by different threads.
@@ -630,6 +632,7 @@ public class h2odriver extends Configured implements Tool {
                     "          [-jobname <name of job in jobtracker (defaults to: 'H2O_nnnnn')>]\n" +
                     "              (Note nnnnn is chosen randomly to produce a unique name)\n" +
                     "          [-principal <kerberos principal> -keytab <keytab path> [-run_as_user <impersonated hadoop username>] | -run_as_user <hadoop username>]\n" +
+                    // Experimental "          [-hiveHost <hostname:port> -hivePrincipal <hive server principal>]\n" +
                     "          [-driverif <ip address of mapper->driver callback interface>]\n" +
                     "          [-driverport <port of mapper->driver callback interface>]\n" +
                     "          [-driverportrange <range portX-portY of mapper->driver callback interface>; eg: 50000-55000]\n" +
@@ -1046,6 +1049,12 @@ public class h2odriver extends Configured implements Tool {
         reportHostname = true;
       } else if (s.equals("-driver_debug")) {
         driverDebug = true;
+      } else if (s.equals("-hiveHost")) {
+        i++; if (i >= args.length) { usage (); }
+        hiveHost = args[i];
+      } else if (s.equals("-hivePrincipal")) {
+        i++; if (i >= args.length) { usage (); }
+        hivePrincipal = args[i];
       } else {
         error("Unrecognized option " + s);
       }
@@ -1820,6 +1829,8 @@ public class h2odriver extends Configured implements Tool {
     j.setNumReduceTasks(0);
     j.setOutputKeyClass(Text.class);
     j.setOutputValueClass(Text.class);
+
+    new HiveTokenGenerator(driverDebug).addHiveDelegationToken(j, hiveHost, hivePrincipal);
 
     if (outputPath != null)
       FileOutputFormat.setOutputPath(j, new Path(outputPath));
