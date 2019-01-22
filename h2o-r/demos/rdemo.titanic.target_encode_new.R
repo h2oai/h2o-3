@@ -17,8 +17,7 @@ test <- splits[[4]]
 print("Run GBM without Target Encoding as Baseline")
 
 myX <- setdiff(colnames(train), c("survived", "name", "ticket", "boat", "body"))
-# te_cols <- list("embarked")
-te_cols <- list("cabin", "embarked", "home.dest")
+te_cols <- c("cabin", "embarked", "home.dest")
 inflection_point <- 3
 smoothing <- 1
 
