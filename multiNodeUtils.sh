@@ -12,9 +12,16 @@ if [[ "$@" == "ssl" ]]; then
 
 fi
 
+if [[ "$(uname)" = "Darwin" ]]; then
+  # Node discovery doesn't work on OS X for local interface
+  export H2O_NODE_IP="$(host -4 $(hostname) | sed 's/.*has address //')"
+else
+  export H2O_NODE_IP=127.0.0.1
+fi
+
 function runCluster () {
-  $JVM water.H2O -name $CLUSTER_NAME -ip 127.0.0.1 -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.1 2>&1 & PID_1=$!
-  $JVM water.H2O -name $CLUSTER_NAME -ip 127.0.0.1 -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.2 2>&1 & PID_2=$!
-  $JVM water.H2O -name $CLUSTER_NAME -ip 127.0.0.1 -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.3 2>&1 & PID_3=$!
-  $JVM water.H2O -name $CLUSTER_NAME -ip 127.0.0.1 -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.4 2>&1 & PID_4=$!
+  $JVM water.H2O -name $CLUSTER_NAME -ip $H2O_NODE_IP -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.1 2>&1 & PID_1=$!
+  $JVM water.H2O -name $CLUSTER_NAME -ip $H2O_NODE_IP -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.2 2>&1 & PID_2=$!
+  $JVM water.H2O -name $CLUSTER_NAME -ip $H2O_NODE_IP -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.3 2>&1 & PID_3=$!
+  $JVM water.H2O -name $CLUSTER_NAME -ip $H2O_NODE_IP -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.4 2>&1 & PID_4=$!
 }
