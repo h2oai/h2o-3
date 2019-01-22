@@ -151,7 +151,7 @@ public class h2odriver extends Configured implements Tool {
   static boolean reportHostname = false;
   static boolean driverDebug = false;
   static String hiveHost = null;
-  static String hivePrincipal = null;    
+  static String hivePrincipal = null;
 
   String proxyUrl = null;
   // Runtime state that might be touched by different threads.

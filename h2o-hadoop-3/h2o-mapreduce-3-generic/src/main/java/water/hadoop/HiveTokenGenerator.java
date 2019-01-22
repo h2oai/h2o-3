@@ -16,13 +16,13 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class HiveTokenGenerator {
-  
+
   private static final String HIVE_DRIVER_CLASS = "org.apache.hive.jdbc.HiveDriver";
-  
+
   private static final String HIVE_PRINCIPAL_CONF = "hive.metastore.kerberos.principal";
-  
+
   private static final String HIVE_URI_CONF = "hive.metastore.uris";
-  
+
   private final boolean debug;
 
   public HiveTokenGenerator(boolean debug) {
@@ -36,7 +36,7 @@ public class HiveTokenGenerator {
         job.getCredentials()
     );
   }
-  
+
   private void DBG(String s, Exception e) {
     if (!debug) return;
     System.err.println(s);
@@ -53,7 +53,7 @@ public class HiveTokenGenerator {
       return null;
     }
   }
-  
+
   private void addHiveDelegationTokenIfPossible(Configuration conf, String hiveHost, String hivePrincipal, Credentials creds) throws IOException {
     if (!isHiveDriverPresent()) {
       DBG("Hive driver not present, not generating token.", null);
@@ -72,11 +72,11 @@ public class HiveTokenGenerator {
       DBG("Hive host and principal missing, no token generated.", null);
       return;
     }
-    
+
     String currentUser = UserGroupInformation.getCurrentUser().getShortUserName();
     String hiveJdbcUrl = "jdbc:hive2://" + hiveHost + "/";
     DBG("Getting delegation token from " + hiveJdbcUrl + " with " + hivePrincipal + ", " + currentUser, null);
-    
+
     String tokenStr = getDelegationTokenFromConnection(hiveJdbcUrl, hivePrincipal, currentUser);
     if (tokenStr != null) {
       Token<DelegationTokenIdentifier> hive2Token = new Token<>();
@@ -87,7 +87,7 @@ public class HiveTokenGenerator {
       creds.addToken(new Text("hiveserver2ClientToken"), hive2Token); //HiveAuthConstants.HS2_CLIENT_TOKEN
     }
   }
-  
+
   private boolean isHiveDriverPresent() {
     try {
       Class.forName(HIVE_DRIVER_CLASS);

@@ -11,8 +11,8 @@ description = 'H2O mapreduce generic driver for Hadoop 3'
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
-compileJava { 
-  options.debug = true 
+compileJava {
+  options.debug = true
 }
 
 dependencies {
