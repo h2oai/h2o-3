@@ -537,40 +537,28 @@ public final class PersistS3 extends Persist {
   @Override
   public List<String> calcTypeaheadMatches(String filter, int limit) {
     String [] parts = decodePath(filter);
-    if(parts[1] != null) { // bucket and key prefix
-      try {
-        final boolean lockAcquired = _lock.tryLock(LOCK_TIMEOUT_SEC, TimeUnit.SECONDS);
-        if (!lockAcquired) {
-          throw new IllegalStateException(String.format("Unable to obtain lock to find file in key cache in %d seconds.", LOCK_TIMEOUT_SEC));
-        }
+    try {
+      final boolean lockAcquired = _lock.tryLock(LOCK_TIMEOUT_SEC, TimeUnit.SECONDS);
+      if (!lockAcquired) {
+        throw new IllegalStateException(String.format("Unable to obtain lock to find file in key cache in %d seconds.", LOCK_TIMEOUT_SEC));
+      }
+      if(parts[1] != null) { // bucket and key prefix
         if (_keyCaches.get(parts[0]) == null) {
           if (!getClient().doesBucketExist(parts[0])) return new ArrayList<>();
-          
+
           _keyCaches.put(parts[0], new KeyCache(parts[0]));
 
           return _keyCaches.get(parts[0]).fetch(parts[1], limit);
         } else {
           return _keyCaches.get(parts[0]).fetch(parts[1],limit);
         }
-        
-      } catch (InterruptedException e) {
-        throw new IllegalStateException(String.format("Obtained interrupt signal while waiting for lock in order to access bucket cache.", LOCK_TIMEOUT_SEC), e);
-      } finally {
-        _lock.unlock();
-      }
-
     } else { // no key, only bucket prefix
-      try {
-        final boolean lockAcquired = _lock.tryLock(LOCK_TIMEOUT_SEC, TimeUnit.SECONDS);
-        if (!lockAcquired) {
-          throw new IllegalStateException(String.format("Unable to obtain lock to find file in bucket cache in %d seconds.", LOCK_TIMEOUT_SEC));
-        }
         return _bucketCache.fetch(parts[0], limit);
-      } catch (InterruptedException e) {
-        throw new IllegalStateException(String.format("Obtained interrupt signal while waiting for lock in order to access bucket cache.", LOCK_TIMEOUT_SEC), e);
-      } finally {
-        _lock.unlock();
-      }
     }
+  } catch (InterruptedException e) {
+    throw new IllegalStateException(String.format("Obtained interrupt signal while waiting for lock in order to access bucket cache.", LOCK_TIMEOUT_SEC), e);
+  } finally {
+    _lock.unlock();
+  }
   }
 }
