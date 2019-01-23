@@ -12,14 +12,7 @@ import org.eclipse.jetty.security.SpnegoLoginService;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.security.authentication.SpnegoAuthenticator;
-import org.eclipse.jetty.server.ConnectionFactory;
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.session.SessionHandler;
@@ -30,8 +23,6 @@ import water.webserver.iface.H2OHttpConfig;
 import water.webserver.iface.H2OHttpView;
 import water.webserver.iface.LoginType;
 
-import javax.security.auth.login.AppConfigurationEntry;
-import javax.security.auth.login.Configuration;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -54,43 +45,37 @@ class Jetty9Helper {
 
         final Server jettyServer = new Server();
 
+        final boolean isSecured = config.jks != null;
+        final HttpConnectionFactory httpConnectionFactory = buildHttpConnectionFactory(isSecured);
+
         final ServerConnector connector;
-        final String proto;
-        if (config.jks != null) {
-            proto = "https";
+        if (isSecured) {
             final SslContextFactory sslContextFactory = new SslContextFactory(config.jks);
             sslContextFactory.setKeyStorePassword(config.jks_pass);
-
-            connector = new ServerConnector(jettyServer, sslContextFactory);
+            connector = new ServerConnector(jettyServer, AbstractConnectionFactory.getFactories(sslContextFactory, httpConnectionFactory));
         } else {
-            proto = "http";
-            connector = new ServerConnector(jettyServer);
+            connector = new ServerConnector(jettyServer, httpConnectionFactory);
         }
         if (ip != null) {
             connector.setHost(ip);
         }
         connector.setPort(port);
-        final Collection<ConnectionFactory> connectionFactories = buildConnectionFactory(proto);
         jettyServer.setConnectors(new Connector[]{connector});
 
-        connector.setConnectionFactories(new ArrayList<ConnectionFactory>());
-        connector.setConnectionFactories(connectionFactories);
         return jettyServer;
     }
 
 
-    private Collection<ConnectionFactory> buildConnectionFactory(String proto) {
-        final ArrayList<ConnectionFactory> connectionFactories = new ArrayList<>();
-        ConnectionFactory connectionFactory = new HttpConnectionFactory();
+    private HttpConnectionFactory buildHttpConnectionFactory(boolean isSecured) {
+        final String proto = isSecured ? "https" : "http";
+
         final HttpConfiguration httpConfiguration = new HttpConfiguration();
         httpConfiguration.setSendServerVersion(true);
         httpConfiguration.setRequestHeaderSize(getSysPropInt(proto + ".requestHeaderSize", 32 * 1024));
         httpConfiguration.setResponseHeaderSize(getSysPropInt(proto + ".responseHeaderSize", 32 * 1024));
         httpConfiguration.setOutputBufferSize(getSysPropInt(proto + ".responseBufferSize", httpConfiguration.getOutputBufferSize()));
 
-        connectionFactories.add(connectionFactory);
-
-        return connectionFactories;
+        return new HttpConnectionFactory(httpConfiguration);
     }
 
     private static int getSysPropInt(String suffix, int defaultValue) {
