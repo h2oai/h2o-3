@@ -273,7 +273,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         // top-level quantiles for all columns
         // non-numeric columns get a vector full of NAs
         if (_parms._histogram_type == SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal
-                || _parms._histogram_type == SharedTreeModel.SharedTreeParameters.HistogramType.RoundRobin) {
+                || _parms._histogram_type == SharedTreeModel.SharedTreeParameters.HistogramType.RoundRobin
+                || _parms._histogram_type == SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesLocal) {
           int N = _parms._nbins;
           QuantileModel.QuantileParameters p = new QuantileModel.QuantileParameters();
           Key rndKey = Key.make();

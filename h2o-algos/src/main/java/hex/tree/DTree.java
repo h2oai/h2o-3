@@ -1,5 +1,7 @@
 package hex.tree;
 
+import hex.quantile.Quantile;
+import hex.quantile.QuantileModel;
 import jsr166y.RecursiveAction;
 import water.*;
 import water.fvec.Chunk;
@@ -246,6 +248,8 @@ public class DTree extends Iced {
 
         // Tighter bounds on the column getting split: exactly each new
         // DHistogram's bound are the bins' min & max.
+        double[] splitPoints = null;
+        Key globalKey = h._globalQuantilesKey;
         if( _col==j ) {
           switch( _equal ) {
           case 0:  // Ranged split; know something about the left & right sides
@@ -259,6 +263,44 @@ public class DTree extends Iced {
             if (_nasplit != DHistogram.NASplitDir.NAvsREST) {
               if (way == 0) maxEx = split;
               else min = split;
+            }
+            if (parms._histogram_type == SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesLocal){
+              int N = parms._nbins;
+              QuantileModel.QuantileParameters p = new QuantileModel.QuantileParameters();
+              p._train = parms._train;
+              p._weights_column = parms._weights_column;
+              p._combine_method = QuantileModel.CombineMethod.INTERPOLATE;
+              p._probs = new double[N];
+              for (int i = 0; i < N; ++i) //compute quantiles such that they span from (inclusive) min...maxEx (exclusive)
+                p._probs[i] = i * 1./N;
+              // TODO change local_column_index to local_column_name 
+              p._local_column_index = parms.train().find(h._name);
+              p._lo = min;
+              p._hi = maxEx;
+              Job<QuantileModel> job = new Quantile(p).trainModel();
+              //_job.update(1, "Computing top-level histogram splitpoints.");
+              QuantileModel qm = job.get();
+              job.remove();
+              double[] origQuantiles = qm._output._quantiles[0];
+              //pad the quantiles until we have nbins_top_level bins
+              if (origQuantiles != null) {
+                splitPoints = ArrayUtils.makeUniqueAndLimitToRange(origQuantiles, min, maxEx);
+                if(splitPoints.length > 1){
+                  ArrayUtils.padUniformly(splitPoints, parms._nbins_top_level);
+                } else {
+                  // because of the range - it can produce only one split point
+                  splitPoints = null;
+                }
+              }
+              // ensure to not use global split points if local quantiles are used
+              globalKey = null;
+              assert splitPoints == null || splitPoints.length > 1;
+              qm.delete();
+              StringBuilder sb = new StringBuilder();
+              sb.append("Quantile Local: index=").append(j).append(" [min, maxEx] = [").append(min).append(",").append(maxEx).append("]");
+              sb.append(" splat =").append(splat).append(", way=").append(way);
+              sb.append(" Qs=").append(Arrays.toString(splitPoints));
+              //Log.info(sb);
             }
             break;
           case 1:               // Equality split; no change on unequals-side
@@ -280,7 +322,7 @@ public class DTree extends Iced {
         if( h._isInt > 0 && !(min+1 < maxEx ) )
           continue; // This column will not split again
         assert min < maxEx && adj_nbins > 1 : ""+min+"<"+maxEx+" nbins="+adj_nbins;
-        nhists[j] = DHistogram.make(h._name, adj_nbins, h._isInt, min, maxEx, h._seed*0xDECAF+(way+1), parms, h._globalQuantilesKey);
+        nhists[j] = DHistogram.make(h._name, adj_nbins, h._isInt, min, maxEx, h._seed*0xDECAF+(way+1), parms, globalKey, splitPoints);
         cnt++;                    // At least some chance of splitting
       }
       return cnt == 0 ? null : nhists;

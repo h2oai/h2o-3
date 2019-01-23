@@ -164,7 +164,7 @@ public final class DHistogram extends Iced {
     }
   }
   public DHistogram(String name, final int nbins, int nbins_cats, byte isInt, double min, double maxEx,
-                    double minSplitImprovement, SharedTreeModel.SharedTreeParameters.HistogramType histogramType, long seed, Key globalQuantilesKey) {
+                    double minSplitImprovement, SharedTreeModel.SharedTreeParameters.HistogramType histogramType, long seed, Key globalQuantilesKey, double[] localSplitPoints) {
     assert nbins > 1;
     assert nbins_cats > 1;
     assert maxEx > min : "Caller ensures "+maxEx+">"+min+", since if max==min== the column "+name+" is all constants";
@@ -185,6 +185,9 @@ public final class DHistogram extends Iced {
       _histoType= SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive;
     assert(_histoType!= SharedTreeModel.SharedTreeParameters.HistogramType.RoundRobin);
     _globalQuantilesKey = globalQuantilesKey;
+    if(localSplitPoints != null){
+      _splitPts = localSplitPoints;
+    }
     // See if we can show there are fewer unique elements than nbins.
     // Common for e.g. boolean columns, or near leaves.
     int xbins = isInt == 2 ? nbins_cats : nbins;
@@ -251,7 +254,8 @@ public final class DHistogram extends Iced {
          _splitPts[i] = rng.nextFloat() * (_nbin-1);
       Arrays.sort(_splitPts);
     }
-    else if (_histoType== SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal) {
+    else if (_histoType== SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal || 
+            (_histoType== SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesLocal && _splitPts == null)) {
       assert (_splitPts == null);
       if (_globalQuantilesKey != null) {
         HistoQuantiles hq = DKV.getGet(_globalQuantilesKey);
@@ -273,6 +277,16 @@ public final class DHistogram extends Iced {
             }
           }
         }
+      }
+    } else if(_histoType == SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesLocal) {
+      if (_splitPts.length <= 1) {
+        _splitPts = null; //abort, fall back to uniform binning
+        _histoType = SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive;
+      }
+      else {
+        _hasQuantiles = true;
+        _nbin = (char)_splitPts.length;
+//              Log.info("Refined splitPoints: " + Arrays.toString(_splitPts));
       }
     }
     else assert(_histoType== SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive);
@@ -337,7 +351,7 @@ public final class DHistogram extends Iced {
       final long vlen = v.length();
       try {
         hs[c] = v.naCnt() == vlen || v.min() == v.max() ?
-            null : make(fr._names[c], nbins, (byte) (v.isCategorical() ? 2 : (v.isInt() ? 1 : 0)), minIn, maxEx, seed, parms, globalQuantilesKey[c]);
+            null : make(fr._names[c], nbins, (byte) (v.isCategorical() ? 2 : (v.isInt() ? 1 : 0)), minIn, maxEx, seed, parms, globalQuantilesKey[c], null);
       } catch(StepOutOfRangeException e) {
         hs[c] = null;
         Log.warn("Column " + fr._names[c]  + " with min = " + v.min() + ", max = " + v.max() + " has step out of range (" + e.getMessage() + ") and is ignored.");
@@ -349,8 +363,8 @@ public final class DHistogram extends Iced {
 
 
 
-  public static DHistogram make(String name, final int nbins, byte isInt, double min, double maxEx, long seed, SharedTreeModel.SharedTreeParameters parms, Key globalQuantilesKey) {
-    return new DHistogram(name,nbins, parms._nbins_cats, isInt, min, maxEx, parms._min_split_improvement, parms._histogram_type, seed, globalQuantilesKey);
+  public static DHistogram make(String name, final int nbins, byte isInt, double min, double maxEx, long seed, SharedTreeModel.SharedTreeParameters parms, Key globalQuantilesKey, double[] localSplitPoints) {
+    return new DHistogram(name,nbins, parms._nbins_cats, isInt, min, maxEx, parms._min_split_improvement, parms._histogram_type, seed, globalQuantilesKey, localSplitPoints);
   }
 
   // Pretty-print a histogram

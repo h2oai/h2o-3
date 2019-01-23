@@ -13,6 +13,10 @@ public class QuantileModel extends Model<QuantileModel,QuantileModel.QuantilePar
     // Set of probabilities to compute
     public double _probs[/*Q*/] = new double[]{0.001,0.01,0.1,0.25,0.333,0.50,0.667,0.75,0.9,0.99,0.999};
     public CombineMethod _combine_method = CombineMethod.INTERPOLATE;
+    
+    public double _lo,_hi = 0;
+    public int _local_column_index = -1;
+    
     protected boolean defaultDropConsCols() { return false; }
     public String algoName() { return "Quantiles"; }
     public String fullName() { return "Quantiles"; }

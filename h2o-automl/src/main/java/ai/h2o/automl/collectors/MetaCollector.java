@@ -128,7 +128,7 @@ public class MetaCollector {
       parms._nbins = nbins;
       parms._nbins_cats = nbins_cats;
 
-      return DHistogram.make(name, nbins, isInt, minIn, maxEx, 0, parms, null);
+      return DHistogram.make(name, nbins, isInt, minIn, maxEx, 0, parms, null, null);
     }
     public double binAt(int b) { return _h.binAt(b); }
 

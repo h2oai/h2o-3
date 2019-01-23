@@ -3530,5 +3530,57 @@ public class GBMTest extends TestUtil {
     Scope.track(train);
     return train;
   }
+  
+  @Test
+  public void testLocalQuantiles(){
+    Scope.enter();
+    try {
+      final Key<Frame> target = Key.make();
+      Frame train = Scope.track(parse_test_file("/smalldata/higgs/higgs_train_10k.csv"));
+      int ci = train.find("response");
+      Scope.track(train.replace(ci, train.vecs()[ci].toCategoricalVec()));   // Convert response 'Angaus' to categorical
+      DKV.put(train);                    // Update frame after hacking it
+
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = train._key;
+      parms._response_column = "response"; // Train on the outcome
+      parms._distribution = bernoulli;
+      parms._ntrees = 50;
+      parms._max_depth = 20;
+      
+      parms._histogram_type = SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesLocal;
+      GBMModel gbm_local = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
+
+      if(gbm_local!=null){ gbm_local.delete();}
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testGlobalQuantiles(){
+    Scope.enter();
+    try {
+      final Key<Frame> target = Key.make();
+      Frame train = Scope.track(parse_test_file("/smalldata/higgs/higgs_train_10k.csv"));
+      int ci = train.find("response");
+      Scope.track(train.replace(ci, train.vecs()[ci].toCategoricalVec()));   // Convert response 'Angaus' to categorical
+      DKV.put(train);                    // Update frame after hacking it
+
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = train._key;
+      parms._response_column = "response"; // Train on the outcome
+      parms._distribution = bernoulli;
+      parms._ntrees = 50;
+      parms._max_depth = 20;
+
+      parms._histogram_type = SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal;
+      GBMModel gbm_global= (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
+      
+      if(gbm_global!=null){ gbm_global.delete();}
+    } finally {
+      Scope.exit();
+    }
+  }
 
 }

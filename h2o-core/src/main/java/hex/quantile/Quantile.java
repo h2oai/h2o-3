@@ -21,7 +21,12 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
   // Called from Nano thread; start the Quantile Job on a F/J thread
   public Quantile( QuantileModel.QuantileParameters parms ) { super(parms); init(false); }
   public Quantile( QuantileModel.QuantileParameters parms, Job job ) { super(parms, job); init(false); }
-  @Override public Driver trainModelImpl() { return new QuantileDriver(); }
+  @Override public Driver trainModelImpl() { 
+    if (_parms._local_column_index > -1){
+      return new LocalQuantileDriver();
+    }
+    return new QuantileDriver(); 
+  }
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ModelCategory.Unknown}; }
   // any number of chunks is fine - don't rebalance - it's not worth it for a few passes over the data (at most)
   @Override protected int desiredChunks(final Frame original_fr, boolean local) { return 1;  }
@@ -58,6 +63,52 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
     @Override public void reduce(SumWeights mrt) { sum+=mrt.sum; }
   }
 
+
+  private static class FilteredSumWeights extends MRTask<FilteredSumWeights> {
+    double sum;
+    double lo;
+    double hi;
+
+    public FilteredSumWeights(double lo, double hi) {
+      this.lo = lo;
+      this.hi = hi;
+    }
+
+    @Override public void map(Chunk c, Chunk w) {
+      for (int i=0;i<c.len();++i) {
+        if (!c.isNA(i)) {
+          if (c.atd(i) >= lo && c.atd(i) < hi) {
+            double wt = w.atd(i);
+            sum += wt;
+          }
+        }
+      }
+    }
+    @Override public void reduce(FilteredSumWeights mrt) { sum+=mrt.sum; }
+  }
+
+  private static class FilteredSumVec extends MRTask<FilteredSumVec> {
+    double sum;
+    double lo;
+    double hi;
+
+    public FilteredSumVec(double lo, double hi) {
+      this.lo = lo;
+      this.hi = hi;
+    }
+    
+    @Override public void map(Chunk c) {
+      for (int i=0;i<c.len();++i) {
+        if (!c.isNA(i)) {
+          if (c.atd(i) >= lo && c.atd(i) < hi) {
+            sum++;
+          }
+        }
+      }
+    }
+    @Override public void reduce(FilteredSumVec mrt) { sum+=mrt.sum; }
+  }
+  
   // ----------------------
   private class QuantileDriver extends Driver {
 
@@ -106,8 +157,71 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
             _job.update(0);     // One unit of work
           }
           StringBuilder sb = new StringBuilder();
-          sb.append("Quantile: iter: ").append(model._output._iterations).append(" Qs=").append(Arrays.toString(model._output._quantiles[n]));
+          sb.append("Quantile: index=").append(n).append(" iter: ").append(model._output._iterations).append(" Qs=").append(Arrays.toString(model._output._quantiles[n]));
           Log.debug(sb);
+          //Log.info(sb);
+        }
+      } finally {
+        if( model != null ) model.unlock(_job);
+      }
+    }
+  }
+
+  private class LocalQuantileDriver extends Driver {
+
+    @Override public void computeImpl() {
+      QuantileModel model = null;
+      try {
+        init(true);
+
+        // The model to be built
+        model = new QuantileModel(dest(), _parms, new QuantileModel.QuantileOutput(Quantile.this));
+        model._output._parameters = _parms;
+        model._output._quantiles = new double[1][_parms._probs.length];
+        model.delete_and_lock(_job);
+
+        
+        if( stop_requested() ) return; // Stopped/cancelled
+        Vec vec = train().vec(_parms._local_column_index);
+        if (vec.isBad() || vec.isCategorical() || vec.isString() || vec.isTime() || vec.isUUID()) {
+          model._output._quantiles[0] = null;
+          //Arrays.fill(model._output._quantiles[0], Double.NaN);
+          
+        } else {
+          double sumRows = _weights == null ? new FilteredSumVec(_parms._lo, _parms._hi).doAll(vec).sum : new FilteredSumWeights(_parms._lo, _parms._hi).doAll(vec, _weights).sum;
+          if (sumRows != 0) {
+              // Compute histogram
+              double hi = _parms._hi;
+              if (vec.isInt()) {
+                  // because of Dtree returns min inclusive and max exclusive
+                  hi = hi - 1.0;
+              }
+              Histo h1 = new Histo(_parms._lo, _parms._hi, 0, sumRows, vec.isInt());
+              h1 = _weights == null ? h1.doAll(vec) : h1.doAll(vec, _weights);
+
+              // For each probability, see if we have it exactly - or else run
+              // passes until we do.
+              for (int p = 0; p < _parms._probs.length; p++) {
+                  double prob = _parms._probs[p];
+                  Histo h = h1;  // Start from the first global histogram
+
+                  model._output._iterations++; // At least one iter per-prob-per-column
+                  while (Double.isNaN(model._output._quantiles[0][p] = h.findQuantile(prob, _parms._combine_method))) {
+                      h = _weights == null ? h.refinePass(prob).doAll(vec) : h.refinePass(prob).doAll(vec, _weights); // Full pass at higher resolution
+                      model._output._iterations++; // also count refinement iterations
+                  }
+
+                  // Update the model
+                  model.update(_job); // Update model in K/V store
+                  _job.update(0);     // One unit of work
+              }
+          } else{
+              model._output._quantiles[0] = null;
+          }
+          StringBuilder sb = new StringBuilder();
+          sb.append("Quantile: index=").append(_parms._local_column_index).append(" iter: ").append(model._output._iterations).append(" Qs=").append(Arrays.toString(model._output._quantiles[0]));
+          Log.debug(sb);
+          //Log.info(sb);
         }
       } finally {
         if( model != null ) model.unlock(_job);
