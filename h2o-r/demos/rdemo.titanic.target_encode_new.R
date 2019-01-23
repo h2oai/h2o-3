@@ -66,7 +66,6 @@ loo_test <- h2o.target_encode_transform(frame=loo_test, x = te_cols, y = "surviv
 
 print("Run GBM with Leave One Out Target Encoding")
 myX <- setdiff(colnames(loo_test), c(te_cols, "survived", "name", "ticket", "boat", "body"))
-myX
 loo_gbm <- h2o.gbm(x = myX, y = "survived",
                    training_frame = loo_train, validation_frame = loo_valid,
                    ntrees = 1000, score_tree_interval = 10, model_id = "loo_gbm",
