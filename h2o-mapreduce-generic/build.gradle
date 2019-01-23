@@ -1,6 +1,6 @@
 apply plugin: 'java'
 
-description = 'H2O mapreduce generic driver for Hadoop 2'
+description = 'H2O Generic MapReduce Driver for Hadoop'
 
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
@@ -10,6 +10,7 @@ compileJava {
 }
 
 dependencies {
+  // we need to compile against something - the versions here are not important - assemblies will bundle the correct versions
   compileOnly "org.apache.hive:hive-jdbc:0.13.1-cdh5.2.0"
   compile "org.apache.hadoop:hadoop-client:2.5.0-cdh5.2.0"
   compile(project(':h2o-app')) {
