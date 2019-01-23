@@ -79,6 +79,21 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
+dev-python-2.7-openjdk-7: dev-python-2.7
+endif
+dev-python-2.7-openjdk-7:
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-python-2.7-openjdk-7$(GPU_SUFFIX):$(VERSION) \
+		-f jenkins-images/Dockerfile-openjdk-others \
+		--build-arg GPU_SUFFIX=$(GPU_SUFFIX) \
+		--build-arg FROM_VERSION=$(VERSION) \
+		--build-arg FROM_IMAGE=harbor.h2o.ai/opsh2oai/h2o-3/dev-python-2.7 \
+		--build-arg INSTALL_JAVA_VERSION=1.7.0 \
+		.
+ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
+	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-python-2.7-openjdk-7$(GPU_SUFFIX):$(VERSION)
+endif
+
+ifneq ($(CI), 1)
 dev-python-2.7-jdk-%: dev-python-2.7
 endif
 dev-python-2.7-jdk-%:
@@ -94,6 +109,21 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
+dev-python-3.5-openjdk-7: dev-python-3.5
+endif
+dev-python-3.5-openjdk-7:
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.5-openjdk-7$(GPU_SUFFIX):$(VERSION) \
+		-f jenkins-images/Dockerfile-jdk-others \
+		--build-arg GPU_SUFFIX=$(GPU_SUFFIX) \
+		--build-arg FROM_VERSION=$(VERSION) \
+		--build-arg FROM_IMAGE=harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.5 \
+		--build-arg INSTALL_JAVA_VERSION=1.7.0 \
+		.
+ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
+	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.5-openjdk-7$(GPU_SUFFIX):$(VERSION)
+endif
+
+ifneq ($(CI), 1)
 dev-python-3.5-jdk-%: dev-python-3.5
 endif
 dev-python-3.5-jdk-%:
@@ -106,6 +136,21 @@ dev-python-3.5-jdk-%:
 		.
 ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.5-jdk-$*$(GPU_SUFFIX):$(VERSION)
+endif
+
+ifneq ($(CI), 1)
+dev-python-3.6-openjdk-7: dev-python-3.6
+endif
+dev-python-3.6-openjdk-7:
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.6-openjdk-7$(GPU_SUFFIX):$(VERSION) \
+		-f jenkins-images/Dockerfile-jdk-others \
+		--build-arg GPU_SUFFIX=$(GPU_SUFFIX) \
+		--build-arg FROM_VERSION=$(VERSION) \
+		--build-arg FROM_IMAGE=harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.6 \
+		--build-arg INSTALL_JAVA_VERSION=1.7.0 \
+		.
+ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
+	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.6-openjdk-7$(GPU_SUFFIX):$(VERSION)
 endif
 
 ifneq ($(CI), 1)
@@ -139,6 +184,21 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
+dev-r-3.3.3-openjdk-7: dev-r-3.3.3
+endif
+dev-r-3.3.3-openjdk-7:
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.3.3-openjdk-7$(GPU_SUFFIX):$(VERSION) \
+		-f jenkins-images/Dockerfile-jdk-others \
+		--build-arg GPU_SUFFIX=$(GPU_SUFFIX) \
+		--build-arg FROM_VERSION=$(VERSION) \
+		--build-arg FROM_IMAGE=harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.3.3 \
+		--build-arg INSTALL_JAVA_VERSION=1.7.0 \
+		.
+ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
+	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.3.3-openjdk-7$(GPU_SUFFIX):$(VERSION)
+endif
+
+ifneq ($(CI), 1)
 dev-r-3.3.3-jdk-%: dev-r-3.3.3
 endif
 dev-r-3.3.3-jdk-%:
@@ -151,6 +211,21 @@ dev-r-3.3.3-jdk-%:
 		.
 ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.3.3-jdk-$*$(GPU_SUFFIX):$(VERSION)
+endif
+
+ifneq ($(CI), 1)
+dev-r-3.4.1-openjdk-7: dev-r-3.4.1
+endif
+dev-r-3.4.1-openjdk-7:
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.4.1-jdk-7$(GPU_SUFFIX):$(VERSION) \
+		-f jenkins-images/Dockerfile-jdk-others \
+		--build-arg GPU_SUFFIX=$(GPU_SUFFIX) \
+		--build-arg FROM_VERSION=$(VERSION) \
+		--build-arg FROM_IMAGE=harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.4.1 \
+		--build-arg INSTALL_JAVA_VERSION=1.7.0 \
+		.
+ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
+	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.4.1-openjdk-7$(GPU_SUFFIX):$(VERSION)
 endif
 
 ifneq ($(CI), 1)
@@ -180,6 +255,20 @@ dev-r-%:
 		.
 ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-r-$*$(GPU_SUFFIX):$(VERSION)
+endif
+
+ifneq ($(CI), 1)
+dev-openjdk-7: dev-jdk-others-base
+endif
+dev-openjdk-7:
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-openjdk-7$(GPU_SUFFIX):$(VERSION) \
+		-f jenkins-images/Dockerfile-openjdk-others \
+		--build-arg GPU_SUFFIX=$(GPU_SUFFIX) \
+		--build-arg FROM_VERSION=$(VERSION) \
+		--build-arg INSTALL_JAVA_VERSION=1.7.0 \
+		.
+ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
+	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-openjdk-7$(GPU_SUFFIX):$(VERSION)
 endif
 
 ifneq ($(CI), 1)
