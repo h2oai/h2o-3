@@ -20,6 +20,16 @@ class BroadcastJoinForTargetEncoder {
       this._foldValue = fold;
     }
 
+    CompositeLookupKey() {
+      this._levelValue = null;
+      this._foldValue = -1;
+    }
+    
+    public void update(String levelValue, int fold) {
+      this._levelValue = levelValue;
+      this._foldValue = fold;
+    }
+
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
@@ -61,8 +71,6 @@ class BroadcastJoinForTargetEncoder {
     IcedHashMap<CompositeLookupKey, EncodingData> _encodingDataMapPerNode = new IcedHashMap<>();
     int _categoricalColumnIdx, _foldColumnIdx, _numeratorIdx, _denominatorIdx;
 
-    IcedHashMap<CompositeLookupKey, EncodingData> _encodingDataMapFinal = new IcedHashMap<>();
-
     FrameWithEncodingDataToHashMap(int categoricalColumnIdx, int foldColumnId, int numeratorIdx, int denominatorIdx) {
       this._categoricalColumnIdx = categoricalColumnIdx;
       this._foldColumnIdx = foldColumnId;
@@ -91,15 +99,11 @@ class BroadcastJoinForTargetEncoder {
 
     @Override
     public void reduce(FrameWithEncodingDataToHashMap mrt) {
-      _encodingDataMapFinal.putAll(mrt.getEncodingDataMap());
+      _encodingDataMapPerNode.putAll(mrt.getEncodingDataMap());
     }
     
     IcedHashMap<CompositeLookupKey, EncodingData> getEncodingDataMap() {
       return _encodingDataMapPerNode;
-    }
-
-    public IcedHashMap<CompositeLookupKey, EncodingData> getEncodingDataMapFinal() {
-      return _encodingDataMapFinal;
     }
   }
 
@@ -142,6 +146,7 @@ class BroadcastJoinForTargetEncoder {
       int numOfVecs = cs.length;
       Chunk num = cs[numOfVecs - 2];
       Chunk den = cs[numOfVecs - 1];
+      CompositeLookupKey lookupKey = new CompositeLookupKey();
       for (int i = 0; i < num.len(); i++) {
         long levelValue = categoricalChunk.at8(i);
         String factor = categoricalChunk.vec().factor(levelValue);
@@ -153,7 +158,7 @@ class BroadcastJoinForTargetEncoder {
           foldValue = (int) foldValueFromVec;
         }
         
-        CompositeLookupKey lookupKey = new CompositeLookupKey(factor, foldValue);
+        lookupKey.update(factor, foldValue);
         EncodingData encodingData = _encodingDataMap.get(lookupKey);
         if(encodingData == null) {
           num.setNA(i);
