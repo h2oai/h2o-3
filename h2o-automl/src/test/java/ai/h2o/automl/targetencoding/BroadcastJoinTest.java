@@ -82,6 +82,10 @@ public class BroadcastJoinTest extends TestUtil {
     CompositeLookupKey lookupKey2 = new CompositeLookupKey(levelValue, randomInt);
     int actual = lookupKey2.hashCode();
     assertEquals(expected, actual);
+    
+    //Mutation of the fields will change hash code
+    lookupKey2.update("test", -1);
+    assertNotEquals(lookupKey2.hashCode(), actual);
   }
 
   @Test
@@ -106,6 +110,7 @@ public class BroadcastJoinTest extends TestUtil {
               .withDataForCol(0, ar("a", "b", "c"))
               .withDataForCol(1, ar(22, 33, 42))
               .withDataForCol(2, ar(44, 66, 84))
+              .withChunkLayout(1,1,1)
               .build();
 
       emptyNumerator = Vec.makeZero(fr.numRows());
@@ -125,7 +130,7 @@ public class BroadcastJoinTest extends TestUtil {
       if(rightFr != null) rightFr.delete();
     }
   }
-
+  
   @Test
   public void icedHashMapPutAllTest() {
 
