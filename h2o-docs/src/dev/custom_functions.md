@@ -90,7 +90,7 @@ For example, custom RMSE model metric:
 
 ```python
 class CustomRmseFunc:
-    def map(self, pred, act, w, o, model):
+    def map(self, pred, act, weight, offset, model):
         idx = int(act[0])
         err = 1 - pred[idx + 1] if idx + 1 < len(pred) else 1
         return [err * err, 1]
