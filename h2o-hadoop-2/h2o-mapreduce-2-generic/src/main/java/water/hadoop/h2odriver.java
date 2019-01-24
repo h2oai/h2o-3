@@ -152,7 +152,7 @@ public class h2odriver extends Configured implements Tool {
   static boolean driverDebug = false;
   static String hiveHost = null;
   static String hivePrincipal = null;
-  
+
   private final HiveTokenGenerator hiveTokenGenerator = new HiveTokenGenerator();
 
   String proxyUrl = null;
