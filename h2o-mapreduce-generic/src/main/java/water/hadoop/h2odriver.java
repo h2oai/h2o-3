@@ -152,6 +152,8 @@ public class h2odriver extends Configured implements Tool {
   static boolean driverDebug = false;
   static String hiveHost = null;
   static String hivePrincipal = null;
+  
+  private final HiveTokenGenerator hiveTokenGenerator = new HiveTokenGenerator();
 
   String proxyUrl = null;
   // Runtime state that might be touched by different threads.
@@ -1322,7 +1324,7 @@ public class h2odriver extends Configured implements Tool {
   private int mapperConfLength = 0;
 
   private void addMapperArg(Configuration conf, String name) {
-    conf.set(h2omapper.H2O_MAPPER_ARGS_BASE + Integer.toString(mapperArgsLength), name);
+    conf.set(h2omapper.H2O_MAPPER_ARGS_BASE + mapperArgsLength, name);
     mapperArgsLength++;
   }
 
@@ -1830,7 +1832,7 @@ public class h2odriver extends Configured implements Tool {
     j.setOutputKeyClass(Text.class);
     j.setOutputValueClass(Text.class);
 
-    new HiveTokenGenerator(driverDebug).addHiveDelegationToken(j, hiveHost, hivePrincipal);
+    hiveTokenGenerator.addHiveDelegationToken(j, hiveHost, hivePrincipal);
 
     if (outputPath != null)
       FileOutputFormat.setOutputPath(j, new Path(outputPath));
