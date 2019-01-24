@@ -929,14 +929,14 @@ class Test(object):
     def _pytest_cmd(test_name, ip, port, on_hadoop, hadoop_namenode):
         if g_pycoverage:
             pyver = "coverage-3.5" if g_py3 else "coverage"
-            cmd = [pyver, "run", "-a", g_py_test_setup, "--usecloud", ip + ":" + str(port), "--resultsDir",
+            cmd = [pyver, "run", "-a", g_py_test_setup, "--usecloud", g_use_proto + ip + ":" + str(port), "--resultsDir",
                    g_output_dir,
                    "--testName", test_name]
             print("Running Python test with coverage:")
             print(cmd)
         else:
             pyver = "python3.5" if g_py3 else "python"
-            cmd = [pyver, g_py_test_setup, "--usecloud", ip + ":" + str(port), "--resultsDir", g_output_dir,
+            cmd = [pyver, g_py_test_setup, "--usecloud", g_use_proto + ip + ":" + str(port), "--resultsDir", g_output_dir,
                    "--testName", test_name]
         if is_pyunit(test_name):
             if on_hadoop: cmd += ["--onHadoop"]
@@ -1922,6 +1922,7 @@ class TestRunner(object):
         if not port or int(port) <= 0:
             return False
         h2o_okay = False
+        proto = g_use_proto if g_use_proto else "http://"
         try:
             auth = None
             if g_ldap_password is not None and g_ldap_username is not None:
@@ -1929,7 +1930,7 @@ class TestRunner(object):
             elif g_kerb_principal is not None:
                 from h2o.auth import SpnegoAuth
                 auth = SpnegoAuth(service_principal=g_kerb_principal)
-            http = requests.get("http://{}:{}/3/Cloud?skip_ticks=true".format(ip, port), auth=auth)
+            http = requests.get("{}{}:{}/3/Cloud?skip_ticks=true".format(proto, ip, port), auth=auth, verify=False)
             json = http.json()
             if "cloud_healthy" in json:
                 h2o_okay = json["cloud_healthy"]
@@ -1992,6 +1993,7 @@ g_use_cloud = False
 g_use_cloud2 = False
 g_use_client = False
 g_config = None
+g_use_proto = ""
 g_use_ip = None
 g_use_port = None
 g_no_run = False
@@ -2256,6 +2258,7 @@ def parse_args(argv):
     global g_use_cloud2
     global g_use_client
     global g_config
+    global g_use_proto
     global g_use_ip
     global g_use_port
     global g_no_run
@@ -2366,10 +2369,15 @@ def parse_args(argv):
             if i >= len(argv):
                 usage()
             s = argv[i]
+            proto = ""
+            if s.lower().startswith("https://"):
+                proto = "https://"
+                s = s[8:]
             m = re.match(r'(\S+):([1-9][0-9]*)', s)
             if m is None:
                 unknown_arg(s)
             g_use_cloud = True
+            g_use_proto = proto
             g_use_ip = m.group(1)
             port_string = m.group(2)
             g_use_port = int(port_string)
