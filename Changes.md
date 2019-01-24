@@ -2,6 +2,33 @@
 
 ## H2O
 
+### Xu (3.22.1.3) - 1/25/2019
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-xu/3/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6186'>PUBDEV-6186</a>] - Improved error handling for a wrong Hive JDBC connector error.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6233'>PUBDEV-6233</a>] - Fixed an issue that caused H2O clusters to fail to come up on Cloudera 6 with HTTPS.
+</li>
+</ul>
+    
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6216'>PUBDEV-6216</a>] - Added Hive with Kerberos support for H2O on Hadoop. (STILL OPEN)
+</li>
+</ul>
+                    
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6219'>PUBDEV-6219</a>] - Updated the default value for min_rows in the User Guide when used with XGBoost, DRF, and Isolation Forest.
+</li>
+</ul>
+
 ### Xu (3.22.1.2) - 1/18/2019
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-xu/2/index.html</a>
