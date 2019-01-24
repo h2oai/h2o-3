@@ -316,20 +316,20 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
     // Arguments passed by the driver.
     int argsLength = Integer.parseInt(conf.get(H2O_MAPPER_ARGS_LENGTH));
     for (int i = 0; i < argsLength; i++) {
-      String arg = conf.get(H2O_MAPPER_ARGS_BASE + Integer.toString(i));
+      String arg = conf.get(H2O_MAPPER_ARGS_BASE + i);
       argsList.add(arg);
     }
 
     // Config files passed by the driver.
     int confLength = Integer.parseInt(conf.get(H2O_MAPPER_CONF_LENGTH));
     for (int i = 0; i < confLength; i++) {
-      String arg = conf.get(H2O_MAPPER_CONF_ARG_BASE + Integer.toString(i));
+      String arg = conf.get(H2O_MAPPER_CONF_ARG_BASE + i);
       // For files which are not passed as args (i.e. SSL certs)
       if(null != arg && !arg.isEmpty()) {
         argsList.add(arg);
       }
 
-      String basename = conf.get(H2O_MAPPER_CONF_BASENAME_BASE + Integer.toString(i));
+      String basename = conf.get(H2O_MAPPER_CONF_BASENAME_BASE + i);
       File f = new File(ice_root);
       boolean b = f.exists();
       if (! b) {
@@ -341,7 +341,7 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
         Log.POST(104, "after mkdirs()");
       }
       String fileName = ice_root + File.separator + basename;
-      String payload = conf.get(H2O_MAPPER_CONF_PAYLOAD_BASE + Integer.toString(i));
+      String payload = conf.get(H2O_MAPPER_CONF_PAYLOAD_BASE + i);
       byte[] byteArr = h2odriver.convertStringToByteArr(payload);
       h2odriver.writeBinaryFile(fileName, byteArr);
       if(null != arg && !arg.isEmpty()) {
