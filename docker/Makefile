@@ -217,7 +217,7 @@ ifneq ($(CI), 1)
 dev-r-3.4.1-openjdk-7: dev-r-3.4.1
 endif
 dev-r-3.4.1-openjdk-7:
-	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.4.1-jdk-7$(GPU_SUFFIX):$(VERSION) \
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.4.1-openjdk-7$(GPU_SUFFIX):$(VERSION) \
 		-f jenkins-images/Dockerfile-openjdk-others \
 		--build-arg GPU_SUFFIX=$(GPU_SUFFIX) \
 		--build-arg FROM_VERSION=$(VERSION) \
