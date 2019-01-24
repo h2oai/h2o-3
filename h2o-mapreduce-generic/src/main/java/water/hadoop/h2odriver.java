@@ -155,6 +155,8 @@ public class h2odriver extends Configured implements Tool {
   
   private final HiveTokenGenerator hiveTokenGenerator = new HiveTokenGenerator();
 
+  private final HiveTokenGenerator hiveTokenGenerator = new HiveTokenGenerator();
+
   String proxyUrl = null;
   // Runtime state that might be touched by different threads.
   volatile ServerSocket driverCallbackSocket = null;
