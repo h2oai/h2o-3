@@ -8,7 +8,6 @@ import water.util.Log;
 
 import java.math.BigDecimal;
 import java.sql.*;
-import java.util.Arrays;
 import java.util.concurrent.ArrayBlockingQueue;
 
 public class SQLManager {
@@ -40,190 +39,198 @@ public class SQLManager {
    * @param columns (Input)
    * @param sqlFetchMode (Input)
    */
-  public static Job<Frame> importSqlTable(final String connection_url, String table, final String select_query,
+  public static Job<Frame> importSqlTable(final String connection_url, final String table, final String select_query,
                                           final String username, final String password, final String columns,
                                           final SqlFetchMode sqlFetchMode) {
-    Connection conn = null;
-    Statement stmt = null;
-    ResultSet rs = null;
+
+    final Key<Frame> destination_key = Key.make((table + "_sql_to_hex").replaceAll("\\W", "_"));
+    final Job<Frame> j = new Job<>(destination_key, Frame.class.getName(), "Import SQL Table");
+
     final String databaseType = connection_url.split(":", 3)[1];
     initializeDatabaseDriver(databaseType);
-    int catcols = 0, intcols = 0, bincols = 0, realcols = 0, timecols = 0, stringcols = 0;
-    final int numCol;
-    long numRow = 0;
-    final String[] columnNames;
-    final byte[] columnH2OTypes;
-    try {
-      conn = DriverManager.getConnection(connection_url, username, password);
-      stmt = conn.createStatement();
-      //set fetch size for improved performance
-      stmt.setFetchSize(1);
-      //if select_query has been specified instead of table
-      if (table.equals("")) {
-        if (!select_query.toLowerCase().startsWith("select")) {
-          throw new IllegalArgumentException("The select_query must start with `SELECT`, but instead is: " + select_query);
-        }
 
-        //if tmp table disabled, we use sub-select instead, which outperforms tmp table for very large queries/tables
-        // the main drawback of sub-selects is that we lose isolation, but as we're only reading data
-        // and counting the rows from the beginning, it should not an issue (at least when using hive...)
-        final boolean createTmpTable = Boolean.parseBoolean(System.getProperty(TMP_TABLE_ENABLED, "true")); //default to true to keep old behaviour
-        if (createTmpTable) {
-          table = SQLManager.TEMP_TABLE_NAME;
-          //returns number of rows, but as an int, not long. if int max value is exceeded, result is negative
-          numRow = stmt.executeUpdate("CREATE TABLE " + table + " AS " + select_query);
-        } else {
-          table = "(" + select_query + ") sub_h2o_import";
-        }
-      } else if (table.equals(SQLManager.TEMP_TABLE_NAME)) {
-        //tables with this name are assumed to be created here temporarily and are dropped
-        throw new IllegalArgumentException("The specified table cannot be named: " + SQLManager.TEMP_TABLE_NAME);
-      }
-      //get number of rows. check for negative row count
-      if (numRow <= 0) {
-        rs = stmt.executeQuery("SELECT COUNT(1) FROM " + table);
-        rs.next();
-        numRow = rs.getLong(1);
-        rs.close();
-      }
-      //get H2O column names and types
-      if (SqlFetchMode.DISTRIBUTED.equals(sqlFetchMode)) {
-        rs = stmt.executeQuery(buildSelectSingleRowSql(databaseType, table, columns));
-      } else {
-        // we use a simpler SQL-dialect independent query in the `streaming` mode because the goal is to be dialect independent
-        stmt.setMaxRows(1);
-        rs = stmt.executeQuery("SELECT " + columns + " FROM " + table);
-      }
-      ResultSetMetaData rsmd = rs.getMetaData();
-      numCol = rsmd.getColumnCount();
-
-      columnNames = new String[numCol];
-      columnH2OTypes = new byte[numCol];
-
-      rs.next();
-      for (int i = 0; i < numCol; i++) {
-        columnNames[i] = rsmd.getColumnName(i + 1);
-        //must iterate through sql types instead of getObject bc object could be null
-        switch (rsmd.getColumnType(i + 1)) {
-          case Types.NUMERIC:
-          case Types.REAL:
-          case Types.DOUBLE:
-          case Types.FLOAT:
-          case Types.DECIMAL:
-            columnH2OTypes[i] = Vec.T_NUM;
-            realcols += 1;
-            break;
-          case Types.INTEGER:
-          case Types.TINYINT:
-          case Types.SMALLINT:
-          case Types.BIGINT:
-            columnH2OTypes[i] = Vec.T_NUM;
-            intcols += 1;
-            break;
-          case Types.BIT:
-          case Types.BOOLEAN:
-            columnH2OTypes[i] = Vec.T_NUM;
-            bincols += 1;
-            break;
-          case Types.VARCHAR:
-          case Types.NVARCHAR:
-          case Types.CHAR:
-          case Types.NCHAR:
-          case Types.LONGVARCHAR:
-          case Types.LONGNVARCHAR:
-            columnH2OTypes[i] = Vec.T_STR;
-            stringcols += 1;
-            break;
-          case Types.DATE:
-          case Types.TIME:
-          case Types.TIMESTAMP:
-            columnH2OTypes[i] = Vec.T_TIME;
-            timecols += 1;
-            break;
-          default:
-            Log.warn("Unsupported column type: " + rsmd.getColumnTypeName(i + 1));
-            columnH2OTypes[i] = Vec.T_BAD;
-        }
-      }
-
-    } catch (SQLException ex) {
-      throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to connect and read from SQL database with connection_url: " + connection_url, ex);
-    } finally {
-      // release resources in a finally{} block in reverse-order of their creation
-      if (rs != null) {
-        try {
-          rs.close();
-        } catch (SQLException sqlEx) {} // ignore
-        rs = null;
-      }
-
-      if (stmt != null) {
-        try {
-          stmt.close();
-        } catch (SQLException sqlEx) {} // ignore
-        stmt = null;
-      }
-
-      if (conn != null) {
-        try {
-          conn.close();
-        } catch (SQLException sqlEx) {} // ignore
-        conn = null;
-      }
-    }
-
-    double binary_ones_fraction = 0.5; //estimate
-
-    //create template vectors in advance and run MR
-    final long totSize =
-            (long)((float)(catcols+intcols)*numRow*4 //4 bytes for categoricals and integers
-                    +(float)bincols          *numRow*1*binary_ones_fraction //sparse uses a fraction of one byte (or even less)
-                    +(float)(realcols+timecols+stringcols) *numRow*8); //8 bytes for real and time (long) values
-
-    final Vec vec;
-    final int chunk_size = FileVec.calcOptimalChunkSize(totSize, numCol, numCol * 4,
-            H2O.ARGS.nthreads, H2O.getCloudSize(), false, false);
-    final double rows_per_chunk = chunk_size; //why not numRow * chunk_size / totSize; it's supposed to be rows per chunk, not the byte size
-    final int num_chunks = Vec.nChunksFor(numRow, (int) Math.ceil(Math.log1p(rows_per_chunk)), false);
-
-    if (SqlFetchMode.DISTRIBUTED.equals(sqlFetchMode)) {
-      final int num_retrieval_chunks = ConnectionPoolProvider.estimateConcurrentConnections(H2O.getCloudSize(), H2O.ARGS.nthreads);
-      vec = num_retrieval_chunks >= num_chunks
-              ? Vec.makeConN(numRow, num_chunks)
-              : Vec.makeConN(numRow, num_retrieval_chunks);
-    } else {
-      vec = Vec.makeConN(numRow, num_chunks);
-    }
-    Log.info("Number of chunks for data retrieval: " + vec.nChunks() + ", number of rows:" + numRow);
-    //create frame
-    final Key<Frame> destination_key = Key.make((table + "_sql_to_hex").replaceAll("\\W", "_"));
-    final Job<Frame> j = new Job(destination_key, Frame.class.getName(), "Import SQL Table");
-
-    final String finalTable = table;
     H2O.H2OCountedCompleter work = new H2O.H2OCountedCompleter() {
       @Override
       public void compute2() {
+        j.update(0, "Initializing import");
+        Connection conn = null;
+        Statement stmt = null;
+        ResultSet rs = null;
+        int catcols = 0, intcols = 0, bincols = 0, realcols = 0, timecols = 0, stringcols = 0;
+        final int numCol;
+        long numRow = 0;
+        String source_table = table;
+        final String[] columnNames;
+        final byte[] columnH2OTypes;
+        try {
+          conn = DriverManager.getConnection(connection_url, username, password);
+          stmt = conn.createStatement();
+          //set fetch size for improved performance
+          stmt.setFetchSize(1);
+          //if select_query has been specified instead of source_table
+          if (source_table.equals("")) {
+            if (!select_query.toLowerCase().startsWith("select")) {
+              throw new IllegalArgumentException("The select_query must start with `SELECT`, but instead is: " + select_query);
+            }
+    
+            //if tmp source_table disabled, we use sub-select instead, which outperforms tmp source_table for very large queries/tables
+            // the main drawback of sub-selects is that we lose isolation, but as we're only reading data
+            // and counting the rows from the beginning, it should not an issue (at least when using hive...)
+            final boolean createTmpTable = Boolean.parseBoolean(System.getProperty(TMP_TABLE_ENABLED, "true")); //default to true to keep old behaviour
+            if (createTmpTable) {
+              source_table = SQLManager.TEMP_TABLE_NAME;
+              //returns number of rows, but as an int, not long. if int max value is exceeded, result is negative
+              numRow = stmt.executeUpdate("CREATE TABLE " + source_table + " AS " + select_query);
+            } else {
+              source_table = "(" + select_query + ") sub_h2o_import";
+            }
+          } else if (source_table.equals(SQLManager.TEMP_TABLE_NAME)) {
+            //tables with this name are assumed to be created here temporarily and are dropped
+            throw new IllegalArgumentException("The specified source_table cannot be named: " + SQLManager.TEMP_TABLE_NAME);
+          }
+          //get number of rows. check for negative row count
+          if (numRow <= 0) {
+            rs = stmt.executeQuery("SELECT COUNT(1) FROM " + source_table);
+            rs.next();
+            numRow = rs.getLong(1);
+            rs.close();
+          }
+          //get H2O column names and types
+          if (SqlFetchMode.DISTRIBUTED.equals(sqlFetchMode)) {
+            rs = stmt.executeQuery(buildSelectSingleRowSql(databaseType, source_table, columns));
+          } else {
+            // we use a simpler SQL-dialect independent query in the `streaming` mode because the goal is to be dialect independent
+            stmt.setMaxRows(1);
+            rs = stmt.executeQuery("SELECT " + columns + " FROM " + source_table);
+          }
+          ResultSetMetaData rsmd = rs.getMetaData();
+          numCol = rsmd.getColumnCount();
+    
+          columnNames = new String[numCol];
+          columnH2OTypes = new byte[numCol];
+    
+          rs.next();
+          for (int i = 0; i < numCol; i++) {
+            columnNames[i] = rsmd.getColumnName(i + 1);
+            //must iterate through sql types instead of getObject bc object could be null
+            switch (rsmd.getColumnType(i + 1)) {
+              case Types.NUMERIC:
+              case Types.REAL:
+              case Types.DOUBLE:
+              case Types.FLOAT:
+              case Types.DECIMAL:
+                columnH2OTypes[i] = Vec.T_NUM;
+                realcols += 1;
+                break;
+              case Types.INTEGER:
+              case Types.TINYINT:
+              case Types.SMALLINT:
+              case Types.BIGINT:
+                columnH2OTypes[i] = Vec.T_NUM;
+                intcols += 1;
+                break;
+              case Types.BIT:
+              case Types.BOOLEAN:
+                columnH2OTypes[i] = Vec.T_NUM;
+                bincols += 1;
+                break;
+              case Types.VARCHAR:
+              case Types.NVARCHAR:
+              case Types.CHAR:
+              case Types.NCHAR:
+              case Types.LONGVARCHAR:
+              case Types.LONGNVARCHAR:
+                columnH2OTypes[i] = Vec.T_STR;
+                stringcols += 1;
+                break;
+              case Types.DATE:
+              case Types.TIME:
+              case Types.TIMESTAMP:
+                columnH2OTypes[i] = Vec.T_TIME;
+                timecols += 1;
+                break;
+              default:
+                Log.warn("Unsupported column type: " + rsmd.getColumnTypeName(i + 1));
+                columnH2OTypes[i] = Vec.T_BAD;
+            }
+          }
+    
+        } catch (SQLException ex) {
+          throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to connect and read from SQL database with connection_url: " + connection_url, ex);
+        } finally {
+          // release resources in a finally{} block in reverse-order of their creation
+          if (rs != null) {
+            try {
+              rs.close();
+            } catch (SQLException sqlEx) {} // ignore
+            rs = null;
+          }
+    
+          if (stmt != null) {
+            try {
+              stmt.close();
+            } catch (SQLException sqlEx) {} // ignore
+            stmt = null;
+          }
+    
+          if (conn != null) {
+            try {
+              conn.close();
+            } catch (SQLException sqlEx) {} // ignore
+            conn = null;
+          }
+        }
+    
+        double binary_ones_fraction = 0.5; //estimate
+    
+        //create template vectors in advance and run MR
+        final long totSize =
+                (long)((float)(catcols+intcols)*numRow*4 //4 bytes for categoricals and integers
+                        +(float)bincols          *numRow*1*binary_ones_fraction //sparse uses a fraction of one byte (or even less)
+                        +(float)(realcols+timecols+stringcols) *numRow*8); //8 bytes for real and time (long) values
+    
+        final Vec vec;
+        final int chunk_size = FileVec.calcOptimalChunkSize(totSize, numCol, numCol * 4,
+                H2O.ARGS.nthreads, H2O.getCloudSize(), false, false);
+        final double rows_per_chunk = chunk_size; //why not numRow * chunk_size / totSize; it's supposed to be rows per chunk, not the byte size
+        final int num_chunks = Vec.nChunksFor(numRow, (int) Math.ceil(Math.log1p(rows_per_chunk)), false);
+    
+        if (SqlFetchMode.DISTRIBUTED.equals(sqlFetchMode)) {
+          final int num_retrieval_chunks = ConnectionPoolProvider.estimateConcurrentConnections(H2O.getCloudSize(), H2O.ARGS.nthreads);
+          vec = num_retrieval_chunks >= num_chunks
+                  ? Vec.makeConN(numRow, num_chunks)
+                  : Vec.makeConN(numRow, num_retrieval_chunks);
+        } else {
+          vec = Vec.makeConN(numRow, num_chunks);
+        }
+
+        Log.info("Number of chunks for data retrieval: " + vec.nChunks() + ", number of rows:" + numRow);
+        j.setWork(vec.nChunks());
+        
+        //create frame
+        j.update(0L, "Importing data");
+        final String importTable = source_table;
         final ConnectionPoolProvider provider = new ConnectionPoolProvider(connection_url, username, password, vec.nChunks());
         final Frame fr;
 
         if (SqlFetchMode.DISTRIBUTED.equals(sqlFetchMode)) {
-          fr = new SqlTableToH2OFrame(finalTable, databaseType, columns, columnNames, numCol, j, provider)
+          fr = new SqlTableToH2OFrame(importTable, databaseType, columns, columnNames, numCol, j, provider)
                   .doAll(columnH2OTypes, vec)
                   .outputFrame(destination_key, columnNames, null);
         } else {
-          fr = new SqlTableToH2OFrameStreaming(finalTable, databaseType, columns, columnNames, numCol, j, provider)
+          fr = new SqlTableToH2OFrameStreaming(importTable, databaseType, columns, columnNames, numCol, j, provider)
                   .readTable(vec, columnH2OTypes, destination_key);
         }
         vec.remove();
 
         DKV.put(fr);
         ParseDataset.logParseResults(fr);
-        if (finalTable.equals(SQLManager.TEMP_TABLE_NAME))
+        if (importTable.equals(SQLManager.TEMP_TABLE_NAME))
           dropTempTable(connection_url, username, password);
         tryComplete();
       }
     };
-    j.start(work, vec.nChunks());
+    j.start(work, Job.WORK_UNKNOWN);
 
     return j;
   }
