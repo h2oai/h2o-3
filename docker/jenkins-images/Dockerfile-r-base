@@ -11,6 +11,7 @@ RUN \
         zip \
         python-pip && \
     apt-get -y build-dep r-base && \
+    apt-get -y remove openjdk-8-jdk openjdk-8-jdk-headless openjdk-8-jre openjdk-8-jre-headless && \
     apt-get clean && \
     apt-get autoremove -y && \
     rm -rf /var/cache/apt/* && \
