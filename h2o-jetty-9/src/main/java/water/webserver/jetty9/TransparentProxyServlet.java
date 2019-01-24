@@ -1,5 +1,6 @@
 package water.webserver.jetty9;
 
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.proxy.ProxyServlet;
 
@@ -8,6 +9,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 
 /**
@@ -20,6 +22,12 @@ public class TransparentProxyServlet extends ProxyServlet.Transparent {
   public void init(ServletConfig config) throws ServletException {
     super.init(config);
     _basicAuth = config.getInitParameter("BasicAuth");
+  }
+
+  @Override
+  protected HttpClient newHttpClient() {
+    final SslContextFactory sslContextFactory = new SslContextFactory(true);
+    return new HttpClient(sslContextFactory);
   }
 
   @Override
