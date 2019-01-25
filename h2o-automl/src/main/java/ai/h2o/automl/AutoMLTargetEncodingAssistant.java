@@ -3,10 +3,13 @@ package ai.h2o.automl;
 import ai.h2o.automl.targetencoding.BlendingParams;
 import ai.h2o.automl.targetencoding.TargetEncoder;
 import ai.h2o.automl.targetencoding.TargetEncodingParams;
+import ai.h2o.automl.targetencoding.strategy.AllCategoricalTEApplicationStrategy;
+import ai.h2o.automl.targetencoding.strategy.FixedTEParamsStrategy;
 import ai.h2o.automl.targetencoding.strategy.TEApplicationStrategy;
 import ai.h2o.automl.targetencoding.strategy.TEParamsSelectionStrategy;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.TwoDimTable;
 
 import java.util.Map;
 
@@ -42,10 +45,11 @@ class AutoMLTargetEncodingAssistant{
     _responseColumn = responseColumn;
     _foldColumn = foldColumn;
     _buildSpec = buildSpec;
-    _teParamsSelectionStrategy = teParamsSelectionStrategy;
+    _teParamsSelectionStrategy = teParamsSelectionStrategy != null ? teParamsSelectionStrategy : new FixedTEParamsStrategy(TargetEncodingParams.DEFAULT);
     _teParams = _teParamsSelectionStrategy.getBestParams();
-    _applicationStrategy = applicationStrategy;
+    _applicationStrategy = applicationStrategy != null ? applicationStrategy : new AllCategoricalTEApplicationStrategy(trainingFrame, responseColumn);
   }
+
 
   void performAutoTargetEncoding() {
     
@@ -68,45 +72,43 @@ class AutoMLTargetEncodingAssistant{
       
       switch (holdoutType) {
         case TargetEncoder.DataLeakageHandlingStrategy.KFold:
-
           Frame encodedTrainingFrame = tec.applyTargetEncoding(_trainingFrame, responseColumnName, encodingMap, holdoutType, getFoldColumnName(), withBlendedAvg, noiseLevel, imputeNAsWithNewCategory, seed);
-//           need to check that our added columns match original ones(the ones with imputed values)
-          copyEncodedColumnsToDestinationFrame(columnsToEncode, encodedTrainingFrame, _trainingFrame);
+          copyEncodedColumnsToDestinationFrameAndRemoveSource(columnsToEncode, encodedTrainingFrame, _trainingFrame);
 
           if(_validationFrame != null) {
             Frame encodedValidationFrame = tec.applyTargetEncoding(_validationFrame, responseColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, getFoldColumnName(), withBlendedAvg, 0, imputeNAsWithNewCategory, seed);
-            copyEncodedColumnsToDestinationFrame(columnsToEncode, encodedValidationFrame, _validationFrame);
+            copyEncodedColumnsToDestinationFrameAndRemoveSource(columnsToEncode, encodedValidationFrame, _validationFrame);
           }
           if(_leaderboardFrame != null) {
             Frame encodedLeaderboardFrame = tec.applyTargetEncoding(_leaderboardFrame, responseColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, getFoldColumnName(), withBlendedAvg, 0, imputeNAsWithNewCategory, seed);
-            copyEncodedColumnsToDestinationFrame(columnsToEncode, encodedLeaderboardFrame, _leaderboardFrame);
+            copyEncodedColumnsToDestinationFrameAndRemoveSource(columnsToEncode, encodedLeaderboardFrame, _leaderboardFrame);
           }
           break;
           
         case TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut:
           Frame encodedTrainingFrameLOO = tec.applyTargetEncoding(_trainingFrame, responseColumnName, encodingMap, holdoutType, withBlendedAvg, noiseLevel, imputeNAsWithNewCategory,seed);
-          copyEncodedColumnsToDestinationFrame(columnsToEncode, encodedTrainingFrameLOO, _trainingFrame);
+          copyEncodedColumnsToDestinationFrameAndRemoveSource(columnsToEncode, encodedTrainingFrameLOO, _trainingFrame);
 
           if(_validationFrame != null) {
             Frame encodedValidationFrame = tec.applyTargetEncoding(_validationFrame, responseColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, withBlendedAvg, 0,  imputeNAsWithNewCategory, seed);
-            copyEncodedColumnsToDestinationFrame(columnsToEncode, encodedValidationFrame, _validationFrame);
+            copyEncodedColumnsToDestinationFrameAndRemoveSource(columnsToEncode, encodedValidationFrame, _validationFrame);
           }
           if(_leaderboardFrame != null) {
             Frame encodedLeaderboardFrame = tec.applyTargetEncoding(_leaderboardFrame, responseColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, withBlendedAvg, 0, imputeNAsWithNewCategory, seed);
-            copyEncodedColumnsToDestinationFrame(columnsToEncode, encodedLeaderboardFrame, _leaderboardFrame);
+            copyEncodedColumnsToDestinationFrameAndRemoveSource(columnsToEncode, encodedLeaderboardFrame, _leaderboardFrame);
           }
           break;
         case TargetEncoder.DataLeakageHandlingStrategy.None:
           Frame encodedTrainingFrameNone = tec.applyTargetEncoding(_trainingFrame, responseColumnName, encodingMap, holdoutType, withBlendedAvg, noiseLevel, imputeNAsWithNewCategory, seed);
-          copyEncodedColumnsToDestinationFrame(columnsToEncode, encodedTrainingFrameNone, _trainingFrame);
+          copyEncodedColumnsToDestinationFrameAndRemoveSource(columnsToEncode, encodedTrainingFrameNone, _trainingFrame);
 
           if(_validationFrame != null) {
             Frame encodedValidationFrameNone = tec.applyTargetEncoding(_validationFrame, responseColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, withBlendedAvg, 0, imputeNAsWithNewCategory, seed);
-            copyEncodedColumnsToDestinationFrame(columnsToEncode, encodedValidationFrameNone, _validationFrame);
+            copyEncodedColumnsToDestinationFrameAndRemoveSource(columnsToEncode, encodedValidationFrameNone, _validationFrame);
           }
           if(_leaderboardFrame != null) {
             Frame encodedLeaderboardFrameNone = tec.applyTargetEncoding(_leaderboardFrame, responseColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, withBlendedAvg, 0, imputeNAsWithNewCategory, seed);
-            copyEncodedColumnsToDestinationFrame(columnsToEncode, encodedLeaderboardFrameNone, _leaderboardFrame);
+            copyEncodedColumnsToDestinationFrameAndRemoveSource(columnsToEncode, encodedLeaderboardFrameNone, _leaderboardFrame);
           }
       }
       encodingMapCleanUp(encodingMap);
@@ -114,16 +116,15 @@ class AutoMLTargetEncodingAssistant{
   }
 
   //Note: we could have avoided this if we were following mutable way in TargetEncoder
-  private void copyEncodedColumnsToDestinationFrame(String[] columnsToEncode, Frame encodedFrame, Frame destinationFrame) {
+  void copyEncodedColumnsToDestinationFrameAndRemoveSource(String[] columnsToEncode, Frame sourceWithEncodings, Frame destinationFrame) {
     for(String column :columnsToEncode) {
       String encodedColumnName = column + "_te";
-      Vec encodedVec = encodedFrame.vec(encodedColumnName);
+      Vec encodedVec = sourceWithEncodings.vec(encodedColumnName);
       Vec encodedVecCopy = encodedVec.makeCopy();
       destinationFrame.add(encodedColumnName, encodedVecCopy);
       encodedVec.remove();
-      encodedVecCopy.remove();
     }
-    encodedFrame.delete();
+    sourceWithEncodings.delete();
   }
 
   private void encodingMapCleanUp(Map<String, Frame> encodingMap) {

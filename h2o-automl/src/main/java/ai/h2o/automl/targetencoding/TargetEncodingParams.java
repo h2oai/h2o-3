@@ -11,17 +11,21 @@ public class TargetEncodingParams extends Iced {
 
   private boolean _imputeNAsWithNewCategory = true;
 
-  public TargetEncodingParams( BlendingParams blendingParams, byte holdoutType) {
+  public TargetEncodingParams( BlendingParams blendingParams, byte holdoutType, double noiseLevel) {
     if(blendingParams != null) this._withBlendedAvg = true;
     this._blendingParams = blendingParams;
     this._holdoutType = holdoutType;
+    this._noiseLevel = noiseLevel;
   }
   
   public TargetEncodingParams( byte holdoutType) {
     this._withBlendedAvg = false;
     this._blendingParams = null;
     this._holdoutType = holdoutType;
+    this._noiseLevel = 0;
   }
+  
+  public static TargetEncodingParams DEFAULT = new TargetEncodingParams(new BlendingParams(10, 5), TargetEncoder.DataLeakageHandlingStrategy.KFold, 0.01);
 
   public BlendingParams getBlendingParams() {
     return _blendingParams;

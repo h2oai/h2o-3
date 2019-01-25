@@ -12,10 +12,12 @@ import org.junit.Test;
 import water.DKV;
 import water.Key;
 import water.fvec.Frame;
+import water.fvec.TestFrameBuilder;
+import water.fvec.Vec;
 
 import java.util.Map;
 
-import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
+import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.encodingMapCleanUp;
 import static org.junit.Assert.*;
 
 public class TargetEncodingIntegrationWithAutoMLTest extends water.TestUtil {
@@ -60,23 +62,35 @@ public class TargetEncodingIntegrationWithAutoMLTest extends water.TestUtil {
     AutoML aml=null;
     Frame fr=null;
     Model leader = null;
+    Frame trainingFrame = null;
+    String teColumnName = "ColA";
+    String responseColumnName = "ColC";
+    String foldColumnName = "fold";
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      //NOTE: We can't use parse_test_file method because behaviour of the Frame would be different comparing to TestFrameBuilder's frames
+      //fr = parse_test_file("./smalldata/gbm_test/titanic.csv"); 
+      fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames(teColumnName, "ColB", responseColumnName, foldColumnName)
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
+              .withDataForCol(0, ar("a", "b", "b", "b", "a"))
+              .withDataForCol(1, ard(1, 1, 4, 7, 4))
+              .withDataForCol(2, ar("2", "6", "6", "6", "6"))
+              .withDataForCol(3, ar(1, 2, 2, 3, 2))
+              .build();
       
-      String foldColumnName = "fold";
-      addKFoldColumn(fr, foldColumnName, 5, 1234L);
-      String responceColumnName = "survived";
-      TargetEncoderFrameHelper.factorColumn(fr, responceColumnName);
+      TargetEncoderFrameHelper.factorColumn(fr, responseColumnName);
       
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.fold_column = foldColumnName;
-      autoMLBuildSpec.input_spec.response_column = responceColumnName;
+      autoMLBuildSpec.input_spec.response_column = responseColumnName;
 
-      TargetEncodingParams targetEncodingParams = new TargetEncodingParams(new BlendingParams(5, 1), TargetEncoder.DataLeakageHandlingStrategy.KFold);
+      TargetEncodingParams targetEncodingParams = new TargetEncodingParams(new BlendingParams(5, 1), TargetEncoder.DataLeakageHandlingStrategy.KFold, 0.01);
       TEParamsSelectionStrategy fixedTEParamsStrategy =  new FixedTEParamsStrategy(targetEncodingParams);
 
-      TEApplicationStrategy teApplicationStrategy = new AllCategoricalTEApplicationStrategy(fr, fr.vec(responceColumnName)); //TODO we can introduce ENUM and create factory based on it
+      Vec responseColumn = fr.vec(responseColumnName);
+      TEApplicationStrategy teApplicationStrategy = new AllCategoricalTEApplicationStrategy(fr, responseColumn); //TODO we can introduce ENUM and create factory based on it
       
       autoMLBuildSpec.te_spec.application_strategy = teApplicationStrategy;
       autoMLBuildSpec.te_spec.params_selection_strategy = fixedTEParamsStrategy;
@@ -90,7 +104,8 @@ public class TargetEncodingIntegrationWithAutoMLTest extends water.TestUtil {
 
       leader = aml.leader();
 
-      Frame trainingFrame = aml.getTrainingFrame();
+      trainingFrame = aml.getTrainingFrame();
+      
       assertNotEquals(" Two frames should be different.", fr, trainingFrame);
       assertEquals(teApplicationStrategy.getColumnsToEncode().length + fr.numCols(), trainingFrame.numCols());
       
@@ -99,32 +114,49 @@ public class TargetEncodingIntegrationWithAutoMLTest extends water.TestUtil {
     } finally {
       if(leader!=null) leader.delete();
       if(aml!=null) aml.delete();
+      if(trainingFrame != null)  trainingFrame.delete();
       if(fr != null) fr.delete();
     }
   }
 
+  @Test public void defaultStrategiesTest() {
+    //TODO check that if we don't specify stratagies in AutoMLBuildSpec then default ones will be applied
+  }
+  
+  
   @Test public void KFoldFixedParamsAllCategoricalTest() {
     AutoML aml=null;
     Frame fr=null;
     Model leader = null;
+    String teColumnName = "ColA";
+    String responseColumnName = "ColC";
+    String foldColumnName = "fold";
     try {
       // TODO refactor out buildspec fixture.
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames(teColumnName, "ColB", responseColumnName, foldColumnName)
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
+              .withDataForCol(0, ar("a", "b", "b", "b", "a"))
+              .withDataForCol(1, ard(1, 1, 4, 7, 4))
+              .withDataForCol(2, ar("2", "6", "6", "6", "6"))
+              .withDataForCol(3, ar(1, 2, 2, 3, 2))
+              .build();
 
-      String foldColumnName = "fold";
-      addKFoldColumn(fr, foldColumnName, 5, 1234L);
-      String responceColumnName = "survived";
-      TargetEncoderFrameHelper.factorColumn(fr, responceColumnName);
+      Frame copyOfTheTrainingFrame = fr.deepCopy("copy_of_the_training_frame");
+      DKV.put(copyOfTheTrainingFrame);
+      
+      TargetEncoderFrameHelper.factorColumn(fr, responseColumnName);
 
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.fold_column = foldColumnName;
-      autoMLBuildSpec.input_spec.response_column = responceColumnName;
+      autoMLBuildSpec.input_spec.response_column = responseColumnName;
 
-      TargetEncodingParams targetEncodingParams = new TargetEncodingParams(new BlendingParams(5, 1), TargetEncoder.DataLeakageHandlingStrategy.KFold);
+      TargetEncodingParams targetEncodingParams = new TargetEncodingParams(new BlendingParams(5, 1), TargetEncoder.DataLeakageHandlingStrategy.KFold, 0.01);
       TEParamsSelectionStrategy fixedTEParamsStrategy =  new FixedTEParamsStrategy(targetEncodingParams);
 
-      TEApplicationStrategy teApplicationStrategy = new AllCategoricalTEApplicationStrategy(fr, fr.vec(responceColumnName));
+      TEApplicationStrategy teApplicationStrategy = new AllCategoricalTEApplicationStrategy(fr, fr.vec(responseColumnName));
 
       autoMLBuildSpec.te_spec.application_strategy = teApplicationStrategy;
       autoMLBuildSpec.te_spec.params_selection_strategy = fixedTEParamsStrategy;
@@ -139,27 +171,24 @@ public class TargetEncodingIntegrationWithAutoMLTest extends water.TestUtil {
 
       leader = aml.leader();
 
-      Frame trainingFrameAutoMLWasTrainingOn = aml.getTrainingFrame();
-      Frame copyOfTheTrainingFrame = fr.deepCopy("copy_of_the_training_frame");
-      DKV.put(copyOfTheTrainingFrame);
+      Frame trainingEncodingsFromAutoML = aml.getTrainingFrame();
 
-      // Preparing expected values with just TargetEncoding class
+      // Preparing expected values with just TargetEncoding class to compare against encodings from AutoML process 
       String[] teColumns = teApplicationStrategy.getColumnsToEncode();
       TargetEncoder tec = new TargetEncoder(teColumns, targetEncodingParams.getBlendingParams());
 
-      Map<String, Frame> encodingMap = tec.prepareEncodingMap(copyOfTheTrainingFrame, responceColumnName, foldColumnName, targetEncodingParams.isImputeNAsWithNewCategory());
+      Map<String, Frame> encodingMap = tec.prepareEncodingMap(copyOfTheTrainingFrame, responseColumnName, foldColumnName, targetEncodingParams.isImputeNAsWithNewCategory());
       
-      Frame expectedTrainingEncodedFrame = tec.applyTargetEncoding(copyOfTheTrainingFrame, responceColumnName, encodingMap, targetEncodingParams.getHoldoutType(),
+      Frame expectedTrainingEncodedFrameFromTE = tec.applyTargetEncoding(copyOfTheTrainingFrame, responseColumnName, encodingMap, targetEncodingParams.getHoldoutType(),
               foldColumnName, targetEncodingParams.isWithBlendedAvg(), targetEncodingParams.isImputeNAsWithNewCategory(), autoMLBuildSpec.te_spec.seed);
 
-      //We need to find a way of how to sort both frames so that we can compare them. Use MRTast to add id column.
-      printOutFrameAsTable(expectedTrainingEncodedFrame.sort(new int[]{7}), false, 13);
-      printOutFrameAsTable(trainingFrameAutoMLWasTrainingOn.sort(new int[]{2}), false, 13);
-//      printOutFrameAsTable(expectedTrainingEncodedFrame.subframe(teColumns).sort(new int[]{3}), false, 1309);
-//      printOutFrameAsTable(trainingFrameAutoMLWasTrainingOn.subframe(teColumns).sort(new int[]{3}), false, 1309);
-
       // We are ready to assert encodings from AutoML process and encodings directly from TargetEncoder
-//      assertTrue(isBitIdentical(expectedTrainingEncodedFrame.subframe(teColumns).sort(new int[]{3}), trainingFrameAutoMLWasTrainingOn.subframe(teColumns).sort(new int[]{3})));
+      assertTrue(isBitIdentical(trainingEncodingsFromAutoML, expectedTrainingEncodedFrameFromTE));
+
+      encodingMapCleanUp(encodingMap);
+      trainingEncodingsFromAutoML.delete();
+      copyOfTheTrainingFrame.delete();
+      expectedTrainingEncodedFrameFromTE.delete();
 
     } finally {
       if(leader!=null) leader.delete();

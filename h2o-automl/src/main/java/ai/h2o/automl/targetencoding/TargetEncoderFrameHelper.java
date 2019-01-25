@@ -12,6 +12,7 @@ import water.fvec.task.UniqTask;
 import water.rapids.ast.prims.advmath.AstKFold;
 import water.rapids.ast.prims.mungers.AstGroup;
 
+import java.util.Map;
 import java.util.Random;
 
 public class TargetEncoderFrameHelper {
@@ -101,6 +102,15 @@ public class TargetEncoderFrameHelper {
   static Frame renameColumn(Frame fr, String oldName, String newName) {
     return renameColumn(fr, fr.find(oldName), newName);
   }
+  
+  static String[] getEncodedColumnNames(String[] origColumns) {
+    int index = 0;
+    for(String columnName : origColumns) {
+      origColumns[index] = columnName + "_te";
+      index++;        
+    }
+    return origColumns;
+  }
 
   /**
    * @param frame
@@ -121,6 +131,12 @@ public class TargetEncoderFrameHelper {
     frame._key = Key.make();
     DKV.put(frame);
     return frame;
+  }
+
+  static public void encodingMapCleanUp(Map<String, Frame> encodingMap) {
+    for (Map.Entry<String, Frame> map : encodingMap.entrySet()) {
+      map.getValue().delete();
+    }
   }
 
 }

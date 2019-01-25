@@ -487,7 +487,7 @@ public class TargetEncodingTest extends TestUtil {
         }
       }
     }
-
+    
     // ----------------------------- blended average -----------------------------------------------------------------//
     @Test
     public void calculateAndAppendBlendedTEEncodingTest() {
@@ -512,7 +512,7 @@ public class TargetEncodingTest extends TestUtil {
         export.get();
 
         reimportedFrame = parse_test_file(Key.make("parsed"), tmpName, true);
-
+        
         String[] teColumns = {"ColA"};
         String targetColumnName = "ColB";
         TargetEncoder tec = new TargetEncoder(teColumns);
@@ -522,7 +522,6 @@ public class TargetEncodingTest extends TestUtil {
 
         resultWithEncoding = tec.calculateAndAppendBlendedTEEncoding(merged, targetEncodingMap.get("ColA"), "ColB", "targetEncoded");
 
-//      String[] dom = resultWithEncoding.vec(1).domain();
         // k <- 20
         // f <- 10
         // global_mean <- sum(x_map$numerator)/sum(x_map$denominator)
@@ -547,9 +546,9 @@ public class TargetEncodingTest extends TestUtil {
       } finally {
         new File(tmpName).delete();
         encodingMapCleanUp(targetEncodingMap);
-        merged.delete();
-        resultWithEncoding.delete();
-        reimportedFrame.delete();
+        if(merged!= null) merged.delete();
+        if(resultWithEncoding != null) resultWithEncoding.delete();
+        if(reimportedFrame != null) reimportedFrame.delete();
       }
     }
 

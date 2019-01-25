@@ -13,6 +13,7 @@ import water.util.TwoDimTable;
 import java.util.Arrays;
 import java.util.Map;
 
+import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.encodingMapCleanUp;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
@@ -440,12 +441,6 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
   @After
   public void afterEach() {
     if (fr != null) fr.delete();
-  }
-
-  private void encodingMapCleanUp(Map<String, Frame> encodingMap) {
-    for (Map.Entry<String, Frame> map : encodingMap.entrySet()) {
-      map.getValue().delete();
-    }
   }
 
 }
