@@ -258,7 +258,7 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
-dev-openjdk-7: dev-jdk-others-base
+dev-openjdk-7: dev-jdk-8-base
 endif
 dev-openjdk-7:
 	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-openjdk-7$(GPU_SUFFIX):$(VERSION) \
