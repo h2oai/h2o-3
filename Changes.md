@@ -18,7 +18,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/3/index.htm
 <h4>New Feature</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6216'>PUBDEV-6216</a>] - Added Hive with Kerberos support for H2O on Hadoop. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6216'>PUBDEV-6216</a>] - Added Hive with Kerberos support for H2O on Hadoop. 
 </li>
 </ul>
                     
