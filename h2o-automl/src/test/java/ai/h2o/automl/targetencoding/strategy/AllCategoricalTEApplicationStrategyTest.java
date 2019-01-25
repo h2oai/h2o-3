@@ -5,11 +5,11 @@ import org.junit.Test;
 import water.fvec.Frame;
 import static org.junit.Assert.*;
 
-public class TEApplicationStrategyTest extends water.TestUtil {
+public class AllCategoricalTEApplicationStrategyTest extends water.TestUtil {
 
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
-  @Test public void KFoldSmokeTest() {
+  @Test public void shouldReturnAllCategoricalColumnTest() {
     Frame fr=null;
     
     try {

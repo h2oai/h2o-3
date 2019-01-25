@@ -1,11 +1,12 @@
-package ai.h2o.automl.targetencoding;
+package ai.h2o.automl.targetencoding.integration;
 
 import ai.h2o.automl.AutoML;
 import ai.h2o.automl.AutoMLBuildSpec;
-import ai.h2o.automl.targetencoding.strategy.AllCategoricalTEApplicationStrategy;
-import ai.h2o.automl.targetencoding.strategy.FixedTEParamsStrategy;
-import ai.h2o.automl.targetencoding.strategy.TEApplicationStrategy;
-import ai.h2o.automl.targetencoding.strategy.TEParamsSelectionStrategy;
+import ai.h2o.automl.targetencoding.BlendingParams;
+import ai.h2o.automl.targetencoding.TargetEncoder;
+import ai.h2o.automl.targetencoding.TargetEncoderFrameHelper;
+import ai.h2o.automl.targetencoding.TargetEncodingParams;
+import ai.h2o.automl.targetencoding.strategy.*;
 import hex.Model;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -193,6 +194,66 @@ public class TargetEncodingIntegrationWithAutoMLTest extends water.TestUtil {
     } finally {
       if(leader!=null) leader.delete();
       if(aml!=null) aml.delete();
+      if(fr != null) fr.delete();
+    }
+  }
+
+  @Test public void ThresholdApplicationStrategyTest() {
+    AutoML aml=null;
+    Frame fr=null;
+    Model leader = null;
+    Frame trainingFrame = null;
+    String teColumnName = "ColA";
+    String responseColumnName = "ColC";
+    String foldColumnName = "fold";
+    try {
+      AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+      
+      String columnThatIsSupposedToBeEncoded = "ColB";
+      fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames(teColumnName, columnThatIsSupposedToBeEncoded, responseColumnName, foldColumnName)
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_CAT, Vec.T_NUM)
+              .withDataForCol(0, ar("a", "b", "b", "b", "a", "a"))
+              .withDataForCol(1, ar("yellow", "blue", "green", "red", "purple", "orange"))
+              .withDataForCol(2, ar("2", "6", "6", "6", "6", "2"))
+              .withDataForCol(3, ar(1, 2, 2, 3, 2, 1))
+              .build();
+
+      TargetEncoderFrameHelper.factorColumn(fr, responseColumnName);
+
+      autoMLBuildSpec.input_spec.training_frame = fr._key;
+      autoMLBuildSpec.input_spec.fold_column = foldColumnName;
+      autoMLBuildSpec.input_spec.response_column = responseColumnName;
+
+      TargetEncodingParams targetEncodingParams = new TargetEncodingParams(new BlendingParams(5, 1), TargetEncoder.DataLeakageHandlingStrategy.KFold, 0.01);
+      TEParamsSelectionStrategy fixedTEParamsStrategy =  new FixedTEParamsStrategy(targetEncodingParams);
+
+      Vec responseColumn = fr.vec(responseColumnName);
+      TEApplicationStrategy teApplicationStrategy = new ThresholdTEApplicationStrategy(fr, responseColumn, 5);
+
+      autoMLBuildSpec.te_spec.application_strategy = teApplicationStrategy;
+      autoMLBuildSpec.te_spec.params_selection_strategy = fixedTEParamsStrategy;
+
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
+      autoMLBuildSpec.build_control.keep_cross_validation_models = false;
+      autoMLBuildSpec.build_control.keep_cross_validation_predictions = false;
+
+      aml = AutoML.startAutoML(autoMLBuildSpec);
+      aml.get();
+
+      leader = aml.leader();
+
+      trainingFrame = aml.getTrainingFrame();
+
+      assertNotEquals(" Two frames should be different.", fr, trainingFrame);
+      assertEquals(1, teApplicationStrategy.getColumnsToEncode().length);
+      assertEquals(teApplicationStrategy.getColumnsToEncode().length + fr.numCols(), trainingFrame.numCols());
+
+    } finally {
+      if(leader!=null) leader.delete();
+      if(aml!=null) aml.delete();
+      if(trainingFrame != null)  trainingFrame.delete();
       if(fr != null) fr.delete();
     }
   }
