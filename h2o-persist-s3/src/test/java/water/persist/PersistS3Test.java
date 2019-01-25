@@ -12,7 +12,9 @@ import water.fvec.Chunk;
 import water.fvec.FileVec;
 import water.fvec.Frame;
 import water.util.FileUtils;
+import water.util.ReflectionUtils;
 
+import java.lang.reflect.Field;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,7 +32,7 @@ public class PersistS3Test extends TestUtil {
   private static final String AWS_ACCESS_KEY_PROPERTY_NAME = "AWS_ACCESS_KEY_ID";
   private static final String AWS_SECRET_KEY_PROPERTY_NAME = "AWS_SECRET_ACCESS_KEY";
   private static final String IRIS_H2O_AWS = "s3://test.0xdata.com/h2o-unit-tests/iris.csv";
-  private static final String IRIS_BUCKET_H2O_AWS = "s3://test.0xdata.com/h2o-unit-tests/";
+  private static final String IRIS_BUCKET_H2O_AWS = "s3://test.0xdata.com/h2o-unit-tests";
 
 
   @Rule
@@ -45,7 +47,6 @@ public class PersistS3Test extends TestUtil {
   public void tearDown() throws Exception {
     // Make sure after each test method, wrong client with invalid credentials - required to avoid false negatives
     final String invalidCredential = UUID.randomUUID().toString();
-    PersistS3.changeClientCredentials(invalidCredential, invalidCredential);
   }
 
   private static class XORTask extends MRTask<XORTask> {
@@ -94,13 +95,7 @@ public class PersistS3Test extends TestUtil {
     assumeTrue(accessKey != null);
     assumeTrue(secretKey != null);
 
-    final AmazonS3 defaultClient = PersistS3.getClient(); // Create a default client
-    assertNotNull(defaultClient);
-
-    PersistS3.changeClientCredentials(accessKey, secretKey);
-    final AmazonS3 staticCredentialsClient = PersistS3.getClient();
-    assertNotEquals(defaultClient, staticCredentialsClient);
-
+    new S3CredentialsMRTask(accessKey, secretKey).doAllNodes();
 
     Scope.enter();
     Key k = null, k2 = null;
@@ -132,29 +127,18 @@ public class PersistS3Test extends TestUtil {
       if (v != null) v.remove();
       if (v2 != null) v2.remove();
     }
-
-    expectedException.expect(AmazonS3Exception.class);
-    expectedException.expectMessage("Forbidden (Service: Amazon S3; Status Code: 403; Error Code: 403 Forbidden; Request ID:");
-    final String unexistingAmazonCredential = UUID.randomUUID().toString();
-    PersistS3.changeClientCredentials(unexistingAmazonCredential, unexistingAmazonCredential);
-    H2O.getPM().anyURIToKey(new URI(IRIS_H2O_AWS));
   }
 
   @Test
-  public void testS3ImportUriCredentials() throws Exception {
+  public void testS3ImportFiles() throws Exception {
     // This test is only runnable in environment with Amazon credentials properly set {AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY}
     final String accessKey = System.getenv(AWS_ACCESS_KEY_PROPERTY_NAME);
     final String secretKey = System.getenv(AWS_SECRET_KEY_PROPERTY_NAME);
 
     assumeTrue(accessKey != null);
     assumeTrue(secretKey != null);
-
-    final AmazonS3 defaultClient = PersistS3.getClient(); // Create a default client
-    assertNotNull(defaultClient);
-
-    PersistS3.changeClientCredentials(accessKey, secretKey);
-    final AmazonS3 staticCredentialsClient = PersistS3.getClient();
-    assertNotEquals(defaultClient, staticCredentialsClient);
+    
+    new S3CredentialsMRTask(accessKey, secretKey).doAllNodes();
 
 
     PersistS3 persistS3 = new PersistS3();
@@ -181,7 +165,8 @@ public class PersistS3Test extends TestUtil {
     expectedException.expect(AmazonS3Exception.class);
     expectedException.expectMessage("The AWS Access Key Id you provided does not exist in our records. (Service: Amazon S3; Status Code: 403; Error Code: InvalidAccessKeyId; Request ID:");
     final String unexistingAmazonCredential = UUID.randomUUID().toString();
-    PersistS3.changeClientCredentials(unexistingAmazonCredential, unexistingAmazonCredential);
+    new S3CredentialsMRTask(unexistingAmazonCredential, unexistingAmazonCredential).doAllNodes();
+    deprecateBucketContentCaches(persistS3);
     persistS3.importFiles(IRIS_H2O_AWS, null, files, keys, fails, deletions);
 
   }
@@ -199,10 +184,7 @@ public class PersistS3Test extends TestUtil {
     final AmazonS3 defaultClient = PersistS3.getClient(); // Create a default client
     assertNotNull(defaultClient);
 
-    PersistS3.changeClientCredentials(accessKey, secretKey);
-    final AmazonS3 staticCredentialsClient = PersistS3.getClient();
-    assertNotEquals(defaultClient, staticCredentialsClient);
-    
+    new S3CredentialsMRTask(accessKey, secretKey).doAllNodes();
     
     PersistS3 persistS3 = new PersistS3();
     final List<String> strings = persistS3.calcTypeaheadMatches(IRIS_H2O_AWS, 10);
@@ -216,13 +198,14 @@ public class PersistS3Test extends TestUtil {
     expectedException.expectMessage("The AWS Access Key Id you provided does not exist in our records. (Service: Amazon S3; Status Code: 403; Error Code: InvalidAccessKeyId; Request ID:");
     final String unexistingAmazonCredential = UUID.randomUUID().toString();
     // Also tests cache erasure during client credentials chage. The list of files in the bucket is still in the caches unless erased
-    PersistS3.changeClientCredentials(unexistingAmazonCredential, unexistingAmazonCredential);
+    new S3CredentialsMRTask(unexistingAmazonCredential, unexistingAmazonCredential).doAllNodes();
+    deprecateBucketContentCaches(persistS3);
     final List<String> failed = persistS3.calcTypeaheadMatches(IRIS_H2O_AWS, 10);
 
   }
 
   @Test
-  public void testS3calcTypeaheadMatchesBucketOnly() {
+  public void testS3calcTypeaheadMatchesBucketOnly() throws Exception {
     // This test is only runnable in environment with Amazon credentials properly set {AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY}
     final String accessKey = System.getenv(AWS_ACCESS_KEY_PROPERTY_NAME);
     final String secretKey = System.getenv(AWS_SECRET_KEY_PROPERTY_NAME);
@@ -231,13 +214,8 @@ public class PersistS3Test extends TestUtil {
     assumeTrue(secretKey != null);
 
 
-    final AmazonS3 defaultClient = PersistS3.getClient(); // Create a default client
-    assertNotNull(defaultClient);
-
-    PersistS3.changeClientCredentials(accessKey, secretKey);
-    final AmazonS3 staticCredentialsClient = PersistS3.getClient();
-    assertNotEquals(defaultClient, staticCredentialsClient);
-
+    final S3CredentialsMRTask s3CredentialsMRTask = new S3CredentialsMRTask(accessKey, secretKey).doAllNodes();
+    
 
     PersistS3 persistS3 = new PersistS3();
     final List<String> strings = persistS3.calcTypeaheadMatches(IRIS_BUCKET_H2O_AWS, 10);
@@ -248,9 +226,54 @@ public class PersistS3Test extends TestUtil {
     expectedException.expect(AmazonS3Exception.class);
     expectedException.expectMessage("The AWS Access Key Id you provided does not exist in our records. (Service: Amazon S3; Status Code: 403; Error Code: InvalidAccessKeyId; Request ID:");
     final String unexistingAmazonCredential = UUID.randomUUID().toString();
+    new S3CredentialsMRTask(unexistingAmazonCredential, unexistingAmazonCredential).doAllNodes();
+    deprecateBucketContentCaches(persistS3);
+    deprecatedBucketCache(persistS3);
     // Also tests cache erasure during client credentials chage. The list of files in the bucket is still in the caches unless erased
-    PersistS3.changeClientCredentials(unexistingAmazonCredential, unexistingAmazonCredential);
     final List<String> failed = persistS3.calcTypeaheadMatches(IRIS_BUCKET_H2O_AWS, 10);
+  }
+  
+  private static final void deprecatedBucketCache(final PersistS3 persistS3) throws NoSuchFieldException, IllegalAccessException {
+    Field timeoutMillis = null;
+    Field lastUpdated = null;
+    try {
+      final Class<? extends PersistS3.Cache> bucketCacheClass = persistS3._bucketCache.getClass();
+      
+      timeoutMillis = bucketCacheClass.getDeclaredField("_timeoutMillis");
+      timeoutMillis.setAccessible(true);
+      timeoutMillis.set(persistS3._bucketCache, 1); // one millisecond timeout
+      
+      lastUpdated = bucketCacheClass.getDeclaredField("_lastUpdated");
+      lastUpdated.setAccessible(true);
+      lastUpdated.set(persistS3._bucketCache, 1);
+      
+    } finally {
+      if(timeoutMillis != null) timeoutMillis.setAccessible(false);
+      if(lastUpdated != null) lastUpdated.setAccessible(false);
+    }
+  }
+
+  private static final void deprecateBucketContentCaches(final PersistS3 persistS3) throws NoSuchFieldException, IllegalAccessException {
+    Field timeoutMillis = null;
+    Field lastUpdated = null;
+    try {
+      final Class<PersistS3.Cache> cacheClass = PersistS3.Cache.class;
+
+      timeoutMillis = cacheClass.getDeclaredField("_timeoutMillis");
+      timeoutMillis.setAccessible(true);
+
+      lastUpdated = cacheClass.getDeclaredField("_lastUpdated");
+      lastUpdated.setAccessible(true);
+      
+      for (PersistS3.Cache cache: persistS3._keyCaches.values()){
+        timeoutMillis.set(cache, 1); // one millisecond timeout
+        lastUpdated.set(cache, 0); // Updated at the beginning of EPOCH
+      }
+
+    } finally {
+      if(timeoutMillis != null) timeoutMillis.setAccessible(false);
+      if(lastUpdated != null) lastUpdated.setAccessible(false);
+    }
   }
   
 }

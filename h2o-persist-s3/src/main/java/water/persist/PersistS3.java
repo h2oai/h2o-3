@@ -26,9 +26,6 @@ import java.io.InputStream;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
 
@@ -38,40 +35,15 @@ public final class PersistS3 extends Persist {
 
   private static final String KEY_PREFIX = "s3://";
   private static final int KEY_PREFIX_LEN = KEY_PREFIX.length();
-  private static final int LOCK_TIMEOUT_SEC = 60;
+  private static volatile String S3_SECRET_KEY_ID = null;
+  public static volatile String S3_SECRET_ACCESS_KEY = null;
 
-  private static final Lock _lock = new ReentrantLock();
-  
+  private static final Object _lock = new Object();
   private static volatile AmazonS3 _s3;
 
-  public static void changeClientCredentials(final String secretKeyId, final String secretAccessKey) {
-
-    try {
-      final boolean lockAcquired = _lock.tryLock(LOCK_TIMEOUT_SEC, TimeUnit.SECONDS);
-      if (!lockAcquired) {
-        throw new IllegalStateException(String.format("Could not acquire lock to change S3 client in %d seconds", LOCK_TIMEOUT_SEC));
-      }
-
-      final H2OAWSCredentialsProviderChain credentialsProviderChain = new H2OAWSCredentialsProviderChain(secretKeyId, secretAccessKey);
-      final ClientConfiguration clientConfiguration = new ClientConfiguration();
-      _s3 = configureClient(new AmazonS3Client(credentialsProviderChain, clientConfiguration));
-      _bucketCache = new Cache();
-      _keyCaches = new HashMap<>();
-    } catch (InterruptedException e) {
-      throw new IllegalStateException("Interrupt signal received while waiting to acqure S3 client locks.", e);
-    } finally {
-      _lock.unlock();
-    }
-
-  }
-  
-
   public static AmazonS3 getClient() {
-      try {
-        final boolean lockAcquired = _lock.tryLock(LOCK_TIMEOUT_SEC, TimeUnit.SECONDS);
-        if (!lockAcquired)
-          throw new IllegalStateException(String.format("Could not acquire lock to change S3 client in %d seconds", LOCK_TIMEOUT_SEC));
-
+    if (_s3 == null) {
+      synchronized (_lock) {
         if( _s3 == null ) {
           try {
             H2OAWSCredentialsProviderChain c = new H2OAWSCredentialsProviderChain();
@@ -85,11 +57,8 @@ public final class PersistS3 extends Persist {
             throw new RuntimeException(msg.toString());
           }
         }
-      } catch (InterruptedException e) {
-        throw new IllegalStateException("Interrupt signal received while waiting to acqure S3 client locks in getClient() method.", e);
-      } finally {
-        _lock.unlock();
       }
+    }
     return _s3;
   }
 
@@ -97,28 +66,15 @@ public final class PersistS3 extends Persist {
    * credentials provider.
    */
   public static class H2OAWSCredentialsProviderChain extends AWSCredentialsProviderChain {
-
-    public H2OAWSCredentialsProviderChain(final String secretKeyId, final String secretAccessKey) {
-      super(constructStaticCredentialsProviderChain(secretKeyId, secretAccessKey));
-
-    }
-
     public H2OAWSCredentialsProviderChain() {
       super(constructProviderChain());
 
     }
 
-    private static List<AWSCredentialsProvider> constructStaticCredentialsProviderChain(final String accesKeyId, final String accesSecretKey) {
-      final List<AWSCredentialsProvider> providers = new ArrayList<>();
-      providers.add(new H2OStaticCredentialsProvider(accesKeyId, accesSecretKey));
-      return providers;
-    }
-
-
     private static List<AWSCredentialsProvider> constructProviderChain() {
       final List<AWSCredentialsProvider> providers = new ArrayList<>();
 
-      // There is no need to specify other providers once the credentials are directly known (e.g. from URL)
+      providers.add(new H2ODynamicCredentialsProvider());
       providers.add(new H2OArgCredentialsProvider());
       providers.add(new InstanceProfileCredentialsProvider());
       providers.add(new EnvironmentVariableCredentialsProvider());
@@ -130,20 +86,27 @@ public final class PersistS3 extends Persist {
     }
   }
 
+  public static void setAmazonS3Credentials(final String secretKeyId, final String secretAccessKey) {
+    synchronized (_lock) {
+      S3_SECRET_KEY_ID = secretKeyId;
+      S3_SECRET_ACCESS_KEY = secretAccessKey;
+    }
+  }
+
   /**
    * Holds basic credentials (Secret key ID + Secret access key) pair.
    */
-  private static final class H2OStaticCredentialsProvider implements AWSCredentialsProvider{
-    
-    private final AWSCredentials awsCredentials;
+  private static final class H2ODynamicCredentialsProvider implements AWSCredentialsProvider {
 
-    private H2OStaticCredentialsProvider(final String secretKeyId, final String secretAccessKey) {
-      this.awsCredentials = new BasicAWSCredentials(secretKeyId, secretAccessKey);
-    }
 
     @Override
     public AWSCredentials getCredentials() {
-      return awsCredentials;
+
+      if (S3_SECRET_KEY_ID != null && S3_SECRET_ACCESS_KEY != null) {
+        return new BasicAWSCredentials(S3_SECRET_KEY_ID, S3_SECRET_ACCESS_KEY);
+      } else {
+        throw new AmazonClientException("No Amazon S3 credentials set directly.");
+      }
     }
 
     @Override
@@ -470,7 +433,7 @@ public final class PersistS3 extends Persist {
   @Override
   public void cleanUp() { throw H2O.unimpl(); /** user-mode swapping not implemented */}
 
-  private static class Cache {
+  static class Cache {
     long _lastUpdated = 0;
     long _timeoutMillis = 5*60*1000;
     String [] _cache = new String[0];
@@ -532,8 +495,8 @@ public final class PersistS3 extends Persist {
   }
 
 
-  static volatile Cache _bucketCache = new Cache();
-  static volatile HashMap<String, KeyCache> _keyCaches = new HashMap<>();
+  Cache _bucketCache = new Cache();
+  HashMap<String, KeyCache> _keyCaches = new HashMap<>();
   @Override
   public List<String> calcTypeaheadMatches(String filter, int limit) {
     String [] parts = decodePath(filter);

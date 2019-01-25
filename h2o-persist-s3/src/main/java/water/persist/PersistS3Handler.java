@@ -8,7 +8,8 @@ public class PersistS3Handler extends Handler {
     
     public PersistS3CredentialsV3 setS3Credentials(final int version, final PersistS3CredentialsV3 s3Credentials){
         validateS3Credentials(s3Credentials);
-        PersistS3.changeClientCredentials(s3Credentials.secret_key_id, s3Credentials.secret_access_key);
+        
+        new S3CredentialsMRTask(s3Credentials.secret_key_id, s3Credentials.secret_access_key).doAllNodes();
         return s3Credentials;
     }
 
@@ -24,8 +25,8 @@ public class PersistS3Handler extends Handler {
         s3Credentials.secret_key_id = s3Credentials.secret_key_id.trim();
         s3Credentials.secret_access_key = s3Credentials.secret_access_key.trim();
 
-        if(s3Credentials.secret_key_id.isEmpty()) throw new IllegalArgumentException("The field 'SECRET_KEY_ID' may not be empty.");
-        if(s3Credentials.secret_access_key.isEmpty()) throw new IllegalArgumentException("The field 'SECRET_ACCESS_KEY' may not be empty.");
+        if(s3Credentials.secret_key_id.isEmpty()) throw new IllegalArgumentException("The field 'S3_SECRET_KEY_ID' may not be empty.");
+        if(s3Credentials.secret_access_key.isEmpty()) throw new IllegalArgumentException("The field 'S3_SECRET_ACCESS_KEY' may not be empty.");
         
     }
     
