@@ -36,9 +36,10 @@ def call(final pipelineContext) {
       component: pipelineContext.getBuildConfig().COMPONENT_JS
     ],
     [
-      stageName: 'Java 7 Smoke', target: 'test-junit-7-smoke-jenkins', javaVersion: 7, timeoutValue: 20,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
-      image: "${pipelineContext.getBuildConfig().DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-openjdk-7:${pipelineContext.getBuildConfig().DEFAULT_IMAGE_VERSION_TAG}"
+      stageName: 'Java 7 Smoke', target: 'test-junit-7-smoke-jenkins', timeoutValue: 20, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      image: "${pipelineContext.getBuildConfig().DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-openjdk-7:${pipelineContext.getBuildConfig().DEFAULT_IMAGE_VERSION_TAG}",
+      javaVersion: 8, // Use Java 8 as default Java, Gradle 5+ does not support Java 7; define Java 7 as test runtime java
+      customDockerArgs: ["-e JAVA_7_HOME=/usr/lib/jvm/java-1.7.0-openjdk-amd64/"] // Use Java 7 as test runtime Java
     ],
     [
       stageName: 'Java 8 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 8, timeoutValue: 20,

@@ -7,6 +7,9 @@ task testSingleNode(type: Exec) {
     environment "BUILD_DIR", project.buildDir
     doFirst {
         environment "JVM_CLASSPATH", sourceSets.test.runtimeClasspath.asPath
+        if (rootProject.hasProperty('testJavaHome')) {
+            environment "TEST_JAVA_HOME", rootProject.testJavaHome
+        }
     }
 
     def args = ['bash', './testSingleNode.sh']
@@ -23,6 +26,9 @@ task testSingleNodeOneProc(type: Exec) {
     environment "BUILD_DIR", project.buildDir
     doFirst {
         environment "JVM_CLASSPATH", sourceSets.test.runtimeClasspath.asPath
+        if (rootProject.hasProperty('testJavaHome')) {
+            environment "TEST_JAVA_HOME", rootProject.testJavaHome
+        }
     }
 
     def args = ['bash', './testSingleNodeOneProc.sh']
@@ -39,6 +45,9 @@ task testMultiNode(type: Exec) {
     environment "BUILD_DIR", project.buildDir
     doFirst {
         environment "JVM_CLASSPATH", sourceSets.test.runtimeClasspath.asPath
+        if (rootProject.hasProperty('testJavaHome')) {
+            environment "TEST_JAVA_HOME", rootProject.testJavaHome
+        }
     }
 
     def args = ['bash', './testMultiNode.sh']
