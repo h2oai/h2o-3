@@ -30,7 +30,7 @@ public class SQLManager {
   private static final String HIVE_JDBC_DRIVER_CLASS = "org.apache.hive.jdbc.HiveDriver";
 
   private static final String TMP_TABLE_ENABLED = H2O.OptArgs.SYSTEM_PROP_PREFIX + "sql.tmp_table.enabled";
-
+  
   /**
    * @param connection_url (Input)
    * @param table (Input)
@@ -621,7 +621,7 @@ public class SQLManager {
             stmt.close();
           } catch (SQLException sqlEx) {
             // ignore
-          }
+          } 
           stmt = null;
         }
 
@@ -689,7 +689,7 @@ public class SQLManager {
         }
       } catch (Exception ex) {
         // ignore
-      }
+      } 
     }
   }
 
@@ -711,7 +711,7 @@ public class SQLManager {
           stmt.close();
         } catch (SQLException sqlEx) {
           // ignore
-        }
+        } 
         stmt = null;
       }
 
@@ -720,7 +720,7 @@ public class SQLManager {
           conn.close();
         } catch (SQLException sqlEx) {
           // ignore
-        }
+        } 
         conn = null;
       }
     }
