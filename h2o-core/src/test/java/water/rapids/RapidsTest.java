@@ -3,6 +3,7 @@ package water.rapids;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.*;
 import water.parser.ParseDataset;
@@ -11,21 +12,21 @@ import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstNumList;
 import water.rapids.ast.params.AstStr;
 import water.rapids.vals.ValFrame;
-import water.util.ArrayUtils;
-import water.util.FileUtils;
-import water.util.FrameUtils;
-import water.util.Log;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
+import water.util.*;
 
 import java.io.File;
 import java.util.Arrays;
 import java.util.Random;
 
 import static org.junit.Assert.*;
+import static water.TestUtil.*;
 import static water.rapids.Rapids.IllegalASTException;
 
-
-public class RapidsTest extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class RapidsTest {
 
   @Test public void bigSlice() {
     // check that large slices do something sane
@@ -401,7 +402,7 @@ public class RapidsTest extends TestUtil {
     Random newRand = new Random();
     int index = newRand.nextInt(rapidStrings.length);
     testMergeStringOneSetting(f1Names[index], f2Names[index], ansNames[index], rapidStrings[index], stringColIndices[index]);
-   // }
+    // }
   }
 
   private void testMergeStringOneSetting(String f1Name, String f2Name, String ansName, String rapidString, int[] stringCols) {
@@ -468,21 +469,21 @@ public class RapidsTest extends TestUtil {
   static void exec_str( String str, Session ses ) {
     Val val = Rapids.exec(str,ses);
     switch( val.type() ) {
-    case Val.FRM:
-      Frame fr = val.getFrame();
-      System.out.println(fr);
-      checkSaneFrame();
-      break;
-    case Val.NUM:
-      System.out.println("num= "+val.getNum());
-      checkSaneFrame();
-      break;
-    case Val.STR:
-      System.out.println("str= "+val.getStr());
-      checkSaneFrame();
-      break;
-    default:
-      throw water.H2O.fail();
+      case Val.FRM:
+        Frame fr = val.getFrame();
+        System.out.println(fr);
+        checkSaneFrame();
+        break;
+      case Val.NUM:
+        System.out.println("num= "+val.getNum());
+        checkSaneFrame();
+        break;
+      case Val.STR:
+        System.out.println("str= "+val.getStr());
+        checkSaneFrame();
+        break;
+      default:
+        throw water.H2O.fail();
     }
   }
 
@@ -565,10 +566,10 @@ public class RapidsTest extends TestUtil {
       ParseDataset.parse(Key.make( "census.hex"), new Key[]{nfs._key}, true, ps);
 
       exec_str("(assign census.hex (colnames= census.hex\t[0 1 2 3 4 5 6 7 8] \n" +
-               "['Community.Area.Number' 'COMMUNITY.AREA.NAME' \"PERCENT.OF.HOUSING.CROWDED\" \r\n" +
-               " \"PERCENT.HOUSEHOLDS.BELOW.POVERTY\" \"PERCENT.AGED.16..UNEMPLOYED\" " +
-               " \"PERCENT.AGED.25..WITHOUT.HIGH.SCHOOL.DIPLOMA\" \"PERCENT.AGED.UNDER.18.OR.OVER.64\" " +
-               " \"PER.CAPITA.INCOME.\" \"HARDSHIP.INDEX\"]))", ses);
+              "['Community.Area.Number' 'COMMUNITY.AREA.NAME' \"PERCENT.OF.HOUSING.CROWDED\" \r\n" +
+              " \"PERCENT.HOUSEHOLDS.BELOW.POVERTY\" \"PERCENT.AGED.16..UNEMPLOYED\" " +
+              " \"PERCENT.AGED.25..WITHOUT.HIGH.SCHOOL.DIPLOMA\" \"PERCENT.AGED.UNDER.18.OR.OVER.64\" " +
+              " \"PER.CAPITA.INCOME.\" \"HARDSHIP.INDEX\"]))", ses);
 
       exec_str("(assign crimes.hex (colnames= crimes.hex [0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21] [\"ID\" \"Case.Number\" \"Date\" \"Block\" \"IUCR\" \"Primary.Type\" \"Description\" \"Location.Description\" \"Arrest\" \"Domestic\" \"Beat\" \"District\" \"Ward\" \"Community.Area\" \"FBI.Code\" \"X.Coordinate\" \"Y.Coordinate\" \"Year\" \"Updated.On\" \"Latitude\" \"Longitude\" \"Location\"]))", ses);
 
@@ -673,22 +674,22 @@ public class RapidsTest extends TestUtil {
       Rapids.exec("(setTimeZone \""+oldtz+"\")"); // Restore time zone (which is global, and will affect following tests)
 
       for( String s : new String[]{"weather.hex","crimes.hex","census.hex",
-                                   "nary_op_5", "unary_op_6", "unary_op_7", "unary_op_8", "binary_op_9",
-                                   "unary_op_10", "unary_op_11", "unary_op_12", "binary_op_13",
-                                   "binary_op_14", "binary_op_15", "nary_op_16", "binary_op_17",
-                                   "binary_op_18", "binary_op_19", "binary_op_20", "binary_op_21",
-                                   "binary_op_22", "binary_op_23", "binary_op_24", "binary_op_25",
-                                   "nary_op_26", "nary_op_27", "nary_op_28", "unary_op_29", "binary_op_30",
-                                   "binary_op_31", "binary_op_32", "subset_33", "subset_34", "subset_35",
-                                   "subset_36", "subset_36_2", "nary_op_37", "nary_op_38", "nary_op_39", "binary_op_40",
-                                   "subset_41", "binary_op_42", "subset_43", "subset_44", } )
+              "nary_op_5", "unary_op_6", "unary_op_7", "unary_op_8", "binary_op_9",
+              "unary_op_10", "unary_op_11", "unary_op_12", "binary_op_13",
+              "binary_op_14", "binary_op_15", "nary_op_16", "binary_op_17",
+              "binary_op_18", "binary_op_19", "binary_op_20", "binary_op_21",
+              "binary_op_22", "binary_op_23", "binary_op_24", "binary_op_25",
+              "nary_op_26", "nary_op_27", "nary_op_28", "unary_op_29", "binary_op_30",
+              "binary_op_31", "binary_op_32", "subset_33", "subset_34", "subset_35",
+              "subset_36", "subset_36_2", "nary_op_37", "nary_op_38", "nary_op_39", "binary_op_40",
+              "subset_41", "binary_op_42", "subset_43", "subset_44", } )
         Keyed.remove(Key.make(s));
     }
   }
 
   @Test public void test_frameKeyStartsWithNumber() {
     Frame fr = null;
-    
+
     try {
       final Key key = Key.make("123STARTSWITHDIGITS");
       fr = parse_test_file(key, "smalldata/logreg/prostate.csv");
