@@ -697,117 +697,73 @@ public class QuantileTest extends TestUtil {
   
   @Test
   public void testInterpolate1Local() {
-    QuantileModel kmm = null;
-    Frame fr = null;
     QuantileModel kmml = null;
     Frame frl = null;
     try {
-      double[][] d = new double[][]{{1}, {1}, {2}, {2}};
-      fr = ArrayUtils.frame(d);
-      QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
-      parms._train = fr._key;
-      parms._probs = new double[]{0.5};
-      Job<QuantileModel> job = new Quantile(parms).trainModel();
-      kmm = job.get();
-      job.remove();
-      Assert.assertTrue(kmm._output._quantiles[0][0] == 1.5);
-
       double[][] dl = new double[][]{{0}, {1}, {1}, {2}, {2}, {3}};
       frl = ArrayUtils.frame(dl);
-      parms = new QuantileModel.QuantileParameters();
+      QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
       parms._train = frl._key;
       parms._probs = new double[]{0.5};
       parms._lo = 1; // inclusive
       parms._hi = 3; // exclusive
       parms._local_column_index = 0;
-      job = new Quantile(parms).trainModel();
+      Job<QuantileModel> job = new Quantile(parms).trainModel();
       kmml = job.get();
       job.remove();
       Assert.assertTrue(kmml._output._quantiles[0][0] == 1.5);
 
     } finally {
-      if (fr != null) fr.remove();
       if (frl != null) frl.remove();
-      if (kmm != null) kmm.delete();
       if (kmml != null) kmml.delete();
     }
   }
 
   @Test
   public void testInterpolateHighWeightedLocal() {
-    QuantileModel kmm = null;
-    Frame fr = null;
     QuantileModel kmml = null;
     Frame frl = null;
     try {
-      double[][] d = new double[][]{{1, 0}, {2, 1}, {3, 1}};
-      fr = ArrayUtils.frame(new String[]{"x", "weights"}, d);
-      QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
-      parms._train = fr._key;
-      parms._weights_column = "weights";
-      parms._probs = new double[]{0.51};
-      Job<QuantileModel> job = new Quantile(parms).trainModel();
-      kmm = job.get();
-      job.remove();
-      Assert.assertTrue(kmm._output._quantiles[0][0] == 2.51);
-
       double[][] dl = new double[][]{{0, 1}, {1, 0}, {2, 1}, {3, 1},{4, 7}};
       frl = ArrayUtils.frame(new String[]{"x", "weights"}, dl);
-      parms = new QuantileModel.QuantileParameters();
+      QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
       parms._train = frl._key;
       parms._weights_column = "weights";
       parms._probs = new double[]{0.51};
       parms._lo = 1; // inclusive
       parms._hi = 4; // exclusive
       parms._local_column_index = 0;
-      job = new Quantile(parms).trainModel();
+      Job<QuantileModel> job = new Quantile(parms).trainModel();
       kmml = job.get();
       job.remove();
       Assert.assertTrue(kmml._output._quantiles[0][0] == 2.51);
       
     } finally {
-      if (fr != null) fr.remove();
-      if (kmm != null) kmm.delete();
       if (frl != null) frl.remove();
       if (kmml != null) kmml.delete();
     }
   }
   
   @Test
-  public void testInterpolateHighWeightedDoubleLocal() { 
-      QuantileModel kmm = null;
-      Frame fr = null;
+  public void testInterpolateHighWeightedDoubleLocal() {
       QuantileModel kmml = null;
       Frame frl = null;
-      try { 
-          double[][] d = new double[][]{{1e-100, 10}, {1e-10, 4}, {1e-4, 2}, {1e-2, 4}, {1e-1, 5}, {1, 3}};
-          fr = ArrayUtils.frame(new String[]{"x", "weights"}, d);
-          QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
-          parms._train = fr._key;
-          parms._weights_column = "weights";
-          parms._probs = new double[]{0.5};
-          Job<QuantileModel> job = new Quantile(parms).trainModel();
-          kmm = job.get();
-          job.remove();
-          Assert.assertEquals(5.000005000000008E-5, kmm._output._quantiles[0][0], 1e-10);
-
+      try {
           double[][] dl = new double[][]{{1e-100, 10}, {1e-10, 4}, {1e-4, 2}, {1e-2, 4}, {1e-1, 5}, {1, 3}, {2, 10}};
           frl = ArrayUtils.frame(new String[]{"x", "weights"}, dl);
-          parms = new QuantileModel.QuantileParameters();
+          QuantileModel.QuantileParameters parms  = new QuantileModel.QuantileParameters();
           parms._train = frl._key;
           parms._weights_column = "weights";
           parms._probs = new double[]{0.5};
           parms._lo = 1e-100; // inclusive
           parms._hi = 2; // exclusive
           parms._local_column_index = 0;
-          job = new Quantile(parms).trainModel();
+          Job<QuantileModel> job = new Quantile(parms).trainModel();
           kmml = job.get();
           job.remove();
           Assert.assertEquals(5.000005000000008E-5, kmml._output._quantiles[0][0],1e-10 );
 
       } finally {
-          if (fr != null) fr.remove();
-          if (kmm != null) kmm.delete();
           if (frl != null) frl.remove();
           if (kmml != null) kmml.delete(); 
       }

@@ -2147,7 +2147,7 @@ public class GBMTest extends TestUtil {
       }
       int idx = ArrayUtils.minIndex(loglosses);
       Log.info("Optimal randomization: " + histoType[idx]);
-      assertTrue(4 == idx);
+      assertTrue(3 == idx);
     } finally {
       if (tfr!=null) tfr.delete();
       if (ksplits[0]!=null) ksplits[0].remove();
@@ -3545,8 +3545,8 @@ public class GBMTest extends TestUtil {
       parms._train = train._key;
       parms._response_column = "response"; // Train on the outcome
       parms._distribution = bernoulli;
-      parms._ntrees = 50;
-      parms._max_depth = 20;
+      parms._ntrees = 20;
+      parms._max_depth = 10;
       
       parms._histogram_type = SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesLocal;
       GBMModel gbm_local = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
@@ -3571,8 +3571,8 @@ public class GBMTest extends TestUtil {
       parms._train = train._key;
       parms._response_column = "response"; // Train on the outcome
       parms._distribution = bernoulli;
-      parms._ntrees = 50;
-      parms._max_depth = 20;
+      parms._ntrees = 20;
+      parms._max_depth = 10;
 
       parms._histogram_type = SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal;
       GBMModel gbm_global= (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
