@@ -30,7 +30,7 @@ public class SQLManager {
   private static final String HIVE_JDBC_DRIVER_CLASS = "org.apache.hive.jdbc.HiveDriver";
 
   private static final String TMP_TABLE_ENABLED = H2O.OptArgs.SYSTEM_PROP_PREFIX + "sql.tmp_table.enabled";
-  
+
   /**
    * @param connection_url (Input)
    * @param table (Input)
@@ -54,7 +54,7 @@ public class SQLManager {
     final String[] columnNames;
     final byte[] columnH2OTypes;
     try {
-      conn = getConnectionSafe(connection_url, username, password);
+      conn = DriverManager.getConnection(connection_url, username, password);
       stmt = conn.createStatement();
       //set fetch size for improved performance
       stmt.setFetchSize(1);
@@ -228,17 +228,12 @@ public class SQLManager {
     return j;
   }
 
-  private static Connection getConnectionSafe(String url, String username, String password) throws SQLException {
-    try {
-      return DriverManager.getConnection(url, username, password);
-    } catch (NoClassDefFoundError e) {
-      throw new RuntimeException("Failed to get database connection, probably due to using thin jdbc driver jar.", e);
-    }
-  }
-
   /**
    * Builds SQL SELECT to retrieve single row from a table based on type of database
    *
+   * @param databaseType
+   * @param table
+   * @param columns
    * @return String SQL SELECT statement
    */
   static String buildSelectSingleRowSql(String databaseType, String table, String columns) {
@@ -620,8 +615,7 @@ public class SQLManager {
           try {
             stmt.close();
           } catch (SQLException sqlEx) {
-            // ignore
-          } 
+          } // ignore
           stmt = null;
         }
 
@@ -688,8 +682,7 @@ public class SQLManager {
           conn.close();
         }
       } catch (Exception ex) {
-        // ignore
-      } 
+      } // ignore
     }
   }
 
@@ -710,8 +703,7 @@ public class SQLManager {
         try {
           stmt.close();
         } catch (SQLException sqlEx) {
-          // ignore
-        } 
+        } // ignore
         stmt = null;
       }
 
@@ -719,8 +711,7 @@ public class SQLManager {
         try {
           conn.close();
         } catch (SQLException sqlEx) {
-          // ignore
-        } 
+        } // ignore
         conn = null;
       }
     }
