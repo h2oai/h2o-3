@@ -98,7 +98,7 @@ public class SQLManager {
       final String[] columnNames;
       final byte[] columnH2OTypes;
       try {
-        conn = DriverManager.getConnection(_connection_url, _username, _password);
+        conn = getConnectionSafe(_connection_url, _username, _password);
         stmt = conn.createStatement();
         //set fetch size for improved performance
         stmt.setFetchSize(1);
@@ -374,7 +374,7 @@ public class SQLManager {
     }
 
     Connection createConnection() throws SQLException {
-      return DriverManager.getConnection(_url, _user, _password);
+      return getConnectionSafe(_url, _user, _password);
     }
 
     /**
@@ -450,6 +450,14 @@ public class SQLManager {
      */
     private static int estimateConcurrentConnections(final int cloudSize, final short nThreads) {
       return cloudSize * Math.min(nThreads, Math.max(getMaxConnectionsTotal() / cloudSize, MIN_CONNECTIONS_PER_NODE));
+    }
+  }
+
+  private static Connection getConnectionSafe(String url, String username, String password) throws SQLException {
+    try {
+      return DriverManager.getConnection(url, username, password);
+    } catch (NoClassDefFoundError e) {
+      throw new RuntimeException("Failed to get database connection, probably due to using thin jdbc driver jar.", e);
     }
   }
 
