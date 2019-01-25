@@ -602,7 +602,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
           if (c != 0)
             to[i] = c - 1 + catOffsets[i];
           else
-            to[i] = -1;
+            to[i] = 0;
         }
         if (to[i] >= catOffsets[i + 1])
           to[i] = (catOffsets[i + 1] - 1);
