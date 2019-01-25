@@ -1,15 +1,11 @@
 package water.util;
 
 import org.junit.*;
-import org.junit.runner.RunWith;
 import water.H2O;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
+import water.TestUtil;
 
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class JStackTest {
-
+public class JStackTest extends TestUtil {
+  public JStackTest() { super(3); }
 
   @Test public void testJStack() {
     for( int i=0; i<10; i++ ) {

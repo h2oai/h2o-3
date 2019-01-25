@@ -3,10 +3,7 @@ package water.fvec;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import water.*;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -15,14 +12,15 @@ import java.util.Set;
 import static org.junit.Assert.*;
 
 import static org.junit.Assert.assertTrue;
-import static water.TestUtil.*;
 
 /**
  * Tests for Frame.java
  */
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class FrameTest{
+public class FrameTest extends TestUtil {
+  @BeforeClass
+  public static void setup() {
+    stall_till_cloudsize(1);
+  }
 
   @Test
   public void testNonEmptyChunks() {

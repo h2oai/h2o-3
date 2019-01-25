@@ -3,7 +3,6 @@ package hex.coxph;
 import hex.StringPair;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import water.Key;
 import water.MRTask;
 import water.Scope;
@@ -12,15 +11,13 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 
 import static org.junit.Assert.*;
-import static water.TestUtil.parse_test_file;
 
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class CoxPHTest {
+public class CoxPHTest extends TestUtil {
+
+  @BeforeClass
+  public static void setup() { stall_till_cloudsize(1); }
 
   @Test
   public void testCoxPHEfron1Var() {

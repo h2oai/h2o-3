@@ -5,21 +5,18 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import hex.tree.drf.DRFModel;
-import org.junit.runner.RunWith;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
-
-import static water.TestUtil.parse_test_file;
 
 /**
  * Tests to catch problems with hash collisions on model parameters.
  */
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class ModelParametersChecksumTest {
-  
+public class ModelParametersChecksumTest extends TestUtil {
+
+  @BeforeClass()
+  public static void setup() {
+    stall_till_cloudsize(1);
+  }
 
   @Test
   public void testPubDev2075() {

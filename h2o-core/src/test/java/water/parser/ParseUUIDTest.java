@@ -1,17 +1,12 @@
 package water.parser;
 
 import org.junit.*;
-import org.junit.runner.RunWith;
 import water.TestUtil;
 import water.fvec.*;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 
-import static water.TestUtil.parse_test_file;
-
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class ParseUUIDTest {
+public class ParseUUIDTest  extends TestUtil {
+  @BeforeClass
+  static public void setup() { stall_till_cloudsize(1); }
 
   private long[] l(long... ls) { return ls; }
 

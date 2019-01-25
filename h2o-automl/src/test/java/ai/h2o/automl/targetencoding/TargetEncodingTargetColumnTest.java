@@ -4,13 +4,10 @@ import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.*;
 import water.rapids.Rapids;
 import water.rapids.Val;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 import water.util.FrameUtils;
 import water.util.TwoDimTable;
 
@@ -21,11 +18,14 @@ import java.util.Random;
 import java.util.UUID;
 
 import static org.junit.Assert.*;
-import static water.TestUtil.*;
 
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class TargetEncodingTargetColumnTest{
+public class TargetEncodingTargetColumnTest extends TestUtil {
+
+
+  @BeforeClass
+  public static void setup() {
+    stall_till_cloudsize(1);
+  }
 
   private Frame fr = null;
 

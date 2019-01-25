@@ -7,11 +7,8 @@ import org.junit.Test;
 
 import java.io.InputStream;
 
-import org.junit.runner.RunWith;
 import water.DKV;
 import water.TestUtil;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 
 import static water.udf.JFuncTest.mockedRow;
 import static water.udf.JFuncUtils.getSkippingClassloader;
@@ -19,10 +16,13 @@ import static water.udf.JFuncUtils.loadRawTestFunc;
 import static water.udf.JFuncUtils.loadTestFunc;
 import static water.util.ArrayUtils.sum;
 
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class JythonCFuncTest {
+public class JythonCFuncTest extends TestUtil {
 
+  @BeforeClass
+  static public void setup() {
+    stall_till_cloudsize(1);
+  }
+  
   @Test
   public void testPyFunc2InvocationFromResources() throws Exception {
     String[] functionResources = ar("py/test_cfunc2.py", "py/__init__.py");

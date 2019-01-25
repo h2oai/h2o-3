@@ -8,7 +8,6 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
@@ -17,8 +16,6 @@ import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 import water.util.*;
 
 import java.io.File;
@@ -27,12 +24,9 @@ import java.util.Arrays;
 import static hex.genmodel.utils.DistributionFamily.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static water.TestUtil.ard;
-import static water.TestUtil.parse_test_file;
 
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class DeepLearningTest {
+public class DeepLearningTest extends TestUtil {
+  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
   abstract static class PrepData { abstract int prep(Frame fr); }
 

@@ -4,12 +4,10 @@ import hex.CreateFrame;
 import hex.DataInfo;
 import hex.SplitFrame;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.Frame;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 import water.util.Log;
 import water.util.RandomUtils;
 
@@ -17,18 +15,15 @@ import java.util.Arrays;
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
-import static water.TestUtil.parse_test_file;
 
 // Want to test the following:
 // 1. make sure gradient calculation is correct
 // 2. for Binomial, compare ordinal result with the one for binomial
 // 3. make sure h2o predict, mojo and pojo predict all agrees
-
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class GLMBasicTestOrdinal {
+public class GLMBasicTestOrdinal extends TestUtil {
   private static final double _tol = 1e-10;   // threshold for comparison
 
+  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
   private void convert2Enum(Frame f, int[] cols) {
     for (int col : cols) {

@@ -6,7 +6,6 @@ import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import water.DKV;
 import water.Key;
 import water.Scope;
@@ -15,8 +14,6 @@ import water.fvec.Frame;
 import water.fvec.FrameTestUtil;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -28,9 +25,9 @@ import static org.junit.Assert.assertTrue;
 /**
  * Test FrameUtils interface.
  */
-@RunWith(H2ORunner.class)
-@CloudSize(1)
 public class FrameUtilsTest extends TestUtil {
+  @BeforeClass
+  static public void setup() {  stall_till_cloudsize(1); }
 
   @Test
   public void testCategoricalColumnsBinaryEncoding() {

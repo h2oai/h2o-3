@@ -10,7 +10,6 @@ import water.TestUtil;
 import water.fvec.Frame;
 import static org.junit.Assert.fail;
 import static org.junit.Assert.assertTrue;
-import static water.TestUtil.parse_test_file;
 
 /**
 	* Test suite for orc parser.
@@ -20,7 +19,7 @@ import static water.TestUtil.parse_test_file;
 	* <p>
 	* -- Requested by Tomas N.
 	*/
-public class ParseTestORCCSV {
+public class ParseTestORCCSV extends TestUtil {
 
 		private String[] csvFiles = {"smalldata/parser/orc/orc2csv/testTimeStamp.csv",
 										"smalldata/parser/orc/orc2csv/testDate1900.csv",

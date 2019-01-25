@@ -7,17 +7,14 @@ import org.junit.Test;
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.junit.runner.RunWith;
 import water.TestUtil;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 
 import static water.udf.CustomMetricTest.testNullModelRegression;
 import static water.udf.JFuncUtils.loadRawTestFunc;
 
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class JythonCustomMetricTest {
+public class JythonCustomMetricTest extends TestUtil {
+  @BeforeClass
+  static public void setup() { stall_till_cloudsize(1); }
 
   @Test
   public void testNullModelCustomMetric() throws Exception {

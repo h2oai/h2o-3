@@ -1,13 +1,8 @@
 package water;
 
 import org.junit.*;
-import org.junit.runner.RunWith;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class AutoBuffer2JSONTest {
+public class AutoBuffer2JSONTest extends TestUtil {
   private void assertEqual(Iced test, String expJson) {
     AutoBuffer ab = new AutoBuffer();
     String json = new String(test.writeJSON(ab).buf());

@@ -11,9 +11,10 @@ import water.rapids.Val;
 
 import java.util.Random;
 
-import static water.TestUtil.assertVecEquals;
+public class AstMatchTest extends TestUtil {
 
-public class AstMatchTest {
+  @BeforeClass
+  static public void setup() { stall_till_cloudsize(1); }
 
   @Test
   public void testMatchNumList() throws Exception {

@@ -43,13 +43,12 @@ import java.util.UUID;
 import static org.apache.parquet.hadoop.metadata.CompressionCodecName.UNCOMPRESSED;
 import static org.apache.parquet.schema.MessageTypeParser.parseMessageType;
 import static org.junit.Assert.*;
-import static water.TestUtil.*;
 
 /**
  * Test suite for Parquet parser.
  */
 @RunWith(Parameterized.class)
-public class ParseTestParquet {
+public class ParseTestParquet extends TestUtil {
 
   private static double EPSILON = 1e-9;
 
@@ -64,11 +63,11 @@ public class ParseTestParquet {
   @Parameterized.Parameter
   public boolean disableParallelParse;
 
-  public TestUtil.ParseSetupTransformer psTransformer;
+  public ParseSetupTransformer psTransformer;
 
   @Before
   public void makeParseSetupTransformer() {
-    psTransformer = new TestUtil.ParseSetupTransformer() {
+    psTransformer = new ParseSetupTransformer() {
       @Override
       public ParseSetup transformSetup(ParseSetup guessedSetup) {
         guessedSetup.disableParallelParse = disableParallelParse;
@@ -78,7 +77,7 @@ public class ParseTestParquet {
   }
 
   private Frame parse_parquet(String fname) {
-    return parse_test_file(fname, psTransformer);
+    return TestUtil.parse_test_file(fname, psTransformer);
   }
 
   @Test

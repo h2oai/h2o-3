@@ -3,24 +3,17 @@ package water.parser;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 import water.util.FileUtils;
 
 import java.io.File;
 
-import static water.TestUtil.parse_test_file;
-import static water.TestUtil.parse_test_folder;
-
-@RunWith(H2ORunner.class)
-@CloudSize(5)
-public class ParseFolderTest {
+public class ParseFolderTest extends TestUtil {
+  @BeforeClass static public void setup() { stall_till_cloudsize(5); }
 
   @Test public void testProstate() {
     Frame k1 = null, k2 = null;

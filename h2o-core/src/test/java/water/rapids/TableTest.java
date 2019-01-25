@@ -3,20 +3,14 @@ package water.rapids;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import water.Key;
 import water.Keyed;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.rapids.vals.ValFrame;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 
-import static water.TestUtil.parse_test_file;
-
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class TableTest{
+public class TableTest extends TestUtil {
+  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void testBasic() {
     Frame fr = null;

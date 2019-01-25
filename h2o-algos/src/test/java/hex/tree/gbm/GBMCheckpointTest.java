@@ -2,26 +2,24 @@ package hex.tree.gbm;
 
 import hex.tree.CompressedTree;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import water.DKV;
 import water.Key;
+import water.TestUtil;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 import water.util.VecUtils;
 
 import static water.ModelSerializationTest.assertTreeEquals;
 import static water.ModelSerializationTest.getTrees;
-import static water.TestUtil.parse_test_file;
 
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class GBMCheckpointTest {
-  
+public class GBMCheckpointTest extends TestUtil {
+
+  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
+
   @Test
   public void testCheckpointReconstruction4Multinomial() {
     testCheckPointReconstruction("smalldata/iris/iris.csv", 4, true, 5, 3);

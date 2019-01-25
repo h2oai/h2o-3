@@ -1,18 +1,12 @@
 package water;
 
 import static org.junit.Assert.*;
-import static water.TestUtil.parse_test_file;
-
 import org.junit.*;
-import org.junit.runner.RunWith;
 import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 
-@RunWith(H2ORunner.class)
-@CloudSize(3)
-public class ClientTest {
+public class ClientTest extends TestUtil {
+  @BeforeClass static public void setup() { stall_till_cloudsize(3); }
   
   // ---
   // Run some basic tests.  Create a key, test that it does not exist, insert a

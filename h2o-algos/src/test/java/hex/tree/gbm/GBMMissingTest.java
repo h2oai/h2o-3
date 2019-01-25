@@ -3,14 +3,12 @@ package hex.tree.gbm;
 import hex.FrameSplitter;
 import hex.ModelMetricsBinomial;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 import water.util.FileUtils;
 import water.util.FrameUtils;
 import static water.util.FrameUtils.generateNumKeys;
@@ -20,9 +18,8 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.TreeMap;
 
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class GBMMissingTest {
+public class GBMMissingTest extends TestUtil {
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void run() {
     long seed = 1234;

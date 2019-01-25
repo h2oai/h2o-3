@@ -4,18 +4,14 @@ import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 
 import org.junit.*;
-import org.junit.runner.RunWith;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 import water.util.IcedDouble;
 import water.util.IcedInt;
 
 import java.util.ArrayList;
 import java.util.Map;
 
-@RunWith(H2ORunner.class)
-@CloudSize(5)
-public class KeySnapshotTest {
+public class KeySnapshotTest extends TestUtil {
+  public KeySnapshotTest() { super(5); }
 
   @Test
   public void testGlobalKeySet(){

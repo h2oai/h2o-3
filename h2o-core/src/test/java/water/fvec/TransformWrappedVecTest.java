@@ -1,17 +1,16 @@
 package water.fvec;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import water.MRTask;
+import water.TestUtil;
 import water.rapids.ast.AstFunction;
+import water.rapids.ast.AstRoot;
 import water.rapids.Rapids;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class TransformWrappedVecTest {
-  
+public class TransformWrappedVecTest extends TestUtil {
+  @BeforeClass static public void setup() {  stall_till_cloudsize(1); }
+
   @Test public void testInversion() {
     Vec v=null;
     try {

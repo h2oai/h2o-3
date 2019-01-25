@@ -19,20 +19,15 @@ import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
-import org.junit.runner.RunWith;
 import water.fvec.Frame;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 import water.util.Log;
 
 import static org.junit.Assert.assertArrayEquals;
-import static water.TestUtil.ar;
-import static water.TestUtil.parse_test_file;
 
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class ModelSerializationTest {
+public class ModelSerializationTest extends TestUtil {
+
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   private static String[] ESA = new String[] {};
 

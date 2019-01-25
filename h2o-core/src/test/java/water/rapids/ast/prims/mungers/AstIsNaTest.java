@@ -4,7 +4,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import water.H2O;
 import water.TestUtil;
 import water.fvec.Frame;
@@ -12,16 +11,13 @@ import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.rapids.Rapids;
 import water.rapids.Val;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 
 import static org.junit.Assert.assertEquals;
-import static water.TestUtil.ar;
-import static water.TestUtil.ard;
 
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class AstIsNaTest {
+public class AstIsNaTest extends TestUtil {
+
+  @BeforeClass
+  static public void setup() { stall_till_cloudsize(1); }
 
   private Frame fr = null;
 

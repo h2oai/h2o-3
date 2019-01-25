@@ -4,19 +4,17 @@ package water;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 
 import java.util.concurrent.*;
 
 /**
  * Created by tomas on 8/16/16.
  */
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class FuturesTest{
-  
+public class FuturesTest extends TestUtil {
+
+  @BeforeClass
+  public static void setup() { stall_till_cloudsize(1); }
+
   public static class TstFuture implements Future {
     private boolean _isDone;
     private boolean _isCancelled;

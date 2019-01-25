@@ -4,18 +4,14 @@ import org.junit.*;
 import java.util.ArrayList;
 import jsr166y.ForkJoinTask;
 import jsr166y.RecursiveAction;
-import org.junit.runner.RunWith;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 import water.util.PrettyPrint;
 
 @Ignore("Speed/perf test, not intended as a pre-push junit test")
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class KVSpeedTest {
+public class KVSpeedTest extends TestUtil {
 
   static final int NCLOUD=5;
   static final int NKEYS=1000000;
+  @BeforeClass static public void setup() { stall_till_cloudsize(1); }
 
   // Make a million keys-per-node.  Make sure they are all cached/shared on at
   // least one other node.  Time removing them all.  Can be network bound as

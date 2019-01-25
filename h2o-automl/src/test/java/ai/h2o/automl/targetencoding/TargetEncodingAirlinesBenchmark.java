@@ -16,14 +16,16 @@ import java.util.Arrays;
 import java.util.Map;
 
 import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
-import static water.TestUtil.parse_test_file;
-import static water.TestUtil.printOutColumnsMetadata;
 
 /*
   Be aware that `smalldata/airlines/target_encoding/airlines_*.csv` files are not present in the repo. Replace with your own splits.
  */
-public class TargetEncodingAirlinesBenchmark {
-  
+public class TargetEncodingAirlinesBenchmark extends TestUtil {
+
+  @BeforeClass
+  public static void setup() {
+    stall_till_cloudsize(1);
+  }
 
   @Test
   public void KFoldHoldoutTypeTest() {

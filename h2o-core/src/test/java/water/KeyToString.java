@@ -2,16 +2,11 @@ package water;
 
 import static org.junit.Assert.*;
 import org.junit.*;
-import org.junit.runner.RunWith;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 import water.util.StringUtils;
 
 import java.util.Arrays;
 
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class KeyToString {
+public class KeyToString extends TestUtil {
   @Test public void testKeyToString() {
     byte[] b = StringUtils.bytesOf("XXXHelloAll");
     assertTrue(Key.make(b).toString().equals("XXXHelloAll"));

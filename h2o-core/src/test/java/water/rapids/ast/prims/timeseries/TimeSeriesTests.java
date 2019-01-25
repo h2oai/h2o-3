@@ -4,7 +4,6 @@ import org.junit.Assert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import water.DKV;
 import water.TestUtil;
 import water.TestUtilSharedResources;
@@ -13,16 +12,14 @@ import water.parser.BufferedString;
 import water.rapids.Rapids;
 import water.rapids.Val;
 import hex.CreateFrame;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class TimeSeriesTests {
+
+public class TimeSeriesTests extends TestUtilSharedResources {
     private static Frame f = null, fr1=null, fr2=null;
     private static CreateFrame cf = null;
 
     @BeforeClass public static void setup() {
+        stall_till_cloudsize(1);
         cf = new CreateFrame();
         cf.rows = 2;
         cf.cols = 256;

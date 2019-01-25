@@ -9,15 +9,20 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
+import water.util.FrameUtils;
 
 import java.io.File;
 import java.util.Map;
 import java.util.UUID;
 
-import static water.TestUtil.*;
-
 // Multi-class target encoding is not fully supported yet
-public class TargetEncodingMultiClassTargetTest {
+public class TargetEncodingMultiClassTargetTest extends TestUtil {
+
+
+  @BeforeClass
+  public static void setup() {
+    stall_till_cloudsize(1);
+  }
 
   private Frame fr = null;
 

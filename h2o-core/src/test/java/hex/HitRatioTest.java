@@ -2,17 +2,15 @@ package hex;
 
 import static hex.ModelMetricsMultinomial.updateHits;
 import org.junit.Assert;
-
+import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
+import static water.TestUtil.stall_till_cloudsize;
 
 import java.util.Arrays;
 
-@RunWith(H2ORunner.class)
-@CloudSize(1)
 public class HitRatioTest {
+
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   @Test
   public void testHits() {

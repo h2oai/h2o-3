@@ -6,17 +6,12 @@ import java.io.*;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLong;
-
-import org.junit.runner.RunWith;
 import water.*;
 import water.nbhm.NonBlockingHashMap;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 import water.util.FileUtils;
 
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class WordCountTest {
+public class WordCountTest extends TestUtil {
+  @BeforeClass static public void setup() {  stall_till_cloudsize(1); }
 
   // ==========================================================================
   @Test public void testWordCount() throws IOException {

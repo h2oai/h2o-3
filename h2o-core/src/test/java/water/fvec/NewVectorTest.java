@@ -4,14 +4,11 @@ import static org.junit.Assert.*;
 import org.junit.BeforeClass;
 import org.junit.*;
 
-import org.junit.runner.RunWith;
 import water.*;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class NewVectorTest{
+public class NewVectorTest extends TestUtil {
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+
   static final double EPSILON = 1e-6;
 
   private void testImpl( long[] ls, int[] xs, Class C, boolean hasFloat ) {

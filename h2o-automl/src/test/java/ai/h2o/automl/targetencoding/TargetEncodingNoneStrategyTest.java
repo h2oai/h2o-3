@@ -3,22 +3,21 @@ package ai.h2o.automl.targetencoding;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 import water.util.TwoDimTable;
 
 import java.util.Map;
 
-import static water.TestUtil.*;
+public class TargetEncodingNoneStrategyTest extends TestUtil {
 
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class TargetEncodingNoneStrategyTest{
+
+  @BeforeClass
+  public static void setup() {
+    stall_till_cloudsize(1);
+  }
 
   private Frame fr = null;
 

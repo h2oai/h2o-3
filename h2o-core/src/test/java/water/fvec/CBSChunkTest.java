@@ -3,12 +3,9 @@ package water.fvec;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import water.Futures;
 import water.Scope;
 import water.TestUtil;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -27,9 +24,8 @@ import static org.junit.Assert.assertTrue;
  * expected results. In this case expectation is little bit missused
  * since it is used to avoid DKV call.
  * */
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class CBSChunkTest {
+public class CBSChunkTest extends TestUtil {
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
   void testImpl(long[] ls, int[] xs, int expBpv, int expGap, int expClen, int expNA) {
     AppendableVec av = new AppendableVec(Vec.newKey(), Vec.T_NUM);
     // Create a new chunk

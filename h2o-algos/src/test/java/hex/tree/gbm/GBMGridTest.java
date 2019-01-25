@@ -5,10 +5,12 @@ import hex.genmodel.utils.DistributionFamily;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import water.DKV;
 import water.Job;
 import water.Key;
+import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.test.util.GridTestUtils;
@@ -17,10 +19,14 @@ import water.util.ArrayUtils;
 import java.util.*;
 
 import static org.junit.Assert.assertTrue;
-import static water.TestUtil.parse_test_file;
 import static water.util.ArrayUtils.interval;
 
-public class GBMGridTest {
+public class GBMGridTest extends TestUtil {
+
+  @BeforeClass()
+  public static void setup() {
+    stall_till_cloudsize(1);
+  }
 
   @Test
   public void testCarsGrid() {

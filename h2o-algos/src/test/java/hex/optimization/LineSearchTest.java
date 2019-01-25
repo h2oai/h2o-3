@@ -4,10 +4,7 @@ import hex.optimization.OptimizationUtils.GradientInfo;
 import hex.optimization.OptimizationUtils.GradientSolver;
 import hex.optimization.OptimizationUtils.MoreThuente;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import water.TestUtil;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -15,9 +12,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by tomasnykodym on 9/29/15.
  */
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class LineSearchTest{
+public class LineSearchTest extends TestUtil {
 
   @Test public void testMoreThuenteMethod() {
     GradientSolver f = new GradientSolver(){

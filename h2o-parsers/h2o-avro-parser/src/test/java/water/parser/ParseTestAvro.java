@@ -11,12 +11,9 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.io.DatumWriter;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 import water.util.StringUtils;
 
 import java.io.File;
@@ -24,17 +21,16 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import static org.junit.Assert.*;
-import static water.TestUtil.*;
 
 /**
  * Test suite for Avro parser.
  */
-@RunWith(H2ORunner.class)
-@CloudSize(5)
-public class ParseTestAvro {
+public class ParseTestAvro extends TestUtil {
 
   private static double EPSILON = 1e-9;
-  
+
+  @BeforeClass
+  static public void setup() { TestUtil.stall_till_cloudsize(5); }
 
   @Test
   public void testSkippedColumns() {
@@ -49,9 +45,9 @@ public class ParseTestAvro {
   @Test
   public void testParseSimple() {
     // Tests for basic files which are in smalldata
-    TestUtil.FrameAssertion[] assertions = new TestUtil.FrameAssertion[] {
+    FrameAssertion[] assertions = new FrameAssertion[] {
         // sequence100k.avro
-        new TestUtil.FrameAssertion("smalldata/parser/avro/sequence100k.avro", TestUtil.ari(1, 100000)) {
+        new FrameAssertion("smalldata/parser/avro/sequence100k.avro", TestUtil.ari(1, 100000)) {
           @Override public void check(Frame f) {
             Vec values = f.vec(0);
             for (int i = 0; i < f.numRows(); i++) {
@@ -60,7 +56,7 @@ public class ParseTestAvro {
           }
         },
         // episodes.avro
-        new TestUtil.FrameAssertion("smalldata/parser/avro/episodes.avro", TestUtil.ari(3, 8)) {}
+        new FrameAssertion("smalldata/parser/avro/episodes.avro", TestUtil.ari(3, 8)) {}
     };
 
     for (int i = 0; i < assertions.length; ++i) {
@@ -69,8 +65,8 @@ public class ParseTestAvro {
   }
 
   @Test public void testParsePrimitiveTypes() {
-    TestUtil.FrameAssertion[] assertions = new TestUtil.FrameAssertion[]{
-        new TestUtil.GenFrameAssertion("supportedPrimTypes.avro", TestUtil.ari(8, 100)) {
+    FrameAssertion[] assertions = new FrameAssertion[]{
+        new GenFrameAssertion("supportedPrimTypes.avro", TestUtil.ari(8, 100)) {
 
           @Override protected File prepareFile() throws IOException { return AvroFileGenerator.generatePrimitiveTypes(file, nrows()); }
 

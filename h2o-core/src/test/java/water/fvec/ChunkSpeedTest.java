@@ -2,16 +2,12 @@ package water.fvec;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import water.*;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 import water.util.Log;
 import water.util.PrettyPrint;
 
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class ChunkSpeedTest {
+public class ChunkSpeedTest extends TestUtil {
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   final int cols = 100;
   final int rows = 100000;
@@ -406,7 +402,7 @@ public class ChunkSpeedTest {
   }
 
   public static void main(String[] args) {
-    TestUtil.stall_till_cloudsize(1);
+    setup();
     new ChunkSpeedTest().run();
   }
 }

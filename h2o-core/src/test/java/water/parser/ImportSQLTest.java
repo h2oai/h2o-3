@@ -3,19 +3,15 @@ package water.parser;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.jdbc.SQLManager;
 import water.jdbc.SqlFetchMode;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class ImportSQLTest{
+public class ImportSQLTest extends TestUtil{
   //MySQL
   private String conUrl = "jdbc:mysql://172.16.2.178:3306/ingestSQL?&useSSL=false";
   String user = "root";
@@ -29,6 +25,9 @@ public class ImportSQLTest{
   String select_query = "";
   String columns = "*";
   
+  @BeforeClass
+  static public void setup() {stall_till_cloudsize(1);}
+
   @Ignore @Test
   public void citibike20k() {
     String table = "citibike20k";

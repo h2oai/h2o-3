@@ -9,9 +9,8 @@ import water.DKV;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
-import static water.TestUtil.parse_test_file;
-
-public class RefCntTest {
+public class RefCntTest extends TestUtil {
+  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void testNoTest() { /*defeat junit complaining about no tests in file*/ }
 

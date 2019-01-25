@@ -4,8 +4,8 @@ import hex.ModelMetricsBinomial;
 import hex.ScoreKeeper;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import water.DKV;
 import water.Key;
 import water.Scope;
@@ -13,13 +13,10 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 import water.util.Log;
 
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class DeepLearningSpiralsTest {
+public class DeepLearningSpiralsTest extends TestUtil {
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void run() {
     Scope.enter();

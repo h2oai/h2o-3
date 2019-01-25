@@ -14,20 +14,18 @@ import hex.ModelMetrics;
 import hex.ModelMetricsBinomial;
 import hex.ModelMetricsMultinomial;
 import hex.ModelMetricsRegression;
-import org.junit.runner.RunWith;
 import water.DKV;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 import water.util.FrameUtils;
 
 import static water.udf.JFuncUtils.loadTestFunc;
 
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class CustomMetricTest {
+public class CustomMetricTest extends TestUtil {
+
+  @BeforeClass
+  static public void setup() { stall_till_cloudsize(1); }
 
   @Test
   public void testNullModelCustomMetric() throws Exception {
@@ -35,7 +33,7 @@ public class CustomMetricTest {
   }
 
   static void testNullModelRegression(final CFuncRef func) throws Exception {
-    final Frame f = TestUtil.Datasets.iris();
+    final Frame f = Datasets.iris();
     Frame pred = null; Model model = null;
     try {
       NullModelParameters params = new NullModelParameters() {{

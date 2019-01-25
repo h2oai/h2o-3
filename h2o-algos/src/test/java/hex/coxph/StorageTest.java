@@ -3,21 +3,14 @@ package hex.coxph;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 
-import static water.TestUtil.*;
-
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class StorageTest {
+public class StorageTest extends TestUtil {
 
   @BeforeClass()
   public static void setup() { stall_till_cloudsize(1); }

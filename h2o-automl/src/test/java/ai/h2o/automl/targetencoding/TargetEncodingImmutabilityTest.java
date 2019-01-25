@@ -3,23 +3,21 @@ package ai.h2o.automl.targetencoding;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import water.DKV;
 import water.Key;
+import water.TestUtil;
 import water.fvec.*;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
-
 import java.util.Map;
 
 import static org.junit.Assert.*;
-import static water.TestUtil.ar;
-import static water.TestUtil.isBitIdentical;
 
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class TargetEncodingImmutabilityTest {
-  
+public class TargetEncodingImmutabilityTest extends TestUtil {
+
+
+  @BeforeClass
+  public static void setup() {
+    stall_till_cloudsize(1);
+  }
 
   private Frame fr = null;
 

@@ -10,17 +10,15 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import water.DKV;
 import water.Key;
+import water.TestUtilSharedResources;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,16 +26,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.Assert.*;
-import static water.TestUtil.parse_test_file;
 import static water.util.FileUtils.getFile;
 
 /**
  * Created by tomasnykodym on 6/4/15.
  */
 
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class GLMBasicTestRegression {
+public class GLMBasicTestRegression extends TestUtilSharedResources {
   static Frame _canCarTrain;
   static Frame _earinf;
   static Frame _weighted;
@@ -49,6 +44,7 @@ public class GLMBasicTestRegression {
 
   @BeforeClass
   public static void setup() throws IOException {
+    stall_till_cloudsize(1);
     File f = getFile("smalldata/glm_test/cancar_logIn.csv");
     assert f.exists();
     NFSFileVec nfs = NFSFileVec.make(f);

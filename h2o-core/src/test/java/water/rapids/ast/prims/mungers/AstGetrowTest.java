@@ -2,26 +2,22 @@ package water.rapids.ast.prims.mungers;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Rapids;
 import water.rapids.Val;
 import water.rapids.vals.ValRow;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 
 import static org.junit.Assert.*;
-import static water.TestUtil.ar;
-import static water.TestUtil.ard;
 
 /**
  */
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class AstGetrowTest{
+public class AstGetrowTest extends TestUtil {
+
+  @BeforeClass
+  static public void setup() { stall_till_cloudsize(1); }
 
   /** Test that in normal case the result has the correct type and value. */
   @Test public void TestGetrow() {

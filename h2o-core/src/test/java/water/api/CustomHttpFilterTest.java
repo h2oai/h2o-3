@@ -6,12 +6,9 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.spi.LoggingEvent;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import water.H2O;
 import water.JettyHTTPD;
 import water.TestUtil;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -26,10 +23,10 @@ import java.util.Properties;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class CustomHttpFilterTest {
+
+public class CustomHttpFilterTest extends TestUtil {
   @BeforeClass static public void setup() {
+    stall_till_cloudsize(1);
     // h2o-core/.., register the web bits (so we don't get errs below)
     String relativeResourcePath = System.getProperty("user.dir")+ "/..";
     H2O.registerResourceRoot(new File(relativeResourcePath + File.separator + "h2o-web/src/main/resources/www"));

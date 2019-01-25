@@ -3,21 +3,20 @@ package water.parser;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import water.TestUtil;
 import water.Value;
 import water.fvec.FileVec;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 import water.util.Log;
 import water.util.PrettyPrint;
 
 import java.io.FileWriter;
 import java.io.IOException;
 
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class ChunksizeTest {
+public class ChunksizeTest extends TestUtil {
+  @BeforeClass
+  static public void setup() {
+    stall_till_cloudsize(1);
+  }
 
   @Test
   public void run() throws IOException {

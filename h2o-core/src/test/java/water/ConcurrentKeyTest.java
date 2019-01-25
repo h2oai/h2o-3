@@ -5,9 +5,8 @@ import org.junit.BeforeClass;
 
 import water.fvec.Frame;
 
-import static water.TestUtil.parse_test_file;
-
-public class ConcurrentKeyTest {
+public class ConcurrentKeyTest extends TestUtil {
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
   
   // Test rapid key create/delete during parse
   @Test public void testParse() {

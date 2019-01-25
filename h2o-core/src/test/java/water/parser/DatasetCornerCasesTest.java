@@ -2,17 +2,10 @@ package water.parser;
 
 import org.junit.*;
 
-import org.junit.runner.RunWith;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 
-import static water.TestUtil.parse_test_file;
-
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class DatasetCornerCasesTest {
+public class DatasetCornerCasesTest extends TestUtil {
 
   /** HTWO-87 bug test
    *  - two lines dataset (one line is a comment) throws assertion java.lang.AssertionError: classOf no dists > 0? 1

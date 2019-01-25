@@ -3,13 +3,10 @@ package water;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 
-@RunWith(H2ORunner.class)
-@CloudSize(3)
-public class WeaverPoolTest{
+public class WeaverPoolTest extends TestUtil {
+
+  @BeforeClass() public static void setup() { stall_till_cloudsize(3); }
 
   @BeforeClass
   static public void _preconditionJavaVersion() { // NOTE: the `_` force execution of this check after setup

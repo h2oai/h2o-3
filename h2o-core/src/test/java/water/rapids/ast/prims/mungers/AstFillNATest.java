@@ -6,7 +6,6 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
 import water.Key;
 import water.Scope;
 import water.TestUtil;
@@ -17,16 +16,15 @@ import water.rapids.Rapids;
 import water.rapids.Session;
 import water.rapids.Val;
 import water.rapids.vals.ValFrame;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 
-import static water.TestUtil.*;
-
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class AstFillNATest {
+public class AstFillNATest extends TestUtil {
   @Rule
   public ExpectedException expectedException = ExpectedException.none();
+
+  @BeforeClass
+  static public void setup() {
+    stall_till_cloudsize(1);
+  }
 
 
   @Test

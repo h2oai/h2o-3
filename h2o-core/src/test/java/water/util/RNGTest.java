@@ -7,7 +7,8 @@ import water.TestUtil;
 
 import java.util.Random;
 
-public class RNGTest{
+public class RNGTest extends TestUtil {
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
   final static long[] seed = {7234723423423402343L, 1234882173459262304L};
 
   enum NumType { DOUBLE, FLOAT, LONG, INT }

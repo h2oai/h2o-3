@@ -31,10 +31,9 @@ import java.util.*;
 
 import static hex.genmodel.utils.DistributionFamily.*;
 import static org.junit.Assert.*;
-import static water.TestUtil.*;
 import static water.fvec.FVecTest.makeByteVec;
 
-public class GBMTest {
+public class GBMTest extends TestUtil {
 
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 

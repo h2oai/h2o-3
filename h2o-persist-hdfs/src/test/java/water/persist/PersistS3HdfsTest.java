@@ -10,11 +10,8 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
 import water.H2O;
 import water.TestUtil;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 import water.util.ReflectionUtils;
 
 import java.net.URI;
@@ -23,9 +20,12 @@ import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertNotNull;
 
 
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class PersistS3HdfsTest  {
+public class PersistS3HdfsTest extends TestUtil  {
+
+  @BeforeClass
+  public static void setup() {
+    stall_till_cloudsize(1);
+  }
 
   @Rule
   public ExpectedException thrown = ExpectedException.none();

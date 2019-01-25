@@ -3,16 +3,11 @@ package hex.createframe;
 import hex.createframe.postprocess.ShuffleColumnsCfps;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import water.TestUtil;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 
 /**
  */
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class ShuffleColumnsCfpsTest {
+public class ShuffleColumnsCfpsTest extends TestUtil {
 
   @Test
   public void removeNumericSuffixTest() {

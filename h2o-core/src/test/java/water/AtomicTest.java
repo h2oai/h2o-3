@@ -1,16 +1,12 @@
 package water;
 
 import org.junit.*;
-import org.junit.runner.RunWith;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 
 import java.util.Arrays;
 import java.util.Random;
 
-@RunWith(H2ORunner.class)
-@CloudSize(3)
-public class AtomicTest {
+public class AtomicTest extends TestUtil {
+  @BeforeClass() public static void setup() { stall_till_cloudsize(3); }
 
   public Key makeKey(String n, boolean remote) {
     if(!remote) return Key.make(n);

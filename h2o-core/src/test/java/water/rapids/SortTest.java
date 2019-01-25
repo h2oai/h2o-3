@@ -3,24 +3,19 @@ package water.rapids;
 import hex.CreateFrame;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.*;
 import water.nbhm.NonBlockingHashMapLong;
 import water.rapids.vals.ValFrame;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 
 import java.io.IOException;
 import java.util.Random;
 
 import static org.junit.Assert.assertTrue;
-import static water.TestUtil.*;
 
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class SortTest {
+public class SortTest extends TestUtil {
+  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void testBasicSortRapids() {
     Frame fr = null, res = null;

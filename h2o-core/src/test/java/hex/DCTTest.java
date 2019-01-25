@@ -2,19 +2,17 @@ package hex;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import water.DKV;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 import water.util.Log;
 import water.util.MathUtils;
 import water.util.PrettyPrint;
 
-@RunWith(H2ORunner.class)
-@CloudSize(5)
-public class DCTTest{
+public class DCTTest extends TestUtil {
+  @BeforeClass() public static void setup() {
+    stall_till_cloudsize(5);
+  }
 
   @Test
   public void DCT_1D() {

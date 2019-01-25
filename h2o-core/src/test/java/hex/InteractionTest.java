@@ -2,16 +2,12 @@ package hex;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 import water.util.Log;
 
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class InteractionTest {
+public class InteractionTest extends TestUtil {
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   Frame makeFrame(long rows) {
     CreateFrame cf = new CreateFrame();

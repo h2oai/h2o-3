@@ -3,7 +3,6 @@ package water.rapids;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import water.Key;
 import water.Scope;
 import water.TestUtil;
@@ -11,8 +10,6 @@ import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 import water.util.FileUtils;
 
 import java.io.InputStream;
@@ -22,12 +19,12 @@ import java.util.Arrays;
 import java.util.Random;
 
 import static junit.framework.TestCase.assertTrue;
-import static water.TestUtil.isIdenticalUpToRelTolerance;
 
 
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class MungingTest {
+public class MungingTest extends TestUtil {
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+
+
 
   private void copyStream(OutputStream os, InputStream is, final int buffer_size) {
     try {

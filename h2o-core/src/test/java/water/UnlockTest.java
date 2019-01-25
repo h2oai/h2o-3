@@ -2,16 +2,12 @@ package water;
 
 import org.junit.*;
 
-import org.junit.runner.RunWith;
 import water.api.UnlockTask;
 import water.fvec.Frame;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 import water.util.Log;
 
-@RunWith(H2ORunner.class)
-@CloudSize(5)
-public class UnlockTest {
+public class UnlockTest extends TestUtil {
+  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
 
   @Test
   public void run() {

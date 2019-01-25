@@ -4,18 +4,13 @@ import static org.junit.Assert.*;
 import org.junit.*;
 
 import java.io.File;
-
-import org.junit.runner.RunWith;
 import water.fvec.Chunk;
 import water.fvec.NFSFileVec;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 import water.util.FileUtils;
 import water.util.UnsafeUtils;
 
-@RunWith(H2ORunner.class)
-@CloudSize(3)
-public class KVTest {
+public class KVTest extends TestUtil {
+  @BeforeClass static public void setup() { stall_till_cloudsize(3); }
 
   // ---
   // Run some basic tests.  Create a key, test that it does not exist, insert a

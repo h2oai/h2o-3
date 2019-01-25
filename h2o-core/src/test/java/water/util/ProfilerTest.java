@@ -3,15 +3,12 @@ package water.util;
 import static org.junit.Assert.*;
 import org.junit.*;
 
-import org.junit.runner.RunWith;
 import water.H2O;
 import water.TestUtil;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 
-@RunWith(H2ORunner.class)
-@CloudSize(3)
-public class ProfilerTest {
+public class ProfilerTest extends TestUtil {
+  @BeforeClass() public static void setup() { stall_till_cloudsize(3); }
+  public ProfilerTest() { super(3); }
 
   @Test public void testProfiler() {
     for( int i=0; i<10; i++ ) {
