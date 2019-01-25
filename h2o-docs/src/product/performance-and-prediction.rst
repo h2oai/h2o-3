@@ -11,24 +11,6 @@ Evaluation Model Metrics
 
 H2O-3 provides a variety of metrics that can be used for evaluating supervised and unsupervised models. The metrics for this section only cover supervised learning models, which vary based on the model type (classification or regression).
 
-Classification or Regression
-''''''''''''''''''''''''''''
-
-- A `Gini Coefficient`_ is available for both classification and regression models. 
-
-Gini Coefficient
-################
-
-The Gini index is a well-established method to quantify the inequality among values of a frequency distribution, and can be used to measure the quality of a binary classifier. A Gini index of zero expresses perfect equality (or a totally useless classifier), while a Gini index of one expresses maximal inequality (or a perfect classifier).
-
-The Gini index is based on the Lorenz curve. The Lorenz curve plots the true positive rate (y-axis) as a function of percentiles of the population (x-axis).  
-
-The Lorenz curve represents a collective of models represented by the classifier. The location on the curve is given by the probability threshold of a particular model. (i.e., Lower probability thresholds for classification typically lead to more true positives, but also to more false positives.)
-
-The Gini index itself is independent of the model and only depends on the Lorenz curve determined by the distribution of the scores (or probabilities) obtained from the classifier.
-
-.. figure:: images/lorenz_curve.png
-  :alt: Lorenz curve
 
 Regression
 ''''''''''
@@ -110,6 +92,7 @@ Classification
 
 The following evaluation metrics are available for classification models:
 
+- `Gini Coefficient`_
 - `Absolute MCC (Matthews Correlation Coefficient)`_
 - `F1`_
 - `F0.5`_
@@ -118,6 +101,19 @@ The following evaluation metrics are available for classification models:
 - `Logloss`_
 - `AUC (Area Under the ROC Curve)`_
 
+Gini Coefficient
+################
+
+The Gini index is a well-established method to quantify the inequality among values of a frequency distribution, and can be used to measure the quality of a binary classifier. A Gini index of zero expresses perfect equality (or a totally useless classifier), while a Gini index of one expresses maximal inequality (or a perfect classifier).
+
+The Gini index is based on the Lorenz curve. The Lorenz curve plots the true positive rate (y-axis) as a function of percentiles of the population (x-axis).  
+
+The Lorenz curve represents a collective of models represented by the classifier. The location on the curve is given by the probability threshold of a particular model. (i.e., Lower probability thresholds for classification typically lead to more true positives, but also to more false positives.)
+
+The Gini index itself is independent of the model and only depends on the Lorenz curve determined by the distribution of the scores (or probabilities) obtained from the classifier.
+
+.. figure:: images/lorenz_curve.png
+  :alt: Lorenz curve
 
 Absolute MCC (Matthews Correlation Coefficient)
 ###############################################
