@@ -31,13 +31,13 @@ public class GenModelTest {
     int[] cats = new int[3];
     GenModel.setCats(row, nums, cats, 3, catOffsets, null, null, false);
     assertArrayEquals(new double[]{42}, nums, 0);
-    assertArrayEquals(new int[]{-1, 7, 10}, cats);
+    assertArrayEquals(new int[]{0, 7, 10}, cats);
 
     double[] to = new double[16];
     double[] numsInput = new double[1];
     int[] catsInput = new int[3];
     GenModel.setInput(row, to, numsInput, catsInput, numsInput.length, catsInput.length, catOffsets, null, null, false, false);
-    assertArrayEquals(new double[]{0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 42}, to, 0);
+    assertArrayEquals(new double[]{1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 42}, to, 0);
   }
 
   @Test
@@ -47,7 +47,7 @@ public class GenModelTest {
 
     float[] to = new float[16];
     GenModel.setInput(row, to, 1, 3, catOffsets, null, null, false, false);
-    assertArrayEquals(new float[]{0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 42}, to, 0);
+    assertArrayEquals(new float[]{1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 42}, to, 0);
   }
 
 }
