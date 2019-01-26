@@ -261,7 +261,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, insecure=None, use
         h2oconn = H2OConnection.open(url=url, ip=ip, port=port, name=name, https=https,
                                      verify_ssl_certificates=verify_ssl_certificates,
                                      auth=auth, proxy=proxy,cookies=cookies, verbose=True,
-                                     _msgs=("Checking whether there is an H2O instance running at {url}",
+                                     _msgs=("Checking whether there is an H2O instance running at {url} ",
                                             "connected.", "not found."))
     except H2OConnectionError:
         # Backward compatibility: in init() port parameter really meant "baseport" when starting a local server...
