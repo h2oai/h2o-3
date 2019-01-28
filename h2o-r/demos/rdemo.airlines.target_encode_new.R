@@ -1,164 +1,242 @@
 library(h2o)
 h2o.init()
 
+# Try different combinations of columns to encode to see how it impacts performance.
+# te_cols <- c("Origin", "Dest")
+te_cols <- c( "Dest") 
+inflection_point <- 5
+smoothing <- 1
+responseColumn <- "IsDepDelayed"
+
+
+.split_data <- function ( frame, frameTest, seed) {
+
+    print("Split data into training, validation, testing and target encoding holdout")
+    splits <- h2o.splitFrame(frame, seed = seed, ratios = c(0.6, 0.2),
+    destination_frames = c("train.hex", "valid.hex", "te_holdout.hex"))
+    train <- splits[[1]]
+    te_holdout <- splits[[3]]
+    
+    full_train <- h2o.rbind(train, te_holdout)
+    ds <- list(train = train, valid = splits[[2]], te_holdout = te_holdout, test = frameTest, full_train = full_train)
+
+    return(ds)
+}
+
+.average_benchmarking_without_te <- function (frame, frameTest, randomSeeds) {
+    
+    print("Run GBM without Target Encoding as Baseline")
+    # Since we are not creating any target encoding, we will use both the `train`` and `te_holdout`` frames to train our model
+
+    sum_of_aucs <- 0
+    for(current_seed in randomSeeds) {
+        ds = .split_data(frame, frameTest, current_seed)
+
+        predictors <- setdiff(colnames(ds$train), c(responseColumn, "IsDepDelayed_REC"))
+
+        print(paste(c("Predictors: ", predictors), collapse=" | "))
+
+        # Since we are not creating any target encoding, we will use both the `train`` and `te_holdout`` frames to train our model
+        default_gbm <- h2o.gbm(x = predictors, y = responseColumn,
+        training_frame = ds$full_train, validation_frame = ds$valid,
+        ntrees = 1000, score_tree_interval = 10, model_id = "default_gbm",
+        # Early Stopping
+        stopping_rounds = 5, stopping_metric = "AUC", stopping_tolerance = 0.001,
+        seed = 1)
+
+        auc <- h2o.auc(h2o.performance(default_gbm, ds$test))
+        print(paste0("auc = ", auc))
+        sum_of_aucs <- sum_of_aucs + auc
+    }
+    return( sum_of_aucs / length(randomSeeds))
+}
+
+.average_benchmarking_kfold <- function (frame, frameTest, randomSeeds) {
+    ############################################## KFold ###################################################################
+    print("Perform Target Encoding on cabin, embarked, and home.dest with Cross Validation Holdout")
+
+    # For this model we will calculate Target Encoding mapping on the full training data with cross validation holdout
+    # There is possible data leakage since we are creating the encoding map on the training and applying it to the training
+    # To mitigate the effect of data leakage without creating a holdout data, we remove the existing value of the row (holdout_type = LeaveOneOut)
+
+    sum_of_aucs <- 0
+    for(current_seed in randomSeeds) {
+        ds = .split_data(frame, frameTest, current_seed)
+
+        kfold_train <- ds$full_train
+        kfold_valid <- ds$valid
+        kfold_test <- ds$test
+        kfold_train$fold <- h2o.kfold_column(kfold_train, nfolds = 5, seed = 1234)
+
+        encoding_map <- h2o.target_encode_fit(kfold_train, te_cols, responseColumn, "fold")
+
+        # Apply Encoding Map on Training, Validation, Testing Data
+        kfold_train <- h2o.target_encode_transform(frame=kfold_train, x = te_cols, y = responseColumn,
+        target_encode_map=encoding_map, holdout_type = "kfold", fold_column = "fold",
+        blended_avg=TRUE, inflection_point = inflection_point, smoothing=smoothing,
+        noise=-1, seed = 1234)
+
+        kfold_valid <- h2o.target_encode_transform(frame=kfold_valid, x = te_cols, y = responseColumn,
+        target_encode_map=encoding_map, holdout_type = "none", fold_column = "fold",
+        blended_avg=TRUE, inflection_point = inflection_point, smoothing=smoothing,
+        noise=0)
+
+        kfold_test <- h2o.target_encode_transform(frame=kfold_test, x = te_cols, y = responseColumn,
+        target_encode_map=encoding_map, holdout_type = "none", fold_column = "fold",
+        blended_avg=TRUE, inflection_point = inflection_point, smoothing=smoothing,
+        noise=0)
+
+        print("Run GBM with Cross Calculation Target Encoding")
+
+        predictors <- setdiff(colnames(kfold_test), c(te_cols, responseColumn, "IsDepDelayed_REC"))
+
+        print(paste(c("Predictors: ", predictors), collapse=" | "))
+
+        kfold_te_gbm <- h2o.gbm(x = predictors, y = responseColumn,
+        training_frame = kfold_train, validation_frame = kfold_valid,
+        ntrees = 1000, score_tree_interval = 10, model_id = "kfold_te_gbm",
+        # Early Stopping
+        stopping_rounds = 5, stopping_metric = "AUC", stopping_tolerance = 0.001,
+        seed = 1)
+
+        auc <- h2o.auc(h2o.performance(kfold_te_gbm, kfold_test))
+        print(paste0("auc = ", auc))
+        sum_of_aucs <- sum_of_aucs + auc
+    }
+    return( sum_of_aucs / length(randomSeeds))
+}
+
+.average_benchmarking_loo <- function (frame, frameTest, randomSeeds) {
+    ############################################## LeaveOneOut #############################################################
+    print(paste(c("Perform Leave One Out Target Encoding on ", te_cols), collapse=" "))
+
+    # For this model we will calculate LOO Target Encoding on the full train
+    # There is possible data leakage since we are creating the encoding map on the training and applying it to the training
+    # To mitigate the effect of data leakage without creating a holdout data, we remove the existing value of the row (holdout_type = LeaveOneOut)
+
+    sum_of_aucs <- 0
+    for(current_seed in randomSeeds) {
+        ds = .split_data(frame, frameTest, current_seed)
+
+        loo_train <- ds$full_train
+        loo_valid <- ds$valid
+        loo_test <- ds$test
+
+        # Create Leave One Out Encoding Map
+        encoding_map <- h2o.target_encode_fit(loo_train, te_cols, responseColumn)
+
+        # Apply Leave One Out Encoding Map on Training, Validation, Testing Data
+        loo_train <- h2o.target_encode_transform(frame=loo_train, x = te_cols, y = responseColumn,
+        target_encode_map=encoding_map, holdout_type = "loo",
+        blended_avg=TRUE, inflection_point = inflection_point, smoothing=smoothing,
+        noise=-1, seed = 1234)
+
+        loo_valid <- h2o.target_encode_transform(frame=loo_valid, x = te_cols, y = responseColumn,
+        target_encode_map=encoding_map, holdout_type = "none",
+        blended_avg=TRUE, inflection_point = inflection_point, smoothing=smoothing,
+        noise=0)
+
+        loo_test <- h2o.target_encode_transform(frame=loo_test, x = te_cols, y = responseColumn,
+        target_encode_map=encoding_map, holdout_type = "none",
+        blended_avg=TRUE, inflection_point = inflection_point, smoothing=smoothing,
+        noise=0)
+
+
+        print("Run GBM with Leave One Out Target Encoding")
+        predictors <- setdiff(colnames(loo_test), c(te_cols, responseColumn, "IsDepDelayed_REC"))
+        print(paste(c("Predictors: ", predictors), collapse=" | "))
+
+        loo_gbm <- h2o.gbm(x = predictors, y = responseColumn,
+                            training_frame = loo_train, validation_frame = loo_valid,
+                            ntrees = 1000, score_tree_interval = 10, model_id = "loo_gbm",
+                            # Early Stopping
+                            stopping_rounds = 5, stopping_metric = "AUC", stopping_tolerance = 0.001,
+                            seed = 1)
+
+        auc <- h2o.auc(h2o.performance(loo_gbm, loo_test))
+        print(paste0("auc = ", auc))
+        sum_of_aucs <- sum_of_aucs + auc
+    }
+    return( sum_of_aucs / length(randomSeeds))
+}
+
+.average_benchmarking_none <- function (frame, frameTest, randomSeeds) {
+    ############################################## None holdout ############################################################
+    print("Perform Target Encoding on cabin, embarked, and home.dest on Separate Holdout Data")
+
+    # For this model we will calculate the Target Encoding mapping on the te_holdout data
+    # Since we are creating the encoding map on the te_holdout data and applying it to the training data,
+    # we do not need to take data leakage precautions (set `holdout_type = None`)
+
+    sum_of_aucs <- 0
+    for(current_seed in randomSeeds) {
+        ds = .split_data(frame, frameTest, current_seed)
+
+        holdout_train <- ds$train
+        holdout_valid <- ds$valid
+        holdout_test <- ds$test
+        te_holdout <- ds$te_holdout
+
+        encoding_map <- h2o.target_encode_fit(te_holdout, te_cols, responseColumn)
+
+
+        # Apply Encoding Map on Training, Validation, and Testing Data
+        holdout_train <- h2o.target_encode_transform(frame=holdout_train, x = te_cols, y = responseColumn,
+        target_encode_map=encoding_map, holdout_type = "none",
+        blended_avg=TRUE, inflection_point = inflection_point, smoothing=smoothing,
+        noise=0)
+
+        holdout_valid <- h2o.target_encode_transform(frame=holdout_valid, x = te_cols, y = responseColumn,
+        target_encode_map=encoding_map, holdout_type = "none",
+        blended_avg=TRUE, inflection_point = inflection_point, smoothing=smoothing,
+        noise=0)
+
+        holdout_test <- h2o.target_encode_transform(frame=holdout_test, x = te_cols, y = responseColumn,
+        target_encode_map=encoding_map, holdout_type = "none",
+        blended_avg=TRUE, inflection_point = inflection_point, smoothing=smoothing,
+        noise=0)
+
+        predictors <- setdiff(colnames(holdout_test), c(te_cols, responseColumn, "IsDepDelayed_REC"))
+
+        print(paste(c("Predictors: ", predictors), collapse=" | "))
+
+        print("Run GBM with Target Encoding on Holdout")
+        holdout_gbm <- h2o.gbm(x = predictors, y = responseColumn,
+                                training_frame = holdout_train, validation_frame = holdout_valid,
+                                ntrees = 1000, score_tree_interval = 10, model_id = "holdout_gbm",
+                                # Early Stopping
+                                stopping_rounds = 5, stopping_metric = "AUC", stopping_tolerance = 0.001,
+                                seed = 1)
+
+        auc <- h2o.auc(h2o.performance(holdout_gbm, holdout_test))
+        print(paste0("auc = ", auc))
+        sum_of_aucs <- sum_of_aucs + auc
+    }
+    return( sum_of_aucs / length(randomSeeds))
+}
+
+# Beginning of the average_benchmarking
+number_of_runs <- 2
+randomSeeds <- sample(100:1000, number_of_runs, replace=FALSE)
+
 dataPath <- h2o:::.h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip")
 dataPathTest <- h2o:::.h2o.locate("smalldata/airlines/AirlinesTest.csv.zip")
 print("Importing airlines data into H2O")
 data <- h2o.importFile(path = dataPath, destination_frame = "data")
 dataTest <- h2o.importFile(path = dataPathTest, destination_frame = "dataTest")
 
-print("Split data into training, validation, testing and target encoding holdout")
-splits <- h2o.splitFrame(data, seed = 1234, ratios = c(0.8, 0.1),
-                         destination_frames = c("train.hex", "valid.hex", "te_holdout.hex"))
-train <- splits[[1]]
-valid <- splits[[2]]
-te_holdout <- splits[[3]]
-test <- dataTest
+avg_without_te_auc <- .average_benchmarking_without_te(data, dataTest, randomSeeds)
+avg_kfold_auc <- .average_benchmarking_kfold(data, dataTest, randomSeeds)
+avg_loo_auc <- .average_benchmarking_loo(data, dataTest, randomSeeds)
+avg_holdout_none_auc <- .average_benchmarking_none(data, dataTest, randomSeeds)
 
-print("Run GBM without Target Encoding as Baseline")
-
-myX <- setdiff(colnames(train), c("IsDepDelayed", "IsDepDelayed_REC"))
-
-# Since we are not creating any target encoding, we will use both the `train`` and `te_holdout`` frames to train our model
-full_train <- h2o.rbind(train, te_holdout)
-default_gbm <- h2o.gbm(x = myX, y = "IsDepDelayed",
-                       training_frame = full_train, validation_frame = valid,
-                       ntrees = 1000, score_tree_interval = 10, model_id = "default_gbm",
-                       # Early Stopping
-                       stopping_rounds = 5, stopping_metric = "AUC", stopping_tolerance = 0.001,
-                       seed = 1)
-
-
-
-############################################## LeaveOneOut #############################################################
-print("Perform Leave One Out Target Encoding on cabin, embarked, and home.dest")
-
-te_cols <- c("Origin", "Dest")
-# For this model we will calculate LOO Target Encoding on the full train
-# There is possible data leakage since we are creating the encoding map on the training and applying it to the training
-# To mitigate the effect of data leakage without creating a holdout data, we remove the existing value of the row (holdout_type = LeaveOneOut)
-
-loo_train <- full_train
-loo_valid <- valid
-loo_test <- test
-
-# Create Leave One Out Encoding Map
-encoding_map <- h2o.target_encode_fit(full_train, te_cols, "IsDepDelayed")
-
-
-# Apply Leave One Out Encoding Map on Training, Validation, Testing Data
-loo_train <- h2o.target_encode_transform(frame = loo_train, x = te_cols, y = "IsDepDelayed",
-                                        target_encode_map = encoding_map, holdout_type = "loo",
-                                        blended_avg = TRUE, inflection_point = 10, smoothing = 5,
-                                        noise = -1, seed = 1234)
-
-loo_valid <- h2o.target_encode_transform(frame = loo_valid, x = te_cols, y = "IsDepDelayed",
-                                        target_encode_map = encoding_map, holdout_type = "none",
-                                        blended_avg = TRUE, inflection_point = 10, smoothing = 5,
-                                        noise = 0, seed = 1234)
-
-loo_test <- h2o.target_encode_transform(frame = loo_test, x = te_cols, y = "IsDepDelayed",
-                                        target_encode_map = encoding_map, holdout_type = "none",
-                                        blended_avg = TRUE, inflection_point = 10, smoothing = 5,
-                                        noise = 0, seed = 1234)
-
-print("Run GBM with Leave One Out Target Encoding")
-myX <- setdiff(colnames(loo_test), c(te_cols, "IsDepDelayed", "IsDepDelayed_REC"))
-loo_gbm <- h2o.gbm(x = myX, y = "IsDepDelayed",
-                   training_frame = loo_train, validation_frame = loo_valid,
-                   ntrees = 1000, score_tree_interval = 10, model_id = "loo_gbm",
-                   # Early Stopping
-                   stopping_rounds = 5, stopping_metric = "AUC", stopping_tolerance = 0.001,
-                   seed = 1)
-
-h2o.varimp_plot(loo_gbm)
-
-
-
-############################################## KFold ###################################################################
-print("Perform Target Encoding on cabin, embarked, and home.dest with Cross Validation Holdout")
-
-# For this model we will calculate Target Encoding mapping on the full training data with cross validation holdout
-# There is possible data leakage since we are creating the encoding map on the training and applying it to the training
-# To mitigate the effect of data leakage without creating a holdout data, we remove the existing value of the row (holdout_type = LeaveOneOut)
-
-kfold_train <- full_train
-kfold_valid <- valid
-kfold_test <- test
-kfold_train$fold <- h2o.kfold_column(kfold_train, nfolds = 5, seed = 1234)
-
-encoding_map <- h2o.target_encode_fit(kfold_train, te_cols, "IsDepDelayed", "fold")
-
-# Apply Encoding Map on Training, Validation, Testing Data
-kfold_train <- h2o.target_encode_transform(frame=kfold_train, x = te_cols, y = "IsDepDelayed",
-                                        target_encode_map=encoding_map, holdout_type = "kfold", fold_column = "fold",
-                                        blended_avg=TRUE, inflection_point = 10, smoothing=5,
-                                        noise=-1, seed = 1234)
-
-kfold_valid <- h2o.target_encode_transform(frame=kfold_valid, x = te_cols, y = "IsDepDelayed",
-                                        target_encode_map=encoding_map, holdout_type = "none", fold_column = "fold",
-                                        blended_avg=TRUE, inflection_point = 10, smoothing=5,
-                                        noise=0, seed = 1234)
-
-kfold_test <- h2o.target_encode_transform(frame=kfold_test, x = te_cols, y = "IsDepDelayed",
-                                        target_encode_map=encoding_map, holdout_type = "none", fold_column = "fold",
-                                        blended_avg=TRUE, inflection_point = 10, smoothing=5,
-                                        noise=0, seed = 1234)
-
-print("Run GBM with Cross Validation Target Encoding")
-kfold_te_gbm <- h2o.gbm(x = myX, y = "IsDepDelayed",
-                    training_frame = kfold_train, validation_frame = kfold_valid,
-                    ntrees = 1000, score_tree_interval = 10, model_id = "cv_te_gbm",
-                    # Early Stopping
-                    stopping_rounds = 5, stopping_metric = "AUC", stopping_tolerance = 0.001,
-                    seed = 1)
-
-h2o.varimp_plot(kfold_te_gbm)
-
-
-
-############################################## None holdout ############################################################
-print("Perform Target Encoding on cabin, embarked, and home.dest on Separate Holdout Data")
-
-# For this model we will calculate the Target Encoding mapping on the te_holdout data
-# Since we are creating the encoding map on the te_holdout data and applying it to the training data,
-# we do not need to take data leakage precautions (set `holdout_type = None`)
-
-holdout_train <- train
-holdout_valid <- valid
-holdout_test <- test
-
-encoding_map <- h2o.target_encode_fit(te_holdout, te_cols, "IsDepDelayed")
-
-# Apply Encoding Map on Training, Validation, and Testing Data
-holdout_train <- h2o.target_encode_transform(frame=holdout_train, x = te_cols, y = "IsDepDelayed",
-                                            target_encode_map=encoding_map, holdout_type = "none",
-                                            blended_avg=TRUE, inflection_point = 10, smoothing=5,
-                                            noise=0, seed = 1234)
-
-holdout_valid <- h2o.target_encode_transform(frame=holdout_valid, x = te_cols, y = "IsDepDelayed",
-                                            target_encode_map=encoding_map, holdout_type = "none",
-                                            blended_avg=TRUE, inflection_point = 10, smoothing=5,
-                                            noise=0, seed = 1234)
-
-holdout_test <- h2o.target_encode_transform(frame=holdout_test, x = te_cols, y = "IsDepDelayed",
-                                            target_encode_map=encoding_map, holdout_type = "none",
-                                            blended_avg=TRUE, inflection_point = 10, smoothing=5,
-                                            noise=0, seed = 1234)
-
-print("Run GBM with Target Encoding on Holdout")
-holdout_gbm <- h2o.gbm(x = myX, y = "IsDepDelayed",
-                       training_frame = holdout_train, validation_frame = holdout_valid,
-                       ntrees = 1000, score_tree_interval = 10, model_id = "holdout_gbm",
-                       # Early Stopping
-                       stopping_rounds = 5, stopping_metric = "AUC", stopping_tolerance = 0.001,
-                       seed = 1)
-
-h2o.varimp_plot(holdout_gbm)
+round_digits <- 4
 
 print("Compare AUC of GBM with different types of target encoding")
-print(paste0("Default GBM AUC: ", round(h2o.auc(h2o.performance(default_gbm, test)), 3)))
-print(paste0("LOO GBM AUC: ", round(h2o.auc(h2o.performance(loo_gbm, loo_test)), 3)))
-print(paste0("KFold TE GBM AUC: ", round(h2o.auc(h2o.performance(kfold_te_gbm, kfold_test)), 3)))
-print(paste0("Holdout GBM AUC: ", round(h2o.auc(h2o.performance(holdout_gbm, holdout_test)), 3)))
+
+print(paste0("Default AUC without TE: ", round(avg_without_te_auc, round_digits)))
+print(paste0("KFold TE GBM AUC: ", round(avg_kfold_auc, round_digits)))
+print(paste0("LOO GBM AUC: ", round(avg_loo_auc, round_digits)))
+print(paste0("Holdout none GBM AUC: ", round(avg_holdout_none_auc, round_digits)))
+
 
