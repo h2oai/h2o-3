@@ -324,6 +324,6 @@ h2o.set_s3_credentials <- function(secretKeyId, secretAccessKey){
   parms$secret_key_id <- secretKeyId
   parms$secret_access_key = secretAccessKey
   
-  res <- .h2o.__remoteSend("Persist", method = "GET", .params = parms, h2oRestApiVersion = 3)
+  res <- .h2o.__remoteSend("Persist", method = "POST", .params = parms, h2oRestApiVersion = 3)
   print("Credentials successfully set.")
 }

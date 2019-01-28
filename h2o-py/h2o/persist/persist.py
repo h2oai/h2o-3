@@ -26,5 +26,5 @@ def set_s3_credentials(secret_key_id, secret_access_key):
               "secret_access_key": secret_access_key
               }
     
-    h2o.api(endpoint="GET /3/Persist", data=params)
+    h2o.api(endpoint="POST /3/Persist", data=params)
     print("Credentials successfully set.")
