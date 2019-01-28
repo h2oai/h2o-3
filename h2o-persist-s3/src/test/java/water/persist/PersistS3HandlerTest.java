@@ -8,6 +8,8 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import water.DKV;
 import water.Iced;
+import water.Key;
+import water.TestUtil;
 import water.fvec.Frame;
 
 import java.util.ArrayList;
@@ -18,14 +20,14 @@ import static org.junit.Assert.*;
 import static org.junit.Assume.assumeTrue;
 import static water.TestUtil.stall_till_cloudsize;
 
-public class PersistS3HandlerTest {
+public class PersistS3HandlerTest extends TestUtil {
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
     @BeforeClass
     public static void setup() {
-        stall_till_cloudsize(5);
+        stall_till_cloudsize(1);
     }
 
 
@@ -47,7 +49,8 @@ public class PersistS3HandlerTest {
         final String secretKey = System.getenv(AWS_SECRET_KEY_PROPERTY_NAME);
         assumeTrue(accessKeyId != null);
         assumeTrue(secretKey != null);
-
+        
+        final Key credentialsKey= Key.make(IcedS3Credentials.S3_CREDENTIALS_DKV_KEY);
         PersistS3 persistS3 = new PersistS3();
         final ArrayList<String> keys = new ArrayList<>();
         final ArrayList<String> fails = new ArrayList<>();
@@ -66,6 +69,7 @@ public class PersistS3HandlerTest {
             assertEquals(1, files.size());
             assertEquals(1, keys.size());
         } finally {
+            if(credentialsKey != null) DKV.remove(credentialsKey);
             for (String key : keys) {
                 final Iced iced = DKV.getGet(key);
                 assertTrue(iced instanceof Frame);
@@ -82,7 +86,6 @@ public class PersistS3HandlerTest {
         final ArrayList<String> fails = new ArrayList<>();
         final ArrayList<String> deletions = new ArrayList<>();
         final ArrayList<String> files = new ArrayList<>();
-
         try {
             final String nonExistingKey = UUID.randomUUID().toString();
             final PersistS3CredentialsV3 persistS3CredentialsV3 = new PersistS3CredentialsV3();
