@@ -23,8 +23,9 @@ public class PersistS3Handler extends Handler {
      */
     private void validateS3Credentials(final PersistS3CredentialsV3 s3Credentials){
         Objects.requireNonNull(s3Credentials);
-        Objects.requireNonNull(s3Credentials.secret_key_id);
-        Objects.requireNonNull(s3Credentials.secret_access_key);
+        
+        if(s3Credentials.secret_key_id == null) throw new IllegalArgumentException("The field 'S3_SECRET_KEY_ID' may not be null.");
+        if(s3Credentials.secret_access_key == null) throw new IllegalArgumentException("The field 'S3_SECRET_ACCESS_KEY' may not be null.");
 
         s3Credentials.secret_key_id = s3Credentials.secret_key_id.trim();
         s3Credentials.secret_access_key = s3Credentials.secret_access_key.trim();

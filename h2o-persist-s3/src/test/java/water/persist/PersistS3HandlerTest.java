@@ -27,7 +27,7 @@ public class PersistS3HandlerTest {
 
     @BeforeClass
     public static void setup() {
-        stall_till_cloudsize(5);
+        stall_till_cloudsize(1);
     }
 
 
@@ -59,8 +59,10 @@ public class PersistS3HandlerTest {
         final ArrayList<String> files = new ArrayList<>();
 
         try {
-            DKV.put(secretKeyIdKey, new BufferedString(accessKeyId));
-            DKV.put(secretAccessKeyKey, new BufferedString(secretKey));
+            final PersistS3CredentialsV3 persistS3CredentialsV3 = new PersistS3CredentialsV3();
+            persistS3CredentialsV3.secret_key_id = accessKeyId;
+            persistS3CredentialsV3.secret_access_key =  secretKey;
+            persistS3Handler.setS3Credentials(3, persistS3CredentialsV3);
 
             persistS3.importFiles(IRIS_H2O_AWS, null, files, keys, fails, deletions);
             assertEquals(0, fails.size());
@@ -91,8 +93,10 @@ public class PersistS3HandlerTest {
 
         try {
             final String nonExistingKey = UUID.randomUUID().toString();
-            DKV.put(secretKeyIdKey, new BufferedString(nonExistingKey));
-            DKV.put(secretAccessKeyKey, new BufferedString(nonExistingKey));
+            final PersistS3CredentialsV3 persistS3CredentialsV3 = new PersistS3CredentialsV3();
+            persistS3CredentialsV3.secret_key_id = nonExistingKey;
+            persistS3CredentialsV3.secret_access_key =  nonExistingKey;
+            persistS3Handler.setS3Credentials(3, persistS3CredentialsV3);
             
             expectedException.expect(AmazonS3Exception.class);
             expectedException.expectMessage("The AWS Access Key Id you provided does not exist in our records. (Service: Amazon S3; Status Code: 403; Error Code: InvalidAccessKeyId;");
@@ -102,5 +106,45 @@ public class PersistS3HandlerTest {
             if (secretKeyIdKey != null) DKV.remove(secretKeyIdKey);
             if (secretAccessKeyKey != null) DKV.remove(secretAccessKeyKey);
         }
+    }
+    
+    @Test
+    public void setS3Credentials_nullKeyId(){
+        final PersistS3CredentialsV3 persistS3CredentialsV3 = new PersistS3CredentialsV3();
+        persistS3CredentialsV3.secret_key_id = null;
+        persistS3CredentialsV3.secret_access_key =  "something";
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage("The field 'S3_SECRET_KEY_ID' may not be null.");
+        persistS3Handler.setS3Credentials(3, persistS3CredentialsV3);
+    }
+
+    @Test
+    public void setS3Credentials_nullAccessKey(){
+        final PersistS3CredentialsV3 persistS3CredentialsV3 = new PersistS3CredentialsV3();
+        persistS3CredentialsV3.secret_key_id = "something";
+        persistS3CredentialsV3.secret_access_key =  null;
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage("The field 'S3_SECRET_ACCESS_KEY' may not be null.");
+        persistS3Handler.setS3Credentials(3, persistS3CredentialsV3);
+    }
+
+    @Test
+    public void setS3Credentials_emptyKeyId(){
+        final PersistS3CredentialsV3 persistS3CredentialsV3 = new PersistS3CredentialsV3();
+        persistS3CredentialsV3.secret_key_id = " "; //Space inside tests the value gets trimmed
+        persistS3CredentialsV3.secret_access_key =  "something";
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage("The field 'S3_SECRET_KEY_ID' may not be empty.");
+        persistS3Handler.setS3Credentials(3, persistS3CredentialsV3);
+    }
+
+    @Test
+    public void setS3Credentials_emptySecretAccessKey(){
+        final PersistS3CredentialsV3 persistS3CredentialsV3 = new PersistS3CredentialsV3();
+        persistS3CredentialsV3.secret_key_id = "something";
+        persistS3CredentialsV3.secret_access_key =  " "; // Space inside tests the value gets trimmed
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage("The field 'S3_SECRET_ACCESS_KEY' may not be empty.");
+        persistS3Handler.setS3Credentials(3, persistS3CredentialsV3);
     }
 }
