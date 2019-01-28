@@ -49,7 +49,7 @@ def runComparisonTests(autoEncoder, probleyType):
     print("Comparing mojo predict and h2o predict...")
     pyunit_utils.compare_frames_local_onecolumn_NA(pred_h2o, pred_mojo, prob=1, tol=1e-10)
     print("Comparing pojo predict and h2o predict...")
-    pyunit_utils.compare_frames_local_onecolumn_NA(pred_mojo, pred_pojo, prob=1, tol=1e-10)
+    pyunit_utils.compare_frames_local_onecolumn_NA(pred_h2o, pred_pojo, prob=1, tol=1e-10)
 
 def set_params( enableEncoder=False):
     allAct = ["maxout", "rectifier", "maxout_with_dropout", "tanh_with_dropout", "rectifier_with_dropout", "tanh"]
