@@ -306,6 +306,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
                   new double[] { 0.9, 0.1 },
                   buildSpec.build_control.stopping_criteria.seed());
           this.trainingFrame = splits[0];
+          if(splits[1].numRows() == 0) throw new IllegalStateException("During spliting from training frame we ended up with empty leaderboardFrame");
           this.leaderboardFrame = splits[1];
           this.didValidationSplit = false;
           this.didLeaderboardSplit = true;

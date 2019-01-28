@@ -6,14 +6,12 @@ import org.junit.Test;
 import water.Key;
 import water.MRTask;
 import water.TestUtil;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.parser.BufferedString;
 
 import java.util.Arrays;
 
+import static org.junit.Assert.assertEquals;
 import static water.fvec.FrameTestUtil.createFrame;
 import static water.fvec.FrameTestUtil.collectS;
 import static water.util.ArrayUtils.flat;
@@ -113,6 +111,83 @@ public class ShuffleSplitFrameTest extends TestUtil {
       if (ary[i] == null) ary[i] = replacement;
     }
     return ary;
+  }
+
+
+  @Test
+  public void splitRatioIsWorkingCorrectly() {
+    Frame leaderboardFrame = null;
+
+    try {
+      leaderboardFrame = new TestFrameBuilder()
+              .withName("leaderboardFrame")
+              .withColNames("ColA", "ColB", "ColC")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", "b", "b", "a", "a"))
+              .withDataForCol(1, ar("yellow", "blue", "green", "red", "purple", "orange"))
+              .withDataForCol(2, ar("2", "6", "6", "6", "6", "2"))
+              .build();
+
+      double[] splitRatio = {0.8, 0.2};
+      Key[] keysForSplits = {Key.make("key_" + leaderboardFrame._key), Key.make("key2_" + leaderboardFrame._key)};
+      Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(leaderboardFrame, keysForSplits, splitRatio, 1234);
+      System.out.println("Number of row in original frame: " + leaderboardFrame.numRows());
+      assertEquals(5, splits[0].numRows());
+      assertEquals(1, splits[1].numRows());
+
+    } finally {
+      leaderboardFrame.delete();
+    }
+  }
+
+  @Test
+  public void splitRatioIsWorkingCorrectlyOnBigData() {
+    Frame leaderboardFrame = null;
+
+    try {
+      leaderboardFrame = new TestFrameBuilder()
+              .withName("leaderboardFrame")
+              .withColNames("ColA")
+              .withVecTypes(Vec.T_NUM)
+              .withRandomDoubleDataForCol(0, 1000, 20, 90, 1234L)
+              .build();
+
+      double[] splitRatio = {0.8, 0.2};
+      Key[] keysForSplits = {Key.make("key_" + leaderboardFrame._key), Key.make("key2_" + leaderboardFrame._key)};
+      Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(leaderboardFrame, keysForSplits, splitRatio, 1234);
+      System.out.println("Number of row in original frame: " + leaderboardFrame.numRows());
+      assertEquals(800, splits[0].numRows(), 10);
+      assertEquals(200, splits[1].numRows(), 10);
+
+    } finally {
+      leaderboardFrame.delete();
+    }
+  }
+
+  @Test
+  public void numberOfPartitionsIsMoreImportantThenCorrectRation() {
+    Frame leaderboardFrame = null;
+
+    try {
+      leaderboardFrame = new TestFrameBuilder()
+              .withName("leaderboardFrame")
+              .withColNames("ColA", "ColB", "ColC")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b"))
+              .withDataForCol(1, ar("yellow", "blue"))
+              .withDataForCol(2, ar("2", "6"))
+              .build();
+
+      double[] splitRatio = {0.9, 0.1};
+      Key[] keysForSplits = {Key.make("key_" + leaderboardFrame._key), Key.make("key2_" + leaderboardFrame._key)};
+      Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(leaderboardFrame, keysForSplits, splitRatio, 1234);
+      System.out.println("Number of row in original frame: " + leaderboardFrame.numRows());
+      assertEquals(1, splits[0].numRows());
+      assertEquals(1, splits[1].numRows());
+
+    } finally {
+      leaderboardFrame.delete();
+    }
   }
 
 }
