@@ -4,7 +4,6 @@ sys.path.insert(1, "../../../")
 import h2o
 from tests import pyunit_utils
 import random
-from random import randint
 import re
 from h2o.estimators.deeplearning import H2ODeepLearningEstimator
 
@@ -15,24 +14,36 @@ TMPDIR = ""
 MOJONAME = ""
 
 def deeplearning_mojo_pojo():
-    h2o.remove_all()
     problemtypes = ["regression", "binomial", "multinomial"]
-    autoEncoderOn = [True, False]
+    autoEncoderOn = [True]
+    missingValues = ['Skip', 'MeanImputation']
+    allFactors = [False, True]
+    for problem in problemtypes:
+        df = random_dataset(problem)       # generate random dataset
+        train = df[NTESTROWS:, :]
+        test = df[:NTESTROWS, :]
+        x = list(set(df.names) - {"response"})
 
-    for encoderOn in autoEncoderOn:
-        for problem in problemtypes:
-            print("AutoEncoderOn is: {0} and problem type is: {1}".format(encoderOn, problem))
-            random.seed(9876) # set python random seed
-            runComparisonTests(encoderOn, problem)
+        for encoderOn in autoEncoderOn:
+            if (encoderOn): # maxout not support for autoEncoder
+                allAct = ["rectifier", "tanh_with_dropout", "rectifier_with_dropout", "tanh"]
+            else:
+                allAct = ["maxout", "rectifier","maxout_with_dropout", "tanh_with_dropout",
+                          "rectifier_with_dropout", "tanh"]
+
+            for actFun in allAct:
+                for missingValuesHandling in missingValues:
+                    for setAllFactor in allFactors:
+                        print("AutoEncoderOn is: {0} and problem type is: {1}".format(encoderOn, problem))
+                        print("Activation function: {0}, missing value handling: {1}, skippAllFactor: "
+                              "{2}".format(actFun, missingValuesHandling, setAllFactor))
+                        runComparisonTests(encoderOn, actFun, missingValuesHandling, setAllFactor, train,
+                                           test, x)
 
 
-def runComparisonTests(autoEncoder, probleyType):
-    params = set_params(autoEncoder)   # set deeplearning model parameters
-    df = random_dataset(probleyType)       # generate random dataset
-    train = df[NTESTROWS:, :]
-    test = df[:NTESTROWS, :]
-    x = list(set(df.names) - {"response"})
-
+def runComparisonTests(autoEncoder, actFun, missingValuesHandling, setAllFactor, train, test, x):
+    params = set_params(actFun, missingValuesHandling, setAllFactor, autoEncoder)   # set deeplearning model parameters
+    
     if autoEncoder:
         try:
             deeplearningModel = build_save_model(params, x, train) # build and save mojo model
@@ -42,6 +53,7 @@ def runComparisonTests(autoEncoder, probleyType):
             return
     else:
         deeplearningModel = build_save_model(params, x, train) # build and save mojo model
+        
     h2o.download_csv(test[x], os.path.join(TMPDIR, 'in.csv'))  # save test file, h2o predict/mojo use same file
     pred_h2o, pred_mojo = pyunit_utils.mojo_predict(deeplearningModel, TMPDIR, MOJONAME)  # load model and perform predict
     pred_pojo = pyunit_utils.pojo_predict(deeplearningModel, TMPDIR, MOJONAME)
@@ -51,34 +63,26 @@ def runComparisonTests(autoEncoder, probleyType):
     print("Comparing pojo predict and h2o predict...")
     pyunit_utils.compare_frames_local_onecolumn_NA(pred_mojo, pred_pojo, prob=1, tol=1e-10)
 
-def set_params( enableEncoder=False):
-    allAct = ["maxout", "rectifier", "maxout_with_dropout", "tanh_with_dropout", "rectifier_with_dropout", "tanh"]
-    problemType = ["binomial", "multinomial", "regression"]
-    missingValues = ['Skip', 'MeanImputation']
-    allFactors = [True, False]
-    if (enableEncoder): # maxout not support for autoEncoder
-        allAct = ["rectifier", "tanh_with_dropout", "rectifier_with_dropout", "tanh"]
-    actFunc = allAct[randint(0,len(allAct)-1)]
-    missing_values = missingValues[randint(0, len(missingValues)-1)]
-
-    hiddens, hidden_dropout_ratios = random_networkSize(actFunc)    # generate random size layers
-    params = {}
-    if ('dropout') in actFunc:
+def set_params(actFun, missingValuesHandling, setAllFactor, enableEncoder=False):
+    dropOutRatio = 0.25
+    hiddens, hidden_dropout_ratios = random_networkSize(actFun)    # generate random size layers
+    seed = 12345
+    if ('dropout') in actFun:
         params = {'hidden': hiddens, 'standardize': True,
-                  'missing_values_handling': missing_values, 'activation': actFunc,
-                  'use_all_factor_levels': allFactors[randint(0, len(allFactors) - 1)],
+                  'missing_values_handling': missingValuesHandling, 'activation': actFun,
+                  'use_all_factor_levels': setAllFactor,
                   'hidden_dropout_ratios': hidden_dropout_ratios,
-                  'input_dropout_ratio': random.uniform(0, 0.5),
+                  'input_dropout_ratio': dropOutRatio,
                   'autoencoder':enableEncoder,
-                  'seed':1234
+                  'seed':seed, 'reproducible':True
                   }
     else:
         params = {'hidden': hiddens, 'standardize': True,
-                  'missing_values_handling': missing_values, 'activation': actFunc,
-                  'use_all_factor_levels': allFactors[randint(0, len(allFactors) - 1)],
-                  'input_dropout_ratio': random.uniform(0, 0.5),
+                  'missing_values_handling': missingValuesHandling, 'activation': actFun,
+                  'use_all_factor_levels': setAllFactor,
+                  'input_dropout_ratio': dropOutRatio,
                   'autoencoder':enableEncoder,
-                  'seed':1234
+                  'seed':seed, 'reproducible':True
                   }
     print(params)
     return params
@@ -104,13 +108,13 @@ def build_save_model(params, x, train):
 
 # generate random neural network architecture
 def random_networkSize(actFunc):
-    no_hidden_layers = randint(1, MAXLAYERS)
+    no_hidden_layers = 5
     hidden = []
     hidden_dropouts = []
     for k in range(1, no_hidden_layers+1):
-        hidden.append(randint(1,MAXNODESPERLAYER))
+        hidden.append(8)
         if 'dropout' in actFunc.lower():
-            hidden_dropouts.append(random.uniform(0,0.5))
+            hidden_dropouts.append(0.25)
 
     return hidden, hidden_dropouts
 
@@ -118,7 +122,7 @@ def random_networkSize(actFunc):
 def random_dataset(response_type="regression", verbose=True):
     """Create and return a random dataset."""
     if verbose: print("\nCreating a dataset for a %s problem:" % response_type)
-    fractions = {k + "_fraction": random.random() for k in "real categorical integer time string binary".split()}
+    fractions = {k + "_fraction": 0.5 for k in "real categorical integer time string binary".split()}
     fractions["string_fraction"] = 0  # Right now we are dropping string columns, so no point in having them.
     fractions["binary_fraction"] /= 3
     fractions["time_fraction"] /= 2
@@ -129,8 +133,8 @@ def random_dataset(response_type="regression", verbose=True):
     response_factors = (1 if response_type == "regression" else
                         2 if response_type == "binomial" else
                         random.randint(3, 10))
-    df = h2o.create_frame(rows=random.randint(5000, 10000) + NTESTROWS, cols=random.randint(3, 20),
-                          missing_fraction=random.uniform(0, 0.05),
+    df = h2o.create_frame(rows=5000 + NTESTROWS, cols=5,
+                          missing_fraction=0.025,
                           has_response=True, response_factors=response_factors, positive_response=True, factors=10,
                           seed=1234, **fractions)
     if verbose:
