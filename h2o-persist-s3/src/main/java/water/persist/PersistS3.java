@@ -15,6 +15,7 @@ import water.*;
 import water.fvec.FileVec;
 import water.fvec.S3FileVec;
 import water.fvec.Vec;
+import water.parser.BufferedString;
 import water.util.ByteStreams;
 import water.util.Log;
 import water.util.RIStream;
@@ -33,10 +34,11 @@ import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
 public final class PersistS3 extends Persist {
   private static final String HELP = "You can specify a credentials properties file with the -aws_credentials command line switch.";
 
+  static final String S3_SECRET_KEY_ID_DKV_KEY = "S3_SECRET_KEY_ID";
+  static final String S3_SECRET_ACCES_KEY_DKV_KEY = "S3_SECRET_ACCES_KEY";
+
   private static final String KEY_PREFIX = "s3://";
   private static final int KEY_PREFIX_LEN = KEY_PREFIX.length();
-  private static volatile String S3_SECRET_KEY_ID = null;
-  public static volatile String S3_SECRET_ACCESS_KEY = null;
 
   private static final Object _lock = new Object();
   private static volatile AmazonS3 _s3;
@@ -85,13 +87,7 @@ public final class PersistS3 extends Persist {
 
     }
   }
-
-  public static void setAmazonS3Credentials(final String secretKeyId, final String secretAccessKey) {
-    synchronized (_lock) {
-      S3_SECRET_KEY_ID = secretKeyId;
-      S3_SECRET_ACCESS_KEY = secretAccessKey;
-    }
-  }
+  
 
   /**
    * Holds basic credentials (Secret key ID + Secret access key) pair.
@@ -101,9 +97,11 @@ public final class PersistS3 extends Persist {
 
     @Override
     public AWSCredentials getCredentials() {
+      BufferedString keyId = DKV.getGet(S3_SECRET_KEY_ID_DKV_KEY);
+      BufferedString secretAccessKey = DKV.getGet(S3_SECRET_ACCES_KEY_DKV_KEY);
 
-      if (S3_SECRET_KEY_ID != null && S3_SECRET_ACCESS_KEY != null) {
-        return new BasicAWSCredentials(S3_SECRET_KEY_ID, S3_SECRET_ACCESS_KEY);
+      if (keyId != null && secretAccessKey != null) {
+        return new BasicAWSCredentials(keyId.toString(), secretAccessKey.toString());
       } else {
         throw new AmazonClientException("No Amazon S3 credentials set directly.");
       }
