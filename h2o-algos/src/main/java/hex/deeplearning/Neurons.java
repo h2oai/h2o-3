@@ -598,7 +598,11 @@ public abstract class Neurons {
 //        }
       } else {
         assert(_a[mb].size() == _dinfo.fullN());
-        for (int i = 0; i < numcat; ++i) _a[mb].set(cats[i], 1f); // one-hot encode categoricals
+        for (int i = 0; i < numcat; ++i) {
+          if(cats[i] != -1) {
+            _a[mb].set(cats[i], 1f); // one-hot encode categoricals
+          }
+        }
         if (numIds != null) {
           //sparse
           for (int i = 0; i < numIds.length; ++i)
