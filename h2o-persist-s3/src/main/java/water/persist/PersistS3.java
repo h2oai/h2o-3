@@ -15,7 +15,6 @@ import water.*;
 import water.fvec.FileVec;
 import water.fvec.S3FileVec;
 import water.fvec.Vec;
-import water.parser.BufferedString;
 import water.util.ByteStreams;
 import water.util.Log;
 import water.util.RIStream;
@@ -33,9 +32,6 @@ import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
 /** Persistence backend for S3 */
 public final class PersistS3 extends Persist {
   private static final String HELP = "You can specify a credentials properties file with the -aws_credentials command line switch.";
-
-  static final String S3_SECRET_KEY_ID_DKV_KEY = "S3_SECRET_KEY_ID";
-  static final String S3_SECRET_ACCES_KEY_DKV_KEY = "S3_SECRET_ACCES_KEY";
 
   private static final String KEY_PREFIX = "s3://";
   private static final int KEY_PREFIX_LEN = KEY_PREFIX.length();
@@ -94,14 +90,12 @@ public final class PersistS3 extends Persist {
    */
   private static final class H2ODynamicCredentialsProvider implements AWSCredentialsProvider {
 
-
     @Override
     public AWSCredentials getCredentials() {
-      BufferedString keyId = DKV.getGet(S3_SECRET_KEY_ID_DKV_KEY);
-      BufferedString secretAccessKey = DKV.getGet(S3_SECRET_ACCES_KEY_DKV_KEY);
+      final IcedS3Credentials s3Credentials = DKV.getGet(IcedS3Credentials.S3_CREDENTIALS_DKV_KEY);
 
-      if (keyId != null && secretAccessKey != null) {
-        return new BasicAWSCredentials(keyId.toString(), secretAccessKey.toString());
+      if (s3Credentials != null && s3Credentials._secretKeyId != null && s3Credentials._secretAccessKey != null) {
+        return new BasicAWSCredentials(s3Credentials._secretKeyId, s3Credentials._secretAccessKey);
       } else {
         throw new AmazonClientException("No Amazon S3 credentials set directly.");
       }

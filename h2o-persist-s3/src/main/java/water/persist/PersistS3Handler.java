@@ -11,9 +11,9 @@ public class PersistS3Handler extends Handler {
     
     public PersistS3CredentialsV3 setS3Credentials(final int version, final PersistS3CredentialsV3 s3Credentials){
         validateS3Credentials(s3Credentials);
-        
-        DKV.put(Key.make("S3_SECRET_KEY_ID"), new BufferedString(s3Credentials.secret_key_id));
-        DKV.put(Key.make("S3_SECRET_ACCES_KEY"), new BufferedString(s3Credentials.secret_access_key));
+
+        final IcedS3Credentials icedS3Credentials = new IcedS3Credentials(s3Credentials.secret_key_id, s3Credentials.secret_access_key);
+        DKV.put(Key.make(IcedS3Credentials.S3_CREDENTIALS_DKV_KEY), icedS3Credentials);
         return s3Credentials;
     }
 

@@ -8,9 +8,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import water.DKV;
 import water.Iced;
-import water.Key;
 import water.fvec.Frame;
-import water.parser.BufferedString;
 
 import java.util.ArrayList;
 import java.util.UUID;
@@ -27,7 +25,7 @@ public class PersistS3HandlerTest {
 
     @BeforeClass
     public static void setup() {
-        stall_till_cloudsize(5);
+        stall_till_cloudsize(1);
     }
 
 
@@ -49,9 +47,7 @@ public class PersistS3HandlerTest {
         final String secretKey = System.getenv(AWS_SECRET_KEY_PROPERTY_NAME);
         assumeTrue(accessKeyId != null);
         assumeTrue(secretKey != null);
-        
-        final Key secretKeyIdKey = Key.make(PersistS3.S3_SECRET_KEY_ID_DKV_KEY);
-        final Key secretAccessKeyKey = Key.make(PersistS3.S3_SECRET_ACCES_KEY_DKV_KEY);
+
         PersistS3 persistS3 = new PersistS3();
         final ArrayList<String> keys = new ArrayList<>();
         final ArrayList<String> fails = new ArrayList<>();
@@ -76,15 +72,11 @@ public class PersistS3HandlerTest {
                 final Frame frame = (Frame) iced;
                 frame.remove();
             }
-            if (secretKeyIdKey != null) DKV.remove(secretKeyIdKey);
-            if (secretAccessKeyKey != null) DKV.remove(secretAccessKeyKey);
         }
     }
 
     @Test
     public void setS3Credentials_fail() {
-        final Key secretKeyIdKey = Key.make(PersistS3.S3_SECRET_KEY_ID_DKV_KEY);
-        final Key secretAccessKeyKey = Key.make(PersistS3.S3_SECRET_ACCES_KEY_DKV_KEY);
         PersistS3 persistS3 = new PersistS3();
         final ArrayList<String> keys = new ArrayList<>();
         final ArrayList<String> fails = new ArrayList<>();
@@ -103,8 +95,12 @@ public class PersistS3HandlerTest {
             persistS3.importFiles(IRIS_H2O_AWS, null, files, keys, fails, deletions);
 
         } finally {
-            if (secretKeyIdKey != null) DKV.remove(secretKeyIdKey);
-            if (secretAccessKeyKey != null) DKV.remove(secretAccessKeyKey);
+            for (String key : keys) {
+                final Iced iced = DKV.getGet(key);
+                assertTrue(iced instanceof Frame);
+                final Frame frame = (Frame) iced;
+                frame.remove();
+            }
         }
     }
     
