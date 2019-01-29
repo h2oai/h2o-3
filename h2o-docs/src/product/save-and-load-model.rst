@@ -1,3 +1,5 @@
+.. _save_and_load_model:
+
 Saving and Loading a Model
 ==========================
 
