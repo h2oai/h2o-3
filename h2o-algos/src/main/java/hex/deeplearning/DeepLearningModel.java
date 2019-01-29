@@ -1141,8 +1141,13 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       bodySb.i(2).p("int c = (int) data[i];").nl();
       if (model_info().data_info()._useAllFactorLevels)
         bodySb.i(2).p("CATS[ncats] = c + CATOFFSETS[i];").nl();
-      else
-        bodySb.i(2).p("if (c != 0) CATS[ncats] = c + CATOFFSETS[i] - 1;").nl();
+      else {
+        bodySb.i(2).p("if (c != 0) {").nl();
+        bodySb.i(3).p("CATS[ncats] = c + CATOFFSETS[i] - 1;").nl();
+        bodySb.i(2).p("} else {").nl();
+        bodySb.i(3).p("CATS[ncats] = -1;").nl();
+        bodySb.i(2).p("}").nl();
+      }
       bodySb.i(1).p("} else {").nl();  // set CAT level when encountering NAN
       bodySb.i(2).p("CATS[ncats] = CATOFFSETS[i+1]-1;").nl();
       bodySb.i(1).p("}").nl();
@@ -1162,7 +1167,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     }
     bodySb.i().p("java.util.Arrays.fill(ACTIVATION[0],0);").nl();
     if (cats > 0) {
-      bodySb.i().p("for (i=0; i<ncats; ++i) ACTIVATION[0][CATS[i]] = 1;").nl();
+      bodySb.i().p("for (i=0; i<ncats; ++i) {").nl();
+      bodySb.i(1).p("if(CATS[i] >= 0) ACTIVATION[0][CATS[i]] = 1;").nl();
+      bodySb.i(0).p("}").nl();
     }
     if (nums > 0) {
       bodySb.i().p("for (i=0; i<NUMS.length; ++i) {").nl();

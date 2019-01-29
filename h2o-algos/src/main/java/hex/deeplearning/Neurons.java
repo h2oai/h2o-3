@@ -599,7 +599,7 @@ public abstract class Neurons {
       } else {
         assert(_a[mb].size() == _dinfo.fullN());
         for (int i = 0; i < numcat; ++i) {
-          if(cats[i] != -1) {
+          if(cats[i] >= 0) {
             _a[mb].set(cats[i], 1f); // one-hot encode categoricals
           }
         }
