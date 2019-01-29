@@ -558,7 +558,7 @@ class H2OConnection(backwards_compatible()):
         :raises H2OConnectionError, H2OServerError:
         """
         if messages is None:
-            messages = ("Connecting to H2O server at {url}..", "successful.", "failed.")
+            messages = ("Connecting to H2O server at {url} ..", "successful.", "failed.")
         self._print(messages[0].format(url=self._base_url), end="")
         cld = None
         errors = []
