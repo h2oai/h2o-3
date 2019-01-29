@@ -1,5 +1,6 @@
 package hex.ensemble;
 
+import hex.StackedEnsembleModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
@@ -13,7 +14,6 @@ import water.TestUtil;
 import water.fvec.Frame;
 import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
-import hex.StackedEnsembleModel;
 
 /***
  * The main purpose of this test is to ensure the checksum() of a training frame is preserved throughout the

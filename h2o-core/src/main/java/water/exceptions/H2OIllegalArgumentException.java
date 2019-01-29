@@ -13,7 +13,11 @@ public class H2OIllegalArgumentException extends H2OAbstractRuntimeException {
     this.values = new IcedHashMapGeneric.IcedHashMapStringObject();
     this.values.put("function", function);
     this.values.put("argument", argument);
-    if (value!=null) this.values.put("value", value);
+    if (value!=null) {
+      try {
+        this.values.put("value", value);
+      } catch (Exception ignored) {}
+    }
   }
 
   /** Raw-message constructor for use by subclasses. */

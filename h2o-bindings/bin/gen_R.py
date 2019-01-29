@@ -131,12 +131,9 @@ def gen_module(schema, algo, module):
                 temp = temp.replace(' "ordinal",',"")
             list.append(indent("%s = %s" % (param["name"], temp), 17 + len(module)))
         else:
-            if param["name"] != "metalearner_params":
-                list.append(indent("%s = %s" % (param["name"], normalize_value(param)), 17 + len(module)))
+            list.append(indent("%s = %s" % (param["name"], normalize_value(param)), 17 + len(module)))
     if algo in ["deeplearning","drf", "gbm","xgboost"]:
         list.append(indent("verbose = FALSE ",17 + len(module)))
-    if algo in ["stackedensemble"]:
-        list.append(indent("metalearner_params = NULL ",17 + len(module)))
     yield ",\n".join(list)
     yield indent(") \n{", 17 + len(module))
     if algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes", "stackedensemble"]:

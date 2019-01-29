@@ -27,9 +27,7 @@ import water.nbhm.NonBlockingHashMap;
 import water.util.ArrayUtils;
 import water.util.IcedHashMapGeneric;
 import water.util.Log;
-import water.util.StringUtils;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -1144,6 +1142,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     stackedEnsembleParameters._base_models = allModelKeys.toArray(new Key[0]);
     stackedEnsembleParameters._valid = (getValidationFrame() == null ? null : getValidationFrame()._key);
     stackedEnsembleParameters._keep_levelone_frame = true; //TODO Why is this true? Can be optionally turned off
+    stackedEnsembleParameters._keep_base_model_predictions = true; //avoids recomputing some base predictions for each SE
     // Add cross-validation args
     if (buildSpec.input_spec.fold_column != null) {
       stackedEnsembleParameters._metalearner_fold_column = buildSpec.input_spec.fold_column;

@@ -1,19 +1,17 @@
 package hex;
 
-import hex.deeplearning.DeepLearningModel;
+import hex.ensemble.Metalearner;
 import hex.ensemble.StackedEnsemble;
 import hex.ensemble.StackedEnsembleMojoWriter;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMModel;
 import hex.tree.drf.DRFModel;
-import hex.tree.gbm.GBMModel;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.nbhm.NonBlockingHashSet;
 import water.udf.CFuncRef;
-import water.util.IcedHashMap;
 import water.util.Log;
 import water.util.ReflectionUtils;
 
@@ -42,7 +40,11 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
   public String basemodel_fold_column;  //From 1st base model
 
   public long seed = -1; //From 1st base model
-
+  
+  public enum StackingStrategy {
+    cross_validation,
+    blending
+  }
 
   // TODO: add a separate holdout dataset for the ensemble
   // TODO: add a separate overall cross-validation for the ensemble, including _fold_column and FoldAssignmentScheme / _fold_assignment
@@ -59,13 +61,18 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
     // base_models is a list of base model keys to ensemble (must have been cross-validated)
     public Key<Model> _base_models[] = new Key[0];
-    // Should we keep the level-one frame of cv preds + repsonse col?
+    // Should we keep the level-one frame of cv preds + response col?
     public boolean _keep_levelone_frame = false;
+    // internal flag if we want to avoid having the base model predictions rescored multiple times, esp. for blending.
+    public boolean _keep_base_model_predictions = false;
 
     // Metalearner params
+    //for stacking using cross-validation
     public int _metalearner_nfolds;
     public Parameters.FoldAssignmentScheme _metalearner_fold_assignment;
     public String _metalearner_fold_column;
+    //the training frame used for blending (from which predictions columns are computed)
+    public Key<Frame> _blending;
 
     //What to use as a metalearner (GLM, GBM, DRF, or DeepLearning)
     public enum MetalearnerAlgorithm {
@@ -93,22 +100,10 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
      */
     public void initMetalearnerParams(MetalearnerAlgorithm algo) {
       _metalearner_algorithm = algo;
-      switch (algo) {
-        case AUTO:
-        case glm:
-          _metalearner_parameters = new GLMModel.GLMParameters();
-          break;
-        case gbm:
-          _metalearner_parameters = new GBMModel.GBMParameters();
-          break;
-        case drf:
-          _metalearner_parameters = new DRFModel.DRFParameters();
-          break;
-        case deeplearning:
-          _metalearner_parameters = new DeepLearningModel.DeepLearningParameters();
-          break;
-      }
+      _metalearner_parameters = Metalearner.createParameters(algo);
     }
+    
+    public final Frame blending() { return _blending == null ? null : _blending.get(); }
 
   }
 
@@ -119,7 +114,14 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     public StackedEnsembleOutput(Job job) { _job = job; }
     // The metalearner model (e.g., a GLM that has a coefficient for each of the base_learners).
     public Model _metalearner;
-    public Frame _levelone_frame_id;
+    public Frame _levelone_frame_id; //set only if StackedEnsembleParameters#_keep_levelone_frame=true
+    public StackingStrategy _stacking_strategy;
+    
+    //Set of base model predictions that have been cached in DKV to avoid scoring the same model multiple times,
+    // it is then the responsibility of the client code to delete those frames from DKV.
+    //This especially useful when building SE models incrementally (e.g. in AutoML).
+    //The Set is instantiated and filled only if StackedEnsembleParameters#_keep_base_model_predictions=true.
+    public Key<Frame>[] _base_model_predictions_keys; 
   }
 
   /**
@@ -322,6 +324,8 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
     Model aModel = null;
     boolean beenHere = false;
+    boolean blending_mode = _parms._blending != null;
+    boolean cv_required_on_base_model = !blending_mode;
     trainingFrameRows = _parms.train().numRows();
 
     for (Key<Model> k : _parms._base_models) {
@@ -343,43 +347,50 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         // NOTE: if we loosen this restriction and fold_column is set add a check below.
         Frame aTrainingFrame = aModel._parms.train();
         if (trainingFrameRows != aTrainingFrame.numRows() && !this._parms._is_cv_model)
-          throw new H2OIllegalArgumentException("Base models are inconsistent: they use different size(number of rows) training frames.  Found number of rows: " + trainingFrameRows + " and: " + aTrainingFrame.numRows() + ".");
+          throw new H2OIllegalArgumentException("Base models are inconsistent: they use different size (number of rows) training frames." +
+              " Found: "+trainingFrameRows+" (StackedEnsemble) and "+aTrainingFrame.numRows()+" (model "+k+").");
 
         if (! responseColumn.equals(aModel._parms._response_column))
-          throw new H2OIllegalArgumentException("Base models are inconsistent: they use different response columns.  Found: " + responseColumn + " and: " + aModel._parms._response_column + ".");
+          throw new H2OIllegalArgumentException("Base models are inconsistent: they use different response columns." +
+              " Found: "+responseColumn+"(StackedEnsemble) and "+aModel._parms._response_column+" (model "+k+").");
+        
+//        if (blending_mode && _parms._blending.equals(aModel._parms._train)) {
+//          throw new H2OIllegalArgumentException("Base model `"+k+"` was trained with the StackedEnsemble blending frame.");
+//        }
 
         // TODO: we currently require xval; loosen this iff we add a separate holdout dataset for the ensemble
-
-        if (aModel._parms._fold_assignment != basemodel_fold_assignment) {
-          if ((aModel._parms._fold_assignment == AUTO && basemodel_fold_assignment == Random) ||
-                  (aModel._parms._fold_assignment == Random && basemodel_fold_assignment == AUTO)) {
-            // A-ok
-          } else {
-            throw new H2OIllegalArgumentException("Base models are inconsistent: they use different fold_assignments.");
+        if (cv_required_on_base_model) {
+          if (aModel._parms._fold_assignment != basemodel_fold_assignment) {
+            if ((aModel._parms._fold_assignment == AUTO && basemodel_fold_assignment == Random) ||
+                (aModel._parms._fold_assignment == Random && basemodel_fold_assignment == AUTO)) {
+              // A-ok
+            } else {
+              throw new H2OIllegalArgumentException("Base models are inconsistent: they use different fold_assignments.");
+            }
           }
+
+          // If we have a fold_column make sure nfolds from base models are consistent
+          if (aModel._parms._fold_column == null && basemodel_nfolds != aModel._parms._nfolds)
+            throw new H2OIllegalArgumentException("Base models are inconsistent: they use different values for nfolds.");
+
+          // If we don't have a fold_column require nfolds > 1
+          if (aModel._parms._fold_column == null && aModel._parms._nfolds < 2)
+            throw new H2OIllegalArgumentException("Base model does not use cross-validation: " + aModel._parms._nfolds);
+
+          // NOTE: we already check that the training_frame checksums are the same, so
+          // we don't need to check the Vec checksums here:
+          if (aModel._parms._fold_column != null &&
+              ! aModel._parms._fold_column.equals(basemodel_fold_column))
+            throw new H2OIllegalArgumentException("Base models are inconsistent: they use different fold_columns.");
+
+          if (aModel._parms._fold_column == null &&
+              basemodel_fold_assignment == Random &&
+              aModel._parms._seed != seed)
+            throw new H2OIllegalArgumentException("Base models are inconsistent: they use random-seeded k-fold cross-validation but have different seeds.");
+
+          if (! aModel._parms._keep_cross_validation_predictions)
+            throw new H2OIllegalArgumentException("Base model does not keep cross-validation predictions: " + aModel._parms._nfolds);
         }
-
-        // If we have a fold_column make sure nfolds from base models are consistent
-        if (aModel._parms._fold_column == null && basemodel_nfolds != aModel._parms._nfolds)
-          throw new H2OIllegalArgumentException("Base models are inconsistent: they use different values for nfolds.");
-
-        // If we don't have a fold_column require nfolds > 1
-        if (aModel._parms._fold_column == null && aModel._parms._nfolds < 2)
-          throw new H2OIllegalArgumentException("Base model does not use cross-validation: " + aModel._parms._nfolds);
-
-        // NOTE: we already check that the training_frame checksums are the same, so
-        // we don't need to check the Vec checksums here:
-        if (aModel._parms._fold_column != null &&
-                ! aModel._parms._fold_column.equals(basemodel_fold_column))
-          throw new H2OIllegalArgumentException("Base models are inconsistent: they use different fold_columns.");
-
-        if (aModel._parms._fold_column == null &&
-                basemodel_fold_assignment == Random &&
-                aModel._parms._seed != seed)
-          throw new H2OIllegalArgumentException("Base models are inconsistent: they use random-seeded k-fold cross-validation but have different seeds.");
-
-        if (! aModel._parms._keep_cross_validation_predictions)
-          throw new H2OIllegalArgumentException("Base model does not keep cross-validation predictions: " + aModel._parms._nfolds);
 
         // In GLM, we get _family instead of _distribution.
         // Further, we have Family.binomial instead of DistributionFamily.bernoulli.
@@ -423,8 +434,22 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       throw new H2OIllegalArgumentException("When creating a StackedEnsemble you must specify one or more models; " + _parms._base_models.length + " were specified but none of those were found: " + Arrays.toString(_parms._base_models));
 
   }
+  
+  //TODO: change visibility to package after moving current file to hex.ensemble package
+  public void deleteBaseModelPredictions() {
+    if (_output._base_model_predictions_keys != null) {
+      for (Key<Frame> key : _output._base_model_predictions_keys) {
+        if (_output._levelone_frame_id != null && key.get() != null)
+          Frame.deleteTempFrameAndItsNonSharedVecs(key.get(), _output._levelone_frame_id);
+        else
+          key.remove();
+      }
+      _output._base_model_predictions_keys = null;
+    }
+  }
 
   @Override protected Futures remove_impl(Futures fs ) {
+    deleteBaseModelPredictions(); 
     if (_output._metalearner != null)
       _output._metalearner.remove(fs);
     if (_output._levelone_frame_id != null)

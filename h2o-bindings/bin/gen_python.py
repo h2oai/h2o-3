@@ -513,6 +513,22 @@ def class_extra_for(algo):
             if "levelone_frame_id" in model and model["levelone_frame_id"] is not None:
                 return model["levelone_frame_id"]
             print("No levelone_frame_id for this model")         
+            
+        def stacking_strategy(self):
+            model = self._model_json["output"]
+            if "stacking_strategy" in model and model["stacking_strategy"] is not None:
+                return model["stacking_strategy"]
+            print("No stacking strategy for this model")  
+        
+        # Override train method to support blending 
+        def train(self, x=None, y=None, training_frame=None, blending_frame=None, **kwargs):
+            assert_is_type(blending_frame, None, H2OFrame)
+            
+            def extend_parms(parms):
+                if blending_frame is not None:
+                    parms['blending_frame'] = blending_frame
+                    
+            super(self.__class__, self)._train(x, y, training_frame, extend_parms_fn=extend_parms, **kwargs)
         """
     elif algo == "word2vec":
         return """
