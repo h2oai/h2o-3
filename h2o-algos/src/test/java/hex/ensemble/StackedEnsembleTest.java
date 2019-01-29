@@ -23,6 +23,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.util.ArrayUtils;
 
 import java.util.*;
 
@@ -373,9 +374,9 @@ public class StackedEnsembleTest extends TestUtil {
         seModel = seJob.trainModel().get();
         seModels.add(seModel);
         Assert.assertNotNull(seModel._output._base_model_predictions_keys);
-        Assert.assertEquals(models.length, seModel._output._base_model_predictions_keys.size());
+        Assert.assertEquals(models.length, seModel._output._base_model_predictions_keys.length);
         
-        Set<Key<Frame>> first_se_pred_keys = seModel._output._base_model_predictions_keys;
+        Key<Frame>[] first_se_pred_keys = seModel._output._base_model_predictions_keys;
         for (Key k: first_se_pred_keys) {
           Assert.assertNotNull("prediction key is not stored in DKV", DKV.get(k));
         }
@@ -386,8 +387,8 @@ public class StackedEnsembleTest extends TestUtil {
         seModel = seJob.trainModel().get();
         seModels.add(seModel);
         Assert.assertNotNull(seModel._output._base_model_predictions_keys);
-        Assert.assertEquals(models.length, seModel._output._base_model_predictions_keys.size());
-        Assert.assertEquals(first_se_pred_keys, seModel._output._base_model_predictions_keys);
+        Assert.assertEquals(models.length, seModel._output._base_model_predictions_keys.length);
+        Assert.assertArrayEquals(first_se_pred_keys, seModel._output._base_model_predictions_keys);
         
         //running a last SE, with validation frame, and check that new predictions are added
         seParams._keep_base_model_predictions = true;
@@ -396,8 +397,10 @@ public class StackedEnsembleTest extends TestUtil {
         seModel = seJob.trainModel().get();
         seModels.add(seModel);
         Assert.assertNotNull(seModel._output._base_model_predictions_keys);
-        Assert.assertEquals(models.length * 2, seModel._output._base_model_predictions_keys.size());
-        Assert.assertTrue(seModel._output._base_model_predictions_keys.containsAll(first_se_pred_keys));
+        Assert.assertEquals(models.length * 2, seModel._output._base_model_predictions_keys.length);
+        for (Key<Frame> first_pred_key: first_se_pred_keys) {
+          Assert.assertTrue(ArrayUtils.contains(seModel._output._base_model_predictions_keys, first_pred_key));
+        }
         
         seModel.deleteBaseModelPredictions();
         Assert.assertNull(seModel._output._base_model_predictions_keys);

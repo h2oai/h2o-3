@@ -121,7 +121,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     // it is then the responsibility of the client code to delete those frames from DKV.
     //This especially useful when building SE models incrementally (e.g. in AutoML).
     //The Set is instantiated and filled only if StackedEnsembleParameters#_keep_base_model_predictions=true.
-    public NonBlockingHashSet<Key<Frame>> _base_model_predictions_keys; 
+    public Key<Frame>[] _base_model_predictions_keys; 
   }
 
   /**
