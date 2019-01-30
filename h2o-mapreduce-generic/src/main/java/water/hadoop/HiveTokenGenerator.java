@@ -15,6 +15,9 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
+import static water.hadoop.h2omapper.H2O_HIVE_HOST;
+import static water.hadoop.h2omapper.H2O_HIVE_PRINCIPAL;
+
 public class HiveTokenGenerator {
 
   private static final String HIVE_DRIVER_CLASS = "org.apache.hive.jdbc.HiveDriver";
@@ -24,17 +27,35 @@ public class HiveTokenGenerator {
   private static final String HIVE_URI_CONF = "hive.metastore.uris";
 
   public void addHiveDelegationToken(Job job, String hiveHost, String hivePrincipal) throws IOException {
+    Configuration conf = job.getConfiguration();
+    HiveConf hiveConf = new HiveConf(conf, HiveConf.class);
+    if (hiveHost == null) {
+      hiveHost = hiveConf.getTrimmed(HIVE_URI_CONF, "");
+    }
+    if (hivePrincipal == null) {
+      hivePrincipal = hiveConf.getTrimmed(HIVE_PRINCIPAL_CONF, "");
+    }
+    job.getConfiguration().set(H2O_HIVE_HOST, hiveHost);
+    job.getConfiguration().set(H2O_HIVE_PRINCIPAL, hivePrincipal);
     addHiveDelegationTokenIfPossible(
-        job.getConfiguration(),
+        conf,
         hiveHost, hivePrincipal,
         job.getCredentials()
+    );
+  }
+
+  public void addHiveDelegationToken(Configuration conf, String hiveHost, String hivePrincipal, Credentials creds) throws IOException {
+    addHiveDelegationTokenIfPossible(
+        conf,
+        hiveHost, hivePrincipal,
+        creds
     );
   }
 
   private void log(String s, Exception e) {
     System.out.println(s);
     if (e != null) {
-      e.printStackTrace();
+      e.printStackTrace(System.out);
     }
   }
 
@@ -51,14 +72,6 @@ public class HiveTokenGenerator {
     if (!isHiveDriverPresent()) {
       log("Hive driver not present, not generating token.", null);
       return;
-    }
-
-    HiveConf hiveConf = new HiveConf(conf, HiveConf.class);
-    if (hiveHost == null) {
-      hiveHost = hiveConf.getTrimmed(HIVE_URI_CONF, "");
-    }
-    if (hivePrincipal == null) {
-      hivePrincipal = hiveConf.getTrimmed(HIVE_PRINCIPAL_CONF, "");
     }
 
     if (hivePrincipal.isEmpty() || hiveHost.isEmpty()) {
@@ -81,7 +94,7 @@ public class HiveTokenGenerator {
     }
   }
 
-  private boolean isHiveDriverPresent() {
+  public boolean isHiveDriverPresent() {
     try {
       Class.forName(HIVE_DRIVER_CLASS);
       return true;

@@ -47,6 +47,7 @@ import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -63,6 +64,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static water.hadoop.DelegationTokenRefresher.KEYTAB_FILE;
+import static water.hadoop.h2omapper.H2O_AUTH_PRINCIPAL;
 import static water.util.JavaVersionUtils.JAVA_VERSION;
 
 /**
@@ -1353,9 +1356,9 @@ public class h2odriver extends Configured implements Tool {
   private void addMapperConf(Configuration conf, String name, String value, byte[] payloadData) {
     String payload = convertByteArrToString(payloadData);
 
-    conf.set(h2omapper.H2O_MAPPER_CONF_ARG_BASE + Integer.toString(mapperConfLength), name);
-    conf.set(h2omapper.H2O_MAPPER_CONF_BASENAME_BASE + Integer.toString(mapperConfLength), value);
-    conf.set(h2omapper.H2O_MAPPER_CONF_PAYLOAD_BASE + Integer.toString(mapperConfLength), payload);
+    conf.set(h2omapper.H2O_MAPPER_CONF_ARG_BASE + mapperConfLength, name);
+    conf.set(h2omapper.H2O_MAPPER_CONF_BASENAME_BASE + mapperConfLength, value);
+    conf.set(h2omapper.H2O_MAPPER_CONF_PAYLOAD_BASE + mapperConfLength, payload);
     mapperConfLength++;
   }
 
@@ -1833,6 +1836,10 @@ public class h2odriver extends Configured implements Tool {
     j.setOutputValueClass(Text.class);
 
     hiveTokenGenerator.addHiveDelegationToken(j, hiveHost, hivePrincipal);
+    if (principal != null && keytabPath != null) {
+      j.getConfiguration().set(H2O_AUTH_PRINCIPAL, principal);
+      j.addCacheFile(new URI("file://" + keytabPath + "#" + KEYTAB_FILE));
+    }
 
     if (outputPath != null)
       FileOutputFormat.setOutputPath(j, new Path(outputPath));
