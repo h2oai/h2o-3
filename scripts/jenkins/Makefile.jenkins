@@ -214,6 +214,8 @@ test-package-java:
 		h2o-genmodel/build/libs/h2o-genmodel-*.jar \
 		h2o-algos/src/ \
 		h2o-algos/build/libs/h2o-algos-*.jar \
+		h2o-automl/src/ \
+		h2o-automl/build/libs/h2o-automl-*.jar \
 		h2o-parsers/h2o-avro-parser/src/ \
 		h2o-parsers/h2o-avro-parser/build/libs/h2o-avro-parser-*.jar \
 		h2o-parsers/h2o-orc-parser/src/ \
