@@ -907,6 +907,105 @@ public class TargetEncodingTest extends TestUtil {
     fr.delete();
   }
 
+  @Test
+  public void addThenRemoveTest() {
+    Frame fr = null;
+    try {
+      fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA", "ColB")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", "a"))
+              .withDataForCol(1, ar("yes", "no", "yes"))
+              .build();
+
+      // Add and remove column on a frame from test builder
+      addThenRemoveNumerator(fr);
+
+    } finally {
+      if(fr!= null) fr.delete();
+
+    }
+  }
+
+  @Test
+  public void layoutIsBeingChangedAccordingTotheVecWeAreAddingTest() {
+    Frame fr = null;
+    try {
+      fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA")
+              .withVecTypes(Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", "a"))
+              .withChunkLayout(1,1,1)
+              .build();
+
+      Vec emptyNumerator = Vec.makeZero(fr.numRows());
+      
+      assertFalse(fr.anyVec().isCompatibleWith(emptyNumerator));
+      
+      fr.add("numerator", emptyNumerator);
+      
+      //Here we expect having some espcs changed. Because emptyNumerator had different layout we created a new vector with a compatible layout. 
+      // That is why in that case we need to remove original `emptyNumerator` themselves.
+      Vec numeratorWIthCompatibleLayout = fr.vec("numerator");
+      assertTrue(fr.anyVec().isCompatibleWith(numeratorWIthCompatibleLayout));
+      
+      //Cleanup
+      emptyNumerator.remove();
+    } finally {
+      if(fr!= null) fr.delete();
+
+    }
+  }
+  
+  @Test
+  public void vecIsBeingReusedIfWeMakeItCompatibleInAdvanceTest() {
+    Frame fr = null;
+    try {
+      fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA")
+              .withVecTypes(Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", "a"))
+              .withChunkLayout(1,1,1)
+              .build();
+
+      Vec emptyNumerator = fr.anyVec().makeCon(0);
+      
+      assertTrue(fr.anyVec().isCompatibleWith(emptyNumerator));
+      fr.add("numerator", emptyNumerator);
+      //We expect no key leakage as `numerator` vec is going to be deleted with `fr`
+
+    } finally {
+      if(fr!= null) fr.delete();
+
+    }
+  }
+  
+  @Test
+  public void addThenRemoveWithParsingFileTest() {
+    Frame fr = null;
+    try {
+      fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+
+      // Add and remove column on a `training` frame
+      addThenRemoveNumerator(fr);
+
+    } finally {
+      if(fr!= null) fr.delete();
+
+    }
+  }
+
+  void addThenRemoveNumerator(Frame fr) {
+   Vec emptyNumerator = fr.anyVec().makeCon(0);
+    fr.add("numerator", emptyNumerator);
+
+    Vec removedNumeratorNone = fr.remove("numerator");
+    removedNumeratorNone.remove();
+  }
+
   @After
   public void afterEach() {
     if (fr != null) fr.delete();

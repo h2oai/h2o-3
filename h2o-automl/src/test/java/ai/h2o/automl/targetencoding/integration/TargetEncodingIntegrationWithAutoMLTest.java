@@ -72,7 +72,7 @@ public class TargetEncodingIntegrationWithAutoMLTest extends water.TestUtil {
       //NOTE: We can't use parse_test_file method because behaviour of the Frame would be different comparing to TestFrameBuilder's frames
       //fr = parse_test_file("./smalldata/gbm_test/titanic.csv"); 
       fr = new TestFrameBuilder()
-              .withName("testFrame")
+              .withName("trainingFrame")
               .withColNames(teColumnName, "ColB", responseColumnName, foldColumnName)
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
               .withDataForCol(0, ar("a", "b", "b", "b", "a"))
@@ -136,7 +136,7 @@ public class TargetEncodingIntegrationWithAutoMLTest extends water.TestUtil {
       // TODO refactor out buildspec fixture.
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
       fr = new TestFrameBuilder()
-              .withName("testFrame")
+              .withName("trainingFrame")
               .withColNames(teColumnName, "ColB", responseColumnName, foldColumnName)
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
               .withDataForCol(0, ar("a", "b", "b", "b", "a"))
@@ -211,7 +211,7 @@ public class TargetEncodingIntegrationWithAutoMLTest extends water.TestUtil {
       
       String columnThatIsSupposedToBeEncoded = "ColB";
       fr = new TestFrameBuilder()
-              .withName("testFrame")
+              .withName("trainingFrame")
               .withColNames(teColumnName, columnThatIsSupposedToBeEncoded, responseColumnName, foldColumnName)
               .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_CAT, Vec.T_NUM)
               .withDataForCol(0, ar("a", "b", "b", "b", "a", "a"))
@@ -219,8 +219,6 @@ public class TargetEncodingIntegrationWithAutoMLTest extends water.TestUtil {
               .withDataForCol(2, ar("2", "6", "6", "6", "6", "2"))
               .withDataForCol(3, ar(1, 2, 2, 3, 2, 1))
               .build();
-
-      TargetEncoderFrameHelper.factorColumn(fr, responseColumnName);
 
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.fold_column = foldColumnName;
@@ -256,5 +254,85 @@ public class TargetEncodingIntegrationWithAutoMLTest extends water.TestUtil {
       if(trainingFrame != null)  trainingFrame.delete();
       if(fr != null) fr.delete();
     }
+  }
+
+  // For validation frame to be used we need to satisfy nfolds == 0. 
+  @Test 
+  public void validationFrameIsEncodedTest() {
+    AutoML aml=null;
+    Frame fr=null;
+    Model leader = null;
+    Frame validationFrame = null;
+    Frame copyOfValidFrame = null;
+    Frame leaderboardFrame = null;
+    String teColumnName = "ColA";
+    String responseColumnName = "ColC";
+    try {
+      AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+
+      String columnThatIsSupposedToBeEncoded = "ColB";
+      fr = new TestFrameBuilder()
+              .withName("trainingFrame")
+              .withColNames(teColumnName, columnThatIsSupposedToBeEncoded, responseColumnName)
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", "b", "b", "a", "a", "b", "a"))
+              .withDataForCol(1, ar("yellow", "blue", "green", "red", "purple", "orange", "purple", "orange"))
+              .withDataForCol(2, ar("2", "6", "6", "6", "6", "2", "6", "2"))
+              .build();
+
+      validationFrame = new TestFrameBuilder()
+              .withName("validationFrame")
+              .withColNames(teColumnName, columnThatIsSupposedToBeEncoded, responseColumnName)
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", "b", "b", "a", "a"))
+              .withDataForCol(1, ar("yellow", "blue", "green", "red", "purple", "orange"))
+              .withDataForCol(2, ar("2", "6", "6", "6", "6", "2"))
+              .build();
+      copyOfValidFrame = validationFrame.deepCopy(Key.make().toString());
+      DKV.put(copyOfValidFrame);
+
+      autoMLBuildSpec.input_spec.training_frame = fr._key;
+      autoMLBuildSpec.input_spec.validation_frame = validationFrame._key;
+      autoMLBuildSpec.input_spec.response_column = responseColumnName;
+
+      TargetEncodingParams targetEncodingParams = new TargetEncodingParams(new BlendingParams(5, 1), TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, 0.01);
+      TEParamsSelectionStrategy fixedTEParamsStrategy =  new FixedTEParamsStrategy(targetEncodingParams);
+
+      Vec responseColumn = fr.vec(responseColumnName);
+      TEApplicationStrategy teApplicationStrategy = new ThresholdTEApplicationStrategy(fr, responseColumn, 5);
+
+      autoMLBuildSpec.te_spec.application_strategy = teApplicationStrategy;
+      autoMLBuildSpec.te_spec.params_selection_strategy = fixedTEParamsStrategy;
+
+      autoMLBuildSpec.build_control.nfolds = 0;
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(1);
+      autoMLBuildSpec.build_control.keep_cross_validation_models = false;
+      autoMLBuildSpec.build_control.keep_cross_validation_predictions = false;
+
+      aml = AutoML.startAutoML(autoMLBuildSpec);
+      aml.get();
+
+      leader = aml.leader();
+
+      validationFrame = aml.getValidationFrame();
+
+      assertNotEquals(" Two frames should be different.", copyOfValidFrame, validationFrame);
+      leaderboardFrame = aml.getLeaderboardFrame();
+      assertTrue(leaderboardFrame.numRows() > 0 );
+
+    } finally {
+      if(aml!=null) aml.delete();
+      if(leader!=null) leader.delete();
+      if(validationFrame != null)  validationFrame.delete();
+      if(leaderboardFrame != null)  leaderboardFrame.delete();
+      if(copyOfValidFrame != null)  copyOfValidFrame.delete();
+      if(fr != null) fr.delete();
+    }
+  }
+  
+  @Test
+  public void checkThatAllModelsInTheLeaderboardGotIgnoredColumnsTest() {
+    // it is expected that we will have original columns for encodings listed in the `_ignored_columns` array.
+//    assertArrayEquals(leaderWithTE._parms._ignored_columns, teApplicationStrategy.getColumnsToEncode());
   }
 }

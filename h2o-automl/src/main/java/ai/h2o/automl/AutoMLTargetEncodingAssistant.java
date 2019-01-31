@@ -54,7 +54,9 @@ class AutoMLTargetEncodingAssistant{
   void performAutoTargetEncoding() {
     
     String[] columnsToEncode = getApplicationStrategy().getColumnsToEncode();
-    
+
+    appendOriginalTEColumnsNamesToIgnoredListOfColumns(columnsToEncode);
+
     if(columnsToEncode.length > 0) {
 
       BlendingParams blendingParams = _teParams.getBlendingParams();
@@ -68,10 +70,16 @@ class AutoMLTargetEncodingAssistant{
 
       String responseColumnName = _trainingFrame.name(_trainingFrame.find(_responseColumn));
 
-      Map<String, Frame> encodingMap = tec.prepareEncodingMap(_trainingFrame, responseColumnName, getFoldColumnName(), imputeNAsWithNewCategory);;
-      
+      Map<String, Frame> encodingMap = tec.prepareEncodingMap(_trainingFrame, responseColumnName, getFoldColumnName(), imputeNAsWithNewCategory);
+
       switch (holdoutType) {
         case TargetEncoder.DataLeakageHandlingStrategy.KFold:
+          // Case when we ignore validation frame and do early stopping based on CV models. Leaderboard is not used as well as we are using CV metrics to order model in the Leaderboard.
+          if(_trainingFrame != null && _buildSpec.build_control.nfolds!=0) {
+            // Ideally we would split training frame either train/test or train/valid/test. But we are not going to use these splits as we do CV.
+            //This is bad as we will train CV models on data that contributed to the test splits of corresponding CV models.
+          }
+          
           Frame encodedTrainingFrame = tec.applyTargetEncoding(_trainingFrame, responseColumnName, encodingMap, holdoutType, getFoldColumnName(), withBlendedAvg, noiseLevel, imputeNAsWithNewCategory, seed);
           copyEncodedColumnsToDestinationFrameAndRemoveSource(columnsToEncode, encodedTrainingFrame, _trainingFrame);
 
@@ -115,6 +123,19 @@ class AutoMLTargetEncodingAssistant{
     }
   }
 
+  void appendOriginalTEColumnsNamesToIgnoredListOfColumns(String[] columnsToEncode) {
+    String[] ignored_columns = _buildSpec.input_spec.ignored_columns;
+
+    if(ignored_columns != null && ignored_columns.length != 0) {
+      String[] updatedIgnoredColumns = new String[ignored_columns.length + columnsToEncode.length];
+      System.arraycopy(ignored_columns, 0, updatedIgnoredColumns, 0, ignored_columns.length);
+      System.arraycopy(columnsToEncode, 0, updatedIgnoredColumns, ignored_columns.length, columnsToEncode.length);
+      _buildSpec.input_spec.ignored_columns = updatedIgnoredColumns;
+    } else {
+      _buildSpec.input_spec.ignored_columns = columnsToEncode;
+    }
+  }
+
   //Note: we could have avoided this if we were following mutable way in TargetEncoder
   void copyEncodedColumnsToDestinationFrameAndRemoveSource(String[] columnsToEncode, Frame sourceWithEncodings, Frame destinationFrame) {
     for(String column :columnsToEncode) {
@@ -143,7 +164,8 @@ class AutoMLTargetEncodingAssistant{
   public String getFoldColumnName() {
     if(_teParams.getHoldoutType() == TargetEncoder.DataLeakageHandlingStrategy.KFold)
       return _trainingFrame.name(_trainingFrame.find(_foldColumn));
-    else return null;
+    else 
+      return null;
   }
 
   public void setApplicationStrategy(TEApplicationStrategy applicationStrategy) {

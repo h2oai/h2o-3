@@ -18,7 +18,10 @@ import java.util.Random;
 public class TargetEncoderFrameHelper {
 
   /** @return the expanded with constant vector Frame, for flow-coding */
-  static Frame addCon(Frame fr, String appendedColumnName, long constant ) { fr.add(appendedColumnName, Vec.makeCon(constant, fr.numRows(), Vec.T_NUM)); return fr; }
+  static Frame addCon(Frame fr, String appendedColumnName, long constant ) { 
+    Vec constVec = fr.anyVec().makeCon(constant);
+    fr.add(appendedColumnName, constVec); return fr;
+  }
 
   /**
    * @return frame without rows with NAs in `columnIndex` column
