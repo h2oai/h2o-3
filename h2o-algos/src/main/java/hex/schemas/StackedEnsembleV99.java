@@ -10,7 +10,9 @@ import hex.deeplearning.DeepLearningModel;
 import hex.glm.GLMModel;
 import hex.Model;
 
+import water.DKV;
 import water.Key;
+import water.Value;
 import water.api.API;
 import water.api.schemas3.KeyV3;
 import water.api.schemas3.ModelParametersSchemaV3;
@@ -47,8 +49,8 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
 
 
     // Base models
-    @API(level = API.Level.critical,
-            help = "List of models (or model ids) to ensemble/stack together. Models must have been cross-validated using nfolds > 1, and folds must be identical across models.", required = true)
+    @API(level = API.Level.critical, direction = API.Direction.INOUT,
+            help = "List of models (or model ids) to ensemble/stack together. If not using blending frame, then models must have been cross-validated using nfolds > 1, and folds must be identical across models.", required = true)
     public KeyV3.ModelKeyV3 base_models[];
 
     
@@ -92,6 +94,19 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
 
     @API(help = "Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number)", gridable = true)
     public long seed;
+
+    @Override
+    public StackedEnsembleParametersV99 fillFromImpl(StackedEnsembleModel.StackedEnsembleParameters impl) {
+      super.fillFromImpl(impl);
+      
+      if (impl._blending!= null) {
+        Value v = DKV.get(impl._blending);
+        if (v != null) {
+          blending_frame = new KeyV3.FrameKeyV3(((Frame) v.get())._key);
+        }
+      }
+      return this;
+    }
 
     public StackedEnsembleModel.StackedEnsembleParameters fillImpl(StackedEnsembleModel.StackedEnsembleParameters impl) {
       super.fillImpl(impl);
