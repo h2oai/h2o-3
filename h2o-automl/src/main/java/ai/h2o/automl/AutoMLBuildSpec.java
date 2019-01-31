@@ -65,6 +65,7 @@ public class AutoMLBuildSpec extends Iced {
 
     public Key<Frame> training_frame;
     public Key<Frame> validation_frame;
+    public Key<Frame> blending_frame;
     public Key<Frame> leaderboard_frame;
 
     public String response_column;

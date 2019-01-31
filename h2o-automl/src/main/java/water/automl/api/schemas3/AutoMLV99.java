@@ -20,6 +20,9 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
   @API(help="ID of the actual validation frame for this AutoML run after any automatic splitting", direction=API.Direction.OUTPUT)
   public KeyV3.FrameKeyV3 validation_frame;
 
+  @API(help="", direction = API.Direction.OUTPUT)
+  public KeyV3.FrameKeyV3 blending_frame;
+  
   @API(help="ID of the actual leaderboard frame for this AutoML run after any automatic splitting", direction=API.Direction.OUTPUT)
   public KeyV3.FrameKeyV3 leaderboard_frame;
 
@@ -62,6 +65,10 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
 
     if (null != autoML.getValidationFrame()) {
       this.validation_frame = new KeyV3.FrameKeyV3(autoML.getValidationFrame()._key);
+    }
+
+    if (null != autoML.getBlendingFrame()) {
+      this.blending_frame = new KeyV3.FrameKeyV3(autoML.getBlendingFrame()._key);
     }
 
     if (null != autoML.getLeaderboardFrame()) {

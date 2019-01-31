@@ -158,6 +158,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   public Frame getTrainingFrame() { return trainingFrame; }
   public Frame getValidationFrame() { return validationFrame; }
+  public Frame getBlendingFrame() { return blendingFrame; }
   public Frame getLeaderboardFrame() { return leaderboardFrame; }
 
   public Vec getResponseColumn() { return responseColumn; }
@@ -171,6 +172,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   private Frame trainingFrame;    // required training frame: can add and remove Vecs, but not mutate Vec data in place
   private Frame validationFrame;  // optional validation frame; the training_frame is split automagically if it's not specified
+  private Frame blendingFrame;
   private Frame leaderboardFrame; // optional test frame used for leaderboard scoring; if not specified, leaderboard will use xval metrics
 
   private Vec responseColumn;
@@ -318,24 +320,23 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private void handleDatafileParameters(AutoMLBuildSpec buildSpec) {
     this.origTrainingFrame = DKV.getGet(buildSpec.input_spec.training_frame);
     this.validationFrame = DKV.getGet(buildSpec.input_spec.validation_frame);
+    this.blendingFrame = DKV.getGet(buildSpec.input_spec.blending_frame);
     this.leaderboardFrame = DKV.getGet(buildSpec.input_spec.leaderboard_frame);
 
-
-    if (this.origTrainingFrame.find(buildSpec.input_spec.response_column) == -1) {
-      throw new H2OIllegalArgumentException("Response column '" + buildSpec.input_spec.response_column + "' is not in " +
-              "the training frame.");
+    Map<String, Frame> compatible_frames = new LinkedHashMap(){{
+      put("training", origTrainingFrame);
+      put("validation", validationFrame);
+      put("blending", blendingFrame);
+      put("leaderboard", leaderboardFrame);
+    }};
+    for (Map.Entry<String, Frame> entry : compatible_frames.entrySet()) {
+      Frame frame = entry.getValue();
+      if (frame != null && frame.find(buildSpec.input_spec.response_column) == -1) {
+        throw new H2OIllegalArgumentException("Response column '" + buildSpec.input_spec.response_column + "' is not in " +
+            "the " + entry.getKey() + " frame.");
+      }
     }
-
-    if (this.validationFrame != null && this.validationFrame.find(buildSpec.input_spec.response_column) == -1) {
-      throw new H2OIllegalArgumentException("Response column '" + buildSpec.input_spec.response_column + "' is not in " +
-              "the validation frame.");
-    }
-
-    if (this.leaderboardFrame != null && this.leaderboardFrame.find(buildSpec.input_spec.response_column) == -1) {
-      throw new H2OIllegalArgumentException("Response column '" + buildSpec.input_spec.response_column + "' is not in " +
-              "the leaderboard frame.");
-    }
-
+    
     if (buildSpec.input_spec.fold_column != null && this.origTrainingFrame.find(buildSpec.input_spec.fold_column) == -1) {
       throw new H2OIllegalArgumentException("Fold column '" + buildSpec.input_spec.fold_column + "' is not in " +
               "the training frame.");
@@ -698,7 +699,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     // currently required, for the base_models, for stacking:
     if (! (params instanceof StackedEnsembleParameters)) {
-      params._keep_cross_validation_predictions = true;
+      params._keep_cross_validation_predictions = getBlendingFrame() == null ? true : buildSpec.build_control.keep_cross_validation_predictions;
 
       // TODO: StackedEnsemble doesn't support weights yet in score0
       params._fold_column = buildSpec.input_spec.fold_column;
@@ -1141,6 +1142,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     StackedEnsembleParameters stackedEnsembleParameters = new StackedEnsembleParameters();
     stackedEnsembleParameters._base_models = allModelKeys.toArray(new Key[0]);
     stackedEnsembleParameters._valid = (getValidationFrame() == null ? null : getValidationFrame()._key);
+    stackedEnsembleParameters._blending = (getBlendingFrame() == null ? null : getBlendingFrame()._key);
     stackedEnsembleParameters._keep_levelone_frame = true; //TODO Why is this true? Can be optionally turned off
     stackedEnsembleParameters._keep_base_model_predictions = true; //avoids recomputing some base predictions for each SE
     // Add cross-validation args
