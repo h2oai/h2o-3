@@ -10,6 +10,15 @@ Isolation Forest is similar in principle to Random Forest and is built on the ba
 
 Random partitioning produces noticeably shorter paths for anomalies. When a forest of random trees collectively produces shorter path lengths for particular samples, they are highly likely to be anomalies.
 
+Tutorials and Blogs
+~~~~~~~~~~~~~~~~~~~
+
+The following tutorials are available that describe how to use Isolation Forest to find anomalies in a dataset and how to interpret the results. 
+
+- `Isolation Forest Deep Dive <https://github.com/h2oai/h2o-tutorials/blob/master/tutorials/isolation-forest/isolation-forest.ipynb>`__: Describes how the Isolation Forest algorithm works and how to use it.
+- `Interpreting Isolation Forest Anomalies <https://github.com/h2oai/h2o-tutorials/blob/master/tutorials/isolation-forest/interpreting_isolation-forest.ipynb>`__: Describes how to understand why a particular feature is considered an anomaly.
+
+The `Anomaly Detection with Isolation Forests using H2O <https://www.h2o.ai/blog/anomaly-detection-with-isolation-forests-using-h2o/>`__ blog provides a summary and examples of the Isolation Forest algorithm in H2O. 
 
 Defining an Isolation Forest Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -71,6 +80,68 @@ Defining an Isolation Forest Model
   - ``label_encoder`` or ``LabelEncoder``:  Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.)
   - ``sort_by_response`` or ``SortByResponse``: Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.). This is useful in GBM/DRF, for example, when you have more levels than ``nbins_cats``, and where the top level splits now have a chance at separating the data with a split. Note that this requires a specified response column.
 
+Simple Example
+~~~~~~~~~~~~~~
+
+Below is a simple example showing Isolation Forest from model training through prediction and predicted leaf node assignment. 
+
+.. example-code::
+   .. code-block:: r
+
+    library(h2o)
+    h2o.init()
+
+    # Import the prostate dataset
+    prostate.hex <- h2o.importFile(path = "https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv", 
+                                   destination_frame = "prostate.hex")
+
+    # Split dataset giving the training dataset 75% of the data
+    prostate.split <- h2o.splitFrame(data=prostate.hex, ratios=0.75)
+
+    # Create a training set from the 1st dataset in the split
+    train <- prostate.split[[1]]
+
+    # Create a testing set from the 2nd dataset in the split
+    test <- prostate.split[[2]]
+
+    # Build an Isolation forest model
+    model <- h2o.isolationForest(training_frame=train, 
+                                 sample_rate = 0.1, 
+                                 max_depth = 20, 
+                                 ntrees = 10, 
+                                 score_each_iteration = TRUE)
+
+    # Calculate score
+    score <- h2o.predict(model, test)
+    result_pred <- as.data.frame(score)$predict
+
+    # Predict the leaf node assignment
+    ln_pred <- h2o.predict_leaf_node_assignment(model, test)
+
+   .. code-block:: python
+
+    import h2o
+    from h2o.estimators import H2OIsolationForestEstimator
+    h2o.init()
+    
+    # Import the prostate dataset
+    h2o_df = h2o.import_file("https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv")
+    
+    # Split the data into Train/Test/Validation with Train having 70% and test and validation 15% each
+    train,test,valid = h2o_df.split_frame(ratios=[.7, .15])
+
+    # Build an Isolation forest model
+    model = H2OIsolationForestEstimator(sample_rate = 0.1, 
+                                        max_depth = 20, 
+                                        ntrees = 10, 
+                                        score_each_iteration = True)
+    model.train(training_frame=train)
+
+    # Run prediction on the model
+    predict = model.predict(test)
+
+    # Predict the leaf node assigment
+    predict_lna = model.predict_leaf_node_assignment(test, "Path")
 
 References
 ~~~~~~~~~~
