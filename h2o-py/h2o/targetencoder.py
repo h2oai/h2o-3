@@ -62,7 +62,7 @@ class TargetEncoder(object):
         self._responseColumnName = y
         self._foldColumnName = fold_column
         if 'blending_avg' in kwargs:
-            warnings.warn("Parameter blending_avg is deprecated; use blended_avg instead", category=DeprecationWarning)
+            warnings.warn("Parameter blending_avg is deprecated; use blended_avg instead", category=DeprecationWarning, stacklevel=2)
             self._blending = kwargs.get('blending_avg')
         else:
             self._blending = blended_avg
