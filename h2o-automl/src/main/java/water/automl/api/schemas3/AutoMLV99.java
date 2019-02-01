@@ -20,7 +20,7 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
   @API(help="ID of the actual validation frame for this AutoML run after any automatic splitting", direction=API.Direction.OUTPUT)
   public KeyV3.FrameKeyV3 validation_frame;
 
-  @API(help="", direction = API.Direction.OUTPUT)
+  @API(help="ID of the actual blending frame used to train the Stacked Ensembles in blending mode", direction = API.Direction.OUTPUT)
   public KeyV3.FrameKeyV3 blending_frame;
   
   @API(help="ID of the actual leaderboard frame for this AutoML run after any automatic splitting", direction=API.Direction.OUTPUT)

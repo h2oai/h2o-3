@@ -254,7 +254,7 @@ class H2OAutoML(object):
     # Training AutoML
     #---------------------------------------------------------------------------
     def train(self, x = None, y = None, training_frame = None, fold_column = None, 
-              weights_column = None, validation_frame = None, leaderboard_frame = None):
+              weights_column = None, validation_frame = None, leaderboard_frame = None, blending_frame = None):
         """
         Begins an AutoML task, a background task that automatically builds a number of models
         with various algorithms and tracks their performance in a leaderboard. At any point 
@@ -323,12 +323,16 @@ class H2OAutoML(object):
             input_spec['weights_column'] = weights_column
 
         if validation_frame is not None:
-            assert_is_type(training_frame, H2OFrame)
+            assert_is_type(validation_frame, H2OFrame)
             input_spec['validation_frame'] = validation_frame.frame_id
 
         if leaderboard_frame is not None:
-            assert_is_type(training_frame, H2OFrame)
+            assert_is_type(leaderboard_frame, H2OFrame)
             input_spec['leaderboard_frame'] = leaderboard_frame.frame_id
+
+        if blending_frame is not None:
+            assert_is_type(blending_frame, H2OFrame)
+            input_spec['blending_frame'] = blending_frame.frame_id
 
         if self.sort_metric is not None:
             assert_is_type(self.sort_metric, str)

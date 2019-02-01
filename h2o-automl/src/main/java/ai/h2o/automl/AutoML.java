@@ -1131,20 +1131,17 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     pollAndUpdateProgress(Stage.ModelTraining, "DeepLearning hyperparameter search 3", work, this.job(), dlJob);
   }
 
-  Job<StackedEnsembleModel> stack(String modelName, Key<Model>[]... modelKeyArrays) {
+  Job<StackedEnsembleModel> stack(String modelName, Key<Model>[] modelKeyArrays, boolean use_cache) {
     WorkAllocations.Work work = workAllocations.getAllocation(Algo.StackedEnsemble, JobType.ModelBuild);
     if (work == null) return null;
 
-    List<Key<Model>> allModelKeys = new ArrayList<>();
-    for (Key<Model>[] modelKeyArray : modelKeyArrays)
-      allModelKeys.addAll(Arrays.asList(modelKeyArray));
     // Set up Stacked Ensemble
     StackedEnsembleParameters stackedEnsembleParameters = new StackedEnsembleParameters();
-    stackedEnsembleParameters._base_models = allModelKeys.toArray(new Key[0]);
+    stackedEnsembleParameters._base_models = modelKeyArrays;
     stackedEnsembleParameters._valid = (getValidationFrame() == null ? null : getValidationFrame()._key);
     stackedEnsembleParameters._blending = (getBlendingFrame() == null ? null : getBlendingFrame()._key);
     stackedEnsembleParameters._keep_levelone_frame = true; //TODO Why is this true? Can be optionally turned off
-    stackedEnsembleParameters._keep_base_model_predictions = true; //avoids recomputing some base predictions for each SE
+    stackedEnsembleParameters._keep_base_model_predictions = use_cache; //avoids recomputing some base predictions for each SE
     // Add cross-validation args
     if (buildSpec.input_spec.fold_column != null) {
       stackedEnsembleParameters._metalearner_fold_column = buildSpec.input_spec.fold_column;
@@ -1265,9 +1262,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     } else if (allModels.length == 1) {
       this.job.update(seWork.consumeAll(), "One model built; StackedEnsemble builds skipped");
       userFeedback.info(Stage.ModelTraining, "StackedEnsemble builds skipped since there is only one model built");
-    } else if (buildSpec.build_control.nfolds == 0) {
-        this.job.update(seWork.consumeAll(), "Cross-validation disabled by the user; StackedEnsemble build skipped");
-        userFeedback.info(Stage.ModelTraining,"Cross-validation disabled by the user; StackedEnsemble build skipped");
+    } else if (buildSpec.build_control.nfolds == 0 && getBlendingFrame() == null) {
+        this.job.update(seWork.consumeAll(), "Cross-validation disabled by the user and no blending frame provided; StackedEnsemble build skipped");
+        userFeedback.info(Stage.ModelTraining,"Cross-validation disabled by the user and no blending frame provided; StackedEnsemble build skipped");
     } else {
       ///////////////////////////////////////////////////////////
       // stack all models
@@ -1285,9 +1282,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
         if (!(aModel instanceof StackedEnsembleModel))
           notEnsembles[notEnsembleIndex++] = aModel._key;
 
-      Job<StackedEnsembleModel> ensembleJob = stack("StackedEnsemble_AllModels", notEnsembles);
-      pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build using all AutoML models", seWork, this.job(), ensembleJob, true);
-
       // Set aside List<Model> for best models per model type. Meaning best GLM, GBM, DRF, XRT, and DL (5 models).
       // This will give another ensemble that is smaller than the original which takes all models into consideration.
       List<Model> bestModelsOfEachType = new ArrayList<>();
@@ -1304,8 +1298,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       for (int i = 0; i < bestModelsOfEachType.size(); i++)
         bestModelKeys[i] = bestModelsOfEachType.get(i)._key;
 
-      Job<StackedEnsembleModel> bestEnsembleJob = stack("StackedEnsemble_BestOfFamily", bestModelKeys);
+      Job<StackedEnsembleModel> bestEnsembleJob = stack("StackedEnsemble_BestOfFamily", bestModelKeys, true);
       pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build using top model from each algorithm type", seWork, this.job(), bestEnsembleJob, true);
+      
+      Job<StackedEnsembleModel> ensembleJob = stack("StackedEnsemble_AllModels", notEnsembles, false);
+      pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build using all AutoML models", seWork, this.job(), ensembleJob, true);
     }
     userFeedback.info(Stage.Workflow, "AutoML: build done; built " + modelCount + " models");
     Log.info(userFeedback.toString("User Feedback for AutoML Run " + this._key + ":"));
