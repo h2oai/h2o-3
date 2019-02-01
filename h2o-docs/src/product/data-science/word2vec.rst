@@ -8,6 +8,12 @@ The Word2vec algorithm takes a text `corpus <https://en.wikipedia.org/wiki/Corpu
 
 **Note**: This Word2vec implementation is written in Java and is not compatible with other implementations that, for example, are written in C++. In addition, importing models in binary format is not supported.
 
+Demos
+~~~~~
+
+- A Word2vec demo in R using a Craigslist job titles dataset available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.word2vec.craigslistjobtitles.R>`__.
+- A Word2vec demo in Python using a Craigslist job titles dataset available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/word2vec_craigslistjobtitles.ipynb>`__.
+
 Defining a Word2vec Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -49,10 +55,15 @@ By default, the following output displays:
 -  Column names
 -  Domains (for categorical columns)
 
+Tokenize Strings
+~~~~~~~~~~~~~~~~
+
+When running a Word2Vec model, you might find it useful to tokenize your text. Tokenizing text converts strings into tokens, then stores the tokenized text into a single column, making it easier for additional processing. Refer to :ref:`tokenize` in the Data Manipulation section for more information. 
+
 Finding Synonyms
 ~~~~~~~~~~~~~~~~
 
-A "find synonyms" function can be used to find synonyms in a Word2vec model. This function has the following usage:
+A ``find_synonyms`` function can be used to find synonyms in a Word2vec model. This function has the following usage:
 
 .. example-code::
    .. code-block:: r
@@ -72,7 +83,6 @@ More information about this function can be found in the H2O-3 GitHub repository
 - R: `https://github.com/h2oai/h2o-3/blob/master/h2o-r/h2o-package/R/w2vutils.R#L2 <https://github.com/h2oai/h2o-3/blob/master/h2o-r/h2o-package/R/w2vutils.R#L2>`__
 - Python: `https://github.com/h2oai/h2o-3/blob/master/h2o-py/h2o/model/word_embedding.py#L16 <https://github.com/h2oai/h2o-3/blob/master/h2o-py/h2o/model/word_embedding.py#L16>`__
 
-
 Transforming Words to Vectors
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -90,12 +100,6 @@ More information about this function can be found in the H2O-3 GitHub repository
 
 - R: `https://github.com/h2oai/h2o-3/blob/master/h2o-r/h2o-package/R/w2vutils.R#L21 <https://github.com/h2oai/h2o-3/blob/master/h2o-r/h2o-package/R/w2vutils.R#L21>`__
 - Python: `https://github.com/h2oai/h2o-3/blob/master/h2o-py/h2o/model/word_embedding.py#L28 <https://github.com/h2oai/h2o-3/blob/master/h2o-py/h2o/model/word_embedding.py#L28>`__
-
-Demos
-~~~~~
-
-- A Word2vec demo in R using a Craigslist job titles dataset available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.word2vec.craigslistjobtitles.R>`__.
-- A Word2vec demo in Python using a Craigslist job titles dataset available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/word2vec_craigslistjobtitles.ipynb>`__.
 
 References
 ~~~~~~~~~~
