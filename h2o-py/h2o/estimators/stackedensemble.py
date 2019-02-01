@@ -130,8 +130,8 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     @property
     def base_models(self):
         """
-        List of models (or model ids) to ensemble/stack together. Models must have been cross-validated using nfolds >
-        1, and folds must be identical across models.
+        List of models (or model ids) to ensemble/stack together. If not using blending frame, then models must have
+        been cross-validated using nfolds > 1, and folds must be identical across models.
 
         Type: ``List[str]``  (default: ``[]``).
         """

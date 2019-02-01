@@ -17,8 +17,8 @@
 #' @param validation_frame Id of the validation data frame.
 #' @param blending_frame Frame used to compute the predictions that serve as the training frame for the metalearner (triggers blending
 #'        mode if provided)
-#' @param base_models List of models (or model ids) to ensemble/stack together. Models must have been cross-validated using nfolds >
-#'        1, and folds must be identical across models. Defaults to [].
+#' @param base_models List of models (or model ids) to ensemble/stack together. If not using blending frame, then models must have
+#'        been cross-validated using nfolds > 1, and folds must be identical across models. Defaults to [].
 #' @param metalearner_algorithm Type of algorithm to use as the metalearner. Options include 'AUTO' (GLM with non negative weights; if
 #'        validation_frame is present, a lambda search is performed), 'glm' (GLM with default parameters), 'gbm' (GBM
 #'        with default parameters), 'drf' (Random Forest with default parameters), or 'deeplearning' (Deep Learning with
