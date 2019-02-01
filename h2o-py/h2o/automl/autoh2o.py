@@ -275,6 +275,9 @@ class H2OAutoML(object):
         :param leaderboard_frame: H2OFrame with test data for scoring the leaderboard.  This is optional and
             if this is set to None (the default), then cross-validation metrics will be used to generate the leaderboard 
             rankings instead.
+        :param blending_frame: H2OFrame used to train the Stacked Ensembles in the absence of cross-validated base models.
+            This is optional, but when provided, it is also recommended to disable cross validation 
+            by setting `nfolds=0` and to provide a leaderboard frame for scoring purposes.
 
         :returns: An H2OAutoML object.
 

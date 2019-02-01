@@ -16,6 +16,8 @@
 #'        validation_frame will be ignored.
 #' @param leaderboard_frame Leaderboard frame (H2OFrame or ID); Optional.  If provided, the Leaderboard will be scored using 
 #'        this data frame intead of using cross-validation metrics, which is the default.
+#' @param blending_frame Blending frame (H2OFrame or ID) used to train the Stacked Ensembles in the absence of cross-validated base models; Optional. 
+#         When provided, it also is recommended to disable cross validation by setting `nfolds=0` and to provide a leaderboard frame for scoring purposes.
 #' @param nfolds Number of folds for k-fold cross-validation. Defaults to 5. Use 0 to disable cross-validation; this will also disable Stacked Ensemble (thus decreasing the overall model performance).
 #' @param fold_column Column with cross-validation fold index assignment per observation; used to override the default, randomized, 5-fold cross-validation scheme for individual models in the AutoML run.
 #' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from 
@@ -64,6 +66,7 @@
 h2o.automl <- function(x, y, training_frame,
                        validation_frame = NULL,
                        leaderboard_frame = NULL,
+                       blending_frame = NULL,
                        nfolds = 5,
                        fold_column = NULL,
                        weights_column = NULL,
@@ -134,12 +137,25 @@ h2o.automl <- function(x, y, training_frame,
     leaderboard_frame_id <- h2o.getId(leaderboard_frame)
   }
 
+  # Blending frame must be a key or an H2OFrame object
+  blending_frame_id <- NULL
+  if (!is.null(blending_frame)) {
+      if (!is.H2OFrame(blending_frame)) {
+          tryCatch(blending_frame <- h2o.getFrame(blending_frame),
+          error = function(err) {
+              stop("argument 'blending_frame' must be a valid H2OFrame or key")
+          })
+      }
+      blending_frame_id <- h2o.getId(blending_frame)
+  }
+    
   # Input/data parameters to send to the AutoML backend
   input_spec <- list()
   input_spec$response_column <- ifelse(is.numeric(y),names(training_frame[y]),y)
   input_spec$training_frame <- training_frame_id
   input_spec$validation_frame <- validation_frame_id
   input_spec$leaderboard_frame <- leaderboard_frame_id
+  input_spec$blending_frame <- blending_frame_id
   if (!is.null(fold_column)) {
     input_spec$fold_column <- fold_column
   }

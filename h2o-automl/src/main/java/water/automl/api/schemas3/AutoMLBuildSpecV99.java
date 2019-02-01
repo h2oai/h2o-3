@@ -75,7 +75,7 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     @API(help = "ID of the validation data frame (used for early stopping in grid searches and for early stopping of the AutoML process itself).", direction=API.Direction.INPUT)
     public KeyV3.FrameKeyV3 validation_frame;
 
-    @API(help = "ID of the actual blending frame used to train the Stacked Ensembles in the absence of cross-validated base models: when using this frame, it is recommended to set `nfolds=0` and provide a leaderboard frame for scoring.", direction = API.Direction.INPUT)
+    @API(help = "ID of the blending frame used to train the Stacked Ensembles in the absence of cross-validated base models. When provided, it is also recommended to disable cross validation by setting `nfolds=0` and to provide a leaderboard frame for scoring purposes.", direction = API.Direction.INPUT)
     public KeyV3.FrameKeyV3 blending_frame;
 
     @API(help = "ID of the leaderboard data frame (used to score models and rank them on the AutoML Leaderboard).", direction=API.Direction.INPUT)
