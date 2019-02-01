@@ -10,7 +10,7 @@ Reproducibility
    - **Note**: If you have H2O import a whole directory with multiple files instead of a single file, we do not guarantee reproducibility because the data may be shuffled during import.
    
  - Same parameters used to train the model
- - Same seed set if sampling is done
+ - Same seed used if sampling is done
    
    - Parameters that perform sampling: 
        - ``sample_rate``
@@ -21,8 +21,6 @@ Reproducibility
 
  - No early stopping or early stopping with ``score_tree_interval`` explicitly specified and same validation data
    
-   - If using cross validation for early stopping, seed must be set
-
 - **Is it possible to guarantee reproducibility in multi-node clusters?**
 
  The following criteria must be met to guarantee reproducibility in a multi-node cluster:
@@ -64,3 +62,33 @@ Reproducibility
    
    - Refer to :ref:`save_and_load_model` for more information.
    - The binary model will contain the H2O version and the parameters used to train the model.
+
+ 4. Train the GBM model using the same:
+	
+   - training data (information about the training data saved in Step 1)
+   - cluster configuration (information about the cluster configuration saved in Step 2)
+   - same parameters (information about the parameters saved in Step 3)
+
+   You do not need to explicitly set a seed to make a GBM model reproducible.  If no seed is set, then H2O-3 will randomly choose a seed.  This seed is saved in the binary model.  To reproduce your model, you can extract the seed from the binary model and re-train the GBM with the seed set.
+   
+   .. example-code::
+      .. code-block:: r
+
+      # Train GBM without Seed
+      gbm_v1 <- h2o.gbm(y = "Species", training_frame = df, sample_rate = 0.7)
+
+      # Reproduce GBM
+      seed <- gbm_v1@allparameters$seed
+      gbm_v2 <- h2o.gbm(y = "Species", training_frame = df, sample_rate = 0.7, seed = seed)
+
+      .. code-block:: python
+
+      # Train GBM without Seed
+      from h2o.estimators import H2OGradientBoostingEstimator
+      gbm_v1 = H2OGradientBoostingEstimator(sample_rate = 0.7)
+      gbm_v1.train(y = "Species", training_frame = df)
+
+      # Reproduce GBM
+      seed = gbm_v1.params.get('seed').get('actual')
+      gbm_v2 = H2OGradientBoostingEstimator(sample_rate = 0.7, seed = seed)
+      gbm_v2.train(y = "Species", training_frame = df)
