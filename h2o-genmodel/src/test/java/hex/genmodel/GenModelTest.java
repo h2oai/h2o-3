@@ -49,5 +49,5 @@ public class GenModelTest {
     GenModel.setInput(row, to, 1, 3, catOffsets, null, null, false, false);
     assertArrayEquals(new float[]{0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 42}, to, 0);
   }
-
+  
 }

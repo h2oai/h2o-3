@@ -518,7 +518,11 @@ public abstract class Neurons {
             cats[ncats] = c + _dinfo._catOffsets[i];
           else if (c!=0)
             cats[ncats] = c + _dinfo._catOffsets[i] - 1;
-
+          else {
+            // if the useAllFactorLevels is not used the zero level should be set to -1
+            // the net to be able calculate right encoding later
+            cats[ncats] = -1;
+          }
           // If factor level in test set was not seen by training, then turn it into an NA
           if (cats[ncats] >= _dinfo._catOffsets[i+1]) {
             cats[ncats] = (_dinfo._catOffsets[i+1]-1);
@@ -594,7 +598,11 @@ public abstract class Neurons {
 //        }
       } else {
         assert(_a[mb].size() == _dinfo.fullN());
-        for (int i = 0; i < numcat; ++i) _a[mb].set(cats[i], 1f); // one-hot encode categoricals
+        for (int i = 0; i < numcat; ++i) {
+          if(cats[i] >= 0) {
+            _a[mb].set(cats[i], 1f); // one-hot encode categoricals
+          }
+        }
         if (numIds != null) {
           //sparse
           for (int i = 0; i < numIds.length; ++i)

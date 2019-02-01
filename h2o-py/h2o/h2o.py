@@ -35,6 +35,7 @@ from .estimators.pca import H2OPrincipalComponentAnalysisEstimator
 from .estimators.random_forest import H2ORandomForestEstimator
 from .estimators.stackedensemble import H2OStackedEnsembleEstimator
 from .estimators.word2vec import H2OWord2vecEstimator
+from .estimators.isolation_forest import H2OIsolationForestEstimator
 from .expr import ExprNode
 from .frame import H2OFrame
 from .grid.grid_search import H2OGridSearch
@@ -780,6 +781,7 @@ def get_model(model_id):
         else:
             m = H2ODeepLearningEstimator()
     elif algo == "stackedensemble": m = H2OStackedEnsembleEstimator()
+    elif algo == "isolationforest": m = H2OIsolationForestEstimator()
     else:
         raise ValueError("Unknown algo type: " + algo)
     m._resolve_model(model_id, model_json)
