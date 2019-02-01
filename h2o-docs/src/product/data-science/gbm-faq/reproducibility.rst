@@ -67,7 +67,7 @@ Reproducibility
 	
    - training data (information about the training data saved in Step 1)
    - cluster configuration (information about the cluster configuration saved in Step 2)
-   - same parameters (information about the parameters saved in Step 3)
+   - parameters (information about the parameters saved in Step 3)
 
    You do not need to explicitly set a seed to make a GBM model reproducible.  If no seed is set, then H2O-3 will randomly choose a seed.  This seed is saved in the binary model.  To reproduce your model, you can extract the seed from the binary model and re-train the GBM with the seed set.
    
