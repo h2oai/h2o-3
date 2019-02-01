@@ -1,6 +1,8 @@
 package hex.api;
 
 import hex.ModelBuilder;
+import hex.mojo.MojoDelegating;
+import hex.mojo.api.MojoDelegatingModelHandler;
 import hex.tree.TreeHandler;
 import water.api.AlgoAbstractRegister;
 import water.api.RestApiContext;
@@ -27,6 +29,7 @@ public class RegisterAlgos extends AlgoAbstractRegister {
             new hex.word2vec    .Word2Vec    (true),
             new hex.ensemble    .StackedEnsemble(true),
             new hex.coxph       .CoxPH       (true),
+            new hex.mojo        .MojoDelegating(true)
     };
 
     // "Word2Vec", "Example", "Grep"
@@ -62,6 +65,8 @@ public class RegisterAlgos extends AlgoAbstractRegister {
             "Test only" );
 
     context.registerEndpoint("get_tree", "GET /3/Tree", TreeHandler.class, "getTree", "Obtain a traverseable representation of a specific tree");
+
+    context.registerEndpoint("create_mojo_delegating_model", "POST /3/MojoDelegatingModel", MojoDelegatingModelHandler.class, "createMojoDelegatingModel", "Obtain a traverseable representation of a specific tree");
   }
 
   @Override
