@@ -45,6 +45,7 @@ public final class PersistS3 extends Persist {
         if( _s3 == null ) {
           try {
             H2OAWSCredentialsProviderChain c = new H2OAWSCredentialsProviderChain();
+            c.setReuseLastProvider(false);
             ClientConfiguration cc = s3ClientCfg();
             _s3 = configureClient(new AmazonS3Client(c, cc));
           } catch( Throwable e ) {
