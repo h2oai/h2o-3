@@ -40,11 +40,12 @@ public final class PersistS3 extends Persist {
   private static volatile AmazonS3 _s3;
 
   public static AmazonS3 getClient() {
-    if( _s3 == null ) {
-      synchronized( _lock ) {
+    if (_s3 == null) {
+      synchronized (_lock) {
         if( _s3 == null ) {
           try {
             H2OAWSCredentialsProviderChain c = new H2OAWSCredentialsProviderChain();
+            c.setReuseLastProvider(false);
             ClientConfiguration cc = s3ClientCfg();
             _s3 = configureClient(new AmazonS3Client(c, cc));
           } catch( Throwable e ) {
@@ -65,11 +66,45 @@ public final class PersistS3 extends Persist {
    */
   public static class H2OAWSCredentialsProviderChain extends AWSCredentialsProviderChain {
     public H2OAWSCredentialsProviderChain() {
-      super(new H2OArgCredentialsProvider(),
-          new InstanceProfileCredentialsProvider(),
-          new EnvironmentVariableCredentialsProvider(),
-          new SystemPropertiesCredentialsProvider(),
-          new ProfileCredentialsProvider());
+      super(constructProviderChain());
+
+    }
+
+    private static List<AWSCredentialsProvider> constructProviderChain() {
+      final List<AWSCredentialsProvider> providers = new ArrayList<>();
+
+      providers.add(new H2ODynamicCredentialsProvider());
+      providers.add(new H2OArgCredentialsProvider());
+      providers.add(new InstanceProfileCredentialsProvider());
+      providers.add(new EnvironmentVariableCredentialsProvider());
+      providers.add(new SystemPropertiesCredentialsProvider());
+      providers.add(new ProfileCredentialsProvider());
+
+      return providers;
+
+    }
+  }
+  
+
+  /**
+   * Holds basic credentials (Secret key ID + Secret access key) pair.
+   */
+  private static final class H2ODynamicCredentialsProvider implements AWSCredentialsProvider {
+
+    @Override
+    public AWSCredentials getCredentials() {
+      final IcedS3Credentials s3Credentials = DKV.getGet(IcedS3Credentials.S3_CREDENTIALS_DKV_KEY);
+
+      if (s3Credentials != null && s3Credentials._secretKeyId != null && s3Credentials._secretAccessKey != null) {
+        return new BasicAWSCredentials(s3Credentials._secretKeyId, s3Credentials._secretAccessKey);
+      } else {
+        throw new AmazonClientException("No Amazon S3 credentials set directly.");
+      }
+    }
+
+    @Override
+    public void refresh() {
+      // No actions taken on refresh
     }
   }
 
@@ -391,7 +426,7 @@ public final class PersistS3 extends Persist {
   @Override
   public void cleanUp() { throw H2O.unimpl(); /** user-mode swapping not implemented */}
 
-  private static class Cache {
+  static class Cache {
     long _lastUpdated = 0;
     long _timeoutMillis = 5*60*1000;
     String [] _cache = new String[0];
@@ -453,9 +488,8 @@ public final class PersistS3 extends Persist {
   }
 
 
-
   Cache _bucketCache = new Cache();
-  HashMap<String,KeyCache> _keyCaches = new HashMap<>();
+  HashMap<String, KeyCache> _keyCaches = new HashMap<>();
   @Override
   public List<String> calcTypeaheadMatches(String filter, int limit) {
     String [] parts = decodePath(filter);
