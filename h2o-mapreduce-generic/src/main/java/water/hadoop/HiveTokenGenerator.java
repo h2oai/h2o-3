@@ -11,6 +11,7 @@ import org.apache.hadoop.security.token.Token;
 import org.apache.hive.jdbc.HiveConnection;
 
 import java.io.IOException;
+import java.security.PrivilegedExceptionAction;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -26,7 +27,7 @@ public class HiveTokenGenerator {
 
   private static final String HIVE_URI_CONF = "hive.metastore.uris";
 
-  public void addHiveDelegationToken(Job job, String hiveHost, String hivePrincipal) throws IOException {
+  public void addHiveDelegationToken(Job job, String hiveHost, String hivePrincipal) throws IOException, InterruptedException {
     Configuration conf = job.getConfiguration();
     HiveConf hiveConf = new HiveConf(conf, HiveConf.class);
     if (hiveHost == null) {
@@ -37,19 +38,29 @@ public class HiveTokenGenerator {
     }
     job.getConfiguration().set(H2O_HIVE_HOST, hiveHost);
     job.getConfiguration().set(H2O_HIVE_PRINCIPAL, hivePrincipal);
-    addHiveDelegationTokenIfPossible(
-        conf,
-        hiveHost, hivePrincipal,
-        job.getCredentials()
-    );
+    UserGroupInformation realUser = UserGroupInformation.getCurrentUser();
+    if (realUser.getRealUser() != null) {
+      realUser = realUser.getRealUser();
+    }
+    addHiveDelegationTokenAsUser(realUser, conf, hiveHost, hivePrincipal, job.getCredentials());
   }
 
-  public void addHiveDelegationToken(Configuration conf, String hiveHost, String hivePrincipal, Credentials creds) throws IOException {
-    addHiveDelegationTokenIfPossible(
-        conf,
-        hiveHost, hivePrincipal,
-        creds
-    );
+  public void addHiveDelegationTokenAsUser(
+      UserGroupInformation ugi, final Configuration conf,
+      final String hiveHost, final String hivePrincipal,
+      final Credentials creds
+  ) throws IOException, InterruptedException {
+    ugi.doAs(new PrivilegedExceptionAction<Credentials>() {
+      @Override
+      public Credentials run() throws Exception {
+        addHiveDelegationTokenIfPossible(
+            conf,
+            hiveHost, hivePrincipal,
+            creds
+        );
+        return creds;
+      }
+    });
   }
 
   private void log(String s, Exception e) {
@@ -68,7 +79,12 @@ public class HiveTokenGenerator {
     }
   }
 
-  private void addHiveDelegationTokenIfPossible(Configuration conf, String hiveHost, String hivePrincipal, Credentials creds) throws IOException {
+  private void addHiveDelegationTokenIfPossible(
+      Configuration conf,
+      String hiveHost,
+      String hivePrincipal,
+      Credentials creds
+  ) throws IOException {
     if (!isHiveDriverPresent()) {
       log("Hive driver not present, not generating token.", null);
       return;

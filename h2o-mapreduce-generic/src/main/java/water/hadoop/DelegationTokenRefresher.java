@@ -12,7 +12,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.security.PrivilegedExceptionAction;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -88,10 +87,10 @@ public class DelegationTokenRefresher implements Runnable {
   
   private static class DistributeCreds extends MRTask {
     
-    private final byte[] credsSerialized;
+    private final byte[] _credsSerialized;
 
     private DistributeCreds(byte[] credsSerialized) {
-      this.credsSerialized = credsSerialized;
+      this._credsSerialized = credsSerialized;
     }
 
     @Override
@@ -106,8 +105,7 @@ public class DelegationTokenRefresher implements Runnable {
     }
 
     private Credentials deserialize() throws IOException {
-      ByteArrayInputStream tokensBuf = new ByteArrayInputStream(credsSerialized);
-
+      ByteArrayInputStream tokensBuf = new ByteArrayInputStream(_credsSerialized);
       Credentials creds = new Credentials();
       creds.readTokenStorageStream(new DataInputStream(tokensBuf));
       return creds;
@@ -115,14 +113,9 @@ public class DelegationTokenRefresher implements Runnable {
   }
   
   private Credentials getTokens(UserGroupInformation ugi) throws IOException, InterruptedException {
-    return ugi.doAs(new PrivilegedExceptionAction<Credentials>() {
-      @Override
-      public Credentials run() throws Exception {
-        Credentials creds = new Credentials();
-        _hiveTokenGenerator.addHiveDelegationToken(_conf, _hiveHost, _hivePrincipal, creds);
-        return creds;
-      }
-    });
+    Credentials creds = new Credentials();
+    _hiveTokenGenerator.addHiveDelegationTokenAsUser(ugi, _conf, _hiveHost, _hivePrincipal, creds);
+    return creds;
   }
   
   private void distribute(Credentials creds) {
