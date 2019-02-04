@@ -1,0 +1,70 @@
+{
+  "variables": {
+    "aws_access_key": "",
+    "aws_secret_key": "",
+    "aws_region": "us-east-1",
+    "aws_vpc_id": "vpc-a9f577cc",
+    "aws_owners": "099720109477",
+    "aws_subnet_id": "subnet-14b87a4d",
+    "aws_security_group_id": "sg-09746568062f54e36",
+    "h2o3_version": "",
+    "name_suffix": "",
+    "h2o3_url": ""
+  },
+  "builders": [
+    {
+      "type": "amazon-ebs",
+      "ami_name": "h2o-3-{{user `h2o3_version`}}{{user `name_suffix`}}",
+      "instance_type": "t2.micro",
+      "ssh_username": "ubuntu",
+      "tags": {
+        "Name": "h2o-3-{{user `h2o3_version`}}"
+      },
+      "access_key": "{{user `aws_access_key`}}",
+      "secret_key": "{{user `aws_secret_key`}}",
+      "region": "{{user `aws_region`}}",
+      "subnet_id": "{{user `aws_subnet_id`}}",
+      "vpc_id": "{{user `aws_vpc_id`}}",
+      "security_group_id": "{{user `aws_security_group_id`}}",
+      "launch_block_device_mappings": [
+        {
+          "device_name": "/dev/sda1",
+          "volume_size": 64,
+          "volume_type": "gp2",
+          "delete_on_termination": true
+        }
+      ],
+      "source_ami_filter": {
+        "filters": {
+          "virtualization-type": "hvm",
+          "name": "ubuntu/images/*ubuntu-xenial-16.04-amd64-server-*",
+          "root-device-type": "ebs"
+        },
+        "owners": [
+          "{{user `aws_owners`}}"
+        ],
+        "most_recent": true
+      }
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "file",
+      "source": "scripts/start.sh",
+      "destination": "/home/ubuntu/scripts/start-h2o3.sh"
+    },
+    {
+      "type": "file",
+      "source": "scripts/stop.sh",
+      "destination": "/home/ubuntu/scripts/stop-h2o3.sh"
+    },
+    {
+      "pause_before": "60s",
+      "type": "shell",
+      "environment_vars": [
+        "H2O3_DOWNLOAD_URL={{user `h2o3_url`}}"
+      ],
+      "script": "scripts/install_h2o3.sh"
+    }
+  ]
+}
