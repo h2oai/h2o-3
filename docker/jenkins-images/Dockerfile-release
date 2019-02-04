@@ -22,5 +22,11 @@ RUN \
     conda update conda && \
     conda clean --all --yes
 
+RUN \
+    wget https://releases.hashicorp.com/packer/1.3.4/packer_1.3.4_linux_amd64.zip && \
+    unzip packer* && \
+    rm -f packer*.zip && \
+    mv packer /usr/bin/
+
 ENV PATH /opt/conda/bin:$PATH
 ENV GRADLE_USER_HOME=/home/jenkins/.gradle

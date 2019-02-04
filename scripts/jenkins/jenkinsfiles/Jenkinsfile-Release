@@ -4,7 +4,6 @@ def NODE_LABEL = 'master'
 
 def pipelineContext = null
 def result = 'FAILURE'
-
 try {
     ansiColor('xterm') {
         timestamps {
@@ -463,6 +462,44 @@ EOF
                             echo 'Marked as TEST_RELEASE, don\'t check Conda packages from anaconda.org'
                         }
                     }
+
+                    if (params.BUILD_AMI) {
+                        def BUILD_AMI_STAGE_NAME = 'Build AMI'
+                        stage(BUILD_AMI_STAGE_NAME) {
+                            try {
+                                pipelineContext.getBuildSummary().addStageSummary(this, UPLOAD_TO_PYPI_STAGE_NAME, env.BUILD_NUMBER_DIR)
+                                pipelineContext.getBuildSummary().setStageDetails(this, UPLOAD_TO_PYPI_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
+                                insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
+                                    sh """
+                                        echo "Activating Python ${env.PYTHON_VERSION}"
+                                        . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
+
+                                        cd ${env.BUILD_NUMBER_DIR}
+                                        make -f scripts/jenkins/Makefile.jenkins \
+                                            H2O3_DOWNLOAD_URL=http://h2o-release.s3.amazonaws.com/h2o/${env.BRANCH_NAME}/${currentBuild.number}/h2o-${env.PROJECT_VERSION}.zip \
+                                            H2O3_VERSION=${env.PROJECT_VERSION} \
+                                            ${params.TEST_RELEASE ? "AMI_NAME_SUFFIX='-test'" : ''} \
+                                            build-ami 2>&1 | tee packer.out
+                                        grep 'artifact,0,id' packer.out | cut -d, -f6 | cut -d: -f2 > amiId.txt
+                                        s3cmd --acl-public put amiId.txt ${env.S3_ROOT}/ami/amiId.txt
+                                    """
+                                    arch "${env.BUILD_NUMBER_DIR}/packer.out"
+                                    arch "${env.BUILD_NUMBER_DIR}/amiId.txt"
+                                    sh "s3cmd --acl-public put win-64/\${PKG_NAME} ${condaS3Dir}/win-64/\${PKG_NAME}"
+                                }
+                                String amiContent = """
+                                    <ul>
+                                        <li><strong>AMI Id:</strong> ${readFile('amiId.txt').trim()}</li>
+                                    </ul>
+                                """
+                                pipelineContext.getBuildSummary().addSection(this, 'ami', 'AMI', amiContent)
+                                pipelineContext.getBuildSummary().markStageSuccessful(this, UPLOAD_TO_PYPI_STAGE_NAME)
+                            } catch (Exception e) {
+                                pipelineContext.getBuildSummary().markStageFailed(this, UPLOAD_TO_PYPI_STAGE_NAME)
+                                throw e
+                            }
+                        }
+                    }
                 }
 
                 final String CLEANUP_STAGE_NAME = 'Cleanup'
@@ -508,7 +545,8 @@ private setReleaseJobProperties(final pipelineContext) {
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, publish to Nexus', name: 'UPLOAD_NEXUS'),
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set build PyPI package. Also if building rel- branch, publish to PyPI', name: 'UPLOAD_PYPI'),
             booleanParam(defaultValue: true, description: 'If set build conda packages and upload them to S3', name: 'BUILD_CONDA'),
-            booleanParam(defaultValue: false, description: 'If set and building rel- branch, publish to Anaconda.', name: 'UPLOAD_TO_ANACONDA')
+            booleanParam(defaultValue: false, description: 'If set and building rel- branch, publish to Anaconda.', name: 'UPLOAD_TO_ANACONDA').
+            booleanParam(defaultValue: false, description: 'If set, build AMI. If building other than rel- branch, adds "-test" suffix to the AMI name.', name: 'BUILD_AMI')
         ])
     ]
     if (env.BRANCH_NAME == 'master') {
@@ -555,6 +593,7 @@ Configuration:
     Publish to Nexus:   | ${params.UPLOAD_NEXUS}
     Publish to PyPI:    | ${params.UPLOAD_PYPI}
     Publish to Conda:   | ${params.UPLOAD_CONDA}
+    Build AMI:          | ${params.BUILD_AMI}
 =======================================
 """
 }

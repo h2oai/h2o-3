@@ -375,3 +375,30 @@ endif
 	cd ../mojoland && ./gradlew clean
 	cd ../mojoland && ./gradlew build
 	cd ../mojoland/mojo-py && python in_mojo_veritas.py
+
+build-ami:
+ifeq ($(AWS_ACCESS_KEY_ID),)
+	echo "AWS_ACCESS_KEY_ID must be set"
+	exit 1
+endif
+ifeq ($(AWS_SECRET_ACCESS_KEY),)
+	echo "AWS_SECRET_ACCESS_KEY must be set"
+	exit 1
+endif
+ifeq ($(H2O3_DOWNLOAD_URL),)
+	echo "H2O3_DOWNLOAD_URL must be set"
+	exit 1
+endif
+ifeq ($(H2O3_VERSION),)
+	echo "H2O3_VERSION must be set"
+	exit 1
+endif
+	cd scripts/packer/aws && packer build \
+		-var aws_access_key=$(AWS_ACCESS_KEY_ID) \
+		-var aws_secret_key=$(AWS_SECRET_ACCESS_KEY) \
+		-var aws_region=us-east-1 \
+		-var h2o3_version=$(H2O3_VERSION) \
+		-var h2o3_url=$(H2O3_DOWNLOAD_URL) \
+		-var name_suffix=$(AMI_NAME_SUFFIX) \
+		-machine-readable \
+		h2o3-aws.json
