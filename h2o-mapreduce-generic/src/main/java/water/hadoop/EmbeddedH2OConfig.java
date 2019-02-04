@@ -2,6 +2,7 @@ package water.hadoop;
 
 import water.util.Log;
 
+import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -34,10 +35,8 @@ class EmbeddedH2OConfig extends water.init.AbstractEmbeddedH2OConfig {
     }
 
     public void run() {
-      try {
-        Socket s = new Socket(_m.getDriverCallbackIp(), _m.getDriverCallbackPort());
+      try (Socket s = new Socket(_m.getDriverCallbackIp(), _m.getDriverCallbackPort())) {
         _m.write(s);
-        s.close();
       }
       catch (java.net.ConnectException e) {
         System.out.println("EmbeddedH2OConfig: BackgroundWriterThread could not connect to driver at " + _driverCallbackIp + ":" + _driverCallbackPort);
@@ -133,27 +132,36 @@ class EmbeddedH2OConfig extends water.init.AbstractEmbeddedH2OConfig {
       System.out.println("EmbeddedH2OConfig: after bwt.start()");
     }
     catch (Exception e) {
-      System.out.println("EmbeddedH2OConfig: exit caught an exception 1");
+      System.out.println("EmbeddedH2OConfig: failed to send message to driver");
       e.printStackTrace();
     }
 
+    Socket s = null;
     try {
+      Thread.sleep(1000);
       // Wait one second to deliver the message before exiting.
-      Thread.sleep (1000);
-      Socket s = new Socket("127.0.0.1", _mapperCallbackPort);
+      s = new Socket("127.0.0.1", _mapperCallbackPort);
       byte[] b = new byte[] { (byte) status };
       OutputStream os = s.getOutputStream();
       os.write(b);
       os.flush();
       s.close();
+      s = null;
       System.out.println("EmbeddedH2OConfig: after write to mapperCallbackPort");
 
       Thread.sleep(60 * 1000);
       // Should never make it this far!
-    }
-    catch (Exception e) {
+    } catch (Exception e) {
       System.out.println("EmbeddedH2OConfig: exit caught an exception 2");
       e.printStackTrace();
+    } finally {
+      if (s != null) {
+        try {
+          s.close();
+        } catch (IOException e) {
+          // ignore
+        }
+      }
     }
 
     System.exit(111);

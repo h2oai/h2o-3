@@ -34,16 +34,16 @@ public class DelegationTokenRefresher implements Runnable {
     }
   }
 
-  private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(
+  private final ScheduledExecutorService _executor = Executors.newSingleThreadScheduledExecutor(
       new ThreadFactoryBuilder().setDaemon(true).setNameFormat("delegation-token-refresher-%d").build()
   );
 
-  private final Configuration conf;
-  private final String authPrincipal;
-  private final String hiveHost;
-  private final String hivePrincipal;
+  private final Configuration _conf;
+  private final String _authPrincipal;
+  private final String _hiveHost;
+  private final String _hivePrincipal;
 
-  private final HiveTokenGenerator hiveTokenGenerator = new HiveTokenGenerator();
+  private final HiveTokenGenerator _hiveTokenGenerator = new HiveTokenGenerator();
 
   public DelegationTokenRefresher(
       Configuration conf,
@@ -51,15 +51,15 @@ public class DelegationTokenRefresher implements Runnable {
       String hiveHost,
       String hivePrincipal
   ) {
-    this.conf = conf;
-    this.authPrincipal = authPrincipal;
-    this.hiveHost = hiveHost;
-    this.hivePrincipal = hivePrincipal;
+    this._conf = conf;
+    this._authPrincipal = authPrincipal;
+    this._hiveHost = hiveHost;
+    this._hivePrincipal = hivePrincipal;
   }
 
   public void start() {
-    if (hiveTokenGenerator.isHiveDriverPresent()) {
-      executor.scheduleAtFixedRate(this, 0, 1, TimeUnit.MINUTES);
+    if (_hiveTokenGenerator.isHiveDriverPresent()) {
+      _executor.scheduleAtFixedRate(this, 0, 1, TimeUnit.MINUTES);
     }
   }
 
@@ -119,7 +119,7 @@ public class DelegationTokenRefresher implements Runnable {
       @Override
       public Credentials run() throws Exception {
         Credentials creds = new Credentials();
-        hiveTokenGenerator.addHiveDelegationToken(conf, hiveHost, hivePrincipal, creds);
+        _hiveTokenGenerator.addHiveDelegationToken(_conf, _hiveHost, _hivePrincipal, creds);
         return creds;
       }
     });
@@ -137,7 +137,7 @@ public class DelegationTokenRefresher implements Runnable {
 
   private void doRefreshTokens() throws IOException, InterruptedException {
     log("Log in from keytab", null);
-    UserGroupInformation ugi = UserGroupInformation.loginUserFromKeytabAndReturnUGI(authPrincipal, KEYTAB_PATH);
+    UserGroupInformation ugi = UserGroupInformation.loginUserFromKeytabAndReturnUGI(_authPrincipal, KEYTAB_PATH);
     Credentials creds = getTokens(ugi);
     distribute(creds);
   }
