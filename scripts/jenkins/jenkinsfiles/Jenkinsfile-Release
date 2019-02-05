@@ -471,26 +471,29 @@ EOF
                                 pipelineContext.getBuildSummary().addStageSummary(this, BUILD_AMI, env.BUILD_NUMBER_DIR)
                                 pipelineContext.getBuildSummary().setStageDetails(this, BUILD_AMI, env.NODE_NAME, env.WORKSPACE)
                                 insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
+                                    def downloadUrl = "http://h2o-release.s3.amazonaws.com/h2o/${env.BRANCH_NAME}/${currentBuild.number}/h2o-${env.PROJECT_VERSION}.zip"
+                                    if (params.TEST_RELEASE) {
+                                        downloadUrl = "https://s3.amazonaws.com/test.0xdata.com/test-release/h2o/${env.BRANCH_NAME}/${currentBuild.number}/h2o-${env.PROJECT_VERSION}.zip" 
+                                    }
                                     sh """
                                         echo "Activating Python ${env.PYTHON_VERSION}"
                                         . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
 
                                         cd ${env.BUILD_NUMBER_DIR}
                                         make -f scripts/jenkins/Makefile.jenkins \
-                                            H2O3_DOWNLOAD_URL=http://h2o-release.s3.amazonaws.com/h2o/${env.BRANCH_NAME}/${currentBuild.number}/h2o-${env.PROJECT_VERSION}.zip \
+                                            H2O3_DOWNLOAD_URL=${downloadUrl} \
                                             H2O3_VERSION=${env.PROJECT_VERSION} \
                                             ${params.TEST_RELEASE ? "AMI_NAME_SUFFIX='-test'" : ''} \
                                             build-ami 2>&1 | tee packer.out
                                         grep 'artifact,0,id' packer.out | cut -d, -f6 | cut -d: -f2 > amiId.txt
-                                        s3cmd --acl-public put amiId.txt ${env.S3_ROOT}/ami/amiId.txt
+                                        s3cmd --acl-public put amiId.txt ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/ami/amiId.txt
                                     """
                                     arch "${env.BUILD_NUMBER_DIR}/packer.out"
                                     arch "${env.BUILD_NUMBER_DIR}/amiId.txt"
-                                    sh "s3cmd --acl-public put win-64/\${PKG_NAME} ${condaS3Dir}/win-64/\${PKG_NAME}"
                                 }
                                 String amiContent = """
                                     <ul>
-                                        <li><strong>AMI Id:</strong> ${readFile('amiId.txt').trim()}</li>
+                                        <li><strong>AMI Id:</strong> ${readFile("${env.BUILD_NUMBER_DIR}/amiId.txt").trim()}</li>
                                     </ul>
                                 """
                                 pipelineContext.getBuildSummary().addSection(this, 'ami', 'AMI', amiContent)

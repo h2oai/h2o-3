@@ -49,22 +49,32 @@
   ],
   "provisioners": [
     {
+      "type": "shell",
+      "inline": "mkdir /home/ubuntu/scripts"
+    },
+    {
       "type": "file",
-      "source": "scripts/start.sh",
+      "source": "scripts/start-h2o3.sh",
       "destination": "/home/ubuntu/scripts/start-h2o3.sh"
     },
     {
       "type": "file",
-      "source": "scripts/stop.sh",
+      "source": "scripts/stop-h2o3.sh",
       "destination": "/home/ubuntu/scripts/stop-h2o3.sh"
+    },
+    {
+      "type": "file",
+      "source": "scripts/rc.local",
+      "destination": "/home/ubuntu/rc.local"
     },
     {
       "pause_before": "60s",
       "type": "shell",
       "environment_vars": [
-        "H2O3_DOWNLOAD_URL={{user `h2o3_url`}}"
+        "H2O3_DOWNLOAD_URL={{user `h2o3_url`}}",
+        "H2O3_VERSION={{user `h2o3_version`}}"
       ],
-      "script": "scripts/install_h2o3.sh"
+      "script": "scripts/provision.sh"
     }
   ]
 }
