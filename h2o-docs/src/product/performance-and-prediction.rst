@@ -465,7 +465,9 @@ Thus, the one-dimensional partial dependence of function :math:`g` on :math:`X_j
 Prediction
 ----------
 
-With H2O-3, you can generate predictions for a model based on samples in a test set. This can be accomplished in memory or using MOJOs/POJOs.  
+With H2O-3, you can generate predictions for a model based on samples in a test set. This can be accomplished in memory or using MOJOs/POJOs using ``h2o.predict()`` or ``predict``.
+
+**Note**: MOJO/POJO predict cannot parse columns enclosed in double quotes (for example, ""2"").  
 
 For classification problems, predicted probabilities and labels are compared against known results. (Note that for binary models, labels are based on the maximum F1 threshold from the model object.) For regression problems, predicted regression targets are compared against testing targets and typical error metrics.
 
