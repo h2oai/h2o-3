@@ -1123,9 +1123,9 @@ h2o.mean_residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FA
 #' @param valid Retrieve the validation GINI Coefficcient
 #' @param xval Retrieve the cross-validation GINI Coefficcient
 #' @seealso \code{\link{h2o.auc}} for AUC,  \code{\link{h2o.giniCoef}} for the
-#'          GINI coefficient, and \code{\link{h2o.metric}} for the various. See
-#'          \code{\link{h2o.performance}} for creating H2OModelMetrics objects.
-#'          threshold metrics.
+#'          GINI coefficient, and \code{\link{h2o.metric}} for the various
+#'          threshold metrics. See \code{\link{h2o.performance}} for creating 
+#'          H2OModelMetrics objects.
 #' @examples
 #' \donttest{
 #' library(h2o)

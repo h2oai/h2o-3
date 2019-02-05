@@ -71,9 +71,11 @@ Defining a Stacked Ensemble Model
 
 -  `validation_frame <algo-params/validation_frame.html>`__: (Optional) Specify the dataset to use for tuning the model.  The validation frame will be passed through to the metalearner for tuning.
 
+-  `blending_frame <algo-params/blending_frame.html>`__: (Optional) Specify a frame to be used for computing the predictions that serve as the training frame for the metalearner. This triggers blending mode if provided.
+
 -  `model_id <algo-params/model_id.html>`__: (Optional) Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
 
--  **base_models**: (Required) Specify a list of models (or model IDs) that can be stacked together.  Models must have been cross-validated (i.e. ``nfolds``>1 or ``fold_column`` was specified), they all must use the same cross-validation folds, and ``keep_cross_validation_predictions`` must have been set to True. One way to guarantee identical folds across base models is to set ``fold_assignment = "Modulo"`` in all the base models.  It is also possible to get identical folds by setting ``fold_assignment = "Random"`` when the same seed is used in all base models.
+-  `base_models <algo-params/base_models.html>`__: (Required) Specify a list of models (or model IDs) that can be stacked together.  Models must have been cross-validated (i.e. ``nfolds``>1 or ``fold_column`` was specified), they all must use the same cross-validation folds, and ``keep_cross_validation_predictions`` must have been set to True. One way to guarantee identical folds across base models is to set ``fold_assignment = "Modulo"`` in all the base models.  It is also possible to get identical folds by setting ``fold_assignment = "Random"`` when the same seed is used in all base models.
 
 -  `metalearner_algorithm <algo-params/metalearner_algorithm.html>`__ (Optional) Specify the metalearner algorithm type.  Options include:
 

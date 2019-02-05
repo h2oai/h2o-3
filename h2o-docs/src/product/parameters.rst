@@ -15,9 +15,11 @@ This Appendix provides detailed descriptions of parameters that can be specified
 
    data-science/algo-params/alpha
    data-science/algo-params/balance_classes
+   data-science/algo-params/base_models
    data-science/algo-params/beta_constraints
    data-science/algo-params/beta_epsilon
    data-science/algo-params/binomial_double_trees
+   data-science/algo-params/blending_frame
    data-science/algo-params/build_tree_one_node
    data-science/algo-params/calibrate_model
    data-science/algo-params/calibration_frame
