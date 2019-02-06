@@ -27,6 +27,9 @@ dependencies {
     compile (project(':h2o-persist-hdfs')) {
         transitive = false
     }
+    compile (project(':h2o-hive')) {
+        transitive = false
+    }
 
     // For standalone mode to work with MapR, this extra library needs to be
     // included, and it's not pulled in by the dependency stuff;  this must
