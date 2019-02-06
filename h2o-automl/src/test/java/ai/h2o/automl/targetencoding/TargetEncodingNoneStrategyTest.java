@@ -176,16 +176,4 @@ public class TargetEncodingNoneStrategyTest extends TestUtil {
     }
   }
 
-  private void printOutFrameAsTable(Frame fr) {
-
-    TwoDimTable twoDimTable = fr.toTwoDimTable();
-    System.out.println(twoDimTable.toString(2, false));
-  }
-
-  private void printOutFrameAsTable(Frame fr, boolean full, boolean rollups) {
-
-    TwoDimTable twoDimTable = fr.toTwoDimTable(0, 10000, rollups);
-    System.out.println(twoDimTable.toString(2, full));
-  }
-
 }

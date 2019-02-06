@@ -10,10 +10,8 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
-import water.util.TwoDimTable;
 
 import java.io.File;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 
@@ -61,8 +59,8 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
       reimportedFrame = parse_test_file(Key.make("parsed"), tmpName, true);
       printOutFrameAsTable(reimportedFrame);
 
-      printOutColumnsMeta(fr);
-      printOutColumnsMeta(reimportedFrame);
+      printOutColumnsMetadata(fr);
+      printOutColumnsMetadata(reimportedFrame);
 
       String[] teColumns = {teColumnName};
       TargetEncoder tec = new TargetEncoder(teColumns);
@@ -149,7 +147,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
     String[] teColumns = {teColumnName};
     TargetEncoder tec = new TargetEncoder(teColumns);
 
-    printOutColumnsMeta(fr);
+    printOutColumnsMetadata(fr);
 
     Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, null);
 
@@ -179,7 +177,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
     String[] teColumns = {teColumnName};
     TargetEncoder tec = new TargetEncoder(teColumns);
 
-    printOutColumnsMeta(fr);
+    printOutColumnsMetadata(fr);
 
     Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, null);
 
@@ -475,20 +473,5 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
       map.getValue().delete();
     }
   }
-
-  private void printOutFrameAsTable(Frame fr) {
-
-    TwoDimTable twoDimTable = fr.toTwoDimTable();
-    System.out.println(twoDimTable.toString(2, false));
-  }
-
-
-  private void printOutColumnsMeta(Frame fr) {
-    for (String header : fr.toTwoDimTable().getColHeaders()) {
-      String type = fr.vec(header).get_type_str();
-      int cardinality = fr.vec(header).cardinality();
-      System.out.println(header + " - " + type + String.format("; Cardinality = %d", cardinality));
-
-    }
-  }
+  
 }
