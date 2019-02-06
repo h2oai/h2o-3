@@ -48,6 +48,20 @@ public class FrameTest extends TestUtil {
   }
 
   @Test
+  public void testRemoveMultipleColumnsByNames() {
+    Scope.enter();
+    Frame fr = null;
+    try {
+      fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+
+      Frame removed = fr.remove(new String[]{"name", "ticket", "boat", "body"});
+      removed.delete();
+    } catch (Exception ex) {
+      Scope.exit();
+    }
+  }
+
+  @Test
   public void testRemoveColumn() {
     Scope.enter();
     Frame testData = parse_test_file(Key.make("test_deep_select_1"), "smalldata/sparse/created_frame_binomial.svm.zip");
