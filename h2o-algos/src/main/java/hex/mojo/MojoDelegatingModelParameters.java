@@ -5,7 +5,7 @@ import water.fvec.ByteVec;
 
 public class MojoDelegatingModelParameters extends Model.Parameters {
     
-    public String mojoFile;
+    public ByteVec _mojoData;
     
     @Override
     public String algoName() {

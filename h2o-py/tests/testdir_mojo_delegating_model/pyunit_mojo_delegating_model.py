@@ -1,6 +1,5 @@
 import h2o
 import tempfile
-import os
 from h2o.estimators import H2OGradientBoostingEstimator
 from h2o.model import mojo_delegating
 from tests import pyunit_utils

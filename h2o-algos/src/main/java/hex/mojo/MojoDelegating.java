@@ -3,12 +3,11 @@ package hex.mojo;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.genmodel.MojoModel;
-import water.DKV;
-import water.Value;
-import water.fvec.ByteVec;
-import water.fvec.Frame;
+import hex.genmodel.MojoReaderBackend;
+import hex.genmodel.MojoReaderBackendFactory;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 public class MojoDelegating extends ModelBuilder<MojoDelegatingModel, MojoDelegatingModelParameters, MojoDelegatingModelOutput> {
 
@@ -17,7 +16,7 @@ public class MojoDelegating extends ModelBuilder<MojoDelegatingModel, MojoDelega
     }
 
     public MojoDelegating(boolean startup_once) {
-        super(new MojoDelegatingModelParameters(), true);
+        super(new MojoDelegatingModelParameters(), startup_once);
     }
 
     @Override
@@ -42,7 +41,6 @@ public class MojoDelegating extends ModelBuilder<MojoDelegatingModel, MojoDelega
     }
 
     class MojoDelegatingModelDriver extends Driver {
-
         @Override
         public void computeImpl() {
             final MojoDelegatingModelOutput mojoDelegatingModelOutput = new MojoDelegatingModelOutput();
@@ -50,10 +48,10 @@ public class MojoDelegating extends ModelBuilder<MojoDelegatingModel, MojoDelega
             mojoDelegatingModel.write_lock(_job);
 
             try {
-                final MojoModel mojoModel = MojoModel.load(_parms.mojoFile);
+                final MojoModel mojoModel = MojoModel.load(MojoReaderBackendFactory.createReaderBackend(_parms._mojoData.openStream(_job._key), MojoReaderBackendFactory.CachingStrategy.MEMORY));
                 mojoDelegatingModel._mojoModel = mojoModel;
             } catch (IOException e) {
-                throw new IllegalStateException("Unreachable MOJO file: " + _parms.mojoFile, e);
+                throw new IllegalStateException("Unreachable MOJO file: " + _parms._mojoData._key, e);
             }
 
             mojoDelegatingModel.unlock(_job);
