@@ -34,6 +34,11 @@ Additional Resources:
 
 .. toctree::
    :maxdepth: 2
+
+   scikit-learn-integration
+
+.. toctree::
+   :maxdepth: 2
    
    downloading
    
