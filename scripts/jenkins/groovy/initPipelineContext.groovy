@@ -20,7 +20,7 @@ def call(final scmEnv, final String mode, final boolean ignoreChanges, final Lis
 }
 
 void clearStageDirs() {
-  sh "find `pwd` -maxdepth 1 -not -name 'h2o-3' -not -name h2o-3@tmp -not -path `pwd` -exec rm -rfv '{}' ';'"
+  sh "find `pwd` -maxdepth 1 -not -name 'h2o-3' -not -name h2o-3@tmp -not -path `pwd` -exec rm -rf '{}' ';'"
 }
 
 return this

@@ -561,7 +561,8 @@ public class RequestServer extends HttpServlet {
           path[2].equals("Progress") ||
           path[2].equals("Typeahead") ||
           path[2].equals("WaterMeterCpuTicks") ||
-          path[2].equals("DecryptionSetup"); // contains password information
+          path[2].equals("DecryptionSetup") ||
+          path[2].equals("PersistS3"); // contains password information
       }
     };
   }
