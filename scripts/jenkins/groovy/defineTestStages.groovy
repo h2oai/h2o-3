@@ -574,7 +574,7 @@ private void invokeStage(final pipelineContext, final body) {
                 if (healthCheckPassed) {
                   pipelineContext.getBuildSummary().setStageDetails(this, config.stageName, env.NODE_NAME, env.WORKSPACE)
 
-                  sh "rm -rfv ${config.stageDir}"
+                  sh "rm -rf ${config.stageDir}"
 
                   def script = load(config.executionScript)
                   script(pipelineContext, config)
