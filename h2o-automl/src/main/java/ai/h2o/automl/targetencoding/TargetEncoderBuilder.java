@@ -25,7 +25,6 @@ public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, Targe
   private class TargetEncoderDriver extends Driver {
     @Override
     public void computeImpl() {
-      
       TargetEncoder tec = new TargetEncoder(_parms._columnNamesToEncode, _parms._blendingParams);
 
       Scope.untrack(train().keys());
@@ -66,4 +65,5 @@ public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, Targe
   public boolean isSupervised() {
     return true;
   }
+
 }

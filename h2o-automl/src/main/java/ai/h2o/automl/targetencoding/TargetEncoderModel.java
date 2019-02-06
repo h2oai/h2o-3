@@ -64,7 +64,6 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       super(b);
       _target_encoding_map = teMap;
       _teParams = b._parms;
-
       _teColumnNameToIdx = createColumnNameToIndexMap(_teParams);
     }
     
@@ -96,7 +95,8 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
   }
 
   /**
-   * Transform with default noise of 0.01 */
+   * Transform with default noise of 0.01
+   */
   public Frame transform(Frame data, byte strategy, long seed){
     return _targetEncoder.applyTargetEncoding(data, _parms._response_column, this._output._target_encoding_map, strategy,
             _parms._teFoldColumnName, _parms._withBlending, true, seed);
@@ -109,8 +109,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
 
   @Override
   public ModelMojoWriter getMojo() {
-//    return new TargetEncoderMojoWriter(this);
-    throw H2O.unimpl("Will be enabled after PR #3282");
+    return new TargetEncoderMojoWriter(this);
   }
-  
+
 }

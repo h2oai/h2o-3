@@ -120,11 +120,11 @@ public abstract class ModelMojoReader<M extends MojoModel> {
    * Retrieve binary data previously saved to the mojo file using `writeblob(key, blob)`.
    */
   protected byte[] readblob(String name) throws IOException {
-    return _reader.getBinaryFile(name);
+    return getMojoReaderBackend().getBinaryFile(name);
   }
 
   protected boolean exists(String name) {
-    return _reader.exists(name);
+    return getMojoReaderBackend().exists(name);
   }
 
   /**
@@ -141,7 +141,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
    */
   protected Iterable<String> readtext(String name, boolean unescapeNewlines) throws IOException {
     ArrayList<String> res = new ArrayList<>(50);
-    BufferedReader br = _reader.getTextFile(name);
+    BufferedReader br = getMojoReaderBackend().getTextFile(name);
     try {
       String line;
       while (true) {
@@ -262,7 +262,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
       String domfile = info[1];
       String[] domain = new String[n_elements];
 
-      try (BufferedReader br = _reader.getTextFile("domains/" + domfile)) {
+      try (BufferedReader br = getMojoReaderBackend().getTextFile("domains/" + domfile)) {
         String line;
         int id = 0;  // domain elements counter
         while ((line = br.readLine()) != null) {
@@ -292,5 +292,9 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     if(_model._mojo_version > Double.parseDouble(mojoVersion())){
       throw new IOException(String.format("MOJO version incompatibility - the model MOJO version (%.2f) is higher than the current h2o version (%s) supports. Please, use the older version of h2o to load MOJO model.", _model._mojo_version, mojoVersion()));
     }
+  }
+
+  protected MojoReaderBackend getMojoReaderBackend() {
+    return _reader;
   }
 }

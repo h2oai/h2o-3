@@ -8,7 +8,6 @@ public class FrameToTETableTask extends MRTask<FrameToTETableTask> {
   
   // IcedHashMap does not support integer keys so we will store indices as strings.
   public IcedHashMap<String, TEComponents> _table = new IcedHashMap<>();
-
   
   public FrameToTETableTask() { }
 

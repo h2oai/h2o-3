@@ -21,7 +21,6 @@ public class TargetEncoderBuilderTest extends TestUtil {
 
   @Test
   public void getTargetEncodingMapByTrainingTEBuilder() {
-
     Map<String, Frame> encodingMapFromTargetEncoder = null;
     Map<String, Frame> targetEncodingMapFromBuilder = null;
     Scope.enter();
