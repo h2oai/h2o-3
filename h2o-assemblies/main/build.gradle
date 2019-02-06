@@ -23,6 +23,7 @@ dependencies {
     compile project(":h2o-persist-s3")
     compile project(":h2o-persist-http")
     compile project(":h2o-persist-hdfs")
+    compile project(":h2o-hive")
     if (project.hasProperty("doIncludeOrc") && project.doIncludeOrc == "true") {
         compile project(":h2o-orc-parser")
     }

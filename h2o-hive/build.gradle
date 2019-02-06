@@ -1,0 +1,18 @@
+apply plugin: 'java'
+
+description = 'H2O Generic MapReduce Driver for Hadoop'
+
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
+compileJava {
+  options.debug = true
+}
+
+dependencies {
+  // the versions here are not important - user will provide the correct versions at runtime
+  compileOnly "org.apache.hadoop:hadoop-client:2.5.0-cdh5.2.0"
+  compileOnly "org.apache.hive:hive-exec:0.13.1-cdh5.2.0"
+  compileOnly "org.apache.hive:hive-metastore:0.13.1-cdh5.2.0"
+  compile project(":h2o-core")
+}

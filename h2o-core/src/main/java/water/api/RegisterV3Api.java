@@ -50,6 +50,10 @@ public class RegisterV3Api extends AbstractRegister {
             "POST /99/ImportSQLTable", ImportSQLTableHandler.class, "importSQLTable",
             "Import SQL table into an H2O Frame.");
 
+    context.registerEndpoint("importHiveTable",
+        "POST /99/ImportHiveTable", ImportHiveTableHandler.class, "importHiveTable",
+        "Import Hive table into an H2O Frame.");
+
     context.registerEndpoint("guessParseSetup",
             "POST /3/ParseSetup", ParseSetupHandler.class, "guessSetup",
             "Guess the parameters for parsing raw byte-oriented data into an H2O Frame.");
