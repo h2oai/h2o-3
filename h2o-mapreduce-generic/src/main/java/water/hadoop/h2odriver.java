@@ -155,6 +155,7 @@ public class h2odriver extends Configured implements Tool {
   static boolean driverDebug = false;
   static String hiveHost = null;
   static String hivePrincipal = null;
+  static boolean refreshTokens = false;
 
   private final HiveTokenGenerator hiveTokenGenerator = new HiveTokenGenerator();
 
@@ -637,7 +638,8 @@ public class h2odriver extends Configured implements Tool {
                     "          [-jobname <name of job in jobtracker (defaults to: 'H2O_nnnnn')>]\n" +
                     "              (Note nnnnn is chosen randomly to produce a unique name)\n" +
                     "          [-principal <kerberos principal> -keytab <keytab path> [-run_as_user <impersonated hadoop username>] | -run_as_user <hadoop username>]\n" +
-                    // Experimental "          [-hiveHost <hostname:port> -hivePrincipal <hive server principal>]\n" +
+                    // Experimental "          [-hiveHost <hostname:port> -hivePrincipal <hive server kerberos principal>]\n" +
+                    //              "          [-refreshTokens]\n" +
                     "          [-driverif <ip address of mapper->driver callback interface>]\n" +
                     "          [-driverport <port of mapper->driver callback interface>]\n" +
                     "          [-driverportrange <range portX-portY of mapper->driver callback interface>; eg: 50000-55000]\n" +
@@ -1060,6 +1062,8 @@ public class h2odriver extends Configured implements Tool {
       } else if (s.equals("-hivePrincipal")) {
         i++; if (i >= args.length) { usage (); }
         hivePrincipal = args[i];
+      } else if (s.equals("-refreshTokens")) {
+        refreshTokens = true;
       } else {
         error("Unrecognized option " + s);
       }
@@ -1836,7 +1840,7 @@ public class h2odriver extends Configured implements Tool {
     j.setOutputValueClass(Text.class);
 
     hiveTokenGenerator.addHiveDelegationToken(j, hiveHost, hivePrincipal);
-    if (principal != null && keytabPath != null) {
+    if (refreshTokens && principal != null && keytabPath != null) {
       j.getConfiguration().set(H2O_AUTH_PRINCIPAL, principal);
       j.addCacheFile(new URI("file://" + keytabPath + "#" + KEYTAB_FILE));
     }

@@ -29,7 +29,9 @@ public class DelegationTokenRefresher implements Runnable {
     String authPrincipal = conf.get(H2O_AUTH_PRINCIPAL);
 
     if (authPrincipal != null && hiveHost != null && hivePrincipal != null) {
-      new DelegationTokenRefresher(conf, authPrincipal, hiveHost, hivePrincipal).start();
+      new DelegationTokenRefresher(authPrincipal, hiveHost, hivePrincipal).start();
+    } else {
+      log("Delegation token refresh not active.", null);
     }
   }
 
@@ -37,7 +39,6 @@ public class DelegationTokenRefresher implements Runnable {
       new ThreadFactoryBuilder().setDaemon(true).setNameFormat("delegation-token-refresher-%d").build()
   );
 
-  private final Configuration _conf;
   private final String _authPrincipal;
   private final String _hiveHost;
   private final String _hivePrincipal;
@@ -45,12 +46,10 @@ public class DelegationTokenRefresher implements Runnable {
   private final HiveTokenGenerator _hiveTokenGenerator = new HiveTokenGenerator();
 
   public DelegationTokenRefresher(
-      Configuration conf,
       String authPrincipal,
       String hiveHost,
       String hivePrincipal
   ) {
-    this._conf = conf;
     this._authPrincipal = authPrincipal;
     this._hiveHost = hiveHost;
     this._hivePrincipal = hivePrincipal;
@@ -114,7 +113,7 @@ public class DelegationTokenRefresher implements Runnable {
   
   private Credentials getTokens(UserGroupInformation ugi) throws IOException, InterruptedException {
     Credentials creds = new Credentials();
-    _hiveTokenGenerator.addHiveDelegationTokenAsUser(ugi, _conf, _hiveHost, _hivePrincipal, creds);
+    _hiveTokenGenerator.addHiveDelegationTokenAsUser(ugi, _hiveHost, _hivePrincipal, creds);
     return creds;
   }
   

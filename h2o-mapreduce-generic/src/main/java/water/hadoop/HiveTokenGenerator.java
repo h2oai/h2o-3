@@ -27,7 +27,11 @@ public class HiveTokenGenerator {
 
   private static final String HIVE_URI_CONF = "hive.metastore.uris";
 
-  public void addHiveDelegationToken(Job job, String hiveHost, String hivePrincipal) throws IOException, InterruptedException {
+  public void addHiveDelegationToken(
+      Job job,
+      String hiveHost,
+      String hivePrincipal
+  ) throws IOException, InterruptedException {
     Configuration conf = job.getConfiguration();
     HiveConf hiveConf = new HiveConf(conf, HiveConf.class);
     if (hiveHost == null) {
@@ -36,28 +40,22 @@ public class HiveTokenGenerator {
     if (hivePrincipal == null) {
       hivePrincipal = hiveConf.getTrimmed(HIVE_PRINCIPAL_CONF, "");
     }
-    job.getConfiguration().set(H2O_HIVE_HOST, hiveHost);
-    job.getConfiguration().set(H2O_HIVE_PRINCIPAL, hivePrincipal);
+    conf.set(H2O_HIVE_HOST, hiveHost);
+    conf.set(H2O_HIVE_PRINCIPAL, hivePrincipal);
     UserGroupInformation realUser = UserGroupInformation.getCurrentUser();
     if (realUser.getRealUser() != null) {
       realUser = realUser.getRealUser();
     }
-    addHiveDelegationTokenAsUser(realUser, conf, hiveHost, hivePrincipal, job.getCredentials());
+    addHiveDelegationTokenAsUser(realUser, hiveHost, hivePrincipal, job.getCredentials());
   }
 
   public void addHiveDelegationTokenAsUser(
-      UserGroupInformation ugi, final Configuration conf,
-      final String hiveHost, final String hivePrincipal,
-      final Credentials creds
+      UserGroupInformation ugi, final String hiveHost, final String hivePrincipal, final Credentials creds
   ) throws IOException, InterruptedException {
     ugi.doAs(new PrivilegedExceptionAction<Credentials>() {
       @Override
       public Credentials run() throws Exception {
-        addHiveDelegationTokenIfPossible(
-            conf,
-            hiveHost, hivePrincipal,
-            creds
-        );
+        addHiveDelegationTokenIfPossible(hiveHost, hivePrincipal, creds);
         return creds;
       }
     });
@@ -80,7 +78,6 @@ public class HiveTokenGenerator {
   }
 
   private void addHiveDelegationTokenIfPossible(
-      Configuration conf,
       String hiveHost,
       String hivePrincipal,
       Credentials creds
@@ -90,7 +87,7 @@ public class HiveTokenGenerator {
       return;
     }
 
-    if (hivePrincipal.isEmpty() || hiveHost.isEmpty()) {
+    if (!isHiveConfigPresent(hiveHost, hivePrincipal)) {
       log("Hive host or principal not set, no token generated.", null);
       return;
     }
@@ -108,6 +105,11 @@ public class HiveTokenGenerator {
       creds.addToken(new Text("hive.server2.delegation.token"), hive2Token);
       creds.addToken(new Text("hiveserver2ClientToken"), hive2Token); //HiveAuthConstants.HS2_CLIENT_TOKEN
     }
+  }
+
+  private boolean isHiveConfigPresent(String hiveHost, String hivePrincipal) {
+    return hivePrincipal != null && !hivePrincipal.isEmpty() &&
+        hiveHost != null && !hiveHost.isEmpty();
   }
 
   public boolean isHiveDriverPresent() {
