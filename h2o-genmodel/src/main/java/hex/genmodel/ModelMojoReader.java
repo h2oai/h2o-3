@@ -13,6 +13,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Helper class to deserialize a model from MOJO format. This is a counterpart to `ModelMojoWriter`.
@@ -179,6 +181,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     _model._priorClassDistrib = readkv("prior_class_distrib");
     _model._modelClassDistrib = readkv("model_class_distrib");
     _model._offsetColumn = readkv("offset_column");
+    _model._targetEncodingMap = parseTargetEncodingMap(_reader.getTextFile("feature_engineering/targetencoding.ini"));
     _model._mojo_version = ((Number) readkv("mojo_version")).doubleValue();
     checkMaxSupportedMojoVersion();
     readModelData();
@@ -281,6 +284,64 @@ public abstract class ModelMojoReader<M extends MojoModel> {
       domains[col_index] = domain;
     }
     return domains;
+  }
+
+  Map<String, Map<String, int[]>> parseTargetEncodingMap(BufferedReader source) throws IOException {
+    Map<String, Map<String, int[]>> encodingMap = new HashMap<>();
+    Map<String, int[]> encodingsForColumn = null;
+    String sectionName = null;
+    try {
+      String line;
+
+      while (true) {
+        line = source.readLine();
+        if (line == null) { // EOF
+          encodingMap.put(sectionName, encodingsForColumn);
+          break;
+        }
+        line = line.trim();
+        if(sectionName == null) {
+          sectionName = matchNewSection(line);
+          encodingsForColumn = new HashMap<>();
+        } else { 
+          String matchResult = matchNewSection(line);
+          if(matchResult!= null) {
+            encodingMap.put(sectionName, encodingsForColumn);
+            encodingsForColumn = new HashMap<>();
+            sectionName = matchResult;
+            continue;
+          }
+          
+          String[] res = line.split("\\s*=\\s*", 2);
+          int[] numAndDenom = processNumeratorAndDenominator(res[1].split(" "));
+          encodingsForColumn.put(res[0], numAndDenom);
+        }
+      }
+      source.close();
+    } finally {
+      try {
+        source.close();
+      } catch (IOException e) { /* ignored */ }
+    }
+    return encodingMap;
+  }
+
+  private String matchNewSection(String line) {
+    Pattern pattern = Pattern.compile("\\[(.*?)\\]");
+    Matcher matcher = pattern.matcher(line);
+    if (matcher.find()) {
+      return matcher.group(1);
+    } else return null;
+  }
+
+  private int[] processNumeratorAndDenominator(String[] strings) {
+    int[] intArray = new int[strings.length];
+    int i = 0;
+    for (String str : strings) {
+      intArray[i] = Integer.parseInt(str);
+      i++;
+    }
+    return intArray;
   }
 
   private static class RawValue {

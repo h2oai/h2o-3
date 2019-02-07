@@ -195,6 +195,11 @@ public class MojoPipelineWriter extends AbstractMojoWriter {
     }
 
     @Override
+    public Map<String, Map<String, int[]>> targetEncodingMap() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
     public String uuid() {
       return _finalModel._uuid;
     }

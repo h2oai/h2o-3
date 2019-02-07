@@ -859,7 +859,7 @@ public class Frame extends Lockable<Frame> {
 
   public Frame remove( String[] names ) {
     for( String name : names )
-      remove(find(name)).remove();
+      remove(find(name));
     return this;
   }
 

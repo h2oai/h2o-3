@@ -1,6 +1,7 @@
 package hex.genmodel;
 
 import java.io.*;
+import java.util.Map;
 
 
 /**

@@ -613,6 +613,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   }
 
+  public static class TEComponents extends Iced<TEComponents> {
+    private int[] _components;
+    public TEComponents(int[] components) {
+      _components = components;
+    }
+
+    public int[] getComponents() {
+      return _components;
+    }
+  }
   /** Model-specific output class.  Each model sub-class contains an instance
    *  of one of these containing its "output": the pieces of the model needed
    *  for scoring.  E.g. KMeansModel has a KMeansOutput extending Model.Output
@@ -654,6 +664,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public Key _cross_validation_predictions[];
     public Key<Frame> _cross_validation_holdout_predictions_frame_id;
     public Key<Frame> _cross_validation_fold_assignment_frame_id;
+    
+    public IcedHashMap<String, Map<String, TEComponents>> _target_encoding_map; // It would be good to use Key<Frame> for values type but ModelDescriptor in h2o-genmodel doesn't have dependency on Frame
 
     // Model-specific start/end/run times
     // Each individual model's start/end/run time is reported here, not the total time to build N+1 cross-validation models, or all grid models
@@ -850,6 +862,45 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   } // Output
 
   protected String[][] scoringDomains() { return _output._domains; }
+  
+  public void addTargetEncodingMap(Map<String, Frame> encodingMap) {
+    IcedHashMap<String, Map<String, TEComponents>> transformedEncodingMap = new IcedHashMap<>();
+    for (Map.Entry<String, Frame> entry : encodingMap.entrySet()) {
+      String key = entry.getKey();
+      Frame encodingsForParticularColumn = entry.getValue();
+      IcedHashMap<String, TEComponents> table = new FrameToTETable().doAll(encodingsForParticularColumn).getResult().table;
+
+      transformedEncodingMap.put(key, table);
+    }
+    _output._target_encoding_map = transformedEncodingMap;
+  }
+
+  private static class FrameToTETable extends MRTask<FrameToTETable> {
+    private IcedHashMap<String, TEComponents> table = new IcedHashMap<>();
+    
+    public FrameToTETable() {
+    }
+
+    @Override
+    public void map(Chunk[] cs) {
+      Chunk categoricalChunk = cs[0];
+      String [] domain = categoricalChunk.vec().domain();
+      int numRowsInChunk = categoricalChunk._len;
+      for (int i = 0; i < numRowsInChunk; i++) {
+        int[] numeratorAndDenominator = new int[2]; // TODO reuse array
+        numeratorAndDenominator[0] = (int) cs[1].at8(i); //TODO what about fold column case? 
+        numeratorAndDenominator[1] = (int) cs[2].at8(i);
+        int factor = (int) categoricalChunk.at8(i);
+        String factorName = domain[factor];
+        table.put(factorName, new TEComponents(numeratorAndDenominator));
+      }
+    }
+
+    @Override
+    public void reduce(FrameToTETable mrt) {
+      table.putAll(mrt.table);
+    }
+  }
 
   public ModelMetrics addMetrics(ModelMetrics mm) { return addModelMetrics(mm); }
 
@@ -2584,6 +2635,23 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       public double[] priorClassDist() { return _output._priorClassDist; }
       @Override
       public double[] modelClassDist() { return _output._modelClassDist; }
+      @Override
+      public Map<String, Map<String, int[]>> targetEncodingMap() {
+        // Note: Having int[] as a type for value is not allowed in Output class ( it must be @Freezable for distribution).
+        // But writing Mojo to the disk does not have such a requirements. 
+        // So had to introduce `TEComponents` class to satisfy check in `IcedHashMapBase.write_impl():59line` 
+        IcedHashMap<String, Map<String, int[]>> transformedEncodingMap = new IcedHashMap<>();
+        for (Map.Entry<String, Map<String, TEComponents>> entry : _output._target_encoding_map.entrySet()) {
+          String columnName = entry.getKey();
+          Map<String, TEComponents> encodingsForParticularColumn = entry.getValue();
+          Map<String, int[]> encodingsForColumnMap = new HashMap<>();
+          for (Map.Entry<String, TEComponents> kv : encodingsForParticularColumn.entrySet()) {
+            encodingsForColumnMap.put(kv.getKey(), kv.getValue().getComponents());
+          }
+          transformedEncodingMap.put(columnName, encodingsForColumnMap);
+        }
+        return transformedEncodingMap; 
+      }
       @Override
       public String uuid() { return String.valueOf(Model.this.checksum()); }
       @Override

@@ -341,7 +341,7 @@ public class TargetEncoder {
           if (num.isNA(i) || den.isNA(i))
             encodings.setNA(i);
           else if (den.at8(i) == 0) {
-            Log.info("Denominator is zero. Imputing with _priorMean = " + _priorMean);
+            Log.info("Denominator is zero for column index = " + _encodingsIdx + ". Imputing with _priorMean = " + _priorMean);
             encodings.set(i, _priorMean);
           } else {
             double numberOfRowsInCurrentCategory = den.atd(i);
