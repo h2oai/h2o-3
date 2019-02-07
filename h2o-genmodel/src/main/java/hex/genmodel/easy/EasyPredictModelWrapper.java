@@ -535,6 +535,8 @@ public class EasyPredictModelWrapper implements Serializable {
    * @throws PredictException
    */
   public BinomialModelPrediction predictBinomial(RowData data, double offset) throws PredictException {
+    transformWithTargetEncoding(data);
+
     double[] preds = preamble(ModelCategory.Binomial, data, offset);
 
     BinomialModelPrediction p = new BinomialModelPrediction();
@@ -566,6 +568,19 @@ public class EasyPredictModelWrapper implements Serializable {
       p.contributions = predictContributions.calculateContributions(rawData);
     }
     return p;
+  }
+
+  void transformWithTargetEncoding(RowData data) {
+    Map<String, Map<String, int[]>> targetEncodingMap = getTargetEncodingMap();
+    for (Map.Entry<String, Map<String, int[]>> columnToEncodingsMap : targetEncodingMap.entrySet()) {
+      String columnName = columnToEncodingsMap.getKey();
+      String originalValue = (String) data.get(columnName); // TODO otherwise exception
+      Map<String, int[]> encodings = columnToEncodingsMap.getValue(); // Should we store encodings separately as numerator and denominator?
+      int[] correspondingNumAndDen = encodings.get(originalValue);
+      double calculatedFrequency = (double) correspondingNumAndDen[0] / correspondingNumAndDen[1];
+//      data.remove(columnName); // TODO should we remove previous entries?
+      data.put(columnName+"_te", calculatedFrequency);
+    }
   }
 
   @SuppressWarnings("unused") // not used in this class directly, kept for backwards compatibility
@@ -772,6 +787,10 @@ public class EasyPredictModelWrapper implements Serializable {
    */
   public String[] getResponseDomainValues() {
     return m.getDomainValues(m.getResponseIdx());
+  }
+  
+  public Map<String, Map<String, int[]>> getTargetEncodingMap() {
+    return m.getTargetEncodingMap();
   }
 
   /**
