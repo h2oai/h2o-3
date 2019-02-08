@@ -22,6 +22,7 @@ import java.util.Random;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class KMeansTest extends TestUtil {
   public final double threshold = 1e-6;
@@ -624,6 +625,39 @@ public class KMeansTest extends TestUtil {
         kmeans.deleteCrossValidationModels();
         kmeans.delete();
       }
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testTimeColumnPubdev6264() {
+    try {
+      Scope.enter();
+      Frame f = Scope.track(parse_test_file("smalldata/chicago/chicagoAllWeather.csv"));
+
+      assertEquals("Time", f.vec("date").get_type_str());
+
+      KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
+      parms._train = f._key;
+      parms._seed = 0xcaf;
+      parms._k = 3;
+
+      KMeans job = new KMeans(parms);
+      KMeansModel kmeans = (KMeansModel) Scope.track_generic(job.trainModel().get());
+      checkConsistency(kmeans);
+
+      assertEquals("date", kmeans._output._names[0]);
+      assertEquals(-1, kmeans._output._mode[0]); // time column is not treated as a categorical (PUBDEV-6264)
+
+      double minTime = f.vec("date").min();
+      double maxTime = f.vec("date").max();
+
+      assertEquals(3, kmeans._output._centers_raw.length);
+      for (double[] center : kmeans._output._centers_raw) {
+        assertTrue(center[0] >= minTime);
+        assertTrue(center[0] <= maxTime);
+      }
+    } finally {
       Scope.exit();
     }
   }
