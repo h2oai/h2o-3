@@ -16,8 +16,7 @@ from .metrics_base import H2ODimReductionModelMetrics
 from .metrics_base import H2OMultinomialModelMetrics
 from .metrics_base import H2OOrdinalModelMetrics
 from .metrics_base import H2ORegressionModelMetrics
-from .mojo_delegating import MojoDelegatingModel
 
 __all__ = ["H2OAutoEncoderModel", "H2OBinomialModel", "H2OClusteringModel",
            "ConfusionMatrix", "H2ODimReductionModel", "MetricsBase", "ModelBase",
-           "H2OModelFuture", "MojoDelegatingModel"]
+           "H2OModelFuture"]

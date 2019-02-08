@@ -50,7 +50,10 @@ hex.schemas.KMeansModelV3$KMeansModelOutputV3
 hex.schemas.KMeansV3
 hex.schemas.KMeansV3$KMeansParametersV3
 hex.schemas.MakeGLMModelV3
-hex.mojo.api.MojoDelegatingModelV3
+hex.schemas.MojoDelegatingV3
+hex.schemas.MojoDelegatingV3$MojoDelegatingParametersV3
+hex.schemas.MojoDelegatingModelV3
+hex.schemas.MojoDelegatingModelV3$MojoDelegatingModelOutputV3
 hex.schemas.NaiveBayesModelV3
 hex.schemas.NaiveBayesModelV3$NaiveBayesModelOutputV3
 hex.schemas.NaiveBayesV3

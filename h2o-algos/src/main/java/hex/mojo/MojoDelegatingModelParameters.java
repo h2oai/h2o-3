@@ -5,17 +5,17 @@ import water.fvec.ByteVec;
 
 public class MojoDelegatingModelParameters extends Model.Parameters {
     
-    public ByteVec _mojoData;
+    public String _mojo_key;
     
     @Override
     public String algoName() {
-        return "mojodelegating";
+        return "MojoDelegating";
     }
 
     @Override
     public String fullName() {
         // TODO: Set the name interactively based on the algorithm behind the MOJO
-        return "Imported Mojo Model";
+        return "Mojo Delegating Model";
     }
 
     @Override

@@ -1,7 +1,6 @@
 import h2o
 import tempfile
-from h2o.estimators import H2OGradientBoostingEstimator
-from h2o.model import mojo_delegating
+from h2o.estimators import H2OGradientBoostingEstimator, H2OMojoDelegatingEstimator
 from tests import pyunit_utils
 
 
@@ -14,11 +13,13 @@ def mojo_model_test():
 
     filename = tempfile.mkdtemp()
     filename = gbm.download_mojo(filename)
-    
-    response = mojo_delegating.MojoDelegatingModel(filename)
-    print(response.response)
-    
 
+    model = H2OMojoDelegatingEstimator(filename)
+    model.train()
+    predictions = model.predict(airlines)
+    assert predictions is not None
+    assert predictions.nrows == 24421
+    
 if __name__ == "__main__":
     pyunit_utils.standalone_test(mojo_model_test)
 else:

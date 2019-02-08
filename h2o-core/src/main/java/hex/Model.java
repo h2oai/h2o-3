@@ -751,9 +751,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     public boolean isSupervised() { return _isSupervised; }
     /** The name of the response column (which is always the last column). */
-    protected final boolean _hasOffset; // weights and offset are kept at designated position in the names array
-    protected final boolean _hasWeights;// only need to know if we have them
-    protected final boolean _hasFold;// only need to know if we have them
+    protected boolean _hasOffset; // weights and offset are kept at designated position in the names array
+    protected boolean _hasWeights;// only need to know if we have them
+    protected boolean _hasFold;// only need to know if we have them
     public boolean hasOffset  () { return _hasOffset;}
     public boolean hasWeights () { return _hasWeights;}
     public boolean hasFold () { return _hasFold;}
