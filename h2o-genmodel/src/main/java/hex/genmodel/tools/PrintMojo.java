@@ -46,7 +46,7 @@ public class PrintMojo {
 
   private static void usage() {
     System.out.println("Emit a human-consumable graph of a model for use with dot (graphviz).");
-    System.out.println("The currently supported model types are DRF, GBM and XGBoost.");
+    System.out.println("The currently supported model types are DRF, GBM, XGBoost and IRF.");
     System.out.println("");
     System.out.println("Usage:  java [...java args...] hex.genmodel.tools.PrintMojo [--tree n] [--levels n] [--title sss] [-o outputFileName]");
     System.out.println("");

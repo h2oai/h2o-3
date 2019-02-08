@@ -14,8 +14,8 @@ public class IsolationForestMojoReader extends SharedTreeMojoReader<IsolationFor
   @Override
   protected void readModelData() throws IOException {
     super.readModelData();
-    _model._min_path_length = readkv("min_path_length", 0);
-    _model._max_path_length = readkv("max_path_length", 0);;
+    _model._min_path_length = readkv("min_path_length", 0L);
+    _model._max_path_length = readkv("max_path_length", 0L);
   }
 
   @Override

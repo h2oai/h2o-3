@@ -5,8 +5,8 @@ import hex.genmodel.algos.tree.SharedTreeMojoModel;
 
 public final class IsolationForestMojoModel extends SharedTreeMojoModel {
 
-  int _min_path_length;
-  int _max_path_length;
+  long _min_path_length;
+  long _max_path_length;
 
   public IsolationForestMojoModel(String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
