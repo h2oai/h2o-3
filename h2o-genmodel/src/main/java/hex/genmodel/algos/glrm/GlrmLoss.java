@@ -181,7 +181,11 @@ public enum GlrmLoss {
       return grad;
     }
     @Override public int mimpute(double[] u) {
-      return ArrayUtils.maxIndex(u);
+      return ArrayUtils.maxIndex(u, u.length);
+    }
+
+    @Override public int mimpute(double[] u, int len) {
+      return ArrayUtils.maxIndex(u, len);
     }
   },
 
@@ -211,10 +215,14 @@ public enum GlrmLoss {
       return grad;
     }
     @Override public int mimpute(double[] u) {
-      double sum = u.length - 1;
+      return mimpute(u, u.length);
+    }
+
+    @Override public int mimpute(double[] u, int len) {
+      double sum = len - 1;
       double best_loss = sum;
       int best_a = 0;
-      for (int a = 1; a < u.length; a++) {
+      for (int a = 1; a < len; a++) {
         sum -= Math.min(1, u[a - 1]);
         if (sum < best_loss) {
           best_loss = sum;
@@ -260,6 +268,8 @@ public enum GlrmLoss {
 
   /** \argmin_a L(u, a): Data imputation for categorical values {0, 1, 2, ...} */
   public int mimpute(double[] u) { throw new UnsupportedOperationException(); }
+
+  public int mimpute(double[] u, int len) { throw new UnsupportedOperationException(); }
 
   /** Initialize additional parameters on the loss function. Currently used by Periodic class only. */
   public void setParameters(int p) { throw new UnsupportedOperationException(); }

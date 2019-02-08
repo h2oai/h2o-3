@@ -324,6 +324,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     final boolean _save_imputed;  // Save imputed data into new vecs?
     final boolean _reverse_transform;   // Reconstruct original training data by reversing transform?
     ModelMetricsGLRM.GlrmModelMetricsBuilder _mb;
+    public double[] _tprod;
 
     GLRMScore( int ncolA, int ncolX, boolean save_imputed ) {
       this(ncolA, ncolX, save_imputed, _parms._impute_original);
@@ -333,9 +334,12 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
       _ncolA = ncolA; _ncolX = ncolX;
       _save_imputed = save_imputed;
       _reverse_transform = reverse_transform;
+
     }
 
     @Override public void map(Chunk[] chks) {
+      if (_output._ncats>0)  // each thread will have its own _tprod
+        _tprod = new double[_output._archetypes_raw._numLevels[0]];
       float[] atmp = new float[_ncolA];
       double[] xtmp = new double[_ncolX];
       double[] preds = new double[_ncolA];
@@ -382,7 +386,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
       return GlrmMojoModel.impute_data(tmp, preds, _output._nnums, _output._ncats, _output._permutation,
               _reverse_transform, _output._normMul, _output._normSub, _output._lossFunc,
               _output._archetypes_raw._transposed, _output._archetypes_raw._archetypes, _output._catOffsets,
-              _output._archetypes_raw._numLevels);
+              _output._archetypes_raw._numLevels, _tprod);
     }
   }
 

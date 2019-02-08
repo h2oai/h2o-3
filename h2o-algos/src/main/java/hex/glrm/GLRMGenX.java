@@ -2,9 +2,9 @@ package hex.glrm;
 
 import hex.genmodel.algos.glrm.GlrmMojoModel;
 import water.MRTask;
-import water.MemoryManager;
 import water.fvec.Chunk;
 import water.fvec.NewChunk;
+import water.MemoryManager;
 
 /**
  * GLRMGenX will generate the coefficients (X matrix) of a GLRM model given the archetype
@@ -20,9 +20,8 @@ public class GLRMGenX  extends MRTask<GLRMGenX> {
     _m._parms = m._parms;
     _k = k;
   }
-
-  @Override
-  protected void setupLocal() {
+  
+  protected void instantiateMojo() {
     _gMojoModel = new GlrmMojoModel(_m._output._names, _m._output._domains, null);
     _gMojoModel._allAlphas = GlrmMojoModel.initializeAlphas(_gMojoModel._numAlphaFactors);  // set _allAlphas array
 
@@ -44,17 +43,18 @@ public class GLRMGenX  extends MRTask<GLRMGenX> {
     _gMojoModel._permutation = _m._output._permutation;
     _gMojoModel._reverse_transform = _m._parms._impute_original;
     _gMojoModel._transposed = _m._output._archetypes_raw._transposed;
-
     // loss functions
     _gMojoModel._losses = _m._output._lossFunc;
-
     // archetypes
     _gMojoModel._numLevels = arch._numLevels;
     _gMojoModel._catOffsets = arch._catOffsets;
     _gMojoModel._archetypes = arch.getY(false);
+    // allocate arrays
+    _gMojoModel.allocateMemory();
   }
 
   public void map(Chunk[] chks, NewChunk[] preds) {
+    instantiateMojo();
     int featureLen = chks.length;
     long rowStart = chks[0].start();
     long baseSeed = _gMojoModel._seed+rowStart;
@@ -65,7 +65,6 @@ public class GLRMGenX  extends MRTask<GLRMGenX> {
       for (int col = 0; col < featureLen; col++) {
         rowdata[col] = chks[col].atd(rid);
       }
-
       _gMojoModel.score0(rowdata, pdimensions, baseSeed+rid); // make prediction
       for (int c=0; c<_k; c++) {
         preds[c].addNum(pdimensions[c]);

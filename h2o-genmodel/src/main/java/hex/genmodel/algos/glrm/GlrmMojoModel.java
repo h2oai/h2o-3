@@ -3,6 +3,7 @@ package hex.genmodel.algos.glrm;
 import hex.ModelCategory;
 import hex.genmodel.MojoModel;
 
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Random;
 
@@ -32,6 +33,13 @@ public class GlrmMojoModel extends MojoModel {
   public boolean _reverse_transform;
   public double _accuracyEps = 1e-10; // reconstruction accuracy A=X*Y
   public int _iterNumber = 100; // maximum number of iterations to perform X update.
+  public double[] _grad;  // used in gradientL 
+  public double[] _tgrad; // used in calling glrmloss
+  public double[] _txy;
+  public double[] _tx;
+  public double[] _tu;
+  public double[] _ta;
+  public double[] _tbest;
 
   // We don't really care about regularization of Y since it is changed during scoring
 
@@ -68,6 +76,19 @@ public class GlrmMojoModel extends MojoModel {
 
   public GlrmMojoModel(String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
+    allocateMemory();
+  }
+  
+  public void allocateMemory() {
+    _grad = new double[_ncolX];
+    _tx = new double[_ncolX];
+    _tu = new double[_ncolX];
+    _ta = new double[_ncolA];
+    _tbest = new double[_ncolX];
+    if (_ncats > 0) {
+      _tgrad = new double[_numLevels[0]]; // stores the highest cat levels
+      _txy = new double[_numLevels[0]];
+    }
   }
 
   @Override public int getPredsSize(ModelCategory mc) {
@@ -95,8 +116,9 @@ public class GlrmMojoModel extends MojoModel {
     double[] a = getRowData(row);
 
     // Step 1: initialize X  (for now do Random initialization only)
-    double[] x = new double[_ncolX];
-    double[] u = new double[_ncolX];
+    double[] x = _tx;
+    double[] u = _tu;
+
     Random random = new Random(seedValue);  // change the random seed everytime it is used
     for (int i = 0; i < _ncolX; i++)  // randomly generate initial x coefficients
       x[i] = random.nextGaussian();
@@ -112,7 +134,6 @@ public class GlrmMojoModel extends MojoModel {
       // Compute the gradient of the loss function
       double[] grad = gradientL(x, a);
       // Try to make a step of size alpha, until we can achieve improvement in the objective.
-
       obj = applyBestAlpha(u, x, grad, a, oldObj, random);
       double obj_improvement = 1 - obj/oldObj;
       if ((obj_improvement < 0) || (obj_improvement < _accuracyEps))
@@ -126,20 +147,21 @@ public class GlrmMojoModel extends MojoModel {
   }
 
   public double[] getRowData(double[] row) {
-    double[] a = new double[_ncolA];
+    double[] a = _ta;
 
     for (int i=0; i < _ncats; i++) {
       double temp = row[_permutation[i]];
       a[i] = (temp>=_numLevels[i])?Double.NaN:temp; // set unseen levels to NaN
     }
-    for (int i = _ncats; i < _ncolA; i++)
+    for (int i = _ncats; i < _ncolA; i++) {
       a[i] = row[_permutation[i]];
+    }
 
     return a;
   }
 
   /***
-   * This method will try a bunch of arbitray alpha values and pick the best to return which get the best obj
+   * This method will try a bunch of arbitrary alpha values and pick the best to return which get the best obj
    * improvement.
    *
    * @param u
@@ -151,7 +173,8 @@ public class GlrmMojoModel extends MojoModel {
    * @return
    */
   public double applyBestAlpha(double[] u, double[] x, double[] grad, double[] a, double oldObj, Random random) {
-    double[] bestX = new double[x.length];
+    double[] bestX = _tbest;
+    Arrays.fill(bestX, 0.0);
     double lowestObj = Double.MAX_VALUE;
 
     if (oldObj == 0) { // done optimization, loss is now zero.
@@ -194,13 +217,14 @@ public class GlrmMojoModel extends MojoModel {
   // impute data from x and archetypes
   public static double[] impute_data(double[] xfactor, double[] preds, int nnums, int ncats, int[] permutation,
                                      boolean reverse_transform, double[] normMul, double[] normSub, GlrmLoss[] losses,
-                                     boolean transposed, double[][] archetypes_raw, int[] catOffsets, int[] numLevels) {
+                                     boolean transposed, double[][] archetypes_raw, int[] catOffsets, int[] numLevels, 
+                                     double[] prod) {
     assert preds.length == nnums + ncats;
 
     // Categorical columns
     for (int d = 0; d <ncats; d++) {
-      double[] xyblock = lmulCatBlock(xfactor,d, numLevels, transposed, archetypes_raw, catOffsets);
-      preds[permutation[d]] = losses[d].mimpute(xyblock);
+      double[] xyblock = lmulCatBlock(xfactor,d, numLevels, transposed, archetypes_raw, catOffsets, prod);
+      preds[permutation[d]] = losses[d].mimpute(xyblock, numLevels[d]);
     }
 
     // Numeric columns
@@ -244,12 +268,13 @@ public class GlrmMojoModel extends MojoModel {
   }
 
   // Vector-matrix product x * Y_j where Y_j is block of Y corresponding to categorical column j
-  public static double[] lmulCatBlock(double[] x, int j, int[] numLevels, boolean transposed, double[][] archetypes_raw, int[] catOffsets) {
+  public static double[] lmulCatBlock(double[] x, int j, int[] numLevels, boolean transposed, double[][] archetypes_raw, int[] catOffsets, double[] prod) {
     int catColJLevel = numLevels[j];
     assert catColJLevel != 0 : "Number of levels in categorical column cannot be zero";
     assert x != null && x.length == rank(transposed, archetypes_raw) : "x must be of length " +
             rank(transposed, archetypes_raw);
-    double[] prod = new double[catColJLevel];
+   // double[] prod = new double[catColJLevel];
+    Arrays.fill(prod, 0); // need this one to stay
 
     if (transposed) {
       for (int level = 0; level < catColJLevel; level++) {
@@ -278,8 +303,10 @@ public class GlrmMojoModel extends MojoModel {
    */
   private double[] gradientL(double[] x, double[] a) {
     // Prepate output row
-    double[] grad = new double[_ncolX];
-
+    //double[] grad = new double[_ncolX];
+    double[] grad = _grad;
+    Arrays.fill(grad, 0.0);  // prepare new grad, need to stay
+    
     // Categorical columns
     int cat_offset = 0;
     for (int j = 0; j < _ncats; j++) {
@@ -287,7 +314,9 @@ public class GlrmMojoModel extends MojoModel {
       int n_levels = _numLevels[j];
 
       // Calculate xy = x * Y_j where Y_j is sub-matrix corresponding to categorical col j
-      double[] xy = new double[n_levels];
+      double[] xy = _txy;
+      Arrays.fill(xy, 0); // need to stay
+    //  double[] xy = new double[n_levels];
       for (int level = 0; level < n_levels; level++) {
         for (int k = 0; k < _ncolX; k++) {
           xy[level] += x[k] * _archetypes[k][level + cat_offset];
@@ -295,7 +324,7 @@ public class GlrmMojoModel extends MojoModel {
       }
 
       // Gradient wrt x is matrix product \grad L_j(x * Y_j, A_j) * Y_j'
-      double[] gradL = _losses[j].mlgrad(xy, (int) a[j]);
+      double[] gradL = _losses[j].mlgrad(xy, (int) a[j], _tgrad, n_levels);
       for (int k = 0; k < _ncolX; k++) {
         for (int c = 0; c < n_levels; c++)
           grad[k] += gradL[c] * _archetypes[k][c + cat_offset];
@@ -329,7 +358,9 @@ public class GlrmMojoModel extends MojoModel {
     for (int j = 0; j < _ncats; j++) {
       if (Double.isNaN(a[j])) continue;   // Skip missing observations in row
       int n_levels = _numLevels[j];
-      double[] xy = new double[n_levels];
+     // double[] xy = new double[n_levels];
+      double[] xy = _txy;
+      Arrays.fill(xy, 0.0); // need to stay
       for (int level = 0; level < n_levels; level++) {
         for (int k = 0; k < _ncolX; k++) {
           xy[level] += x[k] * _archetypes[k][level + cat_offset];

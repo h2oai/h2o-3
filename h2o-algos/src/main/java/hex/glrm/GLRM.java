@@ -1274,7 +1274,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
     }
 
     // Extract Y_j the k by d_j block of Y corresponding to categorical column j
-    // Note: d_j = number of levels in categorical column j
+    // Note: d_j = number of levels in categorical column j, not used often, don't bother to optimize further
     protected final double[][] getCatBlock(int j) {
       int catColJLevel = _numLevels[j];
       assert catColJLevel != 0 : "Number of levels in categorical column cannot be zero";
@@ -1294,11 +1294,6 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         }
       }
       return block;
-    }
-
-    // Vector-matrix product x * Y_j where Y_j is block of Y corresponding to categorical column j
-    protected final double[] lmulCatBlock(double[] x, int j) {
-      return GlrmMojoModel.lmulCatBlock(x, j, _numLevels, _transposed, _archetypes, _catOffsets);
     }
   }
 
@@ -1464,6 +1459,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       double[] a = new double[_ncolA];
       double[] tgrad = new double[_ncolX];  // new gradient calculation with reduced memory allocation
       double[] u = new double[_ncolX];
+      double[] xnew = new double[_ncolX];
       Chunk chkweight = _weightId >= 0 ? cs[_weightId] : new C0DChunk(1, cs[0]._len);
       Random rand = RandomUtils.getRNG(0);
       _xreg = 0;
@@ -1476,7 +1472,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
 
       for (int row = 0; row < cs[0]._len; row++) {
         rand.setSeed(_parms._seed + cs[0].start() + row); //global row ID determines the seed
-        Arrays.fill(tgrad, 0.0);  // temporary gradient for comparison
+        Arrays.fill(tgrad, 0.0);  // temporary gradient for comparison, need to stay
 
         // Additional user-specified weight on loss for this row
         double cweight = chkweight.atd(row);
@@ -1488,7 +1484,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
           a[j] = cs[j].atd(row);
           if (Double.isNaN(a[j])) continue;   // Skip missing observations in row
           int catColJLevel = _yt._numLevels[j];
-          Arrays.fill(xy, 0, catColJLevel, 0);  // reset xy before accumulate sum
+          Arrays.fill(xy, 0, catColJLevel, 0);  // reset xy before accumulate sum, need to stay
 
           // Calculate x_i * Y_j where Y_j is sub-matrix corresponding to categorical col j
           for (int level = 0; level < catColJLevel ; level++) {
@@ -1541,7 +1537,8 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
           double xold = chk_xold(cs, k).atd(row);   // Old value of x_i
           u[k] = xold - _alpha * tgrad[k];
         }
-        double[] xnew = _parms._regularization_x.rproxgrad(u, _alpha*_parms._gamma_x, rand);
+        Arrays.fill(xnew, 0.0); // need to stay
+        xnew = _parms._regularization_x.rproxgrad(u, xnew, _alpha*_parms._gamma_x, rand);
         _xreg += _parms._regularization_x.regularize(xnew);
         for (int k = 0; k < _ncolX; k++)
           chk_xnew(cs, k).set(row,xnew[k]);
@@ -1631,7 +1628,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
             if (Double.isNaN(a)) continue;   // Skip missing observations in column
 
             // Calculate x_i * Y_j where Y_j is sub-matrix corresponding to categorical col j
-            Arrays.fill(xy, 0.0);
+            Arrays.fill(xy, 0.0); // need to stay
             for (int level = 0; level < catColJLevel; level++) {  // finish dealing with one enum
               xRow = level+_ytold._catOffsets[tARow]-xChunkRowStart;  // equivalent row index into X chunk
 
@@ -1789,6 +1786,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       int tAChunkRowStart = (int) tAChunks[0].start();   // first row index of T(A) Frame
       int tAChunkSize = (int) tAChunks[0]._len;   // number of rows in T(A) Frame
       int xRow = 0;   // store row index of X chunk
+      double[] xnew = new double[_ncolX];
 
       if (_yt._numLevels[tAChunkRowStart] > 0) {
         tgradEnum = new double[_yt._numLevels[tAChunkRowStart]][_ncolX];
@@ -1820,11 +1818,9 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         }
 
         rand.setSeed(_parms._seed + cs[0].start() + row); //global row ID determines the seed
-        Arrays.fill(tgrad, 0.0);  // temporary gradient for comparison
-
         if (tArow < _ncats) {   // dealing with a row of T(A) that is enum
           int catColJLevel = _yt._numLevels[tArow];     // initialize tgradEnum to all zeros
-          for (int level=0; level<tgradEnum.length; level++) {
+          for (int level=0; level<tgradEnum.length; level++) { // need to stay
             Arrays.fill(tgradEnum[level], 0, _parms._k, 0);
           }
 
@@ -1882,7 +1878,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
                 int tempXStart = (int) xChunksN[0].start();
                 int tempXSize = (int) xChunksN[0]._len;
                 for (int rowN = xRow; rowN <= endXRow; rowN++) {
-                  Arrays.fill(tgradEnum[levelSeen], 0, _ncolX, 0); // time to reset tgrad with all zeros
+                  //Arrays.fill(tgradEnum[levelSeen], 0, _ncolX, 0); // time to reset tgrad with all zeros
                   int relRowX = rowN-tempXStart;
 
                   if (relRowX > tempXSize) {
@@ -1912,7 +1908,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
             if (Double.isNaN(a)) {
               continue;   // Skip missing observations in row and adjust the corresponding relative index into X chunk
             }
-            Arrays.fill(xy, 0, catColJLevel, 0);  // reset xy before accumulate sum
+            Arrays.fill(xy, 0, catColJLevel, 0);  // reset xy before accumulate sum, need to stay
 
             // obtained the matrix of X to form XY for one element of T(A)
             for (int level=0; level < catColJLevel; level++) {
@@ -1937,7 +1933,8 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
               uEnum[level][k] = xMat[level][k] - _alpha * tgradEnum[level][k];
             }
             // calculate how much update is due to regularization term
-            double[] xnew = _parms._regularization_y.rproxgrad(uEnum[level], _alpha*_parms._gamma_y, rand);
+            Arrays.fill(xnew, 0.0); // need to stay
+            xnew = _parms._regularization_y.rproxgrad(uEnum[level], xnew,_alpha*_parms._gamma_y, rand);
             _yreg += _parms._regularization_y.regularize(xnew);
             // need to update X chunks with new X values, it is of size catColJLevel by k
             // checking which x chunks contains the x elements that needed to be updated.
@@ -1948,6 +1945,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
             }
           }
         } else {  // dealing with numerical columns, separate from categoricals
+          Arrays.fill(tgrad, 0.0);  // temporary gradient for comparison, need to stay
           rowX = findExpColIndex(tArow, _ncats, _yt) - xRowStart;  // translate to relative row index of x chunk
           int numRow = tArow - _ncats;  // index into numerical rows of T(A) without enum columns expansion
           for (int j=0; j<tAColNum; j++) {
@@ -1973,7 +1971,8 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
           }
 
           // calculate how much update is due to regularization term
-          double[] xnew = _parms._regularization_y.rproxgrad(u, _alpha*_parms._gamma_y, rand);
+          Arrays.fill(xnew, 0.0); // need to stay
+          xnew = _parms._regularization_y.rproxgrad(u, xnew,_alpha*_parms._gamma_y, rand);
           _yreg += _parms._regularization_y.regularize(xnew);
 
           for (int k=0; k<_ncolX; k++)  {
@@ -2050,7 +2049,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
           assert !Double.isNaN(cweight) : "User-specified weight cannot be NaN";
 
           // Calculate x_i * Y_j where Y_j is sub-matrix corresponding to categorical col j
-          Arrays.fill(xy, 0.0);
+          Arrays.fill(xy, 0.0);  // need to stay
           for (int level = 0; level < catColJLevel; level++) {
             for (int k = 0; k < _ncolX; k++) {
               xy[level] += chk_xnew(cs, k).atd(row) * _ytold.getCat(j,level,k);
@@ -2196,7 +2195,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
               if (Double.isNaN(a)) continue;
               ;
 
-              Arrays.fill(xy, 0, catRowLevel, 0);   // reset before next accumulated sum
+              Arrays.fill(xy, 0, catRowLevel, 0);   // reset before next accumulated sum, need to stay
 
               for (int level = 0; level < catRowLevel; level++) { // one element of T(A) composed of several of XY
                 xRow = level + _yt._catOffsets[tARow] - xChunkRowStart; // relative row
@@ -2494,7 +2493,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       double a = cs[colInd].atd(row);
       if (Double.isNaN(a)) return 0.0;
       int catColJLevel = _yt._numLevels[colInd];
-      Arrays.fill(xy, 0, catColJLevel, 0);  // reset before next accumulation sum
+      Arrays.fill(xy, 0, catColJLevel, 0);  // reset before next accumulation sum, need to stay
 
       // Calculate x_i * Y_j where Y_j is sub-matrix corresponding to categorical col j
       for (int level = 0; level < catColJLevel; level++) {  // level index into extra columns due to categoricals.
@@ -2512,7 +2511,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
   }
 
   // Solves XD = AY' for X where A is m x n, Y is k x n, D is k x k, and m >> n > k
-  // Resulting matrix X = (AY')D^(-1) will have dimensions m x k
+  // Resulting matrix X = (AY')D^(-1) will have dimensions m x k.  Used in initialization only, no need to optimize.
   private static class CholMulTask extends MRTask<CholMulTask> {
     final Archetypes _yt;     // _yt = Y' (transpose of Y)
     final int _ncolA;         // Number of cols in training frame

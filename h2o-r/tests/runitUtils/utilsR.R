@@ -763,7 +763,8 @@ random_dataset <-
            min_row = 15000,
            max_col = 100,
            min_col = 20,
-           testrow = 1000) {
+           testrow = 1000,
+           seed=12345) {
     num_rows <- round(runif(1, min_row, max_row))
     num_cols <- round(runif(1, min_col, max_col))
     if (response_type == 'regression') {
@@ -795,7 +796,8 @@ random_dataset <-
         time_fraction = fractions[4],
         string_fraction = 0,
         response_factors = response_num,
-        missing_fraction = runif(1, 0, 0.05)
+        missing_fraction = runif(1, 0, 0.05),
+        seed=seed
       )
 
     return(random_frame)

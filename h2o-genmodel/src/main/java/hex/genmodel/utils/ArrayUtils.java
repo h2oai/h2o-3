@@ -63,8 +63,12 @@ public class ArrayUtils {
   }
 
   public static int maxIndex(double[] from) {
+    return maxIndex(from, from.length);
+  }
+
+  public static int maxIndex(double[] from, int len) {
     int result = 0;
-    for (int i = 1; i < from.length; ++i)
+    for (int i = 1; i < len; ++i)
       if (from[i] > from[result]) result = i;
     return result;
   }

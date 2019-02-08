@@ -233,6 +233,9 @@ public class EasyPredictModelWrapper implements Serializable {
    */
   public EasyPredictModelWrapper(Config config) {
     m = config.getModel();
+    if (m instanceof GlrmMojoModel)
+      ((GlrmMojoModel) m).allocateMemory();
+    
     // Ensure an error consumer is always instantiated to avoid missing null-check errors.
     errorConsumer = config.getErrorConsumer() == null ? new VoidErrorConsumer() : config.getErrorConsumer();
 
@@ -414,12 +417,20 @@ public class EasyPredictModelWrapper implements Serializable {
 
     DimReductionModelPrediction p = new DimReductionModelPrediction();
     p.dimensions = preds;
-    if (m instanceof GlrmMojoModel && ((GlrmMojoModel) m)._archetypes_raw != null && this.enableGLRMReconstruct)  // only for verion 1.10 or higher
+    if (m instanceof GlrmMojoModel && ((GlrmMojoModel) m)._archetypes_raw != null && this.enableGLRMReconstruct) { // only for verion 1.10 or higher
+      GlrmMojoModel tmodel = (GlrmMojoModel) m;
+      double[] prod;
+      if (tmodel._ncats > 0) {
+        prod = new double[tmodel._numLevels[0]];
+      } else 
+        prod = new double[0];
+      
       p.reconstructed = ((GlrmMojoModel) m).impute_data(preds, new double[m.nfeatures()], ((GlrmMojoModel) m)._nnums,
               ((GlrmMojoModel) m)._ncats, ((GlrmMojoModel) m)._permutation, ((GlrmMojoModel) m)._reverse_transform,
               ((GlrmMojoModel) m)._normMul, ((GlrmMojoModel) m)._normSub, ((GlrmMojoModel) m)._losses,
               ((GlrmMojoModel) m)._transposed, ((GlrmMojoModel) m)._archetypes_raw, ((GlrmMojoModel) m)._catOffsets,
-              ((GlrmMojoModel) m)._numLevels);
+              ((GlrmMojoModel) m)._numLevels, prod);
+    }
     return p;
   }
   /**
