@@ -1,14 +1,12 @@
 package water.hadoop;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.Socket;
 
 /**
  * Simple class to help serialize messages from the Mapper to the Driver.
  */
 class DriverToMapperMessage extends AbstractMessage {
+  
   public static final char TYPE_FETCH_FLATFILE_RESPONSE = 23;
 
   private char _type = TYPE_UNKNOWN;

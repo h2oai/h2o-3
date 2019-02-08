@@ -1,18 +1,23 @@
 package water.hadoop;
 
-import java.io.*;
-import java.net.*;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Properties;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.Mapper;
 import water.H2O;
-
 import water.util.Log;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
 
 
 /**
@@ -20,181 +25,21 @@ import water.util.Log;
  * mapper	mapred.local.dir=/tmp/hadoop-tomk/mapred/local/taskTracker/tomk/jobcache/job_local1117903517_0001/attempt_local1117903517_0001_m_000000_0
  */
 public class h2omapper extends Mapper<Text, Text, Text, Text> {
-  final static public String H2O_DRIVER_IP_KEY = "h2o.driver.ip";
-  final static public String H2O_DRIVER_PORT_KEY = "h2o.driver.port";
 
-  final static public String H2O_MAPPER_ARGS_BASE = "h2o.mapper.args.";
-  final static public String H2O_MAPPER_ARGS_LENGTH = "h2o.mapper.args.length";
+  public static final String H2O_DRIVER_IP_KEY = "h2o.driver.ip";
+  public static final String H2O_DRIVER_PORT_KEY = "h2o.driver.port";
 
-  final static public String H2O_MAPPER_CONF_ARG_BASE = "h2o.mapper.conf.arg.";
-  final static public String H2O_MAPPER_CONF_BASENAME_BASE = "h2o.mapper.conf.basename.";
-  final static public String H2O_MAPPER_CONF_PAYLOAD_BASE = "h2o.mapper.conf.payload.";
-  final static public String H2O_MAPPER_CONF_LENGTH = "h2o.mapper.conf.length";
+  public static final String H2O_AUTH_PRINCIPAL = "h2o.auth.principal";
+  public static final String H2O_HIVE_HOST = "h2o.hive.host";
+  public static final String H2O_HIVE_PRINCIPAL = "h2o.hive.principal";
+  
+  public static final String H2O_MAPPER_ARGS_BASE = "h2o.mapper.args.";
+  public static final String H2O_MAPPER_ARGS_LENGTH = "h2o.mapper.args.length";
 
-  static EmbeddedH2OConfig _embeddedH2OConfig;
-
-  private static class EmbeddedH2OConfig extends water.init.AbstractEmbeddedH2OConfig {
-    volatile String _driverCallbackIp;
-    volatile int _driverCallbackPort = -1;
-    volatile int _mapperCallbackPort = -1;
-    volatile String _embeddedWebServerIp = "(Unknown)";
-    volatile int _embeddedWebServerPort = -1;
-
-    void setDriverCallbackIp(String value) {
-      _driverCallbackIp = value;
-    }
-
-    void setDriverCallbackPort(int value) {
-      _driverCallbackPort = value;
-    }
-
-    void setMapperCallbackPort(int value) {
-      _mapperCallbackPort = value;
-    }
-
-    private class BackgroundWriterThread extends Thread {
-      MapperToDriverMessage _m;
-
-      void setMessage (MapperToDriverMessage value) {
-        _m = value;
-      }
-
-      public void run() {
-        try {
-          Socket s = new Socket(_m.getDriverCallbackIp(), _m.getDriverCallbackPort());
-          _m.write(s);
-          s.close();
-        }
-        catch (java.net.ConnectException e) {
-          System.out.println("EmbeddedH2OConfig: BackgroundWriterThread could not connect to driver at " + _driverCallbackIp + ":" + _driverCallbackPort);
-          System.out.println("(This is normal when the driver disowns the hadoop job and exits.)");
-        }
-        catch (Exception e) {
-          System.out.println("EmbeddedH2OConfig: BackgroundWriterThread caught an Exception");
-          e.printStackTrace();
-        }
-      }
-    }
-
-    @Override
-    public void notifyAboutEmbeddedWebServerIpPort (InetAddress ip, int port) {
-      _embeddedWebServerIp = ip.getHostAddress();
-      _embeddedWebServerPort = port;
-
-      try {
-        MapperToDriverMessage msg = new MapperToDriverMessage();
-        msg.setDriverCallbackIpPort(_driverCallbackIp, _driverCallbackPort);
-        msg.setMessageEmbeddedWebServerIpPort(ip.getHostAddress(), port);
-        BackgroundWriterThread bwt = new BackgroundWriterThread();
-        System.out.printf("EmbeddedH2OConfig: notifyAboutEmbeddedWebServerIpPort called (%s, %d)\n", ip.getHostAddress(), port);
-        bwt.setMessage(msg);
-        bwt.start();
-      }
-      catch (Exception e) {
-        System.out.println("EmbeddedH2OConfig: notifyAboutEmbeddedWebServerIpPort caught an Exception");
-        e.printStackTrace();
-      }
-    }
-
-    @Override
-    public boolean providesFlatfile() {
-      return true;
-    }
-
-    @Override
-    public String fetchFlatfile() throws Exception {
-      System.out.printf("EmbeddedH2OConfig: fetchFlatfile called\n");
-      MapperToDriverMessage msg = new MapperToDriverMessage();
-      msg.setMessageFetchFlatfile(_embeddedWebServerIp, _embeddedWebServerPort);
-      Socket s = new Socket(_driverCallbackIp, _driverCallbackPort);
-      msg.write(s);
-      DriverToMapperMessage msg2 = new DriverToMapperMessage();
-      msg2.read(s);
-      char type = msg2.getType();
-      if (type != DriverToMapperMessage.TYPE_FETCH_FLATFILE_RESPONSE) {
-        int typeAsInt = (int)type & 0xff;
-        String str = "DriverToMapperMessage type unrecognized (" + typeAsInt + ")";
-        Log.err(str);
-        throw new Exception (str);
-      }
-      s.close();
-      String flatfile = msg2.getFlatfile();
-      System.out.printf("EmbeddedH2OConfig: fetchFlatfile returned\n");
-      System.out.println("------------------------------------------------------------");
-      System.out.println(flatfile);
-      System.out.println("------------------------------------------------------------");
-      return flatfile;
-    }
-
-    @Override
-    public void notifyAboutCloudSize (InetAddress ip, int port, InetAddress leaderIp, int leaderPort, int size) {
-      _embeddedWebServerIp = ip.getHostAddress();
-      _embeddedWebServerPort = port;
-
-      try {
-        MapperToDriverMessage msg = new MapperToDriverMessage();
-        msg.setDriverCallbackIpPort(_driverCallbackIp, _driverCallbackPort);
-        msg.setMessageCloudSize(ip.getHostAddress(), port, leaderIp.getHostAddress(), leaderPort, size);
-        BackgroundWriterThread bwt = new BackgroundWriterThread();
-        System.out.printf("EmbeddedH2OConfig: notifyAboutCloudSize called (%s, %d, %d)\n", ip.getHostAddress(), port, size);
-        bwt.setMessage(msg);
-        bwt.start();
-      }
-      catch (Exception e) {
-        System.out.println("EmbeddedH2OConfig: notifyAboutCloudSize caught an Exception");
-        e.printStackTrace();
-      }
-    }
-
-    @Override
-    public void exit(int status) {
-      try {
-        MapperToDriverMessage msg = new MapperToDriverMessage();
-        msg.setDriverCallbackIpPort(_driverCallbackIp, _driverCallbackPort);
-        msg.setMessageExit(_embeddedWebServerIp, _embeddedWebServerPort, status);
-        System.out.printf("EmbeddedH2OConfig: exit called (%d)\n", status);
-        BackgroundWriterThread bwt = new BackgroundWriterThread();
-        bwt.setMessage(msg);
-        bwt.start();
-        System.out.println("EmbeddedH2OConfig: after bwt.start()");
-      }
-      catch (Exception e) {
-        System.out.println("EmbeddedH2OConfig: exit caught an exception 1");
-        e.printStackTrace();
-      }
-
-      try {
-        // Wait one second to deliver the message before exiting.
-        Thread.sleep (1000);
-        Socket s = new Socket("127.0.0.1", _mapperCallbackPort);
-        byte[] b = new byte[1];
-        b[0] = (byte)status;
-        OutputStream os = s.getOutputStream();
-        os.write(b);
-        os.flush();
-        s.close();
-        System.out.println("EmbeddedH2OConfig: after write to mapperCallbackPort");
-
-        Thread.sleep(60 * 1000);
-        // Should never make it this far!
-      }
-      catch (Exception e) {
-        System.out.println("EmbeddedH2OConfig: exit caught an exception 2");
-        e.printStackTrace();
-      }
-
-      System.exit(111);
-    }
-
-    @Override
-    public void print() {
-      System.out.println("EmbeddedH2OConfig print()");
-      System.out.println("    Driver callback IP: " + ((_driverCallbackIp != null) ? _driverCallbackIp : "(null)"));
-      System.out.println("    Driver callback port: " + _driverCallbackPort);
-      System.out.println("    Embedded webserver IP: " + ((_embeddedWebServerIp != null) ? _embeddedWebServerIp : "(null)"));
-      System.out.println("    Embedded webserver port: " + _embeddedWebServerPort);
-    }
-  }
+  public static final String H2O_MAPPER_CONF_ARG_BASE = "h2o.mapper.conf.arg.";
+  public static final String H2O_MAPPER_CONF_BASENAME_BASE = "h2o.mapper.conf.basename.";
+  public static final String H2O_MAPPER_CONF_PAYLOAD_BASE = "h2o.mapper.conf.payload.";
+  public static final String H2O_MAPPER_CONF_LENGTH = "h2o.mapper.conf.length";
 
   /**
    * Identify hadoop mapper counter
@@ -280,8 +125,8 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
       args[i] = (s == null) ? "" : s;
     }
   }
-
-  private int run2(Context context) throws IOException, InterruptedException {
+  
+  private int run2(Context context) throws IOException {
     Configuration conf = context.getConfiguration();
 
     Counter counter = context.getCounter(H2O_MAPPER_COUNTER.HADOOP_COUNTER_HEARTBEAT);
@@ -354,9 +199,10 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
       }
     }
 
-    String[] args = argsList.toArray(new String[argsList.size()]);
+    DelegationTokenRefresher.setup(conf);
+    String[] args = argsList.toArray(new String[0]);
     try {
-      _embeddedH2OConfig = new EmbeddedH2OConfig();
+      EmbeddedH2OConfig _embeddedH2OConfig = new EmbeddedH2OConfig();
       _embeddedH2OConfig.setDriverCallbackIp(driverIp);
       _embeddedH2OConfig.setDriverCallbackPort(driverPort);
       _embeddedH2OConfig.setMapperCallbackPort(localPort);

@@ -47,6 +47,7 @@ import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -63,6 +64,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static water.hadoop.DelegationTokenRefresher.KEYTAB_FILE;
+import static water.hadoop.h2omapper.H2O_AUTH_PRINCIPAL;
 import static water.util.JavaVersionUtils.JAVA_VERSION;
 
 /**
@@ -152,6 +155,7 @@ public class h2odriver extends Configured implements Tool {
   static boolean driverDebug = false;
   static String hiveHost = null;
   static String hivePrincipal = null;
+  static boolean refreshTokens = false;
   
   private final HiveTokenGenerator hiveTokenGenerator = new HiveTokenGenerator();
 
@@ -634,7 +638,8 @@ public class h2odriver extends Configured implements Tool {
                     "          [-jobname <name of job in jobtracker (defaults to: 'H2O_nnnnn')>]\n" +
                     "              (Note nnnnn is chosen randomly to produce a unique name)\n" +
                     "          [-principal <kerberos principal> -keytab <keytab path> [-run_as_user <impersonated hadoop username>] | -run_as_user <hadoop username>]\n" +
-                    // Experimental "          [-hiveHost <hostname:port> -hivePrincipal <hive server principal>]\n" +
+                    // Experimental "          [-hiveHost <hostname:port> -hivePrincipal <hive server kerberos principal>]\n" +
+                    //              "          [-refreshTokens]\n" +
                     "          [-driverif <ip address of mapper->driver callback interface>]\n" +
                     "          [-driverport <port of mapper->driver callback interface>]\n" +
                     "          [-driverportrange <range portX-portY of mapper->driver callback interface>; eg: 50000-55000]\n" +
@@ -1057,6 +1062,8 @@ public class h2odriver extends Configured implements Tool {
       } else if (s.equals("-hivePrincipal")) {
         i++; if (i >= args.length) { usage (); }
         hivePrincipal = args[i];
+      } else if (s.equals("-refreshTokens")) {
+        refreshTokens = true;
       } else {
         error("Unrecognized option " + s);
       }
@@ -1353,9 +1360,9 @@ public class h2odriver extends Configured implements Tool {
   private void addMapperConf(Configuration conf, String name, String value, byte[] payloadData) {
     String payload = convertByteArrToString(payloadData);
 
-    conf.set(h2omapper.H2O_MAPPER_CONF_ARG_BASE + Integer.toString(mapperConfLength), name);
-    conf.set(h2omapper.H2O_MAPPER_CONF_BASENAME_BASE + Integer.toString(mapperConfLength), value);
-    conf.set(h2omapper.H2O_MAPPER_CONF_PAYLOAD_BASE + Integer.toString(mapperConfLength), payload);
+    conf.set(h2omapper.H2O_MAPPER_CONF_ARG_BASE + mapperConfLength, name);
+    conf.set(h2omapper.H2O_MAPPER_CONF_BASENAME_BASE + mapperConfLength, value);
+    conf.set(h2omapper.H2O_MAPPER_CONF_PAYLOAD_BASE + mapperConfLength, payload);
     mapperConfLength++;
   }
 
@@ -1833,6 +1840,10 @@ public class h2odriver extends Configured implements Tool {
     j.setOutputValueClass(Text.class);
 
     hiveTokenGenerator.addHiveDelegationToken(j, hiveHost, hivePrincipal);
+    if (refreshTokens && principal != null && keytabPath != null) {
+      j.getConfiguration().set(H2O_AUTH_PRINCIPAL, principal);
+      j.addCacheFile(new URI("file://" + keytabPath + "#" + KEYTAB_FILE));
+    }
 
     if (outputPath != null)
       FileOutputFormat.setOutputPath(j, new Path(outputPath));
