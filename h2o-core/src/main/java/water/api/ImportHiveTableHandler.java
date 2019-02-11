@@ -5,11 +5,9 @@ import water.ExtensionManager;
 import water.Job;
 import water.api.schemas3.ImportHiveTableV99;
 import water.api.schemas3.JobV3;
-import water.api.schemas3.ParseV3;
 import water.fvec.Frame;
 
 import java.util.Collection;
-import java.util.List;
 
 public class ImportHiveTableHandler extends Handler {
   
@@ -17,7 +15,7 @@ public class ImportHiveTableHandler extends Handler {
     
     String DEFAULT_DATABASE = "default";
     
-    Job<Frame> loadHiveTable(String database, String tableName) throws Exception;
+    Job<Frame> loadHiveTable(String database, String tableName, String[][] partitions) throws Exception;
 
   }
   
@@ -35,7 +33,7 @@ public class ImportHiveTableHandler extends Handler {
   public ImportHiveTableV99 importHiveTable(int version, ImportHiveTableV99 request) throws Exception {
     HiveTableImporter importer = getImporter();
     if (importer != null) {
-      Job<Frame> job = importer.loadHiveTable(request.database, request.table);
+      Job<Frame> job = importer.loadHiveTable(request.database, request.table, request.partitions);
       request.job = new JobV3(job);
       return request;
     } else {
