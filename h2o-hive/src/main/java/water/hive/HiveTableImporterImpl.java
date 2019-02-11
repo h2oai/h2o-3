@@ -12,6 +12,7 @@ import water.Job;
 import water.Key;
 import water.api.ImportHiveTableHandler;
 import water.fvec.Frame;
+import water.parser.CsvParser;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 
@@ -19,11 +20,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static water.fvec.Vec.*;
 import static water.parser.DefaultParserProviders.GUESS_INFO;
-import static water.parser.ParseSetup.GUESS_SEP;
 import static water.parser.ParseSetup.NO_HEADER;
 
 @SuppressWarnings("unused") // called via reflection
@@ -40,7 +41,7 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
       String database,
       String tableName,
       String[][] partitionFilter
-  ) throws Exception { //, String partitionFilter
+  ) throws Exception {
     Configuration conf = new Configuration();
     HiveConf hiveConf = new HiveConf(conf, HiveTableImporterImpl.class);
 
@@ -50,10 +51,9 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
     }
     Table table = client.getTable(database, tableName);
     String targetFrame = "hive_" + database + "_" + tableName;
-    List<FieldSchema> columnsToImport = table.getSd().getCols();
     List<Partition> partitions = client.listPartitions(database, tableName, Short.MAX_VALUE);
     String[] paths = getPathsToImport(table, partitions, partitionFilter);
-    return load(paths, columnsToImport, targetFrame);
+    return load(paths, table, targetFrame);
   }
 
   private String[] getPathsToImport(Table table, List<Partition> partitions, String[][] partitionFilter) {
@@ -88,20 +88,36 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
     return paths;
   }
 
-  private Job<Frame> load(String[] paths, List<FieldSchema> columnsToImport, String targetFrame) {
+  private byte getSeparator(Table table) {
+    Map<String, String> serDeParams = table.getSd().getSerdeInfo().getParameters();
+    String explicitSeparator = serDeParams.get("field.delim"); // for basic TextFormat
+    if (explicitSeparator != null && !explicitSeparator.isEmpty()) {
+      return (byte) explicitSeparator.charAt(0);
+    }
+    
+    explicitSeparator = serDeParams.get("separatorChar"); // for OpenCSV
+    if (explicitSeparator != null && !explicitSeparator.isEmpty()) {
+      return (byte) explicitSeparator.charAt(0);
+    } else {
+      return CsvParser.HIVE_SEP;
+    }
+  }
+
+  private Job<Frame> load(String[] paths, Table table, String targetFrame) {
     List<String> importedKeyStrings = importFiles(paths);
     Key[] importedKeys = stringsToKeys(importedKeyStrings);
 
     ParseSetup parseGuess = new ParseSetup();
     parseGuess.setParseType(GUESS_INFO);
-    parseGuess.setSeparator(GUESS_SEP);
+    parseGuess.setSeparator(getSeparator(table));
     parseGuess.setCheckHeader(NO_HEADER); // TBLPROPERTIES "skip.header.line.count"="1" not supported in metastore API
     ParseSetup setup = ParseSetup.guessSetup(importedKeys, parseGuess);
 
-    String[] columnNames = new String[columnsToImport.size()];
-    byte[] columnTypes = new byte[columnsToImport.size()];
-    for (int i = 0; i < columnsToImport.size(); i++) {
-      FieldSchema col = columnsToImport.get(i);
+    List<FieldSchema> tableColumns = table.getSd().getCols();
+    String[] columnNames = new String[tableColumns.size()];
+    byte[] columnTypes = new byte[tableColumns.size()];
+    for (int i = 0; i < tableColumns.size(); i++) {
+      FieldSchema col = tableColumns.get(i);
       columnNames[i] = col.getName();
       columnTypes[i] = convertHiveType(col.getType());
     }
@@ -109,7 +125,7 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
     setup.setColumnTypes(columnTypes);
     setup.setNumberColumns(columnNames.length);
 
-    Key destinationKey = Key.<Frame>make(targetFrame);
+    Key<Frame> destinationKey = Key.make(targetFrame);
     ParseDataset parse = ParseDataset.parse(destinationKey, importedKeys, true, setup, false);
     return parse._job;
   }
@@ -117,7 +133,7 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
   private Key[] stringsToKeys(List<String> strings) {
     Key[] keys = new Key[strings.size()];
     for (int i = 0; i < keys.length; i++) {
-      keys[i] = Key.<Frame>make(strings.get(i));
+      keys[i] = Key.make(strings.get(i));
     }
     return keys;
   }
