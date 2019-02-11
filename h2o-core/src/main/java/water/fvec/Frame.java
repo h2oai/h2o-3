@@ -980,16 +980,14 @@ public class Frame extends Lockable<Frame> {
   // Chunks in a Frame, before filling them.  This can be called in parallel
   // for different Chunk#'s (cidx); each Chunk can be filled in parallel.
   static NewChunk[] createNewChunks(String name, byte[] type, int cidx) {
-    boolean[] sparse = new boolean[type.length];
-    Arrays.fill(sparse, false);
-    return createNewChunks(name, type, cidx, sparse);
+    return createNewChunks(name, type, cidx, false);
   }
 
-  static NewChunk[] createNewChunks(String name, byte[] type, int cidx, boolean[] sparse) {
+  static NewChunk[] createNewChunks(String name, byte[] type, int cidx, boolean sparse) {
     Frame fr = (Frame) Key.make(name).get();
     NewChunk[] nchks = new NewChunk[fr.numCols()];
     for (int i = 0; i < nchks.length; i++) {
-      nchks[i] = new NewChunk(new AppendableVec(fr._keys[i], type[i]), cidx, sparse[i]);
+      nchks[i] = new NewChunk(new AppendableVec(fr._keys[i], type[i]), cidx, sparse);
     }
     return nchks;
   }
