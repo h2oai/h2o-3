@@ -16,6 +16,7 @@ import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -23,6 +24,7 @@ import java.util.Set;
 import static water.fvec.Vec.*;
 import static water.parser.DefaultParserProviders.GUESS_INFO;
 import static water.parser.ParseSetup.GUESS_SEP;
+import static water.parser.ParseSetup.NO_HEADER;
 
 @SuppressWarnings("unused") // called via reflection
 public class HiveTableImporterImpl extends AbstractH2OExtension implements ImportHiveTableHandler.HiveTableImporter {
@@ -34,7 +36,11 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
     return NAME;
   }
 
-  public Job<Frame> loadHiveTable(String database, String tableName) throws Exception {
+  public Job<Frame> loadHiveTable(
+      String database,
+      String tableName,
+      String[][] partitionFilter
+  ) throws Exception { //, String partitionFilter
     Configuration conf = new Configuration();
     HiveConf hiveConf = new HiveConf(conf, HiveTableImporterImpl.class);
 
@@ -45,28 +51,52 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
     Table table = client.getTable(database, tableName);
     String targetFrame = "hive_" + database + "_" + tableName;
     List<FieldSchema> columnsToImport = table.getSd().getCols();
-    String path = table.getSd().getLocation();
-
     List<Partition> partitions = client.listPartitions(database, tableName, Short.MAX_VALUE);
-    for (Partition partition : partitions) {
-      System.out.println();
-    }
-
-    return load(path, columnsToImport, targetFrame);
+    String[] paths = getPathsToImport(table, partitions, partitionFilter);
+    return load(paths, columnsToImport, targetFrame);
   }
-  
-  private Job<Frame> load(String path, List<FieldSchema> columnsToImport, String targetFrame) {
-    List<String> importedKeyStrings = importFiles(path);
+
+  private String[] getPathsToImport(Table table, List<Partition> partitions, String[][] partitionFilter) {
+    if (partitionFilter == null || partitionFilter.length == 0) {
+      return new String[]{table.getSd().getLocation()};
+    } else {
+      return getPartitionPaths(partitions, partitionFilter);
+    }
+  }
+
+  private String[] getPartitionPaths(List<Partition> partitions, String[][] partitionFilter) {
+    List<List<String>> filtersAsLists = new ArrayList<>(partitionFilter.length);
+    for (String[] f : partitionFilter) {
+      filtersAsLists.add(Arrays.asList(f));
+    }
+    List<Partition> matchedPartitions = new ArrayList<>(partitions.size());
+    for (Partition p : partitions) {
+      for (List<String> filter : filtersAsLists) {
+        if (p.getValues().equals(filter)) {
+          matchedPartitions.add(p);
+          break;
+        }
+      }
+    }
+    if (matchedPartitions.isEmpty()) {
+      throw new IllegalArgumentException("Partition filter did not match any partitions.");
+    }
+    String[] paths = new String[matchedPartitions.size()];
+    for (int i = 0; i < matchedPartitions.size(); i++) {
+      paths[i] = matchedPartitions.get(i).getSd().getLocation();
+    }
+    return paths;
+  }
+
+  private Job<Frame> load(String[] paths, List<FieldSchema> columnsToImport, String targetFrame) {
+    List<String> importedKeyStrings = importFiles(paths);
     Key[] importedKeys = stringsToKeys(importedKeyStrings);
 
     ParseSetup parseGuess = new ParseSetup();
     parseGuess.setParseType(GUESS_INFO);
     parseGuess.setSeparator(GUESS_SEP);
+    parseGuess.setCheckHeader(NO_HEADER); // TBLPROPERTIES "skip.header.line.count"="1" not supported in metastore API
     ParseSetup setup = ParseSetup.guessSetup(importedKeys, parseGuess);
-    
-    // TODO setup.setCheckHeader();
-    // TODO "skip.header.line.count"="1"
-    // TODO "skip.footer.line.count"="2"
 
     String[] columnNames = new String[columnsToImport.size()];
     byte[] columnTypes = new byte[columnsToImport.size()];
@@ -77,12 +107,13 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
     }
     setup.setColumnNames(columnNames);
     setup.setColumnTypes(columnTypes);
+    setup.setNumberColumns(columnNames.length);
 
     Key destinationKey = Key.<Frame>make(targetFrame);
     ParseDataset parse = ParseDataset.parse(destinationKey, importedKeys, true, setup, false);
     return parse._job;
   }
-  
+
   private Key[] stringsToKeys(List<String> strings) {
     Key[] keys = new Key[strings.size()];
     for (int i = 0; i < keys.length; i++) {
@@ -90,19 +121,19 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
     }
     return keys;
   }
-  
-  private List<String> importFiles(String path) {
+
+  private List<String> importFiles(String[] paths) {
     ArrayList<String> files = new ArrayList<>();
     ArrayList<String> keys = new ArrayList<>();
     ArrayList<String> fails = new ArrayList<>();
     ArrayList<String> dels = new ArrayList<>();
-    H2O.getPM().importFiles(path, null, files, keys, fails, dels);
+    H2O.getPM().importFiles(paths, null, files, keys, fails, dels);
     if (!fails.isEmpty()) {
       throw new RuntimeException("Failed to import some files: " + fails.toString());
     }
     return keys;
   }
-  
+
   private Set<String> parseColumnFilter(String filter) {
     Set<String> columnNames = new HashSet<>();
     for (String colName : filter.split(",")) {

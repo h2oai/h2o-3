@@ -434,11 +434,12 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
         return H2OFrame()._import_parse(path, pattern, destination_frame, header, sep, col_names, col_types, na_strings, skipped_columns)
 
 
-def import_hive_table(database, table):
+def import_hive_table(database=None, table=None, partitions=None):
     
-    assert_is_type(database, str)
+    assert_is_type(database, str, None)
     assert_is_type(table, str)
-    p = {"database": database, "table": table }
+    assert_is_type(partitions, [[str]], None)
+    p = { "database": database, "table": table, "partitions": partitions }
     j = H2OJob(api("POST /99/ImportHiveTable", data=p), "Import Hive Table").poll()
     return get_frame(j.dest_key)
 

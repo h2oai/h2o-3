@@ -2,7 +2,6 @@ package water.api.schemas3;
 
 import water.Iced;
 import water.api.API;
-import water.fvec.Frame;
 
 public class ImportHiveTableV99 extends RequestSchemaV3<Iced, ImportHiveTableV99> {
 
@@ -12,6 +11,9 @@ public class ImportHiveTableV99 extends RequestSchemaV3<Iced, ImportHiveTableV99
 
   @API(help = "table", required = true)
   public String table = "";
+
+  @API(help = "partitions")
+  public String[][] partitions;
 
   // Output fields
   @API(help="Parse job", direction=API.Direction.OUTPUT)
