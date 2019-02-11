@@ -8,11 +8,11 @@ import numpy as np
 
 def test_compare_lambdasearch():
 
-    train_h2o = h2o.importFile(pyunit_utils.locate("smalldata/glm_test/lambda_search.csv"))
+    train_h2o = h2o.import_file(pyunit_utils.locate("smalldata/glm_test/lambda_search.csv.zip"))
     print('train_h2o: {:,} x {:,} (including label, fold)'.format(*train_h2o.shape))
-
+    xnames = train_h2o.names
     glm_h2o = H2OGeneralizedLinearEstimator(family='binomial', alpha=1., lambda_search=True, nlambdas=10, seed=1)
-    glm_h2o.train(y='label', training_frame=train_h2o, fold_column='fold')
+    glm_h2o.train(y='label', x=xnames, training_frame=train_h2o, fold_column='fold')
     
     regpath_h2o = H2OGeneralizedLinearEstimator.getGLMRegularizationPath(glm_h2o)
     regpath_pd = pd.DataFrame(index=np.arange(len(regpath_h2o['lambdas'])), columns=['lambda','ncoef','auc'])
