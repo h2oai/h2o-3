@@ -13,7 +13,7 @@ import java.util.Arrays;
 
 import static water.parser.DefaultParserProviders.CSV_INFO;
 
-class CsvParser extends Parser {
+public class CsvParser extends Parser {
   private static final byte GUESS_SEP = ParseSetup.GUESS_SEP;
   private static final int NO_HEADER = ParseSetup.NO_HEADER;
   private static final int GUESS_HEADER = ParseSetup.GUESS_HEADER;
@@ -546,7 +546,7 @@ MAIN_LOOP:
    *  last one as it is used if all other fails because multiple spaces can be
    *  used as a single separator.
    */
-  static final byte HIVE_SEP = 0x1; // '^A',  Hive table column separator
+  public static final byte HIVE_SEP = 0x1; // '^A',  Hive table column separator
   private static byte[] separators = new byte[] { HIVE_SEP, ',', ';', '|', '\t',  ' '/*space is last in this list, because we allow multiple spaces*/ };
 
   /** Dermines the number of separators in given line.  Correctly handles quoted tokens. */
