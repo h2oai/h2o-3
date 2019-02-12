@@ -30,6 +30,7 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
   public static final String H2O_DRIVER_PORT_KEY = "h2o.driver.port";
 
   public static final String H2O_AUTH_PRINCIPAL = "h2o.auth.principal";
+  public static final String H2O_AUTH_KEYTAB = "h2o.auth.keytab";
   public static final String H2O_HIVE_HOST = "h2o.hive.host";
   public static final String H2O_HIVE_PRINCIPAL = "h2o.hive.principal";
   
@@ -126,6 +127,19 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
     }
   }
   
+  static boolean makeSureIceRootExists(String iceRoot) {
+    File f = new File(iceRoot);
+    if (!f.exists()) {
+      boolean success = f.mkdirs();
+      if (!success) {
+        Log.POST(103, "mkdirs(" + f.toString() + ") failed");
+        return false;
+      }
+      Log.POST(104, "after mkdirs()");
+    }
+    return true;
+  }
+  
   private int run2(Context context) throws IOException {
     Configuration conf = context.getConfiguration();
 
@@ -175,15 +189,8 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
       }
 
       String basename = conf.get(H2O_MAPPER_CONF_BASENAME_BASE + i);
-      File f = new File(ice_root);
-      boolean b = f.exists();
-      if (! b) {
-        boolean success = f.mkdirs();
-        if (! success) {
-          Log.POST(103, "mkdirs(" + f.toString() + ") failed");
-          return -1;
-        }
-        Log.POST(104, "after mkdirs()");
+      if (!makeSureIceRootExists(ice_root)) {
+        return -1;
       }
       String fileName = ice_root + File.separator + basename;
       String payload = conf.get(H2O_MAPPER_CONF_PAYLOAD_BASE + i);
@@ -198,8 +205,8 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
         modifyKeyPath(fileName, ice_root);
       }
     }
-
-    DelegationTokenRefresher.setup(conf);
+    
+    DelegationTokenRefresher.setup(conf, ice_root);
     String[] args = argsList.toArray(new String[0]);
     try {
       EmbeddedH2OConfig _embeddedH2OConfig = new EmbeddedH2OConfig();
