@@ -133,10 +133,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
           false
       );
       
-      //Need to remove 'predict' column from multinomial since it contains outcome
-      if (base._output.isMultinomialClassifier()) {
-        basePreds.remove("predict");
-      }
       StackedEnsemble.addModelPredictionsToLevelOneFrame(base, basePreds, levelOneFrame);
       DKV.remove(basePreds._key); //Cleanup
     }

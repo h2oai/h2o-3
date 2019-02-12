@@ -72,7 +72,8 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       Vec preds = aModelsPredictions.vec(2); // Predictions column names have been changed. . .
       levelOneFrame.add(aModel._key.toString(), preds);
     } else if (aModel._output.isMultinomialClassifier()) { //Multinomial
-      levelOneFrame.add(aModelsPredictions);
+      //Need to remove 'predict' column from multinomial since it contains outcome
+      levelOneFrame.add(aModelsPredictions.subframe(ArrayUtils.remove(aModelsPredictions.names(), "predict")));
     } else if (aModel._output.isAutoencoder()) {
       throw new H2OIllegalArgumentException("Don't yet know how to stack autoencoders: " + aModel._key);
     } else if (!aModel._output.isSupervised()) {
@@ -157,14 +158,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
       Frame predictions = getPredictionsForBaseModel(aModel, actuals, isTraining);
       baseModels.add(aModel);
-      if (!aModel._output.isMultinomialClassifier()) {
-        baseModelPredictions.add(predictions);
-      } else {
-        List<String> predColNames = new ArrayList<>(Arrays.asList(predictions.names()));
-        predColNames.remove("predict");
-        String[] multClassNames = predColNames.toArray(new String[0]);
-        baseModelPredictions.add(predictions.subframe(multClassNames));
-      }
+      baseModelPredictions.add(predictions);
     }
 
     return prepareLevelOneFrame(levelOneKey, baseModels.toArray(new Model[0]), baseModelPredictions.toArray(new Frame[0]), actuals);
