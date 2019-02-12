@@ -309,7 +309,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
           this.leaderboardFrame = splits[1];
           this.didValidationSplit = false;
           this.didLeaderboardSplit = true;
-          userFeedback.info(Stage.DataImport, "Since nfolds == 0, automatically split the training data into training and leaderboard frame in the ratio 80/20");
+          userFeedback.info(Stage.DataImport, "Since nfolds == 0, automatically split the training data into training and leaderboard frame in the ratio 90/10");
         } else {
           // Leaderboard frame is already there, no need to do anything
           userFeedback.info(Stage.DataImport, "Since nfolds == 0 and leaderboard dataset was specified, no auto-splitting needed.");

@@ -295,6 +295,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         Log.warn("Failed to find base model; skipping: " + k);
         continue;
       }
+      Log.debug("Checking properties for model " + k);
       if (!aModel.isSupervised()) {
         throw new H2OIllegalArgumentException("Base model is not supervised: " + aModel._key.toString());
       }
