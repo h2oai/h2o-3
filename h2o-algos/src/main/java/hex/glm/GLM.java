@@ -102,10 +102,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
   /**
    * If run with lambda search, we need to take extra action performed after cross-val models are built.
-   * Each of the folds have been computed with ots own private validation datasetd and it performed early stopping based on it.
+   * Each of the folds have been computed with its own private validation dataset and it performed early stopping based on it.
    * => We need to:
    *   1. compute cross-validated lambda estimate
-   *   2. set the lambda estimate too all n-folds models (might require extra model fitting if the particular model stopped too early!)
+   *   2. set the lambda estimate to all n-folds models (might require extra model fitting if the particular model stopped too early!)
    *   3. compute cross-validated scoring history (cross-validated deviance standard error per lambda)
    *   4. unlock the n-folds models (they are changed here, so the unlocking happens here)
    */
