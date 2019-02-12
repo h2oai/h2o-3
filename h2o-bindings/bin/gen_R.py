@@ -185,6 +185,11 @@ def gen_module(schema, algo, module):
         yield "  if(!is.character(stop_column) && !is.numeric(stop_column)) {"
         yield "     stop('argument \"stop_column\" must be a column name or an index')"
         yield "  }"
+    if algo == "mojodelegating":
+        
+        
+        yield "  # Required args: mojo_file_path"
+        yield "  if (is.null(mojo_key)) stop(\"argument 'mojo_key' must be provided\")"
     if algo == "word2vec":
         yield "  # training_frame is required if pre_trained frame is not specified"
         yield "  if (missing(pre_trained) && missing(training_frame)) stop(\"argument \'training_frame\' is missing, with no default\")"
@@ -200,7 +205,7 @@ def gen_module(schema, algo, module):
         yield "             error = function(err) {"
         yield "               stop(\"argument \'pre_trained\' must be a valid H2OFrame or key\")"
         yield "             })"
-    else:
+    elif algo not in ["mojodelegating"]:
         yield "  # Required args: training_frame"
         yield "  if (missing(training_frame)) stop(\"argument \'training_frame\' is missing, with no default\")"
         # yield "  if( missing(validation_frame) ) validation_frame = NULL"
@@ -210,7 +215,7 @@ def gen_module(schema, algo, module):
         yield "           error = function(err) {"
         yield "             stop(\"argument \'training_frame\' must be a valid H2OFrame or key\")"
         yield "           })"
-    if algo not in ["word2vec", "aggregator", "coxph", "isolationforest"]:
+    if algo not in ["word2vec", "aggregator", "coxph", "isolationforest", "mojodelegating"]:
         yield "  # Validation_frame must be a key or an H2OFrame object"
         yield "  if (!is.null(validation_frame)) {"
         yield "     if (!is.H2OFrame(validation_frame))"
@@ -253,7 +258,7 @@ def gen_module(schema, algo, module):
         yield "      parms$ignored_columns <- setdiff(parms$ignored_columns, fold_column)"
         yield "    }"
         yield "  }"
-    else:
+    elif algo not in ["mojodelegating"]:
         yield "  if(!missing(x))"
         yield "    parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore"
     if algo == "svd":
@@ -657,6 +662,8 @@ def get_extra_params_for(algo):
         return "training_frame = NULL"
     elif algo == "coxph":
         return "x, event_column, training_frame"
+    elif algo == "mojodelegating":
+        return "training_frame = NULL"
     else:
         return "training_frame, x"
 

@@ -89,6 +89,12 @@ Unsupervised
     :show-inheritance:
     :members:
 
+:mod:`H2OMojodelegatingEstimator`
+---------------------------------
+.. autoclass:: h2o.estimators.mojodelegating.H2OMojodelegatingEstimator
+    :show-inheritance:
+    :members:
+
 :mod:`H2OPrincipalComponentAnalysisEstimator`
 ---------------------------------------------
 .. autoclass:: h2o.estimators.pca.H2OPrincipalComponentAnalysisEstimator

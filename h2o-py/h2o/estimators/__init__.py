@@ -14,6 +14,7 @@ from .glm import H2OGeneralizedLinearEstimator
 from .glrm import H2OGeneralizedLowRankEstimator
 from .isolation_forest import H2OIsolationForestEstimator
 from .kmeans import H2OKMeansEstimator
+from .mojodelegating import H2OMojodelegatingEstimator
 from .naive_bayes import H2ONaiveBayesEstimator
 from .pca import H2OPrincipalComponentAnalysisEstimator
 from .random_forest import H2ORandomForestEstimator
@@ -21,7 +22,6 @@ from .stackedensemble import H2OStackedEnsembleEstimator
 from .svd import H2OSingularValueDecompositionEstimator
 from .word2vec import H2OWord2vecEstimator
 from .xgboost import H2OXGBoostEstimator
-from .mojo_estimator import H2OMojoDelegatingEstimator
 
 __all__ = (
     "H2OAggregatorEstimator", "H2OAggregatorEstimator", "H2OAutoML", "H2OAutoEncoderEstimator",
@@ -29,10 +29,10 @@ __all__ = (
     "H2ODeepWaterEstimator", "H2OEstimator", "H2OEstimator", "H2OGradientBoostingEstimator",
     "H2OGradientBoostingEstimator", "H2OGeneralizedLinearEstimator", "H2OGeneralizedLinearEstimator",
     "H2OGeneralizedLowRankEstimator", "H2OGeneralizedLowRankEstimator", "H2OIsolationForestEstimator",
-    "H2OIsolationForestEstimator", "H2OKMeansEstimator", "H2OKMeansEstimator", "H2ONaiveBayesEstimator",
-    "H2ONaiveBayesEstimator", "H2OPrincipalComponentAnalysisEstimator", "H2OPrincipalComponentAnalysisEstimator",
-    "H2ORandomForestEstimator", "H2ORandomForestEstimator", "H2OStackedEnsembleEstimator",
-    "H2OStackedEnsembleEstimator", "H2OSingularValueDecompositionEstimator", "H2OSingularValueDecompositionEstimator",
-    "H2OWord2vecEstimator", "H2OWord2vecEstimator", "H2OXGBoostEstimator", "H2OXGBoostEstimator",
-    "H2OMojoDelegatingEstimator", "H2OMojoDelegatingEstimator"
+    "H2OIsolationForestEstimator", "H2OKMeansEstimator", "H2OKMeansEstimator", "H2OMojodelegatingEstimator",
+    "H2OMojodelegatingEstimator", "H2ONaiveBayesEstimator", "H2ONaiveBayesEstimator",
+    "H2OPrincipalComponentAnalysisEstimator", "H2OPrincipalComponentAnalysisEstimator", "H2ORandomForestEstimator",
+    "H2ORandomForestEstimator", "H2OStackedEnsembleEstimator", "H2OStackedEnsembleEstimator",
+    "H2OSingularValueDecompositionEstimator", "H2OSingularValueDecompositionEstimator", "H2OWord2vecEstimator",
+    "H2OWord2vecEstimator", "H2OXGBoostEstimator", "H2OXGBoostEstimator"
 )

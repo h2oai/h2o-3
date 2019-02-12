@@ -5,7 +5,9 @@ import hex.ModelCategory;
 import hex.genmodel.MojoModel;
 import hex.genmodel.MojoReaderBackendFactory;
 import water.DKV;
+import water.Key;
 import water.Value;
+import water.api.schemas3.KeyV3;
 import water.fvec.ByteVec;
 import water.fvec.Frame;
 
@@ -13,10 +15,6 @@ import java.io.IOException;
 import java.util.Objects;
 
 public class MojoDelegating extends ModelBuilder<MojoDelegatingModel, MojoDelegatingModelParameters, MojoDelegatingModelOutput> {
-
-    public MojoDelegating(MojoDelegatingModelParameters parms) {
-        super(parms);
-    }
 
     public MojoDelegating(boolean startup_once) {
         super(new MojoDelegatingModelParameters(), startup_once);
@@ -72,15 +70,10 @@ public class MojoDelegating extends ModelBuilder<MojoDelegatingModel, MojoDelega
      * @return An instance of {@link ByteVec} containing the bytes of an uploaded MOJO, if present. Or exception. Never returns null.
      * @throws IllegalArgumentException In case the supplied key is invalid (MOJO missing, empty key etc.)
      */
-    private final ByteVec getUploadedMojo(final String key) throws IllegalArgumentException {
+    private final ByteVec getUploadedMojo(final Key<Frame> key) throws IllegalArgumentException {
         Objects.requireNonNull(key); // Nicer null pointer exception in case null key is accidentally provided
-        final Value value = DKV.get(key);
-        if (value == null)
-            throw new IllegalArgumentException(String.format("Given MOJO file key '%s' is not to be found in H2O.", value));
-        if (!value.isFrame())
-            throw new IllegalArgumentException(String.format("Given MOJO file key should a one-columnar Frame, however the following type has been found: '%d'", value.type()));
 
-        Frame mojoFrame = value.get();
+        Frame mojoFrame = key.get();
         if (mojoFrame.numCols() > 1)
             throw new IllegalArgumentException(String.format("Given MOJO frame with key '%s' should contain only 1 column with MOJO bytes. More columns found. Incorrect key provided ?", key));
         ByteVec mojoData = (ByteVec) mojoFrame.anyVec();

@@ -3665,3 +3665,9 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
 
 #' @export
 print.h2o.stackedEnsemble.summary <- function(x, ...) cat(x, sep = "\n")
+
+#' @export
+h2o.mojoDelegatingModel <- function(mojo_file_path){
+  file_key <- h2o.importFile(mojo_file_path, parse = FALSE)
+  h2o.mojodelegating(mojo_key = file_key)
+}

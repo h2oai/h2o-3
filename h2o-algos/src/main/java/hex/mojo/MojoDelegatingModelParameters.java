@@ -1,11 +1,12 @@
 package hex.mojo;
 
 import hex.Model;
-import water.fvec.ByteVec;
+import water.Key;
+import water.fvec.Frame;
 
 public class MojoDelegatingModelParameters extends Model.Parameters {
     
-    public String _mojo_key;
+    public Key<Frame> _mojo_key;
     
     @Override
     public String algoName() {
