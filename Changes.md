@@ -33,6 +33,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/4/index.htm
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6183'>PUBDEV-6183</a>] - Fixed the equation for Tweedie Deviance in the GLM booklet and in the User Guide.
 </li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6199'>PUBDEV-6199</a>] - Added a "Tokenize Strings" topic to the Data Manipulation chapter. 
+</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6245'>PUBDEV-6245</a>] - Added `predict_leaf_node_assignment` information to the User Guide in the Performance and Prediction chapter. (STILL OPEN)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6253'>PUBDEV-6253</a>] - Noted in the documentation that the `custom` and `custom_increasing` stopping metric options are not available in the R client.
@@ -58,7 +60,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/3/index.htm
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6216'>PUBDEV-6216</a>] - Added Hive with Kerberos support for H2O on Hadoop. 
 </li>
 </ul>
-                    
+
 <h4>Docs</h4>
 
 <ul>
