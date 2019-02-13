@@ -50,3 +50,10 @@ class H2OMojodelegatingEstimator(H2OEstimator):
         self._parms["mojo_key"] = mojo_key
 
 
+
+    def _requires_training_frame(self):
+        """
+        Determines if MojoDelegating model requires a training frame.
+        :return: False.
+        """
+        return False

@@ -17,7 +17,6 @@ import types
 from h2o.backend import H2OConnection
 from h2o.backend import H2OConnectionConf
 from h2o.backend import H2OLocalServer
-from h2o.estimators import H2OMojoDelegatingEstimator
 from h2o.exceptions import H2OConnectionError, H2OValueError
 from h2o.utils.config import H2OConfigReader
 from h2o.utils.shared_utils import check_frame_id, deprecated, gen_header, py_tmp_key, quoted, urlopen

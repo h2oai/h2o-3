@@ -582,6 +582,15 @@ def class_extra_for(algo):
             parameters = {k: v for k, v in self._parms.items() if k in var_names}
             return H2OPCA(**parameters)
         """
+    elif algo == "mojodelegating":
+        return """
+        def _requires_training_frame(self):
+            \"\"\"
+            Determines if MojoDelegating model requires a training frame.
+            :return: False.
+            \"\"\"
+            return False
+        """
 
 
 def module_extra_for(algo):
