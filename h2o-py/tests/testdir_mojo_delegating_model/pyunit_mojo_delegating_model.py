@@ -22,6 +22,15 @@ def mojo_model_test():
     assert predictions is not None
     assert predictions.nrows == 24421
     
+    # Test constructor generating the model from existing MOJO file
+    model = H2OMojodelegatingEstimator.from_mojo_file(filename)
+    assert model is not None
+    predictions = model.predict(airlines)
+    assert predictions is not None
+    assert predictions.nrows == 24421
+    
+    
+    
 if __name__ == "__main__":
     pyunit_utils.standalone_test(mojo_model_test)
 else:

@@ -590,6 +590,21 @@ def class_extra_for(algo):
             :return: False.
             \"\"\"
             return False
+        
+        @staticmethod
+        def from_mojo_file(file=str):
+            \"\"\"
+            Creates new MojoDelegatingModel by loading existing MOJO into library.
+            :param file: A string containing path to the MOJO to create the model from
+            :return: H2OMojodelegatingEstimator instance representing the mojo-based model
+            \"\"\"
+            from h2o import lazy_import, get_frame
+            mojo_key = lazy_import(file)
+            mojo_bytes_frame = get_frame(mojo_key[0])
+            model = H2OMojodelegatingEstimator(mojo_key = mojo_bytes_frame)
+            model.train()
+            
+            return model
         """
 
 
