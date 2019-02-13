@@ -2,10 +2,9 @@ package hex.mojo;
 
 import hex.*;
 import hex.genmodel.MojoModel;
+import hex.tree.isofor.ModelMetricsAnomaly;
 import water.H2O;
-import water.Job;
 import water.Key;
-import water.fvec.Frame;
 
 public class MojoDelegatingModel extends Model<MojoDelegatingModel, MojoDelegatingModelParameters, MojoDelegatingModelOutput> {
     
@@ -26,11 +25,12 @@ public class MojoDelegatingModel extends Model<MojoDelegatingModel, MojoDelegati
 
     @Override
     public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-        // TODO : incomplete. We've got to support all of them !
+        // TODO : incomplete. We've got to support all of them ! Maybe automate this ?
         switch(_output.getModelCategory()) {
             case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain);
             case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(),domain);
             case Regression:  return new ModelMetricsRegression.MetricBuilderRegression();
+            case AnomalyDetection: return new ModelMetricsAnomaly.MetricBuilderAnomaly();
             default: throw H2O.unimpl();
         }
     }

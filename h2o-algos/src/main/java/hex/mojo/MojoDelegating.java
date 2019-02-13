@@ -4,10 +4,7 @@ import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.genmodel.MojoModel;
 import hex.genmodel.MojoReaderBackendFactory;
-import water.DKV;
 import water.Key;
-import water.Value;
-import water.api.schemas3.KeyV3;
 import water.fvec.ByteVec;
 import water.fvec.Frame;
 
@@ -54,9 +51,6 @@ public class MojoDelegating extends ModelBuilder<MojoDelegatingModel, MojoDelega
             final MojoDelegatingModelOutput mojoDelegatingModelOutput = new MojoDelegatingModelOutput(mojoModel);
             final MojoDelegatingModel mojoDelegatingModel = new MojoDelegatingModel(_result, _parms, mojoDelegatingModelOutput, mojoModel);
             mojoDelegatingModel.write_lock(_job);
-
-            
-
             mojoDelegatingModel.unlock(_job);
         }
     }
