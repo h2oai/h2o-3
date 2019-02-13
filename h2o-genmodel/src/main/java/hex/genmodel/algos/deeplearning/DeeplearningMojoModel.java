@@ -140,11 +140,13 @@ public class DeeplearningMojoModel extends MojoModel {
    * @return average reconstruction error = ||original - reconstructed||^2 / length(original)
    */
   public double calculateReconstructionErrorPerRowData(double [] original, double [] reconstructed){
+    assert (original != null && original.length > 0) && (reconstructed != null && reconstructed.length > 0);
+    assert original.length == reconstructed.length;
     int numStartIndex = original.length - this._nums;
     double norm;
     double l2 = 0;
     for (int i = 0; i < original.length; i++) {
-      norm = (this._normmul != null) && (this._nums > 0) && (i >= (numStartIndex)) ? this._normmul[i-numStartIndex] : 1;
+      norm = (this._normmul != null && this._normmul.length > 0 && this._nums > 0 && i >= numStartIndex) ? this._normmul[i-numStartIndex] : 1;
       l2 += Math.pow((reconstructed[i] - original[i]) * norm, 2);
     }
     return  l2 / original.length;

@@ -30,5 +30,5 @@ public class AutoEncoderModelPrediction extends AbstractPrediction {
    * Uses a normalization defined for the numerical features of the trained model.
    * average reconstruction error = ||original - reconstructed||^2 / length(original)
    */
-  public double mse;
+  public double mse = -1;
 }
