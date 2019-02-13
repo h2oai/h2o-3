@@ -19,6 +19,8 @@ import ml.dmlc.xgboost4j.java.*;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
 import hex.ModelMetrics;
@@ -32,7 +34,8 @@ import java.util.Map;
 import static hex.tree.xgboost.XGBoost.makeDataInfo;
 import static hex.genmodel.algos.xgboost.XGBoostMojoModel.ObjectiveType;
 
-public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParameters, XGBoostOutput> implements SharedTreeGraphConverter {
+public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParameters, XGBoostOutput> 
+        implements SharedTreeGraphConverter, Model.Contributions {
 
   private XGBoostModelInfo model_info;
 
@@ -591,6 +594,38 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
       final boolean isHot = _catValues[_catMap[index]] == index;
       return isHot ? 1 : _notHot;
+    }
+  }
+
+  @Override
+  public Frame scoreContributions(Frame frame, Key<Frame> destination_key) {
+    Frame adaptFrm = new Frame(frame);
+    adaptTestForTrain(adaptFrm, true, false);
+
+    DataInfo di = model_info()._dataInfoKey.get();
+    assert di != null;
+    final String[] outputNames = ArrayUtils.append(di.coefNames(), "BiasTerm");
+
+    return new PredictContribApproxTask(di)
+            .doAll(outputNames.length, Vec.T_NUM, adaptFrm)
+            .outputFrame(destination_key, outputNames, null);
+  }
+
+  private class PredictContribApproxTask extends MRTask<PredictContribApproxTask> {
+    private final BoosterParms _boosterParms;
+
+    private PredictContribApproxTask(DataInfo di) {
+      _boosterParms = XGBoostModel.createParams(_parms, _output.nclasses(), di.coefNames());
+    }
+
+    @Override
+    public void map(Chunk chks[], NewChunk[] nc) {
+      float[][] contrib = XGBoostScoreTask.scoreChunkContribApprox(model_info(), _parms, _boosterParms, _output, _fr, chks);
+      for (float[] rowContrib : contrib) {
+        for (int j = 0; j < rowContrib.length; j++) {
+          nc[j].addNum(rowContrib[j]);
+        }
+      }
     }
   }
 

@@ -91,6 +91,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     Frame scoreStagedPredictions(Frame frame, Key<Frame> destination_key);
   }
 
+  public interface Contributions {
+    Frame scoreContributions(Frame frame, Key<Frame> destination_key);
+  }
+
   public interface ExemplarMembers {
     Frame scoreExemplarMembers(Key<Frame> destination_key, int exemplarIdx);
   }
