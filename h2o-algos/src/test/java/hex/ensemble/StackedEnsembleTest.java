@@ -415,6 +415,60 @@ public class StackedEnsembleTest extends TestUtil {
       }
     }
 
+    
+    @Test
+    public void testSECanDoPredictionsOnFramesWithUnseenCategoricalValues() {
+      // test for PUBDEV-6266
+      List<Lockable> deletables = new ArrayList<>();
+      try {
+        Frame train = parse_test_file("./smalldata/testng/cars_train.csv"); deletables.add(train);
+        Frame test = parse_test_file("./smalldata/testng/cars_test.csv"); deletables.add(test);
+        String target = "economy (mpg)";
+        int cyl_idx = test.find("cylinders");
+        Assert.assertTrue(test.vec(cyl_idx).isInt());
+        Vec cyl_test = test.vec(cyl_idx);
+        cyl_test.set(cyl_test.length() - 1, 7); // that's a new engine concept
+        test.replace(cyl_idx, cyl_test.toCategoricalVec()).remove();
+        Assert.assertTrue(test.vec(cyl_idx).isCategorical());
+        train.replace(cyl_idx, train.vec(cyl_idx).toCategoricalVec()).remove();
+
+        int seed = 62832;
+        //generate a few base models
+        GBMModel.GBMParameters params = new GBMModel.GBMParameters();
+        params._train = train._key;
+        params._response_column = target;
+        params._seed = seed;
+        params._keep_cross_validation_models = false;
+        params._keep_cross_validation_predictions = true;
+        params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+        params._nfolds = 5;
+        Job<Grid> gridSearch = GridSearch.startGridSearch(null, params, new HashMap<String, Object[]>() {{
+          put("_ntrees", new Integer[]{3, 5});
+          put("_learn_rate", new Double[]{0.1, 0.2});
+        }});
+        Grid grid = gridSearch.get(); deletables.add(grid);
+        Model[] gridModels = grid.getModels(); deletables.addAll(Arrays.asList(gridModels));
+        Assert.assertEquals(4, gridModels.length);
+
+        StackedEnsembleParameters seParams = new StackedEnsembleParameters();
+        seParams._train = train._key;
+        seParams._response_column = target;
+        seParams._base_models = grid.getModelKeys();
+        seParams._seed = seed;
+        StackedEnsembleModel se = new StackedEnsemble(seParams).trainModel().get(); deletables.add(se);
+
+        // mainly ensuring that no exception is thrown due to unmet categorical in test dataset. 
+        Scope.enter(); //only scoring seems to be producing inaccessible keys.
+        Frame predictions = se.score(test); deletables.add(predictions);
+        Assert.assertTrue(predictions.vec(0).at(cyl_test.length() - 1) > 0);
+      } finally {
+        Scope.exit();
+        for (Lockable l: deletables) {
+          if (l instanceof Model) ((Model)l).deleteCrossValidationPreds();
+          l.delete();
+        }
+      }
+    }
 
 
     // ==========================================================================
