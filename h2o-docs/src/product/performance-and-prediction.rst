@@ -465,11 +465,20 @@ Thus, the one-dimensional partial dependence of function :math:`g` on :math:`X_j
 Prediction
 ----------
 
-With H2O-3, you can generate predictions for a model based on samples in a test set. This can be accomplished in memory or using MOJOs/POJOs using ``h2o.predict()`` or ``predict``.
+With H2O-3, you can generate predictions for a model based on samples in a test set using ``h2o.predict()`` or ``predict()``. This can be accomplished in memory or using MOJOs/POJOs.
 
 **Note**: MOJO/POJO predict cannot parse columns enclosed in double quotes (for example, ""2"").  
 
 For classification problems, predicted probabilities and labels are compared against known results. (Note that for binary models, labels are based on the maximum F1 threshold from the model object.) For regression problems, predicted regression targets are compared against testing targets and typical error metrics.
+
+Predicting Leaf Node Assignment
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For tree-based models, including GBM, DRF, XGBoost, and Isolation Forest, the ``h2o.predict_leaf_node_assignment()`` function predicts the leaf assignment on an H2O model. 
+
+This function predicts against a test frame. For every row in the test frame, this function returns the leaf placements of the row in all the trees in the model. An optional Type can also be specified to define the placements. Placements can be represented either by paths to the leaf nodes from the tree root (``Path`` - default) or by H2O's internal identifiers (``Node_ID``). The order of the rows in the results is the same as the order in which the data was loaded.
+
+This function returns an H2OFrame object with categorical leaf assignment identifiers for each tree in the model.
 
 Prediction Threshold
 ~~~~~~~~~~~~~~~~~~~~
@@ -496,7 +505,6 @@ This section provides examples of performing predictions in Python and R. Refer 
     prostate.hex <- h2o.importFile(path = "https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv", 
                                    destination_frame = "prostate.hex")
 
-
     # Split dataset giving the training dataset 75% of the data
     prostate.split <- h2o.splitFrame(data=prostate.hex, ratios=0.75)
 
@@ -519,27 +527,42 @@ This section provides examples of performing predictions in Python and R. Refer 
                      learn_rate=0.1)
 
     # Predict using the GBM model and the testing dataset
-    pred = h2o.predict(object=model, newdata=prostate.test)
+    pred <- h2o.predict(object=model, newdata=prostate.test)
     pred
       predict         p0          p1
-    1       1 0.39080085 0.609199153
-    2       0 0.75531958 0.244680420
-    3       1 0.09730223 0.902697771
-    4       0 0.99386932 0.006130679
-    5       0 0.89263247 0.107367533
-    6       0 0.98590611 0.014093887
+    1       0 0.7414373 0.25856274
+    2       1 0.3114293 0.68857073
+    3       0 0.9852284 0.01477161
+    4       0 0.6647902 0.33520975
+    5       0 0.6075046 0.39249538
+    6       1 0.4065468 0.59345323
 
-    [38 rows x 3 columns] 
+    [88 rows x 3 columns] 
 
     # View a summary of the prediction with a probability of TRUE
     summary(pred$p1, exact_quantiles=TRUE)
      p1                
-     Min.   :0.006131  
-     1st Qu.:0.123465  
-     Median :0.375684  
-     Mean   :0.414250  
-     3rd Qu.:0.676742  
-     Max.   :0.971854  
+     Min.   :0.008925  
+     1st Qu.:0.160050  
+     Median :0.350236  
+     Mean   :0.451507  
+     3rd Qu.:0.818486  
+     Max.   :0.99040  
+
+    # Predict the leaf node assigment using the GBM model and test data.
+    # Predict based on the path from the root node of the tree.
+    predict_lna <- h2o.predict_leaf_node_assignment(model, prostate.test)
+
+    # View a summary of the leaf node assignment prediction
+    summary(predict_lna$T1.C1, exact_quantiles=TRUE)
+    T1.C1   
+    RRLR:15 
+    RRR :13 
+    LLLR:12 
+    LLLL:11 
+    LLRR: 8 
+    LLRL: 6 
+
 
    .. code-block:: python
 
@@ -582,6 +605,10 @@ This section provides examples of performing predictions in Python and R. Refer 
             0  0.642381  0.357619
 
     [10 rows x 3 columns]
+
+    # Predict the leaf node assigment using the GBM model and test data.
+    # Predict based on the path from the root node of the tree.
+    predict_lna = model.predict_leaf_node_assignment(test, "Path")
 
 
 Predict using MOJOs
