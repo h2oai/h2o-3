@@ -527,10 +527,36 @@ public class RequestServer extends HttpServlet {
    * Log the request (unless it's an overly common one).
    */
   private static void maybeLogRequest(RequestUri uri, Properties header, Properties parms) {
-    for(HttpLogFilter f: _filters)
-      if( f.filter(uri,header,parms) ) return; // do not log anything if filtered
-    String url = uri.getUrl();
-    Log.info(uri + ", parms: " + parms);
+    LogFilterLevel level = LogFilterLevel.LOG;
+    for (HttpLogFilter f : _filters)
+      level = level.reduce(f.filter(uri, header, parms));
+    switch (level) {
+      case DO_NOT_LOG: 
+        return; // do not log anything if filtered
+      case URL_ONLY:
+        Log.info(uri, ", parms: <secret>");
+        return;
+      default:
+        Log.info(uri + ", parms: " + parms);
+    }
+  }
+  
+  public enum LogFilterLevel {
+    LOG(0), URL_ONLY(1), DO_NOT_LOG(Integer.MAX_VALUE);
+
+    private int level;
+
+    LogFilterLevel(int level) {
+      this.level = level;
+    }
+    
+    LogFilterLevel reduce(LogFilterLevel other) {
+      if (other.level > this.level) {
+        return other;
+      } else {
+        return this;
+      }
+    }
   }
 
   /**
@@ -539,7 +565,7 @@ public class RequestServer extends HttpServlet {
    * Implement this interface to create new filters used by maybeLogRequest
    */
   public interface HttpLogFilter {
-    boolean filter(RequestUri uri, Properties header, Properties parms);
+    LogFilterLevel filter(RequestUri uri, Properties header, Properties parms);
   }
 
   /**
@@ -548,21 +574,32 @@ public class RequestServer extends HttpServlet {
    */
   public static HttpLogFilter defaultFilter() {
     return new HttpLogFilter() { // this is much prettier with 1.8 lambdas
-      @Override public boolean filter(RequestUri uri, Properties header, Properties parms) {
+      @Override public LogFilterLevel filter(RequestUri uri, Properties header, Properties parms) {
         String url = uri.getUrl();
         if (url.endsWith(".css") ||
-          url.endsWith(".js")  ||
-          url.endsWith(".png") ||
-          url.endsWith(".ico")) return true;
+            url.endsWith(".js")  || 
+            url.endsWith(".png") || 
+            url.endsWith(".ico")
+        ) {
+          return LogFilterLevel.DO_NOT_LOG;
+        }
         String[] path = uri.getPath();
-        return path[2].equals("Cloud") ||
-          path[2].equals("Jobs") && uri.isGetMethod() ||
-          path[2].equals("Log") ||
-          path[2].equals("Progress") ||
-          path[2].equals("Typeahead") ||
-          path[2].equals("WaterMeterCpuTicks") ||
-          path[2].equals("DecryptionSetup") ||
-          path[2].equals("PersistS3"); // contains password information
+        if (path[2].equals("PersistS3") ||
+            path[2].equals("ImportSQLTable")
+        ) {
+          return LogFilterLevel.URL_ONLY;
+        }
+        if (path[2].equals("Cloud") ||
+            path[2].equals("Jobs") && uri.isGetMethod() ||
+            path[2].equals("Log") ||
+            path[2].equals("Progress") ||
+            path[2].equals("Typeahead") ||
+            path[2].equals("WaterMeterCpuTicks") ||
+            path[2].equals("DecryptionSetup")
+        ) {
+          return LogFilterLevel.DO_NOT_LOG;
+        }
+        return LogFilterLevel.LOG;
       }
     };
   }

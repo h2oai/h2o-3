@@ -46,9 +46,10 @@ public class CustomHttpFilterTest extends TestUtil {
 
     // let's filter out all GETs
     RequestServer.setFilters(RequestServer.defaultFilter(), new RequestServer.HttpLogFilter() {
-      @Override public boolean filter(RequestUri uri, Properties header, Properties parms) {
+      @Override public RequestServer.LogFilterLevel filter(RequestUri uri, Properties header, Properties parms) {
         String[] path = uri.getPath();
-        return path[1].equals("GET");
+        if (path[1].equals("GET")) return RequestServer.LogFilterLevel.DO_NOT_LOG;
+        else return RequestServer.LogFilterLevel.LOG;
       }
     });
 
