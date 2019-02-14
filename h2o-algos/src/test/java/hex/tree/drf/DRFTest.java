@@ -52,7 +52,8 @@ public class DRFTest extends TestUtil {
             ard(ard(15, 0, 0),
                     ard(0, 18, 0),
                     ard(0, 1, 17)),
-            s("Iris-setosa", "Iris-versicolor", "Iris-virginica"));
+            s("Iris-setosa", "Iris-versicolor", "Iris-virginica"),
+            true);
 
   }
 
@@ -73,7 +74,8 @@ public class DRFTest extends TestUtil {
             ard(ard(43, 0, 0),
                     ard(0, 37, 4),
                     ard(0, 4, 39)),
-            s("Iris-setosa", "Iris-versicolor", "Iris-virginica"));
+            s("Iris-setosa", "Iris-versicolor", "Iris-virginica"),
+            true);
   }
 
   @Test public void testClassCars1() throws Throwable {
@@ -96,7 +98,8 @@ public class DRFTest extends TestUtil {
                     ard(0, 1, 0, 0, 0),
                     ard(1, 3, 4, 25, 1),
                     ard(0, 0, 0, 2, 37)),
-            s("3", "4", "5", "6", "8"));
+            s("3", "4", "5", "6", "8"),
+            true);
   }
 
   @Test public void testClassCars5() throws Throwable {
@@ -118,7 +121,8 @@ public class DRFTest extends TestUtil {
                     ard(0, 2, 0, 0, 0),
                     ard(0, 6, 1, 67, 1),
                     ard(0, 0, 0, 2, 84)),
-            s("3", "4", "5", "6", "8"));
+            s("3", "4", "5", "6", "8"), 
+            true);
   }
 
   @Test public void testConstantCols() throws Throwable {
@@ -139,7 +143,8 @@ public class DRFTest extends TestUtil {
               1,
               20,
               null,
-              null);
+              null,
+              true);
       Assert.fail();
     } catch( H2OModelBuilderIllegalArgumentException iae ) {
     /*pass*/
@@ -156,7 +161,8 @@ public class DRFTest extends TestUtil {
             20,
             ard(ard(6, 0),
                     ard(9, 1)),
-            s("0", "1"));
+            s("0", "1"),
+            true);
   }
 
   //@Test
@@ -176,7 +182,8 @@ public class DRFTest extends TestUtil {
             20,
             ard(ard(46294, 202),
                     ard(3187, 107)),
-            s("0", "1"));
+            s("0", "1"),
+            true);
 
   }
 
@@ -196,7 +203,8 @@ public class DRFTest extends TestUtil {
             20,
             ard(ard(0, 70),
                     ard(0, 59)),
-            s("0", "1"));
+            s("0", "1"),
+            true);
 
   }
 
@@ -214,7 +222,8 @@ public class DRFTest extends TestUtil {
             20,
             1,
             10,
-            63.13182273942728
+            63.13182273942728,
+            true
     );
 
   }
@@ -233,7 +242,8 @@ public class DRFTest extends TestUtil {
             20,
             1,
             10,
-            59.713095855920244
+            59.713095855920244,
+            true
     );
 
   }
@@ -252,7 +262,8 @@ public class DRFTest extends TestUtil {
             20,
             1,
             10,
-        46.88452885668735
+        46.88452885668735, 
+            true
     );
 
   }
@@ -274,7 +285,8 @@ public class DRFTest extends TestUtil {
             20,
             ard(ard(0, 45000),
                     ard(0, 45000)),
-            s("0", "1"));
+            s("0", "1"),
+            true);
   }
 
   @Test public void test30kUnseenLevels() throws Throwable {
@@ -290,7 +302,8 @@ public class DRFTest extends TestUtil {
             20, //bins
             10, //min_rows
             5, //max_depth
-            0.25040633586487);
+            0.25040633586487,
+            true);
   }
 
   @Test public void testProstate() throws Throwable {
@@ -315,7 +328,8 @@ public class DRFTest extends TestUtil {
             1, //min_rows
             1, //max_depth
             null,
-            s("0", "1"));
+            s("0", "1"),
+            true);
   }
 
   @Test public void testAlphabet() throws Throwable {
@@ -333,7 +347,8 @@ public class DRFTest extends TestUtil {
             20,
             ard(ard(670, 0),
                     ard(0, 703)),
-            s("0", "1"));
+            s("0", "1"),
+            true);
   }
   @Test public void testAlphabetRegression() throws Throwable {
     basicDRFTestOOBE_Regression(
@@ -348,7 +363,8 @@ public class DRFTest extends TestUtil {
             20,
             1,
             10,
-            0.0);
+            0.0,
+            true);
   }
   @Test public void testAlphabetRegression2() throws Throwable {
     basicDRFTestOOBE_Regression(
@@ -363,7 +379,8 @@ public class DRFTest extends TestUtil {
             26, // enough bins to resolve the alphabet
             1,
             1, // depth 1 is enough since nbins_cats == nbins == 26 (enough)
-            0.0);
+            0.0,
+            true);
   }
   @Test public void testAlphabetRegression3() throws Throwable {
     basicDRFTestOOBE_Regression(
@@ -378,7 +395,8 @@ public class DRFTest extends TestUtil {
             25, // not enough bins to resolve the alphabet
             1,
             1, // depth 1 is not enough since nbins_cats == nbins < 26
-            0.24007225096411577);
+            0.24007225096411577,
+            true);
   }
 
   @Ignore  //1-vs-5 node discrepancy (parsing into different number of chunks?)
@@ -404,7 +422,8 @@ public class DRFTest extends TestUtil {
                     ard(2709, 19024)),
 //          a(a(7841, 11822), //5-node
 //            a(2666, 19053)),
-            s("NO", "YES"));
+            s("NO", "YES"),
+            true);
   }
 
 
@@ -429,14 +448,14 @@ public class DRFTest extends TestUtil {
     return ret;
   }
 
-  public void basicDRFTestOOBE_Classification(String fnametrain, String hexnametrain, PrepData prep, int ntree, int nbins, int min_rows, int max_depth, double[][] expCM, String[] expRespDom) throws Throwable {
-    basicDRF(fnametrain, hexnametrain, null, prep, ntree, max_depth, nbins, true, min_rows, expCM, -1, expRespDom);
+  public void basicDRFTestOOBE_Classification(String fnametrain, String hexnametrain, PrepData prep, int ntree, int nbins, int min_rows, int max_depth, double[][] expCM, String[] expRespDom, boolean checkConstResp) throws Throwable {
+    basicDRF(fnametrain, hexnametrain, null, prep, ntree, max_depth, nbins, true, min_rows, expCM, -1, expRespDom, checkConstResp);
   }
-  public void basicDRFTestOOBE_Regression(String fnametrain, String hexnametrain, PrepData prep, int ntree, int nbins, int min_rows, int max_depth, double expMSE) throws Throwable {
-    basicDRF(fnametrain, hexnametrain, null, prep, ntree, max_depth, nbins, false, min_rows, null, expMSE, null);
+  public void basicDRFTestOOBE_Regression(String fnametrain, String hexnametrain, PrepData prep, int ntree, int nbins, int min_rows, int max_depth, double expMSE, boolean checkConstResp) throws Throwable {
+    basicDRF(fnametrain, hexnametrain, null, prep, ntree, max_depth, nbins, false, min_rows, null, expMSE, null, checkConstResp);
   }
 
-  public void basicDRF(String fnametrain, String hexnametrain, String fnametest, PrepData prep, int ntree, int max_depth, int nbins, boolean classification, int min_rows, double[][] expCM, double expMSE, String[] expRespDom) throws Throwable {
+  public void basicDRF(String fnametrain, String hexnametrain, String fnametest, PrepData prep, int ntree, int max_depth, int nbins, boolean classification, int min_rows, double[][] expCM, double expMSE, String[] expRespDom, boolean checkConstResp) throws Throwable {
     Scope.enter();
     DRFModel.DRFParameters drf = new DRFModel.DRFParameters();
     Frame frTest = null, pred = null;
@@ -461,6 +480,9 @@ public class DRFTest extends TestUtil {
       drf._mtries = -1;
       drf._sample_rate = 0.66667f;   // Simulated sampling with replacement
       drf._seed = (1L<<32)|2;
+      if(!checkConstResp) {
+          drf._check_constant_response = false;
+      }
 
       // Invoke DRF and block till the end
       DRF job = new DRF(drf);
@@ -1684,5 +1706,31 @@ public class DRFTest extends TestUtil {
       if (ksplits[1]!=null) ksplits[1].remove();
       Scope.exit();
     }
+  }
+  
+  @Test public void testConstantResponse() {
+    Frame tfr=null;
+    DRFModel drf = null;
+    
+    Scope.enter();
+    try {
+        tfr = parse_test_file(Key.make("iris.hex"), "./smalldata/iris/iris.csv");
+        tfr.add("constantCol",tfr.anyVec().makeCon(1));
+        DKV.put(tfr);
+        DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+        parms._train = tfr._key;
+        parms._response_column = "constantCol";
+        parms._ntrees = 1;
+        parms._max_depth = 3;
+        parms._seed = 12;
+        parms._check_constant_response = false; //Allow constant response column
+
+        // Build model
+        drf = new DRF(parms).trainModel().get();
+    } finally{
+        if (tfr != null) tfr.remove();
+        if (drf != null) drf.remove();
+    }
+    Scope.exit(); 
   }
 }
