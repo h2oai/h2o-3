@@ -52,7 +52,7 @@ public class GLMScore extends MRTask<GLMScore> {
       double [] beta = m.beta();
       int [] ids = new int[beta.length-1];
       int k = 0;
-      for(int i = 0; i < beta.length-1; ++i){
+      for(int i = 0; i < beta.length-1; ++i){ // pick out beta that is not zero in ids
         if(beta[i] != 0) ids[k++] = i;
       }
       if(k < beta.length-1) {
