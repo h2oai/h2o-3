@@ -20,6 +20,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/4/index.htm
 <h4>Improvement</h4>
 
 <ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/HEXDEV-733'>HEXDEV-733</a>] - When using h2o.import_sql_table to read from a Hive table, the username and password no longer appear in the logs.
+</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6207'>PUBDEV-6207</a>] - Monotone constraints are now exposed in Flow.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6277'>PUBDEV-6277</a>] - The check for constants in response columns is now optional for all models. (STILL OPEN)
