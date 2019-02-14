@@ -14,11 +14,12 @@ import water.util.ReflectionUtils;
 import java.io.*;
 import java.util.*;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static water.util.FileUtils.locateFile;
 
 // this test demonstrates that XGBoost Predictor can be used to calculate feature contributions (Tree SHAP values)
-// naive (=slow) algorithm implemented
+// naive (=slow) algorithm implemented and compared to implementation in XGBoost Predictor
 public class XgbPredictContribsTest {
 
   List<Map<Integer, Float>> trainData;
@@ -76,7 +77,7 @@ public class XgbPredictContribsTest {
     
     // 2. Sanity check - make sure booster & predictor agree on predictions
     float[][] preds = booster.predict(trainMat, true);
-    float[][] ctrbs = booster.predictContrib(trainMat, 0);
+    float[][] ctrbs = booster.predictContrib(trainMat, 0); // these are approximate contributions no TreeSHAP values (included for completeness)
     for (int i = 0; i < preds.length; ++i) {
       FVec fvec = new MapBackedFVec(trainData.get(i));
       float[] pp = predictor.predict(fvec, true);
@@ -89,21 +90,27 @@ public class XgbPredictContribsTest {
       assertEquals(ps[0], pp[0], 1e-6);
     }
 
-    // 3. Calculate contributions using naive (and extremely slow) approach
+    // 3. Calculate contributions using naive (and extremely slow) approach and compare with Predictor's result
     GBTree gbTree = (GBTree) predictor.getBooster();
     RegTree[] trees = gbTree.getGroupedTrees()[0];
     for (int i = 0; i < 100; i++) {
-      double[] contribs = new double[ctrbs[0].length];
+      double[] contribsNaive = new double[ctrbs[0].length]; // contributions calculated naive approach (exponential complexity)
+      float[] contribsPredictor = new float[ctrbs[0].length]; // contributions calculated by Predictor
       FVec row = new MapBackedFVec(trainData.get(i));
       float[] predicted = predictor.predict(row, true);
+
       double pred = 0;
       for (int t = 0; t < trees.length; t++) {
         final RegTreeImpl tree = (RegTreeImpl) trees[t];
+        final TreeSHAP treeSHAP = new TreeSHAP(tree);
         final Set<Integer> usedFeatures = usedFeatures(tree);
         final int M = usedFeatures.size();
+        // A) Calculate contributions using Predictor 
+        treeSHAP.calculateContributions(row, 0, contribsPredictor, 0, -1);
+        // B) Calculate contributions the hard way
         Log.info("Tree " + t + ": " + usedFeatures);
-        // last element is the bias
-        contribs[contribs.length - 1] += treeMeanValue(tree) /* tree bias */ + baseMargin;
+        // last element is the bias term
+        contribsNaive[contribsNaive.length - 1] += treeMeanValue(tree) /* tree bias */ + baseMargin;
         // pre-calculate expValue for each subset
         Map<Set<Integer>, Double> expVals = new HashMap<>();
         for (Set<Integer> subset : allSubsets(usedFeatures)) {
@@ -117,17 +124,19 @@ public class XgbPredictContribsTest {
               noFeature.remove(feature);
               double mult = fact(noFeature.size()) * (long) fact(M - subset.size()) / (double) fact(M);
               double contrib = mult * (expVals.get(subset) - expVals.get(noFeature));
-              contribs[feature] += contrib;
+              contribsNaive[feature] += contrib;
             }
           }
         }
         // expValue of a tree with all features marked as used should sum-up to the total prediction
         pred += expValue(tree, row, usedFeatures);
       }
-      // contributions should sum-up to the prediction
-      double pc = ArrayUtils.sum(contribs);
-      assertEquals(predicted[0], pc, 1e-6);
+      // sanity check - contributions should sum-up to the prediction
+      final double predNaive = ArrayUtils.sum(contribsNaive);
+      assertEquals(predicted[0], predNaive, 1e-6);
       assertEquals(predicted[0], pred, 1e-6);
+      // contributions should match!
+      assertArrayEquals(contribsNaive, ArrayUtils.toDouble(contribsPredictor), 1e-6);
     }
   }
 
