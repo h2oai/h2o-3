@@ -1,4 +1,30 @@
 .. _migration:
+.. include:: <isonum.txt>
+
+Migration Guide
+###############
+
+Migrating between H2O-3 versions
+================================
+
+H2O-3 does its best to keep backwards compatibility between major versions, but sometimes breaking changes are needed in order to improve code quality and to address issues.
+
+Please refer to the following sections if you encounter any API-related issue when upgrading H2O-3.
+
+**Note**: H2O-3 versions follow the naming convention ``3.major.minor.patch``. 
+
+From 3.22 or below to 3.24
+--------------------------
+
+Java API
+~~~~~~~~
+
+The following classes were moved and/or renamed:
+
+- ``hex.StackedEnsembleModel`` |rarr| ``hex.ensemble.StackedEnsembleModel``.
+- ``hex.StackedEnsembleModel.MetalearnerAlgorithm`` |rarr| ``hex.ensemble.Metalearner.Algorithm``.
+
+Some internal methods of ``StackedEnsemble`` and ``StackedEnsembleModel`` were also removed their public access but this should not impact anyone.
 
 Migrating to H2O 3
 ==================
