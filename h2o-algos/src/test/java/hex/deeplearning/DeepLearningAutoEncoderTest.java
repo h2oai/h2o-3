@@ -67,6 +67,10 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
         DeepLearning dl = new DeepLearning(p);
         DeepLearningModel mymodel = dl.trainModel().get();
 
+        p._standardize = false;
+        DeepLearning dlNoStand = new DeepLearning(p);
+        DeepLearningModel mymodelNoStand = dlNoStand.trainModel().get();
+
         Frame l2_frame_train=null, l2_frame_test=null;
 
         // Verification of results
@@ -159,12 +163,18 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
           Assert.assertTrue(outliers.contains(new Long(22)));
           Assert.assertTrue(outliers.size() == 3);
 
-          // check if reconstruction error is the same from model and mojo model too. Testcase for PUBDEV-6030.
+          // check if reconstruction error is the same from model and mojo model too - test case for PUBDEV-6030
+          // also check if reconstruction error is calculated correctly if the parameter standardize is set to false 
+          // - test case for PUBDEV-6267
           try {
             DeeplearningMojoModel mojoModel = (DeeplearningMojoModel) mymodel.toMojo();
             EasyPredictModelWrapper model = new EasyPredictModelWrapper(mojoModel);
-            AutoEncoderModelPrediction tmpPrediction;
+
+            DeeplearningMojoModel  mojoModelNoStand = (DeeplearningMojoModel) mymodelNoStand.toMojo();
+            EasyPredictModelWrapper modelNoStand = new EasyPredictModelWrapper(mojoModelNoStand);
+            
             double calcNormMse = 0;
+            double calcNormMseNoStand = 0;
             for (int r = 0; r < train.numRows(); r++) {
               RowData tmpRow = new RowData();
               BufferedString bStr = new BufferedString();
@@ -175,8 +185,11 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
                   tmpRow.put(train.names()[c],  train.vec(c).at(r));
                 }
               }
-              tmpPrediction = model.predictAutoEncoder(tmpRow);
+              AutoEncoderModelPrediction tmpPrediction = model.predictAutoEncoder(tmpRow);
               calcNormMse += tmpPrediction.mse;
+
+              AutoEncoderModelPrediction tmpPredictionNoStand = modelNoStand.predictAutoEncoder(tmpRow);
+              calcNormMseNoStand += tmpPredictionNoStand.mse;
             }
             double mojoMeanError = calcNormMse/train.numRows();
             sb.append("Mojo mean reconstruction error (train): ").append(mojoMeanError).append("\n");
@@ -184,6 +197,14 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
                     "reconstruction error: ");
             sb.append(mean_l2).append(" == ").append(mojoMeanError).append("\n");
             Assert.assertEquals( mean_l2, mojoMeanError, 1e-7);
+            
+            double mojoMeanErrorNoStand = calcNormMseNoStand/train.numRows();
+            sb.append("Mojo mean reconstruction error (train): ").append(mojoMeanErrorNoStand).append("\n");
+            sb.append("Mean reconstruction error should be the same from model compare to mojo model " +
+                    "reconstruction error: ");
+            sb.append(mymodelNoStand._output.errors.scored_train._mse).append(" == ").append(mojoMeanErrorNoStand).append("\n");
+            Assert.assertEquals(mymodelNoStand._output.errors.scored_train._mse, mojoMeanErrorNoStand, 1e-7);
+            
           } catch (IOException error) {
             Assert.fail("IOException when testing mojo mean reconstruction error: "+error.toString());
           } catch (PredictException error){
@@ -192,6 +213,7 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
         } finally {
           Log.info(sb);
           // cleanup
+          if (mymodelNoStand != null) mymodelNoStand.delete();
           if (mymodel != null) mymodel.delete();
           if (l2_frame_train != null) l2_frame_train.delete();
           if (l2_frame_test != null) l2_frame_test.delete();

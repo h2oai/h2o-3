@@ -11,6 +11,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -20,19 +21,26 @@ import static water.hadoop.h2omapper.*;
 
 public class DelegationTokenRefresher implements Runnable {
   
-  public static final String KEYTAB_FILE = "hive_keytab";
-  private static final String KEYTAB_PATH = "./" + KEYTAB_FILE;
-
-  public static void setup(Configuration conf) {
+  public static void setup(Configuration conf, String iceRoot) throws IOException {
     String hiveHost = conf.get(H2O_HIVE_HOST);
     String hivePrincipal = conf.get(H2O_HIVE_PRINCIPAL);
     String authPrincipal = conf.get(H2O_AUTH_PRINCIPAL);
+    String authKeytab = conf.get(H2O_AUTH_KEYTAB);
 
-    if (authPrincipal != null && hiveHost != null && hivePrincipal != null) {
-      new DelegationTokenRefresher(authPrincipal, hiveHost, hivePrincipal).start();
+    if (authPrincipal != null && authKeytab != null && hiveHost != null && hivePrincipal != null) {
+      String authKeytabPath = writeKeytabToFile(authKeytab, iceRoot);
+      new DelegationTokenRefresher(authPrincipal, authKeytabPath, hiveHost, hivePrincipal).start();
     } else {
       log("Delegation token refresh not active.", null);
     }
+  }
+  
+  private static String writeKeytabToFile(String authKeytab, String iceRoot) throws IOException {
+    h2omapper.makeSureIceRootExists(iceRoot);
+    String fileName = iceRoot + File.separator + "auth_keytab";
+    byte[] byteArr = h2odriver.convertStringToByteArr(authKeytab);
+    h2odriver.writeBinaryFile(fileName, byteArr);
+    return fileName;
   }
 
   private final ScheduledExecutorService _executor = Executors.newSingleThreadScheduledExecutor(
@@ -40,6 +48,7 @@ public class DelegationTokenRefresher implements Runnable {
   );
 
   private final String _authPrincipal;
+  private final String _authKeytabPath;
   private final String _hiveHost;
   private final String _hivePrincipal;
 
@@ -47,10 +56,12 @@ public class DelegationTokenRefresher implements Runnable {
 
   public DelegationTokenRefresher(
       String authPrincipal,
+      String authKeytabPath,
       String hiveHost,
       String hivePrincipal
   ) {
     this._authPrincipal = authPrincipal;
+    this._authKeytabPath = authKeytabPath;
     this._hiveHost = hiveHost;
     this._hivePrincipal = hivePrincipal;
   }
@@ -129,7 +140,7 @@ public class DelegationTokenRefresher implements Runnable {
 
   private void doRefreshTokens() throws IOException, InterruptedException {
     log("Log in from keytab", null);
-    UserGroupInformation ugi = UserGroupInformation.loginUserFromKeytabAndReturnUGI(_authPrincipal, KEYTAB_PATH);
+    UserGroupInformation ugi = UserGroupInformation.loginUserFromKeytabAndReturnUGI(_authPrincipal, _authKeytabPath);
     Credentials creds = getTokens(ugi);
     distribute(creds);
   }

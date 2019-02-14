@@ -383,7 +383,7 @@ The Tweedie distribution is parametrized by variance power :math:`p`. It is defi
 - :math:`p = 1`: Poisson
 - :math:`p \in (1,2)`: Compound Poisson, non-negative with mass at zero
 - :math:`p = 2`: Gamma
-- :math:`p = 3`: Gaussian
+- :math:`p = 3`: Inverse-Gaussian
 - :math:`p > 2`: Stable, with support on the positive reals
 
 For :math:`p > 1`, the model likelood to maximize has the form:
@@ -398,7 +398,7 @@ The corresponding deviance when :math:`p \neq 1` and :math:`p \neq 2` is equal t
 
 .. math::
 
- D = -2 \sum_{i=1}^{N} y_i(y_i^{1-p} - \hat{y}_i^{1-p}) - \dfrac {(y_i^{2-p} - \hat{y}_i^{2-p})} {(2-p)}
+ D = 2\sum_{i}^N \frac{y_{i}(y_{i}^{1-p} - \hat{y}_{i}^{1-p})}{(1-p)} - \frac{(y_{i}^{2-p} - \hat{y}_{i}^{2-p})}{(2-p)}
 
 Links
 '''''

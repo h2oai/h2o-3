@@ -47,7 +47,6 @@ import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
-import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -64,7 +63,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static water.hadoop.DelegationTokenRefresher.KEYTAB_FILE;
+import static water.hadoop.h2omapper.H2O_AUTH_KEYTAB;
 import static water.hadoop.h2omapper.H2O_AUTH_PRINCIPAL;
 import static water.util.JavaVersionUtils.JAVA_VERSION;
 
@@ -1842,7 +1841,9 @@ public class h2odriver extends Configured implements Tool {
     hiveTokenGenerator.addHiveDelegationToken(j, hiveHost, hivePrincipal);
     if (refreshTokens && principal != null && keytabPath != null) {
       j.getConfiguration().set(H2O_AUTH_PRINCIPAL, principal);
-      j.addCacheFile(new URI("file://" + keytabPath + "#" + KEYTAB_FILE));
+      byte[] payloadData = readBinaryFile(keytabPath);
+      String payload = convertByteArrToString(payloadData);
+      j.getConfiguration().set(H2O_AUTH_KEYTAB, payload);
     }
 
     if (outputPath != null)
