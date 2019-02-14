@@ -108,12 +108,11 @@ Below is a simple example showing Isolation Forest from model training through p
     model <- h2o.isolationForest(training_frame=train, 
                                  sample_rate = 0.1, 
                                  max_depth = 20, 
-                                 ntrees = 10, 
-                                 score_each_iteration = TRUE)
+                                 ntrees = 50)
 
     # Calculate score
     score <- h2o.predict(model, test)
-    result_pred <- as.data.frame(score)$predict
+    result_pred <- score$predict
 
     # Predict the leaf node assignment
     ln_pred <- h2o.predict_leaf_node_assignment(model, test)
@@ -127,21 +126,22 @@ Below is a simple example showing Isolation Forest from model training through p
     # Import the prostate dataset
     h2o_df = h2o.import_file("https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv")
     
-    # Split the data into Train/Test/Validation with Train having 70% and test and validation 15% each
-    train,test,valid = h2o_df.split_frame(ratios=[.7, .15])
+    # Split the data giving the training dataset 75% of the data
+    train,test = h2o_df.split_frame(ratios=[0.75])
 
     # Build an Isolation forest model
     model = H2OIsolationForestEstimator(sample_rate = 0.1, 
                                         max_depth = 20, 
-                                        ntrees = 10, 
-                                        score_each_iteration = True)
+                                        ntrees = 50)
     model.train(training_frame=train)
 
-    # Run prediction on the model
-    predict = model.predict(test)
+    # Calculate score
+    score = model.predict(test)
+    result_pred = score["predict"]
 
-    # Predict the leaf node assigment
-    predict_lna = model.predict_leaf_node_assignment(test, "Path")
+    # Predict the leaf node assignment
+    ln_pred = model.predict_leaf_node_assignment(test, "Path")
+
 
 References
 ~~~~~~~~~~
