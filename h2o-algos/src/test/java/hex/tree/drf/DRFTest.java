@@ -1701,7 +1701,6 @@ public class DRFTest extends TestUtil {
         parms._max_depth = 3;
         parms._seed = 12;
         parms._check_constant_response = false; //Allow constant response column
-
         // Build model
         drf = new DRF(parms).trainModel().get();
     } finally{
