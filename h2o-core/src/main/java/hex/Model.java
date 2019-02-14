@@ -237,6 +237,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public String _weights_column;
     public String _offset_column;
     public String _fold_column;
+    
+    // Check for constant response
+    public boolean _check_constant_response = true;
 
     public boolean _is_cv_model; //internal helper
 
