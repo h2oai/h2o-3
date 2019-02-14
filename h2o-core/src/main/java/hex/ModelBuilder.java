@@ -821,8 +821,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected transient Vec _fold; // fold id column
   protected transient String[] _origNames; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
   protected transient String[][] _origDomains; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
-
-  public boolean _checkConstResponse(){return _parms._check_constant_response;}
+  
   public boolean hasOffsetCol(){ return _parms._offset_column != null;} // don't look at transient Vec
   public boolean hasWeightCol(){return _parms._weights_column != null;} // don't look at transient Vec
   public boolean hasFoldCol(){return _parms._fold_column != null;} // don't look at transient Vec
@@ -1189,7 +1188,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         if (_parms._distribution == DistributionFamily.quasibinomial) {
           _nclass = 2;
         }
-        if (_checkConstResponse() && _response.isConst()) {
+        if (_parms._check_constant_response && _response.isConst()) {
           error("_response", "Response cannot be constant.");
         }
       }
