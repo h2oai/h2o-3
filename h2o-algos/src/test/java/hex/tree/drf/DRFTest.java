@@ -1686,11 +1686,10 @@ public class DRFTest extends TestUtil {
     }
   }
   
-  @Test public void testConstantResponse() {
+  @Test public void testConstantResponse() { 
+    Scope.enter();
     Frame tfr=null;
     DRFModel drf = null;
-
-    Scope.enter();
     try {
         tfr = parse_test_file(Key.make("iris.hex"), "./smalldata/iris/iris.csv");
         tfr.add("constantCol",tfr.anyVec().makeCon(1));
