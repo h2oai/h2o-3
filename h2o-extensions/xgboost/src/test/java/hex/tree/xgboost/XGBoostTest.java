@@ -14,13 +14,12 @@ import ml.dmlc.xgboost4j.java.XGBoost;
 import org.hamcrest.CoreMatchers;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
-import water.fvec.Frame;
-import water.fvec.TestFrameBuilder;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.rapids.Rapids;
 import water.util.ArrayUtils;
 import water.util.Log;
@@ -51,6 +50,9 @@ public class XGBoostTest extends TestUtil {
   @Rule
   public ExpectedException thrown = ExpectedException.none();
 
+  @Rule
+  public TemporaryFolder tmp = new TemporaryFolder();
+  
   @Before
   public void setupMojoJavaScoring() {
     System.setProperty("sys.ai.h2o.xgboost.scoring.java.enable", confMojoJavaScoring); // mojo scoring
@@ -1521,6 +1523,86 @@ public class XGBoostTest extends TestUtil {
 
       DataInfo dinfo = hex.tree.xgboost.XGBoost.makeDataInfo(f, null, parms, 1);
       assertNotNull(dinfo._coefNames);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testScoreContributions() throws IOException, XGBoostError {
+    Scope.enter();
+    try {
+      Frame tfr = Scope.track(parse_test_file("./smalldata/junit/weather.csv"));
+      assertEquals(1, tfr.anyVec().nChunks()); // tiny file => should always fit in a single chunk
+      
+      String response = "RainTomorrow";
+      Scope.track(tfr.replace(tfr.find(response), tfr.vecs()[tfr.find(response)].toCategoricalVec()));
+      // remove columns correlated with the response
+      tfr.remove("RISK_MM").remove();
+      tfr.remove("EvapMM").remove();
+      DKV.put(tfr);
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._ntrees = 5;
+      parms._max_depth = 5;
+      parms._train = tfr._key;
+      parms._response_column = response;
+      parms._save_matrix_directory = tmp.newFolder("matrix_dump").getAbsolutePath();
+
+      XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      Scope.track_generic(model);
+      Log.info(model);
+
+      Frame contributions = model.scoreContributions(tfr, Key.<Frame>make());
+      Scope.track(contributions);
+
+      assertEquals("BiasTerm", contributions.names()[contributions.names().length - 1]);
+      
+      // basic sanity check - contributions should sum-up to predictions
+      Frame predsFromContributions = new MRTask() {
+        @Override
+        public void map(Chunk[] cs, NewChunk nc) {
+          for (int i = 0; i < cs[0]._len; i++) {
+            float sum = 0;
+            for (Chunk c : cs)
+              sum += c.atd(i);
+            nc.addNum(sigmoid(sum));
+          }
+        }
+        private float sigmoid(float x) {
+          return (1f / (1f + (float) Math.exp(-x)));
+        }
+      }.doAll(Vec.T_NUM, contributions).outputFrame();
+      Frame expectedPreds = model.score(tfr);
+      Scope.track(expectedPreds);
+      assertVecEquals(expectedPreds.vec(2), predsFromContributions.vec(0), 1e-6);
+
+      // make the predictions with XGBoost
+      Map<String, String> rabitEnv = new HashMap<>();
+      rabitEnv.put("DMLC_TASK_ID", "0");
+      Rabit.init(rabitEnv);
+      Booster booster = model.model_info().deserializeBooster();
+      DMatrix matrix = new DMatrix(new File(parms._save_matrix_directory, "matrix.part0").getAbsolutePath());
+      final float[][] expectedContribs = booster.predictContrib(matrix, 0);
+      booster.dispose();
+      matrix.dispose();
+      Rabit.shutdown();
+      
+      // finally check the contributions
+      assertEquals(expectedContribs.length, contributions.numRows());
+      new MRTask() {
+        @Override
+        public void map(Chunk[] cs) {
+          for (int i = 0; i < cs[0]._len; i++) {
+            for (int j = 0; j < cs.length; j++) {
+              float contrib = (float) cs[j].atd(i);
+              int row = (int) cs[0].start() + i;
+              assertEquals("Contribution in row=" + row + " on position=" + j + " should match.", 
+                      expectedContribs[row][j], contrib, 1e-6);
+            }
+          }
+        }
+      }.doAll(contributions).outputFrame();
     } finally {
       Scope.exit();
     }
