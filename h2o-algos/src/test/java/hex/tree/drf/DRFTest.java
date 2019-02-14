@@ -1685,4 +1685,28 @@ public class DRFTest extends TestUtil {
       Scope.exit();
     }
   }
+  
+  @Test public void testConstantResponse() { 
+    Scope.enter();
+    Frame tfr=null;
+    DRFModel drf = null;
+    try {
+        tfr = parse_test_file(Key.make("iris.hex"), "./smalldata/iris/iris.csv");
+        tfr.add("constantCol",tfr.anyVec().makeCon(1));
+        DKV.put(tfr);
+        DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+        parms._train = tfr._key;
+        parms._response_column = "constantCol";
+        parms._ntrees = 1;
+        parms._max_depth = 3;
+        parms._seed = 12;
+        parms._check_constant_response = false; //Allow constant response column
+        // Build model
+        drf = new DRF(parms).trainModel().get();
+    } finally{
+        if (tfr != null) tfr.remove();
+        if (drf != null) drf.remove();
+    }
+    Scope.exit(); 
+  }
 }
