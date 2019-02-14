@@ -2,7 +2,7 @@
 
 ## H2O
 
-### Xu (3.22.1.4) - 2/14/2019
+### Xu (3.22.1.4) - 2/15/2019
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-xu/4/index.html</a>
 
@@ -24,7 +24,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/4/index.htm
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6207'>PUBDEV-6207</a>] - Monotone constraints are now exposed in Flow.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6277'>PUBDEV-6277</a>] - The check for constants in response columns is now optional for all models. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6277'>PUBDEV-6277</a>] - The check for constants in response columns is now optional for all models.
 </li>
 </ul>
                 
