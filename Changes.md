@@ -13,7 +13,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/4/index.htm
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6264'>PUBDEV-6264</a>] - In K-Means, fixed and issue in which time columns were treated as if they were categorical.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6267'>PUBDEV-6267</a>] - Fixed Autoencoder `calculateReconstructionErrorPerRowData` error and set the default value of the result MSE to -1. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6267'>PUBDEV-6267</a>] - Fixed Autoencoder `calculateReconstructionErrorPerRowData` error and set the default value of the result MSE to -1.
 </li>
 </ul>
     
@@ -21,6 +21,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/4/index.htm
 
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6207'>PUBDEV-6207</a>] - Monotone constraints are now exposed in Flow.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6277'>PUBDEV-6277</a>] - The check for constants in response columns is now optional for all models. (STILL OPEN)
 </li>
 </ul>
                 
@@ -35,7 +37,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/4/index.htm
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6199'>PUBDEV-6199</a>] - Added a "Tokenize Strings" topic to the Data Manipulation chapter. 
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6245'>PUBDEV-6245</a>] - Added `predict_leaf_node_assignment` information to the User Guide in the Performance and Prediction chapter. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6245'>PUBDEV-6245</a>] - Added `predict_leaf_node_assignment` information to the User Guide in the Performance and Prediction chapter.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6253'>PUBDEV-6253</a>] - Noted in the documentation that the `custom` and `custom_increasing` stopping metric options are not available in the R client.
 </li>
