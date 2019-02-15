@@ -28,7 +28,7 @@ The following classes were moved and/or renamed:
 ``ai.h2o.automl.AutoML.algo``                       ``ai.h2o.automl.Algo``
 =================================================   ======================================
 
-Some internal methods of ``StackedEnsemble`` and ``StackedEnsembleModel`` were also removed their public access but this should not impact anyone.
+Some internal methods of ``StackedEnsemble`` and ``StackedEnsembleModel`` are no longer public, but this should not impact anyone.
 
 Migrating to H2O-3
 ------------------
