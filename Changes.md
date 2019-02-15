@@ -2,6 +2,49 @@
 
 ## H2O
 
+### Xu (3.22.1.4) - 2/15/2019
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-xu/4/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6242'>PUBDEV-6242</a>] - Users can now save and load Isolation Forest models.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6264'>PUBDEV-6264</a>] - In K-Means, fixed and issue in which time columns were treated as if they were categorical.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6267'>PUBDEV-6267</a>] - Fixed Autoencoder `calculateReconstructionErrorPerRowData` error and set the default value of the result MSE to -1.
+</li>
+</ul>
+    
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/HEXDEV-733'>HEXDEV-733</a>] - When using h2o.import_sql_table to read from a Hive table, the username and password no longer appear in the logs.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6207'>PUBDEV-6207</a>] - Monotone constraints are now exposed in Flow.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6277'>PUBDEV-6277</a>] - The check for constants in response columns is now optional for all models.
+</li>
+</ul>
+                
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6032'>PUBDEV-6032</a>] - Added to the documentation that MOJO/POJO predict cannot parse columns enclosed in double quotes (for example, ""2"").
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6174'>PUBDEV-6174</a>] - Updated the description for Gini in the User Guide. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6183'>PUBDEV-6183</a>] - Fixed the equation for Tweedie Deviance in the GLM booklet and in the User Guide.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6199'>PUBDEV-6199</a>] - Added a "Tokenize Strings" topic to the Data Manipulation chapter. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6245'>PUBDEV-6245</a>] - Added `predict_leaf_node_assignment` information to the User Guide in the Performance and Prediction chapter.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6253'>PUBDEV-6253</a>] - Noted in the documentation that the `custom` and `custom_increasing` stopping metric options are not available in the R client.
+</li>
+</ul>
+
 ### Xu (3.22.1.3) - 1/25/2019
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-xu/3/index.html</a>
@@ -21,7 +64,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/3/index.htm
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6216'>PUBDEV-6216</a>] - Added Hive with Kerberos support for H2O on Hadoop. 
 </li>
 </ul>
-                    
+
 <h4>Docs</h4>
 
 <ul>
