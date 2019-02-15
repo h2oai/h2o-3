@@ -12,6 +12,7 @@ import water.fvec.task.UniqTask;
 import water.rapids.ast.prims.advmath.AstKFold;
 import water.rapids.ast.prims.mungers.AstGroup;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Random;
 
@@ -113,6 +114,12 @@ public class TargetEncoderFrameHelper {
       index++;        
     }
     return origColumns;
+  }
+  
+  public static <T> T[] concat(T[] first, T[] second) {
+    T[] result = Arrays.copyOf(first, first.length + second.length);
+    System.arraycopy(second, 0, result, first.length, second.length);
+    return result;
   }
 
   /**

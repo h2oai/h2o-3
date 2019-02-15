@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.Map;
 
 import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
+import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.concat;
 
 /*
   Be aware that `smalldata/airlines/target_encoding/airlines_*.csv` files are not present in the repo. Replace with your own splits.
@@ -287,9 +288,4 @@ public class TargetEncodingAirlinesBenchmark extends TestUtil {
     }
   }
 
-  public static <T> T[] concat(T[] first, T[] second) {
-    T[] result = Arrays.copyOf(first, first.length + second.length);
-    System.arraycopy(second, 0, result, first.length, second.length);
-    return result;
-  }
 }

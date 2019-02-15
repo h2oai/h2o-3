@@ -2,6 +2,8 @@ package ai.h2o.automl.targetencoding;
 
 import water.Iced;
 
+import java.util.Map;
+
 public class TargetEncodingParams extends Iced {
 
   private boolean _withBlendedAvg;
@@ -23,6 +25,13 @@ public class TargetEncodingParams extends Iced {
     this._blendingParams = null;
     this._holdoutType = holdoutType;
     this._noiseLevel = 0;
+  }
+  
+  public TargetEncodingParams( Map<String, Object> paramsMap) {
+    this._withBlendedAvg = (boolean) paramsMap.get("_withBlending");;
+    this._blendingParams = new BlendingParams((int) paramsMap.get("_inflection_point"), (double) paramsMap.get("_smoothing"));
+    this._holdoutType = (byte) paramsMap.get("_holdoutType");
+    this._noiseLevel = (double) paramsMap.get("_noise_level");
   }
   
   public static TargetEncodingParams DEFAULT = new TargetEncodingParams(new BlendingParams(10, 5), TargetEncoder.DataLeakageHandlingStrategy.KFold, 0.01);

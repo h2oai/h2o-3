@@ -9,8 +9,10 @@ import water.DKV;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.rapids.Rapids;
+import water.rapids.StratifiedSplit;
 import water.rapids.Val;
 import water.util.ArrayUtils;
 
