@@ -1,5 +1,4 @@
 .. _migration:
-.. include:: <isonum.txt>
 
 Migration Guide
 ===============
@@ -21,8 +20,12 @@ Java API
 
 The following classes were moved and/or renamed:
 
-- ``hex.StackedEnsembleModel`` |rarr| ``hex.ensemble.StackedEnsembleModel``.
-- ``hex.StackedEnsembleModel.MetalearnerAlgorithm`` |rarr| ``hex.ensemble.Metalearner.Algorithm``.
+=================================================   ======================================
+  Until 3.22                                          From 3.24
+=================================================   ======================================
+``hex.StackedEnsembleModel``                        ``hex.ensemble.StackedEnsembleModel``
+``hex.StackedEnsembleModel.MetalearnerAlgorithm``   ``hex.ensemble.Metalearner.Algorithm``
+=================================================   ======================================
 
 Some internal methods of ``StackedEnsemble`` and ``StackedEnsembleModel`` were also removed their public access but this should not impact anyone.
 
