@@ -25,6 +25,7 @@ The following classes were moved and/or renamed:
 =================================================   ======================================
 ``hex.StackedEnsembleModel``                        ``hex.ensemble.StackedEnsembleModel``
 ``hex.StackedEnsembleModel.MetalearnerAlgorithm``   ``hex.ensemble.Metalearner.Algorithm``
+``ai.h2o.automl.AutoML.algo``                       ``ai.h2o.automl.Algo``
 =================================================   ======================================
 
 Some internal methods of ``StackedEnsemble`` and ``StackedEnsembleModel`` were also removed their public access but this should not impact anyone.
