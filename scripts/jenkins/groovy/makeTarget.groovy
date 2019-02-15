@@ -6,6 +6,7 @@ def call(final pipelineContext, final Closure body) {
   ]
 
   final List<String> FILES_TO_ARCHIVE_ON_FAILURE = [
+          '**/leak-check.out',
           '**/*.log',
           '**/out.*',
           '**/results/*.txt',
@@ -60,7 +61,7 @@ def call(final pipelineContext, final Closure body) {
 
       echo "Running Make"
       export ${makeVars.join(' ')}
-      make -f ${config.makefilePath} ${config.target}
+      make -f ${config.makefilePath} ${config.target} check-leaks
     """
   }
 
