@@ -1,6 +1,7 @@
 package hex.api;
 
 import hex.ModelBuilder;
+import hex.mojo.Generic;
 import hex.tree.TreeHandler;
 import water.api.AlgoAbstractRegister;
 import water.api.RestApiContext;
@@ -27,7 +28,7 @@ public class RegisterAlgos extends AlgoAbstractRegister {
             new hex.word2vec    .Word2Vec    (true),
             new hex.ensemble    .StackedEnsemble(true),
             new hex.coxph       .CoxPH       (true),
-            new hex.mojo        .MojoDelegating(true)
+            new Generic(true)
     };
 
     // "Word2Vec", "Example", "Grep"

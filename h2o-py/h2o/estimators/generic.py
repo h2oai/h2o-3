@@ -12,16 +12,16 @@ from h2o.frame import H2OFrame
 from h2o.utils.typechecks import assert_is_type, Enum, numeric
 
 
-class H2OMojodelegatingEstimator(H2OEstimator):
+class H2OGenericEstimator(H2OEstimator):
     """
-    Mojo Delegating Model
+    Generic Model
 
     """
 
-    algo = "mojodelegating"
+    algo = "generic"
 
     def __init__(self, **kwargs):
-        super(H2OMojodelegatingEstimator, self).__init__()
+        super(H2OGenericEstimator, self).__init__()
         self._parms = {}
         names_list = {"mojo_key"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
@@ -53,7 +53,7 @@ class H2OMojodelegatingEstimator(H2OEstimator):
 
     def _requires_training_frame(self):
         """
-        Determines if MojoDelegating model requires a training frame.
+        Determines if Generic model requires a training frame.
         :return: False.
         """
         return False
@@ -61,14 +61,14 @@ class H2OMojodelegatingEstimator(H2OEstimator):
     @staticmethod
     def from_mojo_file(file=str):
         """
-        Creates new MojoDelegatingModel by loading existing MOJO into library.
+        Creates new Generic model by loading existing MOJO into library.
         :param file: A string containing path to the MOJO to create the model from
-        :return: H2OMojodelegatingEstimator instance representing the mojo-based model
+        :return: H2OGenericEstimator instance representing the mojo-based model
         """
         from h2o import lazy_import, get_frame
         mojo_key = lazy_import(file)
         mojo_bytes_frame = get_frame(mojo_key[0])
-        model = H2OMojodelegatingEstimator(mojo_key = mojo_bytes_frame)
+        model = H2OGenericEstimator(mojo_key = mojo_bytes_frame)
         model.train()
 
         return model

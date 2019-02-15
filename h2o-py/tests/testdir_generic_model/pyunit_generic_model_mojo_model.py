@@ -1,6 +1,6 @@
 import h2o
 import tempfile
-from h2o.estimators import H2OGradientBoostingEstimator, H2OMojodelegatingEstimator
+from h2o.estimators import H2OGradientBoostingEstimator, H2OGenericEstimator
 from tests import pyunit_utils
 
 
@@ -16,14 +16,14 @@ def mojo_model_test():
     
     key = h2o.lazy_import(filename)
     fr = h2o.get_frame(key[0])
-    model = H2OMojodelegatingEstimator(mojo_key = fr)
+    model = H2OGenericEstimator(mojo_key = fr)
     model.train()
     predictions = model.predict(airlines)
     assert predictions is not None
     assert predictions.nrows == 24421
     
     # Test constructor generating the model from existing MOJO file
-    model = H2OMojodelegatingEstimator.from_mojo_file(filename)
+    model = H2OGenericEstimator.from_mojo_file(filename)
     assert model is not None
     predictions = model.predict(airlines)
     assert predictions is not None

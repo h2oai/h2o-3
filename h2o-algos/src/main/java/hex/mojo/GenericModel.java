@@ -6,7 +6,7 @@ import hex.tree.isofor.ModelMetricsAnomaly;
 import water.H2O;
 import water.Key;
 
-public class MojoDelegatingModel extends Model<MojoDelegatingModel, MojoDelegatingModelParameters, MojoDelegatingModelOutput> {
+public class GenericModel extends Model<GenericModel, GenericModelParameters, GenericModelOutput> {
     
     MojoModel _mojoModel;
     
@@ -17,7 +17,7 @@ public class MojoDelegatingModel extends Model<MojoDelegatingModel, MojoDelegati
      * @param parms
      * @param output
      */
-    public MojoDelegatingModel(Key<MojoDelegatingModel> selfKey, MojoDelegatingModelParameters parms, MojoDelegatingModelOutput output, MojoModel mojoModel) {
+    public GenericModel(Key<GenericModel> selfKey, GenericModelParameters parms, GenericModelOutput output, MojoModel mojoModel) {
         // TODO: We might want to add reference for training and validation frame to re-construct metrics if we do not choose to get them from JSON inside MOJO
         super(selfKey, parms, output);
         _mojoModel = mojoModel;

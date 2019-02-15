@@ -11,10 +11,10 @@ import water.fvec.Frame;
 import java.io.IOException;
 import java.util.Objects;
 
-public class MojoDelegating extends ModelBuilder<MojoDelegatingModel, MojoDelegatingModelParameters, MojoDelegatingModelOutput> {
+public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, GenericModelOutput> {
 
-    public MojoDelegating(boolean startup_once) {
-        super(new MojoDelegatingModelParameters(), startup_once);
+    public Generic(boolean startup_once) {
+        super(new GenericModelParameters(), startup_once);
     }
 
     @Override
@@ -48,10 +48,10 @@ public class MojoDelegating extends ModelBuilder<MojoDelegatingModel, MojoDelega
             } catch (IOException e) {
                 throw new IllegalStateException("Unreachable MOJO file: " + mojoData._key, e);
             }
-            final MojoDelegatingModelOutput mojoDelegatingModelOutput = new MojoDelegatingModelOutput(mojoModel);
-            final MojoDelegatingModel mojoDelegatingModel = new MojoDelegatingModel(_result, _parms, mojoDelegatingModelOutput, mojoModel);
-            mojoDelegatingModel.write_lock(_job);
-            mojoDelegatingModel.unlock(_job);
+            final GenericModelOutput genericModelOutput = new GenericModelOutput(mojoModel);
+            final GenericModel genericModel = new GenericModel(_result, _parms, genericModelOutput, mojoModel);
+            genericModel.write_lock(_job);
+            genericModel.unlock(_job);
         }
     }
     

@@ -582,11 +582,11 @@ def class_extra_for(algo):
             parameters = {k: v for k, v in self._parms.items() if k in var_names}
             return H2OPCA(**parameters)
         """
-    elif algo == "mojodelegating":
+    elif algo == "generic":
         return """
         def _requires_training_frame(self):
             \"\"\"
-            Determines if MojoDelegating model requires a training frame.
+            Determines if Generic model requires a training frame.
             :return: False.
             \"\"\"
             return False
@@ -594,14 +594,14 @@ def class_extra_for(algo):
         @staticmethod
         def from_mojo_file(file=str):
             \"\"\"
-            Creates new MojoDelegatingModel by loading existing MOJO into library.
+            Creates new Generic model by loading existing MOJO into library.
             :param file: A string containing path to the MOJO to create the model from
-            :return: H2OMojodelegatingEstimator instance representing the mojo-based model
+            :return: H2OGenericEstimator instance representing the mojo-based model
             \"\"\"
             from h2o import lazy_import, get_frame
             mojo_key = lazy_import(file)
             mojo_bytes_frame = get_frame(mojo_key[0])
-            model = H2OMojodelegatingEstimator(mojo_key = mojo_bytes_frame)
+            model = H2OGenericEstimator(mojo_key = mojo_bytes_frame)
             model.train()
             
             return model

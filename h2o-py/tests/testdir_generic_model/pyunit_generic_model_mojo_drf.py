@@ -1,6 +1,6 @@
 import h2o
 import tempfile
-from h2o.estimators import H2ORandomForestEstimator, H2OMojodelegatingEstimator
+from h2o.estimators import H2ORandomForestEstimator, H2OGenericEstimator
 from tests import pyunit_utils
 
 
@@ -14,7 +14,7 @@ def mojo_model_drf_test():
     filename = tempfile.mkdtemp()
     filename = drf.download_mojo(filename)
       
-    model = H2OMojodelegatingEstimator.from_mojo_file(filename)
+    model = H2OGenericEstimator.from_mojo_file(filename)
     assert model is not None
     predictions = model.predict(airlines)
     assert predictions is not None

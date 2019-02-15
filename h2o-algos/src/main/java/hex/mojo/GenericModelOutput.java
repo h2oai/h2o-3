@@ -5,13 +5,13 @@ import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.genmodel.MojoModel;
 
-public class MojoDelegatingModelOutput extends Model.Output {
+public class GenericModelOutput extends Model.Output {
     
     private final ModelCategory _modelCategory;
     private final int _nfeatures;
     
 
-    public MojoDelegatingModelOutput(final MojoModel mojoModel) {
+    public GenericModelOutput(final MojoModel mojoModel) {
         _isSupervised = mojoModel._supervised;
         _domains = mojoModel._domains;
         _origDomains = mojoModel._domains;

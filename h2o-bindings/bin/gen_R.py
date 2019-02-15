@@ -185,7 +185,7 @@ def gen_module(schema, algo, module):
         yield "  if(!is.character(stop_column) && !is.numeric(stop_column)) {"
         yield "     stop('argument \"stop_column\" must be a column name or an index')"
         yield "  }"
-    if algo == "mojodelegating":
+    if algo == "generic":
         
         
         yield "  # Required args: mojo_file_path"
@@ -205,7 +205,7 @@ def gen_module(schema, algo, module):
         yield "             error = function(err) {"
         yield "               stop(\"argument \'pre_trained\' must be a valid H2OFrame or key\")"
         yield "             })"
-    elif algo not in ["mojodelegating"]:
+    elif algo not in ["generic"]:
         yield "  # Required args: training_frame"
         yield "  if (missing(training_frame)) stop(\"argument \'training_frame\' is missing, with no default\")"
         # yield "  if( missing(validation_frame) ) validation_frame = NULL"
@@ -215,7 +215,7 @@ def gen_module(schema, algo, module):
         yield "           error = function(err) {"
         yield "             stop(\"argument \'training_frame\' must be a valid H2OFrame or key\")"
         yield "           })"
-    if algo not in ["word2vec", "aggregator", "coxph", "isolationforest", "mojodelegating"]:
+    if algo not in ["word2vec", "aggregator", "coxph", "isolationforest", "generic"]:
         yield "  # Validation_frame must be a key or an H2OFrame object"
         yield "  if (!is.null(validation_frame)) {"
         yield "     if (!is.H2OFrame(validation_frame))"
@@ -258,7 +258,7 @@ def gen_module(schema, algo, module):
         yield "      parms$ignored_columns <- setdiff(parms$ignored_columns, fold_column)"
         yield "    }"
         yield "  }"
-    elif algo not in ["mojodelegating"]:
+    elif algo not in ["generic"]:
         yield "  if(!missing(x))"
         yield "    parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore"
     if algo == "svd":
@@ -662,7 +662,7 @@ def get_extra_params_for(algo):
         return "training_frame = NULL"
     elif algo == "coxph":
         return "x, event_column, training_frame"
-    elif algo == "mojodelegating":
+    elif algo == "generic":
         return "training_frame = NULL"
     else:
         return "training_frame, x"
