@@ -84,6 +84,7 @@
 #' @param distribution Distribution. This argument is deprecated and has no use for Random Forest.
 #' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
+#' @param check_constant_response \code{Logical}. Check for constant response Defaults to TRUE.
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree for GBM, DRF, & XGBoost. Metrics per epoch for Deep Learning). Defaults to FALSE.
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
@@ -134,6 +135,7 @@ h2o.randomForest <- function(x, y, training_frame,
                              distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
                              custom_metric_func = NULL,
                              export_checkpoints_dir = NULL,
+                             check_constant_response = TRUE,
                              verbose = FALSE 
                              ) 
 {
@@ -264,6 +266,8 @@ h2o.randomForest <- function(x, y, training_frame,
     parms$custom_metric_func <- custom_metric_func
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+  if (!missing(check_constant_response))
+    parms$check_constant_response <- check_constant_response
   # Error check and build model
   .h2o.modelJob('drf', parms, h2oRestApiVersion = 3, verbose=verbose) 
 }

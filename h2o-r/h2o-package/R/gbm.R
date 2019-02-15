@@ -95,6 +95,7 @@
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @param monotone_constraints A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a
 #'        decreasing constraint.
+#' @param check_constant_response \code{Logical}. Check for constant response Defaults to TRUE.
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree for GBM, DRF, & XGBoost. Metrics per epoch for Deep Learning). Defaults to FALSE.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
 #' @examples
@@ -165,6 +166,7 @@ h2o.gbm <- function(x, y, training_frame,
                     custom_metric_func = NULL,
                     export_checkpoints_dir = NULL,
                     monotone_constraints = NULL,
+                    check_constant_response = TRUE,
                     verbose = FALSE 
                     ) 
 {
@@ -310,6 +312,8 @@ h2o.gbm <- function(x, y, training_frame,
     parms$export_checkpoints_dir <- export_checkpoints_dir
   if (!missing(monotone_constraints))
     parms$monotone_constraints <- monotone_constraints
+  if (!missing(check_constant_response))
+    parms$check_constant_response <- check_constant_response
   # Error check and build model
   .h2o.modelJob('gbm', parms, h2oRestApiVersion = 3, verbose=verbose) 
 }

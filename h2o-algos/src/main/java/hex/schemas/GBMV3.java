@@ -65,7 +65,8 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
       "calibration_frame",
       "custom_metric_func",
       "export_checkpoints_dir",
-      "monotone_constraints"
+      "monotone_constraints",
+      "check_constant_response"
 //      "use_new_histo_tsk",
 //      "col_block_sz",
 //      "min_threads",
@@ -94,9 +95,6 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
 
     @API(help="Bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node predictions", level = API.Level.expert, gridable = true)
     public double pred_noise_bandwidth;
-
-    @API(help="Check for constant response", level = API.Level.expert, direction = API.Direction.INOUT)
-    public boolean check_constant_response;
 
 //    // TODO debug only, remove!
 //    @API(help="Internal flag, use new version of histo tsk if set", level = API.Level.expert, gridable = false)

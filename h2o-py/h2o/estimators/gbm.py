@@ -40,7 +40,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                       "col_sample_rate_change_per_level", "col_sample_rate_per_tree", "min_split_improvement",
                       "histogram_type", "max_abs_leafnode_pred", "pred_noise_bandwidth", "categorical_encoding",
                       "calibrate_model", "calibration_frame", "custom_metric_func", "export_checkpoints_dir",
-                      "monotone_constraints"}
+                      "monotone_constraints", "check_constant_response"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -895,5 +895,20 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     def monotone_constraints(self, monotone_constraints):
         assert_is_type(monotone_constraints, None, dict)
         self._parms["monotone_constraints"] = monotone_constraints
+
+
+    @property
+    def check_constant_response(self):
+        """
+        Check for constant response
+
+        Type: ``bool``  (default: ``True``).
+        """
+        return self._parms.get("check_constant_response")
+
+    @check_constant_response.setter
+    def check_constant_response(self, check_constant_response):
+        assert_is_type(check_constant_response, None, bool)
+        self._parms["check_constant_response"] = check_constant_response
 
 
