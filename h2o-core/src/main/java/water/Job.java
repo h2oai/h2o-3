@@ -203,6 +203,24 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     return jobs;
   }
 
+  public static final long WORK_UNKNOWN = 0L;
+
+  public final long getWork() {
+    update_from_remote();
+    return _work;
+  }
+
+  /** Set the amount of work for this job - can only be called if job was started without work specification */
+  public final void setWork(final long work) {
+    if (getWork() != WORK_UNKNOWN) {
+      throw new IllegalStateException("Cannot set work amount if it was already previously specified");
+    }
+    new JAtomic() {
+      @Override boolean abort(Job job) { return false; }
+      @Override void update(Job old) { old._work = work; }
+    }.apply(this);
+  }
+
   public Job<T> start(final H2OCountedCompleter fjtask, long work, double max_runtime_secs) {
     _max_runtime_msecs = (long)(max_runtime_secs*1e3);
     return start(fjtask, work);
