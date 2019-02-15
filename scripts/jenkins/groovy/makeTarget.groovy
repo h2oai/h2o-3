@@ -60,7 +60,7 @@ def call(final pipelineContext, final Closure body) {
 
       echo "Running Make"
       export ${makeVars.join(' ')}
-      make -f ${config.makefilePath} ${config.target}
+      make -f ${config.makefilePath} ${config.target} check-leaks
     """
   }
 
