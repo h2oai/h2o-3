@@ -29,12 +29,14 @@ compress-huge-logfiles:
 
 test-package-py:
 	zip -q -r test-package-py.zip h2o-py/tests/ h2o-py/demos/ \
+	tests/leakCheckKeywords \
 	h2o-docs/src/booklets/v2_2015/source h2o-py/build/dist/*.whl \
 	h2o-genmodel/build/libs/h2o-genmodel.jar h2o-assemblies/genmodel/build/libs/genmodel.jar scripts/run.py \
 	$(JENKINS_MAKEFILE_PATH) tests/pyunit*List h2o-py/scripts/h2o-py-test-setup.py
 
 test-package-r:
 	zip -q -r test-package-r.zip h2o-r h2o-docs/src/booklets/v2_2015/source \
+		tests/leakCheckKeywords \
 		h2o-assemblies/genmodel/build/libs/genmodel.jar scripts/run.py \
 		$(JENKINS_MAKEFILE_PATH) tests/runitSmokeTestList tests/runitAutoMLList \
 		scripts/validate_r_cmd_check_output.R scripts/validate_r_cmd_check_output.py h2o-3-DESCRIPTION
@@ -170,6 +172,7 @@ pack-r-generated-docs:
 
 test-package-js:
 	zip -q -r test-package-js \
+		tests/leakCheckKeywords \
 		$(JENKINS_MAKEFILE_PATH) tests/ignoreFlowSmokeTestList scripts/run.py \
 		h2o-web
 
@@ -199,6 +202,7 @@ test-demos:
 
 test-package-java:
 	zip -q -r test-package-java \
+		tests/leakCheckKeywords \
 		$(JENKINS_MAKEFILE_PATH) \
 		gradlew \
 		gradle.properties \
@@ -344,11 +348,11 @@ benchmark:
 
 test-package-hadoop:
 	zip -q -r test-package-hadoop \
+		tests/leakCheckKeywords \
 		scripts/jenkins/config/ \
 		h2o-hadoop-2/tests/python/ h2o-hadoop-2/h2o-*-assembly/build/libs/h2odriver.jar \
 		h2o-hadoop-3/tests/python/ h2o-hadoop-3/h2o-*-assembly/build/libs/h2odriver.jar \
 		h2o-hadoop-common/tests/python/
-
 
 test-hadoop-common-smoke-ldap:
 	cd h2o-hadoop-common/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
@@ -384,3 +388,14 @@ endif
 	cd ../mojoland && ./gradlew clean
 	cd ../mojoland && ./gradlew build
 	cd ../mojoland/mojo-py && python in_mojo_veritas.py
+
+check-leaks:
+	-find . \
+		-name '*.log' \
+		-or -name '*.out' \
+		-or -name 'out.*' \
+		-exec grep -E "`cat tests/leakCheckKeywords | tr '\n' '|' | sed 's/|\s*$$//'`" {} \; 2>&1 > leak-check.out
+	@if [ -n "`cat leak-check.out`" ]; then\
+		echo "Credentials leaked! Please check $(PWD)/leak-check.out"; \
+		exit 1; \
+	fi

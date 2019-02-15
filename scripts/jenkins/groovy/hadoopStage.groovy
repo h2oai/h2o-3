@@ -39,7 +39,7 @@ def call(final pipelineContext, final stageConfig) {
             echo "Cloud IP:PORT ----> \$CLOUD_IP:\$CLOUD_PORT"
 
             echo "Running Make"
-            make -f ${pipelineContext.getBuildConfig().MAKEFILE_PATH} ${stageConfig.target}${getMakeTargetSuffix(stageConfig)}
+            make -f ${pipelineContext.getBuildConfig().MAKEFILE_PATH} ${stageConfig.target}${getMakeTargetSuffix(stageConfig)} check-leaks
         """
         
         stageConfig.postFailedBuildAction = getPostFailedBuildAction(stageConfig.customData.mode)
