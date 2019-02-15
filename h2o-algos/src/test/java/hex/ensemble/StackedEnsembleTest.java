@@ -420,6 +420,7 @@ public class StackedEnsembleTest extends TestUtil {
     public void test_SE_with_GLM_can_do_predictions_on_frames_with_unseen_categorical_values() {
       // test for PUBDEV-6266
       List<Lockable> deletables = new ArrayList<>();
+      List<Iced> removables = new ArrayList<>();
       try {
         final int seed = 62832;
         final Frame train = parse_test_file("./smalldata/testng/cars_train.csv"); deletables.add(train);
@@ -430,8 +431,10 @@ public class StackedEnsembleTest extends TestUtil {
         Vec cyl_test = test.vec(cyl_idx);
         cyl_test.set(cyl_test.length() - 1, 7); // that's a new engine concept
         test.replace(cyl_idx, cyl_test.toCategoricalVec()).remove();
+        DKV.put(test);
         Assert.assertTrue(test.vec(cyl_idx).isCategorical());
         train.replace(cyl_idx, train.vec(cyl_idx).toCategoricalVec()).remove();
+        DKV.put(train);
 
         //generate a few base models
         GBMModel.GBMParameters params = new GBMModel.GBMParameters();
