@@ -2,6 +2,8 @@ package hex.mojo;
 
 import hex.*;
 import hex.genmodel.MojoModel;
+import hex.genmodel.algos.kmeans.KMeansMojoModel;
+import hex.genmodel.easy.prediction.AutoEncoderModelPrediction;
 import hex.tree.isofor.ModelMetricsAnomaly;
 import water.H2O;
 import water.Key;
@@ -25,12 +27,30 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
 
     @Override
     public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-        // TODO : incomplete. We've got to support all of them ! Maybe automate this ?
         switch(_output.getModelCategory()) {
-            case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain);
-            case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(),domain);
+            case Unknown:
+                throw new IllegalStateException("Model category is unknown");
+            case Binomial:
+                return new ModelMetricsBinomial.MetricBuilderBinomial(domain);
+            case Multinomial:
+                return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(), domain);
+            case Ordinal:
+                return new ModelMetricsOrdinal.MetricBuilderOrdinal(_output.nclasses(), domain);
             case Regression:  return new ModelMetricsRegression.MetricBuilderRegression();
+            case Clustering:
+                assert _mojoModel instanceof KMeansMojoModel;
+                KMeansMojoModel kMeansMojoModel = (KMeansMojoModel) _mojoModel;
+                return new ModelMetricsClustering.MetricBuilderClustering(_output.nfeatures(), kMeansMojoModel.getNumClusters());
+            case AutoEncoder:
+                return new ModelMetricsAutoEncoder.MetricBuilderAutoEncoder(_output.nfeatures());
+            case DimReduction:
+                throw new UnsupportedOperationException("DimReduction is not supported.");
+            case WordEmbedding:
+                throw new UnsupportedOperationException("WordEmbedding is not supported.");
+            case CoxPH:
+                throw new UnsupportedOperationException("CoxPH is not supported.");
             case AnomalyDetection: return new ModelMetricsAnomaly.MetricBuilderAnomaly();
+
             default: throw H2O.unimpl();
         }
     }
