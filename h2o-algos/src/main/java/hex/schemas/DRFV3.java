@@ -68,5 +68,8 @@ public class DRFV3 extends SharedTreeV3<DRF, DRFV3, DRFV3.DRFParametersV3> {
 
         @API(help = "Row sample rate per tree (from 0.0 to 1.0)", gridable = true)
         public double sample_rate;
+
+        @API(help="Check for constant response", level = API.Level.expert, direction = API.Direction.INOUT)
+        public boolean check_constant_response;
     }
 }

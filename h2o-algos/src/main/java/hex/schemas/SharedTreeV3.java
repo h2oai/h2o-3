@@ -95,5 +95,8 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
 
     @API(help="Calibration frame for Platt Scaling", level = API.Level.expert, direction = API.Direction.INOUT)
     public FrameKeyV3 calibration_frame;
+
+    @API(help="Check for constant response", level = API.Level.expert, direction = API.Direction.INOUT)
+    public boolean check_constant_response;
   }
 }
