@@ -123,9 +123,7 @@ public class DelegationTokenRefresher implements Runnable {
   }
   
   private Credentials getTokens(UserGroupInformation ugi) throws IOException, InterruptedException {
-    Credentials creds = new Credentials();
-    _hiveTokenGenerator.addHiveDelegationTokenAsUser(ugi, _hiveHost, _hivePrincipal, creds);
-    return creds;
+    return _hiveTokenGenerator.addHiveDelegationTokenAsUser(ugi, _hiveHost, _hivePrincipal);
   }
   
   private void distribute(Credentials creds) {
@@ -142,7 +140,11 @@ public class DelegationTokenRefresher implements Runnable {
     log("Log in from keytab", null);
     UserGroupInformation ugi = UserGroupInformation.loginUserFromKeytabAndReturnUGI(_authPrincipal, _authKeytabPath);
     Credentials creds = getTokens(ugi);
-    distribute(creds);
+    if (creds != null) {
+      distribute(creds);
+    } else {
+      log("Failed to refresh delegation token.", null);
+    }
   }
 
   private byte[] serializeCreds(Credentials creds) throws IOException {
