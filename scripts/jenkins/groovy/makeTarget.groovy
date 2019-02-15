@@ -6,6 +6,7 @@ def call(final pipelineContext, final Closure body) {
   ]
 
   final List<String> FILES_TO_ARCHIVE_ON_FAILURE = [
+          '**/leak-check.out',
           '**/*.log',
           '**/out.*',
           '**/results/*.txt',

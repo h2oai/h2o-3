@@ -377,8 +377,11 @@ endif
 	cd ../mojoland/mojo-py && python in_mojo_veritas.py
 
 check-leaks:
-	-find . -name '*.log' -or -name '*.out' -or -name 'out.*' | \
-		ack -x "`cat tests/leakCheckKeywords | tr '\n' '|' | sed 's/|\s*$$//'`" 2>&1 > leak-check.out
+	-find . \
+		-name '*.log' \
+		-or -name '*.out' \
+		-or -name 'out.*' \
+		-exec grep -E "`cat tests/leakCheckKeywords | tr '\n' '|' | sed 's/|\s*$$//'`" {} \; 2>&1 > leak-check.out
 	@if [ -n "`cat leak-check.out`" ]; then\
 		echo "Credentials leaked! Please check $(PWD)/leak-check.out"; \
 		exit 1; \
