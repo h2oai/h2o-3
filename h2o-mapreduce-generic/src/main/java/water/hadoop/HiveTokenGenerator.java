@@ -46,17 +46,21 @@ public class HiveTokenGenerator {
     if (realUser.getRealUser() != null) {
       realUser = realUser.getRealUser();
     }
-    addHiveDelegationTokenAsUser(realUser, hiveHost, hivePrincipal, job.getCredentials());
+    Credentials creds = addHiveDelegationTokenAsUser(realUser, hiveHost, hivePrincipal);
+    if (creds != null) {
+      job.getCredentials().addAll(creds);
+    } else {
+      log("Failed to get delegation token.", null);
+    }
   }
 
-  public void addHiveDelegationTokenAsUser(
-      UserGroupInformation ugi, final String hiveHost, final String hivePrincipal, final Credentials creds
+  public Credentials addHiveDelegationTokenAsUser(
+      UserGroupInformation ugi, final String hiveHost, final String hivePrincipal
   ) throws IOException, InterruptedException {
-    ugi.doAs(new PrivilegedExceptionAction<Credentials>() {
+    return ugi.doAs(new PrivilegedExceptionAction<Credentials>() {
       @Override
       public Credentials run() throws Exception {
-        addHiveDelegationTokenIfPossible(hiveHost, hivePrincipal, creds);
-        return creds;
+        return addHiveDelegationTokenIfPossible(hiveHost, hivePrincipal);
       }
     });
   }
@@ -77,19 +81,18 @@ public class HiveTokenGenerator {
     }
   }
 
-  private void addHiveDelegationTokenIfPossible(
+  private Credentials addHiveDelegationTokenIfPossible(
       String hiveHost,
-      String hivePrincipal,
-      Credentials creds
+      String hivePrincipal
   ) throws IOException {
     if (!isHiveDriverPresent()) {
       log("Hive driver not present, not generating token.", null);
-      return;
+      return null;
     }
 
     if (!isHiveConfigPresent(hiveHost, hivePrincipal)) {
       log("Hive host or principal not set, no token generated.", null);
-      return;
+      return null;
     }
 
     String currentUser = UserGroupInformation.getCurrentUser().getShortUserName();
@@ -102,8 +105,12 @@ public class HiveTokenGenerator {
       hive2Token.decodeFromUrlString(tokenStr);
       hive2Token.setService(new Text("hiveserver2ClientToken"));
 
+      Credentials creds = new Credentials();
       creds.addToken(new Text("hive.server2.delegation.token"), hive2Token);
       creds.addToken(new Text("hiveserver2ClientToken"), hive2Token); //HiveAuthConstants.HS2_CLIENT_TOKEN
+      return creds;
+    } else {
+      return null;
     }
   }
 
