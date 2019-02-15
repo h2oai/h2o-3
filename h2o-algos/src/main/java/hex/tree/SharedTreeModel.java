@@ -80,8 +80,6 @@ public abstract class SharedTreeModel<
     public boolean _calibrate_model = false; // Use Platt Scaling
     public Key<Frame> _calibration_frame;
 
-    public boolean _check_constant_response = true; // Check for constant response
-
     public Frame calib() { return _calibration_frame == null ? null : _calibration_frame.get(); }
 
     @Override public long progressUnits() { return _ntrees + (_histogram_type==HistogramType.QuantilesGlobal || _histogram_type==HistogramType.RoundRobin ? 1 : 0); }
