@@ -97,7 +97,7 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
     public FrameKeyV3 calibration_frame;
 
     @API(help="Check if response column is constant. If enabled, then an exception is thrown if the response column is a constant value." +
-            "If disabled, then model will train regardless of the response column being constant or not.", level = API.Level.expert, direction = API.Direction.INOUT)
+            "If disabled, then model will train regardless of the response column being a constant value or not.", level = API.Level.expert, direction = API.Direction.INOUT)
     public boolean check_constant_response;
   }
 }

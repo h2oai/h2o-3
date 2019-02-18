@@ -790,7 +790,8 @@ class H2ORandomForestEstimator(H2OEstimator):
     def check_constant_response(self):
         """
         Check if response column is constant. If enabled, then an exception is thrown if the response column is a
-        constant value.If disabled, then model will train regardless of the response column being constant or not.
+        constant value.If disabled, then model will train regardless of the response column being a constant value or
+        not.
 
         Type: ``bool``  (default: ``True``).
         """

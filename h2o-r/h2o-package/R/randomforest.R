@@ -85,8 +85,8 @@
 #' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @param check_constant_response \code{Logical}. Check if response column is constant. If enabled, then an exception is thrown if the response
-#'        column is a constant value.If disabled, then model will train regardless of the response column being constant
-#'        or not. Defaults to TRUE.
+#'        column is a constant value.If disabled, then model will train regardless of the response column being a
+#'        constant value or not. Defaults to TRUE.
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree for GBM, DRF, & XGBoost. Metrics per epoch for Deep Learning). Defaults to FALSE.
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
