@@ -2965,7 +2965,7 @@ h2o.floor <- function(x) {
 #' @name h2o.sum
 #' @param x An H2OFrame object.
 #' @param na.rm \code{logical}. indicating whether missing values should be removed.
-#' @param axis An int that indicates whether to do down a column (0) or across a row (1).
+#' @param axis An int that indicates whether to do down a column (0) or across a row (1). For row or column sums, the \code{return_frame} parameter must be TRUE.
 #' @param return_frame A boolean that indicates whether to return an H2O frame or one single aggregated value. Default is FALSE.
 #' @seealso \code{\link[base]{sum}} for the base R implementation.
 #' @export
