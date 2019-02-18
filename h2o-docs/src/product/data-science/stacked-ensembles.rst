@@ -391,7 +391,7 @@ Example
 
     // Import required classes for Stacked Ensembles
     import _root_.hex.Model
-    import _root_.hex.StackedEnsembleModel
+    import _root_.hex.ensemble.StackedEnsembleModel
     import _root_.hex.ensemble.StackedEnsemble
 
     // Define Stacked Ensemble parameters

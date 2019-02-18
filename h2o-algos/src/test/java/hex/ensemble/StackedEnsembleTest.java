@@ -3,8 +3,7 @@ package hex.ensemble;
 import hex.GLMHelper;
 import hex.Model;
 import hex.ModelMetrics;
-import hex.StackedEnsembleModel;
-import hex.StackedEnsembleModel.StackedEnsembleParameters;
+import hex.ensemble.StackedEnsembleModel.StackedEnsembleParameters;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
@@ -27,7 +26,6 @@ import water.util.ArrayUtils;
 
 import java.util.*;
 
-import static hex.StackedEnsembleModel.StackedEnsembleParameters.*;
 import static org.junit.Assert.assertNotNull;
 
 public class StackedEnsembleTest extends TestUtil {
@@ -45,7 +43,7 @@ public class StackedEnsembleTest extends TestUtil {
         basicEnsemble("./smalldata/junit/cars.csv",
             null,
             new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
-            false, DistributionFamily.gaussian, MetalearnerAlgorithm.AUTO, false);
+            false, DistributionFamily.gaussian, Metalearner.Algorithm.AUTO, false);
         
         basicEnsemble("./smalldata/airlines/allyears2k_headers.zip",
                 null,
@@ -53,19 +51,19 @@ public class StackedEnsembleTest extends TestUtil {
                     for( String s : ignored_aircols ) fr.remove(s).remove();
                     return fr.find("IsArrDelayed"); }
                 },
-                false, DistributionFamily.bernoulli, MetalearnerAlgorithm.AUTO, false);
+                false, DistributionFamily.bernoulli, Metalearner.Algorithm.AUTO, false);
 
         basicEnsemble("./smalldata/iris/iris_wheader.csv",
                 null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) {return fr.find("class"); }
                 },
-                false, DistributionFamily.multinomial, MetalearnerAlgorithm.AUTO, false);
+                false, DistributionFamily.multinomial, Metalearner.Algorithm.AUTO, false);
 
         basicEnsemble("./smalldata/logreg/prostate_train.csv",
                 "./smalldata/logreg/prostate_test.csv",
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) { return fr.find("CAPSULE"); }
                 },
-                false, DistributionFamily.bernoulli, MetalearnerAlgorithm.AUTO, false);
+                false, DistributionFamily.bernoulli, Metalearner.Algorithm.AUTO, false);
     }
 
 
@@ -74,7 +72,7 @@ public class StackedEnsembleTest extends TestUtil {
         basicEnsemble("./smalldata/junit/cars.csv",
                 null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
-                false, DistributionFamily.gaussian, MetalearnerAlgorithm.gbm, false);
+                false, DistributionFamily.gaussian, Metalearner.Algorithm.gbm, false);
 
         basicEnsemble("./smalldata/airlines/allyears2k_headers.zip",
                 null,
@@ -82,19 +80,19 @@ public class StackedEnsembleTest extends TestUtil {
                     for( String s : ignored_aircols ) fr.remove(s).remove();
                     return fr.find("IsArrDelayed"); }
                 },
-                false, DistributionFamily.bernoulli, MetalearnerAlgorithm.gbm, false);
+                false, DistributionFamily.bernoulli, Metalearner.Algorithm.gbm, false);
 
         basicEnsemble("./smalldata/iris/iris_wheader.csv",
                 null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) {return fr.find("class"); }
                 },
-                false, DistributionFamily.multinomial, MetalearnerAlgorithm.gbm, false);
+                false, DistributionFamily.multinomial, Metalearner.Algorithm.gbm, false);
 
         basicEnsemble("./smalldata/logreg/prostate_train.csv",
                 "./smalldata/logreg/prostate_test.csv",
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) { return fr.find("CAPSULE"); }
                 },
-                false, DistributionFamily.bernoulli, MetalearnerAlgorithm.gbm, false);
+                false, DistributionFamily.bernoulli, Metalearner.Algorithm.gbm, false);
     }
 
     @Test public void testBasicEnsembleDRFMetalearner() {
@@ -102,7 +100,7 @@ public class StackedEnsembleTest extends TestUtil {
         basicEnsemble("./smalldata/junit/cars.csv",
                 null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
-                false, DistributionFamily.gaussian, MetalearnerAlgorithm.drf, false);
+                false, DistributionFamily.gaussian, Metalearner.Algorithm.drf, false);
 
         basicEnsemble("./smalldata/airlines/allyears2k_headers.zip",
                 null,
@@ -110,19 +108,19 @@ public class StackedEnsembleTest extends TestUtil {
                     for( String s : ignored_aircols ) fr.remove(s).remove();
                     return fr.find("IsArrDelayed"); }
                 },
-                false, DistributionFamily.bernoulli, MetalearnerAlgorithm.drf, false);
+                false, DistributionFamily.bernoulli, Metalearner.Algorithm.drf, false);
 
         basicEnsemble("./smalldata/iris/iris_wheader.csv",
                 null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) {return fr.find("class"); }
                 },
-                false, DistributionFamily.multinomial, MetalearnerAlgorithm.drf, false);
+                false, DistributionFamily.multinomial, Metalearner.Algorithm.drf, false);
 
         basicEnsemble("./smalldata/logreg/prostate_train.csv",
                 "./smalldata/logreg/prostate_test.csv",
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) { return fr.find("CAPSULE"); }
                 },
-                false, DistributionFamily.bernoulli, MetalearnerAlgorithm.drf, false);
+                false, DistributionFamily.bernoulli, Metalearner.Algorithm.drf, false);
     }
 
     @Test public void testBasicEnsembleDeepLearningMetalearner() {
@@ -130,7 +128,7 @@ public class StackedEnsembleTest extends TestUtil {
         basicEnsemble("./smalldata/junit/cars.csv",
                 null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
-                false, DistributionFamily.gaussian, MetalearnerAlgorithm.deeplearning, false);
+                false, DistributionFamily.gaussian, Metalearner.Algorithm.deeplearning, false);
 
         basicEnsemble("./smalldata/airlines/allyears2k_headers.zip",
                 null,
@@ -138,19 +136,19 @@ public class StackedEnsembleTest extends TestUtil {
                     for( String s : ignored_aircols ) fr.remove(s).remove();
                     return fr.find("IsArrDelayed"); }
                 },
-                false, DistributionFamily.bernoulli, MetalearnerAlgorithm.deeplearning, false);
+                false, DistributionFamily.bernoulli, Metalearner.Algorithm.deeplearning, false);
 
         basicEnsemble("./smalldata/iris/iris_wheader.csv",
                 null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) {return fr.find("class"); }
                 },
-                false, DistributionFamily.multinomial, MetalearnerAlgorithm.deeplearning, false);
+                false, DistributionFamily.multinomial, Metalearner.Algorithm.deeplearning, false);
 
         basicEnsemble("./smalldata/logreg/prostate_train.csv",
                 "./smalldata/logreg/prostate_test.csv",
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) { return fr.find("CAPSULE"); }
                 },
-                false, DistributionFamily.bernoulli, MetalearnerAlgorithm.deeplearning, false);
+                false, DistributionFamily.bernoulli, Metalearner.Algorithm.deeplearning, false);
     }
 
     
@@ -161,32 +159,32 @@ public class StackedEnsembleTest extends TestUtil {
         basicEnsemble("./smalldata/junit/cars.csv",
                 null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
-                false, DistributionFamily.gaussian, MetalearnerAlgorithm.glm, false);
+                false, DistributionFamily.gaussian, Metalearner.Algorithm.glm, false);
 
         // Binomial tests
         basicEnsemble("./smalldata/junit/test_tree_minmax.csv",
                 null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) { return fr.find("response"); }
                 },
-                false, DistributionFamily.bernoulli, MetalearnerAlgorithm.glm, false);
+                false, DistributionFamily.bernoulli, Metalearner.Algorithm.glm, false);
 
         basicEnsemble("./smalldata/logreg/prostate.csv",
                 null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("CAPSULE"); }
                 },
-                false, DistributionFamily.bernoulli, MetalearnerAlgorithm.glm, false);
+                false, DistributionFamily.bernoulli, Metalearner.Algorithm.glm, false);
 
         basicEnsemble("./smalldata/logreg/prostate_train.csv",
                 "./smalldata/logreg/prostate_test.csv",
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) { return fr.find("CAPSULE"); }
                 },
-                false, DistributionFamily.bernoulli, MetalearnerAlgorithm.glm, false);
+                false, DistributionFamily.bernoulli, Metalearner.Algorithm.glm, false);
 
         basicEnsemble("./smalldata/gbm_test/alphabet_cattest.csv",
                 null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) { return fr.find("y"); }
                 },
-                false, DistributionFamily.bernoulli, MetalearnerAlgorithm.glm, false);
+                false, DistributionFamily.bernoulli, Metalearner.Algorithm.glm, false);
 
         basicEnsemble("./smalldata/airlines/allyears2k_headers.zip",
                 null,
@@ -194,26 +192,26 @@ public class StackedEnsembleTest extends TestUtil {
                     for( String s : ignored_aircols ) fr.remove(s).remove();
                     return fr.find("IsArrDelayed"); }
                 },
-                false, DistributionFamily.bernoulli, MetalearnerAlgorithm.glm, false);
+                false, DistributionFamily.bernoulli, Metalearner.Algorithm.glm, false);
 
         // Multinomial tests
         basicEnsemble("./smalldata/logreg/prostate.csv",
                 null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("RACE"); }
                 },
-                false, DistributionFamily.multinomial, MetalearnerAlgorithm.glm, false);
+                false, DistributionFamily.multinomial, Metalearner.Algorithm.glm, false);
 
         basicEnsemble("./smalldata/junit/cars.csv",
                 null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) { fr.remove("name").remove(); return fr.find("cylinders"); }
                 },
-                false, DistributionFamily.multinomial, MetalearnerAlgorithm.glm, false);
+                false, DistributionFamily.multinomial, Metalearner.Algorithm.glm, false);
 
         basicEnsemble("./smalldata/iris/iris_wheader.csv",
                 null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) {return fr.find("class"); }
                 },
-                false, DistributionFamily.multinomial, MetalearnerAlgorithm.glm, false);
+                false, DistributionFamily.multinomial, Metalearner.Algorithm.glm, false);
 
     }
 
@@ -281,7 +279,7 @@ public class StackedEnsembleTest extends TestUtil {
                     null,
                     new StackedEnsembleTest.PrepData() { int prep(Frame fr) {return fr.find("class"); }
                     },
-                    false, DistributionFamily.multinomial, MetalearnerAlgorithm.glm, false);
+                    false, DistributionFamily.multinomial, Metalearner.Algorithm.glm, false);
         } finally {
             Scope.exit();
         }
@@ -291,7 +289,7 @@ public class StackedEnsembleTest extends TestUtil {
         basicEnsemble("./smalldata/junit/cars.csv",
             null,
             new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
-            false, DistributionFamily.gaussian, MetalearnerAlgorithm.AUTO, true);
+            false, DistributionFamily.gaussian, Metalearner.Algorithm.AUTO, true);
 
         basicEnsemble("./smalldata/airlines/allyears2k_headers.zip",
             null,
@@ -299,19 +297,19 @@ public class StackedEnsembleTest extends TestUtil {
                 for( String s : ignored_aircols ) fr.remove(s).remove();
                 return fr.find("IsArrDelayed"); }
             },
-            false, DistributionFamily.bernoulli, MetalearnerAlgorithm.AUTO, true);
+            false, DistributionFamily.bernoulli, Metalearner.Algorithm.AUTO, true);
         
         basicEnsemble("./smalldata/iris/iris_wheader.csv",
             null,
             new StackedEnsembleTest.PrepData() { int prep(Frame fr) {return fr.find("class"); }
             },
-            false, DistributionFamily.multinomial, MetalearnerAlgorithm.AUTO, true);
+            false, DistributionFamily.multinomial, Metalearner.Algorithm.AUTO, true);
 
         basicEnsemble("./smalldata/logreg/prostate_train.csv",
             "./smalldata/logreg/prostate_test.csv",
             new StackedEnsembleTest.PrepData() { int prep(Frame fr) { return fr.find("CAPSULE"); }
             },
-            false, DistributionFamily.bernoulli, MetalearnerAlgorithm.AUTO, true);
+            false, DistributionFamily.bernoulli, Metalearner.Algorithm.AUTO, true);
     }
     
     @Test
@@ -353,7 +351,7 @@ public class StackedEnsembleTest extends TestUtil {
         Model[] models = grid.getModels();
         Assert.assertEquals(4, models.length);
 
-        StackedEnsembleModel.StackedEnsembleParameters seParams = new StackedEnsembleModel.StackedEnsembleParameters();
+        StackedEnsembleParameters seParams = new StackedEnsembleParameters();
         seParams._distribution = DistributionFamily.bernoulli;
         seParams._train = train._key;
         seParams._blending = blend._key;
@@ -417,6 +415,76 @@ public class StackedEnsembleTest extends TestUtil {
       }
     }
 
+    
+    @Test
+    public void test_SE_with_GLM_can_do_predictions_on_frames_with_unseen_categorical_values() {
+      // test for PUBDEV-6266
+      List<Lockable> deletables = new ArrayList<>();
+      List<Iced> removables = new ArrayList<>();
+      try {
+        final int seed = 62832;
+        final Frame train = parse_test_file("./smalldata/testng/cars_train.csv"); deletables.add(train);
+        final Frame test = parse_test_file("./smalldata/testng/cars_test.csv"); deletables.add(test);
+        final String target = "economy (mpg)";
+        int cyl_idx = test.find("cylinders");
+        Assert.assertTrue(test.vec(cyl_idx).isInt());
+        Vec cyl_test = test.vec(cyl_idx);
+        cyl_test.set(cyl_test.length() - 1, 7); // that's a new engine concept
+        test.replace(cyl_idx, cyl_test.toCategoricalVec()).remove();
+        DKV.put(test);
+        Assert.assertTrue(test.vec(cyl_idx).isCategorical());
+        train.replace(cyl_idx, train.vec(cyl_idx).toCategoricalVec()).remove();
+        DKV.put(train);
+
+        //generate a few base models
+        GBMModel.GBMParameters params = new GBMModel.GBMParameters();
+        params._train = train._key;
+        params._response_column = target;
+        params._seed = seed;
+        params._keep_cross_validation_models = false;
+        params._keep_cross_validation_predictions = true;
+        params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+        params._nfolds = 5;
+          
+        Job<Grid> gridSearch = GridSearch.startGridSearch(null, params, new HashMap<String, Object[]>() {{
+          put("_ntrees", new Integer[]{3, 5});
+          put("_learn_rate", new Double[]{0.1, 0.2});
+        }});
+        Grid grid = gridSearch.get(); deletables.add(grid);
+        Model[] gridModels = grid.getModels(); deletables.addAll(Arrays.asList(gridModels));
+        Assert.assertEquals(4, gridModels.length);
+        
+        GLMModel.GLMParameters glm_params = new GLMModel.GLMParameters();
+        glm_params._train = train._key;
+        glm_params._response_column = target;
+        glm_params._seed = seed;
+        glm_params._keep_cross_validation_models = false;
+        glm_params._keep_cross_validation_predictions = true;
+        glm_params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+        glm_params._nfolds = 5;
+        glm_params._alpha = new double[]{0.1, 0.2, 0.4};
+        glm_params._lambda_search = true;
+        GLMModel glm = new GLM(glm_params).trainModel().get(); deletables.add(glm);
+
+        StackedEnsembleParameters seParams = new StackedEnsembleParameters();
+        seParams._train = train._key;
+        seParams._response_column = target;
+        seParams._base_models = ArrayUtils.append(grid.getModelKeys(), glm._key);
+        seParams._seed = seed;
+        StackedEnsembleModel se = new StackedEnsemble(seParams).trainModel().get(); deletables.add(se);
+
+        // mainly ensuring that no exception is thrown due to unmet categorical in test dataset. 
+        Scope.enter(); //only scoring seems to be producing inaccessible keys.
+        Frame predictions = se.score(test); deletables.add(predictions);
+        Assert.assertTrue(predictions.vec(0).at(cyl_test.length() - 1) > 0);
+      } finally {
+        Scope.exit();
+        for (Lockable l: deletables) {
+          if (l instanceof Model) ((Model)l).deleteCrossValidationPreds();
+          l.delete();
+        }
+      }
+    }
 
 
     // ==========================================================================
@@ -425,7 +493,7 @@ public class StackedEnsembleTest extends TestUtil {
                                                                     StackedEnsembleTest.PrepData prep,
                                                                     boolean dupeTrainingFrameToValidationFrame,
                                                                     DistributionFamily family,
-                                                                    MetalearnerAlgorithm metalearner_algo,
+                                                                    Metalearner.Algorithm metalearner_algo,
                                                                     boolean blending_mode) {
         Set<Frame> framesBefore = new HashSet<>();
         framesBefore.addAll(Arrays.asList( Frame.fetchAll()));

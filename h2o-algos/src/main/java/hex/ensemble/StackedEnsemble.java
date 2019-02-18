@@ -4,8 +4,6 @@ import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 
-import hex.StackedEnsembleModel;
-import hex.StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm;
 import water.DKV;
 import water.Job;
 import water.Key;
@@ -19,7 +17,6 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import water.nbhm.NonBlockingHashSet;
 import water.util.ArrayUtils;
 import water.util.Log;
 
@@ -69,13 +66,14 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
     return true;
   }
 
-  public static void addModelPredictionsToLevelOneFrame(Model aModel, Frame aModelsPredictions, Frame levelOneFrame) {
+  static void addModelPredictionsToLevelOneFrame(Model aModel, Frame aModelsPredictions, Frame levelOneFrame) {
     if (aModel._output.isBinomialClassifier()) {
       // GLM uses a different column name than the other algos
       Vec preds = aModelsPredictions.vec(2); // Predictions column names have been changed. . .
       levelOneFrame.add(aModel._key.toString(), preds);
     } else if (aModel._output.isMultinomialClassifier()) { //Multinomial
-      levelOneFrame.add(aModelsPredictions);
+      //Need to remove 'predict' column from multinomial since it contains outcome
+      levelOneFrame.add(aModelsPredictions.subframe(ArrayUtils.remove(aModelsPredictions.names(), "predict")));
     } else if (aModel._output.isAutoencoder()) {
       throw new H2OIllegalArgumentException("Don't yet know how to stack autoencoders: " + aModel._key);
     } else if (!aModel._output.isSupervised()) {
@@ -160,14 +158,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
       Frame predictions = getPredictionsForBaseModel(aModel, actuals, isTraining);
       baseModels.add(aModel);
-      if (!aModel._output.isMultinomialClassifier()) {
-        baseModelPredictions.add(predictions);
-      } else {
-        List<String> predColNames = new ArrayList<>(Arrays.asList(predictions.names()));
-        predColNames.remove("predict");
-        String[] multClassNames = predColNames.toArray(new String[0]);
-        baseModelPredictions.add(predictions.subframe(multClassNames));
-      }
+      baseModelPredictions.add(predictions);
     }
 
     return prepareLevelOneFrame(levelOneKey, baseModels.toArray(new Model[0]), baseModelPredictions.toArray(new Frame[0]), actuals);
@@ -226,8 +217,8 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         levelOneValidationFrame = prepareLevelOneFrame(levelOneValidKey, _model._parms._base_models, _model._parms.valid(), false);
       }
 
-      MetalearnerAlgorithm metalearnerAlgoSpec = _model._parms._metalearner_algorithm;
-      MetalearnerAlgorithm metalearnerAlgoImpl = Metalearner.getActualMetalearnerAlgo(metalearnerAlgoSpec);
+      Metalearner.Algorithm metalearnerAlgoSpec = _model._parms._metalearner_algorithm;
+      Metalearner.Algorithm metalearnerAlgoImpl = Metalearner.getActualMetalearnerAlgo(metalearnerAlgoSpec);
 
       // Compute metalearner
       if(metalearnerAlgoImpl != null) {
@@ -255,7 +246,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         metalearner.compute();
       } else {
         throw new H2OIllegalArgumentException("Invalid `metalearner_algorithm`. Passed in " + metalearnerAlgoSpec + 
-            " but must be one of " + Arrays.toString(MetalearnerAlgorithm.values()));
+            " but must be one of " + Arrays.toString(Metalearner.Algorithm.values()));
       }
     } // computeImpl
   }

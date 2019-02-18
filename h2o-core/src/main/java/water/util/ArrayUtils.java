@@ -1437,7 +1437,7 @@ public class ArrayUtils {
     if(s == null)return ary;
     int cnt = 0;
     int idx = find(ary,s);
-    while(idx > 0) {
+    while(idx >= 0) {
       ++cnt;
       idx = find(ary,s,++idx);
     }
