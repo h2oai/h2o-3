@@ -135,6 +135,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       
       StackedEnsemble.addModelPredictionsToLevelOneFrame(base, basePreds, levelOneFrame);
       DKV.remove(basePreds._key); //Cleanup
+      Frame.deleteTempFrameAndItsNonSharedVecs(basePreds, levelOneFrame);
     }
 
     // Add response column to level one frame
@@ -162,6 +163,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       ModelMetrics mmStackedEnsemble = lastComputedMetric.deepCloneWithDifferentModelAndFrame(this, fr);
       this.addModelMetrics(mmStackedEnsemble);
     }
+    Frame.deleteTempFrameAndItsNonSharedVecs(levelOneFrame, adaptFrm);
     return predictFr;
   }
 
@@ -182,7 +184,8 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
   ModelMetrics doScoreMetricsOneFrame(Frame frame, Job job) {
       Frame pred = this.predictScoreImpl(frame, new Frame(frame), null, job, true, CFuncRef.from(_parms._custom_metric_func));
-      pred.remove();
+//      Frame pred = this.score(frame, null, job, true,  CFuncRef.from(_parms._custom_metric_func));
+      pred.delete();
       return ModelMetrics.getFromDKV(this, frame);
   }
 

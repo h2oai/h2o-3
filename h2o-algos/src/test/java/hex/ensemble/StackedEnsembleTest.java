@@ -3,6 +3,7 @@ package hex.ensemble;
 import hex.GLMHelper;
 import hex.Model;
 import hex.ModelMetrics;
+import hex.SplitFrame;
 import hex.ensemble.StackedEnsembleModel.StackedEnsembleParameters;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLM;
@@ -415,12 +416,63 @@ public class StackedEnsembleTest extends TestUtil {
       }
     }
 
-    
+    @Test
+    public void test_SE_scoring_with_blending() {
+      List<Lockable> deletables = new ArrayList<>();
+      try {
+        final int seed = 62832;
+        final Frame fr = parse_test_file("./smalldata/logreg/prostate_train.csv"); deletables.add(fr);
+        final Frame test = parse_test_file("./smalldata/logreg/prostate_test.csv"); deletables.add(test);
+        
+        final String target = "CAPSULE";
+        int tidx = fr.find(target);
+        fr.replace(tidx, fr.vec(tidx).toCategoricalVec()).remove(); DKV.put(fr);
+        test.replace(tidx, test.vec(tidx).toCategoricalVec()).remove(); DKV.put(test);
+
+        SplitFrame sf = new SplitFrame(fr, new double[] { 0.7, 0.3 }, null);
+        sf.exec().get();
+        Key<Frame>[] ksplits = sf._destination_frames;
+        final Frame train = ksplits[0].get(); deletables.add(train);
+        final Frame blending = ksplits[1].get(); deletables.add(blending);
+        
+        //generate a few base models
+        GBMModel.GBMParameters params = new GBMModel.GBMParameters();
+        params._train = train._key;
+        params._response_column = target;
+        params._seed = seed;
+
+        Job<Grid> gridSearch = GridSearch.startGridSearch(null, params, new HashMap<String, Object[]>() {{
+          put("_ntrees", new Integer[]{3, 5});
+          put("_learn_rate", new Double[]{0.1, 0.2});
+        }});
+        Grid grid = gridSearch.get(); deletables.add(grid);
+        Model[] gridModels = grid.getModels(); deletables.addAll(Arrays.asList(gridModels));
+        Assert.assertEquals(4, gridModels.length);
+
+        StackedEnsembleParameters seParams = new StackedEnsembleParameters();
+        seParams._train = train._key;
+        seParams._blending = blending._key;
+        seParams._response_column = target;
+        seParams._base_models = grid.getModelKeys();
+        seParams._seed = seed;
+        StackedEnsembleModel se = new StackedEnsemble(seParams).trainModel().get(); deletables.add(se);
+
+        // mainly ensuring that no exception is thrown due to unmet categorical in test dataset. 
+        Frame predictions = se.score(test); deletables.add(predictions);
+        Assert.assertEquals(2+1, predictions.numCols()); // binomial: 2 probabilities + 1 response prediction
+        Assert.assertEquals(test.numRows(), predictions.numRows());
+      } finally {
+        for (Lockable l: deletables) {
+          if (l instanceof Model) ((Model)l).deleteCrossValidationPreds();
+          l.delete();
+        }
+      }
+    }
+
     @Test
     public void test_SE_with_GLM_can_do_predictions_on_frames_with_unseen_categorical_values() {
       // test for PUBDEV-6266
       List<Lockable> deletables = new ArrayList<>();
-      List<Iced> removables = new ArrayList<>();
       try {
         final int seed = 62832;
         final Frame train = parse_test_file("./smalldata/testng/cars_train.csv"); deletables.add(train);
@@ -474,11 +526,9 @@ public class StackedEnsembleTest extends TestUtil {
         StackedEnsembleModel se = new StackedEnsemble(seParams).trainModel().get(); deletables.add(se);
 
         // mainly ensuring that no exception is thrown due to unmet categorical in test dataset. 
-        Scope.enter(); //only scoring seems to be producing inaccessible keys.
         Frame predictions = se.score(test); deletables.add(predictions);
         Assert.assertTrue(predictions.vec(0).at(cyl_test.length() - 1) > 0);
       } finally {
-        Scope.exit();
         for (Lockable l: deletables) {
           if (l instanceof Model) ((Model)l).deleteCrossValidationPreds();
           l.delete();

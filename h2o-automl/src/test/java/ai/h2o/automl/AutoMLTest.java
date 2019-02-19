@@ -6,10 +6,13 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
+import water.Lockable;
 import water.Scope;
 import water.fvec.Frame;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Random;
 
 import static junit.framework.TestCase.assertNotNull;
@@ -84,27 +87,34 @@ public class AutoMLTest extends water.TestUtil {
   }
   
   @Test public void test_stacked_ensembles_trained_with_blending_frame_if_provided() {
-    AutoML aml=null;
-    Frame fr=null, train=null, blending=null;
+    List<Lockable> deletables = new ArrayList<>();
     try {
-      AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
-      // split into train/test
+      final int seed = 62832;
+      final Frame fr = parse_test_file("./smalldata/logreg/prostate_train.csv"); deletables.add(fr);
+      final Frame test = parse_test_file("./smalldata/logreg/prostate_test.csv"); deletables.add(test);
+      
+      String target = "CAPSULE";
+      int tidx = fr.find(target);
+      fr.replace(tidx, fr.vec(tidx).toCategoricalVec()).remove(); DKV.put(fr); deletables.add(fr);
+      test.replace(tidx, test.vec(tidx).toCategoricalVec()).remove(); DKV.put(test); deletables.add(test);
+      
       SplitFrame sf = new SplitFrame(fr, new double[] { 0.7, 0.3 }, null);
       sf.exec().get();
       Key<Frame>[] ksplits = sf._destination_frames;
-      train = ksplits[0].get();
-      blending = ksplits[1].get();
-      
+      final Frame train = ksplits[0].get(); deletables.add(train);
+      final Frame blending = ksplits[1].get(); deletables.add(blending);
+
+      AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
       autoMLBuildSpec.input_spec.training_frame = train._key;
       autoMLBuildSpec.input_spec.blending_frame = blending._key;
-//      autoMLBuildSpec.input_spec.leaderboard_frame = train._key;
-      autoMLBuildSpec.input_spec.response_column = "CAPSULE";
+      autoMLBuildSpec.input_spec.leaderboard_frame = test._key;
+      autoMLBuildSpec.input_spec.response_column = target;
 
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(3);
       autoMLBuildSpec.build_control.nfolds = 0;
+      autoMLBuildSpec.build_control.stopping_criteria.set_seed(seed);
 
-      aml = AutoML.startAutoML(autoMLBuildSpec);
+      AutoML aml = AutoML.startAutoML(autoMLBuildSpec); deletables.add(aml);
       aml.get();
       
       Key[] modelKeys = aml.leaderboard().getModelKeys();
@@ -116,12 +126,11 @@ public class AutoMLTest extends water.TestUtil {
       assertEquals(5, aml.leaderboard().getModelCount());
     } finally {
       // Cleanup
-      if(aml!=null) aml.deleteWithChildren();
-      if(fr != null) fr.delete();
-      if(train != null) train.delete();
-      if(blending != null) blending.delete();
+      for (Lockable l: deletables) {
+        if (l instanceof AutoML) ((AutoML)l).deleteWithChildren();
+        l.delete();
+      }
     }
-    
   }
 
 
