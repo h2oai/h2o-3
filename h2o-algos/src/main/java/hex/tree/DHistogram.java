@@ -49,30 +49,27 @@ public final class DHistogram extends Iced {
   public char  _nbin;     // Bin count (excluding NA bucket)
   public double _step;     // Linear interpolation step per bin
   public final double _min, _maxEx; // Conservative Min/Max over whole collection.  _maxEx is Exclusive.
+  public final double _pred1;
+  public final double _pred2;
 
   protected double [] _vals;
-  public double w(int i){  return _vals[3*i+0];}
-  public double wY(int i){ return _vals[3*i+1];}
-  public double wYY(int i){return _vals[3*i+2];}
+  public double w(int i){  return _vals[5*i+0];}
+  public double wY(int i){ return _vals[5*i+1];}
+  public double wYY(int i){return _vals[5*i+2];}
 
   public void addWAtomic(int i, double wDelta) {  // used by AutoML
-    AtomicUtils.DoubleArray.add(_vals, 3*i+0, wDelta);
+    AtomicUtils.DoubleArray.add(_vals, 5*i+0, wDelta);
   }
 
   public void addNasAtomic(double y, double wy, double wyy) {
-    AtomicUtils.DoubleArray.add(_vals,3*_nbin+0,y);
-    AtomicUtils.DoubleArray.add(_vals,3*_nbin+1,wy);
-    AtomicUtils.DoubleArray.add(_vals,3*_nbin+2,wyy);
-  }
-  public void addNasPlain(double... ds) {
-    _vals[3*_nbin+0] += ds[0];
-    _vals[3*_nbin+1] += ds[1];
-    _vals[3*_nbin+2] += ds[2];
+    AtomicUtils.DoubleArray.add(_vals,5*_nbin+0,y);
+    AtomicUtils.DoubleArray.add(_vals,5*_nbin+1,wy);
+    AtomicUtils.DoubleArray.add(_vals,5*_nbin+2,wyy);
   }
 
-  public double wNA()   { return _vals[3*_nbin+0]; }
-  public double wYNA()  { return _vals[3*_nbin+1]; }
-  public double wYYNA() { return _vals[3*_nbin+2]; }
+  public double wNA()   { return _vals[5*_nbin+0]; }
+  public double wYNA()  { return _vals[5*_nbin+1]; }
+  public double wYYNA() { return _vals[5*_nbin+2]; }
 
 
 
@@ -164,10 +161,12 @@ public final class DHistogram extends Iced {
     }
   }
   public DHistogram(String name, final int nbins, int nbins_cats, byte isInt, double min, double maxEx,
-                    double minSplitImprovement, SharedTreeModel.SharedTreeParameters.HistogramType histogramType, long seed, Key globalQuantilesKey) {
+                    double minSplitImprovement, SharedTreeModel.SharedTreeParameters.HistogramType histogramType, long seed, Key globalQuantilesKey, double pred1, double pred2) {
     assert nbins > 1;
     assert nbins_cats > 1;
     assert maxEx > min : "Caller ensures "+maxEx+">"+min+", since if max==min== the column "+name+" is all constants";
+    _pred1 = pred1;
+    _pred2 = pred2;
     _isInt = isInt;
     _name = name;
     _min=min;
@@ -278,7 +277,7 @@ public final class DHistogram extends Iced {
     else assert(_histoType== SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive);
     //otherwise AUTO/UniformAdaptive
     assert(_nbin>0);
-    _vals = vals == null?MemoryManager.malloc8d(3*_nbin+3):vals;
+    _vals = vals == null?MemoryManager.malloc8d(5*_nbin+5):vals;
   }
 
   // Add one row to a bin found via simple linear interpolation.
@@ -291,7 +290,7 @@ public final class DHistogram extends Iced {
     }
     assert Double.isInfinite(col_data) || (_min <= col_data && col_data < _maxEx) : "col_data "+col_data+" out of range "+this;
     int b = bin(col_data);      // Compute bin# via linear interpolation
-    water.util.AtomicUtils.DoubleArray.add(_vals,3*b,w); // Bump count in bin
+    water.util.AtomicUtils.DoubleArray.add(_vals,5*b,w); // Bump count in bin
     // Track actual lower/upper bound per-bin
     if (!Double.isInfinite(col_data)) {
       setMin(col_data);
@@ -350,7 +349,11 @@ public final class DHistogram extends Iced {
 
 
   public static DHistogram make(String name, final int nbins, byte isInt, double min, double maxEx, long seed, SharedTreeModel.SharedTreeParameters parms, Key globalQuantilesKey) {
-    return new DHistogram(name,nbins, parms._nbins_cats, isInt, min, maxEx, parms._min_split_improvement, parms._histogram_type, seed, globalQuantilesKey);
+    return new DHistogram(name,nbins, parms._nbins_cats, isInt, min, maxEx, parms._min_split_improvement, parms._histogram_type, seed, globalQuantilesKey, 0, 0);
+  }
+
+  public static DHistogram make(String name, final int nbins, byte isInt, double min, double maxEx, long seed, SharedTreeModel.SharedTreeParameters parms, Key globalQuantilesKey, double pred1, double pred2) {
+    return new DHistogram(name,nbins, parms._nbins_cats, isInt, min, maxEx, parms._min_split_improvement, parms._histogram_type, seed, globalQuantilesKey, pred1, pred2);
   }
 
   // Pretty-print a histogram
@@ -386,13 +389,8 @@ public final class DHistogram extends Iced {
   // Compute response mean & variance.
   // Done racily instead F/J map calls, so atomic
   public void incr0( int b, double y, double w ) {
-    AtomicUtils.DoubleArray.add(_vals,3*b+1,(float)(w*y)); //See 'HistogramTest' JUnit for float-casting rationalization
-    AtomicUtils.DoubleArray.add(_vals,3*b+2,(float)(w*y*y));
-  }
-  // Same, except square done by caller
-  public void incr1( int b, double y, double yy) {
-    AtomicUtils.DoubleArray.add(_vals,3*b+1,(float)y); //See 'HistogramTest' JUnit for float-casting rationalization
-    AtomicUtils.DoubleArray.add(_vals,3*b+2,(float)yy);
+    AtomicUtils.DoubleArray.add(_vals,5*b+1,(float)(w*y)); //See 'HistogramTest' JUnit for float-casting rationalization
+    AtomicUtils.DoubleArray.add(_vals,5*b+2,(float)(w*y*y));
   }
 
   /**
@@ -417,11 +415,13 @@ public final class DHistogram extends Iced {
       double y = ys[k];
       assert (!Double.isNaN(y));
       double wy = weight * y;
-      double wyy = wy * y;  // This is the correct implementation.
+      double wyy = wy * y;
       int b = bin(col_data);
-      _vals[3*b + 0] += weight;
-      _vals[3*b + 1] += wy;
-      _vals[3*b + 2] += wyy;
+      _vals[5*b + 0] += weight;
+      _vals[5*b + 1] += wy;
+      _vals[5*b + 2] += wyy;
+      _vals[5*b + 3] += weight * (_pred1 - y) * (_pred1 - y);
+      _vals[5*b + 4] += weight * (_pred2 - y) * (_pred2 - y);
     }
   }
 
@@ -431,7 +431,7 @@ public final class DHistogram extends Iced {
    */
   public void reducePrecision(){
     if(_vals == null) return;
-    for(int i = 0; i < _vals.length -3 /* do not reduce precision of NAs */; i+=3) {
+    for(int i = 0; i < _vals.length -5 /* do not reduce precision of NAs */; i+=5) {
       _vals[i+1] = (float)_vals[i+1];
       _vals[i+2] = (float)_vals[i+2];
     }
@@ -469,15 +469,15 @@ public final class DHistogram extends Iced {
     final int len = _nbin;
     for( int b=0; b<len; b++ ) {
       if (lh.w(b) != 0) {
-        AtomicUtils.DoubleArray.add(_vals, 3*b+0, lh.w(b));
+        AtomicUtils.DoubleArray.add(_vals, 5*b+0, lh.w(b));
         lh.wClear(b);
       }
       if (lh.wY(b) != 0) {
-        AtomicUtils.DoubleArray.add(_vals, 3*b+1, (float) lh.wY(b));
+        AtomicUtils.DoubleArray.add(_vals, 5*b+1, (float) lh.wY(b));
         lh.wYClear(b);
       }
       if (lh.wYY(b) != 0) {
-        AtomicUtils.DoubleArray.add(_vals, 3*b+2,(float)lh.wYY(b));
+        AtomicUtils.DoubleArray.add(_vals, 5*b+2,(float)lh.wYY(b));
         lh.wYYClear(b);
       }
     }

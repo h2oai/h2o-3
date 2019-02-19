@@ -46,7 +46,7 @@ public class GBMModel extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, 
       if (_monotone_constraints == null || _monotone_constraints.length == 0) {
         return null;
       }
-      Constraint[] cs = new Constraint[f.numCols()];
+      int[] cs = new int[f.numCols()];
       for (KeyValue spec : _monotone_constraints) {
         if (spec.getValue() == 0)
           continue;
@@ -54,8 +54,7 @@ public class GBMModel extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, 
         if (col < 0) {
           throw new IllegalStateException("Invalid constraint specification, column '" + spec.getKey() + "' doesn't exist.");
         }
-        int direction = spec.getValue() < 0 ? -1 : 1;
-        cs[col] = new Constraint(direction);
+        cs[col] = spec.getValue() < 0 ? -1 : 1;
       }
       return new Constraints(cs);
     }

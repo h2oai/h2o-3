@@ -205,7 +205,7 @@ public class DTree extends Iced {
      * @param parms user-given parameters (will use nbins, min_rows, etc.)
      * @return Array of histograms to be used for the next level of split finding
      */
-    public DHistogram[] nextLevelHistos(DHistogram currentHistos[], int way, double splat, SharedTreeModel.SharedTreeParameters parms) {
+    public DHistogram[] nextLevelHistos(DHistogram currentHistos[], int way, double splat, SharedTreeModel.SharedTreeParameters parms, double pred1, double pred2) {
       double n = way==0 ? _n0 : _n1;
       if( n < parms._min_rows ) {
 //        Log.info("Not splitting: too few observations left: " + n);
@@ -250,7 +250,7 @@ public class DTree extends Iced {
           switch( _equal ) {
           case 0:  // Ranged split; know something about the left & right sides
             if (_nasplit != DHistogram.NASplitDir.NAvsREST) {
-              if (h._vals[3*_bin] == 0)
+              if (h._vals[5*_bin] == 0)
                 throw H2O.unimpl(); // Here I should walk up & down same as split() above.
             }
             assert _bs==null : "splat not defined for BitSet splits";
@@ -280,20 +280,19 @@ public class DTree extends Iced {
         if( h._isInt > 0 && !(min+1 < maxEx ) )
           continue; // This column will not split again
         assert min < maxEx && adj_nbins > 1 : ""+min+"<"+maxEx+" nbins="+adj_nbins;
-        nhists[j] = DHistogram.make(h._name, adj_nbins, h._isInt, min, maxEx, h._seed*0xDECAF+(way+1), parms, h._globalQuantilesKey);
+        nhists[j] = DHistogram.make(h._name, adj_nbins, h._isInt, min, maxEx, h._seed*0xDECAF+(way+1), parms, h._globalQuantilesKey, pred1, pred2);
         cnt++;                    // At least some chance of splitting
       }
       return cnt == 0 ? null : nhists;
     }
 
     public Constraints nextLevelConstraints(Constraints currentConstraints, int way, double splat, SharedTreeModel.SharedTreeParameters parms) {
-      Constraint constraint = currentConstraints.getColumnConstraint(_col);
-      if (constraint == null) {
+      int constraint = currentConstraints.getColumnConstraint(_col);
+      if (constraint == 0) {
         return currentConstraints; // didn't split on a column with constraints => no need to modify them
       }
       double mid = (_p0 + _p1) / 2;
-      Constraint newConstraint = new Constraint(constraint, way, mid);
-      return currentConstraints.withNewConstraint(_col, newConstraint);
+      return currentConstraints.withNewConstraint(way, mid);
     }
 
     @Override public String toString() {
@@ -509,8 +508,18 @@ public class DTree extends Iced {
         computeSplit();
       }
       public final DTree.Split computeSplit() {
-        Constraint constraint = _cs != null ? _cs.getColumnConstraint(_col) : null;
-        _s = findBestSplitPoint(_hs[_col], _col, _tree._parms._min_rows, constraint);
+        final double min, max;
+        final int constraint;
+        if (_cs != null) {
+          min = _cs._min;
+          max = _cs._max;
+          constraint = _cs.getColumnConstraint(_col);
+        } else {
+          min = Double.NaN;
+          max = Double.NaN;
+          constraint = 0;
+        }
+        _s = findBestSplitPoint(_hs[_col], _col, _tree._parms._min_rows, constraint, min, max);
         return _s;
       }
     }
@@ -530,8 +539,8 @@ public class DTree extends Iced {
       _splat = _split._nasplit != DHistogram.NASplitDir.NAvsREST && (_split._equal == 0 || _split._equal == 1) ? _split.splat(hs) : -1f; // Split-at value (-1 for group-wise splits)
       for(int way = 0; way <2; way++ ) { // left / right
         // Create children histograms, not yet populated, but the ranges are set
-        DHistogram nhists[] = _split.nextLevelHistos(hs, way,_splat, _tree._parms); //maintains the full range for NAvsREST
         Constraints ncs = cs != null ? _split.nextLevelConstraints(cs, way, _splat, _tree._parms) : null;
+        DHistogram nhists[] = _split.nextLevelHistos(hs, way,_splat, _tree._parms, ncs != null ? ncs._min : 0, ncs != null ? ncs._max : 0); //maintains the full range for NAvsREST
         assert nhists==null || nhists.length==_tree._ncols;
         // Assign a new (yet undecided) node to each child, and connect this (the parent) decided node and the newly made histograms to it
         _nids[way] = nhists == null ? ScoreBuildHistogram.UNDECIDED_CHILD_NODE_ID : makeUndecidedNode(nhists,ncs)._nid;
@@ -773,7 +782,8 @@ public class DTree extends Iced {
     return new CompressedTree(ab.buf(), _seed,tid,cls);
   }
 
-  static Split findBestSplitPoint(DHistogram hs, int col, double min_rows, Constraint constraint) {
+  private static Split findBestSplitPoint(DHistogram hs, int col, double min_rows,
+                                          int constraint, double min, double max) {
     if(hs._vals == null) {
       if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": histogram not filled yet.");
       return null; // TODO: there are empty leafs?
@@ -799,13 +809,15 @@ public class DTree extends Iced {
       ArrayUtils.sort(idxs, avgs);
       // Fill with sorted data.  Makes a copy, so the original data remains in
       // its original order.
-      vals = MemoryManager.malloc8d(3*nbins);
+      vals = MemoryManager.malloc8d(5*nbins);
 
       for( int i=0; i<nbins; i++ ) {
         int id = idxs[i];
-        vals[3*i+0] = hs._vals[3*id+0];
-        vals[3*i+1] = hs._vals[3*id+1];
-        vals[3*i+2] = hs._vals[3*id+2];
+        vals[5*i+0] = hs._vals[5*id+0];
+        vals[5*i+1] = hs._vals[5*id+1];
+        vals[5*i+2] = hs._vals[5*id+2];
+        vals[5*i+3] = hs._vals[5*id+3];
+        vals[5*i+4] = hs._vals[5*id+4];
 //        Log.info(vals[3*i] + " obs have avg response [" + i + "]=" + avgs[id]);
       }
     }
@@ -814,16 +826,22 @@ public class DTree extends Iced {
     double   wlo[] = MemoryManager.malloc8d(nbins+1);
     double  wYlo[] = MemoryManager.malloc8d(nbins+1);
     double wYYlo[] = MemoryManager.malloc8d(nbins+1);
+    double pr1lo[] = MemoryManager.malloc8d(nbins+1);
+    double pr2lo[] = MemoryManager.malloc8d(nbins+1);
     for( int b=1; b<=nbins; b++ ) {
-      int id = 3*(b-1);
+      int id = 5*(b-1);
       double n0 =   wlo[b-1], n1 = vals[id+0];
       if( n0==0 && n1==0 )
         continue;
       double m0 =  wYlo[b-1], m1 = vals[id+1];
       double s0 = wYYlo[b-1], s1 = vals[id+2];
+      double p10 = pr1lo[b-1], p11 = vals[id+3];
+      double p20 = pr2lo[b-1], p21 = vals[id+4];
       wlo[b] = n0+n1;
       wYlo[b] = m0+m1;
       wYYlo[b] = s0+s1;
+      pr1lo[b] = p10+p11;
+      pr2lo[b] = p20+p21;
     }
     double wNA = hs.wNA();
     double tot = wlo[nbins] + wNA; //total number of (weighted) rows
@@ -847,15 +865,21 @@ public class DTree extends Iced {
     double   whi[] = MemoryManager.malloc8d(nbins+1);
     double  wYhi[] = MemoryManager.malloc8d(nbins+1);
     double wYYhi[] = MemoryManager.malloc8d(nbins+1);
+    double pr1hi[] = MemoryManager.malloc8d(nbins+1);
+    double pr2hi[] = MemoryManager.malloc8d(nbins+1);
     for( int b=nbins-1; b>=0; b-- ) {
-      double n0 =   whi[b+1], n1 = vals[3*b];
+      double n0 =   whi[b+1], n1 = vals[5*b];
       if( n0==0 && n1==0 )
         continue;
-      double m0 =  wYhi[b+1], m1 = vals[3*b+1];
-      double s0 = wYYhi[b+1], s1 = vals[3*b+2];
+      double m0 =  wYhi[b+1], m1 = vals[5*b+1];
+      double s0 = wYYhi[b+1], s1 = vals[5*b+2];
+      double p10 = pr1hi[b+1], p11 = vals[5*b+3];
+      double p20 = pr2hi[b+1], p21 = vals[5*b+4];
       whi[b] = n0+n1;
       wYhi[b] = m0+m1;
       wYYhi[b] = s0+s1;
+      pr1hi[b] = p10+p11;
+      pr2hi[b] = p20+p21;
       assert MathUtils.compare(wlo[b]+ whi[b]+wNA,tot,1e-5,1e-5);
     }
 
@@ -868,6 +892,11 @@ public class DTree extends Iced {
     if (seNonNA < 0) seNonNA = 0;
     double seBefore = seNonNA;
 
+    double nLeft = 0;
+    double nRight = 0;
+    double predLeft = 0;
+    double predRight = 0;
+
     // if there are any NAs, then try to split them from the non-NAs
     if (wNA>=min_rows) {
       double seAll = (wYYhi[0] + wYYNA) - (wYhi[0] + wYNA) * (wYhi[0] + wYNA) / (whi[0] + wNA);
@@ -877,6 +906,10 @@ public class DTree extends Iced {
       best_seR = seNA;
       nasplit = DHistogram.NASplitDir.NAvsREST;
       seBefore = seAll;
+      nLeft = whi[0]; //all non-NAs
+      predLeft = wYhi[0];
+      nRight = wNA;
+      predRight = wYNA;
     }
 
     // Now roll the split-point across the bins.  There are 2 ways to do this:
@@ -887,7 +920,7 @@ public class DTree extends Iced {
     int best=0;                         // The no-split
     byte equal=0;                       // Ranged check
     for( int b=1; b<=nbins-1; b++ ) {
-      if( vals[3*b] == 0 ) continue; // Ignore empty splits
+      if( vals[5*b] == 0 ) continue; // Ignore empty splits
       if( wlo[b]+wNA < min_rows ) continue;
       if( whi[b]+wNA < min_rows ) break; // w1 shrinks at the higher bin#s, so if it fails once it fails always
       // We're making an unbiased estimator, so that MSE==Var.
@@ -907,9 +940,15 @@ public class DTree extends Iced {
                 // Or tied MSE, then pick split towards middle bins
                 (selo + sehi == best_seL + best_seR &&
                         Math.abs(b - (nbins >> 1)) < Math.abs(best - (nbins >> 1)))) {
-          best_seL = selo;
-          best_seR = sehi;
-          best = b;
+          if (constraint == 0 || (constraint * wYlo[b] / wlo[b] <= constraint * wYhi[b] / whi[b])) {
+            best_seL = selo;
+            best_seR = sehi;
+            best = b;
+            nLeft = wlo[best];
+            nRight = whi[best];
+            predLeft = wYlo[best];
+            predRight = wYhi[best];
+          }
         }
       } else {
         // option 1: split the numeric feature and throw NAs to the left
@@ -923,10 +962,16 @@ public class DTree extends Iced {
                   (selo + sehi == best_seL + best_seR &&
                           Math.abs(b - (nbins >> 1)) < Math.abs(best - (nbins >> 1)))) {
             if( (wlo[b] + wNA) >= min_rows && whi[b] >= min_rows) {
-              best_seL = selo;
-              best_seR = sehi;
-              best = b;
-              nasplit = DHistogram.NASplitDir.NALeft;
+              if (constraint == 0 || (constraint * (wYlo[b] + wYNA) / (wlo[b] + wNA) <= constraint * wYhi[b] / whi[b])) {
+                best_seL = selo;
+                best_seR = sehi;
+                best = b;
+                nLeft = wlo[best] + wNA;
+                nRight = whi[best];
+                predLeft = wYlo[best] + wYNA;
+                predRight = wYhi[best];
+                nasplit = DHistogram.NASplitDir.NALeft;
+              }
             }
           }
         }
@@ -942,10 +987,16 @@ public class DTree extends Iced {
                   (selo + sehi == best_seL + best_seR &&
                           Math.abs(b - (nbins >> 1)) < Math.abs(best - (nbins >> 1)))) {
             if( wlo[b] >= min_rows && (whi[b] + wNA) >= min_rows ) {
-              best_seL = selo;
-              best_seR = sehi;
-              best = b;
-              nasplit = DHistogram.NASplitDir.NARight;
+              if (constraint == 0 || (constraint * wYlo[b] / (wlo[b]) <= constraint * (wYhi[b] + wYNA) / (whi[b] + wNA))) {
+                best_seL = selo;
+                best_seR = sehi;
+                best = b;
+                nLeft = wlo[best];
+                nRight = whi[best] + wNA;
+                predLeft = wYlo[best];
+                predRight = wYhi[best] + wYNA;
+                nasplit = DHistogram.NASplitDir.NARight;
+              }
             }
           }
         }
@@ -963,26 +1014,6 @@ public class DTree extends Iced {
       return null;
     }
 
-    double nLeft = wlo[best];
-    double nRight = whi[best];
-    double predLeft = wYlo[best];
-    double predRight = wYhi[best];
-
-    if (nasplit== DHistogram.NASplitDir.NAvsREST) {
-      assert(best == 0);
-      nLeft = whi[0]; //all non-NAs
-      predLeft = wYhi[0];
-      nRight = wNA;
-      predRight = wYNA;
-    }
-    else if (nasplit== DHistogram.NASplitDir.NALeft) {
-      nLeft +=wNA;
-      predLeft +=wYNA;
-    }
-    else if (nasplit== DHistogram.NASplitDir.NARight) {
-      nRight +=wNA;
-      predRight +=wYNA;
-    }
     assert(Math.abs(tot - (nRight + nLeft)) < 1e-5*tot);
 
     if( MathUtils.equalsWithinOneSmallUlp((float)(predLeft / nLeft),(float)(predRight / nRight)) ) {
@@ -990,24 +1021,53 @@ public class DTree extends Iced {
       return null;
     }
 
+    double p0 = predLeft / nLeft;
+    double p1 = predRight / nRight;
+
     if (nLeft < min_rows || nRight < min_rows) {
       if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": split would violate min_rows limit.");
       return null;
     }
 
-    if (constraint != null) {
-      if (constraint._direction * predLeft / nLeft > constraint._direction * predRight / nRight) {
+    if (!Double.isNaN(min)) {
+      if (p0 < min) {
+        if (SharedTree.DEV_DEBUG)
+          Log.info("minimum constraint violated in the left split of " + hs._name + ": left node will predict minimum bound: " + min);
+        p0 = min;
+        best_seL = pr1lo[best];
+      }
+      if (p1 < min) {
+        if (SharedTree.DEV_DEBUG)
+          Log.info("minimum constraint violated in the right split of " + hs._name + ": right node will predict minimum bound: " + min);
+        p1 = min;
+        best_seR = pr1hi[best];
+      }
+    }
+    if (!Double.isNaN(max)) {
+      if (p0 > max) {
+        if (SharedTree.DEV_DEBUG)
+          Log.info("maximum constraint violated in the left split of " + hs._name + ": left node will predict maximum bound: " + max);
+        p0 = max;
+        best_seL = pr2lo[best];
+      }
+      if (p1 > max) {
+        if (SharedTree.DEV_DEBUG)
+          Log.info("maximum constraint violated in the right split of " + hs._name + ": right node will predict maximum bound: " + max);
+        p1 = max;
+        best_seR = pr2hi[best];
+      }
+    }
+
+    if (constraint != 0) {
+      if (constraint * p0 > constraint * p1) {
         if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": split would violate monotone constraint.");
         return null;
       }
-      if (!Double.isNaN(constraint._min) && constraint._direction * predLeft / nLeft > constraint._direction * constraint._min) {
-        if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": split would violate monotone constraint (min value).");
-        return null;
-      }
-      if (!Double.isNaN(constraint._max) && constraint._direction * predRight / nRight > constraint._direction * constraint._max) {
-        if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": split would violate monotone constraint (max value).");
-        return null;
-      }
+    }
+
+    if (!(best_seL+ best_seR < seBefore * (1- hs._minSplitImprovement))) {
+      if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": not enough relative improvement: " + (1-(best_seL + best_seR) / seBefore) + "\n" + hs);
+      return null;
     }
 
     // For categorical (unordered) predictors, we sorted the bins by average
@@ -1025,7 +1085,9 @@ public class DTree extends Iced {
     if (nasplit == DHistogram.NASplitDir.None) {
       nasplit = nLeft > nRight ? DHistogram.NASplitDir.Left : DHistogram.NASplitDir.Right;
     }
-    Split split = new Split(col,best,nasplit,bs,equal,seBefore,best_seL, best_seR, nLeft, nRight, predLeft / nLeft, predRight / nRight);
+    assert constraint == 0 || constraint * p0 <= constraint * p1;
+    assert (Double.isNaN(min) || min <= p0) && (Double.isNaN(max) || p1 <= max);
+    Split split = new Split(col, best, nasplit, bs, equal, seBefore,best_seL, best_seR, nLeft, nRight, p0, p1);
     if (SharedTree.DEV_DEBUG) Log.info("splitting on " + hs._name + ": " + split);
     return split;
   }
