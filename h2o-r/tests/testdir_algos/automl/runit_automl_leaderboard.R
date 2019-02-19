@@ -76,7 +76,6 @@ automl.leaderboard.test <- function() {
                        project_name = "r_lb_test_aml4",
                        exclude_algos = exclude_algos)
     aml4@leaderboard
-    # there's a dummy row of NAs in an "empty" leaderboard
     expect_equal(nrow(aml4@leaderboard), 0)
 
     # Include all algorithms (all should be there, given large enough max_models)
