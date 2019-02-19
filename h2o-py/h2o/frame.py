@@ -2032,7 +2032,8 @@ class H2OFrame(object):
         :param int axis: Direction of sum computation. If 0 (default), then sum is computed columnwise, and the result
             is a frame with 1 row and number of columns as in the original frame. If 1, then sum is computed rowwise
             and the result is a frame with 1 column (called "sum"), and number of rows equal to the number of rows
-            in the original frame.
+            in the original frame.  For row or column sums, the ``return_frame`` parameter must be True.
+        :param bool return_frame: A boolean parameter that indicates whether to return an H2O frame or one single aggregated value. Default is False.
         :returns: either an aggregated value with sum of values per-column (old semantic); or an H2OFrame containing sum of values
             per-column/per-row in the original frame (new semantic). The new semantic is triggered by either
             providing the ``return_frame=True`` parameter, or having the ``general.allow_breaking_changed`` config
