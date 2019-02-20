@@ -19,6 +19,7 @@ import water.parser.ParseSetup;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -57,8 +58,27 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
       return loadTable(table, targetFrame);
     } else {
       List<Partition> filteredPartitions = filterPartitions(partitions, partitionFilter);
-      return loadPartitions(table, partitions, targetFrame);
+      if (arePartitionsSameFormat(table, filteredPartitions)) {
+        return loadPartitionsSameFormat(table, filteredPartitions, targetFrame);
+      } else {
+        return loadPartitions(table, filteredPartitions, targetFrame);
+      }
     }
+  }
+  
+  private boolean arePartitionsSameFormat(Table table, List<Partition> partitions) {
+    String tableLib = table.getSd().getSerdeInfo().getSerializationLib();
+    String tableInput = table.getSd().getInputFormat();
+    Map<String, String> tableParams = table.getSd().getSerdeInfo().getParameters();
+    for (Partition part : partitions) {
+      if (!tableLib.equals(part.getSd().getSerdeInfo().getSerializationLib()) ||
+          !tableParams.equals(part.getSd().getSerdeInfo().getParameters()) ||
+          !tableInput.equals(part.getSd().getInputFormat())
+      ) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private List<Partition> filterPartitions(List<Partition> partitions, String[][] partitionFilter) {
@@ -98,11 +118,9 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
       return CsvParser.HIVE_SEP;
     }
   }
-
-  private Job<Frame> loadTable(Table table, String targetFrame) {
-    Key[] filesKeys = importFiles(table.getSd().getLocation());
+  
+  private ParseSetup guessTableSetup(Key[] filesKeys, Table table) {
     ParseSetup setup = guessSetup(filesKeys, table.getSd());
-
     List<FieldSchema> tableColumns = table.getSd().getCols();
     String[] columnNames = new String[tableColumns.size()];
     byte[] columnTypes = new byte[tableColumns.size()];
@@ -110,10 +128,41 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
     setup.setColumnNames(columnNames);
     setup.setColumnTypes(columnTypes);
     setup.setNumberColumns(columnNames.length);
-
+    return setup;
+  }
+  
+  private Job<Frame> parseTable(String targetFrame, Key[] filesKeys, ParseSetup setup) {
     Key<Frame> destinationKey = Key.make(targetFrame);
     ParseDataset parse = ParseDataset.parse(destinationKey, filesKeys, true, setup, false);
     return parse._job;
+  }
+
+  private Job<Frame> loadTable(Table table, String targetFrame) {
+    Key[] filesKeys = importFiles(table.getSd().getLocation());
+    ParseSetup setup = guessTableSetup(filesKeys, table);
+    return parseTable(targetFrame, filesKeys, setup);
+  }
+  
+  private Job<Frame> loadPartitionsSameFormat(Table table, List<Partition> partitions, String targetFrame) {
+    List<Key> fileKeysList = new ArrayList<>();
+    int keyCount = table.getPartitionKeysSize();
+    Map<String, String[]> partitionValuesMap = new HashMap<>();
+    for (Partition p : partitions) {
+      Key[] partFileKeys = importFiles(p.getSd().getLocation());
+      fileKeysList.addAll(Arrays.asList(partFileKeys));
+      String[] keyValues = p.getValues().toArray(new String[0]);
+      for (Key f : partFileKeys) {
+        partitionValuesMap.put(f.toString(), keyValues);
+      }
+    }
+    Key[] filesKeys = fileKeysList.toArray(new Key[0]);
+    ParseSetup setup = guessTableSetup(filesKeys, table);
+    String[] partitionKeys = new String[table.getPartitionKeys().size()];
+    for (int i = 0; i < table.getPartitionKeys().size(); i++) {
+      partitionKeys[i] = table.getPartitionKeys().get(i).getName();
+    }
+    setup.setSyntheticColumns(partitionKeys, partitionValuesMap);
+    return parseTable(targetFrame, filesKeys, setup);
   }
   
   private Job<Frame> loadPartitions(Table table, List<Partition> partitions, String targetFrame) {

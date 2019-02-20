@@ -11,6 +11,7 @@ import water.util.Log;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Map;
 
 import static water.parser.DefaultParserProviders.*;
 
@@ -40,6 +41,9 @@ public class ParseSetup extends Iced {
   String[][] _na_strings;       // Strings for NA in a given column
   String[][] _data;           // First few rows of parsed/tokenized data
   int[] _parse_columns_indices; // store column indices to be parsed into the final file
+  
+  String[] _synthetic_column_names;
+  Map<String, String[]> _synthetic_column_values;
 
   String [] _fileNames = new String[]{"unknown"};
   public boolean disableParallelParse;
@@ -125,6 +129,11 @@ public class ParseSetup extends Iced {
       for (int index=0; index < ncols; index++)
         _parse_columns_indices[index] = index;
     }
+  }
+  
+  public void setSyntheticColumns(String[] names, Map<String, String[]> valueMapping) {
+    _synthetic_column_names = names;
+    _synthetic_column_values = valueMapping;
   }
 
   /**
