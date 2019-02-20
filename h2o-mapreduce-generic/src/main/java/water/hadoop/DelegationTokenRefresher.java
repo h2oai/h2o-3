@@ -22,14 +22,12 @@ import static water.hadoop.h2omapper.*;
 public class DelegationTokenRefresher implements Runnable {
   
   public static void setup(Configuration conf, String iceRoot) throws IOException {
-    String hiveHost = conf.get(H2O_HIVE_HOST);
-    String hivePrincipal = conf.get(H2O_HIVE_PRINCIPAL);
     String authPrincipal = conf.get(H2O_AUTH_PRINCIPAL);
     String authKeytab = conf.get(H2O_AUTH_KEYTAB);
-
-    if (authPrincipal != null && authKeytab != null && hiveHost != null && hivePrincipal != null) {
+    HiveTokenGenerator.HiveOptions options = HiveTokenGenerator.HiveOptions.make(conf);
+    if (authPrincipal != null && authKeytab != null && options != null) {
       String authKeytabPath = writeKeytabToFile(authKeytab, iceRoot);
-      new DelegationTokenRefresher(authPrincipal, authKeytabPath, hiveHost, hivePrincipal).start();
+      new DelegationTokenRefresher(authPrincipal, authKeytabPath, options).start();
     } else {
       log("Delegation token refresh not active.", null);
     }
@@ -49,25 +47,22 @@ public class DelegationTokenRefresher implements Runnable {
 
   private final String _authPrincipal;
   private final String _authKeytabPath;
-  private final String _hiveHost;
-  private final String _hivePrincipal;
+  private final HiveTokenGenerator.HiveOptions _hiveOptions;
 
   private final HiveTokenGenerator _hiveTokenGenerator = new HiveTokenGenerator();
 
   public DelegationTokenRefresher(
       String authPrincipal,
       String authKeytabPath,
-      String hiveHost,
-      String hivePrincipal
+      HiveTokenGenerator.HiveOptions options
   ) {
     this._authPrincipal = authPrincipal;
     this._authKeytabPath = authKeytabPath;
-    this._hiveHost = hiveHost;
-    this._hivePrincipal = hivePrincipal;
+    this._hiveOptions = options;
   }
 
   public void start() {
-    if (_hiveTokenGenerator.isHiveDriverPresent()) {
+    if (HiveTokenGenerator.isHiveDriverPresent()) {
       _executor.scheduleAtFixedRate(this, 0, 1, TimeUnit.MINUTES);
     }
   }
@@ -123,7 +118,7 @@ public class DelegationTokenRefresher implements Runnable {
   }
   
   private Credentials getTokens(UserGroupInformation ugi) throws IOException, InterruptedException {
-    return _hiveTokenGenerator.addHiveDelegationTokenAsUser(ugi, _hiveHost, _hivePrincipal);
+    return _hiveTokenGenerator.addHiveDelegationTokenAsUser(ugi, _hiveOptions);
   }
   
   private void distribute(Credentials creds) {
