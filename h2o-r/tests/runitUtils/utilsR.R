@@ -377,16 +377,19 @@ function(testDesc, test) {
 }
 
 doSuite<-
-function(suiteDesc, suite, run_in_isolation=TRUE) {
+function(suiteDesc, suite, run_in_isolation=TRUE, time_monitor=FALSE) {
     suiteTest <- function() {
         warnings <- c()
         errors <- c()
+        call_func <- do.call
+        if(time_monitor)
+            call_func <- function(...) print(system.time(do.call(...)))
         lapply(suite$tests, function(test_name) {
           cat("\n")
           cat("Running", test_name, "\n")
           if(run_in_isolation) h2o.removeAll()
           tryCatch(
-              test_that(test_name, withWarnings(do.call(test_name, list(), envir=suite$envir))),
+              test_that(test_name, withWarnings(call_func(test_name, list(), envir=suite$envir))),
               warning = function(w) warnings <<- c(warnings, w),
               error = function(e) errors <<- c(errors, e$message)
           )  
