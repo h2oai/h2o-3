@@ -15,7 +15,7 @@ public class ImportHiveTableHandler extends Handler {
     
     String DEFAULT_DATABASE = "default";
     
-    Job<Frame> loadHiveTable(String database, String tableName, String[][] partitions) throws Exception;
+    Job<Frame> loadHiveTable(String database, String tableName, String[][] partitions, boolean allowMultiFormat) throws Exception;
 
   }
   
@@ -33,9 +33,13 @@ public class ImportHiveTableHandler extends Handler {
   public ImportHiveTableV99 importHiveTable(int version, ImportHiveTableV99 request) throws Exception {
     HiveTableImporter importer = getImporter();
     if (importer != null) {
-      Job<Frame> job = importer.loadHiveTable(request.database, request.table, request.partitions);
-      request.job = new JobV3(job);
-      return request;
+      try {
+        Job<Frame> job = importer.loadHiveTable(request.database, request.table, request.partitions, request.allow_multi_format);
+        request.job = new JobV3(job);
+        return request;
+      } catch (NoClassDefFoundError e) {
+        throw new IllegalStateException("Hive Metastore client classes not available on classpath.", e);
+      }
     } else {
       throw new IllegalStateException("HiveTableImporter extension not enabled.");
     }

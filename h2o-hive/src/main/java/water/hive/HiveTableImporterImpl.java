@@ -42,7 +42,8 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
   public Job<Frame> loadHiveTable(
       String database,
       String tableName,
-      String[][] partitionFilter
+      String[][] partitionFilter,
+      boolean allowDifferentFormats
   ) throws Exception {
     Configuration conf = new Configuration();
     HiveConf hiveConf = new HiveConf(conf, HiveTableImporterImpl.class);
@@ -60,8 +61,10 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
       List<Partition> filteredPartitions = filterPartitions(partitions, partitionFilter);
       if (arePartitionsSameFormat(table, filteredPartitions)) {
         return loadPartitionsSameFormat(table, filteredPartitions, targetFrame);
-      } else {
+      } else if (allowDifferentFormats) {
         return loadPartitions(table, filteredPartitions, targetFrame);
+      } else {
+        throw new IllegalArgumentException("Hive table contains partitions with differing formats. Use allow_multi_format if needed.");
       }
     }
   }
