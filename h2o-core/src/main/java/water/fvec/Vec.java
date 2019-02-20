@@ -606,6 +606,7 @@ public class Vec extends Keyed<Vec> {
    *  and initialized to the given constant value.  */
   public Vec makeCon(final double d) { return makeCon(d, group(), _rowLayout, T_NUM); }
   public Vec makeCon(final double d, byte type) { return makeCon(d, group(), _rowLayout, type); }
+  public Vec makeCon(final long l, byte type) { return makeCon(l, null, group(), _rowLayout, type); }
 
   private static Vec makeCon( final double d, VectorGroup group, int rowLayout, byte type ) {
     if( (long)d==d ) return makeCon((long)d, null, group, rowLayout, type);
