@@ -65,7 +65,8 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
       "calibration_frame",
       "custom_metric_func",
       "export_checkpoints_dir",
-      "monotone_constraints"
+      "monotone_constraints",
+      "check_constant_response"
 //      "use_new_histo_tsk",
 //      "col_block_sz",
 //      "min_threads",
