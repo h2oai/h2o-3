@@ -1535,7 +1535,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                                    j,
                                    customMetricFunc).doAll(names.length, Vec.T_NUM, adaptFrm);
 
-    if (computeMetrics)
+    if (computeMetrics && bs._mb != null) //metric builder can be null if training was interrupted/cancelled
       bs._mb.makeModelMetrics(this, fr, adaptFrm, bs.outputFrame());
     Frame predictFr = bs.outputFrame(Key.<Frame>make(destination_key), names, domains);
     return postProcessPredictions(adaptFrm, predictFr, j);
