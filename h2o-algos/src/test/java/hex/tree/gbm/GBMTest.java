@@ -3474,6 +3474,53 @@ public class GBMTest extends TestUtil {
   }
 
   @Test
+  public void testMonotoneConstraintsProstate() {
+    try {
+      Scope.enter();
+      Frame f = Scope.track(parse_test_file("smalldata/logreg/prostate.csv"));
+      f.replace(f.find("CAPSULE"), f.vec("CAPSULE").toCategoricalVec());
+      DKV.put(f);
+  
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._response_column = "CAPSULE";
+      parms._train = f._key;
+      parms._monotone_constraints = new KeyValue[] {new KeyValue("AGE", 1)};
+      parms._ignored_columns = new String[]{"ID"};
+      parms._ntrees = 50;
+      parms._seed = 42;
+
+      String[] uniqueAges = Scope.track(f.vec("AGE").toCategoricalVec()).domain();
+
+      GBMModel model = new GBM(parms).trainModel().get();
+      Scope.track_generic(model);
+
+      Vec lastPreds = null;
+      for (String ageStr : uniqueAges) {
+        final int age = Integer.parseInt(ageStr);
+        
+        new MRTask() {
+          @Override
+          public void map(Chunk c) {
+            for (int i = 0; i < c._len; i++)
+              c.set(i, age);
+          }
+        }.doAll(f.vec("AGE"));
+        assertEquals(age, f.vec("AGE").min(), 0);
+        assertEquals(age, f.vec("AGE").max(), 0);
+
+        Vec currentPreds = Scope.track(model.score(f)).vec(2);
+        if (lastPreds != null)
+          for (int i = 0; i < lastPreds.length(); i++) {
+            assertTrue("age=" + age + ", id=" + f.vec("ID").at8(i), lastPreds.at(i) <= currentPreds.at(i));
+          }
+        lastPreds = currentPreds;
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
   public void testMonotoneConstraintSingleSplit() {
     checkMonotonic(2);
   }
