@@ -15,6 +15,9 @@ public class ImportHiveTableV99 extends RequestSchemaV3<Iced, ImportHiveTableV99
   @API(help = "partitions")
   public String[][] partitions;
 
+  @API(help = "partitions")
+  public boolean allow_multi_format = false;
+
   // Output fields
   @API(help="Parse job", direction=API.Direction.OUTPUT)
   public JobV3 job;

@@ -273,6 +273,33 @@ h2o.import_sql_select<- function(connection_url, select_query, username, passwor
   h2o.getFrame(dest_key)
 }
 
+#'
+#' Import Hive Table into H2O
+#'
+#' Import Hive table to H2OFrame in memory.
+#' Make sure to start H2O with Hive on classpath. Uses hive-site.xml on classpath to connect to Hive.
+#'
+#' For example, 
+#'     my_citibike_data = h2o.import_hive_table("default", "citibike20k", [["2017", "01"], ["2017", "02"]])
+#'
+#' @param database Name of Hive database (default database will be used by default)
+#' @param table name of Hive table to import
+#' @param partitions a list of lists of strings - partition key column values of partitions you want to import.
+#' @param allow_multi_format: enable import of partitioned tables with different storage formats used. WARNING:
+#'        this may fail on out-of-memory for tables with a large number of small partitions.
+#' @export
+h2o.import_hive_table <- function(database, table, partitions = NULL, allow_multi_format = FALSE) {
+  parms <- list()
+  parms$database <- database
+  parms$table <- table
+  parms$partitions <- partitions
+  parms$allow_multi_format <- allow_multi_format
+  res <- .h2o.__remoteSend('ImportHiveTable', method = "POST", .params = parms, h2oRestApiVersion = 99)
+  job_key <- res$key$name
+  dest_key <- res$dest$name
+  .h2o.__waitOnJob(job_key)
+  h2o.getFrame(dest_key)
+}
 
 #'
 #' Load H2O Model from HDFS or Local Disk
