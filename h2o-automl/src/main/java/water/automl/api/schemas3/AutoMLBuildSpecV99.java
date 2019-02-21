@@ -127,11 +127,11 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     @API(help = "Maximum number of models to build (optional).", direction = API.Direction.INOUT)
     public int max_models;
 
-    @API(help = "Maximum time to spend building models (optional).", direction = API.Direction.INOUT)
+    @API(help = "Maximum time to spend building all models (optional).", direction = API.Direction.INOUT)
     public double max_runtime_secs;
 
-    @API(help = "Maximum time to spend on an individual model (optional).", direction = API.Direction.INOUT)
-    public double max_model_runtime_secs;
+    @API(help = "Maximum time to spend on each individual model (optional).", direction = API.Direction.INOUT)
+    public double max_runtime_secs_per_model;
 
     @API(help = "Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)", level = API.Level.secondary, direction=API.Direction.INOUT)
     public int stopping_rounds;
@@ -145,14 +145,14 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     @Override
     public AutoMLStoppingCriteria fillImpl(AutoMLStoppingCriteria impl) {
       AutoMLStoppingCriteria filled = super.fillImpl(impl, new String[] {"_searchCriteria"});
-      PojoUtils.copyProperties(filled.getSearchCriteria(), this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES, new String[] {"max_model_runtime_secs"});
+      PojoUtils.copyProperties(filled.getSearchCriteria(), this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES, new String[] {"max_runtime_secs_per_model"});
       return filled;
     }
 
     @Override
     public AutoMLStoppingCriteriaV99 fillFromImpl(AutoMLStoppingCriteria impl) {
       AutoMLStoppingCriteriaV99 schema = super.fillFromImpl(impl, new String[]{"_searchCriteria"});
-      PojoUtils.copyProperties(schema, impl.getSearchCriteria(), PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, new String[] {"max_model_runtime_secs"});
+      PojoUtils.copyProperties(schema, impl.getSearchCriteria(), PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, new String[] {"max_runtime_secs_per_model"});
       return schema;
     }
   }

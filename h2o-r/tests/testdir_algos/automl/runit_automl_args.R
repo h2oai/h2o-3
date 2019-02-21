@@ -377,10 +377,10 @@ automl.args.test <- function() {
         expect_equal(length(get_partitioned_models(aml)$se), 2)
     }
 
-    test_max_model_runtime_secs <- function() {
-      print("Check that individual model get interrupted after `max_model_runtime_secs`")
-      #nothing we can test here as soon as the userfeedback is not available on client side
-    }
+  test_max_runtime_secs_per_model <- function() {
+    print("Check that individual model get interrupted after `max_runtime_secs_per_model`")
+    #nothing we can test here as soon as the userfeedback is not available on client side
+  }
 
     test_max_models <- function() {
         print("Check that automl get interrupted after `max_models`")
@@ -419,7 +419,7 @@ automl.args.test <- function() {
         test_keep_cv_fold_assignment_TRUE_with_nfolds_gt_0,
         test_keep_cv_fold_assignment_TRUE_with_nfolds_eq_0,
         test_max_runtime_secs,
-        # test_max_model_runtime_secs,
+        # test_max_runtime_secs_per_model,
         test_max_models
     )
 }

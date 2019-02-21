@@ -2,7 +2,6 @@ package ai.h2o.automl;
 
 import hex.ScoreKeeper;
 import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
-import water.AutoBuffer;
 import water.Iced;
 import water.Key;
 import water.api.schemas3.JobV3;
@@ -33,7 +32,7 @@ public class AutoMLBuildSpec extends Iced {
       // reasonable defaults:
       stopping_criteria.set_max_models(0);
       stopping_criteria.set_max_runtime_secs(3600);
-      stopping_criteria.set_max_model_runtime_secs(0);
+      stopping_criteria.set_max_runtime_secs_per_model(0);
 
       stopping_criteria.set_stopping_rounds(3);
       stopping_criteria.set_stopping_tolerance(0.001);
@@ -65,19 +64,19 @@ public class AutoMLBuildSpec extends Iced {
     public static final int AUTO_STOPPING_TOLERANCE = -1;
 
     private RandomDiscreteValueSearchCriteria _searchCriteria;
-    private double max_model_runtime_secs = 0;
+    private double max_runtime_secs_per_model = 0;
 
     public AutoMLStoppingCriteria() {
       super();
       _searchCriteria = new RandomDiscreteValueSearchCriteria();
     }
 
-    public double max_model_runtime_secs() {
-      return max_model_runtime_secs;
+    public double max_runtime_secs_per_model() {
+      return max_runtime_secs_per_model;
     }
 
-    public void set_max_model_runtime_secs(double max_model_runtime_secs) {
-      this.max_model_runtime_secs = max_model_runtime_secs;
+    public void set_max_runtime_secs_per_model(double max_runtime_secs_per_model) {
+      this.max_runtime_secs_per_model = max_runtime_secs_per_model;
     }
 
     public long seed() {

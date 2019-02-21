@@ -16,8 +16,11 @@ public class CountdownTest {
   @Test
   public void testStateAfterStart() {
     Countdown c = new Countdown(1000);
+    assertFalse(c.running());
+    assertFalse(c.ended());
     c.start();
-    assertTrue(c.started());
+    assertTrue(c.running());
+    assertFalse(c.ended());
     assertFalse(c.timedOut());
   }
 
@@ -29,7 +32,7 @@ public class CountdownTest {
       c.start();
       fail("Starting started countdown should have thrown IllegalStateException");
     } catch (IllegalStateException e) {
-      Assert.assertTrue(e.getMessage().contains("already started"));
+      Assert.assertTrue(e.getMessage().contains("already running"));
     }
   }
   
@@ -38,9 +41,9 @@ public class CountdownTest {
     Countdown c = new Countdown(1000);
     c.start();
     c.reset();
-    assertFalse(c.started());
+    assertFalse(c.running());
     c.start();
-    assertTrue(c.started());
+    assertTrue(c.running());
   }
   
   @Test
@@ -48,8 +51,10 @@ public class CountdownTest {
     Countdown c = new Countdown(1000);
     c.start();
     short_sleep();
+    assertFalse(c.ended());
     long duration = c.stop();
-    assertFalse(c.started());
+    assertTrue(c.ended());
+    assertFalse(c.running());
     assertFalse(c.timedOut());
     assertTrue(duration > 0);
   }
