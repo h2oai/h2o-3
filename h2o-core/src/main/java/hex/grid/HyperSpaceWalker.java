@@ -9,6 +9,7 @@ import water.util.PojoUtils;
 
 import java.util.*;
 
+import static java.lang.Math.ceil;
 import static java.lang.Math.round;
 import static java.lang.StrictMath.floor;
 import static java.lang.StrictMath.min;
@@ -519,9 +520,9 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
               double timeleft = this.time_remaining_secs();
               if (timeleft > 0)  {
                 if (params._max_runtime_secs > 0) {
-                  params._max_runtime_secs = round(min(params._max_runtime_secs, timeleft));
+                  params._max_runtime_secs = min(params._max_runtime_secs, timeleft);
                 } else {
-                  params._max_runtime_secs = round(timeleft);
+                  params._max_runtime_secs = timeleft;
                 }
               }
             }

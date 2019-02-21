@@ -15,7 +15,7 @@ public class Countdown extends Iced<Countdown> {
   private long _stop_time;
   
   public static Countdown fromSeconds(double seconds) {
-    return new Countdown(seconds <= 0 ? 0 : Math.round(seconds * 1000) + 1);
+    return new Countdown(seconds <= 0 ? 0 : (long)Math.ceil(seconds * 1000));
   }
 
   public Countdown(long time_limit_millis) {
