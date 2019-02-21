@@ -34,10 +34,10 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
   public String project_name;
 
   @API(help="The leaderboard for this project, potentially including models from other AutoML runs", direction=API.Direction.OUTPUT)
-  public LeaderboardV99   leaderboard;
+  public LeaderboardV99 leaderboard;
 
   @API(help="The leaderboard for this project, potentially including models from other AutoML runs, for easy rendering", direction=API.Direction.OUTPUT)
-  public TwoDimTableV3   leaderboard_table;
+  public TwoDimTableV3 leaderboard_table;
 
   @API(help="User feedback for events from this AutoML run", direction=API.Direction.OUTPUT)
   public UserFeedbackV99 user_feedback;
