@@ -246,49 +246,13 @@ h2o.automl <- function(x, y, training_frame,
       params <- list(input_spec = input_spec, build_control = build_control, build_models = build_models)
   }
 
-  # POST call to AutoMLBuilder
+  # POST call to AutoMLBuilder (executes the AutoML job)
   res <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "POST", page = "AutoMLBuilder", autoML = TRUE, .params = params)
   .h2o.__waitOnJob(res$job$key$name)
 
-  # GET AutoML job and leaderboard for project
-  automl_job <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "GET", page = paste0("AutoML/", res$job$dest$name))
-  #project <- automl_job$project  # This is not functional right now, we can get project_name from user input instead
-  leaderboard <- as.data.frame(automl_job["leaderboard_table"]$leaderboard_table)
-  row.names(leaderboard) <- seq(nrow(leaderboard))
-
-
-  # Intentionally mask the progress bar here since showing multiple progress bars is confusing to users.
-  # If any failure happens, revert back to user's original setting for progress and display the error message.
-  is_progress <- isTRUE(as.logical(.h2o.is_progress()))
-  h2o.no_progress()
-  leaderboard <- tryCatch(
-    as.h2o(leaderboard),
-    error = identity,
-    finally = if (is_progress) h2o.show_progress()
-  )
-
-  # If the leaderboard is empty, it creates a dummy row so let's remove it
-  if (leaderboard$model_id[1,1] == "") {
-    leaderboard <- leaderboard[-1,]
-    warning("The leaderboard contains zero models: try running AutoML for longer (the default is 1 hour).")
-  }
-  # If leaderboard is not empty, grab the leader model, otherwise create a "dummy" leader
-  if (nrow(leaderboard) > 0) {
-    leaderboard[,2:length(leaderboard)] <- as.numeric(leaderboard[,2:length(leaderboard)])  # Convert metrics to numeric
-    leader <- h2o.getModel(automl_job$leaderboard$models[[1]]$name)
-  } else {
-    # create a phony leader
-    Class <- paste0("H2OBinomialModel")
-    leader <- .newH2OModel(Class = Class,
-                           model_id = "dummy")
-  }
-
-  # Make AutoML object
-  new("H2OAutoML",
-      project_name = build_control$project_name,
-      leader = leader,
-      leaderboard = leaderboard
-  )
+  # GET AutoML object
+  aml <- h2o.getAutoML(project_name = res$job$dest$name)
+  return(aml)
 }
 
 #' Predict on an AutoML object
@@ -341,12 +305,12 @@ predict.H2OAutoML <- function(object, newdata, ...) {
 #' @export
 h2o.getAutoML <- function(project_name) {
 
-  # Below is copy-pasted from the main function above
   # GET AutoML job and leaderboard for project
   automl_job <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "GET", page = paste0("AutoML/", project_name))
   #project <- automl_job$project  # This is not functional right now, we can get project_name from user input instead
   leaderboard <- as.data.frame(automl_job["leaderboard_table"]$leaderboard_table)
   row.names(leaderboard) <- seq(nrow(leaderboard))
+  
   # Intentionally mask the progress bar here since showing multiple progress bars is confusing to users.
   # If any failure happens, revert back to user's original setting for progress and display the error message.
   is_progress <- isTRUE(as.logical(.h2o.is_progress()))
