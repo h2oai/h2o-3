@@ -10,8 +10,9 @@ This test is used to check arguments passed into H2OAutoML along with different 
 """
 max_models = 2
 
+
 def import_dataset(seed=0, larger=False):
-    df = h2o.import_file(path=pyunit_utils.locate("smalldata/prostate/prostate{}.csv".format("_complete" if larger else "")))
+    df = h2o.import_file(path=pyunit_utils.locate("smalldata/prostate/{}".format("prostate_complete.csv.zip" if larger else "prostate.csv")))
     target = "CAPSULE"
     df[target] = df[target].asfactor()
     #Split frames
