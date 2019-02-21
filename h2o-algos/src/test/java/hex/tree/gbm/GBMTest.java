@@ -556,11 +556,11 @@ public class GBMTest extends TestUtil {
       DKV.put(fr);                       // Update after hacking
       parms._train = fr._key;
       parms._response_column = "Angaus"; // Train on the outcome
-      parms._ntrees = 10;
+      parms._ntrees = 50;
       parms._max_depth = 10;
       parms._min_rows = 1;
-      parms._nbins = 20;
       parms._learn_rate = .2f;
+      parms._seed = 42L;
       parms._distribution = DistributionFamily.multinomial;
       GBM gbm = new GBM(parms);
       
