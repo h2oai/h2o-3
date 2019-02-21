@@ -34,7 +34,7 @@ class H2ORandomForestEstimator(H2OEstimator):
                       "sample_rate_per_class", "binomial_double_trees", "checkpoint",
                       "col_sample_rate_change_per_level", "col_sample_rate_per_tree", "min_split_improvement",
                       "histogram_type", "categorical_encoding", "calibrate_model", "calibration_frame", "distribution",
-                      "custom_metric_func", "export_checkpoints_dir"}
+                      "custom_metric_func", "export_checkpoints_dir", "check_constant_response"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -784,5 +784,22 @@ class H2ORandomForestEstimator(H2OEstimator):
     def export_checkpoints_dir(self, export_checkpoints_dir):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
+
+
+    @property
+    def check_constant_response(self):
+        """
+        Check if response column is constant. If enabled, then an exception is thrown if the response column is a
+        constant value.If disabled, then model will train regardless of the response column being a constant value or
+        not.
+
+        Type: ``bool``  (default: ``True``).
+        """
+        return self._parms.get("check_constant_response")
+
+    @check_constant_response.setter
+    def check_constant_response(self, check_constant_response):
+        assert_is_type(check_constant_response, None, bool)
+        self._parms["check_constant_response"] = check_constant_response
 
 
