@@ -546,44 +546,45 @@ public class GBMTest extends TestUtil {
 
   // A test of locking the input dataset during model building.
   @Test public void testModelLock() {
-    GBM gbm=null;
-    Frame fr=null;
     Scope.enter();
     try {
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
-      fr = parse_test_file("smalldata/gbm_test/ecology_model.csv");
+      Frame fr = Scope.track(parse_test_file("smalldata/gbm_test/ecology_model.csv"));
       fr.remove("Site").remove();        // Remove unique ID
       int ci = fr.find("Angaus");
       Scope.track(fr.replace(ci, fr.vecs()[ci].toCategoricalVec()));   // Convert response 'Angaus' to categorical
       DKV.put(fr);                       // Update after hacking
       parms._train = fr._key;
       parms._response_column = "Angaus"; // Train on the outcome
-      parms._ntrees = 10;
+      parms._ntrees = 50;
       parms._max_depth = 10;
       parms._min_rows = 1;
-      parms._nbins = 20;
       parms._learn_rate = .2f;
+      parms._seed = 42L;
       parms._distribution = DistributionFamily.multinomial;
-      gbm = new GBM(parms);
+      GBM gbm = new GBM(parms);
+      
       gbm.trainModel();
-      try { Thread.sleep(100); } catch( Exception ignore ) { }
+      try { Thread.sleep(100); }
+      catch( Exception e ) { e.printStackTrace(); } // just in case
 
+      boolean delete_ok = false;
       try {
         Log.info("Trying illegal frame delete.");
         fr.delete();            // Attempted delete while model-build is active
-        Assert.fail("Should toss IAE instead of reaching here");
+        delete_ok = true;
+        Log.err("Frame " + fr._key + " was deleted while it should have been locked!");
       } catch( IllegalArgumentException ignore ) {
       } catch( RuntimeException re ) {
         assertTrue( re.getCause() instanceof IllegalArgumentException);
       }
-
-      Log.info("Getting model");
-      GBMModel model = gbm.get();
+      
+      Log.info("Getting model"); // in order to clean it up
+      Scope.track_generic(gbm.get());
       Assert.assertTrue(gbm.isStopped()); //HEX-1817
-      if( model != null ) model.delete();
-
+      
+      Assert.assertFalse("Frame " + fr._key + " was deleted while it should have been locked!", delete_ok);
     } finally {
-      if( fr  != null ) fr .remove();
       Scope.exit();
     }
   }
