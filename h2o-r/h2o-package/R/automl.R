@@ -80,6 +80,7 @@ h2o.automl <- function(x, y, training_frame,
                        stopping_rounds = 3,
                        seed = NULL,
                        project_name = NULL,
+                       include_algos = NULL,
                        exclude_algos = NULL,
                        keep_cross_validation_predictions = FALSE,
                        keep_cross_validation_models = FALSE,
@@ -217,6 +218,14 @@ h2o.automl <- function(x, y, training_frame,
     input_spec$sort_metric <- tolower(sort_metric)
   }
 
+  all_algos = c('DeepLearning', 'DRF', 'GBM', 'GLM', 'StackedEnsemble', 'XGBoost')
+  if (!is.null(include_algos)) {
+    if (!is.null(exclude_algos)) stop("Use either include_algos or exclude_algos, not both.")
+    if (length(include_algos) == 1) {
+      include_algos <- as.list(include_algos)
+    }
+    exclude_algos <- setdiff(all_algos, include_algos)
+  }
   if (!is.null(exclude_algos)) {
     if (length(exclude_algos) == 1) {
       exclude_algos <- as.list(exclude_algos)
