@@ -260,20 +260,20 @@ def test_automl_stops_after_max_runtime_secs():
     assert abs(end-start - max_runtime_secs) < cancel_tolerance_secs, end-start
 
 
-def test_no_model_takes_more_than_max_model_runtime_secs():
+def test_no_model_takes_more_than_max_runtime_secs_per_model():
     """
     currently disabled: there's no way to test this param here as soon as userfeedback is not available on client side
     """
-    print("Check that individual model get interrupted after `max_model_runtime_secs`")
+    print("Check that individual model get interrupted after `max_runtime_secs_per_model`")
     ds = import_dataset(seed=1, larger=True)
     max_runtime_secs = 30
     models_count = {}
-    for max_model_runtime_secs in [0, 3, max_runtime_secs]:
-        aml = H2OAutoML(project_name="py_aml_max_model_runtime_secs_{}".format(max_model_runtime_secs), seed=1,
-                        max_model_runtime_secs=max_model_runtime_secs,
+    for max_runtime_secs_per_model in [0, 3, max_runtime_secs]:
+        aml = H2OAutoML(project_name="py_aml_max_runtime_secs_per_model_{}".format(max_runtime_secs_per_model), seed=1,
+                        max_runtime_secs_per_model=max_runtime_secs_per_model,
                         max_runtime_secs=max_runtime_secs)
         aml.train(y=ds['target'], training_frame=ds['train'])
-        models_count[max_model_runtime_secs] = len(aml.leaderboard)
+        models_count[max_runtime_secs_per_model] = len(aml.leaderboard)
         print(aml.leaderboard)
     # there may be one model difference as reproducibility is not perfectly guaranteed in time-bound runs
     assert abs(models_count[0] - models_count[max_runtime_secs]) <= 1
@@ -352,7 +352,7 @@ pyunit_utils.run_tests([
     test_keep_cross_validation_fold_assignment_enabled_with_nfolds_neq_0,
     test_keep_cross_validation_fold_assignment_enabled_with_nfolds_eq_0,
     test_automl_stops_after_max_runtime_secs,
-    test_no_model_takes_more_than_max_model_runtime_secs,
+    test_no_model_takes_more_than_max_runtime_secs_per_model,
     test_stacked_ensembles_are_trained_after_timeout,
     test_automl_stops_after_max_models,
     test_stacked_ensembles_are_trained_after_max_models,

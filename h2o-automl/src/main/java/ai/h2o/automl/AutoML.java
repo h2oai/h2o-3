@@ -826,7 +826,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     params._response_column = buildSpec.input_spec.response_column;
     params._ignored_columns = buildSpec.input_spec.ignored_columns;
     params._seed = buildSpec.build_control.stopping_criteria.seed();
-    params._max_runtime_secs = buildSpec.build_control.stopping_criteria.max_model_runtime_secs();
+    params._max_runtime_secs = buildSpec.build_control.stopping_criteria.max_runtime_secs_per_model();
 
     // currently required, for the base_models, for stacking:
     if (! (params instanceof StackedEnsembleParameters)) {

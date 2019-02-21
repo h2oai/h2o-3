@@ -204,11 +204,11 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.response_column = "diabetesMed";
       autoMLBuildSpec.input_spec.training_frame = fr._key;
 
-      int max_model_runtime_secs = 10;
+      int max_runtime_secs_per_model = 10;
       autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.DRF};
       autoMLBuildSpec.build_control.stopping_criteria.set_seed(1);
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(3);
-      autoMLBuildSpec.build_control.stopping_criteria.set_max_model_runtime_secs(max_model_runtime_secs);
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs_per_model(max_runtime_secs_per_model);
       autoMLBuildSpec.build_control.keep_cross_validation_models = true; //Prevent leaked keys from CV models
       autoMLBuildSpec.build_control.keep_cross_validation_predictions = false; //Prevent leaked keys from CV predictions
 
@@ -232,7 +232,7 @@ public class AutoMLTest extends water.TestUtil {
         duration = model._output._total_run_time / 1e3;
         Log.info(key + " model total build duration (s): "+ duration);
         assertTrue(key + " took longer than required: "+ duration,
-            duration - max_model_runtime_secs < tolerance);
+            duration - max_runtime_secs_per_model < tolerance);
         model.deleteCrossValidationModels();
       }
 

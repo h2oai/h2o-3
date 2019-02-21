@@ -76,7 +76,7 @@ h2o.automl <- function(x, y, training_frame,
                        class_sampling_factors = NULL,
                        max_after_balance_size = 5.0,
                        max_runtime_secs = 3600,
-                       max_model_runtime_secs = NULL,
+                       max_runtime_secs_per_model = NULL,
                        max_models = NULL,
                        stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error"),
                        stopping_tolerance = NULL,
@@ -190,8 +190,8 @@ h2o.automl <- function(x, y, training_frame,
 
   # Update build_control list with top level build control args
   build_control <- list(stopping_criteria = list(max_runtime_secs = max_runtime_secs))
-  if (!is.null(max_model_runtime_secs)) {
-      build_control$stopping_criteria$max_model_runtime_secs <- max_model_runtime_secs
+  if (!is.null(max_runtime_secs_per_model)) {
+      build_control$stopping_criteria$max_runtime_secs_max_per_model <- max_runtime_secs_per_model
   }
   if (!is.null(max_models)) {
     build_control$stopping_criteria$max_models <- max_models
