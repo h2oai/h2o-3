@@ -1269,9 +1269,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if(!_parms._lambda_search)
         updateProgress(false);
       // lambda search loop
-      for (int i = 0; i < _parms._lambda.length && !stop_requested(); ++i) {  // lambda search
-        if(_parms._max_iterations != -1 && _state._iter >= _parms._max_iterations)
-          break;
+      for (int i = 0; i < _parms._lambda.length; ++i) {  // lambda search
+        if (_job.stop_requested() || (timeout() && _model._output._submodels.length > 0)) break;  //need at least one submodel on timeout to avoid issues.
+        if(_parms._max_iterations != -1 && _state._iter >= _parms._max_iterations) break;
         Submodel sm = computeSubmodel(i,_parms._lambda[i]);
         double trainDev = sm.devianceTrain;
         double testDev = sm.devianceTest;

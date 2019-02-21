@@ -2,6 +2,8 @@ package water.util;
 
 import water.Iced;
 
+import java.util.Date;
+
 /**
  * Simple countdown to encapsulate timeouts and durations.
  * time_limit_millis <= 0 is interpreted as infinite countdown (no timeout)
@@ -25,19 +27,19 @@ public class Countdown extends Iced<Countdown> {
     if (start) start();
   }
   
-  public long start_time() {
-    return _start_time;
+  public Date start_time() {
+    return new Date(_start_time);
   }
   
-  public long stop_time() {
-    return _stop_time;
+  public Date stop_time() {
+    return new Date(_stop_time);
   }
   
-  public long duration() {
+  public long duration_millis() {
     try {
       return elapsedTime();
     } catch (IllegalStateException e) {
-      return 0;
+      return -1;
     }
   }
 
@@ -83,7 +85,7 @@ public class Countdown extends Iced<Countdown> {
   }
 
   public boolean timedOut() {
-    return running() && _time_limit_millis > 0 && elapsedTime() > _time_limit_millis;
+    return _start_time > 0 && _time_limit_millis > 0 && elapsedTime() > _time_limit_millis;
   }
 
   private long now() { return System.currentTimeMillis(); }
