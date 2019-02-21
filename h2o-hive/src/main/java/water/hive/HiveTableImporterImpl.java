@@ -139,9 +139,20 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
     ParseDataset parse = ParseDataset.parse(destinationKey, filesKeys, true, setup, false);
     return parse._job;
   }
+  
+  private void checkTableNotEmpty(Table table, Key[] filesKeys) {
+    if (filesKeys.length == 0) {
+      throwTableEmpty(table);
+    }
+  }
+
+  private void throwTableEmpty(Table table) {
+    throw new IllegalArgumentException("Table " + table.getTableName() + " is empty. Nothing to import.");
+  }
 
   private Job<Frame> loadTable(Table table, String targetFrame) {
     Key[] filesKeys = importFiles(table.getSd().getLocation());
+    checkTableNotEmpty(table, filesKeys);
     ParseSetup setup = guessTableSetup(filesKeys, table);
     return parseTable(targetFrame, filesKeys, setup);
   }
@@ -159,6 +170,7 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
       }
     }
     Key[] filesKeys = fileKeysList.toArray(new Key[0]);
+    checkTableNotEmpty(table, filesKeys);
     ParseSetup setup = guessTableSetup(filesKeys, table);
     String[] partitionKeys = new String[table.getPartitionKeys().size()];
     for (int i = 0; i < table.getPartitionKeys().size(); i++) {
@@ -178,7 +190,12 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
     for (int i = 0; i < partitions.size(); i++) {
       String partitionKey = "_" + targetFrame + "_part_" + i;
       Job<Frame> job = parsePartition(partitionColumns, partitions.get(i), partitionKey, columnNames, columnTypes);
-      parseJobs.add(job);
+      if (job != null) {
+        parseJobs.add(job);
+      }
+    }
+    if (parseJobs.isEmpty()) {
+      throwTableEmpty(table);
     }
     Job<Frame> job = new Job<>(Key.<Frame>make(targetFrame), Frame.class.getName(),"ImportHiveTable");
     PartitionFrameJoiner joiner = new PartitionFrameJoiner(job, table, partitions, targetFrame, parseJobs);
@@ -187,6 +204,9 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
 
   private Job<Frame> parsePartition(List<FieldSchema> partitionColumns, Partition part, String targetFrame, String[] columnNames, byte[] columnTypes) {
     Key[] files = importFiles(part.getSd().getLocation());
+    if (files.length == 0) {
+      return null;
+    }
     ParseSetup setup = guessSetup(files, part.getSd());
     setup.setColumnNames(columnNames);
     setup.setColumnTypes(columnTypes);

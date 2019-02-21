@@ -40,10 +40,13 @@ public class PartitionFrameJoiner extends H2O.H2OCountedCompleter {
   public void compute2() {
     int keyCount = _table.getPartitionKeysSize();
     StringBuilder partKeys = new StringBuilder();
-    for (int partIndex = 0; partIndex < _partitions.size(); partIndex++) {
+    for (Job<Frame> job : _parseJobs) {
+      Frame partitionFrame = job.get();
+      String partKey = partitionFrame._key.toString();
+      String[] keySplit = partKey.split("_");
+      int partIndex = Integer.valueOf(keySplit[keySplit.length - 1]);
       Partition part = _partitions.get(partIndex);
-      Frame partitionFrame = _parseJobs.get(partIndex).get();
-      partKeys.append(" ").append(partitionFrame._key);
+      partKeys.append(" ").append(partKey);
       long rows = partitionFrame.numRows();
       for (int keyIndex = 0; keyIndex < keyCount; keyIndex++) {
         String partitionValue = part.getValues().get(keyIndex);
