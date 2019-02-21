@@ -7,18 +7,18 @@
 #'
 #' @param x A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing, then all columns except y are used.
-#' @param y The name or index of the response variable in the model. For classification, the y column must be a 
+#' @param y The name or index of the response variable in the model. For classification, the y column must be a
 #'        factor, otherwise regression will be performed. Indexes are 1-based in R.
 #' @param training_frame Training frame (H2OFrame or ID).
-#' @param validation_frame Validation frame (H2OFrame or ID); Optional.  This argument is ignored unless the user sets nfolds = 0. 
-#'        If cross-validation is turned off, then a validation frame can be specified and used for early stopping of individual models and early 
-#'        stopping of the grid searches.  By default and when nfolds > 1, cross-validation metrics will be used for early stopping and thus 
+#' @param validation_frame Validation frame (H2OFrame or ID); Optional.  This argument is ignored unless the user sets nfolds = 0.
+#'        If cross-validation is turned off, then a validation frame can be specified and used for early stopping of individual models and early
+#'        stopping of the grid searches.  By default and when nfolds > 1, cross-validation metrics will be used for early stopping and thus
 #'        validation_frame will be ignored.
-#' @param leaderboard_frame Leaderboard frame (H2OFrame or ID); Optional.  If provided, the Leaderboard will be scored using 
+#' @param leaderboard_frame Leaderboard frame (H2OFrame or ID); Optional.  If provided, the Leaderboard will be scored using
 #'        this data frame intead of using cross-validation metrics, which is the default.
 #' @param nfolds Number of folds for k-fold cross-validation. Defaults to 5. Use 0 to disable cross-validation; this will also disable Stacked Ensemble (thus decreasing the overall model performance).
 #' @param fold_column Column with cross-validation fold index assignment per observation; used to override the default, randomized, 5-fold cross-validation scheme for individual models in the AutoML run.
-#' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from 
+#' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
 #'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative weights are not allowed.
 #' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
 #'        FALSE.
@@ -28,18 +28,18 @@
 #'        balance_classes. Defaults to 5.0.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for the entire model training process. Use 0 to disable. Defaults to 3600 secs (1 hour).
 #' @param max_models Maximum number of models to build in the AutoML process (does not include Stacked Ensembles). Defaults to NULL.
-#' @param stopping_metric Metric to use for early stopping ("AUTO" is logloss for classification, deviance for regression).  
+#' @param stopping_metric Metric to use for early stopping ("AUTO" is logloss for classification, deviance for regression).
 #'        Must be one of "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error". Defaults to AUTO.
-#' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much). This value defaults to 0.001 if the 
-#'        dataset is at least 1 million rows; otherwise it defaults to a bigger value determined by the size of the dataset and the non-NA-rate.  In that case, the value is computed 
+#' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much). This value defaults to 0.001 if the
+#'        dataset is at least 1 million rows; otherwise it defaults to a bigger value determined by the size of the dataset and the non-NA-rate.  In that case, the value is computed
 #'        as 1/sqrt(nrows * non-NA-rate).
-#' @param stopping_rounds Integer. Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the stopping_metric 
+#' @param stopping_rounds Integer. Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the stopping_metric
 #'        does not improve for k (stopping_rounds) scoring events. Defaults to 3 and must be an non-zero integer.  Use 0 to disable early stopping.
-#' @param seed Integer. Set a seed for reproducibility. AutoML can only guarantee reproducibility if max_models or early stopping is used 
+#' @param seed Integer. Set a seed for reproducibility. AutoML can only guarantee reproducibility if max_models or early stopping is used
 #'        because max_runtime_secs is resource limited, meaning that if the resources are not the same between runs, AutoML may be able to train more models on one run vs another.
 #' @param project_name Character string to identify an AutoML project.  Defaults to NULL, which means a project name will be auto-generated based on the training frame ID.
-#' @param exclude_algos Vector of character strings naming the algorithms to skip during the model-building phase.  An example use is exclude_algos = c("GLM", "DeepLearning", "DRF"), 
-#'        and the full list of options is: "DRF" (Random Forest and Extremely-Randomized Trees), "GLM", "XGBoost", "GBM", "DeepLearning" and "StackedEnsemble". Defaults to NULL, which means that 
+#' @param exclude_algos Vector of character strings naming the algorithms to skip during the model-building phase.  An example use is exclude_algos = c("GLM", "DeepLearning", "DRF"),
+#'        and the full list of options is: "DRF" (Random Forest and Extremely-Randomized Trees), "GLM", "XGBoost", "GBM", "DeepLearning" and "StackedEnsemble". Defaults to NULL, which means that
 #'        all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation predictions. This needs to be set to TRUE if running the same AutoML object for repeated runs because CV predictions are required to build additional Stacked Ensemble models in AutoML. This option defaults to FALSE.
 #' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to FALSE.
@@ -50,7 +50,7 @@
 #'        "mean_per_class_error" for multinomial classification, and "mean_residual_deviance" for regression.
 #' @param export_checkpoints_dir (Optional) Path to a directory where every model will be stored in binary form.
 #' @details AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
-#'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.  
+#'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.
 #' @return An \linkS4class{H2OAutoML} object.
 #' @examples
 #' \donttest{
@@ -103,10 +103,10 @@ h2o.automl <- function(x, y, training_frame,
 
   # Training frame must be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame)) {
-    tryCatch(training_frame <- h2o.getFrame(training_frame), 
+    tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
                stop("argument 'training_frame' must be a valid H2OFrame or key")
-             }) 
+             })
   }
   training_frame_id <- h2o.getId(training_frame)
 
@@ -114,10 +114,10 @@ h2o.automl <- function(x, y, training_frame,
   validation_frame_id <- NULL
   if (!is.null(validation_frame)) {
     if (!is.H2OFrame(validation_frame)) {
-      tryCatch(validation_frame <- h2o.getFrame(validation_frame), 
+      tryCatch(validation_frame <- h2o.getFrame(validation_frame),
                error = function(err) {
                  stop("argument 'validation_frame' must be a valid H2OFrame or key")
-               }) 
+               })
     }
     validation_frame_id <- h2o.getId(validation_frame)
   }
@@ -126,10 +126,10 @@ h2o.automl <- function(x, y, training_frame,
   leaderboard_frame_id <- NULL
   if (!is.null(leaderboard_frame)) {
     if (!is.H2OFrame(leaderboard_frame)) {
-      tryCatch(leaderboard_frame <- h2o.getFrame(leaderboard_frame), 
+      tryCatch(leaderboard_frame <- h2o.getFrame(leaderboard_frame),
                error = function(err) {
                  stop("argument 'leaderboard_frame' must be a valid H2OFrame or key")
-               }) 
+               })
     }
     leaderboard_frame_id <- h2o.getId(leaderboard_frame)
   }
@@ -167,7 +167,7 @@ h2o.automl <- function(x, y, training_frame,
       input_spec$ignored_columns <- ignored_columns
     } # else: length(ignored_columns) == 0; don't send ignored_columns
   }
-  
+
   # Update build_control list with top level build control args
   build_control <- list(stopping_criteria = list(max_runtime_secs = max_runtime_secs))
   if (!is.null(max_models)) {
@@ -239,50 +239,20 @@ h2o.automl <- function(x, y, training_frame,
     build_control$export_checkpoints_dir <- export_checkpoints_dir
   }
 
-  # Create the parameter list to POST to the AutoMLBuilder 
+  # Create the parameter list to POST to the AutoMLBuilder
   if (length(build_models) == 0) {
       params <- list(input_spec = input_spec, build_control = build_control)
   } else {
       params <- list(input_spec = input_spec, build_control = build_control, build_models = build_models)
   }
 
-  # POST call to AutoMLBuilder
+  # POST call to AutoMLBuilder (executes the AutoML job)
   res <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "POST", page = "AutoMLBuilder", autoML = TRUE, .params = params)
   .h2o.__waitOnJob(res$job$key$name)
 
-  # GET AutoML job and leaderboard for project
-  automl_job <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "GET", page = paste0("AutoML/", res$job$dest$name))
-  #project <- automl_job$project  # This is not functional right now, we can get project_name from user input instead
-  leaderboard <- as.data.frame(automl_job["leaderboard_table"]$leaderboard_table)
-  row.names(leaderboard) <- seq(nrow(leaderboard))
-  
-  # Intentionally mask the progress bar here since showing multiple progress bars is confusing to users.
-  # If any failure happens, revert back to user's original setting for progress and display the error message.
-  is_progress <- isTRUE(as.logical(.h2o.is_progress()))
-  h2o.no_progress()
-  leaderboard <- tryCatch(
-    as.h2o(leaderboard),
-    error = identity,
-    finally = if (is_progress) h2o.show_progress()
-  )
-
-  leaderboard[,2:length(leaderboard)] <- as.numeric(leaderboard[,2:length(leaderboard)])  # Convert metrics to numeric
-  # If leaderboard is empty, create a "dummy" leader
-  if (nrow(leaderboard) > 1) {
-      leader <- h2o.getModel(automl_job$leaderboard$models[[1]]$name)
-  } else {
-      # create a phony leader
-      Class <- paste0("H2OBinomialModel")
-      leader <- .newH2OModel(Class = Class,
-                             model_id = "dummy")
-  }
-
-  # Make AutoML object
-  new("H2OAutoML",
-      project_name = build_control$project_name,
-      leader = leader,
-      leaderboard = leaderboard
-  )
+  # GET AutoML object
+  aml <- h2o.getAutoML(project_name = res$job$dest$name)
+  return(aml)
 }
 
 #' Predict on an AutoML object
@@ -306,9 +276,9 @@ predict.H2OAutoML <- function(object, newdata, ...) {
   if (missing(newdata)) {
     stop("predictions with a missing `newdata` argument is not implemented yet")
   }
-  
+
   model <- object@leader
-  
+
   # Send keys to create predictions
   url <- paste0('Predictions/models/', model@model_id, '/frames/',  h2o.getId(newdata))
   res <- .h2o.__remoteSend(url, method = "POST", h2oRestApiVersion = 4)
@@ -328,20 +298,46 @@ predict.H2OAutoML <- function(object, newdata, ...) {
 #' h2o.init()
 #' votes_path <- system.file("extdata", "housevotes.csv", package = "h2o")
 #' votes_hf <- h2o.uploadFile(path = votes_path, header = TRUE)
-#' aml <- h2o.automl(y = "Class", project_name="aml_housevotes", 
+#' aml <- h2o.automl(y = "Class", project_name="aml_housevotes",
 #'                   training_frame = votes_hf, max_runtime_secs = 30)
 #' automl_retrieved <- h2o.getAutoML("aml_housevotes")
 #' }
 #' @export
 h2o.getAutoML <- function(project_name) {
+
+  # GET AutoML job and leaderboard for project
   automl_job <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "GET", page = paste0("AutoML/", project_name))
+  #project <- automl_job$project  # This is not functional right now, we can get project_name from user input instead
   leaderboard <- as.data.frame(automl_job["leaderboard_table"]$leaderboard_table)
   row.names(leaderboard) <- seq(nrow(leaderboard))
-  leaderboard <- as.h2o(leaderboard)
-  leaderboard[,2:length(leaderboard)] <- as.numeric(leaderboard[,2:length(leaderboard)])
-  leader <- h2o.getModel(automl_job$leaderboard$models[[1]]$name)
-  project <- automl_job$project
   
+  # Intentionally mask the progress bar here since showing multiple progress bars is confusing to users.
+  # If any failure happens, revert back to user's original setting for progress and display the error message.
+  is_progress <- isTRUE(as.logical(.h2o.is_progress()))
+  h2o.no_progress()
+  leaderboard <- tryCatch(
+    as.h2o(leaderboard),
+    error = identity,
+    finally = if (is_progress) h2o.show_progress()
+  )
+
+  # If the leaderboard is empty, it creates a dummy row so let's remove it
+  if (leaderboard$model_id[1,1] == "") {
+    leaderboard <- leaderboard[-1,]
+    warning("The leaderboard contains zero models: try running AutoML for longer (the default is 1 hour).")
+  }
+  # If leaderboard is not empty, grab the leader model, otherwise create a "dummy" leader
+  if (nrow(leaderboard) > 0) {
+    leaderboard[,2:length(leaderboard)] <- as.numeric(leaderboard[,2:length(leaderboard)])  # Convert metrics to numeric
+    leader <- h2o.getModel(automl_job$leaderboard$models[[1]]$name)
+  } else {
+    # create a phony leader
+    Class <- paste0("H2OBinomialModel")
+    leader <- .newH2OModel(Class = Class,
+                           model_id = "dummy")
+  }
+  project <- automl_job$project
+
   # Make AutoML object
   return(new("H2OAutoML",
              project_name = project,
