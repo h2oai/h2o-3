@@ -1,29 +1,11 @@
-#! /bin/bash
+#!/bin/bash -xe
 
-set -x -e
+apt-get install -y ${HIVE_PACKAGE} ${HIVE_PACKAGE}-server2
 
-if [ -z ${HIVE_VERSION} ]; then
-    echo "HIVE_VERSION must be set"
-    exit 1
-fi
+source /usr/sbin/get_hive_home.sh
 
-# Download and initialize HIVE
-cd /home/hive
-wget http://archive.apache.org/dist/hive/hive-${HIVE_VERSION}/apache-hive-${HIVE_VERSION}-bin.tar.gz
-tar -xzf apache-hive-${HIVE_VERSION}-bin.tar.gz
-rm apache-hive-${HIVE_VERSION}-bin.tar.gz
-chown -R hive:hive apache-hive-*/
-sudo -E -u hive ${HIVE_HOME}/bin/schematool -dbType derby -initSchema
+find $HIVE_HOME/lib | grep '.jar' | \
+    grep -E 'hive-jdbc|hive-common|hive-exec|hive-service|hive-metastore|libfb303|libthrift' | \
+    tr '\n' ':' > /opt/hive-jdbc-cp
 
-mkdir -p /opt/hive-jars/
-cp ${HIVE_HOME}/lib/hive-jdbc-* /opt/hive-jars/
-cp ${HIVE_HOME}/lib/hive-service-* /opt/hive-jars/
-cp ${HIVE_HOME}/lib/hive-metastore-* /opt/hive-jars/
-cp ${HIVE_HOME}/lib/hive-common-* /opt/hive-jars/
-cp ${HIVE_HOME}/lib/hive-cli-* /opt/hive-jars/
-cp ${HIVE_HOME}/lib/hive-exec-* /opt/hive-jars/
-cp ${HIVE_HOME}/lib/libfb303-* /opt/hive-jars/
-cp ${HIVE_HOME}/lib/libthrift-* /opt/hive-jars/
-
-find /opt/hive-jars/ -name '*.jar' | tr '\n' ',' > /opt/hive-jars/hive-libjars
-
+ln -sf /usr/share/java/mysql-connector-java.jar ${HIVE_HOME}/lib/mysql-connector-java.jar

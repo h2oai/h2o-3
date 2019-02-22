@@ -9,11 +9,11 @@ def call(final pipelineContext, final stageConfig) {
                 export HADOOP_CONF_DIR=\$(realpath \${HADOOP_CONF_DIR})
             fi
 
-            if [ -n "\$HADOOP_DAEMON" ]; then
-                export HADOOP_DAEMON=\$(realpath \${HADOOP_DAEMON})
-            fi
-            if [ -n "\$YARN_DAEMON" ]; then
-                export YARN_DAEMON=\$(realpath \${YARN_DAEMON})
+            echo 'Determine hive version'
+            if hive_version_check.sh; then
+                export HIVE_DIST_ENABLED=true
+            else
+                export HIVE_DIST_ENABLED=false
             fi
 
             echo "Activating Python ${stageConfig.pythonVersion}"
@@ -57,7 +57,7 @@ private GString getH2OStartupCmd_hadoop(final stageConfig) {
     return """
             rm -fv h2o_one_node h2odriver.out
             hadoop jar h2o-hadoop-*/h2o-${stageConfig.customData.distribution}${stageConfig.customData.version}-assembly/build/libs/h2odriver.jar \\
-                -libjars "\$(cat /opt/hive-jars/hive-libjars)" -n 1 -mapperXmx 2g -baseport 54445 \\
+                -n 1 -mapperXmx 2g -baseport 54445 \\
                 -jks mykeystore.jks \\
                 -notify h2o_one_node -ea -proxy \\
                 -jks mykeystore.jks \\
@@ -86,7 +86,7 @@ private GString getH2OStartupCmd_kerberos(final stageConfig) {
     def defaultPort = 54321
     return """
             java -Djavax.security.auth.useSubjectCredsOnly=false \\
-                -cp build/h2o.jar:\$(cat /opt/hive-jars/hive-libjars | tr ',' ':') water.H2OApp \\
+                -cp build/h2o.jar:\$(cat /opt/hive-jdbc-cp) water.H2OApp \\
                 -port ${defaultPort} -ip \$(hostname --ip-address) -name \$(date +%s) \\
                 -jks mykeystore.jks \\
                 -spnego_login -user_name ${stageConfig.customData.kerberosUserName} \\
@@ -112,7 +112,7 @@ private GString getH2OStartupCmd(final stageConfig) {
         case H2O_HADOOP_STARTUP_MODE_STANDALONE:
             def defaultPort = 54321
             return """
-                java -cp build/h2o.jar:\$(cat /opt/hive-jars/hive-libjars | tr ',' ':') water.H2OApp \\
+                java -cp build/h2o.jar:\$(cat /opt/hive-jdbc-cp) water.H2OApp \\
                     -port ${defaultPort} -ip \$(hostname --ip-address) -name \$(date +%s) \\
                     -jks mykeystore.jks \\
                     > standalone_h2o.log 2>&1 & sleep 15

@@ -1,13 +1,6 @@
-#! /bin/bash
+#!/bin/bash -ex
 
-set -e -x
-
-sudo -E -u hdfs hadoop fs -mkdir -p /user/hive/warehouse
-sudo -E -u hdfs hadoop fs -chmod a+w /user/hive/warehouse
-sudo -E -u hdfs hadoop fs -chmod a+w /tmp
-
-cd /home/hive
-sudo -E -u hive nohup ${HIVE_HOME}/bin/hiveserver2 > /home/hive/hive.log & sleep 180
+source /usr/sbin/get_hive_home.sh
 
 cd /home/jenkins
 # Download dataset and upload it to HDFS
@@ -24,7 +17,7 @@ KRB_SUFFIX=
 if [ "${KRB_ENABLED}" = "true" ]; then
     KRB_SUFFIX=';principal=hive/localhost@H2O.AI'
 fi
-for f in $(ls); do
+for f in $(ls *.hql); do
     sudo -E -u hive ${HIVE_HOME}/bin/beeline -u "jdbc:hive2://localhost:10000/${KRB_SUFFIX}" -f ${f}
 done
 

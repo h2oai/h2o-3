@@ -350,7 +350,11 @@ def call(final pipelineContext) {
 
     def stageTemplate = [
       target: target, timeoutValue: 25, component: pipelineContext.getBuildConfig().COMPONENT_ANY,
-      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_HADOOP, pipelineContext.getBuildConfig().COMPONENT_PY],
+      additionalTestPackages: [
+              pipelineContext.getBuildConfig().COMPONENT_HADOOP,
+              pipelineContext.getBuildConfig().COMPONENT_PY,
+              pipelineContext.getBuildConfig().COMPONENT_R
+      ],
       customData: [
         distribution: distribution.name,
         version: distribution.version,

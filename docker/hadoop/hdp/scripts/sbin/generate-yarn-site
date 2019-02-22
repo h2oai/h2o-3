@@ -1,17 +1,14 @@
-#! /bin/bash
+#!/bin/bash -xe
 
 HDP_VERSION=$(ls /usr/hdp/ | grep -e '^2\|^3')
+source /usr/sbin/get_hive_home.sh
 echo "Generating yarn-site.xml for HDP ${HDP_VERSION}"
-echo '''
+
+cat > ${HADOOP_CONF_DIR}/yarn-site.xml <<EOF
 <configuration>
   <property>
     <name>yarn.nodemanager.aux-services</name>
     <value>mapreduce_shuffle</value>
-  </property>
-
-  <property>
-    <name>yarn.nodemanager.aux-services.mapreduce_shuffle.class</name>
-    <value>org.apache.hadoop.mapred.ShuffleHandler</value>
   </property>
 
   <property>
@@ -20,14 +17,9 @@ echo '''
   </property>
 
   <property>
-    <name>yarn.dispatcher.exit-on-error</name>
-    <value>true</value>
-  </property>
-
-  <property>
     <description>List of directories to store localized files in.</description>
     <name>yarn.nodemanager.local-dirs</name>
-    <value>/var/lib/hadoop-yarn/cache/${user.name}/nm-local-dir</value>
+    <value>/var/lib/hadoop-yarn/cache/\${user.name}/nm-local-dir</value>
   </property>
 
   <property>
@@ -44,23 +36,30 @@ echo '''
 
   <property>
      <name>yarn.application.classpath</name>
-     <value>$HADOOP_CONF_DIR,/usr/hdp/${HDP_VERSION}/hadoop-client/*,
-     /usr/hdp/${HDP_VERSION}/hadoop-client/lib/*,
-     /usr/hdp/${HDP_VERSION}/hadoop-hdfs-client/*,
-     /usr/hdp/${HDP_VERSION}/hadoop-hdfs-client/lib/*,
-     /usr/hdp/${HDP_VERSION}/hadoop-yarn-client/*,
-     /usr/hdp/${HDP_VERSION}/hadoop-yarn-client/lib/*</value>
+     <value>
+         ${HADOOP_CONF_DIR},
+         /usr/hdp/${HDP_VERSION}/hadoop/*,
+         /usr/hdp/${HDP_VERSION}/hadoop/lib/*,
+         /usr/hdp/${HDP_VERSION}/hadoop-hdfs/*,
+         /usr/hdp/${HDP_VERSION}/hadoop-hdfs/lib/*,
+         /usr/hdp/${HDP_VERSION}/hadoop-yarn/*,
+         /usr/hdp/${HDP_VERSION}/hadoop-yarn/lib/*,
+         /usr/hdp/${HDP_VERSION}/hadoop-mapreduce/*,
+         /usr/hdp/${HDP_VERSION}/hadoop-mapreduce/lib/*,
+         ${HIVE_HOME}/conf,
+         ${HIVE_HOME}/lib/*
+     </value>
   </property>
 
 </configuration>
-''' > ${HADOOP_CONF_DIR}/yarn-site.xml
+EOF
 
-
-echo '''
+echo > ${HADOOP_CONF_DIR}/container-executor.cfg <<EOF
 yarn.nodemanager.linux-container-executor.group=hadoop
 banned.users=hdfs,yarn,mapred
 min.user.id=1000
-''' > ${HADOOP_CONF_DIR}/container-executor.cfg
+EOF
+
 chown root:hadoop ${HADOOP_CONF_DIR}/container-executor.cfg
 chmod 400 ${HADOOP_CONF_DIR}/container-executor.cfg
 chown root:hadoop /usr/hdp/${HDP_VERSION}/hadoop-yarn/bin/container-executor
