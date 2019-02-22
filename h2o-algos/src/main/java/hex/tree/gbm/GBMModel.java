@@ -56,7 +56,11 @@ public class GBMModel extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, 
         }
         cs[col] = spec.getValue() < 0 ? -1 : 1;
       }
-      return new Constraints(cs);
+      boolean useBounds = _distribution == DistributionFamily.gaussian ||
+              _distribution == DistributionFamily.bernoulli ||
+              _distribution == DistributionFamily.quasibinomial ||
+              _distribution == DistributionFamily.multinomial;
+      return new Constraints(cs, useBounds);
     }
 
   }

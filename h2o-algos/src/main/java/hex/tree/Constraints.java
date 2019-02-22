@@ -7,15 +7,17 @@ public class Constraints extends Iced<Constraints> {
   private final int[] _cs;
   final double _min;
   final double _max;
+  private final boolean _use_bounds;
 
-  public Constraints(int[] cs) {
-    this(cs, Double.NaN, Double.NaN);
+  public Constraints(int[] cs, boolean useBounds) {
+    this(cs, useBounds, Double.NaN, Double.NaN);
   }
 
-  private Constraints(int[] cs, double min, double max) {
+  private Constraints(int[] cs, boolean useBounds, double min, double max) {
     _cs = cs;
     _min = min;
     _max = max;
+    _use_bounds = useBounds;
   }
 
   int getColumnConstraint(int col) {
@@ -24,10 +26,14 @@ public class Constraints extends Iced<Constraints> {
 
   Constraints withNewConstraint(int way, double bound) {
     if (way == 0) { // left
-      return new Constraints(_cs, _min, bound);
+      return new Constraints(_cs, _use_bounds, _min, bound);
     } else {
-      return new Constraints(_cs, bound, _max);
+      return new Constraints(_cs, _use_bounds, bound, _max);
     }
+  }
+
+  public boolean useBounds() {
+    return _use_bounds;
   }
 
 }

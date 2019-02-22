@@ -1,6 +1,5 @@
 package hex.tree.gbm;
 
-import hex.KeyValue;
 import hex.genmodel.utils.DistributionFamily;
 import hex.Distribution;
 import hex.ModelCategory;
@@ -16,9 +15,7 @@ import water.fvec.*;
 import water.util.*;
 
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Random;
-import java.util.Set;
 
 /** Gradient Boosted Trees
  *
@@ -351,7 +348,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // ESL2, page 387.  Step 2b ii.
       // One Big Loop till the ktrees are of proper depth.
       // Adds a layer to the trees each pass.
-      growTrees(ktrees, leaves, _rand, _parms.constraints(_train));
+      Constraints cs = _parms.constraints(_train);
+      growTrees(ktrees, leaves, _rand, cs);
       for (int k = 0; k < _nclass; k++) {
         if (DEV_DEBUG && ktrees[k]!=null) {
           System.out.println("Grew trees. Updated NIDs for class " + k + ":\n" + new Frame(new String[]{"NIDS"},new Vec[]{vec_nids(_train, k)}).toTwoDimTable());
@@ -370,7 +368,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       } else if (_parms._distribution == DistributionFamily.huber) {
         fitBestConstantsHuber(ktrees, leaves[0], huberDelta); //compute the alpha-quantile for each leaf node and store that as prediction
       } else {
-        fitBestConstants(ktrees, leaves, gp);
+        fitBestConstants(ktrees, leaves, gp, cs);
       }
 
       // Apply a correction for strong mispredictions (otherwise deviance can explode)
@@ -567,14 +565,23 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       return _parms._learn_rate * Math.pow(_parms._learn_rate_annealing, (_model._output._ntrees-1));
     }
 
-    private void fitBestConstants(DTree[] ktrees, int[] leafs, GammaPass gp) {
+    private void fitBestConstants(DTree[] ktrees, int[] leafs, GammaPass gp, Constraints cs) {
+      final boolean useBounds = cs != null && cs.useBounds();
       double m1class = _nclass > 1 && _parms._distribution == DistributionFamily.multinomial ? (double) (_nclass - 1) / _nclass : 1.0; // K-1/K for multinomial
       for (int k = 0; k < _nclass; k++) {
         final DTree tree = ktrees[k];
         if (tree == null) continue;
         if (DEV_DEBUG) for (int i=0;i<ktrees[k]._len-leafs[k];++i) System.out.println(ktrees[k].node(leafs[k]+i).toString());
         for (int i = 0; i < tree._len - leafs[k]; i++) {
-          double gf = effective_learning_rate() * m1class * gp.gamma(k, i);
+          LeafNode leafNode = (LeafNode) ktrees[k].node(leafs[k] + i);
+          double gamma;
+          if (useBounds) {
+            double numerator = leafNode.getSplitPrediction();
+            gamma = gp.gamma(k, i, numerator);
+          } else {
+            gamma = gp.gamma(k, i);
+          }
+          double gf = effective_learning_rate() * m1class * gamma;
           // In the multinomial case, check for very large values (which will get exponentiated later)
           // Note that gss can be *zero* while rss is non-zero - happens when some rows in the same
           // split are perfectly predicted true, and others perfectly predicted false.
@@ -586,7 +593,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           else if (Double.isInfinite(gf)) gf=Math.signum(gf)*1e4f;
           if (gf > _parms._max_abs_leafnode_pred) gf = _parms._max_abs_leafnode_pred;
           if (gf < -_parms._max_abs_leafnode_pred) gf = -_parms._max_abs_leafnode_pred;
-          ((LeafNode) tree.node(leafs[k] + i))._pred = (float) gf;
+          leafNode._pred = (float) gf;
         }
       }
     }
@@ -965,18 +972,22 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     }
 
     double gamma(int tree, int nid) {
+      return gamma(tree, nid, _num[tree][nid]);
+    }
+
+    double gamma(int tree, int nid, double num) {
       if (_denom[tree][nid] == 0) return 0;
-      double g = _num[tree][nid] / _denom[tree][nid];
+      double g = num / _denom[tree][nid];
       assert (!Double.isInfinite(g) && !Double.isNaN(g));
       if (_dist.distribution == DistributionFamily.poisson ||
-          _dist.distribution == DistributionFamily.gamma ||
-          _dist.distribution == DistributionFamily.tweedie) {
+              _dist.distribution == DistributionFamily.gamma ||
+              _dist.distribution == DistributionFamily.tweedie) {
         return _dist.link(g);
       } else {
         return g;
       }
     }
-
+    
     @Override
     protected boolean modifiesVolatileVecs() {
       return true;
