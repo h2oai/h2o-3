@@ -377,10 +377,24 @@ automl.args.test <- function() {
         expect_equal(length(get_partitioned_models(aml)$se), 2)
     }
 
-  test_max_runtime_secs_per_model <- function() {
-    print("Check that individual model get interrupted after `max_runtime_secs_per_model`")
-    #nothing we can test here as soon as the userfeedback is not available on client side
-  }
+    test_max_runtime_secs_per_model <- function() {
+      print("Check that individual model get interrupted after `max_runtime_secs_per_model`")
+      ds <- import_dataset()
+      max_runtime_secs <- 30
+      models_count <- list()
+      for (max_runtime_secs_per_model in c(0, 3, max_runtime_secs)) {
+        aml <- h2o.automl(x=ds$x, y=ds$y,
+                          training_frame=ds$train,
+                          seed=1,
+                          project_name=paste0("aml_max_runtime_secs_per_model_", max_runtime_secs_per_model),
+                          max_runtime_secs_per_model=max_runtime_secs_per_model,
+                          max_runtime_secs=max_runtime_secs)
+        models_count[max_runtime_secs_per_model] = nrow(aml@leaderboard)
+      }
+      expect_lte(abs(models_count[[0]] - models_count[[max_runtime_secs]]), 1)
+      expect_gt(abs(models_count[[0]] - models_count[[3]]), 1)
+      # TODO: add assertions about single model timing once 'automl event_log' is available on client side
+    }
 
     test_max_models <- function() {
         print("Check that automl get interrupted after `max_models`")
@@ -419,7 +433,7 @@ automl.args.test <- function() {
         test_keep_cv_fold_assignment_TRUE_with_nfolds_gt_0,
         test_keep_cv_fold_assignment_TRUE_with_nfolds_eq_0,
         test_max_runtime_secs,
-        # test_max_runtime_secs_per_model,
+        test_max_runtime_secs_per_model,
         test_max_models
     )
 }
