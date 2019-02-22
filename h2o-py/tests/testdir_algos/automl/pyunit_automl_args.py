@@ -232,7 +232,7 @@ def test_no_model_takes_more_than_max_runtime_secs_per_model():
                         max_runtime_secs=max_runtime_secs)
         aml.train(y=ds['target'], training_frame=ds['train'])
         models_count[max_runtime_secs_per_model] = len(aml.leaderboard)
-        print(aml.leaderboard)
+        # print(aml.leaderboard)
     # there may be one model difference as reproducibility is not perfectly guaranteed in time-bound runs
     assert abs(models_count[0] - models_count[max_runtime_secs]) <= 1
     assert abs(models_count[0] - models_count[3]) > 1
