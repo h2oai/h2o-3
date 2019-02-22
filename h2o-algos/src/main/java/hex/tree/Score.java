@@ -76,7 +76,7 @@ public class Score extends CMetricScoringTask<Score> {
     float [] val= new float[1];
     for( int row=0; row<ys._len; row++ ) {
       if( ys.isNA(row) ) continue; // Ignore missing response vars only if it was actual NA
-      // Ignore out-of-bag rows
+      // Ignore rows that were never out-of-bag (= were always used to build trees so far) 
       if( _oob && chks[oobColIdx].atd(row)==0 ) continue;
       double weight = weightsChunk!=null?weightsChunk.atd(row):1;
       if (weight == 0) continue; //ignore holdout rows
