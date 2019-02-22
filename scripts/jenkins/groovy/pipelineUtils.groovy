@@ -65,9 +65,6 @@ class PipelineUtils {
 
     List<String> readSupportedHadoopDistributions(final context, final String buildinfoPath) {
         final List<String> DOCKERIZED_DISTRIBUTIONS = ['cdh', 'hdp']
-        final String HIVE_VERSION_2_2 = '2.2.0'
-        final String HIVE_VERSION_3_1 = '3.1.0'
-        final String HIVE_VERSION_2_1_1_CDH_6_0 = '2.1.1-cdh6.0.0'
 
         final String buildinfoContent = context.sh(script: "sed 's/SUBST_BUILD_TIME_MILLIS/\"SUBST_BUILD_TIME_MILLIS\"/g' ${buildinfoPath} | sed -e 's/SUBST_BUILD_NUMBER/\"SUBST_BUILD_NUMBER\"/g'", returnStdout: true).trim()
 
@@ -81,18 +78,9 @@ class PipelineUtils {
                 if (distributionStr.startsWith(dockerizedDist)) {
                     def distributionName = dockerizedDist
                     def distributionVersion = distributionStr.replaceFirst(dockerizedDist, '')
-                    def hiveVersion = HIVE_VERSION_2_2
-                    if (distributionName.toLowerCase() == 'cdh' && distributionVersion.startsWith('6.')) {
-                        hiveVersion = HIVE_VERSION_2_1_1_CDH_6_0
-                    } else if (distributionName.toLowerCase() == 'hdp' && distributionVersion.startsWith('3.')) {
-                        hiveVersion = HIVE_VERSION_3_1
-                    } else {
-                        hiveVersion = HIVE_VERSION_2_2
-                    }
                     distributionsToBuild += [
                         name: distributionName,
-                        version: distributionVersion,
-                        hiveVersion: hiveVersion
+                        version: distributionVersion
                     ]
                 }
             }

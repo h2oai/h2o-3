@@ -11,7 +11,4 @@ fi
 
 service hadoop-hdfs-namenode start
 service hadoop-hdfs-secondarynamenode start
-set +e
-echo 'FIXME IGNORE ERROR WHILE STARTING DATANODE'
 service hadoop-hdfs-datanode start
-set -e

@@ -70,11 +70,17 @@
         <description>Classpath for typical applications.</description>
         <name>yarn.application.classpath</name>
         <value>
-            $HADOOP_CONF_DIR,
-            $HADOOP_COMMON_HOME/*,$HADOOP_COMMON_HOME/lib/*,
-            $HADOOP_HDFS_HOME/*,$HADOOP_HDFS_HOME/lib/*,
-            $HADOOP_MAPRED_HOME/*,$HADOOP_MAPRED_HOME/lib/*,
-            $HADOOP_YARN_HOME/*,$HADOOP_YARN_HOME/lib/*
+            /etc/hadoop/conf,
+            /usr/lib/hadoop/*,
+            /usr/lib/hadoop/lib/*,
+            /usr/lib/hadoop-hdfs/*,
+            /usr/lib/hadoop-hdfs/lib/*,
+            /usr/lib/hadoop-yarn/*,
+            /usr/lib/hadoop-yarn/lib/*,
+            /usr/lib/hadoop-mapreduce/*,
+            /usr/lib/hadoop-mapreduce/lib/*,
+            /etc/hive/conf,
+            /usr/lib/hive/lib/*
         </value>
     </property>
 </configuration>

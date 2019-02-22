@@ -1,8 +1,8 @@
 ext {
   hadoopVersion = 'hdp2.5'
-  hadoopMavenArtifactVersion = '2.7.1.2.4.0.0-169'
+  hadoopMavenArtifactVersion = '2.7.3.2.5.0.0-1245'
   orcSupported = true
-  orcHiveExecVersion = "1.2.1"
+  orcHiveExecVersion = "1.2.1000.2.5.0.0-1245"
 }
 
 apply from: '../assemblyjar.gradle'
