@@ -8,6 +8,8 @@ import ai.h2o.automl.targetencoding.strategy.FixedTEParamsStrategy;
 import ai.h2o.automl.targetencoding.strategy.TEApplicationStrategy;
 import ai.h2o.automl.targetencoding.strategy.TEParamsSelectionStrategy;
 import hex.ModelBuilder;
+import hex.splitframe.ShuffleSplitFrame;
+import water.Key;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
@@ -30,6 +32,7 @@ class AutoMLTargetEncodingAssistant{
   private Vec _responseColumn;
   private Vec _foldColumn;
   private AutoMLBuildSpec _buildSpec;
+  private ModelBuilder _modelBuilder;
 
   private TEParamsSelectionStrategy _teParamsSelectionStrategy;
   private TEApplicationStrategy _applicationStrategy;
@@ -44,6 +47,7 @@ class AutoMLTargetEncodingAssistant{
                                 Vec foldColumn,
                                 AutoMLBuildSpec buildSpec,
                                 ModelBuilder modelBuilder) {
+    _modelBuilder = modelBuilder;
     _trainingFrame = modelBuilder.train();
     _validationFrame = validationFrame;
     _leaderboardFrame = leaderboardFrame;
@@ -142,8 +146,14 @@ class AutoMLTargetEncodingAssistant{
           }
           break;
         case TargetEncoder.DataLeakageHandlingStrategy.None:
-          Frame encodedTrainingFrameNone = tec.applyTargetEncoding(_trainingFrame, responseColumnName, encodingMap, holdoutType, withBlendedAvg, noiseLevel, imputeNAsWithNewCategory, seed);
-          copyEncodedColumnsToDestinationFrameAndRemoveSource(columnsToEncode, encodedTrainingFrameNone, _trainingFrame);
+          //We not only want to search for optimal parameters based on separate test split during grid search but also apply these parameters accordingly
+          Frame[] trainAndHoldoutSplits = splitByRatio(_trainingFrame, new double[]{0.8, 0.2});
+          Frame trainNone = trainAndHoldoutSplits[0];
+          Frame holdoutNone = trainAndHoldoutSplits[1];
+          encodingMap = tec.prepareEncodingMap(holdoutNone, responseColumnName, null);
+          Frame encodedTrainingFrameNone = tec.applyTargetEncoding(trainNone, responseColumnName, encodingMap, holdoutType, withBlendedAvg, noiseLevel, imputeNAsWithNewCategory, seed);
+          copyEncodedColumnsToDestinationFrameAndRemoveSource(columnsToEncode, encodedTrainingFrameNone, trainNone);
+          _modelBuilder.setTrain(trainNone);
 
           if(_validationFrame != null) {
             Frame encodedValidationFrameNone = tec.applyTargetEncoding(_validationFrame, responseColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, withBlendedAvg, 0, imputeNAsWithNewCategory, seed);
@@ -156,6 +166,11 @@ class AutoMLTargetEncodingAssistant{
       }
       encodingMapCleanUp(encodingMap);
     }
+  }
+
+  private Frame[] splitByRatio(Frame fr,double[] ratios) {
+    Key[] keys = new Key[]{Key.<Frame>make(), Key.<Frame>make()};
+    return ShuffleSplitFrame.shuffleSplitFrame(fr, keys, ratios, 42);
   }
 
   void appendOriginalTEColumnsNamesToIgnoredListOfColumns(String[] columnsToEncode) {

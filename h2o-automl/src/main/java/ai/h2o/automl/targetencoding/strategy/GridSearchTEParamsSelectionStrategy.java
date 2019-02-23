@@ -41,7 +41,7 @@ public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrate
     _grid.put("_noise_level", new Double[]{0.0, 0.1, 0.01});
     _grid.put("_inflection_point", new Integer[]{1, 2, 3, 5, 10, 50, 100});
     _grid.put("_smoothing", new Double[]{5.0, 10.0, 20.0});
-    _grid.put("_holdoutType", new Byte[]{TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut,TargetEncoder.DataLeakageHandlingStrategy.KFold}); // only LeaveOneOut and KFOLD as we don't want to split holdout from training frame of the whole automl process
+    _grid.put("_holdoutType", new Byte[]{TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut,TargetEncoder.DataLeakageHandlingStrategy.KFold, TargetEncoder.DataLeakageHandlingStrategy.None});
 
     randomSelector = new RandomSelector(_grid, _seed);
     
