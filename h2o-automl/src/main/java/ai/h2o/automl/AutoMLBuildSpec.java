@@ -9,6 +9,8 @@ import water.Key;
 import water.api.schemas3.JobV3;
 import water.fvec.Frame;
 
+import java.util.Random;
+
 /**
  * Parameters which specify the build (or extension) of an AutoML build job.
  */
@@ -172,7 +174,7 @@ public class AutoMLBuildSpec extends Iced {
     public boolean enabled = true;
     public TEApplicationStrategy application_strategy;
     public TEParamsSelectionStrategy params_selection_strategy;
-    public long seed = -1;
+    public long seed = new Random().nextLong();
   }
 
   /**

@@ -1,66 +1,60 @@
 package ai.h2o.automl.targetencoding.strategy;
 
-import ai.h2o.automl.Algo;
 import ai.h2o.automl.targetencoding.TargetEncoder;
 import ai.h2o.automl.targetencoding.TargetEncodingParams;
+import hex.ModelBuilder;
+import water.Iced;
 import water.fvec.Frame;
 import water.util.TwoDimTable;
 
 import java.util.*;
-
-import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
 
 /**
  * For now it should be named RandomGridSearchTEParamsStrategy
  */
 public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrategy {
 
-  private Algo[] _evaluationAlgos;
   private Frame _inputData;
   private String _responseColumn;
   private String[] _columnsToEncode; // we might want to search for subset as well
   private boolean _theBiggerTheBetter;
   private long _seed;
-  Map<String, Object[]> _grid = new HashMap<>();
+
   private RandomSelector randomSelector;
   private PriorityQueue<Evaluated<TargetEncodingParams>> evaluatedQueue;
-  GridSearchTEEvaluator evaluator = new GridSearchTEEvaluator();
+  private GridSearchTEEvaluator evaluator = new GridSearchTEEvaluator();
   
-  int _numberOfIterations; // or should be a strategy that will be in charge of stopping.
-  final String foldColumnForTE = "custom_fold";
-  
+  private int _numberOfIterations; // or should be a strategy that will be in charge of stopping.
 
-  public GridSearchTEParamsSelectionStrategy(Frame data, Algo[] evaluationAlgos, int numberOfIterations, String responseColumn, String[] columnsToEncode, boolean theBiggerTheBetter, long seed) {
-    _evaluationAlgos = evaluationAlgos;
+  public GridSearchTEParamsSelectionStrategy(Frame data, int numberOfIterations, String responseColumn, String[] columnsToEncode, boolean theBiggerTheBetter, long seed) {
     _seed = seed;
     
-    int nfolds = 5; // we might want to search for this parameter as well
-    addKFoldColumn(data, foldColumnForTE, nfolds, _seed);
     _inputData = data;
     _numberOfIterations = numberOfIterations;
     _responseColumn = responseColumn;
     _columnsToEncode = columnsToEncode;
     _theBiggerTheBetter = theBiggerTheBetter;
     
-    //Get it as parameter ?
+    //Hardcoded. Get it as parameter to generalize ?
+    HashMap<String, Object[]> _grid = new HashMap<>();
     _grid.put("_withBlending", new Boolean[]{true, false});
     _grid.put("_noise_level", new Double[]{0.0, 0.1, 0.01});
     _grid.put("_inflection_point", new Integer[]{1, 2, 3, 5, 10, 50, 100});
     _grid.put("_smoothing", new Double[]{5.0, 10.0, 20.0});
-    _grid.put("_holdoutType", new Byte[]{TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, TargetEncoder.DataLeakageHandlingStrategy.KFold}); // only LeaveOneOut and KFOLD as we don't want to split holdout from training frame of the whole automl process
+    _grid.put("_holdoutType", new Byte[]{TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut,TargetEncoder.DataLeakageHandlingStrategy.KFold}); // only LeaveOneOut and KFOLD as we don't want to split holdout from training frame of the whole automl process
 
     randomSelector = new RandomSelector(_grid, _seed);
     
-    evaluatedQueue = new PriorityQueue<>(numberOfIterations, new EvaluatedComparator(theBiggerTheBetter)); //TODO fix numberOfIterations
+    evaluatedQueue = new PriorityQueue<>(numberOfIterations, new EvaluatedComparator(theBiggerTheBetter));
   }
   
   @Override
-  public TargetEncodingParams getBestParams() {
-    return getBestParamsWithEvaluation().getItem();
+  public TargetEncodingParams getBestParams(ModelBuilder modelBuilder) {
+    return getBestParamsWithEvaluation(modelBuilder).getItem();
   }
 
-  public Evaluated<TargetEncodingParams> getBestParamsWithEvaluation() {
-    // First we need to do stratified sampling
+  public Evaluated<TargetEncodingParams> getBestParamsWithEvaluation(ModelBuilder modelBuilder) {
+    //TODO First we need to do stratified sampling
 
     for(int attempt = 0 ; attempt < _numberOfIterations; attempt++) {
 
@@ -68,7 +62,10 @@ public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrate
 
       TargetEncodingParams param = new TargetEncodingParams(selected.getItem());
 
-      double evaluationResult = evaluator.evaluate(param, getEvaluationAlgos(), getInputData(), getResponseColumn(), foldColumnForTE, getColumnsToEncode());
+      ModelBuilder clonedModelBuilder = ModelBuilder.clone(modelBuilder);
+      clonedModelBuilder.init(false); // in evaluator we assume that init() has been already called
+
+      double evaluationResult = evaluator.evaluate(param, clonedModelBuilder, getColumnsToEncode(), _seed);
       evaluatedQueue.add(new Evaluated<>(param, evaluationResult));
     }
 
@@ -85,10 +82,6 @@ public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrate
     return _inputData;
   }
 
-  public Algo[] getEvaluationAlgos() {
-    return _evaluationAlgos;
-  }
-
   public String[] getColumnsToEncode() {
     return _columnsToEncode;
   }
@@ -98,7 +91,7 @@ public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrate
   }
 
 
-  public static class Evaluated<P> {
+  public static class Evaluated<P> extends Iced<Evaluated<P>> {
     public P getItem() {
       return _item;
     }
@@ -107,7 +100,7 @@ public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrate
       return _score;
     }
 
-    P _item;
+    transient P _item; 
     private double _score;
 
     public Evaluated(P item, double score) {
@@ -116,7 +109,7 @@ public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrate
     }
   }
 
-  public static class EvaluatedComparator implements Comparator<Evaluated>{
+  public static class EvaluatedComparator extends Iced<EvaluatedComparator> implements Comparator<Evaluated>{
     private boolean _theBiggerTheBetter;
     
     public EvaluatedComparator(boolean theBiggerTheBetter) {
@@ -126,26 +119,26 @@ public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrate
     @Override
     public int compare(Evaluated o1, Evaluated o2) {
       int inverseTerm = _theBiggerTheBetter ? -1 : 1;
-      return inverseTerm * Double.compare(o1.getScore(), o2.getScore()); // TODO the bigger the better or the other way around
+      return inverseTerm * Double.compare(o1.getScore(), o2.getScore());
     }
   }
 
-  public static class RandomSelector {
+  public static class RandomSelector extends Iced<RandomSelector> {
 
-    Map<String, Object[]> _grid = new HashMap<>();
+    HashMap<String, Object[]> _grid;
     String[] _dimensionNames;
     private int _spaceSize;
-    private Set<Integer> _visitedPermutationHashes = new LinkedHashSet<>();
-    Random randomGen;
+    transient private Set<Integer> _visitedPermutationHashes = new LinkedHashSet<>(); // what are the cases of retrieving automl from DKV?
+    Random _randomGen;
 
-    public RandomSelector(Map<String, Object[]> grid, long seed) {
+    public RandomSelector(HashMap<String, Object[]> grid, long seed) {
       _grid = grid;
-      randomGen = new Random(seed);
+      _randomGen = new Random(seed);
       _dimensionNames = _grid.keySet().toArray(new String[0]);
       _spaceSize = calculateSpaceSize(_grid);
     }
     
-    public RandomSelector(Map<String, Object[]> grid) {
+    public RandomSelector(HashMap<String, Object[]> grid) {
       this(grid, -1);
     }
     
@@ -158,6 +151,7 @@ public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrate
       return new GridEntry(_next, hashIntArray(indices));
     }
 
+    //This approach is not very efficient as over time we will start to hit cache more often and selecting unseen combination will become harder.
     private int[] nextIndices() {
       int[] chosenIndices =  new int[_dimensionNames.length];
 
@@ -165,15 +159,27 @@ public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrate
       do {
         for (int i = 0; i < _dimensionNames.length; i++) {
           String name = _dimensionNames[i];
+//          System.out.println("Dimension:" + i +":" + name);
           int dimensionLength = _grid.get(name).length;
-          chosenIndices[i] = randomGen.nextInt(dimensionLength);
+          int chosenIndex = _randomGen.nextInt(dimensionLength);
+          chosenIndices[i] = chosenIndex;
         }
         hashOfIndices = hashIntArray(chosenIndices);
-      } while (_visitedPermutationHashes.contains(hashOfIndices) && _visitedPermutationHashes.size() != _spaceSize);
+      } while (_visitedPermutationHashes.contains(hashOfIndices) && _visitedPermutationHashes.size() != _spaceSize /*&& skipIndices(chosenIndices)*/);
       _visitedPermutationHashes.add(hashOfIndices);
 
-      if(_visitedPermutationHashes.size() == _spaceSize) System.out.println("Whole search space has been discovered. Continue selecting randomly.");
+      if(_visitedPermutationHashes.size() == _spaceSize) {
+        System.out.println("Whole search space has been discovered. Continue selecting randomly.");
+      }
       return chosenIndices;
+    }
+    
+    // overwrite it with custom combinations
+    protected boolean skipIndices(int[] possibleIndices) {
+      if (possibleIndices[0] == 0 ) {
+        _visitedPermutationHashes.add(hashIntArray(possibleIndices));
+      }
+      return true;
     }
 
     private int calculateSpaceSize(Map<String, Object[]> grid) {
@@ -194,12 +200,13 @@ public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrate
     private int hashIntArray(int[] ar) {
       Integer[] hashMe = new Integer[ar.length];
       for (int i = 0; i < ar.length; i++)
-        hashMe[i] = ar[i] * _grid.get(_dimensionNames[i]).length;
+        hashMe[i] = ar[i];
+//        hashMe[i] = ar[i] * _grid.get(_dimensionNames[i]).length;
       return Arrays.deepHashCode(hashMe);
     }
   }
 
-  public static class GridEntry {
+  public static class GridEntry extends Iced<GridEntry>{
     Map<String, Object> _item;
     int _hash;
 

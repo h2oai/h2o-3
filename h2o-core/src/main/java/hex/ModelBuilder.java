@@ -170,6 +170,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return mb;
   }
 
+  public static <B extends ModelBuilder> B clone(ModelBuilder modelBuilder) {
+    Key<Model> modelKey = Key.<Model>make(); // TODO using random key name for now
+    Job<Model> job = new Job<>(modelKey, ModelBuilder.javaName(modelBuilder._parms.algoName().toLowerCase()), modelBuilder._parms.algoName());
+    B newMB = ModelBuilder.make(modelBuilder._parms.algoName(), job, modelKey);
+    newMB._parms = modelBuilder._parms.clone();
+    return newMB;
+  }
 
   /** All the parameters required to build the model. */
   public P _parms;              // Not final, so CV can set-after-clone

@@ -5,6 +5,7 @@ import ai.h2o.automl.targetencoding.TargetEncoder;
 import ai.h2o.automl.targetencoding.TargetEncodingParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.AutoBuffer;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
@@ -95,9 +96,9 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
     long seedForFoldColumn = 2345L;
 
     GridSearchTEParamsSelectionStrategy gridSearchTEParamsSelectionStrategy =
-            new GridSearchTEParamsSelectionStrategy(fr, evaluationAlgos, i, responseColumnName, columnsToEncode, true, seedForFoldColumn);
+            new GridSearchTEParamsSelectionStrategy(fr, i, responseColumnName, columnsToEncode, true, seedForFoldColumn);
 
-    return gridSearchTEParamsSelectionStrategy.getBestParamsWithEvaluation();
+    return gridSearchTEParamsSelectionStrategy.getBestParamsWithEvaluation(null);
   }
 
   @Test
@@ -169,7 +170,7 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
 
   @Test
   public void randomSelectorTest() {
-    Map<String, Object[]> searchParams = new HashMap<>();
+    HashMap<String, Object[]> searchParams = new HashMap<>();
     searchParams.put("_withBlending", new Boolean[]{true, false});
     searchParams.put("_noise_level", new Double[]{0.0, 0.1, 0.01});
     searchParams.put("_inflection_point", new Integer[]{1, 2, 3, 5, 10, 50, 100});
@@ -187,8 +188,13 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
     randomSelector.getNext();
     assertEquals(sizeOfSpace, randomSelector.getVisitedPermutationHashes().size());
   }
-  
-  @Test // We assume that sampling might change best target encoding's hyper parameters. 
+
+  /**
+   *  We assume that 1) sampling might change selection of best target encoding's hyper parameters( hard to test in a consistent way) 
+   *                  2) Even with RGS over TE params with sampled dataset we do better than without TE
+   *                  3) Sampling might hurt performance of the GRS over TE params
+   */
+  @Test 
   public void samplingAssumptionTest() {
     int numberOfSearchIterations = 252;
     String responseColumnName = "survived";
@@ -225,7 +231,34 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
       frBaseLine.delete();
     }
   }
+
+  @Test
+  public void randomSelectorSerialization() {
+    HashMap<String, Object[]> searchParams = new HashMap<>();
+    searchParams.put("_withBlending", new Boolean[]{true, false});
+    
+    GridSearchTEParamsSelectionStrategy.RandomSelector randomSelector = new GridSearchTEParamsSelectionStrategy.RandomSelector(searchParams);
+    AutoBuffer ab = new AutoBuffer();
+    String json = new String(randomSelector.writeJSON(ab).buf());
+
+  }
   
+  @Test
+  public void Test2() {
+    
+//    New walking stratуgy. We can estimate which dimension of the space is the most valuable to discover.
+  }
+  
+  @Test
+  public void optimisation2() {
+    // Bayesian optimisation with expected improvement approach of peeking next parameter.
+  }
+  
+  @Test
+  public void Test3() {
+    
+//    We can compute probabilities for all evaluated grid entries.
+  }
   
   @Test 
   public void speedupBySamplingAssumptionTest() {

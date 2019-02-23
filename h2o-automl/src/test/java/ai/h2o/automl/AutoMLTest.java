@@ -39,6 +39,8 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_control.keep_cross_validation_models = false; //Prevent leaked keys from CV models
       autoMLBuildSpec.build_control.keep_cross_validation_predictions = false; //Prevent leaked keys from CV predictions
 
+      autoMLBuildSpec.te_spec.enabled = false;
+      
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
 
@@ -70,6 +72,8 @@ public class AutoMLTest extends water.TestUtil {
 
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(3);
       autoMLBuildSpec.build_control.nfolds = 0;
+      
+      autoMLBuildSpec.te_spec.enabled = false;
 
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
@@ -111,6 +115,8 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.blending_frame = blending._key;
       autoMLBuildSpec.input_spec.leaderboard_frame = test._key;
       autoMLBuildSpec.input_spec.response_column = target;
+      
+      autoMLBuildSpec.te_spec.enabled = false;
 
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(3);
       autoMLBuildSpec.build_control.nfolds = 0;
@@ -150,6 +156,8 @@ public class AutoMLTest extends water.TestUtil {
       fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "CAPSULE";
+      
+      autoMLBuildSpec.te_spec.enabled = false;
 
       autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(new Random().nextInt(30));
       autoMLBuildSpec.build_control.keep_cross_validation_models = false; //Prevent leaked keys from CV models
@@ -181,6 +189,8 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_control.keep_cross_validation_models = false; //Prevent leaked keys from CV models
       autoMLBuildSpec.build_control.keep_cross_validation_predictions = false; //Prevent leaked keys from CV predictions
 
+      autoMLBuildSpec.te_spec.enabled = false;
+
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
 
@@ -210,6 +220,8 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs_per_model(max_runtime_secs_per_model);
       autoMLBuildSpec.build_control.keep_cross_validation_models = true; //Prevent leaked keys from CV models
       autoMLBuildSpec.build_control.keep_cross_validation_predictions = false; //Prevent leaked keys from CV predictions
+
+      autoMLBuildSpec.te_spec.enabled = false;
 
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
@@ -244,6 +256,8 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(30);
       autoMLBuildSpec.build_control.keep_cross_validation_fold_assignment = true;
 
+      autoMLBuildSpec.te_spec.enabled = false;
+
       aml = AutoML.makeAutoML(Key.<AutoML>make(), new Date(), autoMLBuildSpec);
       AutoML.startAutoML(aml);
       aml.get();
@@ -276,6 +290,8 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(30);
       autoMLBuildSpec.build_control.keep_cross_validation_fold_assignment = false;
 
+      autoMLBuildSpec.te_spec.enabled = false;
+
       aml = AutoML.makeAutoML(Key.<AutoML>make(), new Date(), autoMLBuildSpec);
       AutoML.startAutoML(aml);
       aml.get();
@@ -299,6 +315,8 @@ public class AutoMLTest extends water.TestUtil {
       fr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
+      autoMLBuildSpec.te_spec.enabled = false;
+
       aml = new AutoML(Key.<AutoML>make(), new Date(), autoMLBuildSpec);
 
       AutoML.WorkAllocations workPlan = aml.planWork();
@@ -336,6 +354,9 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_control.nfolds = 0;
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
       autoMLBuildSpec.build_control.stopping_criteria.set_seed(1);
+
+      autoMLBuildSpec.te_spec.enabled = false;
+
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
       double tolerance = 1e-2;
@@ -363,6 +384,9 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_control.nfolds = 0;
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
       autoMLBuildSpec.build_control.stopping_criteria.set_seed(1);
+
+      autoMLBuildSpec.te_spec.enabled = false;
+
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
       double tolerance = 1e-2;
@@ -389,6 +413,9 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_control.nfolds = 0;
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
       autoMLBuildSpec.build_control.stopping_criteria.set_seed(1);
+
+      autoMLBuildSpec.te_spec.enabled = false;
+
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
       double tolerance = 1e-2;
@@ -413,6 +440,9 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.leaderboard_frame = null;
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
       autoMLBuildSpec.build_control.stopping_criteria.set_seed(1);
+
+      autoMLBuildSpec.te_spec.enabled = false;
+
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
       assertEquals(fr.numRows(), aml.getTrainingFrame().numRows());
@@ -433,6 +463,9 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.DeepLearning, Algo.XGBoost, };
+      
+      autoMLBuildSpec.te_spec.enabled = false;
+
       aml = new AutoML(Key.<AutoML>make(), new Date(), autoMLBuildSpec);
       AutoML.WorkAllocations workPlan = aml.planWork();
       for (Algo algo : autoMLBuildSpec.build_models.exclude_algos) {
@@ -462,6 +495,9 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_models.include_algos = new Algo[] {Algo.DeepLearning, Algo.XGBoost, };
+
+      autoMLBuildSpec.te_spec.enabled = false;
+
       aml = new AutoML(Key.<AutoML>make(), new Date(), autoMLBuildSpec);
       AutoML.WorkAllocations workPlan = aml.planWork();
       for (Algo algo : autoMLBuildSpec.build_models.include_algos) {
@@ -492,6 +528,9 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.GBM, Algo.GLM, };
       autoMLBuildSpec.build_models.include_algos = new Algo[] {Algo.DeepLearning, Algo.XGBoost, };
+
+      autoMLBuildSpec.te_spec.enabled = false;
+
       try {
         aml = new AutoML(Key.<AutoML>make(), new Date(), autoMLBuildSpec);
         fail("Should have thrown an H2OIllegalArgumentException for providing both include_algos and exclude_algos");

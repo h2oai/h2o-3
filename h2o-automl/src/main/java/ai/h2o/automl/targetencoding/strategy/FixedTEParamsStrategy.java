@@ -1,6 +1,7 @@
 package ai.h2o.automl.targetencoding.strategy;
 
 import ai.h2o.automl.targetencoding.TargetEncodingParams;
+import hex.ModelBuilder;
 
 public class FixedTEParamsStrategy extends TEParamsSelectionStrategy {
   
@@ -11,8 +12,7 @@ public class FixedTEParamsStrategy extends TEParamsSelectionStrategy {
   }
 
   @Override
-  public TargetEncodingParams getBestParams() {
+  public TargetEncodingParams getBestParams(ModelBuilder modelBuilder) {
     return this._params;
   }
-
 }

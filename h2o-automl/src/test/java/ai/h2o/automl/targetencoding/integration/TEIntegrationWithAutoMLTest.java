@@ -21,7 +21,7 @@ import java.util.Map;
 import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.encodingMapCleanUp;
 import static org.junit.Assert.*;
 
-public class TargetEncodingIntegrationWithAutoMLTest extends water.TestUtil {
+public class TEIntegrationWithAutoMLTest extends water.TestUtil {
 
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
