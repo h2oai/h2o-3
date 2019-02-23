@@ -169,7 +169,7 @@ automl.args.test <- function() {
                             project_name = "aml9",
         )
         models <- get_partitioned_models(aml)
-        base_model <- h2o.getModel(get_partitioned_models(aml)$non_se[1])
+        base_model <- h2o.getModel(models$non_se[1])
         base_model_fold_column <- base_model@parameters$fold_column$column_name
         expect_equal(base_model_fold_column, fold_column)
         ensemble <- h2o.getModel(models$se[1])
