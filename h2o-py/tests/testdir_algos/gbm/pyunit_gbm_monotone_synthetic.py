@@ -7,6 +7,8 @@ import numpy as np
 def train_models(iter):
     print("Iteration %s" % iter)
     
+    # generating test data using approach from 
+    #   https://github.com/dmlc/xgboost/blob/master/tests/python/test_monotone_constraints.py
     number_of_dpoints = 1000
     x1_positively_correlated_with_y = np.random.random(size=number_of_dpoints)
     x2_negatively_correlated_with_y = np.random.random(size=number_of_dpoints)
@@ -73,7 +75,9 @@ def train_models(iter):
 
 def gbm_monotone_synthetic_test():
     metrics = np.array(list(map(train_models, range(10))))
-    print(metrics.mean(axis=0))
+    mean_rmse = metrics.mean(axis=0)
+    print("GBM RMSE: %s, XGBoost RMSE: %s" % (mean_rmse[0], mean_rmse[1]))
+    assert (mean_rmse[0]-mean_rmse[1])/mean_rmse[1] <= 0.07
 
 
 if __name__ == "__main__":
