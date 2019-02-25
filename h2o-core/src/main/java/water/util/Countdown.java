@@ -58,7 +58,8 @@ public class Countdown extends Iced<Countdown> {
   }
 
   public long stop() {
-    _stop_time = now();
+    if (running() && !ended())
+      _stop_time = now();
     return elapsedTime();
   }
   
