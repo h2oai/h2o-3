@@ -10,7 +10,7 @@ public class EventLogV99 extends Schema<EventLog, EventLogV99> {
   public AutoML.AutoMLKeyV3 automl_id;
 
   @API(help="List of events produced during the AutoML run", direction=API.Direction.OUTPUT)
-  public EventLogItemV99[] events;
+  public EventLogEntryV99[] events;
 
   @Override public EventLogV99 fillFromImpl(EventLog eventLog) {
     super.fillFromImpl(eventLog, new String[] { "automl_id", "events" });
@@ -19,10 +19,10 @@ public class EventLogV99 extends Schema<EventLog, EventLogV99> {
       this.automl_id = new AutoML.AutoMLKeyV3(eventLog.autoML._key);
     }
 
-    if (null != eventLog.items) {
-      this.events = new EventLogItemV99[eventLog.items.length];
-      for (int i = 0; i < eventLog.items.length; i++)
-        this.events[i] = new EventLogItemV99().fillFromImpl(eventLog.items[i]);
+    if (null != eventLog.events) {
+      this.events = new EventLogEntryV99[eventLog.events.length];
+      for (int i = 0; i < eventLog.events.length; i++)
+        this.events[i] = new EventLogEntryV99().fillFromImpl(eventLog.events[i]);
     }
 
     return this;

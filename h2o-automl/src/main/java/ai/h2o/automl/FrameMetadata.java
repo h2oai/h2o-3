@@ -1,6 +1,6 @@
 package ai.h2o.automl;
 
-import ai.h2o.automl.EventLogItem.*;
+import ai.h2o.automl.EventLogEntry.*;
 import ai.h2o.automl.collectors.MetaCollector;
 import ai.h2o.automl.colmeta.ColMeta;
 import ai.h2o.automl.utils.AutoMLUtils;

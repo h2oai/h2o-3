@@ -1,13 +1,13 @@
 package water.automl.api.schemas3;
 
-import ai.h2o.automl.EventLogItem;
-import ai.h2o.automl.EventLogItem.Level;
-import ai.h2o.automl.EventLogItem.Stage;
+import ai.h2o.automl.EventLogEntry;
+import ai.h2o.automl.EventLogEntry.Level;
+import ai.h2o.automl.EventLogEntry.Stage;
 import water.api.API;
 import water.api.EnumValuesProvider;
 import water.api.Schema;
 
-public class EventLogItemV99 extends Schema<EventLogItem, EventLogItemV99> {
+public class EventLogEntryV99 extends Schema<EventLogEntry, EventLogEntryV99> {
 
   @API(help="Timestamp for this event, in milliseconds since Jan 1, 1970", direction=API.Direction.OUTPUT)
   public long timestamp;

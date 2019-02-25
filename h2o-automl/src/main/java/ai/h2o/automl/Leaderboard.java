@@ -244,7 +244,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
         for (Key<Model> aKey : updating.models) {
           model = aKey.get();
           if (null == model) {
-            eventLog.warn(EventLogItem.Stage.ModelTraining, "Model in the leaderboard has unexpectedly been deleted from H2O: " + aKey);
+            eventLog.warn(EventLogEntry.Stage.ModelTraining, "Model in the leaderboard has unexpectedly been deleted from H2O: " + aKey);
             continue;
           }
 
@@ -338,7 +338,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
 
     // always
     if (null != newLeader[0]) {
-      eventLog.info(EventLogItem.Stage.ModelTraining,
+      eventLog.info(EventLogEntry.Stage.ModelTraining,
               "New leader: " + newLeader[0] + ", " + sort_metric + ": " + newLeaderSortMetric[0]);
     }
   } // addModels

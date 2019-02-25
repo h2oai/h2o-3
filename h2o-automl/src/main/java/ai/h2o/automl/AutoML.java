@@ -1,6 +1,6 @@
 package ai.h2o.automl;
 
-import ai.h2o.automl.EventLogItem.Stage;
+import ai.h2o.automl.EventLogEntry.Stage;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ScoreKeeper.StoppingMetric;
@@ -355,7 +355,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     eventLog.info(Stage.Workflow, "AutoML build done: built " + modelCount + " models");
 
     Log.info(eventLog.toString("User Feedback for AutoML Run " + this._key + ":"));
-    for (EventLogItem event : eventLog.items)
+    for (EventLogEntry event : eventLog.events)
       Log.info(event);
 
     if (0 < this.leaderboard().getModelKeys().length) {
