@@ -1,13 +1,13 @@
 package water.automl.api.schemas3;
 
-import ai.h2o.automl.UserFeedbackEvent;
-import ai.h2o.automl.UserFeedbackEvent.Level;
-import ai.h2o.automl.UserFeedbackEvent.Stage;
+import ai.h2o.automl.EventLogItem;
+import ai.h2o.automl.EventLogItem.Level;
+import ai.h2o.automl.EventLogItem.Stage;
 import water.api.API;
 import water.api.EnumValuesProvider;
 import water.api.Schema;
 
-public class UserFeedbackEventV99 extends Schema<UserFeedbackEvent, UserFeedbackEventV99> {
+public class EventLogItemV99 extends Schema<EventLogItem, EventLogItemV99> {
 
   @API(help="Timestamp for this event, in milliseconds since Jan 1, 1970", direction=API.Direction.OUTPUT)
   public long timestamp;
@@ -18,7 +18,7 @@ public class UserFeedbackEventV99 extends Schema<UserFeedbackEvent, UserFeedback
   @API(help="Stage of the AutoML process for this feedback event", valuesProvider = StageProvider.class, direction=API.Direction.OUTPUT)
   public Stage stage;
 
-  @API(help="User message for this event", direction=API.Direction.OUTPUT)
+  @API(help="Message for this event", direction=API.Direction.OUTPUT)
   public String message;
 
   public static final class LevelProvider extends EnumValuesProvider<Level> {

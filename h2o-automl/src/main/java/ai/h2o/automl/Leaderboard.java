@@ -102,10 +102,10 @@ public class Leaderboard extends Keyed<Leaderboard> {
   private boolean have_set_sort_metric = false;
 
   /**
-   * UserFeedback object used to send, um, feedback to the, ah, user.  :-)
+   * EventLog object used to send, um, feedback to the, ah, user.  :-)
    * Right now this is a "new leader" message.
    */
-  private UserFeedback userFeedback;
+  private EventLog eventLog;
 
   /**
    * Frame for which we return the metrics, by default.
@@ -120,19 +120,19 @@ public class Leaderboard extends Keyed<Leaderboard> {
   /**
    *
    */
-  public Leaderboard(String project_name, UserFeedback userFeedback, Frame leaderboardFrame, String sort_metric) {
+  public Leaderboard(String project_name, EventLog eventLog, Frame leaderboardFrame, String sort_metric) {
     this._key = make(idForProject(project_name));
     this.project_name = project_name;
-    this.userFeedback = userFeedback;
+    this.eventLog = eventLog;
     this.leaderboardFrame = leaderboardFrame;
     this.leaderboardFrameChecksum = leaderboardFrame == null ? 0 : leaderboardFrame.checksum();
     this.sort_metric = sort_metric == null ? null : sort_metric.toLowerCase();
   }
 
-  static Leaderboard getOrMakeLeaderboard(String project_name, UserFeedback userFeedback, Frame leaderboardFrame, String sort_metric) {
+  static Leaderboard getOrMakeLeaderboard(String project_name, EventLog eventLog, Frame leaderboardFrame, String sort_metric) {
     Leaderboard exists = DKV.getGet(Key.make(idForProject(project_name)));
     if (null != exists) {
-      exists.userFeedback = userFeedback;
+      exists.eventLog = eventLog;
       exists.leaderboardFrame = leaderboardFrame;
       if (sort_metric != null) {
         exists.sort_metric = sort_metric.toLowerCase();
@@ -144,7 +144,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
       return exists;
     }
 
-    Leaderboard newLeaderboard = new Leaderboard(project_name, userFeedback, leaderboardFrame, sort_metric);
+    Leaderboard newLeaderboard = new Leaderboard(project_name, eventLog, leaderboardFrame, sort_metric);
     DKV.put(newLeaderboard);
     return newLeaderboard;
   }
@@ -244,7 +244,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
         for (Key<Model> aKey : updating.models) {
           model = aKey.get();
           if (null == model) {
-            userFeedback.warn(UserFeedbackEvent.Stage.ModelTraining, "Model in the leaderboard has unexpectedly been deleted from H2O: " + aKey);
+            eventLog.warn(EventLogItem.Stage.ModelTraining, "Model in the leaderboard has unexpectedly been deleted from H2O: " + aKey);
             continue;
           }
 
@@ -338,7 +338,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
 
     // always
     if (null != newLeader[0]) {
-      userFeedback.info(UserFeedbackEvent.Stage.ModelTraining,
+      eventLog.info(EventLogItem.Stage.ModelTraining,
               "New leader: " + newLeader[0] + ", " + sort_metric + ": " + newLeaderSortMetric[0]);
     }
   } // addModels

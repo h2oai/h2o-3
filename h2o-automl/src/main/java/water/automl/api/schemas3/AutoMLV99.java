@@ -1,8 +1,8 @@
 package water.automl.api.schemas3;
 
 import ai.h2o.automl.AutoML;
+import ai.h2o.automl.EventLog;
 import ai.h2o.automl.Leaderboard;
-import ai.h2o.automl.UserFeedback;
 import water.DKV;
 import water.api.API;
 import water.api.schemas3.KeyV3;
@@ -40,16 +40,16 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
   public TwoDimTableV3 leaderboard_table;
 
   @API(help="User feedback for events from this AutoML run", direction=API.Direction.OUTPUT)
-  public UserFeedbackV99 user_feedback;
+  public EventLogV99 event_log;
 
   @API(help="User feedback for events from this AutoML run, for easy rendering", direction=API.Direction.OUTPUT)
-  public TwoDimTableV3 user_feedback_table;
+  public TwoDimTableV3 event_log_table;
 
   @API(help="Metric used to sort leaderboard", direction=API.Direction.INPUT)
   public String sort_metric;
 
   @Override public AutoMLV99 fillFromImpl(AutoML autoML) {
-    super.fillFromImpl(autoML, new String[] { "leaderboard", "user_feedback", "leaderboard_table", "user_feedback_table", "sort_metric" });
+    super.fillFromImpl(autoML, new String[] { "leaderboard", "event_log", "leaderboard_table", "event_log_table", "sort_metric" });
 
     if (null == autoML) return this;
 
@@ -75,23 +75,23 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
       this.leaderboard_frame = new KeyV3.FrameKeyV3(autoML.getLeaderboardFrame()._key);
     }
 
-    // NOTE: don't return nulls; return an empty leaderboard/userFeedback, to ease life for the client
+    // NOTE: don't return nulls; return an empty leaderboard/eventLog, to ease life for the client
     Leaderboard leaderboard = autoML.leaderboard();
     if (null == leaderboard) {
-      leaderboard = new Leaderboard(autoML.projectName(), autoML.userFeedback(), autoML.getLeaderboardFrame(), this.sort_metric);
+      leaderboard = new Leaderboard(autoML.projectName(), autoML.eventLog(), autoML.getLeaderboardFrame(), this.sort_metric);
       DKV.put(leaderboard);
     } else {
       this.leaderboard = new LeaderboardV99().fillFromImpl(leaderboard);
       this.leaderboard_table = new TwoDimTableV3().fillFromImpl(leaderboard.toTwoDimTable());
     }
 
-    UserFeedback userFeedback = autoML.userFeedback();
-    if (null == userFeedback) {
-      userFeedback = new UserFeedback(autoML);
+    EventLog eventLog = autoML.eventLog();
+    if (null == eventLog) {
+      eventLog = new EventLog(autoML);
     }
-    this.user_feedback = new UserFeedbackV99().fillFromImpl(userFeedback);
+    this.event_log = new EventLogV99().fillFromImpl(eventLog);
     String tableHeader = (autoML._key == null ? "(new)" : autoML._key.toString());
-    this.user_feedback_table = new TwoDimTableV3().fillFromImpl(userFeedback.toTwoDimTable(tableHeader));
+    this.event_log_table = new TwoDimTableV3().fillFromImpl(eventLog.toTwoDimTable(tableHeader));
 
     return this;
   }
