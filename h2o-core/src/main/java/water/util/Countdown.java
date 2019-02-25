@@ -6,7 +6,13 @@ import java.util.Date;
 
 /**
  * Simple countdown to encapsulate timeouts and durations.
- * time_limit_millis <= 0 is interpreted as infinite countdown (no timeout)
+ * time_limit_millis <= 0 is interpreted as infinite countdown (no timeout).
+ * All durations in this class are milliseconds:
+ * <li>
+ *   <ul>{@link #duration()}</ul>
+ *   <ul>{@link #elapsedTime()}</ul>
+ *   <ul>{@link #remainingTime()}</ul>
+ * </li>
  */
 public class Countdown extends Iced<Countdown> {
 
@@ -34,8 +40,8 @@ public class Countdown extends Iced<Countdown> {
   public Date stop_time() {
     return new Date(_stop_time);
   }
-  
-  public long duration_millis() {
+
+  public long duration() {
     try {
       return elapsedTime();
     } catch (IllegalStateException e) {
@@ -74,7 +80,7 @@ public class Countdown extends Iced<Countdown> {
   }
 
   public long remainingTime() {
-    if (!running()) throw new IllegalStateException("Countdown is not running.");
+    if (!running()) return _time_limit_millis > 0 ? _time_limit_millis : Long.MAX_VALUE;
     return _time_limit_millis > 0
         ? Math.max(0, _start_time + _time_limit_millis - now())
         : Long.MAX_VALUE;
