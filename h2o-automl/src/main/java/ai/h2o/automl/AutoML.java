@@ -339,7 +339,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   @Override
   public void run() {
     runCountdown.start();
-    userFeedback.info(Stage.Workflow, "AutoML build started: " + fullTimestampFormat.format(new Date()));
+    userFeedback.info(Stage.Workflow, "AutoML build started: " + fullTimestampFormat.format(runCountdown.start_time()));
     learn();
     stop();
   }
@@ -352,7 +352,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     jobs = null;
 
     runCountdown.stop();
-    userFeedback.info(Stage.Workflow, "AutoML build stopped: " + fullTimestampFormat.format(new Date()));
+    userFeedback.info(Stage.Workflow, "AutoML build stopped: " + fullTimestampFormat.format(runCountdown.stop_time()));
     userFeedback.info(Stage.Workflow, "AutoML build done: built " + modelCount + " models");
 
     Log.info(userFeedback.toString("User Feedback for AutoML Run " + this._key + ":"));
