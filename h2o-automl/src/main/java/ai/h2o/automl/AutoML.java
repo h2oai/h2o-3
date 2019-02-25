@@ -167,7 +167,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   public static void startAutoML(AutoML aml) {
     // Currently AutoML can only run one job at a time
     if (aml.job == null || !aml.job.isRunning()) {
-      H2OJob j = new H2OJob(aml, aml._key, aml.timeRemainingMs());
+      H2OJob j = new H2OJob(aml, aml._key, aml.runCountdown.remainingTime());
       aml.job = j._job;
       j.start(aml.workAllocations.remainingWork());
       DKV.put(aml);
@@ -414,10 +414,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (buildSpec.build_control.stopping_criteria.max_models() == 0)
       return Integer.MAX_VALUE;
     return buildSpec.build_control.stopping_criteria.max_models() - modelCount.get();
-  }
-
-  private boolean timingOut() {
-    return timeRemainingMs() <= 0;
   }
 
   @Override
