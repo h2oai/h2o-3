@@ -6,10 +6,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.fvec.Frame;
-import water.util.Log;
 import water.util.TwoDimTable;
-
-import static hex.genmodel.utils.DistributionFamily.gaussian;
 
 public class LeaderboardTest extends water.TestUtil {
 
@@ -23,7 +20,7 @@ public class LeaderboardTest extends water.TestUtil {
   @Test
   public void test_toTwoDimTable_with_empty_models_and_without_sort_metric() {
     Leaderboard lb = null;
-    UserFeedback ufb = new UserFeedback(new AutoML());
+    EventLog ufb = new EventLog(new AutoML());
     try {
       lb = Leaderboard.getOrMakeLeaderboard("dummy_lb_no_sort_metric", ufb, new Frame(), null);
 
@@ -39,7 +36,7 @@ public class LeaderboardTest extends water.TestUtil {
   @Test
   public void test_toTwoDimTable_with_empty_models_and_with_sort_metric() {
     Leaderboard lb = null;
-    UserFeedback ufb = new UserFeedback(new AutoML());
+    EventLog ufb = new EventLog(new AutoML());
     try {
       lb = Leaderboard.getOrMakeLeaderboard("dummy_lb_logloss_sort_metric", ufb, new Frame(), "logloss");
 
@@ -56,7 +53,7 @@ public class LeaderboardTest extends water.TestUtil {
   @Test
   public void test_rank_tsv() {
     Leaderboard lb = null;
-    UserFeedback ufb = new UserFeedback(new AutoML());
+    EventLog ufb = new EventLog(new AutoML());
     GBMModel model = null;
     Frame fr  = null;
     try {

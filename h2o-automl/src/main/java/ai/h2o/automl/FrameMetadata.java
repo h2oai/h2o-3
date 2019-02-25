@@ -1,6 +1,6 @@
 package ai.h2o.automl;
 
-import ai.h2o.automl.UserFeedbackEvent.*;
+import ai.h2o.automl.EventLogItem.*;
 import ai.h2o.automl.collectors.MetaCollector;
 import ai.h2o.automl.colmeta.ColMeta;
 import ai.h2o.automl.utils.AutoMLUtils;
@@ -48,7 +48,7 @@ public class FrameMetadata extends Iced {
   private SimpleStats _statsKurtosis;
   private SimpleStats _statsCardinality;
 
-  private UserFeedback _userFeedback;
+  private EventLog _eventLog;
 
   public static final double SQLNAN = -99999;
 
@@ -305,25 +305,25 @@ public class FrameMetadata extends Iced {
     return (_catFeat=cnt);
   }
 
-  public FrameMetadata(UserFeedback userFeedback, Frame fr, int response, String datasetName) {
+  public FrameMetadata(EventLog eventLog, Frame fr, int response, String datasetName) {
     _datasetName=datasetName;
     _fr=fr;
     _response=response;
     _cols = new ColMeta[_fr.numCols()];
-    _userFeedback = userFeedback;
+    _eventLog = eventLog;
   }
 
-  public FrameMetadata(UserFeedback userFeedback, Frame fr, int response, String datasetName, boolean isClassification) {
-    this(userFeedback, fr,response,datasetName);
+  public FrameMetadata(EventLog eventLog, Frame fr, int response, String datasetName, boolean isClassification) {
+    this(eventLog, fr,response,datasetName);
     _isClassification=isClassification;
   }
 
-  public FrameMetadata(UserFeedback userFeedback, Frame fr, int response, int[] predictors, String datasetName, boolean isClassification) {
-    this(userFeedback, fr, response, intAtoStringA(predictors, fr.names()), datasetName, isClassification);
+  public FrameMetadata(EventLog eventLog, Frame fr, int response, int[] predictors, String datasetName, boolean isClassification) {
+    this(eventLog, fr, response, intAtoStringA(predictors, fr.names()), datasetName, isClassification);
   }
 
-  public FrameMetadata(UserFeedback userFeedback, Frame fr, int response, String[] predictors, String datasetName, boolean isClassification) {
-    this(userFeedback, fr, response, datasetName, isClassification);
+  public FrameMetadata(EventLog eventLog, Frame fr, int response, String[] predictors, String datasetName, boolean isClassification) {
+    this(eventLog, fr, response, datasetName, isClassification);
     _includeCols = predictors;
     if( null==_includeCols )
       for (int i = 0; i < _fr.numCols(); ++i)
@@ -386,7 +386,7 @@ public class FrameMetadata extends Iced {
     MetaCollector.ParallelTasks metaCollector = new MetaCollector.ParallelTasks<>(tasks);
     long start = System.currentTimeMillis();
     H2O.submitTask(metaCollector).join();
-    _userFeedback.info(Stage.FeatureAnalysis,
+    _eventLog.info(Stage.FeatureAnalysis,
                        "Frame metadata analyzer pass 1 completed in " +
                        (System.currentTimeMillis()-start)/1000. +
                        " seconds");
@@ -397,7 +397,7 @@ public class FrameMetadata extends Iced {
       else                        _cols[cmt._colMeta._idx] = cmt._colMeta;
       sumTimeToMRTaskPerCol+= cmt._elapsed;
     }
-    _userFeedback.info(Stage.FeatureAnalysis,
+    _eventLog.info(Stage.FeatureAnalysis,
                        "Average time to analyze each column: " +
                        String.format("%.5f", (sumTimeToMRTaskPerCol/tasks.length) / 1000.0) +
                        " seconds");
@@ -408,7 +408,7 @@ public class FrameMetadata extends Iced {
   }
 
   private void dropIgnoredCols(int[] dropCols) {
-    _userFeedback.info(Stage.FeatureAnalysis, "AutoML dropping " + dropCols.length + " ignored columns");
+    _eventLog.info(Stage.FeatureAnalysis, "AutoML dropping " + dropCols.length + " ignored columns");
     Vec[] vecsToRemove = _fr.remove(dropCols);
     for(Vec v: vecsToRemove) v.remove();
     ColMeta cm[] = new ColMeta[_fr.numCols()];
