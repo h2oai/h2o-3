@@ -263,6 +263,8 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 -  **elastic_averaging_regularization**: Specify the elastic averaging regularization strength. This option is only available if ``elastic_averaging=True``. 
 
+-  **export_checkpoints_dir**: Optionally specify a path to a directory where every generated model will be stored when checkpointing models.
+
 -  **verbose**: Print scoring history to the console. For Deep Learning, metrics are per epoch. This value defaults to FALSE.
 
 
