@@ -6,7 +6,7 @@ import water.util.TwoDimTable;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-public class EventLogItem extends Iced {
+public class EventLogEntry extends Iced {
 
   public enum Level {
     Debug, Info, Warn
@@ -48,7 +48,7 @@ public class EventLogItem extends Iced {
     return message;
   }
 
-  public EventLogItem(AutoML autoML, Level level, Stage stage, String message) {
+  public EventLogEntry(AutoML autoML, Level level, Stage stage, String message) {
     this.timestamp = System.currentTimeMillis();
     this.autoML = autoML;
     this.level = level;
@@ -93,9 +93,9 @@ public class EventLogItem extends Iced {
     return new TwoDimTable(tableHeader,
                            "Actions taken and discoveries made by AutoML",
                            rowHeaders,
-                           EventLogItem.colHeaders,
-                           EventLogItem.colTypes,
-                           EventLogItem.colFormats, "#");
+                           EventLogEntry.colHeaders,
+                           EventLogEntry.colTypes,
+                           EventLogEntry.colFormats, "#");
   }
 
   private static final SimpleDateFormat timestampFormat = new SimpleDateFormat("HH:mm:ss.S");
