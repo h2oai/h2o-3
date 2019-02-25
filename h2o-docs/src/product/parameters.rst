@@ -22,6 +22,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/calibrate_model
    data-science/algo-params/calibration_frame
    data-science/algo-params/categorical_encoding
+   data-science/algo-params/check_constant_response
    data-science/algo-params/checkpoint
    data-science/algo-params/class_sampling_factors
    data-science/algo-params/col_sample_rate
@@ -29,6 +30,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/col_sample_rate_per_tree
    data-science/algo-params/compute_metrics
    data-science/algo-params/compute_p_values
+   data-science/algo-params/custom_metric_func
    data-science/algo-params/distribution
    data-science/algo-params/early_stopping
    data-science/algo-params/eps_prob
