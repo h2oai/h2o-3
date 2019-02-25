@@ -128,6 +128,7 @@ public class TestUtil extends Iced {
     int leaked_keys = H2O.store_size() - _initial_keycnt;
     int cnt=0;
     if( leaked_keys > 0 ) {
+      int print_max = 10;
       for( Key k : H2O.localKeySet() ) {
         Value value = Value.STORE_get(k);
         // Ok to leak VectorGroups and the Jobs list
@@ -137,11 +138,11 @@ public class TestUtil extends Iced {
           leaked_keys--;
         } else {
           System.out.println(k + " -> " + (value.type() != TypeMap.PRIM_B ? value.get() : "byte[]"));
-          if( cnt++ < 10 )
+          if( cnt++ < print_max )
             System.err.println("Leaked key: " + k + " = " + TypeMap.className(value.type()));
         }
       }
-      if( 10 < leaked_keys ) System.err.println("... and "+(leaked_keys-10)+" more leaked keys");
+      if( print_max < leaked_keys ) System.err.println("... and "+(leaked_keys-print_max)+" more leaked keys");
     }
     assertTrue("Keys leaked: " + leaked_keys + ", cnt = " + cnt, leaked_keys <= 0 || cnt == 0);
     // Bulk brainless key removal.  Completely wipes all Keys without regard.

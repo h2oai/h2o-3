@@ -111,19 +111,19 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   public float[] hr() { return null; }
   public AUC2 auc_obj() { return null; }
 
-  static public double getMetricFromModel(Key<Model> key, String criterion) {
-    Model model = DKV.getGet(key);
-    if (null == model) throw new H2OIllegalArgumentException("Cannot find model " + key);
-    ModelMetrics mm =
-            model._output._cross_validation_metrics != null ?
-                    model._output._cross_validation_metrics :
-                    model._output._validation_metrics != null ?
-                            model._output._validation_metrics :
-                            model._output._training_metrics;
-    return getMetricFromModelMetric(mm, criterion);
+  public static ModelMetrics defaultModelMetrics(Model model) {
+    return model._output._cross_validation_metrics != null ? model._output._cross_validation_metrics
+        : model._output._validation_metrics != null ? model._output._validation_metrics
+        : model._output._training_metrics;
   }
 
-  static public double getMetricFromModelMetric(ModelMetrics mm, String criterion) {
+  public static double getMetricFromModel(Key<Model> key, String criterion) {
+    Model model = DKV.getGet(key);
+    if (null == model) throw new H2OIllegalArgumentException("Cannot find model " + key);
+    return getMetricFromModelMetric(defaultModelMetrics(model), criterion);
+  }
+
+  public static double getMetricFromModelMetric(ModelMetrics mm, String criterion) {
     if (null == criterion || criterion.equals("")) {
       throw new H2OIllegalArgumentException("Need a valid criterion, but got '" + criterion + "'.");
     }
@@ -234,12 +234,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     Set<String> res = new HashSet<>();
     Model model = DKV.getGet(key);
     if (null == model) throw new H2OIllegalArgumentException("Cannot find model " + key);
-    ModelMetrics m =
-            model._output._cross_validation_metrics != null ?
-                    model._output._cross_validation_metrics :
-                    model._output._validation_metrics != null ?
-                            model._output._validation_metrics :
-                            model._output._training_metrics;
+    ModelMetrics m = defaultModelMetrics(model);
     ConfusionMatrix cm = m.cm();
     Set<String> excluded = new HashSet<>();
     excluded.add("makeSchema");

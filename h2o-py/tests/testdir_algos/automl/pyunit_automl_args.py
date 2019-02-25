@@ -256,12 +256,25 @@ def test_stacked_ensembles_are_trained_after_max_models():
     assert len(se) == 2, "StackedEnsemble should still be trained after max models have been reached"
 
 
+def test_stacked_ensembles_are_trained_with_blending_frame_even_if_nfolds_eq_0():
+    print("Check that we can disable cross-validation when passing a blending frame and that Stacked Ensembles are trained using this frame.")
+    max_models = 5
+    ds = import_dataset()
+    aml = H2OAutoML(project_name="py_aml_blending_frame", seed=1, max_models=max_models, nfolds=0)
+    aml.train(y=ds['target'], training_frame=ds['train'], blending_frame=ds['valid'], leaderboard_frame=ds['test'])
+    
+    _, _, se = get_partitioned_model_names(aml.leaderboard)
+    assert len(se) == 2, "In blending mode, StackedEnsemble should still be trained in spite of nfolds=0."
+    for m in se:
+        model = h2o.get_model(m)
+        assert model.params['blending_frame']['actual']['name'] == ds['valid'].frame_id
+        assert model._model_json['output']['stacking_strategy'] == 'blending'
+        
 
     # TO DO  PUBDEV-5676
     # Add a test that checks fold_column like in runit
 
-
-tests = [
+pyunit_utils.run_tests([
     test_early_stopping_args,
     test_no_x_train_set_only,
     test_no_x_train_and_validation_sets,
@@ -279,9 +292,5 @@ tests = [
     test_stacked_ensembles_are_trained_after_timeout,
     test_automl_stops_after_max_models,
     test_stacked_ensembles_are_trained_after_max_models,
-]
-
-if __name__ == "__main__":
-    for test in tests: pyunit_utils.standalone_test(test)
-else:
-    for test in tests: test()
+    test_stacked_ensembles_are_trained_with_blending_frame_even_if_nfolds_eq_0,
+])

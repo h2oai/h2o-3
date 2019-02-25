@@ -240,30 +240,30 @@ public class Leaderboard extends Keyed<Leaderboard> {
         // Try fetching ModelMetrics for *all* models, not just
         // new models, because the leaderboardFrame might have changed.
         updating.leaderboard_set_metrics = new IcedHashMap<>();
-        Model aModel = null;
+        Model model = null;
         for (Key<Model> aKey : updating.models) {
-          aModel = aKey.get();
-          if (null == aModel) {
+          model = aKey.get();
+          if (null == model) {
             userFeedback.warn(UserFeedbackEvent.Stage.ModelTraining, "Model in the leaderboard has unexpectedly been deleted from H2O: " + aKey);
             continue;
           }
 
-          // If leaderboardFrame is null, use xval metrics instead
+          // If leaderboardFrame is null, use default model metrics instead
           ModelMetrics mm = null;
           if (leaderboardFrame == null) {
-            mm = aModel._output._cross_validation_metrics;
+            mm = ModelMetrics.defaultModelMetrics(model);
           } else {
-            mm = ModelMetrics.getFromDKV(aModel, leaderboardFrame);
+            mm = ModelMetrics.getFromDKV(model, leaderboardFrame);
             if (mm == null) {
               //scores and magically stores the metrics where we're looking for it on the next line
-              aModel.score(leaderboardFrame).delete();  // immediately delete the resulting frame to avoid leaks
-              mm = ModelMetrics.getFromDKV(aModel, leaderboardFrame);
+              model.score(leaderboardFrame).delete();  // immediately delete the resulting frame to avoid leaks
+              mm = ModelMetrics.getFromDKV(model, leaderboardFrame);
             }
           }
           if (mm != null) updating.leaderboard_set_metrics.put(mm._key, mm);
         }
 
-        // Sort by metric on the leaderboard/test set or cross-validation metrics.
+        // Sort by metric on the leaderboard/test set or default model metrics.
         try {
           List<Key<Model>> modelsSorted = null;
           if (leaderboardFrame == null) {
@@ -282,13 +282,13 @@ public class Leaderboard extends Keyed<Leaderboard> {
 
         updating.sort_metrics = getMetrics(updating.sort_metric, updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
 
-        if (aModel._output.isBinomialClassifier()) { // Binomial case
+        if (model._output.isBinomialClassifier()) { // Binomial case
           updating.auc = getMetrics("auc", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
           updating.logloss = getMetrics("logloss", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
           updating.mean_per_class_error = getMetrics("mean_per_class_error", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
           updating.rmse = getMetrics("rmse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
           updating.mse = getMetrics("mse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-        } else if (aModel._output.isMultinomialClassifier()) { //Multinomial Case
+        } else if (model._output.isMultinomialClassifier()) { //Multinomial Case
           updating.mean_per_class_error = getMetrics("mean_per_class_error", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
           updating.logloss = getMetrics("logloss", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
           updating.rmse = getMetrics("rmse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
@@ -426,16 +426,19 @@ public class Leaderboard extends Keyed<Leaderboard> {
     for (Model m : models) {
       // If leaderboard frame exists, get metrics from there
       if (leaderboardFrame != null) {
-        //System.out.println("@@@@@@@@@@@@@ Leaderboard frame metrics @@@@@@@@@@@@@");
-        other_metrics[i++] = ModelMetrics.getMetricFromModelMetric(leaderboard_set_metrics.get(ModelMetrics.buildKey(m, leaderboardFrame)), metric);
+        other_metrics[i++] = ModelMetrics.getMetricFromModelMetric(
+            leaderboard_set_metrics.get(ModelMetrics.buildKey(m, leaderboardFrame)),
+            metric
+        );
       } else {
-        // otherwise use cross-validation metrics
-        //System.out.println("@@@@@@@@@@@@@ Cross-validation frame metrics @@@@@@@@@@@@@");
+        // otherwise use default model metrics
         Key model_key = m._key;
         long model_checksum = m.checksum();
-        Key frame_key = m._output._cross_validation_metrics.frame()._key;
-        long frame_checksum = m._output._cross_validation_metrics.frame().checksum();
-        other_metrics[i++] = ModelMetrics.getMetricFromModelMetric(leaderboard_set_metrics.get(ModelMetrics.buildKey(model_key, model_checksum, frame_key, frame_checksum)), metric);
+        ModelMetrics mm = ModelMetrics.defaultModelMetrics(m);
+        other_metrics[i++] = ModelMetrics.getMetricFromModelMetric(
+            leaderboard_set_metrics.get(ModelMetrics.buildKey(model_key, model_checksum, mm.frame()._key, mm.frame().checksum())),
+            metric
+        );
       }
     }
     return other_metrics;
@@ -457,22 +460,33 @@ public class Leaderboard extends Keyed<Leaderboard> {
   }
 
   private static double[] defaultMetricForModel(Model m) {
-    ModelMetrics mm =
-            m._output._cross_validation_metrics != null ?
-                    m._output._cross_validation_metrics :
-                    m._output._validation_metrics != null ?
-                            m._output._validation_metrics :
-                            m._output._training_metrics;
-    return defaultMetricForModel(m, mm);
+    return defaultMetricForModel(m, ModelMetrics.defaultModelMetrics(m));
   }
 
   private static double[] defaultMetricForModel(Model m, ModelMetrics mm) {
     if (m._output.isBinomialClassifier()) {
-      return new double[] {(((ModelMetricsBinomial)mm).auc()),((ModelMetricsBinomial) mm).logloss(), ((ModelMetricsBinomial) mm).mean_per_class_error(), mm.rmse(), mm.mse()};
+      return new double[] {
+          ((ModelMetricsBinomial) mm).auc(),
+          ((ModelMetricsBinomial) mm).logloss(),
+          ((ModelMetricsBinomial) mm).mean_per_class_error(),
+          mm.rmse(),
+          mm.mse()
+      };
     } else if (m._output.isMultinomialClassifier()) {
-      return new double[] {(((ModelMetricsMultinomial)mm).mean_per_class_error()), ((ModelMetricsMultinomial) mm).logloss(), mm.rmse(), mm.mse()};
+      return new double[] {
+          ((ModelMetricsMultinomial) mm).mean_per_class_error(),
+          ((ModelMetricsMultinomial) mm).logloss(),
+          mm.rmse(),
+          mm.mse()
+      };
     } else if (m._output.isSupervised()) {
-      return new double[] {((ModelMetricsRegression)mm).mean_residual_deviance(),mm.rmse(), mm.mse(), ((ModelMetricsRegression) mm).mae(), ((ModelMetricsRegression) mm).rmsle()};
+      return new double[] {
+          ((ModelMetricsRegression)mm).mean_residual_deviance(),
+          mm.rmse(),
+          mm.mse(),
+          ((ModelMetricsRegression) mm).mae(),
+          ((ModelMetricsRegression) mm).rmsle()
+      };
     }
     Log.warn("Failed to find metric for model: " + m);
     return new double[] {Double.NaN};
@@ -480,11 +494,11 @@ public class Leaderboard extends Keyed<Leaderboard> {
 
   private static String[] defaultMetricNameForModel(Model m) {
     if (m._output.isBinomialClassifier()) {
-      return new String[] {"auc","logloss", "mean_per_class_error", "rmse", "mse"};
+      return new String[] {"auc", "logloss", "mean_per_class_error", "rmse", "mse"};
     } else if (m._output.isMultinomialClassifier()) {
       return new String[] {"mean per-class error", "logloss", "rmse", "mse"};
     } else if (m._output.isSupervised()) {
-      return new String[] {"mean_residual_deviance","rmse", "mse", "mae","rmsle"};
+      return new String[] {"mean_residual_deviance", "rmse", "mse", "mae", "rmsle"};
     }
     return new String[] {"unknown"};
   }

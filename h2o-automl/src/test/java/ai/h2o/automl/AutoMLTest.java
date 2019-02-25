@@ -1,13 +1,18 @@
 package ai.h2o.automl;
 
 import hex.Model;
+import hex.SplitFrame;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
+import water.Lockable;
+import water.Scope;
 import water.fvec.Frame;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Random;
 
 import static junit.framework.TestCase.assertNotNull;
@@ -63,8 +68,6 @@ public class AutoMLTest extends water.TestUtil {
 
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(3);
       autoMLBuildSpec.build_control.nfolds = 0;
-      autoMLBuildSpec.build_control.keep_cross_validation_models = false; //Prevent leaked keys from CV models
-      autoMLBuildSpec.build_control.keep_cross_validation_predictions = false; //Prevent leaked keys from CV predictions
 
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
@@ -80,6 +83,53 @@ public class AutoMLTest extends water.TestUtil {
       // Cleanup
       if(aml!=null) aml.deleteWithChildren();
       if(fr != null) fr.delete();
+    }
+  }
+  
+  @Test public void test_stacked_ensembles_trained_with_blending_frame_if_provided() {
+    List<Lockable> deletables = new ArrayList<>();
+    try {
+      final int seed = 62832;
+      final Frame fr = parse_test_file("./smalldata/logreg/prostate_train.csv"); deletables.add(fr);
+      final Frame test = parse_test_file("./smalldata/logreg/prostate_test.csv"); deletables.add(test);
+      
+      String target = "CAPSULE";
+      int tidx = fr.find(target);
+      fr.replace(tidx, fr.vec(tidx).toCategoricalVec()).remove(); DKV.put(fr); deletables.add(fr);
+      test.replace(tidx, test.vec(tidx).toCategoricalVec()).remove(); DKV.put(test); deletables.add(test);
+      
+      SplitFrame sf = new SplitFrame(fr, new double[] { 0.7, 0.3 }, null);
+      sf.exec().get();
+      Key<Frame>[] ksplits = sf._destination_frames;
+      final Frame train = ksplits[0].get(); deletables.add(train);
+      final Frame blending = ksplits[1].get(); deletables.add(blending);
+
+      AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+      autoMLBuildSpec.input_spec.training_frame = train._key;
+      autoMLBuildSpec.input_spec.blending_frame = blending._key;
+      autoMLBuildSpec.input_spec.leaderboard_frame = test._key;
+      autoMLBuildSpec.input_spec.response_column = target;
+
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_models(3);
+      autoMLBuildSpec.build_control.nfolds = 0;
+      autoMLBuildSpec.build_control.stopping_criteria.set_seed(seed);
+
+      AutoML aml = AutoML.startAutoML(autoMLBuildSpec); deletables.add(aml);
+      aml.get();
+      
+      Key[] modelKeys = aml.leaderboard().getModelKeys();
+      int count_se = 0, count_non_se = 0;
+      for (Key k : modelKeys) if (k.toString().startsWith("StackedEnsemble")) count_se++; else count_non_se++;
+
+      assertEquals("wrong amount of standard models", 3, count_non_se);
+      assertEquals("wrong amount of SE models", 2, count_se);
+      assertEquals(5, aml.leaderboard().getModelCount());
+    } finally {
+      // Cleanup
+      for (Lockable l: deletables) {
+        if (l instanceof AutoML) ((AutoML)l).deleteWithChildren();
+        l.delete();
+      }
     }
   }
 

@@ -7,10 +7,11 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class UserFeedbackEvent extends Iced {
+
   public enum Level {
-    Debug, Info, Warn;
+    Debug, Info, Warn
   }
-  public final int longestLevel = longestLevel(); // for formatting
+  private final int longestLevel = longestLevel(); // for formatting
 
 
   public enum Stage {
@@ -21,7 +22,7 @@ public class UserFeedbackEvent extends Iced {
     FeatureCreation,
     ModelTraining,
   }
-  public final int longestStage = longestStage(); // for formatting
+  private final int longestStage = longestStage(); // for formatting
 
   private long timestamp;
   transient private AutoML autoML;
