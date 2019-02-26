@@ -341,17 +341,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
         if (this.validationFrame == null && splits[1].numRows() > 0) {
           this.validationFrame = splits[1];
         } else {
-          DKV.remove(splits[1]._key);
+          splits[1].delete();
         }
 
         if (this.leaderboardFrame == null && splits[2].numRows() > 0) {
           this.leaderboardFrame = splits[2];
         } else {
-          DKV.remove(splits[2]._key);
-        }
-
-        for (Frame f : splits) {
-          if (f.numRows() == 0) f.delete();
+          splits[2].delete();
         }
       }
     }
