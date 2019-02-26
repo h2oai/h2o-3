@@ -238,6 +238,13 @@ Defining a DRF Model
 
 -  **verbose**: Print scoring history to the console. For DRF, metrics are per tree. This value defaults to FALSE.
 
+-  `custom_metric_func <algo-params/custom_metric_func.html>`__: Optionally specify a custom evaluation function.
+
+-  **export_checkpoints_dir**: Optionally specify a path to a directory where every generated model will be stored when checkpointing models.
+
+-  `check_constant_response <algo-params/check_constant_response.html>`__: Check if the response column is a constant value. If enabled (default), then an exception is thrown if the response column is a constant value. If disabled, then the model will train regardless of the response column being a constant value or not.
+
+
 Interpreting a DRF Model
 ~~~~~~~~~~~~~~~~~~~~~~~~
 

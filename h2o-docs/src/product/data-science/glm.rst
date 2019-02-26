@@ -142,6 +142,8 @@ Defining a GLM Model
 
 -  **obj_reg**: Specifies the likelihood divider in objective value computation. This defaults to 1/nobs.
 
+-  `custom_metric_func <algo-params/custom_metric_func.html>`__: Optionally specify a custom evaluation function.
+
 
 Interpreting a GLM Model
 ~~~~~~~~~~~~~~~~~~~~~~~~
