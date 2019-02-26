@@ -55,7 +55,7 @@ public class CreateFrame extends Iced {
     if (categorical_fraction > 0 && factors <= 1) throw new IllegalArgumentException("Factors must be larger than 2 for categorical data.");
     if (response_factors < 1) throw new IllegalArgumentException("Response factors must be either 1 (real-valued response), or >=2 (factor levels).");
     if (response_factors > Model.Parameters.MAX_SUPPORTED_LEVELS) throw new IllegalArgumentException("Response factors must be <= " + Model.Parameters.MAX_SUPPORTED_LEVELS + ".");
-    if (factors > 1000000) throw new IllegalArgumentException("Number of factors must be <= 1,000,000).");
+    if (factors > 10000000) throw new IllegalArgumentException("Number of factors must be <= 10,000,000).");
     if (cols <= 0 || rows <= 0) throw new IllegalArgumentException("Must have number of rows > 0 and columns > 0.");
 
     // estimate byte size of the frame
