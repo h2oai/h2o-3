@@ -30,13 +30,12 @@ public class ImportHiveTableHandler extends Handler {
   }
  
   @SuppressWarnings("unused") // called via reflection
-  public ImportHiveTableV99 importHiveTable(int version, ImportHiveTableV99 request) throws Exception {
+  public JobV3 importHiveTable(int version, ImportHiveTableV99 request) throws Exception {
     HiveTableImporter importer = getImporter();
     if (importer != null) {
       try {
         Job<Frame> job = importer.loadHiveTable(request.database, request.table, request.partitions, request.allow_multi_format);
-        request.job = new JobV3(job);
-        return request;
+        return new JobV3(job);
       } catch (NoClassDefFoundError e) {
         throw new IllegalStateException("Hive Metastore client classes not available on classpath.", e);
       }
