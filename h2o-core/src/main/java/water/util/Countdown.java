@@ -42,11 +42,8 @@ public class Countdown extends Iced<Countdown> {
   }
 
   public long duration() {
-    try {
-      return elapsedTime();
-    } catch (IllegalStateException e) {
-      return -1;
-    }
+    if (!ended()) throw new IllegalStateException("Countdown was never started or stopped.");
+    return elapsedTime();
   }
 
   public void start() {
@@ -70,20 +67,15 @@ public class Countdown extends Iced<Countdown> {
   }
   
   public long elapsedTime() {
-    if (running()) {
-      return now() - _start_time;
-    } else if (ended()) {
-      return _stop_time - _start_time;
-    } else {
-      throw new IllegalStateException("Countdown was never started.");
-    }
+    if (running()) return now() - _start_time;
+    if (ended()) return _stop_time - _start_time;
+    return 0;
   }
 
   public long remainingTime() {
-    if (!running()) return _time_limit_millis > 0 ? _time_limit_millis : Long.MAX_VALUE;
-    return _time_limit_millis > 0
-        ? Math.max(0, _start_time + _time_limit_millis - now())
-        : Long.MAX_VALUE;
+    if (running()) return _time_limit_millis > 0 ? Math.max(0, _start_time + _time_limit_millis - now()) : Long.MAX_VALUE;
+    if (ended()) return 0;
+    return _time_limit_millis > 0 ? _time_limit_millis : Long.MAX_VALUE;
   }
 
   public void reset() {
