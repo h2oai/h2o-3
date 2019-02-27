@@ -271,6 +271,46 @@ public class TargetEncodingTest extends TestUtil{
       assertArrayEquals( ar(1L, 2L, 3L), result);
     }
 
+  @Test
+  public void groupThenAggregateForNumeratorAndDenominatorTest() {
+
+    Frame etalon = null;
+    for (int attempt = 0; attempt < 300; attempt++) {
+      Scope.enter();
+      try {
+        Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+        String responseColumn = "survived";
+
+        String teColumnName = "home.dest";
+
+        int teColumnIndex = fr.find(teColumnName);
+        int responseColumnIndex = fr.find(responseColumn);
+
+        String tree = String.format("(GB %s [%d] sum %s \"all\" nrow %s \"all\")", fr._key, teColumnIndex, responseColumnIndex, responseColumnIndex);
+        Val val = Rapids.exec(tree);
+        Frame groupedFrame = val.getFrame();
+        groupedFrame._key = Key.make();
+        DKV.put(groupedFrame._key, groupedFrame);
+
+        if (etalon == null) {
+          etalon = groupedFrame;
+          Scope.untrack(etalon.keys());
+          Frame.export(etalon, "encoding_map_etalon.csv", etalon._key.toString(), true, 1).get();
+        } else {
+          try {
+            assertTrue("Failed attempt number " + attempt, isBitIdentical(etalon, groupedFrame));
+          } catch (AssertionError ex) {
+            Frame.export(groupedFrame, "encoding_map_badboy" + attempt + ".csv", groupedFrame._key.toString(), true, 1).get();
+            throw ex;
+          }
+        }
+        printOutFrameAsTable(groupedFrame);
+      } finally {
+        Scope.exit();
+      }
+    }
+  }
+
     @Test
     public void appendColumnTest() {
       fr = new TestFrameBuilder()
@@ -287,34 +327,6 @@ public class TargetEncodingTest extends TestUtil{
       assertEquals(42, withAppended.vec(appendedColumnName).at(0), 1e-5);
 
       withAppended.delete();
-    }
-
-    @Test
-    public void imputeWithMeanTest() {
-      fr = new TestFrameBuilder()
-              .withName("testFrame")
-              .withColNames("ColA")
-              .withVecTypes(Vec.T_STR)
-              .withDataForCol(0, ar("1", "2", null))
-              .build();
-
-      TargetEncoder tec = new TargetEncoder();
-
-      // We have to do this trick because we cant initialize array with `null` values.
-      Vec strVec = fr.vec("ColA");
-      Vec numericVec = strVec.toNumericVec();
-      fr.replace(0, numericVec);
-
-      Frame withImputed = tec.imputeWithMean(fr, 0);
-      Vec expected = vec(1, 2, 1.5);
-      Vec resultVec = withImputed.vec(0);
-      assertVecEquals(expected, resultVec, 1e-5);
-
-      expected.remove();
-      strVec.remove();
-      resultVec.remove();
-      withImputed.delete();
-      numericVec.remove();
     }
 
     @Test
