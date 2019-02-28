@@ -24,6 +24,7 @@ public class IsolationForestTest extends TestUtil {
       p._train = train._key;
       p._seed = 0xDECAF;
       p._ntrees = 7;
+      p._min_rows = 1;
       p._sample_size = 5;
 
       IsolationForestModel model = new IsolationForest(p).trainModel().get();
@@ -35,9 +36,40 @@ public class IsolationForestTest extends TestUtil {
       assertEquals(train.numRows(), preds.numRows());
 
       assertTrue(model.testJavaScoring(train, preds, 1e-8));
+
+      assertTrue(model._output._min_path_length < Integer.MAX_VALUE);
     } finally {
       Scope.exit();
     }
   }
+
+  @Test
+  public void testEmptyOOB() {
+    try {
+      Scope.enter();
+      Frame train = Scope.track(parse_test_file("smalldata/anomaly/ecg_discord_train.csv"));
+
+      IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
+      p._train = train._key;
+      p._seed = 0xDECAF;
+      p._ntrees = 7;
+      p._sample_size = train.numRows(); // => no OOB observations
+
+      IsolationForestModel model = new IsolationForest(p).trainModel().get();
+      assertNotNull(model);
+      Scope.track_generic(model);
+
+      Frame preds = Scope.track(model.score(train));
+      assertArrayEquals(new String[]{"predict", "mean_length"}, preds.names());
+      assertEquals(train.numRows(), preds.numRows());
+
+      assertTrue(model.testJavaScoring(train, preds, 1e-8));
+
+      assertTrue(model._output._min_path_length < Integer.MAX_VALUE);
+    } finally {
+      Scope.exit();
+    }
+  }
+
 
 }
