@@ -226,12 +226,12 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     userFeedback.info(Stage.Workflow, "AutoML job created: " + fullTimestampFormat.format(this.startTime));
 
-    handleDatafileParameters(buildSpec);
-
-    if (null != buildSpec.input_spec.fold_column && 5 != buildSpec.build_control.nfolds)
-      throw new H2OIllegalArgumentException("Cannot specify fold_column and a non-default nfolds value at the same time.");
-    if (null != buildSpec.input_spec.fold_column)
+    if (null != buildSpec.input_spec.fold_column) {
       userFeedback.warn(Stage.Workflow, "Custom fold column, " + buildSpec.input_spec.fold_column + ", will be used. nfolds value will be ignored.");
+      buildSpec.build_control.nfolds = 0;
+    }
+
+    handleDatafileParameters(buildSpec);
 
     userFeedback.info(Stage.Workflow, "Build control seed: " +
             buildSpec.build_control.stopping_criteria.seed() +
@@ -299,28 +299,59 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return workAllocations;
   }
 
+  private boolean isCVEnabled() {
+    return this.buildSpec.build_control.nfolds != 0 || this.buildSpec.input_spec.fold_column != null;
+  }
 
-  private void optionallySplitLeaderboardDataset() {
-    // If nfolds = 0 and leaderboard frame is not supplied, we need to create one
-    // We do a 90/10 split of the training frame
-    if (this.buildSpec.build_control.nfolds == 0) {
-        if (null == this.leaderboardFrame) {
-          Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(origTrainingFrame,
-                  new Key[] { Key.make("automl_training_" + origTrainingFrame._key),
-                          Key.make("automl_leaderboard_" + origTrainingFrame._key)},
-                  new double[] { 0.9, 0.1 },
-                  buildSpec.build_control.stopping_criteria.seed());
-          this.trainingFrame = splits[0];
-          this.leaderboardFrame = splits[1];
-          this.didValidationSplit = false;
-          this.didLeaderboardSplit = true;
-          userFeedback.info(Stage.DataImport, "Since nfolds == 0, automatically split the training data into training and leaderboard frame in the ratio 80/20");
+  private void optionallySplitTrainingDataset() {
+    // If no cross-validation and validation or leaderboard frame are missing,
+    // then we need to create one out of the original training set.
+    if (!isCVEnabled()) {
+      double[] splitRatios = null;
+      if (null == this.validationFrame && null == this.leaderboardFrame) {
+        splitRatios = new double[]{ 0.8, 0.1, 0.1 };
+        userFeedback.info(Stage.DataImport,
+            "Since cross-validation is disabled, and none of validation frame and leaderboard frame were provided, " +
+                "automatically split the training data into training, validation and leaderboard frames in the ratio 80/10/10");
+      } else if (null == this.validationFrame) {
+        splitRatios = new double[]{ 0.9, 0.1, 0 };
+        userFeedback.info(Stage.DataImport,
+            "Since cross-validation is disabled, and no validation frame was provided, " +
+                "automatically split the training data into training and validation frames in the ratio 90/10");
+      } else if (null == this.leaderboardFrame) {
+        splitRatios = new double[]{ 0.9, 0, 0.1 };
+        userFeedback.info(Stage.DataImport,
+            "Since cross-validation is disabled, and no leaderboard frame was provided, " +
+                "automatically split the training data into training and leaderboard frames in the ratio 90/10");
+      }
+      if (splitRatios != null) {
+        Key[] keys = new Key[] {
+            Key.make("automl_training_"+origTrainingFrame._key),
+            Key.make("automl_validation_"+origTrainingFrame._key),
+            Key.make("automl_leaderboard_"+origTrainingFrame._key),
+        };
+        Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(
+            origTrainingFrame,
+            keys,
+            splitRatios,
+            buildSpec.build_control.stopping_criteria.seed()
+        );
+        this.trainingFrame = splits[0];
+
+        if (this.validationFrame == null && splits[1].numRows() > 0) {
+          this.validationFrame = splits[1];
         } else {
-          // Leaderboard frame is already there, no need to do anything
-          userFeedback.info(Stage.DataImport, "Since nfolds == 0 and leaderboard dataset was specified, no auto-splitting needed.");
+          splits[1].delete();
+        }
+
+        if (this.leaderboardFrame == null && splits[2].numRows() > 0) {
+          this.leaderboardFrame = splits[2];
+        } else {
+          splits[2].delete();
         }
       }
     }
+  }
 
   private void handleDatafileParameters(AutoMLBuildSpec buildSpec) {
     this.origTrainingFrame = DKV.getGet(buildSpec.input_spec.training_frame);
@@ -352,7 +383,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
               "the training frame.");
     }
 
-    optionallySplitLeaderboardDataset();
+    optionallySplitTrainingDataset();
 
     if (null == this.trainingFrame) {
       // when nfolds>0, let trainingFrame be the original frame
@@ -1150,12 +1181,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     stackedEnsembleParameters._valid = (getValidationFrame() == null ? null : getValidationFrame()._key);
     stackedEnsembleParameters._keep_levelone_frame = true; //TODO Why is this true? Can be optionally turned off
     // Add cross-validation args
-    if (buildSpec.input_spec.fold_column != null) {
-      stackedEnsembleParameters._metalearner_fold_column = buildSpec.input_spec.fold_column;
-      stackedEnsembleParameters._metalearner_nfolds = 0;  //if fold_column is used, set nfolds to 0 (default)
-    } else {
-      stackedEnsembleParameters._metalearner_nfolds = buildSpec.build_control.nfolds;
-    }
+    stackedEnsembleParameters._metalearner_fold_column = buildSpec.input_spec.fold_column;
+    stackedEnsembleParameters._metalearner_nfolds = buildSpec.build_control.nfolds;
+
     stackedEnsembleParameters.initMetalearnerParams();
     stackedEnsembleParameters._metalearner_parameters._keep_cross_validation_models = buildSpec.build_control.keep_cross_validation_models;
     stackedEnsembleParameters._metalearner_parameters._keep_cross_validation_predictions = buildSpec.build_control.keep_cross_validation_predictions;
@@ -1269,7 +1297,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     } else if (allModels.length == 1) {
       this.job.update(seWork.consumeAll(), "One model built; StackedEnsemble builds skipped");
       userFeedback.info(Stage.ModelTraining, "StackedEnsemble builds skipped since there is only one model built");
-    } else if (buildSpec.build_control.nfolds == 0) {
+    } else if (!isCVEnabled()) {
         this.job.update(seWork.consumeAll(), "Cross-validation disabled by the user; StackedEnsemble build skipped");
         userFeedback.info(Stage.ModelTraining,"Cross-validation disabled by the user; StackedEnsemble build skipped");
     } else {
