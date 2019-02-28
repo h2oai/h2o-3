@@ -4,9 +4,7 @@ import ai.h2o.automl.Algo;
 import ai.h2o.automl.targetencoding.TargetEncoder;
 import ai.h2o.automl.targetencoding.TargetEncoderFrameHelper;
 import ai.h2o.automl.targetencoding.TargetEncodingParams;
-import hex.Model;
-import hex.ModelBuilder;
-import hex.ScoreKeeper;
+import hex.*;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
@@ -27,9 +25,6 @@ import java.util.*;
 import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
 import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.concat;
 
-/**
- * For now it should be named RandomGridSearchTEParamsStrategy
- */
 public class GridSearchTEEvaluator extends Iced {
   public GridSearchTEEvaluator() {
     
@@ -41,8 +36,17 @@ public class GridSearchTEEvaluator extends Iced {
     double score = 0;
     Map<String, Frame> encodingMap = null;
     Frame trainEncoded = null;
+    Frame validEncoded = null;
     Frame testEncoded = null;
+    
+    // As original modelBuilder could be set up in a different way... let say nfolds = 0 
+    // we need to take into consideration the fact that training frame is going to be different every time as we split validation and leaderboard from it
     Frame originalTrainingData = modelBuilder.train();
+    Frame originalValidationData = modelBuilder._parms.valid();
+
+    Frame validCopy = originalValidationData.deepCopy(Key.make("validation_frame_copy_for_evaluation" + Key.make()).toString());
+    DKV.put(validCopy);
+    
     String[] originalIgnoredColumns = modelBuilder._parms._ignored_columns;
     String foldColumnForTE = null;
     Model retrievedModel = null;
@@ -50,7 +54,7 @@ public class GridSearchTEEvaluator extends Iced {
     try {
       // We need to apply TE taking into account the way how we train and validate our models.
       // With nfolds model will assign fold column to the data but we need those folds in TE before that. So we need to generate fold column themselves and then provide it to the model.
-      // But what if we already have folds from the model search level? Is it better to use different fold assignments for TE? Maybe yes - it is similar to "n-times m-folds cross-validation" idea.
+      // But what if we already have folds from the model search level provided by user? Is it better to use different fold assignments for TE? Maybe yes - it is similar to "n-times m-folds cross-validation" idea.
 
       String responseColumn = modelBuilder._parms._response_column;
       String[] teColumnsToExclude = columnsToEncode;
@@ -74,11 +78,13 @@ public class GridSearchTEEvaluator extends Iced {
         teColumnsToExclude = concat(columnsToEncode, new String[]{foldColumnForTE});
         encodingMap = tec.prepareEncodingMap(trainSplit, responseColumn, foldColumnForTE, true);
         trainEncoded = tec.applyTargetEncoding(trainSplit, responseColumn, encodingMap, holdoutType, foldColumnForTE, teParams.isWithBlendedAvg(), teParams.getNoiseLevel(), true, seedForNoise);
+        validEncoded = tec.applyTargetEncoding(validCopy, responseColumn, encodingMap, holdoutType, foldColumnForTE, teParams.isWithBlendedAvg(), 0.0, true, seedForNoise);
         testEncoded = tec.applyTargetEncoding(testSplit, responseColumn, encodingMap, holdoutType, foldColumnForTE, teParams.isWithBlendedAvg(), 0.0, true, seedForNoise);
       }
       else if(holdoutType == TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut) {
         encodingMap = tec.prepareEncodingMap(trainSplit, responseColumn, null, true);
         trainEncoded = tec.applyTargetEncoding(trainSplit, responseColumn, encodingMap, holdoutType, teParams.isWithBlendedAvg(), teParams.getNoiseLevel(), true, seedForNoise);
+        validEncoded = tec.applyTargetEncoding(validCopy, responseColumn, encodingMap, holdoutType, teParams.isWithBlendedAvg(), 0.0, true, seedForNoise);
         testEncoded = tec.applyTargetEncoding(testSplit, responseColumn, encodingMap, holdoutType, teParams.isWithBlendedAvg(), 0.0, true, seedForNoise);
 
       } else { // Holdout None case might be always a looser as we use less data for training. So it is an unfair competition.
@@ -88,32 +94,43 @@ public class GridSearchTEEvaluator extends Iced {
         encodingMap = tec.prepareEncodingMap(holdoutSplitForNoneCase, responseColumn, null, true);
         // Note: no need to add noise for training
         trainEncoded = tec.applyTargetEncoding(trainSplitForNoneCase, responseColumn, encodingMap, holdoutType, teParams.isWithBlendedAvg(), 0.0, true, seedForNoise);
+        validEncoded = tec.applyTargetEncoding(validCopy, responseColumn, encodingMap, holdoutType, teParams.isWithBlendedAvg(), 0.0, true, seedForNoise);
         testEncoded = tec.applyTargetEncoding(testSplit, responseColumn, encodingMap, holdoutType, teParams.isWithBlendedAvg(), 0.0, true, seedForNoise);
       }
-      
+
+
       modelBuilder._parms._ignored_columns = concat(originalIgnoredColumns, teColumnsToExclude);
 
       // Temporary set encoded frame as training set and afterwards we can set original back
+      // It look like model is using frames from modelBuilder but reports to the console come from modelBuilder._param object
       modelBuilder.setTrain(trainEncoded);
+      modelBuilder.setValid(validEncoded);
+      modelBuilder._parms.setTrain(trainEncoded._key);
+      modelBuilder._parms._valid = validEncoded._key;
       
       try {
         Keyed model = modelBuilder.trainModel().get();
         retrievedModel = DKV.getGet(model._key);
         retrievedModel.score(testEncoded);
+//        Key<ModelMetrics> modelMetricsKey = ModelMetricsBinomial.buildKey(retrievedModel, testEncoded);
         hex.ModelMetricsBinomial mmb = hex.ModelMetricsBinomial.getFromDKV(retrievedModel, testEncoded);
         score += mmb.auc();
       } catch (H2OIllegalArgumentException exception) {
-        System.out.println(exception.getMessage());
+        System.out.println("Exception during modelBuilder evaluation: " + exception.getMessage());
       }
     } catch(Exception ex ) {
-      System.out.println(ex.getMessage());
+      System.out.println("Exception during applying TE in GridSearchTEEvaluator.evaluate(): " + ex.getMessage());
     } finally {
       if(foldColumnForTE!=null && originalTrainingData != null) {
         Vec removed = originalTrainingData.remove(foldColumnForTE);
         removed.remove();
       }
-      //Setting back original frame
+      //Setting back original frames
       modelBuilder.setTrain(originalTrainingData);
+      modelBuilder.setValid(originalValidationData);
+      modelBuilder._parms.setTrain(originalTrainingData._key);
+      modelBuilder._parms._valid = originalValidationData._key;
+      
       modelBuilder._parms._ignored_columns = originalIgnoredColumns;
       if(retrievedModel!=null) retrievedModel.delete();
       if(trainEncoded != null) trainEncoded.delete();
@@ -137,71 +154,8 @@ public class GridSearchTEEvaluator extends Iced {
     Key[] keys = new Key[]{Key.<Frame>make("train_te_grid_search"), Key.<Frame>make("test_te_grid_search")};
     return ShuffleSplitFrame.shuffleSplitFrame(fr, keys, ratios, 42);
   }
-  
+
   @Deprecated
-  public double evaluate(TargetEncodingParams teParams, Algo[] evaluationAlgos, Frame inputData, String responseColumn, String foldColumnForTE, String[] columnsToEncode) {
-    double score = 0;
-    Map<String, Frame> encodingMap = null;
-    Frame trainEncoded = null;
-    try {
-      // We need to apply TE taking into account the way how we train and validate our models.
-      // with nfolds model will assign fold column to the date but we need those folds in TE before that. So we need to generate and then provide to the mode.
-      // but what if we already have folds from the model search level? Is it better to use different fold assignments? Maybe yes - it is similar to "n-times m-folds cross-validation" idea.
-
-      String[] teColumnsWithFoldToExclude = concat(columnsToEncode, new String[]{foldColumnForTE});
-
-      // We might want to fine tune selection of the te column in Grid search as well ( even after TEApplicationStrategy)
-      TargetEncoder tec = new TargetEncoder(columnsToEncode, teParams.getBlendingParams());
-      encodingMap = tec.prepareEncodingMap(inputData, responseColumn, foldColumnForTE, true);
-      trainEncoded = tec.applyTargetEncoding(inputData, responseColumn, encodingMap, teParams.getHoldoutType(), foldColumnForTE, teParams.isWithBlendedAvg(), teParams.getNoiseLevel(), true, 1234);
-
-      for (Algo algo : evaluationAlgos) {
-        if (algo == Algo.GBM) {
-          score += GridSearchTEEvaluator.evaluateWithGBM(trainEncoded, responseColumn, teColumnsWithFoldToExclude);
-        }
-        if (algo == Algo.GLM) {
-          score += GridSearchTEEvaluator.evaluateWithGLM(trainEncoded, responseColumn, teColumnsWithFoldToExclude);
-        }
-      }
-    } finally {
-      if(trainEncoded != null) trainEncoded.delete();
-      TargetEncoderFrameHelper.encodingMapCleanUp(encodingMap);
-    }
-    return score;
-  }
-
-  static double evaluateWithGBM(Frame inputData, String responseColumn, String[] columnsToExclude)  {
-    GBMModel gbm = null; // TODO maybe we should receive GBMParameters from caller?
-
-    double score = 0;
-    try {
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
-      parms._train = inputData._key;
-      parms._response_column = responseColumn;
-      parms._score_tree_interval = 10;
-      parms._ntrees = 100;
-//      parms._fold_column = foldColumnName; //TODO we will train on differend folds that will be assigned by the models themselves. Fold column that was used for TE should be excluded.
-      parms._nfolds = 5;
-      parms._max_depth = 5;
-      parms._distribution = DistributionFamily.multinomial;
-      parms._stopping_tolerance = 0.001;
-      parms._stopping_metric = ScoreKeeper.StoppingMetric.AUC;
-      parms._stopping_rounds = 5;
-      parms._ignored_columns = columnsToExclude;
-      parms._keep_cross_validation_fold_assignment = false;
-      parms._keep_cross_validation_models = false;
-      parms._seed = 1234L;
-      GBM job = new GBM(parms);
-      gbm = job.trainModel().get();
-
-      score = gbm.auc();
-//      System.out.println(gbm._output._variable_importances.toString(2, true));
-    } finally {
-      if(gbm != null) gbm.delete();
-    }
-      return score;
-  }
-
   static double evaluateWithGLM(Frame inputData, String responseColumn, String[] columnsToExclude) {
         GLMModel.GLMParameters params = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.binomial); //TODO we should pass a parameter to decise which Family to use
         GLMModel model = null;

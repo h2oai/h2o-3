@@ -1,19 +1,17 @@
 package ai.h2o.automl.targetencoding.strategy;
 
-import ai.h2o.automl.Algo;
-import ai.h2o.automl.UserFeedbackEvent;
+import ai.h2o.automl.targetencoding.TargetEncoder;
 import ai.h2o.automl.targetencoding.TargetEncodingParams;
 import ai.h2o.automl.targetencoding.TargetEncodingTestFixtures;
-import hex.Model;
 import hex.ModelBuilder;
-import hex.tree.SharedTreeModel;
-import hex.tree.gbm.GBMModel;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
 import water.fvec.Frame;
 
-import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
+import java.util.HashMap;
+
+import static ai.h2o.automl.targetencoding.TargetEncodingTestFixtures.modelBuilderWithCVFixture;
 import static org.junit.Assert.*;
 
 public class GridSearchTEEvaluatorTest extends TestUtil {
@@ -23,7 +21,9 @@ public class GridSearchTEEvaluatorTest extends TestUtil {
     stall_till_cloudsize(1);
   }
 
-  @Test
+  // We test here that we can reuse model builder by cloning it.
+  // Also we check that two evaluations with the same TE params return same result.
+  @Test 
   public void evaluateMethodWorksWithModelBuilder() {
     Frame fr = null;
     Frame frCopy = null;
@@ -41,7 +41,8 @@ public class GridSearchTEEvaluatorTest extends TestUtil {
       GridSearchTEEvaluator evaluator = new GridSearchTEEvaluator();
 
       TargetEncodingParams randomTEParams = TargetEncodingTestFixtures.randomTEParams();
-      ModelBuilder modelBuilder = modelBuilderFixture(fr, responseColumnName);
+      long builderSeed = 3456;
+      ModelBuilder modelBuilder = modelBuilderWithCVFixture(fr, responseColumnName, builderSeed);
       
       String[] columnsToEncode = strategy.getColumnsToEncode();
 
@@ -55,7 +56,7 @@ public class GridSearchTEEvaluatorTest extends TestUtil {
 
       ModelBuilder clonedModelBuilder = ModelBuilder.clone(modelBuilder);
       clonedModelBuilder.init(false);
-      double auc2 = evaluator.evaluate(randomTEParams, clonedModelBuilder, columnsToEncode, seedForFoldColumn); // check that we can reuse modelBuilder
+      double auc2 = evaluator.evaluate(randomTEParams, clonedModelBuilder, columnsToEncode, seedForFoldColumn); // checking that we can reuse modelBuilder
 
       assertTrue(isBitIdentical(frCopy, modelBuilder._parms.train()));
       assertTrue(auc > 0);
@@ -66,37 +67,69 @@ public class GridSearchTEEvaluatorTest extends TestUtil {
     }
   }
 
+
+  @Test
+  public void checkThatForAnyHyperParametersCombinationWeGetConsistentEvaluationsFromModelBuilderFixture() {
+
+    //Important variable as AUC are not consistent with precision 1e-4 and less
+    double precisionForAUCEvaluations = 1e-5;
+    
+    HashMap<String, Object[]> _grid = new HashMap<>();
+    _grid.put("_withBlending", new Boolean[]{true, false});
+    _grid.put("_noise_level", new Double[]{0.0, 0.1, 0.01});
+    _grid.put("_inflection_point", new Integer[]{1, 2, 3, 5, 10, 50, 100});
+    _grid.put("_smoothing", new Double[]{5.0, 10.0, 20.0});
+    _grid.put("_holdoutType", new Byte[]{TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut,TargetEncoder.DataLeakageHandlingStrategy.KFold, TargetEncoder.DataLeakageHandlingStrategy.None});
+
+    long testSeed = 2345; //TODO maybe -1?
+    long builderSeed = 3456; 
+
+    GridSearchTEEvaluator gridSearchTEEvaluator = new GridSearchTEEvaluator();
+
+    Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+    String responseColumnName = "survived";
+    asFactor(fr, responseColumnName);
+    ModelBuilder modelBuilder = modelBuilderWithCVFixture(fr, responseColumnName, builderSeed); // TODO try different model builders
+    modelBuilder.init(false); // Should we init before cloning? Like in real use case we clone after initialisation of the original modelBuilder.
+    TEApplicationStrategy strategy = new ThresholdTEApplicationStrategy(fr, fr.vec(responseColumnName), 4);
+
+
+    for (int teParamAttempt = 0; teParamAttempt < 30; teParamAttempt++) {
+      GridSearchTEParamsSelectionStrategy.RandomSelector randomSelector = new GridSearchTEParamsSelectionStrategy.RandomSelector(_grid, testSeed);
+      GridSearchTEParamsSelectionStrategy.GridEntry selected = null;
+      try {
+        selected = randomSelector.getNext();
+      } catch (GridSearchTEParamsSelectionStrategy.RandomSelector.GridSearchCompleted ex) {
+
+      } 
+
+      TargetEncodingParams param = new TargetEncodingParams(selected.getItem());
+      TargetEncodingParams tmpParam  = new TargetEncodingParams(null, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, 0.0);
+
+
+      double lastResult = 0.0;
+      for (int evaluationAttempt = 0; evaluationAttempt < 50; evaluationAttempt++) {
+        ModelBuilder clonedModelBuilder = ModelBuilder.clone(modelBuilder);
+        clonedModelBuilder.init(false);
+        
+        double evaluationResult = gridSearchTEEvaluator.evaluate(tmpParam, clonedModelBuilder, strategy.getColumnsToEncode(), testSeed);
+        if(lastResult == 0.0) lastResult = evaluationResult;
+        else {
+          
+          assertEquals("evaluationAttempt #" + evaluationAttempt + " for teParamAttempt #" + 
+                  teParamAttempt + " has failed. " + tmpParam , lastResult, evaluationResult, precisionForAUCEvaluations);
+        }
+      }
+    }
+    
+  }
+  
   @Test
   public void evaluateMethodWorksWithModelBuilderAndIgnoredColumns() {
     //TODO check case when original model builder has ignored columns
   }
   
-  private ModelBuilder modelBuilderFixture(Frame fr, String responseColumnName) {
-    Algo algo = Algo.GBM;
-    String algoUrlName = algo.name().toLowerCase();
-    String algoName = ModelBuilder.algoName(algoUrlName);
-    Key<Model> testModelKey = Key.make("testModelKey");
-
-    Job<Model> job = new Job<>(testModelKey, ModelBuilder.javaName(algoUrlName), algoName);
-    ModelBuilder builder = ModelBuilder.make(algoUrlName, job, testModelKey);
-
-    // Model Parameters
-    GBMModel.GBMParameters gbmParameters = new GBMModel.GBMParameters();
-    gbmParameters._score_tree_interval = 5;
-    gbmParameters._histogram_type = SharedTreeModel.SharedTreeParameters.HistogramType.AUTO;
-
-    builder._parms = gbmParameters;
-
-    setCommonModelBuilderParams(builder._parms, fr, responseColumnName);
-    return builder;
-  }
-
-  private void setCommonModelBuilderParams(Model.Parameters params,Frame trainingFr, String responseColumnName) {
-    params._train = trainingFr._key;
-    params._response_column = responseColumnName;
-  }
-  
-  @Test
+ /* @Test
   public void evaluateMethodDoesNotLeakKeys() {
     Frame fr = null;
     try {
@@ -120,43 +153,6 @@ public class GridSearchTEEvaluatorTest extends TestUtil {
     } finally {
       fr.delete();
     }
-  }
+  }*/
   
-  @Test
-  public void gbmEvaluatorDoesNotLeakKeys() {
-    Frame fr = null;
-    try {
-      fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
-
-      String responseColumnName = "survived";
-
-      asFactor(fr, responseColumnName);
-
-      String[] columnsOtExclude = new String[]{};
-
-      GridSearchTEEvaluator.evaluateWithGBM(fr, responseColumnName, columnsOtExclude);
-
-    } finally {
-      fr.delete();
-    }
-  }
-  
-  @Test
-  public void glmEvaluatorDoesNotLeakKeys() {
-    
-    Frame fr = null;
-    try {
-      fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
-
-      String responseColumnName = "survived";
-
-      asFactor(fr, responseColumnName);
-
-      String[] columnsOtExclude = new String[]{};
-
-      GridSearchTEEvaluator.evaluateWithGLM(fr, responseColumnName, columnsOtExclude);
-    } finally {
-      fr.delete();
-    }
-  }
 }

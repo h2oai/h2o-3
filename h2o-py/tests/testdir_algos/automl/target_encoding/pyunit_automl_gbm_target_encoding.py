@@ -86,12 +86,9 @@ def titanic_with_te_loostrategy(frame = None, seeds = None):
     ds = split_data(frame, current_seed)
     targetColumnName = "survived"
 
-    foldColumnName = "kfold_column"
-    ds['train'][foldColumnName] = ds['train'].kfold_column(n_folds=5, seed=current_seed)
-
     teColumns = ["home.dest", "cabin", "embarked"]
     targetEncoder = TargetEncoder(x= teColumns, y= targetColumnName,
-                                  fold_column= foldColumnName, blended_avg= True, inflection_point = 3, smoothing = 1)
+                                   blended_avg= True, inflection_point = 3, smoothing = 1)
     targetEncoder.fit(frame=ds['train'])
 
     encodedTrain = targetEncoder.transform(frame=ds['train'], holdout_type="loo", seed=1234)

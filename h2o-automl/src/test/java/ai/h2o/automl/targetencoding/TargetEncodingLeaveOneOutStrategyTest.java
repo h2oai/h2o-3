@@ -1,22 +1,24 @@
 package ai.h2o.automl.targetencoding;
 
+import hex.Model;
+import hex.ModelBuilder;
+import hex.splitframe.ShuffleSplitFrame;
+import hex.tree.gbm.GBMModel;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import water.Job;
-import water.Key;
-import water.TestUtil;
+import water.*;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
-import water.util.TwoDimTable;
 
 import java.io.File;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 
+import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
+import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.concat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
@@ -393,6 +395,290 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
     resultWithEncoding.delete();
   }
 
+  /**
+   * Here as evaluator we are using GBM model with cross validation on training frame. AUC is expected to be consistent.
+   */
+  @Test
+  public void targetEncoderLOOWithoutBlendingAndZeroNoiseTestd222() {
+    String responseColumn = "IsDepDelayed";
+
+    Frame fr = parse_test_file("./smalldata/airlines/AirlinesTrain.csv.zip");
+    String[] teColumns = {"Origin", "Dest"};
+    BlendingParams params = new BlendingParams(5, 1);
+
+    TargetEncoder tec = new TargetEncoder(teColumns, params);
+    printOutFrameAsTable(fr);
+  }
+
+  @Test
+  public void targetEncoderLOOWithoutBlendingAndZeroNoise_WithAirlinesTest() {
+    double lastResult = 0.0;
+    int numberOfFailures = 0;
+    for (int attemptNumber = 0; attemptNumber < 100; attemptNumber++) {
+
+
+      String responseColumn = "IsDepDelayed";
+
+      Frame fr = parse_test_file("./smalldata/airlines/AirlinesTrain.csv.zip");
+//      long nr = fr.numRows();
+//
+//      Frame titanicFr = parse_test_file("./smalldata/gbm_test/titanic.csv").subframe(new String[]{"home.dest"});
+//      fr.add(titanicFr);
+
+      printOutColumnsMetadata(fr);
+      printOutFrameAsTable(fr);
+
+      Key[] keys = new Key[]{Key.<Frame>make("train_LOO"), Key.<Frame>make("test_LOO")};
+      Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(fr, keys, new double[]{0.8, 0.2}, 42);
+      Frame trainSplit = splits[0];
+      Frame testSplit = splits[1];
+
+      String[] columnNamesToEncode = {"Origin", "Dest"};
+      TargetEncoder tec = new TargetEncoder(columnNamesToEncode);
+
+      Map<String, Frame> encodingMap = tec.prepareEncodingMap(fr, responseColumn, null);
+
+      long seedForNoise = 2345;
+      byte leaveOneOutHoldout = TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut;
+      Frame trainEncoded = tec.applyTargetEncoding(trainSplit, responseColumn, encodingMap, leaveOneOutHoldout, false, 0.0, true, seedForNoise);
+      Frame testEncoded = tec.applyTargetEncoding(testSplit, responseColumn, encodingMap, leaveOneOutHoldout, false, 0.0, true, seedForNoise);
+
+      GBMModel gbmModel = TargetEncodingTestFixtures.trainGBM(trainEncoded, responseColumn, columnNamesToEncode);
+
+      gbmModel.score(testEncoded);
+
+      hex.ModelMetricsBinomial mmb = hex.ModelMetricsBinomial.getFromDKV(gbmModel, testEncoded);
+
+      if(lastResult == 0.0) {
+        lastResult = mmb.auc();
+        Frame.export(trainSplit, "auc_inconsistency_original_etalon.csv", trainSplit._key.toString(), true, 1).get();
+        Frame.export(trainEncoded, "auc_inconsistency_etalon.csv", trainEncoded._key.toString(), true, 1).get();
+        Frame.export(testEncoded, "auc_inconsistency_test_etalon.csv", testEncoded._key.toString(), true, 1).get();
+        Frame.export(encodingMap.get("Dest"), "auc_inconsistency_encoding_etalon.csv", encodingMap.get("Dest")._key.toString(), true, 1).get();
+      }
+      else {
+        try {
+          assertEquals("Failed attempt number " + attemptNumber, lastResult, mmb.auc(), 1e-5);
+        } catch (AssertionError ex) {
+          Frame.export(trainSplit, "auc_inconsistency_original_badboy" + numberOfFailures +".csv", trainSplit._key.toString(), true, 1).get();
+          Frame.export(trainEncoded, "auc_inconsistency_badboy" + numberOfFailures +".csv", trainEncoded._key.toString(), true, 1).get();
+          Frame.export(testEncoded, "auc_inconsistency_test_badboy" + numberOfFailures + ".csv", testEncoded._key.toString(), true, 1).get();
+          Frame.export(encodingMap.get("Dest"), "auc_inconsistency_encoding_badboy" + numberOfFailures + ".csv", encodingMap.get("Dest")._key.toString(), true, 1).get();
+          numberOfFailures++;
+          throw ex;
+        }
+      }
+      fr.delete();
+      encodingMapCleanUp(encodingMap);
+    }
+  }
+  
+  /**
+  * Here as evaluator we are using GBM model with cross validation on training frame. AUC is expected to be consistent.
+  */
+  @Test
+  public void targetEncoderLOOWithoutBlendingAndZeroNoiseTest() {
+    double lastResult = 0.0;
+    int numberOfFailures = 0;
+    for (int attemptNumber = 0; attemptNumber < 100; attemptNumber++) {
+   
+
+      String responseColumn = "survived";
+      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      asFactor(fr, responseColumn);
+
+      printOutColumnsMetadata(fr);
+      printOutFrameAsTable(fr, true, 20);
+      long count = fr.vec("home.dest").naCnt();
+
+      Key[] keys = new Key[]{Key.<Frame>make("train_LOO"), Key.<Frame>make("test_LOO")};
+      Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(fr, keys, new double[]{0.8, 0.2}, 42);
+      Frame trainSplit = splits[0];
+      Frame testSplit = splits[1];
+
+//      String[] columnNamesToEncode = {"cabin"};
+      String[] columnNamesToEncode = {"cabin", "home.dest"};
+      TargetEncoder tec = new TargetEncoder(columnNamesToEncode);
+
+      Map<String, Frame> encodingMap = tec.prepareEncodingMap(fr, responseColumn, null);
+
+      long seedForNoise = 2345;
+      byte leaveOneOutHoldout = TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut;
+      Frame trainEncoded = tec.applyTargetEncoding(trainSplit, responseColumn, encodingMap, leaveOneOutHoldout, false, 0.0, true, seedForNoise);
+      Frame testEncoded = tec.applyTargetEncoding(testSplit, responseColumn, encodingMap, leaveOneOutHoldout, false, 0.0, true, seedForNoise);
+
+      GBMModel gbmModel = TargetEncodingTestFixtures.trainGBM(trainEncoded, responseColumn, columnNamesToEncode);
+
+      gbmModel.score(testEncoded);
+
+      hex.ModelMetricsBinomial mmb = hex.ModelMetricsBinomial.getFromDKV(gbmModel, testEncoded);
+
+      String encodingMapToExport = "home.dest";
+      if(lastResult == 0.0) {
+        lastResult = mmb.auc();
+        Frame.export(trainSplit, "auc_inconsistency_original_etalon.csv", trainSplit._key.toString(), true, 1).get();
+        Frame.export(trainEncoded, "auc_inconsistency_etalon.csv", trainEncoded._key.toString(), true, 1).get();
+        Frame.export(testEncoded, "auc_inconsistency_test_etalon.csv", testEncoded._key.toString(), true, 1).get();
+        Frame.export(encodingMap.get(encodingMapToExport), "auc_inconsistency_encoding_etalon.csv", encodingMap.get(encodingMapToExport)._key.toString(), true, 1).get();
+      }
+      else {
+        try {
+          assertEquals("Failed attempt number " + attemptNumber, lastResult, mmb.auc(), 1e-5);
+        } catch (AssertionError ex) {
+          Frame.export(trainSplit, "auc_inconsistency_original_badboy" + numberOfFailures +".csv", trainSplit._key.toString(), true, 1).get();
+          Frame.export(trainEncoded, "auc_inconsistency_badboy" + numberOfFailures +".csv", trainEncoded._key.toString(), true, 1).get();
+          Frame.export(testEncoded, "auc_inconsistency_test_badboy" + numberOfFailures + ".csv", testEncoded._key.toString(), true, 1).get();
+          Frame.export(encodingMap.get(encodingMapToExport), "auc_inconsistency_encoding_badboy" + numberOfFailures + ".csv", encodingMap.get(encodingMapToExport)._key.toString(), true, 1).get();
+//          throw ex;
+          numberOfFailures++;
+        }
+      }
+      fr.delete();
+      encodingMapCleanUp(encodingMap);
+    }
+  }
+
+  /**
+   * Not only LOO causes inconsistency. KFOLD also.
+   */
+  @Test
+  public void targetEncoderLOOWithBlendingAndZeroNoiseCheckedOnModelBuilderTest() {
+    double lastResult = 0.0;
+    for (int attemptNumber = 0; attemptNumber < 100; attemptNumber++) {
+
+
+      String responseColumn = "survived";
+      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      asFactor(fr, responseColumn);
+      
+      String foldColumnForTE = "fold_column_te";
+      int nfolds = 5;
+      addKFoldColumn(fr, foldColumnForTE, nfolds, 1234);
+
+      Key[] keys = new Key[]{Key.<Frame>make("train_LOO"), Key.<Frame>make("test_LOO")};
+      Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(fr, keys, new double[]{0.8, 0.2}, 42);
+      Frame trainSplit = splits[0];
+      Frame testSplit = splits[1];
+
+      String[] columnNamesToEncode = {"cabin", "home.dest"};
+      TargetEncoder tec = new TargetEncoder(columnNamesToEncode);
+
+      Map<String, Frame> encodingMap = tec.prepareEncodingMap(fr, responseColumn, foldColumnForTE);
+
+      long seedForNoise = 2345;
+      long builderSeed = 3456;
+      byte holdoutType = TargetEncoder.DataLeakageHandlingStrategy.KFold;
+      
+      Frame trainEncoded = tec.applyTargetEncoding(trainSplit, responseColumn, encodingMap, holdoutType, foldColumnForTE, true, 0.01, true, seedForNoise);
+      Frame testEncoded = tec.applyTargetEncoding(testSplit, responseColumn, encodingMap, holdoutType, foldColumnForTE, true, 0.0, true, seedForNoise);
+
+      ModelBuilder modelBuilder = TargetEncodingTestFixtures.modelBuilderWithValidFrameFixture(trainEncoded, responseColumn, builderSeed);
+      modelBuilder.init(false);
+      
+      modelBuilder._parms._ignored_columns = concat(columnNamesToEncode, new String[] {foldColumnForTE});
+
+      Keyed model = modelBuilder.trainModel().get();
+      Model retrievedModel = DKV.getGet(model._key);
+      retrievedModel.score(testEncoded);
+      hex.ModelMetricsBinomial mmb = hex.ModelMetricsBinomial.getFromDKV(retrievedModel, testEncoded);
+
+      if(lastResult == 0.0) lastResult = mmb.auc();
+      else {
+        assertEquals("Failed attempt number " + attemptNumber, lastResult, mmb.auc(), 1e-5);
+      }
+      fr.delete();
+      encodingMapCleanUp(encodingMap);
+    }
+  }
+  
+  /**
+   * Here as evaluator we are using GBM model with validation on modelBuilder
+   */
+  @Test
+  public void targetEncoderLOOWithoutBlendingAndZeroNoiseCheckedOnModelBuilderTest() {
+    double lastResult = 0.0;
+    for (int attemptNumber = 0; attemptNumber < 100; attemptNumber++) {
+
+
+      String responseColumn = "survived";
+      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      asFactor(fr, responseColumn);
+
+      Key[] keys = new Key[]{Key.<Frame>make("train_LOO"), Key.<Frame>make("test_LOO")};
+      Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(fr, keys, new double[]{0.8, 0.2}, 42);
+      Frame trainSplit = splits[0];
+      Frame testSplit = splits[1];
+
+      String[] columnNamesToEncode = {"cabin", "home.dest"};
+      TargetEncoder tec = new TargetEncoder(columnNamesToEncode);
+
+      Map<String, Frame> encodingMap = tec.prepareEncodingMap(fr, responseColumn, null);
+
+      long seedForNoise = 2345;
+      long builderSeed = 3456;
+      byte leaveOneOutHoldout = TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut;
+      Frame trainEncoded = tec.applyTargetEncoding(trainSplit, responseColumn, encodingMap, leaveOneOutHoldout, false, 0.0, true, seedForNoise);
+      Frame testEncoded = tec.applyTargetEncoding(testSplit, responseColumn, encodingMap, leaveOneOutHoldout, false, 0.0, true, seedForNoise);
+
+      ModelBuilder modelBuilder = TargetEncodingTestFixtures.modelBuilderWithValidFrameFixture(trainEncoded, responseColumn, builderSeed);
+      modelBuilder.init(false);
+      modelBuilder._parms._ignored_columns = columnNamesToEncode;
+
+      Keyed model = modelBuilder.trainModel().get();
+      Model retrievedModel = DKV.getGet(model._key);
+      retrievedModel.score(testEncoded);
+      hex.ModelMetricsBinomial mmb = hex.ModelMetricsBinomial.getFromDKV(retrievedModel, testEncoded);
+      
+      if(lastResult == 0.0) lastResult = mmb.auc();
+      else {
+        assertEquals("Failed attempt number " + attemptNumber, lastResult, mmb.auc(), 1e-5);
+      }
+      fr.delete();
+      encodingMapCleanUp(encodingMap);
+    }
+  }
+  
+  // It is consistent
+  @Test
+  public void withoutTEConsistencyTest() {
+    double lastResult = 0.0;
+    for (int attemptNumber = 0; attemptNumber < 300; attemptNumber++) {
+
+      String responseColumn = "survived";
+      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      asFactor(fr, responseColumn);
+
+
+      Key[] keys = new Key[]{Key.<Frame>make("train_LOO"), Key.<Frame>make("test_LOO")};
+      Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(fr, keys, new double[]{0.8, 0.2}, 42);
+      Frame trainSplit = splits[0];
+      Frame testSplit = splits[1];
+
+      long builderSeed = 3456;
+
+      // TODO how come we are able to train model without validation frame if we don't use CV?
+      ModelBuilder modelBuilder = TargetEncodingTestFixtures.modelBuilderWithValidFrameFixture(trainSplit, responseColumn, builderSeed);
+      modelBuilder.init(false);
+
+      Keyed model = modelBuilder.trainModel().get();
+      Model retrievedModel = DKV.getGet(model._key);
+      retrievedModel.score(testSplit);
+      hex.ModelMetricsBinomial mmb = hex.ModelMetricsBinomial.getFromDKV(retrievedModel, testSplit);
+
+      if(lastResult == 0.0) lastResult = mmb.auc();
+      else {
+        assertEquals("Failed attempt number " + attemptNumber, lastResult, mmb.auc(), 1e-5);
+      }
+      fr.delete();
+    }
+  }
+
+  /**
+   * Here as evaluator we are using GBM model with validation on validation_frame. 
+   */
+  @Test
+  public void targetEncoderLOOWithoutBlendingAndZeroNoiseCheckedOnValidationFrameTest() {
+  }
 
   // ------------------------ Multiple columns for target encoding -------------------------------------------------//
 

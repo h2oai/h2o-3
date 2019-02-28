@@ -147,7 +147,6 @@ public class TargetEncoder {
       return register(result);
     }
 
-    // This method is mutating data frame
     Frame ensureTargetColumnIsBinaryCategorical(Frame data, String targetColumnName) {
         int targetIndex = data.find(targetColumnName);
         if (data.vec(targetIndex).isCategorical()){

@@ -40,6 +40,19 @@ public class TargetEncodingParams extends Iced {
     return _blendingParams;
   }
 
+  @Override
+  public String toString() {
+    String representation = null;
+    if( isWithBlendedAvg()) { // TODO avoid duplication
+      representation = "TE params: holdout_type = " + getHoldoutType() + " , blending = " + isWithBlendedAvg() + ", inflection_point = " + getBlendingParams().getK() +
+              " , smoothing = " + getBlendingParams().getF() + " , noise_level = " + getNoiseLevel();
+    }
+    else {
+      representation = "TE params: holdout_type = " + getHoldoutType() + " , noise_level = " + getNoiseLevel();
+    }
+    return representation;
+  }
+
   public byte getHoldoutType() {
     return _holdoutType;
   }

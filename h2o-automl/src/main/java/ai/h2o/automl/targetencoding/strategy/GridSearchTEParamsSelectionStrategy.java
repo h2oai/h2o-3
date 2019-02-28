@@ -1,5 +1,6 @@
 package ai.h2o.automl.targetencoding.strategy;
 
+import ai.h2o.automl.targetencoding.BlendingParams;
 import ai.h2o.automl.targetencoding.TargetEncoder;
 import ai.h2o.automl.targetencoding.TargetEncodingParams;
 import hex.ModelBuilder;
@@ -21,8 +22,10 @@ public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrate
   private long _seed;
 
   private RandomSelector randomSelector;
-  private PriorityQueue<Evaluated<TargetEncodingParams>> evaluatedQueue;
-  private GridSearchTEEvaluator evaluator = new GridSearchTEEvaluator();
+  private PriorityQueue<Evaluated<TargetEncodingParams>> _evaluatedQueue;
+  private GridSearchTEEvaluator _evaluator = new GridSearchTEEvaluator();
+  
+  private TESearchSpace _teSearchSpace;
   
   private int _numberOfIterations; // or should be a strategy that will be in charge of stopping.
 
@@ -35,17 +38,32 @@ public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrate
     _columnsToEncode = columnsToEncode;
     _theBiggerTheBetter = theBiggerTheBetter;
     
-    //Hardcoded. Get it as parameter to generalize ?
+    _evaluatedQueue = new PriorityQueue<>(numberOfIterations, new EvaluatedComparator(theBiggerTheBetter));
+  }
+  
+  public void setTESearchSpace(TESearchSpace teSearchSpace) {
     HashMap<String, Object[]> _grid = new HashMap<>();
-    _grid.put("_withBlending", new Boolean[]{true, false});
-    _grid.put("_noise_level", new Double[]{0.0, 0.1, 0.01});
-    _grid.put("_inflection_point", new Integer[]{1, 2, 3, 5, 10, 50, 100});
-    _grid.put("_smoothing", new Double[]{5.0, 10.0, 20.0});
-    _grid.put("_holdoutType", new Byte[]{TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut,TargetEncoder.DataLeakageHandlingStrategy.KFold, TargetEncoder.DataLeakageHandlingStrategy.None});
+    
+    switch (teSearchSpace) {
+      case CV_EARLY_STOPPING: // TODO move up common parameter' ranges
+        _grid.put("_withBlending", new Boolean[]{true, false});
+        _grid.put("_noise_level", new Double[]{0.0, 0.1, 0.01});
+        _grid.put("_inflection_point", new Integer[]{1, 2, 3, 5, 10, 50, 100});
+        _grid.put("_smoothing", new Double[]{5.0, 10.0, 20.0});
+        _grid.put("_holdoutType", new Byte[]{ TargetEncoder.DataLeakageHandlingStrategy.None});
+        break;
+      case VALIDATION_FRAME_EARLY_STOPPING:
+        _grid.put("_withBlending", new Boolean[]{true, false});
+        _grid.put("_noise_level", new Double[]{0.0, 0.1, 0.01});
+        _grid.put("_inflection_point", new Integer[]{1, 2, 3, 5, 10, 50, 100});
+        _grid.put("_smoothing", new Double[]{5.0, 10.0, 20.0});
+        _grid.put("_holdoutType", new Byte[]{TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut/*,TargetEncoder.DataLeakageHandlingStrategy.KFold, TargetEncoder.DataLeakageHandlingStrategy.None*/});
+        break;
+    }
+    
+    _teSearchSpace = teSearchSpace;
 
     randomSelector = new RandomSelector(_grid, _seed);
-    
-    evaluatedQueue = new PriorityQueue<>(numberOfIterations, new EvaluatedComparator(theBiggerTheBetter));
   }
   
   @Override
@@ -54,22 +72,27 @@ public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrate
   }
 
   public Evaluated<TargetEncodingParams> getBestParamsWithEvaluation(ModelBuilder modelBuilder) {
+    assert _teSearchSpace != null : "`setTESearchSpace()` method should has been called to setup appropriate grid search.";
+    
     //TODO First we need to do stratified sampling
+    try {
+      for (int attempt = 0; attempt < _numberOfIterations; attempt++) {
 
-    for(int attempt = 0 ; attempt < _numberOfIterations; attempt++) {
+        GridEntry selected = randomSelector.getNext(); // Maybe we don't need to have a GridEntry
 
-      GridEntry selected = randomSelector.getNext(); // Maybe we don't need to have a GridEntry
+        TargetEncodingParams param = new TargetEncodingParams(selected.getItem());
 
-      TargetEncodingParams param = new TargetEncodingParams(selected.getItem());
+        ModelBuilder clonedModelBuilder = ModelBuilder.clone(modelBuilder);
+        clonedModelBuilder.init(false); // in _evaluator we assume that init() has been already called
 
-      ModelBuilder clonedModelBuilder = ModelBuilder.clone(modelBuilder);
-      clonedModelBuilder.init(false); // in evaluator we assume that init() has been already called
-
-      double evaluationResult = evaluator.evaluate(param, clonedModelBuilder, getColumnsToEncode(), _seed);
-      evaluatedQueue.add(new Evaluated<>(param, evaluationResult));
+        double evaluationResult = _evaluator.evaluate(param, clonedModelBuilder, getColumnsToEncode(), _seed);
+        _evaluatedQueue.add(new Evaluated<>(param, evaluationResult));
+      }
+    } catch (RandomSelector.GridSearchCompleted ex) {
+      // just proceed by returning best gridEntry found so far
     }
 
-    Evaluated<TargetEncodingParams> targetEncodingParamsEvaluated = evaluatedQueue.peek();
+    Evaluated<TargetEncodingParams> targetEncodingParamsEvaluated = _evaluatedQueue.peek();
 
     return targetEncodingParamsEvaluated;
   }
@@ -142,7 +165,7 @@ public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrate
       this(grid, -1);
     }
     
-    GridEntry getNext() {
+    GridEntry getNext() throws GridSearchCompleted {
       Map<String, Object> _next = new HashMap<>();
       int[] indices = nextIndices();
       for (int i = 0; i < indices.length; i++) {
@@ -152,14 +175,13 @@ public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrate
     }
 
     //This approach is not very efficient as over time we will start to hit cache more often and selecting unseen combination will become harder.
-    private int[] nextIndices() {
+    private int[] nextIndices() throws GridSearchCompleted {
       int[] chosenIndices =  new int[_dimensionNames.length];
 
       int hashOfIndices = 0;
       do {
         for (int i = 0; i < _dimensionNames.length; i++) {
           String name = _dimensionNames[i];
-//          System.out.println("Dimension:" + i +":" + name);
           int dimensionLength = _grid.get(name).length;
           int chosenIndex = _randomGen.nextInt(dimensionLength);
           chosenIndices[i] = chosenIndex;
@@ -169,9 +191,14 @@ public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrate
       _visitedPermutationHashes.add(hashOfIndices);
 
       if(_visitedPermutationHashes.size() == _spaceSize) {
-        System.out.println("Whole search space has been discovered. Continue selecting randomly.");
+        System.out.println("Whole search space has been discovered. Stopping search.");
+        throw new GridSearchCompleted();
       }
       return chosenIndices;
+    }
+    
+    public static class GridSearchCompleted extends Exception{
+      
     }
     
     // overwrite it with custom combinations

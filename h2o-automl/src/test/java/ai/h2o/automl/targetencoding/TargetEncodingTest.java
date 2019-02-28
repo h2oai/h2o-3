@@ -154,11 +154,80 @@ public class TargetEncodingTest extends TestUtil {
     res.delete();
   }
 
-    @Test
-    public void testThatNATargetsAreSkippedTest() {
-      //TODO
-    }
+  @Test
+  public void imputationWorksAndDoesNotAffectResponseColumnTest() {
+    for (int attempt = 0; attempt < 100; attempt++) {
+      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      String[] responseColumn = {"survived"};
+      Frame targetFrame = fr.subframe(responseColumn);
+      Frame targetFrameCopy = targetFrame.deepCopy(Key.make().toString());
+      DKV.put(targetFrameCopy);
 
+      printOutColumnsMetadata(fr);
+      printOutFrameAsTable(fr, true, 20);
+
+      String columnName = "home.dest";
+      long count = fr.vec(columnName).naCnt();
+
+      assertEquals(564, count, 1e-5);
+
+      String[] teColumns = {""};
+      TargetEncoder tec = new TargetEncoder(teColumns);
+
+      Frame filtered = tec.filterOutNAsFromTargetColumn(fr, fr.find(columnName));
+
+      Frame res = tec.imputeNAsForColumn(fr, columnName, "home.dest_NA");
+
+      long countAfterImputation = res.vec(columnName).naCnt();
+
+      assertEquals(0, countAfterImputation, 1e-5);
+      assertTrue(isBitIdentical(targetFrameCopy, res.subframe(responseColumn)));
+      printOutFrameAsTable(fr, true, 20);
+      filtered.delete();
+      targetFrame.delete();
+      targetFrameCopy.delete();
+      res.delete();
+    }
+  }
+  
+  @Test
+  public void groupThenAggregateForNumeratorAndDenominatorTest() {
+    
+    Frame etalon = null;
+    for (int attempt = 0; attempt < 300; attempt++) {
+      Scope.enter();
+      try {
+        Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+        String responseColumn = "survived";
+
+        String columnName = "home.dest";
+
+        String[] teColumns = {""};
+        TargetEncoder tec = new TargetEncoder(teColumns);
+
+        int responseColumnIndex = fr.find(responseColumn);
+        
+        Frame groupedFrame = tec.groupThenAggregateForNumeratorAndDenominator(fr, columnName, null, responseColumnIndex);
+
+        if (etalon == null) {
+          etalon = groupedFrame;
+          Scope.untrack(etalon.keys());
+          Frame.export(etalon, "encoding_map_etalon.csv", etalon._key.toString(), true, 1).get();
+        } else {
+          try {
+            assertTrue("Failed attempt number " + attempt, isBitIdentical(etalon, groupedFrame));
+          } catch (AssertionError ex) {
+            Frame.export(groupedFrame, "encoding_map_badboy" + attempt + ".csv", groupedFrame._key.toString(), true, 1).get();
+            throw ex;
+          }
+        }
+        printOutFrameAsTable(groupedFrame);
+      } finally {
+        Scope.exit();
+      }
+    }
+  }
+  
     @Test
     public void allTEColumnsAreCategoricalTest() {
 
@@ -831,6 +900,59 @@ public class TargetEncodingTest extends TestUtil {
       expected.remove();
       tmp1.delete();
       tmp2.delete();
+    }
+    
+    @Test
+    public void ensureRemovingNAsIsWorkingTest() {
+      for (int attempt = 0; attempt < 30; attempt++) {
+        Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+
+        printOutColumnsMetadata(fr);
+        printOutFrameAsTable(fr, true, 20);
+
+        String columnName = "home.dest";
+        long count = fr.vec(columnName).naCnt();
+
+        assertEquals(564, count, 1e-5);
+
+        String[] teColumns = {""};
+        TargetEncoder tec = new TargetEncoder(teColumns);
+
+        Frame filtered = tec.filterOutNAsFromTargetColumn(fr, fr.find(columnName));
+
+        long countAfterFiltering = filtered.vec(columnName).naCnt();
+
+        assertEquals(0, countAfterFiltering, 1e-5);
+        filtered.delete();
+      }
+      
+    }
+    
+    @Test
+    public void ensureBinaryCategoricalIsWorkingTest() {
+      for (int attempt = 0; attempt < 1; attempt++) {
+        Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+
+        String response = "survived";
+
+        asFactor(fr, response);
+        printOutColumnsMetadata(fr);
+
+        String columnName = "home.dest";
+
+        String[] teColumns = {""};
+        TargetEncoder tec = new TargetEncoder(teColumns);
+
+        Frame filtered = tec.filterOutNAsFromTargetColumn(fr, fr.find(columnName));
+
+        Frame encoded = tec.ensureTargetColumnIsBinaryCategorical(filtered, response);
+
+        printOutColumnsMetadata(encoded);
+        
+        filtered.delete();
+        fr.delete();
+      }
+      
     }
 
   @Test

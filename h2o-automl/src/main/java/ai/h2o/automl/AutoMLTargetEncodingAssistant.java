@@ -90,8 +90,8 @@ class AutoMLTargetEncodingAssistant{
 
       String responseColumnName = _trainingFrame.name(_trainingFrame.find(_responseColumn));
 
-      Map<String, Frame> encodingMap = null
-              ;
+      Map<String, Frame> encodingMap = null;
+      
       switch (holdoutType) {
         case TargetEncoder.DataLeakageHandlingStrategy.KFold:
           

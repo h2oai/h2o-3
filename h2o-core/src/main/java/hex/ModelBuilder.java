@@ -197,6 +197,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected final Frame valid() { return _valid; }
   protected transient Frame _valid;
 
+  public void setValid(Frame valid) {
+    _valid = valid;
+  }
+
   // TODO: tighten up the type
   // Map the algo name (e.g., "deeplearning") to the builder class (e.g., DeepLearning.class) :
   private static final Map<String, Class<? extends ModelBuilder>> _builders = new HashMap<>();
