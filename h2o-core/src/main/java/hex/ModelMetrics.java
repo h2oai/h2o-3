@@ -97,9 +97,13 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     sb.append(" Description: " + (_description == null ? "N/A" : _description) + "\n");
     sb.append(" model id: " + _modelKey + "\n");
     sb.append(" frame id: " + _frameKey + "\n");
-    sb.append(" MSE: " + (float)_MSE + "\n");
-    sb.append(" RMSE: " + (float)rmse() + "\n");
-    return sb.toString();
+    return appendToStringMetrics(sb).toString();
+  }
+
+  protected StringBuilder appendToStringMetrics(StringBuilder sb) {
+    sb.append(" MSE: ").append((float)_MSE).append("\n");
+    sb.append(" RMSE: ").append((float)rmse()).append("\n");
+    return sb;
   }
 
   public final Model model() { return _model==null ? (_model=DKV.getGet(_modelKey)) : _model; }
