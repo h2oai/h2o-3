@@ -6,13 +6,10 @@ import hex.genmodel.ModelDescriptor;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.H2O;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.util.IcedHashMap;
 
-import java.io.IOException;
 import java.util.Map;
 
 /**

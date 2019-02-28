@@ -6,7 +6,6 @@ import hex.genmodel.descriptor.VariableImportances;
 
 import java.io.Serializable;
 
-import java.awt.*;
 import java.util.Map;
 
 public interface ModelDescriptor {
