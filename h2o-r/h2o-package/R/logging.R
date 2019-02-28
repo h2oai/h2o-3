@@ -188,7 +188,7 @@ h2o.downloadAllLogs <- function(dirname = ".", filename = NULL) {
     stop("`filename` must be a non-empty character string")
 
   conn <- h2o.getConnection()
-  url <- paste0("http://", conn@ip, ":", conn@port, "/", .h2o.__DOWNLOAD_LOGS)
+  url <- .h2o.calcBaseURL(conn, urlSuffix = .h2o.__DOWNLOAD_LOGS)
   if(!file.exists(dirname))
     dir.create(dirname)
 
