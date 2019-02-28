@@ -186,7 +186,7 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
                     max_memory = max_mem_size, min_memory = min_mem_size,
                     enable_assertions = enable_assertions, forceDL = forceDL, license = license,
                     extra_classpath = extra_classpath, ice_root = ice_root, stdout = stdout,
-                    log_dir = log_dir, log_level = log_level,
+                    log_dir = log_dir, log_level = log_level, context_path = context_path,
                     jvm_custom_args = jvm_custom_args, bind_to_localhost = bind_to_localhost)
 
       count <- 0L
@@ -530,7 +530,8 @@ h2o.clusterStatus <- function() {
 .h2o.startJar <- function(ip = "localhost", port = 54321, name = NULL, nthreads = -1,
                           max_memory = NULL, min_memory = NULL,
                           enable_assertions = TRUE, forceDL = FALSE, license = NULL, extra_classpath = NULL,
-                          ice_root, stdout, log_dir, log_level, jvm_custom_args = NULL, bind_to_localhost) {
+                          ice_root, stdout, log_dir, log_level, context_path, jvm_custom_args = NULL, 
+                          bind_to_localhost) {
   command <- .h2o.checkJava()
 
   if (! is.null(license)) {
@@ -612,6 +613,7 @@ h2o.clusterStatus <- function() {
 
   if(!is.na(log_dir)) args <- c(args, "-log_dir", log_dir)
   if(!is.na(log_level)) args <- c(args, "-log_level", log_level)
+  if(!is.na(context_path)) args <- c(args, "-context_path", context_path)
 
   if(nthreads > 0L) args <- c(args, "-nthreads", nthreads)
   if(!is.null(license)) args <- c(args, "-license", license)
@@ -822,6 +824,8 @@ h2o.networkTest <- function() {
 #'
 #' @importFrom utils browseURL
 #' @export
-h2o.flow <- function(){
-  browseURL(.h2o.calcBaseURL(urlSuffix=""))
+h2o.flow <- function() {
+  conn <- h2o.getConnection()
+  url <- .h2o.calcBaseURL(conn, urlSuffix = "flow/")
+  browseURL(url)
 }
