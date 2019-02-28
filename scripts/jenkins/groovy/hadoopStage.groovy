@@ -129,6 +129,7 @@ private GString getH2OStartupCmd(final stageConfig) {
 private String getMakeTargetSuffix(final stageConfig) {
     switch (stageConfig.customData.mode) {
         case H2O_HADOOP_STARTUP_MODE_HADOOP:
+            return "-hdp"
         case H2O_HADOOP_STARTUP_MODE_STANDALONE:
             return "-ldap"
         case H2O_HADOOP_STARTUP_MODE_WITH_KRB:

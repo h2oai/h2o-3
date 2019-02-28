@@ -352,7 +352,12 @@ test-package-hadoop:
 		scripts/jenkins/config/ \
 		h2o-hadoop-2/tests/python/ h2o-hadoop-2/h2o-*-assembly/build/libs/h2odriver.jar \
 		h2o-hadoop-3/tests/python/ h2o-hadoop-3/h2o-*-assembly/build/libs/h2odriver.jar \
-		h2o-hadoop-common/tests/python/
+		h2o-hadoop-common/tests/python/ \
+		h2o-hive/tests/python h2o-hive/tests/R
+
+test-hadoop-common-smoke-hive:
+	cd h2o-hive/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
+	cd h2o-hive/tests/R && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
 
 test-hadoop-common-smoke-ldap:
 	cd h2o-hadoop-common/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
@@ -360,8 +365,12 @@ test-hadoop-common-smoke-ldap:
 test-hadoop-common-smoke-kerb:
 	cd h2o-hadoop-common/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --kerb.principal $$KERB_PRINCIPAL
 
+test-hadoop-2-smoke-hdp: test-hadoop-2-smoke-ldap test-hadoop-common-smoke-hive
+
 test-hadoop-2-smoke-ldap: test-hadoop-common-smoke-ldap
 	cd h2o-hadoop-2/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
+
+test-hadoop-3-smoke-hdp: test-hadoop-3-smoke-ldap test-hadoop-common-smoke-hive
 
 test-hadoop-3-smoke-ldap: test-hadoop-common-smoke-ldap
 	cd h2o-hadoop-3/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
