@@ -2,27 +2,10 @@ package hex.genmodel.easy;
 
 import hex.ModelCategory;
 import hex.genmodel.GenModel;
-import hex.genmodel.MojoModel;
-import hex.genmodel.algos.word2vec.WordEmbeddingModel;
-import hex.genmodel.easy.error.CountingErrorConsumer;
-import hex.genmodel.easy.error.VoidErrorConsumer;
-import hex.genmodel.easy.exception.PredictUnknownCategoricalLevelException;
-import hex.genmodel.easy.prediction.*;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
-import java.io.*;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
 
 public class EasyPredictModelWrapperWithTargetEncodingTest {
 

@@ -2,12 +2,10 @@ package hex;
 
 import ai.h2o.automl.targetencoding.BlendingParams;
 import ai.h2o.automl.targetencoding.TargetEncoder;
-import hex.genmodel.ModelDescriptor;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Key;
-import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 

@@ -1,9 +1,6 @@
 package hex.genmodel;
 
 import org.junit.Test;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.reflect.Whitebox;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
@@ -11,8 +8,6 @@ import java.io.StringReader;
 import java.util.Map;
 
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
-import static org.powermock.configuration.ConfigurationType.PowerMock;
 
 public class ModelMojoReaderTest {
 

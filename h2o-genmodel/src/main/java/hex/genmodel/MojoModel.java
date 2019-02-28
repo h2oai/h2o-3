@@ -4,7 +4,6 @@ import hex.genmodel.attributes.ModelAttributes;
 import hex.genmodel.descriptor.ModelDescriptor;
 
 import java.io.*;
-import java.util.Map;
 
 
 /**
