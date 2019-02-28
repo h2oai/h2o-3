@@ -280,7 +280,7 @@ h2o.import_sql_select<- function(connection_url, select_query, username, passwor
 #' Make sure to start H2O with Hive on classpath. Uses hive-site.xml on classpath to connect to Hive.
 #'
 #' For example, 
-#'     my_citibike_data = h2o.import_hive_table("default", "citibike20k", [["2017", "01"], ["2017", "02"]])
+#'     my_citibike_data = h2o.import_hive_table("default", "citibike20k", partitions = list(c("2017", "01"), c("2017", "02")))
 #'
 #' @param database Name of Hive database (default database will be used by default)
 #' @param table name of Hive table to import
@@ -292,7 +292,14 @@ h2o.import_hive_table <- function(database, table, partitions = NULL, allow_mult
   parms <- list()
   parms$database <- database
   parms$table <- table
-  parms$partitions <- partitions
+  if (!is.null(partitions)) {
+      parts <- c()
+      for (p in partitions) {
+        parts <- c(parts, paste0("[", paste0(p, collapse = ","), "]"))
+      }
+      parms$partitions <- paste0("[", paste0(parts, collapse = ","), "]")
+
+  }
   parms$allow_multi_format <- allow_multi_format
   res <- .h2o.__remoteSend('ImportHiveTable', method = "POST", .params = parms, h2oRestApiVersion = 99)
   job_key <- res$key$name

@@ -190,6 +190,36 @@ core-site.xml must be configured for at least the following properties (class, p
     </configuration>
 
 
+Direct Hive import
+~~~~~~~~~~~~~~~~~~
+
+H2O supports direct ingestion of data managed by Hive in Hadoop. This feature is available only when H2O is running as a Hadoop job. Internally H2O uses metadata in Hive Metastore database to determine the location and format of given Hive table. H2O then imports data directly from HDFS so limitations of supported formats mentioned above apply. Data from hive can pulled into H2O using ``import_hive_table`` function.
+
+Requirements:
+
+- Hive jars and configuration must be present on H2O job classpath - either via adding it to yarn.application.classpath (or similar property for your resource manger of choice) or by adding Hive jars and configuration to libjars
+- user running H2O must have read access to Hive and the files it manages
+
+Limitations
+
+- imported table must be stored in a format supported by H2O (see above)
+- CSV - Hive table property ``skip.header.line.count`` is currently not supported, CSV files with header rows will be imported with header row as data
+- partitioned tables with different storage formats - H2O supports importing partitioned tables which use different storage formats for different partitions, however in some cases (for example large number of small partitions) H2O may run out of memory while importing even though the final data would easily fit into the memory allocated to the H2O cluster
+
+.. example-code::
+   .. code-block:: r
+
+    basic_import <- h2o.import_hive_table("default", "table_name")
+    multi_format_enabled <- h2o.import_hive_table("default", "table_name", allow_multi_format=True)
+    with_partition_filter <- h2o.import_hive_table("default", "table_name", [["2017", "02"]])
+
+   .. code-block:: python
+
+    basic_import = h2o.import_hive_table("default", "table_name")
+    multi_format_enabled = h2o.import_hive_table("default", "table_name", allow_multi_format=True)
+    with_partition_filter = h2o.import_hive_table("default", "table_name", [["2017", "02"]])
+
+
 JDBC Databases
 ~~~~~~~~~~~~~~
 
