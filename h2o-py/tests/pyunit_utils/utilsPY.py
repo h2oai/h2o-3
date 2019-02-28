@@ -4230,3 +4230,21 @@ def checkCorrectSkipsFolder(originalFullFrame, csvfile, skipped_columns):
                 compare_frames_local_onecolumn_NA(originalFullFrame[cindex], skippedFrameIF[skipCounter],
                                                                prob=1, tol=1e-10, returnResult=False)
             skipCounter = skipCounter + 1
+
+def assertModelColNamesTypesCorrect(modelNames, modelTypes, frameNames, frameTypesDict):
+    fName = list(frameNames)
+    mName = list(modelNames)
+    assert fName.sort() == mName.sort(), "Expected column names {0}, actual column names {1} and they" \
+                                                    " are different".format(frameNames, modelNames) 
+    for ind in range(len(frameNames)):  
+        if modelTypes[modelNames.index(frameNames[ind])].lower()=="numeric":
+            assert (frameTypesDict[frameNames[ind]].lower()=='real') or \
+                   (frameTypesDict[frameNames[ind]].lower()=='int'), \
+                "Expected training data types for column {0} is {1}.  Actual training data types for column {2} from " \
+                "model output is {3}".format(frameNames[ind], frameTypesDict[frameNames[ind]],
+                                             frameNames[ind], modelTypes[modelNames.index(frameNames[ind])])
+        else:
+            assert modelTypes[modelNames.index(frameNames[ind])].lower()==frameTypesDict[frameNames[ind]].lower(), \
+            "Expected training data types for column {0} is {1}.  Actual training data types for column {2} from " \
+            "model output is {3}".format(frameNames[ind], frameTypesDict[frameNames[ind]],
+                                         frameNames[ind], modelTypes[modelNames.index(frameNames[ind])])

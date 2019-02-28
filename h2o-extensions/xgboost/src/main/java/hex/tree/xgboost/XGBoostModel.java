@@ -630,7 +630,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   }
 
   private void setDataInfoToOutput(DataInfo dinfo) {
-    _output._names = dinfo._adaptedFrame.names();
+    _output.setNames(dinfo._adaptedFrame.names(), dinfo._adaptedFrame.typesStr());
     _output._domains = dinfo._adaptedFrame.domains();
     _output._origNames = _parms._train.get().names();
     _output._origDomains = _parms._train.get().domains();
