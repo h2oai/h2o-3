@@ -9,8 +9,9 @@ public class ModelMetricsAnomaly extends ModelMetricsUnsupervised implements Sco
   public final double _mean_normalized_score;
 
   public ModelMetricsAnomaly(Model model, Frame frame, CustomMetric customMetric,
-                             long nobs, double totalScore, double totalNormScore) {
-    super(model, frame, nobs, Double.NaN, customMetric);
+                             long nobs, double totalScore, double totalNormScore,
+                             String description) {
+    super(model, frame, nobs, description, customMetric);
     _mean_score = totalScore / nobs;
     _mean_normalized_score = totalNormScore / nobs;
   }
@@ -21,13 +22,23 @@ public class ModelMetricsAnomaly extends ModelMetricsUnsupervised implements Sco
     sk._anomaly_score_normalized = _mean_normalized_score;
   }
 
+  @Override
+  protected StringBuilder appendToStringMetrics(StringBuilder sb) {
+    sb.append(" Number of Observations: ").append(_nobs).append("\n");
+    sb.append(" Mean Anomaly Score: ").append(_mean_score).append("\n");
+    sb.append(" Mean Normalized Anomaly Score: ").append(_mean_normalized_score).append("\n");
+    return sb;
+  }
+
   public static class MetricBuilderAnomaly extends MetricBuilderUnsupervised<MetricBuilderAnomaly> {
+    private transient String _description;
     private double _total_score = 0;
     private double _total_norm_score = 0;
     private long _nobs = 0;
 
-    public MetricBuilderAnomaly() {
+    public MetricBuilderAnomaly(String description) {
       _work = new double[2];
+      _description = description;
     }
 
     @Override
@@ -50,7 +61,7 @@ public class ModelMetricsAnomaly extends ModelMetricsUnsupervised implements Sco
 
     @Override
     public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
-      return m.addModelMetrics(new ModelMetricsAnomaly(m, f, _customMetric, _nobs, _total_score, _total_norm_score));
+      return m.addModelMetrics(new ModelMetricsAnomaly(m, f, _customMetric, _nobs, _total_score, _total_norm_score, _description));
     }
   }
 }
