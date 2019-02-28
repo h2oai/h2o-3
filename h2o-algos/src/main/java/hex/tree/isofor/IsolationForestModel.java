@@ -35,8 +35,8 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
   }
 
   public static class IsolationForestOutput extends SharedTreeModel.SharedTreeOutput {
-    public long _max_path_length;
-    public long _min_path_length;
+    public int _max_path_length;
+    public int _min_path_length;
 
     public IsolationForestOutput(IsolationForest b) { super(b); }
 
