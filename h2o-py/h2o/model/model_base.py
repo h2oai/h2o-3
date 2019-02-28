@@ -1238,7 +1238,7 @@ class ModelBase(backwards_compatible()):
         else:
             color_ids = ("Positive", "Negative")
             markers = [plt.Line2D([0, 0], [0, 0], color=color, marker="s", linestyle="")
-                       for color in set(signage[0:num_of_features])]
+                       for color in ['#1F77B4', '#FF7F0E']] # blue should always be positive, orange negative
             lgnd = plt.legend(markers, color_ids, numpoints=1, loc="best", frameon=False, fontsize=13)
             lgnd.legendHandles[0]._legmarker.set_markersize(10)
             lgnd.legendHandles[1]._legmarker.set_markersize(10)
