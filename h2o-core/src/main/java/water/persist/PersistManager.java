@@ -15,6 +15,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
@@ -249,7 +250,7 @@ public class PersistManager {
   public List<String> calcTypeaheadMatches(String filter, int limit) {
     filter = filter.trim();
     if (filter.isEmpty()) {
-      return new ArrayList<>();
+      return Collections.emptyList();
     }
     
     String s = filter.toLowerCase();
