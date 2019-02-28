@@ -247,6 +247,11 @@ public class PersistManager {
    * @return List of matches
    */
   public List<String> calcTypeaheadMatches(String filter, int limit) {
+    filter = filter.trim();
+    if (filter.isEmpty()) {
+      return new ArrayList<>();
+    }
+    
     String s = filter.toLowerCase();
     if (s.startsWith("http:") || s.startsWith("https:")) {
       if (httpUrlExists(filter)) {
