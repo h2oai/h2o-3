@@ -8,7 +8,6 @@ import org.junit.Test;
 import water.DKV;
 import water.Key;
 import water.TestUtil;
-import water.TestUtilSharedResources;
 import water.fvec.Frame;
 import water.parser.BufferedString;
 import water.rapids.Rapids;
@@ -16,7 +15,7 @@ import water.rapids.Val;
 import water.util.ArrayUtils;
 
 
-public class StratifiedSplitTest extends TestUtilSharedResources {
+public class StratifiedSplitTest extends TestUtil{
     private static Frame f = null, fr1 = null, fanimal = null, fr2 = null;
 
     @BeforeClass public static void setup() {

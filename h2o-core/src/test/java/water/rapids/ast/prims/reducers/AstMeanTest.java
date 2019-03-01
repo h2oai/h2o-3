@@ -6,7 +6,6 @@ import org.junit.Test;
 import water.DKV;
 import water.Key;
 import water.TestUtil;
-import water.TestUtilSharedResources;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Rapids;
@@ -22,7 +21,7 @@ import static org.junit.Assert.*;
 /**
  * Test the AstMean.java class
  */
-public class AstMeanTest extends TestUtilSharedResources {
+public class AstMeanTest extends TestUtil {
   private static Vec vi1, vd1, vd2, vd3, vs1, vt1, vt2, vc1, vc2;
   private static ArrayList<Frame> allFrames;
 

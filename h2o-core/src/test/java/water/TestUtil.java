@@ -1,7 +1,6 @@
 package water;
 
 import hex.CreateFrame;
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -124,20 +123,14 @@ public class TestUtil extends Iced {
     outStream.close();
   }
 
-  @After
-  public void checkLeakedKeys() {
-    performLeakedKeysCheck();
-  }
-
-
-  protected static void performLeakedKeysCheck() {
+  @AfterClass
+  public static void checkLeakedKeys() {
     final int leaked_keys = H2O.store_size() - _initial_keycnt;
     int unreportedKeyCount = leaked_keys;
     int nonIgnorableKeyCount = leaked_keys;
-    int cnt = 0;
     Set<Key> localKeySet = new HashSet<>(H2O.localKeySet());
-
-    if (leaked_keys > 0) {
+    
+    if( leaked_keys > 0 ) {
       for (Key key : H2O.localKeySet()) {
         final Value keyValue = Value.STORE_get(key);
         if (isIgnorableKeyLeak(key, keyValue)) {
@@ -146,7 +139,7 @@ public class TestUtil extends Iced {
           localKeySet.remove(key);
           continue;
         }
-        cnt++;
+
         if (keyValue != null && keyValue.isFrame()) {
           Frame frame = (Frame) key.get();
           localKeySet.remove(key);
@@ -166,7 +159,6 @@ public class TestUtil extends Iced {
               unreportedKeyCount--;
             }
           }
-          key.remove();
         }
       }
 
@@ -175,10 +167,18 @@ public class TestUtil extends Iced {
       }
 
       for (Key key : localKeySet) {
+        final Value keyValue = Value.STORE_get(key);
+
+        if (isIgnorableKeyLeak(key, keyValue)) {
+          continue;
+        }
+
+        unreportedKeyCount--;
         Log.err(String.format("Key '%s'", key.toString()));
       }
 
-      assertFalse(String.format("There are %d keys leaked.", nonIgnorableKeyCount), nonIgnorableKeyCount > 0 || cnt != 0);
+      assertFalse(String.format("There are %d keys leaked.", nonIgnorableKeyCount), nonIgnorableKeyCount > 0);
+
     }
     // Bulk brainless key removal.  Completely wipes all Keys without regard.
     new DKVCleaner().doAllNodes();

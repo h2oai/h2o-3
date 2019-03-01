@@ -6,7 +6,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import water.DKV;
 import water.TestUtil;
-import water.TestUtilSharedResources;
 import water.fvec.Frame;
 import water.parser.BufferedString;
 import water.rapids.Rapids;
@@ -14,7 +13,7 @@ import water.rapids.Val;
 import hex.CreateFrame;
 
 
-public class TimeSeriesTests extends TestUtilSharedResources {
+public class TimeSeriesTests extends TestUtil{
     private static Frame f = null, fr1=null, fr2=null;
     private static CreateFrame cf = null;
 
