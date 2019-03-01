@@ -66,10 +66,7 @@ class AutoMLTargetEncodingAssistant{
     _teParamsSelectionStrategy = teParamsSelectionStrategy != null ? teParamsSelectionStrategy : new FixedTEParamsStrategy(TargetEncodingParams.DEFAULT);
     _teParams = _teParamsSelectionStrategy.getBestParams(modelBuilder);
     
-    //Don't forget to preserve ignored colums that were set up by user explicitly
     _originalIgnoredColumns = modelBuilder._parms._ignored_columns;
-    // TODO do we need this? try to remove
-    modelBuilder._parms._ignored_columns = concat(getApplicationStrategy().getColumnsToEncode(), _originalIgnoredColumns);
   }
 
 

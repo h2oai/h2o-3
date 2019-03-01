@@ -33,7 +33,7 @@ public class AutoMLWithTETitanicBenchmark extends TestUtil {
     stall_till_cloudsize(1);
   }
 
-  int numberOfModelsToCompareWith = 3;
+  int numberOfModelsToCompareWith = 4;
 
   Algo[] excludeAlgos = {Algo.DeepLearning, Algo.DRF/*, Algo.GLM*/, Algo.XGBoost, Algo.GBM, Algo.StackedEnsemble};
 
@@ -65,7 +65,10 @@ public class AutoMLWithTETitanicBenchmark extends TestUtil {
     Random generator = new Random();
     double avgAUCWith = 0.0;
     double avgAUCWithoutTE = 0.0;
-    int numberOfRuns = 1;
+    double avgCumulativeAUCWith = 0.0;
+    double avgCumulativeWithoutTE = 0.0;
+
+    int numberOfRuns = 2;
     for (int seedAttempt = 0; seedAttempt < numberOfRuns; seedAttempt++) {
       long splitSeed = generator.nextLong();
       try {
@@ -104,7 +107,10 @@ public class AutoMLWithTETitanicBenchmark extends TestUtil {
         aml.get();
 
         leader = aml.leader();
-        assertTrue(  aml.leaderboard().getModels().length == numberOfModelsToCompareWith);
+        Leaderboard leaderboardWithTE = aml.leaderboard();
+        double cumulativeLeaderboardScoreWithTE = 0;
+        cumulativeLeaderboardScoreWithTE = getCumulativeLeaderboardScore(splits[2], leaderboardWithTE);
+        assertTrue(  leaderboardWithTE.getModels().length == numberOfModelsToCompareWith);
 
         double aucWithTE = getScoreBasedOn(splits[2], leader);
 
@@ -112,15 +118,24 @@ public class AutoMLWithTETitanicBenchmark extends TestUtil {
 
         splitsForWithoutTE = getSplitsFromTitanicDataset(responseColumnName, splitSeed);
         Leaderboard leaderboardWithoutTE = trainBaselineAutoMLWithoutTE(splitsForWithoutTE, responseColumnName, seed, splitSeed);
+        double cumulativeLeaderboardScoreWithoutTE = 0;
+        cumulativeLeaderboardScoreWithoutTE = getCumulativeLeaderboardScore(splits[2], leaderboardWithoutTE);
         Model leaderFromWithoutTE = leaderboardWithoutTE.getLeader();
         double aucWithoutTE = getScoreBasedOn(splits[2], leaderFromWithoutTE);
 
-        Log.info("Leader" + leader._parms.fullName());
+        Log.info("Leader:" + leader._parms.fullName());
+        Log.info("Leader:" + leaderFromWithoutTE._parms.fullName());
         Log.info("Performance on leaderboard frame with TE: AUC = " + aucWithTE);
-        Log.info("Leader" + leaderFromWithoutTE._parms.fullName());
         Log.info("Performance on leaderboard frame without TE: AUC = " + aucWithoutTE);
+        Log.info("Cumulative performance on leaderboard frame with TE: AUC = " + cumulativeLeaderboardScoreWithTE);
+        Log.info("Cumulative performance on leaderboard frame without TE: AUC = " + cumulativeLeaderboardScoreWithoutTE);
+        
+        
         avgAUCWith += aucWithTE;
         avgAUCWithoutTE += aucWithoutTE;
+
+        avgCumulativeAUCWith += cumulativeLeaderboardScoreWithTE;
+        avgCumulativeWithoutTE += cumulativeLeaderboardScoreWithoutTE;
 
       } finally {
         if (leader != null) leader.delete();
@@ -131,9 +146,23 @@ public class AutoMLWithTETitanicBenchmark extends TestUtil {
 
     avgAUCWith = avgAUCWith / numberOfRuns;
     avgAUCWithoutTE = avgAUCWithoutTE / numberOfRuns;
-    System.out.println("Average AUC with encoding:" + avgAUCWith);
-    System.out.println("Average AUC without encoding:" + avgAUCWithoutTE);
+    System.out.println("Average AUC with encoding: " + avgAUCWith);
+    System.out.println("Average AUC without encoding: " + avgAUCWithoutTE);
+
+    avgCumulativeAUCWith = avgCumulativeAUCWith / numberOfRuns;
+    avgCumulativeWithoutTE = avgCumulativeWithoutTE / numberOfRuns;
+    System.out.println("Average cumulative AUC with encoding: " + avgCumulativeAUCWith);
+    System.out.println("Average cumulative AUC without encoding: " + avgCumulativeWithoutTE);
+    
     Assert.assertTrue(avgAUCWith > avgAUCWithoutTE);
+  }
+
+  private double getCumulativeLeaderboardScore(Frame split, Leaderboard leaderboardWithTE) {
+    double cumulative = 0.0;
+    for( Model model : leaderboardWithTE.getModels()) {
+      cumulative += getScoreBasedOn(split, model);
+    }
+    return cumulative;
   }
 
   private Leaderboard trainBaselineAutoMLWithoutTE(Frame[] splits, String responseColumnName, long seed, long splitSeed) {
