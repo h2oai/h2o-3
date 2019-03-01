@@ -1542,7 +1542,18 @@ h2o.varimp <- function(object) {
   o <- object
   if( is(o, "H2OModel") ) {
     vi <- o@model$variable_importances
-    if( is.null(vi) ) { vi <- object@model$standardized_coefficient_magnitudes }  # no true variable importances, maybe glm coeffs? (return standardized table...)
+    if( is.null(vi) ) { # may be glm
+      tvi <- object@model$standardized_coefficient_magnitudes 
+      maxCoeff <- max(tvi$coefficients)
+      sumCoeff <- sum(tvi$coefficients)
+      scaledCoeff <- tvi$coefficients/maxCoeff
+      percentageC <- tvi$coefficients/sumCoeff
+      variable <- tvi$names
+      relative_importance <- tvi$coefficients
+      scaled_importance <- scaledCoeff
+      percentage <- percentageC
+      vi <- data.frame(variable, relative_importance, scaled_importance, percentage)
+      }  # no true variable importances, maybe glm coeffs? (return standardized table...)
     if( is.null(vi) ) {
       warning("This model doesn't have variable importances", call. = FALSE)
       return(invisible(NULL))
@@ -2654,9 +2665,6 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
 #' }
 #' @export
 h2o.varimp_plot <- function(model, num_of_features = NULL){
-  # if glm use h2o.std_coef_plot() instead to get std. coef. magnitudes
-  if(model@algorithm[1] == 'glm') {h2o.std_coef_plot(model, num_of_features = num_of_features )}
-  else{
   # store the variable importance table as vi
   vi <- h2o.varimp(model)
 
@@ -2701,8 +2709,6 @@ h2o.varimp_plot <- function(model, num_of_features = NULL){
             col ='#1F77B4', # blue
             main = title)
   }
-
-  }
 }
 
 #' Plot Standardized Coefficient Magnitudes
@@ -2730,9 +2736,17 @@ h2o.varimp_plot <- function(model, num_of_features = NULL){
 h2o.std_coef_plot <- function(model, num_of_features = NULL){
   # check that the model is a glm
   if(model@algorithm[1] != "glm") stop("Warning: model must be a GLM")
-
+  maxcoeff = 1
+  if (model@model$model_summary["family"]=="multinomial") {
+    coeff_table <- model@model$standardized_coefficient_magnitudes
+    sorted_table <- coeff_table[order(abs(coeff_table$coefficients)),]
+    norm_coef <- sorted_table$coefficients
+    sort_norm <- norm_coef
+    maxcoeff = max(norm_coef)
+  } else {
   # get the coefficients table
   coeff_table_complete <- model@model$coefficients_table
+
   # remove the intercept row from the complete coeff_table_complete
   coeff_table <- coeff_table_complete[coeff_table_complete$names != "Intercept",]
   # order the coeffcients table by the absolute value of the standardized_coefficients
@@ -2741,7 +2755,9 @@ h2o.std_coef_plot <- function(model, num_of_features = NULL){
   # get a vector of normalized coefs. and abs norm coefs., and the corresponding labels
   norm_coef <- sorted_table$standardized_coefficients
   sort_norm <- abs(sorted_table$standardized_coefficients)
+}
   labels <- sorted_table$names
+  
 
   # check if num_of_features was passed as an integer, otherwise use all features
   if(is.null(num_of_features)) {num_of_features = length(norm_coef)}
@@ -2772,7 +2788,7 @@ h2o.std_coef_plot <- function(model, num_of_features = NULL){
             space = 1,
             horiz = TRUE, las = 1,
             ylim=c(0 ,2),
-            xlim = c(0,1),
+            xlim = c(0,maxcoeff),
             col = rev(color_code)[num_of_features],
             main = "Standardized Coef. Magnitudes")
   }
@@ -2785,7 +2801,7 @@ h2o.std_coef_plot <- function(model, num_of_features = NULL){
         space = 1,
         horiz = TRUE, las = 1,
         col = tail(color_code, n = num_of_features),
-        xlim = c(0,1),
+        xlim = c(0,maxcoeff),
         main = "Standardized Coef. Magnitudes")
   }
 
