@@ -443,7 +443,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // If no cross-validation and validation or leaderboard frame are missing,
     // then we need to create one out of the original training set.
     if (!isCVEnabled()) {
-      //TODO: Leaderboard now also accepts scoring based on validation metrics, so maybe it's not necessary to create a leaderboardFrame anymore...
       double[] splitRatios = null;
       if (null == this.validationFrame && null == this.leaderboardFrame) {
         splitRatios = new double[]{ 0.8, 0.1, 0.1 };
@@ -478,22 +477,17 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
         if (this.validationFrame == null && splits[1].numRows() > 0) {
           this.validationFrame = splits[1];
         } else {
-          DKV.remove(splits[1]._key);
+          splits[1].delete();
         }
 
         if (this.leaderboardFrame == null && splits[2].numRows() > 0) {
           this.leaderboardFrame = splits[2];
         } else {
-          DKV.remove(splits[2]._key);
-        }
-
-        for (Frame f : splits) {
-          if (f.numRows() == 0) f.delete();
+          splits[2].delete();
         }
       }
     }
   }
-
   private void handleDatafileParameters(AutoMLBuildSpec buildSpec) {
     this.origTrainingFrame = DKV.getGet(buildSpec.input_spec.training_frame);
     this.validationFrame = DKV.getGet(buildSpec.input_spec.validation_frame);
@@ -512,7 +506,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
         throw new H2OIllegalArgumentException("Response column '"+buildSpec.input_spec.response_column+"' is not in the "+entry.getKey()+" frame.");
       }
     }
-    
+
     if (buildSpec.input_spec.fold_column != null && this.origTrainingFrame.find(buildSpec.input_spec.fold_column) == -1) {
       throw new H2OIllegalArgumentException("Fold column '"+buildSpec.input_spec.fold_column+"' is not in the training frame.");
     }

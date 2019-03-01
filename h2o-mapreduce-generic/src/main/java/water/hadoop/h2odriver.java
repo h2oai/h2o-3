@@ -155,8 +155,6 @@ public class h2odriver extends Configured implements Tool {
   static String hiveHost = null;
   static String hivePrincipal = null;
   static boolean refreshTokens = false;
-  
-  private final HiveTokenGenerator hiveTokenGenerator = new HiveTokenGenerator();
 
   String proxyUrl = null;
   // Runtime state that might be touched by different threads.
@@ -1838,7 +1836,7 @@ public class h2odriver extends Configured implements Tool {
     j.setOutputKeyClass(Text.class);
     j.setOutputValueClass(Text.class);
 
-    hiveTokenGenerator.addHiveDelegationToken(j, hiveHost, hivePrincipal);
+    HiveTokenGenerator.addHiveDelegationTokenIfHivePresent(j, hiveHost, hivePrincipal);
     if (refreshTokens && principal != null && keytabPath != null) {
       j.getConfiguration().set(H2O_AUTH_PRINCIPAL, principal);
       byte[] payloadData = readBinaryFile(keytabPath);

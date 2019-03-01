@@ -280,4 +280,106 @@ public class AutoMLTest extends water.TestUtil {
       if (fr != null) fr.remove();
     }
   }
+
+  @Test public void test_training_frame_partition_when_cv_disabled_and_validation_frame_missing() {
+    AutoML aml = null;
+    Frame fr = null, test = null;
+    try {
+      AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+      fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
+      test = parse_test_file("./smalldata/logreg/prostate_test.csv");
+      autoMLBuildSpec.input_spec.response_column = "CAPSULE";
+      autoMLBuildSpec.input_spec.training_frame = fr._key;
+      autoMLBuildSpec.input_spec.validation_frame = null;
+      autoMLBuildSpec.input_spec.leaderboard_frame = test._key;
+      autoMLBuildSpec.build_control.nfolds = 0;
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
+      autoMLBuildSpec.build_control.stopping_criteria.set_seed(1);
+      aml = AutoML.startAutoML(autoMLBuildSpec);
+      aml.get();
+      double tolerance = 1e-2;
+      assertEquals(0.9, (double)aml.getTrainingFrame().numRows() / fr.numRows(), tolerance);
+      assertEquals(0.1, (double)aml.getValidationFrame().numRows() / fr.numRows(), tolerance);
+      assertEquals(test.numRows(), aml.getLeaderboardFrame().numRows());
+    } finally {
+      if (aml != null) aml.deleteWithChildren();
+      if (fr != null) fr.remove();
+      if (test != null) test.remove();
+    }
+  }
+
+  @Test public void  test_training_frame_partition_when_cv_disabled_and_leaderboard_frame_missing() {
+    AutoML aml = null;
+    Frame fr = null, test = null;
+    try {
+      AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+      fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
+      test = parse_test_file("./smalldata/logreg/prostate_test.csv");
+      autoMLBuildSpec.input_spec.response_column = "CAPSULE";
+      autoMLBuildSpec.input_spec.training_frame = fr._key;
+      autoMLBuildSpec.input_spec.validation_frame = test._key;
+      autoMLBuildSpec.input_spec.leaderboard_frame = null;
+      autoMLBuildSpec.build_control.nfolds = 0;
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
+      autoMLBuildSpec.build_control.stopping_criteria.set_seed(1);
+      aml = AutoML.startAutoML(autoMLBuildSpec);
+      aml.get();
+      double tolerance = 1e-2;
+      assertEquals(0.9, (double)aml.getTrainingFrame().numRows() / fr.numRows(), tolerance);
+      assertEquals(test.numRows(), aml.getValidationFrame().numRows());
+      assertEquals(0.1, (double)aml.getLeaderboardFrame().numRows() / fr.numRows(), tolerance);
+    } finally {
+      if (aml != null) aml.deleteWithChildren();
+      if (fr != null) fr.remove();
+      if (test != null) test.remove();
+    }
+  }
+
+  @Test public void test_training_frame_partition_when_cv_disabled_and_both_validation_and_leaderboard_frames_missing() {
+    AutoML aml = null;
+    Frame fr = null;
+    try {
+      AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+      fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
+      autoMLBuildSpec.input_spec.response_column = "CAPSULE";
+      autoMLBuildSpec.input_spec.training_frame = fr._key;
+      autoMLBuildSpec.input_spec.validation_frame = null;
+      autoMLBuildSpec.input_spec.leaderboard_frame = null;
+      autoMLBuildSpec.build_control.nfolds = 0;
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
+      autoMLBuildSpec.build_control.stopping_criteria.set_seed(1);
+      aml = AutoML.startAutoML(autoMLBuildSpec);
+      aml.get();
+      double tolerance = 1e-2;
+      assertEquals(0.8, (double)aml.getTrainingFrame().numRows() / fr.numRows(), tolerance);
+      assertEquals(0.1, (double)aml.getValidationFrame().numRows() / fr.numRows(), tolerance);
+      assertEquals(0.1, (double)aml.getLeaderboardFrame().numRows() / fr.numRows(), tolerance);
+    } finally {
+      if (aml != null) aml.deleteWithChildren();
+      if (fr != null) fr.remove();
+    }
+  }
+
+  @Test public void test_training_frame_not_partitioned_when_cv_enabled() {
+    AutoML aml = null;
+    Frame fr = null;
+    try {
+      AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+      fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
+      autoMLBuildSpec.input_spec.response_column = "CAPSULE";
+      autoMLBuildSpec.input_spec.training_frame = fr._key;
+      autoMLBuildSpec.input_spec.validation_frame = null;
+      autoMLBuildSpec.input_spec.leaderboard_frame = null;
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
+      autoMLBuildSpec.build_control.stopping_criteria.set_seed(1);
+      aml = AutoML.startAutoML(autoMLBuildSpec);
+      aml.get();
+      assertEquals(fr.numRows(), aml.getTrainingFrame().numRows());
+      assertNull(aml.getValidationFrame());
+      assertNull(aml.getLeaderboardFrame());
+    } finally {
+      if (aml != null) aml.deleteWithChildren();
+      if (fr != null) fr.remove();
+    }
+  }
 }
