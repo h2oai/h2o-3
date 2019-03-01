@@ -132,16 +132,24 @@ class AutoMLTargetEncodingAssistant{
           break;
           
         case TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut:
+//          Frame.export(_trainingFrame, "trainCopy_assistant.csv", Key.make().toString(), true, 1).get();
+
           encodingMap = tec.prepareEncodingMap(_trainingFrame, responseColumnName, null);
+//          Frame.export(encodingMap.get("home.dest"), "encoding_map_assistant.csv", encodingMap.get("home.dest")._key.toString(), true, 1).get();
+
           Frame encodedTrainingFrameLOO = tec.applyTargetEncoding(_trainingFrame, responseColumnName, encodingMap, holdoutType, withBlendedAvg, noiseLevel, imputeNAsWithNewCategory,seed);
           copyEncodedColumnsToDestinationFrameAndRemoveSource(columnsToEncode, encodedTrainingFrameLOO, _trainingFrame);
 
           if(_validationFrame != null) {
-            Frame encodedValidationFrame = tec.applyTargetEncoding(_validationFrame, responseColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, withBlendedAvg, 0,  imputeNAsWithNewCategory, seed);
+            Frame encodedValidationFrame = tec.applyTargetEncoding(_validationFrame, responseColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, withBlendedAvg, 0.0,  imputeNAsWithNewCategory, seed);
             copyEncodedColumnsToDestinationFrameAndRemoveSource(columnsToEncode, encodedValidationFrame, _validationFrame);
           }
           if(_leaderboardFrame != null) {
-            Frame encodedLeaderboardFrame = tec.applyTargetEncoding(_leaderboardFrame, responseColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, withBlendedAvg, 0, imputeNAsWithNewCategory, seed);
+//            Frame.export(_leaderboardFrame, "leaderboard_before_assistant.csv", _leaderboardFrame._key.toString(), true, 1).get();
+
+            Frame encodedLeaderboardFrame = tec.applyTargetEncoding(_leaderboardFrame, responseColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, withBlendedAvg, 0.0, imputeNAsWithNewCategory, seed);
+//            Frame.export(encodedLeaderboardFrame, "leaderboard_encoded_assistant.csv", encodedLeaderboardFrame._key.toString(), true, 1).get();
+
             copyEncodedColumnsToDestinationFrameAndRemoveSource(columnsToEncode, encodedLeaderboardFrame, _leaderboardFrame);
           }
           break;
@@ -151,8 +159,15 @@ class AutoMLTargetEncodingAssistant{
           Frame trainNone = trainAndHoldoutSplits[0];
           Frame holdoutNone = trainAndHoldoutSplits[1];
           encodingMap = tec.prepareEncodingMap(holdoutNone, responseColumnName, null);
-          Frame encodedTrainingFrameNone = tec.applyTargetEncoding(trainNone, responseColumnName, encodingMap, holdoutType, withBlendedAvg, noiseLevel, imputeNAsWithNewCategory, seed);
+          Frame.export(encodingMap.get("home.dest"), "encoding_map_assistant.csv", encodingMap.get("home.dest")._key.toString(), true, 1).get();
+
+          Frame.export(trainNone, "train_none_before_assistant.csv", trainNone._key.toString(), true, 1).get();
+
+          Frame encodedTrainingFrameNone = tec.applyTargetEncoding(trainNone, responseColumnName, encodingMap, holdoutType, withBlendedAvg, 0.0, imputeNAsWithNewCategory, seed);
+          Frame.export(encodedTrainingFrameNone, "train_none_assistant.csv", encodedTrainingFrameNone._key.toString(), true, 1).get();
+
           copyEncodedColumnsToDestinationFrameAndRemoveSource(columnsToEncode, encodedTrainingFrameNone, trainNone);
+
           _modelBuilder.setTrain(trainNone);
 
           if(_validationFrame != null) {
@@ -168,9 +183,9 @@ class AutoMLTargetEncodingAssistant{
     }
   }
 
-  private Frame[] splitByRatio(Frame fr,double[] ratios) {
+  private Frame[] splitByRatio(Frame fr,double[] ratios, long seed) {
     Key[] keys = new Key[]{Key.<Frame>make(), Key.<Frame>make()};
-    return ShuffleSplitFrame.shuffleSplitFrame(fr, keys, ratios, 42);
+    return ShuffleSplitFrame.shuffleSplitFrame(fr, keys, ratios, seed);
   }
 
   void appendOriginalTEColumnsNamesToIgnoredListOfColumns(String[] columnsToEncode) {

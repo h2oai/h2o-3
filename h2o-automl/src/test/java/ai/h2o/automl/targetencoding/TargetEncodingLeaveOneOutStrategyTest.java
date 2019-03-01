@@ -14,13 +14,13 @@ import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
 import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.concat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.*;
 
 public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
 
@@ -472,7 +472,8 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
       encodingMapCleanUp(encodingMap);
     }
   }
-  
+
+  // Check after known issue PUBDEV-6319 is fixed
   /**
   * Here as evaluator we are using GBM model with cross validation on training frame. AUC is expected to be consistent.
   */
@@ -534,6 +535,118 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
         }
       }
       fr.delete();
+      encodingMapCleanUp(encodingMap);
+    }
+  }
+
+  // known issue PUBDEV-6319
+  @Test
+  public void usingSameEncodingMapWillNotCauseInconsistencyInApplyingPhaseTest() {
+    Frame etalonTrainFrame = null;
+    int numberOfFailures = 0;
+
+    String responseColumn = "survived";
+    Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+    fr.remove(new String[]{"name", "ticket", "boat", "body", "pclass", "sex", "age", "sibsp", "parch", "fare", "cabin", "embarked"});
+    asFactor(fr, responseColumn);
+
+    Key[] keys = new Key[]{Key.<Frame>make("train_LOO"), Key.<Frame>make("test_LOO")};
+    Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(fr, keys, new double[]{0.8, 0.2}, 42);
+    Frame trainSplit = splits[0];
+
+    String[] columnNamesToEncode = {/*"cabin", */"home.dest"};
+    BlendingParams params  = new BlendingParams(3, 10);
+    TargetEncoder tec = new TargetEncoder(columnNamesToEncode, params);
+
+    String teColumnName = "home.dest";
+    
+    Map<String, Frame> encodingMap = tec.prepareEncodingMap(fr, responseColumn, null);
+    
+    for (int attemptNumber = 0; attemptNumber < 500; attemptNumber++) {
+
+      // Making copies for current attempt
+      Frame trainCopy = trainSplit.deepCopy(Key.make().toString());
+      DKV.put(trainCopy);
+      
+      Frame encodingMapHomeDest = encodingMap.get(teColumnName).deepCopy(Key.make().toString());
+      DKV.put(encodingMapHomeDest);
+      Map<String, Frame> encodingMapCopy = new HashMap<>();
+      encodingMapCopy.put(teColumnName, encodingMapHomeDest);
+
+      // Applying encoding map with definitely the same encoding map
+      long seedForNoise = 2345;
+      byte leaveOneOutHoldout = TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut;
+      Frame trainEncoded = tec.applyTargetEncoding(trainCopy, responseColumn, encodingMapCopy, leaveOneOutHoldout, false, 0.0, true, seedForNoise);
+
+      
+      if(etalonTrainFrame == null) {
+        etalonTrainFrame = trainEncoded;
+        Frame.export(etalonTrainFrame, "applied_encoding_etalon.csv", etalonTrainFrame._key.toString(), true, 1).get();
+        Frame.export(encodingMapCopy.get(teColumnName), "encoding_map_etalon.csv", encodingMapCopy.get(teColumnName)._key.toString(), true, 1).get();
+      }
+      else {
+        try {
+          assertTrue("Failed attempt number " + attemptNumber, isBitIdentical(etalonTrainFrame, trainEncoded));
+        } catch (AssertionError ex) {
+          Frame.export(trainEncoded, "applied_encoding_badboy" + numberOfFailures +".csv", trainEncoded._key.toString(), true, 1).get();
+          Frame.export(encodingMapCopy.get(teColumnName), "encoding_map_etalon_badboy" + numberOfFailures + ".csv", encodingMapCopy.get(teColumnName)._key.toString(), true, 1).get();
+          numberOfFailures++;
+          throw ex;
+        }
+//        trainEncoded.delete();
+      }
+      encodingMapCleanUp(encodingMapCopy);
+    }
+    fr.delete();
+    encodingMapCleanUp(encodingMap);
+  }
+  
+  //This test shows that we will get inconsistent encodings from `prepareEncodingMap` method due to the known issue PUBDEV-6319
+  @Test
+  public void applyingTheSameTEParamsResultsInTheSameEncodedFrameTest() throws InterruptedException{
+    Frame etalonTrainFrame = null;
+    int numberOfFailures = 0;
+    for (int attemptNumber = 0; attemptNumber < 200; attemptNumber++) {
+      
+      String responseColumn = "survived";
+      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      fr.remove(new String[]{"name", "ticket", "boat", "body", "pclass", "sex", "age", "sibsp", "parch", "fare", "cabin", "embarked"});
+      asFactor(fr, responseColumn);
+
+      Key[] keys = new Key[]{Key.<Frame>make("train_LOO"), Key.<Frame>make("test_LOO")};
+      Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(fr, keys, new double[]{0.8, 0.2}, 42);
+      Frame trainSplit = splits[0];
+
+      String[] columnNamesToEncode = {/*"cabin", */"home.dest"};
+      BlendingParams params  = new BlendingParams(3, 10);
+      TargetEncoder tec = new TargetEncoder(columnNamesToEncode, params);
+
+      Map<String, Frame> encodingMap = tec.prepareEncodingMap(fr, responseColumn, null);
+
+      long seedForNoise = 2345;
+      byte leaveOneOutHoldout = TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut;
+      Frame trainEncoded = tec.applyTargetEncoding(trainSplit, responseColumn, encodingMap, leaveOneOutHoldout, false, 0.0, true, seedForNoise);
+
+      String encodingMapToExport = "home.dest";
+      if(etalonTrainFrame == null) {
+        etalonTrainFrame = trainEncoded;
+        Frame.export(etalonTrainFrame, "applied_encoding_etalon.csv", etalonTrainFrame._key.toString(), true, 1).get();
+        Frame.export(encodingMap.get(encodingMapToExport), "encoding_map_etalon.csv", encodingMap.get(encodingMapToExport)._key.toString(), true, 1).get();
+      }
+      else {
+        try {
+          assertTrue("Failed attempt number " + attemptNumber, isBitIdentical(etalonTrainFrame, trainEncoded));
+        } catch (AssertionError ex) {
+          Frame.export(trainEncoded, "applied_encoding_badboy" + numberOfFailures +".csv", trainEncoded._key.toString(), true, 1).get();
+          Frame.export(encodingMap.get(encodingMapToExport), "encoding_map_etalon_badboy" + numberOfFailures + ".csv", encodingMap.get(encodingMapToExport)._key.toString(), true, 1).get();
+          numberOfFailures++;
+          throw ex;
+        }
+        trainEncoded.delete();
+      }
+      fr.delete();
+      splits[0].delete();
+      splits[1].delete();
       encodingMapCleanUp(encodingMap);
     }
   }

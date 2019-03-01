@@ -346,6 +346,7 @@ public class TargetEncoder {
       int denominatorIndex = fr.find(DENOMINATOR_COL_NAME);
 
       double globalMeanForTargetClass = calculatePriorMean(encodingMap); // we can only operate on encodingsMap because `fr` could not have target column at all
+      Log.info("Global mean for levels with zero denominator = " + globalMeanForTargetClass);
 
       Vec zeroVec = fr.anyVec().makeCon(0);
       fr.add(appendedColumnName, zeroVec);
@@ -612,6 +613,9 @@ public class TargetEncoder {
                   foldColumnIsInEncodingMapCheck(foldColumnName, encodingMapForCurrentTEColumn);
                   groupedTargetEncodingMapForNone = groupingIgnoringFordColumn(foldColumnName, encodingMapForCurrentTEColumn, teColumnName);
                   int teColumnIndexInGroupedEncodingMapNone = groupedTargetEncodingMapForNone.find(teColumnName);
+//                  String prefix = UUID.randomUUID().toString().substring(0, 5);
+//                  Frame.export(dataWithAllEncodings, "dataWithAllEncodings_" + dataWithAllEncodings.numRows() + "_" + prefix +".csv", dataWithAllEncodings._key.toString(), true, 1).get();
+
                   dataWithMergedAggregationsN = mergeByTEColumn(dataWithAllEncodings, groupedTargetEncodingMapForNone, teColumnIndex, teColumnIndexInGroupedEncodingMapNone);
 
                   Frame withEncodingsFrameN = calculateEncoding(dataWithMergedAggregationsN, groupedTargetEncodingMapForNone, targetColumnName, newEncodedColumnName, withBlendedAvg);

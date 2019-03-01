@@ -49,14 +49,15 @@ public class GridSearchTEEvaluatorTest extends TestUtil {
       modelBuilder.init(false); //verifying that we can call init and then modify builder in evaluator
       
       int seedForFoldColumn = 2345;
-      double auc = evaluator.evaluate(randomTEParams, modelBuilder, columnsToEncode, seedForFoldColumn);
+      //TODO change null into Leaderboard
+      double auc = evaluator.evaluate(randomTEParams, modelBuilder, null, columnsToEncode, seedForFoldColumn);
       
       System.out.println("AUC with target encoding: " + auc);
       printOutFrameAsTable(modelBuilder._parms.train(), false, 5);
 
       ModelBuilder clonedModelBuilder = ModelBuilder.clone(modelBuilder);
       clonedModelBuilder.init(false);
-      double auc2 = evaluator.evaluate(randomTEParams, clonedModelBuilder, columnsToEncode, seedForFoldColumn); // checking that we can reuse modelBuilder
+      double auc2 = evaluator.evaluate(randomTEParams, clonedModelBuilder, null, columnsToEncode, seedForFoldColumn); // checking that we can reuse modelBuilder
 
       assertTrue(isBitIdentical(frCopy, modelBuilder._parms.train()));
       assertTrue(auc > 0);
@@ -112,7 +113,7 @@ public class GridSearchTEEvaluatorTest extends TestUtil {
         ModelBuilder clonedModelBuilder = ModelBuilder.clone(modelBuilder);
         clonedModelBuilder.init(false);
         
-        double evaluationResult = gridSearchTEEvaluator.evaluate(tmpParam, clonedModelBuilder, strategy.getColumnsToEncode(), testSeed);
+        double evaluationResult = gridSearchTEEvaluator.evaluate(tmpParam, clonedModelBuilder, null, strategy.getColumnsToEncode(), testSeed);
         if(lastResult == 0.0) lastResult = evaluationResult;
         else {
           

@@ -1,11 +1,11 @@
 package ai.h2o.automl.targetencoding.strategy;
 
-import ai.h2o.automl.targetencoding.BlendingParams;
 import ai.h2o.automl.targetencoding.TargetEncoder;
 import ai.h2o.automl.targetencoding.TargetEncodingParams;
 import hex.ModelBuilder;
 import water.Iced;
 import water.fvec.Frame;
+import water.util.Log;
 import water.util.TwoDimTable;
 
 import java.util.*;
@@ -15,7 +15,7 @@ import java.util.*;
  */
 public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrategy {
 
-  private Frame _inputData;
+  private Frame _leaderboardData;
   private String _responseColumn;
   private String[] _columnsToEncode; // we might want to search for subset as well
   private boolean _theBiggerTheBetter;
@@ -29,10 +29,11 @@ public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrate
   
   private int _numberOfIterations; // or should be a strategy that will be in charge of stopping.
 
-  public GridSearchTEParamsSelectionStrategy(Frame data, int numberOfIterations, String responseColumn, String[] columnsToEncode, boolean theBiggerTheBetter, long seed) {
+  //TODO train 
+  public GridSearchTEParamsSelectionStrategy(Frame leaderboard, int numberOfIterations, String responseColumn, String[] columnsToEncode, boolean theBiggerTheBetter, long seed) {
     _seed = seed;
     
-    _inputData = data;
+    _leaderboardData = leaderboard;
     _numberOfIterations = numberOfIterations;
     _responseColumn = responseColumn;
     _columnsToEncode = columnsToEncode;
@@ -44,20 +45,21 @@ public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrate
   public void setTESearchSpace(TESearchSpace teSearchSpace) {
     HashMap<String, Object[]> _grid = new HashMap<>();
     
+    // Also when we chose holdoutType=None we don't need to search for noise
     switch (teSearchSpace) {
       case CV_EARLY_STOPPING: // TODO move up common parameter' ranges
-        _grid.put("_withBlending", new Boolean[]{true, false});
+        _grid.put("_withBlending", new Boolean[]{true/*, false*/}); // NOTE: we can postpone implementation of hierarchical hyperparameter spaces... as in most cases blending is helpful.
         _grid.put("_noise_level", new Double[]{0.0, 0.1, 0.01});
         _grid.put("_inflection_point", new Integer[]{1, 2, 3, 5, 10, 50, 100});
         _grid.put("_smoothing", new Double[]{5.0, 10.0, 20.0});
         _grid.put("_holdoutType", new Byte[]{ TargetEncoder.DataLeakageHandlingStrategy.None});
         break;
       case VALIDATION_FRAME_EARLY_STOPPING:
-        _grid.put("_withBlending", new Boolean[]{true, false});
+        _grid.put("_withBlending", new Boolean[]{true, false}); // NOTE: we can postpone implementation of hierarchical hyperparameter spaces... as in most cases blending is helpful.
         _grid.put("_noise_level", new Double[]{0.0, 0.1, 0.01});
         _grid.put("_inflection_point", new Integer[]{1, 2, 3, 5, 10, 50, 100});
         _grid.put("_smoothing", new Double[]{5.0, 10.0, 20.0});
-        _grid.put("_holdoutType", new Byte[]{TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut/*,TargetEncoder.DataLeakageHandlingStrategy.KFold, TargetEncoder.DataLeakageHandlingStrategy.None*/});
+        _grid.put("_holdoutType", new Byte[]{TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, TargetEncoder.DataLeakageHandlingStrategy.KFold,  TargetEncoder.DataLeakageHandlingStrategy.None});
         break;
     }
     
@@ -85,7 +87,7 @@ public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrate
         ModelBuilder clonedModelBuilder = ModelBuilder.clone(modelBuilder);
         clonedModelBuilder.init(false); // in _evaluator we assume that init() has been already called
 
-        double evaluationResult = _evaluator.evaluate(param, clonedModelBuilder, getColumnsToEncode(), _seed);
+        double evaluationResult = _evaluator.evaluate(param, clonedModelBuilder, _leaderboardData, getColumnsToEncode(), _seed);
         _evaluatedQueue.add(new Evaluated<>(param, evaluationResult));
       }
     } catch (RandomSelector.GridSearchCompleted ex) {
@@ -99,10 +101,6 @@ public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrate
 
   public String getResponseColumn() {
     return _responseColumn;
-  }
-  
-  public Frame getInputData() {
-    return _inputData;
   }
 
   public String[] getColumnsToEncode() {
@@ -191,7 +189,7 @@ public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrate
       _visitedPermutationHashes.add(hashOfIndices);
 
       if(_visitedPermutationHashes.size() == _spaceSize) {
-        System.out.println("Whole search space has been discovered. Stopping search.");
+        Log.info("Whole search space has been discovered (" + _visitedPermutationHashes.size() + " grid entries). Stopping search.");
         throw new GridSearchCompleted();
       }
       return chosenIndices;

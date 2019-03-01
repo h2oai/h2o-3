@@ -5,6 +5,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Key;
 import water.MRTask;
+import water.Scope;
 import water.TestUtil;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -38,6 +39,44 @@ public class ShuffleSplitFrameTest extends TestUtil {
     data = ar(ar("A", null, "B"), ar("C", "D", "E"));
     f = createFrame("test2.hex", chunkLayout, data);
     testScenario(f, flat(data));
+  }
+
+  private Frame[] getSplitsFromTitanicDataset(String responseColumnName, long splitSeed) {
+    Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+
+    double[] ratios = ard(0.7, 0.3);
+    Key<Frame>[] keys = aro(Key.<Frame>make(), Key.<Frame>make());
+    Frame[] splits = null;
+    splits = ShuffleSplitFrame.shuffleSplitFrame(fr, keys, ratios, splitSeed);
+    fr.delete();
+    return splits;
+  }
+  
+  @Test
+  public void testThatSplitIsConsistentWithSeedBeingSet() {
+    Scope.enter();
+    Frame etalonTrain = null;
+    Frame etalonValid = null;
+    try {
+      long singleSeed = 2345;
+      for (int attempt = 0; attempt < 100; attempt++) {
+
+        Frame[] splits = getSplitsFromTitanicDataset("survived", singleSeed);
+        if (etalonTrain == null) {
+          etalonTrain = splits[0];
+          etalonValid = splits[1];
+        } else {
+          Assert.assertTrue(isBitIdentical(etalonTrain, splits[0]));
+          Assert.assertTrue(isBitIdentical(etalonValid, splits[1]));
+          splits[0].delete();
+          splits[1].delete();
+        }
+      }
+    } finally {
+      etalonTrain.delete();
+      etalonValid.delete();
+      Scope.exit();
+    }
   }
 
   @Test /* this test makes sure that the rows of the split frames are preserved (including UUID) */

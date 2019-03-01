@@ -54,7 +54,7 @@ public class TEGridSearchIntegrationWithAutoMLValidationFrameTest extends water.
     Random generator = new Random();
     double avgAUCWith = 0.0;
     double avgAUCWithoutTE = 0.0;
-    int numberOfRuns = 1;
+    int numberOfRuns = 3;
     for (int seedAttempt = 0; seedAttempt < numberOfRuns; seedAttempt++) {
       long splitSeed = generator.nextLong();
       try {
@@ -78,12 +78,12 @@ public class TEGridSearchIntegrationWithAutoMLValidationFrameTest extends water.
         autoMLBuildSpec.te_spec.seed = 3456;
         long seed = autoMLBuildSpec.te_spec.seed;
         TEParamsSelectionStrategy gridSearchTEParamsSelectionStrategy =
-                new GridSearchTEParamsSelectionStrategy(train, numberOfIterations, responseColumnName, thresholdTEApplicationStrategy.getColumnsToEncode(), true, seed);
-        ;
+                new GridSearchTEParamsSelectionStrategy(leaderboard, numberOfIterations, responseColumnName, thresholdTEApplicationStrategy.getColumnsToEncode(), true, seed);
 
         autoMLBuildSpec.te_spec.application_strategy = thresholdTEApplicationStrategy;
         autoMLBuildSpec.te_spec.params_selection_strategy = gridSearchTEParamsSelectionStrategy;
 
+        autoMLBuildSpec.build_control.project_name = "with_te_" + splitSeed;
         autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
         autoMLBuildSpec.build_control.stopping_criteria.set_seed(7890);
         autoMLBuildSpec.build_control.keep_cross_validation_models = false;
@@ -93,13 +93,14 @@ public class TEGridSearchIntegrationWithAutoMLValidationFrameTest extends water.
         aml.get();
 
         leader = aml.leader();
+        assertTrue(  aml.leaderboard().getModels().length == 1);
 
         double aucWithTE = getScoreBasedOn(splits[2], leader);
 
         trainingFrame = aml.getTrainingFrame();
 
         splitsForWithoutTE = getSplitsFromTitanicDataset(responseColumnName, splitSeed);
-        Leaderboard leaderboardWithoutTE = trainBaselineAutoMLWithoutTE(splitsForWithoutTE, responseColumnName, seed);
+        Leaderboard leaderboardWithoutTE = trainBaselineAutoMLWithoutTE(splitsForWithoutTE, responseColumnName, seed, splitSeed);
         Model leaderFromWithoutTE = leaderboardWithoutTE.getLeader();
         double aucWithoutTE = getScoreBasedOn(splits[2], leaderFromWithoutTE);
 
@@ -122,7 +123,7 @@ public class TEGridSearchIntegrationWithAutoMLValidationFrameTest extends water.
     Assert.assertTrue(avgAUCWith > avgAUCWithoutTE);
   }
 
-  private Leaderboard trainBaselineAutoMLWithoutTE(Frame[] splits, String responseColumnName, long seed) {
+  private Leaderboard trainBaselineAutoMLWithoutTE(Frame[] splits, String responseColumnName, long seed, long splitSeed) {
     Leaderboard leaderboard=null;
     Scope.enter();
     try {
@@ -136,7 +137,7 @@ public class TEGridSearchIntegrationWithAutoMLValidationFrameTest extends water.
 
       autoMLBuildSpec.te_spec.enabled = false;
 
-      autoMLBuildSpec.build_control.project_name = "without_te";
+      autoMLBuildSpec.build_control.project_name = "without_te_" + splitSeed;
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
       autoMLBuildSpec.build_control.stopping_criteria.set_seed(7890);
       autoMLBuildSpec.build_control.keep_cross_validation_models = false;
@@ -231,7 +232,7 @@ public class TEGridSearchIntegrationWithAutoMLValidationFrameTest extends water.
         trainingFrame = aml.getTrainingFrame();
 
         splitsForWithoutTE = getSplitsFromTitanicDataset(responseColumnName, splitSeed);
-        Leaderboard leaderboardWithoutTE = trainBaselineAutoMLWithoutTE( splitsForWithoutTE, responseColumnName, seed);
+        Leaderboard leaderboardWithoutTE = trainBaselineAutoMLWithoutTE( splitsForWithoutTE, responseColumnName, seed, splitSeed);
         Model leaderFromWithoutTE = leaderboardWithoutTE.getLeader();
         double aucWithoutTE = getScoreBasedOn(splits[2], leaderFromWithoutTE);
 
