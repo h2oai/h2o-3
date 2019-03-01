@@ -45,7 +45,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/5/index.htm
 <h4>Docs</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5554'>PUBDEV-5554</a>] -         docs: add to docs that to run h2o-xgboost on hadoop set -extramempercent to a much higher value (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5554'>PUBDEV-5554</a>] - When running XGBoost on Hadoop, recommend that users set -extramempercent to 120. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6287'>PUBDEV-6287</a>] - Added the new check_constant_response option to the GBM and DRF chapters. Also added an example usage to the Parameters Appendix.
 </li>
