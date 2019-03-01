@@ -18,6 +18,7 @@ import water.util.TwoDimTable;
 import java.util.Map;
 
 import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
+import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.concat;
 
 /**
  * Dedicated to a single ModelBuilder, i.e. model with hyperParameters
@@ -33,6 +34,7 @@ class AutoMLTargetEncodingAssistant{
   private Vec _foldColumn;
   private AutoMLBuildSpec _buildSpec;
   private ModelBuilder _modelBuilder;
+  private String[] _originalIgnoredColumns;
 
   private TEParamsSelectionStrategy _teParamsSelectionStrategy;
   private TEApplicationStrategy _applicationStrategy;
@@ -63,8 +65,11 @@ class AutoMLTargetEncodingAssistant{
     TEParamsSelectionStrategy teParamsSelectionStrategy = buildSpec.te_spec.params_selection_strategy;
     _teParamsSelectionStrategy = teParamsSelectionStrategy != null ? teParamsSelectionStrategy : new FixedTEParamsStrategy(TargetEncodingParams.DEFAULT);
     _teParams = _teParamsSelectionStrategy.getBestParams(modelBuilder);
-    modelBuilder._parms._ignored_columns = getApplicationStrategy().getColumnsToEncode();
-
+    
+    //Don't forget to preserve ignored colums that were set up by user explicitly
+    _originalIgnoredColumns = modelBuilder._parms._ignored_columns;
+    // TODO do we need this? try to remove
+    modelBuilder._parms._ignored_columns = concat(getApplicationStrategy().getColumnsToEncode(), _originalIgnoredColumns);
   }
 
 
@@ -159,12 +164,12 @@ class AutoMLTargetEncodingAssistant{
           Frame trainNone = trainAndHoldoutSplits[0];
           Frame holdoutNone = trainAndHoldoutSplits[1];
           encodingMap = tec.prepareEncodingMap(holdoutNone, responseColumnName, null);
-          Frame.export(encodingMap.get("home.dest"), "encoding_map_assistant.csv", encodingMap.get("home.dest")._key.toString(), true, 1).get();
+//          Frame.export(encodingMap.get("home.dest"), "encoding_map_assistant.csv", encodingMap.get("home.dest")._key.toString(), true, 1).get();
 
-          Frame.export(trainNone, "train_none_before_assistant.csv", trainNone._key.toString(), true, 1).get();
+//          Frame.export(trainNone, "train_none_before_assistant.csv", trainNone._key.toString(), true, 1).get();
 
           Frame encodedTrainingFrameNone = tec.applyTargetEncoding(trainNone, responseColumnName, encodingMap, holdoutType, withBlendedAvg, 0.0, imputeNAsWithNewCategory, seed);
-          Frame.export(encodedTrainingFrameNone, "train_none_assistant.csv", encodedTrainingFrameNone._key.toString(), true, 1).get();
+//          Frame.export(encodedTrainingFrameNone, "train_none_assistant.csv", encodedTrainingFrameNone._key.toString(), true, 1).get();
 
           copyEncodedColumnsToDestinationFrameAndRemoveSource(columnsToEncode, encodedTrainingFrameNone, trainNone);
 
@@ -181,6 +186,7 @@ class AutoMLTargetEncodingAssistant{
       }
       encodingMapCleanUp(encodingMap);
     }
+    
   }
 
   private Frame[] splitByRatio(Frame fr,double[] ratios, long seed) {
@@ -188,17 +194,11 @@ class AutoMLTargetEncodingAssistant{
     return ShuffleSplitFrame.shuffleSplitFrame(fr, keys, ratios, seed);
   }
 
+  // Due to TE we want to exclude original column so that we can use only encoded ones. 
+  // We need to be careful and reset value in _buildSpec back as next modelBuilder in AutoML sequence will exclude this 
+  // columns even before we will have a chance to apply TE.
   void appendOriginalTEColumnsNamesToIgnoredListOfColumns(String[] columnsToEncode) {
-    String[] ignored_columns = _buildSpec.input_spec.ignored_columns;
-
-    if(ignored_columns != null && ignored_columns.length != 0) {
-      String[] updatedIgnoredColumns = new String[ignored_columns.length + columnsToEncode.length];
-      System.arraycopy(ignored_columns, 0, updatedIgnoredColumns, 0, ignored_columns.length);
-      System.arraycopy(columnsToEncode, 0, updatedIgnoredColumns, ignored_columns.length, columnsToEncode.length);
-      _buildSpec.input_spec.ignored_columns = updatedIgnoredColumns;
-    } else {
-      _buildSpec.input_spec.ignored_columns = columnsToEncode;
-    }
+    _buildSpec.input_spec.ignored_columns = concat(_buildSpec.input_spec.ignored_columns, columnsToEncode);
   }
 
   //Note: we could have avoided this if we were following mutable way in TargetEncoder

@@ -1,6 +1,7 @@
 package ai.h2o.automl;
 
 import ai.h2o.automl.UserFeedbackEvent.Stage;
+import ai.h2o.automl.targetencoding.strategy.TEApplicationStrategy;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ScoreKeeper.StoppingMetric;
@@ -765,8 +766,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     builder.init(false);          // validate parameters
 
     // TODO: handle error_count and messages
-    
-    performTargetEncoding(builder);
+
+    // NOTE: here we will also affect `_buildSpec.input_spec.ignored_columns`. We will switch it back below in `finally` block after model is trained.
+    String[] originalIgnoredColumns = buildSpec.input_spec.ignored_columns;
+    performTargetEncoding(builder);  
 
     Log.debug("Training model: " + algoName + ", time remaining (ms): " + timeRemainingMs());
     try {
@@ -774,6 +777,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     } catch (H2OIllegalArgumentException exception) {
       userFeedback.warn(Stage.ModelTraining, "Skipping training of model "+key+" due to exception: "+exception);
       return null;
+    } finally {
+      buildSpec.input_spec.ignored_columns = originalIgnoredColumns;
     }
   }
 

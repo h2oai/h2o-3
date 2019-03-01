@@ -18,6 +18,7 @@ import water.Keyed;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.Log;
 import water.util.TwoDimTable;
 
 import java.util.*;
@@ -131,10 +132,10 @@ public class GridSearchTEEvaluator extends Iced {
         hex.ModelMetricsBinomial mmb = hex.ModelMetricsBinomial.getFromDKV(retrievedModel, testEncoded);
         score += mmb.auc();
       } catch (H2OIllegalArgumentException exception) {
-        System.out.println("Exception during modelBuilder evaluation: " + exception.getMessage());
+        Log.debug("Exception during modelBuilder evaluation: " + exception.getMessage());
       }
     } catch(Exception ex ) {
-      System.out.println("Exception during applying TE in GridSearchTEEvaluator.evaluate(): " + ex.getMessage());
+      Log.debug("Exception during applying TE in GridSearchTEEvaluator.evaluate(): " + ex.getMessage());
     } finally {
       //Setting back original frames
       modelBuilder.setTrain(originalTrainingData);
@@ -149,7 +150,11 @@ public class GridSearchTEEvaluator extends Iced {
       validCopy.delete();
       leaderboardCopy.delete();
       trainCopy.delete();
-      TargetEncoderFrameHelper.encodingMapCleanUp(encodingMap);
+      if (encodingMap == null) {
+        Log.debug("Illegal state. encodingMap == null.");
+      } else {
+        TargetEncoderFrameHelper.encodingMapCleanUp(encodingMap);
+      }
     }
     return score;
   }
