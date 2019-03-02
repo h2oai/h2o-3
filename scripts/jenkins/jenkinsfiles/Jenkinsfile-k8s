@@ -74,13 +74,11 @@ ansiColor('xterm') {
                                     null, // no additional gradle args
                                     'k8s' // isolation backend
                             )
-                            // Execute nightly for master at 22:XX, 0:XX, 2:XX, 4:XX and 6:XX
-                            // for rel- branches at 21:XX
-                            String scheduleString = 'H */4 * * *'
+                            String scheduleString = 'H */6 * * *'
                             if (env.BRANCH_NAME.startsWith('rel-')) {
                                 scheduleString = 'H 21 * * *'
                             }
-                            pipelineContext.getBuildConfig().setJobProperties(this, pipelineTriggers([cron(scheduleString)]))
+                            pipelineContext.getBuildConfig().setJobProperties(this, [disableConcurrentBuilds(), pipelineTriggers([cron(scheduleString)])])
                             // Load the defineTestStages script
                             defineTestStages = load('h2o-3/scripts/jenkins/groovy/defineTestStages.groovy')
                         }
