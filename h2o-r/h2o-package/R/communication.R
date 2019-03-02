@@ -23,7 +23,7 @@
   FALSE
 }
 
-.h2o.calcBaseURL <- function(conn,h2oRestApiVersion, urlSuffix) {
+.h2o.calcBaseURL <- function(conn, h2oRestApiVersion, urlSuffix) {
   if( missing(conn) ) conn <- h2o.getConnection()
   stopifnot(is(conn, "H2OConnection"))
   stopifnot(is.character(urlSuffix))
@@ -903,7 +903,7 @@ h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
 
 #------------------------------------ Utilities ------------------------------------#
 h2o.getBaseURL <- function(conn) {
-  .h2o.calcBaseURL( conn, urlSuffix = "")
+  .h2o.calcBaseURL(conn, urlSuffix = "")
 }
 
 #' Get h2o version
