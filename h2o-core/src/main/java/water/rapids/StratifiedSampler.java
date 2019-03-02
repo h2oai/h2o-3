@@ -25,6 +25,28 @@ public class StratifiedSampler {
     return filteredFr;
   }
 
+  public static Frame[] split(Frame fr, String sampleByColumnName, double samplingRatio, long seed) {
+
+    final String[] STRATA_DOMAIN = new String[]{"in", "out"};
+
+    Vec sampleByVec = fr.vec(sampleByColumnName);
+    Vec stratifiedAssignmentsVec = StratifiedSplit.split(sampleByVec, 1.0 - samplingRatio, seed, STRATA_DOMAIN);
+
+    double valueThatCorrespondsToInStrataLabel = 0.0;
+    Frame stratifiedAssignmentsFrame = new Frame(stratifiedAssignmentsVec);
+    Frame predicateInFrame = new FilterByValueTask(valueThatCorrespondsToInStrataLabel, false).doAll(1, Vec.T_NUM, stratifiedAssignmentsFrame).outputFrame();
+
+    Frame filteredIn = selectByPredicate(fr, predicateInFrame);
+
+    Frame predicateOutFrame = new FilterByValueTask(valueThatCorrespondsToInStrataLabel, true).doAll(1, Vec.T_NUM, stratifiedAssignmentsFrame).outputFrame();
+    Frame filteredOut = selectByPredicate(fr, predicateOutFrame);
+
+    predicateInFrame.delete();
+    predicateOutFrame.delete();
+    stratifiedAssignmentsFrame.delete();
+    return new Frame[] {filteredIn, filteredOut};
+  }
+
   private static Frame selectByPredicate(Frame fr, Frame predicateFrame) {
     String[] names = fr.names().clone();
     byte[] types = fr.types().clone();

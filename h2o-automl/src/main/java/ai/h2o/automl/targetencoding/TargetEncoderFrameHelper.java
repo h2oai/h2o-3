@@ -42,7 +42,7 @@ public class TargetEncoderFrameHelper {
   /**
    * @return frame with all the rows whose value in the `columnIndex' column equals to `value`
    */
-  static Frame filterByValue(Frame fr,int columnIndex, double value) {
+  static public Frame filterByValue(Frame fr,int columnIndex, double value) {
     return filterByValueBase(fr, columnIndex, value,false);
   }
 

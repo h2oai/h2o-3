@@ -11,8 +11,6 @@ import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.rapids.StratifiedSplit;
 
-import static water.rapids.StratifiedSampler.sample;
-
 public class AstStratifiedSplitTest extends TestUtil {
 
   @BeforeClass
@@ -83,32 +81,6 @@ public class AstStratifiedSplitTest extends TestUtil {
       Scope.exit();
     }
   }
-  
-  @Test
-  public void stratifiedSampleIsWorkingForNumColumn() {
-
-    Scope.enter();
-    try {
-      fr = new TestFrameBuilder()
-              .withName("testFrame")
-              .withColNames("ColA")
-              .withVecTypes(Vec.T_CAT)
-              .withDataForCol(0, ar("yes", "yes", "no", "no", "no", "no"))
-              .build();
-
-
-      printOutFrameAsTable(fr);
-
-      Frame filtered = sample(fr,"ColA",0.5, 1234);
-
-      printOutFrameAsTable(filtered);
-      filtered.delete();
-    }
-    finally {
-      Scope.exit();
-    }
-  }
-
 
   @After
   public void afterEach() {

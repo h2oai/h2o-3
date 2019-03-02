@@ -15,6 +15,7 @@ import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.rapids.StratifiedSampler;
 import water.util.Log;
 
 import java.util.Random;
@@ -33,9 +34,8 @@ public class AutoMLWithTETitanicBenchmark extends TestUtil {
     stall_till_cloudsize(1);
   }
 
-  int numberOfModelsToCompareWith = 4;
-
-  Algo[] excludeAlgos = {Algo.DeepLearning, Algo.DRF/*, Algo.GLM*/, Algo.XGBoost, Algo.GBM, Algo.StackedEnsemble};
+  int numberOfModelsToCompareWith = 1;
+  Algo[] excludeAlgos = {Algo.DeepLearning /*Algo.DRF*/, Algo.GLM,  Algo.XGBoost /* Algo.GBM,*/, Algo.StackedEnsemble};
 
   private Frame getPreparedTitanicFrame(String responseColumnName) {
     Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
@@ -54,6 +54,15 @@ public class AutoMLWithTETitanicBenchmark extends TestUtil {
 
     return splits;
   }
+  
+  private Frame[] getStratifiedSplitsFromTitanicDataset(String responseColumnName, long splitSeed) {
+    Frame fr = getPreparedTitanicFrame(responseColumnName);
+
+    Frame[] splitsTrainOther = StratifiedSampler.split(fr, responseColumnName, 0.7, splitSeed);
+    Frame train = splitsTrainOther[0];
+    Frame[] splitsValidLeader = StratifiedSampler.split(splitsTrainOther[1], responseColumnName, 0.5, splitSeed);
+    return new Frame[]{train, splitsValidLeader[0], splitsValidLeader[1]};
+  }
 
   // Each run will get us one leader out of `numberOfModelsToCompareWith` number of competitors. We can average this over `numberOfRuns` runs.
   @Test public void averageLeaderMetricBenchmark() {
@@ -68,16 +77,19 @@ public class AutoMLWithTETitanicBenchmark extends TestUtil {
     double avgCumulativeAUCWith = 0.0;
     double avgCumulativeWithoutTE = 0.0;
 
-    int numberOfRuns = 2;
+    int numberOfRuns = 5;
+
     for (int seedAttempt = 0; seedAttempt < numberOfRuns; seedAttempt++) {
       long splitSeed = generator.nextLong();
       try {
         AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
 
-        Frame[] splits = getSplitsFromTitanicDataset(responseColumnName, splitSeed);
+        Frame[] splits = getStratifiedSplitsFromTitanicDataset(responseColumnName, splitSeed);
         Frame train = splits[0];
         Frame valid = splits[1];
         Frame leaderboard = splits[2];
+
+        autoMLBuildSpec.build_models.exclude_algos = excludeAlgos;
 
         autoMLBuildSpec.input_spec.training_frame = train._key;
         autoMLBuildSpec.input_spec.validation_frame = valid._key;
@@ -109,19 +121,19 @@ public class AutoMLWithTETitanicBenchmark extends TestUtil {
         leader = aml.leader();
         Leaderboard leaderboardWithTE = aml.leaderboard();
         double cumulativeLeaderboardScoreWithTE = 0;
-        cumulativeLeaderboardScoreWithTE = getCumulativeLeaderboardScore(splits[2], leaderboardWithTE);
+        cumulativeLeaderboardScoreWithTE = getCumulativeLeaderboardScore(leaderboard, leaderboardWithTE);
         assertTrue(  leaderboardWithTE.getModels().length == numberOfModelsToCompareWith);
 
-        double aucWithTE = getScoreBasedOn(splits[2], leader);
+        double aucWithTE = getScoreBasedOn(leaderboard, leader);
 
         trainingFrame = aml.getTrainingFrame();
 
         splitsForWithoutTE = getSplitsFromTitanicDataset(responseColumnName, splitSeed);
         Leaderboard leaderboardWithoutTE = trainBaselineAutoMLWithoutTE(splitsForWithoutTE, responseColumnName, seed, splitSeed);
         double cumulativeLeaderboardScoreWithoutTE = 0;
-        cumulativeLeaderboardScoreWithoutTE = getCumulativeLeaderboardScore(splits[2], leaderboardWithoutTE);
+        cumulativeLeaderboardScoreWithoutTE = getCumulativeLeaderboardScore(leaderboard, leaderboardWithoutTE);
         Model leaderFromWithoutTE = leaderboardWithoutTE.getLeader();
-        double aucWithoutTE = getScoreBasedOn(splits[2], leaderFromWithoutTE);
+        double aucWithoutTE = getScoreBasedOn(leaderboard, leaderFromWithoutTE);
 
         Log.info("Leader:" + leader._parms.fullName());
         Log.info("Leader:" + leaderFromWithoutTE._parms.fullName());
@@ -170,6 +182,8 @@ public class AutoMLWithTETitanicBenchmark extends TestUtil {
     Scope.enter();
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+
+      autoMLBuildSpec.build_models.exclude_algos = excludeAlgos;
 
       autoMLBuildSpec.input_spec.training_frame = splits[0]._key;
       autoMLBuildSpec.input_spec.validation_frame = splits[1]._key;

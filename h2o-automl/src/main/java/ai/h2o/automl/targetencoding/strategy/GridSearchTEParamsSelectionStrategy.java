@@ -24,6 +24,7 @@ public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrate
   private RandomSelector randomSelector;
   private PriorityQueue<Evaluated<TargetEncodingParams>> _evaluatedQueue;
   private GridSearchTEEvaluator _evaluator = new GridSearchTEEvaluator();
+//  private GridSearchTEStratifiedEvaluator _evaluator = new GridSearchTEStratifiedEvaluator();
   
   private TESearchSpace _teSearchSpace;
   
