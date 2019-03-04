@@ -392,7 +392,6 @@ automl.args.test <- function() {
                           max_runtime_secs_per_model=max_runtime_secs_per_model,
                           max_runtime_secs=max_runtime_secs)
         models_count[paste0(max_runtime_secs_per_model)] = nrow(aml@leaderboard)
-        print(aml@leaderboard)
       }
       expect_lte(abs(models_count[[paste0(0)]] - models_count[[paste0(max_runtime_secs)]]), 1)
       expect_gt(abs(models_count[[paste0(0)]] - models_count[[paste0(3)]]), 1)
