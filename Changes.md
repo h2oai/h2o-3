@@ -180,7 +180,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/2/index.htm
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6167'>PUBDEV-6167</a>] - Increased the XGBoost stress test timeout.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6188'>PUBDEV-6188</a>] - Implemented secret key credentials for s3:// AWS protocol. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6188'>PUBDEV-6188</a>] - Implemented secret key credentials for s3:// AWS protocol.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6205'>PUBDEV-6205</a>] - Renamed .jade files to .pug. 
 </li>
