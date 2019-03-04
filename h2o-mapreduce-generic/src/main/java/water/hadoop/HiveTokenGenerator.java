@@ -67,8 +67,9 @@ public class HiveTokenGenerator {
     } else {
       log("Hive driver not present, not generating token.", null);
       Configuration conf = job.getConfiguration();
-      conf.set(H2O_HIVE_HOST, hiveHost);
-      conf.set(H2O_HIVE_PRINCIPAL, hivePrincipal);
+      // pass configured values if any to mapper
+      if (hiveHost != null) conf.set(H2O_HIVE_HOST, hiveHost);
+      if (hivePrincipal != null) conf.set(H2O_HIVE_PRINCIPAL, hivePrincipal);
     }
   }
 
