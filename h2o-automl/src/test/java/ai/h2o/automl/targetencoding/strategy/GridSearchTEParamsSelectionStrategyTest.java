@@ -11,11 +11,10 @@ import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.rapids.StratifiedSampler;
+import water.rapids.StratificationAssistant;
 
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.PriorityQueue;
 
 import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
@@ -219,7 +218,7 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
       GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsFromGLM_FULL = findBestTargetEncodingParams(frFull, Algo.GLM, numberOfSearchIterations);
 
       frameThatWillBeSampledByHalf = parse_test_file("./smalldata/gbm_test/titanic.csv");
-      sampledByHalf = StratifiedSampler.sample(frameThatWillBeSampledByHalf, responseColumnName, 0.5, 1234L);
+      sampledByHalf = StratificationAssistant.sample(frameThatWillBeSampledByHalf, responseColumnName, 0.5, 1234L);
       GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsFromGLM_HALF = findBestTargetEncodingParams(sampledByHalf, Algo.GLM, numberOfSearchIterations);
 
       double scoreFull = bestParamsFromGLM_FULL.getScore();
@@ -287,7 +286,7 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
 
       long start2 = System.currentTimeMillis();
       frameThatWillBeSampledByHalf = parse_test_file("./smalldata/gbm_test/titanic.csv");
-      sampledByHalf = StratifiedSampler.sample(frameThatWillBeSampledByHalf, responseColumnName, 0.5, 1234L);
+      sampledByHalf = StratificationAssistant.sample(frameThatWillBeSampledByHalf, responseColumnName, 0.5, 1234L);
       GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsFromGLM_HALF = findBestTargetEncodingParams(sampledByHalf, Algo.GLM, numberOfSearchIterations);
       long timeWithSampling = System.currentTimeMillis() - start2;
       System.out.println("Time without sampling: " + timeWithoutSampling);

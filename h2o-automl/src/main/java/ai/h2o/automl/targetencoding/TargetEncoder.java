@@ -180,11 +180,6 @@ public class TargetEncoder {
         return columnNames.toArray(new String[columnIndexes.length]);
     }
 
-    private Frame execRapidsAndGetFrame(String astTree) {
-        Val val = Rapids.exec(astTree);
-        return register(val.getFrame());
-    }
-
     //TODO We might want to introduce parameter that will change this behaviour. We can treat NA's as extra class.
     Frame filterOutNAsFromTargetColumn(Frame data, int targetColumnIndex) {
         return filterOutNAsInColumn(data, targetColumnIndex);
@@ -242,16 +237,6 @@ public class TargetEncoder {
 
       Frame result = new AstGroup().performGroupingWithAggregations(data, new int[]{teColumnIndex}, aggs, -1).getFrame();
       return register(result);
-    }
-
-    Frame rBind(Frame a, Frame b) {
-        if(a == null) {
-            assert b != null;
-            return b;
-        } else {
-            String tree = String.format("(rbind %s %s)", a._key, b._key);
-            return execRapidsAndGetFrame(tree);
-        }
     }
 
     Frame mergeByTEAndFoldColumns(Frame leftFrame, Frame holdoutEncodeMap, int teColumnIndexOriginal, int foldColumnIndexOriginal, int teColumnIndex) {
@@ -537,7 +522,7 @@ public class TargetEncoder {
                       if (holdoutEncodeMap == null) {
                         holdoutEncodeMap = groupedWithAppendedFoldColumn;
                       } else {
-                        Frame newHoldoutEncodeMap = rBind(holdoutEncodeMap, groupedWithAppendedFoldColumn);
+                        Frame newHoldoutEncodeMap = TargetEncoderFrameHelper.rBind(holdoutEncodeMap, groupedWithAppendedFoldColumn);
                         holdoutEncodeMap.delete();
                         holdoutEncodeMap = newHoldoutEncodeMap;
                       }

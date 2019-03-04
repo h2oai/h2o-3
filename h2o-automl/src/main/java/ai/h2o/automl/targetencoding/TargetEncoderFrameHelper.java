@@ -9,6 +9,8 @@ import water.fvec.Vec;
 import water.fvec.task.FilterByValueTask;
 import water.fvec.task.IsNotNaTask;
 import water.fvec.task.UniqTask;
+import water.rapids.Rapids;
+import water.rapids.Val;
 import water.rapids.ast.prims.advmath.AstKFold;
 import water.rapids.ast.prims.mungers.AstGroup;
 
@@ -18,6 +20,21 @@ import java.util.Random;
 
 public class TargetEncoderFrameHelper {
 
+  static public Frame rBind(Frame a, Frame b) {
+    if(a == null) {
+      assert b != null;
+      return b;
+    } else {
+      String tree = String.format("(rbind %s %s)", a._key, b._key);
+      return execRapidsAndGetFrame(tree);
+    }
+  }
+
+  private static Frame execRapidsAndGetFrame(String astTree) {
+    Val val = Rapids.exec(astTree);
+    return register(val.getFrame());
+  }
+  
   /** @return the expanded with constant vector Frame, for flow-coding */
   static Frame addCon(Frame fr, String appendedColumnName, long constant ) { 
     Vec constVec = fr.anyVec().makeCon(constant);

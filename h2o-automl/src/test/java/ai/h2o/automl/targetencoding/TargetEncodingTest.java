@@ -392,10 +392,8 @@ public class TargetEncodingTest extends TestUtil {
               .withDataForCol(0, ar(1))
               .build();
 
-      String[] teColumns = {""};
-      TargetEncoder tec = new TargetEncoder(teColumns);
 
-      Frame result = tec.rBind(null, fr);
+      Frame result = TargetEncoderFrameHelper.rBind(null, fr);
       assertEquals(fr._key, result._key);
 
       Frame fr2 = new TestFrameBuilder()
@@ -405,7 +403,7 @@ public class TargetEncodingTest extends TestUtil {
               .withDataForCol(0, ar(42))
               .build();
 
-      Frame result2 = tec.rBind(fr, fr2);
+      Frame result2 = TargetEncoderFrameHelper.rBind(fr, fr2);
 
       assertEquals(1, result2.vec("ColA").at(0), 1e-5);
       assertEquals(42, result2.vec("ColA").at(1), 1e-5);

@@ -10,7 +10,7 @@ import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 
-import static water.rapids.StratifiedSampler.sample;
+import static water.rapids.StratificationAssistant.sample;
 import static org.junit.Assert.*;
 
 public class StratifiedSamplerTest extends TestUtil {
@@ -30,7 +30,7 @@ public class StratifiedSamplerTest extends TestUtil {
       frameThatWillBeSampledByHalf = parse_test_file("./smalldata/gbm_test/titanic.csv");
       String responseColumnName = "survived";
 
-      sampledByHalf = StratifiedSampler.sample(frameThatWillBeSampledByHalf, responseColumnName, 0.5, 1234L);
+      sampledByHalf = StratificationAssistant.sample(frameThatWillBeSampledByHalf, responseColumnName, 0.5, 1234L);
       printOutFrameAsTable(sampledByHalf, true, sampledByHalf.numRows());
       int domainIndexForSurvivedLabel = 1;
       onlySurvivedBeforeSampling = TargetEncoderFrameHelper.filterByValue(frameThatWillBeSampledByHalf, frameThatWillBeSampledByHalf.find(responseColumnName), domainIndexForSurvivedLabel);
@@ -54,7 +54,7 @@ public class StratifiedSamplerTest extends TestUtil {
       fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
       String responseColumnName = "survived";
 
-      inAndOutFrame = StratifiedSampler.split(fr, responseColumnName, 0.5, 1234L);
+      inAndOutFrame = StratificationAssistant.split(fr, responseColumnName, 0.5, 1234L);
       long inNumRows = inAndOutFrame[0].numRows();
       long outNumRows = inAndOutFrame[1].numRows();
       assertTrue(inNumRows + outNumRows == fr.numRows());
@@ -73,6 +73,37 @@ public class StratifiedSamplerTest extends TestUtil {
       for(Frame frame :inAndOutFrame) {
         frame.delete();
       }
+    }
+  }
+
+  public int[] range(int n) {
+    int[] a = new int[n];
+    for (int i = 0; i < n; ++i) {
+      a[i] = i;
+    }
+    return a;
+  }
+
+  @Test
+  public void assignKFolds() {
+    Frame fr = null;
+    Frame frameWithAssignments = null;
+    try {
+      fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+
+      
+      Vec indexes = vec(range((int)fr.numRows()));
+      fr.add("id", indexes);
+      String responseColumnName = "survived";
+
+      frameWithAssignments = StratificationAssistant.assignKFolds(fr, 5, responseColumnName, 1234L);
+      Frame sorted = frameWithAssignments.sort(new int[] {frameWithAssignments.find("id")}).subframe(frameWithAssignments.numCols()- 1, frameWithAssignments.numCols());
+      
+      assertEquals(fr.numRows(), frameWithAssignments.numRows());
+      printOutFrameAsTable(sorted);
+    } finally {
+      fr.delete();
+      frameWithAssignments.delete();
     }
   }
   

@@ -6,8 +6,6 @@ import ai.h2o.automl.targetencoding.TargetEncodingParams;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelMetricsBinomial;
-import hex.glm.GLM;
-import hex.glm.GLMModel;
 import hex.splitframe.ShuffleSplitFrame;
 import water.DKV;
 import water.Iced;
@@ -15,7 +13,7 @@ import water.Key;
 import water.Keyed;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
-import water.rapids.StratifiedSampler;
+import water.rapids.StratificationAssistant;
 import water.util.Log;
 
 import java.util.Map;
@@ -47,15 +45,15 @@ public class GridSearchTEStratifiedEvaluator extends Iced {
     Frame trainCopy = originalTrainingData.deepCopy(Key.make("train_frame_copy_for_evaluation" + Key.make()).toString());
     DKV.put(trainCopy);
     double stratifiedSamplingRatio = 0.8;
-    Frame stratifiedTrainCopy = StratifiedSampler.sample(trainCopy, responseColumn, stratifiedSamplingRatio, seedForFoldColumn);
+    Frame stratifiedTrainCopy = StratificationAssistant.sample(trainCopy, responseColumn, stratifiedSamplingRatio, seedForFoldColumn);
     
     Frame validCopy = originalValidationData.deepCopy(Key.make("validation_frame_copy_for_evaluation" + Key.make()).toString());
     DKV.put(validCopy);
-    Frame stratifiedValidCopy = StratifiedSampler.sample(validCopy, responseColumn, stratifiedSamplingRatio, seedForFoldColumn);
+    Frame stratifiedValidCopy = StratificationAssistant.sample(validCopy, responseColumn, stratifiedSamplingRatio, seedForFoldColumn);
 
     Frame leaderboardCopy = leaderboard.deepCopy(Key.make("leaderboard_frame_copy_for_evaluation" + Key.make()).toString());
     DKV.put(leaderboardCopy);
-    Frame stratifiedLeaderboardCopy = StratifiedSampler.sample(leaderboardCopy, responseColumn, stratifiedSamplingRatio, seedForFoldColumn);
+    Frame stratifiedLeaderboardCopy = StratificationAssistant.sample(leaderboardCopy, responseColumn, stratifiedSamplingRatio, seedForFoldColumn);
 
 
     String[] originalIgnoredColumns = modelBuilder._parms._ignored_columns;
