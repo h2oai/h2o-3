@@ -131,6 +131,7 @@ Now train the baseline model. We will train a GBM model with early stopping.
     train_auc = gbm_baseline.auc(train=True)
     train_auc
     0.7492599314713426
+
     valid_auc = gbm_baseline.auc(valid=True)
     valid_auc
     0.707018686126265
@@ -205,6 +206,7 @@ See if the AUC improves on the test data if we remove the ``addr_state`` predict
     auc_baseline = gbm_baseline.auc(valid=True)
     auc_baseline
     0.707018686126265
+
     auc_nostate = gbm_no_state.auc(valid=True)
     auc_nostate
     0.7076197256885596
@@ -218,14 +220,17 @@ Now we will perform target encoding on ``addr_state`` to see if this representat
 
 Target encoding in H2O-3 is performed in two steps:
 
-1. Create a target encoding map: this will contain the sum of the response column and the count
-2. Apply a target encoding map: the target encoding map is applied to the data by adding new columns with the target encoding values.
 
-To apply the target encoding, we have several options included to prevent overfitting:
+1. Create (fit) a target encoding map. This will contain the sum of the response column and the count. This can include an optional ``fold_column``. 
+2. Transform a target encoding map. The target encoding map is applied to the data by adding new columns with the target encoding values.
 
--  ``holdout_type``: whether or not a holdout should be used in constructing the target average
--  ``blended_avg`` (R)/``blending_avg`` (Python): whether to perform a blended average
--  ``noise_level`` (R)/``noise`` (Python): whether to include random noise to the average
+ The following options are available when transforming the target encoding, we have several options included to prevent overfitting:
+
+ -  ``holdout_type``: Specify whether or not a holdout should be used in constructing the target average. This can help prevent overfitting. Options include ``kfold``, ``loo``, and ``none``. 
+ -  ``blended_avg``: Specify whether to perform a blended average. This can help prevent overfitting.
+ -  ``noise``: Specify whether to include random noise to the average. This can help prevent overfitting.
+ -  ``fold_column``: Specify the name or column index of the fold column in the data. This defaults to NULL (no `fold_column`). This option is only required if `holdout_type = "KFold"`.
+ -  ``seed``: Specify a random seed used to generate draws from the uniform distribution for random noise. Defaults to -1.
 
 Holdout Type
 ''''''''''''
@@ -234,24 +239,24 @@ The ``holdout_type`` parameter defines whether the target average should be cons
 
 The ``h2o.target_encode_apply`` (R)/``transform`` (Python) function offers the following ``holdout_type`` options:
 
--  None: no holdout, mean is calculating on all rows of data \*\* this should be used for test data
--  LeaveOneOut: mean is calculating on all rows of data excluding the row itself
+-  ``none``: no holdout. The mean is calculating on all rows of data \*\*. This should be used for test data
+-  ``loo``: mean is calculating on all rows of data excluding the row itself.
 
-   -  This can be used for the training data. The target of the row itself is not included in the average to prevent overfitting
+   -  This can be used for the training data. The target of the row itself is not included in the average to prevent overfitting.
 
--  KFold: mean is calculating on out-of-fold data only (requires a fold column)
+-  ``kfold``: The mean is calculating on out-of-fold data only. (This options requires a fold column.)
 
    -  This can be used for the training data. The target average is calculated on the out of fold data to prevent overfitting
 
 Blended Average
 '''''''''''''''
 
-The ``blended_avg`` (R)/``blending_avg`` (Python) parameter defines whether the target average should be weighted based on the count of the group. It is often the case, that some groups may have a small number of records and the target average will be unreliable. To prevent this, the blended average takes a weighted average of the group's target value and the global target value.
+The ``blended_avg`` parameter defines whether the target average should be weighted based on the count of the group. It is often the case, that some groups may have a small number of records and the target average will be unreliable. To prevent this, the blended average takes a weighted average of the group's target value and the global target value.
 
-Noise Level
-'''''''''''
+Noise
+'''''
 
-The ``noise_level`` (R)/``noise`` (Python) parameter determines if random noise should be added to the target average.
+The ``noise`` parameter determines if random noise should be added to the target average.
 
 Perform Target Encoding
 ~~~~~~~~~~~~~~~~~~~~~~~
