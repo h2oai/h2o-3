@@ -608,13 +608,28 @@ print.H2OTable <- function(x, header=TRUE, ...) {
 # It is strongly API related, if someone change the structure of the REST, it can affect this method.
 # PUBDEV-6262 Not able to reproduce GBM in R if seed not set
 .h2o.__parseSeedCorrectly <- function(jsonRaw, jsonParsed){
-    expr = regexpr("seed[^}]*\"actual_value\":-?([0-9])+", jsonRaw, perl=TRUE)
-    seedString = gsub("seed[^}]*\"actual_value\":", "", regmatches(jsonRaw, expr), perl=TRUE)
-    seedParsed = jsonParsed$models[[1]]$parameters[[33]]$actual_value
+    expr = regexpr("\"seed[^}]*\"actual_value\":-?([0-9])+", jsonRaw, perl=TRUE)
+    seedString = gsub("\"seed[^}]*\"actual_value\":", "", regmatches(jsonRaw, expr), perl=TRUE)
+    if(jsonParsed$"__meta"$schema_name == "ModelBuildersV3"){
+        modelId = "model_builders"
+    } else if(jsonParsed$"__meta"$schema_name == "ModelsV3"){
+        modelId = "models"
+    } else{
+        # FIXME possibly different schema with seed?
+        return(jsonParsed)
+    }
+    parameters = jsonParsed[[modelId]][[1]]$parameters
+    for (i in 1:length(parameters)){
+        if(parameters[[i]]$name=="seed"){
+            seedIndex = i
+            break
+        }
+    }
+    seedParsed = parameters[[seedIndex]]$actual_value
     # test if seed is corrupted by R, if yes convert it to string 
     if (is.numeric(seedParsed) && toString(seedParsed) != seedString){
-        jsonParsed$models[[1]]$parameters[[33]]$actual_value <- seedString
-        jsonParsed$models[[1]]$parameters[[33]]$type <- "string"
+        jsonParsed[[modelId]][[1]]$parameters[[seedIndex]]$actual_value <- seedString
+        jsonParsed[[modelId]][[1]]$parameters[[seedIndex]]$type <- "string"
     }
     jsonParsed
 }
