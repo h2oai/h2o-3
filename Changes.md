@@ -13,7 +13,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/5/index.htm
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6290'>PUBDEV-6290</a>] - Fixed an error that occurred when retreiving AutoML leader model with max_models = 1 in R. 
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6292'>PUBDEV-6292</a>] - Fixed an issue that ersulted in an extra NA row in the GLM variable importance frame. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6292'>PUBDEV-6292</a>] - Fixed an issue that ersulted in an extra NA row in the GLM variable importance frame.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6298'>PUBDEV-6298</a>] - h2odriver now worrks correctly on MapR.
 </li>
@@ -44,7 +44,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/5/index.htm
 <h4>Improvement</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6271'>PUBDEV-6271</a>] -  In Isolation Forest, fixed an issue that caused the minimum and maximum path length to not be correctly calculated when there are no OOB observations. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6271'>PUBDEV-6271</a>] -  In Isolation Forest, fixed an issue that caused the minimum and maximum path length to not be correctly calculated when there are no OOB observations.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6294'>PUBDEV-6294</a>] - A `check_constant_response` option is available in DRF and GBM. When enabled (default), then an exception is thrown if the response column is a constant value.
 </li>
