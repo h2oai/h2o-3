@@ -9,15 +9,13 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/5/index.htm
 <h4>Bug</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6283'>PUBDEV-6283</a>] - Fixed an issue that caused stratified_split to fail when run on same column twice. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6283'>PUBDEV-6283</a>] - Fixed an issue that caused stratified_split to fail when run on same column twice.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6290'>PUBDEV-6290</a>] - Fixed an error that occurred when retreiving AutoML leader model with max_models = 1 in R. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6292'>PUBDEV-6292</a>] - Fixed an issue that ersulted in an extra NA row in the GLM variable importance frame. (STILL OPEN)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6298'>PUBDEV-6298</a>] - h2odriver now worrks correctly on MapR.
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6299'>PUBDEV-6299</a>] - In XGBoost, fixed an issue that resulted in an assertion error. This occurred when there were different categorical levels in the training and validation datasets and the user set categorical_encoding to "one_hot_explicit". (STILL OPEN)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6300'>PUBDEV-6300</a>] - Flow no longer displays an error when searching for a file without first providing a path. 
 </li>
@@ -27,7 +25,15 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/5/index.htm
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6305'>PUBDEV-6305</a>] - Users can now download logs from R after connecting via Steam.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6311'>PUBDEV-6311</a>] - Fixed an issue that caused the confusion matrix to report the wrong total number of rows. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6313'>PUBDEV-6313</a>] - In AutoML, created new partition rules for generating new validation and leaderboard frames when cross validation is disabled and validation/leaderboard frames are not provided:
+<ul>
+<li>If only the validation frame is missing: training/validation = 90/10.
+</li>
+<li>If only the leaderboard frame is missing: training/leaderboard = 90/10.
+</li>
+<li>If both the validation and leaderboard frames are missing: training/validation/leaderboard = 80/10/10.
+</li>
+</ul>
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6321'>PUBDEV-6321</a>] - Fixed resolution of `spark-shell --packages "ai.h2o:h2o-algos:<vesion>` by Spark Ivy resolver.
 </li>
