@@ -41,7 +41,7 @@ try {
               pipelineContext = initPipelineContext(scmEnv, 'MODE_BENCHMARK', true)
               // Execute nightly for master at 22:XX, 0:XX, 2:XX, 4:XX and 6:XX
               // for rel- branches at 21:XX
-              String scheduleString
+              def scheduleString
               if (env.BRANCH_NAME == 'master') {
                 scheduleString = 'H 22,0,2,4,6 * * *'
               } else if (env.BRANCH_NAME.startsWith('rel-')) {
