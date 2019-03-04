@@ -2,6 +2,68 @@
 
 ## H2O
 
+### Xu (3.22.1.5) - 3/4/2019
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/5/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-xu/5/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6283'>PUBDEV-6283</a>] - Fixed an issue that caused stratified_split to fail when run on same column twice.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6290'>PUBDEV-6290</a>] - Fixed an error that occurred when retreiving AutoML leader model with max_models = 1 in R. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6292'>PUBDEV-6292</a>] - Fixed an issue that ersulted in an extra NA row in the GLM variable importance frame.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6298'>PUBDEV-6298</a>] - h2odriver now works correctly on MapR.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6300'>PUBDEV-6300</a>] - Flow no longer displays an error when searching for a file without first providing a path. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6303'>PUBDEV-6303</a>] - GBM monotonicity constraints now correctly preserves the exact monotonicity. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6304'>PUBDEV-6304</a>] - Fixed the warning message that displays for categorical data with more then 10,000,000 values.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6305'>PUBDEV-6305</a>] - Users can now download logs from R after connecting via Steam.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6313'>PUBDEV-6313</a>] - In AutoML, created new partition rules for generating new validation and leaderboard frames when cross validation is disabled and validation/leaderboard frames are not provided:
+<ul>
+<li>If only the validation frame is missing: training/validation = 90/10.
+</li>
+<li>If only the leaderboard frame is missing: training/leaderboard = 90/10.
+</li>
+<li>If both the validation and leaderboard frames are missing: training/validation/leaderboard = 80/10/10.
+</li>
+</ul>
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6321'>PUBDEV-6321</a>] - Fixed resolution of `spark-shell --packages "ai.h2o:h2o-algos:<vesion>"` by Spark Ivy resolver.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6333'>PUBDEV-6333</a>] - Fixed an issue that caused h2o driver to fail to start when Hive was not configured. 
+</li>
+</ul>
+    
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6271'>PUBDEV-6271</a>] - In Isolation Forest, fixed an issue that caused the minimum and maximum path length to not be correctly calculated when there are no OOB observations.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6294'>PUBDEV-6294</a>] - A `check_constant_response` option is available in DRF and GBM. When enabled (default), then an exception is thrown if the response column is a constant value.
+</li>
+</ul>
+    
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5554'>PUBDEV-5554</a>] - When running XGBoost on Hadoop, recommend that users set -extramempercent to 120. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6287'>PUBDEV-6287</a>] - Added the new check_constant_response option to the GBM and DRF chapters. Also added an example usage to the Parameters Appendix.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6301'>PUBDEV-6301</a>] - Added a description of the AUCPR metric to the Model Performance section in the User Guide.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6314'>PUBDEV-6314</a>] - Fixed the Random Grid Search in Python example in the Grid Search chapter.
+</li>
+</ul>
+
+
 ### Xu (3.22.1.4) - 2/15/2019
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-xu/4/index.html</a>
@@ -126,7 +188,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/2/index.htm
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6167'>PUBDEV-6167</a>] - Increased the XGBoost stress test timeout.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6188'>PUBDEV-6188</a>] - Implemented secret key credentials for s3:// AWS protocol. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6188'>PUBDEV-6188</a>] - Implemented secret key credentials for s3:// AWS protocol.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6205'>PUBDEV-6205</a>] - Renamed .jade files to .pug. 
 </li>

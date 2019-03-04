@@ -414,9 +414,24 @@ class ModelBase(backwards_compatible()):
         :returns: A list or Pandas DataFrame.
         """
         model = self._model_json["output"]
-        if "variable_importances" in list(model.keys()) and model["variable_importances"]:
-            vals = model["variable_importances"].cell_values
-            header = model["variable_importances"].col_header
+        if self.algo=='glm' or "variable_importances" in list(model.keys()) and model["variable_importances"]:
+            if self.algo=='glm':
+                tempvals = model["standardized_coefficient_magnitudes"].cell_values
+                maxVal = 0
+                sum=0
+                for item in tempvals:
+                    sum=sum+item[1]
+                    if item[1]>maxVal:
+                        maxVal = item[1]
+                vals = []
+                for item in tempvals:
+                    tempT = (item[0], item[1], item[1]/maxVal, item[1]/sum)
+                    vals.append(tempT)
+                header = ["variable", "relative_importance", "scaled_importance", "percentage"]
+            else:
+                vals = model["variable_importances"].cell_values
+                header = model["variable_importances"].col_header
+                
             if use_pandas and can_use_pandas():
                 import pandas
                 return pandas.DataFrame(vals, columns=header)
@@ -529,10 +544,16 @@ class ModelBase(backwards_compatible()):
 
         These coefficients can be used to evaluate variable importance.
         """
-        tbl = self._model_json["output"]["coefficients_table"]
-        if tbl is None:
-            return None
-        return {name: coef for name, coef in zip(tbl["names"], tbl["standardized_coefficients"])}
+        if self._model_json["output"]["model_category"]=="Multinomial":
+            tbl = self._model_json["output"]["standardized_coefficient_magnitudes"]
+            if tbl is None:
+                return None
+            return {name: coef for name, coef in zip(tbl["names"], tbl["coefficients"])}
+        else:
+            tbl = self._model_json["output"]["coefficients_table"]
+            if tbl is None:
+                return None
+            return {name: coef for name, coef in zip(tbl["names"], tbl["standardized_coefficients"])}
 
 
     def r2(self, train=False, valid=False, xval=False):
@@ -1068,13 +1089,6 @@ class ModelBase(backwards_compatible()):
         plt = _get_matplotlib_pyplot(server)
         if not plt: return
 
-        # check if the model is a glm
-        if self._model_json["algo"] == "glm":
-            # print statement to used std_coef_plot(), and use std_coef_plt instead
-            print("Variable importance does not apply to GLM. Will use std_coef_plot() instead.")
-            self.std_coef_plot(num_of_features)
-            return
-
         # get the variable importances as a list of tuples, do not use pandas dataframe
         importances = self.varimp(use_pandas=False)
         # features labels correspond to the first value of each tuple in the importances list
@@ -1139,6 +1153,9 @@ class ModelBase(backwards_compatible()):
         elif self._model_json["algo"] == "deeplearning":
             plt.title("Variable Importance: H2O Deep Learning", fontsize=20)
             if not server: plt.show()
+        elif self._model_json["algo"] == "glm":
+            plt.title("Variable Importance: H2O GLM", fontsize=20)
+            if not server: plt.show()            
         else:
             raise H2OValueError("A variable importances plot is not implemented for this type of model")
 

@@ -103,8 +103,9 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
               return 0;
             }
           });
-          String [] names2 = new String[names.length];
-          for(int i = 0; i < names2.length-1; ++i)
+          int len = names.length-1;
+          String [] names2 = new String[len]; // this one decides the length of standardized table length
+          for(int i = 0; i < len; ++i)
             names2[i] = names[indices[i]];
           tdt = new TwoDimTable("Standardized Coefficient Magnitudes", "standardized coefficient magnitudes", names2, new String[]{"Coefficients", "Sign"}, new String[]{"double", "string"}, new String[]{"%5f", "%s"}, "names");
           for (int i = 0; i < magnitudes.length - 1; ++i) {
@@ -235,8 +236,9 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
             return 0;
           }
         });
-        String[] names2 = new String[names.length];
-        for (int i = 0; i < names2.length - 1; ++i)
+        int len = names.length-1;
+        String[] names2 = new String[len];
+        for (int i = 0; i < len; ++i)
           names2[i] = names[indices[i]];
         tdt = new TwoDimTable("Standardized Coefficient Magnitudes", "standardized coefficient magnitudes", names2, new String[]{"Coefficients", "Sign"}, new String[]{"double", "string"}, new String[]{"%5f", "%s"}, "names");
         for (int i = 0; i < beta.length - 1; ++i) {
