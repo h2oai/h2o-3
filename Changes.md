@@ -35,7 +35,9 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/5/index.htm
 </li>
 </ul>
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6321'>PUBDEV-6321</a>] - Fixed resolution of `spark-shell --packages "ai.h2o:h2o-algos:<vesion>` by Spark Ivy resolver.
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6321'>PUBDEV-6321</a>] - Fixed resolution of `spark-shell --packages "ai.h2o:h2o-algos:<vesion>"` by Spark Ivy resolver.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6333'>PUBDEV-6333</a>] - Fixed an issue that caused h2o driver to fail to start when Hive was not configured. 
 </li>
 </ul>
     
