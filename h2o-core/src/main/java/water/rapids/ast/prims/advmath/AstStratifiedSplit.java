@@ -57,7 +57,7 @@ public class AstStratifiedSplit extends AstPrimitive {
     // Collect input vector domain
     final long[] classes = new VecUtils.CollectIntegerDomain().doAll(stratifyingColumn).domain();
     // Number of output classes
-    final int numClasses = stratifyingColumn.isNumeric() ? classes.length : stratifyingColumn.domain().length;
+    final int numClasses = classes.length;
     
     // Make a new column based on input column - this needs to follow layout of input vector!
     // Save vector into DKV
