@@ -260,7 +260,6 @@ def call(final pipelineContext) {
       timeoutValue: 75, component: pipelineContext.getBuildConfig().COMPONENT_JS
     ]
   ]
-  MASTER_STAGES += BENCHMARK_STAGES
 
   // Stages executed in addition to MASTER_STAGES, used for nightly builds.
   def NIGHTLY_STAGES = [
