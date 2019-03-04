@@ -222,7 +222,7 @@ def test_automl_stops_after_max_runtime_secs():
 
 def test_stacked_ensembles_are_trained_after_timeout():
     print("Check that Stacked Ensembles are still trained after timeout")
-    max_runtime_secs = 10
+    max_runtime_secs = 20
     ds = import_dataset()
     aml = H2OAutoML(project_name="py_aml_SE_after_timeout", seed=1, max_runtime_secs=max_runtime_secs, exclude_algos=['DeepLearning'])
     start = time.time()
