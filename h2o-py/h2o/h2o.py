@@ -455,7 +455,7 @@ def import_hive_table(database=None, table=None, partitions=None, allow_multi_fo
     assert_is_type(table, str)
     assert_is_type(partitions, [[str]], None)
     p = { "database": database, "table": table, "partitions": partitions, "allow_multi_format": allow_multi_format }
-    j = H2OJob(api("POST /99/ImportHiveTable", data=p), "Import Hive Table").poll()
+    j = H2OJob(api("POST /3/ImportHiveTable", data=p), "Import Hive Table").poll()
     return get_frame(j.dest_key)
 
 def import_sql_table(connection_url, table, username, password, columns=None, optimize=True, fetch_mode=None):
