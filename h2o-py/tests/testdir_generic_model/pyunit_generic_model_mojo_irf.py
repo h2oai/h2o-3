@@ -19,6 +19,7 @@ def mojo_model_irf_test():
     predictions = model.predict(airlines)
     assert predictions is not None
     assert predictions.nrows == 24421
+    assert model._model_json["output"]["variable_importances"] is None
     
 if __name__ == "__main__":
     pyunit_utils.standalone_test(mojo_model_irf_test)

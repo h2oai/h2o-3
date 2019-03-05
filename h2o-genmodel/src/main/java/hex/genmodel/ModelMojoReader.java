@@ -1,11 +1,16 @@
 package hex.genmodel;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.stream.JsonReader;
 import hex.genmodel.utils.ParseUtils;
 import hex.genmodel.utils.StringEscapeUtils;
 
 import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -254,5 +259,17 @@ public abstract class ModelMojoReader<M extends MojoModel> {
       throw new IOException(String.format("MOJO version incompatibility - the model MOJO version (%.2f) is higher than the current h2o version (%s) supports. Please, use the older version of h2o to load MOJO model.", _model._mojo_version, mojoVersion()));
     }
   }
+
+    public static final String MODEL_DETAILS_FILE = "experimental/modelDetails.json";
+
+    protected JsonObject parseJson() {
+
+        try (BufferedReader fileReader = _reader.getTextFile(MODEL_DETAILS_FILE)) {
+            final Gson gson = new GsonBuilder().create();
+            return gson.fromJson(fileReader, JsonObject.class);
+        } catch (IOException e) {
+            throw new IllegalStateException("Could not read file inside MOJO " + MODEL_DETAILS_FILE, e);
+        }
+    }
 
 }

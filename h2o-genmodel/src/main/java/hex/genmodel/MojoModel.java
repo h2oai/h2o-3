@@ -1,5 +1,8 @@
 package hex.genmodel;
 
+import hex.ModelCategory;
+import hex.genmodel.descriptor.VariableImportances;
+
 import java.io.*;
 
 
@@ -64,5 +67,108 @@ public abstract class MojoModel extends GenModel {
   protected MojoModel(String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
   }
+  
+  protected class MojoModelDescriptor implements ModelDescriptor{
+    //TODO: Investigate if we should expose these internal structures like that (make a local copy ?)
+    @Override
+    public String[][] scoringDomains() {
+      return _domains;
+    }
+
+    @Override
+    public String projectVersion() {
+      return _h2oVersion;
+    }
+
+    @Override
+    public String algoName() {
+      return getClass().getName();
+    }
+
+    @Override
+    public String algoFullName() {
+      return getClass().getName();
+    }
+
+    @Override
+    public String offsetColumn() {
+      return _offsetColumn;
+    }
+
+    @Override
+    public String weightsColumn() {
+      return null;
+    }
+
+    @Override
+    public String foldColumn() {
+      return null;
+    }
+
+    @Override
+    public ModelCategory getModelCategory() {
+      return _category;
+    }
+
+    @Override
+    public boolean isSupervised() {
+      return _supervised;
+    }
+
+    @Override
+    public int nfeatures() {
+      return _nfeatures;
+    }
+
+    @Override
+    public int nclasses() {
+      return _nclasses;
+    }
+
+    @Override
+    public String[] columnNames() {
+      return _names;
+    }
+
+    @Override
+    public boolean balanceClasses() {
+      return _balanceClasses;
+    }
+
+    @Override
+    public double defaultThreshold() {
+      return _defaultThreshold;
+    }
+
+    @Override
+    public double[] priorClassDist() {
+      return _priorClassDistrib;
+    }
+
+    @Override
+    public double[] modelClassDist() {
+      return _modelClassDistrib;
+    }
+
+    @Override
+    public String uuid() {
+      return _uuid;
+    }
+
+    @Override
+    public String timestamp() {
+      return null;
+    }
+
+    @Override
+    public VariableImportances variableImportances() {
+      return null;
+    }
+  }
+
+  public ModelDescriptor modelDescriptor() {
+     return new MojoModelDescriptor();
+  }
+
 
 }

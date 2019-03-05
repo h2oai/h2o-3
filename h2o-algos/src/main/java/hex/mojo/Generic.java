@@ -48,7 +48,7 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
             } catch (IOException e) {
                 throw new IllegalStateException("Unreachable MOJO file: " + mojoData._key, e);
             }
-            final GenericModelOutput genericModelOutput = new GenericModelOutput(mojoModel);
+            final GenericModelOutput genericModelOutput = new GenericModelOutput(mojoModel.modelDescriptor());
             final GenericModel genericModel = new GenericModel(_result, _parms, genericModelOutput, mojoModel);
             genericModel.write_lock(_job);
             genericModel.unlock(_job);

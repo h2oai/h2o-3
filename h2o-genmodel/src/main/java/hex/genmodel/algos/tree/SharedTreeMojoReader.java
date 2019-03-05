@@ -1,12 +1,19 @@
 package hex.genmodel.algos.tree;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import hex.genmodel.ModelMojoReader;
+import hex.genmodel.descriptor.VariableImportances;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Objects;
 
 /**
  */
 public abstract class SharedTreeMojoReader<M extends SharedTreeMojoModel> extends ModelMojoReader<M> {
+
 
   @Override
   protected void readModelData() throws IOException {
@@ -45,6 +52,51 @@ public abstract class SharedTreeMojoReader<M extends SharedTreeMojoModel> extend
       _model._calib_glm_beta = readkv("calib_glm_beta", new double[0]);
     }
 
+    extractModelDump();
+
     _model.postInit();
+  }
+
+  private void extractModelDump() {
+    // Extract additional information from model dump
+    final JsonObject modelJson = parseJson();
+
+    // First check the JSON dump is available
+    if (modelJson == null) {
+      System.out.println(String.format("Unable to parse JSON dump of MojoModel with ID '%s'. Additional model metrics were not extracted.",
+              _model._uuid));
+      return;
+    }
+
+    // Then check model output is dumped in the JSON, as this is re-used for extraction of many model metrics
+    final JsonObject output = modelJson.getAsJsonObject("output");
+    if (output.isJsonNull() || output == null) {
+      System.out.println(String.format("Output object expected in MojoModel dump with ID '%s', however none were found. Additional model metrics were not extracted.",
+              _model._uuid));
+      return;
+    }
+
+    _model._variable_importances = extractVariableImportances(output);
+  }
+
+  private VariableImportances extractVariableImportances(final JsonObject modelOutputJson) {
+    final JsonElement variableImportancesElement = modelOutputJson.get("variable_importances");
+    if (variableImportancesElement.isJsonNull()) {
+      System.out.println(String.format("Variable importances expected in MojoModel dump with ID '%s', however none were found.",
+              _model._uuid));
+      return null;
+    }
+    final JsonObject variableImportances = variableImportancesElement.getAsJsonObject();
+    final int rowcount = variableImportances.get("rowcount").getAsInt();
+    if (rowcount < 1) return null;
+
+    final double[] relativeVarimps = new double[rowcount];
+    final JsonArray relativeVarimpsJson = variableImportances.getAsJsonArray("data").get(1).getAsJsonArray();
+
+    for (int i = 0; i < rowcount; i++) {
+      relativeVarimps[i] = relativeVarimpsJson.get(i).getAsDouble();
+    }
+
+    return new VariableImportances(Arrays.copyOf(_model._names, _model.nfeatures()), relativeVarimps);
   }
 }
