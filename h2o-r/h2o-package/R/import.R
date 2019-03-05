@@ -301,7 +301,7 @@ h2o.import_hive_table <- function(database, table, partitions = NULL, allow_mult
 
   }
   parms$allow_multi_format <- allow_multi_format
-  res <- .h2o.__remoteSend('ImportHiveTable', method = "POST", .params = parms, h2oRestApiVersion = 99)
+  res <- .h2o.__remoteSend('ImportHiveTable', method = "POST", .params = parms, h2oRestApiVersion = 3)
   job_key <- res$key$name
   dest_key <- res$dest$name
   .h2o.__waitOnJob(job_key)

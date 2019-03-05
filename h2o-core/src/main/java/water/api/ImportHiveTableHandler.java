@@ -3,7 +3,7 @@ package water.api;
 import water.AbstractH2OExtension;
 import water.ExtensionManager;
 import water.Job;
-import water.api.schemas3.ImportHiveTableV99;
+import water.api.schemas3.ImportHiveTableV3;
 import water.api.schemas3.JobV3;
 import water.fvec.Frame;
 
@@ -30,7 +30,7 @@ public class ImportHiveTableHandler extends Handler {
   }
  
   @SuppressWarnings("unused") // called via reflection
-  public JobV3 importHiveTable(int version, ImportHiveTableV99 request) throws Exception {
+  public JobV3 importHiveTable(int version, ImportHiveTableV3 request) throws Exception {
     HiveTableImporter importer = getImporter();
     if (importer != null) {
       try {

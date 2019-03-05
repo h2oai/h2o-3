@@ -3,7 +3,7 @@ package water.api.schemas3;
 import water.Iced;
 import water.api.API;
 
-public class ImportHiveTableV99 extends RequestSchemaV3<Iced, ImportHiveTableV99> {
+public class ImportHiveTableV3 extends RequestSchemaV3<Iced, ImportHiveTableV3> {
 
   //Input fields
   @API(help = "database")
