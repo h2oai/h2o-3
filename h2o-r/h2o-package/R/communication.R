@@ -610,26 +610,33 @@ print.H2OTable <- function(x, header=TRUE, ...) {
 .h2o.__parseSeedCorrectly <- function(jsonRaw, jsonParsed){
     expr = regexpr("\"seed[^}]*\"actual_value\":-?([0-9])+", jsonRaw, perl=TRUE)
     seedString = gsub("\"seed[^}]*\"actual_value\":", "", regmatches(jsonRaw, expr), perl=TRUE)
-    if(jsonParsed$"__meta"$schema_name == "ModelBuildersV3"){
-        modelId = "model_builders"
-    } else if(jsonParsed$"__meta"$schema_name == "ModelsV3"){
-        modelId = "models"
-    } else{
-        # FIXME possibly different schema with seed?
+    if(length(jsonParsed) < 5) {
+        parameters = jsonParsed[[3]][[1]]$parameters
+    } else {
+        parameters = jsonParsed$parameters
+    } 
+    if (length(parameters) == 0) {
+        print("different schema")
+        print(jsonRaw)
         return(jsonParsed)
     }
-    parameters = jsonParsed[[modelId]][[1]]$parameters
     for (i in 1:length(parameters)){
         if(parameters[[i]]$name=="seed"){
             seedIndex = i
+            print(paste("seedIndex", i))
             break
         }
     }
     seedParsed = parameters[[seedIndex]]$actual_value
     # test if seed is corrupted by R, if yes convert it to string 
     if (is.numeric(seedParsed) && toString(seedParsed) != seedString){
-        jsonParsed[[modelId]][[1]]$parameters[[seedIndex]]$actual_value <- seedString
-        jsonParsed[[modelId]][[1]]$parameters[[seedIndex]]$type <- "string"
+        if(length(jsonParsed) < 5) {
+            jsonParsed[[3]][[1]]$parameters[[seedIndex]]$actual_value <- seedString
+            jsonParsed[[3]][[1]]$parameters[[seedIndex]]$type <- "string"
+        } else {
+            jsonParsed$parameters[[seedIndex]]$actual_value <- seedString
+            jsonParsed$parameters[[seedIndex]]$type <- "string"
+        }
     }
     jsonParsed
 }

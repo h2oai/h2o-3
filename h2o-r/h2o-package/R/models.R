@@ -220,7 +220,7 @@ h2o.getFutureModel <- function(object,verbose=FALSE) {
     e <- ""
     name <- i$name
     # R treats integer as not numeric
-    if(is.integer(params)){
+    if(is.integer(params[[name]])){
 	  params[[name]] <- as.numeric(params[[name]])
 	}
     if (i$required && !((name %in% names(params)) || (name %in% names(hyper_params)))) {
@@ -272,7 +272,7 @@ h2o.getFutureModel <- function(object,verbose=FALSE) {
 	  }
     } else {   
       if (!inherits(paramValue, type)) {
-        e <- paste0("\"", name , "\" must be of type ", type, ", but got ", class(paramValue), ".\n")
+        e <- paste0(e, "\"", name , "\" must be of type ", type, ", but got ", class(paramValue), ".\n")
       } else if ((length(paramDef$values) > 1L) && !(paramValue %in% paramDef$values)) {
         e <- paste0(e, "\"", name,"\" must be in")
         for (fact in paramDef$values)
