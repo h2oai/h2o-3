@@ -5,6 +5,7 @@ import hex.genmodel.MojoModel;
 import hex.genmodel.algos.drf.DrfMojoModel;
 import hex.genmodel.algos.gbm.GbmMojoModel;
 import hex.genmodel.descriptor.VariableImportances;
+import hex.genmodel.descriptor.Table;
 import hex.genmodel.utils.ByteBufferWrapper;
 import hex.genmodel.utils.GenmodelBitSet;
 
@@ -54,6 +55,7 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
     protected double[] _calib_glm_beta;
 
     protected VariableImportances _variable_importances;
+    protected Table _model_summary;
 
 
     protected void postInit() {
@@ -980,6 +982,11 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
         @Override
         public VariableImportances variableImportances() {
             return _variable_importances;
+        }
+
+        @Override
+        public Table modelSummary() {
+            return _model_summary;
         }
     }
 

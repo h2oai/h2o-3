@@ -1,19 +1,18 @@
 package hex.genmodel;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
-import com.google.gson.stream.JsonReader;
+import com.google.gson.*;
+import hex.genmodel.descriptor.Table;
 import hex.genmodel.utils.ParseUtils;
 import hex.genmodel.utils.StringEscapeUtils;
 
 import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.regex.Pattern;
 
 
 /**
@@ -266,10 +265,95 @@ public abstract class ModelMojoReader<M extends MojoModel> {
 
         try (BufferedReader fileReader = _reader.getTextFile(MODEL_DETAILS_FILE)) {
             final Gson gson = new GsonBuilder().create();
-            return gson.fromJson(fileReader, JsonObject.class);
+
+          return gson.fromJson(fileReader, JsonObject.class);
         } catch (IOException e) {
             throw new IllegalStateException("Could not read file inside MOJO " + MODEL_DETAILS_FILE, e);
         }
     }
+
+  protected Table extractTableFromJson(final JsonObject modelJson, final String tablePath) {
+    Objects.requireNonNull(modelJson);
+    JsonElement potentialTableJson = findInJson(modelJson, tablePath);
+    if (potentialTableJson.isJsonNull()) {
+      System.out.println(String.format("Failed to extract element '%s' MojoModel dump with ID '%s'.",
+              tablePath, _model._uuid));
+      return null;
+    }
+    final JsonObject tableJson = potentialTableJson.getAsJsonObject();
+    final int rowCount = tableJson.get("rowcount").getAsInt();
+    
+    final String[] columnHeaders;
+    final Table.ColumnType[] columnTypes;
+    final Object[][] data;
+    
+    
+    // Extract column attributes
+    final JsonArray columns = findInJson(tableJson, "columns").getAsJsonArray();
+    final int columnCount = columns.size();
+    columnHeaders = new String[columnCount];
+    columnTypes = new Table.ColumnType[columnCount];
+
+    for (int i = 0; i < columnCount; i++) {
+      final JsonObject column = columns.get(i).getAsJsonObject();
+      columnHeaders[i] = column.get("description").getAsString();
+      columnTypes[i] = Table.ColumnType.extractType(column.get("type").getAsString());
+    }
+    
+    
+    // Extract data
+    JsonArray dataColumns = findInJson(tableJson, "data").getAsJsonArray();
+    data = new Object[columnCount][rowCount];
+    for (int i = 0; i < columnCount; i++) {
+      JsonArray column = dataColumns.get(i).getAsJsonArray();
+      for (int j = 0; j < rowCount; j++) {
+        final JsonPrimitive primitiveValue = column.get(j).getAsJsonPrimitive();
+       
+        switch (columnTypes[i]){
+          case LONG:
+            data[i][j] = primitiveValue.getAsLong();
+            break;
+          case DOUBLE:
+            data[i][j] = primitiveValue.getAsDouble();
+            break;
+          case STRING:
+            data[i][j] = primitiveValue.getAsString();
+            break;
+        }
+        
+      }
+    }
+    
+    return new Table(tableJson.get("name").getAsString(), tableJson.get("description").getAsString(),
+            new String[rowCount], columnHeaders,columnTypes, "", data);
+  }
+
+  private static final Pattern JSON_PATH_PATTERN = Pattern.compile("\\.|\\[|\\]");
+
+  public static JsonElement findInJson(JsonElement jsonElement, String jsonPath) {
+
+    final String[] route = JSON_PATH_PATTERN.split(jsonPath);
+    JsonElement result = jsonElement;
+
+    for (String key : route) {
+      key = key.trim();
+      if (key.isEmpty())
+        continue;
+
+      if (result == null) {
+        result = JsonNull.INSTANCE;
+        break;
+      }
+
+      if (result.isJsonObject()) {
+        result = ((JsonObject) result).get(key);
+      } else if (result.isJsonArray()) {
+        int value = Integer.valueOf(key) - 1;
+        result = ((JsonArray) result).get(value);
+      } else break;
+    }
+
+    return result;
+  }
 
 }

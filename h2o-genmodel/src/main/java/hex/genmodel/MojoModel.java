@@ -1,6 +1,7 @@
 package hex.genmodel;
 
 import hex.ModelCategory;
+import hex.genmodel.descriptor.Table;
 import hex.genmodel.descriptor.VariableImportances;
 
 import java.io.*;
@@ -22,6 +23,7 @@ public abstract class MojoModel extends GenModel {
   public double[] _priorClassDistrib;
   public double[] _modelClassDistrib;
   public double _mojo_version;
+  public Table model_summary;
 
   /**
    * Primary factory method for constructing MojoModel instances.
@@ -162,6 +164,11 @@ public abstract class MojoModel extends GenModel {
 
     @Override
     public VariableImportances variableImportances() {
+      return null;
+    }
+
+    @Override
+    public Table modelSummary() {
       return null;
     }
   }

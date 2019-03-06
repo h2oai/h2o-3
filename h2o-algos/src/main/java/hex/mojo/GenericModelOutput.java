@@ -4,11 +4,9 @@ import hex.Model;
 import hex.ModelCategory;
 import hex.ModelMetrics;
 import hex.genmodel.ModelDescriptor;
+import hex.genmodel.descriptor.Table;
 import hex.genmodel.descriptor.VariableImportances;
 import water.util.TwoDimTable;
-
-import java.util.Arrays;
-import java.util.Random;
 
 public class GenericModelOutput extends Model.Output {
     
@@ -32,6 +30,7 @@ public class GenericModelOutput extends Model.Output {
         _nfeatures = modelDescriptor.nfeatures();
         
         _variable_importances = readVariableImportances(modelDescriptor.variableImportances());
+        _model_summary = convertTable(modelDescriptor.modelSummary());
     }
 
     @Override
@@ -49,5 +48,20 @@ public class GenericModelOutput extends Model.Output {
 
         TwoDimTable varImps = ModelMetrics.calcVarImp(variableImportances.getImportances(), variableImportances.getVariableNames());
         return varImps;
+    }
+    
+    private static TwoDimTable convertTable(final Table convertedTable){
+        if(convertedTable == null) return null;
+        final TwoDimTable table = new TwoDimTable(convertedTable.getTableHeader(), convertedTable.getTableDescription(),
+                convertedTable.getRowHeaders(), convertedTable.getColHeaders(), convertedTable.getColTypesString(),
+                null, convertedTable.getColHeaderForRowHeaders());
+
+        for (int i = 0; i < convertedTable.columns(); i++) {
+            for (int j = 0; j < convertedTable.rows(); j++) {
+                table.set(j, i, convertedTable.getCell(i,j));
+            }
+        }
+        
+        return table;
     }
 }

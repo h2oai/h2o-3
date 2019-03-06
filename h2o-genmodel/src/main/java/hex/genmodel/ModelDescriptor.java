@@ -1,6 +1,7 @@
 package hex.genmodel;
 
 import hex.ModelCategory;
+import hex.genmodel.descriptor.Table;
 import hex.genmodel.descriptor.VariableImportances;
 
 //TODO: Do we really want our users to implement all of this, even if most of it remains null ?
@@ -45,5 +46,7 @@ public interface ModelDescriptor {
   String timestamp();
   
   VariableImportances variableImportances();
+  
+  Table modelSummary();
 
 }

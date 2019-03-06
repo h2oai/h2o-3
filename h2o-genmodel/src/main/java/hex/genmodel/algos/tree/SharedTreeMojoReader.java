@@ -4,11 +4,11 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import hex.genmodel.ModelMojoReader;
+import hex.genmodel.descriptor.Table;
 import hex.genmodel.descriptor.VariableImportances;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Objects;
 
 /**
  */
@@ -57,7 +57,7 @@ public abstract class SharedTreeMojoReader<M extends SharedTreeMojoModel> extend
     _model.postInit();
   }
 
-  private void extractModelDump() {
+  protected void extractModelDump() {
     // Extract additional information from model dump
     final JsonObject modelJson = parseJson();
 
@@ -67,20 +67,15 @@ public abstract class SharedTreeMojoReader<M extends SharedTreeMojoModel> extend
               _model._uuid));
       return;
     }
-
-    // Then check model output is dumped in the JSON, as this is re-used for extraction of many model metrics
-    final JsonObject output = modelJson.getAsJsonObject("output");
-    if (output.isJsonNull() || output == null) {
-      System.out.println(String.format("Output object expected in MojoModel dump with ID '%s', however none were found. Additional model metrics were not extracted.",
-              _model._uuid));
-      return;
-    }
-
-    _model._variable_importances = extractVariableImportances(output);
+    
+    _model._variable_importances = extractVariableImportances(modelJson);
+    _model._model_summary = extractTableFromJson(modelJson, "output.model_summary");
   }
+  
+  
 
-  private VariableImportances extractVariableImportances(final JsonObject modelOutputJson) {
-    final JsonElement variableImportancesElement = modelOutputJson.get("variable_importances");
+  private VariableImportances extractVariableImportances(final JsonObject modelJson) {
+    final JsonElement variableImportancesElement = findInJson(modelJson,"output.variable_importances");
     if (variableImportancesElement.isJsonNull()) {
       System.out.println(String.format("Variable importances expected in MojoModel dump with ID '%s', however none were found.",
               _model._uuid));

@@ -5,6 +5,7 @@ import hex.genmodel.algos.glrm.GlrmMojoModel;
 import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.algos.tree.SharedTreeNode;
+import hex.genmodel.descriptor.Table;
 import hex.genmodel.descriptor.VariableImportances;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
@@ -2581,6 +2582,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       public String timestamp() { return new DateTime().toString(); }
       @Override
       public VariableImportances variableImportances() { return null; }
+      @Override
+      public Table modelSummary() { return null; }
     };
   }
 
