@@ -19,6 +19,9 @@ public class ModelOutputSchemaV3<O extends Model.Output, S extends ModelOutputSc
   @API(help="Column names", direction=API.Direction.OUTPUT)
   public String[] names;
 
+  @API(help="Column types", direction=API.Direction.OUTPUT)
+  public String[] column_types; // column type mappings can be found in Vec.java, around line 198.
+
   @API(help="Domains for categorical columns", direction=API.Direction.OUTPUT, level=API.Level.expert)
   public String[][] domains;
 

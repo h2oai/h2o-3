@@ -620,9 +620,22 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     /** Columns used in the model and are used to match up with scoring data
      *  columns.  The last name is the response column name (if any). */
     public String _names[];
+    public String _column_types[];
 
+    /**
+     * @deprecated as of March 6, 2019, replaced by (@link #setNames(String[] names, String[] columnTypes))
+     * 
+     */
+    @Deprecated
     public void setNames(String[] names) {
       _names = names;
+      _column_types = new String[names.length];
+      Arrays.fill(_column_types, "NA");
+    }
+
+    public void setNames(String[] names, String[] columntypes) {
+      _names = names;
+      _column_types = columntypes;
     }
 
     public String _origNames[]; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
@@ -669,7 +682,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       if (b.error_count() > 0)
         throw new IllegalArgumentException(b.validationErrors());
       // Capture the data "shape" the model is valid on
-      setNames(train != null ? train.names() : new String[0]);
+      setNames(train != null ? train.names() : new String[0], train!=null?train.typesStr():new String[0]);
       _domains = train != null ? train.domains() : new String[0][];
       _origNames = b._origNames;
       _origDomains = b._origDomains;

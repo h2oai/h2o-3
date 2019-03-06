@@ -3,7 +3,6 @@ package hex.api;
 import hex.DataInfo;
 import hex.DataInfo.TransformType;
 import hex.Model;
-import hex.genmodel.utils.ArrayUtils;
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMOutput;
 import hex.gram.Gram;
@@ -14,11 +13,10 @@ import water.MRTask;
 import water.api.Handler;
 import water.api.schemas3.KeyV3;
 import water.fvec.*;
-import water.rapids.vals.ValFrame;
+import water.fvec.Vec.VectorGroup;
 
 import java.util.Arrays;
 import java.util.Map;
-import water.fvec.Vec.VectorGroup;
 
 /**
  * Created by tomasnykodym on 3/25/15.
@@ -39,7 +37,7 @@ public class MakeGLMModelHandler extends Handler {
     DataInfo dinfo = model.dinfo();
     dinfo.setPredictorTransform(TransformType.NONE);
     // GLMOutput(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names, boolean binomial) {
-    m._output = new GLMOutput(model.dinfo(),model._output._names, model._output._domains, model._output.coefficientNames(), model._output._binomial, beta);
+    m._output = new GLMOutput(model.dinfo(),model._output._names,model._output._column_types,  model._output._domains, model._output.coefficientNames(), model._output._binomial, beta);
     DKV.put(m._key, m);
     GLMModelV3 res = new GLMModelV3();
     res.fillFromImpl(m);
