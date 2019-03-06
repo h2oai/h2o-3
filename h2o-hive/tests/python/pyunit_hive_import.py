@@ -43,7 +43,7 @@ def hive_import():
     assert test_table_multi_format.ncol==5, "test_table_multi_format number of columns is incorrect. h2o.import_hive_table() is not working."
 
     # import from partitioned table with single format and partition filter
-    test_table_multi_key = h2o.import_hive_table("default", "test_table_multi_key", partitions=[["2017", "02"]])
+    test_table_multi_key = h2o.import_hive_table("default", "test_table_multi_key", partitions=[["2017", "2"]])
     assert_is_type(test_table_multi_key, H2OFrame)
     assert test_table_multi_key.nrow==3, "test_table_multi_key number of rows is incorrect. h2o.import_hive_table() is not working."
     assert test_table_multi_key.ncol==5, "test_table_multi_key number of columns is incorrect. h2o.import_hive_table() is not working."
