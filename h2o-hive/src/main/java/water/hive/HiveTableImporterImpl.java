@@ -160,13 +160,13 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
   private Job<Frame> loadPartitionsSameFormat(Table table, List<Partition> partitions, String targetFrame) {
     List<Key> fileKeysList = new ArrayList<>();
     int keyCount = table.getPartitionKeysSize();
-    Map<String, String[]> partitionValuesMap = new HashMap<>();
+    List<String[]> partitionValuesMap = new ArrayList<>();
     for (Partition p : partitions) {
       Key[] partFileKeys = importFiles(p.getSd().getLocation());
       fileKeysList.addAll(Arrays.asList(partFileKeys));
       String[] keyValues = p.getValues().toArray(new String[0]);
       for (Key f : partFileKeys) {
-        partitionValuesMap.put(f.toString(), keyValues);
+        partitionValuesMap.add(keyValues);
       }
     }
     Key[] filesKeys = fileKeysList.toArray(new Key[0]);
@@ -176,7 +176,7 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
     for (int i = 0; i < table.getPartitionKeys().size(); i++) {
       partitionKeys[i] = table.getPartitionKeys().get(i).getName();
     }
-    setup.setSyntheticColumns(partitionKeys, partitionValuesMap);
+    setup.setSyntheticColumns(partitionKeys, partitionValuesMap.toArray(new String[0][]));
     return parseTable(targetFrame, filesKeys, setup);
   }
   

@@ -42,8 +42,8 @@ public class ParseSetup extends Iced {
   String[][] _data;           // First few rows of parsed/tokenized data
   int[] _parse_columns_indices; // store column indices to be parsed into the final file
   
-  String[] _synthetic_column_names;
-  Map<String, String[]> _synthetic_column_values;
+  String[] _synthetic_column_names; // Columns with constant values to be added to parsed Frame
+  String[][] _synthetic_column_values; // For each imported file contains array of values for each synthetic column
 
   String [] _fileNames = new String[]{"unknown"};
   public boolean disableParallelParse;
@@ -131,7 +131,7 @@ public class ParseSetup extends Iced {
     }
   }
   
-  public void setSyntheticColumns(String[] names, Map<String, String[]> valueMapping) {
+  public void setSyntheticColumns(String[] names, String[][] valueMapping) {
     _synthetic_column_names = names;
     _synthetic_column_values = valueMapping;
   }
