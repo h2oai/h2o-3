@@ -24,5 +24,8 @@ public class GenericModelV3 extends ModelSchemaV3<GenericModel, GenericModelV3, 
 
         @API(help="Variable Importances", direction=API.Direction.OUTPUT, level = API.Level.secondary)
         TwoDimTableV3 variable_importances;
+
+        @API(help="Generic model summary", direction = API.Direction.OUTPUT, level = API.Level.secondary)
+        TwoDimTableV3 model_summary;
     }
 }
