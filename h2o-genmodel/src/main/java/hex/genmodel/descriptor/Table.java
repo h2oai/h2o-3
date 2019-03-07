@@ -128,4 +128,13 @@ public class Table implements Serializable {
     public Object getCell(final int column, final int row){
         return _cellValues[column][row];
     }
+
+    public int findColumnIndex(final String columnName) {
+
+        for (int i = 0; i < _colHeaders.length; i++) {
+            if (_colHeaders[i].equals(columnName)) return i;
+        }
+        
+        return -1;
+    }
 }

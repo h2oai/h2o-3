@@ -73,23 +73,13 @@ public abstract class SharedTreeMojoReader<M extends SharedTreeMojoModel> extend
   }
   
   
-
   private VariableImportances extractVariableImportances(final JsonObject modelJson) {
-    final JsonElement variableImportancesElement = findInJson(modelJson,"output.variable_importances");
-    if (variableImportancesElement.isJsonNull()) {
-      System.out.println(String.format("Variable importances expected in MojoModel dump with ID '%s', however none were found.",
-              _model._uuid));
-      return null;
-    }
-    final JsonObject variableImportances = variableImportancesElement.getAsJsonObject();
-    final int rowcount = variableImportances.get("rowcount").getAsInt();
-    if (rowcount < 1) return null;
-
-    final double[] relativeVarimps = new double[rowcount];
-    final JsonArray relativeVarimpsJson = variableImportances.getAsJsonArray("data").get(1).getAsJsonArray();
-
-    for (int i = 0; i < rowcount; i++) {
-      relativeVarimps[i] = relativeVarimpsJson.get(i).getAsDouble();
+    final Table table = extractTableFromJson(modelJson, "output.variable_importances");
+    final double[] relativeVarimps = new double[table.rows()];
+    final int column = table.findColumnIndex("Relative Importance");
+    if(column == -1) return null;
+    for (int i = 0; i < table.rows(); i++) {
+      relativeVarimps[i] = (double) table.getCell(column,i);
     }
 
     return new VariableImportances(Arrays.copyOf(_model._names, _model.nfeatures()), relativeVarimps);
