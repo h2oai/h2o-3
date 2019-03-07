@@ -21,6 +21,8 @@ def mojo_model_drf_test():
     assert predictions.nrows == 24421
     assert model._model_json["output"]["variable_importances"] is not None
     assert len(model._model_json["output"]["variable_importances"]._cell_values) > 0
+    assert model._model_json["output"]["model_summary"] is not None
+    assert len(model._model_json["output"]["model_summary"]._cell_values) > 0
     
 if __name__ == "__main__":
     pyunit_utils.standalone_test(mojo_model_drf_test)

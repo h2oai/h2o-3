@@ -23,7 +23,7 @@ public abstract class MojoModel extends GenModel {
   public double[] _priorClassDistrib;
   public double[] _modelClassDistrib;
   public double _mojo_version;
-  public Table model_summary;
+    protected Table _model_summary;
 
   /**
    * Primary factory method for constructing MojoModel instances.
@@ -167,10 +167,10 @@ public abstract class MojoModel extends GenModel {
       return null;
     }
 
-    @Override
-    public Table modelSummary() {
-      return null;
-    }
+      @Override
+      public Table modelSummary() {
+          return _model_summary;
+      }
   }
 
   public ModelDescriptor modelDescriptor() {

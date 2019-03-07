@@ -19,6 +19,8 @@ def mojo_model_glm_test():
     predictions = model.predict(airlines)
     assert predictions is not None
     assert predictions.nrows == 24421
+    assert model._model_json["output"]["model_summary"] is not None
+    assert len(model._model_json["output"]["model_summary"]._cell_values) > 0
     
 if __name__ == "__main__":
     pyunit_utils.standalone_test(mojo_model_glm_test)

@@ -161,6 +161,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     _model._mojo_version = ((Number) readkv("mojo_version")).doubleValue();
     checkMaxSupportedMojoVersion();
     readModelData();
+    extractModelDetails();
   }
 
   private static Map<String, Object> parseModelInfo(MojoReaderBackend reader) throws IOException {
@@ -326,6 +327,24 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     
     return new Table(tableJson.get("name").getAsString(), tableJson.get("description").getAsString(),
             new String[rowCount], columnHeaders,columnTypes, "", data);
+  }
+
+  private void extractModelDetails() {
+    // Extract additional information from model dump
+    final JsonObject modelJson = parseJson();
+
+    // First check the JSON dump is available
+    if (modelJson == null) {
+      System.out.println(String.format("Unable to parse JSON dump of MojoModel with ID '%s'. Additional model metrics were not extracted.",
+              _model._uuid));
+      return;
+    }
+
+    processModelMetrics(modelJson);
+  }
+
+  protected void processModelMetrics(JsonObject modelJson) {
+    _model._model_summary = extractTableFromJson(modelJson, "output.model_summary");
   }
 
   private static final Pattern JSON_PATH_PATTERN = Pattern.compile("\\.|\\[|\\]");

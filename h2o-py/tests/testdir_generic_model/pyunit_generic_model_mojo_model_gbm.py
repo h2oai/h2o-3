@@ -23,6 +23,8 @@ def mojo_model_test():
     assert predictions.nrows == 24421
     assert model._model_json["output"]["variable_importances"] is not None
     assert len(model._model_json["output"]["variable_importances"]._cell_values) > 0
+    assert model._model_json["output"]["model_summary"] is not None
+    assert len(model._model_json["output"]["model_summary"]._cell_values) > 0
     
     # Test constructor generating the model from existing MOJO file
     model = H2OGenericEstimator.from_mojo_file(filename)
@@ -32,6 +34,8 @@ def mojo_model_test():
     assert predictions.nrows == 24421
     assert model._model_json["output"]["variable_importances"] is not None
     assert len(model._model_json["output"]["variable_importances"]._cell_values) > 0
+    assert model._model_json["output"]["model_summary"] is not None
+    assert len(model._model_json["output"]["model_summary"]._cell_values) > 0 
     
     
     

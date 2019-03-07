@@ -52,27 +52,17 @@ public abstract class SharedTreeMojoReader<M extends SharedTreeMojoModel> extend
       _model._calib_glm_beta = readkv("calib_glm_beta", new double[0]);
     }
 
-    extractModelDump();
 
     _model.postInit();
   }
 
-  protected void extractModelDump() {
-    // Extract additional information from model dump
-    final JsonObject modelJson = parseJson();
 
-    // First check the JSON dump is available
-    if (modelJson == null) {
-      System.out.println(String.format("Unable to parse JSON dump of MojoModel with ID '%s'. Additional model metrics were not extracted.",
-              _model._uuid));
-      return;
-    }
-    
+  @Override
+  protected void processModelMetrics(JsonObject modelJson) {
+    super.processModelMetrics(modelJson);
     _model._variable_importances = extractVariableImportances(modelJson);
-    _model._model_summary = extractTableFromJson(modelJson, "output.model_summary");
   }
-  
-  
+
   private VariableImportances extractVariableImportances(final JsonObject modelJson) {
     final Table table = extractTableFromJson(modelJson, "output.variable_importances");
     if (table == null) return null;
