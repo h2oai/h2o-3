@@ -5,41 +5,38 @@ Reproducibility
 
  The following criteria must be met to guarantee reproducibility in a single node cluster:
  
- - Same training data
- 
-   - **Note**: If you have H2O import a whole directory with multiple files instead of a single file, we do not guarantee reproducibility because the data may be shuffled during import.
-   
- - Same parameters used to train the model
- - Same seed used if sampling is done
-   
-   - Parameters that perform sampling: 
-       - ``sample_rate``
-       - ``sample_rate_per_class``
-       - ``col_sample_rate``
-       - ``col_sample_rate_change_per_level``
-       - ``col_sample_rate_per_tree``
+ - Same training data. **Note**: If you have H2O import a whole directory with multiple files instead of a single file, we do not guarantee reproducibility because the data may be shuffled during import.
+ - Same parameters are used to train the model.
+ - Same seed is used if sampling is done. The following parameters perform sampling:
 
- - No early stopping or early stopping with ``score_tree_interval`` explicitly specified and same validation data
+     - ``sample_rate``
+     - ``sample_rate_per_class``
+     - ``col_sample_rate``
+     - ``col_sample_rate_change_per_level``
+     - ``col_sample_rate_per_tree``
+
+ - No early stopping performed or early stopping with ``score_tree_interval`` is explicitly specified and the same validation data.
    
 - **Is it possible to guarantee reproducibility in multi-node clusters?**
 
  The following criteria must be met to guarantee reproducibility in a multi-node cluster:
 
  - Reproducible requirements for single node cluster are met. (See above.)
- - The cluster configuration is the same.
+ - The cluster configuration is the same:
     
     - Clusters must have the same number of nodes.
     - Nodes must have the same number of CPU cores available (or same restriction on number of threads).
-       - If you do not have a machine with the same number of CPU cores, see question "How can I reproduce a model if machines have a different number of CPU cores?" below.
+      
+    If you do not have a machine with the same number of CPU cores, see the question "How can I reproduce a model if machines have a different number of CPU cores?" below.
 
  - The model training is triggered from the leader node of the cluster. (See note below.)
 
   **Note**: When H2O is running on Hadoop, the leader node is automatically returned by the h2odriver as the node that the user should connect to. In multi-node deployments of Standalone H2O, the leader node has to be manually identified by the user. Flow users can easily check whether they are connected to the leader node by opening Cluster Status (from the Admin menu) and checking that the first node has the same IP address as they see in their browser's address bar.
  
- .. figure:: ../../images/GBMReproducibility_LeaderNode.png
-    :alt: Leader node in cluster status
+  .. figure:: ../../images/GBMReproducibility_LeaderNode.png
+     :alt: Leader node in cluster status
 
- **Note**: In H2O versions prior to 3.18.0.1, the node automatically returned by the h2odriver while running on Hadoop was not guaranteed to be the leader node.  If you are using a version prior to 3.18.0.1 and you are running H2O on Hadoop, the leader node has to be manually identified by the user for reproducibility.  See question "How do I reproduce a model where model training was not triggered from the leader node?" below.
+  **Note**: In H2O versions prior to 3.18.0.1, the node automatically returned by the h2odriver while running on Hadoop was not guaranteed to be the leader node.  If you are using a version prior to 3.18.0.1 and you are running H2O on Hadoop, the leader node has to be manually identified by the user for reproducibility.  See question "How do I reproduce a model where model training was not triggered from the leader node?" below.
 
 - **How deterministic is GBM?**
 
@@ -49,20 +46,14 @@ Reproducibility
 
  When building a model the user should perform the following steps to make sure the model can be reproduced in the future:
 
- 1. Save any script used to pre-process the data before model training.
-   
-   - In the event that you will need to reproduce your model, it is important to save the steps used to create the training data. 
-   - This should include how the data is imported into the H2O cluster and whether any data types have been modified (i.e., was a numeric column converted to categorical).
+ 1. Save any script used to pre-process the data before model training. In the event that you will need to reproduce your model, it is important to save the steps used to create the training data. This information should include how the data is imported into the H2O cluster and whether any data types have been modified (i.e., was a numeric column converted to categorical).
 
  2. Save information about the H2O cluster.
    
    - What are the number of nodes in the cluster?
    - What are the number of CPU cores available?
 
- 3. Save the H2O binary model. 
-   
-   - Refer to :ref:`save_and_load_model` for more information.
-   - The binary model will contain the H2O version and the parameters used to train the model.
+ 3. Save the H2O binary model. Refer to :ref:`save_and_load_model` for more information. The binary model will contain the H2O version and the parameters used to train the model.
 
  4. Train the GBM model using the same:
 	
@@ -70,29 +61,29 @@ Reproducibility
    - cluster configuration (information about the cluster configuration saved in Step 2)
    - parameters (information about the parameters saved in Step 3)
 
-   You do not need to explicitly set a seed to make a GBM model reproducible.  If no seed is set, then H2O-3 will randomly choose a seed.  This seed is saved in the binary model.  To reproduce your model, you can extract the seed from the binary model and re-train the GBM with the seed set.
+ You do not need to explicitly set a seed to make a GBM model reproducible.  If no seed is set, then H2O-3 will randomly choose a seed.  This seed is saved in the binary model.  To reproduce your model, you can extract the seed from the binary model and re-train the GBM with the seed set.
    
-   .. example-code::
-      .. code-block:: r
+ .. example-code::
+    .. code-block:: r
 
-      # Train GBM without Seed
-      gbm_v1 <- h2o.gbm(y = "Species", training_frame = df, sample_rate = 0.7)
+       # Train GBM without Seed
+       gbm_v1 <- h2o.gbm(y = "Species", training_frame = df, sample_rate = 0.7)
 
-      # Reproduce GBM
-      seed <- gbm_v1@allparameters$seed
-      gbm_v2 <- h2o.gbm(y = "Species", training_frame = df, sample_rate = 0.7, seed = seed)
+       # Reproduce GBM
+       seed <- gbm_v1@allparameters$seed
+       gbm_v2 <- h2o.gbm(y = "Species", training_frame = df, sample_rate = 0.7, seed = seed)
 
-      .. code-block:: python
+    .. code-block:: python
 
-      # Train GBM without Seed
-      from h2o.estimators import H2OGradientBoostingEstimator
-      gbm_v1 = H2OGradientBoostingEstimator(sample_rate = 0.7)
-      gbm_v1.train(y = "Species", training_frame = df)
+       # Train GBM without Seed
+       from h2o.estimators import H2OGradientBoostingEstimator
+       gbm_v1 = H2OGradientBoostingEstimator(sample_rate = 0.7)
+       gbm_v1.train(y = "Species", training_frame = df)
 
-      # Reproduce GBM
-      seed = gbm_v1.params.get('seed').get('actual')
-      gbm_v2 = H2OGradientBoostingEstimator(sample_rate = 0.7, seed = seed)
-      gbm_v2.train(y = "Species", training_frame = df)
+       # Reproduce GBM
+       seed = gbm_v1.params.get('seed').get('actual')
+       gbm_v2 = H2OGradientBoostingEstimator(sample_rate = 0.7, seed = seed)
+       gbm_v2.train(y = "Species", training_frame = df)
 
 - **How can I reproduce a model if machines have a different number of CPU cores?**
 
@@ -102,101 +93,110 @@ Reproducibility
 
 	``"Rebalancing train dataset into 145 chunks."``
 	
-	**If the logs show that rebalancing has occurred, reproducibility is not possible.** If the logs do not mention rebalancing, continue to Step 2.
+  **If the logs show that rebalancing has occurred, reproducibility is not possible.** If the logs do not mention rebalancing, continue to Step 2.
 
-2. In the logs of the initial model, search for the line that says: **``ParseSetup heuristic``**.  
+ 2. In the logs of the initial model, search for the line that says: **ParseSetup heuristic**. On that line in the logs, the chunk size will be defined. In this example, the chunk size is 1016493.
 
-.. figure:: ../../images/GBMReproducibility_ChunkSize_Logs.png
-    :alt: Chunk size in Logs
+
+  .. figure:: ../../images/GBMReproducibility_ChunkSize_Logs.png
+     :alt: Chunk size in Logs
     
-2. On that line in the logs, the chunk size will be defined.  In the example above, the chunk size is 1016493.
-
-3. Load data with defined chunk size.
+ 3. Load data with the defined chunk size.
 
    .. example-code::
       .. code-block:: r
 
-      # Load data with defined chunk size
-      raw_train <- h2o.importFile(PATH_TO_TRAIN_FILE, parse = FALSE)
-      training_frame <- h2o.parseRaw(data=raw_train, 
-      				                    chunk_size = CHUNK_SIZE_TRAIN, 
-								          destination_frame = "train.hex")
-								          
-4. Repeat Steps 2-4 if you used validation data.  
-5. Train the model in R or in Flow.  If you are using Flow, you will be able to see the datasets from the Frames menu.
+       # Load data with defined chunk size
+       raw_train <- h2o.importFile(PATH_TO_TRAIN_FILE, parse = FALSE)
+       training_frame <- h2o.parseRaw(data=raw_train, 
+                                      chunk_size = CHUNK_SIZE_TRAIN, 
+                                      destination_frame = "train.hex")
 
-.. figure:: ../../images/GBMReproducibility_ListAllFrames.png
-    :alt: List of All Frames
+      .. code-block:: python
+
+       # Load data with defined chunk size       
+       raw_train = h2o.import_file(PATH_TO_TRAIN_FILE, parse = FALSE)
+       training_frame = h2o.parse_raw(data=raw_train, 
+                                      chunk_size = CHUNK_SIZE_TRAIN, 
+                                      destination_frame = "train.hex")
+
+ 4. Repeat Steps 2-3 if you used validation data.  
+ 5. Train the model in R or in Flow. If you are using Flow, you will be able to see the datasets from the Frames menu when you select **Data > List All Frames**. 
+
+  .. figure:: ../../images/GBMReproducibility_ListAllFrames.png
+     :alt: List of All Frames
+     :width: 627
+     :height: 288
     
-.. figure:: ../../images/GBMReproducibility_ImportedFrame.png
-    :alt: Imported Frame    
+  .. figure:: ../../images/GBMReproducibility_ImportedFrame.png
+     :alt: Imported Frame
+     :width: 444
+     :height: 269
 
-6. In the logs of the new model, check to see if rebalancing occurred.  An example of the rebalancing output is below:
+ 6. In the logs of the new model, check to see if rebalancing occurred.  An example of the rebalancing output is below:
 
 	``"Rebalancing train dataset into 145 chunks."``
 	
-	**If the logs show that rebalancing has occurred, you will not be able to reproduce the model.**
+  **If the logs show that rebalancing has occurred, you will not be able to reproduce the model.**
 
 - **How do I reproduce a model where model training was not triggered from the leader node?**
 
- In versions of H2O-3 before 3.16.04 or Steam Versions before 1.4.4, the node that triggered the traininig of the model was not necessarily the leader node of the cluster.
+ In versions of H2O-3 before 3.16.04 or Steam Versions before 1.4.4, the node that triggered the traininig of the model was not necessarily the leader node of the cluster. This variability can cause issues in reproducibility. In order to guarantee reproducibility, we must connect to the same node of the H2O cluster as was done during training of the initial model. The steps below outline how to do this:
 
-This variability can cause issues in reproducibility.  In order to guarantee reproducibility, we must connect to the same node of the H2O cluster as was done during training of the initial model.  The steps below outline how to do this:
+ 1. Review the logs of the initial model. This will tell us what node we will need to connect to in order to reproduce the model. The logs will have a folder for each node in the cluster
 
- 1. Review the logs of the initial model.  This will tell us what node we will need to connect to in order to reproduce the model.
-   
-   - the logs will have a folder for each node in the cluster
-
-   .. figure:: ../../images/GBMReproducibility_NodeLogs.png
+    .. figure:: ../../images/GBMReproducibility_NodeLogs.png
        :alt: Logs for each node
     
-   - unzip the logs from one of the nodes (the node chosen does not matter) and open the info logs
+   a. Unzip the logs from one of the nodes (the node chosen does not matter) and open the info logs.
    
-   .. figure:: ../../images/GBMReproducibility_LogsFromSingleNode.png
+    .. figure:: ../../images/GBMReproducibility_LogsFromSingleNode.png
        :alt: Logs from single node
    
-   - in the logs, search for ``Cloud of size N formed [...]`` - for example, in this 3 node cluster I am searching for the term: ``Cloud of size 3 formed``
+   b. In the logs, search for ``Cloud of size N formed [...]``. For example, in this 3 node cluster, I am searching for the term: ``Cloud of size 3 formed``.
 	
-   .. figure:: ../../images/GBMReproducibility_CloudOrder_Logs.png
+    .. figure:: ../../images/GBMReproducibility_CloudOrder_Logs.png
        :alt: Order of the H2O cloud
        
-   - the first node listed is the node we will need to connect to in order to reproduce the model - in this case it is: ``172.16.2.182:54323``
-   - determine which node this IP and port correspond to - you can do this by going back to the H2O logs and seeing which node has the same IP and Port
+    The first node listed is the node we will need to connect to in order to reproduce the model. In this case, it is: ``172.16.2.182:54323``.
+
+   c. Determine which node this IP and port correspond to. You can do this by going back to the H2O logs and seeing which node has the same IP and port.
 			
-   .. figure:: ../../images/GBMReproducibility_NodeLogs.png
+    .. figure:: ../../images/GBMReproducibility_NodeLogs.png
        :alt: Logs for each node
 		
 	
-   - in this case, the node with the same IP and Port: ``172.16.2.182:54323`` is ``node0``
-   - to reproduce the model, we must always connect to the first node: ``node0``
+    In this case, the node with the same IP and port: ``172.16.2.182:54323`` is ``node0``. To reproduce the model, we must always connect to the first node: ``node0``.
 	
- 2. Start up a new H2O cluster in the command line - this is the H2O cluster we will use to reproduce the model.
+ 2. Start up a new H2O cluster in the command line. This is the H2O cluster we will use to reproduce the model. For example: 
+
+  ::
+
+   hadoop jar h2odriver.jar -mapperXmx 1g -n 3 -output h2o
    
-   - Example: ``hadoop jar h2odriver.jar -mapperXmx 1g -n 3 -output h2o``
-   - This cluster must have the same number of nodes as the cluster used to train the inital model
+  This cluster must have the same number of nodes as the cluster used to train the inital model.
 	
- 3. Open Flow.
-   
-   - When the H2O cluster is up, you will see this output in the command line:
-	``Open H2O Flow in your web browser: http://172.16.2.189:54321``
- open Flow using the URL provided in the output
+ 3. Open Flow. When the H2O cluster is up, you will see the following similar output in the command line. Open Flow using the URL provided in the output.
 
-4. Review the Cluster Status in Flow
+   ::
 
-   .. figure:: ../../images/GBMReproducibility_ClusterStatusButton.png
-       :alt: Button in Flow to access cluster status
-   
-   .. figure:: ../../images/GBMReproducibility_ClusterStatus.png
-       :alt: Cluster Status
-
-5. Find the IP address that corresponds to the node we need to connect to from Step 1
-   
-   - in our example, we have to connect to the first node listed (``node0``)   
-   - this means we need to connect to the first node listed in the Cluster Status
-	
-	   .. figure:: ../../images/GBMReproducibility_ClusterStatusNodeSelected.png
-       :alt: Leader Node highlighted in Cluster status
+    Open H2O Flow in your web browser: http://172.16.2.189:54321
  
-6. Use the selected IP address to connect to H2O from R, Python, or Flow and re-train the model you are interested in reproducing. 
+ 4. Review the Cluster Status in Flow by selecting **Admin > Cluster Status**. 
+
+  .. figure:: ../../images/GBMReproducibility_ClusterStatusButton.png
+     :alt: Button in Flow to access cluster status
    
-   - Note: if you are using Flow, this means you must open Flow in a new browser with the IP and Port selected
+  .. figure:: ../../images/GBMReproducibility_ClusterStatus.png
+     :alt: Cluster Status
+
+ 5. Find the IP address that corresponds to the node we need to connect to from Step 1. Remember that in our example, we have to connect to the first node listed (``node0``). This means that we need to connect to the first node listed in the Cluster Status.
+
+  .. figure:: ../../images/GBMReproducibility_ClusterStatusNodeSelected.png
+     :alt: Leader Node highlighted in cluster status
+     :width: 447
+     :height: 372
+ 
+ 6. Use the selected IP address to connect to H2O from R, Python, or Flow and re-train the model you are interested in reproducing. 
+   
+  **Note**: If you are using Flow, this means you must open Flow in a new browser with the IP and port selected.
