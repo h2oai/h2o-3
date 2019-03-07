@@ -47,6 +47,16 @@
     </property>
 
     <property>
+        <name>mapred.tez.java.opts</name>
+        <value>-Xmx256m</value>
+    </property>
+    <property>
+        <name>hive.tez.container.size</name>
+        <value>256</value>
+        <description></description>
+    </property>
+
+    <property>
         <name>hive.server2.authentication</name>
         <value>kerberos</value>
     </property>

@@ -100,6 +100,7 @@ RUN chmod 700 /usr/sbin/startup.sh && \
 
 # Copy hive configs
 COPY ${PATH_PREFIX}/../common/conf-hive/ /etc/${HIVE_PACKAGE}/conf/
+COPY ${PATH_PREFIX}/conf-tez/ /etc/tez/conf/
 
 RUN /usr/sbin/install_ldap.sh
 
