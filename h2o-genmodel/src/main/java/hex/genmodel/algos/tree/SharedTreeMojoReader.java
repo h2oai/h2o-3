@@ -75,6 +75,7 @@ public abstract class SharedTreeMojoReader<M extends SharedTreeMojoModel> extend
   
   private VariableImportances extractVariableImportances(final JsonObject modelJson) {
     final Table table = extractTableFromJson(modelJson, "output.variable_importances");
+    if (table == null) return null;
     final double[] relativeVarimps = new double[table.rows()];
     final int column = table.findColumnIndex("Relative Importance");
     if(column == -1) return null;
