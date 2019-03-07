@@ -4,6 +4,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Futures;
+import water.MRTask;
 import water.Scope;
 import water.TestUtil;
 
@@ -121,5 +122,30 @@ public class VecTest extends TestUtil {
                     v.espc()[2] == FileVec.DFLT_CHUNK_SIZE * 2
     );
     v.remove(new Futures()).blockForPending();
+  }
+
+  @Test public void testMakeConStr() {
+    Vec source = makeSeq(2 * FileVec.DFLT_CHUNK_SIZE, false);
+    Vec con = source.makeCon(Vec.T_STR);
+    // check rollup possible
+    assertEquals(0d, con.base(), 0);
+    // set each row unique value
+    new MRTask() {
+      @Override
+      public void map(Chunk c) {
+        long firstRow = c._vec.espc()[c.cidx()];
+        for (int row = 0; row < c._len; row++) {
+          c.set(row, "row_" + (firstRow + row));
+        }
+      }
+    }.doAll(con);
+    // set row values are correct strings
+    for (int row = 0; row < con.length(); row++) {
+      assertEquals(row + "th row has expected value", "row_" + row, con.stringAt(row));
+    }
+    // check rollup possible
+    assertEquals(1, con.sparseRatio(), 0);
+    source.remove(new Futures()).blockForPending();
+    con.remove(new Futures()).blockForPending();
   }
 }

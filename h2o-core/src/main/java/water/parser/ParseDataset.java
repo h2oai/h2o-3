@@ -299,6 +299,7 @@ public final class ParseDataset {
     }
     final int[] ecols = Arrays.copyOf(ecols2, n); // skipped columns are excluded already
     Frame fr;
+    ParseFinalizer finalizer = ParseFinalizer.get(setup);
     // If we have any, go gather unified categorical domains
     if( n > 0 ) {
       if (!setup.getParseType().isDomainProvided) { // Domains are not provided via setup we need to collect them
@@ -330,7 +331,7 @@ public final class ParseDataset {
 
       job.update(0, "Compressing data.");
 
-      fr = SyntheticColumnGenerator.addSyntheticColumns(job, AppendableVec.closeAll(avs), setup, fkeys, mfpt._fileChunkOffsets);
+      fr = finalizer.finalize(job, AppendableVec.closeAll(avs), setup, mfpt._fileChunkOffsets);
       fr.update(job);
 
       Log.trace("Done compressing data.");
@@ -359,7 +360,7 @@ public final class ParseDataset {
       }
     } else {                    // No categoricals case
       job.update(0,"Compressing data.");
-      fr = SyntheticColumnGenerator.addSyntheticColumns(job, AppendableVec.closeAll(avs), setup, fkeys, mfpt._fileChunkOffsets);
+      fr = finalizer.finalize(job, AppendableVec.closeAll(avs), setup, mfpt._fileChunkOffsets);
       Log.trace("Done closing all Vecs.");
     }
     // Check for job cancellation
