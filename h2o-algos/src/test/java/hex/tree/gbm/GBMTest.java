@@ -11,10 +11,8 @@ import hex.genmodel.easy.prediction.BinomialModelPrediction;
 import hex.genmodel.easy.prediction.MultinomialModelPrediction;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.SharedTreeModel;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.rules.ExpectedException;
 import water.*;
 import water.api.StreamingSchema;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
@@ -35,6 +33,9 @@ import static org.junit.Assert.*;
 import static water.fvec.FVecTest.makeByteVec;
 
 public class GBMTest extends TestUtil {
+
+  @Rule
+  public transient ExpectedException expectedException = ExpectedException.none();
 
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
@@ -3479,7 +3480,7 @@ public class GBMTest extends TestUtil {
     try {
       Scope.enter();
       Frame f = Scope.track(parse_test_file("smalldata/logreg/prostate.csv"));
-      f.replace(f.find("CAPSULE"), f.vec("CAPSULE").toCategoricalVec());
+      f.replace(f.find("CAPSULE"), f.vec("CAPSULE").toNumericVec());
       DKV.put(f);
   
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
@@ -3509,13 +3510,36 @@ public class GBMTest extends TestUtil {
         assertEquals(age, f.vec("AGE").min(), 0);
         assertEquals(age, f.vec("AGE").max(), 0);
 
-        Vec currentPreds = Scope.track(model.score(f)).vec(2);
+        Vec currentPreds = Scope.track(model.score(f)).anyVec();
         if (lastPreds != null)
           for (int i = 0; i < lastPreds.length(); i++) {
             assertTrue("age=" + age + ", id=" + f.vec("ID").at8(i), lastPreds.at(i) <= currentPreds.at(i));
           }
         lastPreds = currentPreds;
       }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testMonotoneConstraintsUnsupported() {
+    try {
+      Scope.enter();
+      Frame f = Scope.track(parse_test_file("smalldata/logreg/prostate.csv"));
+      f.replace(f.find("CAPSULE"), f.vec("CAPSULE").toCategoricalVec());
+      DKV.put(f);
+
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._response_column = "CAPSULE";
+      parms._train = f._key;
+      parms._monotone_constraints = new KeyValue[]{new KeyValue("AGE", 1)};
+
+      expectedException.expectMessage("ERRR on field: _monotone_constraints: " +
+              "Monotone constraints are only supported for Gaussian distribution, your distribution: bernoulli.");
+
+      GBMModel model = new GBM(parms).trainModel().get();
+      Scope.track_generic(model);
     } finally {
       Scope.exit();
     }
