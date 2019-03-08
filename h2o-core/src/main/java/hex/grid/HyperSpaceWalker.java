@@ -9,9 +9,6 @@ import water.util.PojoUtils;
 
 import java.util.*;
 
-import static java.lang.Math.ceil;
-import static java.lang.Math.round;
-import static java.lang.StrictMath.floor;
 import static java.lang.StrictMath.min;
 
 public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSpaceSearchCriteria> {
