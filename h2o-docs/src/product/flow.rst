@@ -909,7 +909,7 @@ The available options vary depending on the selected model. If an option is only
 
 -  **col_sample_rate_per_tree**: (XGBoost) Specify the column subsampling rate per tree.
 
--  **monotone_constraints**: (XGBoost) A mapping representing `monotonic constraints <https://xiaoxiaowang87.github.io/monotonicity_constraint/>`__. Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint. Note that constraints can only be defined for numerical columns.
+-  **monotone_constraints**: (XGBoost, GBM) A mapping representing `monotonic constraints <https://xiaoxiaowang87.github.io/monotonicity_constraint/>`__. Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint. Note that constraints can only be defined for numerical columns. Also note that in GBM, this option can only be used when ``distribution="gaussian"``. 
 
 -  **score_tree_interval**: (XGBoost) Score the model after every so many trees.
 
