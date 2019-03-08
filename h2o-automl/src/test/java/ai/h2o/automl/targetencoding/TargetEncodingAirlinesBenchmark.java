@@ -78,9 +78,9 @@ public class TargetEncodingAirlinesBenchmark extends TestUtil {
       testEncoded = tec.ensureTargetColumnIsBinaryCategorical(testEncoded, targetColumnName);
 
       Scope.track(trainEncoded, validEncoded, testEncoded);
-      //Frame.export(trainEncoded, "airlines_train_kfold_dest_noise_noblend.csv", trainEncoded._key.toString(), true, 1);
-      //Frame.export(validEncoded, "airlines_valid_kfold_dest_noise_noblend.csv", validEncoded._key.toString(), true, 1);
-      //Frame.export(testEncoded, "airlines_test_kfold_dest_noise_noblend.csv", testEncoded._key.toString(), true, 1);
+      //Frame.exportToCSV(trainEncoded, "airlines_train_kfold_dest_noise_noblend.csv", trainEncoded._key.toString(), true, 1);
+      //Frame.exportToCSV(validEncoded, "airlines_valid_kfold_dest_noise_noblend.csv", validEncoded._key.toString(), true, 1);
+      //Frame.exportToCSV(testEncoded, "airlines_test_kfold_dest_noise_noblend.csv", testEncoded._key.toString(), true, 1);
 
       long finishTimeEncoding = System.currentTimeMillis();
       System.out.println("Calculation of encodings took: " + (finishTimeEncoding - startTimeEncoding));

@@ -115,7 +115,7 @@ public class TEIntegrationWithAutoMLCVBenchmark extends water.TestUtil {
       Frame withAssignments = StratificationAssistant.assignKFolds(train, 5, responseColumnName, seed);
 
       autoMLBuildSpec.input_spec.training_frame = withAssignments._key;
-      autoMLBuildSpec.build_control.nfolds = 5;
+//      autoMLBuildSpec.build_control.nfolds = 5;
 
       autoMLBuildSpec.input_spec.response_column = responseColumnName;
       autoMLBuildSpec.input_spec.fold_column = "fold";
@@ -188,7 +188,7 @@ public class TEIntegrationWithAutoMLCVBenchmark extends water.TestUtil {
     double avgCumulativeAUCWith = 0.0;
     double avgCumulativeWithoutTE = 0.0;
 
-    int numberOfRuns = 10;
+    int numberOfRuns = 5;
 
     for (int seedAttempt = 0; seedAttempt < numberOfRuns; seedAttempt++) {
       long splitSeed = generator.nextLong();

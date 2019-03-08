@@ -3,10 +3,7 @@ package ai.h2o.automl;
 import ai.h2o.automl.targetencoding.BlendingParams;
 import ai.h2o.automl.targetencoding.TargetEncoder;
 import ai.h2o.automl.targetencoding.TargetEncodingParams;
-import ai.h2o.automl.targetencoding.strategy.AllCategoricalTEApplicationStrategy;
-import ai.h2o.automl.targetencoding.strategy.FixedTEParamsStrategy;
-import ai.h2o.automl.targetencoding.strategy.TEApplicationStrategy;
-import ai.h2o.automl.targetencoding.strategy.TEParamsSelectionStrategy;
+import ai.h2o.automl.targetencoding.strategy.*;
 import hex.ModelBuilder;
 import hex.splitframe.ShuffleSplitFrame;
 import water.Key;
@@ -64,6 +61,20 @@ class AutoMLTargetEncodingAssistant{
     // Selection strategy
     TEParamsSelectionStrategy teParamsSelectionStrategy = buildSpec.te_spec.params_selection_strategy;
     _teParamsSelectionStrategy = teParamsSelectionStrategy != null ? teParamsSelectionStrategy : new FixedTEParamsStrategy(TargetEncodingParams.DEFAULT);
+
+    //TODO  It is better for user to specify strategy as just enum value, and we can initalize selection strategy here without presetups. But in that case we will not be able to provide `FixedTEParamsStrategy`
+    // Presetup based on AutoML's ways of validating models 
+    if(_teParamsSelectionStrategy instanceof GridSearchTEParamsSelectionStrategy) {
+      boolean CVEarlyStoppingEnabled = _modelBuilder._parms.valid() == null;
+      if(CVEarlyStoppingEnabled) {
+        //TODO or make setTESearchSpace a common method
+        ((GridSearchTEParamsSelectionStrategy) _teParamsSelectionStrategy).setTESearchSpace(TESearchSpace.CV_EARLY_STOPPING);
+      }
+      else {
+        ((GridSearchTEParamsSelectionStrategy) _teParamsSelectionStrategy).setTESearchSpace(TESearchSpace.VALIDATION_FRAME_EARLY_STOPPING);
+      }
+    }
+    
     _teParams = _teParamsSelectionStrategy.getBestParams(modelBuilder);
     
     _originalIgnoredColumns = modelBuilder._parms._ignored_columns;
@@ -134,10 +145,7 @@ class AutoMLTargetEncodingAssistant{
           break;
           
         case TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut:
-//          Frame.export(_trainingFrame, "trainCopy_assistant.csv", Key.make().toString(), true, 1).get();
-
           encodingMap = tec.prepareEncodingMap(_trainingFrame, responseColumnName, null);
-//          Frame.export(encodingMap.get("home.dest"), "encoding_map_assistant.csv", encodingMap.get("home.dest")._key.toString(), true, 1).get();
 
           Frame encodedTrainingFrameLOO = tec.applyTargetEncoding(_trainingFrame, responseColumnName, encodingMap, holdoutType, withBlendedAvg, noiseLevel, imputeNAsWithNewCategory,seed);
           copyEncodedColumnsToDestinationFrameAndRemoveSource(columnsToEncode, encodedTrainingFrameLOO, _trainingFrame);
@@ -147,27 +155,18 @@ class AutoMLTargetEncodingAssistant{
             copyEncodedColumnsToDestinationFrameAndRemoveSource(columnsToEncode, encodedValidationFrame, _validationFrame);
           }
           if(_leaderboardFrame != null) {
-//            Frame.export(_leaderboardFrame, "leaderboard_before_assistant.csv", _leaderboardFrame._key.toString(), true, 1).get();
-
             Frame encodedLeaderboardFrame = tec.applyTargetEncoding(_leaderboardFrame, responseColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, withBlendedAvg, 0.0, imputeNAsWithNewCategory, seed);
-//            Frame.export(encodedLeaderboardFrame, "leaderboard_encoded_assistant.csv", encodedLeaderboardFrame._key.toString(), true, 1).get();
-
             copyEncodedColumnsToDestinationFrameAndRemoveSource(columnsToEncode, encodedLeaderboardFrame, _leaderboardFrame);
           }
           break;
         case TargetEncoder.DataLeakageHandlingStrategy.None:
-          //We not only want to search for optimal parameters based on separate test split during grid search but also apply these parameters accordingly
-          Frame[] trainAndHoldoutSplits = splitByRatio(_trainingFrame, new double[]{0.8, 0.2});
+          //We not only want to search for optimal parameters based on separate test split during grid search but also apply these parameters in the same fashion.
+          //But seed is different in current case
+          Frame[] trainAndHoldoutSplits = splitByRatio(_trainingFrame, new double[]{0.7, 0.3}, seed);
           Frame trainNone = trainAndHoldoutSplits[0];
           Frame holdoutNone = trainAndHoldoutSplits[1];
           encodingMap = tec.prepareEncodingMap(holdoutNone, responseColumnName, null);
-//          Frame.export(encodingMap.get("home.dest"), "encoding_map_assistant.csv", encodingMap.get("home.dest")._key.toString(), true, 1).get();
-
-//          Frame.export(trainNone, "train_none_before_assistant.csv", trainNone._key.toString(), true, 1).get();
-
           Frame encodedTrainingFrameNone = tec.applyTargetEncoding(trainNone, responseColumnName, encodingMap, holdoutType, withBlendedAvg, 0.0, imputeNAsWithNewCategory, seed);
-//          Frame.export(encodedTrainingFrameNone, "train_none_assistant.csv", encodedTrainingFrameNone._key.toString(), true, 1).get();
-
           copyEncodedColumnsToDestinationFrameAndRemoveSource(columnsToEncode, encodedTrainingFrameNone, trainNone);
 
           _modelBuilder.setTrain(trainNone);
@@ -216,6 +215,16 @@ class AutoMLTargetEncodingAssistant{
         map.getValue().delete();
       }
     }
+  }
+
+  public static void printOutFrameAsTable(Frame fr) {
+    printOutFrameAsTable(fr, false, fr.numRows());
+  }
+
+  public static void printOutFrameAsTable(Frame fr, boolean rollups, long limit) {
+    assert limit <= Integer.MAX_VALUE;
+    TwoDimTable twoDimTable = fr.toTwoDimTable(0, (int) limit, rollups);
+    System.out.println(twoDimTable.toString(2, true));
   }
 
   public TEApplicationStrategy getApplicationStrategy() {

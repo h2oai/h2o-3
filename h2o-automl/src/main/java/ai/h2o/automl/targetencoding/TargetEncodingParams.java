@@ -28,9 +28,14 @@ public class TargetEncodingParams extends Iced {
   }
   
   public TargetEncodingParams( Map<String, Object> paramsMap) {
-    this._withBlendedAvg = (boolean) paramsMap.get("_withBlending");;
-    this._blendingParams = new BlendingParams((int) paramsMap.get("_inflection_point"), (double) paramsMap.get("_smoothing"));
-    this._holdoutType = (byte) paramsMap.get("_holdoutType");
+    this._withBlendedAvg = (double) paramsMap.get("_withBlending") == 1.0;
+    this._blendingParams = new BlendingParams((double) paramsMap.get("_inflection_point"), (double) paramsMap.get("_smoothing"));
+    
+    double value = (double) paramsMap.get("_holdoutType");
+    if(value == 0.0) _holdoutType = TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut;
+    if(value == 1.0) _holdoutType = TargetEncoder.DataLeakageHandlingStrategy.KFold;
+    if(value == 2.0) _holdoutType = TargetEncoder.DataLeakageHandlingStrategy.None;
+    
     this._noiseLevel = (double) paramsMap.get("_noise_level");
   }
   

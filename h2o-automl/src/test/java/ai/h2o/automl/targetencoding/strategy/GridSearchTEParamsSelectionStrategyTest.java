@@ -4,6 +4,7 @@ import ai.h2o.automl.Algo;
 import ai.h2o.automl.targetencoding.TargetEncoder;
 import ai.h2o.automl.targetencoding.TargetEncodingParams;
 import ai.h2o.automl.targetencoding.TargetEncodingTestFixtures;
+import hex.ModelBuilder;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.AutoBuffer;
@@ -33,7 +34,7 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
     try {
       fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
       int numberOfIterations = 1;
-      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsEv = findBestTargetEncodingParams(fr ,Algo.GBM, numberOfIterations);
+      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsEv = findBestTargetEncodingParams(fr ,"survived", numberOfIterations);
       bestParamsEv.getItem();
       
     } finally {
@@ -41,64 +42,23 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
     }
     
   }
-  
-  @Test
-  public void getBestParamsBasedOnGBMRepresentative() {
-    Frame fr = null;
-    try {
-      fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
-      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsEv = findBestTargetEncodingParams(fr, Algo.GBM, 252);
 
-      TargetEncodingParams bestParams = bestParamsEv.getItem();
-      assertEquals(50, bestParams.getBlendingParams().getK(), 1e-5);
-      assertEquals(5, bestParams.getBlendingParams().getF(), 1e-5);
-      assertEquals(0.0, bestParams.getNoiseLevel(), 1e-5);
-      assertEquals(true, bestParams.isWithBlendedAvg());
-      assertEquals(TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, bestParams.getHoldoutType());
-      
-    } finally {
-      fr.delete();
-    }
-    
-  }
-  
-  @Test
-  public void getBestParamsBasedOnGLMRepresentative() {
-    Frame fr = null;
-    try {
-      fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
-      
-      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsEv = findBestTargetEncodingParams(fr, Algo.GLM, 252);
-      TargetEncodingParams bestParams = bestParamsEv.getItem();
-
-      assertEquals(1, bestParams.getBlendingParams().getK(), 1e-5);
-      assertEquals(5, bestParams.getBlendingParams().getF(), 1e-5);
-      assertEquals(0.01, bestParams.getNoiseLevel(), 1e-5);
-      assertEquals(true, bestParams.isWithBlendedAvg());
-      assertEquals(TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, bestParams.getHoldoutType());
-
-    } finally {
-      fr.delete();
-    }
-    
-  }
-
-  private GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> findBestTargetEncodingParams(Frame fr, Algo glm, int i) {
-
-    String responseColumnName = "survived";
+  private GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> findBestTargetEncodingParams(Frame fr, String responseColumnName, int numberOfIterations) {
 
     asFactor(fr, responseColumnName);
 
     TEApplicationStrategy strategy = new ThresholdTEApplicationStrategy(fr, fr.vec("survived"), 4);
     String[] columnsToEncode = strategy.getColumnsToEncode();
-    Algo[] evaluationAlgos = new Algo[]{glm};
 
     long seedForFoldColumn = 2345L;
 
     GridSearchTEParamsSelectionStrategy gridSearchTEParamsSelectionStrategy =
-            new GridSearchTEParamsSelectionStrategy(fr, i, responseColumnName, columnsToEncode, true, seedForFoldColumn);
+            new GridSearchTEParamsSelectionStrategy(fr, numberOfIterations, responseColumnName, columnsToEncode, true, seedForFoldColumn);
 
-    return gridSearchTEParamsSelectionStrategy.getBestParamsWithEvaluation(null);
+    gridSearchTEParamsSelectionStrategy.setTESearchSpace(TESearchSpace.VALIDATION_FRAME_EARLY_STOPPING);
+    ModelBuilder mb = TargetEncodingTestFixtures.modelBuilderWithValidFrameFixture(fr, responseColumnName, seedForFoldColumn);
+    mb.init(false);
+    return gridSearchTEParamsSelectionStrategy.getBestParamsWithEvaluation(mb);
   }
 
   @Test
@@ -111,10 +71,10 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
     Scope.enter();
     try {
       fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
-      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsFromGLM = findBestTargetEncodingParams(fr, Algo.GLM, numberOfSearchIterations);
+      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsFromGLM = findBestTargetEncodingParams(fr, "survived", numberOfSearchIterations);
       
       fr2 = parse_test_file("./smalldata/gbm_test/titanic.csv");
-      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsFromGBM = findBestTargetEncodingParams(fr2, Algo.GBM, numberOfSearchIterations);
+      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsFromGBM = findBestTargetEncodingParams(fr2, "survived", numberOfSearchIterations);
 
       fr3 = parse_test_file("./smalldata/gbm_test/titanic.csv");
       long seedForFoldColumn = 2345L;
@@ -215,11 +175,11 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
     Frame frBaseLine = null;
     try {
       frFull = parse_test_file("./smalldata/gbm_test/titanic.csv");
-      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsFromGLM_FULL = findBestTargetEncodingParams(frFull, Algo.GLM, numberOfSearchIterations);
+      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsFromGLM_FULL = findBestTargetEncodingParams(frFull, "survived", numberOfSearchIterations);
 
       frameThatWillBeSampledByHalf = parse_test_file("./smalldata/gbm_test/titanic.csv");
       sampledByHalf = StratificationAssistant.sample(frameThatWillBeSampledByHalf, responseColumnName, 0.5, 1234L);
-      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsFromGLM_HALF = findBestTargetEncodingParams(sampledByHalf, Algo.GLM, numberOfSearchIterations);
+      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsFromGLM_HALF = findBestTargetEncodingParams(sampledByHalf, "survived", numberOfSearchIterations);
 
       double scoreFull = bestParamsFromGLM_FULL.getScore();
       double scoreHalf = bestParamsFromGLM_HALF.getScore();
@@ -254,23 +214,6 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
 
   }
   
-  @Test
-  public void Test2() {
-    
-//    New walking stratуgy. We can estimate which dimension of the space is the most valuable to discover.
-  }
-  
-  @Test
-  public void optimisation2() {
-    // Bayesian optimisation with expected improvement approach of peeking next parameter.
-  }
-  
-  @Test
-  public void Test3() {
-    
-//    We can compute probabilities for all evaluated grid entries.
-  }
-  
   @Test 
   public void speedupBySamplingAssumptionTest() {
     int numberOfSearchIterations = 252;
@@ -281,13 +224,13 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
     try {
       long start1 = System.currentTimeMillis();
       frFull = parse_test_file("./smalldata/gbm_test/titanic.csv");
-      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsFromGLM_FULL = findBestTargetEncodingParams(frFull, Algo.GLM, numberOfSearchIterations);
+      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsFromGLM_FULL = findBestTargetEncodingParams(frFull, "survived", numberOfSearchIterations);
       long timeWithoutSampling = System.currentTimeMillis() - start1;
 
       long start2 = System.currentTimeMillis();
       frameThatWillBeSampledByHalf = parse_test_file("./smalldata/gbm_test/titanic.csv");
       sampledByHalf = StratificationAssistant.sample(frameThatWillBeSampledByHalf, responseColumnName, 0.5, 1234L);
-      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsFromGLM_HALF = findBestTargetEncodingParams(sampledByHalf, Algo.GLM, numberOfSearchIterations);
+      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsFromGLM_HALF = findBestTargetEncodingParams(sampledByHalf, "survived", numberOfSearchIterations);
       long timeWithSampling = System.currentTimeMillis() - start2;
       System.out.println("Time without sampling: " + timeWithoutSampling);
       System.out.println("Time with sampling: " + timeWithSampling);
@@ -301,16 +244,5 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
       sampledByHalf.delete();
     }
   }
-
-  @Test
-  public void assumption1Test() {
-    //test that shows effectiveness of learning by family of algo and not by every specific model(i.e. model with specific set of hyper parameters)
-  }
-  @Test
-  public void assumptionTest() {
-    //TODO test that for N best parameters found based on samped data and representational model we will get best performance for our models:
-    // 1) models of the same family (we will verify viability of sampling
-    // 2) any model ( we will check if representational model is able to find sutable parameters for other models. Find set of models that benefits(higher than baseline performance) from TE
-    
-  }
+  
 }

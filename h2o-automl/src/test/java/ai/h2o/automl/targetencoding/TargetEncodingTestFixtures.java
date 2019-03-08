@@ -1,6 +1,7 @@
 package ai.h2o.automl.targetencoding;
 
 import ai.h2o.automl.Algo;
+import ai.h2o.automl.AutoMLBenchmarkingHelper;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ScoreKeeper;
@@ -22,6 +23,7 @@ public class TargetEncodingTestFixtures {
   public static TargetEncodingParams defaultTEParams() {
     return new TargetEncodingParams(new BlendingParams(3, 1), TargetEncoder.DataLeakageHandlingStrategy.KFold, 0.01);
   }
+  
   public static TargetEncodingParams randomTEParams(long seed) {
     Random generator = seed == -1 ? new Random() : new Random(seed);
     double pivot = generator.nextDouble();
@@ -75,7 +77,9 @@ public class TargetEncodingTestFixtures {
     builder._parms = gbmParameters;
     builder._parms._seed = builderSeed;
 
-    builder._parms._train = fr._key;
+    Frame splits[] = AutoMLBenchmarkingHelper.split2ByRatio(fr, 0.8, 0.2, 2345L);
+    builder._parms._train = splits[0]._key;
+    builder._parms._valid = splits[1]._key;
     builder._parms._response_column = responseColumnName;
 
     return builder;

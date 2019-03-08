@@ -30,7 +30,6 @@ public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrate
   
   private int _numberOfIterations; // or should be a strategy that will be in charge of stopping.
 
-  //TODO train 
   public GridSearchTEParamsSelectionStrategy(Frame leaderboard, int numberOfIterations, String responseColumn, String[] columnsToEncode, boolean theBiggerTheBetter, long seed) {
     _seed = seed;
     
@@ -49,18 +48,18 @@ public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrate
     // Also when we chose holdoutType=None we don't need to search for noise
     switch (teSearchSpace) {
       case CV_EARLY_STOPPING: // TODO move up common parameter' ranges
-        _grid.put("_withBlending", new Boolean[]{true/*, false*/}); // NOTE: we can postpone implementation of hierarchical hyperparameter spaces... as in most cases blending is helpful.
-        _grid.put("_noise_level", new Double[]{0.0, 0.1, 0.01});
-        _grid.put("_inflection_point", new Integer[]{1, 2, 3, 5, 10, 50, 100});
+        _grid.put("_withBlending", new Double[]{1.0/*, false*/}); // NOTE: we can postpone implementation of hierarchical hyperparameter spaces... as in most cases blending is helpful.
+        //_grid.put("_noise_level", new Double[]{0.0, 0.1, 0.01}); when we chose holdoutType=None we don't need to search for noise
+        _grid.put("_inflection_point", new Double[]{1.0, 2.0, 3.0, 5.0, 10.0, 50.0, 100.0});
         _grid.put("_smoothing", new Double[]{5.0, 10.0, 20.0});
-        _grid.put("_holdoutType", new Byte[]{ TargetEncoder.DataLeakageHandlingStrategy.None});
+        _grid.put("_holdoutType", new Double[]{ 2.0});
         break;
       case VALIDATION_FRAME_EARLY_STOPPING:
-        _grid.put("_withBlending", new Boolean[]{true, false}); // NOTE: we can postpone implementation of hierarchical hyperparameter spaces... as in most cases blending is helpful.
+        _grid.put("_withBlending", new Double[]{1.0, 0.0}); // NOTE: we can postpone implementation of hierarchical hyperparameter spaces... as in most cases blending is helpful.
         _grid.put("_noise_level", new Double[]{0.0, 0.1, 0.01});
-        _grid.put("_inflection_point", new Integer[]{1, 2, 3, 5, 10, 50, 100});
+        _grid.put("_inflection_point", new Double[]{1.0, 2.0, 3.0, 5.0, 10.0, 50.0, 100.0});
         _grid.put("_smoothing", new Double[]{5.0, 10.0, 20.0});
-        _grid.put("_holdoutType", new Byte[]{TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, TargetEncoder.DataLeakageHandlingStrategy.KFold,  TargetEncoder.DataLeakageHandlingStrategy.None});
+        _grid.put("_holdoutType", new Double[]{0.0, 1.0, 2.0}); // see TargetEncoder.DataLeakageHandlingStrategy
         break;
     }
     
@@ -113,143 +112,6 @@ public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrate
   }
 
 
-  public static class Evaluated<P> extends Iced<Evaluated<P>> {
-    public P getItem() {
-      return _item;
-    }
-
-    public double getScore() {
-      return _score;
-    }
-
-    transient P _item; 
-    private double _score;
-
-    public Evaluated(P item, double score) {
-      _item = item;
-      _score = score;
-    }
-  }
-
-  public static class EvaluatedComparator extends Iced<EvaluatedComparator> implements Comparator<Evaluated>{
-    private boolean _theBiggerTheBetter;
-    
-    public EvaluatedComparator(boolean theBiggerTheBetter) {
-      _theBiggerTheBetter = theBiggerTheBetter;
-    }
-
-    @Override
-    public int compare(Evaluated o1, Evaluated o2) {
-      int inverseTerm = _theBiggerTheBetter ? -1 : 1;
-      return inverseTerm * Double.compare(o1.getScore(), o2.getScore());
-    }
-  }
-
-  public static class RandomSelector extends Iced<RandomSelector> {
-
-    HashMap<String, Object[]> _grid;
-    String[] _dimensionNames;
-    private int _spaceSize;
-    transient private Set<Integer> _visitedPermutationHashes = new LinkedHashSet<>(); // what are the cases of retrieving automl from DKV?
-    Random _randomGen;
-
-    public RandomSelector(HashMap<String, Object[]> grid, long seed) {
-      _grid = grid;
-      _randomGen = new Random(seed);
-      _dimensionNames = _grid.keySet().toArray(new String[0]);
-      _spaceSize = calculateSpaceSize(_grid);
-    }
-    
-    public RandomSelector(HashMap<String, Object[]> grid) {
-      this(grid, -1);
-    }
-    
-    GridEntry getNext() throws GridSearchCompleted {
-      Map<String, Object> _next = new HashMap<>();
-      int[] indices = nextIndices();
-      for (int i = 0; i < indices.length; i++) {
-        _next.put(_dimensionNames[i], _grid.get(_dimensionNames[i])[indices[i]]);
-      }
-      return new GridEntry(_next, hashIntArray(indices));
-    }
-
-    //This approach is not very efficient as over time we will start to hit cache more often and selecting unseen combination will become harder.
-    private int[] nextIndices() throws GridSearchCompleted {
-      int[] chosenIndices =  new int[_dimensionNames.length];
-
-      int hashOfIndices = 0;
-      do {
-        for (int i = 0; i < _dimensionNames.length; i++) {
-          String name = _dimensionNames[i];
-          int dimensionLength = _grid.get(name).length;
-          int chosenIndex = _randomGen.nextInt(dimensionLength);
-          chosenIndices[i] = chosenIndex;
-        }
-        hashOfIndices = hashIntArray(chosenIndices);
-      } while (_visitedPermutationHashes.contains(hashOfIndices) && _visitedPermutationHashes.size() != _spaceSize /*&& skipIndices(chosenIndices)*/);
-      _visitedPermutationHashes.add(hashOfIndices);
-
-      if(_visitedPermutationHashes.size() == _spaceSize) {
-        Log.info("Whole search space has been discovered (" + _visitedPermutationHashes.size() + " grid entries). Stopping search.");
-        throw new GridSearchCompleted();
-      }
-      return chosenIndices;
-    }
-    
-    public static class GridSearchCompleted extends Exception{
-      
-    }
-    
-    // overwrite it with custom combinations
-    protected boolean skipIndices(int[] possibleIndices) {
-      if (possibleIndices[0] == 0 ) {
-        _visitedPermutationHashes.add(hashIntArray(possibleIndices));
-      }
-      return true;
-    }
-
-    private int calculateSpaceSize(Map<String, Object[]> grid) {
-      String[] dimensionNames = grid.keySet().toArray(new String[0]);
-      int spaceSize = 1;
-      for (int i = 0; i < dimensionNames.length; i++) {
-        String name = dimensionNames[i];
-        int dimensionLength = grid.get(name).length;
-        spaceSize *= dimensionLength;
-      }
-      return spaceSize;
-    }
-
-    public Set<Integer> getVisitedPermutationHashes() {
-      return _visitedPermutationHashes;
-    }
-
-    private int hashIntArray(int[] ar) {
-      Integer[] hashMe = new Integer[ar.length];
-      for (int i = 0; i < ar.length; i++)
-        hashMe[i] = ar[i];
-//        hashMe[i] = ar[i] * _grid.get(_dimensionNames[i]).length;
-      return Arrays.deepHashCode(hashMe);
-    }
-  }
-
-  public static class GridEntry extends Iced<GridEntry>{
-    Map<String, Object> _item;
-    int _hash;
-
-    public Map<String, Object> getItem() {
-      return _item;
-    }
-
-    public int getHash() {
-      return _hash;
-    }
-    
-    public GridEntry(Map<String, Object> item, int hash) {
-      _item = item;
-      _hash = hash;
-      
-    }
-  }
 
   public static void printOutFrameAsTable(Frame fr) {
     printOutFrameAsTable(fr, false, fr.numRows());
