@@ -89,7 +89,6 @@ class H2OAutoML(object):
                  class_sampling_factors=None,
                  max_after_balance_size=5.0,
                  max_runtime_secs=3600,
-                 max_runtime_secs_per_model=None,
                  max_models=None,
                  stopping_metric="AUTO",
                  stopping_tolerance=None,
@@ -151,11 +150,6 @@ class H2OAutoML(object):
         if max_runtime_secs is not 3600:
             assert_is_type(max_runtime_secs,int)
         self.max_runtime_secs = max_runtime_secs
-
-        assert_is_type(max_runtime_secs_per_model, None, int)
-        self.max_runtime_secs_per_model = max_runtime_secs_per_model
-        if self.max_runtime_secs_per_model is not None:
-            self.build_control["stopping_criteria"]["max_runtime_secs_per_model"] = self.max_runtime_secs_per_model
 
         # Add other parameters to build_control if available
         if max_models is not None:

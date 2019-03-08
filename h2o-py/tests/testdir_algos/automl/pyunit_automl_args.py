@@ -10,13 +10,12 @@ This test is used to check arguments passed into H2OAutoML along with different 
 """
 max_models = 2
 
-
-def import_dataset(seed=0, larger=False):
-    df = h2o.import_file(path=pyunit_utils.locate("smalldata/prostate/{}".format("prostate_complete.csv.zip" if larger else "prostate.csv")))
+def import_dataset():
+    df = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
     target = "CAPSULE"
     df[target] = df[target].asfactor()
     #Split frames
-    fr = df.split_frame(ratios=[.8,.1], seed=seed)
+    fr = df.split_frame(ratios=[.8,.1])
     #Set up train, validation, and test sets
     return dict(train=fr[0], valid=fr[1], test=fr[2], target=target, target_idx=1)
 
@@ -221,24 +220,6 @@ def test_automl_stops_after_max_runtime_secs():
     assert abs(end-start - max_runtime_secs) < cancel_tolerance_secs, end-start
 
 
-def test_no_model_takes_more_than_max_runtime_secs_per_model():
-    print("Check that individual model get interrupted after `max_runtime_secs_per_model`")
-    ds = import_dataset(seed=1, larger=True)
-    max_runtime_secs = 30
-    models_count = {}
-    for max_runtime_secs_per_model in [0, 3, max_runtime_secs]:
-        aml = H2OAutoML(project_name="py_aml_max_runtime_secs_per_model_{}".format(max_runtime_secs_per_model), seed=1,
-                        max_runtime_secs_per_model=max_runtime_secs_per_model,
-                        max_runtime_secs=max_runtime_secs)
-        aml.train(y=ds['target'], training_frame=ds['train'])
-        models_count[max_runtime_secs_per_model] = len(aml.leaderboard)
-        # print(aml.leaderboard)
-    # there may be one model difference as reproducibility is not perfectly guaranteed in time-bound runs
-    assert abs(models_count[0] - models_count[max_runtime_secs]) <= 1
-    assert abs(models_count[0] - models_count[3]) > 1
-    # TODO: add assertions about single model timing once 'automl event_log' is available on client side
-
-
 def test_stacked_ensembles_are_trained_after_timeout():
     print("Check that Stacked Ensembles are still trained after timeout")
     max_runtime_secs = 20
@@ -281,14 +262,14 @@ def test_stacked_ensembles_are_trained_with_blending_frame_even_if_nfolds_eq_0()
     ds = import_dataset()
     aml = H2OAutoML(project_name="py_aml_blending_frame", seed=1, max_models=max_models, nfolds=0)
     aml.train(y=ds['target'], training_frame=ds['train'], blending_frame=ds['valid'], leaderboard_frame=ds['test'])
-
+    
     _, _, se = get_partitioned_model_names(aml.leaderboard)
     assert len(se) == 2, "In blending mode, StackedEnsemble should still be trained in spite of nfolds=0."
     for m in se:
         model = h2o.get_model(m)
         assert model.params['blending_frame']['actual']['name'] == ds['valid'].frame_id
         assert model._model_json['output']['stacking_strategy'] == 'blending'
-
+        
 
     # TO DO  PUBDEV-5676
     # Add a test that checks fold_column like in runit
@@ -308,7 +289,6 @@ pyunit_utils.run_tests([
     test_keep_cross_validation_fold_assignment_enabled_with_nfolds_neq_0,
     test_keep_cross_validation_fold_assignment_enabled_with_nfolds_eq_0,
     test_automl_stops_after_max_runtime_secs,
-    test_no_model_takes_more_than_max_runtime_secs_per_model,
     test_stacked_ensembles_are_trained_after_timeout,
     test_automl_stops_after_max_models,
     test_stacked_ensembles_are_trained_after_max_models,
