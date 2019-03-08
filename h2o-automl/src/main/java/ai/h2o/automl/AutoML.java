@@ -81,7 +81,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     private Work[] allocations = new Work[0];
 
     WorkAllocations allocate(Algo algo, int count, JobType type, int workShare) {
-      if (!canAllocate) throw new IllegalStateException("can't allocate new work");
+      if (!canAllocate) throw new IllegalStateException("Can't allocate new work.");
 
       allocations = ArrayUtils.append(allocations, new Work(algo, count, type, workShare));
       return this;

@@ -8,12 +8,9 @@ automl.args.test <- function() {
     # 1) That h2o.automl executes w/o errors
     # 2) That the arguments are working properly
 
-    run_each_test_in_isolation <- TRUE      # can be disabled to minimize slowdown when running test suite in client mode on Jenkins
     max_models <- 2
 
-    import_dataset <- function(cleanup = run_each_test_in_isolation) {
-        if (cleanup) h2o.removeAll()
-
+    import_dataset <- function() {
         y <- "CAPSULE"
         y.idx <- 1
 
@@ -419,24 +416,29 @@ automl.args.test <- function() {
         expect_equal(length(get_partitioned_models(aml)$se), 2)
     }
 
-  test_max_runtime_secs_per_model <- function() {
-    print("Check that individual model get interrupted after `max_runtime_secs_per_model`")
-    ds <- import_dataset()
-    max_runtime_secs <- 30
-    models_count <- list()
-    for (max_runtime_secs_per_model in c(0, 3, max_runtime_secs)) {
-      aml <- h2o.automl(x=ds$x, y=ds$y,
-                        training_frame=ds$train,
-                        seed=1,
-                        project_name=paste0("aml_max_runtime_secs_per_model_", max_runtime_secs_per_model),
-                        max_runtime_secs_per_model=max_runtime_secs_per_model,
-                        max_runtime_secs=max_runtime_secs)
-      models_count[paste0(max_runtime_secs_per_model)] = nrow(aml@leaderboard)
+    test_max_runtime_secs_per_model <- function() {
+      print("Check that individual model get interrupted after `max_runtime_secs_per_model`")
+      # need a larger dataset to obtain significant differences in behaviour
+      train <- h2o.importFile(locate("smalldata/prostate/prostate_complete.csv.zip"), destination_frame="prostate_complete")
+      y <- 'CAPSULE'
+      x <- setdiff(names(train), y)
+      ds <- list(train=train, x=x, y=y)
+
+      max_runtime_secs <- 30
+      models_count <- list()
+      for (max_runtime_secs_per_model in c(0, 3, max_runtime_secs)) {
+        aml <- h2o.automl(x=ds$x, y=ds$y,
+                          training_frame=ds$train,
+                          seed=1,
+                          project_name=paste0("aml_max_runtime_secs_per_model_", max_runtime_secs_per_model),
+                          max_runtime_secs_per_model=max_runtime_secs_per_model,
+                          max_runtime_secs=max_runtime_secs)
+        models_count[paste0(max_runtime_secs_per_model)] = nrow(aml@leaderboard)
+      }
+      expect_lte(abs(models_count[[paste0(0)]] - models_count[[paste0(max_runtime_secs)]]), 1)
+      expect_gt(abs(models_count[[paste0(0)]] - models_count[[paste0(3)]]), 1)
+      # TODO: add assertions about single model timing once 'automl event_log' is available on client side
     }
-    expect_lte(abs(models_count[[paste0(0)]] - models_count[[paste0(max_runtime_secs)]]), 1)
-    # expect_gt(abs(models_count[[paste0(0)]] - models_count[[paste0(3)]]), 1)
-    # TODO: add assertions about single model timing once 'automl event_log' is available on client side
-  }
 
     test_max_models <- function() {
         print("Check that automl get interrupted after `max_models`")
