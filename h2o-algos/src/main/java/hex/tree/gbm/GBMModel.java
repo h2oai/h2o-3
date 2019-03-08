@@ -15,6 +15,7 @@ import water.fvec.Vec;
 import water.util.SBPrintStream;
 
 import java.util.Arrays;
+import java.util.Random;
 
 public class GBMModel extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, GBMModel.GBMOutput> implements Model.StagedPredictions {
 
@@ -42,20 +43,16 @@ public class GBMModel extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, 
     public String fullName() { return "Gradient Boosting Machine"; }
     public String javaName() { return GBMModel.class.getName(); }
 
-    Constraints constraints(Frame f) {
-      if (_monotone_constraints == null || _monotone_constraints.length == 0) {
-        return null;
-      }
+    Constraints constraints(Frame f, int iter) {
       int[] cs = new int[f.numCols()];
-      for (KeyValue spec : _monotone_constraints) {
-        if (spec.getValue() == 0)
+      Random r = new Random(iter);
+      for (int i = 0; i < cs.length; i++) {
+        if (! f.vec(i).isNumeric())
           continue;
-        int col = f.find(spec.getKey());
-        if (col < 0) {
-          throw new IllegalStateException("Invalid constraint specification, column '" + spec.getKey() + "' doesn't exist.");
-        }
-        cs[col] = spec.getValue() < 0 ? -1 : 1;
+        double p = r.nextDouble();
+        cs[i] = p < 0.7 ? 0 : (p > 0.9 ? -1 : 1);
       }
+      System.out.println("CS-Generated: " + Arrays.toString(cs));
       boolean useBounds = _distribution == DistributionFamily.gaussian ||
               _distribution == DistributionFamily.bernoulli ||
               _distribution == DistributionFamily.quasibinomial ||

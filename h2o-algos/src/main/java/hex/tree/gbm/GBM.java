@@ -351,7 +351,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // ESL2, page 387.  Step 2b ii.
       // One Big Loop till the ktrees are of proper depth.
       // Adds a layer to the trees each pass.
-      Constraints cs = _parms.constraints(_train);
+      Constraints cs = _parms.constraints(_train, _model._output._ntrees);
       growTrees(ktrees, leaves, _rand, cs);
       for (int k = 0; k < _nclass; k++) {
         if (DEV_DEBUG && ktrees[k]!=null) {
