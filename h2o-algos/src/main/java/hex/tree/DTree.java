@@ -292,7 +292,7 @@ public class DTree extends Iced {
         return currentConstraints; // didn't split on a column with constraints => no need to modify them
       }
       double mid = (_p0 + _p1) / 2;
-      return currentConstraints.withNewConstraint(way, mid);
+      return currentConstraints.withNewConstraint(_col, way, mid);
     }
 
     @Override public String toString() {

@@ -91,6 +91,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       if (hasOffsetCol() && isClassifier() && _parms._distribution == DistributionFamily.multinomial) {
         error("_offset_column", "Offset is not supported for multinomial distribution.");
       }
+      if (!DistributionFamily.gaussian.equals(_parms._distribution) && _parms._monotone_constraints != null && _parms._monotone_constraints.length > 0) {
+        error("_monotone_constraints", "Monotone constraints are only supported for Gaussian distribution, your distribution: " + _parms._distribution + ".");
+      }
     }
 
     switch( _parms._distribution) {
@@ -379,6 +382,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         truncatePreds(ktrees[0], leaves[0], _parms._distribution);
       }
 
+      if ((cs != null) && constraintCheckEnabled()) {
+        checkConstraints(ktrees, leaves, cs);
+      }
+
       // ----
       // ESL2, page 387.  Step 2b iv.  Cache the sum of all the trees, plus the
       // new tree, in the 'tree' columns.  Also, zap the NIDs for next pass.
@@ -598,6 +605,66 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       }
     }
 
+    private boolean constraintCheckEnabled() {
+      return Boolean.parseBoolean(getSysProperty("gbm.monotonicity.checkEnabled", "true"));
+    }
+
+    private void checkConstraints(DTree[] ktrees, int[] leafs, Constraints cs) {
+      for (int k = 0; k < _nclass; k++) {
+        final DTree tree = ktrees[k];
+        if (tree == null) continue;
+        float[] mins = new float[tree._len];
+        int[] min_ids = new int[tree._len];
+        float[] maxs = new float[tree._len];
+        int[] max_ids = new int[tree._len];
+        rollupMinMaxPreds(tree, tree.root(), mins, min_ids, maxs, max_ids);
+        for (int i = 0; i < tree._len - leafs.length; i++) {
+          DTree.Node node = tree.node(i);
+          if (! (node instanceof DecidedNode))
+            continue;
+          DecidedNode dn = ((DecidedNode) node);
+          if (dn._split == null)
+            continue;
+          int constraint = cs.getColumnConstraint(dn._split._col);
+          if (constraint > 0) {
+            if (maxs[dn._nids[0]] > mins[dn._nids[1]]) {
+              throw new IllegalStateException("Monotonicity constraint " + constraint + " violated on column '" + _train.name(dn._split._col) + "' (max(left) > min(right)): " + 
+                      maxs[dn._nids[0]] + " > " + mins[dn._nids[1]] + 
+                      "\nNode: " + node + 
+                      "\nLeft Node (max): " + tree.node(max_ids[dn._nids[0]]) + 
+                      "\nRight Node (min): " + tree.node(min_ids[dn._nids[1]]));
+            }
+          } else if (constraint < 0) {
+            if (mins[dn._nids[0]] < maxs[dn._nids[1]]) {
+              throw new IllegalStateException("Monotonicity constraint " + constraint + " violated on column '" + _train.name(dn._split._col) + "' (min(left) < max(right)): " +
+                      mins[dn._nids[0]] + " < " + maxs[dn._nids[1]] + 
+                      "\nNode: " + node +
+                      "\nLeft Node (min): " + tree.node(min_ids[dn._nids[0]]) +
+                      "\nRight Node (max): " + tree.node(max_ids[dn._nids[1]]));
+            }
+          }
+        }
+      }
+    }
+
+    private void rollupMinMaxPreds(DTree tree, DTree.Node node, float[] mins, int min_ids[], float[] maxs, int[] max_ids) {
+      if (node instanceof LeafNode) {
+        mins[node.nid()] = ((LeafNode) node)._pred;
+        min_ids[node.nid()] = node.nid();
+        maxs[node.nid()] = ((LeafNode) node)._pred;
+        max_ids[node.nid()] = node.nid();
+        return;
+      }
+      DecidedNode dn = (DecidedNode) node;
+      rollupMinMaxPreds(tree, tree.node(dn._nids[0]), mins, min_ids, maxs, max_ids);
+      rollupMinMaxPreds(tree, tree.node(dn._nids[1]), mins, min_ids, maxs, max_ids);
+      final int min_id = mins[dn._nids[0]] < mins[dn._nids[1]] ? dn._nids[0] : dn._nids[1];
+      mins[node.nid()] = mins[min_id];
+      min_ids[node.nid()] = min_ids[min_id];
+      final int max_id = maxs[dn._nids[0]] > maxs[dn._nids[1]] ? dn._nids[0] : dn._nids[1];
+      maxs[node.nid()] = maxs[max_id];
+      max_ids[node.nid()] = max_ids[max_id];
+    }
 
     @Override protected GBMModel makeModel(Key<GBMModel> modelKey, GBMModel.GBMParameters parms) {
       return new GBMModel(modelKey, parms, new GBMModel.GBMOutput(GBM.this));
