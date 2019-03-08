@@ -573,7 +573,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     }
 
     private void fitBestConstants(DTree[] ktrees, int[] leafs, GammaPass gp, Constraints cs) {
-      final boolean useBounds = cs != null && cs.useBounds();
+      final boolean useSplitPredictions = cs != null && cs.useBounds();
       double m1class = _nclass > 1 && _parms._distribution == DistributionFamily.multinomial ? (double) (_nclass - 1) / _nclass : 1.0; // K-1/K for multinomial
       for (int k = 0; k < _nclass; k++) {
         final DTree tree = ktrees[k];
@@ -582,9 +582,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         for (int i = 0; i < tree._len - leafs[k]; i++) {
           LeafNode leafNode = (LeafNode) ktrees[k].node(leafs[k] + i);
           double gamma;
-          if (useBounds) {
-            double numerator = leafNode.getSplitPrediction();
-            gamma = gp.gamma(k, i, numerator);
+          if (useSplitPredictions) {
+            gamma = leafNode.getSplitPrediction();
           } else {
             gamma = gp.gamma(k, i);
           }
