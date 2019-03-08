@@ -285,7 +285,7 @@ h2o.import_sql_select<- function(connection_url, select_query, username, passwor
 #' @param database Name of Hive database (default database will be used by default)
 #' @param table name of Hive table to import
 #' @param partitions a list of lists of strings - partition key column values of partitions you want to import.
-#' @param allow_multi_format: enable import of partitioned tables with different storage formats used. WARNING:
+#' @param allow_multi_format enable import of partitioned tables with different storage formats used. WARNING:
 #'        this may fail on out-of-memory for tables with a large number of small partitions.
 #' @export
 h2o.import_hive_table <- function(database, table, partitions = NULL, allow_multi_format = FALSE) {
