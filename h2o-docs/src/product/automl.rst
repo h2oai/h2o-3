@@ -107,6 +107,8 @@ Optional Miscellaneous Parameters
     - ``DeepLearning``  (Fully-connected multi-layer artificial neural network)
     - ``StackedEnsemble``
 
+- **include_algos**: List/vector of character strings naming the algorithms to restrict to during the model-building phase. This can't be used in combination with ``exclude_algos`` param. Defaults to ``None/NULL``: all algorithms are included, except if ``exclude_algos`` parameter is provided.
+
 - `keep_cross_validation_predictions <data-science/algo-params/keep_cross_validation_predictions.html>`__: Specify whether to keep the predictions of the cross-validation predictions. This needs to be set to TRUE if running the same AutoML object for repeated runs because CV predictions are required to build additional Stacked Ensemble models in AutoML. This option defaults to FALSE.
 
 - `keep_cross_validation_models <data-science/algo-params/keep_cross_validation_models.html>`__: Specify whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to FALSE.
