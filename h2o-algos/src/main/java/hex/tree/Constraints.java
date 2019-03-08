@@ -8,16 +8,22 @@ public class Constraints extends Iced<Constraints> {
   final double _min;
   final double _max;
   private final boolean _use_bounds;
+  private final Constraints _old;
 
   public Constraints(int[] cs, boolean useBounds) {
-    this(cs, useBounds, Double.NaN, Double.NaN);
+    _cs = cs;
+    _use_bounds = useBounds;
+    _min = Double.NaN;
+    _max = Double.NaN;
+    _old = null;
   }
 
-  private Constraints(int[] cs, boolean useBounds, double min, double max) {
-    _cs = cs;
+  private Constraints(Constraints old, double min, double max) {
+    _cs = old._cs;
     _min = min;
     _max = max;
-    _use_bounds = useBounds;
+    _use_bounds = old._use_bounds;
+    _old = old;
   }
 
   public int getColumnConstraint(int col) {
@@ -27,15 +33,15 @@ public class Constraints extends Iced<Constraints> {
   Constraints withNewConstraint(int col, int way, double bound) {
     if (_cs[col] == 1) { // "increasing" constraint
       if (way == 0) { // left
-        return new Constraints(_cs, _use_bounds, _min, newMaxBound(_max, bound));
+        return new Constraints(this, _min, newMaxBound(_max, bound));
       } else { // right
-        return new Constraints(_cs, _use_bounds, newMinBound(_min, bound), _max);
+        return new Constraints(this, newMinBound(_min, bound), _max);
       }
     } else { // "decreasing" constraint
       if (way == 0) { // left
-        return new Constraints(_cs, _use_bounds, newMinBound(_min, bound),  _max);
+        return new Constraints(this, newMinBound(_min, bound),  _max);
       } else { // right
-        return new Constraints(_cs, _use_bounds, _min, newMaxBound(_max, bound));
+        return new Constraints(this, _min, newMaxBound(_max, bound));
       }
     }
   }

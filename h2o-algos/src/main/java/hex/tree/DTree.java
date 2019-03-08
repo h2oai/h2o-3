@@ -135,8 +135,9 @@ public class DTree extends Iced {
     final double _se0, _se1;    // Squared error of each subsplit
     final double _n0,  _n1;     // (Weighted) Rows in each final split
     final double _p0,  _p1;     // Predicted value for each split
+    final Constraints _cs;
 
-    public Split(int col, int bin, DHistogram.NASplitDir nasplit, IcedBitSet bs, byte equal, double se, double se0, double se1, double n0, double n1, double p0, double p1 ) {
+    public Split(int col, int bin, DHistogram.NASplitDir nasplit, IcedBitSet bs, byte equal, double se, double se0, double se1, double n0, double n1, double p0, double p1, Constraints cs ) {
       assert(nasplit!= DHistogram.NASplitDir.None);
       assert(equal!=1); //no longer done
       assert se > se0+se1 || se==Double.MAX_VALUE; // No point in splitting unless error goes down
@@ -145,6 +146,7 @@ public class DTree extends Iced {
       _col = col;  _bin = bin; _nasplit = nasplit; _bs = bs;  _equal = equal;  _se = se;
       _n0 = n0;  _n1 = n1;  _se0 = se0;  _se1 = se1;
       _p0 = p0;  _p1 = p1;
+      _cs = cs;
     }
     public final double pre_split_se() { return _se; }
     public final double se() { return _se0+_se1; }
@@ -522,7 +524,7 @@ public class DTree extends Iced {
           constraint = 0;
           useBounds = false;
         }
-        _s = findBestSplitPoint(_hs[_col], _col, _tree._parms._min_rows, constraint, min, max, useBounds);
+        _s = findBestSplitPoint(_hs[_col], _col, _tree._parms._min_rows, constraint, min, max, useBounds, _cs);
         return _s;
       }
     }
@@ -793,7 +795,7 @@ public class DTree extends Iced {
   }
 
   private static Split findBestSplitPoint(DHistogram hs, int col, double min_rows,
-                                          int constraint, double min, double max, boolean useBounds) {
+                                          int constraint, double min, double max, boolean useBounds, Constraints cs) {
     if(hs._vals == null) {
       if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": histogram not filled yet.");
       return null; // TODO: there are empty leafs?
@@ -1125,7 +1127,7 @@ public class DTree extends Iced {
     assert constraint == 0 || constraint * p0 <= constraint * p1;
     assert (Double.isNaN(min) || min <= p0) && (Double.isNaN(max) || p0 <= max);
     assert (Double.isNaN(min) || min <= p1) && (Double.isNaN(max) || p1 <= max);
-    Split split = new Split(col, best, nasplit, bs, equal, seBefore,best_seL, best_seR, nLeft, nRight, p0, p1);
+    Split split = new Split(col, best, nasplit, bs, equal, seBefore,best_seL, best_seR, nLeft, nRight, p0, p1, cs);
     if (SharedTree.DEV_DEBUG) Log.info("splitting on " + hs._name + ": " + split);
     return split;
   }
