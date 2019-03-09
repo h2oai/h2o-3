@@ -12,7 +12,7 @@ For security reasons, we recommend writing a script to read the access credentia
 
 ## Standalone Instance
 
-When running H2O in standalone mode using the simple Java launch command, we can pass in the S3 credentials in two ways. 
+When running H2O in standalone mode using the simple Java launch command, we can pass in the S3 credentials in three ways. 
 
 - You can pass in credentials in standalone mode by creating a `core-site.xml` file and pass it in with the flag `-hdfs_config`. For an example `core-site.xml` file, refer to [Core-site.xml](#Example). 
 
@@ -29,28 +29,29 @@ When running H2O in standalone mode using the simple Java launch command, we can
 	      <value>[AWS SECRET ACCESS KEY]</value>
 	    </property>
 	    ```
-  2. Launch with the configuration file `core-site.xml` by entering the following in the command line:
+ 2. Launch with the configuration file `core-site.xml` by entering the following in the command line:
 
 		java -jar h2o.jar -hdfs_config core-site.xml
 
-  3. Import the data using importFile with the S3 url path:
+ 3. Set the credentials dynamically before accessing the bucket. (where ``AWS_ACCESS_KEY`` represents your user name, and ``AWS_SECRET_KEY`` represents your password).
 
-     `s3n://bucket/path/to/file.csv`
- 
-  
-- You can pass the AWS Access Key and Secret Access Key in an S3N Url in Flow, R, or Python (where `AWS_ACCESS_KEY` represents your user name and `AWS_SECRET_KEY` represents your password).
-  
-  - To import the data from the Flow API:
+ - To set the credentials dynamically using R API:
 
-        `importFiles [ "s3n://<AWS_ACCESS_KEY>:<AWS_SECRET_KEY>@bucket/path/to/file.csv" ]`
+```python
+h2o.set_s3_credentials("AWS_ACCESS_KEY", "AWS_SECRET_KEY")
+h2o.importFile(path = "s3://bucket/path/to/file.csv")
+```
 
-  - To import the data from the R API:
-  
-        `h2o.importFile(path = "s3n://<AWS_ACCESS_KEY>:<AWS_SECRET_KEY>@bucket/path/to/file.csv")`
+  - To set the credentials dynamically using Python API:
 
-  - To import the data from the Python API:
-  
-        `h2o.import_file(path = "s3n://<AWS_ACCESS_KEY>:<AWS_SECRET_KEY>@bucket/path/to/file.csv")`
+```python
+
+from h2o.persist import set_s3_credentials
+set_s3_credentials("AWS_ACCESS_KEY", "AWS_SECRET_KEY")
+h2o.import_file(path = "s3://bucket/path/to/file.csv")
+```
+
+Passing credentials in the URL, e.g. `h2o.importFile(path = "s3://<AWS_ACCESS_KEY>:<AWS_SECRET_KEY>@bucket/path/to/file.csv")` is considered security risk and is deprecated.
   
 ---
 <a name="Multi"></a>
