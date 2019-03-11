@@ -917,8 +917,14 @@ class Test(object):
             r_test_driver = g_r_test_setup
         cmd = ["R", "-f", r_test_driver, "--args", "--usecloud", ip + ":" + str(port), "--resultsDir", g_output_dir,
                "--testName", test_name]
+        if g_use_proto == "https://":
+            cmd += ['--https']
         if g_rest_log:
             cmd += ['--restLog']
+        if g_ldap_username:
+            cmd += ['--username', g_ldap_username]
+        if g_ldap_password:
+            cmd += ['--password', g_ldap_password]
 
         if is_runit(test_name):
             if on_hadoop: cmd += ["--onHadoop"]
