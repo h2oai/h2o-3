@@ -771,7 +771,7 @@ public class DTree extends Iced {
     public final double getSplitPrediction() {
       DTree.DecidedNode parent = (DTree.DecidedNode) _tree.node(_pid);
       boolean isLeft = parent._nids[0] == _nid;
-      return isLeft ? parent._split._p0 * parent._split._n0 : parent._split._p1 * parent._split._n1;
+      return isLeft ? parent._split._p0 : parent._split._p1;
     }
   }
 
