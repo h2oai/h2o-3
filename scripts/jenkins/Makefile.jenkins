@@ -355,9 +355,14 @@ test-package-hadoop:
 		h2o-hadoop-common/tests/python/ \
 		h2o-hive/tests/python h2o-hive/tests/R
 
+ifeq ($(HIVE_VERSION_MAJOR),3)
+test-hadoop-common-smoke-hive:
+	echo "Hive version 3 installed, not running Hive tests."
+else
 test-hadoop-common-smoke-hive:
 	cd h2o-hive/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
-#	cd h2o-hive/tests/R && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
+	#cd h2o-hive/tests/R && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
+endif
 
 test-hadoop-common-smoke-ldap:
 	cd h2o-hadoop-common/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD

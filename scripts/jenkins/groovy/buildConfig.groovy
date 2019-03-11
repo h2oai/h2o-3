@@ -19,7 +19,7 @@ class BuildConfig {
   public static final String S3CMD_IMAGE = DOCKER_REGISTRY + '/opsh2oai/s3cmd'
 
   private static final String HADOOP_IMAGE_NAME_PREFIX = 'h2o-3-hadoop'
-  private static final String HADOOP_IMAGE_VERSION_TAG = '57'
+  private static final String HADOOP_IMAGE_VERSION_TAG = '58'
 
   private static final String XGB_IMAGE_VERSION_TAG = 'latest'
   public static final String XGB_TARGET_MINIMAL = 'minimal'
