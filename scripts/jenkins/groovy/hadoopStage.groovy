@@ -9,12 +9,7 @@ def call(final pipelineContext, final stageConfig) {
                 export HADOOP_CONF_DIR=\$(realpath \${HADOOP_CONF_DIR})
             fi
 
-            echo 'Determine hive version'
-            if hive_version_check.sh; then
-                export HIVE_DIST_ENABLED=true
-            else
-                export HIVE_DIST_ENABLED=false
-            fi
+            . /usr/sbin/hive_version_check.sh
 
             echo "Activating Python ${stageConfig.pythonVersion}"
             . /envs/h2o_env_python${stageConfig.pythonVersion}/bin/activate
