@@ -3603,4 +3603,79 @@ public class GBMTest extends TestUtil {
     return train;
   }
 
+  @Test
+  public void demonstratePubDev6356() {
+    try {
+      Scope.enter();
+      final int N = 1000;
+      double[] columnData = new double[N];
+      double[] responseData = new double[N];
+      Arrays.fill(responseData, Double.NaN);
+      int cnt = 100;
+      for (int i = 0; i < cnt; i++) {
+        columnData[i] = 1;
+        responseData[i] = 1;
+        columnData[i + cnt] = 2;
+        responseData[i + cnt] = 2;
+      }
+
+      // 1. Create a frame with no NAs and train a shallow GBM model
+      TestFrameBuilder builder_noNA = new TestFrameBuilder()
+              .withName("testFrame_noNA")
+              .withColNames("x", "y")
+              .withVecTypes(Vec.T_NUM, Vec.T_NUM)
+              .withDataForCol(0, Arrays.copyOf(columnData, cnt*2))
+              .withDataForCol(1, Arrays.copyOf(responseData, cnt*2));
+
+      Frame train_noNA = Scope.track(builder_noNA.build());
+
+      GBMModel.GBMParameters parms_noNA = new GBMModel.GBMParameters();
+      parms_noNA._response_column = "y";
+      parms_noNA._train = train_noNA._key;
+      parms_noNA._seed = 42;
+      parms_noNA._max_depth = 2;
+      parms_noNA._ntrees = 1;
+      parms_noNA._learn_rate = 1;
+
+      GBMModel gbm_noNA = new GBM(parms_noNA).trainModel().get();
+      Scope.track_generic(gbm_noNA);
+
+      assertEquals(1.0, gbm_noNA.score(ard(1)), 0);
+      assertEquals(2.0, gbm_noNA.score(ard(2)), 0);
+
+      assertEquals(1.0, gbm_noNA.score(ard(0)), 0); // No values x=0 were observed in training -> we don't know anything about them
+
+      // 1. Create a frame with NAs and train a GBM model using the same parameters 
+      TestFrameBuilder builder_NA = new TestFrameBuilder()
+              .withName("testFrame_NA")
+              .withColNames("x", "y")
+              .withVecTypes(Vec.T_NUM, Vec.T_NUM)
+              .withDataForCol(0, columnData)
+              .withDataForCol(1, responseData);
+
+      Frame train_NA = Scope.track(builder_NA.build());
+
+      GBMModel.GBMParameters parms_NA = new GBMModel.GBMParameters();
+      parms_NA._response_column = "y";
+      parms_NA._train = train_NA._key;
+      parms_NA._seed = 42;
+      parms_NA._max_depth = 2;
+      parms_NA._ntrees = 1;
+      parms_NA._learn_rate = 1;
+
+      GBMModel gbm_NA = new GBM(parms_NA).trainModel().get();
+      Scope.track_generic(gbm_NA);
+
+      assertEquals(1.0, gbm_NA.score(ard(1)), 0);
+      assertEquals(2.0, gbm_NA.score(ard(2)), 0);
+
+      assertEquals(1.5, gbm_NA.score(ard(0)), 0); // Values x=0 shouldn't have been seen in training 
+                                                                      // because they only correspond to NA response
+                                                                      // but we still learned something about those rows!
+                                                                      // PUBDEV-6356 
+    } finally {
+      Scope.exit();
+    }
+  }
+  
 }
