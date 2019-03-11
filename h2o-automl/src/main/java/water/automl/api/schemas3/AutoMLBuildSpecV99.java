@@ -129,9 +129,11 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
       super();
     }
 
-    @API(help="A list algorithms to skip during the model-building phase.", valuesProvider=AlgoProvider.class, direction=API.Direction.INPUT)
+    @API(help="A list of algorithms to skip during the model-building phase.", valuesProvider=AlgoProvider.class, direction=API.Direction.INPUT)
     public Algo[] exclude_algos;
 
+    @API(help="A list of algorithms to restrict to during the model-building phase.", valuesProvider=AlgoProvider.class, direction=API.Direction.INPUT)
+    public Algo[] include_algos;
   } // class AutoMLBuildModels
 
   ////////////////

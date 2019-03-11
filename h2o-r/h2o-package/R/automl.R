@@ -219,22 +219,19 @@ h2o.automl <- function(x, y, training_frame,
     }
     input_spec$sort_metric <- tolower(sort_metric)
   }
-
-  all_algos = c('DeepLearning', 'DRF', 'GBM', 'GLM', 'StackedEnsemble', 'XGBoost')
-  if (!is.null(include_algos)) {
-    if (!is.null(exclude_algos)) stop("Use either include_algos or exclude_algos, not both.")
-    if (length(include_algos) == 1) {
-      include_algos <- as.list(include_algos)
-    }
-    exclude_algos <- setdiff(all_algos, include_algos)
-  }
   if (!is.null(exclude_algos)) {
+    if (!is.null(include_algos)) stop("Use either include_algos or exclude_algos, not both.")
     if (length(exclude_algos) == 1) {
       exclude_algos <- as.list(exclude_algos)
     }
-      build_models <- list(exclude_algos = exclude_algos)
+    build_models <- list(exclude_algos = exclude_algos)
+  } else if (!is.null(include_algos)) {
+    if (length(include_algos) == 1) {
+      include_algos <- as.list(include_algos)
+    }
+    build_models <- list(include_algos = include_algos)
   } else {
-      build_models <- list()
+    build_models <- list()
   }
 
   # Update build_control with nfolds

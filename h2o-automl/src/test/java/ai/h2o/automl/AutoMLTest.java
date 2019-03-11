@@ -8,7 +8,9 @@ import water.DKV;
 import water.Key;
 import water.Lockable;
 import water.Scope;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
+import water.util.ArrayUtils;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -18,7 +20,7 @@ import java.util.Random;
 import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertNull;
 import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public class AutoMLTest extends water.TestUtil {
 
@@ -377,6 +379,86 @@ public class AutoMLTest extends water.TestUtil {
       assertEquals(fr.numRows(), aml.getTrainingFrame().numRows());
       assertNull(aml.getValidationFrame());
       assertNull(aml.getLeaderboardFrame());
+    } finally {
+      if (aml != null) aml.deleteWithChildren();
+      if (fr != null) fr.remove();
+    }
+  }
+
+  @Test public void testExcludeAlgos() {
+    AutoML aml = null;
+    Frame fr=null;
+    try {
+      AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+      fr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      autoMLBuildSpec.input_spec.training_frame = fr._key;
+      autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
+      autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.DeepLearning, Algo.XGBoost, };
+      aml = new AutoML(Key.<AutoML>make(), new Date(), autoMLBuildSpec);
+      AutoML.WorkAllocations workPlan = aml.planWork();
+      for (Algo algo : autoMLBuildSpec.build_models.exclude_algos) {
+        assertNull(workPlan.getAllocation(algo, AutoML.JobType.ModelBuild));
+        assertNull(workPlan.getAllocation(algo, AutoML.JobType.HyperparamSearch));
+      }
+      for (Algo algo : Algo.values()) {
+        if (!ArrayUtils.contains(autoMLBuildSpec.build_models.exclude_algos, algo)) {
+          assertFalse(
+              workPlan.getAllocation(algo, AutoML.JobType.ModelBuild) == null
+                  && workPlan.getAllocation(algo, AutoML.JobType.HyperparamSearch) == null
+          );
+        }
+      }
+    } finally {
+      if (aml != null) aml.deleteWithChildren();
+      if (fr != null) fr.remove();
+    }
+  }
+
+  @Test public void testIncludeAlgos() {
+    AutoML aml = null;
+    Frame fr=null;
+    try {
+      AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+      fr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      autoMLBuildSpec.input_spec.training_frame = fr._key;
+      autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
+      autoMLBuildSpec.build_models.include_algos = new Algo[] {Algo.DeepLearning, Algo.XGBoost, };
+      aml = new AutoML(Key.<AutoML>make(), new Date(), autoMLBuildSpec);
+      AutoML.WorkAllocations workPlan = aml.planWork();
+      for (Algo algo : autoMLBuildSpec.build_models.include_algos) {
+        assertFalse(
+            workPlan.getAllocation(algo, AutoML.JobType.ModelBuild) == null
+            && workPlan.getAllocation(algo, AutoML.JobType.HyperparamSearch) == null
+        );
+      }
+      for (Algo algo : Algo.values()) {
+        if (!ArrayUtils.contains(autoMLBuildSpec.build_models.include_algos, algo)) {
+          assertNull(workPlan.getAllocation(algo, AutoML.JobType.ModelBuild));
+          assertNull(workPlan.getAllocation(algo, AutoML.JobType.HyperparamSearch));
+        }
+      }
+    } finally {
+      if (aml != null) aml.deleteWithChildren();
+      if (fr != null) fr.remove();
+    }
+  }
+
+  @Test public void testExcludeIncludeAlgos() {
+    AutoML aml = null;
+    Frame fr=null;
+    try {
+      AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+      fr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      autoMLBuildSpec.input_spec.training_frame = fr._key;
+      autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
+      autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.GBM, Algo.GLM, };
+      autoMLBuildSpec.build_models.include_algos = new Algo[] {Algo.DeepLearning, Algo.XGBoost, };
+      try {
+        aml = new AutoML(Key.<AutoML>make(), new Date(), autoMLBuildSpec);
+        fail("Should have thrown an H2OIllegalArgumentException for providing both include_algos and exclude_algos");
+      } catch (H2OIllegalArgumentException e) {
+        assertTrue(e.getMessage().startsWith("Parameters `exclude_algos` and `include_algos` are mutually exclusive"));
+      }
     } finally {
       if (aml != null) aml.deleteWithChildren();
       if (fr != null) fr.remove();

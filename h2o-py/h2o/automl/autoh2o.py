@@ -44,8 +44,6 @@ class H2OAutoML(object):
     >>> perf.auc()
     """
     
-    algos = {'DeepLearning', 'DRF', 'GBM', 'GLM', 'StackedEnsemble', 'XGBoost'}
-    
     def __init__(self,
                  nfolds=5,
                  balance_classes=False,
@@ -198,18 +196,18 @@ class H2OAutoML(object):
         else:
             self.project_name = None
 
-        if include_algos is not None:
-            assert exclude_algos is None, "Use either include_algos or exclude_algos, not both."
-            assert_is_type(include_algos, list)
-            for elem in include_algos:
-                assert_is_type(elem, str)
-            exclude_algos = list(H2OAutoML.algos - set(include_algos))
-
         if exclude_algos is not None:
             assert_is_type(exclude_algos, list)
             for elem in exclude_algos:
                 assert_is_type(elem, str)
             self.build_models['exclude_algos'] = exclude_algos
+
+        if include_algos is not None:
+            assert exclude_algos is None, "Use either include_algos or exclude_algos, not both."
+            assert_is_type(include_algos, list)
+            for elem in include_algos:
+                assert_is_type(elem, str)
+            self.build_models['include_algos'] = include_algos
 
         assert_is_type(keep_cross_validation_predictions, bool)
         self.build_control["keep_cross_validation_predictions"] = keep_cross_validation_predictions
