@@ -2,6 +2,31 @@
 
 ## H2O
 
+### Xu (3.22.1.6) - 3/11/2019
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6335'>PUBDEV-6335</a>] - In GBM, added a check to ensure that monotonicity constraints can only be used when distribution="gaussian".
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6342'>PUBDEV-6342</a>] - Fixed an issue that caused decreasing monotonic constraints to fail to work correctly. Min-Max bounds are now properly propagated to the subtrees.
+</li>
+</ul>
+    
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6343'>PUBDEV-6343</a>] - Added internal validation of monotonicity of GBM trees.
+</li>
+</ul>
+      
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6337'>PUBDEV-6337</a>] - Updated the description of monotone_constraints for GBM. This option can only be used for gaussian distributions.
+</li>
+</ul>
+
 ### Xu (3.22.1.5) - 3/4/2019
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/5/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-xu/5/index.html</a>
