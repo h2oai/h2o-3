@@ -2,15 +2,9 @@ package hex.mojo;
 
 import hex.ModelMojoWriter;
 import hex.genmodel.utils.IOUtils;
-import water.Key;
 import water.fvec.ByteVec;
-import water.fvec.Frame;
 import water.util.Log;
-
 import java.io.*;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
 
 public class GenericModelMojoWriter extends ModelMojoWriter<GenericModel, GenericModelParameters, GenericModelOutput> {
 

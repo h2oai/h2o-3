@@ -3,7 +3,6 @@ package hex.mojo;
 import hex.*;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.kmeans.KMeansMojoModel;
-import hex.genmodel.easy.prediction.AutoEncoderModelPrediction;
 import hex.tree.isofor.ModelMetricsAnomaly;
 import water.H2O;
 import water.Key;
@@ -22,7 +21,6 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
      * @param output
      */
     public GenericModel(Key<GenericModel> selfKey, GenericModelParameters parms, GenericModelOutput output, MojoModel mojoModel, ByteVec mojoBytes) {
-        // TODO: We might want to add reference for training and validation frame to re-construct metrics if we do not choose to get them from JSON inside MOJO
         super(selfKey, parms, output);
         _mojoModel = mojoModel;
         _mojoBytes = mojoBytes;
