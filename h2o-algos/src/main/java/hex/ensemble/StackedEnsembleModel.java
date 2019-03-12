@@ -418,7 +418,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       _output._metalearner.remove(fs);
     if (_output._levelone_frame_id != null)
       _output._levelone_frame_id.remove(fs);
-//        DKV.remove(_output._levelone_frame_id._key);
 
     return super.remove_impl(fs);
   }
