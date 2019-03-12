@@ -388,6 +388,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * @return A F/J Job, which, when executed, does the build.  F/J is NOT started.  */
   abstract protected Driver trainModelImpl();
 
+  @Deprecated protected int nModelsInParallel() { return 0; }
   /**
    * How many should be trained in parallel during N-fold cross-validation?
    * Train all CV models in parallel when parallelism is enabled, otherwise train one at a time
@@ -395,6 +396,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * @return How many models to train in parallel during cross-validation
    */
   protected int nModelsInParallel(int folds) {
+    int n = nModelsInParallel();
+    if (n > 0) return n;
     return nModelsInParallel(folds, 1);
   }
 
