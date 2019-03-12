@@ -251,6 +251,7 @@ public final class ComputationState {
         return 2*likelihood();
       case poisson:
       case gamma:
+      case negativebinomial:  
       case tweedie:
         return likelihood();
       default:
