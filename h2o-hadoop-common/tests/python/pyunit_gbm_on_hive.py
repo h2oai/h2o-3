@@ -20,9 +20,13 @@ def adapt_airlines(airlines_dataset):
 
 def gbm_on_hive():
     connection_url = "jdbc:hive2://localhost:10000/default"
-    krb_enabled = os.getenv('KRB_ENABLED', 'false')
-    if krb_enabled.lower() == 'true':
-        connection_url += ";principal=%s" % os.getenv('HIVE_PRINCIPAL', 'hive/localhost@H2O.AI')
+    krb_enabled = os.getenv('KRB_ENABLED', 'false').lower() == 'true'
+    use_token = os.getenv('KRB_USE_TOKEN', 'false').lower() == 'true'
+    if krb_enabled:
+        if use_token:
+            connection_url += ";auth=delegationToken"
+        else:
+            connection_url += ";principal=%s" % os.getenv('HIVE_PRINCIPAL', 'hive/localhost@H2O.AI')
 
     select_query = "select * from airlinestest"
     username = "hive"
