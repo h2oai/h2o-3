@@ -53,12 +53,8 @@ public class GenericModelTest extends TestUtil {
             final File originalModelMojoFile = File.createTempFile("mojo", "zip");
             gbm.getMojo().writeTo(originalModelMojo);
             gbm.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
-            
-            // Import original GBM model's MOJO into H2O
-            final ArrayList<String> keys = new ArrayList<>(1);
-            H2O.getPM().importFiles(originalModelMojoFile.getAbsolutePath(), "", new ArrayList<String>(), keys, new ArrayList<String>(), new ArrayList<String>());
-            assertEquals(1, keys.size());
-            mojo = DKV.get(keys.get(0))._key;
+
+            mojo = importMojo(originalModelMojoFile.getAbsolutePath());
             
             // Create Generic model from given imported MOJO
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
@@ -108,11 +104,7 @@ public class GenericModelTest extends TestUtil {
             originalModel.getMojo().writeTo(originalModelMojo);
             originalModel.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
 
-            // Import original DRF model's MOJO into H2O
-            final ArrayList<String> keys = new ArrayList<>(1);
-            H2O.getPM().importFiles(originalModelMojoFile.getAbsolutePath(), "", new ArrayList<String>(), keys, new ArrayList<String>(), new ArrayList<String>());
-            assertEquals(1, keys.size());
-            mojo = DKV.get(keys.get(0))._key;
+            mojo = importMojo(originalModelMojoFile.getAbsolutePath());
 
             // Create Generic model from given imported MOJO
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
@@ -162,11 +154,7 @@ public class GenericModelTest extends TestUtil {
             originalModel.getMojo().writeTo(originalModelMojo);
             originalModel.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
 
-            // Import original IRF model's MOJO into H2O
-            final ArrayList<String> keys = new ArrayList<>(1);
-            H2O.getPM().importFiles(originalModelMojoFile.getAbsolutePath(), "", new ArrayList<String>(), keys, new ArrayList<String>(), new ArrayList<String>());
-            assertEquals(1, keys.size());
-            mojo = DKV.get(keys.get(0))._key;
+            mojo = importMojo(originalModelMojoFile.getAbsolutePath());
 
             // Create Generic model from given imported MOJO
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
@@ -215,11 +203,7 @@ public class GenericModelTest extends TestUtil {
             originalModel.getMojo().writeTo(originalModelMojo);
             originalModel.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
 
-            // Import original DRF model's MOJO into H2O
-            final ArrayList<String> keys = new ArrayList<>(1);
-            H2O.getPM().importFiles(originalModelMojoFile.getAbsolutePath(), "", new ArrayList<String>(), keys, new ArrayList<String>(), new ArrayList<String>());
-            assertEquals(1, keys.size());
-            mojo = DKV.get(keys.get(0))._key;
+            mojo = importMojo(originalModelMojoFile.getAbsolutePath());
 
             // Create Generic model from given imported MOJO
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
@@ -239,6 +223,14 @@ public class GenericModelTest extends TestUtil {
             if (genericModel != null) genericModel.remove();
             if (trainingFrame != null) trainingFrame.remove();
         }
+    }
+
+    private Key<Frame> importMojo(final String mojoAbsolutePath) {
+        final ArrayList<String> keys = new ArrayList<>(1);
+        H2O.getPM().importFiles(mojoAbsolutePath, "", new ArrayList<String>(), keys, new ArrayList<String>(),
+                new ArrayList<String>());
+        assertEquals(1, keys.size());
+        return DKV.get(keys.get(0))._key;
     }
 
 }
