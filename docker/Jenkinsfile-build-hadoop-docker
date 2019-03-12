@@ -63,9 +63,9 @@ parallel(pipelineContext.getBuildConfig().getSupportedHadoopDistributions().coll
                 final String buildStageName = "Build ${distribution.name.toUpperCase()} ${distribution.version}"
                 stage(buildStageName) {
                     try {
-                        cleanWs()
                         pipelineContext.getBuildSummary().addStageSummary(this, buildStageName, '')
                         pipelineContext.getBuildSummary().setStageDetails(this, buildStageName, env.NODE_NAME, env.WORKSPACE)
+                        cleanWs()
 
                         final String imageName = "${IMAGE_NAME_PREFIX}-${distribution.name}-${distribution.version}"
                         final boolean conflict = pipelineContext.getUtils()
