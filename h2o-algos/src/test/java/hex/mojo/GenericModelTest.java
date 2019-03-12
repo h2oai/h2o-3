@@ -1,5 +1,6 @@
 package hex.mojo;
 
+import hex.ModelCategory;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.tree.drf.DRF;
@@ -24,6 +25,487 @@ public class GenericModelTest extends TestUtil {
     @Before
     public void setUp() {
         TestUtil.stall_till_cloudsize(1);
+    }
+
+    @Test
+    public void testJavaScoring_gbm_binomial() throws Exception {
+        Key mojo = null;
+        GBMModel model = null;
+        GenericModel genericModel = null;
+        Frame trainingFrame = null;
+        Frame testFrame = null;
+        Frame predictions = null;
+        try {
+            // Create new GBM model
+            trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
+            testFrame = parse_test_file("./smalldata/testng/airlines_test.csv");
+            GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+            parms._train = trainingFrame._key;
+            parms._distribution = AUTO;
+            parms._response_column = "IsDepDelayed";
+            parms._ntrees = 1;
+
+            GBM job = new GBM(parms);
+            model = job.trainModel().get();
+            assertEquals(model._output.getModelCategory(), ModelCategory.Binomial);
+            final ByteArrayOutputStream originalModelMojo = new ByteArrayOutputStream();
+            final File originalModelMojoFile = File.createTempFile("mojo", "zip");
+            model.getMojo().writeTo(originalModelMojo);
+            model.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
+
+            mojo = importMojo(originalModelMojoFile.getAbsolutePath());
+
+            final GenericModelParameters genericModelParameters = new GenericModelParameters();
+            genericModelParameters._mojo_key = mojo;
+            final Generic generic = new Generic(genericModelParameters);
+            generic.init(false);
+            genericModel = generic.trainModel().get();
+
+            predictions = genericModel.score(testFrame);
+            assertEquals(2691, predictions.anyVec().length());
+
+            final boolean equallyScored = genericModel.testJavaScoring(testFrame, predictions, 0);
+            assertTrue(equallyScored);
+        } finally {
+            if (model != null) model.remove();
+            if (mojo != null) mojo.remove();
+            if (genericModel != null) genericModel.remove();
+            if (trainingFrame != null) trainingFrame.remove();
+            if (testFrame != null) testFrame.remove();
+            if (predictions != null) predictions.remove();
+        }
+    }
+
+    @Test
+    public void testJavaScoring_drf_binomial() throws Exception {
+        Key mojo = null;
+        DRFModel model = null;
+        GenericModel genericModel = null;
+        Frame trainingFrame = null;
+        Frame testFrame = null;
+        Frame predictions = null;
+        try {
+            trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
+            testFrame = parse_test_file("./smalldata/testng/airlines_test.csv");
+            DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+            parms._train = trainingFrame._key;
+            parms._distribution = AUTO;
+            parms._response_column = "IsDepDelayed";
+            parms._ntrees = 1;
+
+            DRF job = new DRF(parms);
+            model = job.trainModel().get();
+            assertEquals(model._output.getModelCategory(), ModelCategory.Binomial);
+            final ByteArrayOutputStream originalModelMojo = new ByteArrayOutputStream();
+            final File originalModelMojoFile = File.createTempFile("mojo", "zip");
+            model.getMojo().writeTo(originalModelMojo);
+            model.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
+
+            mojo = importMojo(originalModelMojoFile.getAbsolutePath());
+
+            final GenericModelParameters genericModelParameters = new GenericModelParameters();
+            genericModelParameters._mojo_key = mojo;
+            final Generic generic = new Generic(genericModelParameters);
+            generic.init(false);
+            genericModel = generic.trainModel().get();
+
+            predictions = genericModel.score(testFrame);
+            assertEquals(2691, predictions.anyVec().length());
+
+            final boolean equallyScored = genericModel.testJavaScoring(testFrame, predictions, 0);
+            assertTrue(equallyScored);
+        } finally {
+            if (model != null) model.remove();
+            if (mojo != null) mojo.remove();
+            if (genericModel != null) genericModel.remove();
+            if (trainingFrame != null) trainingFrame.remove();
+            if (testFrame != null) testFrame.remove();
+            if (predictions != null) predictions.remove();
+        }
+    }
+
+    @Test
+    public void testJavaScoring_irf_binomial() throws Exception {
+        Key mojo = null;
+        IsolationForestModel model = null;
+        GenericModel genericModel = null;
+        Frame trainingFrame = null;
+        Frame testFrame = null;
+        Frame predictions = null;
+        try {
+            trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
+            testFrame = parse_test_file("./smalldata/testng/airlines_test.csv");
+            IsolationForestModel.IsolationForestParameters parms = new IsolationForestModel.IsolationForestParameters();
+            parms._train = trainingFrame._key;
+            parms._distribution = AUTO;
+            parms._response_column = "IsDepDelayed";
+            parms._ntrees = 1;
+
+            IsolationForest job = new IsolationForest(parms);
+            model = job.trainModel().get();
+            assertEquals(model._output.getModelCategory(), ModelCategory.AnomalyDetection);
+            final ByteArrayOutputStream originalModelMojo = new ByteArrayOutputStream();
+            final File originalModelMojoFile = File.createTempFile("mojo", "zip");
+            model.getMojo().writeTo(originalModelMojo);
+            model.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
+
+            mojo = importMojo(originalModelMojoFile.getAbsolutePath());
+
+            final GenericModelParameters genericModelParameters = new GenericModelParameters();
+            genericModelParameters._mojo_key = mojo;
+            final Generic generic = new Generic(genericModelParameters);
+            generic.init(false);
+            genericModel = generic.trainModel().get();
+
+            predictions = genericModel.score(testFrame);
+            assertEquals(2691, predictions.anyVec().length());
+
+            final boolean equallyScored = genericModel.testJavaScoring(testFrame, predictions, 0);
+            assertTrue(equallyScored);
+        } finally {
+            if (model != null) model.remove();
+            if (mojo != null) mojo.remove();
+            if (genericModel != null) genericModel.remove();
+            if (trainingFrame != null) trainingFrame.remove();
+            if (testFrame != null) testFrame.remove();
+            if (predictions != null) predictions.remove();
+        }
+    }
+
+    @Test
+    public void testJavaScoring_gbm_regression() throws Exception {
+        Key mojo = null;
+        GBMModel model = null;
+        GenericModel genericModel = null;
+        Frame trainingFrame = null;
+        Frame testFrame = null;
+        Frame predictions = null;
+        try {
+            trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
+            testFrame = parse_test_file("./smalldata/testng/airlines_test.csv");
+            GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+            parms._train = trainingFrame._key;
+            parms._distribution = AUTO;
+            parms._response_column = "Distance";
+            parms._ntrees = 1;
+
+            GBM job = new GBM(parms);
+            model = job.trainModel().get();
+            assertEquals(model._output.getModelCategory(), ModelCategory.Regression);
+            final ByteArrayOutputStream originalModelMojo = new ByteArrayOutputStream();
+            final File originalModelMojoFile = File.createTempFile("mojo", "zip");
+            model.getMojo().writeTo(originalModelMojo);
+            model.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
+
+            mojo = importMojo(originalModelMojoFile.getAbsolutePath());
+
+            final GenericModelParameters genericModelParameters = new GenericModelParameters();
+            genericModelParameters._mojo_key = mojo;
+            final Generic generic = new Generic(genericModelParameters);
+            generic.init(false);
+            genericModel = generic.trainModel().get();
+
+            predictions = genericModel.score(testFrame);
+            assertEquals(2691, predictions.anyVec().length());
+
+            final boolean equallyScored = genericModel.testJavaScoring(testFrame, predictions, 0);
+            assertTrue(equallyScored);
+        } finally {
+            if (model != null) model.remove();
+            if (mojo != null) mojo.remove();
+            if (genericModel != null) genericModel.remove();
+            if (trainingFrame != null) trainingFrame.remove();
+            if (testFrame != null) testFrame.remove();
+            if (predictions != null) predictions.remove();
+        }
+    }
+
+    @Test
+    public void testJavaScoring_drf_regression() throws Exception {
+        Key mojo = null;
+        DRFModel model = null;
+        GenericModel genericModel = null;
+        Frame trainingFrame = null;
+        Frame testFrame = null;
+        Frame predictions = null;
+        try {
+            trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
+            testFrame = parse_test_file("./smalldata/testng/airlines_test.csv");
+            DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+            parms._train = trainingFrame._key;
+            parms._distribution = AUTO;
+            parms._response_column = "Distance";
+            parms._ntrees = 1;
+
+            DRF job = new DRF(parms);
+            model = job.trainModel().get();
+            assertEquals(model._output.getModelCategory(), ModelCategory.Regression);
+            final ByteArrayOutputStream originalModelMojo = new ByteArrayOutputStream();
+            final File originalModelMojoFile = File.createTempFile("mojo", "zip");
+            model.getMojo().writeTo(originalModelMojo);
+            model.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
+
+            mojo = importMojo(originalModelMojoFile.getAbsolutePath());
+
+            final GenericModelParameters genericModelParameters = new GenericModelParameters();
+            genericModelParameters._mojo_key = mojo;
+            final Generic generic = new Generic(genericModelParameters);
+            generic.init(false);
+            genericModel = generic.trainModel().get();
+
+            predictions = genericModel.score(testFrame);
+            assertEquals(2691, predictions.anyVec().length());
+
+            final boolean equallyScored = genericModel.testJavaScoring(testFrame, predictions, 0);
+            assertTrue(equallyScored);
+        } finally {
+            if (model != null) model.remove();
+            if (mojo != null) mojo.remove();
+            if (genericModel != null) genericModel.remove();
+            if (trainingFrame != null) trainingFrame.remove();
+            if (testFrame != null) testFrame.remove();
+            if (predictions != null) predictions.remove();
+        }
+    }
+
+    @Test
+    public void testJavaScoring_irf_numerical() throws Exception {
+        Key mojo = null;
+        IsolationForestModel model = null;
+        GenericModel genericModel = null;
+        Frame trainingFrame = null;
+        Frame testFrame = null;
+        Frame predictions = null;
+        try {
+            trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
+            testFrame = parse_test_file("./smalldata/testng/airlines_test.csv");
+            IsolationForestModel.IsolationForestParameters parms = new IsolationForestModel.IsolationForestParameters();
+            parms._train = trainingFrame._key;
+            parms._distribution = AUTO;
+            parms._response_column = "Distance";
+            parms._ntrees = 1;
+
+            IsolationForest job = new IsolationForest(parms);
+            model = job.trainModel().get();
+            assertEquals(model._output.getModelCategory(), ModelCategory.AnomalyDetection);
+            final ByteArrayOutputStream originalModelMojo = new ByteArrayOutputStream();
+            final File originalModelMojoFile = File.createTempFile("mojo", "zip");
+            model.getMojo().writeTo(originalModelMojo);
+            model.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
+
+            mojo = importMojo(originalModelMojoFile.getAbsolutePath());
+
+            final GenericModelParameters genericModelParameters = new GenericModelParameters();
+            genericModelParameters._mojo_key = mojo;
+            final Generic generic = new Generic(genericModelParameters);
+            generic.init(false);
+            genericModel = generic.trainModel().get();
+
+            predictions = genericModel.score(testFrame);
+            assertEquals(2691, predictions.anyVec().length());
+
+            final boolean equallyScored = genericModel.testJavaScoring(testFrame, predictions, 0);
+            assertTrue(equallyScored);
+        } finally {
+            if (model != null) model.remove();
+            if (mojo != null) mojo.remove();
+            if (genericModel != null) genericModel.remove();
+            if (trainingFrame != null) trainingFrame.remove();
+            if (testFrame != null) testFrame.remove();
+            if (predictions != null) predictions.remove();
+        }
+    }
+
+    @Test
+    public void testJavaScoring_glm() throws Exception {
+        Key mojo = null;
+        GLMModel model = null;
+        GenericModel genericModel = null;
+        Frame trainingFrame = null;
+        Frame testFrame = null;
+        Frame predictions = null;
+        try {
+            trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
+            testFrame = parse_test_file("./smalldata/testng/airlines_test.csv");
+            GLMModel.GLMParameters parms = new GLMModel.GLMParameters();
+            parms._train = trainingFrame._key;
+            parms._distribution = AUTO;
+            parms._response_column = "Distance";
+
+            GLM job = new GLM(parms);
+            model = job.trainModel().get();
+            assertEquals(model._output.getModelCategory(), ModelCategory.Regression);
+            final ByteArrayOutputStream originalModelMojo = new ByteArrayOutputStream();
+            final File originalModelMojoFile = File.createTempFile("mojo", "zip");
+            model.getMojo().writeTo(originalModelMojo);
+            model.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
+
+            mojo = importMojo(originalModelMojoFile.getAbsolutePath());
+
+            final GenericModelParameters genericModelParameters = new GenericModelParameters();
+            genericModelParameters._mojo_key = mojo;
+            final Generic generic = new Generic(genericModelParameters);
+            generic.init(false);
+            genericModel = generic.trainModel().get();
+
+            predictions = genericModel.score(testFrame);
+            assertEquals(2691, predictions.anyVec().length());
+
+            final boolean equallyScored = genericModel.testJavaScoring(testFrame, predictions, 0);
+            assertTrue(equallyScored);
+        } finally {
+            if (model != null) model.remove();
+            if (mojo != null) mojo.remove();
+            if (genericModel != null) genericModel.remove();
+            if (trainingFrame != null) trainingFrame.remove();
+            if (testFrame != null) testFrame.remove();
+            if (predictions != null) predictions.remove();
+        }
+    }
+
+    @Test
+    public void testJavaScoring_gbm_multinomial() throws Exception {
+        Key mojo = null;
+        GBMModel model = null;
+        GenericModel genericModel = null;
+        Frame trainingFrame = null;
+        Frame testFrame = null;
+        Frame predictions = null;
+        try {
+            // Create new GBM model
+            trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
+            testFrame = parse_test_file("./smalldata/testng/airlines_test.csv");
+            GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+            parms._train = trainingFrame._key;
+            parms._distribution = AUTO;
+            parms._response_column = "Origin";
+            parms._ntrees = 1;
+
+            GBM job = new GBM(parms);
+            model = job.trainModel().get();
+            assertEquals(model._output.getModelCategory(), ModelCategory.Multinomial);
+            final ByteArrayOutputStream originalModelMojo = new ByteArrayOutputStream();
+            final File originalModelMojoFile = File.createTempFile("mojo", "zip");
+            model.getMojo().writeTo(originalModelMojo);
+            model.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
+
+            mojo = importMojo(originalModelMojoFile.getAbsolutePath());
+
+            final GenericModelParameters genericModelParameters = new GenericModelParameters();
+            genericModelParameters._mojo_key = mojo;
+            final Generic generic = new Generic(genericModelParameters);
+            generic.init(false);
+            genericModel = generic.trainModel().get();
+
+            predictions = genericModel.score(testFrame);
+            assertEquals(2691, predictions.anyVec().length());
+
+            final boolean equallyScored = genericModel.testJavaScoring(testFrame, predictions, 0);
+            assertTrue(equallyScored);
+        } finally {
+            if (model != null) model.remove();
+            if (mojo != null) mojo.remove();
+            if (genericModel != null) genericModel.remove();
+            if (trainingFrame != null) trainingFrame.remove();
+            if (testFrame != null) testFrame.remove();
+            if (predictions != null) predictions.remove();
+        }
+    }
+
+    @Test
+    public void testJavaScoring_drf_multinomial() throws Exception {
+        Key mojo = null;
+        DRFModel model = null;
+        GenericModel genericModel = null;
+        Frame trainingFrame = null;
+        Frame testFrame = null;
+        Frame predictions = null;
+        try {
+            trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
+            testFrame = parse_test_file("./smalldata/testng/airlines_test.csv");
+            DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+            parms._train = trainingFrame._key;
+            parms._distribution = AUTO;
+            parms._response_column = "Origin";
+            parms._ntrees = 1;
+
+            DRF job = new DRF(parms);
+            model = job.trainModel().get();
+            assertEquals(model._output.getModelCategory(), ModelCategory.Multinomial);
+            final ByteArrayOutputStream originalModelMojo = new ByteArrayOutputStream();
+            final File originalModelMojoFile = File.createTempFile("mojo", "zip");
+            model.getMojo().writeTo(originalModelMojo);
+            model.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
+
+            mojo = importMojo(originalModelMojoFile.getAbsolutePath());
+
+            final GenericModelParameters genericModelParameters = new GenericModelParameters();
+            genericModelParameters._mojo_key = mojo;
+            final Generic generic = new Generic(genericModelParameters);
+            generic.init(false);
+            genericModel = generic.trainModel().get();
+
+            predictions = genericModel.score(testFrame);
+            assertEquals(2691, predictions.anyVec().length());
+
+            final boolean equallyScored = genericModel.testJavaScoring(testFrame, predictions, 0);
+            assertTrue(equallyScored);
+        } finally {
+            if (model != null) model.remove();
+            if (mojo != null) mojo.remove();
+            if (genericModel != null) genericModel.remove();
+            if (trainingFrame != null) trainingFrame.remove();
+            if (testFrame != null) testFrame.remove();
+            if (predictions != null) predictions.remove();
+        }
+    }
+
+    @Test
+    public void testJavaScoring_irf_multinomial() throws Exception {
+        Key mojo = null;
+        IsolationForestModel model = null;
+        GenericModel genericModel = null;
+        Frame trainingFrame = null;
+        Frame testFrame = null;
+        Frame predictions = null;
+        try {
+            trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
+            testFrame = parse_test_file("./smalldata/testng/airlines_test.csv");
+            IsolationForestModel.IsolationForestParameters parms = new IsolationForestModel.IsolationForestParameters();
+            parms._train = trainingFrame._key;
+            parms._distribution = AUTO;
+            parms._response_column = "Origin";
+            parms._ntrees = 1;
+
+            IsolationForest job = new IsolationForest(parms);
+            model = job.trainModel().get();
+            assertEquals(model._output.getModelCategory(), ModelCategory.AnomalyDetection);
+            final ByteArrayOutputStream originalModelMojo = new ByteArrayOutputStream();
+            final File originalModelMojoFile = File.createTempFile("mojo", "zip");
+            model.getMojo().writeTo(originalModelMojo);
+            model.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
+
+            mojo = importMojo(originalModelMojoFile.getAbsolutePath());
+
+            final GenericModelParameters genericModelParameters = new GenericModelParameters();
+            genericModelParameters._mojo_key = mojo;
+            final Generic generic = new Generic(genericModelParameters);
+            generic.init(false);
+            genericModel = generic.trainModel().get();
+
+            predictions = genericModel.score(testFrame);
+            assertEquals(2691, predictions.anyVec().length());
+
+            final boolean equallyScored = genericModel.testJavaScoring(testFrame, predictions, 0);
+            assertTrue(equallyScored);
+        } finally {
+            if (model != null) model.remove();
+            if (mojo != null) mojo.remove();
+            if (genericModel != null) genericModel.remove();
+            if (trainingFrame != null) trainingFrame.remove();
+            if (testFrame != null) testFrame.remove();
+            if (predictions != null) predictions.remove();
+        }
     }
     
     /**
