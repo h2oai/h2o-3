@@ -27,7 +27,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/6/index.htm
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6337'>PUBDEV-6337</a>] - Updated the description of monotone_constraints for GBM. This option can only be used for gaussian distributions.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6437'>PUBDEV-6437</a>] - Improved documentation for the EC2 and S3 storage topic for AWS Standalone instances (http://docs.h2o.ai/h2o/latest-stable/h2o-docs/cloud-integration/ec2-and-s3.html#aws-standalone-instance).
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6347'>PUBDEV-6347</a>] - Improved documentation for the EC2 and S3 storage topic for AWS Standalone instances (http://docs.h2o.ai/h2o/latest-stable/h2o-docs/cloud-integration/ec2-and-s3.html#aws-standalone-instance).
 </li>
 </ul>
 
