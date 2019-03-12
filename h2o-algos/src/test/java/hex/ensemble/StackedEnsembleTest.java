@@ -536,6 +536,85 @@ public class StackedEnsembleTest extends TestUtil {
       }
     }
 
+    @Test public void testKeepLevelOneFrameCVMode() {
+        testSEModelCanBeSafelyRemoved(true, false);
+    }
+
+    @Test public void testDoNotKeepLevelOneFrameCVMode() {
+        testSEModelCanBeSafelyRemoved(false, false);
+    }
+
+    @Test public void testKeepLevelOneFrameBlendingMode() {
+        testSEModelCanBeSafelyRemoved(true, true);
+    }
+
+    @Test public void testDoNotKeepLevelOneFrameBlendingMode() {
+        testSEModelCanBeSafelyRemoved(false, true);
+    }
+
+    private void testSEModelCanBeSafelyRemoved(boolean keepLevelOneFrame, boolean blending) {
+        List<Lockable> deletables = new ArrayList<>();
+        try {
+            final int seed = 1;
+            final Frame train = parse_test_file("./smalldata/logreg/prostate_train.csv"); deletables.add(train);
+            final Frame test = parse_test_file("./smalldata/logreg/prostate_test.csv"); deletables.add(test);
+
+            final String target = "CAPSULE";
+            int tidx = train.find(target);
+            train.replace(tidx, train.vec(tidx).toCategoricalVec()).remove(); DKV.put(train);
+            test.replace(tidx, test.vec(tidx).toCategoricalVec()).remove(); DKV.put(test);
+
+            //generate a few base models
+            GBMModel.GBMParameters params = new GBMModel.GBMParameters();
+            params._train = train._key;
+            params._response_column = target;
+            params._seed = seed;
+            if (!blending) {
+                params._nfolds = 3;
+                params._keep_cross_validation_models = false;
+                params._keep_cross_validation_predictions = true;
+                params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+            }
+
+            Job<Grid> gridSearch = GridSearch.startGridSearch(null, params, new HashMap<String, Object[]>() {{
+                put("_ntrees", new Integer[]{3, 5});
+                put("_learn_rate", new Double[]{0.1, 0.2});
+            }});
+            Grid grid = gridSearch.get(); deletables.add(grid);
+            Model[] gridModels = grid.getModels(); deletables.addAll(Arrays.asList(gridModels));
+            Assert.assertEquals(4, gridModels.length);
+
+            StackedEnsembleModel.StackedEnsembleParameters seParams = new StackedEnsembleModel.StackedEnsembleParameters();
+            seParams._train = train._key;
+            seParams._response_column = target;
+            seParams._base_models = grid.getModelKeys();
+            seParams._seed = seed;
+            seParams._keep_levelone_frame = keepLevelOneFrame;
+            if (blending) seParams._blending = test._key;
+            StackedEnsembleModel se1 = new StackedEnsemble(seParams).trainModel().get(); deletables.add(se1);
+            Frame predictions = se1.score(test); deletables.add(predictions);
+
+            if (keepLevelOneFrame) {
+                Assert.assertEquals(gridModels.length + 1, se1._output._levelone_frame_id.numCols());
+                if (blending)
+                    Assert.assertEquals(test.numRows(), se1._output._levelone_frame_id.numRows());
+                else
+                    Assert.assertEquals(train.numRows(), se1._output._levelone_frame_id.numRows());
+            } else {
+                Assert.assertNull(se1._output._levelone_frame_id);
+            }
+            se1.delete();
+
+//            building a new model would throw an exception if we deleted too much when deleting s1
+            GBMModel gbm = new GBM(params).trainModel().get(); deletables.add(gbm);
+            StackedEnsembleModel se2 = new StackedEnsemble(seParams).trainModel().get(); deletables.add(se2);
+        } finally {
+            for (Lockable l: deletables) {
+                if (l instanceof Model) ((Model)l).deleteCrossValidationPreds();
+                l.delete();
+            }
+        }
+    }
 
     // ==========================================================================
     public StackedEnsembleModel.StackedEnsembleOutput basicEnsemble(String training_file,
