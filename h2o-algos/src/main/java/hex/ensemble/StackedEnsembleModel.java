@@ -133,7 +133,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
           false
       );
       
-      StackedEnsemble.addModelPredictionsToLevelOneFrame(base, basePreds, levelOneFrame, false);
+      StackedEnsemble.addModelPredictionsToLevelOneFrame(base, basePreds, levelOneFrame);
       DKV.remove(basePreds._key); //Cleanup
       Frame.deleteTempFrameAndItsNonSharedVecs(basePreds, levelOneFrame);
     }

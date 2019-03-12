@@ -66,16 +66,14 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
     return true;
   }
 
-  static void addModelPredictionsToLevelOneFrame(Model aModel, Frame aModelsPredictions, Frame levelOneFrame, boolean keepLevelOneFrame) {
+  static void addModelPredictionsToLevelOneFrame(Model aModel, Frame aModelsPredictions, Frame levelOneFrame) {
     if (aModel._output.isBinomialClassifier()) {
       // GLM uses a different column name than the other algos
       Vec preds = aModelsPredictions.vec(2); // Predictions column names have been changed...
-      if (keepLevelOneFrame) preds = preds.makeCopy();
       levelOneFrame.add(aModel._key.toString(), preds);
     } else if (aModel._output.isMultinomialClassifier()) { //Multinomial
       //Need to remove 'predict' column from multinomial since it contains outcome
       Frame probabilities = aModelsPredictions.subframe(ArrayUtils.remove(aModelsPredictions.names(), "predict"));
-      if (keepLevelOneFrame) probabilities = probabilities.deepCopy(aModelsPredictions._key.toString() + "_probabilities");
       levelOneFrame.add(probabilities);
     } else if (aModel._output.isAutoencoder()) {
       throw new H2OIllegalArgumentException("Don't yet know how to stack autoencoders: " + aModel._key);
@@ -83,7 +81,6 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       throw new H2OIllegalArgumentException("Don't yet know how to stack unsupervised models: " + aModel._key);
     } else {
       Vec preds = aModelsPredictions.vec("predict");
-      if (keepLevelOneFrame) preds = preds.makeCopy();
       levelOneFrame.add(aModel._key.toString(), preds);
     }
   }
@@ -95,7 +92,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
      * training and validation frames for the metalearning step, and could also be used for bulk predictions for
      * a StackedEnsemble.
      */
-    private Frame prepareLevelOneFrame(String levelOneKey, Model[] baseModels, Frame[] baseModelPredictions, Frame actuals, boolean keepResultFrame) {
+    private Frame prepareLevelOneFrame(String levelOneKey, Model[] baseModels, Frame[] baseModelPredictions, Frame actuals) {
       if (null == baseModels) throw new H2OIllegalArgumentException("Base models array is null.");
       if (null == baseModelPredictions) throw new H2OIllegalArgumentException("Base model predictions array is null.");
       if (baseModels.length == 0) throw new H2OIllegalArgumentException("Base models array is empty.");
@@ -119,17 +116,15 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
           Log.warn("Failed to find base model " + baseModel + " predictions; skipping: " + baseModelPreds._key);
           continue;
         }
-        StackedEnsemble.addModelPredictionsToLevelOneFrame(baseModel, baseModelPreds, levelOneFrame, keepResultFrame);
+        StackedEnsemble.addModelPredictionsToLevelOneFrame(baseModel, baseModelPreds, levelOneFrame);
       }
       // Add metalearner_fold_column to level one frame if it exists
       if (_model._parms._metalearner_fold_column != null) {
         Vec foldColumn = actuals.vec(_model._parms._metalearner_fold_column);
-        if (keepResultFrame) foldColumn = foldColumn.makeCopy();
         levelOneFrame.add(_model._parms._metalearner_fold_column, foldColumn);
       }
       // Add response column to level one frame
       Vec responseColumn = actuals.vec(_model.responseColumn);
-      if (keepResultFrame) responseColumn = responseColumn.makeCopy();
       levelOneFrame.add(_model.responseColumn, responseColumn);
 
       // TODO: what if we're running multiple in parallel and have a name collision?
@@ -170,7 +165,14 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       baseModelPredictions.add(predictions);
     }
     boolean keepLevelOneFrame = isTraining && _parms._keep_levelone_frame;
-    return prepareLevelOneFrame(levelOneKey, baseModels.toArray(new Model[0]), baseModelPredictions.toArray(new Frame[0]), actuals, keepLevelOneFrame);
+    Frame levelOneFrame = prepareLevelOneFrame(levelOneKey, baseModels.toArray(new Model[0]), baseModelPredictions.toArray(new Frame[0]), actuals);
+    if (keepLevelOneFrame) {
+      levelOneFrame.write_lock(_job);
+      levelOneFrame = levelOneFrame.deepCopy(levelOneFrame._key.toString());
+      levelOneFrame.unlock(_job);
+      DKV.put(levelOneFrame);
+    }
+    return levelOneFrame;
   }
 
   protected Frame buildPredictionsForBaseModel(Model model, Frame frame) {
