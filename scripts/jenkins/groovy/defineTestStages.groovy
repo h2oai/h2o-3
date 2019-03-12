@@ -6,11 +6,13 @@ def call(final pipelineContext) {
   def MODE_XGB_CODE = 3
   def MODE_COVERAGE_CODE = 4
   def MODE_SINGLE_TEST_CODE = 5
+  def MODE_KERBEROS_CODE = 6
   def MODE_MASTER_CODE = 10
   def MODE_NIGHTLY_CODE = 20
   def MODES = [
     [name: 'MODE_PR', code: MODE_PR_CODE],
     [name: 'MODE_HADOOP', code: MODE_HADOOP_CODE],
+    [name: 'MODE_KERBEROS', code: MODE_KERBEROS_CODE],
     [name: 'MODE_XGB', code: MODE_XGB_CODE],
     [name: 'MODE_COVERAGE', code: MODE_COVERAGE_CODE],
     [name: 'MODE_SINGLE_TEST', code: MODE_SINGLE_TEST_CODE],
@@ -333,8 +335,9 @@ def call(final pipelineContext) {
     ]
   ]
 
+  def supportedHadoopDists = pipelineContext.getBuildConfig().getSupportedHadoopDistributions()
   def HADOOP_STAGES = []
-  for (distribution in pipelineContext.getBuildConfig().getSupportedHadoopDistributions()) {
+  for (distribution in supportedHadoopDists) {
     def target
     def ldapConfigPath
     if (distribution.name == 'cdh' && distribution.version.startsWith('6.')) {
@@ -349,7 +352,7 @@ def call(final pipelineContext) {
     }
 
     def stageTemplate = [
-      target: target, timeoutValue: 25, component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+      target: target, timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_ANY,
       additionalTestPackages: [
               pipelineContext.getBuildConfig().COMPONENT_HADOOP,
               pipelineContext.getBuildConfig().COMPONENT_PY,
@@ -358,6 +361,7 @@ def call(final pipelineContext) {
       customData: [
         distribution: distribution.name,
         version: distribution.version,
+        commandFactory: 'h2o-3/scripts/jenkins/groovy/hadoopCommands.groovy',
         ldapConfigPath: ldapConfigPath,
         kerberosUserName: 'jenkins@H2O.AI',
         kerberosPrincipal: 'HTTP/localhost@H2O.AI',
@@ -377,14 +381,68 @@ def call(final pipelineContext) {
     onHadoopStage.customData.mode = 'ON_HADOOP'
     onHadoopStage.image = pipelineContext.getBuildConfig().getSmokeHadoopImage(onHadoopStage.customData.distribution, onHadoopStage.customData.version, false)
 
-    def withKRBStage = evaluate(stageTemplate.inspect())
-    withKRBStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - KRB"
-    withKRBStage.customData.mode = 'WITH_KRB'
-    withKRBStage.image = pipelineContext.getBuildConfig().getSmokeHadoopImage(withKRBStage.customData.distribution, withKRBStage.customData.version, true)
-
     HADOOP_STAGES += standaloneStage
     HADOOP_STAGES += onHadoopStage
-    HADOOP_STAGES += withKRBStage
+  }
+
+  def KERBEROS_STAGES = []
+  def distributionsToTest = [
+          [ name: "cdh", version: "5.10" ], // hdp2/hive1
+          [ name: "cdh", version: "6.1"  ], // hdp3/hive2
+          [ name: "hdp", version: "2.6"  ], // hdp2/hive2
+          [ name: "hdp", version: "3.1"  ]  // hdp3/hive3 - JDBC Only
+  ]
+  // check our config is still valid
+  for (distribution in distributionsToTest) {
+    def distSupported = false
+    for (supportedDist in supportedHadoopDists) {
+      if (supportedDist == distribution) {
+        distSupported = true
+      }
+    }
+    if (!distSupported) {
+      throw new IllegalArgumentException("Distribution ${distribution} is no longer supported. Update pipeline config.")
+    }
+    def target
+    if ((distribution.name == 'cdh' && distribution.version.startsWith('6.')) ||
+            (distribution.name == 'hdp' && distribution.version.startsWith('3.'))){
+      target = 'test-kerberos-hadoop-3'
+    } else {
+      target = 'test-kerberos-hadoop-2'
+    }
+
+    def stageTemplate = [
+            target: target, timeoutValue: 30, 
+            component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+            additionalTestPackages: [
+                    pipelineContext.getBuildConfig().COMPONENT_HADOOP,
+                    pipelineContext.getBuildConfig().COMPONENT_PY,
+                    pipelineContext.getBuildConfig().COMPONENT_R
+            ],
+            customData: [
+                    distribution: distribution.name,
+                    version: distribution.version,
+                    commandFactory: 'h2o-3/scripts/jenkins/groovy/kerberosCommands.groovy',
+                    kerberosUserName: 'jenkins@H2O.AI',
+                    kerberosPrincipal: 'HTTP/localhost@H2O.AI',
+                    kerberosConfigPath: 'scripts/jenkins/config/kerberos.conf',
+                    kerberosPropertiesPath: 'scripts/jenkins/config/kerberos.properties',
+            ], pythonVersion: '2.7', nodeLabel: 'docker && micro',
+            customDockerArgs: [ '--privileged' ],
+            executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopStage.groovy'
+    ]
+    def standaloneStage = evaluate(stageTemplate.inspect())
+    standaloneStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - STANDALONE"
+    standaloneStage.customData.mode = 'STANDALONE'
+    standaloneStage.image = pipelineContext.getBuildConfig().getSmokeHadoopImage(standaloneStage.customData.distribution, standaloneStage.customData.version, true)
+
+    def onHadoopStage = evaluate(stageTemplate.inspect())
+    onHadoopStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - HADOOP"
+    onHadoopStage.customData.mode = 'ON_HADOOP'
+    onHadoopStage.image = pipelineContext.getBuildConfig().getSmokeHadoopImage(onHadoopStage.customData.distribution, onHadoopStage.customData.version, true)
+
+    KERBEROS_STAGES += standaloneStage
+    KERBEROS_STAGES += onHadoopStage
   }
 
   def XGB_STAGES = []
@@ -457,6 +515,8 @@ def call(final pipelineContext) {
     executeInParallel(BENCHMARK_STAGES, pipelineContext)
   } else if (modeCode == MODE_HADOOP_CODE) {
     executeInParallel(HADOOP_STAGES, pipelineContext)
+  } else if (modeCode == MODE_KERBEROS_CODE) {
+    executeInParallel(KERBEROS_STAGES, pipelineContext)
   } else if (modeCode == MODE_XGB_CODE) {
     executeInParallel(XGB_STAGES, pipelineContext)
   } else if (modeCode == MODE_COVERAGE_CODE) {

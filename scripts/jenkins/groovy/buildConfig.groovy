@@ -80,7 +80,7 @@ class BuildConfig {
     this.mode = mode
     this.nodeLabel = nodeLabel
     this.commitMessage = commitMessage
-    this.buildHadoop = mode == 'MODE_HADOOP'
+    this.buildHadoop = (mode == 'MODE_HADOOP' || mode == 'MODE_KERBEROS')
     this.additionalGradleOpts = gradleOpts
     this.xgbVersion = xgbVersion
     this.gradleVersion = gradleVersion
