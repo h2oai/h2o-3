@@ -12,6 +12,10 @@ import java.io.IOException;
 import java.util.Objects;
 
 public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, GenericModelOutput> {
+    
+    public Generic(GenericModelParameters genericParameters){
+        super(genericParameters);
+    }
 
     public Generic(boolean startup_once) {
         super(new GenericModelParameters(), startup_once);
@@ -33,23 +37,27 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
     }
 
     @Override
+    public boolean haveMojo() {
+        return true;
+    }
+
+    @Override
     public boolean isSupervised() {
-        // TODO: should return value based on underlying MOJ
         return false;
     }
 
     class MojoDelegatingModelDriver extends Driver {
         @Override
         public void computeImpl() {
-            final ByteVec mojoData = getUploadedMojo(_parms._mojo_key);
+            final ByteVec mojoBytes = getUploadedMojo(_parms._mojo_key);
             final MojoModel mojoModel;
             try {
-                mojoModel = MojoModel.load(MojoReaderBackendFactory.createReaderBackend(mojoData.openStream(_job._key), MojoReaderBackendFactory.CachingStrategy.MEMORY));
+                mojoModel = MojoModel.load(MojoReaderBackendFactory.createReaderBackend(mojoBytes.openStream(_job._key), MojoReaderBackendFactory.CachingStrategy.MEMORY));
             } catch (IOException e) {
-                throw new IllegalStateException("Unreachable MOJO file: " + mojoData._key, e);
+                throw new IllegalStateException("Unreachable MOJO file: " + mojoBytes._key, e);
             }
             final GenericModelOutput genericModelOutput = new GenericModelOutput(mojoModel.modelDescriptor());
-            final GenericModel genericModel = new GenericModel(_result, _parms, genericModelOutput, mojoModel);
+            final GenericModel genericModel = new GenericModel(_result, _parms, genericModelOutput, mojoModel, mojoBytes);
             genericModel.write_lock(_job);
             genericModel.unlock(_job);
         }

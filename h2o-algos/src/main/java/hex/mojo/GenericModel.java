@@ -7,10 +7,12 @@ import hex.genmodel.easy.prediction.AutoEncoderModelPrediction;
 import hex.tree.isofor.ModelMetricsAnomaly;
 import water.H2O;
 import water.Key;
+import water.fvec.ByteVec;
 
 public class GenericModel extends Model<GenericModel, GenericModelParameters, GenericModelOutput> {
     
-    MojoModel _mojoModel;
+    private final MojoModel _mojoModel;
+    private final ByteVec _mojoBytes;
     
     /**
      * Full constructor
@@ -19,10 +21,11 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
      * @param parms
      * @param output
      */
-    public GenericModel(Key<GenericModel> selfKey, GenericModelParameters parms, GenericModelOutput output, MojoModel mojoModel) {
+    public GenericModel(Key<GenericModel> selfKey, GenericModelParameters parms, GenericModelOutput output, MojoModel mojoModel, ByteVec mojoBytes) {
         // TODO: We might want to add reference for training and validation frame to re-construct metrics if we do not choose to get them from JSON inside MOJO
         super(selfKey, parms, output);
         _mojoModel = mojoModel;
+        _mojoBytes = mojoBytes;
     }
 
     @Override
@@ -49,7 +52,7 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
                 throw new UnsupportedOperationException("WordEmbedding is not supported.");
             case CoxPH:
                 throw new UnsupportedOperationException("CoxPH is not supported.");
-            case AnomalyDetection: return new ModelMetricsAnomaly.MetricBuilderAnomaly();
+            case AnomalyDetection: return new ModelMetricsAnomaly.MetricBuilderAnomaly("");
 
             default: throw H2O.unimpl();
         }
@@ -58,5 +61,10 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
     @Override
     protected double[] score0(double[] data, double[] preds) {
         return _mojoModel.score0(data,preds);
+    }
+
+    @Override
+    public ModelMojoWriter getMojo() {
+        return new GenericModelMojoWriter(_mojoBytes);
     }
 }
