@@ -456,7 +456,6 @@ def call(final pipelineContext) {
   } else if (modeCode == MODE_SINGLE_TEST_CODE) {
     executeInParallel(SINGLE_TEST_STAGES, pipelineContext)
   } else {
-    executeInParallel(SMOKE_STAGES, pipelineContext)
     def jobs = PR_STAGES
     if (modeCode >= MODE_MASTER_CODE) {
       jobs += MASTER_STAGES
@@ -464,7 +463,13 @@ def call(final pipelineContext) {
     if (modeCode >= MODE_NIGHTLY_CODE) {
       jobs += NIGHTLY_STAGES
     }
-    executeInParallel(jobs, pipelineContext)
+    if (modeCode >= MODE_NIGHTLY_CODE) {
+      // in Nightly mode execute all jobs regardless whether smoke tests fail 
+      executeInParallel(SMOKE_STAGES + jobs, pipelineContext)
+    } else {
+      executeInParallel(SMOKE_STAGES, pipelineContext)
+      executeInParallel(jobs, pipelineContext)
+    }
   }
 }
 
