@@ -180,8 +180,8 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       if (_parms._keep_levelone_frame) {
         levelOneFrame.write_lock(_job);
         levelOneFrame = levelOneFrame.deepCopy(levelOneFrame._key.toString());
+        levelOneFrame.update(_job);
         levelOneFrame.unlock(_job);
-        DKV.put(levelOneFrame);
       }
       return levelOneFrame;
     }
