@@ -24,11 +24,11 @@ def testvarimp():
     h2o_data = h2o.import_file(path=pyunit_utils.locate("smalldata/prostate/prostate_complete.csv.zip"))
     myY = "GLEASON"
     myX = ["ID","AGE","RACE","CAPSULE","DCAPS","PSA","VOL","DPROS"]
-    buildModelCheckVarimp(h2o_data, myX, myY, "gaussian")
+    buildModelCheckVarimp(h2o_data, myX, myY, "gaussian", pValues=True)
  
 
-def buildModelCheckVarimp(training_frame, x_indices, y_index, family):
-    model = H2OGeneralizedLinearEstimator(family=family)
+def buildModelCheckVarimp(training_frame, x_indices, y_index, family, pValues=False):
+    model = H2OGeneralizedLinearEstimator(family=family, Lambda=0, compute_p_values=pValues)
     model.train(training_frame=training_frame, x=x_indices, y=y_index)
     varimp = model.varimp()
     print(varimp)

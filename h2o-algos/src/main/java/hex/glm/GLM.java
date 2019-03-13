@@ -189,15 +189,27 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   }
 
   protected void checkMemoryFootPrint(DataInfo activeData) {
-    if (_parms._solver == Solver.IRLSM || _parms._solver == Solver.COORDINATE_DESCENT) {
+    if (_parms._solver.equals(Solver.IRLSM) || _parms._solver.equals(Solver.COORDINATE_DESCENT) ||
+            _parms._solver.equals(Solver.IRLSM_SPEEDUP_TEST) || _parms._solver.equals(Solver.IRLSM_NATIVE)) {
       int p = activeData.fullN();
       HeartBeat hb = H2O.SELF._heartbeat;
       long mem_usage = (long) (hb._cpus_allowed * (p * p + activeData.largestCat()) * 8/*doubles*/ * (1 + .5 * Math.log((double) _train.lastVec().nChunks()) / Math.log(2.))); //one gram per core
+      if (_parms._solver.equals(Solver.IRLSM_SPEEDUP_TEST) || _parms._solver.equals(Solver.IRLSM_NATIVE)) {
+        mem_usage = mem_usage * _nclass*2;  // increase this for native multinomial implementation
+      }
       long max_mem = hb.get_free_mem();
+      String msg;
       if (mem_usage > max_mem) {
-        String msg = "Gram matrices (one per thread) won't fit in the driver node's memory ("
-          + PrettyPrint.bytes(mem_usage) + " > " + PrettyPrint.bytes(max_mem)
-          + ") - try reducing the number of columns and/or the number of categorical factors (or switch to the L-BFGS solver).";
+        if (_parms._solver.equals(Solver.IRLSM_NATIVE)) {
+          msg = "Gram matrices (one per thread) won't fit in the driver node's memory ("
+                  + PrettyPrint.bytes(mem_usage) + " > " + PrettyPrint.bytes(max_mem)
+                  + ") - try reducing the number of columns and/or the number of categorical factors (or switch " +
+                  "from IRLSM_NATIVE to the IRLSM solver).";
+        } else {
+          msg = "Gram matrices (one per thread) won't fit in the driver node's memory ("
+                  + PrettyPrint.bytes(mem_usage) + " > " + PrettyPrint.bytes(max_mem)
+                  + ") - try reducing the number of columns and/or the number of categorical factors (or switch to the L-BFGS solver).";
+        }
         error("_train", msg);
       }
     }
@@ -388,6 +400,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         case multinomial:
           if (_nclass <= 2)
             error("_family", H2O.technote(2, "Multinomial requires a categorical response with at least 3 levels (for 2 class problem use family=binomial."));
+          else if (_parms._solver.equals(Solver.IRLSM_SPEEDUP_TEST) || _parms._solver.equals(Solver.IRLSM_NATIVE)) {
+            if (!_parms._intercept)
+              error("_family", "Multinomial with IRLSM_NATIVE will " +
+                      "require an intercept term." +
+                      "  Set intercept to true.");
+          }
           break;
         case poisson:
         case negativebinomial:  
@@ -462,7 +480,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               _parms.missingValuesHandling() == MissingValuesHandling.MeanImputation || _parms.missingValuesHandling() == MissingValuesHandling.PlugValues,
               _parms.makeImputer(), 
               false, hasWeightCol(), hasOffsetCol(), hasFoldCol(), _parms.interactionSpec());
-
       if (_parms._max_iterations == -1) { // fill in default max iterations
         int numclasses = (_parms._family == Family.multinomial)||(_parms._family == Family.ordinal)?nclasses():1;
         if (_parms._solver == Solver.L_BFGS) {
@@ -532,8 +549,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if(_offset != null) vecs.add(_offset);
       vecs.add(_response);
       double [] beta = getNullBeta();
-      GLMGradientInfo ginfo = new GLMGradientSolver(_job,_parms, _dinfo, 0, _state.activeBC()).getGradient(beta);
+      GLMGradientInfo ginfo = new GLMGradientSolver(_job,_parms, _dinfo, 0, _state.activeBC()).getGradient(beta);  // manually check to agree with before Wendy Change
       _lmax = lmax(ginfo._gradient);
+/*      if (_parms._family.equals(Family.multinomial) && _parms._solver.equals(Solver.IRLSM_NATIVE))
+        _lmax = _lmax/(nclasses()*_dinfo.fullN());*/
       _state.setLambdaMax(_lmax);
       if (_parms._lambda_min_ratio == -1) {
         _parms._lambda_min_ratio = (_nobs >> 4) > _dinfo.fullN() ? 1e-4 : 1e-2;
@@ -635,7 +654,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       return Arrays.copyOf(res,cnt);
     }
-    private double[] ADMM_solve(Gram gram, double [] xy) {
+    private double[] ADMM_solve(Gram gram, double [] xy, int nclass) {
       if(_parms._remove_collinear_columns || _parms._compute_p_values) {
         if(!_parms._intercept) throw H2O.unimpl();
         ArrayList<Integer> ignoredCols = new ArrayList<>();
@@ -664,18 +683,24 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         chol.solve(xy);
       } else {
         gram = gram.deep_clone();
-        xy = xy.clone();
-        GramSolver slvr = new GramSolver(gram.clone(), xy.clone(), _parms._intercept, _state.l2pen(),_state.l1pen(), _state.activeBC()._betaGiven, _state.activeBC()._rho, _state.activeBC()._betaLB, _state.activeBC()._betaUB);
+        xy = xy.clone();  // this is no longer point to the actual xy array, it is a new place
+        GramSolver slvr = new GramSolver(gram.clone(), xy.clone(), _parms._intercept, _state.l2pen(),_state.l1pen(),
+                _state.activeBC()._betaGiven, _state.activeBC()._rho, _state.activeBC()._betaLB, 
+                _state.activeBC()._betaUB, nclass, _state._activeColsAll);
         _chol = slvr._chol;
         if(_state.l1pen() == 0 && !_state.activeBC().hasBounds()) {
           slvr.solve(xy);
         } else {
-          xy = MemoryManager.malloc8d(xy.length);
-          if(_state._u == null && (_parms._family != Family.multinomial)) _state._u = MemoryManager.malloc8d(_state.activeData().fullN()+1);
-            (_lslvr = new ADMM.L1Solver(1e-4, 10000, _state._u)).solve(slvr, xy, _state.l1pen(), _parms._intercept, _state.activeBC()._betaLB, _state.activeBC()._betaUB);
+         // xy = MemoryManager.malloc8d(xy.length); // why are we setting this to zero? It is zk and uk who may be zero at the beginning
+          if (_state._u == null && (_parms._family != Family.multinomial))
+            _state._u = MemoryManager.malloc8d(_state.activeData().fullN() + 1);
+          // increase _eps to account for more coefficients for multinomial native
+          (_lslvr = new ADMM.L1Solver(Math.min(1e-2, nclass*1e-4), 10000, _state._u, nclass, 
+                  _state._activeColsAll)).solve(slvr, xy, _state.l1pen(), 
+                  _parms._intercept, _state.activeBC()._betaLB, _state.activeBC()._betaUB);
         }
       }
-      return xy;
+      return xy;  // store new beta values here.  Variable naming is confusing.
     }
 
     private void fitCOD_multinomial(Solver s) {
@@ -694,9 +719,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               ls = new MoreThuente(_state.gslvrMultinomial(c), _state.betaMultinomial(c, beta), _state.ginfoMultinomial(c));
             } else
               ls = new SimpleBacktrackingLS(_state.gslvrMultinomial(c), _state.betaMultinomial(c, beta), _state.l1pen());
-/*            LineSearchSolver ls = (_state.l1pen() == 0)
-                    ? new MoreThuente(_state.gslvrMultinomial(c), _state.betaMultinomial(c, beta), _state.ginfoMultinomial(c))
-                    : new SimpleBacktrackingLS(_state.gslvrMultinomial(c), _state.betaMultinomial(c, beta), _state.l1pen());*/
 
             new GLMMultinomialUpdate(_state.activeDataMultinomial(), _job._key, beta, c).doAll(_state.activeDataMultinomial()._adaptedFrame);
             ComputationState.GramXY gram = _state.computeGram(_state.betaMultinomial(c, beta), s);
@@ -721,6 +743,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
       if (s.equals(Solver.COORDINATE_DESCENT)) {
         fitCOD_multinomial(s);
+      } else if (s.equals(Solver.IRLSM_SPEEDUP_TEST) || s.equals(Solver.IRLSM_NATIVE)) {
+        fitIRLSMSPEEDUP_multinomial(s);
       } else {
         double[] beta = _state.betaMultinomial();
         do {
@@ -733,11 +757,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                     : new SimpleBacktrackingLS(_state.gslvrMultinomial(c), _state.betaMultinomial(c, beta), _state.l1pen());
 
             long t1 = System.currentTimeMillis();
+            // keep this even though it only calculate prob(yi=c) but I need the sum of exp, full beta used here
             new GLMMultinomialUpdate(_state.activeDataMultinomial(), _job._key, beta, c).doAll(_state.activeDataMultinomial()._adaptedFrame);
             long t2 = System.currentTimeMillis();
-            ComputationState.GramXY gram = _state.computeGram(ls.getX(), s);
+            ComputationState.GramXY gram = _state.computeGram(ls.getX(), s);  // shortened coefficients
             long t3 = System.currentTimeMillis();
-            double[] betaCnd = ADMM_solve(gram.gram, gram.xy);
+            double[] betaCnd = ADMM_solve(gram.gram, gram.xy, 1);
 
             long t4 = System.currentTimeMillis();
             if (!onlyIcpt && !ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd))) {
@@ -752,6 +777,68 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _state.setActiveClass(-1);
         } while (progress(beta, _state.gslvr().getGradient(beta)));
       }
+    }
+
+    private void fitIRLSMSPEEDUP_multinomial(Solver s) {
+      assert _dinfo._responses == 3 : "IRLSM for multinomial needs extra information encoded in additional reponses, expected 3 response vecs, got " + _dinfo._responses;
+
+      double[] beta = _state.betaMultinomial(); // full length multinomial coefficients all stacked up
+      int coeffPClass = beta.length/_nclass;
+      _state.setActiveClass(_nclass); // set ActiveClass to be number of class for IRLSM_NATIVE
+      int[] icptInd = new int[_nclass];
+      if (s.equals(Solver.IRLSM_NATIVE)) { // used only active column set here
+        _state.setActiveColsAll();
+        int offset = 0;
+        for (int classInd = 0; classInd < _nclass; classInd++) {
+          icptInd[classInd] = offset+_state.activeDataMultinomial(classInd).activeCols().length - 1;
+          offset += _state.activeDataMultinomial(classInd).activeCols().length;
+        }
+      }
+      
+      double[] betaCnd;
+      LineSearchSolver ls = null;
+      do {
+        // check and walk through all classes
+        beta = beta.clone();  // full length coeffs
+        boolean onlyIcpt = true;
+        for (int classInd = 0; classInd < _nclass; classInd++) {
+          onlyIcpt = onlyIcpt && (_state.activeDataMultinomial(classInd).fullN() == 0);
+        }
+        // coefficients inside ls can shrink with activeCols
+        ls = (_state.l1pen() == 0) ? new MoreThuente(_state.gslvrMultinomial(0), _state.betaMultinomial(beta), 
+                _state.ginfoMultinomial())
+                : new SimpleBacktrackingLS(_state.gslvrMultinomial(0), _state.betaMultinomial(beta),
+                _state.l1pen(), true, _nclass, coeffPClass, icptInd);
+          
+        if (ls instanceof MoreThuente) {
+          ((MoreThuente) ls)._gtol = Math.min(1, ((MoreThuente) ls)._gtol*_nclass);
+        }
+          long t1 = System.currentTimeMillis();
+          // generate prediction output of each class and store results in _adaptedFrame
+          new GLMMultinomialSpeedUpUpdate(_state.activeDataMultinomial(), 
+                  _job._key, beta, _nclass).doAll(_state.activeDataMultinomial()._adaptedFrame);  // use full beta value
+          long t2 = System.currentTimeMillis();
+          long t3;
+
+        try {
+          ComputationState.GramXY gram = _state.computeGram(ls.getX(), s); // use ls.getX() to get shortened coeffs.
+          t3 = System.currentTimeMillis();
+          betaCnd = ADMM_solve(gram.gram, gram.xy, _nclass);
+        } catch (NonSPDMatrixException ex) {
+            _state.setBetaMultinomial(beta, ls.getX());
+            warn("Cholesky decomposition: ", "Model building was cut short due to gram matrix not being PSD.");
+            continue;
+        }
+          
+          long t4 = System.currentTimeMillis();
+          if (!onlyIcpt && !ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd))) {
+              Log.info(LogMsg("Ls failed " + ls));
+              continue;
+          } 
+          long t5 = System.currentTimeMillis();
+          _state.setBetaMultinomial(beta, ls.getX());
+          Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "+" + (t4 - t3) + "+" + (t5 - t4) + "=" + (t5 - t1) + "ms, step = " + ls.step() + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
+      } while (progress(ls.getX(), _state.gslvr().getGradient(beta)));
     }
 
     // use regular gradient descend here.  Need to figure out how to adjust for the alpha, lambda for the elastic net
@@ -819,7 +906,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       long t0 = System.currentTimeMillis();
       ComputationState.GramXY gramXY = _state.computeGram(_state.beta(),s);
       Log.info(LogMsg("Gram computed in " + (System.currentTimeMillis()-t0) + "ms"));
-      double [] beta = _parms._solver == Solver.COORDINATE_DESCENT?COD_solve(gramXY,_state._alpha,_state.lambda()):ADMM_solve(gramXY.gram,gramXY.xy);
+      double [] beta = _parms._solver == Solver.COORDINATE_DESCENT?COD_solve(gramXY,_state._alpha,_state.lambda()) 
+              :ADMM_solve(gramXY.gram,gramXY.xy, _nclass);
       // compute mse
       double [] x = ArrayUtils.mmul(gramXY.gram.getXX(),beta);
       for(int i = 0; i < x.length; ++i)
@@ -848,15 +936,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               System.out.println("DONE after " + (iterCnt-1) + " iterations (1)");
               return;
             }
-            betaCnd = s == Solver.COORDINATE_DESCENT?COD_solve(gram,_state._alpha,_state.lambda()):ADMM_solve(gram.gram,gram.xy);
+            betaCnd = s == Solver.COORDINATE_DESCENT?COD_solve(gram,_state._alpha,_state.lambda())
+                    :ADMM_solve(gram.gram,gram.xy, 1);
           }
-          firstIter = false;
           long t3 = System.currentTimeMillis();
           if(_state._lsNeeded) {
             if(ls == null)
               ls = (_state.l1pen() == 0 && !_state.activeBC().hasBounds())
                  ? new MoreThuente(_state.gslvr(),_state.beta(), _state.ginfo())
-                 : new SimpleBacktrackingLS(_state.gslvr(),_state.beta().clone(), _state.l1pen(), _state.ginfo());
+                 : new SimpleBacktrackingLS(_state.gslvr(),_state.beta().clone(), _state.l1pen(), _state.ginfo(), 
+                      false, 1, betaCnd.length, null);
             if (!ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd))) { // ls.getX() get the old beta value
               Log.info(LogMsg("Ls failed " + ls));
               return;
@@ -1106,6 +1195,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       Solver solver = (_parms._solver == Solver.AUTO) ? defaultSolver() : _parms._solver;
       switch (solver) {
         case COORDINATE_DESCENT: // fall through to IRLSM
+        case IRLSM_SPEEDUP_TEST:  
+        case IRLSM_NATIVE:
         case IRLSM:
           if(_parms._family == Family.multinomial)
             fitIRLSM_multinomial(solver);
@@ -1201,6 +1292,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _model.addSubmodel(sm = new Submodel(lambda, _state.beta(),_state._iter,-1,-1));
         _state.setLambda(lambda);
         checkMemoryFootPrint(_state.activeData());
+        if (error_count() > 0)  // throw an error if memory usage exceeds memory.
+          throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GLM.this);
         do {
           if (_parms._family == Family.multinomial || _parms._family == Family.ordinal)
             for (int c = 0; c < _nclass; ++c)
@@ -1239,6 +1332,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     public void computeImpl() {
       if(_doInit)
         init(true);
+//      checkMemoryFootPrint(_dinfo);
       if (error_count() > 0)
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GLM.this);
 //      buildModel();
@@ -1267,27 +1361,31 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         double maxRow = ArrayUtils.maxValue(nb);
         double sumExp = 0;
         if (_parms._family == Family.multinomial) {
-          int P = _dinfo.fullN();
-          int N = _dinfo.fullN() + 1;
+          int P = _dinfo.fullN();       // number of predictors
+          int N = _dinfo.fullN() + 1;   // number of GLM coefficients per class
           for (int i = 1; i < _nclass; ++i)
             sumExp += Math.exp(nb[i * N + P] - maxRow);
         }
-        Vec [] vecs = _dinfo._adaptedFrame.anyVec().makeDoubles(2, new double[]{sumExp,maxRow});
+        Vec [] vecs = _dinfo._adaptedFrame.anyVec().makeDoubles(2, new double[]{sumExp,maxRow});  // store sum exp and maxRow
         if(_parms._lambda_search && _parms._is_cv_model) {
           Scope.untrack(vecs[0]._key, vecs[1]._key);
           removeLater(vecs[0]._key,vecs[1]._key);
         }
 
-        if (_parms._family == Family.ordinal)
+        if (_parms._family.equals(Family.ordinal))
           _dinfo.addResponse(new String[]{"__glm_ExpC", "__glm_ExpNPC"}, vecs); // store eta for class C and class C-1
-        else
+        else if (_parms._family.equals(Family.multinomial) && (_parms._solver.equals(Solver.IRLSM_SPEEDUP_TEST) || 
+                (_parms._solver.equals(Solver.IRLSM_NATIVE)))) {
+          _dinfo.addResponse(new String[]{"__glm_sumExp", "__glm_logSumExp"}, vecs);
+          _state._multinomialSpeedup = true;
+        } else
           _dinfo.addResponse(new String[]{"__glm_sumExp", "__glm_maxRow"}, vecs);
       }
       
       double oldDevTrain = _nullDevTrain;
       double oldDevTest = _nullDevTest;
-      double [] devHistoryTrain = new double[5];
-      double [] devHistoryTest = new double[5];
+      double [] devHistoryTrain = _parms._solver.equals(Solver.IRLSM_NATIVE)?new double[30]:new double[5];
+      double [] devHistoryTest = _parms._solver.equals(Solver.IRLSM_NATIVE)?new double[30]:new double[5];
 
       if(!_parms._lambda_search)
         updateProgress(false);
@@ -1295,6 +1393,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       for (int i = 0; i < _parms._lambda.length; ++i) {  // lambda search
         if (_job.stop_requested() || (timeout() && _model._output._submodels.length > 0)) break;  //need at least one submodel on timeout to avoid issues.
         if(_parms._max_iterations != -1 && _state._iter >= _parms._max_iterations) break;
+        if (_parms._solver.equals(Solver.IRLSM_NATIVE))
+          _state.setActiveClass(-1);
         Submodel sm = computeSubmodel(i,_parms._lambda[i]);
         double trainDev = sm.devianceTrain;
         double testDev = sm.devianceTest;
@@ -1304,7 +1404,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         oldDevTrain = trainDev;
         if(_parms._lambda[i] < _lmax && Double.isNaN(_lambdaCVEstimate) /** if we have cv lambda estimate we should use it, can not stop before reaching it */) {
           if (_parms._early_stopping && _state._iter >= devHistoryTrain.length) {
-            double s = ArrayUtils.maxValue(devHistoryTrain);
+            double s = _parms._solver.equals(Solver.IRLSM_NATIVE)?ArrayUtils.maxAbsValue(devHistoryTrain):ArrayUtils.maxValue(devHistoryTrain);
             if (s < 1e-4) {
               Log.info(LogMsg("converged at lambda[" + i + "] = " + _parms._lambda[i] + ", improvement on train = " + s));
               break; // started overfitting
@@ -1583,21 +1683,21 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
    */
   public static final class GramSolver implements ProximalSolver {
     private final Gram _gram;
-    private Cholesky _chol;
+    public Cholesky _chol;
 
-    private final double[] _xy;
+    private double[] _xy;
     final double _lambda;
     double[] _rho;
     boolean _addedL2;
     double _betaEps;
-
+    
     private static double boundedX(double x, double lb, double ub) {
       if (x < lb) x = lb;
       if (x > ub) x = ub;
       return x;
     }
 
-    public GramSolver(Gram gram, double[] xy, double lmax, double betaEps, boolean intercept) {
+/*    public GramSolver(Gram gram, double[] xy, double lmax, double betaEps, boolean intercept) {
       _gram = gram;
       _lambda = 0;
       _betaEps = betaEps;
@@ -1606,7 +1706,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       computeCholesky(gram, rhos, lmax * 1e-8,intercept);
       _addedL2 = rhos[0] != 0;
       _rho = _addedL2 ? rhos : null;
-    }
+    }*/
 
     // solve non-penalized problem
     public void solve(double[] result) {
@@ -1625,8 +1725,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         Log.warn("Gram solver did not converge, gerr = " + gerr);
       }
     }
-
-    public GramSolver(Gram gram, double[] xy, boolean intercept, double l2pen, double l1pen, double[] beta_given, double[] proxPen, double[] lb, double[] ub) {
+    
+    public GramSolver(Gram gram, double[] xy, boolean intercept, double l2pen, double l1pen, double[] beta_given,
+                      double[] proxPen, double[] lb, double[] ub, int nclass, int[][] activeColAll) {
       if (ub != null && lb != null)
         for (int i = 0; i < ub.length; ++i) {
           assert ub[i] >= lb[i] : i + ": ub < lb, ub = " + Arrays.toString(ub) + ", lb = " + Arrays.toString(lb);
@@ -1635,73 +1736,158 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _gram = gram;
       // Try to pick optimal rho constant here used in ADMM solver.
       //
-      // Rho defines the strength of proximal-penalty and also the strentg of L1 penalty aplpied in each step.
-      // Picking good rho constant is tricky and greatly influences the speed of convergence and precision with which we are able to solve the problem.
+      // Rho defines the strength of proximal-penalty and also the strength of L1 penalty applied in each step.
+      // Picking good rho constant is tricky and greatly influences the speed of convergence and precision with 
+      // which we are able to solve the problem.
       //
       // Intuitively, we want the proximal l2-penalty ~ l1 penalty (l1 pen = lambda/rho, where lambda is the l1 penalty applied to the problem)
       // Here we compute the rho for each coordinate by using equation for computing coefficient for single coordinate and then making the two penalties equal.
       //
-      int ii = intercept ? 1 : 0;
-      int icptCol = gram.fullN()-1;
+      int ii = intercept ? 1 : 0; // if intercept is absent, mess with it and won't care
+      int classIndBound = gram._multinomialSpeedUp ? nclass : 1;
+      int coeffPClass = activeColAll == null?xy.length / classIndBound:-1;
+      int icptCol = gram._multinomialSpeedUp?(activeColAll==null?(coeffPClass-1):-1):(gram.fullN()-1);
       double[] rhos = MemoryManager.malloc8d(xy.length);
-      double min = Double.POSITIVE_INFINITY;
-      for (int i = 0; i < xy.length - ii; ++i) {
-        double d = xy[i];
-        d = d >= 0 ? d : -d;
-        if (d < min && d != 0) min = d;
+
+      int lastIndex = coeffPClass - ii;
+      if (activeColAll==null) { // find rhos for full length beta
+        if (l1pen != 0) {   // no need to play with rho if l1pen is zero
+          double min = Double.POSITIVE_INFINITY;
+          for (int classInd = 0; classInd < classIndBound; classInd++) {
+            for (int i = 0; i < lastIndex; ++i) { // this loop excludes the intercept
+              double d = xy[i + classInd * coeffPClass];
+              d = d >= 0 ? d : -d;
+              if (d < min && d != 0) min = d;
+            }
+          }
+          for (int classInd = 0; classInd < classIndBound; classInd++) {
+            int offSet = classInd * coeffPClass;
+            double ybar = xy[icptCol + offSet];
+            for (int i = 0; i < lastIndex; i++) {  // make sure intercept terms are skipped here if ii>0
+              int trueInd = i + offSet;
+              double y = xy[trueInd];
+              if (y == 0) y = min;
+              double xbar = gram.get(icptCol + offSet, trueInd);
+              double x = (y - ybar * xbar) / (gram.get(trueInd, trueInd) - xbar * xbar + l2pen);
+              rhos[trueInd] = ADMM.L1Solver.estimateRho(x, l1pen, lb == null ? Double.NEGATIVE_INFINITY : lb[trueInd],
+                      ub == null ? Double.POSITIVE_INFINITY : ub[trueInd]);
+            }
+          }
+        }
+      } else {    // find rhos for beta containing only activeCols
+        if (l1pen != 0) {   // no need to play with rho if l1pen is zero
+          double min = Double.POSITIVE_INFINITY;
+          int offset = 0;
+          for (int classInd = 0; classInd < classIndBound; classInd++) {
+            int[] activeCols = activeColAll[classInd];
+            lastIndex = activeCols.length - ii;
+            for (int i = 0; i < lastIndex; ++i) { // this loop excludes the intercept
+              double d = xy[i + offset];
+              d = d >= 0 ? d : -d;
+              if (d < min && d != 0) min = d;
+            }
+            offset += activeCols.length;
+          }
+          offset = 0;
+          for (int classInd = 0; classInd < classIndBound; classInd++) {
+            int[] activeCols = activeColAll[classInd];
+            lastIndex = activeCols.length - ii;
+            icptCol = lastIndex;
+            double ybar = xy[icptCol + offset];
+            for (int i = 0; i < lastIndex; i++) {  // make sure intercept terms are skipped here if ii>0
+              int trueInd = i + offset;
+              double y = xy[trueInd];
+              if (y == 0) y = min;
+              double xbar = gram.get(icptCol + offset, trueInd);
+              double x = (y - ybar * xbar) / (gram.get(trueInd, trueInd) - xbar * xbar + l2pen);
+              rhos[trueInd] = ADMM.L1Solver.estimateRho(x, l1pen, lb == null ? Double.NEGATIVE_INFINITY : lb[trueInd],
+                      ub == null ? Double.POSITIVE_INFINITY : ub[trueInd]);
+            }
+            offset += activeCols.length;
+          }
+        }
       }
-      double ybar = xy[icptCol];
-      for (int i = 0; i < rhos.length - ii; ++i) {
-        double y = xy[i];
-        if (y == 0) y = min;
-        double xbar = gram.get(icptCol, i);
-        double x = ((y - ybar * xbar) / ((gram.get(i, i) - xbar * xbar) + l2pen));///gram.get(i,i);
-        rhos[i] = ADMM.L1Solver.estimateRho(x, l1pen, lb == null ? Double.NEGATIVE_INFINITY : lb[i], ub == null ? Double.POSITIVE_INFINITY : ub[i]);
-      }
-      // do the intercept separate as l1pen does not apply to it
-      if (intercept && (lb != null && !Double.isInfinite(lb[icptCol]) || ub != null && !Double.isInfinite(ub[icptCol]))) {
-        int icpt = xy.length - 1;
-        rhos[icpt] = 1;//(xy[icpt] >= 0 ? xy[icpt] : -xy[icpt]);
-      }
+        
+        // do the intercept separate as l1pen does not apply to it
+        if (!gram._multinomialSpeedUp && intercept && (lb != null && !Double.isInfinite(lb[icptCol]) || ub != null
+                && !Double.isInfinite(ub[icptCol]))) { // todo: this is a bug I believe, rhos for intercepts should be 0
+          int icpt = xy.length - 1;
+          rhos[icpt] = 1;//(xy[icpt] >= 0 ? xy[icpt] : -xy[icpt]);
+        }
+        
       if (l2pen > 0)
-        gram.addDiag(l2pen);
-      if (proxPen != null && beta_given != null) {
+          if (activeColAll==null) { // activeColAll==null && gram._multinomialSpeedUp is an indication of IRLSM_NATIVE
+            if (gram._multinomialSpeedUp)
+              gram.addDiag(l2pen, !intercept, nclass);
+            else
+              gram.addDiag(l2pen);
+          } else
+            gram.addDiag(l2pen, !intercept, nclass, activeColAll);
+
+      if (proxPen != null && beta_given != null) {  // does not apply to multiclass 
         gram.addDiag(proxPen);
         xy = xy.clone();
         for (int i = 0; i < xy.length; ++i)
           xy[i] += proxPen[i] * beta_given[i];
       }
+
       _xy = xy;
       _rho = rhos;
-      computeCholesky(gram, rhos, 1e-5,intercept);
+      computeCholesky(gram, rhos, 1e-5 ,intercept, nclass, coeffPClass, activeColAll);
     }
-
-    private void computeCholesky(Gram gram, double[] rhos, double rhoAdd, boolean intercept) {
-      gram.addDiag(rhos);
-      if(!intercept) {
-        gram.dropIntercept();
-        rhos = Arrays.copyOf(rhos,rhos.length-1);
-        _xy[_xy.length-1] = 0;
+    
+    private void computeCholesky(Gram gram, double[] rhos, double rhoAdd, boolean intercept, int nclass, 
+                                 int coeffPClass, int[][] activeColAll) {
+      gram.addDiag(rhos); // todo: make sure to test when there is no intercept
+      if (!intercept) { 
+        if (gram._multinomialSpeedUp) {
+          gram.dropIntercept();
+          double[] trhos = rhos.clone();
+          int newXYLength = trhos.length-nclass;
+          rhos = new double[newXYLength];
+          double[] txy = new double[newXYLength];
+          int lastInd = coeffPClass-1; 
+          for (int classInd = 0; classInd < nclass; classInd++) {
+            for (int i = 0; i < lastInd; i++) {
+              int trueIndex = i+classInd*coeffPClass;
+              txy[trueIndex] = _xy[trueIndex];
+              rhos[trueIndex] = rhos[trueIndex];
+            }
+          }
+          _xy=txy;
+        } else {
+          gram.dropIntercept();
+          rhos = Arrays.copyOf(rhos, rhos.length - 1);
+          _xy[_xy.length - 1] = 0;
+        }
       }
       _chol = gram.cholesky(null, true, null);
-      if (!_chol.isSPD()) { // make sure rho is big enough
-        gram.addDiag(ArrayUtils.mult(rhos, -1));
-        gram.addDiag(rhoAdd,!intercept);
-        Log.info("Got NonSPD matrix with original rho, re-computing with rho = " + (_rho[0]+rhoAdd));
-        _chol = gram.cholesky(null, true, null);
-        int cnt = 0;
-        double rhoAddSum = rhoAdd;
-        while (!_chol.isSPD() && cnt++ < 5) {
-          gram.addDiag(rhoAdd,!intercept);
-          rhoAddSum += rhoAdd;
-          Log.warn("Still NonSPD matrix, re-computing with rho = " + (rhos[0] + rhoAddSum));
-          _chol = gram.cholesky(null, true, null);
+        if (!_chol.isSPD()) { // make sure rho is big enough
+          Log.info("Got NonSPD matrix with original rho, re-computing with rho = " + (_rho[0] + rhoAdd));
+//          _chol = gram.cholesky(null, true, null);
+          int cnt = 0;
+          double rhoAddSum = rhoAdd;
+          while (!_chol.isSPD() && cnt++ < 6) { // keep adding rhoAdd until we get chol positive
+            if (activeColAll==null) {
+              if (nclass > 1)
+                gram.addDiag(rhoAdd, intercept, nclass);
+              else
+                gram.addDiag(rhoAdd, !intercept, nclass);
+            } else {
+              if (nclass > 1)
+                gram.addDiag(rhoAdd, intercept, nclass, activeColAll);
+              else
+                gram.addDiag(rhoAdd, !intercept, nclass, activeColAll);
+            }
+            rhoAddSum += rhoAdd;
+            Log.warn("Still NonSPD matrix, re-computing with rho = " + (rhos[0] + rhoAddSum));
+            _chol = gram.cholesky(null, true, null);
+          }
+          if (!_chol.isSPD())
+            throw new NonSPDMatrixException();
         }
-        if (!_chol.isSPD())
-          throw new NonSPDMatrixException();
-      }
-      gram.addDiag(ArrayUtils.mult(rhos, -1));
-      ArrayUtils.mult(rhos, -1);
+        gram.addDiag(ArrayUtils.mult(rhos, -1));  // remove rhos added from gram matrix
+        ArrayUtils.mult(rhos, -1);
     }
 
     @Override
@@ -1713,7 +1899,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     public boolean solve(double[] beta_given, double[] result) {
       if (beta_given != null)
         for (int i = 0; i < _xy.length; ++i)
-          result[i] = _xy[i] + _rho[i] * beta_given[i];
+          result[i] = _xy[i] + _rho[i] * beta_given[i]; // rho is zero for intercept terms, let them add!
       else
         System.arraycopy(_xy, 0, result, 0, _xy.length);
       _chol.solve(result);
@@ -1726,10 +1912,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
 
     @Override
-    public GradientInfo gradient(double[] beta) {
+    public GradientInfo gradient(double[] beta) { // note xy=Gram*beta+dllh/dbeta
       double[] grad = _gram.mul(beta);
       for (int i = 0; i < _xy.length; ++i)
-        grad[i] -= _xy[i];
+        grad[i] -= _xy[i];  // d(-llh)/dbeta
       return new GradientInfo(Double.NaN,grad); // todo compute the objective
     }
 
@@ -1863,6 +2049,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     final BetaConstraint _bc;
     final double _l2pen; // l2 penalty
     double[][] _betaMultinomial;
+    double[] _betaMultinomialSpeedUp;
     final Job _job;
 
     public GLMGradientSolver(Job job, GLMParameters glmp, DataInfo dinfo, double l2pen, BetaConstraint bc) {
@@ -1897,10 +2084,24 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     @Override
     public GLMGradientInfo getGradient(double[] beta) {
-      if (_parms._family == Family.multinomial || _parms._family == Family.ordinal) {
+      if (_parms._solver.equals(Solver.IRLSM_SPEEDUP_TEST) || _parms._solver.equals(Solver.IRLSM_NATIVE)) { // do thing natively here
+        if (_betaMultinomialSpeedUp == null) {
+          _betaMultinomialSpeedUp = MemoryManager.malloc8d(beta.length);
+        }
+        System.arraycopy(beta, 0, _betaMultinomialSpeedUp, 0, beta.length);
+
+        GLMMultinomialGradientSpeedUpTask gt = new GLMMultinomialGradientSpeedUpTask(_job, _dinfo, _l2pen, _betaMultinomialSpeedUp,
+                _parms).doAll(_dinfo._adaptedFrame);
+        int nclasses = beta.length / (_dinfo.fullN() + 1);
+        double l2pen = ArrayUtils.l2norm2(_betaMultinomialSpeedUp, _dinfo._intercept, nclasses);
+        double[] grad = gt.gradient();
+        return new GLMGradientInfo(gt._likelihood, gt._likelihood * _parms._obj_reg + .5 * _l2pen * l2pen, grad);
+      } else if ((!(_parms._solver.equals(Solver.IRLSM_SPEEDUP_TEST) || _parms._solver.equals(Solver.IRLSM_NATIVE))
+              &&_parms._family == Family.multinomial) || _parms._family == Family.ordinal) {
         if (_betaMultinomial == null) {
           int nclasses = beta.length / (_dinfo.fullN() + 1);
           assert beta.length % (_dinfo.fullN() + 1) == 0:"beta len = " + beta.length + ", fullN +1  == " + (_dinfo.fullN()+1);
+          _betaMultinomial = new double[nclasses][];
           _betaMultinomial = new double[nclasses][];
           for (int i = 0; i < nclasses; ++i)
             _betaMultinomial[i] = MemoryManager.malloc8d(_dinfo.fullN() + 1);
@@ -1967,6 +2168,19 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       int ns = dinfo.numStart();
       for (int i = 0; i < dinfo._nums; ++i)
         etaOffset -= beta[i + ns] * dinfo._normSub[i] * dinfo._normMul[i];
+    }
+    return etaOffset;
+  }
+
+  protected static double[] sparseOffset(double[] beta, DataInfo dinfo, int nclass) {
+    double[] etaOffset = new double[nclass];
+    int coeffPClass = beta.length/nclass;
+    if (dinfo._normMul != null && dinfo._normSub != null && beta != null) {
+      int ns = dinfo.numStart();
+      for (int classInd = 0; classInd < nclass; classInd++) {
+        for (int i = 0; i < dinfo._nums; ++i)
+          etaOffset[classInd] -= beta[classInd*coeffPClass+i + ns] * dinfo._normSub[i] * dinfo._normMul[i];
+      }
     }
     return etaOffset;
   }

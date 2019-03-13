@@ -153,42 +153,12 @@ public class TestUtil extends Iced {
     System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+seed);
     return generate_enum_only(numCols, numRows, num_factor, missingfrac, seed);
   }
-
-  protected static Frame generate_enum_only(int numCols, int numRows, int num_factor, double missingfrac, long seed) {
-    CreateFrame cf = new CreateFrame();
-    cf.rows= numRows;
-    cf.cols = numCols;
-    cf.factors=num_factor;
-    cf.binary_fraction = 0;
-    cf.integer_fraction = 0;
-    cf.categorical_fraction = 1;
-    cf.has_response=false;
-    cf.missing_fraction = missingfrac;
-    cf.seed =seed;
-    System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+cf.seed);
-    return cf.execImpl().get();
-  }
+  
 
   protected static Frame generate_real_only(int numCols, int numRows, double missingfrac) {
     long seed = System.currentTimeMillis();
     System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+seed);
     return generate_real_only(numCols, numRows, missingfrac, seed);
-  }
-
-  protected static Frame generate_real_only(int numCols, int numRows, double missingfrac, long seed) {
-    CreateFrame cf = new CreateFrame();
-    cf.rows= numRows;
-    cf.cols = numCols;
-    cf.binary_fraction = 0;
-    cf.integer_fraction = 0;
-    cf.categorical_fraction = 0;
-    cf.time_fraction = 0;
-    cf.string_fraction = 0;
-    cf.has_response=false;
-    cf.missing_fraction = missingfrac;
-    cf.seed = seed;
-    System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+cf.seed);
-    return cf.execImpl().get();
   }
 
   protected static Frame generate_int_only(int numCols, int numRows, int integer_range, double missingfrac) {
@@ -214,23 +184,42 @@ public class TestUtil extends Iced {
     return cf.execImpl().get();
   }
 
-  protected static int[] rangeFun(int numEle, int offset) {
-    int[] ranges = new int[numEle];
-
-    for (int index = 0; index < numEle; index++) {
-      ranges[index] = index+offset;
-    }
-    return ranges;
+  /**
+   * generate random frames containing enum columns only
+   * @param numCols
+   * @param numRows
+   * @param num_factor
+   * @return
+   */
+  protected static Frame generate_enum_only(int numCols, int numRows, int num_factor, double missingfrac, long seed) {
+    CreateFrame cf = new CreateFrame();
+    cf.rows= numRows;
+    cf.cols = numCols;
+    cf.factors=num_factor;
+    cf.binary_fraction = 0;
+    cf.integer_fraction = 0;
+    cf.categorical_fraction = 1;
+    cf.has_response=false;
+    cf.missing_fraction = missingfrac;
+    cf.seed = seed;
+    System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+cf.seed);
+    return cf.execImpl().get();
   }
 
-  protected static int[] sortDir(int numEle, Random rand) {
-    int[] sortDir = new int[numEle];
-    int[] dirs = new int[]{-1,1};
-
-    for (int index = 0; index < numEle; index++) {
-      sortDir[index] = dirs[rand.nextInt(2)];
-    }
-    return sortDir;
+  protected static Frame generate_real_only(int numCols, int numRows, double missingfrac, long seed) {
+    CreateFrame cf = new CreateFrame();
+    cf.rows= numRows;
+    cf.cols = numCols;
+    cf.binary_fraction = 0;
+    cf.integer_fraction = 0;
+    cf.categorical_fraction = 0;
+    cf.time_fraction = 0;
+    cf.string_fraction = 0;
+    cf.has_response=false;
+    cf.missing_fraction = missingfrac;
+    cf.seed = seed;
+    System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+cf.seed);
+    return cf.execImpl().get();
   }
 
   private static class DKVCleaner extends MRTask<DKVCleaner> {
@@ -793,7 +782,7 @@ public class TestUtil extends Iced {
       for (int j = 0; j < actual[0].length; j++)
       assertEquals(expected[i][j].d, actual[i][j].d, threshold);
   }
-
+  
   public static boolean[] checkEigvec(double[][] expected, double[][] actual, double threshold) {
     int nfeat = actual.length;
     int ncomp = actual[0].length;

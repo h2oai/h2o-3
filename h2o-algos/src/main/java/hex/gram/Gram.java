@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 public final class Gram extends Iced<Gram> {
-  boolean _hasIntercept;
+  public boolean _hasIntercept;
   public double[][] _xx;
   public double[] _diag;
   public double[][] _frame2DProduce;  // store result of transpose(Aframe)*eigenvector2Darray
@@ -21,6 +21,7 @@ public final class Gram extends Iced<Gram> {
   final int _denseN;
   int _fullN;
   final static int MIN_TSKSZ=10000;
+  public boolean _multinomialSpeedUp = false;
 
   private static class XXCache {
     public final boolean lowerDiag;
@@ -53,6 +54,21 @@ public final class Gram extends Iced<Gram> {
       _xx[i] = MemoryManager.malloc8d(diag + i + 1);
   }
 
+  /**
+   * This constructor is used only by multinomial speedup and no other algos
+   * @param N
+   * @param hasIntercept
+   */
+  public Gram(int N, int dense, boolean hasIntercept) {
+    _hasIntercept = hasIntercept;
+    _fullN = N;
+    _denseN = dense;
+    _xx = new double[_fullN][];
+    for( int i = 0; i < _fullN; ++i )
+      _xx[i] = MemoryManager.malloc8d(i+1);
+    _multinomialSpeedUp=true; // set speedup flag. 
+  }
+  
   public Gram(double[][] xxCacheNew) {
     _xx = xxCacheNew;
     _xxCache = new XXCache(xxCacheNew,false,false);
@@ -70,6 +86,30 @@ public final class Gram extends Iced<Gram> {
     --_fullN;
   }
 
+  public void dropIntercept(int nclass){
+    if(!_hasIntercept) throw new IllegalArgumentException("Has no intercept");
+    int coeffPClass = _xx.length/nclass;
+    int icptInd = coeffPClass-1;
+    double [][] xx = new double[_xx.length-nclass][];
+    for (int i=0; i < icptInd; i++) { // re-assign first class without intercept
+      xx[i] = _xx[i];
+    }
+    int newXXCounter = icptInd;
+    for (int i=coeffPClass; i<_xx.length; i++) {
+      if ((i%coeffPClass)!=0) { // only perform operation at non-intercept row
+        xx[newXXCounter] = new double[newXXCounter];
+        int numIntercept = i / coeffPClass;
+        for (int rInd=0; rInd<numIntercept; rInd++) {
+          System.arraycopy(_xx[i], rInd*coeffPClass, xx[newXXCounter], rInd*coeffPClass, icptInd);
+        }
+        newXXCounter++;
+      }
+    }
+    _xx = xx;
+    _hasIntercept = false;
+    _fullN -= nclass;
+  }
+
   public Gram deep_clone(){
     Gram res = clone();
     if(_xx != null)
@@ -82,7 +122,7 @@ public final class Gram extends Iced<Gram> {
   public final int fullN(){return _fullN;}
   public double _diagAdded;
 
-  public void addDiag(double [] ds) {
+  public void addDiag(double [] ds) { // no need to change for multinomial speedup
     int i = 0;
     for(;i < Math.min(_diagN,ds.length); ++i)
       _diag[i] += ds[i];
@@ -111,6 +151,34 @@ public final class Gram extends Iced<Gram> {
     int ii = (!_hasIntercept || add2Intercept)?0:1;
     for( int i = 0; i < _xx.length - ii; ++i )
       _xx[i][_xx[i].length - 1] += d;
+  }
+
+  public void addDiag(double d, boolean add2Intercept, int nclass) {
+    _diagAdded += d;
+    int coeffPClass = _xx.length/nclass;
+    int ii = (!_hasIntercept || add2Intercept)?0:1;
+
+    for (int classInd = 0; classInd < nclass; classInd++) {
+      int offset = classInd * coeffPClass;
+      for (int i = 0; i < coeffPClass - ii; ++i) {
+        int diagInd = i + offset;
+        _xx[diagInd][diagInd] += d;
+      }
+    }
+  }
+
+  public void addDiag(double d, boolean add2Intercept, int nclass, int[][] activeColsAll) {
+    _diagAdded += d;
+    int ii = (!_hasIntercept || add2Intercept)?0:1;
+    int offset = 0;
+    for (int classInd=0; classInd<nclass; classInd++) {
+      int actColLen = activeColsAll[classInd].length-ii;
+      for (int i=0; i < actColLen; i++) {
+        int diagInd = i+offset;
+        _xx[diagInd][diagInd] += d;
+      }
+      offset+= activeColsAll[classInd].length;
+    }
   }
 
   public double sparseness(){
@@ -467,7 +535,7 @@ public final class Gram extends Iced<Gram> {
           int n = 0;
           for( int k = 0; k < sparseN; ++k )
             if (rowi[k] != .0) tmp[n++] = k;
-          nz[fi] = Arrays.copyOf(tmp, n);
+          nz[fi] = Arrays.copyOf(tmp, n); // deals with sparse matrix here to add it to double array
         }
       };
     }
@@ -525,8 +593,7 @@ public final class Gram extends Iced<Gram> {
       xx[i] = MemoryManager.malloc8d(lowerDiag?i+1:N);
     return getXX(xx, lowerDiag, icptFist);
   }
-
-  public double[][]getXX(double[][] xalloc) { return getXX(xalloc,false, false);}
+  
   public double[][] getXX(double[][] xalloc, boolean lowerDiag, boolean icptFist) {
     final int N = _fullN;
     double[][] xx = xalloc;
@@ -742,6 +809,183 @@ public final class Gram extends Iced<Gram> {
     else
       addRowSparse(row, w);
   }
+  
+  public final void addRow(DataInfo.Row row, double[][] w, int nclass, int coeffPClass, int numCoeffOffset, 
+                           boolean hasIntercept, double[][] xtx) {
+    ArrayUtils.mult(xtx, 0.0);
+    addRowDense(row, w, nclass, coeffPClass, numCoeffOffset, hasIntercept, xtx, row.numIds!=null);
+  }
+
+  public final void addRow(DataInfo.Row row, double[][] w, int nclass, int coeffPClass, int numCoeffOffset,
+                           boolean hasIntercept, double[][] xtx, int[][] activeCols) {
+    ArrayUtils.mult(xtx, 0.0);
+    addRowDense(row, w, nclass, coeffPClass, numCoeffOffset, hasIntercept, xtx, activeCols, row.numIds!=null);
+
+  }
+
+  /***
+   * This will add each training sample's contribution to the gram matrix which is Transpose(X)*w*X where w is
+   * nclass by nclass, X is nclass by nclass*coeffPClass.  For simplicity, I did not implement any diagonals.
+   * 
+   * @param row
+   * @param w
+   * @param nclass
+   * @param coeffPClass
+   * @param hasIntercept
+   */
+  public final void addRowDense(DataInfo.Row row, double[][] w, int nclass, int coeffPClass, int numCoeffOffset,
+                                boolean hasIntercept, double[][] xtx, boolean sparse) {
+    if (sparse)
+      generateXTXSparse(xtx, row, coeffPClass, numCoeffOffset);
+    else
+      generateXtX(xtx, coeffPClass, row, numCoeffOffset);
+
+    // xtx generation checkout out with my manual calculation
+    for (int classInd = 0; classInd < nclass; classInd++) {
+      for (int classInd2 = 0; classInd2 <= classInd; classInd2++) {
+        for (int rpredInd = 0; rpredInd < coeffPClass; rpredInd++) {
+          int rowInd = classInd * coeffPClass + rpredInd;
+          int maxLen = _xx[rowInd].length;
+          for (int cpredInd = 0; cpredInd < coeffPClass; cpredInd++) {
+            int colInd = classInd2 * coeffPClass + cpredInd;
+            if (colInd >=  maxLen)
+              break;
+            _xx[rowInd][colInd] += w[classInd][classInd2] * xtx[rpredInd][cpredInd];
+          }
+        }
+      }
+    }
+  }
+
+  public final void addRowDense(DataInfo.Row row, double[][] w, int nclass, int coeffPClass, int numCoeffOffset,
+                                boolean hasIntercept, double[][] xtx, int[][] activeCols, boolean sparse) {
+    if (sparse)
+      generateXTXSparse(xtx, row, coeffPClass, numCoeffOffset);
+    else
+      generateXtX(xtx, coeffPClass, row, numCoeffOffset);
+    
+    int roffset = 0;
+    for (int classIndr=0; classIndr < nclass; classIndr++) {
+      int coffset = 0;
+      int[] activeColsRow = activeCols[classIndr];
+      int rowLen = activeColsRow.length;
+      for (int classIndc=0; classIndc <= classIndr; classIndc++) {
+        int[] activeColsCol = activeCols[classIndc];
+        int colLen = activeColsCol.length;
+        for (int rpredInd=0; rpredInd <rowLen; rpredInd++) {
+          int rInd = rpredInd+roffset;
+          int maxLen = _xx[rInd].length;
+          for (int cpredInd=0; cpredInd < colLen; cpredInd++) {
+            int cInd = cpredInd+coffset;
+            if (cInd >= maxLen)
+              break;
+            _xx[rInd][cInd] += w[classIndr][classIndc]*xtx[activeColsRow[rpredInd]][activeColsCol[cpredInd]];
+          }
+        }
+        coffset += colLen;
+      }
+      roffset += rowLen;
+    }
+  }
+  
+  
+  public void generateXtX(double[][] xtx, int coeffPClass, DataInfo.Row row, int numCoeffOffset) {
+    int numOff = _denseN; // start of numerical columns
+    int interceptInd = coeffPClass - 1;
+    int numColStart = row.nBins;  // number of enum columns
+
+    for (int predInd = 0; predInd < numColStart; predInd++) {
+      for (int predInd2 = 0; predInd2 < numColStart; predInd2++) { // cat x cat
+        xtx[row.binIds[predInd]][row.binIds[predInd2]] = 1;
+      }
+
+      // intercept x cat
+      xtx[interceptInd][row.binIds[predInd]] = 1;
+    }
+    for (int predInd = 0; predInd < numOff; predInd++) {
+      double rval = row.numVals[predInd];
+      if (rval != 0) {
+        int realRowInd = predInd + numCoeffOffset;
+        for (int predInd2 = 0; predInd2 < numColStart; predInd2++) {   // num x cat
+          int cid = row.binIds[predInd2];
+          xtx[predInd + numCoeffOffset][cid] = rval;
+        }
+      }
+    }
+    for (int predInd = 0; predInd < numOff; predInd++) {
+      double rval = row.numVals[predInd];
+      if (rval != 0) {
+        int realRowInd = predInd + numCoeffOffset;
+        // intercept by num
+        xtx[interceptInd][realRowInd] = rval;
+        for (int predInd2 = 0; predInd2 < numOff; predInd2++) {
+          double cval = row.numVals[predInd2]; // num x num
+          if (cval != 0) {
+            xtx[realRowInd][predInd2 + numCoeffOffset] = cval * rval;
+          }
+        }
+      }
+    }
+    xtx[interceptInd][interceptInd] = 1;
+    // copy the lower triangle to the uppder triangle of xtx
+    for (int rInd = 0; rInd < coeffPClass; rInd++) {
+      for (int cInd = rInd + 1; cInd < coeffPClass; cInd++) {
+        xtx[rInd][cInd] = xtx[cInd][rInd];
+      }
+    }
+    
+  }
+  
+  public void generateXTXSparse(double[][] xtx, DataInfo.Row row, int coeffPClass, int numCoeffOffset) {
+    int numOff = _denseN; // start of numerical columns
+    int interceptInd = coeffPClass-1;
+    int numColStart = row.nBins;  // number of enum columns
+
+    for (int predInd=0; predInd < numColStart; predInd++) {
+      for (int predInd2=0; predInd2 < numColStart; predInd2++) { // cat x cat
+        xtx[row.binIds[predInd]][row.binIds[predInd2]] = 1;
+      }
+
+      // intercept x cat
+      xtx[interceptInd][row.binIds[predInd]] = 1;
+    }
+    for (int predInd = 0; predInd < numOff; predInd++) {
+      int rowInd = row.numIds[predInd];
+      double rval = row.numVals[rowInd];
+      if (rval != 0) {
+        int realRowInd = rowInd+numCoeffOffset;
+        for (int predInd2 = 0; predInd2 < numColStart; predInd2++) {   // num x cat
+          int cid = row.binIds[predInd2];
+          xtx[realRowInd][cid] = rval;
+        }
+      }
+    }
+
+    for (int predInd=0; predInd <_denseN; predInd++) {
+      int rowInd = row.numIds[predInd];
+      double rval = row.numVals[rowInd];
+      if (rval != 0) {
+        int realRowInd = rowInd + numCoeffOffset;
+        // intercept by num
+        xtx[interceptInd][realRowInd] = rval;
+        for (int predInd2 = 0; predInd2 < _denseN; predInd2++) {
+          int colInd = row.numIds[predInd2];
+          double cval = row.numVals[colInd]; // num x num
+          if (cval!=0) {
+            xtx[realRowInd][colInd+numCoeffOffset] = cval*rval;
+          }
+        }
+      }
+    }
+    xtx[interceptInd][interceptInd] = 1;
+    // copy the lower triangle to the uppder triangle of xtx
+    for (int rInd = 0; rInd < coeffPClass; rInd++) {
+      for (int cInd=rInd+1; cInd < coeffPClass; cInd++) {
+        xtx[rInd][cInd] = xtx[cInd][rInd];
+      }
+    }
+  }
+  
 
   public final void   addRowDense(DataInfo.Row row, double w) {
     final int intercept = _hasIntercept?1:0;
