@@ -471,9 +471,13 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // Build a frame with just a single tree (& work & nid) columns, so the
       // nested MRTask ScoreBuildHistogram in ScoreBuildOneTree does not try
       // to close other tree's Vecs when run in parallel.
-      Frame fr2 = new Frame(Arrays.copyOf(fr._names,_ncols+1), Arrays.copyOf(vecs,_ncols+1)); //predictors and actual response
+      Frame fr2 = new Frame(Arrays.copyOf(fr._names,_ncols+1), Arrays.copyOf(vecs,_ncols+1)); //predictors, weights and the actual response
+      if (isSupervised() && fr2.find(_parms._response_column) == -1) {
+        fr2.add(_parms._response_column, fr.vec(_parms._response_column));
+      }
 
       // Add temporary workspace vectors (optional weights are taken over from fr)
+      int respIdx = fr2.find(_parms._response_column);
       int weightIdx = fr2.find(_parms._weights_column);
       fr2.add(fr._names[idx_tree(k)],vecs[idx_tree(k)]);                              //tree predictions
       int workIdx = fr2.numCols(); fr2.add(fr._names[idx_work(k)],vecs[idx_work(k)]); //target value to fit (copy of actual response for DRF, residual for GBM)
@@ -484,7 +488,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // Async tree building
       // step 1: build histograms
       // step 2: split nodes
-      H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k,nbins, nbins_cats, tree, leafs, hcs, fr2, build_tree_one_node, _improvPerVar, _model._parms._distribution, weightIdx, workIdx, nidIdx));
+      H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k,nbins, nbins_cats, tree, leafs, hcs, fr2, build_tree_one_node, _improvPerVar, _model._parms._distribution, respIdx, weightIdx, workIdx, nidIdx));
     }
     // Block for all K trees to complete.
     boolean did_split=false;
@@ -520,13 +524,14 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     final boolean _build_tree_one_node;
     final float[] _improvPerVar;      // Squared Error improvement per variable per split
     final DistributionFamily _family;
+    final int _respIdx; // index of the actual response column for the whole model (not the residuals!) 
     final int _weightIdx;
     final int _workIdx;
     final int _nidIdx;
 
     boolean _did_split;
 
-    ScoreBuildOneTree(SharedTree st, int k, int nbins, int nbins_cats, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean build_tree_one_node, float[] improvPerVar, DistributionFamily family, int weightIdx, int workIdx, int nidIdx) {
+    ScoreBuildOneTree(SharedTree st, int k, int nbins, int nbins_cats, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean build_tree_one_node, float[] improvPerVar, DistributionFamily family, int respIdx, int weightIdx, int workIdx, int nidIdx) {
       _st   = st;
       _k    = k;
       _nbins= nbins;
@@ -538,6 +543,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       _build_tree_one_node = build_tree_one_node;
       _improvPerVar = improvPerVar;
       _family = family;
+      _respIdx = respIdx;
       _weightIdx = weightIdx;
       _workIdx = workIdx;
       _nidIdx = nidIdx;
@@ -552,7 +558,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // got assigned into.  Collect counts, mean, variance, min, max per bin,
       // per column.
 //      new ScoreBuildHistogram(this,_k, _st._ncols, _nbins, _nbins_cats, _tree, _leafOffsets[_k], _hcs[_k], _family, _weightIdx, _workIdx, _nidIdx).dfork2(null,_fr2,_build_tree_one_node);
-      new ScoreBuildHistogram2(this,_k, _st._ncols, _nbins, _nbins_cats, _tree, _leafOffsets[_k], _hcs[_k], _family, _weightIdx, _workIdx, _nidIdx).dfork2(null,_fr2,_build_tree_one_node);
+      new ScoreBuildHistogram2(this,_k, _st._ncols, _nbins, _nbins_cats, _tree, _leafOffsets[_k], _hcs[_k], _family, _respIdx, _weightIdx, _workIdx, _nidIdx).dfork2(null,_fr2,_build_tree_one_node);
     }
     @Override public void onCompletion(CountedCompleter caller) {
       ScoreBuildHistogram sbh = (ScoreBuildHistogram) caller;

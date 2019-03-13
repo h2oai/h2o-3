@@ -44,7 +44,7 @@ public class GBMModel extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, 
 
     Constraints constraints(Frame f) {
       if (_monotone_constraints == null || _monotone_constraints.length == 0) {
-        return null;
+        return emptyConstraints(f);
       }
       int[] cs = new int[f.numCols()];
       for (KeyValue spec : _monotone_constraints) {
@@ -60,9 +60,14 @@ public class GBMModel extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, 
               _distribution == DistributionFamily.bernoulli ||
               _distribution == DistributionFamily.quasibinomial ||
               _distribution == DistributionFamily.multinomial;
-      return new Constraints(cs, useBounds);
+      return new Constraints(cs, _distribution, useBounds);
     }
 
+    // allows to override the behavior in tests (eg. create empty constraints and test execution as if constraints were used)
+    Constraints emptyConstraints(Frame f) {
+      return null;
+    }
+    
   }
 
   public static class GBMOutput extends SharedTreeModel.SharedTreeOutput {

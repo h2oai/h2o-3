@@ -189,7 +189,7 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
 
       // Initially setup as-if an empty-split had just happened
       final DTree tree = ktrees[0];
-      new UndecidedNode(tree, -1, DHistogram.initialHist(_train, _ncols, adj_nbins, hcs[0][0], rseed, _parms, getGlobalQuantilesKeys()), null); // The "root" node
+      new UndecidedNode(tree, -1, DHistogram.initialHist(_train, _ncols, adj_nbins, hcs[0][0], rseed, _parms, getGlobalQuantilesKeys(), null), null); // The "root" node
 
       // ----
       // One Big Loop till the ktrees are of proper depth.

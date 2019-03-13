@@ -10,9 +10,11 @@ import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.BinomialModelPrediction;
 import hex.genmodel.easy.prediction.MultinomialModelPrediction;
 import hex.genmodel.utils.DistributionFamily;
+import hex.tree.Constraints;
 import hex.tree.SharedTreeModel;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
 import water.*;
 import water.api.StreamingSchema;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
@@ -25,19 +27,49 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.*;
+import org.junit.runners.Parameterized;
 
 import static hex.genmodel.utils.DistributionFamily.*;
 import static org.junit.Assert.*;
 import static water.fvec.FVecTest.makeByteVec;
 
+@RunWith(Parameterized.class)
 public class GBMTest extends TestUtil {
 
   @Rule
   public transient ExpectedException expectedException = ExpectedException.none();
 
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }
+
+  @Parameterized.Parameters(name = "{index}: gbm({0})")
+  public static Iterable<?> data() {
+    if (MINCLOUDSIZE > 1) {
+      return Collections.singletonList("Default");
+    } else {
+      // only run scenario "EmulateConstraints" for cloud size 1 (to avoid too long test execution)
+      return Arrays.asList("Default", "EmulateConstraints");
+    }
+  }
+  
+  @Parameterized.Parameter
+  public String test_type;
+  
+  // Note: use this method to create an instance of GBMParameters (needed for Parameterized test)
+  private GBMModel.GBMParameters makeGBMParameters() {
+    if ("EmulateConstraints".equals(test_type)) {
+      return new GBMModel.GBMParameters() {
+        @Override
+        Constraints emptyConstraints(Frame f) {
+          if (_distribution == DistributionFamily.gaussian || _distribution == DistributionFamily.bernoulli) {
+            return new Constraints(new int[f.numCols()], _distribution, true);
+          } else 
+            return null;
+        }
+      };
+    } else 
+      return new GBMModel.GBMParameters();
+  }
 
   private abstract class PrepData { abstract int prep(Frame fr); }
 
@@ -48,7 +80,7 @@ public class GBMTest extends TestUtil {
     Frame fr = null, fr2 = null;
     try {
       fr = parse_test_file("./smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = fr._key;
       parms._distribution = gaussian;
       parms._response_column = fr._names[1]; // Row in col 0, dependent in col 1, predictor in col 2
@@ -183,7 +215,7 @@ public class GBMTest extends TestUtil {
       }
       DKV.put(fr);             // Update frame after hacking it
 
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       if( idx < 0 ) idx = ~idx;
       parms._train = fr._key;
       parms._response_column = fr._names[idx];
@@ -224,7 +256,7 @@ public class GBMTest extends TestUtil {
   // Test-on-Train.  Slow test, needed to build a good model.
   @Test public void testGBMTrainTest() {
     GBMModel gbm = null;
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     try {
       Scope.enter();
       parms._valid = parse_test_file("smalldata/gbm_test/ecology_eval.csv")._key;
@@ -260,7 +292,7 @@ public class GBMTest extends TestUtil {
   // Predict with no actual, after training
   @Test public void testGBMPredict() {
     GBMModel gbm = null;
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     Frame pred=null, res=null;
     Scope.enter();
     try {
@@ -294,7 +326,7 @@ public class GBMTest extends TestUtil {
   // Scoring should output original probabilities and probabilities calibrated by Platt Scaling
   @Test public void testGBMPredictWithCalibration() {
     GBMModel gbm = null;
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     Scope.enter();
     try {
       Frame train = parse_test_file("smalldata/gbm_test/ecology_model.csv");
@@ -339,7 +371,7 @@ public class GBMTest extends TestUtil {
   // Adapt a trained model to a test dataset with different categoricals
   @Test public void testModelAdaptMultinomial() {
     GBMModel gbm = null;
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     try {
       Scope.enter();
       Frame v;
@@ -390,7 +422,7 @@ public class GBMTest extends TestUtil {
       Scope.track(train.replace(ci, train.vecs()[ci].toCategoricalVec()));   // Convert response 'Angaus' to categorical
       DKV.put(train);                    // Update frame after hacking it
 
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = train._key;
       parms._response_column = "Angaus"; // Train on the outcome
       parms._distribution = DistributionFamily.multinomial;
@@ -436,7 +468,7 @@ public class GBMTest extends TestUtil {
       Scope.track(train.replace(ci, train.vecs()[ci].toCategoricalVec()));   // Convert response 'Angaus' to categorical
       DKV.put(train);                    // Update frame after hacking it
 
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = train._key;
       parms._response_column = "Angaus"; // Train on the outcome
       parms._distribution = DistributionFamily.bernoulli;
@@ -496,7 +528,7 @@ public class GBMTest extends TestUtil {
       Scope.track(train.replace(ci, train.vecs()[ci].toCategoricalVec()));   // Convert response 'Angaus' to categorical
       DKV.put(train);                    // Update frame after hacking it
 
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = train._key;
       parms._response_column = "RACE"; // Train on the outcome
       parms._distribution = DistributionFamily.multinomial;
@@ -549,7 +581,7 @@ public class GBMTest extends TestUtil {
   @Test public void testModelLock() {
     Scope.enter();
     try {
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       Frame fr = Scope.track(parse_test_file("smalldata/gbm_test/ecology_model.csv"));
       fr.remove("Site").remove();        // Remove unique ID
       int ci = fr.find("Angaus");
@@ -672,7 +704,7 @@ public class GBMTest extends TestUtil {
       DKV.put(vfr);
 
       // Same parms for all
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._valid = vfr._key;
       parms._response_column = "TARGET_D";
@@ -732,7 +764,7 @@ public class GBMTest extends TestUtil {
       DKV.put(vfr);
 
       // Same parms for all
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._valid = vfr._key;
       parms._response_column = "C785";
@@ -776,7 +808,7 @@ public class GBMTest extends TestUtil {
 //      DKV.put(tfr);
 
       for (int i=0; i<N; ++i) {
-        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        GBMModel.GBMParameters parms = makeGBMParameters();
         parms._train = tfr._key;
         parms._response_column = "C55";
         parms._nbins = 1000;
@@ -835,7 +867,7 @@ public class GBMTest extends TestUtil {
       }
       DKV.put(tfr);
       for (int i=0; i<N; ++i) {
-        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        GBMModel.GBMParameters parms = makeGBMParameters();
         parms._train = tfr._key;
         parms._response_column = "IsDepDelayed";
         parms._nbins = 10;
@@ -896,7 +928,7 @@ public class GBMTest extends TestUtil {
       }
       DKV.put(tfr);
       for (int i=0; i<N; ++i) {
-        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        GBMModel.GBMParameters parms = makeGBMParameters();
         parms._train = tfr._key;
         parms._response_column = "IsDepDelayed";
         parms._nbins = 10;
@@ -939,7 +971,7 @@ public class GBMTest extends TestUtil {
       Scope.track(tfr.replace(1, tfr.vecs()[1].toCategoricalVec()));
       DKV.put(tfr);
       for (int i=0; i<N; ++i) {
-        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        GBMModel.GBMParameters parms = makeGBMParameters();
         parms._train = tfr._key;
         parms._response_column = "y";
         parms._ntrees = 1;
@@ -981,7 +1013,7 @@ public class GBMTest extends TestUtil {
       DKV.put(vfr);
 
       // Build model
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._valid = vfr._key;
       parms._response_column = "V55";
@@ -1044,7 +1076,7 @@ public class GBMTest extends TestUtil {
     try {
       tfr = parse_test_file("smalldata/junit/no_weights.csv");
       DKV.put(tfr);
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = "response";
       parms._seed = 0xdecaf;
@@ -1083,7 +1115,7 @@ public class GBMTest extends TestUtil {
     try {
       tfr = parse_test_file("smalldata/junit/weights_all_ones.csv");
       DKV.put(tfr);
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = "response";
       parms._weights_column = "weight";
@@ -1125,7 +1157,7 @@ public class GBMTest extends TestUtil {
     try {
       tfr = parse_test_file("smalldata/junit/weights_all_twos.csv");
       DKV.put(tfr);
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = "response";
       parms._weights_column = "weight";
@@ -1167,7 +1199,7 @@ public class GBMTest extends TestUtil {
     try {
       tfr = parse_test_file("smalldata/junit/weights_all_tiny.csv");
       DKV.put(tfr);
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = "response";
       parms._weights_column = "weight";
@@ -1209,7 +1241,7 @@ public class GBMTest extends TestUtil {
     try {
       tfr = parse_test_file("smalldata/junit/no_weights_shuffled.csv");
       DKV.put(tfr);
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = "response";
       parms._seed = 0xdecaf;
@@ -1250,7 +1282,7 @@ public class GBMTest extends TestUtil {
     try {
       tfr = parse_test_file("smalldata/junit/weights.csv");
       DKV.put(tfr);
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = "response";
       parms._weights_column = "weight";
@@ -1292,7 +1324,7 @@ public class GBMTest extends TestUtil {
     try {
       tfr = parse_test_file("smalldata/junit/weights.csv");
       DKV.put(tfr);
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = "response";
       parms._weights_column = "weight";
@@ -1335,7 +1367,7 @@ public class GBMTest extends TestUtil {
     try {
       tfr = parse_test_file("smalldata/junit/weights.csv");
       DKV.put(tfr);
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = "response";
       parms._min_rows = 1;
@@ -1385,7 +1417,7 @@ public class GBMTest extends TestUtil {
     try {
       tfr = parse_test_file("smalldata/junit/weights.csv");
       DKV.put(tfr);
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = "response";
       parms._min_rows = 1;
@@ -1430,7 +1462,7 @@ public class GBMTest extends TestUtil {
       tfr = parse_test_file("smalldata/junit/weights.csv");
       vfr = parse_test_file("smalldata/junit/weights.csv");
       DKV.put(tfr);
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._valid = vfr._key;
       parms._response_column = "response";
@@ -1475,7 +1507,7 @@ public class GBMTest extends TestUtil {
       tfr.add("economy_20mpg", old.toCategoricalVec()); // response to last column
       DKV.put(tfr);
 
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = "economy_20mpg";
       parms._min_rows = 1;
@@ -1521,7 +1553,7 @@ public class GBMTest extends TestUtil {
       tfr.remove("name").remove(); // Remove unique id
       DKV.put(tfr);
 
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = "economy_20mpg";
       parms._fold_column = "cylinders";
@@ -1569,7 +1601,7 @@ public class GBMTest extends TestUtil {
       }.doAll(tfr.vec("cylinders"));
       DKV.put(tfr);
 
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = "economy_20mpg";
       parms._fold_column = "cylinders";
@@ -1603,7 +1635,7 @@ public class GBMTest extends TestUtil {
       old.remove();
       DKV.put(tfr);
 
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = "economy_20mpg";
       parms._fold_column = "folds";
@@ -1640,7 +1672,7 @@ public class GBMTest extends TestUtil {
         tfr.remove(s).remove();
       }
       DKV.put(tfr);
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = "IsDepDelayed";
       parms._seed = 234;
@@ -1693,7 +1725,7 @@ public class GBMTest extends TestUtil {
         }
         DKV.put(tfr);
         DKV.put(vfr);
-        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        GBMModel.GBMParameters parms = makeGBMParameters();
         parms._train = tfr._key;
         parms._response_column = "Cost";
         parms._seed = 0xdecaf;
@@ -1736,7 +1768,7 @@ public class GBMTest extends TestUtil {
         try {
           tfr = parse_test_file("./smalldata/gbm_test/ecology_model.csv");
           DKV.put(tfr);
-          GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+          GBMModel.GBMParameters parms = makeGBMParameters();
           parms._train = tfr._key;
           parms._response_column = "Angaus"; //regression
           parms._seed = 123;
@@ -1800,7 +1832,7 @@ public class GBMTest extends TestUtil {
           for (float col_sample_rate_per_tree : col_sample_rates_per_tree) {
             Scope.enter();
             try {
-              GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+              GBMModel.GBMParameters parms = makeGBMParameters();
               parms._train = ksplits[0];
               parms._valid = ksplits[1];
               parms._response_column = "Angaus"; //regression
@@ -1875,7 +1907,7 @@ public class GBMTest extends TestUtil {
 //      Scope.track(tfr.replace(54, tfr.vecs()[54].toCategoricalVec())._key);
       DKV.put(tfr);
 
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = "C55";
       parms._seed = 1234;
@@ -1904,7 +1936,7 @@ public class GBMTest extends TestUtil {
 
   @Test public void testLaplace2() {
     GBMModel gbm = null;
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     Frame pred=null, res=null;
     Scope.enter();
     try {
@@ -1941,7 +1973,7 @@ public class GBMTest extends TestUtil {
 
   @Test public void testQuantileRegression() {
     GBMModel gbm = null;
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     Frame pred=null, res=null;
     Scope.enter();
     try {
@@ -1979,7 +2011,7 @@ public class GBMTest extends TestUtil {
 
   @Test public void missingAndUnseenValues() {
     GBMModel gbm = null;
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     Frame train=null, test=null, train_preds=null, test_preds=null;
     Scope.enter();
     try {
@@ -2077,7 +2109,7 @@ public class GBMTest extends TestUtil {
       double[] loglosses = new double[N];
       for (int i = 0; i < N; ++i) {
         // Load data, hack frames
-        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        GBMModel.GBMParameters parms = makeGBMParameters();
         parms._train = ksplits[0];
         parms._valid = ksplits[1];
         parms._response_column = tfr.names()[resp];
@@ -2128,7 +2160,7 @@ public class GBMTest extends TestUtil {
       double[] loglosses = new double[N];
       for (int i = 0; i < N; ++i) {
         // Load data, hack frames
-        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        GBMModel.GBMParameters parms = makeGBMParameters();
         parms._train = ksplits[0];
         parms._valid = ksplits[1];
         parms._response_column = tfr.names()[resp];
@@ -2172,7 +2204,7 @@ public class GBMTest extends TestUtil {
       // Invoke the job
       sf.exec().get();
       ksplits = sf._destination_frames;
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = ksplits[0];
       parms._valid = ksplits[1];
       parms._response_column = tfr.names()[resp];
@@ -2200,7 +2232,7 @@ public class GBMTest extends TestUtil {
     String xy = ",0\n1,0\n2,0\n3,0\n4,-10\n,0";
     Key tr = Key.make("train");
     Frame df = ParseDataset.parse(tr, makeByteVec(Key.make("xy"), xy));
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     parms._train = tr;
     parms._response_column = "C2";
     parms._min_rows = 1;
@@ -2228,7 +2260,7 @@ public class GBMTest extends TestUtil {
     String xy = ",10\n1,0\n2,0\n3,0\n4,10\n,10";
     Key tr = Key.make("train");
     Frame df = ParseDataset.parse(tr, makeByteVec(Key.make("xy"), xy));
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     parms._train = tr;
     parms._response_column = "C2";
     parms._min_rows = 1;
@@ -2256,7 +2288,7 @@ public class GBMTest extends TestUtil {
     String xy = ",0\n1,0\n2,0\n3,0\n4,10\n,0";
     Key tr = Key.make("train");
     Frame df = ParseDataset.parse(tr, makeByteVec(Key.make("xy"), xy));
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     parms._train = tr;
     parms._response_column = "C2";
     parms._min_rows = 1;
@@ -2284,7 +2316,7 @@ public class GBMTest extends TestUtil {
     String xy = ",5\n1,0\n2,0\n3,0\n4,0\n,3";
     Key tr = Key.make("train");
     Frame df = ParseDataset.parse(tr, makeByteVec(Key.make("xy"), xy));
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     parms._train = tr;
     parms._response_column = "C2";
     parms._min_rows = 1;
@@ -2312,7 +2344,7 @@ public class GBMTest extends TestUtil {
     String xy = "-9,5\n1,0\n2,0\n3,0\n4,0\n-9,3";
     Key tr = Key.make("train");
     Frame df = ParseDataset.parse(tr, makeByteVec(Key.make("xy"), xy));
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     parms._train = tr;
     parms._response_column = "C2";
     parms._min_rows = 1;
@@ -2340,7 +2372,7 @@ public class GBMTest extends TestUtil {
     String xy = ",0\nA,0\nB,0\nA,0\nD,-10\n,0";
     Key tr = Key.make("train");
     Frame df = ParseDataset.parse(tr, makeByteVec(Key.make("xy"), xy));
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     parms._train = tr;
     parms._response_column = "C2";
     parms._min_rows = 1;
@@ -2368,7 +2400,7 @@ public class GBMTest extends TestUtil {
     String xy = ",10\nA,0\nB,0\nA,0\n4,10\n,10";
     Key tr = Key.make("train");
     Frame df = ParseDataset.parse(tr, makeByteVec(Key.make("xy"), xy));
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     parms._train = tr;
     parms._response_column = "C2";
     parms._min_rows = 1;
@@ -2396,7 +2428,7 @@ public class GBMTest extends TestUtil {
     String xy = ",0\nA,0\nB,0\nA,0\nD,10\n,0";
     Key tr = Key.make("train");
     Frame df = ParseDataset.parse(tr, makeByteVec(Key.make("xy"), xy));
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     parms._train = tr;
     parms._response_column = "C2";
     parms._min_rows = 1;
@@ -2424,7 +2456,7 @@ public class GBMTest extends TestUtil {
     String xy = ",5\nA,0\nB,0\nA,0\nD,0\n,3";
     Key tr = Key.make("train");
     Frame df = ParseDataset.parse(tr, makeByteVec(Key.make("xy"), xy));
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     parms._train = tr;
     parms._response_column = "C2";
     parms._min_rows = 1;
@@ -2457,7 +2489,7 @@ public class GBMTest extends TestUtil {
     Key te = Key.make("test");
     Frame df2 = ParseDataset.parse(te, makeByteVec(Key.make("te"), test));
 
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     parms._train = tr;
     parms._response_column = "C2";
     parms._min_rows = 1;
@@ -2490,7 +2522,7 @@ public class GBMTest extends TestUtil {
 
   @Test public void unseenMissing() {
     GBMModel gbm = null;
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     Frame train=null, test=null, train_preds=null, test_preds=null;
     Scope.enter();
     try {
@@ -2586,7 +2618,7 @@ public class GBMTest extends TestUtil {
       }
       DKV.put(tfr);
       for (int i=0; i<N; ++i) {
-        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        GBMModel.GBMParameters parms = makeGBMParameters();
         parms._train = tfr._key;
         parms._response_column = "IsDepDelayed";
         parms._nbins = 10;
@@ -2627,7 +2659,7 @@ public class GBMTest extends TestUtil {
         tfr.remove(s).remove();
       }
       DKV.put(tfr);
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = "IsDepDelayed";
       parms._seed = 1234;
@@ -2672,7 +2704,7 @@ public class GBMTest extends TestUtil {
     Key te = Key.make("test");
     Frame df2 = ParseDataset.parse(te, makeByteVec(Key.make("te"), test));
 
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     parms._train = tr;
     parms._response_column = "C2";
     parms._min_rows = 1;
@@ -2706,7 +2738,7 @@ public class GBMTest extends TestUtil {
 
   @Test public void testHuber2() {
     GBMModel gbm = null;
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     Frame pred=null, res=null;
     Scope.enter();
     try {
@@ -2750,7 +2782,7 @@ public class GBMTest extends TestUtil {
 
     try {
       tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = tfr.lastVecName();
       parms._seed = 0xdecaf;
@@ -2775,7 +2807,7 @@ public class GBMTest extends TestUtil {
 
     try {
       tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = tfr.lastVecName();
       parms._seed = 0xdecaf;
@@ -2783,8 +2815,18 @@ public class GBMTest extends TestUtil {
 
       gbm = new GBM(parms).trainModel().get();
 
-      Assert.assertEquals(2.9423857564,((ModelMetricsRegression) gbm._output._training_metrics)._MSE,1e-5);
-      Assert.assertEquals(2.9423857564,((ModelMetricsRegression) gbm._output._training_metrics)._mean_residual_deviance,1e-5);
+      if ("Default".equals(test_type)) {
+        Assert.assertEquals(2.9423857564, ((ModelMetricsRegression) gbm._output._training_metrics)._MSE, 1e-5);
+        Assert.assertEquals(2.9423857564, ((ModelMetricsRegression) gbm._output._training_metrics)._mean_residual_deviance, 1e-5);
+      } else if ("EmulateConstraints".equals(test_type)) {
+        // This demonstrates the artificially constrained models are slightly different
+        // This is because we directly re-use the split predictions instead using values in Gamma Pass
+        // also see Split#splat
+        Assert.assertEquals(2.9422145249, ((ModelMetricsRegression) gbm._output._training_metrics)._MSE, 1e-5);
+        Assert.assertEquals(2.9422145249, ((ModelMetricsRegression) gbm._output._training_metrics)._mean_residual_deviance, 1e-5);
+      } else {
+        fail();
+      }
 
     } finally {
       if (tfr != null) tfr.delete();
@@ -2800,7 +2842,7 @@ public class GBMTest extends TestUtil {
 
     try {
       tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = tfr.lastVecName();
       parms._seed = 0xdecaf;
@@ -2827,7 +2869,7 @@ public class GBMTest extends TestUtil {
 
     try {
       tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = tfr.lastVecName();
       parms._seed = 0xdecaf;
@@ -2855,7 +2897,7 @@ public class GBMTest extends TestUtil {
 
     try {
       tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = tfr.lastVecName();
       parms._seed = 0xdecaf;
@@ -2881,7 +2923,7 @@ public class GBMTest extends TestUtil {
 
     try {
       tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = tfr.lastVecName();
       parms._seed = 0xdecaf;
@@ -2912,7 +2954,7 @@ public class GBMTest extends TestUtil {
 
       try {
         tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
-        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        GBMModel.GBMParameters parms = makeGBMParameters();
         parms._train = tfr._key;
         String resp = tfr.lastVecName();
         if (dist==modified_huber || dist==bernoulli || dist==multinomial) {
@@ -2956,7 +2998,7 @@ public class GBMTest extends TestUtil {
 
       try {
         tfr = parse_test_file("./smalldata/junit/weather.csv");
-        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        GBMModel.GBMParameters parms = makeGBMParameters();
         parms._train = tfr._key;
         parms._response_column = tfr.lastVecName();
         parms._ntrees = 5;
@@ -2985,7 +3027,7 @@ public class GBMTest extends TestUtil {
 
       try {
         tfr = parse_test_file("./smalldata/junit/weather.csv");
-        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        GBMModel.GBMParameters parms = makeGBMParameters();
         parms._train = tfr._key;
         parms._response_column = tfr.lastVecName();
         parms._ntrees = 5;
@@ -3006,7 +3048,7 @@ public class GBMTest extends TestUtil {
     GBMModel model = null;
     Scope.enter();
     try {
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       fr = parse_test_file("smalldata/gbm_test/ecology_model.csv");
       fr.remove("Site").remove();
       fr.remove("SegSumT").remove();
@@ -3049,7 +3091,7 @@ public class GBMTest extends TestUtil {
     GBMModel model = null;
     Scope.enter();
     try {
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       fr = parse_test_file("smalldata/airlines/allyears2k_headers.zip");
 
       Frame fr2 = new Frame(Key.<Frame>make(), new String[]{"C","R"}, new Vec[]{fr.vec("Origin"),fr.vec("IsDepDelayed")});
@@ -3080,7 +3122,7 @@ public class GBMTest extends TestUtil {
 
   public void highCardinality(int nbins_cats) {
     GBMModel gbm = null;
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     Frame train=null, test=null, train_preds=null, test_preds=null;
     Scope.enter();
     try {
@@ -3184,7 +3226,7 @@ public class GBMTest extends TestUtil {
       int i=0;
       for (int nbins_cats : vals) {
         GBMModel model = null;
-        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        GBMModel.GBMParameters parms = makeGBMParameters();
         Frame train, train_preds=null;
         Scope.enter();
         train = parse_test_file("smalldata/gbm_test/alphabet_cattest.csv");
@@ -3252,7 +3294,7 @@ public class GBMTest extends TestUtil {
 //      String response = "cylinders"; // passes
       String response = "economy (mpg)"; //fails
 
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = trainFrame._key;
       parms._valid = testFrame._key;
       parms._response_column = response;
@@ -3298,7 +3340,7 @@ public class GBMTest extends TestUtil {
       for (ScoreKeeper.StoppingMetric stoppingMetric : customStoppingMetrics) {
         GBMModel model = null;
         try {
-          GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+          GBMModel.GBMParameters parms = makeGBMParameters();
           parms._train = training._key;
           parms._response_column = response;
           parms._ignored_columns = new String[]{"name"};
@@ -3451,7 +3493,7 @@ public class GBMTest extends TestUtil {
       f.replace(f.find(response), f.vecs()[f.find("cylinders")].toNumericVec()).remove();
       DKV.put(Scope.track(f));
 
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._response_column = response;
       parms._train = f._key;
       parms._ignored_columns = new String[]{"name"};
@@ -3483,7 +3525,7 @@ public class GBMTest extends TestUtil {
       f.replace(f.find("CAPSULE"), f.vec("CAPSULE").toNumericVec());
       DKV.put(f);
   
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._response_column = "CAPSULE";
       parms._train = f._key;
       parms._monotone_constraints = new KeyValue[] {new KeyValue("AGE", 1)};
@@ -3527,17 +3569,17 @@ public class GBMTest extends TestUtil {
     try {
       Scope.enter();
       Frame f = Scope.track(parse_test_file("smalldata/logreg/prostate.csv"));
-      f.replace(f.find("CAPSULE"), f.vec("CAPSULE").toCategoricalVec());
+      f.replace(f.find("CAPSULE"), f.vec("CAPSULE").toNumericVec());
       DKV.put(f);
 
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._response_column = "CAPSULE";
       parms._train = f._key;
       parms._monotone_constraints = new KeyValue[]{new KeyValue("AGE", 1)};
+      parms._distribution = DistributionFamily.tweedie;
 
       expectedException.expectMessage("ERRR on field: _monotone_constraints: " +
-              "Monotone constraints are only supported for Gaussian distribution, your distribution: bernoulli.");
-
+              "Monotone constraints are only supported for Gaussian and Bernoulli distributions, your distribution: tweedie.");
       GBMModel model = new GBM(parms).trainModel().get();
       Scope.track_generic(model);
     } finally {
@@ -3555,13 +3597,13 @@ public class GBMTest extends TestUtil {
     checkMonotonic(5);
   }
 
-  private static void checkMonotonic(int depth) {
+  private void checkMonotonic(int depth) {
     try {
       Scope.enter();
       int len = 10000;
       Frame train = makeSinFrame(len);
 
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._response_column = "y";
       parms._train = train._key;
       parms._seed = 42;

@@ -89,8 +89,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       if (hasOffsetCol() && isClassifier() && _parms._distribution == DistributionFamily.multinomial) {
         error("_offset_column", "Offset is not supported for multinomial distribution.");
       }
-      if (!DistributionFamily.gaussian.equals(_parms._distribution) && _parms._monotone_constraints != null && _parms._monotone_constraints.length > 0) {
-        error("_monotone_constraints", "Monotone constraints are only supported for Gaussian distribution, your distribution: " + _parms._distribution + ".");
+      if (_parms._monotone_constraints != null && _parms._monotone_constraints.length > 0 &&
+              !(DistributionFamily.gaussian.equals(_parms._distribution) || DistributionFamily.bernoulli.equals(_parms._distribution))) {
+        error("_monotone_constraints", "Monotone constraints are only supported for Gaussian and Bernoulli distributions, your distribution: " + _parms._distribution + ".");
       }
     }
 
@@ -436,7 +437,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         // Initially setup as-if an empty-split had just happened
         if (_model._output._distribution[k] != 0) {
           ktrees[k] = new DTree(_train, _ncols, _mtry, _mtry_per_tree, rseed, _parms);
-          DHistogram[] hist = DHistogram.initialHist(_train, _ncols, adj_nbins, hcs[k][0], rseed, _parms, getGlobalQuantilesKeys());
+          DHistogram[] hist = DHistogram.initialHist(_train, _ncols, adj_nbins, hcs[k][0], rseed, _parms, getGlobalQuantilesKeys(), cs);
           new UndecidedNode(ktrees[k], DTree.NO_PARENT, hist, cs); // The "root" node
         }
       }
@@ -579,7 +580,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if (DEV_DEBUG) for (int i=0;i<ktrees[k]._len-leafs[k];++i) System.out.println(ktrees[k].node(leafs[k]+i).toString());
         for (int i = 0; i < tree._len - leafs[k]; i++) {
           LeafNode leafNode = (LeafNode) ktrees[k].node(leafs[k] + i);
-          double gamma;
+          final double gamma;
           if (useSplitPredictions) {
             gamma = leafNode.getSplitPrediction();
           } else {

@@ -126,7 +126,7 @@ public class HistogramTest extends TestUtil {
       }
       Key k = Key.make();
       DKV.put(new DHistogram.HistoQuantiles(k,splitPts));
-      DHistogram hist = new DHistogram("myhisto",nbins,nbins_cats,isInt,min,maxEx,0,histoType,seed,k,0,0);
+      DHistogram hist = new DHistogram("myhisto",nbins,nbins_cats,isInt,min,maxEx,0,histoType,seed,k,null);
       hist.init();
       int N=10000000;
       int bin=-1;
@@ -161,7 +161,7 @@ public class HistogramTest extends TestUtil {
     double maxEx = 6.900000000000001;
     long seed = 1234;
     SharedTreeModel.SharedTreeParameters.HistogramType histoType = SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive;
-    DHistogram hist = new DHistogram("myhisto", nbins, nbins_cats, isInt, min, maxEx, 0, histoType, seed, null, 0,0);
+    DHistogram hist = new DHistogram("myhisto", nbins, nbins_cats, isInt, min, maxEx, 0, histoType, seed, null, null);
     hist.init();
     assert(hist.binAt(0)==min);
     assert(hist.binAt(nbins-1)<maxEx);
@@ -177,7 +177,7 @@ public class HistogramTest extends TestUtil {
     double maxEx = 6.900000000000001;
     long seed = 1234;
     SharedTreeModel.SharedTreeParameters.HistogramType histoType = SharedTreeModel.SharedTreeParameters.HistogramType.Random;
-    DHistogram hist = new DHistogram("myhisto", nbins, nbins_cats, isInt, min, maxEx, 0, histoType, seed, null, 0, 0);
+    DHistogram hist = new DHistogram("myhisto", nbins, nbins_cats, isInt, min, maxEx, 0, histoType, seed, null, null);
     hist.init();
     assert(hist.binAt(0)==min);
     assert(hist.binAt(nbins-1)<maxEx);
@@ -196,7 +196,7 @@ public class HistogramTest extends TestUtil {
     double[] splitPts = new double[]{1,1.5,2,2.5,3,4,5,6.1,6.2,6.3,6.7,6.8,6.85};
     Key k = Key.make();
     DKV.put(new DHistogram.HistoQuantiles(k,splitPts));
-    DHistogram hist = new DHistogram("myhisto",nbins,nbins_cats,isInt,min,maxEx,0,histoType,seed,k,0,0);
+    DHistogram hist = new DHistogram("myhisto",nbins,nbins_cats,isInt,min,maxEx,0,histoType,seed,k,null);
     hist.init();
     assert(hist.binAt(0)==min);
     assert(hist.binAt(nbins-1)<maxEx);
