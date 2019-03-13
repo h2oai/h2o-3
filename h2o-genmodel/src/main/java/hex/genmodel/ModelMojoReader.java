@@ -273,6 +273,13 @@ public abstract class ModelMojoReader<M extends MojoModel> {
         }
     }
 
+  /**
+   * Extracts a Table from H2O's model serialized into JSON.
+   *
+   * @param modelJson Full JSON representation of a model
+   * @param tablePath Path in the given JSON to the desired table. Levels are dot-separated.
+   * @return An instance of {@link Table}, if there was a table found by following the given path. Otherwise null.
+   */
   protected Table extractTableFromJson(final JsonObject modelJson, final String tablePath) {
     Objects.requireNonNull(modelJson);
     JsonElement potentialTableJson = findInJson(modelJson, tablePath);
@@ -283,12 +290,12 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     }
     final JsonObject tableJson = potentialTableJson.getAsJsonObject();
     final int rowCount = tableJson.get("rowcount").getAsInt();
-    
+
     final String[] columnHeaders;
     final Table.ColumnType[] columnTypes;
     final Object[][] data;
-    
-    
+
+
     // Extract column attributes
     final JsonArray columns = findInJson(tableJson, "columns").getAsJsonArray();
     final int columnCount = columns.size();
@@ -300,8 +307,8 @@ public abstract class ModelMojoReader<M extends MojoModel> {
       columnHeaders[i] = column.get("description").getAsString();
       columnTypes[i] = Table.ColumnType.extractType(column.get("type").getAsString());
     }
-    
-    
+
+
     // Extract data
     JsonArray dataColumns = findInJson(tableJson, "data").getAsJsonArray();
     data = new Object[columnCount][rowCount];
@@ -309,7 +316,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
       JsonArray column = dataColumns.get(i).getAsJsonArray();
       for (int j = 0; j < rowCount; j++) {
         final JsonPrimitive primitiveValue = column.get(j).getAsJsonPrimitive();
-       
+
         switch (columnTypes[i]){
           case LONG:
             data[i][j] = primitiveValue.getAsLong();
@@ -321,14 +328,18 @@ public abstract class ModelMojoReader<M extends MojoModel> {
             data[i][j] = primitiveValue.getAsString();
             break;
         }
-        
+
       }
     }
-    
+
     return new Table(tableJson.get("name").getAsString(), tableJson.get("description").getAsString(),
             new String[rowCount], columnHeaders,columnTypes, "", data);
   }
 
+  /**
+   * Initiates the process of extracting more details from model's JSON. The underlying behavior is extensible by each
+   * model reader.
+   */
   private void extractModelDetails() {
     // Extract additional information from model dump
     final JsonObject modelJson = parseJson();
@@ -343,13 +354,26 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     processModelMetrics(modelJson);
   }
 
+  /**
+   * A general method for processing H2O model's JSON representation and extraction additional model information out of it.
+   * This method is meant to be overridden/enhanced by various mojo readers. 
+   * @param modelJson Full JSON representation of a model
+   */
   protected void processModelMetrics(JsonObject modelJson) {
     _model._model_summary = extractTableFromJson(modelJson, "output.model_summary");
   }
 
   private static final Pattern JSON_PATH_PATTERN = Pattern.compile("\\.|\\[|\\]");
 
-  public static JsonElement findInJson(JsonElement jsonElement, String jsonPath) {
+  /**
+   * Finds ane lement in GSON's JSON document representation
+   *
+   * @param jsonElement A (potentially complex) element to search in
+   * @param jsonPath    Path in the given JSON to the desired table. Levels are dot-separated.
+   *                    E.g. 'model._output.variable_importances'.
+   * @return JsonElement, if found. Otherwise {@link JsonNull}.
+   */
+  private static JsonElement findInJson(JsonElement jsonElement, String jsonPath) {
 
     final String[] route = JSON_PATH_PATTERN.split(jsonPath);
     JsonElement result = jsonElement;

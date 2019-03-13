@@ -11,8 +11,12 @@ import water.fvec.Frame;
 import java.io.IOException;
 import java.util.Objects;
 
+/**
+ * Generic model able to do scoring with any underlying model deserializable into a format known by the {@link GenericModel}.
+ * Only H2O Mojos are currently supported.
+ */
 public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, GenericModelOutput> {
-    
+
     public Generic(GenericModelParameters genericParameters){
         super(genericParameters);
     }
@@ -62,7 +66,6 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
             genericModel.unlock(_job);
         }
     }
-    
 
 
     /**
@@ -88,6 +91,6 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
 
     @Override
     public BuilderVisibility builderVisibility() {
-        return BuilderVisibility.Beta;
+        return BuilderVisibility.Stable;
     }
 }

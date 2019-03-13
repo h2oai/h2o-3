@@ -5,6 +5,10 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Objects;
 
+/**
+ * A two-dimensional table capable of containing generic values in each cell.
+ * Useful for description of various models.
+ */
 public class Table implements Serializable {
     private String _tableHeader;
     private String _tableDescription;

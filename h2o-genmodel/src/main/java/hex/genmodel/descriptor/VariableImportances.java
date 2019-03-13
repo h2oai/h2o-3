@@ -3,6 +3,10 @@ package hex.genmodel.descriptor;
 import java.io.Serializable;
 import java.util.Arrays;
 
+/**
+ * Represents model's variables and their relative importances in the model.
+ * The structure is model-independent.
+ */
 public class VariableImportances implements Serializable {
 
     private final String[] _variables;
