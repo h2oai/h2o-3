@@ -167,10 +167,11 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
     boolean keepLevelOneFrame = isTraining && _parms._keep_levelone_frame;
     Frame levelOneFrame = prepareLevelOneFrame(levelOneKey, baseModels.toArray(new Model[0]), baseModelPredictions.toArray(new Frame[0]), actuals);
     if (keepLevelOneFrame) {
-      levelOneFrame.write_lock(_job);
       levelOneFrame = levelOneFrame.deepCopy(levelOneFrame._key.toString());
+      levelOneFrame.write_lock(_job);
       levelOneFrame.update(_job);
       levelOneFrame.unlock(_job);
+      Scope.untrack(levelOneFrame.keysList());
     }
     return levelOneFrame;
   }
