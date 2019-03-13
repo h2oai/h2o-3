@@ -186,6 +186,13 @@ public class ServletUtils {
     response.setHeader("X-h2o-cluster-id", Long.toString(H2O.CLUSTER_ID));
     response.setHeader("X-h2o-cluster-good", Boolean.toString(H2O.CLOUD.healthy()));
     response.setHeader("X-h2o-context-path", sanatizeContextPath(H2O.ARGS.context_path));
+    // Security headers
+    response.setHeader("X-Frame-Options", "deny");
+    response.setHeader("X-XSS-Protection", "X-XSS-Protection: 1; mode=block");
+    response.setHeader("X-Content-Type-Options", "nosniff");
+    response.setHeader("Content-Security-Policy", "default-src 'self' 'unsafe-eval' 'unsafe-inline'");
+    // Note: ^^^ unsafe-eval/-inline are essential for Flow to work
+    //           this will also kill the component "Star H2O on Github" in Flow - see HEXDEV-730
   }
 
   public static String sanatizeContextPath(String context_path) {
