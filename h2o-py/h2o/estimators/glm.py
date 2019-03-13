@@ -352,14 +352,14 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         AUTO will set the solver based on given data and the other parameters. IRLSM is fast on on problems with small
         number of predictors and for lambda-search with L1 penalty, L_BFGS scales better for datasets with many columns.
 
-        One of: ``"auto"``, ``"irlsm"``, ``"l_bfgs"``, ``"coordinate_descent_naive"``, ``"coordinate_descent"``,
-        ``"gradient_descent_lh"``, ``"gradient_descent_sqerr"``  (default: ``"auto"``).
+        One of: ``"auto"``, ``"irlsm"``, ``"irlsm_speedup"``, ``"l_bfgs"``, ``"coordinate_descent_naive"``,
+        ``"coordinate_descent"``, ``"gradient_descent_lh"``, ``"gradient_descent_sqerr"``  (default: ``"auto"``).
         """
         return self._parms.get("solver")
 
     @solver.setter
     def solver(self, solver):
-        assert_is_type(solver, None, Enum("auto", "irlsm", "l_bfgs", "coordinate_descent_naive", "coordinate_descent", "gradient_descent_lh", "gradient_descent_sqerr"))
+        assert_is_type(solver, None, Enum("auto", "irlsm", "irlsm_speedup", "l_bfgs", "coordinate_descent_naive", "coordinate_descent", "gradient_descent_lh", "gradient_descent_sqerr"))
         self._parms["solver"] = solver
 
 

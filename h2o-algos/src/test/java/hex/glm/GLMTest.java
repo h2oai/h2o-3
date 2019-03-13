@@ -1035,7 +1035,7 @@ public class GLMTest  extends TestUtil {
     H2O.submitTask(new H2OCountedCompleter() {
       @Override
       public void compute2() {
-        new GLM.GramSolver(glmtDense._gram, glmtDense._xy, true, 1e-5, 0, null, null, null, null).solve(null, beta);
+        new GLM.GramSolver(glmtDense._gram, glmtDense._xy, true, 1e-5, 0, null, null, null, null, 0).solve(null, beta);
         tryComplete();
       }
     }).join();
