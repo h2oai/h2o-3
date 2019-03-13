@@ -38,12 +38,12 @@ cat > ${HADOOP_CONF_DIR}/yarn-site.xml <<EOF
      <name>yarn.application.classpath</name>
      <value>
          ${HADOOP_CONF_DIR},
+         /usr/hdp/${HDP_VERSION}/hadoop-yarn/*,
+         /usr/hdp/${HDP_VERSION}/hadoop-yarn/lib/*,
          /usr/hdp/${HDP_VERSION}/hadoop/*,
          /usr/hdp/${HDP_VERSION}/hadoop/lib/*,
          /usr/hdp/${HDP_VERSION}/hadoop-hdfs/*,
          /usr/hdp/${HDP_VERSION}/hadoop-hdfs/lib/*,
-         /usr/hdp/${HDP_VERSION}/hadoop-yarn/*,
-         /usr/hdp/${HDP_VERSION}/hadoop-yarn/lib/*,
          /usr/hdp/${HDP_VERSION}/hadoop-mapreduce/*,
          /usr/hdp/${HDP_VERSION}/hadoop-mapreduce/lib/*,
          ${HIVE_HOME}/conf,
