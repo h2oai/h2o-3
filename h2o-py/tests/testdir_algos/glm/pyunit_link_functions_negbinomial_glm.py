@@ -29,7 +29,7 @@ def link_functions_negbinomial():
   for thetaO in thetas:
       print("Create statsmodel model with canonical link: LOG")
       sm_model_log = sm.GLM(endog=sm_data_response, exog=sm_data_features,
-                            family=sm.families.NegativeBinomial(sm.families.links.identity, thetaO)).fit()
+                            family=sm.families.NegativeBinomial(sm.families.links.log, thetaO)).fit()
       print("Create h2o model with canonical link: LOG")
       h2o_model_log = H2OGeneralizedLinearEstimator(family="negativebinomial", link="log",alpha=0.5, Lambda=0,
                                                     theta=thetaO)
@@ -39,7 +39,7 @@ def link_functions_negbinomial():
     
       print("Create statsmodel model with canonical link: identity")
       sm_model_identity = sm.GLM(endog=sm_data_response, exog=sm_data_features,
-                          family=sm.families.NegativeBinomial(sm.families.links.log, thetaO)).fit()
+                          family=sm.families.NegativeBinomial(sm.families.links.identity, thetaO)).fit()
       print("Create h2o model with canonical link: identity")
       h2o_model_identity = H2OGeneralizedLinearEstimator(family="negativebinomial", link="identity",alpha=0.5, Lambda=0,
                                                   theta=thetaO)

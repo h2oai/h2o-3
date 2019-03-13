@@ -1236,8 +1236,7 @@ public class GLMBasicTestRegression extends TestUtil {
       // calculate Hessian, xy and likelihood manually
       double[][] hessian = new double[beta.length][beta.length];
       double[] xy = new double[beta.length];
-      GLMTask.GLMIterationTask gmt = new GLMTask.GLMIterationTask(null, dinfo, glmw, beta,
-              -1).doAll(dinfo._adaptedFrame);
+      GLMTask.GLMIterationTask gmt = new GLMTask.GLMIterationTask(null, dinfo, glmw, beta).doAll(dinfo._adaptedFrame);
       double manualLLH = manualHessianXYLLH(beta, hessian, xy, dinfo, ncoeffPClass, fr.numCols()-1,
               glmw, params);
       

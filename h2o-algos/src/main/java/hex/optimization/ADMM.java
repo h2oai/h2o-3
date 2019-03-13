@@ -6,6 +6,7 @@ import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.MathUtils;
 import water.util.MathUtils.Norm;
+import java.util.Arrays;
 
 /**
  * Created by tomasnykodym on 3/2/15.
@@ -27,6 +28,8 @@ public class ADMM {
     int iter;
     final double _eps;
     final int max_iter;
+    int _nclass = 1;  // default is one
+    int[][] _activeColsAll;
 
     MathUtils.Norm _gradientNorm = Norm.L_Infinite;
 
@@ -39,11 +42,21 @@ public class ADMM {
       this(eps,max_iter,DEFAULT_RELTOL,DEFAULT_ABSTOL,u);
     }
 
+    public L1Solver(double eps, int max_iter, double [] u, int nclass, int[][] activeCols) {
+      this(eps,max_iter,DEFAULT_RELTOL,DEFAULT_ABSTOL,u,nclass, activeCols);
+    }
+
     public L1Solver(double eps, int max_iter, double reltol, double abstol, double [] u) {
       _eps = eps; this.max_iter = max_iter;
       _u = u;
       RELTOL = reltol;
       ABSTOL = abstol;
+    }
+    
+    public L1Solver(double eps, int max_iter, double reltol, double abstol, double [] u, int nclass, int[][] activeCols) {
+      this(eps, max_iter, reltol, abstol, u);
+      _nclass=nclass;
+      _activeColsAll = activeCols;
     }
 
     public L_BFGS.ProgressMonitor _pm;
@@ -83,7 +96,18 @@ public class ADMM {
       return gerr;
     }
 
-    public boolean solve(ProximalSolver solver, double[] z, double l1pen, boolean hasIntercept, double[] lb, double[] ub) {
+    /**
+     * 
+     * @param solver
+     * @param z: store xy at the beginning.  Will end up storing new beta at the end
+     * @param l1pen
+     * @param hasIntercept
+     * @param lb
+     * @param ub
+     * @return
+     */
+    public boolean solve(ProximalSolver solver, double[] z, double l1pen, boolean hasIntercept, double[] lb, 
+                         double[] ub) {
       gerr = Double.POSITIVE_INFINITY;
       iter = 0;
       if (l1pen == 0 && lb == null && ub == null) {
@@ -95,60 +119,93 @@ public class ADMM {
       double abstol = ABSTOL * Math.sqrt(N);
       double [] rho = solver.rho();
       double [] x = z.clone();
+      Arrays.fill(z, 0.0);  //
       double [] beta_given = MemoryManager.malloc8d(N);
       double [] u;
+      int coeffPClass = _activeColsAll==null?z.length/_nclass:_activeColsAll[0][_activeColsAll[0].length-1]+1;
+      boolean useAllPreds = _activeColsAll==null;
       if(_u != null) {
         u = _u;
-        for (int i = 0; i < beta_given.length - hasIcpt; ++i)
-          beta_given[i] = z[i] - _u[i];
+        int offset = 0;
+        for (int classInd=0; classInd < _nclass; classInd++) {
+          int lastIndex = useAllPreds?coeffPClass-hasIcpt:_activeColsAll[classInd].length-hasIcpt;
+          for (int i = 0; i < lastIndex; ++i) { // intercept terms are left alone
+            int trueInd = i + offset;
+            beta_given[trueInd] = z[trueInd] - _u[trueInd];
+          }
+          offset += useAllPreds?coeffPClass:_activeColsAll[classInd].length;
+
+        }
       } else u = _u = MemoryManager.malloc8d(z.length);
       double [] kappa = MemoryManager.malloc8d(rho.length);
-      if(l1pen > 0)
-        for(int i = 0; i < N-hasIcpt; ++i)
-          kappa[i] = rho[i] != 0?l1pen/rho[i]:0;
+
+      if (l1pen > 0) {
+        int offset = 0;
+        for (int classInd = 0; classInd < _nclass; classInd++) {  // skip intercepts here, prepare for soft thresholding
+          int lastIndex = useAllPreds?coeffPClass-hasIcpt:_activeColsAll[classInd].length - hasIcpt;
+          for (int i=0; i<lastIndex; i++) {
+            int cind = i+offset;
+            kappa[cind] = rho[cind]!=0?l1pen/rho[cind]:0;
+          }
+          offset+=useAllPreds?coeffPClass:_activeColsAll[classInd].length;
+        }
+      }
       int i;
       double orlx = 1.0; // over-relaxation
       double reltol = RELTOL;
-      for (i = 0; i < max_iter && solver.solve(beta_given, x); ++i) {
-        if(_pm != null && (i + 1) % 5 == 0)_pm.progress(z,solver.gradient(z));
+      for (i = 0; i < max_iter && solver.solve(beta_given, x); ++i) { // beta_given is z-u, x = xy at first, store xk
+        if(_pm != null && (i + 1) % 5 == 0)_pm.progress(z,solver.gradient(z));  // z = xy at the beginning
         // compute u and z updateADMM
         double rnorm = 0, snorm = 0, unorm = 0, xnorm = 0;
-        for (int j = 0; j < N - hasIcpt; ++j) {
-          double xj = x[j];
-          double zjold = z[j];
-          double x_hat = xj * orlx + (1 - orlx) * zjold;
-          double zj = shrinkage(x_hat + u[j], kappa[j]);
-          if (lb != null && zj < lb[j])
-            zj = lb[j];
-          if (ub != null && zj > ub[j])
-            zj = ub[j];
-          u[j] += x_hat - zj;
-          beta_given[j] = zj - u[j];
-          double r = xj - zj;
-          double s = zj - zjold;
-          rnorm += r * r;
-          snorm += s * s;
-          xnorm += xj * xj;
-          unorm += rho[j] * rho[j] * u[j] * u[j];
-          z[j] = zj;
+        int offset = 0;
+        for (int classInd = 0; classInd < _nclass; classInd++) {
+          int lastIndex = useAllPreds?coeffPClass - hasIcpt:_activeColsAll[classInd].length-hasIcpt;
+          for (int j = 0; j < lastIndex; ++j) { // intercepts are excluded here
+            int trueInd = j+offset;
+            double xj = x[trueInd]; // contains the solution of inv(Gram)*(_xy+rho(z-u))
+            double zjold = z[trueInd];
+            double x_hat = xj * orlx + (1 - orlx) * zjold;  // average new x from solve with old z value
+            double zj = shrinkage(x_hat + u[trueInd], kappa[trueInd]);  // apply soft thresholding as on page 43
+            if (lb != null && zj < lb[trueInd])
+              zj = lb[trueInd];
+            if (ub != null && zj > ub[trueInd])
+              zj = ub[trueInd];
+            u[trueInd] += x_hat - zj; // update on page 43 for u
+            beta_given[trueInd] = zj - u[trueInd];
+            double r = xj - zj;
+            double s = zj - zjold;
+            rnorm += r * r;
+            snorm += s * s;
+            xnorm += xj * xj;
+            unorm += rho[trueInd] * rho[trueInd] * u[trueInd] * u[trueInd];
+            z[trueInd] = zj;
+          }
+          offset += useAllPreds?coeffPClass:_activeColsAll[classInd].length;
         }
-        if (hasIntercept) {
-          int idx = x.length - 1;
-          double icpt = x[idx];
-          if (lb != null && icpt < lb[idx])
-            icpt = lb[idx];
-          if (ub != null && icpt > ub[idx])
-            icpt = ub[idx];
-          double r = x[idx] - icpt;
-          double s = icpt - z[idx];
-          u[idx] += r;
-          beta_given[idx] = icpt - u[idx];
-          rnorm += r * r;
-          snorm += s * s;
-          xnorm += icpt * icpt;
-          unorm += rho[idx] * rho[idx] * u[idx] * u[idx];
-          z[idx] = icpt;
-        }
+        
+        int idx = 0;
+        int offsetIcpt = 0;
+         if (hasIntercept) {
+             for (int classInd = 0; classInd < _nclass; classInd++) {
+               idx = useAllPreds?(coeffPClass*(classInd+1)-1):(_activeColsAll[classInd].length+offsetIcpt-1);
+               double icpt = x[idx];
+               if (lb != null && icpt < lb[idx])
+                 icpt = lb[idx];
+               if (ub != null && icpt > ub[idx])
+                 icpt = ub[idx];
+               double r = x[idx] - icpt;
+               double s = icpt - z[idx];
+               u[idx] += r;
+               beta_given[idx] = icpt - u[idx];
+               rnorm += r * r;  // r=0, not changed
+               snorm += s * s;
+               xnorm += icpt * icpt;
+               unorm += rho[idx] * rho[idx] * u[idx] * u[idx]; // not changed since rho=0
+               z[idx] = icpt; // z at intercept is not changed
+               offsetIcpt += useAllPreds?0:_activeColsAll[classInd].length;
+             }
+           }
+
         if (rnorm < (abstol + (reltol * Math.sqrt(xnorm))) && snorm < (abstol + reltol * Math.sqrt(unorm))) {
           double oldGerr = gerr;
           computeErr(z, solver.gradient(z)._gradient, l1pen, lb, ub);
@@ -166,12 +223,26 @@ public class ADMM {
           return true;
         }
       }
+      if (hasIntercept) { // fill in the intercept values for z which now holds beta
+        int offset = 0;
+        int idx = 0;
+        for (int classInd = 0; classInd < _nclass; classInd++) {
+          idx = useAllPreds?(coeffPClass * (classInd+1) - 1):(_activeColsAll[classInd].length+offset-1);
+          double icpt = x[idx];
+          if (lb != null && icpt < lb[idx])
+            icpt = lb[idx];
+          if (ub != null && icpt > ub[idx])
+            icpt = ub[idx];
+          z[idx] = icpt;
+          offset += useAllPreds?0:_activeColsAll[classInd].length;
+        }
+      }
       computeErr(z, solver.gradient(z)._gradient, l1pen, lb, ub);
       if(iter == max_iter)
         Log.warn("ADMM solver reached maximum number of iterations (" + max_iter + ")");
       else
         Log.warn("ADMM solver stopped after " + i + " iterations. (max_iter=" + max_iter + ")");
-      if(gerr > _eps) Log.warn("ADMM solver finished with gerr = " + gerr + " >  eps = " + _eps);
+     if(gerr > _eps) Log.warn("ADMM solver finished with gerr = " + gerr + " >  eps = " + _eps);
       iter = max_iter;
       if(_pm != null && (i + 1) % 5 == 0)_pm.progress(z,solver.gradient(z));
       return false;
@@ -182,7 +253,7 @@ public class ADMM {
     }
     /**
      * Estimate optimal rho based on l1 penalty and (estimate of) solution x without the l1penalty
-     * @param x
+     * @param x:
      * @param l1pen
      * @return
      */

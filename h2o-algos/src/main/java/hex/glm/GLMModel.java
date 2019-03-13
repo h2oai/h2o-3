@@ -228,6 +228,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         glm.error("_alpha","alpha parameter must from (inclusive) [0,1] range");
       if(_compute_p_values && _solver != Solver.AUTO && _solver != Solver.IRLSM)
         glm.error("_compute_p_values","P values can only be computed with IRLSM solver, go solver = " + _solver);
+      if ((_solver.equals(Solver.IRLSM_SPEEDUP) || _solver.equals(Solver.IRLSM_SPEEDUP_NO_ADMM)) && !_family.equals(Family.multinomial))
+        glm.error("IRLSM_SPEEDUP/IRLSM_SPEEDUP_NO_ADMM", "is only available for the multinomial family.");
       if(_compute_p_values && (_lambda == null || _lambda[0] > 0))
         glm.error("_compute_p_values","P values can only be computed with NO REGULARIZATION (lambda = 0)");
       if(_compute_p_values && (_family == Family.multinomial || _family==Family.ordinal))
@@ -510,9 +512,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       public final Link defaultLink;
       Family(Link link){defaultLink = link;}
     }
-    public static enum Link {family_default, identity, logit, log, inverse, tweedie, multinomial, ologit, oprobit, ologlog}
+    public static enum Link {family_default, identity, logit, log, inverse, tweedie, multinomial, ologit, oprobit,
+      ologlog}
 
-    public static enum Solver {AUTO, IRLSM, L_BFGS, COORDINATE_DESCENT_NAIVE, COORDINATE_DESCENT, GRADIENT_DESCENT_LH, GRADIENT_DESCENT_SQERR}
+    public static enum Solver {AUTO, IRLSM, IRLSM_SPEEDUP, IRLSM_SPEEDUP2, IRLSM_SPEEDUP_NO_ADMM, L_BFGS, COORDINATE_DESCENT_NAIVE,
+      COORDINATE_DESCENT, GRADIENT_DESCENT_LH, GRADIENT_DESCENT_SQERR}
 
     // helper function
     static final double y_log_y(double y, double mu) {

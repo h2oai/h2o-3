@@ -919,6 +919,38 @@ public class DataInfo extends Keyed<DataInfo> {
       return res;
     }
 
+    /**
+     * 
+     * @param vec store the coefficients of the GLM for each class, shortened and only include active columns
+     * @param activeCols column indices of predictors that are active.  Expanded cat columns
+     * @return
+     */
+    public final double innerProduct(double [] vec, int[] activeCols) {
+      double res = 0;
+      int numStart = numStart();  // numerical column coefficient index start with expanded cat columns
+      int catColInd = 0;
+      int colInd = 0;
+      if (_cats > 0) {
+        for (int i : activeCols) { // take care of cat columns here
+          if (i >= _catOffsets[catColInd + 1])
+            catColInd++;
+          if (catColInd >= _cats)
+            break;
+          if (i == binIds[catColInd]) {
+            res += vec[colInd];
+          }
+          colInd++;
+        }
+      }
+      int actColLen = activeCols.length-1;  // last one is the intercept
+      for (int colidx = colInd; colidx < actColLen; colidx++) {
+        res += numVals[activeCols[colidx] - numStart] * vec[colidx];
+      }
+      if(_intercept)
+        res += vec[actColLen];
+      return res;
+    }
+
     public double[] expandCats() {
       if(isSparse() || _responses > 0) throw H2O.unimpl();
 
@@ -938,6 +970,8 @@ public class DataInfo extends Keyed<DataInfo> {
         res[res.length-1] = 1;
       return res;
     }
+    
+    
 
     public String toString() {
       return this.rid + Arrays.toString(Arrays.copyOf(binIds,nBins)) + ", " + Arrays.toString(numVals);

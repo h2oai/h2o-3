@@ -1036,6 +1036,255 @@ public abstract class GLMTask  {
     }
   }
 
+  // This method needs to calculate Pr(yi=c) for each class c and to 1/(sum of all exps
+   static double  computeMultinomialEtasSpeedUp(double [] etas, double [] exps) {
+    double sumExp = 0;
+    int K = etas.length;
+    for(int c = 0; c < K; ++c) { // calculate pr(yi=c) for each class
+      double x = Math.exp(etas[c]);
+      sumExp += x;
+      exps[c] = x;
+    }
+    double reg = 1.0/(sumExp);
+    exps[K] = reg;  // store 1/(sum of exp)
+    for(int c = 0; c < K; ++c)  // calculate pr(yi=c) for each class
+      exps[c] *= reg;
+    return Math.log(sumExp);
+  }
+
+  static class GLMMultinomialGradientSpeedUpTask extends MRTask<GLMMultinomialGradientSpeedUpTask> {
+    final double[] _beta;
+    final transient double _currentLambda;
+    final transient double _reg;
+    public double[] _gradient;
+    double _likelihood;
+    Job _job;
+    final boolean _sparse;
+    final DataInfo _dinfo;
+    final int _nclass;
+    final int _ncoeffPClass;   // number of predictors after enum expansion + intercept
+    final int _npred;   // number of predictors after enum expansion
+    
+    // parameters used by ordinal regression
+    Link _link;           // link function, e.g. ologit, ologlog, oprobit
+    GLMParameters _glmp;  // parameter used to access linkinv and linkinvderiv functions
+
+    /**
+     * @param job
+     * @param dinfo
+     * @param lambda
+     * @param beta   coefficients as 2D array [P][K]
+     * @param reg
+     */
+    public GLMMultinomialGradientSpeedUpTask(Job job, DataInfo dinfo, double lambda, double[] beta, double reg) {
+      _currentLambda = lambda;  // meant to store lambda*(1-alpha)
+      _reg = reg;
+      // need to flip the beta
+      _beta = new double[beta.length];
+      System.arraycopy(beta, 0, _beta, 0, beta.length);
+      _job = job;
+      _sparse = FrameUtils.sparseRatio(dinfo._adaptedFrame) < .125;
+      _dinfo = dinfo;
+      _nclass = beta.length/(dinfo.fullN()+1);
+      _ncoeffPClass = dinfo.fullN()+1;
+      _npred = dinfo.fullN();
+      if (_dinfo._offset) throw H2O.unimpl();
+    }
+
+    public GLMMultinomialGradientSpeedUpTask(Job job, DataInfo dinfo, double lambda, double[] beta, GLMParameters glmp) {
+      this(job, dinfo, lambda, beta, glmp._obj_reg);
+      _link = glmp._link;
+      _glmp = glmp;
+
+    }
+
+    // d-LLH/db
+    final void computeGradientMultipliers(double[][] etas, double[] ys, double[] ws) {
+      int K = _nclass;
+      double[] exps = new double[K + 1];
+      for (int i = 0; i < etas.length; ++i) { // go through each predictor
+        double w = ws[i];
+        if (w == 0) {                         // if weight for that row is zero, zero out the betas for that row
+          Arrays.fill(etas[i], 0);
+          continue;
+        }
+        int y = (int)ys[i];    // store true class response
+        double logSumExp = computeMultinomialEtasSpeedUp(etas[i], exps);
+        _likelihood -= w * (etas[i][y] - logSumExp);          // only contribution from response class
+        for (int c = 0; c < K; ++c)                           // calculate part of gradient without the x terms
+          etas[i][c] = w * (y==c?(exps[c]-1):exps[c]);  // part of the gradient without the x terms
+      }
+    }
+    
+    // common between multinomial and ordinal
+    public final void computeCategoricalEtas(Chunk[] chks, double[][] etas, double[] vals, int[] ids) {
+      // categoricals
+      for (int cid = 0; cid < _dinfo._cats; ++cid) {
+        Chunk c = chks[cid];
+        if (c.isSparseZero()) {
+          int nvals = c.getSparseDoubles(vals, ids, -1);
+          for (int i = 0; i < nvals; ++i) {
+            int id = _dinfo.getCategoricalId(cid, (int) vals[i]);
+              if (id >= 0) ArrayUtils.add(etas[ids[i]], _beta, id, _ncoeffPClass);
+          }
+        } else {
+          c.getIntegers(ids, 0, c._len, -1);
+          for (int i = 0; i < ids.length; ++i) { // go through each row here
+            int id = _dinfo.getCategoricalId(cid, ids[i]); // coeff index
+              if (id >= 0) ArrayUtils.add(etas[i], _beta, id, _ncoeffPClass); // beta index should depend on which class
+          }
+        }
+      }
+    }
+    
+    public final void computeNumericEtas(Chunk[] chks, double[][] etas, double[] vals, int[] ids) {
+       for (int cid = 0; cid < _dinfo._nums; ++cid) {
+        double scale = _dinfo._normMul != null ? _dinfo._normMul[cid] : 1;
+        double NA = _dinfo._numMeans[cid];
+        Chunk c = chks[cid + _dinfo._cats];
+        if (c.isSparseZero() || c.isSparseNA()) {
+          int nvals = c.getSparseDoubles(vals, ids, NA);
+          for (int i = 0; i < nvals; ++i) {
+            double d = vals[i] * scale;
+            ArrayUtils.wadd(etas[ids[i]], _beta, d, _dinfo._numOffsets[cid], _ncoeffPClass);
+          }
+        } else {
+          c.getDoubles(vals, 0, vals.length, NA);
+          double off = _dinfo._normSub != null ? _dinfo._normSub[cid] : 0;
+          for (int i = 0; i < vals.length; ++i) {
+            double d = (vals[i] - off) * scale; // adjust for standardization
+            ArrayUtils.wadd(etas[i], _beta, d, _dinfo._numOffsets[cid], _ncoeffPClass);
+          }
+        }
+      }
+    }
+    
+    public final void computeCategoricalGrads(Chunk[] chks, double[][] etas, double[] vals, int[] ids) {
+      // categoricals
+      for (int cid = 0; cid < _dinfo._cats; ++cid) {  // for each predictor
+        Chunk c = chks[cid];
+        if (c.isSparseZero()) {
+          int nvals = c.getSparseDoubles(vals, ids, -1);
+          for (int i = 0; i < nvals; ++i) { // for each row
+            int id = _dinfo.getCategoricalId(cid, (int) vals[i]);
+            if (id >= 0) ArrayUtils.add(_gradient, etas[ids[i]], id, _ncoeffPClass, _nclass);
+          }
+        } else {
+          c.getIntegers(ids, 0, c._len, -1);
+          for (int i = 0; i < ids.length; ++i) {  // for each row
+            int id = _dinfo.getCategoricalId(cid, ids[i]);  // id already takes into account previous cat columns
+            if (id >= 0) ArrayUtils.add(_gradient, etas[i], id, _ncoeffPClass, _nclass);
+          }
+        }
+      }
+    }
+
+    public final void computeNumericGrads(Chunk[] chks, double[][] etas, double[] vals, int[] ids) {
+      int numOff = _dinfo.numStart();
+      for (int cid = 0; cid < _dinfo._nums; ++cid) {
+        double NA = _dinfo._numMeans[cid];
+        Chunk c = chks[cid + _dinfo._cats];
+        double scale = _dinfo._normMul == null ? 1 : _dinfo._normMul[cid];
+        if (c.isSparseZero() || c.isSparseNA()) {
+          int nVals = c.getSparseDoubles(vals, ids, NA);
+          for (int i = 0; i < nVals; ++i)
+            ArrayUtils.wadd(_gradient, etas[ids[i]], vals[i] * scale, _dinfo._numOffsets[cid], _ncoeffPClass,
+                    _nclass);
+        } else {
+          double off = _dinfo._normSub == null ? 0 : _dinfo._normSub[cid];
+          c.getDoubles(vals, 0, vals.length, NA);
+          for (int i = 0; i < vals.length; ++i) {  // standardization
+            ArrayUtils.wadd(_gradient, etas[i], (vals[i] - off) * scale, _dinfo._numOffsets[cid], _ncoeffPClass,
+                    _nclass);
+          }
+        }
+      }
+    }
+
+    @Override public void map(Chunk[] chks) {
+      if(_job != null && _job.stop_requested()) throw new Job.JobCancelledException();
+      int numStart = _dinfo.numStart(); // first numerical column index
+      int K = _nclass;                  // number of classes
+      int P = _beta.length;             // total number of predictors (+ intercepts) for all classes
+      int M = chks[0]._len;             // number of rows in this chunk of data
+      _gradient = new double[P];        // same length as beta
+      double [][] etas = new double[M][K];          // store multiplier for non-intercept parameters
+      double [][] etasOffset = new double[M][K];    // store multiplier for intercept parameters
+      double[] offsets = new double[_nclass];       // store intercept values for all classes
+      for(int k = 0; k < _nclass; ++k)              // go through each class
+        offsets[k] = _beta[(k+1)*_ncoeffPClass-1];        // intercept
+      // sparse offset + intercept
+      if(_dinfo._normSub != null) { 
+        double[] tempCoeff = null;
+        for(int i = 0; i < _dinfo._nums; ++i) // go through each numerical column....
+          if(chks[_dinfo._cats + i].isSparseZero()) {
+            if (tempCoeff==null)
+              tempCoeff = new double[_nclass];
+            for (int classIndex = 0; classIndex < _nclass; classIndex++)
+              tempCoeff[classIndex] = _beta[numStart+i+classIndex*_nclass];
+            ArrayUtils.wadd(offsets, tempCoeff, -_dinfo._normSub[i] * _dinfo._normMul[i]);
+          }
+      }
+      for (int i = 0; i < chks[0]._len; ++i)
+        System.arraycopy(offsets, 0, etas[i], 0, K);
+      Chunk response = chks[_dinfo.responseChunkId(0)];
+      double [] ws = MemoryManager.malloc8d(M);
+      if(_dinfo._weights) ws = chks[_dinfo.weightChunkId()].getDoubles(ws,0,M);
+      else Arrays.fill(ws,1);
+      chks = Arrays.copyOf(chks,chks.length-1-(_dinfo._weights?1:0));
+      double [] vals = MemoryManager.malloc8d(M);
+      int [] ids = MemoryManager.malloc4(M);
+
+      computeCategoricalEtas(chks,etas,vals,ids);
+      computeNumericEtas(chks,etas,vals,ids); // etas contains just the betaT*X+beta0 for each class
+      computeGradientMultipliers(etas, response.getDoubles(vals, 0, M), ws);
+      computeCategoricalGrads(chks, etas, vals, ids);  // etas contains gradient without x, vals store response
+      computeNumericGrads(chks, etas, vals, ids);
+
+      for (int classInd = 0; classInd < _nclass; classInd++) {
+        for (int rowInd = 0; rowInd < etas.length; rowInd++) {
+          _gradient[(classInd+1)*_ncoeffPClass-1] += etas[rowInd][classInd];
+        }
+      }
+      
+      if (_dinfo._normSub != null) {
+        for (int colInd = 0; colInd < _dinfo._normSub.length; colInd++) {
+          if (chks[_dinfo._cats+colInd].isSparseZero()) {
+            for (int classInd=1; classInd <= _nclass; classInd++) {
+              _gradient[classInd*_ncoeffPClass-1] -= _dinfo._normSub[colInd]*_dinfo._normMul[colInd];
+            }
+          }
+        }
+      }
+    } 
+
+    @Override
+    public void reduce(GLMMultinomialGradientSpeedUpTask gmgt){
+      if(_gradient != gmgt._gradient)
+        ArrayUtils.add(_gradient,gmgt._gradient);
+      _likelihood += gmgt._likelihood;
+    }
+
+    @Override public void postGlobal(){
+      ArrayUtils.mult(_gradient, _reg); // multiply learning rate to gradient
+      int P = _beta.length;
+      // add l2 penalty
+      if (_currentLambda > 0) {
+        for (int classInd=0; classInd < _nclass; classInd++) {
+          for (int predInd = 0; predInd < _npred; predInd++) {  // loop through all coefficients for predictors only
+            _gradient[classInd*_ncoeffPClass+predInd] += _currentLambda*_beta[classInd*_ncoeffPClass+predInd];
+          }
+        }
+      }
+    }
+
+    public double [] gradient(){
+      double [] res = MemoryManager.malloc8d(_gradient.length);
+      System.arraycopy(_gradient, 0, res, 0, res.length);
+      return res;
+    }
+  }
+  
   // share between multinomial and ordinal regression
   static class GLMMultinomialGradientTask extends GLMMultinomialGradientBaseTask {
     public GLMMultinomialGradientTask(Job job, DataInfo dinfo, double lambda, double[][] beta, double reg) {
@@ -1044,7 +1293,7 @@ public abstract class GLMTask  {
 
     public GLMMultinomialGradientTask(Job job, DataInfo dinfo, double lambda, double[][] beta, GLMParameters glmp) {
       super(job, dinfo, lambda, beta, glmp);
-    }
+    }/**/
     @Override
     public void calMultipliersNGradients(double[][] etas, double[][] etasOffset, double[] ws, double[] vals,
                                          int[] ids, Chunk response, Chunk[] chks, int M, int P, int numStart) {
@@ -1413,9 +1662,60 @@ public abstract class GLMTask  {
       _sumExpChunk.set(r.cid,Math.exp(_etas[_c]-maxrow)/sumExp);
     }
   }
-  
+
+  /**
+   * This class will calculate the 1/(sum exp) and the log (sum exp) for multinomial classes.
+   */
+  public static class GLMMultinomialSpeedUpUpdate extends FrameTask2<GLMMultinomialSpeedUpUpdate> {
+    private final double [] _beta; // updated  value of beta
+    private transient double [] _sparseOffsets;
+    private transient double [] _etas;
+    private transient int _nclass;            // number of multinomial classes
+    double[][] _betaPerClass;                 // store beta as a 2-D array
+
+    public GLMMultinomialSpeedUpUpdate(DataInfo dinfo, Key jobKey, double [] beta, int nclass) {
+      super(null, dinfo, jobKey);
+      _beta = beta;
+      _nclass = nclass;
+      _betaPerClass = ArrayUtils.convertTo2DMatrix(beta,dinfo.fullN()+1);
+    }
+
+    @Override public void chunkInit(){
+      // initialize
+      _sparseOffsets = MemoryManager.malloc8d(_betaPerClass.length);
+      _etas = MemoryManager.malloc8d(_betaPerClass.length);
+      if(_sparse) {
+        for(int i = 0; i < _nclass; ++i) { // performed for each multinomial class
+          _sparseOffsets[i] = GLM.sparseOffset(_betaPerClass[i], _dinfo);  // calculated per class
+        }
+      }
+    }
+
+    private transient Chunk _sumExpChunk;
+    private transient Chunk _logSumExpChunk;
+
+    @Override public void map(Chunk [] chks) {
+      _sumExpChunk = chks[chks.length-2];
+      _logSumExpChunk = chks[chks.length-1];
+      super.map(chks);
+    }
+
+    @Override
+    protected void processRow(Row r) {
+      double sumExp = 0;
+      for(int i = 0; i < _nclass; ++i) {
+        _etas[i] = r.innerProduct(_betaPerClass[i]) + _sparseOffsets[i];
+        sumExp += Math.exp(_etas[i]);
+      }
+      _logSumExpChunk.set(r.cid,Math.log(sumExp));
+      _sumExpChunk.set(r.cid,1.0/sumExp);
+    }
+  }
+
+
   /**
    * One iteration of glm, computes weighted gram matrix and t(x)*y vector and t(y)*y scalar.
+   * Intercepts are always included regardless of what the user wants.
    *
    * @author tomasnykodym
    */
@@ -1436,7 +1736,18 @@ public abstract class GLMTask  {
     //    final double _lambda;
     double wsum, wsumu;
     double _sumsqe;
-    int _c = -1;
+    int _c = -1;  // will represent number of multinomial classes during speedup
+    boolean _multiClassSpeedup = false;
+    int[][] _activeColsAll; // store all active column indices per class
+    double[][] _hessian;  // store hessian for multinomial speedup, reuse over multiple rows
+    double[][] _xtx;      // generate transpose(x)*x;
+    double[] _wz;       // store wz for multinomial speedup, reuse over multiple rows
+    double[] _etas;     // store eta for all classes for multinomial speedup
+    double[] _probs;    // store probabilities for all classes for multinomial speedup
+    double[] _betaOneClass; // store beta for one multinomial class for multinomial speedup
+    int _coeffPClass;  // length of beta per class
+    int _numPredColumns; // number of predictors
+    int _numCoeffIndOffset; // coefficient offset for numerical columns
 
     public  GLMIterationTask(Key jobKey, DataInfo dinfo, GLMWeightsFun glmw,double [] beta) {
       super(null,dinfo,jobKey);
@@ -1445,25 +1756,69 @@ public abstract class GLMTask  {
       _glmf = glmw;
     }
 
-    public  GLMIterationTask(Key jobKey, DataInfo dinfo, GLMWeightsFun glmw, double [] beta, int c) {
+    public  GLMIterationTask(Key jobKey, DataInfo dinfo, GLMWeightsFun glmw, double [] beta, int c, boolean speedup) {
       super(null,dinfo,jobKey);
-      _beta = beta;
+      _beta = beta; // beta contains all class coeffs stacked up for IRLSM_SPEEDUP multinomial
       _ymu = null;
       _glmf = glmw;
       _c = c;
+      _multiClassSpeedup=speedup;
+    }
+
+    public  GLMIterationTask(Key jobKey, DataInfo dinfo, GLMWeightsFun glmw, double [] beta, int c, boolean speedup,
+                             int[][] allactivecols, int coeffpclass) {
+      super(null,dinfo,jobKey);
+      _beta = beta; // beta contains all class coeffs stacked up for IRLSM_SPEEDUP multinomial
+      _ymu = null;
+      _glmf = glmw;
+      _c = c;
+      _multiClassSpeedup=speedup;
+      _activeColsAll = allactivecols;
+      _coeffPClass = coeffpclass;
     }
 
     @Override public boolean handlesSparseData(){return true;}
 
     transient private double _sparseOffset;
+    transient private double[] _sparseOffsets;  // sparse offset for each class
 
     @Override
     public void chunkInit() {
       // initialize
-      _gram = new Gram(_dinfo.fullN(), _dinfo.largestCat(), _dinfo.numNums(), _dinfo._cats,true);
-      _xy = MemoryManager.malloc8d(_dinfo.fullN()+1); // + 1 is for intercept
-      if(_sparse)
-        _sparseOffset = GLM.sparseOffset(_beta,_dinfo);
+      _gram = _multiClassSpeedup
+              ?new Gram(_beta.length, _dinfo.numNums(), true)
+              :new Gram(_dinfo.fullN(), _dinfo.largestCat(), _dinfo.numNums(), _dinfo._cats,true);
+      _xy = _multiClassSpeedup ?MemoryManager.malloc8d(_beta.length)
+              :MemoryManager.malloc8d(_dinfo.fullN()+1); // + 1 is for intercept
+      if(_sparse) {
+        if (_multiClassSpeedup)
+          _sparseOffsets = GLM.sparseOffset(_beta, _dinfo, _c);
+        else
+          _sparseOffset = GLM.sparseOffset(_beta, _dinfo);
+      }
+      if (_multiClassSpeedup) {
+        _hessian = new double[_c][];  // symmetric matrix, only need half of the elements
+        for (int classInd=0; classInd < _c; classInd++)
+          _hessian[classInd] = new double[classInd+1];
+        _wz = new double[_c];
+        _etas = new double[_c];
+        _probs = new double[_c];
+        _betaOneClass = new double[_beta.length/_c];
+        _beta_multinomial = new double[_c][];
+        
+        for (int classInd = 0; classInd < _c; classInd++) { // _beta_multinomial can shrink to activeColsAll size
+          _beta_multinomial[classInd] = _activeColsAll== null? new double[_coeffPClass]
+                  :new double[_activeColsAll[classInd].length];
+        }
+        if (_activeColsAll==null)
+          ArrayUtils.convertTo2DMatrix(_beta, _beta_multinomial);
+        else
+          ArrayUtils.convertTo2DMatrix(_beta, _beta_multinomial, _activeColsAll); // _beta_multinomial has nclass rows
+        _numPredColumns = _dinfo._cats+_dinfo._nums;  // number of predictors
+        _numCoeffIndOffset = _dinfo._nums==0?0:_dinfo._numOffsets[0];
+        _gram._diag = new double[0];  // avoid NPE later
+        _xtx = new double[_coeffPClass][_coeffPClass];
+      }
       _w = new GLMWeights();
       if (_glmf._family.equals(Family.tweedie)) {
         _glmfTweedie = new GLMModel.GLMWeightsFun(_glmf._family, _glmf._link, _glmf._var_power, _glmf._link_power,
@@ -1479,45 +1834,137 @@ public abstract class GLMTask  {
     protected void processRow(Row r) { // called for every row in the chunk
       if(r.isBad() || r.weight == 0) return;
       ++_nobs;
-      double y = r.response(0);
-      _yy += y*y;
-      final int numStart = _dinfo.numStart();
-      double wz,w;
-      if(_glmf._family == Family.multinomial) {
-        y = (y == _c)?1:0;
-        double mu = r.response(1);
-        double eta = r.response(2);
-        double d = mu*(1-mu);
-        if(d == 0) d = 1e-10;
-        wz = r.weight * (eta * d + (y-mu));
-        w  = r.weight * d;
-      } else if(_beta != null) {
-        if (_glmf._family.equals(Family.tweedie))
-          _glmfTweedie.computeWeights(y, r.innerProduct(_beta) + _sparseOffset, r.offset, r.weight, _w);
-        else
-          _glmf.computeWeights(y, r.innerProduct(_beta) + _sparseOffset, r.offset, r.weight, _w);
-        w = _w.w; // hessian without the xij xik part
-        if (_glmf._family.equals(Family.tweedie))  // already multiplied with w for w.z
-          wz = _w.z;
-        else
-          wz = w*_w.z;
-        _likelihood += _w.l;
-      } else {
-        w = r.weight;
-        wz = w*(y - r.offset);
+      if (_multiClassSpeedup)
+        processMultinomialRow(r);
+      else {
+        double y = r.response(0);
+        _yy += y * y;
+        final int numStart = _dinfo.numStart();
+        double wz, w;
+        if (_glmf._family == Family.multinomial) {
+          y = (y == _c) ? 1 : 0;
+          double mu = r.response(1);
+          double eta = r.response(2);
+          double d = mu * (1 - mu);
+          if (d == 0) d = 1e-10;
+          wz = r.weight * (eta * d + (y - mu));
+          w = r.weight * d;
+        } else if (_beta != null) {
+          if (_glmf._family.equals(Family.tweedie))
+            _glmfTweedie.computeWeights(y, r.innerProduct(_beta) + _sparseOffset, r.offset, r.weight, _w);
+          else
+            _glmf.computeWeights(y, r.innerProduct(_beta) + _sparseOffset, r.offset, r.weight, _w);
+          w = _w.w; // hessian without the xij xik part
+          if (_glmf._family.equals(Family.tweedie))  // already multiplied with w for w.z
+            wz = _w.z;
+          else
+            wz = w*_w.z;
+          _likelihood += _w.l;
+        } else {
+          w = r.weight;
+          wz = w*(y - r.offset);
+        }
+        wsum += w;
+        wsumu += r.weight; // just add the user observation weight for the scaling.
+        for (int i = 0; i < r.nBins; ++i)
+          _xy[r.binIds[i]] += wz;
+        for (int i = 0; i < r.nNums; ++i) {
+          int id = r.numIds == null ? (i + numStart) : r.numIds[i];
+          double val = r.numVals[i];
+          _xy[id] += wz * val;
+        }
+        if (_dinfo._intercept)
+          _xy[_xy.length - 1] += wz;
+        _gram.addRow(r, w);
       }
-      wsum+=w;
-      wsumu+=r.weight; // just add the user observation weight for the scaling.
-      for(int i = 0; i < r.nBins; ++i)
-        _xy[r.binIds[i]] += wz;
-      for(int i = 0; i < r.nNums; ++i){
-        int id = r.numIds == null?(i + numStart):r.numIds[i];
-        double val = r.numVals[i];
-        _xy[id] += wz*val;
+    }
+    
+    public void processMultinomialRow(Row r) {
+      int y =(int) r.response(0); // actual class label
+      double oneOversumExp = r.response(1);
+      int numStart = _dinfo.numStart(); // start of numerical column index
+      generateEtasNProbs(oneOversumExp, r);
+      _likelihood -= (_etas[y]-r.response(2))*r.weight;
+      // update w, used for gram add row
+      for (int classInd1=0; classInd1 < _c; classInd1++) {
+        for (int classInd2 = 0; classInd2 <= classInd1; classInd2++) {  // hessian for NLLH
+          _hessian[classInd1][classInd2] = r.weight*((classInd1==classInd2)?
+                  (_probs[classInd1]-_probs[classInd1]*_probs[classInd1]):
+                  (-_probs[classInd1]*_probs[classInd2]));
+        } 
+        _wz[classInd1] = r.weight*((classInd1==y)?(1-_probs[y]):-_probs[classInd1]); // gradient of LLH
       }
-      if(_dinfo._intercept)
-        _xy[_xy.length-1] += wz;
-      _gram.addRow(r,w);
+      // update wz, used for _xy
+      for (int rowInd=0; rowInd < _c; rowInd++) {
+        double temp = 0;
+        for (int colInd = 0; colInd <= rowInd; colInd++) { // perform W*etas for each row of W
+          temp += _hessian[rowInd][colInd]*_etas[colInd];
+        }
+        for (int colInd = rowInd+1; colInd < _c; colInd++) {
+          temp+= _hessian[colInd][rowInd]*_etas[colInd];
+        }
+        _wz[rowInd] += temp;
+      }
+      // now generate _xy for enum columns
+      if (_activeColsAll==null) {
+        for (int i = 0; i < r.nBins; ++i) {
+          for (int classInd = 0; classInd < _c; classInd++) { // update _xy for each class, they are stacked over class
+            _xy[r.binIds[i] + classInd * _coeffPClass] += _wz[classInd];
+          }
+        }
+        // now generate _xy for numerical columns
+        for (int i = 0; i < r.nNums; ++i) {
+          int id = r.numIds == null ? (i + numStart) : r.numIds[i];
+          double val = r.numVals[i];
+          for (int classInd = 0; classInd < _c; classInd++) { // update _xy for each class, they are stacked over class
+            _xy[id + classInd * _coeffPClass] += _wz[classInd] * val;
+          }
+        }
+        if (_dinfo._intercept) { // add intercept term 
+          for (int classInd = 0; classInd < _c; classInd++) {
+            _xy[(1 + classInd) * _coeffPClass - 1] += _wz[classInd];
+          }
+        }
+        _gram.addRow(r, _hessian, _c, _coeffPClass, _numCoeffIndOffset, _dinfo._intercept, _xtx);
+      } else {  // deal with shortened coefficients including only active columns
+        int offset = 0; // offset index into _xy
+        for (int classInd=0; classInd < _c; classInd++) {
+          int catColInd = 0;
+          int colInd = 0;
+          if (_dinfo._cats > 0) {
+            for (int i : _activeColsAll[classInd]) {  // deal with cat columns
+              if (i >= _dinfo._catOffsets[catColInd + 1])
+                catColInd++;
+              if (catColInd >= _dinfo._cats)
+                break;
+              if (i == r.binIds[catColInd]) {
+                _xy[colInd + offset] += _wz[classInd];
+              }
+              colInd++;
+            }
+          }
+          int actColLen = _activeColsAll[classInd].length-1;  // last one is the intercept
+          for (int i=colInd; i < actColLen; i++) {  // deal with numerical columns
+            int numIdx = _activeColsAll[classInd][i]-numStart;
+            double val = r.numVals[numIdx];
+            _xy[i+offset] += _wz[classInd]*val;
+          }
+
+          if (_dinfo._intercept) { // add intercept term
+              _xy[actColLen+offset] += _wz[classInd];
+          }
+          offset += _activeColsAll[classInd].length;
+        }
+        _gram.addRow(r, _hessian, _c, _coeffPClass, _numCoeffIndOffset, _dinfo._intercept, _xtx, _activeColsAll);
+      }
+    }
+    
+    public void generateEtasNProbs(double oneOverSumExp, Row r) {
+      for (int classInd=0; classInd < _c; classInd++) {
+        _etas[classInd] = (_activeColsAll == null ? r.innerProduct(_beta_multinomial[classInd])
+                : r.innerProduct(_beta_multinomial[classInd], _activeColsAll[classInd])) + (_sparse ? _sparseOffsets[classInd] : 0);
+        _probs[classInd] = Math.exp(_etas[classInd]) * oneOverSumExp;
+      }
     }
 
     @Override
