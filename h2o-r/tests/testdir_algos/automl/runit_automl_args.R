@@ -75,7 +75,49 @@ automl.args.test <- function() {
                     project_name = "aml2",
         )
     }
-    
+
+    test_exclude_algos <- function() {
+        print("AutoML doesn't train models for algos listed in exclude_algos")
+        ds <- import_dataset()
+        aml <- h2o.automl(x = ds$x, y = ds$y.idx,
+                          training_frame = ds$train,
+                          project_name = "aml_exclude_algos",
+                          max_models = max_models,
+                          exclude_algos = c('DRF', 'GLM'),
+        )
+        models <- get_partitioned_models(aml)
+        expect_false(any(grepl("DRF", aml$all) || any(grepl("GLM", aml$all))))
+        expect_equal(models$se, 2)
+    }
+
+    test_include_algos <- function() {
+        print("AutoML trains only models for algos listed in include_algos")
+        ds <- import_dataset()
+        aml <- h2o.automl(x = ds$x, y = ds$y.idx,
+                          training_frame = ds$train,
+                          project_name = "aml_include_algos",
+                          max_models = max_models,
+                          exclude_algos = c('GBM'),
+        )
+        models <- get_partitioned_models(aml)
+        expect_true(all(grepl("GBM"), models$all))
+        expect_equal(models$se, 0, "No StackedEnsemble should have been trained if not explicitly included to the existing include_algos")
+    }
+
+    test_include_exclude_algos <- function() {
+        print("include_algos and exclude_algos parameters are mutually exclusive")
+        ds <- import_dataset()
+        expect_failure(
+            h2o.automl(x = ds$x, y = ds$y.idx,
+                        training_frame = ds$train,
+                        project_name = "aml_include_exclude_algos",
+                        max_models = max_models,
+                        exclude_algos = c('DRF', 'GLM'),
+                        include_algos = c('XGBoost', 'GBM'),
+            ), message = "Use either include_algos or exclude_algos, not both."
+        )
+    }
+
     test_single_training_frame <- function() {
         print("Single training frame; x and y both specified")
         ds <- import_dataset()

@@ -194,23 +194,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return AutoMLKeyV3.class;
   }
 
-  /**
-   * For external use only.
-   * Keeping this mapping for existing users consuming the Java API directly.
-   * Putting here only algos that were available in H2O 3.20.x,
-   *  users that need to exclude new algos should switch to {@link Algo}.
-   * @deprecated will be removed in H2O 3.24.x, please use {@link Algo} instead.
-   */
-  @Deprecated
-  public interface algo extends Serializable {
-    @Deprecated Algo GLM = Algo.GLM;
-    @Deprecated Algo DRF = Algo.DRF;
-    @Deprecated Algo GBM = Algo.GBM;
-    @Deprecated Algo DeepLearning = Algo.DeepLearning;
-    @Deprecated Algo StackedEnsemble = Algo.StackedEnsemble;
-  }
-
-  private enum JobType {
+  enum JobType {
     Unknown,
     ModelBuild,
     HyperparamSearch
@@ -261,8 +245,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   private WorkAllocations workAllocations;
 
-  private Algo[] skipAlgosList = new Algo[]{};
-
   public AutoML() {
     super(null);
   }
@@ -271,43 +253,66 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     super(key);
     this.startTime = startTime;
     this.buildSpec = buildSpec;
-
-    userFeedback = new UserFeedback(this);
-    userFeedback.info(Stage.Workflow, "Project: " + projectName());
-    userFeedback.info(Stage.Workflow, "AutoML job created: "+fullTimestampFormat.format(this.startTime));
-
-    if (null != buildSpec.input_spec.fold_column) {
-      userFeedback.warn(Stage.Workflow, "Custom fold column, "+buildSpec.input_spec.fold_column+", will be used. nfolds value will be ignored.");
-      buildSpec.build_control.nfolds = 0; //reset nfolds to Model default
-    }
-
-    userFeedback.info(Stage.Workflow, "Build control seed: "+buildSpec.build_control.stopping_criteria.seed()+
-            (buildSpec.build_control.stopping_criteria.seed() == -1 ? " (random)" : ""));
-
-    handleDatafileParameters(buildSpec);
-
-    if (this.buildSpec.build_control.stopping_criteria._stopping_tolerance == -1) {
-      this.buildSpec.build_control.stopping_criteria.set_default_stopping_tolerance_for_frame(this.trainingFrame);
-      userFeedback.info(Stage.Workflow, "Setting stopping tolerance adaptively based on the training frame: " +
-              this.buildSpec.build_control.stopping_criteria._stopping_tolerance);
-    } else {
-      userFeedback.info(Stage.Workflow, "Stopping tolerance set by the user: " + this.buildSpec.build_control.stopping_criteria._stopping_tolerance);
-      double default_tolerance = RandomDiscreteValueSearchCriteria.default_stopping_tolerance_for_frame(this.trainingFrame);
-      if (this.buildSpec.build_control.stopping_criteria._stopping_tolerance < 0.7 * default_tolerance){
-        userFeedback.warn(Stage.Workflow, "Stopping tolerance set by the user is < 70% of the recommended default of " + default_tolerance + ", so models may take a long time to converge or may not converge at all.");
-      }
-    }
-
-    String sort_metric = buildSpec.input_spec.sort_metric == null ? null : buildSpec.input_spec.sort_metric.toLowerCase();
-    leaderboard = Leaderboard.getOrMakeLeaderboard(projectName(), userFeedback, this.leaderboardFrame, sort_metric);
-
     this.jobs = new ArrayList<>();
-    planWork();
+
+    try {
+      userFeedback = new UserFeedback(this);
+      userFeedback.info(Stage.Workflow, "Project: " + projectName());
+      userFeedback.info(Stage.Workflow, "AutoML job created: " + fullTimestampFormat.format(this.startTime));
+
+      workAllocations = planWork();
+
+      if (null != buildSpec.input_spec.fold_column) {
+        userFeedback.warn(Stage.Workflow, "Custom fold column, " + buildSpec.input_spec.fold_column + ", will be used. nfolds value will be ignored.");
+        buildSpec.build_control.nfolds = 0; //reset nfolds to Model default
+      }
+
+      userFeedback.info(Stage.Workflow, "Build control seed: " + buildSpec.build_control.stopping_criteria.seed() +
+          (buildSpec.build_control.stopping_criteria.seed() == -1 ? " (random)" : ""));
+
+      handleDatafileParameters(buildSpec);
+
+      if (this.buildSpec.build_control.stopping_criteria._stopping_tolerance == -1) {
+        this.buildSpec.build_control.stopping_criteria.set_default_stopping_tolerance_for_frame(this.trainingFrame);
+        userFeedback.info(Stage.Workflow, "Setting stopping tolerance adaptively based on the training frame: " +
+            this.buildSpec.build_control.stopping_criteria._stopping_tolerance);
+      } else {
+        userFeedback.info(Stage.Workflow, "Stopping tolerance set by the user: " + this.buildSpec.build_control.stopping_criteria._stopping_tolerance);
+        double default_tolerance = RandomDiscreteValueSearchCriteria.default_stopping_tolerance_for_frame(this.trainingFrame);
+        if (this.buildSpec.build_control.stopping_criteria._stopping_tolerance < 0.7 * default_tolerance) {
+          userFeedback.warn(Stage.Workflow, "Stopping tolerance set by the user is < 70% of the recommended default of " + default_tolerance + ", so models may take a long time to converge or may not converge at all.");
+        }
+      }
+
+      String sort_metric = buildSpec.input_spec.sort_metric == null ? null : buildSpec.input_spec.sort_metric.toLowerCase();
+      leaderboard = Leaderboard.getOrMakeLeaderboard(projectName(), userFeedback, this.leaderboardFrame, sort_metric);
+    } catch (Exception e) {
+      deleteWithChildren(); //cleanup potentially leaked keys
+      throw e;
+    }
   }
 
 
   WorkAllocations planWork() {
-    workAllocations = new WorkAllocations();
+    if (buildSpec.build_models.exclude_algos != null && buildSpec.build_models.include_algos != null) {
+      throw new  H2OIllegalArgumentException("Parameters `exclude_algos` and `include_algos` are mutually exclusive: please use only one of them if necessary.");
+    }
+
+    Set<Algo> skippedAlgos = new HashSet<>();
+    if (buildSpec.build_models.exclude_algos != null) {
+      skippedAlgos.addAll(Arrays.asList(buildSpec.build_models.exclude_algos));
+    } else if (buildSpec.build_models.include_algos != null) {
+      skippedAlgos.addAll(Arrays.asList(Algo.values()));
+      skippedAlgos.removeAll(Arrays.asList(buildSpec.build_models.include_algos));
+    }
+
+    if (!ExtensionManager.getInstance().isCoreExtensionEnabled("XGBoost")
+        || (H2O.CLOUD.size() > 1 && !Boolean.parseBoolean(System.getProperty(DISTRIBUTED_XGBOOST_ENABLED, "false")))) {
+      userFeedback.warn(Stage.ModelTraining, "AutoML: XGBoost extension is not available; skipping default XGBoost");
+      skippedAlgos.add(Algo.XGBoost);
+    }
+
+    WorkAllocations workAllocations = new WorkAllocations();
     workAllocations.allocate(Algo.DeepLearning, 1, JobType.ModelBuild, 10)
             .allocate(Algo.DeepLearning, 3, JobType.HyperparamSearch, 20)
             .allocate(Algo.DRF, 2, JobType.ModelBuild, 10)
@@ -319,18 +324,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
             .allocate(Algo.StackedEnsemble, 2, JobType.ModelBuild, 15)
             .end();
 
-    if (buildSpec.build_models.exclude_algos != null) {
-      for (Algo algo : (Algo[]) buildSpec.build_models.exclude_algos) {
-        skipAlgosList = ArrayUtils.append(skipAlgosList, algo);
-      }
-    }
-    if (!ExtensionManager.getInstance().isCoreExtensionEnabled("XGBoost")
-        || (H2O.CLOUD.size() > 1 && !Boolean.parseBoolean(System.getProperty(DISTRIBUTED_XGBOOST_ENABLED, "false")))) {
-      userFeedback.warn(Stage.ModelTraining, "AutoML: XGBoost extension is not available; skipping default XGBoost");
-      skipAlgosList = ArrayUtils.append(skipAlgosList, Algo.XGBoost);
-    }
-
-    for (Algo skippedAlgo : skipAlgosList) {
+    for (Algo skippedAlgo : skippedAlgos) {
       userFeedback.info(Stage.ModelTraining, "Disabling Algo: "+skippedAlgo+" as requested by the user.");
       workAllocations.remove(skippedAlgo);
     }
@@ -1339,9 +1333,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
    */
   @Override
   protected Futures remove_impl(Futures fs) {
-    Frame.deleteTempFrameAndItsNonSharedVecs(trainingFrame, origTrainingFrame);
-    leaderboard.remove(fs);
-    userFeedback.remove(fs);
+    if (trainingFrame != null && origTrainingFrame != null)
+      Frame.deleteTempFrameAndItsNonSharedVecs(trainingFrame, origTrainingFrame);
+    if (leaderboard != null) leaderboard.remove(fs);
+    if (userFeedback != null) userFeedback.remove(fs);
     return super.remove_impl(fs);
   }
 
@@ -1349,13 +1344,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
    * Same as delete() but also deletes all Objects made from this instance.
    */
   void deleteWithChildren() {
-    leaderboard.deleteWithChildren();
+    if (leaderboard != null) leaderboard.deleteWithChildren();
 
-    for (Key<Grid> gridKey : gridKeys)
-      gridKey.remove();
+    if (gridKeys != null)
+      for (Key<Grid> gridKey : gridKeys) gridKey.remove();
 
     // If the Frame was made here (e.g. buildspec contained a path, then it will be deleted
-    if (buildSpec.input_spec.training_frame == null) {
+    if (buildSpec.input_spec.training_frame == null && origTrainingFrame != null) {
       origTrainingFrame.delete();
     }
     if (buildSpec.input_spec.validation_frame == null && validationFrame != null) {
