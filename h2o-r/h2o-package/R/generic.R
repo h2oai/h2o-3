@@ -3,7 +3,7 @@
 #'
 # -------------------------- generic -------------------------- #
 #' @param x A vector containing the \code{character} names of the predictors in the model.
-#' @param mojo_key Key to an uploaded MOJO archive frame
+#' @param mojo_key Key to an uploaded MOJO archive
 #' @export
 h2o.generic <- function(training_frame = NULL,
                         mojo_key = NULL

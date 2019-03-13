@@ -38,7 +38,7 @@ class H2OGenericEstimator(H2OEstimator):
     @property
     def mojo_key(self):
         """
-        Key to an uploaded MOJO archive frame
+        Key to an uploaded MOJO archive
 
         Type: ``H2OFrame``.
         """

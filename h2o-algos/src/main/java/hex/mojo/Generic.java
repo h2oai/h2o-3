@@ -85,4 +85,9 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
 
         return mojoData;
     }
+
+    @Override
+    public BuilderVisibility builderVisibility() {
+        return BuilderVisibility.Beta;
+    }
 }
