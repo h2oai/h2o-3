@@ -287,8 +287,9 @@ public class PojoUtils {
             //
             // Assigning an impl field into a schema field, e.g. a DeepLearningParameters into a DeepLearningParametersV2.
             //
-            dest_field.set(dest, SchemaServer.schema(/* ((Schema)dest).getSchemaVersion() TODO: remove HACK!! */ 3,
-                (Class<? extends Iced>)orig_field.get(origin).getClass()).fillFromImpl((Iced) orig_field.get(origin)));
+            int dest_version = Schema.extractVersionFromSchemaName(dest_field.getType().getSimpleName());
+            Iced ori = (Iced)orig_field.get(origin);
+            dest_field.set(dest, SchemaServer.schema(dest_version, ori.getClass()).fillFromImpl(ori));
           } else if (Schema.class.isAssignableFrom(orig_field.getType()) && Schema.getImplClass((Class<? extends Schema>)orig_field.getType()).isAssignableFrom(dest_field.getType())) {
             //
             // Assigning a schema field into an impl field, e.g. a DeepLearningParametersV2 into a DeepLearningParameters.
@@ -305,7 +306,7 @@ public class PojoUtils {
             if (null == v || null == v.get()) {
               dest_field.set(dest, null);
             } else {
-              if (((Schema)dest_field.get(dest)).getImplClass().isAssignableFrom(v.get().getClass())) {
+              if (((Schema)dest_field.get(dest)).getImplClass().isAssignableFrom(v.get().getClass())) {   //FIXME: dest_field.get(dest) can be null!
                 Schema s = ((Schema)dest_field.get(dest));
                 dest_field.set(dest, SchemaServer.schema(s.getSchemaVersion(), s.getImplClass()).fillFromImpl(v.get()));
               } else {

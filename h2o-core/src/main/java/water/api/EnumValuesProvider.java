@@ -1,6 +1,8 @@
 package water.api;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class EnumValuesProvider<E extends Enum<E>> implements ValuesProvider {
@@ -8,7 +10,11 @@ public class EnumValuesProvider<E extends Enum<E>> implements ValuesProvider {
   private String[] _values;
 
   public EnumValuesProvider(Class<E> clazz) {
-    _values = getValuesOf(clazz);
+    this(clazz, null);
+  }
+
+  public EnumValuesProvider(Class<E> clazz, E[] excluded) {
+    _values = getValuesOf(clazz, excluded == null ? Collections.<E>emptyList() : Arrays.asList(excluded));
   }
 
   @Override
@@ -16,11 +22,13 @@ public class EnumValuesProvider<E extends Enum<E>> implements ValuesProvider {
     return _values;
   }
 
-  private String[] getValuesOf(Class<E> clazz) {
+  private String[] getValuesOf(Class<E> clazz, List<E> excluded) {
     E[] values = clazz.getEnumConstants();
     List<String> names = new ArrayList<>(values.length);
     for (E val : values) {
-      names.add(val.name());
+      if (!excluded.contains(val)) {
+        names.add(val.name());
+      }
     }
     return names.toArray(new String[0]);
   }

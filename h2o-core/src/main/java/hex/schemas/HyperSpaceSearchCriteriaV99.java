@@ -3,6 +3,8 @@ package hex.schemas;
 import hex.ScoreKeeper;
 import hex.grid.HyperSpaceSearchCriteria;
 import water.api.API;
+import water.api.EnumValuesProvider;
+import water.api.schemas3.ModelParamsValuesProviders.StoppingMetricValuesProvider;
 import water.api.schemas3.SchemaV3;
 import water.exceptions.H2OIllegalArgumentException;
 
@@ -13,7 +15,7 @@ import water.exceptions.H2OIllegalArgumentException;
 public class HyperSpaceSearchCriteriaV99<I extends HyperSpaceSearchCriteria, S extends HyperSpaceSearchCriteriaV99<I,S>>
     extends SchemaV3<I, S> {
 
-  @API(help = "Hyperparameter space search strategy.", required = true, values = { "Unknown", "Cartesian", "RandomDiscrete" }, direction = API.Direction.INOUT)
+  @API(help = "Hyperparameter space search strategy.", required = true, valuesProvider = StrategyValuesProvider.class, direction = API.Direction.INOUT)
   public HyperSpaceSearchCriteria.Strategy strategy;
 
 // TODO: add a factory which accepts a Strategy and calls the right constructor
@@ -43,25 +45,29 @@ public class HyperSpaceSearchCriteriaV99<I extends HyperSpaceSearchCriteria, S e
       this.max_runtime_secs = max_runtime_secs;
     }
 
-    @API(help = "Seed for random number generator; set to a value other than -1 for reproducibility.", required = false, direction = API.Direction.INOUT)
+    @API(help = "Seed for random number generator; set to a value other than -1 for reproducibility.", direction = API.Direction.INOUT)
     public long seed;
 
-    @API(help = "Maximum number of models to build (optional).", required = false, direction = API.Direction.INOUT)
+    @API(help = "Maximum number of models to build (optional).", direction = API.Direction.INOUT)
     public int max_models;
 
-    @API(help = "Maximum time to spend building models (optional).", required = false, direction = API.Direction.INOUT)
+    @API(help = "Maximum time to spend building models (optional).", direction = API.Direction.INOUT)
     public double max_runtime_secs;
 
     @API(help = "Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
     public int stopping_rounds;
 
-    //@API(help = "Metric to use for early stopping (AUTO: logloss for classification, deviance for regression)", values = {"AUTO", "deviance", "logloss", "MSE", "RMSE","MAE","RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error", "r2"}, level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
-    @API(help = "Metric to use for early stopping (AUTO: logloss for classification, deviance for regression)", values = {"AUTO", "deviance", "logloss", "MSE", "RMSE","MAE","RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error"}, level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
-
+    @API(help = "Metric to use for early stopping (AUTO: logloss for classification, deviance for regression)", valuesProvider = StoppingMetricValuesProvider.class, level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
     public ScoreKeeper.StoppingMetric stopping_metric;
 
-    @API(help = "Relative tolerance for metric-based stopping criterion Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+    @API(help = "Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
     public double stopping_tolerance;
+  }
+
+  public static class StrategyValuesProvider extends EnumValuesProvider<HyperSpaceSearchCriteria.Strategy> {
+    public StrategyValuesProvider() {
+      super(HyperSpaceSearchCriteria.Strategy.class);
+    }
   }
 
   /**
