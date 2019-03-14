@@ -3,16 +3,16 @@ package ai.h2o.automl;
 import water.Iced;
 import water.util.TwoDimTable;
 
+import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Objects;
 
-public class EventLogEntry extends Iced {
+public class EventLogEntry<V extends Serializable> extends Iced {
 
   public enum Level {
     Debug, Info, Warn
   }
-  private final int longestLevel = longestLevel(); // for formatting
-
 
   public enum Stage {
     Workflow,
@@ -22,98 +22,132 @@ public class EventLogEntry extends Iced {
     FeatureCreation,
     ModelTraining,
   }
-  private final int longestStage = longestStage(); // for formatting
 
-  private long timestamp;
-  transient private AutoML autoML;
-  private Level level;
-  private Stage stage;
-  private String message;
-
-  public long getTimestamp() {
-    return timestamp;
+  static TwoDimTable makeTwoDimTable(String tableHeader, int length) {
+    String[] rowHeaders = new String[length];
+    for (int i = 0; i < length; i++) rowHeaders[i] = "" + i;
+    return new TwoDimTable(
+            tableHeader,
+            "Actions taken and discoveries made by AutoML",
+            rowHeaders,
+            EventLogEntry.colHeaders,
+            EventLogEntry.colTypes,
+            EventLogEntry.colFormats,
+            "#"
+    );
   }
 
-  public AutoML getAutoML() { return autoML; }
+  static String nowStr() {
+    return dateTimeFormat.format(new Date());
+  }
+
+  static final SimpleDateFormat dateTimeFormat = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss.S"); // uses local timezone
+  static final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss.S");  // uses local timezone
+
+  private static final String[] colHeaders = {
+          "timestamp",
+          "level",
+          "stage",
+          "name",
+          "value",
+          "message"
+  };
+
+  private static final String[] colTypes= {
+          "string",
+          "string",
+          "string",
+          "string",
+          "string",
+          "string"
+  };
+
+  private static final String[] colFormats= {
+          "%s",
+          "%s",
+          "%s",
+          "%s",
+          "%s",
+          "%s"
+  };
+
+  private static <E extends Enum<E>> int longest(Class<E> enu) {
+    int longest = -1;
+    for (E v : enu.getEnumConstants())
+      longest = Math.max(longest, v.name().length());
+    return longest;
+  }
+
+  private final int longestLevel = longest(Level.class); // for formatting
+  private final int longestStage = longest(Stage.class); // for formatting
+
+  transient private AutoML _autoML;
+
+  private long _timestamp;
+  private Level _level;
+  private Stage _stage;
+  private String _name;
+  private V _value;
+  private String _message;
+
+  public long getTimestamp() {
+    return _timestamp;
+  }
+
+  public AutoML getAutoML() { return _autoML; }
 
   public Level getLevel() {
-    return level;
+    return _level;
   }
 
   public Stage getStage() {
-    return stage;
+    return _stage;
+  }
+
+  public String getName() {
+    return _name;
+  }
+
+  public V getValue() {
+    return _value;
   }
 
   public String getMessage() {
-    return message;
+    return _message;
   }
 
   public EventLogEntry(AutoML autoML, Level level, Stage stage, String message) {
-    this.timestamp = System.currentTimeMillis();
-    this.autoML = autoML;
-    this.level = level;
-    this.stage = stage;
-    this.message = message;
+    this._timestamp = System.currentTimeMillis();
+    this._autoML = autoML;
+    this._level = level;
+    this._stage = stage;
+    this._message = message;
   }
 
-
-  private static int longestStage() {
-    int longest = -1;
-    for (Stage stage : Stage.values())
-      longest = Math.max(longest, stage.name().length());
-    return longest;
+  public void setNamedValue(String name, V value) {
+    _name = name;
+    _value = value;
   }
 
-  private static int longestLevel() {
-    int longest = -1;
-    for (Level level : Level.values())
-      longest = Math.max(longest, level.name().length());
-    return longest;
-  }
-
-  protected static final String[] colHeaders = { "timestamp",
-                                                 "level",
-                                                 "stage",
-                                                 "message" };
-
-  protected static final String[] colTypes= { "string",
-                                              "string",
-                                              "string",
-                                              "string" };
-
-  protected static final String[] colFormats= { "%s",
-                                                "%s",
-                                                "%s",
-                                                "%s" };
-
-  public static final TwoDimTable makeTwoDimTable(String tableHeader, int length) {
-    String[] rowHeaders = new String[length];
-    for (int i = 0; i < length; i++) rowHeaders[i] = "" + i;
-
-    return new TwoDimTable(tableHeader,
-                           "Actions taken and discoveries made by AutoML",
-                           rowHeaders,
-                           EventLogEntry.colHeaders,
-                           EventLogEntry.colTypes,
-                           EventLogEntry.colFormats, "#");
-  }
-
-  private static final SimpleDateFormat timestampFormat = new SimpleDateFormat("HH:mm:ss.S");
   public void addTwoDimTableRow(TwoDimTable table, int row) {
     int col = 0;
-    table.set(row, col++, timestampFormat.format(new Date(timestamp)));
-    table.set(row, col++, level);
-    table.set(row, col++, stage);
-    table.set(row, col++, message);
+    table.set(row, col++, timeFormat.format(new Date(_timestamp)));
+    table.set(row, col++, _level);
+    table.set(row, col++, _stage);
+    table.set(row, col++, _name);
+    table.set(row, col++, _value);
+    table.set(row, col++, _message);
   }
 
   @Override
   public String toString() {
-    return String.format("%-12s %-" + longestLevel + "s %-" + longestStage + "s %s",
-            timestampFormat.format(new Date(timestamp)),
-            level,
-            stage,
-            message
+    return String.format("%-12s %-"+longestLevel+"s %-"+longestStage+"s %s %s %s",
+            timeFormat.format(new Date(_timestamp)),
+            _level,
+            _stage,
+            Objects.toString(_name, ""),
+            Objects.toString(_value, ""),
+            Objects.toString(_message, "")
     );
   }
 }

@@ -12,10 +12,11 @@ public class EventLogEntryV99 extends Schema<EventLogEntry, EventLogEntryV99> {
   @API(help="Timestamp for this event, in milliseconds since Jan 1, 1970", direction=API.Direction.OUTPUT)
   public long timestamp;
 
-  @API(help="Importance of this feedback event", valuesProvider = LevelProvider.class, direction=API.Direction.OUTPUT)
+  @API(help="Importance of this log event", valuesProvider = LevelProvider.class, direction=API.Direction.OUTPUT)
+
   public Level level;
 
-  @API(help="Stage of the AutoML process for this feedback event", valuesProvider = StageProvider.class, direction=API.Direction.OUTPUT)
+  @API(help="Stage of the AutoML process for this log event", valuesProvider = StageProvider.class, direction=API.Direction.OUTPUT)
   public Stage stage;
 
   @API(help="Message for this event", direction=API.Direction.OUTPUT)

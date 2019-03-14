@@ -102,8 +102,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
   private boolean have_set_sort_metric = false;
 
   /**
-   * EventLog object used to send, um, feedback to the, ah, user.  :-)
-   * Right now this is a "new leader" message.
+   * The eventLog attached to same AutoML instance as this Leaderboard object.
    */
   private EventLog eventLog;
 
