@@ -190,7 +190,7 @@ try {
                                 # Publish the output to S3.
                                 aws s3 sync target/ ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/ --acl public-read
                             """
-                            if (!params.TEST_RELEASE) {
+                            if (params.UPDATE_LATEST) {
                                 sh """
                                     cd ${env.BUILD_NUMBER_DIR}
                                     aws s3 sync target/R/ ${env.S3_ROOT}/latest_stable_R/ --acl public-read
