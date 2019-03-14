@@ -14,7 +14,7 @@ import java.util.HashMap;
 import static ai.h2o.automl.targetencoding.TargetEncodingTestFixtures.modelBuilderWithCVFixture;
 import static org.junit.Assert.*;
 
-public class GridSearchTEEvaluatorTest extends TestUtil {
+public class TargetEncodingHyperparamsEvaluatorTest extends TestUtil {
 
   @BeforeClass
   public static void setup() {
@@ -38,7 +38,7 @@ public class GridSearchTEEvaluatorTest extends TestUtil {
 
       TEApplicationStrategy strategy = new ThresholdTEApplicationStrategy(fr, fr.vec(responseColumnName), 4);
 
-      GridSearchTEEvaluator evaluator = new GridSearchTEEvaluator();
+      TargetEncodingHyperparamsEvaluator evaluator = new TargetEncodingHyperparamsEvaluator();
 
       TargetEncodingParams randomTEParams = TargetEncodingTestFixtures.randomTEParams();
       long builderSeed = 3456;
@@ -50,14 +50,14 @@ public class GridSearchTEEvaluatorTest extends TestUtil {
       
       int seedForFoldColumn = 2345;
       //TODO change null into Leaderboard
-      double auc = evaluator.evaluate(randomTEParams, modelBuilder, null, columnsToEncode, seedForFoldColumn);
+      double auc = evaluator.evaluate(randomTEParams, modelBuilder, ModelValidationMode.VALIDATION_FRAME,null, columnsToEncode, seedForFoldColumn);
       
       System.out.println("AUC with target encoding: " + auc);
       printOutFrameAsTable(modelBuilder._parms.train(), false, 5);
 
       ModelBuilder clonedModelBuilder = ModelBuilder.clone(modelBuilder);
       clonedModelBuilder.init(false);
-      double auc2 = evaluator.evaluate(randomTEParams, clonedModelBuilder, null, columnsToEncode, seedForFoldColumn); // checking that we can reuse modelBuilder
+      double auc2 = evaluator.evaluate(randomTEParams, clonedModelBuilder, ModelValidationMode.VALIDATION_FRAME,null, columnsToEncode, seedForFoldColumn); // checking that we can reuse modelBuilder
 
       assertTrue(isBitIdentical(frCopy, modelBuilder._parms.train()));
       assertTrue(auc > 0);
@@ -85,7 +85,7 @@ public class GridSearchTEEvaluatorTest extends TestUtil {
     long testSeed = 2345; //TODO maybe -1?
     long builderSeed = 3456; 
 
-    GridSearchTEEvaluator gridSearchTEEvaluator = new GridSearchTEEvaluator();
+    TargetEncodingHyperparamsEvaluator targetEncodingHyperparamsEvaluator = new TargetEncodingHyperparamsEvaluator();
 
     Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
     String responseColumnName = "survived";
@@ -113,7 +113,7 @@ public class GridSearchTEEvaluatorTest extends TestUtil {
         ModelBuilder clonedModelBuilder = ModelBuilder.clone(modelBuilder);
         clonedModelBuilder.init(false);
         
-        double evaluationResult = gridSearchTEEvaluator.evaluate(tmpParam, clonedModelBuilder, null, strategy.getColumnsToEncode(), testSeed);
+        double evaluationResult = targetEncodingHyperparamsEvaluator.evaluate(tmpParam, clonedModelBuilder, ModelValidationMode.VALIDATION_FRAME, null, strategy.getColumnsToEncode(), testSeed);
         if(lastResult == 0.0) lastResult = evaluationResult;
         else {
           
@@ -147,7 +147,7 @@ public class GridSearchTEEvaluatorTest extends TestUtil {
 
       TEApplicationStrategy strategy = new ThresholdTEApplicationStrategy(fr, fr.vec("survived"), 4);
 
-      GridSearchTEEvaluator evaluator = new GridSearchTEEvaluator();
+      TargetEncodingHyperparamsEvaluator evaluator = new TargetEncodingHyperparamsEvaluator();
 
       TargetEncodingParams anyParams = TargetEncodingTestFixtures.defaultTEParams();
       evaluator.evaluate(anyParams, new Algo[]{Algo.GBM}, fr, responseColumnName, foldColumnForTE, strategy.getColumnsToEncode());

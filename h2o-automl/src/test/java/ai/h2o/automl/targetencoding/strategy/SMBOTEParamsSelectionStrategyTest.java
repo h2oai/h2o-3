@@ -32,7 +32,7 @@ public class SMBOTEParamsSelectionStrategyTest  extends TestUtil {
     GridSearchTEParamsSelectionStrategy gridSearchTEParamsSelectionStrategy =
             new GridSearchTEParamsSelectionStrategy(fr, numberOfIterations, responseColumnName, columnsToEncode, true, seedForFoldColumn);
 
-    gridSearchTEParamsSelectionStrategy.setTESearchSpace(TESearchSpace.VALIDATION_FRAME_EARLY_STOPPING);
+    gridSearchTEParamsSelectionStrategy.setTESearchSpace(ModelValidationMode.VALIDATION_FRAME);
     ModelBuilder mb = TargetEncodingTestFixtures.modelBuilderWithValidFrameFixture(fr, responseColumnName, seedForFoldColumn);
     mb.init(false);
     return gridSearchTEParamsSelectionStrategy.getBestParamsWithEvaluation(mb);

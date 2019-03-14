@@ -5,28 +5,23 @@ import ai.h2o.automl.targetencoding.TargetEncoderFrameHelper;
 import ai.h2o.automl.targetencoding.TargetEncodingParams;
 import hex.ModelBuilder;
 import water.DKV;
-import water.Iced;
 import water.Key;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.TwoDimTable;
 
 import java.util.*;
 
-public class SMBOTEParamsSelectionStrategy extends TEParamsSelectionStrategy {
+public class SMBOTEParamsSelectionStrategy extends GridBasedTEParamsSelectionStrategy {
 
   private Frame _leaderboardData;
   private String _responseColumn;
   private String[] _columnsToEncode; // we might want to search for subset as well
   private boolean _theBiggerTheBetter;
-  private long _seed;
 
-  private GridSearchTEParamsSelectionStrategy.RandomSelector randomSelector;
   private PriorityQueue<Evaluated<TargetEncodingParams>> _evaluatedQueue;
-  private GridSearchTEEvaluator _evaluator = new GridSearchTEEvaluator();
-  
-  private TESearchSpace _teSearchSpace;
-  
+  private TargetEncodingHyperparamsEvaluator _evaluator = new TargetEncodingHyperparamsEvaluator();
+//    private GridSearchTEStratifiedEvaluator _evaluator = new GridSearchTEStratifiedEvaluator();
+
   private double _earlyStoppingRatio;
 
   public SMBOTEParamsSelectionStrategy(Frame leaderboard, double earlyStoppingRatio, String responseColumn, String[] columnsToEncode, boolean theBiggerTheBetter, long seed) {
@@ -39,31 +34,6 @@ public class SMBOTEParamsSelectionStrategy extends TEParamsSelectionStrategy {
     _theBiggerTheBetter = theBiggerTheBetter;
     
     _evaluatedQueue = new PriorityQueue<>(10, new EvaluatedComparator(theBiggerTheBetter));
-  }
-  
-  public void setTESearchSpace(TESearchSpace teSearchSpace) {
-    HashMap<String, Object[]> _grid = new HashMap<>();
-    
-    switch (teSearchSpace) {
-      case CV_EARLY_STOPPING: // TODO move up common parameter' ranges
-        _grid.put("_withBlending", new Double[]{1.0/*, false*/}); // NOTE: we can postpone implementation of hierarchical hyperparameter spaces... as in most cases blending is helpful.
-        //_grid.put("_noise_level", new Double[]{0.0, 0.1, 0.01}); when we chose holdoutType=None we don't need to search for noise
-        _grid.put("_inflection_point", new Double[]{1.0, 2.0, 3.0, 5.0, 10.0, 50.0, 100.0});
-        _grid.put("_smoothing", new Double[]{5.0, 10.0, 20.0});
-        _grid.put("_holdoutType", new Double[]{ 2.0});
-        break;
-      case VALIDATION_FRAME_EARLY_STOPPING:
-        _grid.put("_withBlending", new Double[]{1.0, 0.0}); // NOTE: we can postpone implementation of hierarchical hyperparameter spaces... as in most cases blending is helpful.
-        _grid.put("_noise_level", new Double[]{0.0, 0.1, 0.01});
-        _grid.put("_inflection_point", new Double[]{1.0, 2.0, 3.0, 5.0, 10.0, 50.0, 100.0});
-        _grid.put("_smoothing", new Double[]{5.0, 10.0, 20.0});
-        _grid.put("_holdoutType", new Double[]{0.0, 1.0, 2.0}); // see TargetEncoder.DataLeakageHandlingStrategy
-        break;
-    }
-    
-    _teSearchSpace = teSearchSpace;
-
-    randomSelector = new GridSearchTEParamsSelectionStrategy.RandomSelector(_grid, _seed);
   }
   
   static class EarlyStopper {
@@ -97,15 +67,15 @@ public class SMBOTEParamsSelectionStrategy extends TEParamsSelectionStrategy {
   }
 
   public Evaluated<TargetEncodingParams> getBestParamsWithEvaluation(ModelBuilder modelBuilder) {
-    assert _teSearchSpace != null : "`setTESearchSpace()` method should has been called to setup appropriate hyperspace.";
+    assert _modelValidationMode != null : "`setTESearchSpace()` method should has been called to setup appropriate hyperspace.";
     
     ArrayList<GridSearchTEParamsSelectionStrategy.GridEntry> wholeSpace = materialiseHyperspace();
-
+    
     Exporter exporter = new Exporter();
 
     double thresholdScoreFromPriors = 0;
     
-    int numberOfPriorEvals = 5;
+    int numberOfPriorEvals = 10;
     GridSearchTEParamsSelectionStrategy.GridEntry[] entriesForPrior = wholeSpace.subList(0, numberOfPriorEvals).toArray(new GridSearchTEParamsSelectionStrategy.GridEntry[0]);
     double[] priorScores = new double[numberOfPriorEvals];
     int priorIndex = 0;
@@ -114,8 +84,10 @@ public class SMBOTEParamsSelectionStrategy extends TEParamsSelectionStrategy {
 
       ModelBuilder clonedModelBuilder = ModelBuilder.clone(modelBuilder);
       clonedModelBuilder.init(false); // in _evaluator we assume that init() has been already called
-      double evaluationResult = _evaluator.evaluate(param, clonedModelBuilder, _leaderboardData, getColumnsToEncode(), _seed);
+      double evaluationResult = _evaluator.evaluate(param, clonedModelBuilder, _modelValidationMode, _leaderboardData, getColumnsToEncode(), _seed);
       priorScores[priorIndex] = evaluationResult;
+      _evaluatedQueue.add(new Evaluated<>(param, evaluationResult, priorIndex));
+
       priorIndex++;
       thresholdScoreFromPriors = Math.max(thresholdScoreFromPriors, evaluationResult);
       exporter.update(0.0, evaluationResult);
@@ -132,7 +104,8 @@ public class SMBOTEParamsSelectionStrategy extends TEParamsSelectionStrategy {
     printOutFrameAsTable(unexploredHyperspaceAsFrame);
 
     RFSMBO rfsmbo = new RFSMBO(){};
-    EarlyStopper earlyStopper = new EarlyStopper((int)(unexploredHyperspaceAsFrame.numRows() * _earlyStoppingRatio), thresholdScoreFromPriors);
+    int numberOfAttemptsBeforeStopping = (int) (unexploredHyperspaceAsFrame.numRows() * _earlyStoppingRatio);
+    EarlyStopper earlyStopper = new EarlyStopper(numberOfAttemptsBeforeStopping, thresholdScoreFromPriors);
 
     while(earlyStopper.proceed() && unexploredHyperspaceAsFrame.numRows() > 0 ) {
       
@@ -149,22 +122,24 @@ public class SMBOTEParamsSelectionStrategy extends TEParamsSelectionStrategy {
 
       final ModelBuilder clonedModelBuilder = ModelBuilder.clone(modelBuilder);
       clonedModelBuilder.init(false); // in _evaluator we assume that init() has been already called
-      double evaluationResult = _evaluator.evaluate(param, clonedModelBuilder, _leaderboardData, getColumnsToEncode(), _seed);
+      double evaluationResult = _evaluator.evaluate(param, clonedModelBuilder, _modelValidationMode, _leaderboardData, getColumnsToEncode(), _seed);
       
       earlyStopper.update(evaluationResult);
       
-      //Remove prediction from surrogate and add score on objective function
       printOutFrameAsTable(suggestedHPs);
+      
+      //Remove prediction from surrogate and add score on objective function
       exporter.update(suggestedHPs.vec(suggestedHPs.find("prediction")).at(0), evaluationResult);
       suggestedHPs.remove(suggestedHPs.find("prediction")).remove();
       suggestedHPs.add("score", Vec.makeCon(evaluationResult, 1));
       
       rfsmbo.updatePrior(suggestedHPs);
-      
-      _evaluatedQueue.add(new Evaluated<>(param, evaluationResult));
+
+      int evaluationSequenceNumber = _evaluatedQueue.size();
+      _evaluatedQueue.add(new Evaluated<>(param, evaluationResult, evaluationSequenceNumber));
     }
 
-    exporter.exportToCSV();
+    exporter.exportToCSV(modelBuilder._parms.fullName());
     Evaluated<TargetEncodingParams> targetEncodingParamsEvaluated = _evaluatedQueue.peek();
 
     return targetEncodingParamsEvaluated;
@@ -177,14 +152,14 @@ public class SMBOTEParamsSelectionStrategy extends TEParamsSelectionStrategy {
     public Exporter() {
     }
 
-    public void exportToCSV() {
+    public void exportToCSV(String modelName) {
       double[] scoresAsDouble = new double[scores.size()];
       for (int i = 0; i < scores.size(); i++) {
         scoresAsDouble[i] = (double) scores.toArray()[i];
       }
       Vec predVec = Vec.makeVec(scoresAsDouble, Vec.newKey());
       Frame fr = new Frame(new String[]{"score"}, new Vec[]{predVec});
-      Frame.export(fr, "scores_smbo_" + System.currentTimeMillis() / 1000 + ".csv", "frame_name", true, 1);
+      Frame.export(fr, "scores_smbo_" + modelName + "-" + System.currentTimeMillis() / 1000 + ".csv", "frame_name", true, 1).get();
     };
 
     public void update(double prediction, double score) {
@@ -199,7 +174,7 @@ public class SMBOTEParamsSelectionStrategy extends TEParamsSelectionStrategy {
     try {
       double entryIndex = 0;
       while (true) {
-        GridSearchTEParamsSelectionStrategy.GridEntry selected = randomSelector.getNext();
+        GridSearchTEParamsSelectionStrategy.GridEntry selected = _randomSelector.getNext();
         selected.getItem().put("id", entryIndex);
         wholeSpace.add(selected);
         entryIndex++;

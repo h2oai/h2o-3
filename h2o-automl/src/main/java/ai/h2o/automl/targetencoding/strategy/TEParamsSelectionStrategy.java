@@ -26,10 +26,18 @@ public abstract class TEParamsSelectionStrategy extends Iced {
 
     transient P _item;
     private double _score;
+    
+    // Zero-based index of evaluation run
+    private int _index;
 
-    public Evaluated(P item, double score) {
+    public Evaluated(P item, double score, int index) {
       _item = item;
       _score = score;
+      _index = index;
+    }
+
+    public int getIndex() {
+      return _index;
     }
   }
 

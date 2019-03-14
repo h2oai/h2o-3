@@ -32,7 +32,7 @@ public class TEIntegrationWithAutoMLCVBenchmark extends water.TestUtil {
     return fr;
   }
 
-  @Test public void autoAssignedFoldsCVScenarioTest() {
+  @Test public void te_vs_without_te_with_CV_early_stopping() {
     AutoML aml=null;
     Frame fr=null;
     Frame frForWithoutTE=null;
@@ -148,7 +148,8 @@ public class TEIntegrationWithAutoMLCVBenchmark extends water.TestUtil {
 
       frForWithoutTE = train.deepCopy(Key.make().toString());
       DKV.put(frForWithoutTE);
-      Leaderboard leaderboardWithoutTE = trainAutoMLWithoutTE( frForWithoutTE,responseColumnName, seed);
+      
+      Leaderboard leaderboardWithoutTE = trainAutoMLWithoutTE( frForWithoutTE, responseColumnName, seed);
 //      double aucWithoutTE = leaderboardWithoutTE.getLeader().auc(); // In case of CV early stopping our leader model should return auc that was used for sorting in leaderboard. 
       double aucWithoutTE = getScoreBasedOn(leaderboard, leaderboardWithoutTE.getLeader()); // In case of CV early stopping our leader model should return auc that was used for sorting in leaderboard. 
 
@@ -168,9 +169,11 @@ public class TEIntegrationWithAutoMLCVBenchmark extends water.TestUtil {
     }
   }
 
-  int numberOfModelsToCompareWith = 2;
-  Algo[] excludeAlgos = {Algo.DeepLearning /*Algo.DRF*/, Algo.GLM,  Algo.XGBoost /* Algo.GBM,*/, Algo.StackedEnsemble};
-  
+  int numberOfModelsToCompareWith = 3;
+//  Algo[] excludeAlgos = {Algo.DeepLearning, Algo.DRF, Algo.GLM,  Algo.XGBoost /* Algo.GBM,*/, Algo.StackedEnsemble};
+//  Algo[] excludeAlgos = {Algo.DeepLearning , Algo.DRF, Algo.GLM, /* Algo.XGBoost*/ Algo.GBM, Algo.StackedEnsemble};
+  Algo[] excludeAlgos = {Algo.DeepLearning , Algo.DRF, Algo.GLM,  Algo.XGBoost, /*Algo.GBM,*/ Algo.StackedEnsemble};
+
   // not TE related test!!!
   // Testing CV Early stopping case with  explicitly assigned stratified kfolds vs. 
   // AutoAssigned kfolds (default schema is Modulo and we can set it through parameters, only in AutoML.setCommonModelBuilderParams).
@@ -295,75 +298,85 @@ public class TEIntegrationWithAutoMLCVBenchmark extends water.TestUtil {
     
   }
 
-    //With nfolds being set we will use CV early stopping for AutoML search and therefore only DataLeakageHandlingStrategy.None target encoding strategy is going to be used. 
-    //Otherwise we will overfit to dataleakage that target encoding introduces with KFold and LOO strategies.
-  @Test public void gridSearchStrategyWithFinalBenchmarkOnHoldoutTest() {
+  @Test public void baseBenchmarkWithCVPredictionUsedForComparison() {
     AutoML aml=null;
     Frame fr=null;
     Model leader = null;
     Frame trainingFrame = null;
     String responseColumnName = "survived";
-    try {
-      AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
 
-      fr = getPreparedTitanicFrame(responseColumnName);
+    Random generator = new Random();
+    double avgAUCWith = 0.0;
+    double avgAUCWithoutTE = 0.0;
 
-      double[] ratios = ard(0.8, 0.2);
-      Key<Frame>[] keys = aro(Key.<Frame>make("test.hex"), Key.<Frame>make("train.hex"));
-      Frame[] splits = null;
-      splits = ShuffleSplitFrame.shuffleSplitFrame(fr, keys, ratios, 42);
+    int numberOfRuns = 3;
 
-      autoMLBuildSpec.input_spec.training_frame = splits[0]._key;
-      autoMLBuildSpec.build_control.nfolds = 5;
-      autoMLBuildSpec.input_spec.response_column = responseColumnName;
+    for (int seedAttempt = 0; seedAttempt < numberOfRuns; seedAttempt++) {
+      long nextSeed = generator.nextLong();
+      try {
+        AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
 
-      Vec responseColumn = fr.vec(responseColumnName);
-      TEApplicationStrategy thresholdTEApplicationStrategy = new ThresholdTEApplicationStrategy(fr, responseColumn, 5);
+        fr = getPreparedTitanicFrame(responseColumnName);
 
-      int numberOfIterations = 100; // TODO Need to introduce early stopping.
-      long seed = autoMLBuildSpec.te_spec.seed;
-      TEParamsSelectionStrategy gridSearchTEParamsSelectionStrategy =
-              new GridSearchTEParamsSelectionStrategy(fr, numberOfIterations, responseColumnName, thresholdTEApplicationStrategy.getColumnsToEncode(), true, seed);;
+        autoMLBuildSpec.input_spec.training_frame = fr._key;
+        autoMLBuildSpec.build_control.nfolds = 5;
+        autoMLBuildSpec.input_spec.response_column = responseColumnName;
+        autoMLBuildSpec.build_models.exclude_algos = excludeAlgos;
 
-      autoMLBuildSpec.te_spec.application_strategy = thresholdTEApplicationStrategy;
-      autoMLBuildSpec.te_spec.params_selection_strategy = gridSearchTEParamsSelectionStrategy;
+        Vec responseColumn = fr.vec(responseColumnName);
+        TEApplicationStrategy thresholdTEApplicationStrategy = new ThresholdTEApplicationStrategy(fr, responseColumn, 5);
 
-      autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
-      autoMLBuildSpec.build_control.stopping_criteria.set_seed(7890);
-      autoMLBuildSpec.build_control.keep_cross_validation_models = false;
-      autoMLBuildSpec.build_control.keep_cross_validation_predictions = false;
+        int numberOfIterations = 63;
+        autoMLBuildSpec.te_spec.seed = nextSeed;
+        TEParamsSelectionStrategy gridSearchTEParamsSelectionStrategy =
+                new GridSearchTEParamsSelectionStrategy(fr, numberOfIterations, responseColumnName, thresholdTEApplicationStrategy.getColumnsToEncode(), true, nextSeed);
+        ;
 
-      aml = AutoML.startAutoML(autoMLBuildSpec);
-      aml.get();
-
-      leader = aml.leader();
-      leader.score(splits[1]);
-      hex.ModelMetricsBinomial mmWithTE = hex.ModelMetricsBinomial.getFromDKV(leader, splits[1]);
+        autoMLBuildSpec.te_spec.application_strategy = thresholdTEApplicationStrategy;
+        autoMLBuildSpec.te_spec.params_selection_strategy = gridSearchTEParamsSelectionStrategy;
 
 
-      double aucWithTE = mmWithTE.auc();
+        autoMLBuildSpec.build_control.project_name = "with_te" + nextSeed;
+        autoMLBuildSpec.build_control.stopping_criteria.set_max_models(numberOfModelsToCompareWith);
+        autoMLBuildSpec.build_control.stopping_criteria.set_seed(nextSeed);
+        autoMLBuildSpec.build_control.keep_cross_validation_models = false;
+        autoMLBuildSpec.build_control.keep_cross_validation_predictions = false;
 
-      trainingFrame = aml.getTrainingFrame();
+        aml = AutoML.startAutoML(autoMLBuildSpec);
+        aml.get();
 
-      Leaderboard leaderboardWithoutTE = trainAutoMLWithoutTE(splits[0], responseColumnName, seed);
-      Model withoutTELeader = leaderboardWithoutTE.getLeader();
-      withoutTELeader.score(splits[1]);
-      hex.ModelMetricsBinomial mmWithoutTE = hex.ModelMetricsBinomial.getFromDKV(withoutTELeader, splits[1]);
-      double aucWithoutTE = mmWithoutTE.auc();
+        leader = aml.leader();
 
-      System.out.println("Performance on holdout split with TE: AUC = " + aucWithTE);
-      System.out.println("Performance on holdout split without TE: AUC = " + aucWithoutTE);
+        double aucWithTE = leader.auc();
 
-      assertTrue(aucWithTE > aucWithoutTE);
+        Frame fr2 = getPreparedTitanicFrame(responseColumnName);
+        Leaderboard leaderboardWithoutTE = trainAutoMLWithoutTE(fr2, responseColumnName, nextSeed);
+        Model withoutTELeader = leaderboardWithoutTE.getLeader();
 
-      assertNotEquals(" Two frames should be different.", fr, trainingFrame);
+        double aucWithoutTE = withoutTELeader.auc();
 
-    } finally {
-      if(leader!=null) leader.delete();
-      if(aml!=null) aml.delete();
-      if(trainingFrame != null)  trainingFrame.delete();
-      if(fr != null) fr.delete();
+        System.out.println("Performance on holdout split with TE: AUC = " + aucWithTE);
+        System.out.println("Performance on holdout split without TE: AUC = " + aucWithoutTE);
+
+        avgAUCWith += aucWithTE;
+        avgAUCWithoutTE += aucWithoutTE;
+        
+
+      } finally {
+        if (leader != null) leader.delete();
+        if (aml != null) aml.delete();
+        if (trainingFrame != null) trainingFrame.delete();
+        if (fr != null) fr.delete();
+      }
     }
+
+    avgAUCWith = avgAUCWith / numberOfRuns;
+    avgAUCWithoutTE = avgAUCWithoutTE / numberOfRuns;
+    System.out.println("Average AUC with encoding: " + avgAUCWith);
+    System.out.println("Average AUC without encoding: " + avgAUCWithoutTE);
+    
+    assertTrue(avgAUCWith > avgAUCWithoutTE);
+
   }
 
   private Leaderboard trainAutoMLWithoutTE(Frame trainingSplit, String responseColumnName, long seed) {
@@ -374,15 +387,15 @@ public class TEIntegrationWithAutoMLCVBenchmark extends water.TestUtil {
 
       autoMLBuildSpec.input_spec.training_frame = trainingSplit._key;
       autoMLBuildSpec.build_control.nfolds = 5;
+      autoMLBuildSpec.input_spec.response_column = responseColumnName;
       autoMLBuildSpec.build_models.exclude_algos = excludeAlgos;
 
-      autoMLBuildSpec.input_spec.response_column = responseColumnName;
 
       autoMLBuildSpec.te_spec.enabled = false;
 
       autoMLBuildSpec.build_control.project_name = "without_te" + seed;
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(numberOfModelsToCompareWith);
-      autoMLBuildSpec.build_control.stopping_criteria.set_seed(7890);
+      autoMLBuildSpec.build_control.stopping_criteria.set_seed(seed);
       autoMLBuildSpec.build_control.keep_cross_validation_models = false;
       autoMLBuildSpec.build_control.keep_cross_validation_predictions = false;
 

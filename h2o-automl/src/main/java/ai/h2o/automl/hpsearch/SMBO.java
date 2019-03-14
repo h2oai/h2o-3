@@ -46,10 +46,10 @@ public abstract class SMBO {
   public Frame getNextBestHyperparameters(Frame unexploredHyperspace) {
     
     // 1) evaluate whole searchspace with surrogate model. Model is trained on history.
-    Frame evaluatedHyperspace = surrogateModel().evaluate(unexploredHyperspace, history(), null);
+    Frame evaluatedHyperspace = surrogateModel().evaluate(unexploredHyperspace, history());
     int predictionIdx = evaluatedHyperspace.find("prediction");
     Frame sorted = evaluatedHyperspace.sort(new int[] {predictionIdx}, new int[] {-1});
-    printOutFrameAsTable(sorted, false, 10);
+    printOutFrameAsTable(sorted, false, 30);
     // 2) choose best HyperParameters based on `selectionCriteria`
     Frame bestHPsBasedOnCriteria = null;
     boolean randomStrategy = false;

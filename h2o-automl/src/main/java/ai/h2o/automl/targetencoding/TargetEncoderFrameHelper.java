@@ -1,6 +1,8 @@
 package ai.h2o.automl.targetencoding;
 
+import hex.Model;
 import water.DKV;
+import water.H2O;
 import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
@@ -79,6 +81,15 @@ public class TargetEncoderFrameHelper {
     fr.remove("predicate");
     return filtered;
   }
+  
+  public static Frame[] splitByValue(Frame fr,int columnIndex, double value) {
+    return new Frame[] { filterByValue(fr, columnIndex, value), filterNotByValue(fr, columnIndex, value)};
+  }
+  
+  public static Frame[] splitByValue(Frame fr, String foldColumnName, double value) {
+    int indexOfTheFoldColumn = fr.find(foldColumnName);
+    return new Frame[] { filterByValue(fr, indexOfTheFoldColumn, value), filterNotByValue(fr, indexOfTheFoldColumn, value)};
+  }
 
   //Note: It could be a good thing to have this method in Frame's API.
   public static Frame factorColumn(Frame fr, String columnName) {
@@ -150,6 +161,28 @@ public class TargetEncoderFrameHelper {
   static public Frame addKFoldColumn(Frame frame, String name, int nfolds, long seed) {
     Vec foldVec = frame.anyVec().makeZero();
     frame.add(name, AstKFold.kfoldColumn(foldVec, nfolds, seed == -1 ? new Random().nextLong() : seed));
+    return frame;
+  }
+  
+  /**
+   * @param frame
+   * @param name name of the fold column
+   * @param nfolds number of folds
+   * @param seed
+   */
+  static public Frame addKFoldColumn(Model.Parameters.FoldAssignmentScheme fold_assignment, Frame frame, String name, int nfolds, String responseColumnName,  long seed) {
+    Vec foldAssignments = null;
+    switch(fold_assignment ) {
+      case AUTO:
+      case Random:     foldAssignments = AstKFold.          kfoldColumn(frame.anyVec().makeZero(), nfolds,seed);
+        break;
+      case Modulo:     foldAssignments = AstKFold.    moduloKfoldColumn(frame.anyVec().makeZero(), nfolds     );
+        break;
+      case Stratified: foldAssignments = AstKFold.stratifiedKFoldColumn(frame.vec(responseColumnName), nfolds, seed);
+        break;
+      default:         throw H2O.unimpl();
+    }
+    frame.add(name, foldAssignments);
     return frame;
   }
 

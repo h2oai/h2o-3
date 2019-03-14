@@ -1,46 +1,126 @@
 package ai.h2o.automl.targetencoding.strategy;
 
-import ai.h2o.automl.Algo;
 import ai.h2o.automl.targetencoding.TargetEncoder;
 import ai.h2o.automl.targetencoding.TargetEncoderFrameHelper;
 import ai.h2o.automl.targetencoding.TargetEncodingParams;
 import hex.*;
-import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.splitframe.ShuffleSplitFrame;
-import hex.tree.gbm.GBM;
-import hex.tree.gbm.GBMModel;
 import water.DKV;
 import water.Iced;
 import water.Key;
 import water.Keyed;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.util.Log;
 import water.util.TwoDimTable;
 
 import java.util.*;
 
+import static ai.h2o.automl.targetencoding.TargetEncoder.DataLeakageHandlingStrategy.*;
 import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
 import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.concat;
 
-public class GridSearchTEEvaluator extends Iced {
-  public GridSearchTEEvaluator() {
+public class TargetEncodingHyperparamsEvaluator extends Iced {
+  public TargetEncodingHyperparamsEvaluator() {
     
   }
 
-  public double evaluate(TargetEncodingParams teParams, ModelBuilder modelBuilder, Frame leaderboard, String[] columnsToEncode, long seedForFoldColumn) {
-    
+  public double evaluateForCVMode(TargetEncodingParams teParams, ModelBuilder modelBuilder, String[] columnsToEncode, long seedForFoldColumn) {
+
+    double score = 0;
+    double averageScore = 0;
+    Map<String, Frame> encodingMap = null;
+    Frame trainEncoded = null;
+    Frame testEncoded = null;
+    Frame originalTrainingData = modelBuilder.train();
+
+    Frame trainCopy = originalTrainingData.deepCopy(Key.make("train_frame_copy_for_evaluation" + Key.make()).toString());
+    DKV.put(trainCopy);
+
+    String[] originalIgnoredColumns = modelBuilder._parms._ignored_columns;
+    String foldColumnName = modelBuilder._parms._fold_column;
+
+    try {
+      String responseColumn = modelBuilder._parms._response_column;
+      String[] teColumnsToExclude = columnsToEncode;
+      TargetEncoder tec = new TargetEncoder(columnsToEncode, teParams.getBlendingParams());
+      byte holdoutType = teParams.getHoldoutType();
+
+      String foldColumnForTE = null;
+
+      switch (holdoutType) {
+        case KFold:
+          // Maybe we can use the same folds that we will use for splitting but in that case we will have only 4 folds for encoding map
+          // generation and application of this map to the frame that was used for creating map
+          foldColumnForTE = modelBuilder._job._key.toString() + "_fold";
+          int nfolds = 7;
+          addKFoldColumn(trainCopy, foldColumnForTE, nfolds, seedForFoldColumn);
+
+          encodingMap = tec.prepareEncodingMap(trainCopy, responseColumn, foldColumnForTE, true);
+          trainEncoded = tec.applyTargetEncoding(trainCopy, responseColumn, encodingMap, KFold, foldColumnForTE, teParams.isWithBlendedAvg(), teParams.getNoiseLevel(), true, seedForFoldColumn);
+          break;
+        case LeaveOneOut:
+        case None:
+        default:
+          // For `None` strategy we can make sure that holdouts from `otherFolds` frame are being chosen in a mutually exclusive way across all folds
+          throw new IllegalStateException("Only `KFold` strategy is being used in current version for CV mode.");
+      }
+
+      modelBuilder._parms._ignored_columns = concat(concat(originalIgnoredColumns, teColumnsToExclude), new String[]{ foldColumnForTE});
+
+      modelBuilder.setTrain(trainEncoded);
+      modelBuilder._parms.setTrain(trainEncoded._key);
+
+      try {
+        Model retrievedModel = null;
+        Keyed model = modelBuilder.trainModel().get();
+        retrievedModel = DKV.getGet(model._key);
+        double cvScore = retrievedModel._output._cross_validation_metrics.auc_obj()._auc;
+        score += cvScore;
+      } catch (Exception exception) {
+        Log.debug("Exception during modelBuilder evaluation: " + exception.getMessage());
+      }
+      
+    } catch(Exception ex ) {
+      Log.debug("Exception during applying TE in TargetEncodingHyperparamsEvaluator.evaluate(): " + ex.getMessage());
+    } finally {
+      //Setting back original frames
+      modelBuilder.setTrain(originalTrainingData);
+      modelBuilder._parms.setTrain(originalTrainingData._key);
+
+      modelBuilder._parms._ignored_columns = originalIgnoredColumns;
+      if(testEncoded != null) testEncoded.delete();
+      if(trainCopy != null) trainCopy.delete();
+      if (encodingMap == null) {
+        Log.debug("Illegal state. encodingMap == null.");
+      } else {
+        TargetEncoderFrameHelper.encodingMapCleanUp(encodingMap);
+      }
+    }
+    return score;
+  }
+  
+  private double scoreOnTest(ModelBuilder modelBuilder, Frame testEncodedFrame) {
+    Model retrievedModel = null;
+    Keyed model = modelBuilder.trainModel().get();
+    retrievedModel = DKV.getGet(model._key);
+    retrievedModel.score(testEncodedFrame);
+
+    hex.ModelMetricsBinomial mmb = hex.ModelMetricsBinomial.getFromDKV(retrievedModel, testEncodedFrame);
+    if(retrievedModel!=null) retrievedModel.delete();
+
+    return mmb.auc();
+  }
+
+  public double evaluateForValidationFrameMode(TargetEncodingParams teParams, ModelBuilder modelBuilder, Frame leaderboard, String[] columnsToEncode, long seedForFoldColumn) {
     double score = 0;
     Map<String, Frame> encodingMap = null;
     Frame trainEncoded = null;
     Frame validEncoded = null;
     Frame testEncoded = null;
-    
-    boolean debugExport = false;
-    
+
     // As original modelBuilder could be set up in a different way... let say nfolds = 0 
     // we need to take into consideration the fact that training frame is going to be different every time as we split validation and leaderboard from it
     Frame originalTrainingData = modelBuilder.train();
@@ -48,16 +128,15 @@ public class GridSearchTEEvaluator extends Iced {
 
     Frame trainCopy = originalTrainingData.deepCopy(Key.make("train_frame_copy_for_evaluation" + Key.make()).toString());
     DKV.put(trainCopy);
-    
+
     Frame validCopy = originalValidationData.deepCopy(Key.make("validation_frame_copy_for_evaluation" + Key.make()).toString());
     DKV.put(validCopy);
-    
+
     Frame leaderboardCopy = leaderboard.deepCopy(Key.make("leaderboard_frame_copy_for_evaluation" + Key.make()).toString());
     DKV.put(leaderboardCopy);
-    
+
     String[] originalIgnoredColumns = modelBuilder._parms._ignored_columns;
     String foldColumnForTE = null;
-    Model retrievedModel = null;
 
     try {
       // We need to apply TE taking into account the way how we train and validate our models.
@@ -68,8 +147,8 @@ public class GridSearchTEEvaluator extends Iced {
       String[] teColumnsToExclude = columnsToEncode;
       TargetEncoder tec = new TargetEncoder(columnsToEncode, teParams.getBlendingParams());
       byte holdoutType = teParams.getHoldoutType();
-      
-      if(holdoutType == TargetEncoder.DataLeakageHandlingStrategy.KFold) {
+
+      if(holdoutType == KFold) {
         foldColumnForTE = modelBuilder._job._key.toString() + "_fold"; //TODO quite long but feels unique though
         //TODO default value for KFOLD target encoding. We might want to search for this value but it is quite expensive.
         // We might want to optimize and add fold column once per group of hyperparameters.
@@ -77,8 +156,8 @@ public class GridSearchTEEvaluator extends Iced {
         addKFoldColumn(trainCopy, foldColumnForTE, nfolds, seedForFoldColumn);
         // We might want to fine tune selection of the te column in Grid search as well ( even after TEApplicationStrategy)
       }
-      
-      if(holdoutType == TargetEncoder.DataLeakageHandlingStrategy.KFold) {
+
+      if(holdoutType == KFold) {
         teColumnsToExclude = concat(columnsToEncode, new String[]{foldColumnForTE});
         encodingMap = tec.prepareEncodingMap(trainCopy, responseColumn, foldColumnForTE, true);
         trainEncoded = tec.applyTargetEncoding(trainCopy, responseColumn, encodingMap, holdoutType, foldColumnForTE, teParams.isWithBlendedAvg(), teParams.getNoiseLevel(), true, seedForFoldColumn);
@@ -87,14 +166,10 @@ public class GridSearchTEEvaluator extends Iced {
       }
       else if(holdoutType == TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut) {
         encodingMap = tec.prepareEncodingMap(trainCopy, responseColumn, null, true);
-        if(debugExport) Frame.export(trainCopy, "trainCopy_evaluator.csv", trainCopy._key.toString(), true, 1).get();
 
         trainEncoded = tec.applyTargetEncoding(trainCopy, responseColumn, encodingMap, holdoutType, teParams.isWithBlendedAvg(), teParams.getNoiseLevel(), true, seedForFoldColumn);
         validEncoded = tec.applyTargetEncoding(validCopy, responseColumn, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, teParams.isWithBlendedAvg(), 0.0, true, seedForFoldColumn);
-        if(debugExport) Frame.export(leaderboardCopy, "leaderboard_before_evaluator.csv", leaderboardCopy._key.toString(), true, 1).get();
-
         testEncoded = tec.applyTargetEncoding(leaderboardCopy, responseColumn, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, teParams.isWithBlendedAvg(), 0.0, true, seedForFoldColumn);
-        if(debugExport)Frame.export(testEncoded, "leaderboard_encoded_evaluator.csv", testEncoded._key.toString(), true, 1).get();
 
       } else { // Holdout None case might be always a looser as we use less data for training. So it is an unfair competition.
         // It would be more efficient to split it once before all the evaluations.
@@ -103,12 +178,8 @@ public class GridSearchTEEvaluator extends Iced {
         Frame trainSplitForNoneCase = trainAndHoldoutSplits[0];
         Frame holdoutSplitForNoneCase = trainAndHoldoutSplits[1];
         encodingMap = tec.prepareEncodingMap(holdoutSplitForNoneCase, responseColumn, null, true);
-//         Note: no need to add noise for training
-        if(debugExport)Frame.export(trainSplitForNoneCase, "train_none_before_evaluator.csv", trainSplitForNoneCase._key.toString(), true, 1).get();
-
+        // Note: no need to add noise for training
         trainEncoded = tec.applyTargetEncoding(trainSplitForNoneCase, responseColumn, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, teParams.isWithBlendedAvg(), 0.0, true, seedForFoldColumn);
-        if(debugExport)Frame.export(trainEncoded, "train_none_evaluator.csv", trainEncoded._key.toString(), true, 1).get();
-
         validEncoded = tec.applyTargetEncoding(validCopy, responseColumn, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, teParams.isWithBlendedAvg(), 0.0, true, seedForFoldColumn);
         testEncoded = tec.applyTargetEncoding(leaderboardCopy, responseColumn, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, teParams.isWithBlendedAvg(), 0.0, true, seedForFoldColumn);
       }
@@ -122,29 +193,22 @@ public class GridSearchTEEvaluator extends Iced {
       modelBuilder.setValid(validEncoded);
       modelBuilder._parms.setTrain(trainEncoded._key);
       modelBuilder._parms._valid = validEncoded._key;
-      
-      try {
-        Keyed model = modelBuilder.trainModel().get();
-        retrievedModel = DKV.getGet(model._key);
-        retrievedModel.score(testEncoded);
-        if(debugExport) Frame.export(encodingMap.get("home.dest"), "encoding_map_evaluator.csv", encodingMap.get("home.dest")._key.toString(), true, 1).get();
 
-        hex.ModelMetricsBinomial mmb = hex.ModelMetricsBinomial.getFromDKV(retrievedModel, testEncoded);
-        score += mmb.auc();
+      try {
+        score += scoreOnTest(modelBuilder, testEncoded);
       } catch (H2OIllegalArgumentException exception) {
         Log.debug("Exception during modelBuilder evaluation: " + exception.getMessage());
       }
     } catch(Exception ex ) {
-      Log.debug("Exception during applying TE in GridSearchTEEvaluator.evaluate(): " + ex.getMessage());
+      Log.debug("Exception during applying TE in TargetEncodingHyperparamsEvaluator.evaluate(): " + ex.getMessage());
     } finally {
       //Setting back original frames
       modelBuilder.setTrain(originalTrainingData);
       modelBuilder.setValid(originalValidationData);
       modelBuilder._parms.setTrain(originalTrainingData._key);
       modelBuilder._parms._valid = originalValidationData._key;
-      
+
       modelBuilder._parms._ignored_columns = originalIgnoredColumns;
-      if(retrievedModel!=null) retrievedModel.delete();
       if(trainEncoded != null) trainEncoded.delete();
       if(testEncoded != null) testEncoded.delete();
       validCopy.delete();
@@ -157,6 +221,17 @@ public class GridSearchTEEvaluator extends Iced {
       }
     }
     return score;
+  }
+
+  public double evaluate(TargetEncodingParams teParams, ModelBuilder modelBuilder, ModelValidationMode modelValidationMode, Frame leaderboard, String[] columnsToEncode, long seedForFoldColumn) {
+  
+      switch (modelValidationMode) {
+      case CV:
+        return evaluateForCVMode(teParams, modelBuilder, columnsToEncode, seedForFoldColumn);
+      case VALIDATION_FRAME: 
+      default:
+        return evaluateForValidationFrameMode(teParams, modelBuilder, leaderboard, columnsToEncode, seedForFoldColumn);
+    }
   }
 
   public static void printOutFrameAsTable(Frame fr) {

@@ -22,8 +22,15 @@ import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.addKFoldColu
 import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.concat;
 
 public class GridSearchTEStratifiedEvaluator extends Iced {
+  
+  private double _stratificationRatio = 1.0;
+  
   public GridSearchTEStratifiedEvaluator() {
     
+  }
+
+  public void setStratificationRatio(double stratificationRatio) {
+    _stratificationRatio = stratificationRatio;
   }
 
   public double evaluate(TargetEncodingParams teParams, ModelBuilder modelBuilder, Frame leaderboard, String[] columnsToEncode, long seedForFoldColumn) {
@@ -44,7 +51,7 @@ public class GridSearchTEStratifiedEvaluator extends Iced {
 
     Frame trainCopy = originalTrainingData.deepCopy(Key.make("train_frame_copy_for_evaluation" + Key.make()).toString());
     DKV.put(trainCopy);
-    double stratifiedSamplingRatio = 0.8;
+    double stratifiedSamplingRatio = _stratificationRatio;
     Frame stratifiedTrainCopy = StratificationAssistant.sample(trainCopy, responseColumn, stratifiedSamplingRatio, seedForFoldColumn);
     
     Frame validCopy = originalValidationData.deepCopy(Key.make("validation_frame_copy_for_evaluation" + Key.make()).toString());
@@ -134,7 +141,7 @@ public class GridSearchTEStratifiedEvaluator extends Iced {
         Log.debug("Exception during modelBuilder evaluation: " + exception.getMessage());
       }
     } catch(Exception ex ) {
-      Log.debug("Exception during applying TE in GridSearchTEEvaluator.evaluate(): " + ex.getMessage());
+      Log.debug("Exception during applying TE in TargetEncodingHyperparamsEvaluator.evaluate(): " + ex.getMessage());
     } finally {
       //Setting back original frames
       modelBuilder.setTrain(originalTrainingData);

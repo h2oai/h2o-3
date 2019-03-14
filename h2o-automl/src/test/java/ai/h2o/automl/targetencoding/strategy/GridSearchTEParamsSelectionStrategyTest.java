@@ -1,6 +1,5 @@
 package ai.h2o.automl.targetencoding.strategy;
 
-import ai.h2o.automl.Algo;
 import ai.h2o.automl.targetencoding.TargetEncoder;
 import ai.h2o.automl.targetencoding.TargetEncodingParams;
 import ai.h2o.automl.targetencoding.TargetEncodingTestFixtures;
@@ -55,7 +54,7 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
     GridSearchTEParamsSelectionStrategy gridSearchTEParamsSelectionStrategy =
             new GridSearchTEParamsSelectionStrategy(fr, numberOfIterations, responseColumnName, columnsToEncode, true, seedForFoldColumn);
 
-    gridSearchTEParamsSelectionStrategy.setTESearchSpace(TESearchSpace.VALIDATION_FRAME_EARLY_STOPPING);
+    gridSearchTEParamsSelectionStrategy.setTESearchSpace(ModelValidationMode.VALIDATION_FRAME);
     ModelBuilder mb = TargetEncodingTestFixtures.modelBuilderWithValidFrameFixture(fr, responseColumnName, seedForFoldColumn);
     mb.init(false);
     return gridSearchTEParamsSelectionStrategy.getBestParamsWithEvaluation(mb);
@@ -89,7 +88,7 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
       Vec survivedVec = fr3.vec("survived");
       TEApplicationStrategy strategy = new ThresholdTEApplicationStrategy(fr3, survivedVec, 4);
 
-      GridSearchTEEvaluator evaluator = new GridSearchTEEvaluator();
+      TargetEncodingHyperparamsEvaluator evaluator = new TargetEncodingHyperparamsEvaluator();
 
 //      double gbmWithBestGLMParams = evaluator.evaluate(bestParamsFromGLM._item, new Algo[]{Algo.GBM}, fr3, responseColumnName, foldColumnForTE, strategy.getColumnsToEncode());
 //      double gbmWithBestGBMParams = evaluator.evaluate(bestParamsFromGBM._item, new Algo[]{Algo.GBM}, fr3, responseColumnName, foldColumnForTE, strategy.getColumnsToEncode());
@@ -121,9 +120,9 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
     TargetEncodingParams params1 = TargetEncodingTestFixtures.randomTEParams();
     TargetEncodingParams params2 = TargetEncodingTestFixtures.randomTEParams();
     TargetEncodingParams params3 = TargetEncodingTestFixtures.randomTEParams();
-    evaluatedQueue.add(new GridSearchTEParamsSelectionStrategy.Evaluated<>(params1, 0.9984));
-    evaluatedQueue.add(new GridSearchTEParamsSelectionStrategy.Evaluated<>(params2, 0.9996));
-    evaluatedQueue.add(new GridSearchTEParamsSelectionStrategy.Evaluated<>(params3, 0.9784));
+    evaluatedQueue.add(new GridSearchTEParamsSelectionStrategy.Evaluated<>(params1, 0.9984, 0));
+    evaluatedQueue.add(new GridSearchTEParamsSelectionStrategy.Evaluated<>(params2, 0.9996, 1));
+    evaluatedQueue.add(new GridSearchTEParamsSelectionStrategy.Evaluated<>(params3, 0.9784, 2));
     
     assertEquals(0.9996, evaluatedQueue.poll().getScore(), 1e-5);
     assertEquals(0.9984, evaluatedQueue.poll().getScore(), 1e-5);
@@ -189,7 +188,7 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
       
       frBaseLine = parse_test_file("./smalldata/gbm_test/titanic.csv");
       String[] columnsOtExclude = new String[]{};
-      double scoreBaseLine = GridSearchTEEvaluator.evaluateWithGLM(frBaseLine, responseColumnName, columnsOtExclude);
+      double scoreBaseLine = TargetEncodingHyperparamsEvaluator.evaluateWithGLM(frBaseLine, responseColumnName, columnsOtExclude);
       
       assertTrue(scoreBaseLine < scoreHalf);
       

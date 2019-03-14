@@ -36,8 +36,8 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
   
   long autoMLSeed = 7890;
 
-  int numberOfModelsToCompareWith = 4;
-  Algo[] excludeAlgos = {Algo.DeepLearning /*Algo.DRF*//*, Algo.GLM,  Algo.XGBoost *//* Algo.GBM,*/, Algo.StackedEnsemble};
+  int numberOfModelsToCompareWith = 1;
+  Algo[] excludeAlgos = {Algo.DeepLearning /*Algo.DRF*//*, Algo.GLM,*/,  Algo.XGBoost /* Algo.GBM,*/, Algo.StackedEnsemble};
 
 
   @Test
@@ -337,6 +337,109 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
     avgAUCWithoutTE = avgAUCWithoutTE / numberOfRuns;
     System.out.println("Average AUC with encoding:" + avgAUCWith);
     System.out.println("Average AUC without encoding:" + avgAUCWithoutTE);
+    Assert.assertTrue(avgAUCWith > avgAUCWithoutTE);
+  }
+
+  @Test
+  public void random_split_with_SMBO_benchmark_with_leaderboard_evaluation() {
+    AutoML aml = null;
+    Frame fr = null;
+    Frame[] splitsForWithoutTE = null;
+    Frame frForWithoutTE = null;
+    Model leader = null;
+    Frame trainingFrame = null;
+    String responseColumnName = "survived";
+    Random generator = new Random();
+    double avgAUCWith = 0.0;
+    double avgAUCWithoutTE = 0.0;
+
+    double avgCumulativeAUCWith = 0.0;
+    double avgCumulativeWithoutTE = 0.0;
+
+    int numberOfRuns = 1;
+    for (int seedAttempt = 0; seedAttempt < numberOfRuns; seedAttempt++) {
+      long splitSeed = generator.nextLong();
+      try {
+        AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+
+        fr = getPreparedTitanicFrame(responseColumnName);
+        Frame[] splits = AutoMLBenchmarkingHelper.getRandomSplitsFromDataframe(fr, new double[] {0.8, 0.1, 0.1}, splitSeed);
+        Frame train = splits[0];
+        Frame valid = splits[1];
+        Frame leaderboardFrame = splits[2];
+
+        autoMLBuildSpec.input_spec.training_frame = train._key;
+        autoMLBuildSpec.input_spec.validation_frame = valid._key;
+        autoMLBuildSpec.input_spec.leaderboard_frame = leaderboardFrame._key;
+        autoMLBuildSpec.build_control.nfolds = 0;
+        autoMLBuildSpec.input_spec.response_column = responseColumnName;
+
+        autoMLBuildSpec.build_models.exclude_algos = excludeAlgos;
+
+        Vec responseColumn = train.vec(responseColumnName);
+        TEApplicationStrategy thresholdTEApplicationStrategy = new ThresholdTEApplicationStrategy(train, responseColumn, 5);
+
+        autoMLBuildSpec.te_spec.seed = 3456;
+        long seed = autoMLBuildSpec.te_spec.seed;
+        TEParamsSelectionStrategy gridSearchTEParamsSelectionStrategy =
+                new SMBOTEParamsSelectionStrategy(leaderboardFrame, 0.2, responseColumnName, thresholdTEApplicationStrategy.getColumnsToEncode(), true, seed);
+
+        autoMLBuildSpec.te_spec.application_strategy = thresholdTEApplicationStrategy;
+        autoMLBuildSpec.te_spec.params_selection_strategy = gridSearchTEParamsSelectionStrategy;
+
+        autoMLBuildSpec.build_control.project_name = "with_te_" + splitSeed;
+        autoMLBuildSpec.build_control.stopping_criteria.set_max_models(numberOfModelsToCompareWith);
+        autoMLBuildSpec.build_control.stopping_criteria.set_seed(autoMLSeed);
+        autoMLBuildSpec.build_control.keep_cross_validation_models = false;
+        autoMLBuildSpec.build_control.keep_cross_validation_predictions = false;
+
+        aml = AutoML.startAutoML(autoMLBuildSpec);
+        aml.get();
+
+        leader = aml.leader();
+        Leaderboard leaderboardWithTE = aml.leaderboard();
+        assertTrue(leaderboardWithTE.getModels().length == numberOfModelsToCompareWith);
+        double cumulativeLeaderboardScoreWithTE = 0;
+        cumulativeLeaderboardScoreWithTE = getCumulativeLeaderboardScore(leaderboardFrame, leaderboardWithTE);
+
+        double aucWithTE = getScoreBasedOn(leaderboardFrame, leader);
+
+        trainingFrame = aml.getTrainingFrame();
+
+        frForWithoutTE = fr.deepCopy(Key.make().toString());
+        DKV.put(frForWithoutTE);
+        splitsForWithoutTE = AutoMLBenchmarkingHelper.getRandomSplitsFromDataframe(frForWithoutTE, new double[] {0.8, 0.1, 0.1}, splitSeed);
+        Leaderboard leaderboardWithoutTE = trainBaselineAutoMLWithoutTE(splitsForWithoutTE, responseColumnName, splitSeed);
+
+        double cumulativeLeaderboardScoreWithoutTE = 0;
+        cumulativeLeaderboardScoreWithoutTE = getCumulativeLeaderboardScore(leaderboardFrame, leaderboardWithoutTE);
+
+        Model leaderFromWithoutTE = leaderboardWithoutTE.getLeader();
+        double aucWithoutTE = getScoreBasedOn(leaderboardFrame, leaderFromWithoutTE);
+
+        System.out.println("Performance on leaderboardFrame frame with TE: AUC = " + aucWithTE);
+        System.out.println("Performance on leaderboardFrame frame without TE: AUC = " + aucWithoutTE);
+        avgAUCWith += aucWithTE;
+        avgAUCWithoutTE += aucWithoutTE;
+
+        avgCumulativeAUCWith += cumulativeLeaderboardScoreWithTE;
+        avgCumulativeWithoutTE += cumulativeLeaderboardScoreWithoutTE;
+
+      } finally {
+        if (leader != null) leader.delete();
+        if (aml != null) aml.delete();
+        if (trainingFrame != null) trainingFrame.delete();
+      }
+    }
+    avgAUCWith = avgAUCWith / numberOfRuns;
+    avgAUCWithoutTE = avgAUCWithoutTE / numberOfRuns;
+    System.out.println("Average AUC with encoding:" + avgAUCWith);
+    System.out.println("Average AUC without encoding:" + avgAUCWithoutTE);
+
+    avgCumulativeAUCWith = avgCumulativeAUCWith / numberOfRuns;
+    avgCumulativeWithoutTE = avgCumulativeWithoutTE / numberOfRuns;
+    System.out.println("Average cumulative AUC with encoding: " + avgCumulativeAUCWith);
+    System.out.println("Average cumulative AUC without encoding: " + avgCumulativeWithoutTE);
     Assert.assertTrue(avgAUCWith > avgAUCWithoutTE);
   }
 
