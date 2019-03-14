@@ -596,10 +596,13 @@ public class StackedEnsembleTest extends TestUtil {
 
             if (keepLevelOneFrame) {
                 Assert.assertEquals(gridModels.length + 1, se1._output._levelone_frame_id.numCols());
-                if (blending)
+                if (blending) {
                     Assert.assertEquals(test.numRows(), se1._output._levelone_frame_id.numRows());
-                else
+                    TestUtil.isBitIdentical(new Frame(test.vec(target)), new Frame(se1._output._levelone_frame_id.vec(target)));
+                } else {
                     Assert.assertEquals(train.numRows(), se1._output._levelone_frame_id.numRows());
+                    TestUtil.isBitIdentical(new Frame(train.vec(target)), new Frame(se1._output._levelone_frame_id.vec(target)));
+                }
             } else {
                 Assert.assertNull(se1._output._levelone_frame_id);
             }
