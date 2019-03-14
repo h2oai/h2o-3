@@ -122,7 +122,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   private final static boolean verifyImmutability = true; // check that trainingFrame hasn't been messed with
-  private final static SimpleDateFormat fullTimestampFormat = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss.S");
   private final static SimpleDateFormat timestampFormatForKeys = new SimpleDateFormat("yyyyMMdd_HHmmss");
 
   /**
@@ -259,7 +258,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     try {
       eventLog = new EventLog(this);
       eventLog.info(Stage.Workflow, "Project: " + projectName());
-      eventLog.info(Stage.Workflow, "AutoML job created: " + fullTimestampFormat.format(this.startTime));
+      eventLog.info(Stage.Workflow, "AutoML job created: " + EventLogEntry.dateTimeFormat.format(this.startTime))
+              .setNamedValue("creation_epoch", this.startTime.getTime());
 
       workAllocations = planWork();
 
@@ -337,7 +337,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   @Override
   public void run() {
     runCountdown.start();
-    eventLog.info(Stage.Workflow, "AutoML build started: " + fullTimestampFormat.format(runCountdown.start_time()));
+    eventLog.info(Stage.Workflow, "AutoML build started: " + EventLogEntry.dateTimeFormat.format(runCountdown.start_time()))
+            .setNamedValue("start_epoch", Math.round(System.currentTimeMillis() / 1e3));
     learn();
     stop();
   }
@@ -350,10 +351,12 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     jobs = null;
 
     runCountdown.stop();
-    eventLog.info(Stage.Workflow, "AutoML build stopped: " + fullTimestampFormat.format(runCountdown.stop_time()));
-    eventLog.info(Stage.Workflow, "AutoML build done: built " + modelCount + " models");
+    eventLog.info(Stage.Workflow, "AutoML build stopped: " + EventLogEntry.dateTimeFormat.format(runCountdown.stop_time()))
+            .setNamedValue("stop_epoch", Math.round(System.currentTimeMillis() / 1e3));
+    eventLog.info(Stage.Workflow, "AutoML build done: built " + modelCount + " models")
+            .setNamedValue("model_count", modelCount);
 
-    Log.info(eventLog.toString("User Feedback for AutoML Run " + this._key + ":"));
+    Log.info(eventLog.toString("Event Log for AutoML Run " + this._key + ":"));
     for (EventLogEntry event : eventLog.events)
       Log.info(event);
 

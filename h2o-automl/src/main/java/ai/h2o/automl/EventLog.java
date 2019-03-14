@@ -1,16 +1,25 @@
 package ai.h2o.automl;
 
+import ai.h2o.automl.EventLogEntry.Level;
+import ai.h2o.automl.EventLogEntry.Stage;
 import water.DKV;
 import water.Key;
 import water.Keyed;
 import water.util.Log;
 import water.util.TwoDimTable;
 
+import java.io.Serializable;
+
 import static water.Key.make;
 
+/**
+ * EventLog instances store significant events occurring during an AutoML run.
+ * Events are formatted with the intent of rendering on client side.
+ */
 public class EventLog extends Keyed<EventLog> {
-  transient public AutoML autoML; // don't serialize
+
   public EventLogEntry[] events;
+  transient public AutoML autoML; // don't serialize
 
   public EventLog(AutoML autoML) {
     this._key = make(idForRun(autoML._key));
@@ -31,26 +40,28 @@ public class EventLog extends Keyed<EventLog> {
   }
 
   /** Add a Debug EventLogEntry and log. */
-  public void debug(EventLogEntry.Stage stage, String message) {
+  public <V extends Serializable> EventLogEntry<V> debug(Stage stage, String message) {
     Log.debug(stage+": "+message);
-    addEvent(new EventLogEntry(autoML, EventLogEntry.Level.Debug, stage, message));
+    return addEvent(Level.Debug, stage, message);
   }
 
   /** Add a Info EventLogEntry and log. */
-  public void info(EventLogEntry.Stage stage, String message) {
+  public <V extends Serializable> EventLogEntry<V> info(Stage stage, String message) {
     Log.info(stage+": "+message);
-    addEvent(new EventLogEntry(autoML, EventLogEntry.Level.Info, stage, message));
+    return addEvent(Level.Info, stage, message);
   }
 
   /** Add a Warn EventLogEntry and log. */
-  public void warn(EventLogEntry.Stage stage, String message) {
+  public <V extends Serializable> EventLogEntry<V> warn(Stage stage, String message) {
     Log.warn(stage+": "+message);
-    addEvent(new EventLogEntry(autoML, EventLogEntry.Level.Warn, stage, message));
+    return addEvent(Level.Warn, stage, message);
   }
 
   /** Add a EventLogEntry, but don't log. */
-  public void addEvent(EventLogEntry.Level level, EventLogEntry.Stage stage, String message) {
-    addEvent(new EventLogEntry(autoML, level, stage, message));
+  public <V extends Serializable> EventLogEntry<V> addEvent(Level level, Stage stage, String message) {
+    EventLogEntry<V> entry = new EventLogEntry<>(autoML, level, stage, message);
+    addEvent(entry);
+    return entry;
   }
 
   /** Add a EventLogEntry, but don't log. */

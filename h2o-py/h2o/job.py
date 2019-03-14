@@ -42,7 +42,7 @@ class H2OJob(object):
         self._poll_count = 10**10
 
 
-    def poll(self, verbose_model_scoring_history = False):
+    def poll(self, verbose_model_scoring_history=False):
         """
         Wait until the job finishes.
 
@@ -53,7 +53,7 @@ class H2OJob(object):
             hidden = not H2OJob.__PROGRESS_BAR__
             pb = ProgressBar(title=self._job_type + " progress", hidden=hidden)
             if verbose_model_scoring_history:
-                pb.execute(self._refresh_job_status, print_verbose_info=lambda x: self._print_verbose_info() if int(x * 10) % 5 == 0  else " ")
+                pb.execute(self._refresh_job_status, print_verbose_info=lambda x: self._print_verbose_info() if int(x * 10) % 5 == 0 else " ")
             else:
                 pb.execute(self._refresh_job_status)
         except StopIteration as e:

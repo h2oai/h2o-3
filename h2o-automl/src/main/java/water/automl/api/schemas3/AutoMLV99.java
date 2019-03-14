@@ -39,10 +39,10 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
   @API(help="The leaderboard for this project, potentially including models from other AutoML runs, for easy rendering", direction=API.Direction.OUTPUT)
   public TwoDimTableV3 leaderboard_table;
 
-  @API(help="User feedback for events from this AutoML run", direction=API.Direction.OUTPUT)
+  @API(help="Event log of this AutoML run", direction=API.Direction.OUTPUT)
   public EventLogV99 event_log;
 
-  @API(help="User feedback for events from this AutoML run, for easy rendering", direction=API.Direction.OUTPUT)
+  @API(help="Event log of this AutoML run, for easy rendering", direction=API.Direction.OUTPUT)
   public TwoDimTableV3 event_log_table;
 
   @API(help="Metric used to sort leaderboard", direction=API.Direction.INPUT)
