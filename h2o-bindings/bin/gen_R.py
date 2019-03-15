@@ -650,6 +650,14 @@ def help_example_for(algo):
         # See example R code here:
         # http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/stacked-ensembles.html
         """
+    if algo == "generic":
+        return """\donttest{
+            library(h2o)
+            h2o.init()
+            
+            generic_model <- h2o.genericModel("/path/to/mojo.zip")
+            predictions <- h2o.predict(generic_model, dataset)
+            }"""
 
 def get_extra_params_for(algo):
     if algo == "glrm":

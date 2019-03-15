@@ -4,6 +4,14 @@
 # -------------------------- generic -------------------------- #
 #' @param x A vector containing the \code{character} names of the predictors in the model.
 #' @param mojo_key Key to an uploaded MOJO archive
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' 
+#' generic_model <- h2o.genericModel("/path/to/mojo.zip")
+#' predictions <- h2o.predict(generic_model, dataset)
+#' }
 #' @export
 h2o.generic <- function(training_frame = NULL,
                         mojo_key = NULL
