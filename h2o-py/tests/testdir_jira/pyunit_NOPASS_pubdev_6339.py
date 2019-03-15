@@ -2,46 +2,73 @@ import sys
 sys.path.insert(1,"../../")
 import h2o
 import math
+import os
 from tests import pyunit_utils
 
 
 def pubdev_6339():
-    data_raw = h2o.import_file(path="hdfs://mr-0xd6.0xdata.loc:8020/user/megan/reproducibility_train.csv",parse=False)
-    setup = h2o.parse_setup(data_raw)
-    data = h2o.parse_raw(setup)
-    desc = data.describe(chunk_summary=True)
-
-    # get from user user
-    cores = 8
+    
+    # number of nodes
     cloud_size = 1
-    
-    # total size of data in bytes before compression
-    # impossible to get this information from python API
-    total_size = 390333275
-    # calculated based on number of columns, column type and number of NA's, 
-    # impossible to get this information from python API, hard to calculate in Python
-    maxLineLength = 1164
-    
-    # get from setup
-    num_cols = setup['number_columns']
-    result_size = setup['chunk_size']
-    
-    chunk_size = calc_optimal_chunk_size(total_size, num_cols, cores, cloud_size, maxLineLength)
-   
-    print("chunk size:", chunk_size)
-    print("result_size:", result_size)
-    assert chunk_size == result_size
-    
+    # number of CPUs
+    cores = 8
 
-def calc_optimal_chunk_size(total_size, num_cols, cores, cloud_size, max_line_length):
+    # path to file
+    file_paths = [
+        pyunit_utils.locate("smalldata/arcene/arcene_train.data"),
+        pyunit_utils.locate("smalldata/census_income/adult_data.csv"),
+        pyunit_utils.locate("smalldata/chicago/chicagoAllWeather.csv"),
+        pyunit_utils.locate("smalldata/gbm_test/alphabet_cattest.csv"),
+        pyunit_utils.locate("smalldata/wa_cannabis/raw/Dashboard_Usable_Sales_w_Weight_Daily.csv")
+    ]
+
+    for file_path in file_paths:
+        # read data and parse setup to get number of columns 
+        data_raw = h2o.import_file(path=file_path,parse=False)
+        setup = h2o.parse_setup(data_raw)
+
+        # get number of columns from setup
+        num_cols = setup['number_columns']
+
+        # get the chunk size
+        chunk_size = calculate_chunk_size(file_path, num_cols, cores, cloud_size)
+    
+        # get chunk size to compare if calculation is correct
+        result_size = setup['chunk_size']
+        print("chunk size:", chunk_size)
+        print("result size:", result_size)
+        assert chunk_size == result_size, "Calculated hunk size is incorrect!"
+        print("chunk size for file", file_path, "is:", chunk_size)
+        
+    
+def calculate_chunk_size(file_path, num_cols, cores, cloud_size):
+    """
+        Return size of a chunk calculated for optimal data handling in h2o java backend.
+    
+        :param file_path:  path to dataset
+        :param num_cols:  number or columns in dataset
+        :param cores:  number of CPUs on machine where the model was trained
+        :param cloud_size:  number of nodes on machine where the model was trained
+        :return:  a chunk size 
+    """
+    
+    # get maximal line size from file in bytes
+    max_line_length = 0
+    total_size = 0
+    with open(file_path) as input_file:
+        for line in input_file:
+            size = len(line)
+            total_size = total_size + size
+            if size > max_line_length:
+                max_line_length = size
     default_log2_chunk_size = 20+2
     default_chunk_size = 1 << default_log2_chunk_size
     local_parse_size = int(total_size / cloud_size)
     min_number_rows = 10  # need at least 10 rows (lines) per chunk (core)
     per_node_chunk_count_limit = 1 << 21  # don't create more than 2M Chunk POJOs per node
     min_parse_chunk_size = 1 << 12  # don't read less than this many bytes
-    max_parse_chunk_size = (1 << 28)-1  # don't read more than this many bytes per map() thread (needs to fit into a Value object)
-    chunk_size = int(max((local_parse_size / (4*cores))+1, min_parse_chunk_size))#lower hard limit
+    max_parse_chunk_size = (1 << 28)-1  # don't read more than this many bytes per map() thread 
+    chunk_size = int(max((local_parse_size / (4*cores))+1, min_parse_chunk_size))  # lower hard limit
     if chunk_size > 1024*1024:
         chunk_size = (chunk_size & 0xFFFFFE00) + 512  # align chunk size to 512B
         # Super small data check - file size is smaller than 64kB
@@ -55,8 +82,8 @@ def calc_optimal_chunk_size(total_size, num_cols, cores, cloud_size, max_line_le
             # Adjust chunk_size such that we don't create too many chunks
             chunk_count = cores * 4 * num_cols
             if chunk_count > per_node_chunk_count_limit:
-                # convert chunk count to long double
-                ratio = 1 << max(2, int(math.log2(int(chunk_count / per_node_chunk_count_limit))))  # this times too many chunks globally on the cluster
+                # this times too many chunks globally on the cluster
+                ratio = 1 << max(2, int(math.log2(int(chunk_count / per_node_chunk_count_limit))))  
                 chunk_size = chunk_size * ratio  # need to bite off larger chunks
             chunk_size = min(max_parse_chunk_size, chunk_size)  # hard upper limit
             # if we can read at least min_number_rows and we don't create too large Chunk POJOs, we're done
