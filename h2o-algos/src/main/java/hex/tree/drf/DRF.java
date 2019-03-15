@@ -19,9 +19,7 @@ import static hex.genmodel.GenModel.getPrediction;
 import static hex.tree.drf.TreeMeasuresCollector.asSSE;
 import static hex.tree.drf.TreeMeasuresCollector.asVotes;
 
-/** Gradient Boosted Trees
- *
- *  Based on "Elements of Statistical Learning, Second Edition, page 387"
+/** Distributed Random Forest
  */
 public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel.DRFParameters, hex.tree.drf.DRFModel.DRFOutput> {
   private static final double ONEBOUND=1+1e-12;    // due to fixed precision
