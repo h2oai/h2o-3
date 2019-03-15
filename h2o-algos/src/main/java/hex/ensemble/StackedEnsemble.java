@@ -9,6 +9,7 @@ import static hex.StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgo
 import water.DKV;
 import water.Job;
 import water.Key;
+import water.Scope;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
@@ -176,7 +177,15 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         }
       }
 
-      return prepareLevelOneFrame(levelOneKey, baseModels.toArray(new Model[0]), baseModelPredictions.toArray(new Frame[0]), _model._parms.train());
+      Frame levelOneFrame = prepareLevelOneFrame(levelOneKey, baseModels.toArray(new Model[0]), baseModelPredictions.toArray(new Frame[0]), _model._parms.train());
+      if (_parms._keep_levelone_frame) {
+        levelOneFrame = levelOneFrame.deepCopy(levelOneFrame._key.toString());
+        levelOneFrame.write_lock(_job);
+        levelOneFrame.update(_job);
+        levelOneFrame.unlock(_job);
+        Scope.untrack(levelOneFrame.keysList());
+      }
+      return levelOneFrame;
     }
 
     private Key<Frame> buildPredsKey(Key model_key, long model_checksum, Key frame_key, long frame_checksum) {
