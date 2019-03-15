@@ -3,6 +3,7 @@ package biz.k11i.xgboost.tree;
 import biz.k11i.xgboost.Predictor;
 import biz.k11i.xgboost.gbm.GBTree;
 import biz.k11i.xgboost.util.FVec;
+import hex.genmodel.algos.tree.TreeSHAP;
 import ml.dmlc.xgboost4j.java.*;
 import org.junit.After;
 import org.junit.Before;
@@ -102,11 +103,12 @@ public class XgbPredictContribsTest {
       double pred = 0;
       for (int t = 0; t < trees.length; t++) {
         final RegTreeImpl tree = (RegTreeImpl) trees[t];
-        final TreeSHAP treeSHAP = new TreeSHAP(tree);
+        final TreeSHAP<FVec, RegTreeImpl.Node, RegTreeImpl.RTreeNodeStat> treeSHAP = new TreeSHAP<>(
+                tree.getNodes(), tree.getStats(), 0);
         final Set<Integer> usedFeatures = usedFeatures(tree);
         final int M = usedFeatures.size();
         // A) Calculate contributions using Predictor 
-        treeSHAP.calculateContributions(row, 0, contribsPredictor, 0, -1);
+        contribsPredictor = treeSHAP.calculateContributions(row, contribsPredictor);
         // B) Calculate contributions the hard way
         Log.info("Tree " + t + ": " + usedFeatures);
         // last element is the bias term
@@ -175,7 +177,7 @@ public class XgbPredictContribsTest {
   private static Set<Integer> usedFeatures(RegTreeImpl t) {
     Set<Integer> features = new HashSet<>();
     for(RegTreeImpl.Node n : t.getNodes()) {
-      features.add(n.split_index());
+      features.add(n.getSplitIndex());
     }
     return features;
   }
@@ -190,10 +192,10 @@ public class XgbPredictContribsTest {
   private static double expValue(RegTreeImpl.Node[] nodes, RegTreeImpl.RTreeNodeStat[] stats,
                                  int node, FVec v, Set<Integer> s, double w) {
     final RegTreeImpl.Node n = nodes[node];
-    if (n.is_leaf()) {
+    if (n.isLeaf()) {
       return w * n.getLeafValue(); 
     } else {
-      if (s.contains(n.split_index())) {
+      if (s.contains(n.getSplitIndex())) {
         return expValue(nodes, stats, n.next(v), v, s, w);
       } else {
         double wL = stats[n.cleft_].sum_hess;
@@ -213,7 +215,7 @@ public class XgbPredictContribsTest {
   
   private static double nodeMeanValue(RegTreeImpl.Node[] nodes, RegTreeImpl.RTreeNodeStat[] stats, int node) {
     final RegTreeImpl.Node n = nodes[node];
-    if (n.is_leaf()) {
+    if (n.isLeaf()) {
       return n.getLeafValue();
     } else {
       return (stats[n.cleft_].sum_hess * nodeMeanValue(nodes, stats, n.cleft_) +
