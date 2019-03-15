@@ -100,7 +100,7 @@ public class XgbPredictContribsTest {
       FVec row = new MapBackedFVec(trainData.get(i));
       float[] predicted = predictor.predict(row, true);
 
-      double pred = 0;
+      double predExpVal = 0;
       for (int t = 0; t < trees.length; t++) {
         // A) Calculate contributions using Predictor 
         final RegTreeImpl tree = (RegTreeImpl) trees[t];
@@ -108,12 +108,14 @@ public class XgbPredictContribsTest {
                 tree.getNodes(), tree.getStats(), 0);
         contribsPredictor = treeSHAP.calculateContributions(row, contribsPredictor);
         // B) Calculate contributions the hard way
-        pred += NaiveTreeSHAP.calculateContributionsNaive(baseMargin, tree, row, contribsNaive);  
+        final NaiveTreeSHAP<FVec, RegTreeImpl.Node, RegTreeImpl.RTreeNodeStat> naiveTreeSHAP = new NaiveTreeSHAP<>(
+                tree.getNodes(), tree.getStats(), 0, baseMargin);
+        predExpVal += naiveTreeSHAP.calculateContributions(row, contribsNaive);  
       }
       // sanity check - contributions should sum-up to the prediction
       final double predNaive = ArrayUtils.sum(contribsNaive);
       assertEquals(predicted[0], predNaive, 1e-6);
-      assertEquals(predicted[0], pred, 1e-6);
+      assertEquals(predicted[0], predExpVal, 1e-6);
       // contributions should match!
       assertArrayEquals(contribsNaive, ArrayUtils.toDouble(contribsPredictor), 1e-6);
     }

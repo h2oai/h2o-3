@@ -1,23 +1,35 @@
 package biz.k11i.xgboost.tree;
 
-import biz.k11i.xgboost.util.FVec;
+import ai.h2o.algos.tree.INode;
+import ai.h2o.algos.tree.INodeStat;
 import org.junit.Ignore;
-import water.util.ReflectionUtils;
 
 import java.util.*;
 
 @Ignore
-class NaiveTreeSHAP {
+class NaiveTreeSHAP<R, N extends INode<R>, S extends INodeStat> {
 
-  static double calculateContributionsNaive(double baseMargin, RegTreeImpl tree, FVec row, double[] contribsNaive) {
-    final Set<Integer> usedFeatures = usedFeatures(tree);
+  private final int rootNodeId;
+  private final N[] nodes;
+  private final S[] stats;
+  private final double baseMargin;
+
+  NaiveTreeSHAP(N[] nodes, S[] stats, int rootNodeId, double baseMargin) {
+    this.rootNodeId = rootNodeId;
+    this.nodes = nodes;
+    this.stats = stats;
+    this.baseMargin = baseMargin;
+  }
+
+  double calculateContributions(R row, double[] contribsNaive) {
+    final Set<Integer> usedFeatures = usedFeatures();
     final int M = usedFeatures.size();
     // last element is the bias term
-    contribsNaive[contribsNaive.length - 1] += treeMeanValue(tree) /* tree bias */ + baseMargin;
+    contribsNaive[contribsNaive.length - 1] += treeMeanValue() /* tree bias */ + baseMargin;
     // pre-calculate expValue for each subset
     Map<Set<Integer>, Double> expVals = new HashMap<>();
     for (Set<Integer> subset : allSubsets(usedFeatures)) {
-      expVals.put(subset, expValue(tree, row, subset));
+      expVals.put(subset, expValue(row, subset));
     }
     // calculate contributions using pre-calculated expValues
     for (Integer feature : usedFeatures) {
@@ -32,14 +44,11 @@ class NaiveTreeSHAP {
       }
     }
     // expValue of a tree with all features marked as used should sum-up to the total prediction
-    return expValue(tree, row, usedFeatures);
+    return expValue(row, usedFeatures);
   }
   
-  private static double expValue(RegTreeImpl t, FVec v, Set<Integer> s) {
-    RegTreeImpl.RTreeNodeStat[] stats = ReflectionUtils.getFieldValue(t, "stats");
-    RegTreeImpl.Node[] nodes = t.getNodes();
-
-    return expValue(nodes, stats, 0, v, s, 1.0);
+  private double expValue(R v, Set<Integer> s) {
+    return expValue(rootNodeId, v, s, 1.0);
   }
 
   private static int fact(int v) {
@@ -69,45 +78,42 @@ class NaiveTreeSHAP {
     return result;
   }
 
-  private static Set<Integer> usedFeatures(RegTreeImpl t) {
+  private Set<Integer> usedFeatures() {
     Set<Integer> features = new HashSet<>();
-    for(RegTreeImpl.Node n : t.getNodes()) {
+    for(N n : nodes) {
       features.add(n.getSplitIndex());
     }
     return features;
   }
 
-  private static double expValue(RegTreeImpl.Node[] nodes, RegTreeImpl.RTreeNodeStat[] stats,
-                                 int node, FVec v, Set<Integer> s, double w) {
-    final RegTreeImpl.Node n = nodes[node];
+  private double expValue(int node, R v, Set<Integer> s, double w) {
+    final INode<R> n = nodes[node];
     if (n.isLeaf()) {
       return w * n.getLeafValue();
     } else {
       if (s.contains(n.getSplitIndex())) {
-        return expValue(nodes, stats, n.next(v), v, s, w);
+        return expValue(n.next(v), v, s, w);
       } else {
-        double wL = stats[n.cleft_].sum_hess;
-        double wR = stats[n.cright_].sum_hess;
-        return expValue(nodes, stats, n.cleft_, v, s, w * wL / stats[node].sum_hess) +
-                expValue(nodes, stats, n.cright_, v, s, w * wR / stats[node].sum_hess);
+        double wP = stats[node].getWeight();
+        double wL = stats[n.getLeftChildIndex()].getWeight();
+        double wR = stats[n.getRightChildIndex()].getWeight();
+        return expValue(n.getLeftChildIndex(), v, s, w * wL / wP) +
+                expValue(n.getRightChildIndex(), v, s, w * wR / wP);
       }
     }
   }
 
-  private static double treeMeanValue(RegTreeImpl t) {
-    RegTreeImpl.RTreeNodeStat[] stats = ReflectionUtils.getFieldValue(t, "stats");
-    RegTreeImpl.Node[] nodes = t.getNodes();
-
-    return nodeMeanValue(nodes, stats, 0);
+  private double treeMeanValue() {
+    return nodeMeanValue(rootNodeId);
   }
 
-  private static double nodeMeanValue(RegTreeImpl.Node[] nodes, RegTreeImpl.RTreeNodeStat[] stats, int node) {
-    final RegTreeImpl.Node n = nodes[node];
+  private double nodeMeanValue(int node) {
+    final INode n = nodes[node];
     if (n.isLeaf()) {
       return n.getLeafValue();
     } else {
-      return (stats[n.cleft_].sum_hess * nodeMeanValue(nodes, stats, n.cleft_) +
-              stats[n.cright_].sum_hess * nodeMeanValue(nodes, stats, n.cright_)) / stats[node].sum_hess;
+      return (stats[n.getLeftChildIndex()].getWeight() * nodeMeanValue(n.getLeftChildIndex()) +
+              stats[n.getRightChildIndex()].getWeight() * nodeMeanValue(n.getRightChildIndex())) / stats[node].getWeight();
     }
   }
 
