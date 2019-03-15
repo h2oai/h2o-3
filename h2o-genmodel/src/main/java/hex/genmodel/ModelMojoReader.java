@@ -26,7 +26,29 @@ public abstract class ModelMojoReader<M extends MojoModel> {
   private Map<String, Object> _lkv;
 
 
+  /**
+   * De-serializes a {@link MojoModel}, creating an instance of {@link MojoModel} useful for scoring
+   * and model evaluation.
+   *
+   * @param reader An instance of {@link MojoReaderBackend} to read from existing MOJO. After the model is de-serialized,
+   *               the {@link MojoReaderBackend} instance is automatically closed if it implements {@link Closeable}.
+   * @return De-serialized {@link MojoModel}
+   * @throws IOException Whenever there is an error reading the {@link MojoModel}'s data.
+   */
   public static MojoModel readFrom(MojoReaderBackend reader) throws IOException {
+    return readFrom(reader, true);
+  }
+
+  /**
+   * De-serializes a {@link MojoModel}, creating an instance of {@link MojoModel} useful for scoring
+   * and model evaluation.
+   *
+   * @param reader      An instance of {@link MojoReaderBackend} to read from existing MOJO
+   * @param closeReader If true, the given {@link MojoReaderBackend} is closed, preventing further re-use.
+   * @return De-serialized {@link MojoModel}
+   * @throws IOException Whenever there is an error reading the {@link MojoModel}'s data.
+   */
+  public static MojoModel readFrom(MojoReaderBackend reader, final boolean closeReader) throws IOException {
     try {
       Map<String, Object> info = parseModelInfo(reader);
       if (! info.containsKey("algorithm"))
@@ -36,9 +58,10 @@ public abstract class ModelMojoReader<M extends MojoModel> {
       mmr._lkv = info;
       mmr._reader = reader;
       mmr.readAll();
+      mmr._model.algoName = algo;
       return mmr._model;
     } finally {
-      if (reader instanceof Closeable)
+      if (reader instanceof Closeable && closeReader)
         ((Closeable) reader).close();
     }
   }
@@ -161,7 +184,6 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     _model._mojo_version = ((Number) readkv("mojo_version")).doubleValue();
     checkMaxSupportedMojoVersion();
     readModelData();
-    extractModelDetails();
   }
 
   private static Map<String, Object> parseModelInfo(MojoReaderBackend reader) throws IOException {
@@ -259,144 +281,4 @@ public abstract class ModelMojoReader<M extends MojoModel> {
       throw new IOException(String.format("MOJO version incompatibility - the model MOJO version (%.2f) is higher than the current h2o version (%s) supports. Please, use the older version of h2o to load MOJO model.", _model._mojo_version, mojoVersion()));
     }
   }
-
-    public static final String MODEL_DETAILS_FILE = "experimental/modelDetails.json";
-
-    protected JsonObject parseJson() {
-
-        try (BufferedReader fileReader = _reader.getTextFile(MODEL_DETAILS_FILE)) {
-            final Gson gson = new GsonBuilder().create();
-
-          return gson.fromJson(fileReader, JsonObject.class);
-        } catch (IOException e) {
-            throw new IllegalStateException("Could not read file inside MOJO " + MODEL_DETAILS_FILE, e);
-        }
-    }
-
-  /**
-   * Extracts a Table from H2O's model serialized into JSON.
-   *
-   * @param modelJson Full JSON representation of a model
-   * @param tablePath Path in the given JSON to the desired table. Levels are dot-separated.
-   * @return An instance of {@link Table}, if there was a table found by following the given path. Otherwise null.
-   */
-  protected Table extractTableFromJson(final JsonObject modelJson, final String tablePath) {
-    Objects.requireNonNull(modelJson);
-    JsonElement potentialTableJson = findInJson(modelJson, tablePath);
-    if (potentialTableJson.isJsonNull()) {
-      System.out.println(String.format("Failed to extract element '%s' MojoModel dump with ID '%s'.",
-              tablePath, _model._uuid));
-      return null;
-    }
-    final JsonObject tableJson = potentialTableJson.getAsJsonObject();
-    final int rowCount = tableJson.get("rowcount").getAsInt();
-
-    final String[] columnHeaders;
-    final Table.ColumnType[] columnTypes;
-    final Object[][] data;
-
-
-    // Extract column attributes
-    final JsonArray columns = findInJson(tableJson, "columns").getAsJsonArray();
-    final int columnCount = columns.size();
-    columnHeaders = new String[columnCount];
-    columnTypes = new Table.ColumnType[columnCount];
-
-    for (int i = 0; i < columnCount; i++) {
-      final JsonObject column = columns.get(i).getAsJsonObject();
-      columnHeaders[i] = column.get("description").getAsString();
-      columnTypes[i] = Table.ColumnType.extractType(column.get("type").getAsString());
-    }
-
-
-    // Extract data
-    JsonArray dataColumns = findInJson(tableJson, "data").getAsJsonArray();
-    data = new Object[columnCount][rowCount];
-    for (int i = 0; i < columnCount; i++) {
-      JsonArray column = dataColumns.get(i).getAsJsonArray();
-      for (int j = 0; j < rowCount; j++) {
-        final JsonPrimitive primitiveValue = column.get(j).getAsJsonPrimitive();
-
-        switch (columnTypes[i]){
-          case LONG:
-            data[i][j] = primitiveValue.getAsLong();
-            break;
-          case DOUBLE:
-            data[i][j] = primitiveValue.getAsDouble();
-            break;
-          case STRING:
-            data[i][j] = primitiveValue.getAsString();
-            break;
-        }
-
-      }
-    }
-
-    return new Table(tableJson.get("name").getAsString(), tableJson.get("description").getAsString(),
-            new String[rowCount], columnHeaders,columnTypes, "", data);
-  }
-
-  /**
-   * Initiates the process of extracting more details from model's JSON. The underlying behavior is extensible by each
-   * model reader.
-   */
-  private void extractModelDetails() {
-    // Extract additional information from model dump
-    final JsonObject modelJson = parseJson();
-
-    // First check the JSON dump is available
-    if (modelJson == null) {
-      System.out.println(String.format("Unable to parse JSON dump of MojoModel with ID '%s'. Additional model metrics were not extracted.",
-              _model._uuid));
-      return;
-    }
-
-    processModelMetrics(modelJson);
-  }
-
-  /**
-   * A general method for processing H2O model's JSON representation and extraction additional model information out of it.
-   * This method is meant to be overridden/enhanced by various mojo readers. 
-   * @param modelJson Full JSON representation of a model
-   */
-  protected void processModelMetrics(JsonObject modelJson) {
-    _model._model_summary = extractTableFromJson(modelJson, "output.model_summary");
-  }
-
-  private static final Pattern JSON_PATH_PATTERN = Pattern.compile("\\.|\\[|\\]");
-
-  /**
-   * Finds ane lement in GSON's JSON document representation
-   *
-   * @param jsonElement A (potentially complex) element to search in
-   * @param jsonPath    Path in the given JSON to the desired table. Levels are dot-separated.
-   *                    E.g. 'model._output.variable_importances'.
-   * @return JsonElement, if found. Otherwise {@link JsonNull}.
-   */
-  private static JsonElement findInJson(JsonElement jsonElement, String jsonPath) {
-
-    final String[] route = JSON_PATH_PATTERN.split(jsonPath);
-    JsonElement result = jsonElement;
-
-    for (String key : route) {
-      key = key.trim();
-      if (key.isEmpty())
-        continue;
-
-      if (result == null) {
-        result = JsonNull.INSTANCE;
-        break;
-      }
-
-      if (result.isJsonObject()) {
-        result = ((JsonObject) result).get(key);
-      } else if (result.isJsonArray()) {
-        int value = Integer.valueOf(key) - 1;
-        result = ((JsonArray) result).get(value);
-      } else break;
-    }
-
-    return result;
-  }
-
 }

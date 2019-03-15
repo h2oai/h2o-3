@@ -1,11 +1,9 @@
 package hex.genmodel.algos.tree;
 
-import hex.genmodel.ModelDescriptor;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.drf.DrfMojoModel;
 import hex.genmodel.algos.gbm.GbmMojoModel;
 import hex.genmodel.descriptor.VariableImportances;
-import hex.genmodel.descriptor.Table;
 import hex.genmodel.utils.ByteBufferWrapper;
 import hex.genmodel.utils.GenmodelBitSet;
 
@@ -975,17 +973,5 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
             }
         }
         return trees_result;
-    }
-
-    private class SharedTreeModelDescriptor extends MojoModelDescriptor {
-        @Override
-        public VariableImportances variableImportances() {
-            return _variable_importances;
-        }
-    }
-
-    @Override
-    public ModelDescriptor modelDescriptor() {
-        return new SharedTreeModelDescriptor();
     }
 }

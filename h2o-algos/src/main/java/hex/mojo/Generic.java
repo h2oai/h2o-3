@@ -2,8 +2,8 @@ package hex.mojo;
 
 import hex.ModelBuilder;
 import hex.ModelCategory;
-import hex.genmodel.MojoModel;
-import hex.genmodel.MojoReaderBackendFactory;
+import hex.genmodel.descriptor.JsonModelDescriptorReader;
+import hex.genmodel.*;
 import water.Key;
 import water.fvec.ByteVec;
 import water.fvec.Frame;
@@ -56,14 +56,20 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
             final ByteVec mojoBytes = getUploadedMojo(_parms._mojo_key);
             final MojoModel mojoModel;
             try {
-                mojoModel = MojoModel.load(MojoReaderBackendFactory.createReaderBackend(mojoBytes.openStream(_job._key), MojoReaderBackendFactory.CachingStrategy.MEMORY));
+                final MojoReaderBackend readerBackend = MojoReaderBackendFactory.createReaderBackend(mojoBytes.openStream(_job._key), MojoReaderBackendFactory.CachingStrategy.MEMORY);
+                mojoModel = ModelMojoReader.readFrom(readerBackend, false);
+                // Obtain model's description
+                final JsonModelDescriptorReader modelDescriptionReader = JsonModelDescriptorReader.get(readerBackend);
+                final ModelDescriptor description = modelDescriptionReader.getDescription();
+
+                final GenericModelOutput genericModelOutput = new GenericModelOutput(description);
+                final GenericModel genericModel = new GenericModel(_result, _parms, genericModelOutput, mojoModel, mojoBytes);
+
+                genericModel.write_lock(_job);
+                genericModel.unlock(_job);
             } catch (IOException e) {
                 throw new IllegalStateException("Unreachable MOJO file: " + mojoBytes._key, e);
             }
-            final GenericModelOutput genericModelOutput = new GenericModelOutput(mojoModel.modelDescriptor());
-            final GenericModel genericModel = new GenericModel(_result, _parms, genericModelOutput, mojoModel, mojoBytes);
-            genericModel.write_lock(_job);
-            genericModel.unlock(_job);
         }
     }
 

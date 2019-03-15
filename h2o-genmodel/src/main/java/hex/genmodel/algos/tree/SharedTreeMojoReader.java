@@ -55,24 +55,4 @@ public abstract class SharedTreeMojoReader<M extends SharedTreeMojoModel> extend
 
     _model.postInit();
   }
-
-
-  @Override
-  protected void processModelMetrics(JsonObject modelJson) {
-    super.processModelMetrics(modelJson);
-    _model._variable_importances = extractVariableImportances(modelJson);
-  }
-
-  private VariableImportances extractVariableImportances(final JsonObject modelJson) {
-    final Table table = extractTableFromJson(modelJson, "output.variable_importances");
-    if (table == null) return null;
-    final double[] relativeVarimps = new double[table.rows()];
-    final int column = table.findColumnIndex("Relative Importance");
-    if(column == -1) return null;
-    for (int i = 0; i < table.rows(); i++) {
-      relativeVarimps[i] = (double) table.getCell(column,i);
-    }
-
-    return new VariableImportances(Arrays.copyOf(_model._names, _model.nfeatures()), relativeVarimps);
-  }
 }
