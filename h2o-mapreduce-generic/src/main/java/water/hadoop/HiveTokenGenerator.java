@@ -22,10 +22,6 @@ public class HiveTokenGenerator {
 
   private static final String HIVE_DRIVER_CLASS = "org.apache.hive.jdbc.HiveDriver";
 
-  private static final String HIVE_PRINCIPAL_CONF = "hive.metastore.kerberos.principal";
-
-  private static final String HIVE_URI_CONF = "hive.metastore.uris";
-  
   public static class HiveOptions {
     
     final String _host;
@@ -35,26 +31,23 @@ public class HiveTokenGenerator {
       _host = hiveHost;
       _principal = hivePrincipal;
     }
+
+    private static boolean isPresent(String value) {
+      return value != null && !value.isEmpty();
+    }
     
-    public static HiveOptions make(String hiveHost, String hivePrincipal, Configuration conf) {
-      HiveConf hiveConf = new HiveConf(conf, HiveConf.class);
-      if (hiveHost == null) {
-        hiveHost = hiveConf.getTrimmed(HIVE_URI_CONF, "");
-      }
-      if (hivePrincipal == null) {
-        hivePrincipal = hiveConf.getTrimmed(HIVE_PRINCIPAL_CONF, "");
-      }
-      if (hiveHost == null || hivePrincipal == null) {
-        return null;
-      } else {
+    public static HiveOptions make(String hiveHost, String hivePrincipal) {
+      if (isPresent(hiveHost) && isPresent(hivePrincipal)) {
         return new HiveOptions(hiveHost, hivePrincipal);
+      } else {
+        return null;
       }
     }
     
     public static HiveOptions make(Configuration conf) {
-      String hivePrincipal = conf.get(H2O_HIVE_PRINCIPAL);
       String hiveHost = conf.get(H2O_HIVE_HOST);
-      return make(hiveHost, hivePrincipal, conf);
+      String hivePrincipal = conf.get(H2O_HIVE_PRINCIPAL);
+      return make(hiveHost, hivePrincipal);
     }
     
   }
@@ -78,12 +71,12 @@ public class HiveTokenGenerator {
       String hiveHost,
       String hivePrincipal
   ) throws IOException, InterruptedException {
-    Configuration conf = job.getConfiguration();
-    HiveOptions options = HiveOptions.make(hiveHost, hivePrincipal, conf);
+    HiveOptions options = HiveOptions.make(hiveHost, hivePrincipal);
     if (options == null) {
       log("Hive host or principal not set, no token generated.", null);
       return;
     }
+    Configuration conf = job.getConfiguration();
     conf.set(H2O_HIVE_HOST, options._host);
     conf.set(H2O_HIVE_PRINCIPAL, options._principal);
     UserGroupInformation realUser = UserGroupInformation.getCurrentUser();
@@ -147,11 +140,6 @@ public class HiveTokenGenerator {
     } else {
       return null;
     }
-  }
-
-  private boolean isHiveConfigPresent(String hiveHost, String hivePrincipal) {
-    return hivePrincipal != null && !hivePrincipal.isEmpty() &&
-        hiveHost != null && !hiveHost.isEmpty();
   }
 
   public static boolean isHiveDriverPresent() {
