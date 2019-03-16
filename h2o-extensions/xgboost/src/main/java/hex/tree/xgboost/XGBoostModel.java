@@ -691,7 +691,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     final RegTreeNode xgBoostNode = xgBoostNodes[nodeIndex];
     // Not testing for NaNs, as SharedTreeNode uses NaNs as default values.
     //No domain set, as the structure mimics XGBoost's tree, which is numeric-only
-    if (featureProperties._oneHotEncoded[xgBoostNode.split_index()]) {
+    if (featureProperties._oneHotEncoded[xgBoostNode.getSplitIndex()]) {
       //Shared tree model uses < to the left and >= to the right. Transforiming one-hot encoded categoricals
       // from 0 to 1 makes it fit the current split description logic
       sharedTreeNode.setSplitValue(1.0F);
@@ -699,7 +699,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       sharedTreeNode.setSplitValue(xgBoostNode.getSplitCondition());
     }
     sharedTreeNode.setPredValue(xgBoostNode.getLeafValue());
-    sharedTreeNode.setCol(xgBoostNode.split_index(), featureProperties._names[xgBoostNode.split_index()]);
+    sharedTreeNode.setCol(xgBoostNode.getSplitIndex(), featureProperties._names[xgBoostNode.getSplitIndex()]);
     sharedTreeNode.setInclusiveNa(inclusiveNA);
     sharedTreeNode.setNodeNumber(nodeIndex);
 

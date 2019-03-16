@@ -90,7 +90,7 @@ public abstract class XGBoostMojoModel extends MojoModel implements SharedTreeGr
     final RegTreeNode xgBoostNode = xgBoostNodes[nodeIndex];
     // Not testing for NaNs, as SharedTreeNode uses NaNs as default values.
     //No domain set, as the structure mimics XGBoost's tree, which is numeric-only
-    if (oneHotEncodedMap[xgBoostNode.split_index()]) {
+    if (oneHotEncodedMap[xgBoostNode.getSplitIndex()]) {
       //Shared tree model uses < to the left and >= to the right. Transforiming one-hot encoded categoricals
       // from 0 to 1 makes it fit the current split description logic
       sharedTreeNode.setSplitValue(1.0F);
@@ -98,7 +98,7 @@ public abstract class XGBoostMojoModel extends MojoModel implements SharedTreeGr
       sharedTreeNode.setSplitValue(xgBoostNode.getSplitCondition());
     }
     sharedTreeNode.setPredValue(xgBoostNode.getLeafValue());
-      sharedTreeNode.setCol(xgBoostNode.split_index(), features[xgBoostNode.split_index()].split(SPACE)[1]);
+    sharedTreeNode.setCol(xgBoostNode.getSplitIndex(), features[xgBoostNode.getSplitIndex()].split(SPACE)[1]);
     sharedTreeNode.setInclusiveNa(inclusiveNA);
     sharedTreeNode.setNodeNumber(nodeIndex);
 
