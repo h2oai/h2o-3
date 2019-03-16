@@ -2,7 +2,6 @@ package hex.mojo;
 
 import hex.ModelBuilder;
 import hex.ModelCategory;
-import hex.genmodel.descriptor.JsonModelDescriptorReader;
 import hex.genmodel.*;
 import water.Key;
 import water.fvec.ByteVec;
@@ -57,12 +56,9 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
             final MojoModel mojoModel;
             try {
                 final MojoReaderBackend readerBackend = MojoReaderBackendFactory.createReaderBackend(mojoBytes.openStream(_job._key), MojoReaderBackendFactory.CachingStrategy.MEMORY);
-                mojoModel = ModelMojoReader.readFrom(readerBackend, false);
-                // Obtain model's description
-                final JsonModelDescriptorReader modelDescriptionReader = JsonModelDescriptorReader.get(readerBackend);
-                final ModelDescriptor description = modelDescriptionReader.getDescription();
+                mojoModel = ModelMojoReader.readFrom(readerBackend, true);
 
-                final GenericModelOutput genericModelOutput = new GenericModelOutput(description);
+                final GenericModelOutput genericModelOutput = new GenericModelOutput(mojoModel._modelDescriptor);
                 final GenericModel genericModel = new GenericModel(_result, _parms, genericModelOutput, mojoModel, mojoBytes);
 
                 genericModel.write_lock(_job);

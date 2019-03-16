@@ -1,6 +1,8 @@
 package hex.genmodel;
 
 import com.google.gson.*;
+import hex.genmodel.descriptor.JsonModelDescriptorReader;
+import hex.genmodel.descriptor.ModelDescriptorBuilder;
 import hex.genmodel.descriptor.Table;
 import hex.genmodel.utils.ParseUtils;
 import hex.genmodel.utils.StringEscapeUtils;
@@ -11,9 +13,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
-import java.util.regex.Pattern;
-
 
 /**
  * Helper class to deserialize a model from MOJO format. This is a counterpart to `ModelMojoWriter`.
@@ -36,7 +35,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
    * @throws IOException Whenever there is an error reading the {@link MojoModel}'s data.
    */
   public static MojoModel readFrom(MojoReaderBackend reader) throws IOException {
-    return readFrom(reader, true);
+    return readFrom(reader, false);
   }
 
   /**
@@ -44,11 +43,11 @@ public abstract class ModelMojoReader<M extends MojoModel> {
    * and model evaluation.
    *
    * @param reader      An instance of {@link MojoReaderBackend} to read from existing MOJO
-   * @param closeReader If true, the given {@link MojoReaderBackend} is closed, preventing further re-use.
+   * @param readModelDescriptor If true, 
    * @return De-serialized {@link MojoModel}
    * @throws IOException Whenever there is an error reading the {@link MojoModel}'s data.
    */
-  public static MojoModel readFrom(MojoReaderBackend reader, final boolean closeReader) throws IOException {
+  public static MojoModel readFrom(MojoReaderBackend reader, final boolean readModelDescriptor) throws IOException {
     try {
       Map<String, Object> info = parseModelInfo(reader);
       if (! info.containsKey("algorithm"))
@@ -57,11 +56,10 @@ public abstract class ModelMojoReader<M extends MojoModel> {
       ModelMojoReader mmr = ModelMojoFactory.INSTANCE.getMojoReader(algo);
       mmr._lkv = info;
       mmr._reader = reader;
-      mmr.readAll();
-      mmr._model.algoName = algo;
+      mmr.readAll(readModelDescriptor);
       return mmr._model;
     } finally {
-      if (reader instanceof Closeable && closeReader)
+      if (reader instanceof Closeable)
         ((Closeable) reader).close();
     }
   }
@@ -165,7 +163,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
   // Private
   //--------------------------------------------------------------------------------------------------------------------
 
-  private void readAll() throws IOException {
+  private void readAll(final boolean readModelDescriptor) throws IOException {
     String[] columns = (String[]) _lkv.get("[columns]");
     String[][] domains = parseModelDomains(columns.length);
     boolean isSupervised = readkv("supervised");
@@ -184,6 +182,24 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     _model._mojo_version = ((Number) readkv("mojo_version")).doubleValue();
     checkMaxSupportedMojoVersion();
     readModelData();
+    if (readModelDescriptor) {
+      _model._modelDescriptor = readModelDescriptor();
+    }
+  }
+
+  private ModelDescriptor readModelDescriptor() {
+    final JsonObject modelJson = JsonModelDescriptorReader.parseModelJson(_reader);
+    ModelDescriptorBuilder modelDescriptorBuilder = new ModelDescriptorBuilder(_model);
+
+    final Table model_summary_table = JsonModelDescriptorReader.extractTableFromJson(modelJson, "output.model_summary");
+    modelDescriptorBuilder.modelSummary(model_summary_table);
+
+    readModelSpecificDescription(modelDescriptorBuilder, modelJson);
+    return modelDescriptorBuilder.build();
+  }
+
+  protected void readModelSpecificDescription(final ModelDescriptorBuilder modelDescriptorBuilder, final JsonObject modelJson) {
+    // Default behavior is empty on purpose
   }
 
   private static Map<String, Object> parseModelInfo(MojoReaderBackend reader) throws IOException {
