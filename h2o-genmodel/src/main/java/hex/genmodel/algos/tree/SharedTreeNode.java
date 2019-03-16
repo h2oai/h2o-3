@@ -1,6 +1,7 @@
 package hex.genmodel.algos.tree;
 
 import ai.h2o.algos.tree.INode;
+import ai.h2o.algos.tree.INodeStat;
 import hex.genmodel.tools.PrintMojo;
 import hex.genmodel.utils.GenmodelBitSet;
 
@@ -14,7 +15,7 @@ import java.util.Objects;
  * Node in a tree.
  * A node (optionally) contains left and right edges to the left and right child nodes.
  */
-public class SharedTreeNode implements INode<double[]> {
+public class SharedTreeNode implements INode<double[]>, INodeStat {
   final int internalId; // internal tree id (that links the node back to the array of nodes of the tree) - don't confuse with user-facing nodeNumber!
   final SharedTreeNode parent;
   final int subgraphNumber;
@@ -61,6 +62,7 @@ public class SharedTreeNode implements INode<double[]> {
     return nodeNumber;
   }
 
+  @Override
   public float getWeight() {
     return weight;
   }
