@@ -1,4 +1,4 @@
-package biz.k11i.xgboost.tree;
+package hex.util;
 
 import ai.h2o.algos.tree.INode;
 import ai.h2o.algos.tree.INodeStat;
@@ -7,21 +7,21 @@ import org.junit.Ignore;
 import java.util.*;
 
 @Ignore
-class NaiveTreeSHAP<R, N extends INode<R>, S extends INodeStat> {
+public class NaiveTreeSHAP<R, N extends INode<R>, S extends INodeStat> {
 
   private final int rootNodeId;
   private final N[] nodes;
   private final S[] stats;
   private final double baseMargin;
 
-  NaiveTreeSHAP(N[] nodes, S[] stats, int rootNodeId, double baseMargin) {
+  public NaiveTreeSHAP(N[] nodes, S[] stats, int rootNodeId, double baseMargin) {
     this.rootNodeId = rootNodeId;
     this.nodes = nodes;
     this.stats = stats;
     this.baseMargin = baseMargin;
   }
 
-  double calculateContributions(R row, double[] contribsNaive) {
+  public double calculateContributions(R row, double[] contribsNaive) {
     final Set<Integer> usedFeatures = usedFeatures();
     final int M = usedFeatures.size();
     // last element is the bias term

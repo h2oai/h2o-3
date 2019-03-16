@@ -4,6 +4,7 @@ import biz.k11i.xgboost.Predictor;
 import biz.k11i.xgboost.gbm.GBTree;
 import biz.k11i.xgboost.util.FVec;
 import hex.genmodel.algos.tree.TreeSHAP;
+import hex.util.NaiveTreeSHAP;
 import ml.dmlc.xgboost4j.java.*;
 import org.junit.After;
 import org.junit.Before;
