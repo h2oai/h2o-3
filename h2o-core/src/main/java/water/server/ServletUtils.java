@@ -192,7 +192,8 @@ public class ServletUtils {
     response.setHeader("X-Content-Type-Options", "nosniff");
     response.setHeader("Content-Security-Policy", "default-src 'self' 'unsafe-eval' 'unsafe-inline'");
     // Note: ^^^ unsafe-eval/-inline are essential for Flow to work
-    //           this will also kill the component "Star H2O on Github" in Flow - see HEXDEV-730
+    //           this will also kill the component "Star H2O on Github" in Flow - see HEXDEV-739
+
   }
 
   public static String sanatizeContextPath(String context_path) {
