@@ -7,11 +7,9 @@ import org.junit.Test;
 import org.junit.contrib.java.lang.system.ProvideSystemProperty;
 import org.junit.contrib.java.lang.system.RestoreSystemProperties;
 import org.junit.rules.ExpectedException;
-import org.junit.rules.TemporaryFolder;
 import water.H2O;
 
 import java.io.File;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -19,9 +17,6 @@ import java.util.concurrent.ArrayBlockingQueue;
 public class SQLManagerTest {
 
   private static final File BUILD_DIR = new File("build").getAbsoluteFile();
-
-  @Rule
-  public final TemporaryFolder tmp = new TemporaryFolder(BUILD_DIR);
 
   @Rule
   public final ProvideSystemProperty provideSystemProperty =
@@ -41,9 +36,8 @@ public class SQLManagerTest {
   }
 
   @Test
-  public void testCreateConnectionPool() throws SQLException, IOException {
-
-    final String connectionString = String.format("jdbc:derby:%s/SQLManagerTest_DB;create=true", tmp.newFolder("derby").getAbsolutePath());
+  public void testCreateConnectionPool() throws SQLException {
+    final String connectionString = String.format("jdbc:derby:memory:SQLManagerTest_%d;create=true", System.currentTimeMillis());
     final SQLManager.ConnectionPoolProvider provider = new SQLManager.ConnectionPoolProvider(connectionString, "me", "mine", 10);
     ArrayBlockingQueue<Connection> pool = provider.createConnectionPool(1, (short) 100);
 
@@ -95,7 +89,7 @@ public class SQLManagerTest {
     int maxConnectionsPerNode = SQLManager.ConnectionPoolProvider.getMaxConnectionsPerNode(2, (short) 10, 10);
     int expectedConnectionsPerNode = Integer.valueOf(
         System.getProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + "sql.connections.max")
-    ).intValue() / 2;
+    ) / 2;
     Assert.assertEquals(expectedConnectionsPerNode, maxConnectionsPerNode);
   }
 
@@ -104,7 +98,6 @@ public class SQLManagerTest {
    */
   @Test
   public void testBuildSelectOneRowSql() {
-
     // Oracle
     Assert.assertEquals("SELECT * FROM mytable FETCH NEXT 1 ROWS ONLY",
             SQLManager.buildSelectSingleRowSql("oracle","mytable","*"));
@@ -124,7 +117,6 @@ public class SQLManagerTest {
 
   @Test
   public void testBuildSelectChunkSql() {
-
     // Oracle
     Assert.assertEquals("SELECT * FROM mytable OFFSET 0 ROWS FETCH NEXT 1310 ROWS ONLY",
             SQLManager.buildSelectChunkSql("oracle", "mytable", 0, 1310, "*", null));

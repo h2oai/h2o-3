@@ -191,8 +191,7 @@ h2o.uploadFile <- function(path, destination_frame = "",
 #' Be sure to start the h2o.jar in the terminal with your downloaded JDBC driver in the classpath:
 #'    `java -cp <path_to_h2o_jar>:<path_to_jdbc_driver_jar> water.H2OApp`
 #' Also see h2o.import_sql_select.
-#' Currently supported SQL databases are MySQL, PostgreSQL, and MariaDB. Support for Oracle 12g and Microsoft SQL Server 
-#  is forthcoming.
+#' Currently supported SQL databases are MySQL, PostgreSQL, MariaDB, Hive, Oracle and Microsoft SQL Server.
 #'
 #' For example, 
 #'    my_sql_conn_url <- "jdbc:mysql://172.16.2.178:3306/ingestSQL?&useSSL=false"
@@ -239,8 +238,7 @@ h2o.import_sql_table <- function(connection_url, table, username, password, colu
 #' Be sure to start the h2o.jar in the terminal with your downloaded JDBC driver in the classpath:
 #'    `java -cp <path_to_h2o_jar>:<path_to_jdbc_driver_jar> water.H2OApp`
 #' Also see h2o.import_sql_table.
-#' Currently supported SQL databases are MySQL, PostgreSQL, and MariaDB. Support for Oracle 12g and Microsoft SQL Server 
-#  is forthcoming.   
+#' Currently supported SQL databases are MySQL, PostgreSQL, MariaDB, Hive, Oracle and Microsoft SQL Server.
 #'
 #' For example, 
 #'    my_sql_conn_url <- "jdbc:mysql://172.16.2.178:3306/ingestSQL?&useSSL=false"
@@ -254,17 +252,23 @@ h2o.import_sql_table <- function(connection_url, table, username, password, colu
 #' @param select_query SQL query starting with `SELECT` that returns rows from one or more database tables.
 #' @param username Username for SQL server
 #' @param password Password for SQL server
+#' @param use_temp_table Whether a temporary table should be created from select_query
+#' @param temp_table_name Name of temporary table to be created from select_query
 #' @param optimize (Optional) Optimize import of SQL table for faster imports. Experimental. Default is true. 
 #' @param fetch_mode (Optional) Set to DISTRIBUTED to enable distributed import. Set to SINGLE to force a sequential read
 #'        from the database
 #'        Can be used for databases that do not support OFFSET-like clauses in SQL statements.
 #' @export
-h2o.import_sql_select<- function(connection_url, select_query, username, password, optimize = NULL, fetch_mode = NULL) {
+h2o.import_sql_select<- function(connection_url, select_query, username, password, 
+                        use_temp_table = NULL, temp_table_name = NULL,
+                        optimize = NULL, fetch_mode = NULL) {
   parms <- list()
   parms$connection_url <- connection_url
   parms$select_query <- select_query
   parms$username <- username
   parms$password <- password
+  if (!is.null(use_temp_table)) parms$use_temp_table <- use_temp_table
+  if (!is.null(temp_table_name)) parms$temp_table_name <- temp_table_name
   if (!is.null(fetch_mode)) parms$fetch_mode <- fetch_mode
   res <- .h2o.__remoteSend('ImportSQLTable', method = "POST", .params = parms, h2oRestApiVersion = 99)
   job_key <- res$key$name

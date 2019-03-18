@@ -39,9 +39,11 @@ public class SQLManager {
    * @param columns (Input)
    * @param fetch_mode (Input)
    */
-  public static Job<Frame> importSqlTable(final String connection_url, final String table, final String select_query,
-                                          final String username, final String password, final String columns,
-                                          final SqlFetchMode fetch_mode) {
+  public static Job<Frame> importSqlTable(
+      final String connection_url, final String table, final String select_query,
+      final String username, final String password, final String columns,
+      final Boolean useTempTable, final String tempTableName,
+      final SqlFetchMode fetch_mode) {
 
     final Key<Frame> destination_key = Key.make((table + "_sql_to_hex").replaceAll("\\W", "_"));
     final Job<Frame> j = new Job<>(destination_key, Frame.class.getName(), "Import SQL Table");
@@ -49,8 +51,12 @@ public class SQLManager {
     final String databaseType = connection_url.split(":", 3)[1];
     initializeDatabaseDriver(databaseType);
 
-    SQLImportDriver importDriver = new SQLImportDriver(j, destination_key, databaseType,
-            connection_url, table, select_query, username, password, columns, fetch_mode);
+    SQLImportDriver importDriver = new SQLImportDriver(
+        j, destination_key, databaseType, connection_url, 
+        table, select_query, username, password, columns, 
+        useTempTable, tempTableName,
+        fetch_mode
+    );
     j.start(importDriver, Job.WORK_UNKNOWN);
 
     return j;
@@ -68,11 +74,15 @@ public class SQLManager {
     final String _username;
     final String _password;
     final String _columns;
+    final boolean _useTempTable;
+    final String _tempTableName;
     final SqlFetchMode _fetch_mode;
 
-    SQLImportDriver(Job<Frame> job, Key<Frame> destination_key, String database_type, 
-                           String connection_url, String table, String select_query, String username, String password, 
-                           String columns, SqlFetchMode fetch_mode) {
+    SQLImportDriver(
+        Job<Frame> job, Key<Frame> destination_key, String database_type, 
+        String connection_url, String table, String select_query, String username, String password, String columns,
+        Boolean useTempTable, String tempTableName, SqlFetchMode fetch_mode
+    ) {
       _j = job;
       _destination_key = destination_key;
       _database_type = database_type;
@@ -82,7 +92,30 @@ public class SQLManager {
       _username = username;
       _password = password;
       _columns = columns;
+      _useTempTable = shouldUseTempTable(useTempTable);
+      _tempTableName = getTempTableName(tempTableName);
       _fetch_mode = fetch_mode;
+    }
+
+    /*
+     * if tmp table disabled, we use sub-select instead, which outperforms tmp source_table for very
+     * large queries/tables the main drawback of sub-selects is that we lose isolation, but as we're only reading data
+     * and counting the rows from the beginning, it should not an issue (at least when using hive...)
+     */
+    private boolean shouldUseTempTable(Boolean fromParams) {
+      if (fromParams != null) {
+        return fromParams;
+      } else {
+        return Boolean.parseBoolean(System.getProperty(TMP_TABLE_ENABLED, "true"));
+      }
+    }
+
+    private String getTempTableName(String fromParams) {
+      if (fromParams == null || fromParams.isEmpty()) {
+        return SQLManager.TEMP_TABLE_NAME;
+      } else {
+        return fromParams;
+      }
     }
 
     @Override
@@ -107,13 +140,8 @@ public class SQLManager {
           if (!_select_query.toLowerCase().startsWith("select")) {
             throw new IllegalArgumentException("The select query must start with `SELECT`, but instead is: " + _select_query);
           }
-
-          //if tmp source_table disabled, we use sub-select instead, which outperforms tmp source_table for very large queries/tables
-          // the main drawback of sub-selects is that we lose isolation, but as we're only reading data
-          // and counting the rows from the beginning, it should not an issue (at least when using hive...)
-          final boolean createTmpTable = Boolean.parseBoolean(System.getProperty(TMP_TABLE_ENABLED, "true")); //default to true to keep old behaviour
-          if (createTmpTable) {
-            source_table = SQLManager.TEMP_TABLE_NAME;
+          if (_useTempTable) {
+            source_table = _tempTableName;
             //returns number of rows, but as an int, not long. if int max value is exceeded, result is negative
             _j.update(0L, "Creating a temporary table");
             numRow = stmt.executeUpdate("CREATE TABLE " + source_table + " AS " + _select_query);
@@ -267,6 +295,7 @@ public class SQLManager {
         dropTempTable(_connection_url, _username, _password);
       tryComplete();
     }
+
   }
   
   /**

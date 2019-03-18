@@ -366,6 +366,7 @@ endif
 
 test-hadoop-common-smoke-standalone:
 	cd h2o-hadoop-common/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
+	cd h2o-hadoop-common/tests/R && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
 
 test-hadoop-2-smoke-hdp: test-hadoop-2-smoke-standalone test-hadoop-common-smoke-hive
 

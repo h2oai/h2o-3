@@ -469,8 +469,7 @@ def import_sql_table(connection_url, table, username, password, columns=None, op
         java -cp <path_to_h2o_jar>:<path_to_jdbc_driver_jar> water.H2OApp
 
     Also see :func:`import_sql_select`.
-    Currently supported SQL databases are MySQL, PostgreSQL, MariaDB, and Netezza. Support for Oracle 12g and Microsoft SQL
-    Server is forthcoming.
+    Currently supported SQL databases are MySQL, PostgreSQL, MariaDB, Hive, Oracle and Microsoft SQL.
 
     :param connection_url: URL of the SQL database connection as specified by the Java Database Connectivity (JDBC)
         Driver. For example, "jdbc:mysql://localhost:3306/menagerie?&useSSL=false"
@@ -506,7 +505,8 @@ def import_sql_table(connection_url, table, username, password, columns=None, op
     return get_frame(j.dest_key)
 
 
-def import_sql_select(connection_url, select_query, username, password, optimize=True, fetch_mode=None):
+def import_sql_select(connection_url, select_query, username, password, optimize=True, 
+                      use_temp_table=None, temp_table_name=None, fetch_mode=None):
     """
     Import the SQL table that is the result of the specified SQL query to H2OFrame in memory.
 
@@ -516,8 +516,8 @@ def import_sql_select(connection_url, select_query, username, password, optimize
 
       java -cp <path_to_h2o_jar>:<path_to_jdbc_driver_jar> water.H2OApp
 
-    Also see h2o.import_sql_table. Currently supported SQL databases are MySQL, PostgreSQL, and MariaDB. Support
-    for Oracle 12g and Microsoft SQL Server is forthcoming.
+    Also see h2o.import_sql_table. Currently supported SQL databases are MySQL, PostgreSQL, MariaDB, Hive, Oracle 
+    and Microsoft SQL Server.
 
     :param connection_url: URL of the SQL database connection as specified by the Java Database Connectivity (JDBC)
         Driver. For example, "jdbc:mysql://localhost:3306/menagerie?&useSSL=false"
@@ -525,6 +525,8 @@ def import_sql_select(connection_url, select_query, username, password, optimize
     :param username: username for SQL server
     :param password: password for SQL server
     :param optimize: DEPRECATED. Ignored - use fetch_mode instead. Optimize import of SQL table for faster imports.
+    :param use_temp_table: whether a temporary table should be created from select_query
+    :param temp_table_name: name of temporary table to be created from select_query
     :param fetch_mode: Set to DISTRIBUTED to enable distributed import. Set to SINGLE to force a sequential read by a single node
         from the database.
 
@@ -543,9 +545,11 @@ def import_sql_select(connection_url, select_query, username, password, optimize
     assert_is_type(username, str)
     assert_is_type(password, str)
     assert_is_type(optimize, bool)
+    assert_is_type(use_temp_table, bool, None)
+    assert_is_type(temp_table_name, str, None)
     assert_is_type(fetch_mode, str, None)
     p = {"connection_url": connection_url, "select_query": select_query, "username": username, "password": password,
-         "fetch_mode": fetch_mode}
+         "use_temp_table": use_temp_table, "temp_table_name": temp_table_name, "fetch_mode": fetch_mode}
     j = H2OJob(api("POST /99/ImportSQLTable", data=p), "Import SQL Table").poll()
     return get_frame(j.dest_key)
 
