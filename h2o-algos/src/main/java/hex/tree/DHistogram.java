@@ -58,10 +58,11 @@ public final class DHistogram extends Iced {
                              // If constraints are used and gamma denominator needs to be calculated it will be included.
   protected final int _vals_dim; // _vals.length == _vals_dim * _nbin; How many values per bin are encoded in _vals.
                                  // Current possible values are
-                                 // - 3:_pred1 nor _pred2 provided and gamma denumerator is not needed 
+                                 // - 3:_pred1 nor _pred2 provided and gamma denominator is not needed 
                                  // - 5 or 6: if either _pred1 or _pred2 is provided (or both)
-                                 //      - 5 if gamma denumerator is not needed
-                                 //      - 6 if gamma denumerator is needed
+                                 //      - 5 if gamma denominator is not needed
+                                 //      - 6 if gamma denominator is needed
+                                 // also see functions hasPreds() and hasDenominator()
   private final Distribution _dist;
   public double w(int i){  return _vals[_vals_dim*i+0];}
   public double wY(int i){ return _vals[_vals_dim*i+1];}
@@ -82,6 +83,13 @@ public final class DHistogram extends Iced {
   public double wYYNA() { return _vals[_vals_dim*_nbin+2]; }
   public double denNA() { return _vals[_vals_dim*_nbin+5]; }
 
+  final boolean hasPreds() {
+    return _vals_dim >= 5;
+  } 
+
+  final boolean hasDenominator() {
+    return _vals_dim == 6;
+  }
 
   // Atomically updated double min/max
   protected    double  _min2, _maxIn; // Min/Max, shared, atomically updated.  _maxIn is Inclusive.
@@ -415,8 +423,9 @@ public final class DHistogram extends Iced {
   /**
    * Update counts in appropriate bins. Not thread safe, assumed to have private copy.
    * @param ws observation weights
+   * @param resp original response (response column of the outer model, needed to calculate Gamma denominator) 
    * @param cs column data
-   * @param ys response
+   * @param ys response column of the regression tree (eg. GBM residuals, not the original model response!) 
    * @param rows rows sorted by leaf assignemnt
    * @param hi  upper bound on index into rows array to be processed by this call (exclusive)
    * @param lo  lower bound on index into rows array to be processed by this call (inclusive)

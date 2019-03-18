@@ -804,6 +804,9 @@ public class DTree extends Iced {
     final int nbins = hs.nbins();
     assert nbins > 1;
 
+    final boolean hasPreds = hs.hasPreds();
+    final boolean hasDenom = hs.hasDenominator();
+
     // Histogram arrays used for splitting, these are either the original bins
     // (for an ordered predictor), or sorted by the mean response (for an
     // unordered predictor, i.e. categorical predictor).
@@ -830,10 +833,10 @@ public class DTree extends Iced {
         vals[vals_dim*i+0] = hs._vals[vals_dim*id+0];
         vals[vals_dim*i+1] = hs._vals[vals_dim*id+1];
         vals[vals_dim*i+2] = hs._vals[vals_dim*id+2];
-        if (vals_dim >= 5) {
+        if (hasPreds) {
           vals[vals_dim * i + 3] = hs._vals[vals_dim * id + 3];
           vals[vals_dim * i + 4] = hs._vals[vals_dim * id + 4];
-          if (vals_dim == 6)
+          if (hasDenom)
             vals[vals_dim * i + 5] = hs._vals[vals_dim * id + 5];
         }
 //        Log.info(vals[3*i] + " obs have avg response [" + i + "]=" + avgs[id]);
@@ -844,9 +847,9 @@ public class DTree extends Iced {
     double   wlo[] = MemoryManager.malloc8d(nbins+1);
     double  wYlo[] = MemoryManager.malloc8d(nbins+1);
     double wYYlo[] = MemoryManager.malloc8d(nbins+1);
-    double pr1lo[] = vals_dim >= 5 ? MemoryManager.malloc8d(nbins+1) : null;
-    double pr2lo[] = vals_dim >= 5 ? MemoryManager.malloc8d(nbins+1) : null;
-    double denlo[] = vals_dim == 6 ? MemoryManager.malloc8d(nbins+1) : wlo;
+    double pr1lo[] = hasPreds ? MemoryManager.malloc8d(nbins+1) : null;
+    double pr2lo[] = hasPreds ? MemoryManager.malloc8d(nbins+1) : null;
+    double denlo[] = hasDenom ? MemoryManager.malloc8d(nbins+1) : wlo;
     for( int b=1; b<=nbins; b++ ) {
       int id = vals_dim*(b-1);
       double n0 =   wlo[b-1], n1 = vals[id+0];
@@ -857,19 +860,19 @@ public class DTree extends Iced {
       wlo[b] = n0+n1;
       wYlo[b] = m0+m1;
       wYYlo[b] = s0+s1;
-      if (vals_dim >= 5) {
+      if (hasPreds) {
         double p10 = pr1lo[b - 1], p11 = vals[id + 3];
         double p20 = pr2lo[b - 1], p21 = vals[id + 4];
         pr1lo[b] = p10 + p11;
         pr2lo[b] = p20 + p21;
-        if (vals_dim == 6) {
+        if (hasDenom) {
           double d0 = denlo[b - 1], d1 = vals[id + 5];
           denlo[b] = d0 + d1;
         }
       }
     }
     final double wNA = hs.wNA();
-    final double denNA = vals_dim == 6 ? hs.denNA() : wNA;
+    final double denNA = hasDenom ? hs.denNA() : wNA;
     double tot = wlo[nbins] + wNA; //total number of (weighted) rows
     // Is any split possible with at least min_obs?
     if( tot < 2*min_rows ) {
@@ -891,9 +894,9 @@ public class DTree extends Iced {
     double   whi[] = MemoryManager.malloc8d(nbins+1);
     double  wYhi[] = MemoryManager.malloc8d(nbins+1);
     double wYYhi[] = MemoryManager.malloc8d(nbins+1);
-    double pr1hi[] = vals_dim >= 5 ? MemoryManager.malloc8d(nbins+1) : null;
-    double pr2hi[] = vals_dim >= 5 ? MemoryManager.malloc8d(nbins+1) : null;
-    double denhi[] = vals_dim == 6 ? MemoryManager.malloc8d(nbins+1) : whi;
+    double pr1hi[] = hasPreds ? MemoryManager.malloc8d(nbins+1) : null;
+    double pr2hi[] = hasPreds ? MemoryManager.malloc8d(nbins+1) : null;
+    double denhi[] = hasDenom ? MemoryManager.malloc8d(nbins+1) : whi;
     for( int b=nbins-1; b>=0; b-- ) {
       double n0 =   whi[b+1], n1 = vals[vals_dim*b];
       if( n0==0 && n1==0 )
@@ -903,12 +906,12 @@ public class DTree extends Iced {
       whi[b] = n0+n1;
       wYhi[b] = m0+m1;
       wYYhi[b] = s0+s1;
-      if (vals_dim >= 5) {
+      if (hasPreds) {
         double p10 = pr1hi[b + 1], p11 = vals[vals_dim * b + 3];
         double p20 = pr2hi[b + 1], p21 = vals[vals_dim * b + 4];
         pr1hi[b] = p10 + p11;
         pr2hi[b] = p20 + p21;
-        if (vals_dim == 6) {
+        if (hasDenom) {
           double d0 = denhi[b + 1], d1 = vals[vals_dim * b + 5];
           denhi[b] = d0 + d1;
         }
@@ -1072,8 +1075,8 @@ public class DTree extends Iced {
     final double node_p0 = predLeft / nLeft;
     final double node_p1 = predRight / nRight;
 
-    double tree_p0 = vals_dim == 6 ? predLeft / denLeft : node_p0;
-    double tree_p1 = vals_dim == 6 ? predRight / denRight : node_p1;
+    double tree_p0 = hasDenom ? predLeft / denLeft : node_p0;
+    double tree_p1 = hasDenom ? predRight / denRight : node_p1;
 
     if (constraint != 0) {
       if (constraint * tree_p0 > constraint * tree_p1) {
