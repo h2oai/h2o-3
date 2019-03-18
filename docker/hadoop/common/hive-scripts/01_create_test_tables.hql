@@ -1,3 +1,5 @@
+CREATE DATABASE user_database;
+
 CREATE TABLE test_table_empty(
     year INT,
     note STRING

@@ -7,16 +7,16 @@ sys.path.insert(1, os.path.join("..", "..", "..", "h2o-py"))
 from tests import pyunit_utils
 from numpy import isclose
 
-def adapt_airlines(airlines_dataset):
-    airlines_dataset["table_for_h2o_import.origin"] = airlines_dataset["table_for_h2o_import.origin"].asfactor()
-    airlines_dataset["table_for_h2o_import.fdayofweek"] = airlines_dataset["table_for_h2o_import.fdayofweek"].asfactor()
-    airlines_dataset["table_for_h2o_import.uniquecarrier"] = airlines_dataset["table_for_h2o_import.uniquecarrier"].asfactor()
-    airlines_dataset["table_for_h2o_import.dest"] = airlines_dataset["table_for_h2o_import.dest"].asfactor()
-    airlines_dataset["table_for_h2o_import.fyear"] = airlines_dataset["table_for_h2o_import.fyear"].asfactor()
-    airlines_dataset["table_for_h2o_import.fdayofmonth"] = airlines_dataset["table_for_h2o_import.fdayofmonth"].asfactor()
-    airlines_dataset["table_for_h2o_import.isdepdelayed"] = airlines_dataset["table_for_h2o_import.isdepdelayed"].asfactor()
-    airlines_dataset["table_for_h2o_import.fmonth"] = airlines_dataset["table_for_h2o_import.fmonth"].asfactor()
-    return airlines_dataset
+def adapt_airlines(dataset, table_name="table_for_h2o_import"):
+    dataset[table_name + ".origin"] = dataset[table_name + ".origin"].asfactor()
+    dataset[table_name + ".fdayofweek"] = dataset[table_name + ".fdayofweek"].asfactor()
+    dataset[table_name + ".uniquecarrier"] = dataset[table_name + ".uniquecarrier"].asfactor()
+    dataset[table_name + ".dest"] = dataset[table_name + ".dest"].asfactor()
+    dataset[table_name + ".fyear"] = dataset[table_name + ".fyear"].asfactor()
+    dataset[table_name + ".fdayofmonth"] = dataset[table_name + ".fdayofmonth"].asfactor()
+    dataset[table_name + ".isdepdelayed"] = dataset[table_name + ".isdepdelayed"].asfactor()
+    dataset[table_name + ".fmonth"] = dataset[table_name + ".fmonth"].asfactor()
+    return dataset
 
 def hive_jdbc_import():
     connection_url = "jdbc:hive2://localhost:10000/default"
@@ -35,18 +35,31 @@ def hive_jdbc_import():
     password = ""
 
     # read from S3
-    airlines_dataset_original = h2o.import_file(path="https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/AirlinesTest.csv.zip")
+    dataset_original = h2o.import_file(path="https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/AirlinesTest.csv.zip")
 
-    # read from Hive Distributed
     if hive_dist_enabled:
-        airlines_dataset_dist = h2o.import_sql_select(connection_url, select_query, username, password)
-        airlines_dataset_dist = adapt_airlines(airlines_dataset_dist)
-        pyunit_utils.compare_frames(airlines_dataset_original, airlines_dataset_dist, 100, tol_numeric=0)
+        # read from Hive Distributed
+        dataset_dist = h2o.import_sql_select(connection_url, select_query, username, password)
+        dataset_dist = adapt_airlines(dataset_dist)
+        pyunit_utils.compare_frames(dataset_original, dataset_dist, 100, tol_numeric=0)
 
     # read from Hive Streaming
-    airlines_dataset_streaming = h2o.import_sql_select(connection_url, select_query, username, password, fetch_mode="SINGLE")
-    airlines_dataset_streaming = adapt_airlines(airlines_dataset_streaming)
-    pyunit_utils.compare_frames(airlines_dataset_original, airlines_dataset_streaming, 100, tol_numeric=0)
+    dataset_streaming = h2o.import_sql_select(connection_url, select_query, username, password, fetch_mode="SINGLE")
+    dataset_streaming = adapt_airlines(dataset_streaming)
+    pyunit_utils.compare_frames(dataset_original, dataset_streaming, 100, tol_numeric=0)
+
+    # read from Hive without temp table
+    dataset_no_temp_table = h2o.import_sql_select(connection_url, select_query, username, password, 
+        use_temp_table = False, fetch_mode="SINGLE")
+    print(dataset_no_temp_table)
+    dataset_no_temp_table = adapt_airlines(dataset_no_temp_table, "sub_h2o_import")
+    pyunit_utils.compare_frames(dataset_original, dataset_no_temp_table, 100, tol_numeric=0)
+
+    # read from Hive with custom temp table
+    dataset_custom_temp_table = h2o.import_sql_select(connection_url, select_query, username, password, 
+        use_temp_table = True, temp_table_name = "user_database.test_import_table", fetch_mode="SINGLE")
+    dataset_custom_temp_table = adapt_airlines(dataset_custom_temp_table, "test_import_table")
+    pyunit_utils.compare_frames(dataset_original, dataset_custom_temp_table, 100, tol_numeric=0)
 
 
 if __name__ == "__main__":

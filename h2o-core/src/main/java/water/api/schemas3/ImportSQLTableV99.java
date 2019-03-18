@@ -17,6 +17,12 @@ public class ImportSQLTableV99 extends RequestSchemaV3<Iced,ImportSQLTableV99> {
   @API(help = "select_query")
   public String select_query = "";
 
+  @API(help = "use_temp_table")
+  public String use_temp_table = null;
+
+  @API(help = "temp_table_name")
+  public String temp_table_name = null;
+
   @API(help = "username", required = true)
   public String username;
 
