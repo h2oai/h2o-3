@@ -495,7 +495,7 @@ class H2OAutoML(object):
             ori_progress_state = H2OJob.__PROGRESS_BAR__
             H2OJob.__PROGRESS_BAR__ = progress_bar
             # Parse leaderboard H2OTwoDimTable & return as an H2OFrame
-            return h2o.H2OFrame(table.cell_values, destination_frame=key, column_names=table.col_header)
+            return h2o.H2OFrame(table.cell_values, destination_frame=key, column_names=table.col_header, column_types=table.col_types)
         finally:
             H2OJob.__PROGRESS_BAR__ = ori_progress_state
 
@@ -515,11 +515,13 @@ class H2OAutoML(object):
 
         leaderboard = None
         if should_fetch('leaderboard'):
-            leaderboard = H2OAutoML._fetch_table(state_json['leaderboard_table'], key=project_name+"_leaderboard", progress_bar=False)[1:]
+            leaderboard = H2OAutoML._fetch_table(state_json['leaderboard_table'], key=project_name+"_leaderboard", progress_bar=False)
+            leaderboard = leaderboard[1:]  # removing index
 
         event_log = None
         if should_fetch('event_log'):
             event_log = H2OAutoML._fetch_table(state_json['event_log_table'], key=project_name+"_eventlog", progress_bar=False)
+            event_log = event_log[1:]  # removing index
 
         return dict(
             project_name=project_name,
