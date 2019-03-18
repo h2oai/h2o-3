@@ -38,6 +38,7 @@ class H2OTwoDimTable(object):
         self._table_header = table_header
         self._table_description = table_description
         self._col_header = col_header
+        self._col_types = col_types
         self._cell_values = cell_values or self._parse_values(raw_cell_values, col_types)
 
 
@@ -72,6 +73,12 @@ class H2OTwoDimTable(object):
     def col_header(self):
         """Array of column names."""
         return self._col_header
+
+
+    @property
+    def col_types(self):
+        """Array of column types."""
+        return self._col_types
 
 
     def as_data_frame(self):

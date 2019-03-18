@@ -13,7 +13,6 @@ public class EventLogEntryV99 extends Schema<EventLogEntry, EventLogEntryV99> {
   public long timestamp;
 
   @API(help="Importance of this log event", valuesProvider = LevelProvider.class, direction=API.Direction.OUTPUT)
-
   public Level level;
 
   @API(help="Stage of the AutoML process for this log event", valuesProvider = StageProvider.class, direction=API.Direction.OUTPUT)
@@ -21,6 +20,13 @@ public class EventLogEntryV99 extends Schema<EventLogEntry, EventLogEntryV99> {
 
   @API(help="Message for this event", direction=API.Direction.OUTPUT)
   public String message;
+
+  @API(help="String identifier associated to this entry", direction=API.Direction.OUTPUT)
+  public String name;
+
+  @API(help="Value associated to this entry", direction=API.Direction.OUTPUT)
+  public String value;
+
 
   public static final class LevelProvider extends EnumValuesProvider<Level> {
     public LevelProvider() { super(Level.class); }

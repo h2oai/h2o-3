@@ -41,6 +41,7 @@ public class EventLogEntry<V extends Serializable> extends Iced {
     return dateTimeFormat.format(new Date());
   }
 
+  static final SimpleDateFormat dateTimeISOFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS"); // uses local timezone
   static final SimpleDateFormat dateTimeFormat = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss.S"); // uses local timezone
   static final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss.S");  // uses local timezone
 
@@ -48,9 +49,9 @@ public class EventLogEntry<V extends Serializable> extends Iced {
           "timestamp",
           "level",
           "stage",
+          "message",
           "name",
           "value",
-          "message"
   };
 
   private static final String[] colTypes= {
@@ -59,7 +60,7 @@ public class EventLogEntry<V extends Serializable> extends Iced {
           "string",
           "string",
           "string",
-          "string"
+          "string",
   };
 
   private static final String[] colFormats= {
@@ -68,7 +69,7 @@ public class EventLogEntry<V extends Serializable> extends Iced {
           "%s",
           "%s",
           "%s",
-          "%s"
+          "%s",
   };
 
   private static <E extends Enum<E>> int longest(Class<E> enu) {
@@ -104,16 +105,16 @@ public class EventLogEntry<V extends Serializable> extends Iced {
     return _stage;
   }
 
+  public String getMessage() {
+    return _message;
+  }
+
   public String getName() {
     return _name;
   }
 
   public V getValue() {
     return _value;
-  }
-
-  public String getMessage() {
-    return _message;
   }
 
   public EventLogEntry(AutoML autoML, Level level, Stage stage, String message) {
@@ -134,9 +135,9 @@ public class EventLogEntry<V extends Serializable> extends Iced {
     table.set(row, col++, timeFormat.format(new Date(_timestamp)));
     table.set(row, col++, _level);
     table.set(row, col++, _stage);
+    table.set(row, col++, _message);
     table.set(row, col++, _name);
     table.set(row, col++, _value);
-    table.set(row, col++, _message);
   }
 
   @Override
@@ -145,9 +146,9 @@ public class EventLogEntry<V extends Serializable> extends Iced {
             timeFormat.format(new Date(_timestamp)),
             _level,
             _stage,
+            Objects.toString(_message, ""),
             Objects.toString(_name, ""),
-            Objects.toString(_value, ""),
-            Objects.toString(_message, "")
+            Objects.toString(_value, "")
     );
   }
 }
