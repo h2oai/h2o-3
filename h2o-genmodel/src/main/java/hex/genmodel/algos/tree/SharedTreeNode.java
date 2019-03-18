@@ -1,5 +1,7 @@
 package hex.genmodel.algos.tree;
 
+import ai.h2o.algos.tree.INode;
+import ai.h2o.algos.tree.INodeStat;
 import hex.genmodel.tools.PrintMojo;
 import hex.genmodel.utils.GenmodelBitSet;
 
@@ -13,7 +15,8 @@ import java.util.Objects;
  * Node in a tree.
  * A node (optionally) contains left and right edges to the left and right child nodes.
  */
-public class SharedTreeNode {
+public class SharedTreeNode implements INode<double[]>, INodeStat {
+  final int internalId; // internal tree id (that links the node back to the array of nodes of the tree) - don't confuse with user-facing nodeNumber!
   final SharedTreeNode parent;
   final int subgraphNumber;
   int nodeNumber;
@@ -44,7 +47,8 @@ public class SharedTreeNode {
    * @param sn Tree number
    * @param d Node depth within the tree
    */
-  SharedTreeNode(SharedTreeNode p, int sn, int d) {
+  SharedTreeNode(int id, SharedTreeNode p, int sn, int d) {
+    internalId = id;
     parent = p;
     subgraphNumber = sn;
     depth = d;
@@ -58,6 +62,7 @@ public class SharedTreeNode {
     return nodeNumber;
   }
 
+  @Override
   public float getWeight() {
     return weight;
   }
@@ -521,4 +526,47 @@ public class SharedTreeNode {
 
     return Objects.hash(subgraphNumber, nodeNumber);
   }
+
+  // This is the generic Node API (needed by TreeSHAP)
+  
+  @Override
+  public final boolean isLeaf() {
+    return leftChild == null && rightChild == null;
+  }
+
+  @Override
+  public final float getLeafValue() {
+    return predValue;
+  }
+
+  @Override
+  public final int getSplitIndex() {
+    return colId;
+  }
+
+  @Override
+  public final int next(double[] value) {
+    final double d = value[colId];
+
+    if (Double.isNaN(d) || 
+            (bs != null && !bs.isInRange((int)d)) || (domainValues != null && domainValues.length <= (int)d)
+            ? !leftward : !naVsRest && (bs == null ? d >= splitValue : bs.contains((int)d))) {
+      // go RIGHT
+      return getRightChildIndex();
+    } else {
+      // go LEFT
+      return getLeftChildIndex();
+    }
+  }
+
+  @Override
+  public final int getLeftChildIndex() {
+    return leftChild != null ? leftChild.internalId : -1;
+  }
+
+  @Override
+  public final int getRightChildIndex() {
+    return rightChild != null ? rightChild.internalId : -1;
+  }
+
 }

@@ -38,7 +38,8 @@ public class SharedTreeSubgraph {
    * @return The node
    */
   public SharedTreeNode makeRootNode() {
-    SharedTreeNode n = new SharedTreeNode(null, subgraphNumber, 0);
+    assert nodesArray.size() == 0;
+    SharedTreeNode n = new SharedTreeNode(0, null, subgraphNumber, 0);
     n.setInclusiveNa(true);
     nodesArray.add(n);
     rootNode = n;
@@ -59,7 +60,7 @@ public class SharedTreeSubgraph {
    * @return The new child node
    */
   public SharedTreeNode makeLeftChildNode(SharedTreeNode parent) {
-    SharedTreeNode child = new SharedTreeNode(parent, subgraphNumber, parent.getDepth() + 1);
+    SharedTreeNode child = new SharedTreeNode(nodesArray.size(), parent, subgraphNumber, parent.getDepth() + 1);
     nodesArray.add(child);
     makeLeftEdge(parent, child);
     return child;
@@ -71,7 +72,7 @@ public class SharedTreeSubgraph {
    * @return The new child node
    */
   public SharedTreeNode makeRightChildNode(SharedTreeNode parent) {
-    SharedTreeNode child = new SharedTreeNode(parent, subgraphNumber, parent.getDepth() + 1);
+    SharedTreeNode child = new SharedTreeNode(nodesArray.size(), parent, subgraphNumber, parent.getDepth() + 1);
     nodesArray.add(child);
     makeRightEdge(parent, child);
     return child;
@@ -105,6 +106,15 @@ public class SharedTreeSubgraph {
     return n;
   }
 
+  public float scoreTree(double[] data) {
+    SharedTreeNode n = rootNode;
+    while (!n.isLeaf()) {
+      int id = n.next(data);
+      n = nodesArray.get(id);
+    }
+    return n.getPredValue();
+  }
+  
   void print() {
     System.out.println("");
     System.out.println("    ----- " + name + " -----");
