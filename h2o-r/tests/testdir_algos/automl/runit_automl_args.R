@@ -86,8 +86,8 @@ automl.args.test <- function() {
                           exclude_algos = c('DRF', 'GLM'),
         )
         models <- get_partitioned_models(aml)
-        expect_false(any(grepl("DRF", aml$all) || any(grepl("GLM", aml$all))))
-        expect_equal(models$se, 2)
+        expect_false(any(grepl("DRF", models$all)) || any(grepl("GLM", models$all)))
+        expect_equal(length(models$se), 2)
     }
 
     test_include_algos <- function() {
@@ -97,17 +97,17 @@ automl.args.test <- function() {
                           training_frame = ds$train,
                           project_name = "aml_include_algos",
                           max_models = max_models,
-                          exclude_algos = c('GBM'),
+                          include_algos = c('GBM'),
         )
         models <- get_partitioned_models(aml)
-        expect_true(all(grepl("GBM"), models$all))
-        expect_equal(models$se, 0, "No StackedEnsemble should have been trained if not explicitly included to the existing include_algos")
+        expect_true(all(grepl("GBM", models$all)))
+        expect_equal(length(models$se), 0, info="No StackedEnsemble should have been trained if not explicitly included to the existing include_algos")
     }
 
     test_include_exclude_algos <- function() {
         print("include_algos and exclude_algos parameters are mutually exclusive")
         ds <- import_dataset()
-        expect_failure(
+        expect_error(
             h2o.automl(x = ds$x, y = ds$y.idx,
                         training_frame = ds$train,
                         project_name = "aml_include_exclude_algos",
@@ -434,9 +434,12 @@ automl.args.test <- function() {
     
     
     makeSuite(
-        test_without_y, 
+        test_without_y,
         test_without_x,
         test_y_as_index_x_as_name,
+        test_exclude_algos,
+        test_include_algos,
+        test_include_exclude_algos,
         test_single_training_frame,
         test_training_with_validation_frame,
         test_training_with_leaderboard_frame,
