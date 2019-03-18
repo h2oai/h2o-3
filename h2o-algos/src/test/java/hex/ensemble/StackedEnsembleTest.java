@@ -45,7 +45,7 @@ public class StackedEnsembleTest extends TestUtil {
             null,
             new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
             false, DistributionFamily.gaussian, Metalearner.Algorithm.AUTO, false);
-        
+
         basicEnsemble("./smalldata/airlines/allyears2k_headers.zip",
                 null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) {
@@ -285,7 +285,7 @@ public class StackedEnsembleTest extends TestUtil {
             Scope.exit();
         }
     }
-    
+
     @Test public void testBlending() {
         basicEnsemble("./smalldata/junit/cars.csv",
             null,
@@ -299,7 +299,7 @@ public class StackedEnsembleTest extends TestUtil {
                 return fr.find("IsArrDelayed"); }
             },
             false, DistributionFamily.bernoulli, Metalearner.Algorithm.AUTO, true);
-        
+
         basicEnsemble("./smalldata/iris/iris_wheader.csv",
             null,
             new StackedEnsembleTest.PrepData() { int prep(Frame fr) {return fr.find("class"); }
@@ -312,7 +312,7 @@ public class StackedEnsembleTest extends TestUtil {
             },
             false, DistributionFamily.bernoulli, Metalearner.Algorithm.AUTO, true);
     }
-    
+
     @Test
     public void testBaseModelPredictionsCaching() {
       Grid grid = null;
@@ -374,12 +374,12 @@ public class StackedEnsembleTest extends TestUtil {
         seModels.add(seModel);
         Assert.assertNotNull(seModel._output._base_model_predictions_keys);
         Assert.assertEquals(models.length, seModel._output._base_model_predictions_keys.length);
-        
+
         Key<Frame>[] first_se_pred_keys = seModel._output._base_model_predictions_keys;
         for (Key k: first_se_pred_keys) {
           Assert.assertNotNull("prediction key is not stored in DKV", DKV.get(k));
         }
-        
+
         //running again another SE, caching predictions, and checking that no new prediction is created
         seParams._keep_base_model_predictions = true;
         seJob = new StackedEnsemble(seParams);
@@ -388,7 +388,7 @@ public class StackedEnsembleTest extends TestUtil {
         Assert.assertNotNull(seModel._output._base_model_predictions_keys);
         Assert.assertEquals(models.length, seModel._output._base_model_predictions_keys.length);
         Assert.assertArrayEquals(first_se_pred_keys, seModel._output._base_model_predictions_keys);
-        
+
         //running a last SE, with validation frame, and check that new predictions are added
         seParams._keep_base_model_predictions = true;
         seParams._valid = valid._key;
@@ -400,7 +400,7 @@ public class StackedEnsembleTest extends TestUtil {
         for (Key<Frame> first_pred_key: first_se_pred_keys) {
           Assert.assertTrue(ArrayUtils.contains(seModel._output._base_model_predictions_keys, first_pred_key));
         }
-        
+
         seModel.deleteBaseModelPredictions();
         Assert.assertNull(seModel._output._base_model_predictions_keys);
         for (Key k: first_se_pred_keys) {
@@ -423,7 +423,7 @@ public class StackedEnsembleTest extends TestUtil {
         final int seed = 62832;
         final Frame fr = parse_test_file("./smalldata/logreg/prostate_train.csv"); deletables.add(fr);
         final Frame test = parse_test_file("./smalldata/logreg/prostate_test.csv"); deletables.add(test);
-        
+
         final String target = "CAPSULE";
         int tidx = fr.find(target);
         fr.replace(tidx, fr.vec(tidx).toCategoricalVec()).remove(); DKV.put(fr);
@@ -434,7 +434,7 @@ public class StackedEnsembleTest extends TestUtil {
         Key<Frame>[] ksplits = sf._destination_frames;
         final Frame train = ksplits[0].get(); deletables.add(train);
         final Frame blending = ksplits[1].get(); deletables.add(blending);
-        
+
         //generate a few base models
         GBMModel.GBMParameters params = new GBMModel.GBMParameters();
         params._train = train._key;
@@ -457,7 +457,7 @@ public class StackedEnsembleTest extends TestUtil {
         seParams._seed = seed;
         StackedEnsembleModel se = new StackedEnsemble(seParams).trainModel().get(); deletables.add(se);
 
-        // mainly ensuring that no exception is thrown due to unmet categorical in test dataset. 
+        // mainly ensuring that no exception is thrown due to unmet categorical in test dataset.
         Frame predictions = se.score(test); deletables.add(predictions);
         Assert.assertEquals(2+1, predictions.numCols()); // binomial: 2 probabilities + 1 response prediction
         Assert.assertEquals(test.numRows(), predictions.numRows());
@@ -497,7 +497,7 @@ public class StackedEnsembleTest extends TestUtil {
         params._keep_cross_validation_predictions = true;
         params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
         params._nfolds = 5;
-          
+
         Job<Grid> gridSearch = GridSearch.startGridSearch(null, params, new HashMap<String, Object[]>() {{
           put("_ntrees", new Integer[]{3, 5});
           put("_learn_rate", new Double[]{0.1, 0.2});
@@ -505,7 +505,7 @@ public class StackedEnsembleTest extends TestUtil {
         Grid grid = gridSearch.get(); deletables.add(grid);
         Model[] gridModels = grid.getModels(); deletables.addAll(Arrays.asList(gridModels));
         Assert.assertEquals(4, gridModels.length);
-        
+
         GLMModel.GLMParameters glm_params = new GLMModel.GLMParameters();
         glm_params._train = train._key;
         glm_params._response_column = target;
@@ -525,7 +525,7 @@ public class StackedEnsembleTest extends TestUtil {
         seParams._seed = seed;
         StackedEnsembleModel se = new StackedEnsemble(seParams).trainModel().get(); deletables.add(se);
 
-        // mainly ensuring that no exception is thrown due to unmet categorical in test dataset. 
+        // mainly ensuring that no exception is thrown due to unmet categorical in test dataset.
         Frame predictions = se.score(test); deletables.add(predictions);
         Assert.assertTrue(predictions.vec(0).at(cyl_test.length() - 1) > 0);
       } finally {
@@ -568,7 +568,7 @@ public class StackedEnsembleTest extends TestUtil {
                 Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(
                     training_frame,
                     new Key[]{Key.make(training_frame._key + "_train"), Key.make(training_frame._key + "_blending")},
-                    new double[] {0.6, 0.4}, 
+                    new double[] {0.6, 0.4},
                     seed);
                 training_frame.remove();
                 training_frame = splits[0];
@@ -583,7 +583,7 @@ public class StackedEnsembleTest extends TestUtil {
                         Scope.track(blending_frame.replace(idx, blending_frame.vecs()[idx].toCategoricalVec()));
                 }
             }
-            
+
             DKV.put(training_frame); // Update frames after preparing
             if (null != validation_frame)
                 DKV.put(validation_frame);
@@ -669,7 +669,7 @@ public class StackedEnsembleTest extends TestUtil {
             ModelMetrics training_clone_metrics = ModelMetrics.getFromDKV(stackedEnsembleModel, training_clone);
             Assert.assertEquals(training_metrics.mse(), training_clone_metrics.mse(), 1e-15);
             training_clone.remove();
-            
+
             if (validation_frame != null) {
                 ModelMetrics validation_metrics = stackedEnsembleModel._output._validation_metrics;
                 Frame validation_clone = new Frame(validation_frame);
@@ -679,7 +679,7 @@ public class StackedEnsembleTest extends TestUtil {
                 Assert.assertEquals(validation_metrics.mse(), validation_clone_metrics.mse(), 1e-15);
                 validation_clone.remove();
             }
-            
+
             return stackedEnsembleModel._output;
 
         } finally {

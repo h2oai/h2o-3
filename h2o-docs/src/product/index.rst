@@ -43,7 +43,7 @@ Additional Resources:
    starting-h2o
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
 
    getting-data-into-h2o
 

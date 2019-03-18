@@ -635,8 +635,8 @@ public class h2odriver extends Configured implements Tool {
                     "          [-jobname <name of job in jobtracker (defaults to: 'H2O_nnnnn')>]\n" +
                     "              (Note nnnnn is chosen randomly to produce a unique name)\n" +
                     "          [-principal <kerberos principal> -keytab <keytab path> [-run_as_user <impersonated hadoop username>] | -run_as_user <hadoop username>]\n" +
-                    // Experimental "          [-hiveHost <hostname:port> -hivePrincipal <hive server kerberos principal>]\n" +
-                    //              "          [-refreshTokens]\n" +
+                    "          [-hiveHost <hostname:port> -hivePrincipal <hive server kerberos principal>]\n" +
+                    "          [-refreshTokens]\n" +
                     "          [-driverif <ip address of mapper->driver callback interface>]\n" +
                     "          [-driverport <port of mapper->driver callback interface>]\n" +
                     "          [-driverportrange <range portX-portY of mapper->driver callback interface>; eg: 50000-55000]\n" +

@@ -144,7 +144,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
   }
 
   /**
-   * Prepare a "level one" frame for a given set of models and actuals. 
+   * Prepare a "level one" frame for a given set of models and actuals.
    * Used for preparing validation frames for the metalearning step, and could also be used for bulk predictions for a StackedEnsemble.
    */
   private Frame prepareLevelOneFrame(String levelOneKey, Key<Model>[] baseModelKeys, Frame actuals, boolean isTraining) {
@@ -163,7 +163,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
     return prepareLevelOneFrame(levelOneKey, baseModels.toArray(new Model[0]), baseModelPredictions.toArray(new Frame[0]), actuals);
   }
-  
+
   protected Frame buildPredictionsForBaseModel(Model model, Frame frame) {
     Key<Frame> predsKey = buildPredsKey(model, frame);
     Frame preds = DKV.getGet(predsKey);
@@ -173,7 +173,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
     }
     if (_model._output._base_model_predictions_keys == null)
       _model._output._base_model_predictions_keys = new Key[0];
-    
+
     if (!ArrayUtils.contains(_model._output._base_model_predictions_keys, predsKey)){
       _model._output._base_model_predictions_keys = ArrayUtils.append(_model._output._base_model_predictions_keys, predsKey);
     }
@@ -187,9 +187,9 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
    * @RETURN THE FRAME THAT IS USED TO COMPUTE THE PREDICTIONS FOR THE LEVEL-ONE TRAINING FRAME.
    */
   protected abstract Frame getActualTrainingFrame();
-  
+
   protected abstract Frame getPredictionsForBaseModel(Model model, Frame actualsFrame, boolean isTrainingFrame);
-  
+
   private Key<Frame> buildPredsKey(Key model_key, long model_checksum, Key frame_key, long frame_checksum) {
     return Key.make("preds_" + model_checksum + "_on_" + frame_checksum);
   }
@@ -229,28 +229,28 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         //Check if metalearner_params are passed in
         boolean hasMetaLearnerParams = _model._parms._metalearner_parameters != null;
         long metalearnerSeed = _model._parms._seed;
-        
+
         Metalearner metalearner = Metalearner.createInstance(metalearnerAlgoSpec);
         metalearner.init(
-          levelOneTrainingFrame, 
-          levelOneValidationFrame, 
-          _model._parms._metalearner_parameters, 
-          _model, 
+          levelOneTrainingFrame,
+          levelOneValidationFrame,
+          _model._parms._metalearner_parameters,
+          _model,
           _job,
-          metalearnerKey, 
-          metalearnerJob, 
+          metalearnerKey,
+          metalearnerJob,
           _parms,
           hasMetaLearnerParams,
           metalearnerSeed
         );
         metalearner.compute();
       } else {
-        throw new H2OIllegalArgumentException("Invalid `metalearner_algorithm`. Passed in " + metalearnerAlgoSpec + 
+        throw new H2OIllegalArgumentException("Invalid `metalearner_algorithm`. Passed in " + metalearnerAlgoSpec +
             " but must be one of " + Arrays.toString(Metalearner.Algorithm.values()));
       }
     } // computeImpl
   }
-  
+
   private class StackedEnsembleCVStackingDriver extends StackedEnsembleDriver {
 
     @Override
@@ -275,15 +275,15 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
         if (null == fr)
           throw new H2OIllegalArgumentException("Failed to find the xval predictions frame. . .  Looks like keep_cross_validation_predictions wasn't set when building the models, or the frame was deleted.");
-        
+
       } else {
         fr = buildPredictionsForBaseModel(model, actualsFrame);
       }
       return fr;
     }
-    
+
   }
-  
+
   private class StackedEnsembleBlendingDriver extends StackedEnsembleDriver {
 
     @Override
