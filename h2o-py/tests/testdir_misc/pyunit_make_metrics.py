@@ -12,6 +12,8 @@ sys.path.insert(1, "../../")
 import h2o
 from tests import pyunit_utils
 from h2o.estimators import H2OGradientBoostingEstimator
+from h2o.model.metrics_base import H2OBinomialModelMetrics
+cm_metrics = list(H2OBinomialModelMetrics.cm_metrics)
 
 
 def pyunit_make_metrics():
@@ -58,7 +60,7 @@ def pyunit_make_metrics():
     response = "CAPSULE"
     predictors = list(set(fr.names) - {"ID", response})
     model = H2OGradientBoostingEstimator(distribution="bernoulli", ntrees=2, max_depth=3, min_rows=1,
-                                         learn_rate=0.01, nbins=20)
+                                         learn_rate=0.01, nbins=20, seed=1)
     model.train(x=predictors, y=response, training_frame=fr)
     predicted = h2o.assign(model.predict(fr)[2], "pred")
     actual = h2o.assign(fr[response].asfactor(), "act")
@@ -79,6 +81,18 @@ def pyunit_make_metrics():
     assert abs(m0.rmse() - m1.rmse()) < 1e-5
     assert abs(m0.logloss() - m1.logloss()) < 1e-5
     assert abs(m0.mean_per_class_error()[0][1] - m1.mean_per_class_error()[0][1]) < 1e-5
+    cm0 = m0.confusion_matrix(metrics=cm_metrics)
+    assert len(cm0) == len(cm_metrics)
+    assert all([any(m in header for header in map(lambda cm: cm.table._table_header, cm0) for m in cm_metrics)]), \
+        "got duplicate CM headers, although all metrics are different"
+    cm0t = m0.confusion_matrix(metrics=cm_metrics, thresholds=[.3, .6])
+    assert len(cm0t) == 2 + len(cm_metrics)
+    print(cm0t)
+    assert 2 == sum([not any(m in header for m in cm_metrics) for header in map(lambda cm: cm.table._table_header, cm0t)]),  \
+        "missing or duplicate headers without metric (thresholds only CMs)"
+    assert all([any(m in header for header in map(lambda cm: cm.table._table_header, cm0t) for m in cm_metrics)]), \
+        "got duplicate CM headers, although all metrics are different"
+
     assert abs(m2.auc() - m1.auc()) < 1e-5
     assert abs(m2.mse() - m1.mse()) < 1e-5
     assert abs(m2.rmse() - m1.rmse()) < 1e-5
@@ -104,6 +118,7 @@ def pyunit_make_metrics():
     assert abs(m0.rmse() - m1.rmse()) < 1e-5
     assert abs(m0.logloss() - m1.logloss()) < 1e-5
     assert abs(m0.mean_per_class_error() - m1.mean_per_class_error()) < 1e-5
+
     assert abs(m2.mse() - m1.mse()) < 1e-5
     assert abs(m2.rmse() - m1.rmse()) < 1e-5
     assert abs(m2.logloss() - m1.logloss()) < 1e-5

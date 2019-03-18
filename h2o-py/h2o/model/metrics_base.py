@@ -573,18 +573,23 @@ class H2OBinomialModelMetrics(MetricsBase):
         return self._metric_json["thresholds_and_metric_scores"]["tpr"]
 
 
+    cm_metrics = ('absolute_mcc', 'accuracy',
+                  'f0point5', 'f1', 'f2',
+                  'mean_per_class_accuracy', 'min_per_class_accuracy',
+                  'precision', 'recall', 'specificity')
+
     def confusion_matrix(self, metrics=None, thresholds=None):
         """
         Get the confusion matrix for the specified metric
 
-        :param metrics: A string (or list of strings) in {"min_per_class_accuracy", "absolute_mcc", "tnr", "fnr", "fpr",
-            "tpr", "precision", "accuracy", "f0point5", "f2", "f1","mean_per_class_accuracy"}
-        :param thresholds: A value (or list of values) between 0 and 1
+        :param metrics: A string (or list of strings) among metrics listed in :const:`cm_metrics`. Defaults to 'f1'.
+        :param thresholds: A value (or list of values) between 0 and 1.
         :returns: a list of ConfusionMatrix objects (if there are more than one to return), or a single ConfusionMatrix
             (if there is only one).
         """
         # make lists out of metrics and thresholds arguments
-        if metrics is None and thresholds is None: metrics = ["f1"]
+        if metrics is None and thresholds is None:
+            metrics = ['f1']
 
         if isinstance(metrics, list):
             metrics_list = metrics
@@ -604,21 +609,19 @@ class H2OBinomialModelMetrics(MetricsBase):
         assert_is_type(thresholds_list, [numeric])
         assert_satisfies(thresholds_list, all(0 <= t <= 1 for t in thresholds_list))
 
-        if not all(m.lower() in ["min_per_class_accuracy", "absolute_mcc", "precision", "recall", "specificity",
-                                 "accuracy", "f0point5", "f2", "f1", "mean_per_class_accuracy"] for m in metrics_list):
-            raise ValueError(
-                "The only allowable metrics are min_per_class_accuracy, absolute_mcc, precision, accuracy, f0point5, "
-                "f2, f1, mean_per_class_accuracy")
+        if not all(m.lower() in H2OBinomialModelMetrics.cm_metrics for m in metrics_list):
+            raise ValueError("The only allowable metrics are {}", ', '.join(H2OBinomialModelMetrics.cm_metrics))
 
         # make one big list that combines the thresholds and metric-thresholds
         metrics_thresholds = [self.find_threshold_by_max_metric(m) for m in metrics_list]
         for mt in metrics_thresholds:
             thresholds_list.append(mt)
+        first_metrics_thresholds_idx = len(thresholds_list) - len(metrics_thresholds)
 
         thresh2d = self._metric_json['thresholds_and_metric_scores']
         actual_thresholds = [float(e[0]) for i, e in enumerate(thresh2d.cell_values)]
         cms = []
-        for t in thresholds_list:
+        for i, t in enumerate(thresholds_list):
             idx = self.find_idx_by_threshold(t)
             row = thresh2d.cell_values[idx]
             tns = row[11]
@@ -630,11 +633,10 @@ class H2OBinomialModelMetrics(MetricsBase):
             c0 = n - fps
             c1 = p - tps
             if t in metrics_thresholds:
-                m = metrics_list[metrics_thresholds.index(t)]
-                table_header = "Confusion Matrix (Act/Pred) for max " + m + " @ threshold = " + str(
-                    actual_thresholds[idx])
+                m = metrics_list[i - first_metrics_thresholds_idx]
+                table_header = "Confusion Matrix (Act/Pred) for max {} @ threshold = {}".format(m, actual_thresholds[idx])
             else:
-                table_header = "Confusion Matrix (Act/Pred) @ threshold = " + str(actual_thresholds[idx])
+                table_header = "Confusion Matrix (Act/Pred) @ threshold = {}".format(actual_thresholds[idx])
             cms.append(ConfusionMatrix(cm=[[c0, fps], [c1, tps]], domains=self._metric_json['domain'],
                                        table_header=table_header))
 
@@ -670,9 +672,9 @@ class H2OBinomialModelMetrics(MetricsBase):
         thresh2d = self._metric_json['thresholds_and_metric_scores']
         for i, e in enumerate(thresh2d.cell_values):
             t = float(e[0])
-            if abs(t - threshold) < 0.00000001 * max(t, threshold):
+            if abs(t - threshold) < 1e-8 * max(t, threshold):
                 return i
-        if threshold >= 0 and threshold <= 1:
+        if 0 <= threshold <= 1:
             thresholds = [float(e[0]) for i, e in enumerate(thresh2d.cell_values)]
             threshold_diffs = [abs(t - threshold) for t in thresholds]
             closest_idx = threshold_diffs.index(min(threshold_diffs))
