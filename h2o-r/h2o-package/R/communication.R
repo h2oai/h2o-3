@@ -593,11 +593,7 @@ print.H2OTable <- function(x, header=TRUE, ...) {
     rawREST
   }
   else { 	  
-    jsonREST <- .h2o.fromJSON(jsonlite::fromJSON(rawREST,simplifyDataFrame=FALSE))
-    if(grepl("seed", rawREST)){
-        jsonREST <- .h2o.__parseSeedCorrectly(rawREST, jsonREST)
-    }
-    jsonREST  
+    .h2o.fromJSON(jsonlite::fromJSON(rawREST,simplifyDataFrame=FALSE, bigint_as_char=TRUE))
   }
 }
 
