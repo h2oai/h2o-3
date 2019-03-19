@@ -29,16 +29,20 @@ def pubdev_6339():
 
         # get number of columns from setup
         num_cols = setup['number_columns']
-
-        # get the chunk size
-        chunk_size = calculate_chunk_size(file_path, num_cols, cores, cloud_size)
+        print(num_cols)
+        if(num_cols > 100000):
+            # get the chunk size
+            chunk_size = calculate_chunk_size(file_path, num_cols, cores, cloud_size)
     
-        # get chunk size to compare if calculation is correct
-        result_size = setup['chunk_size']
-        print("chunk size:", chunk_size)
-        print("result size:", result_size)
-        assert chunk_size == result_size, "Calculated hunk size is incorrect!"
-        print("chunk size for file", file_path, "is:", chunk_size)
+            # get chunk size to compare if calculation is correct
+            result_size = setup['chunk_size']
+            print("chunk size:", chunk_size)
+            print("result size:", result_size)
+            assert chunk_size == result_size, "Calculated hunk size is incorrect!"
+            print("chunk size for file", file_path, "is:", chunk_size)
+
+    data_raw = h2o.import_file(path=file_paths[1],parse=False)
+    setup = h2o.parse_setup(data_raw)
         
     
 def calculate_chunk_size(file_path, num_cols, cores, cloud_size):
