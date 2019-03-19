@@ -1,7 +1,6 @@
 package water;
 
 import org.junit.Test;
-import water.fvec.Frame;
 
 import static org.junit.Assert.*;
 

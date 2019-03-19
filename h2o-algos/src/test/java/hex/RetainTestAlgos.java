@@ -16,7 +16,7 @@ import water.fvec.Vec;
 import java.util.ArrayList;
 import java.util.List;
 
-import static hex.genmodel.utils.DistributionFamily.gaussian;
+import static hex.genmodel.utils.DistributionFamily.AUTO;
 import static org.junit.Assert.*;
 
 public class RetainTestAlgos extends TestUtil {
@@ -67,7 +67,7 @@ public class RetainTestAlgos extends TestUtil {
         GBMModel model = null;
         Frame trainingFrame = null, preds = null;
         try {
-            trainingFrame = parse_test_file("./smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
+            trainingFrame = parse_test_file("/home/pavel/AirlinesTrain.csv");
 
             // Test the training frame has not been deleted
             testRetainFrame(trainingFrame);
@@ -75,7 +75,7 @@ public class RetainTestAlgos extends TestUtil {
             // A little integration test
             GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
             parms._train = trainingFrame._key;
-            parms._distribution = gaussian;
+            parms._distribution = AUTO;
             parms._response_column = trainingFrame._names[1];
             parms._ntrees = 1;
             parms._max_depth = 1;
@@ -113,7 +113,7 @@ public class RetainTestAlgos extends TestUtil {
             assertTrue(H2O.STORE.containsKey(vec._key));
 
             for (int i = 0; i < vec.nChunks(); i++) {
-                assertTrue(H2O.STORE.containsKey(vec.chunkKey(i)));
+                assertTrue(H2O.STORE.containsValue(vec.chunkIdx(i)));
             }
         }
     }
