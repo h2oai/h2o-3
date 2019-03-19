@@ -323,6 +323,7 @@ class H2OOrdinalModelMetrics(MetricsBase):
         """Retrieve the Hit Ratios."""
         return self._metric_json['hit_ratio_table']
 
+
 class H2OBinomialModelMetrics(MetricsBase):
     """
     This class is essentially an API for the AUC object.
@@ -573,16 +574,22 @@ class H2OBinomialModelMetrics(MetricsBase):
         return self._metric_json["thresholds_and_metric_scores"]["tpr"]
 
 
-    cm_metrics = ('absolute_mcc', 'accuracy',
-                  'f0point5', 'f1', 'f2',
-                  'mean_per_class_accuracy', 'min_per_class_accuracy',
-                  'precision', 'recall', 'specificity')
+    #: metrics names allowed for confusion matrix
+    max_metrics = ('absolute_mcc', 'accuracy',
+                   'f0point5', 'f1', 'f2',
+                   'mean_per_class_accuracy', 'min_per_class_accuracy',
+                   'precision', 'recall', 'specificity',
+                   # 'fpr', 'fallout',                    # could be enabled maybe once PUBDEV-6366 is fixed
+                   # 'fnr', 'missrate', 'sensitivity',
+                   # 'tpr', 'recall',
+                   # 'tnr', 'specificity'
+                   )
 
     def confusion_matrix(self, metrics=None, thresholds=None):
         """
         Get the confusion matrix for the specified metric
 
-        :param metrics: A string (or list of strings) among metrics listed in :const:`cm_metrics`. Defaults to 'f1'.
+        :param metrics: A string (or list of strings) among metrics listed in :const:`max_metrics`. Defaults to 'f1'.
         :param thresholds: A value (or list of values) between 0 and 1.
         :returns: a list of ConfusionMatrix objects (if there are more than one to return), or a single ConfusionMatrix
             (if there is only one).
@@ -609,14 +616,14 @@ class H2OBinomialModelMetrics(MetricsBase):
         assert_is_type(thresholds_list, [numeric])
         assert_satisfies(thresholds_list, all(0 <= t <= 1 for t in thresholds_list))
 
-        if not all(m.lower() in H2OBinomialModelMetrics.cm_metrics for m in metrics_list):
-            raise ValueError("The only allowable metrics are {}", ', '.join(H2OBinomialModelMetrics.cm_metrics))
+        if not all(m.lower() in H2OBinomialModelMetrics.max_metrics for m in metrics_list):
+            raise ValueError("The only allowable metrics are {}", ', '.join(H2OBinomialModelMetrics.max_metrics))
 
         # make one big list that combines the thresholds and metric-thresholds
         metrics_thresholds = [self.find_threshold_by_max_metric(m) for m in metrics_list]
         for mt in metrics_thresholds:
             thresholds_list.append(mt)
-        first_metrics_thresholds_idx = len(thresholds_list) - len(metrics_thresholds)
+        first_metrics_thresholds_offset = len(thresholds_list) - len(metrics_thresholds)
 
         thresh2d = self._metric_json['thresholds_and_metric_scores']
         actual_thresholds = [float(e[0]) for i, e in enumerate(thresh2d.cell_values)]
@@ -633,7 +640,7 @@ class H2OBinomialModelMetrics(MetricsBase):
             c0 = n - fps
             c1 = p - tps
             if t in metrics_thresholds:
-                m = metrics_list[i - first_metrics_thresholds_idx]
+                m = metrics_list[i - first_metrics_thresholds_offset]
                 table_header = "Confusion Matrix (Act/Pred) for max {} @ threshold = {}".format(m, actual_thresholds[idx])
             else:
                 table_header = "Confusion Matrix (Act/Pred) @ threshold = {}".format(actual_thresholds[idx])
@@ -648,8 +655,7 @@ class H2OBinomialModelMetrics(MetricsBase):
 
     def find_threshold_by_max_metric(self, metric):
         """
-        :param metric: A string in {"min_per_class_accuracy", "absolute_mcc", "precision", "recall", "specificity",
-            "accuracy", "f0point5", "f2", "f1", "mean_per_class_accuracy"}.
+        :param metrics: A string among the metrics listed in :const:`max_metrics`.
         :returns: the threshold at which the given metric is maximal.
         """
         crit2d = self._metric_json['max_criteria_and_metric_scores']

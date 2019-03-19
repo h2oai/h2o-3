@@ -13,7 +13,10 @@ import h2o
 from tests import pyunit_utils
 from h2o.estimators import H2OGradientBoostingEstimator
 from h2o.model.metrics_base import H2OBinomialModelMetrics
-cm_metrics = list(H2OBinomialModelMetrics.cm_metrics)
+base_metric_methods = ['aic', 'auc', 'gini', 'logloss', 'mae', 'mean_per_class_error', 'mean_residual_deviance', 'mse',
+                       'nobs', 'pr_auc', 'r2', 'rmse', 'rmsle',
+                       'residual_deviance', 'residual_degrees_of_freedom', 'null_deviance', 'null_degrees_of_freedom']
+max_metrics = list(H2OBinomialModelMetrics.max_metrics)
 
 
 def pyunit_make_metrics():
@@ -76,28 +79,68 @@ def pyunit_make_metrics():
     print("m2:")
     print(m2)
 
-    assert abs(m0.auc() - m1.auc()) < 1e-5
-    assert abs(m0.mse() - m1.mse()) < 1e-5
-    assert abs(m0.rmse() - m1.rmse()) < 1e-5
-    assert abs(m0.logloss() - m1.logloss()) < 1e-5
-    assert abs(m0.mean_per_class_error()[0][1] - m1.mean_per_class_error()[0][1]) < 1e-5
-    cm0 = m0.confusion_matrix(metrics=cm_metrics)
-    assert len(cm0) == len(cm_metrics)
-    assert all([any(m in header for header in map(lambda cm: cm.table._table_header, cm0) for m in cm_metrics)]), \
-        "got duplicate CM headers, although all metrics are different"
-    cm0t = m0.confusion_matrix(metrics=cm_metrics, thresholds=[.3, .6])
-    assert len(cm0t) == 2 + len(cm_metrics)
-    print(cm0t)
-    assert 2 == sum([not any(m in header for m in cm_metrics) for header in map(lambda cm: cm.table._table_header, cm0t)]),  \
-        "missing or duplicate headers without metric (thresholds only CMs)"
-    assert all([any(m in header for header in map(lambda cm: cm.table._table_header, cm0t) for m in cm_metrics)]), \
-        "got duplicate CM headers, although all metrics are different"
+    # Testing base metric methods
+    # FIXME: check the same failures for other ModelMetrics impl. and then fix'emall or move them out of base class...
+    base_metrics_methods_failing_on_H2OBinomialModelMetrics = ['aic', 'mae', 'mean_per_class_error', 'mean_residual_deviance', 'rmsle']
+    for metric_method in (m for m in base_metric_methods if m not in base_metrics_methods_failing_on_H2OBinomialModelMetrics):
+        m0mm = getattr(m0, metric_method)()
+        m1mm = getattr(m1, metric_method)()
+        m2mm = getattr(m2, metric_method)()
 
-    assert abs(m2.auc() - m1.auc()) < 1e-5
-    assert abs(m2.mse() - m1.mse()) < 1e-5
-    assert abs(m2.rmse() - m1.rmse()) < 1e-5
-    assert abs(m2.logloss() - m1.logloss()) < 1e-5
+        assert m0mm == m1mm or abs(m0mm - m1mm) < 1e-5, \
+            "{} is different for model_performance and make_metrics on [0, 1] domain".format(metric_method)
+        assert m1mm == m2mm or abs(m1mm - m2mm) < 1e-5, \
+            "{} is different for make_metrics on [0, 1] domain and make_metrics without domain".format(metric_method)
+    # FIXME: for binomial mean_per_class_error is strangely accessible as an array
+    assert abs(m0.mean_per_class_error()[0][1] - m1.mean_per_class_error()[0][1]) < 1e-5
     assert abs(m2.mean_per_class_error()[0][1] - m1.mean_per_class_error()[0][1]) < 1e-5
+
+    failures = 0
+    for metric_method in base_metrics_methods_failing_on_H2OBinomialModelMetrics:
+        for m in [m0, m1, m2]:
+            try:
+                assert isinstance(getattr(m, metric_method)(), float)
+            except:
+                failures += 1
+    assert failures == 3 * len(base_metrics_methods_failing_on_H2OBinomialModelMetrics)
+
+    # Testing binomial-only metric methods
+    binomial_only_metric_methods = ['accuracy', 'F0point5', 'F1', 'F2', 'mcc',
+                                    'max_per_class_error', 'mean_per_class_error',
+                                    'precision', 'recall', 'specificity', 'fallout', 'missrate', 'sensitivity',
+                                    'fpr', 'fnr', 'tpr', 'tnr']
+    failing_binomial_metrics = ['max_per_class_error', 'recall', 'specificity', 'fallout', 'missrate', 'sensitivity',
+                                'fpr', 'fnr', 'tpr', 'tnr']
+    for metric_method in (m for m in binomial_only_metric_methods if m not in failing_binomial_metrics):
+        # FIXME: not sure that returning a 2d-array is justified when not passing any threshold
+        m0mm = getattr(m0, metric_method)()[0]
+        m1mm = getattr(m1, metric_method)()[0]
+        m2mm = getattr(m2, metric_method)()[0]
+        assert m0mm == m1mm or abs(m0mm[1] - m1mm[1]) < 1e-5, \
+            "{} is different for model_performance and make_metrics on [0, 1] domain".format(metric_method)
+        assert m1mm == m2mm or abs(m1mm[1] - m2mm[1]) < 1e-5, \
+            "{} is different for make_metrics on [0, 1] domain and make_metrics without domain".format(metric_method)
+
+    failures = 0
+    for metric_method in failing_binomial_metrics:
+        for m in [m0, m1, m2]:
+            try:
+                assert isinstance(getattr(m, metric_method)()[0][1], float)
+            except:
+                failures += 1
+    assert failures == 3 * len(failing_binomial_metrics)
+
+    # Testing confusion matrix
+    cm0 = m0.confusion_matrix(metrics=max_metrics)
+    assert len(cm0) == len(max_metrics)
+    assert all([any(m in header for header in map(lambda cm: cm.table._table_header, cm0) for m in max_metrics)]), \
+        "got duplicate CM headers, although all metrics are different"
+    cm0t = m0.confusion_matrix(metrics=max_metrics, thresholds=[.3, .6])
+    assert len(cm0t) == 2 + len(max_metrics)
+    assert 2 == sum([not any(m in header for m in max_metrics) for header in map(lambda cm: cm.table._table_header, cm0t)]),  \
+        "missing or duplicate headers without metric (thresholds only CMs)"
+    assert all([any(m in header for header in map(lambda cm: cm.table._table_header, cm0t) for m in max_metrics)]), \
+        "got duplicate CM headers, although all metrics are different"
 
 
     print("\n\n======= MULTINOMIAL ========\n")
