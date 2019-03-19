@@ -128,7 +128,7 @@ public class DKVTest extends TestUtil {
     }
   }
 
-
+  // Retaining models & integration test with models is in h2o-algos subproject.
   @Test
   public void testRetainFrame() {
     Frame frame = null;
@@ -155,7 +155,7 @@ public class DKVTest extends TestUtil {
   }
 
   @Test
-  public void testRetainNothing() throws InterruptedException {
+  public void testRetainNothing() {
     Frame frame = null;
 
     try {

@@ -1,5 +1,10 @@
 package water;
 
+import water.fvec.Frame;
+
+import java.util.HashSet;
+import java.util.Set;
+
 /** A Distributed Key/Value Store.
  *  <p>
  *  Functions to Get and Put Values into the K/V store by Key.

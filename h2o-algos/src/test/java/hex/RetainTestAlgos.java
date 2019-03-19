@@ -4,7 +4,6 @@ import hex.naivebayes.NaiveBayes;
 import hex.naivebayes.NaiveBayesModel;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.DKV;
@@ -19,7 +18,6 @@ import java.util.List;
 
 import static hex.genmodel.utils.DistributionFamily.gaussian;
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 public class RetainTestAlgos extends TestUtil {
 

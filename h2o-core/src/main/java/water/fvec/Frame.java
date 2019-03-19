@@ -317,6 +317,23 @@ public class Frame extends Lockable<Frame> {
   public Key<Vec>[] keys() { return _keys; }
   public Iterable<Key<Vec>> keysList() { return Arrays.asList(_keys); }
 
+  /**
+   * Returns all keys related to this frame (columns, rollup stats, chunks). Does not include the frame's keys itself.
+   *
+   * @return A {@link Set} of all keys belonging to this Frame
+   */
+  public Set<Key> allKeys() {
+    final Set<Key> retainedKeys = new HashSet<>(numCols());
+    for (final Vec vec : vecs()) {
+      retainedKeys.add(vec._key);
+      retainedKeys.add(vec.rollupStatsKey());
+      for (int i = 0; i < vec.nChunks(); i++) {
+        retainedKeys.add(vec.chunkKey(i));
+      }
+    }
+    return retainedKeys;
+  }
+
   /** The internal array of Vecs.  For efficiency Frames contain an array of
    *  Vec Keys - and the Vecs themselves are lazily loaded from the {@link DKV}.
    *  @return the internal array of Vecs */

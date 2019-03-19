@@ -11,7 +11,6 @@ import water.api.RequestServer;
 import water.exceptions.H2OFailException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.init.AbstractBuildVersion;
 import water.init.AbstractEmbeddedH2OConfig;
 import water.init.JarHash;
@@ -39,16 +38,7 @@ import java.net.MulticastSocket;
 import java.net.NetworkInterface;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -1878,14 +1868,25 @@ final public class H2O {
   }
   public static void raw_clear() { STORE.clear(); }
 
+  /**
+   * Cleans H2O's DKV while retaining specified collection of {@link Key}s.
+   * Only Frame or Model Keys are retained, others are silently ignored.
+   * In case of Frames, only the Frame key is possible. All the Frame-related keys are discovered automatically.
+   *
+   * @param keys Keys to retain, Frame and Model keys only.
+   */
   public static void retain(final Collection<Key> keys) {
+    Objects.requireNonNull(keys);
+
     final Set<Key> retainedKeys = new HashSet<>(keys.size());
     retainedKeys.addAll(keys);
     final Collection<Value> storeKeys = STORE.values();
 
     for (final Key key : keys) {
       final Value value = Value.STORE_get(key);
-      retainedKeys.addAll(getRetainedKeys(value));
+      if (value.isFrame()) {
+        retainedKeys.addAll(((Frame) value.get()).allKeys());
+      }
     }
 
     for (final Value value : storeKeys) {
@@ -1896,23 +1897,6 @@ final public class H2O {
 
       ((Keyed) value.get()).remove();
     }
-  }
-
-  private static Set<Key> getRetainedKeys(final Value value) {
-    Set<Key> retainedKeys = new HashSet<>();
-    if (!value.isFrame()) {
-      return retainedKeys;
-    }
-    Frame frame = value.get();
-
-    for (Vec vec : frame.vecs()) {
-      retainedKeys.add(vec._key);
-      retainedKeys.add(vec.rollupStatsKey());
-      for (int i = 0; i < vec.nChunks(); i++) {
-        retainedKeys.add(vec.chunkKey(i));
-      }
-    }
-    return retainedKeys;
   }
 
   public static boolean containsKey( Key key ) { return STORE.get(key) != null; }
