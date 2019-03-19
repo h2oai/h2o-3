@@ -24,7 +24,7 @@ public class GenericModelTest extends TestUtil {
 
     @Before
     public void setUp() {
-        TestUtil.stall_till_cloudsize(1);
+        TestUtil.stall_till_cloudsize(5);
     }
 
     @Test
@@ -62,7 +62,6 @@ public class GenericModelTest extends TestUtil {
             genericModel = generic.trainModel().get();
 
             predictions = genericModel.score(testFrame);
-            assertEquals(2691, predictions.anyVec().length());
 
             final boolean equallyScored = genericModel.testJavaScoring(testFrame, predictions, 0);
             assertTrue(equallyScored);
