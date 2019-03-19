@@ -64,7 +64,7 @@ public class AutoMLBuildSpec extends Iced {
     public static final int AUTO_STOPPING_TOLERANCE = -1;
 
     private RandomDiscreteValueSearchCriteria _searchCriteria;
-    private double max_runtime_secs_per_model = 0;
+    private double _max_runtime_secs_per_model = 0;
 
     public AutoMLStoppingCriteria() {
       super();
@@ -72,11 +72,11 @@ public class AutoMLBuildSpec extends Iced {
     }
 
     public double max_runtime_secs_per_model() {
-      return max_runtime_secs_per_model;
+      return _max_runtime_secs_per_model;
     }
 
     public void set_max_runtime_secs_per_model(double max_runtime_secs_per_model) {
-      this.max_runtime_secs_per_model = max_runtime_secs_per_model;
+      this._max_runtime_secs_per_model = max_runtime_secs_per_model;
     }
 
     public long seed() {

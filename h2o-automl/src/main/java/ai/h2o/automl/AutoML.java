@@ -282,7 +282,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
               this.buildSpec.build_control.stopping_criteria.stopping_tolerance());
     } else {
       userFeedback.info(Stage.Workflow, "Stopping tolerance set by the user: " + this.buildSpec.build_control.stopping_criteria.stopping_tolerance());
-      double default_tolerance = RandomDiscreteValueSearchCriteria.default_stopping_tolerance_for_frame(this.trainingFrame);
+      double default_tolerance = AutoMLBuildSpec.AutoMLStoppingCriteria.default_stopping_tolerance_for_frame(this.trainingFrame);
       if (this.buildSpec.build_control.stopping_criteria.stopping_tolerance() < 0.7 * default_tolerance){
         userFeedback.warn(Stage.Workflow, "Stopping tolerance set by the user is < 70% of the recommended default of " + default_tolerance + ", so models may take a long time to converge or may not converge at all.");
       }
@@ -569,7 +569,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     jobs.add(subJob);
 
     long lastWorkedSoFar = 0;
-    long lastGridCount = 0;
+    long lastTotalGridModelsBuilt = 0;
 
     while (subJob.isRunning()) {
       if (null != parentJob) {
@@ -590,11 +590,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
       if (JobType.HyperparamSearch == work.type) {
         Grid<?> grid = (Grid)subJob._result.get();
-        int gridCount = grid.getModelCount();
-        if (gridCount > lastGridCount) {
-          userFeedback.info(stage, "Built: " + gridCount + " models for search: " + name);
+        int totalGridModelsBuilt = grid.getModelCount();
+        if (totalGridModelsBuilt > lastTotalGridModelsBuilt) {
+          userFeedback.info(stage, "Built: " + totalGridModelsBuilt + " models for search: " + name);
           this.addModels(grid.getModelKeys());
-          lastGridCount = gridCount;
+          lastTotalGridModelsBuilt = totalGridModelsBuilt;
         }
       }
 
@@ -616,7 +616,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       } else {
         Grid<?> grid = (Grid) subJob.get();
         int gridCount = grid.getModelCount();
-        if (gridCount > lastGridCount) {
+        if (gridCount > lastTotalGridModelsBuilt) {
           userFeedback.info(stage, "Built: " + gridCount + " models for search: " + name);
           this.addModels(grid.getModelKeys());
         }
