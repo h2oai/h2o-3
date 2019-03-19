@@ -4,6 +4,7 @@ import hex.ModelMojoWriter;
 import hex.genmodel.utils.IOUtils;
 import water.fvec.ByteVec;
 import water.util.Log;
+
 import java.io.*;
 
 public class GenericModelMojoWriter extends ModelMojoWriter<GenericModel, GenericModelParameters, GenericModelOutput> {
@@ -26,17 +27,11 @@ public class GenericModelMojoWriter extends ModelMojoWriter<GenericModel, Generi
     }
 
     @Override
-    public void writeTo(OutputStream os) {
-        try(final InputStream inputStream = _mojoBytes.openStream(null)) {
-            IOUtils.copyStream(inputStream,os);
+    public void writeTo(final OutputStream os) {
+        try (final InputStream inputStream = _mojoBytes.openStream(null); OutputStream outputStream = os) {
+            IOUtils.copyStream(inputStream, outputStream);
         } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                os.close();
-            } catch (IOException e) {
-                Log.err(e);
-            }
+            Log.throwErr(e);
         }
     }
 }
