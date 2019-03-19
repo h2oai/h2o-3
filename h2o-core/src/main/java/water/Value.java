@@ -268,7 +268,13 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   public boolean isKey()      { return _type != TypeMap.PRIM_B  && TypeMap.theFreezable(_type) instanceof Key; }
   /** Check if the Value's POJO is a {@link Frame} subtype.  Does not require the POJO.
    *  @return True if the Value's POJO is a {@link Frame} subtype. */
-  public boolean isFrame()    { return _type != TypeMap.PRIM_B  && TypeMap.theFreezable(_type) instanceof Frame; }
+  public boolean isFrame()    {
+      try {
+          return _type != TypeMap.PRIM_B  && TypeMap.getTheFreezableOrThrow(_type) instanceof Frame;
+      } catch (ClassNotFoundException e) {
+          return false;
+      }
+  }
   /** Check if the Value's POJO is a {@link water.fvec.Vec.VectorGroup} subtype.  Does not require the POJO.
    *  @return True if the Value's POJO is a {@link water.fvec.Vec.VectorGroup} subtype. */
   public boolean isVecGroup() { return _type == TypeMap.VECGROUP; }
@@ -280,13 +286,31 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   public boolean isLockable() { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof Lockable; }
   /** Check if the Value's POJO is a {@link Vec} subtype.  Does not require the POJO.
    *  @return True if the Value's POJO is a {@link Vec} subtype. */
-  public boolean isVec()      { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof Vec; }
+  public boolean isVec()      {
+      try {
+          return _type != TypeMap.PRIM_B && TypeMap.getTheFreezableOrThrow(_type) instanceof Vec;
+      } catch (ClassNotFoundException e) {
+          return false;
+      }
+  }
   /** Check if the Value's POJO is a {@link hex.Model} subtype.  Does not require the POJO.
    *  @return True if the Value's POJO is a {@link hex.Model} subtype. */
-  public boolean isModel()    { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof hex.Model; }
+  public boolean isModel()    {
+      try {
+          return _type != TypeMap.PRIM_B && TypeMap.getTheFreezableOrThrow(_type) instanceof hex.Model;
+      } catch (ClassNotFoundException e) {
+          return false;
+      }
+  }
   /** Check if the Value's POJO is a {@link Job} subtype.  Does not require the POJO.
    *  @return True if the Value's POJO is a {@link Job} subtype. */
-  public boolean isJob()      { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof Job; }
+  public boolean isJob()      {
+      try {
+          return _type != TypeMap.PRIM_B && TypeMap.getTheFreezableOrThrow(_type) instanceof Job;
+      } catch (ClassNotFoundException e) {
+          return false;
+      }
+  }
 
   public Class<? extends Freezable> theFreezableClass() { return TypeMap.theFreezable(this._type).getClass(); }
 

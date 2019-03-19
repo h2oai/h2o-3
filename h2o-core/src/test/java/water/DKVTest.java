@@ -6,13 +6,17 @@ import org.junit.Ignore;
 import org.junit.Test;
 import water.H2O.H2OCallback;
 import water.H2O.H2OCountedCompleter;
+import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.IcedInt;
 import water.util.IcedInt.AtomicIncrementAndGet;
 
-import static org.junit.Assert.assertTrue;
-
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
+
+import static org.junit.Assert.*;
 
 /**
  * Created by tomasnykodym on 10/5/15.
@@ -121,6 +125,55 @@ public class DKVTest extends TestUtil {
       Assert.assertFalse(Arrays.equals(((Bytes) DKV.getGet(k1))._b, bytes1._b));
     } finally {
       DKV.remove(k1);
+    }
+  }
+
+
+  @Test
+  public void testRetainFrame() {
+    Frame frame = null;
+
+    try {
+      frame = TestUtil.parse_test_file("smalldata/testng/airlines_train.csv");
+      List<Key> retainedKeys = new ArrayList<Key>();
+      retainedKeys.add(frame._key);
+      H2O.retain(retainedKeys);
+      assertTrue(H2O.STORE.containsKey(frame._key));
+      assertNotNull(DKV.get(frame._key));
+
+      for (Vec vec : frame.vecs()) {
+        assertTrue(H2O.STORE.containsKey(vec._key));
+
+        for (int i = 0; i < vec.nChunks(); i++) {
+          assertTrue(H2O.STORE.containsKey(vec.chunkKey(i)));
+        }
+      }
+      
+    } finally {
+      if (frame != null) frame.delete();
+    }
+  }
+
+  @Test
+  public void testRetainNothing() throws InterruptedException {
+    Frame frame = null;
+
+    try {
+      frame = TestUtil.parse_test_file("smalldata/testng/airlines_train.csv");
+      List<Key> retainedKeys = new ArrayList<>();
+      H2O.retain(retainedKeys);
+      assertNull(DKV.get(frame._key));
+
+      for (Vec vec : frame.vecs()) {
+        assertFalse(H2O.STORE.containsKey(vec._key));
+
+        for (int i = 0; i < vec.nChunks(); i++) {
+          assertFalse(H2O.STORE.containsKey(vec.chunkKey(i)));
+        }
+      }
+
+    } finally {
+      if (frame != null) frame.delete();
     }
   }
 

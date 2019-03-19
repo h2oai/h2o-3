@@ -10,6 +10,8 @@ import water.UDPRebooted.ShutdownTsk;
 import water.api.RequestServer;
 import water.exceptions.H2OFailException;
 import water.exceptions.H2OIllegalArgumentException;
+import water.fvec.Frame;
+import water.fvec.Vec;
 import water.init.AbstractBuildVersion;
 import water.init.AbstractEmbeddedH2OConfig;
 import water.init.JarHash;
@@ -1875,6 +1877,44 @@ final public class H2O {
     if( v != null ) v.removePersist();
   }
   public static void raw_clear() { STORE.clear(); }
+
+  public static void retain(final Collection<Key> keys) {
+    final Set<Key> retainedKeys = new HashSet<>(keys.size());
+    retainedKeys.addAll(keys);
+    final Collection<Value> storeKeys = STORE.values();
+
+    for (final Key key : keys) {
+      final Value value = Value.STORE_get(key);
+      retainedKeys.addAll(getRetainedKeys(value));
+    }
+
+    for (final Value value : storeKeys) {
+      if (retainedKeys.contains(value._key)) {
+        continue;
+      }
+      if (!value.isModel() && !value.isFrame()) continue;
+
+      ((Keyed) value.get()).remove();
+    }
+  }
+
+  private static Set<Key> getRetainedKeys(final Value value) {
+    Set<Key> retainedKeys = new HashSet<>();
+    if (!value.isFrame()) {
+      return retainedKeys;
+    }
+    Frame frame = value.get();
+
+    for (Vec vec : frame.vecs()) {
+      retainedKeys.add(vec._key);
+      retainedKeys.add(vec.rollupStatsKey());
+      for (int i = 0; i < vec.nChunks(); i++) {
+        retainedKeys.add(vec.chunkKey(i));
+      }
+    }
+    return retainedKeys;
+  }
+
   public static boolean containsKey( Key key ) { return STORE.get(key) != null; }
   static Key getk( Key key ) { return STORE.getk(key); }
   public static Set<Key> localKeySet( ) { return STORE.keySet(); }
