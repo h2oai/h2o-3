@@ -46,7 +46,7 @@ public class GenericModelOutput extends Model.Output {
     private static TwoDimTable readVariableImportances(final VariableImportances variableImportances){
         if(variableImportances == null) return null;
 
-        TwoDimTable varImps = ModelMetrics.calcVarImp(variableImportances.getImportances(), variableImportances.getVariableNames());
+        TwoDimTable varImps = ModelMetrics.calcVarImp(variableImportances._importances, variableImportances._variables);
         return varImps;
     }
     
