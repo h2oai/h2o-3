@@ -4,6 +4,9 @@ import water.Iced;
 import water.util.TwoDimTable;
 
 import java.io.Serializable;
+import java.text.FieldPosition;
+import java.text.Format;
+import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Objects;
@@ -41,6 +44,31 @@ public class EventLogEntry<V extends Serializable> extends Iced {
     return dateTimeFormat.format(new Date());
   }
 
+  static abstract class SimpleFormat<T> extends Format {
+    @Override
+    public StringBuffer format(Object obj, StringBuffer toAppendTo, FieldPosition pos) {
+      pos.setBeginIndex(0);
+      pos.setEndIndex(0);
+      format((T)obj, toAppendTo);
+      return toAppendTo;
+    }
+
+    public abstract StringBuffer format(T t, StringBuffer toAppendTo);
+
+    @Override
+    public Object parseObject(String source, ParsePosition pos) {
+      return null;
+    }
+  }
+
+  static final Format epochFormat = new SimpleFormat<Date>() {
+    @Override
+    public StringBuffer format(Date date, StringBuffer toAppendTo) {
+        long epoch = Math.round(date.getTime() / 1e3);
+        toAppendTo.append(epoch);
+        return toAppendTo;
+    }
+  };
   static final SimpleDateFormat dateTimeISOFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS"); // uses local timezone
   static final SimpleDateFormat dateTimeFormat = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss.S"); // uses local timezone
   static final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss.S");  // uses local timezone
@@ -87,9 +115,10 @@ public class EventLogEntry<V extends Serializable> extends Iced {
   private long _timestamp;
   private Level _level;
   private Stage _stage;
+  private String _message;
   private String _name;
   private V _value;
-  private String _message;
+  private Format _valueFormatter;
 
   public long getTimestamp() {
     return _timestamp;
@@ -117,6 +146,10 @@ public class EventLogEntry<V extends Serializable> extends Iced {
     return _value;
   }
 
+  public Format getValueFormatter() {
+    return _valueFormatter;
+  }
+
   public EventLogEntry(AutoML autoML, Level level, Stage stage, String message) {
     this._timestamp = System.currentTimeMillis();
     this._autoML = autoML;
@@ -126,8 +159,13 @@ public class EventLogEntry<V extends Serializable> extends Iced {
   }
 
   public void setNamedValue(String name, V value) {
+      setNamedValue(name, value, null);
+  }
+
+  public void setNamedValue(String name, V value, Format formatter) {
     _name = name;
     _value = value;
+    _valueFormatter = formatter;
   }
 
   public void addTwoDimTableRow(TwoDimTable table, int row) {
@@ -137,7 +175,7 @@ public class EventLogEntry<V extends Serializable> extends Iced {
     table.set(row, col++, _stage);
     table.set(row, col++, _message);
     table.set(row, col++, _name);
-    table.set(row, col++, _value);
+    table.set(row, col++, _valueFormatter == null ? _value : _valueFormatter.format(_value));
   }
 
   @Override
@@ -148,7 +186,7 @@ public class EventLogEntry<V extends Serializable> extends Iced {
             _stage,
             Objects.toString(_message, ""),
             Objects.toString(_name, ""),
-            Objects.toString(_value, "")
+            _valueFormatter == null ? Objects.toString(_value, "") : _valueFormatter.format(_value)
     );
   }
 }

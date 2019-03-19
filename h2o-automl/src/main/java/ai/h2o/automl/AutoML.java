@@ -19,14 +19,12 @@ import hex.tree.gbm.GBMModel.GBMParameters;
 import hex.tree.xgboost.XGBoostModel.XGBoostParameters;
 import water.*;
 import water.api.schemas3.KeyV3;
-import water.exceptions.H2OAbstractRuntimeException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.nbhm.NonBlockingHashMap;
 import water.util.ArrayUtils;
 import water.util.Countdown;
-import water.util.IcedHashMapGeneric;
 import water.util.Log;
 
 import java.text.SimpleDateFormat;
@@ -259,7 +257,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       eventLog = new EventLog(this);
       eventLog.info(Stage.Workflow, "Project: " + projectName());
       eventLog.info(Stage.Workflow, "AutoML job created: " + EventLogEntry.dateTimeFormat.format(this.startTime))
-              .setNamedValue("creation_epoch", this.startTime.getTime());
+              .setNamedValue("creation_epoch", this.startTime, EventLogEntry.epochFormat);
 
       workAllocations = planWork();
 
@@ -338,7 +336,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   public void run() {
     runCountdown.start();
     eventLog.info(Stage.Workflow, "AutoML build started: " + EventLogEntry.dateTimeFormat.format(runCountdown.start_time()))
-            .setNamedValue("start_epoch", Math.round(System.currentTimeMillis() / 1e3));
+            .setNamedValue("start_epoch", runCountdown.start_time(), EventLogEntry.epochFormat);
     learn();
     stop();
   }
@@ -352,7 +350,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     runCountdown.stop();
     eventLog.info(Stage.Workflow, "AutoML build stopped: " + EventLogEntry.dateTimeFormat.format(runCountdown.stop_time()))
-            .setNamedValue("stop_epoch", Math.round(System.currentTimeMillis() / 1e3));
+            .setNamedValue("stop_epoch", runCountdown.stop_time(), EventLogEntry.epochFormat);
     eventLog.info(Stage.Workflow, "AutoML build done: built " + modelCount + " models")
             .setNamedValue("model_count", modelCount);
 
@@ -1396,16 +1394,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
   }
 
-  private class AutoMLDoneException extends H2OAbstractRuntimeException {
-    public AutoMLDoneException() {
-      this("done", "done");
-    }
-
-    public AutoMLDoneException(String msg, String dev_msg) {
-      super(msg, dev_msg, new IcedHashMapGeneric.IcedHashMapStringObject());
-    }
-  }
-
   private boolean possiblyVerifyImmutability() {
     boolean warning = false;
 
@@ -1455,19 +1443,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
 
     return warning;
-  }
-
-  private void giveDatasetFeedback(Frame frame, EventLog eventLog, HashMap<String, Object> frameMeta) {
-    eventLog.info(Stage.FeatureAnalysis, "Metadata for Frame: " + frame._key.toString());
-    for (Map.Entry<String, Object> entry : frameMeta.entrySet()) {
-      if (entry.getKey().startsWith("Dummy"))
-        continue;
-      Object val = entry.getValue();
-      if (val instanceof Double || val instanceof Float)
-        eventLog.info(Stage.FeatureAnalysis, entry.getKey() + ": " + String.format("%.6f", val));
-      else
-        eventLog.info(Stage.FeatureAnalysis, entry.getKey() + ": " + entry.getValue());
-    }
   }
 
   private String getModelType(Model m) {

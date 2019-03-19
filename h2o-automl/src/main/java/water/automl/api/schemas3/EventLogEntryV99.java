@@ -7,6 +7,8 @@ import water.api.API;
 import water.api.EnumValuesProvider;
 import water.api.Schema;
 
+import java.util.Objects;
+
 public class EventLogEntryV99 extends Schema<EventLogEntry, EventLogEntryV99> {
 
   @API(help="Timestamp for this event, in milliseconds since Jan 1, 1970", direction=API.Direction.OUTPUT)
@@ -34,5 +36,13 @@ public class EventLogEntryV99 extends Schema<EventLogEntry, EventLogEntryV99> {
 
   public static final class StageProvider extends EnumValuesProvider<Stage> {
     public StageProvider() { super(Stage.class); }
+  }
+
+  @Override
+  public EventLogEntryV99 fillFromImpl(EventLogEntry impl) {
+    super.fillFromImpl(impl, new String[] { "value", "valueFormatter" });
+    this.value = impl.getValueFormatter() == null ? Objects.toString(impl.getValue(), "")
+            : impl.getValueFormatter().format(impl.getValue());
+    return this;
   }
 }
