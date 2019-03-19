@@ -190,7 +190,7 @@ public class ServletUtils {
     response.setHeader("X-Frame-Options", "deny");
     response.setHeader("X-XSS-Protection", "X-XSS-Protection: 1; mode=block");
     response.setHeader("X-Content-Type-Options", "nosniff");
-    response.setHeader("Content-Security-Policy", "default-src 'self' 'unsafe-eval' 'unsafe-inline'");
+    response.setHeader("Content-Security-Policy", "default-src 'self' 'unsafe-eval' 'unsafe-inline'; img-src 'self' data:");
     // Note: ^^^ unsafe-eval/-inline are essential for Flow to work
     //           this will also kill the component "Star H2O on Github" in Flow - see HEXDEV-739
 
