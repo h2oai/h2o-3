@@ -29,6 +29,7 @@
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
 #'        balance_classes. Defaults to 5.0.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for the entire model training process. Use 0 to disable. Defaults to 3600 secs (1 hour).
+#' @param max_runtime_secs_per_model Maximum runtime in seconds dedicated to each individual model training process. Use 0 to disable. Defaults to 0.
 #' @param max_models Maximum number of models to build in the AutoML process (does not include Stacked Ensembles). Defaults to NULL.
 #' @param stopping_metric Metric to use for early stopping ("AUTO" is logloss for classification, deviance for regression).
 #'        Must be one of "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error". Defaults to AUTO.
