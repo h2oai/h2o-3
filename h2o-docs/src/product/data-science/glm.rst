@@ -421,7 +421,7 @@ The negative binomial regression for an observation :math:`i` is:
 
 .. math::
 
- Pr(Y = y_i|\mu_i, \alpha) = \frac{\Gamma(y_i+\theta^{-1})}{\Gamma(\theta^{-1})\Gamma(y_i+1)} {\bigg(\frac {1} {1 + \theta_{\mu_i}}\bigg) ^\theta}^{-1} { \bigg(\frac {\theta_{\mu_i}} {1 + \theta_{\mu_i}} \bigg) ^{y_i}}
+ Pr(Y = y_i|\mu_i, \theta) = \frac{\Gamma(y_i+\theta^{-1})}{\Gamma(\theta^{-1})\Gamma(y_i+1)} {\bigg(\frac {1} {1 + \theta_{\mu_i}}\bigg) ^\theta}^{-1} { \bigg(\frac {\theta_{\mu_i}} {1 + \theta_{\mu_i}} \bigg) ^{y_i}}
 
 where :math:`\Gamma(x)` is the gamma function, and :math:`\mu_i` can be modeled as:
 
@@ -438,7 +438,7 @@ The  negative log likelihood :math:`L(y_i,\mu_i)` function is:
 
 .. math::
 
- ^\text{max}_{\beta,\beta_0} \bigg[ \frac{-1}{N} \sum_{i=1}^{N}  \bigg \{ \bigg( \sum_{j=1}^{y_i-1} \text{log}(j + \theta^{-1} ) \bigg) - \text{log} (\Gamma (y_i + 1)) - (y_i + \theta^{-1}) \text{log} (1 + \alpha\mu_i) + y_i \text{log}(\mu_i) + y_i \text{log} (\alpha) \bigg \} \bigg]
+ ^\text{max}_{\beta,\beta_0} \bigg[ \frac{-1}{N} \sum_{i=1}^{N}  \bigg \{ \bigg( \sum_{j=0}^{y_i-1} \text{log}(j + \theta^{-1} ) \bigg) - \text{log} (\Gamma (y_i + 1)) - (y_i + \theta^{-1}) \text{log} (1 + \alpha\mu_i) + y_i \text{log}(\mu_i) + y_i \text{log} (\theta) \bigg \} \bigg]
 
 The final penalized negative log likelihood is used to find the coefficients :math:`\beta, \beta_0` given a fixed :math:`\theta` value:
 
@@ -450,7 +450,7 @@ The corresponding deviance is:
 
 .. math::
 
- D = 2 \sum_{i=1}^{N} \bigg \{ y_i \text{log} \big(\frac{y_i}{\mu_i} \big) - (y_i + 0^{-1}) \text{log} \frac{(1+\alpha y_i)}{(1+\alpha \mu_i)} \bigg \}
+ D = 2 \sum_{i=1}^{N} \bigg \{ y_i \text{log} \big(\frac{y_i}{\mu_i} \big) - (y_i + \theta^{-1}) \text{log} \frac{(1+\theta y_i)}{(1+\theta \mu_i)} \bigg \}
 
 **Note**: Future versions of this model will optimize the coefficients as well as the dispersion parameter.  Please stay tuned.
 
