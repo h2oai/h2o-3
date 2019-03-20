@@ -13,10 +13,10 @@ test.model.generic.irf <- function() {
     
     model.generic <- h2o.genericModel(mojo.original.path)
     model.generic.preds  <- h2o.predict(model.generic, data)
-    expect_equal(length(model.generic.preds), 3)
-    expect_equal(length(h2o.nrow(model.generic.preds)), 24421)
-    model.generic.path <- h2o.download_mojo(model = model.generic, path = tmpdir())
-    expect_equal(file.size(model.generic.path), file.size(model.original.path))
+    expect_equal(length(model.generic.preds), 1)
+    expect_equal(h2o.nrow(model.generic.preds), 24421)
+    model.generic.path <- h2o.download_mojo(model = model.generic, path = tempdir())
+    expect_equal(file.size(paste0(tempdir(),"/",model.generic.path)), file.size(mojo.original.path))
     
 }
 
