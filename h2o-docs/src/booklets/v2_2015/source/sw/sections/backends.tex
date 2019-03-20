@@ -125,15 +125,15 @@ conf = H2OConf(spark)
 hc = H2OContext.getOrCreate(spark, conf)
 \end{lstlisting}
 
-We can see that in this case we are using extra call \texttt{setH2OCluster} in Scala and \texttt{set\_h2o\_cluster} in Python. When the external cluster is started via the flatfile approach, we need to give Sparkling Water ip address and port of arbitrary node inside the H2O cloud in order to connect to the cluster. The ip and port of this node are passed as arguments to \texttt{setH2OCluster/set\_h2o\_cluster} method.
+We can see that in this case we are using extra call \texttt{setH2OCluster} in Scala and \texttt{set\_h2o\_cluster} in Python. When the external cluster is started via the flatfile approach, we need to give Sparkling Water ip address and port of arbitrary node inside the H2O cluster in order to connect to the cluster. The ip and port of this node are passed as arguments to \texttt{setH2OCluster/set\_h2o\_cluster} method.
 
-It's possible in both cases that node on which want to start Sparkling Watter shell is connected to more networks. In this case it can happen that H2O cloud decides to use addresses from network A, whilst Spark decides to use addresses for its executors and driver from network B. Later, when we start \texttt{H2OContext}, the special H2O client, running inside of the Spark Driver, can get the same IP address as the Spark driver and thus the rest of the H2O cloud can't see it. This shouldn't happen in environments where the nodes are connected to only one network, however we provide configuration how to deal with this case as well.
+It's possible in both cases that node on which want to start Sparkling Watter shell is connected to more networks. In this case it can happen that H2O cluster decides to use addresses from network A, whilst Spark decides to use addresses for its executors and driver from network B. Later, when we start \texttt{H2OContext}, the special H2O client, running inside of the Spark Driver, can get the same IP address as the Spark driver and thus the rest of the H2O cluster can't see it. This shouldn't happen in environments where the nodes are connected to only one network, however we provide configuration how to deal with this case as well.
 
-We can use method \texttt{setClientIp} in Scala and \texttt{set\_client\_ip} in Python available on \texttt{H2OConf} which expects IP address and sets this IP address for the H2O client running inside the Spark driver. The IP address passed to this method should be address of the node where Spark driver is about to run and should be from the same network as the rest of H2O cloud.
+We can use method \texttt{setClientIp} in Scala and \texttt{set\_client\_ip} in Python available on \texttt{H2OConf} which expects IP address and sets this IP address for the H2O client running inside the Spark driver. The IP address passed to this method should be address of the node where Spark driver is about to run and should be from the same network as the rest of the H2O cluster.
 
 Let's say we have two H2O nodes on addresses 192.168.0.1 and 192.168.0.2 and also assume that Spark driver is available on 172.16.1.1 and the only executor is available on 172.16.1.2. The node with Spark driver is also connected to 192.168.0.x network with address 192.168.0.3.
 
-In this case there is a chance that H2O client will use the address from 172.168.x.x network instead of the 192.168.0.x one, which can lead to the problem that H2O cloud and H2O client can't see each other.
+In this case there is a chance that H2O client will use the address from 172.168.x.x network instead of the 192.168.0.x one, which can lead to the problem that H2O cluster and H2O client can't see each other.
 
 We can force the client to use the correct address using the following configuration:
 

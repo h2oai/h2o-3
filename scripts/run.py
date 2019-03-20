@@ -124,7 +124,7 @@ def grab_java_message(node_list, curr_testname):
     Parameters
     ----------
     :param node_list:  list of H2O nodes
-      List of H2o nodes associated with a H2OCloud that are performing the test specified in curr_testname.
+      List of H2o nodes associated with an H2OCloud (cluster) that are performing the test specified in curr_testname.
     :param curr_testname: str
       Store the unit test name (can be R unit or Py unit) that has been completed and failed.
     :return: a string object that is either empty or the java messages that associated with the test in curr_testname.
@@ -180,11 +180,11 @@ def grab_java_message(node_list, curr_testname):
 
 class H2OUseCloudNode(object):
     """
-    A class representing one node in an H2O cloud which was specified by the user.
+    A class representing one node in an H2O cluster that was specified by the user.
     Don't try to build or tear down this kind of node.
 
-    use_ip: The given ip of the cloud.
-    use_port: The given port of the cloud.
+    use_ip: The given ip of the cluster.
+    use_port: The given port of the cluster.
     """
 
     def __init__(self, use_ip, use_port):
@@ -201,18 +201,18 @@ class H2OUseCloudNode(object):
         """Not implemented."""
 
     def get_ip(self):
-        """Cloud's IP-address."""
+        """Cluster's IP-address."""
         return self.use_ip
 
     def get_port(self):
-        """Cloud's port number."""
+        """Cluster's port number."""
         return self.use_port
 
 
 class H2OUseCloud(object):
     """
-    A class representing an H2O clouds which was specified by the user.
-    Don't try to build or tear down this kind of cloud.
+    A class representing an H2O cluster that was specified by the user.
+    Don't try to build or tear down this kind of cluster.
     """
 
     def __init__(self, cloud_num, use_ip, use_port):
@@ -237,22 +237,22 @@ class H2OUseCloud(object):
         """Not implemented."""
 
     def get_ip(self):
-        """Cloud's IP-address."""
+        """Cluster's IP-address."""
         node = self.nodes[0]
         return node.get_ip()
 
     def get_port(self):
-        """Cloud's port number."""
+        """Cluster's port number."""
         node = self.nodes[0]
         return node.get_port()
 
 
 class H2OCloudNode(object):
     """
-    A class representing one node in an H2O cloud.
+    A class representing one node in an H2O cluster.
     Note that the base_port is only a request for H2O.
     H2O may choose to ignore our request and pick any port it likes.
-    So we have to scrape the real port number from stdout as part of cloud startup.
+    So we have to scrape the real port number from stdout as part of cluster startup.
 
     port: The actual port chosen at run time.
     pid: The process id of the node.
@@ -267,8 +267,8 @@ class H2OCloudNode(object):
         Create a node in a cloud.
 
         :param is_client: Whether this node is an H2O client node (vs a worker node) or not.
-        :param cloud_num: Dense 0-based cloud index number.
-        :param nodes_per_cloud: How many H2O java instances are in a cloud.  Clouds are symmetric.
+        :param cloud_num: Dense 0-based cluster index number.
+        :param nodes_per_cloud: How many H2O java instances are in a cluster. Clustes are symmetric.
         :param node_num: This node's dense 0-based node index number.
         :param cloud_name: The H2O -name command-line argument.
         :param h2o_jar: Path to H2O jar file.
@@ -446,7 +446,7 @@ class H2OCloudNode(object):
 
     def scrape_cloudsize_from_stdout(self, nodes_per_cloud):
         """
-        Look at the stdout log and wait until the cloud of proper size is formed.
+        Look at the stdout log and wait until the cluster of proper size is formed.
         This call is blocking.
         Exit if this fails.
 
@@ -525,16 +525,16 @@ class H2OCloudNode(object):
 
 class H2OCloud(object):
     """
-    A class representing one of the H2O clouds.
+    A class representing one of the H2O clusters.
     """
 
     def __init__(self, cloud_num, use_client, nodes_per_cloud, h2o_jar, base_port, xmx, cp, output_dir, test_ssl,
                  ldap_config_path, jvm_opts=None):
         """
-        Create a cloud.
+        Create a cluster.
         See node definition above for argument descriptions.
 
-        :return The cloud object.
+        :return The cluster object.
         """
         self.use_client = use_client
         self.cloud_num = cloud_num
@@ -548,7 +548,7 @@ class H2OCloud(object):
         self.ldap_config_path = ldap_config_path
         self.jvm_opts = jvm_opts
 
-        # Randomly choose a seven digit cloud number.
+        # Randomly choose a seven digit cluster number.
         n = random.randint(1000000, 9999999)
         user = getpass.getuser()
         user = ''.join(user.split())
@@ -590,8 +590,8 @@ class H2OCloud(object):
 
     def start(self):
         """
-        Start H2O cloud.
-        The cloud is not up until wait_for_cloud_to_be_up() is called and returns.
+        Start H2O cluster.
+        The cluster is not up until wait_for_cloud_to_be_up() is called and returns.
 
         :return none
         """
@@ -603,7 +603,7 @@ class H2OCloud(object):
 
     def wait_for_cloud_to_be_up(self):
         """
-        Blocking call ensuring the cloud is available.
+        Blocking call ensuring the cluster is available.
 
         :return none
         """
@@ -612,7 +612,7 @@ class H2OCloud(object):
 
     def stop(self):
         """
-        Normal cloud shutdown.
+        Normal cluster shutdown.
 
         :return none
         """
@@ -624,7 +624,7 @@ class H2OCloud(object):
 
     def terminate(self):
         """
-        Terminate a running cloud.  (Due to a signal.)
+        Terminate a running cluster.  (Due to a signal.)
 
         :return none
         """
@@ -635,7 +635,7 @@ class H2OCloud(object):
             node.terminate()
 
     def get_ip(self):
-        """ Return an ip to use to talk to this cloud. """
+        """ Return an ip to use to talk to this cluster. """
         if len(self.client_nodes) > 0:
             node = self.client_nodes[0]
         else:
@@ -643,7 +643,7 @@ class H2OCloud(object):
         return node.get_ip()
 
     def get_port(self):
-        """ Return a port to use to talk to this cloud. """
+        """ Return a port to use to talk to this cluster. """
         if len(self.client_nodes) > 0:
             node = self.client_nodes[0]
         else:
@@ -682,8 +682,8 @@ class Test(object):
     terminated: Test killed due to signal.
     returncode: Exit code of child.
     pid: Process id of the test.
-    ip: IP of cloud to run test.
-    port: Port of cloud to run test.
+    ip: IP of cluster to run test.
+    port: Port of cluster to run test.
     child: subprocess.Popen object.
     """
 
@@ -728,8 +728,8 @@ class Test(object):
         """
         Start the test in a non-blocking fashion.
 
-        :param ip: IP address of cloud to run on.
-        :param port: Port of cloud to run on.
+        :param ip: IP address of cluster to run on.
+        :param port: Port of cluster to run on.
         :return none
         """
 
@@ -836,13 +836,13 @@ class Test(object):
 
     def get_ip(self):
         """
-        :return IP of the cloud where this test ran.
+        :return IP of the cluster where this test ran.
         """
         return self.ip
 
     def get_port(self):
         """
-        :return Integer port number of the cloud where this test ran.
+        :return Integer port number of the cluster where this test ran.
         """
         return int(self.port)
 
@@ -965,7 +965,7 @@ class Test(object):
         else:
             cmd += ["--pyBooklet"]
         if g_jacoco_include:
-            # When using JaCoCo we don't want the test to return an error if a cloud reports as unhealthy
+            # When using JaCoCo we don't want the test to return an error if a cluster reports as unhealthy
             cmd += ["--forceConnect"]
         if g_ldap_username:
             cmd += ['--ldapUsername', g_ldap_username]
@@ -1024,13 +1024,13 @@ class TestRunner(object):
         Create a runner.
 
         :param test_root_dir: h2o/R/tests directory.
-        :param use_cloud: Use this one user-specified cloud.  Overrides num_clouds.
-        :param use_cloud2: Use the cloud_config to define the list of H2O clouds.
-        :param cloud_config: (if use_cloud2) the config file listing the H2O clouds.
-        :param use_ip: (if use_cloud) IP of one cloud to use.
-        :param use_port: (if use_cloud) Port of one cloud to use.
-        :param num_clouds: Number of H2O clouds to start.
-        :param nodes_per_cloud: Number of H2O nodes to start per cloud.
+        :param use_cloud: Use this one user-specified cluster.  Overrides num_clouds.
+        :param use_cloud2: Use the cloud_config to define the list of H2O clusters.
+        :param cloud_config: (if use_cloud2) the config file listing the H2O clusters.
+        :param use_ip: (if use_cloud) IP of one cluster to use.
+        :param use_port: (if use_cloud) Port of one cluster to use.
+        :param num_clouds: Number of H2O clusters to start.
+        :param nodes_per_cloud: Number of H2O nodes to start per cluster.
         :param h2o_jar: Path to H2O jar file to run.
         :param base_port: Base H2O port (e.g. 54321) to start choosing from.
         :param xmx: Java -Xmx parameter.
@@ -1354,7 +1354,7 @@ class TestRunner(object):
 
     def start_clouds(self):
         """
-        Start all H2O clouds.
+        Start all H2O clusters.
         :return none
         """
         if self.terminated: return
@@ -1454,7 +1454,7 @@ class TestRunner(object):
 
     def check_clouds(self):
         """
-        for all clouds, check if connection to h2o exists, and that h2o is healthy.
+        For all clusters, check if connection to h2o exists, and that h2o is healthy.
         """
         time.sleep(3)
         print("Checking cloud health...")
@@ -1467,7 +1467,7 @@ class TestRunner(object):
 
     def stop_clouds(self):
         """
-        Stop all H2O clouds.
+        Stop all H2O clusters.
         :return: none
         """
         if self.terminated: return
@@ -1575,7 +1575,7 @@ class TestRunner(object):
 
     def terminate(self):
         """
-        Terminate all running clouds.  (Due to a signal.)
+        Terminate all running clusters.  (Due to a signal.)
         :return none
         """
         self.terminated = True
@@ -1747,8 +1747,8 @@ class TestRunner(object):
 
     def _wait_for_available_cloud(self, nopass, timeout=60):
         """
-        Waits for an available cloud to appear by either a test completing or by a cloud on the suspicious_clouds list
-        reporting as healthy, and then returns a tuple containing its ip and port. If no tests are running and no clouds
+        Waits for an available cluster to appear by either a test completing or by a cluster on the suspicious_clouds list
+        reporting as healthy, and then returns a tuple containing its ip and port. If no tests are running and no clusters
         are reporting as healthy, then the function will wait until the designated timeout time expires before returning
         None.
         """
@@ -1960,8 +1960,8 @@ class TestRunner(object):
 
     def _remove_cloud(self, ip, port):
         """
-        add the ip, port to TestRunner's bad cloud list. remove the bad cloud from the TestRunner's cloud list.
-        terminate TestRunner if no good clouds remain.
+        add the ip, port to TestRunner's bad clusters list. Remove the bad cluster from the TestRunner's cluster list.
+        Terminate TestRunner if no good clusters remain.
         """
         if not [ip, str(port)] in self.bad_clouds: self.bad_clouds.append([ip, str(port)])
         cidx = 0
@@ -1978,9 +1978,9 @@ class TestRunner(object):
 
     def _suspect_cloud(self, ip, port):
         """
-        add the ip, port to TestRunner's suspicious cloud list. This way the cloud is considered to have the potential
-        to report as being healthy sometime in the future. Unlike _remove_cloud(), the suspicious cloud is not removed
-        from the TestRunner's cloud list.
+        add the ip, port to TestRunner's suspicious clusters list. This way the cluster is considered to have the potential
+        to report as being healthy sometime in the future. Unlike _remove_cloud(), the suspicious cluster is not removed
+        from the TestRunner's cluster list.
         """
         if not [ip, str(port)] in self.suspicious_clouds: self.suspicious_clouds.append([ip, str(port)])
 
@@ -2108,10 +2108,10 @@ def usage():
     print("")
     print("    --baseport       The first port at which H2O starts searching for free ports.")
     print("")
-    print("    --numclouds      The number of clouds to start.")
-    print("                     Each test is randomly assigned to a cloud.")
+    print("    --numclouds      The number of clusters to start.")
+    print("                     Each test is randomly assigned to a cluster.")
     print("")
-    print("    --numnodes       The number of nodes in the cloud.")
+    print("    --numnodes       The number of nodes in the cluster.")
     print("                     When this is specified, numclouds must be 1.")
     print("")
     print("    --test           If you only want to run one test, specify it like this.")
@@ -2127,10 +2127,10 @@ def usage():
     print("                     s=small (seconds), m=medium (a minute or two), l=large (longer), x=xlarge (very big)")
     print("                     (Default is to run all tests.)")
     print("")
-    print("    --usecloud       ip:port of cloud to send tests to instead of starting clouds.")
+    print("    --usecloud       ip:port of cluster to send tests to instead of starting clusters.")
     print("                     (When this is specified, numclouds is ignored.)")
     print("")
-    print("    --usecloud2      cloud.cfg: Use a set clouds defined in cloud.config to run tests on.")
+    print("    --usecloud2      cloud.cfg: Use a set clusters defined in cloud.config to run tests on.")
     print("                     (When this is specified, numclouds, numnodes, and usecloud are ignored.)")
     print("")
     print("    --client         Send REST API commands through client mode.")

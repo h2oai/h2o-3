@@ -8,7 +8,7 @@
 #'
 #' Import Files into H2O
 #'
-#' Imports files into an H2O cloud. The default behavior is to pass-through to the parse phase
+#' Imports files into an H2O cluster. The default behavior is to pass-through to the parse phase
 #' automatically.
 #'
 #' \code{h2o.importFile} is a parallelized reader and pulls information from the server from a location specified
@@ -186,7 +186,7 @@ h2o.uploadFile <- function(path, destination_frame = "",
 #'
 #' Import SQL Table into H2O
 #'
-#' Imports SQL table into an H2O cloud. Assumes that the SQL table is not being updated and is stable.
+#' Imports SQL table into an H2O cluster. Assumes that the SQL table is not being updated and is stable.
 #' Runs multiple SELECT SQL queries concurrently for parallel ingestion.
 #' Be sure to start the h2o.jar in the terminal with your downloaded JDBC driver in the classpath:
 #'    `java -cp <path_to_h2o_jar>:<path_to_jdbc_driver_jar> water.H2OApp`

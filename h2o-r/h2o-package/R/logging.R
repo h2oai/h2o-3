@@ -9,7 +9,7 @@
 #'}
 NULL
 
-#' Shutdown H2O cloud after examples run
+#' Shutdown H2O cluster after examples run
 #'
 #' @name zzz
 #' @examples

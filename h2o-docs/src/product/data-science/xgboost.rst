@@ -297,7 +297,7 @@ FAQs
 
   By default, XGBoost will create N+1 new cols for categorical features with N levels (i.e., ``categorical_encoding="one_hot_internal"``). 
 
--  **Why does my H2O cloud on Hadoop became unresponsive when running XGBoost even when I supplied 4 times the datasize memory?**
+-  **Why does my H2O cluster on Hadoop became unresponsive when running XGBoost even when I supplied 4 times the datasize memory?**
 
   XGBoost uses memory outside the Java heap, and when that memory is not available, Hadoop kills the h2o job and the h2o cluster becomes unresponsive. Please set ``-extramempercent`` argument to a much higher value (120% recommended) when starting H2O. This argument configures the extra memory for internal JVM use outside of the Java heap and is a percentage of mapperXmx. For example:
 

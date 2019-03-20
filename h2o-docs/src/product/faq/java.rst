@@ -67,33 +67,3 @@ If you are running OS X 10.8 or later, modify the launchd.plist by entering the 
     </dict>
     </plist>
     EOF
-
---------------
-
-**I recently upgraded to Java 9, and now H2O no longer works. How can I switch to a supported version of Java?**
-
-Java 9 is not yet supported but will be in an upcoming release. In the meantime, you can tell H2O which version of Java you'd like to use by setting the ``JAVA_HOME`` environment variable. 
-
- **On Mac OS X**
-
- First, run the following to get the location of a previous version of Java (for example, 1.8).
-
- ::
-  
-   /usr/libexec/java_home -v 1.8
-
- This will return the path for Java. For example:
-
- ::
-
-   /Library/Java/JavaVirtualMachines/jdk1.8.0_25.jdk/Contents/Home
-
- Next, add the path to your ``.bash_profile``.
-
- :: 
-
-   export JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk1.8.0_25.jdk/Contents/Home
-
- **In RStudio**
-
- In some cases, after you've set your JAVA_HOME environment variable to a supported version, H2O still fails in RStudio. If this is the case, add the path (for example, ``JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk1.8.0_25.jdk/Contents/Home``) to ``~/.Renviron``, and then restart RStudio.

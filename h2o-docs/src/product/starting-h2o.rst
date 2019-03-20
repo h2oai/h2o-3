@@ -212,7 +212,7 @@ H2O.
 When you launch from the command line, you can include
 additional instructions to H2O 3.0, such as how many nodes to launch,
 how much memory to allocate for each node, assign names to the nodes in
-the cloud, and more.
+the cluster, and more.
 
     **Note**: H2O requires some space in the ``/tmp`` directory to
     launch. If you cannot launch H2O, try freeing up some space in the
@@ -244,8 +244,8 @@ H2O Options
 
 -	``-h`` or ``-help``: Display this information in the command line output.
 - ``-version``: Specify to print version information and exit.
--	``-name <H2OCloudName>``: Assign a name to the H2O instance in the cloud (where ``<H2OCloudName>`` is the name of the cloud). Nodes with the same cloud name will form an H2O cloud (also known as an H2O cluster).
--	``-flatfile <FileName>``: Specify a flatfile of IP address for faster cloud formation (where ``<FileName>`` is the name of the flatfile).
+-	``-name <H2OClusterName>``: Assign a name to the H2O instance in the cluster (where ``<H2OClusterName>`` is the name of the cluster). Nodes with the same cluster name will form an H2O cluster (also known as an H2O cloud).
+-	``-flatfile <FileName>``: Specify a flatfile of IP address for faster cluster formation (where ``<FileName>`` is the name of the flatfile).
 -	``-ip <IPnodeAddress>``: Specify an IP for the machine other than the default ``localhost``, for example:
     
     - IPv4: ``-ip 178.16.2.223`` 
@@ -311,19 +311,19 @@ By default, H2O selects the IP and PORT for internal communication automatically
   - ``-baseport`` 
 
 
-Cloud Formation Behavior
-^^^^^^^^^^^^^^^^^^^^^^^^
+Cluster Formation Behavior
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-New H2O nodes join to form a cloud during launch. After a job has
-started on the cloud, it prevents new members from joining.
+New H2O nodes join to form a cluster during launch. After a job has
+started on the cluster, it prevents new members from joining.
 
--  To start an H2O node with 4GB of memory and a default cloud name:
+-  To start an H2O node with 4GB of memory and a default cluster name:
    ``java -Xmx4g -jar h2o.jar``
 
--  To start an H2O node with 6GB of memory and a specific cloud name:
-   ``java -Xmx6g -jar h2o.jar -name MyCloud``
+-  To start an H2O node with 6GB of memory and a specific cluster name:
+   ``java -Xmx6g -jar h2o.jar -name MyCluster``
 
--  To start an H2O cloud with three 2GB nodes using the default cloud
+-  To start an H2O cluster with three 2GB nodes using the default cluster
    names: ``java -Xmx2g -jar h2o.jar &   java -Xmx2g -jar h2o.jar &   java -Xmx2g -jar h2o.jar &``
 
 Wait for the ``INFO: Registered: # schemas in: #mS`` output before
@@ -341,8 +341,8 @@ H2O provides two modes for cluster creation:
 Multicast
 '''''''''
 
-In this mode, H2O is using IP multicast to announce existence of H2O nodes. Each node selects the same multicast group and port based on specified shared cloud name (see ``-name`` option). For example, for IPv4/PORT a generated multicast group is ``228.246.114.236:58614`` (for cloud name ``michal``), 
-for IPv6/PORT a generated multicast group is ``ff05:0:3ff6:72ec:0:0:3ff6:72ec:58614`` (for cloud name ``michal`` and link-local address which enforce link-local scope).
+In this mode, H2O is using IP multicast to announce existence of H2O nodes. Each node selects the same multicast group and port based on specified shared cluster name (see ``-name`` option). For example, for IPv4/PORT a generated multicast group is ``228.246.114.236:58614`` (for cluster name ``michal``), 
+for IPv6/PORT a generated multicast group is ``ff05:0:3ff6:72ec:0:0:3ff6:72ec:58614`` (for cluster name ``michal`` and link-local address which enforce link-local scope).
 
 For IPv6 the scope of multicast address is enforced by a selected node IP. For example, if IP the selection process selects link-local address, then the scope of multicast will be link-local. This can be modified by specifying JVM variable ``sys.ai.h2o.network.ipv6.scope`` which enforces addressing scope use in multicast group address (for example, ``-Dsys.ai.h2o.network.ipv6.scope=0x0005000000000000`` enforces the site local scope. For more details please consult the
 class ``water.util.NetworkUtils``).

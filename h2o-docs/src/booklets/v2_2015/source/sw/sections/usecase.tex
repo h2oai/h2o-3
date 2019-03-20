@@ -44,7 +44,7 @@ addFiles(spark.sparkContext,
 val wrawdata = spark.sparkContext.textFile(SparkFiles.get("Chicago_Ohare_International_Airport.csv"), 3).cache()
 val weatherTable = wrawdata.map(_.split(",")).map(row => WeatherParse(row)).filter(!_.isWrongRow())
 
-// Load H2O from zipped CSV file (i.e., access directly H2O cloud)
+// Load H2O from zipped CSV file (i.e., access directly H2O cluster)
 val airlinesData = new H2OFrame(new File(SparkFiles.get("allyears2k_headers.zip")))
 
 val airlinesTable: RDD[Airlines] = asRDD[Airlines](airlinesData)
