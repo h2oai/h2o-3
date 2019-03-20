@@ -2,7 +2,9 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details) 
 #'
 # -------------------------- generic -------------------------- #
-#' @param x A vector containing the \code{character} names of the predictors in the model.
+#' 
+#' Imports a generic model into H2O
+#' 
 #' @param mojo_key Key to an uploaded MOJO archive
 #' @examples
 #' \donttest{
@@ -13,7 +15,7 @@
 #' predictions <- h2o.predict(generic_model, dataset)
 #' }
 #' @export
-h2o.generic <- function(training_frame = NULL,
+h2o.generic <- function(
                         mojo_key = NULL
                         ) 
 {
@@ -22,7 +24,6 @@ h2o.generic <- function(training_frame = NULL,
   if (is.null(mojo_key)) stop("argument 'mojo_key' must be provided")
   # Parameter list to send to model builder
   parms <- list()
-  parms$training_frame <- training_frame
   if (!missing(mojo_key))
     parms$mojo_key <- mojo_key
   # Error check and build model

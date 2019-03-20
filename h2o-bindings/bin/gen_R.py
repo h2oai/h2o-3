@@ -102,7 +102,10 @@ def gen_module(schema, algo, module):
         for line in lines:
             yield "#' %s" % line.lstrip()
     yield "#' @export"
-    yield "h2o.%s <- function(%s," % (module, get_extra_params_for(algo))
+    if algo == "generic":
+        yield "h2o.%s <- function(" % (module)
+    else:
+        yield "h2o.%s <- function(%s," % (module, get_extra_params_for(algo))
     # yield indent("training_frame,", 17 + len(algo))
     list = []
     for param in schema["parameters"]:
@@ -226,7 +229,8 @@ def gen_module(schema, algo, module):
         yield "  }"
     yield "  # Parameter list to send to model builder"
     yield "  parms <- list()"
-    yield "  parms$training_frame <- training_frame"
+    if algo not in ["generic"]:
+        yield "  parms$training_frame <- training_frame"
     if algo == "glrm":
         yield " if(!missing(cols))"
         yield " parms$ignored_columns <- .verify_datacols(training_frame, cols)$cols_ignore"
@@ -488,6 +492,10 @@ def help_preamble_for(algo):
         return """
             Trains an Isolation Forest model
         """
+    if algo == "generic":
+        return """
+            Imports a generic model into H2O
+        """
 
 def help_details_for(algo):
     if algo == "naivebayes":
@@ -652,12 +660,12 @@ def help_example_for(algo):
         """
     if algo == "generic":
         return """\donttest{
-            library(h2o)
-            h2o.init()
-            
-            generic_model <- h2o.genericModel("/path/to/mojo.zip")
-            predictions <- h2o.predict(generic_model, dataset)
-            }"""
+        library(h2o)
+        h2o.init()
+        
+        generic_model <- h2o.genericModel("/path/to/mojo.zip")
+        predictions <- h2o.predict(generic_model, dataset)
+        }"""
 
 def get_extra_params_for(algo):
     if algo == "glrm":
@@ -671,7 +679,7 @@ def get_extra_params_for(algo):
     elif algo == "coxph":
         return "x, event_column, training_frame"
     elif algo == "generic":
-        return "training_frame = NULL"
+        return ""
     else:
         return "training_frame, x"
 
@@ -693,6 +701,8 @@ def help_extra_params_for(algo):
             #' @param destination_key (Optional) The unique key assigned to the resulting model.
             #'                        Automatically generated if none is provided."""
     elif algo == "word2vec":
+        return None
+    elif algo == "generic":
         return None
     else:  #Aggregator, PCA, SVD, K-Means: can this be grouped in with the others?  why are only character names supported?
         return """#' @param x A vector containing the \code{character} names of the predictors in the model."""
