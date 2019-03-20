@@ -44,11 +44,11 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             ],
             'higgs': [
                 50: [
-                    'train_time_min': 88.0,
+                    'train_time_min': 84.0,
                     'train_time_max': 95.0
                 ],
                 200: [
-                    'train_time_min': 502.0,
+                    'train_time_min': 490.0,
                     'train_time_max': 549.0
                 ]
             ]
