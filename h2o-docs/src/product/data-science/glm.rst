@@ -421,7 +421,7 @@ The negative binomial regression for an observation :math:`i` is:
 
 .. math::
 
- Pr(Y = y_i|\mu_i, \theta) = \frac{\Gamma(y_i+\theta^{-1})}{\Gamma(\theta^{-1})\Gamma(y_i+1)} {\bigg(\frac {1} {1 + \theta_{\mu_i}}\bigg) ^\theta}^{-1} { \bigg(\frac {\theta_{\mu_i}} {1 + \theta_{\mu_i}} \bigg) ^{y_i}}
+ Pr(Y = y_i|\mu_i, \theta) = \frac{\Gamma(y_i+\theta^{-1})}{\Gamma(\theta^{-1})\Gamma(y_i+1)} {\bigg(\frac {1} {1 + {\theta {\mu_i}}}\bigg) ^\theta}^{-1} { \bigg(\frac {{\theta {\mu_i}}} {1 + {\theta {\mu_i}}} \bigg) ^{y_i}}
 
 where :math:`\Gamma(x)` is the gamma function, and :math:`\mu_i` can be modeled as:
 
