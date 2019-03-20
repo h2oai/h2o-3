@@ -1,7 +1,12 @@
 Slicing Rows
 ------------
 
-H2O lazily slices out rows of data and will only materialize a shared copy upon IO. This example shows how to slice rows from a frame of data.
+H2O lazily slices out rows of data and will only materialize a shared copy upon IO. 
+
+The examples below show how to slice rows from a frame of data and also how to slice rows by date.
+
+Slicing Rows Example
+~~~~~~~~~~~~~~~~~~~~
 
 .. example-code::
    .. code-block:: r
@@ -100,8 +105,18 @@ H2O lazily slices out rows of data and will only materialize a shared copy upon 
            4.4         2.9         1.4          0.2  Iris-setosa
            4.9         3.1         1.5          0.1  Iris-setosa
 
-
-
     [150 rows x 3 columns]
 
+Slicing Rows by Date
+~~~~~~~~~~~~~~~~~~~~
 
+The example below assumes that you have a dataframe (df) with a "date" column. 
+
+.. example-code::
+   .. code-block:: r
+   
+    library(h2o)
+    h2o.init()
+
+
+    
