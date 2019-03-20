@@ -73,7 +73,7 @@ Defining a GLM Model
    -  If the family is **ordinal**, the response must be categorical with at least 3 levels.
    -  If the family is **quasibinomial**, the response must be numeric.
    -  If the family is **poisson**, the response must be numeric and non-negative (**Int**).
-   -  If the family is **negativebinomial**, the response must be numeric (**Int**).
+   -  If the family is **negativebinomial**, the response must be numeric and non-negative (**Int**).
    -  If the family is **gamma**, the response must be numeric and continuous and positive (**Real** or **Int**).
    -  If the family is **tweedie**, the response must be numeric and continuous (**Real**) and non-negative.
 
@@ -211,7 +211,7 @@ The ``family`` option specifies a probability distribution from an exponential f
 - ``poisson``: (See `Poisson Models`_). The response must be numeric and non-negative (Int).
 - ``gamma``: (See `Gamma Models`_). The response must be numeric and continuous and positive (Real or Int).
 - ``tweedie``: (See `Tweedie Models`_). The response must be numeric and continuous (Real) and non-negative.
-- ``negativebinomial``: (See `Negative Binomial Models`_). The response must be numeric.
+- ``negativebinomial``: (See `Negative Binomial Models`_). The response must be numeric and non-negative (Int).
 
 **Note**: If your response column is binomial, then you must convert that column to a categorical (``.asfactor()`` in Python and ``as.factor()`` in R) and set ``family = binomial``. The following configurations can lead to unexpected results. 
 
@@ -452,7 +452,7 @@ The corresponding deviance is:
 
  D = 2 \sum_{i=1}^{N} \bigg \{ y_i \text{log} \big(\frac{y_i}{\mu_i} \big) - (y_i + \theta^{-1}) \text{log} \frac{(1+\theta y_i)}{(1+\theta \mu_i)} \bigg \}
 
-**Note**: Future versions of this model will optimize the coefficients as well as the dispersion parameter.  Please stay tuned.
+**Note**: Future versions of this model will optimize the coefficients as well as the dispersion parameter. Please stay tuned.
 
 Links
 '''''

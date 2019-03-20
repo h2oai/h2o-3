@@ -27,7 +27,6 @@ Example
 
 	library(h2o)
 	h2o.init()
-	data(Insurance)
 
 	# Import the Swedish motor insurance dataset
 	h2o_df = h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/Motor_insurance_sweden.txt")
@@ -36,15 +35,10 @@ Example
 	predictors <- c["Payment", "Insured", "Kilometres", "Zone", "Bonus", "Make"]
 	response <- "Claims"
 
-	# Split the data into train and validation
-	h2o_df.split <-  h2o.splitFrame (data=h2o_df, ratios = .8)
-	train <- h2o_df.split[[1]]
-	valid <- h2o_df.split[[2]]
-
 	# Train the model
 	negativebinomial.fit <- h2o.glm(x=predictors, 
 	                                y=response, 
-	                                training_frame=train, 
+	                                training_frame=h2o_df, 
 	                                family="negativebinomial", 
 	                                link="identity", 
 	                                theta=0.5)
