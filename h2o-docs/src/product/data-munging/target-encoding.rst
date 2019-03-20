@@ -37,7 +37,6 @@ In this topic, we will try using target encoding to improve our model performanc
 Train Baseline Model
 ~~~~~~~~~~~~~~~~~~~~
 
-Start by training a model using the original data. Below we import our data into the H2O cluster:
 
 .. example-code::
    .. code-block:: r
@@ -46,39 +45,21 @@ Start by training a model using the original data. Below we import our data into
     h2o.init()
     h2o.no_progress()
 
+    # Start by training a model using the original data. 
+    # Below we import our data into the H2O cluster.
     df <- h2o.importFile("https://raw.githubusercontent.com/h2oai/app-consumer-loan/master/data/loan.csv")
     df$bad_loan <- as.factor(df$bad_loan)
 
-   .. code-block:: python
-
-    import h2o
-    h2o.init()
-
-    df = h2o.import_file("https://raw.githubusercontent.com/h2oai/app-consumer-loan/master/data/loan.csv")
-    df['bad_loan'] = df['bad_loan'].asfactor()
-
-Randomly split the data into 75% training and 25% testing. We will use the testing data to evaluate how well the model performs.
-
-.. example-code::
-   .. code-block:: r
-
-    # Split Frame into training and testing
+    # Randomly split the data into 75% training and 25% testing. 
+    # We will use the testing data to evaluate how well the model performs.
     splits <- h2o.splitFrame(df, seed = 1234, 
                              destination_frames=c("train.hex", "test.hex"), 
                              ratios = 0.75)
     train <- splits[[1]]
     test <- splits[[2]]
 
-   .. code-block:: python
-
-    # Split Frame into training and testing
-    train, test = df.split_frame(ratios=[0.75], seed=1234)
-
-Now train the baseline model. We will train a GBM model with early stopping.
-
-.. example-code::
-   .. code-block:: r
-
+    # Now train the baseline model. 
+    # We will train a GBM model with early stopping.
     response <- "bad_loan"
     predictors <- c("loan_amnt", "int_rate", "emp_length", "annual_inc", "dti", 
                     "delinq_2yrs", "revol_util", "total_acc", "longest_credit_length",
@@ -105,7 +86,23 @@ Now train the baseline model. We will train a GBM model with early stopping.
     1   Training 0.7492599
     2 Validation 0.7070187
 
+
    .. code-block:: python
+
+    import h2o
+    h2o.init()
+
+    # Start by training a model using the original data. 
+    # Below we import our data into the H2O cluster.
+    df = h2o.import_file("https://raw.githubusercontent.com/h2oai/app-consumer-loan/master/data/loan.csv")
+    df['bad_loan'] = df['bad_loan'].asfactor()
+
+    # Randomly split the data into 75% training and 25% testing. 
+    # We will use the testing data to evaluate how well the model performs.
+    train, test = df.split_frame(ratios=[0.75], seed=1234)
+
+    # Now train the baseline model. 
+    # We will train a GBM model with early stopping.
 
     from h2o.estimators.gbm import H2OGradientBoostingEstimator
     predictors = ["loan_amnt", "int_rate", "emp_length", "annual_inc", "dti", 
