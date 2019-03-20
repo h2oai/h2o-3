@@ -29,7 +29,6 @@ import water.util.Countdown;
 import water.util.IcedHashMapGeneric;
 import water.util.Log;
 
-import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -615,9 +614,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
         userFeedback.warn(stage, name + " cancelled");
       } else {
         Grid<?> grid = (Grid) subJob.get();
-        int gridCount = grid.getModelCount();
-        if (gridCount > lastTotalGridModelsBuilt) {
-          userFeedback.info(stage, "Built: " + gridCount + " models for search: " + name);
+        int totalGridModelsBuilt = grid.getModelCount();
+        if (totalGridModelsBuilt > lastTotalGridModelsBuilt) {
+          userFeedback.info(stage, "Built: " + totalGridModelsBuilt + " models for search: " + name);
           this.addModels(grid.getModelKeys());
         }
         userFeedback.info(stage, name + " complete");
