@@ -2,21 +2,18 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 
 automl.args.test <- function() {
-    
+
     # This test checks the following (for binomial classification):
     #
     # 1) That h2o.automl executes w/o errors
     # 2) That the arguments are working properly
-    
-    run_each_test_in_isolation <- TRUE      # can be disabled to minimize slowdown when running test suite in client mode on Jenkins
+
     max_models <- 2
-    
-    import_dataset <- function(cleanup = run_each_test_in_isolation) {
-        if (cleanup) h2o.removeAll()
-        
+
+    import_dataset <- function() {
         y <- "CAPSULE"
         y.idx <- 1
-        
+
         keys <- h2o.ls()$key
         if ("rtest_automl_args_train" %in% keys) {
             print("using existing dataset")
@@ -34,21 +31,21 @@ automl.args.test <- function() {
             valid <- ss[[1]]
             test <- ss[[2]]
         }
-        
+
         x <- setdiff(names(train), y)
         return(list(x=x, y=y, y.idx=y.idx, train=train, valid=valid, test=test))
     }
-    
+
     get_partitioned_models <- function(aml) {
         model_ids <- as.character(as.data.frame(aml@leaderboard[,"model_id"])[,1])
         ensemble_model_ids <- grep("StackedEnsemble", model_ids, value = TRUE, invert = FALSE)
         non_ensemble_model_ids <- model_ids[!(model_ids %in% ensemble_model_ids)]
         return(list(all=model_ids, se=ensemble_model_ids, non_se=non_ensemble_model_ids))
     }
-    
-    
+
+
     print("Check arguments to H2OAutoML class")
-    
+
     test_without_y <- function() {
         print("Try without a y")
         ds <- import_dataset()
@@ -56,7 +53,7 @@ automl.args.test <- function() {
                                 max_models = max_models,
                                 project_name = "aml0"))
     }
-    
+
     test_without_x <- function() {
         print("Try without an x")
         ds <- import_dataset()
@@ -65,7 +62,7 @@ automl.args.test <- function() {
                     max_models = max_models,
                     project_name = "aml1")
     }
-    
+
     test_y_as_index_x_as_name <- function() {
         print("Try with y as a column index, x as colnames")
         ds <- import_dataset()
@@ -127,7 +124,7 @@ automl.args.test <- function() {
                     project_name = "aml3",
         )
     }
-    
+
     test_training_with_validation_frame <- function() {
         print("Training & validation frame")
         ds <- import_dataset()
@@ -138,7 +135,7 @@ automl.args.test <- function() {
                     project_name = "aml4",
         )
     }
-    
+
     test_training_with_leaderboard_frame <- function() {
         print("Training & leaderboard frame")
         ds <- import_dataset()
@@ -149,7 +146,7 @@ automl.args.test <- function() {
                     project_name = "aml5",
         )
     }
-    
+
     test_training_with_validation_and_leaderboard_frame <- function() {
         print("Training, validation & leaderboard frame")
         ds <- import_dataset()
@@ -161,7 +158,7 @@ automl.args.test <- function() {
                     project_name = "aml6",
         )
     }
-    
+
     test_early_stopping <- function() {
         print("Early stopping args")
         ds <- import_dataset()
@@ -176,7 +173,7 @@ automl.args.test <- function() {
                     project_name = "aml7",
         )
     }
-    
+
     test_leaderboard_growth <- function() {
         print("Check max_models = 1")
         ds <- import_dataset()
@@ -187,7 +184,7 @@ automl.args.test <- function() {
         )
         nrow_lb <- nrow(aml@leaderboard)
         expect_equal(nrow_lb, 1)
-        
+
         print("Check max_models > 1; leaderboard continuity/growth")
         aml <- h2o.automl(x = ds$x, y = ds$y,
                             training_frame = ds$train,
@@ -196,12 +193,12 @@ automl.args.test <- function() {
         )
         expect_equal(nrow(aml@leaderboard) > nrow_lb, TRUE)
     }
-    
+
     test_fold_column <- function() {
         ds <- import_dataset()
         fold_column <- "fold_id"
         ds$train[,fold_column] <- as.h2o(data.frame(rep(seq(1:3), 2000)[1:nrow(ds$train)]))
-        
+
         print("Check fold_column")
         aml <- h2o.automl(x = ds$x, y = ds$y,
                             training_frame = ds$train,
@@ -220,14 +217,14 @@ automl.args.test <- function() {
         ensemble_meta <- h2o.getModel(ensemble@model$metalearner$name)
         expect_equal(length(ensemble_meta@model$cross_validation_models), 3)
     }
-    
-    
+
+
     test_weights_column <- function() {
         print("Check weights_column")
         ds <- import_dataset()
         weights_column <- "weight"
         ds$train[,weights_column] <- as.h2o(data.frame(runif(n = nrow(ds$train), min = 0, max = 5)))
-        
+
         aml <- h2o.automl(x = ds$x, y = ds$y,
                             training_frame = ds$train,
                             weights_column = weights_column,
@@ -238,7 +235,7 @@ automl.args.test <- function() {
         base_model_weights_column <- base_model@parameters$weights_column$column_name
         expect_equal(base_model_weights_column, weights_column)
     }
-    
+
     test_fold_column_with_weights_column <- function() {
         print("Check fold_colum and weights_column")
         ds <- import_dataset()
@@ -246,7 +243,7 @@ automl.args.test <- function() {
         ds$train[,fold_column] <- as.h2o(data.frame(rep(seq(1:3), 2000)[1:nrow(ds$train)]))
         weights_column <- "weight"
         ds$train[,weights_column] <- as.h2o(data.frame(runif(n = nrow(ds$train), min = 0, max = 5)))
-        
+
         aml <- h2o.automl(x = ds$x, y = ds$y,
                             training_frame = ds$train,
                             fold_column = fold_column,
@@ -260,7 +257,7 @@ automl.args.test <- function() {
         base_model_weights_column <- base_model@parameters$weights_column$column_name
         expect_equal(base_model_weights_column, weights_column)
     }
-    
+
     test_nfolds_set_to_base_model <- function() {
         print("Check that nfolds is piped through properly to base models (nfolds > 1)")
         ds <- import_dataset()
@@ -273,7 +270,7 @@ automl.args.test <- function() {
         base_model <- h2o.getModel(get_partitioned_models(aml)$non_se[1])
         expect_equal(base_model@parameters$nfolds, 3)
     }
-    
+
     test_nfolds_eq_0 <- function() {
         print("Check that nfolds = 0 works properly")  #will need to change after xval leaderboard is implemented
         ds <- import_dataset()
@@ -286,7 +283,7 @@ automl.args.test <- function() {
         base_model <- h2o.getModel(get_partitioned_models(aml)$non_se[1])
         expect_equal(base_model@allparameters$nfolds, 0)
     }
-    
+
     test_stacked_ensembles_trained <- function() {
         print("Check that two Stacked Ensembles are trained")
         ds <- import_dataset()
@@ -299,11 +296,11 @@ automl.args.test <- function() {
         # Check that leaderboard contains exactly two SEs: all model ensemble & top model ensemble
         expect_equal(length(get_partitioned_models(aml)$se), 2)
     }
-    
+
     test_stacked_ensembles_trained_with_blending_frame_and_nfolds_eq_0 <- function() {
         print("Check that Stacked Ensembles are trained using blending frame, even if cross-validation is disabled.")
         ds <- import_dataset()
-        aml <- h2o.automl(x = ds$x, y = ds$y, 
+        aml <- h2o.automl(x = ds$x, y = ds$y,
                             training_frame = ds$train,
                             blending_frame = ds$valid,
                             leaderboard_frame = ds$test,
@@ -318,7 +315,7 @@ automl.args.test <- function() {
             expect_equal(model@model$stacking_strategy, "blending")
         }
     }
-    
+
     test_balance_classes <- function() {
         print("Check that balance_classes is working")
         ds <- import_dataset()
@@ -336,7 +333,7 @@ automl.args.test <- function() {
         expect_equal(base_model@parameters$max_after_balance_size, 3.0)
         expect_equal(base_model@parameters$class_sampling_factors, c(0.2, 1.4))
     }
-    
+
     test_keep_cv_models_and_keep_cv_predictions <- function() {
         print("Check that cv preds/models are deleted")
         ds <- import_dataset()
@@ -349,7 +346,7 @@ automl.args.test <- function() {
                             keep_cross_validation_models = FALSE,
                             keep_cross_validation_predictions = FALSE,
         )
-        
+
         model_ids <- as.character(as.data.frame(aml@leaderboard[,"model_id"])[,1])
         model_ids <- setdiff(model_ids, grep("StackedEnsemble", model_ids, value = TRUE))
         cv_model_ids <- list(NULL)
@@ -359,7 +356,7 @@ automl.args.test <- function() {
         cv_model_ids <- unlist(cv_model_ids)
         expect_equal(sum(sapply(cv_model_ids, function(i) grepl(i, h2o.ls()))), 0)
     }
-    
+
     test_keep_cv_fold_assignment_defaults_with_nfolds_gt_0 <- function() {
         print("Check that fold assignments were skipped by default and nfolds > 1")
         ds <- import_dataset()
@@ -373,7 +370,7 @@ automl.args.test <- function() {
         expect_equal(some_base_model@parameters$keep_cross_validation_fold_assignment, NULL)
         expect_equal(some_base_model@model$cross_validation_fold_assignment_frame_id, NULL)
     }
-    
+
     test_keep_cv_fold_assignment_TRUE_with_nfolds_gt_0 <- function() {
         print("Check that fold assignments were kept when `keep_cross_validation_fold_assignment`= TRUE and nfolds > 1")
         ds <- import_dataset()
@@ -388,7 +385,7 @@ automl.args.test <- function() {
         expect_equal(base_model@parameters$keep_cross_validation_fold_assignment, TRUE)
         expect_equal(length(base_model@model$cross_validation_fold_assignment_frame_id), 4)
     }
-    
+
     test_keep_cv_fold_assignment_TRUE_with_nfolds_eq_0 <- function() {
         print("Check that fold assignments were skipped when `keep_cross_validation_fold_assignment`= TRUE and nfolds = 0")
         ds <- import_dataset()
@@ -403,7 +400,7 @@ automl.args.test <- function() {
         expect_equal(base_model@parameters$keep_cross_validation_fold_assignment, NULL)
         expect_equal(base_model@model$cross_validation_fold_assignment_frame_id, NULL)
     }
-    
+
     test_max_runtime_secs <- function() {
         print("Check that automl gets interrupted after `max_runtime_secs`")
         ds <- import_dataset()
@@ -418,7 +415,31 @@ automl.args.test <- function() {
         expect_lte(abs(time - max_runtime_secs), cancel_tolerance_secs)
         expect_equal(length(get_partitioned_models(aml)$se), 2)
     }
-    
+
+    test_max_runtime_secs_per_model <- function() {
+      print("Check that individual model get interrupted after `max_runtime_secs_per_model`")
+      # need a larger dataset to obtain significant differences in behaviour
+      train <- h2o.importFile(locate("smalldata/prostate/prostate_complete.csv.zip"), destination_frame="prostate_complete")
+      y <- 'CAPSULE'
+      x <- setdiff(names(train), y)
+      ds <- list(train=train, x=x, y=y)
+
+      max_runtime_secs <- 30
+      models_count <- list()
+      for (max_runtime_secs_per_model in c(0, 3, max_runtime_secs)) {
+        aml <- h2o.automl(x=ds$x, y=ds$y,
+                          training_frame=ds$train,
+                          seed=1,
+                          project_name=paste0("aml_max_runtime_secs_per_model_", max_runtime_secs_per_model),
+                          max_runtime_secs_per_model=max_runtime_secs_per_model,
+                          max_runtime_secs=max_runtime_secs)
+        models_count[paste0(max_runtime_secs_per_model)] = nrow(aml@leaderboard)
+      }
+      expect_lte(abs(models_count[[paste0(0)]] - models_count[[paste0(max_runtime_secs)]]), 1)
+      expect_gt(abs(models_count[[paste0(0)]] - models_count[[paste0(3)]]), 1)
+      # TODO: add assertions about single model timing once 'automl event_log' is available on client side
+    }
+
     test_max_models <- function() {
         print("Check that automl get interrupted after `max_models`")
         ds <- import_dataset()
@@ -431,8 +452,8 @@ automl.args.test <- function() {
         expect_equal(length(models$non_se), max_models)
         expect_equal(length(models$se), 2)
     }
-    
-    
+
+
     makeSuite(
         test_without_y,
         test_without_x,
@@ -459,6 +480,7 @@ automl.args.test <- function() {
         test_keep_cv_fold_assignment_TRUE_with_nfolds_gt_0,
         test_keep_cv_fold_assignment_TRUE_with_nfolds_eq_0,
         test_max_runtime_secs,
+        test_max_runtime_secs_per_model,
         test_max_models
     )
 }

@@ -17,7 +17,6 @@ public class UserFeedback extends Keyed<UserFeedback> {
     this.autoML = autoML;
 
     UserFeedback old = DKV.getGet(this._key);
-
     if (null == old || null == feedbackEvents) {
       feedbackEvents = new UserFeedbackEvent[0];
       DKV.put(this);

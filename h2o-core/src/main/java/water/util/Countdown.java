@@ -19,7 +19,7 @@ public class Countdown extends Iced<Countdown> {
   private long _time_limit_millis;
   private long _start_time;
   private long _stop_time;
-  
+
   public static Countdown fromSeconds(double seconds) {
     return new Countdown(seconds <= 0 ? 0 : (long)Math.ceil(seconds * 1000));
   }
@@ -32,11 +32,11 @@ public class Countdown extends Iced<Countdown> {
     this(_time_limit_millis);
     if (start) start();
   }
-  
+
   public Date start_time() {
     return new Date(_start_time);
   }
-  
+
   public Date stop_time() {
     return new Date(_stop_time);
   }
@@ -55,7 +55,7 @@ public class Countdown extends Iced<Countdown> {
   public boolean running() {
     return _start_time > 0 && _stop_time == 0;
   }
-  
+
   public boolean ended() {
     return _start_time > 0 && _stop_time > 0;
   }
@@ -65,7 +65,7 @@ public class Countdown extends Iced<Countdown> {
       _stop_time = now();
     return elapsedTime();
   }
-  
+
   public long elapsedTime() {
     if (running()) return now() - _start_time;
     if (ended()) return _stop_time - _start_time;
@@ -88,5 +88,5 @@ public class Countdown extends Iced<Countdown> {
   }
 
   private long now() { return System.currentTimeMillis(); }
-  
+
 }

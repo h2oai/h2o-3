@@ -7,10 +7,10 @@ import org.junit.Test;
 import water.DKV;
 import water.Key;
 import water.Lockable;
-import water.Scope;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
+import water.util.Log;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -183,6 +183,45 @@ public class AutoMLTest extends water.TestUtil {
 
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
+
+      // no assertion, we just want to check leaked keys
+    } finally {
+      // Cleanup
+      if(aml!=null) aml.deleteWithChildren();
+      if(fr != null) fr.delete();
+    }
+  }
+
+
+  @Test public void test_individual_model_max_runtime() {
+    AutoML aml=null;
+    Frame fr=null;
+    try {
+      AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+//      fr = parse_test_file("./smalldata/prostate/prostate_complete.csv"); //using slightly larger dataset to make this test useful
+//      autoMLBuildSpec.input_spec.response_column = "CAPSULE";
+      fr = parse_test_file("./smalldata/diabetes/diabetes_text_train.csv"); //using slightly larger dataset to make this test useful
+      autoMLBuildSpec.input_spec.response_column = "diabetesMed";
+      autoMLBuildSpec.input_spec.training_frame = fr._key;
+
+      int max_runtime_secs_per_model = 10;
+      autoMLBuildSpec.build_control.stopping_criteria.set_seed(1);
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_models(5);
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs_per_model(max_runtime_secs_per_model);
+      autoMLBuildSpec.build_control.keep_cross_validation_models = true; //Prevent leaked keys from CV models
+      autoMLBuildSpec.build_control.keep_cross_validation_predictions = false; //Prevent leaked keys from CV predictions
+
+      aml = AutoML.startAutoML(autoMLBuildSpec);
+      aml.get();
+
+      int tolerance = (autoMLBuildSpec.build_control.nfolds + 1) * 2; //generously adding 2s tolerance for each model
+      for (Key<Model> key : aml.leaderboard().getModelKeys()) {
+        Model model = key.get();
+        double duration = model._output._total_run_time / 1e3;
+        assertTrue(key + " took longer than required: "+ duration,
+            duration - max_runtime_secs_per_model < tolerance);
+        model.deleteCrossValidationModels();
+      }
 
       // no assertion, we just want to check leaked keys
     } finally {

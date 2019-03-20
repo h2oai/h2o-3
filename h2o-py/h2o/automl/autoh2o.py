@@ -50,6 +50,7 @@ class H2OAutoML(object):
                  class_sampling_factors=None,
                  max_after_balance_size=5.0,
                  max_runtime_secs=3600,
+                 max_runtime_secs_per_model=None,
                  max_models=None,
                  stopping_metric="AUTO",
                  stopping_tolerance=None,
@@ -74,6 +75,7 @@ class H2OAutoML(object):
         :param float max_after_balance_size: Maximum relative size of the training data after balancing class counts (can be less than 1.0).
           Requires ``balance_classes``. Defaults to ``5.0``.
         :param int max_runtime_secs: This argument controls how long the AutoML run will execute. Defaults to ``3600`` seconds (1 hour).
+        :param int max_runtime_secs_per_model: This argument controls the max time the AutoML run will dedicate to each individual model. Defaults to `0` (disabled).
         :param int max_models: Specify the maximum number of models to build in an AutoML run. (Does not include the Stacked Ensemble models.)
         :param str stopping_metric: Specifies the metric to use for early stopping. Defaults to ``"AUTO"``.
           The available options are:
@@ -161,6 +163,11 @@ class H2OAutoML(object):
         if max_runtime_secs is not 3600:
             assert_is_type(max_runtime_secs, int)
         self.max_runtime_secs = max_runtime_secs
+
+        assert_is_type(max_runtime_secs_per_model, None, int)
+        self.max_runtime_secs_per_model = max_runtime_secs_per_model
+        if self.max_runtime_secs_per_model is not None:
+            self.build_control["stopping_criteria"]["max_runtime_secs_per_model"] = self.max_runtime_secs_per_model
 
         # Add other parameters to build_control if available
         if max_models is not None:

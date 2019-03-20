@@ -29,6 +29,7 @@
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
 #'        balance_classes. Defaults to 5.0.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for the entire model training process. Use 0 to disable. Defaults to 3600 secs (1 hour).
+#' @param max_runtime_secs_per_model Maximum runtime in seconds dedicated to each individual model training process. Use 0 to disable. Defaults to 0.
 #' @param max_models Maximum number of models to build in the AutoML process (does not include Stacked Ensembles). Defaults to NULL.
 #' @param stopping_metric Metric to use for early stopping ("AUTO" is logloss for classification, deviance for regression).
 #'        Must be one of "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error". Defaults to AUTO.
@@ -76,6 +77,7 @@ h2o.automl <- function(x, y, training_frame,
                        class_sampling_factors = NULL,
                        max_after_balance_size = 5.0,
                        max_runtime_secs = 3600,
+                       max_runtime_secs_per_model = NULL,
                        max_models = NULL,
                        stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error"),
                        stopping_tolerance = NULL,
@@ -189,6 +191,9 @@ h2o.automl <- function(x, y, training_frame,
 
   # Update build_control list with top level build control args
   build_control <- list(stopping_criteria = list(max_runtime_secs = max_runtime_secs))
+  if (!is.null(max_runtime_secs_per_model)) {
+      build_control$stopping_criteria$max_runtime_secs_per_model <- max_runtime_secs_per_model
+  }
   if (!is.null(max_models)) {
     build_control$stopping_criteria$max_models <- max_models
   }
