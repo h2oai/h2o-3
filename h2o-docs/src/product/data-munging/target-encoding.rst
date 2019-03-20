@@ -37,13 +37,13 @@ In this topic, we will try using target encoding to improve our model performanc
 Train Baseline Model
 ~~~~~~~~~~~~~~~~~~~~
 
+The examples below show how to train a baseline model. 
 
 .. example-code::
    .. code-block:: r
 
     library(h2o)
     h2o.init()
-    h2o.no_progress()
 
     # Start by training a model using the original data. 
     # Below we import our data into the H2O cluster.
@@ -103,7 +103,6 @@ Train Baseline Model
 
     # Now train the baseline model. 
     # We will train a GBM model with early stopping.
-
     from h2o.estimators.gbm import H2OGradientBoostingEstimator
     predictors = ["loan_amnt", "int_rate", "emp_length", "annual_inc", "dti", 
                   "delinq_2yrs", "revol_util", "total_acc", "longest_credit_length",
@@ -134,9 +133,7 @@ Train Baseline Model
     0.707018686126265
 
 
-Our training data has much higher AUC than our validation data.
-
-The variables with the greatest importance are ``int_rate``, ``addr_state``, ``annual_inc``, and ``term``. It makes sense that the ``int_rate`` has such high variable importance because this is related to loan default, but it is surprising that ``addr_state`` has such high variable importance. The high variable importance could be because our model is memorizing the training data through this high cardinality categorical column.
+Our training data has much higher AUC than our validation data. Review the Variable Importance values to see the variables with the greatest importance.
 
 .. example-code::
    .. code-block:: r
@@ -153,6 +150,8 @@ The variables with the greatest importance are ``int_rate``, ``addr_state``, ``a
    :alt: GBM Variable importance - first run
    :height: 348
    :width: 325
+
+The variables with the greatest importance are ``int_rate``, ``addr_state``, ``annual_inc``, and ``term``. It makes sense that the ``int_rate`` has such high variable importance because this is related to loan default, but it is surprising that ``addr_state`` has such high variable importance. The high variable importance could be because our model is memorizing the training data through this high cardinality categorical column.
 
 See if the AUC improves on the test data if we remove the ``addr_state`` predictor. This can indicate that the model is memorizing the training data.
 
@@ -217,7 +216,6 @@ Now we will perform target encoding on ``addr_state`` to see if this representat
 
 Target encoding in H2O-3 is performed in two steps:
 
-
 1. Create (fit) a target encoding map. This will contain the sum of the response column and the count. This can include an optional ``fold_column``. 
 2. Transform a target encoding map. The target encoding map is applied to the data by adding new columns with the target encoding values.
 
@@ -226,7 +224,7 @@ Target encoding in H2O-3 is performed in two steps:
  -  ``holdout_type``: Specify whether or not a holdout should be used in constructing the target average. This can help prevent overfitting. Options include ``kfold``, ``loo``, and ``none``. 
  -  ``blended_avg``: Specify whether to perform a blended average. This can help prevent overfitting.
  -  ``noise``: Specify whether to include random noise to the average. This can help prevent overfitting.
- -  ``fold_column``: Specify the name or column index of the fold column in the data. This defaults to NULL (no `fold_column`). This option is only required if `holdout_type = "KFold"`.
+ -  ``fold_column``: Specify the name or column index of the fold column in the data. This defaults to NULL (no ``fold_column``). This option is only required if ``holdout_type = "KFold"``.
  -  ``seed``: Specify a random seed used to generate draws from the uniform distribution for random noise. Defaults to -1.
 
 Holdout Type
