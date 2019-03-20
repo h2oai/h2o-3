@@ -107,6 +107,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/stopping_metric
    data-science/algo-params/stopping_rounds
    data-science/algo-params/stopping_tolerance
+   data-science/algo-params/theta
    data-science/algo-params/ties
    data-science/algo-params/training_frame
    data-science/algo-params/transform
