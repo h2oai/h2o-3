@@ -536,12 +536,12 @@ Hadoop Launch Parameters
 -  ``-proxy``: Enables Proxy mode.
 -  ``-report_hostname``: This flag allows the user to specify the machine hostname instead of the IP address when launching H2O Flow. This option can only be used when H2O on Hadoop is started in Proxy mode (with ``-proxy``).
 
-    **JVM arguments**
+**JVM arguments**
 
--  ``-ea``: Enable assertions to verify boolean expressions for error detection.
--  ``-verbose:gc``: Include heap and garbage collection information in the logs. Deprecated in Java 9, removed in Java 10.
--  ``-XX:+PrintGCDetails``: Include a short message after each garbage collection. Deprecated in Java 9, removed in Java 10.
--  ``-Xlog:gc=info``: Prints garbage collection information into the logs. Introduced in Java 9. Usage enforced since Java 10. A replacement for ``-verbose:gc`` and ``-XX:+PrintGCDetails`` tags which are deprecated in Java 9 and removed in Java 10.
+ -  ``-ea``: Enable assertions to verify boolean expressions for error detection.
+ -  ``-verbose:gc``: Include heap and garbage collection information in the logs. Deprecated in Java 9, removed in Java 10.
+ -  ``-XX:+PrintGCDetails``: Include a short message after each garbage collection. Deprecated in Java 9, removed in Java 10.
+ -  ``-Xlog:gc=info``: Prints garbage collection information into the logs. Introduced in Java 9. Usage enforced since Java 10. A replacement for ``-verbose:gc`` and ``-XX:+PrintGCDetails`` tags which are deprecated in Java 9 and removed in Java 10.
 
 Accessing S3 Data from Hadoop
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -859,15 +859,15 @@ You can also view the IP address (``192.168.99.100`` in the example below) by sc
 After obtaining the IP address, point your browser to the specified ip address and port to open Flow. In R and Python, you can access the instance by installing the latest version of the H2O R or Python package and then initializing H2O:
 
 
-  .. example-code::
-     .. code-block:: r
+.. example-code::
+   .. code-block:: r
 
-      # Initialize H2O
-      library(h2o)
-      dockerH2O <- h2o.init(ip = "192.168.59.103", port = 54321)
+    # Initialize H2O
+    library(h2o)
+    dockerH2O <- h2o.init(ip = "192.168.59.103", port = 54321)
 
-     .. code-block:: python
+   .. code-block:: python
 
-      # Initialize H2O 
-      import h2o
-      docker_h2o = h2o.init(ip = "192.168.59.103", port = 54321) 
+    # Initialize H2O 
+    import h2o
+    docker_h2o = h2o.init(ip = "192.168.59.103", port = 54321) 
