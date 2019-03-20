@@ -11,7 +11,7 @@
 #'
 #' @param ip Object of class \code{character} representing the IP address of the server where H2O is running.
 #' @param port Object of class \code{numeric} representing the port number of the H2O server.
-#' @param name (Optional) A \code{character} string representing the H2O cloud name.
+#' @param name (Optional) A \code{character} string representing the H2O cluster name.
 #' @param startH2O (Optional) A \code{logical} value indicating whether to try to start H2O from R if no connection with H2O is detected. This is only possible if \code{ip = "localhost"} or \code{ip = "127.0.0.1"}.  If an existing connection is detected, R does not start H2O.
 #' @param forceDL (Optional) A \code{logical} value indicating whether to force download of the H2O executable. Defaults to FALSE, so the executable will only be downloaded if it does not already exist in the h2o R library resources directory \code{h2o/java/h2o.jar}.  This value is only used when R starts H2O.
 #' @param enable_assertions (Optional) A \code{logical} value indicating whether H2O should be launched with assertions enabled. Used mainly for error checking and debugging purposes.  This value is only used when R starts H2O.
@@ -353,7 +353,7 @@ h2o.getConnection <- function() {
 #' @note Users must call h2o.shutdown explicitly in order to shut down the local H2O instance started by R. If R is closed before H2O, then an attempt will be made to automatically shut down H2O. This only applies to local instances started with h2o.init, not remote H2O servers.
 #' @seealso \code{\link{h2o.init}}
 #' @examples
-#' # Don't run automatically to prevent accidentally shutting down a cloud
+#' # Don't run automatically to prevent accidentally shutting down a cluster
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
@@ -387,7 +387,7 @@ h2o.shutdown <- function(prompt = TRUE) {
 # **** TODO: This isn't really a cluster status... it's a node status check for the node we're connected to.
 # This is possibly confusing because this can come back without warning,
 # but if a user tries to do any remoteSend, they will get a "cloud sick warning"
-# Suggest cribbing the code from Internal.R that checks cloud status (or just call it here?)
+# Suggest cribbing the code from Internal.R that checks cluster status (or just call it here?)
 
 #' Return the status of the cluster
 #'

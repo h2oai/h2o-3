@@ -348,7 +348,7 @@ REST APIs are generated immediately out of the code, allowing users to implement
 Java Users
 --------------
 
-For Java developers, the following resources will help you create your own custom app that uses H2O.
+H2O-3 is supported with Java 7 and later. For Java developers, the following resources will help you create your own custom app that uses H2O.
 
 -  `H2O Core Java Developer Documentation <../h2o-core/javadoc/index.html>`_: The definitive Java API guide
    for the core components of H2O.
@@ -488,9 +488,9 @@ The following steps show you how to download or build H2O with Hadoop and the pa
 
    -  *nodes* is the number of nodes requested to form the cluster.
 
-   -  *output* is the name of the directory created each time a H2O cloud is created so it is necessary for the name to be unique each time it is launched.
+   -  *output* is the name of the directory created each time a H2O cluster is created so it is necessary for the name to be unique each time it is launched.
 
-4. To monitor your job, direct your web browser to your standard job tracker Web UI. To access H2O's Web UI, direct your web browser to one of the launched instances. If you are unsure where your JVM is launched, review the output from your command after the nodes has clouded up and formed a cluster. Any of the nodes' IP addresses will work as there is no master node.
+4. To monitor your job, direct your web browser to your standard job tracker Web UI. To access H2O's Web UI, direct your web browser to one of the launched instances. If you are unsure where your JVM is launched, review the output from your command after the nodes have clouded up and formed a cluster. Any of the nodes' IP addresses will work as there is no master node.
 
    ::
 
@@ -523,7 +523,7 @@ Hadoop Launch Parameters
 
     **Note**: For Qubole users who include the ``-disown`` flag, if your cluster is dying right after launch, add ``-Dmapred.jobclient.killjob.onexit=false`` as a launch parameter.
 
--  ``-notify <notification file name>``: Specify a file to write when the cluster is up. The file contains the IP and port of the embedded web server for one of the nodes in the cluster. All mappers must start before the H2O cloud is considered "up".
+-  ``-notify <notification file name>``: Specify a file to write when the cluster is up. The file contains the IP and port of the embedded web server for one of the nodes in the cluster. All mappers must start before the H2O cluster is considered "up".
 -  ``-mapperXmx <per mapper Java Xmx heap size>``: Specify the amount of memory to allocate to H2O (at least 6g).
 -  ``-extramempercent``: Specify the extra memory for internal JVM use outside of the Java heap. This is a percentage of ``mapperXmx``. **Recommendation**: Set this to a high value when running XGBoost, for example, 120. 
 -  ``-n | -nodes <number of H2O nodes>``: Specify the number of nodes.

@@ -85,8 +85,8 @@ The ``cbind`` function allows you to combine datasets by adding columns from one
 
 	[10 rows x 4 columns]
 	
-	# Generate a second random dataset with 10 rows and 1 column. 
-	# Label the columns, Y and D.
+	# Generate a second random dataset with 10 rows and 2 columns. 
+	# Label the columns, Y and Z.
 	cols2_df = h2o.H2OFrame.from_python(np.random.randn(10,2).tolist(), column_names=list('YZ'))
 	cols2_df.describe
 	         Y           Z

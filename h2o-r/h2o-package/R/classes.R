@@ -24,7 +24,7 @@ if (inherits(try(getRefClass("H2OConnectionMutableState"), silent = TRUE), "try-
 #'
 #' The H2OConnectionMutableState class
 #'
-#' This class represents the mutable aspects of a connection to an H2O cloud.
+#' This class represents the mutable aspects of a connection to an H2O cluster.
 #'
 #' @name H2OConnectionMutableState
 #' @slot session_id A \code{character} string specifying the H2O session identifier.
@@ -43,7 +43,7 @@ setRefClass("H2OConnectionMutableState",
 #'
 #' The H2OConnection class.
 #'
-#' This class represents a connection to an H2O cloud.
+#' This class represents a connection to an H2O cluster.
 #'
 #' Because H2O is not a master-slave architecture, there is no restriction on which H2O node
 #' is used to establish the connection between R (the client) and H2O (the server).
@@ -52,10 +52,10 @@ setRefClass("H2OConnectionMutableState",
 #' the `ip` and `port` of the machine running an instance to connect with. The default behavior
 #' is to connect with a local instance of H2O at port 54321, or to boot a new local instance if one
 #' is not found at port 54321.
-#' @slot ip A \code{character} string specifying the IP address of the H2O cloud.
-#' @slot port A \code{numeric} value specifying the port number of the H2O cloud.
-#' @slot name A \code{character} value specifying the cloud name of the H2O cloud.
-#' @slot proxy A \code{character} specifying the proxy path of the H2O cloud.
+#' @slot ip A \code{character} string specifying the IP address of the H2O cluster.
+#' @slot port A \code{numeric} value specifying the port number of the H2O cluster.
+#' @slot name A \code{character} value specifying the name of the H2O cluster.
+#' @slot proxy A \code{character} specifying the proxy path of the H2O cluster.
 #' @slot https Set this to TRUE to use https instead of http.
 #' @slot insecure Set this to TRUE to disable SSL certificate checking.
 #' @slot username Username to login with.
@@ -102,10 +102,10 @@ setMethod("show", "H2OConnection", function(object) {
 #'
 #' This virtual class represents a model built by H2O.
 #'
-#' This object has slots for the key, which is a character string that points to the model key existing in the H2O cloud,
+#' This object has slots for the key, which is a character string that points to the model key existing in the H2O cluster,
 #' the data used to build the model (an object of class H2OFrame).
 #'
-#' @slot model_id A \code{character} string specifying the key for the model fit in the H2O cloud's key-value store.
+#' @slot model_id A \code{character} string specifying the key for the model fit in the H2O cluster's key-value store.
 #' @slot algorithm A \code{character} string specifying the algorithm that were used to fit the model.
 #' @slot parameters A \code{list} containing the parameter settings that were used to fit the model that differ from the defaults.
 #' @slot allparameters A \code{list} containg all parameters used to fit the model.
@@ -265,10 +265,10 @@ setClass("H2ORegressionModel",  contains="H2OModel")
 #'
 #' This virtual class represents a clustering model built by H2O.
 #'
-#' This object has slots for the key, which is a character string that points to the model key existing in the H2O cloud,
+#' This object has slots for the key, which is a character string that points to the model key existing in the H2O cluster,
 #' the data used to build the model (an object of class H2OFrame).
 #'
-#' @slot model_id A \code{character} string specifying the key for the model fit in the H2O cloud's key-value store.
+#' @slot model_id A \code{character} string specifying the key for the model fit in the H2O cluster's key-value store.
 #' @slot algorithm A \code{character} string specifying the algorithm that was used to fit the model.
 #' @slot parameters A \code{list} containing the parameter settings that were used to fit the model that differ from the defaults.
 #' @slot allparameters A \code{list} containing all parameters used to fit the model.

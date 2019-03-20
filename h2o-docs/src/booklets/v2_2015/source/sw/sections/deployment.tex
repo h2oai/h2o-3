@@ -175,7 +175,7 @@ This will allow you to use the Flow UI.
 \item The jar file is located in the sparkling water zip file at the following location: `assembly/build/libs/sparkling-water-assembly\_*-all.jar`
 \item Attach the Sparkling Water library to the cluster.
 \item Create a new Scala notebook.
-\item Create an H2O cloud inside the Spark cluster:
+\item Create an H2O cluster inside the Spark cluster:
 \begin{lstlisting}[style=Scala]
 import org.apache.spark.h2o._
 val h2oConf = new H2OConf(spark).set("spark.ui.enabled", "false")
@@ -204,7 +204,7 @@ You can access Flow by going to localhost:54321.
 \item Create libraries for the following python modules: request, tabulate, future and colorama.
 \item Attach the PySparkling library and python modules to the cluster.
 \item Create a new python notebook.
-\item Create an H2O cloud inside the Spark cluster:
+\item Create an H2O cluster inside the Spark cluster:
 \begin{lstlisting}[style=Python]
 from pysparkling import *
 h2oConf = H2OConf(spark).set("spark.ui.enabled", "false")

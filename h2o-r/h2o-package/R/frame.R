@@ -1340,19 +1340,19 @@ h2o.as_date <- function(x, format, ...) {
 #' @export
 as.Date.H2OFrame <- h2o.as_date
 
-#' Set the Time Zone on the H2O Cloud
+#' Set the Time Zone on the H2O cluster
 #'
 #' @param tz The desired timezone.
 #' @export
 h2o.setTimezone <- function(tz) .eval.scalar(.newExpr("setTimeZone",.quote(tz)))
 
-#' Get the Time Zone on the H2O Cloud
+#' Get the Time Zone on the H2O cluster
 #' Returns a string
 #'
 #' @export
 h2o.getTimezone <- function() .eval.scalar(.newExpr("getTimeZone"))
 
-#' List all of the Time Zones Acceptable by the H2O Cloud.
+#' List all of the Time Zones Acceptable by the H2O cluster.
 #'
 #' @export
 h2o.listTimezones <- function() .fetch.data(.newExpr("listTimeZones"),1000L)
@@ -3192,7 +3192,7 @@ use.package <- function(package,
 #'
 #' Create H2OFrame
 #'
-#' Import R object to the H2O cloud.
+#' Import R object to the H2O cluster.
 #'
 #' @param x An \code{R} object.
 #' @param destination_frame A string with the desired name for the H2OFrame.

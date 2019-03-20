@@ -103,8 +103,8 @@ and the parameters involved in launching H2O from the command line.
 
    -  *nodes* is the number of nodes requested to form the cluster.
 
-   -  *output* is the name of the directory created each time a H2O
-      cloud is created so it is necessary for the name to be unique each
+   -  *output* is the name of the directory created each time an H2O
+      cluster is created so it is necessary for the name to be unique each
       time it is launched.
 
 4. To monitor your job, direct your web browser to your standard job
@@ -161,7 +161,7 @@ Hadoop Launch Parameters
 -  ``-notify <notification file name>``: Specify a file to write when
    the cluster is up. The file contains the IP and port of the embedded
    web server for one of the nodes in the cluster. All mappers must
-   start before the H2O cloud is considered "up".
+   start before the H2O cluster is considered "up".
 -  ``-mapperXmx <per mapper Java Xmx heap size>``: Specify the amount of
    memory to allocate to H2O (at least 6g).
 -  ``-extramempercent <0-20>``: Specify the extra memory for internal

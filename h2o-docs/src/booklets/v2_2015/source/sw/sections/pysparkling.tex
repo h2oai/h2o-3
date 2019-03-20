@@ -2,8 +2,8 @@
 
 PySparkling Water is an integration of Python with Sparkling water. It allows the user to start H2O services on a spark cluster from Python API.
 
-In the PySparkling Water driver program, the \texttt{SparkContext} or \texttt{SparkSession} uses Py4J to start the driver JVM, and the JAVA \texttt{SparkContext}/\texttt{SparkSession} is used to create \texttt{H2OContext} (hc). This in turn starts the H2O cloud in the Spark ecosystem. (In Internal backend only. In external backend, the H2O cloud is running outside of the Spark cluster.)
-Once the H2O cluster is up, the H2O-Python package is used to interact with the cloud and run H2O algorithms. All pure H2O calls are executed via H2O's REST API interface. Users can easily integrate their regular PySpark workflow with H2O algorithms using PySparkling Water.
+In the PySparkling Water driver program, the \texttt{SparkContext} or \texttt{SparkSession} uses Py4J to start the driver JVM, and the JAVA \texttt{SparkContext}/\texttt{SparkSession} is used to create \texttt{H2OContext} (hc). This in turn starts the H2O cluster in the Spark ecosystem. (In Internal backend only. In external backend, the H2O cluster is running outside of the Spark cluster.)
+Once the H2O cluster is up, the H2O-Python package is used to interact with the cluster and run H2O algorithms. All pure H2O calls are executed via H2O's REST API interface. Users can easily integrate their regular PySpark workflow with H2O algorithms using PySparkling Water.
 
 PySparkling Water programs can be launched as an application, or in an interactive shell, or notebook environment.
 
@@ -46,7 +46,7 @@ Or start a notebook:
 PYSPARK_DRIVER_PYTHON="ipython" PYSPARK_DRIVER_PYTHON_OPTS="notebook" bin/pysparkling
 \end{lstlisting}
 
-\item Create an H2O cloud inside the Spark cluster and import H2O-Python package:
+\item Create an H2O cluster inside the Spark cluster and import H2O-Python package:
 
 \begin{lstlisting}[style=Python]
 from pysparkling import *
@@ -71,7 +71,7 @@ export SPARKLING_HOME="/path/to/SparklingWater/installation"
 $SPARKLING_HOME/bin/pysparkling --num-executors 3 --executor-memory 20g --executor-cores 10 --driver-memory 20g --master yarn --deploy-mode client
 \end{lstlisting}
     
-Then create an H2O cloud inside the Spark cluster and import H2O-Python package:
+Then create an H2O cluster inside the Spark cluster and import H2O-Python package:
 \begin{lstlisting}[style=Python]
 from pysparkling import *
 hc = H2OContext.getOrCreate(spark)

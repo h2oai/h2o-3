@@ -155,9 +155,9 @@ def init(url=None, ip=None, port=None, name=None, https=None, insecure=None, use
     :param url: Full URL of the server to connect to (can be used instead of `ip` + `port` + `https`).
     :param ip: The ip address (or host name) of the server where H2O is running.
     :param port: Port number that H2O service is listening to.
-    :param name: cloud name. If None while connecting to an existing cluster it will not check the cloud name.
-                 If set then will connect only if the target cloud name matches. If no instance is found and decides to start a local
-                 one then this will be used as the cloud name or a random one will be generated if set to None.
+    :param name: Cluster name. If None while connecting to an existing cluster it will not check the cluster name.
+                 If set then will connect only if the target cluster name matches. If no instance is found and decides to start a local
+                 one then this will be used as the cluster name or a random one will be generated if set to None.
     :param https: Set to True to connect via https:// instead of http://.
     :param insecure: When using https, setting this to True will disable SSL certificates verification.
     :param username: Username and
@@ -1109,7 +1109,7 @@ def export_file(frame, path, force=False, parts=1):
 
 
 def cluster():
-    """Return :class:`H2OCluster` object describing the backend H2O cloud."""
+    """Return :class:`H2OCluster` object describing the backend H2O cluster."""
     return h2oconn.cluster if h2oconn else None
 
 

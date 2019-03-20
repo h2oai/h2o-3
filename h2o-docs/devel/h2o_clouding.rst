@@ -1,7 +1,7 @@
-H2O Clouding Behaviour
-----------------------
+H2O Clustering Behaviour
+------------------------
 
-The purpose of this document is to document the behaviour of H2O clouding process. In H2O, there are two ways how a
+The purpose of this document is to document the behaviour of H2O clustering process. In H2O, there are two ways how a
 cluster can be created:
 
 - **multicast discovery**
@@ -39,7 +39,7 @@ cluster isolation.
 This also applies to stopping the H2O cluster, which means that it is not possible for a node from different cluster to kill
 different cluster. The kill request needs to come from the same cluster.
 
-The H2O cloud consist of H2O worker nodes, which needs to remain available during the whole lifetime of the cluster. The cluster
+The H2O cluster consist of H2O worker nodes, which needs to remain available during the whole lifetime of the cluster. The cluster
 can also have H2O clients connected to it. They are not part of the cluster and are not used for the distributed computations.
 The clients can be used to drive the computation on the worker nodes. For example, the major usage of H2O client is in Sparkling Water.
 
@@ -64,14 +64,14 @@ The network initialization is specified in the ``H2O.startLocalNode`` static met
 
 The ``startLocalNode`` method further:
 
-- initializes the heartbeat with cloud name and bunch of other required properties so we can be sure we communicate only with the nodes in the same cluster
+- initializes the heartbeat with cluster name and bunch of other required properties so we can be sure we communicate only with the nodes in the same cluster
 - in case of the node is client (``-client``), we report ourselves as the client to ourselves. This is important for the consistency in cases
   we need perform some operations on all the clients, including me.
 
 The network communication is initialized in the ``H2O.startNetworkServices`` method. This method starts the sockets and starts listening on
 the defined ports. However we still don't send any heartbeats so the different nodes can't still hear from us. The next step is to announce ourselves
  in the ``Paxos.doHeartbeat`` method which, at this point, creates a cluster of size 1. The final step
-is to start the heartbeat thread so the rest of the nodes can hear from us and the cloud can be created.
+is to start the heartbeat thread so the rest of the nodes can hear from us and the cluster can be created.
 
 Clouding
 ~~~~~~~~

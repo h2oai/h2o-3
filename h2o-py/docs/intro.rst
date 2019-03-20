@@ -61,7 +61,7 @@ various objects of the H2O ecosystem. Some shared objects are mutable by the cli
 some shared objects are read-only by the client, but are mutable by H2O (e.g. a model
 being constructed will change over time); and actions by the client may have side-effects
 on other clients (multi-tenancy is not a supported model of use, but it is possible for
-multiple clients to attach to a single H2O cloud).
+multiple clients to attach to a single H2O cluster).
 
 Briefly, these objects are:
 
@@ -88,7 +88,7 @@ manipulation of a distributed system.
 H2O Cluster Inspection
 ----------------------
 
-There are many tools for directly interacting with user-visible objects in the H2O cloud.
+There are many tools for directly interacting with user-visible objects in the H2O cluster.
 Every new python session begins by initializing a connection between the python client and
 the H2O cluster:
 
@@ -208,7 +208,7 @@ The set of operations on an H2OFrame is described in a dedicated chapter, but
 in general, this set of operations closely resembles those that may be
 performed on an R data.frame. This includes all types of slicing (with complex
 conditionals), broadcasting operations, and a slew of math operations for transforming and
-mutating a Frame -- all the while the actual Big Data is sitting in the H2O cloud. The
+mutating a Frame -- all the while the actual Big Data is sitting in the H2O cluster. The
 semantics for modifying a Frame closely resemble R's copy-on-modify semantics, except
 when it comes to mutating a Frame in place. For example, it's possible to assign all
 occurrences of the number `0` in a column to missing (or `NA` in R parlance) as
@@ -244,7 +244,7 @@ all dependent subparts composing `a` are also evaluated.
 
 This module relies on reference counting of python objects to dispose of
 out-of-scope objects. The ExprNode class destroys objects and their big data
-counterparts in the H2O cloud using a remove call:
+counterparts in the H2O cluster using a remove call:
 
   >>> fr = h2o.import_file(path="smalldata/logreg/prostate.csv")   # import prostate data
   >>>
