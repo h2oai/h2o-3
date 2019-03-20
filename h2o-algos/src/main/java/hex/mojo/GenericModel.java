@@ -1,29 +1,42 @@
 package hex.mojo;
 
 import hex.*;
+import hex.genmodel.ModelMojoReader;
 import hex.genmodel.MojoModel;
+import hex.genmodel.MojoReaderBackend;
+import hex.genmodel.MojoReaderBackendFactory;
 import hex.genmodel.algos.kmeans.KMeansMojoModel;
 import hex.tree.isofor.ModelMetricsAnomaly;
 import water.H2O;
 import water.Key;
 import water.fvec.ByteVec;
 
+import java.io.IOException;
+
 public class GenericModel extends Model<GenericModel, GenericModelParameters, GenericModelOutput> {
-    
-    private final MojoModel _mojoModel;
-    private final ByteVec _mojoBytes;
+
+    private transient MojoModel _mojoModel;
+    private ByteVec _mojoBytes;
     
     /**
      * Full constructor
      *
-     * @param selfKey
-     * @param parms
-     * @param output
      */
     public GenericModel(Key<GenericModel> selfKey, GenericModelParameters parms, GenericModelOutput output, MojoModel mojoModel, ByteVec mojoBytes) {
         super(selfKey, parms, output);
-        _mojoModel = mojoModel;
         _mojoBytes = mojoBytes;
+        _mojoModel = mojoModel;
+        _output = new GenericModelOutput(_mojoModel._modelDescriptor);
+
+    }
+
+    private static MojoModel reconstructMojo(ByteVec mojoBytes) {
+        try {
+            final MojoReaderBackend readerBackend = MojoReaderBackendFactory.createReaderBackend(mojoBytes.openStream(null), MojoReaderBackendFactory.CachingStrategy.MEMORY);
+            return ModelMojoReader.readFrom(readerBackend, true);
+        } catch (IOException e) {
+            throw new IllegalStateException("Unreachable MOJO file: " + mojoBytes._key, e);
+        }
     }
 
     @Override
@@ -58,6 +71,10 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
     
     @Override
     protected double[] score0(double[] data, double[] preds) {
+        if (_mojoModel == null) {
+            assert _mojoBytes != null;
+            _mojoModel = reconstructMojo(_mojoBytes);
+        }
         return _mojoModel.score0(data,preds);
     }
 

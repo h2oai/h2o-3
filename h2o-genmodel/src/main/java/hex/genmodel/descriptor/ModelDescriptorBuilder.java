@@ -6,7 +6,7 @@ import hex.genmodel.MojoModel;
 
 import java.io.Serializable;
 
-public class ModelDescriptorBuilder implements Serializable {
+public class ModelDescriptorBuilder {
     // Mandatory
     private final String _h2oVersion;
     private final hex.ModelCategory _category;

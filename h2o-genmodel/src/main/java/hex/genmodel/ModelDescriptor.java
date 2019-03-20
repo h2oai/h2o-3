@@ -6,7 +6,7 @@ import hex.genmodel.descriptor.VariableImportances;
 
 import java.io.Serializable;
 
-public interface ModelDescriptor extends Serializable {
+public interface ModelDescriptor {
 
   String[][] scoringDomains();
 

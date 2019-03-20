@@ -9,7 +9,7 @@ import java.util.Objects;
  * A two-dimensional table capable of containing generic values in each cell.
  * Useful for description of various models.
  */
-public class Table implements Serializable {
+public class Table {
     private String _tableHeader;
     private String _tableDescription;
     private String[] _rowHeaders;

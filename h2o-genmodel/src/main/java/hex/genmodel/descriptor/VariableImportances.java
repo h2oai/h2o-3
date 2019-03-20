@@ -6,7 +6,7 @@ import java.io.Serializable;
  * Represents model's variables and their relative importances in the model.
  * The structure is model-independent.
  */
-public class VariableImportances implements Serializable {
+public class VariableImportances {
 
     public final String[] _variables;
     public final double[] _importances;
