@@ -186,6 +186,18 @@ public class TargetEncoderFrameHelper {
     return frame;
   }
 
+  public static double[] frameRowAsArray(Frame frame, int rowIdx, String[] columnsToIgnore) {
+    Frame row = frame.deepSlice(new long[]{rowIdx}, null);
+    for (String columnName : columnsToIgnore) {
+      row.remove(columnName).remove();
+    }
+    double[] data = new double[row.numCols()];
+    for (int i = 0; i < row.numCols(); i++) {
+      data[i] = row.vec(i).at(0);
+    }
+    return data;
+  }
+
   /**
    * @return Frame that is registered in DKV
    */

@@ -1814,6 +1814,13 @@ public class ArrayUtils {
     return res;
   }
 
+  public static Double[] box(double[] arr) {
+    Double[] res = new Double[arr.length];
+    for (int i = 0; i < arr.length; i++)
+      res[i] = arr[i];
+    return res;
+  }
+
   /**
    * Convert an ArrayList of Integers to a primitive int[] array.
    */
@@ -1858,5 +1865,43 @@ public class ArrayUtils {
       ary[i] = ints[i];
     return ary;
   }
+
+  public static int hashArray(int[] ar) {
+    Integer[] hashMe = new Integer[ar.length];
+    for (int i = 0; i < ar.length; i++)
+      hashMe[i] = ar[i];
+    return Arrays.deepHashCode(hashMe);
+  }
+  
+  public static int hashArray(double[] ar) {
+    Double[] hashMe = new Double[ar.length];
+    for (int i = 0; i < ar.length; i++)
+      hashMe[i] = ar[i];
+    return Arrays.deepHashCode(hashMe);
+  }
+
+  public static double mean(Double[] ar) {
+    double sum = 0.0;
+    for (int i = 0; i < ar.length; i++)
+      sum += ar[i];
+    return sum / ar.length;
+  }
+
+  /**
+   * Population variance
+   */
+  public static double variance(Double[] ar) {
+    double mean = mean(ar);
+    double sumOfSquaredDifferences = 0.0;
+    for (int i = 0; i < ar.length; i++) {
+      sumOfSquaredDifferences += Math.pow(mean - ar[i], 2);
+    }
+    return sumOfSquaredDifferences / ar.length;
+  }
+  
+  public static double standardDeviation(Double[] ar) {
+    return Math.sqrt(variance(ar));
+  }
+  
 
 }
