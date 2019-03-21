@@ -14,6 +14,7 @@ The GLM suite includes:
 -  Multinomial classification
 -  Gamma regression
 -  Ordinal regression
+-  Negative Binomial regression
 
 Defining a GLM Model
 ~~~~~~~~~~~~~~~~~~~~
@@ -66,20 +67,23 @@ Defining a GLM Model
 
 -  `family <algo-params/family.html>`__: Specify the model type.
 
-   -  If the family is **gaussian**, the data must be numeric (**Real** or **Int**).
-   -  If the family is **binomial**, the data must be categorical 2 levels/classes or binary (**Enum** or **Int**).
-   -  If the family is **multinomial**, the data can be categorical with more than two levels/classes (**Enum**).
-   -  If the family is **ordinal**, the data must be categorical with at least 3 levels.
-   -  If the family is **quasibinomial**, the data must be numeric.
-   -  If the family is **poisson**, the data must be numeric and non-negative (**Int**).
-   -  If the family is **gamma**, the data must be numeric and continuous and positive (**Real** or **Int**).
-   -  If the family is **tweedie**, the data must be numeric and continuous (**Real**) and non-negative.
+   -  If the family is **gaussian**, the response must be numeric (**Real** or **Int**). (default)
+   -  If the family is **binomial**, the response must be categorical 2 levels/classes or binary (**Enum** or **Int**).
+   -  If the family is **multinomial**, the response can be categorical with more than two levels/classes (**Enum**).
+   -  If the family is **ordinal**, the response must be categorical with at least 3 levels.
+   -  If the family is **quasibinomial**, the response must be numeric.
+   -  If the family is **poisson**, the response must be numeric and non-negative (**Int**).
+   -  If the family is **negativebinomial**, the response must be numeric and non-negative (**Int**).
+   -  If the family is **gamma**, the response must be numeric and continuous and positive (**Real** or **Int**).
+   -  If the family is **tweedie**, the response must be numeric and continuous (**Real**) and non-negative.
 
 -  `tweedie_variance_power <algo-params/tweedie_variance_power.html>`__: (Only applicable if *Tweedie* is
    specified for **Family**) Specify the Tweedie variance power.
 
 -  `tweedie_link_power <algo-params/tweedie_link_power.html>`__: (Only applicable if *Tweedie* is specified
    for **Family**) Specify the Tweedie link power.
+
+-  `theta <algo-params/theta.html>`__: Theta value (equal to 1/r) for use with the negative binomial family. This value must be > 0 and defaults to 1e-10.  
 
 -  `solver <algo-params/solver.html>`__: Specify the solver to use (AUTO, IRLSM, L_BFGS, COORDINATE_DESCENT_NAIVE, COORDINATE_DESCENT, GRADIENT_DESCENT_LH, or GRADIENT_DESCENT_SQERR). IRLSM is fast on problems with a small number of predictors and for lambda search with L1 penalty, while `L_BFGS <http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf>`__ scales better for datasets with many columns. COORDINATE_DESCENT is IRLSM with the covariance updates version of cyclical coordinate descent in the innermost loop. COORDINATE_DESCENT_NAIVE is IRLSM with the naive updates version of cyclical coordinate descent in the innermost loop. GRADIENT_DESCENT_LH and GRADIENT_DESCENT_SQERR can only be used with the Ordinal family.
 
@@ -122,7 +126,8 @@ Defining a GLM Model
    -  If the family is **Tweedie**, then only **Tweedie** is supported.
    -  If the family is **Multinomial**, then only **Family_Default** is supported. (This defaults to ``multinomial``.)
    -  If the family is **Quasibinomial**, then only **Logit** is supported.
-   -  If the family is **Ordinal**, then only **Ologit**, **Oprobit**, and **Ologlog** are supported.
+   -  If the family is **Ordinal**, then only **Ologit**, **Oprobit**, and **Ologlog** are supported. (Note that only Ologit is available for Ordinal regression.)
+   -  If the family is **Negative Binomial**, then only **Log** and **Identity** are supported.
 
 -  `prior <algo-params/prior.html>`__: Specify prior probability for p(y==1). Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. This value defaults to -1 and must be a value in the range (0,1).
    
@@ -198,14 +203,15 @@ Families
 
 The ``family`` option specifies a probability distribution from an exponential family. You can specify one of the following, based on the response column type:
 
-- ``gaussian``: The data must be numeric (Real or Int). This is the default family.
-- ``binomial``: The data must be categorical 2 levels/classes or binary (Enum or Int).
-- ``multinomial``: The data can be categorical with more than two levels/classes (Enum).
-- ``ordinal``: Requires a categorical response with at least 3 levels. (For 2-class problems use family="binomial".)
-- ``quasibinomial``: The data must be numeric.
-- ``poisson``: The data must be numeric and non-negative (Int).
-- ``gamma``: The data must be numeric and continuous and positive (Real or Int).
-- ``tweedie``: The data must be numeric and continuous (Real) and non-negative.
+- ``gaussian``: (See `Linear Regression (Gaussian Family)`_.) The response must be numeric (Real or Int). This is the default family.
+- ``binomial``: (See `Logistic Regression (Binomial Family)`_). The response must be categorical 2 levels/classes or binary (Enum or Int).
+- ``ordinal``: (See `Logistic Ordinal Regression (Ordinal Family)`_). Requires a categorical response with at least 3 levels. (For 2-class problems, use family="binomial".)
+- ``quasibinomial``: (See `Pseudo-Logistic Regression (Quasibinomial Family)`_). The response must be numeric.
+- ``multinomial``: (See `Multiclass Classification (Multinomial Family)`_). The response can be categorical with more than two levels/classes (Enum).
+- ``poisson``: (See `Poisson Models`_). The response must be numeric and non-negative (Int).
+- ``gamma``: (See `Gamma Models`_). The response must be numeric and continuous and positive (Real or Int).
+- ``tweedie``: (See `Tweedie Models`_). The response must be numeric and continuous (Real) and non-negative.
+- ``negativebinomial``: (See `Negative Binomial Models`_). The response must be numeric and non-negative (Int).
 
 **Note**: If your response column is binomial, then you must convert that column to a categorical (``.asfactor()`` in Python and ``as.factor()`` in R) and set ``family = binomial``. The following configurations can lead to unexpected results. 
 
@@ -402,36 +408,86 @@ The corresponding deviance when :math:`p \neq 1` and :math:`p \neq 2` is equal t
 
  D = 2\sum_{i}^N \frac{y_{i}(y_{i}^{1-p} - \hat{y}_{i}^{1-p})}{(1-p)} - \frac{(y_{i}^{2-p} - \hat{y}_{i}^{2-p})}{(2-p)}
 
+.. _negative_binomial:
+
+Negative Binomial Models
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Negative binomial regression is a generalization of Poisson regression that loosens the restrictive assumption that the variance is equal to the mean. Instead, the variance of negative binomial is a function of its mean and parameter :math:`\theta`, the dispersion parameter. 
+
+Let :math:`Y` denote a random variable with negative binomial distribution, and let :math:`\mu` be the mean. The variance of :math:`Y (\sigma^2)` will be :math:`\sigma^2 = \mu + \theta\mu^2`. The possible values of :math:`Y` are non-negative integers like 0, 1, 2, ...
+
+The negative binomial regression for an observation :math:`i` is:
+
+.. math::
+
+ Pr(Y = y_i|\mu_i, \theta) = \frac{\Gamma(y_i+\theta^{-1})}{\Gamma(\theta^{-1})\Gamma(y_i+1)} {\bigg(\frac {1} {1 + {\theta {\mu_i}}}\bigg) ^\theta}^{-1} { \bigg(\frac {{\theta {\mu_i}}} {1 + {\theta {\mu_i}}} \bigg) ^{y_i}}
+
+where :math:`\Gamma(x)` is the gamma function, and :math:`\mu_i` can be modeled as:
+
+.. math::
+
+ \mu_i=\left\{
+                \begin{array}{ll}
+                  exp (\beta^T X_i + \beta_0) \text{  for log link}\\
+                  \beta^T X_i + \beta_0 \text{  for identity link}\\
+                \end{array}
+              \right.
+
+The  negative log likelihood :math:`L(y_i,\mu_i)` function is:
+
+.. math::
+
+ ^\text{max}_{\beta,\beta_0} \bigg[ \frac{-1}{N} \sum_{i=1}^{N}  \bigg \{ \bigg( \sum_{j=0}^{y_i-1} \text{log}(j + \theta^{-1} ) \bigg) - \text{log} (\Gamma (y_i + 1)) - (y_i + \theta^{-1}) \text{log} (1 + \alpha\mu_i) + y_i \text{log}(\mu_i) + y_i \text{log} (\theta) \bigg \} \bigg]
+
+The final penalized negative log likelihood is used to find the coefficients :math:`\beta, \beta_0` given a fixed :math:`\theta` value:
+
+.. math::
+
+ L(y_i, \mu_i) + \lambda \big(\alpha || \beta || _1 + \frac{1}{2} (1 - \alpha) || \beta || _2 \big)
+
+The corresponding deviance is:
+
+.. math::
+
+ D = 2 \sum_{i=1}^{N} \bigg \{ y_i \text{log} \big(\frac{y_i}{\mu_i} \big) - (y_i + \theta^{-1}) \text{log} \frac{(1+\theta y_i)}{(1+\theta \mu_i)} \bigg \}
+
+**Note**: Future versions of this model will optimize the coefficients as well as the dispersion parameter. Please stay tuned.
+
 Links
 '''''
 
 As indicated previously, a link function :math:`g`: :math:`E(y) = \mu = {g^-1}(\eta)` relates the expected value of the response :math:`\mu` to the linear component :math:`\eta`. The link function can be any monotonic differentiable function. This relaxes the constraints on the additivity of the covariates, and it allows the response to belong to a restricted range of values depending on the chosen transformation :math:`g`.
 
-H2O's GLM supports the following link functions: Family_Default, Identity, Logit, Log, Inverse, Tweedie, Ologit, Oprobit, and Ologlog.
+H2O's GLM supports the following link functions: Family_Default, Identity, Logit, Log, Inverse, Tweedie, Ologit, Oprobit, and Ologlog. 
 
 The following table describes the allowed Family/Link combinations.
 
-+----------------+-------------------------------------------------------------+--------+---------+---------+
-| **Family**     | **Link Function**                                                                        |
-+----------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
-|                | Family_Default | Identity | Logit | Log | Inverse | Tweedie | Ologit | Oprobit | Ologlog |
-+----------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
-| Binomial       | X              |          | X     |     |         |         |        |         |         |
-+----------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
-| Quasibinomial  | X              |          | X     |     |         |         |        |         |         |
-+----------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
-| Multinomial    | X              |          |       |     |         |         |        |         |         |
-+----------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
-| Ordinal        | X              |          |       |     |         |         | X      | X       | X       |
-+----------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
-| Gaussian       | X              | X        |       | X   | X       |         |        |         |         |
-+----------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
-| Poisson        | X              | X        |       | X   |         |         |        |         |         |
-+----------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
-| Gamma          | X              | X        |       | X   | X       |         |        |         |         |
-+----------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
-| Tweedie        | X              |          |       |     |         | X       |        |         |         |
-+----------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
++-------------------+-------------------------------------------------------------+--------+---------+---------+
+| **Family**        | **Link Function**                                                                        |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
+|                   | Family_Default | Identity | Logit | Log | Inverse | Tweedie | Ologit | Oprobit | Ologlog |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
+| Binomial          | X              |          | X     |     |         |         |        |         |         |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
+| Quasibinomial     | X              |          | X     |     |         |         |        |         |         |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
+| Multinomial       | X              |          |       |     |         |         |        |         |         |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
+| Ordinal           | X              |          |       |     |         |         | X      | X*      | X*      |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
+| Gaussian          | X              | X        |       | X   | X       |         |        |         |         |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
+| Poisson           | X              | X        |       | X   |         |         |        |         |         |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
+| Gamma             | X              | X        |       | X   | X       |         |        |         |         |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
+| Tweedie           | X              |          |       |     |         | X       |        |         |         |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
+| Negative Binomial | X              | X        |       | X   |         |         |        |         |         |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
+
+\* Supported with ordinal classification only; not available for ordinal regression.
 
 Regularization
 ~~~~~~~~~~~~~~

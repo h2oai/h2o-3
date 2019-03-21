@@ -623,6 +623,7 @@ GLM Hyperparameters
 -  ``lambda``
 -  ``missing_values_handling``
 -  ``standardize``
+-  ``theta``
 
 GLRM Hyperparameters
 ~~~~~~~~~~~~~~~~~~~~
