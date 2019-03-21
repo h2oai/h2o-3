@@ -189,8 +189,6 @@ def gen_module(schema, algo, module):
         yield "     stop('argument \"stop_column\" must be a column name or an index')"
         yield "  }"
     if algo == "generic":
-        
-        
         yield "  # Required args: mojo_file_path"
         yield "  if (is.null(mojo_key)) stop(\"argument 'mojo_key' must be provided\")"
     if algo == "word2vec":
