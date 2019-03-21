@@ -1,5 +1,5 @@
-if (rebquire(xgboost)) {
-  stop("xboost package not available, please run `install.packages('xgboost')`")
+if (! require(xgboost)) {
+  stop("xgboost package not available, please run `install.packages('xgboost')`")
 }
 
 library(h2o)
@@ -48,7 +48,9 @@ r_xgb_model <- xgb.train(param, milsongs_dmatrix, nrounds = 5)
 
 # Compare variable importances returned by H2O and Native XGBoost
 r_xgb_imp <- xgb.importance(colnames(milsongs_dmatrix), r_xgb_model)
+print(r_xgb_imp)
 h2o_xgb_imp <- h2o.varimp(h2o_xgb_model)
+print(h2o_xgb_imp)
 
 # We expect the order of variables to be the same in Native XGBoost and H2O XGBoost (ordered by Gain)
 if (length(which(r_xgb_imp$Feature != h2o_xgb_imp$variable) != 0)) {
@@ -61,7 +63,7 @@ h2o_xgb_gain_rel <- h2o_xgb_imp$relative_importance / sum(h2o_xgb_imp$relative_i
 max_diff <- max(abs(r_xgb_gain_rel - h2o_xgb_gain_rel))
 
 # The imortances should be the same up to tolerance
-if (max_diff > 1e-6) {
+if (max_diff > 1e-5) {
   stop("Variable importance is different")
 }
 
