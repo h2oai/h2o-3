@@ -277,8 +277,8 @@ public class GroupByTest extends TestUtil {
         int teColumnIndex = fr.find(teColumnName);
         int responseColumnIndex = fr.find(responseColumn);
 
-        String tree = String.format("(GB %s [%d] median %s \"all\" sum %s \"all\" nrow %s \"all\")", fr._key,
-                teColumnIndex, responseColumnIndex, responseColumnIndex, responseColumnIndex);
+        String tree = String.format("(GB %s [%d]  sum %s \"all\" nrow %s \"all\")", fr._key,
+                teColumnIndex, responseColumnIndex, responseColumnIndex);
         Val val = Rapids.exec(tree);
         Frame groupedFrame = val.getFrame();
         groupedFrame._key = Key.make();
