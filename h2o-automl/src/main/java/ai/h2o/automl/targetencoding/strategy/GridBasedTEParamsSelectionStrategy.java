@@ -20,7 +20,7 @@ public abstract class GridBasedTEParamsSelectionStrategy extends TEParamsSelecti
         _grid.put("_holdoutType", new Double[]{ 1.0});
         break;
       case VALIDATION_FRAME:
-        _grid.put("_withBlending", new Double[]{1.0, 0.0}); // NOTE: we can postpone implementation of hierarchical hyperparameter spaces... as in most cases blending is helpful.
+        _grid.put("_withBlending", new Double[]{1.0/*, 0.0*/}); // NOTE: we can postpone implementation of hierarchical hyperparameter spaces... as in most cases blending is helpful.
         _grid.put("_noise_level", new Double[]{0.0, 0.1, 0.01});
         _grid.put("_inflection_point", new Double[]{1.0, 2.0, 3.0, 5.0, 10.0, 50.0, 100.0});
         _grid.put("_smoothing", new Double[]{5.0, 10.0, 20.0});

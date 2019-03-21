@@ -169,7 +169,7 @@ public class TEIntegrationWithAutoMLCVBenchmark extends water.TestUtil {
     }
   }
 
-  int numberOfModelsToCompareWith = 3;
+  int numberOfModelsToCompareWith = 1;
 //  Algo[] excludeAlgos = {Algo.DeepLearning, Algo.DRF, Algo.GLM,  Algo.XGBoost /* Algo.GBM,*/, Algo.StackedEnsemble};
 //  Algo[] excludeAlgos = {Algo.DeepLearning , Algo.DRF, Algo.GLM, /* Algo.XGBoost*/ Algo.GBM, Algo.StackedEnsemble};
   Algo[] excludeAlgos = {Algo.DeepLearning , Algo.DRF, Algo.GLM,  Algo.XGBoost, /*Algo.GBM,*/ Algo.StackedEnsemble};
@@ -298,7 +298,7 @@ public class TEIntegrationWithAutoMLCVBenchmark extends water.TestUtil {
     
   }
 
-  @Test public void baseBenchmarkWithCVPredictionUsedForComparison() {
+  @Test public void withTE_vs_withoutTE_benchmark_withCVPredictionUsedForComparison() {
     AutoML aml=null;
     Frame fr=null;
     Model leader = null;
@@ -312,7 +312,7 @@ public class TEIntegrationWithAutoMLCVBenchmark extends water.TestUtil {
     int numberOfRuns = 3;
 
     for (int seedAttempt = 0; seedAttempt < numberOfRuns; seedAttempt++) {
-      long nextSeed = generator.nextLong();
+      long nextSeed = generator.nextLong(); 
       try {
         AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
 
@@ -326,11 +326,14 @@ public class TEIntegrationWithAutoMLCVBenchmark extends water.TestUtil {
         Vec responseColumn = fr.vec(responseColumnName);
         TEApplicationStrategy thresholdTEApplicationStrategy = new ThresholdTEApplicationStrategy(fr, responseColumn, 5);
 
-        int numberOfIterations = 63;
+        double SMBOEarlyStoppingRatio = 0.2;
         autoMLBuildSpec.te_spec.seed = nextSeed;
         TEParamsSelectionStrategy gridSearchTEParamsSelectionStrategy =
-                new GridSearchTEParamsSelectionStrategy(fr, numberOfIterations, responseColumnName, thresholdTEApplicationStrategy.getColumnsToEncode(), true, nextSeed);
-        ;
+                new SMBOTEParamsSelectionStrategy(fr, SMBOEarlyStoppingRatio, responseColumnName, thresholdTEApplicationStrategy.getColumnsToEncode(), true, nextSeed);
+
+//        TEParamsSelectionStrategy gridSearchTEParamsSelectionStrategy =
+//                new GridSearchTEParamsSelectionStrategy(fr, 63, responseColumnName, thresholdTEApplicationStrategy.getColumnsToEncode(), true, nextSeed);
+
 
         autoMLBuildSpec.te_spec.application_strategy = thresholdTEApplicationStrategy;
         autoMLBuildSpec.te_spec.params_selection_strategy = gridSearchTEParamsSelectionStrategy;

@@ -44,7 +44,8 @@ public class GridSearchTEParamsSelectionStrategy extends GridBasedTEParamsSelect
   public Evaluated<TargetEncodingParams> getBestParamsWithEvaluation(ModelBuilder modelBuilder) {
     assert _modelValidationMode != null : "`setTESearchSpace()` method should has been called to setup appropriate grid search.";
     
-    //TODO First we need to do stratified sampling
+    SMBOTEParamsSelectionStrategy.Exporter exporter = new SMBOTEParamsSelectionStrategy.Exporter();
+    //TODO Consider adding stratified sampling here
     try {
       for (int attempt = 0; attempt < _numberOfIterations; attempt++) {
 
@@ -57,11 +58,14 @@ public class GridSearchTEParamsSelectionStrategy extends GridBasedTEParamsSelect
 
         double evaluationResult = _evaluator.evaluate(param, clonedModelBuilder, _modelValidationMode, _leaderboardData, getColumnsToEncode(), _seed);
         _evaluatedQueue.add(new Evaluated<>(param, evaluationResult, attempt));
+        exporter.update(0, evaluationResult);
       }
     } catch (RandomSelector.GridSearchCompleted ex) {
       // just proceed by returning best gridEntry found so far
     }
 
+    exporter.exportToCSV("scores_random_" + modelBuilder._parms.fullName());
+    
     Evaluated<TargetEncodingParams> targetEncodingParamsEvaluated = _evaluatedQueue.peek();
 
     return targetEncodingParamsEvaluated;

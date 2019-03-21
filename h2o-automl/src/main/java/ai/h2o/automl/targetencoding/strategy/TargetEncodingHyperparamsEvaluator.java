@@ -30,7 +30,6 @@ public class TargetEncodingHyperparamsEvaluator extends Iced {
   public double evaluateForCVMode(TargetEncodingParams teParams, ModelBuilder modelBuilder, String[] columnsToEncode, long seedForFoldColumn) {
 
     double score = 0;
-    double averageScore = 0;
     Map<String, Frame> encodingMap = null;
     Frame trainEncoded = null;
     Frame testEncoded = null;

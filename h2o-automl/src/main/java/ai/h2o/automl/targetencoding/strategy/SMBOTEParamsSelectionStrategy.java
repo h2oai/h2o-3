@@ -37,28 +37,35 @@ public class SMBOTEParamsSelectionStrategy extends GridBasedTEParamsSelectionStr
   }
   
   static class EarlyStopper {
-    private int _numberOfAttemptsBeforeStopping;
-    private double _initialThreshold;
-    private int fruitlessAttemptsCount = 0;
+    private int _seqAttemptsBeforeStopping;
+    private int _totalAttemptsBeforeStopping;
+    private double _currentThreshold;
+    private boolean _theBiggerTheBetter;
 
-    public EarlyStopper(int numberOfAttemptsBeforeStopping, double initialThreshold) {
+    private int _totalAttemptsCount = 0;
+    private int _fruitlessAttemptsSinceLastResetCount = 0;
+
+    public EarlyStopper(int seqAttemptsBeforeStopping, int totalAttemptsBeforeStopping, double initialThreshold, boolean theBiggerTheBetter) {
       
-      _numberOfAttemptsBeforeStopping = numberOfAttemptsBeforeStopping;
-      _initialThreshold = initialThreshold;
+      _seqAttemptsBeforeStopping = seqAttemptsBeforeStopping;
+      _totalAttemptsBeforeStopping = totalAttemptsBeforeStopping;
+      _currentThreshold = initialThreshold;
+      _theBiggerTheBetter = theBiggerTheBetter;
     }
 
     public boolean proceed() {
-      return fruitlessAttemptsCount < _numberOfAttemptsBeforeStopping;
+      return _fruitlessAttemptsSinceLastResetCount < _seqAttemptsBeforeStopping && _totalAttemptsCount < _totalAttemptsBeforeStopping;
     };
 
-    // less or more is better
     public void update(double newValue) {
-      if(newValue <= _initialThreshold) fruitlessAttemptsCount++;
+      boolean conditionToContinue = _theBiggerTheBetter ? newValue <= _currentThreshold : newValue > _currentThreshold;
+      if(conditionToContinue) _fruitlessAttemptsSinceLastResetCount++;
       else {
-        fruitlessAttemptsCount = 0;
-        _initialThreshold = newValue;
+        _fruitlessAttemptsSinceLastResetCount = 0;
+        _currentThreshold = newValue;
       }
-    };
+      _totalAttemptsCount++;
+    }
   }
   
   @Override
@@ -75,7 +82,7 @@ public class SMBOTEParamsSelectionStrategy extends GridBasedTEParamsSelectionStr
 
     double thresholdScoreFromPriors = 0;
     
-    int numberOfPriorEvals = 10;
+    int numberOfPriorEvals = 5;
     GridSearchTEParamsSelectionStrategy.GridEntry[] entriesForPrior = wholeSpace.subList(0, numberOfPriorEvals).toArray(new GridSearchTEParamsSelectionStrategy.GridEntry[0]);
     double[] priorScores = new double[numberOfPriorEvals];
     int priorIndex = 0;
@@ -103,9 +110,14 @@ public class SMBOTEParamsSelectionStrategy extends GridBasedTEParamsSelectionStr
 
     printOutFrameAsTable(unexploredHyperspaceAsFrame);
 
-    RFSMBO rfsmbo = new RFSMBO(){};
-    int numberOfAttemptsBeforeStopping = (int) (unexploredHyperspaceAsFrame.numRows() * _earlyStoppingRatio);
-    EarlyStopper earlyStopper = new EarlyStopper(numberOfAttemptsBeforeStopping, thresholdScoreFromPriors);
+    //Should be chosen automatically based on the task
+    boolean theBiggerTheBetter = true;
+    
+    RFSMBO rfsmbo = new RFSMBO(theBiggerTheBetter){};
+    int seqAttemptsBeforeStopping = (int) (unexploredHyperspaceAsFrame.numRows() * _earlyStoppingRatio);
+//    int totalAttemptsBeforeStopping = (int) (unexploredHyperspaceAsFrame.numRows()  * 0.25); // TODO hardcoded parameter
+    int totalAttemptsBeforeStopping = (int) (unexploredHyperspaceAsFrame.numRows() * 0.22 ); // TODO hardcoded parameter
+    EarlyStopper earlyStopper = new EarlyStopper(seqAttemptsBeforeStopping, totalAttemptsBeforeStopping, thresholdScoreFromPriors, theBiggerTheBetter);
 
     while(earlyStopper.proceed() && unexploredHyperspaceAsFrame.numRows() > 0 ) {
       
@@ -113,11 +125,11 @@ public class SMBOTEParamsSelectionStrategy extends GridBasedTEParamsSelectionStr
         rfsmbo.updatePrior(priorHpsWithScores);
       }
       
-      Frame suggestedHPs = rfsmbo.getNextBestHyperparameters(unexploredHyperspaceAsFrame);
-      double idToRemove = suggestedHPs.vec(suggestedHPs.find("id")).at(0);
+      Frame suggestedHPsEntry = rfsmbo.getNextBestHyperparameters(unexploredHyperspaceAsFrame);
+      double idToRemove = suggestedHPsEntry.vec(suggestedHPsEntry.find("id")).at(0);
       unexploredHyperspaceAsFrame = TargetEncoderFrameHelper.filterNotByValue(unexploredHyperspaceAsFrame, unexploredHyperspaceAsFrame.find("id"), idToRemove);
       
-      HashMap<String, Object> suggestedHPsAsMap = singleRowFrameToMap(suggestedHPs);
+      HashMap<String, Object> suggestedHPsAsMap = singleRowFrameToMap(suggestedHPsEntry);
       TargetEncodingParams param = new TargetEncodingParams(suggestedHPsAsMap);
 
       final ModelBuilder clonedModelBuilder = ModelBuilder.clone(modelBuilder);
@@ -126,27 +138,29 @@ public class SMBOTEParamsSelectionStrategy extends GridBasedTEParamsSelectionStr
       
       earlyStopper.update(evaluationResult);
       
-      printOutFrameAsTable(suggestedHPs);
+      printOutFrameAsTable(suggestedHPsEntry);
       
       //Remove prediction from surrogate and add score on objective function
-      exporter.update(suggestedHPs.vec(suggestedHPs.find("prediction")).at(0), evaluationResult);
-      suggestedHPs.remove(suggestedHPs.find("prediction")).remove();
-      suggestedHPs.add("score", Vec.makeCon(evaluationResult, 1));
+      exporter.update(suggestedHPsEntry.vec(suggestedHPsEntry.find("prediction")).at(0), evaluationResult);
+      suggestedHPsEntry.remove(suggestedHPsEntry.find("prediction")).remove();
+      suggestedHPsEntry.remove(suggestedHPsEntry.find("variance")).remove();
+      suggestedHPsEntry.remove(suggestedHPsEntry.find("afEvaluations")).remove();
+      suggestedHPsEntry.add("score", Vec.makeCon(evaluationResult, 1));
       
-      rfsmbo.updatePrior(suggestedHPs);
+      rfsmbo.updatePrior(suggestedHPsEntry);
 
       int evaluationSequenceNumber = _evaluatedQueue.size();
       _evaluatedQueue.add(new Evaluated<>(param, evaluationResult, evaluationSequenceNumber));
     }
 
-    exporter.exportToCSV(modelBuilder._parms.fullName());
+    exporter.exportToCSV("scores_smbo_" + modelBuilder._parms.fullName());
     Evaluated<TargetEncodingParams> targetEncodingParamsEvaluated = _evaluatedQueue.peek();
 
     return targetEncodingParamsEvaluated;
   }
 
   static class Exporter {
-    private ArrayList<Double> predictions = new ArrayList<>();
+    private ArrayList<Double> surrogatePredictions = new ArrayList<>(); //TODO add support for surrogatePredictions export
     private ArrayList<Double> scores = new ArrayList<>();
 
     public Exporter() {
@@ -159,11 +173,11 @@ public class SMBOTEParamsSelectionStrategy extends GridBasedTEParamsSelectionStr
       }
       Vec predVec = Vec.makeVec(scoresAsDouble, Vec.newKey());
       Frame fr = new Frame(new String[]{"score"}, new Vec[]{predVec});
-      Frame.export(fr, "scores_smbo_" + modelName + "-" + System.currentTimeMillis() / 1000 + ".csv", "frame_name", true, 1).get();
+      Frame.export(fr,   modelName + "-" + System.currentTimeMillis() / 1000 + ".csv", "frame_name", true, 1).get();
     };
 
     public void update(double prediction, double score) {
-      predictions.add(prediction);
+      surrogatePredictions.add(prediction);
       scores.add(score);
     };
   }

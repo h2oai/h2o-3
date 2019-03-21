@@ -340,6 +340,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
           }
         }
       }
+      
       @Override public void reduce(CollectPreds mrt) {
         rightVotes += mrt.rightVotes;
         allRows    += mrt.allRows;
@@ -348,12 +349,9 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       }
     }
 
-
-
     @Override protected DRFModel makeModel( Key modelKey, DRFModel.DRFParameters parms) {
       return new DRFModel(modelKey,parms,new DRFModel.DRFOutput(DRF.this));
     }
-
   }
 
   public static class TreesPerInstancePredictions extends Iced {
