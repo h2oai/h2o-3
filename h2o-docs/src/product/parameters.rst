@@ -38,6 +38,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/eps_prob
    data-science/algo-params/eps_sdev
    data-science/algo-params/estimate_k
+   data-science/algo-params/exclude_algos
    data-science/algo-params/family
    data-science/algo-params/fold_assignment
    data-science/algo-params/fold_column
@@ -47,6 +48,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/ignore_const_cols
    data-science/algo-params/ignored_columns
    data-science/algo-params/impute_missing
+   data-science/algo-params/include_algos
    data-science/algo-params/init
    data-science/algo-params/interaction_pairs
    data-science/algo-params/interactions
@@ -68,7 +70,9 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/max_depth
    data-science/algo-params/max_hit_ratio_k
    data-science/algo-params/max_iterations
+   data-science/algo-params/max_models
    data-science/algo-params/max_runtime_secs
+   data-science/algo-params/max_runtime_secs_per_model
    data-science/algo-params/metalearner_algorithm
    data-science/algo-params/metalearner_params
    data-science/algo-params/min_prob
