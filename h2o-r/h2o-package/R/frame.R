@@ -226,7 +226,6 @@ pfr <- function(x) { chk.H2OFrame(x); .pfr(x) }
       # Convert to data.frame
       L <- lapply(res$columns, function(c) {
         row <- if( c$type!="string" && c$type!="uuid" )  c$data  else  c$string_data
-        #if( length(row)!=res$row_count ) browser()
         stopifnot(length(row)==res$row_count) # No short columns
         row
       })
@@ -4036,32 +4035,60 @@ h2o.group_by <- function(data, by, ..., gb.control=list(na.methods=NULL, col.nam
     if( ag=="sd" ) ag <- "\"sdev\""
     ag
   }))
-  col.idxs    <- unlist(lapply(a, function(agg, envir) {
+  
+  # grab the column indices to perform groupby actions on
+  col.idxs    <- lapply(a, function(agg, envir) {
     # to get the column index, check if the column passed in the agg (@ agg[[2]]) is numeric
     # if numeric, then eval it and return
     # otherwise, as.character the *name* and look it up in colnames(data) and fail/return appropriately
-    agg[[2]] <- eval(agg[[2]], envir)
-    if( is.numeric(agg[[2]]) || is.integer(agg[[2]]) ) { return(eval(agg[[2]])) }
-    col.name <- eval(as.character(agg[[2]]), parent.frame())
-    col.idx <- match(col.name, colnames(data))
+    if (length(agg)==1) { # empty column indices
+      # check and make sure col.idxs contains columns to perform groupby on
+          allIdx = 1:h2o.ncol(data)
+          col.idx = c()
+          # pick numeric/enum columns and exclude the group columns
+          for (colIdx in allIdx) {
+            if (!(h2o.ischaracter(data[colIdx]) || colIdx %in% group.cols)) {
+              col.idx = c(col.idx, colIdx)
+            }
+          }
+      col.idx
+    } else {
+      agg[[2]] <- eval(agg[[2]], envir)
+    
+      if( is.numeric(agg[[2]]) || is.integer(agg[[2]]) ) { return(eval(agg[[2]])) }
+      col.name <- eval(as.character(agg[[2]]), parent.frame())
+      col.idx <- match(col.name, colnames(data))
 
     # no such column, stop!
-    if( is.na(col.idx) ) stop('No column named ', col.name, ' in ', substitute(data), '.')
-
+      if( is.na(col.idx) ) stop('No column named ', col.name, ' in ', substitute(data), '.')
     # got a good column index, return it.
-    col.idx
-  }, parent.frame()))
+      col.idx
+    }
+  }, parent.frame())
 
   # default to "all" na.method
   na.methods.defaults <- rep("all", nAggs)
 
   for (colIndex in col.idxs) {
-    if (h2o.ischaracter(data[colIndex])) {
-      warning(paste0("Column ", names(data)[colIndex], " is a String column.  Groupby operations are not performend on it."))
+    for (inIndex in colIndex) {
+      if (h2o.ischaracter(data[inIndex])) {
+        warning(
+          paste0(
+            "Column ",
+            names(data)[inIndex],
+            " is a String column.  Groupby operations are not performend on it."
+          )
+        )
+      }
     }
   }
   # 1 -> 0 based indexing of columns
-  col.idxs <- col.idxs - 1
+  for (colIndex in 1:length(col.idxs)) {
+    for (inIndex in 1:length(col.idxs[[colIndex]])) {
+      col.idxs[[colIndex]][inIndex] <- col.idxs[[colIndex]][inIndex] - 1
+    }
+  }
+
 
   ### NA handling ###
 
@@ -4091,7 +4118,9 @@ h2o.group_by <- function(data, by, ..., gb.control=list(na.methods=NULL, col.nam
 
   # Append the aggregates!  Append triples: aggregate, column, na-handling
   for( idx in 1:nAggs ) {
-    args <- c(args, agg.methods[idx], eval(col.idxs[idx]), .quote(gb.control$na.methods[idx]))
+    for (colidx in 1:length(col.idxs[[idx]])) {
+    args <- c(args, agg.methods[idx], eval(col.idxs[[idx]][colidx]), .quote(gb.control$na.methods[idx]))
+    }
   }
 
   # Create the group by AST
