@@ -23,7 +23,7 @@ class H2OGenericEstimator(H2OEstimator):
     def __init__(self, **kwargs):
         super(H2OGenericEstimator, self).__init__()
         self._parms = {}
-        names_list = {"mojo_key"}
+        names_list = {"model_id", "mojo_key"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':

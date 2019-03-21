@@ -5,6 +5,7 @@
 #' 
 #' Imports a generic model into H2O
 #' 
+#' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param mojo_key Key to an uploaded MOJO archive
 #' @examples
 #' \donttest{
@@ -16,6 +17,7 @@
 #' }
 #' @export
 h2o.generic <- function(
+                        model_id = NULL,
                         mojo_key = NULL
                         ) 
 {
@@ -24,6 +26,8 @@ h2o.generic <- function(
   if (is.null(mojo_key)) stop("argument 'mojo_key' must be provided")
   # Parameter list to send to model builder
   parms <- list()
+  if (!missing(model_id))
+    parms$model_id <- model_id
   if (!missing(mojo_key))
     parms$mojo_key <- mojo_key
   # Error check and build model
