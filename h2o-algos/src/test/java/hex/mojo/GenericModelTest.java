@@ -24,7 +24,7 @@ public class GenericModelTest extends TestUtil {
 
     @Before
     public void setUp() {
-        TestUtil.stall_till_cloudsize(5);
+        TestUtil.stall_till_cloudsize(1);
     }
 
     @Test
