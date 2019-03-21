@@ -219,20 +219,20 @@ Target encoding in H2O-3 is performed in two steps:
 1. Create (fit) a target encoding map. This will contain the sum of the response column and the count. This can include an optional ``fold_column``. 
 2. Transform a target encoding map. The target encoding map is applied to the data by adding new columns with the target encoding values.
 
- The following options are available when transforming the target encoding, we have several options included to prevent overfitting:
+The following options are available when performing target encoding, including options to prevent overfitting:
 
- -  ``holdout_type``: Specify whether or not a holdout should be used in constructing the target average. This can help prevent overfitting. Options include ``kfold``, ``loo``, and ``none``. 
- -  ``blended_avg``: Specify whether to perform a blended average. This can help prevent overfitting.
- -  ``noise``: Specify whether to include random noise to the average. This can help prevent overfitting.
- -  ``fold_column``: Specify the name or column index of the fold column in the data. This defaults to NULL (no ``fold_column``). This option is only required if ``holdout_type = "KFold"``.
- -  ``seed``: Specify a random seed used to generate draws from the uniform distribution for random noise. Defaults to -1.
+-  ``holdout_type``
+-  ``blended_avg``
+-  ``noise``
+-  ``fold_column``
+-  ``seed``
 
 Holdout Type
 ''''''''''''
 
-The ``holdout_type`` parameter defines whether the target average should be constructed on all rows of data. Overfitting can be prevented by removing some hold out data when calculating the target average on the training data.
+The ``holdout_type`` parameter defines whether the target average should be constructed on all rows of data. Overfitting can be prevented by removing some holdout data when calculating the target average on the training data.
 
-The ``h2o.target_encode_apply`` (R)/``transform`` (Python) function offers the following ``holdout_type`` options:
+The following holdout types can be specified:
 
 -  ``none``: no holdout. The mean is calculating on all rows of data \*\*. This should be used for test data
 -  ``loo``: mean is calculating on all rows of data excluding the row itself.
@@ -251,19 +251,33 @@ The ``blended_avg`` parameter defines whether the target average should be weigh
 Noise
 '''''
 
-The ``noise`` parameter determines if random noise should be added to the target average.
+If random noise should be added to the target average, the ``noise`` parameter can be used to specify the amount of noise to be added. This value defaults to 0.01 \* range of y of random noise
+
+Fold Column
+'''''''''''
+
+Specify the name or column index of the fold column in the data. This defaults to NULL (no ``fold_column``). This option is only required if ``holdout_type = "KFold"``.
+
+Seed
+''''
+
+Specify a random seed used to generate draws from the uniform distribution for random noise. This defaults to -1.
+
 
 Perform Target Encoding
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-Start by creating the target encoding map. This has the number of bad loans per state (``numerator``) and the number of rows per state (``denominator``). We can later use this information to create the target encoding per state.
+Start by fitting the target encoding map. This has the number of bad loans per state (``numerator``) and the number of rows per state (``denominator``). We can later use this information to create the target encoding per state.
+
+Fit the Target Encoding Map
+'''''''''''''''''''''''''''
 
 .. example-code::
    .. code-block:: r
 
-    train$fold <- h2o.kfold_column(train, 5, seed = 1234)
-    te_map <- h2o.target_encode_create(train, x = list("addr_state"), 
-                                       y = response, fold_column = "fold")
+    train$fold <- h2o.kfold_column(train, nfolds=5, seed = 1234)
+    te_map <- h2o.target_encode_fit(train, x = list("addr_state"), 
+                                    y = response, fold_column = "fold")
     head(te_map$addr_state)
 
     ##   addr_state fold numerator denominator
@@ -274,30 +288,25 @@ Start by creating the target encoding map. This has the number of bad loans per 
     ## 5         AK    4         1           7
     ## 6         AL    0         7          52
 
-   .. code-block:: python
+Transform Target Encoding
+'''''''''''''''''''''''''
 
-    foldColumnName="fold"
-    train[foldColumnName] = train.kfold_column(n_folds=5, seed=1234)
-    
-    from h2o.targetencoder import TargetEncoder
-    teColumns=["addr_state"]
-    te_map = TargetEncoder(x=teColumns, y=response, fold_column="fold", blending_avg=True)
-    te_map.fit(train)
+Apply the target encoding to our training and testing data. 
 
+**Apply Target Encoding to Training Dataset** 
 
-Apply the target encoding to our training and testing data. For our training data, we will use the parameters:
+For our training data, we will use the parameters:
 
--  ``holdout_type``: "KFold"
--  ``blended_avg``/``blending_avg``: TRUE
--  ``noise_level``/``noise``: NULL (by default it will add 0.01 \* range of y of random noise)
+-  ``holdout_type="kfold"``
+-  ``blended_avg=TRUE``
+-  ``noise=0.2``
 
 .. example-code::
    .. code-block:: r
 
-    ext_train <- h2o.target_encode_apply(train, x = list("addr_state"), y = response, 
-                                         target_encode_map = te_map, holdout_type = "KFold",
-                                         fold_column = "fold",
-                                         blended_avg = TRUE, noise_level = 0, seed = 1234)
+    ext_train <- h2o.target_encode_transform(train, x = list("addr_state"), y = response, 
+                                             target_encode_map = te_map, holdout_type = "kfold",
+                                             blended_avg = TRUE, seed = 1234)
 
     head(ext_train[c("addr_state", "fold", "TargetEncode_addr_state")])
 
@@ -309,32 +318,22 @@ Apply the target encoding to our training and testing data. For our training dat
     ## 5         AK    0               0.1212239
     ## 6         AK    0               0.1212239
 
-   .. code-block:: python
 
-    ext_train = te_map.transform(is_train_or_valid=True, 
-                                 frame=train, 
-                                 holdout_type="kfold", 
-                                 noise=0.0,
-                                 seed=1234)
+**Apply Target Encoding to Testing Dataset**
 
-    head_ext_train = ext_train.head(rows=5, cols=17)
+We do not need to apply any of the overfitting prevention techniques because our target encoding map was created on the training data, not the testing data.
 
-
-For our testing data, we will use the parameters:
-
--  ``holdout_type``: "None"
--  ``blended_avg``: False
--  ``noise_level``: 0
-
-We do not need to apply any of the overfitting prevention techniques since our target encoding map was created on the training data, not the testing data.
+-  ``holdout_type="none"``
+-  ``blended_avg=FALSE``
+-  ``noise=0`` 
 
 .. example-code::
    .. code-block:: r
 
-    ext_test <- h2o.target_encode_apply(test, x = list("addr_state"), y = response,
-                                        target_encode_map = te_map, holdout_type = "None",
-                                        fold_column = "fold",
-                                        blended_avg = FALSE, noise_level = 0)
+    ext_test <- h2o.target_encode_transform(test, x = list("addr_state"), y = response,
+                                            target_encode_map = te_map, holdout_type = "none",
+                                            fold_column = "fold", noise = 0,
+                                            blended_avg = FALSE)
 
     head(ext_test[c("addr_state", "TargetEncode_addr_state")])
 
@@ -345,16 +344,6 @@ We do not need to apply any of the overfitting prevention techniques since our t
     ## 4         AK               0.1521739
     ## 5         AK               0.1521739
     ## 6         AK               0.1521739
-
-   .. code-block:: python
-
-    ext_test = te_map.transform(is_train_or_valid=True, 
-                                frame=test, 
-                                holdout_type="none", 
-                                noise=0.0,
-                                seed=1234)
-
-    head_ext_test = ext_test.head()
 
 
 
@@ -382,26 +371,6 @@ Train a new model, this time replacing the ``addr_state`` with the ``TargetEncod
                             stopping_tolerance = 0.001,
                             model_id = "gbm_state_te.hex")
 
-   .. code-block:: python
-
-    predictors = ["loan_amnt", "int_rate", "emp_length", "annual_inc", 
-                  "dti", "delinq_2yrs", "revol_util", "total_acc", 
-                  "longest_credit_length", "verification_status", 
-                  "term", "purpose", "home_ownership", "addr_state_te"]
-
-    gbm_state_te=H2OGradientBoostingEstimator(score_tree_interval=10,
-                                              ntrees=500,
-                                              sample_rate=0.8,
-                                              col_sample_rate=0.8,
-                                              seed=1234,
-                                              stopping_rounds=5,
-                                              stopping_metric="AUC",
-                                              stopping_tolerance=0.001,
-                                              model_id="gbm_no_state.hex")
-
-    gbm_state_te.train(x=predictors, y=response, training_frame=ext_train,
-                       validation_frame=ext_test)
-
 
 The AUC of the first and second model is shown below:
 
@@ -422,14 +391,6 @@ The AUC of the first and second model is shown below:
     2              No addr_state 0.7270537
     3 addr_state Target Encoding 0.7254448
 
-  .. code-block:: python
-
-   # Get AUC
-   auc_state_te = gbm_state_te.auc(valid=True)
-   auc_state_te
-   0.7091353041718448
-
-
 
 We see a slight increase in the AUC on the test data. Now the ``addr_state`` has much smaller variable importance. It is no longer the most important feature but the 8th.
 
@@ -438,11 +399,6 @@ We see a slight increase in the AUC on the test data. Now the ``addr_state`` has
 
     # Variable Importance
     h2o.varimp_plot(gbm_state_te)
-
-   .. code-block:: python
-
-    # Variable Importance
-    gbm_state_te.varimp_plot()
 
 
 .. figure:: ../images/gbm_variable_importance2.png
