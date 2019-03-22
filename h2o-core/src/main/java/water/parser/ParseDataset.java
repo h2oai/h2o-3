@@ -268,10 +268,12 @@ public final class ParseDataset {
 
     String[] parse_column_names;
     byte[] parse_column_types;
-    if (setup._column_names == null)
-      setup._column_names = getColumnNames(setup._column_types.length, null);
+    int colNumbers = setup._column_types==null?setup._number_columns:setup._column_types.length;;
+    if (setup._column_names == null) {
+      setup._column_names = getColumnNames(colNumbers, null);
+    }
 
-    boolean typesSameParseColumns = setup._column_types.length==parseCols;
+    boolean typesSameParseColumns = colNumbers==parseCols;
     boolean namesSameparseColumns = setup._column_names.length==parseCols;
 
     if (sameParseColumns) {
