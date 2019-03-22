@@ -14,27 +14,18 @@ import ai.h2o.algos.tree.INodeStat;
  *
  * NOT thread safe, internal state is mutated in order to avoid memory allocation on a per-observation level
  */
-public class TreeSHAP<R, N extends INode<R>, S extends INodeStat> {
+public class TreeSHAP<R, N extends INode<R>, S extends INodeStat> implements TreeSHAPPredictor<R> {
 
   private final int rootNodeId;
   private final N[] nodes;
   private final S[] stats;
   private final float expectedTreeValue;
 
-  private final PathElement[] unique_path_data; // shared state
-
   public TreeSHAP(N[] nodes, S[] stats, int rootNodeId) {
     this.rootNodeId = rootNodeId;
     this.nodes = nodes;
     this.stats = stats;
     this.expectedTreeValue = treeMeanValue();
-
-    // Preallocate space for the unique path data
-    final int maxd = treeDepth() + 2;
-    this.unique_path_data = new PathElement[(maxd * (maxd + 1)) / 2];
-    for (int i = 0; i < unique_path_data.length; i++) {
-      this.unique_path_data[i] = new PathElement();
-    }
   }
 
   private static class PathElement {
@@ -196,7 +187,7 @@ public class TreeSHAP<R, N extends INode<R>, S extends INodeStat> {
     }
   }
 
-  private static class PathPointer {
+  public static class PathPointer {
     PathElement[] path;
     int position;
 
@@ -222,30 +213,43 @@ public class TreeSHAP<R, N extends INode<R>, S extends INodeStat> {
       }
       return new PathPointer(path, position + len);
     }
+
+    void reset() {
+      path[0].reset();
+    }
   }
 
+  @Override
   public float[] calculateContributions(final R feat, float[] out_contribs) {
-    return calculateContributions(feat, out_contribs, 0, -1);
+    return calculateContributions(feat, out_contribs, 0, -1, makeWorkspace());
   }
 
+  @Override
   public float[] calculateContributions(final R feat,
-                                        float[] out_contribs, int condition, int condition_feature) {
+                                        float[] out_contribs, int condition, int condition_feature,
+                                        Object workspace) {
 
     // find the expected value of the tree's predictions
     if (condition == 0) {
       out_contribs[out_contribs.length - 1] += expectedTreeValue;
     }
 
-    PathPointer uniquePathWorkspace = getWorkspace();
+    PathPointer uniquePathWorkspace = (PathPointer) workspace; 
+    uniquePathWorkspace.reset();
 
     treeShap(feat, out_contribs, nodes[rootNodeId], stats[rootNodeId], 0, uniquePathWorkspace,
             1, 1, -1, condition, condition_feature, 1);
     return out_contribs;
   }
 
-  private PathPointer getWorkspace() {
-    this.unique_path_data[0].reset();
-    return new PathPointer(this.unique_path_data);
+  @Override
+  public PathPointer makeWorkspace() {
+    final int maxd = treeDepth() + 2;
+    PathElement[] unique_path_data = new PathElement[(maxd * (maxd + 1)) / 2];
+    for (int i = 0; i < unique_path_data.length; i++) {
+      unique_path_data[i] = new PathElement();
+    }
+    return new PathPointer(unique_path_data);
   }
 
   private int treeDepth() {

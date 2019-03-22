@@ -583,6 +583,50 @@ staged_predict_proba.H2OModel <- function(object, newdata, ...) {
 #' @export
 h2o.staged_predict_proba <- staged_predict_proba.H2OModel
 
+#' Predict feature contributions - SHAP values on an H2O Model (only GBM and XGBoost models).
+#'
+#' Returned H2OFrame has shape (#rows, #features + 1) - there is a feature contribution column for each input
+#' feature, the last column is the model bias (same value for each row). The sum of the feature contributions
+#' and the bias term is equal to the raw prediction of the model. Raw prediction of tree-based model is the sum
+#' of the predictions of the individual trees before before the inverse link function is applied to get the actual
+#' prediction. For Gaussian distribution the sum of the contributions is equal to the model prediction.
+#'
+#' Note: Multinomial classification models are currently not supported.
+#'
+#' @param object a fitted \linkS4class{H2OModel} object for which prediction is
+#'        desired
+#' @param newdata An H2OFrame object in which to look for
+#'        variables with which to predict.
+#' @param ... additional arguments to pass on.
+#' @return Returns an H2OFrame contain feature contributions for each input row.
+#' @seealso \code{\link{h2o.gbm}} and  \code{\link{h2o.randomForest}} for model
+#'          generation in h2o.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.uploadFile(path = prostate_path)
+#' prostate_gbm <- h2o.gbm(3:9, "AGE", prostate)
+#' h2o.predict(prostate_gbm, prostate)
+#' h2o.predict_contributions(prostate_gbm, prostate)
+#' }
+#' @export
+predict_contributions.H2OModel <- function(object, newdata, ...) {
+    if (missing(newdata)) {
+        stop("predictions with a missing `newdata` argument is not implemented yet")
+    }
+
+    url <- paste0('Predictions/models/', object@model_id, '/frames/',  h2o.getId(newdata))
+    res <- .h2o.__remoteSend(url, method = "POST", predict_contributions=TRUE)
+    res <- res$predictions_frame
+    h2o.getFrame(res$name)
+}
+
+#' @rdname predict_contributions.H2OModel
+#' @export
+h2o.predict_contributions <- predict_contributions.H2OModel
+
 #' Model Performance Metrics in H2O
 #'
 #' Given a trained h2o model, compute its performance on the given

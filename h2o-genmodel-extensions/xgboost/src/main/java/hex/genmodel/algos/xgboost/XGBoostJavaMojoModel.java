@@ -5,18 +5,16 @@ import biz.k11i.xgboost.gbm.GBTree;
 import biz.k11i.xgboost.gbm.GradBooster;
 import biz.k11i.xgboost.learner.ObjFunction;
 import biz.k11i.xgboost.tree.RegTree;
-import biz.k11i.xgboost.tree.RegTreeImpl;
+import biz.k11i.xgboost.tree.TreeSHAPHelper;
 import biz.k11i.xgboost.util.FVec;
 import hex.genmodel.GenModel;
-import hex.genmodel.MojoModel;
-import hex.genmodel.algos.tree.SharedTreeGraph;
-import hex.genmodel.algos.tree.SharedTreeNode;
-import hex.genmodel.algos.tree.SharedTreeSubgraph;
-import ml.dmlc.xgboost4j.java.XGBoostError;
+import hex.genmodel.algos.tree.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Implementation of XGBoostMojoModel that uses Pure Java Predict
@@ -25,6 +23,7 @@ import java.io.InputStream;
 public final class XGBoostJavaMojoModel extends XGBoostMojoModel {
 
   private Predictor _predictor;
+  private TreeSHAPPredictor<FVec> _treeSHAPPredictor;
   private OneHotEncoderFactory _1hotFactory;
 
   static {
@@ -34,8 +33,14 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel {
   }
 
   public XGBoostJavaMojoModel(byte[] boosterBytes, String[] columns, String[][] domains, String responseColumn) {
+    this(boosterBytes, columns, domains, responseColumn, false);
+  }
+
+  public XGBoostJavaMojoModel(byte[] boosterBytes, String[] columns, String[][] domains, String responseColumn, 
+                              boolean enableTreeSHAP) {
     super(columns, domains, responseColumn);
     _predictor = makePredictor(boosterBytes);
+    _treeSHAPPredictor = enableTreeSHAP ? makeTreeSHAPPredictor(_predictor) : null;
   }
 
   @Override
@@ -51,6 +56,20 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel {
     }
   }
 
+  private static TreeSHAPPredictor<FVec> makeTreeSHAPPredictor(Predictor predictor) {
+    if (predictor.getNumClass() > 2) {
+      throw new UnsupportedOperationException("Calculating contributions is currently not supported for multinomial models.");
+    }
+    GBTree gbTree = (GBTree) predictor.getBooster();
+    RegTree[] trees = gbTree.getGroupedTrees()[0];
+    List<TreeSHAPPredictor<FVec>> predictors = new ArrayList<>(trees.length);
+    for (RegTree tree : trees) {
+      predictors.add(TreeSHAPHelper.makePredictor(tree));
+    }
+    float initPred = TreeSHAPHelper.getInitPrediction(predictor);
+    return new TreeSHAPEnsemble<>(predictors, initPred);
+  }
+
   public final double[] score0(double[] doubles, double offset, double[] preds) {
     if (offset != 0) throw new UnsupportedOperationException("Unsupported: offset != 0");
 
@@ -60,6 +79,15 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel {
     return toPreds(doubles, out, preds, _nclasses, _priorClassDistrib, _defaultThreshold);
   }
 
+  public final Object makeContributionsWorkspace() {
+    return _treeSHAPPredictor.makeWorkspace();
+  }
+
+  public final float[] calculateContributions(FVec row, float[] out_contribs, Object workspace) {
+    _treeSHAPPredictor.calculateContributions(row, out_contribs, 0, -1, workspace);
+    return out_contribs;
+  }
+
   static ObjFunction getObjFunction(String name) {
     return ObjFunction.fromName(name);
   }
@@ -67,6 +95,8 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel {
   @Override
   public void close() {
     _predictor = null;
+    _treeSHAPPredictor = null;
+    _1hotFactory = null;
   }
 
   @Override

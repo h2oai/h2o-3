@@ -15,8 +15,12 @@ import java.nio.ByteOrder;
 public class PredictorFactory {
 
   public static Predictor makePredictor(byte[] boosterBytes) {
+    return makePredictor(boosterBytes, true);
+  }
+
+  public static Predictor makePredictor(byte[] boosterBytes, boolean scoringOnly) {
     PredictorConfiguration.Builder bldr = PredictorConfiguration.builder();
-    if (unsafeTreesSupported()) {
+    if (scoringOnly && unsafeTreesSupported()) {
       Log.warn("XGBoost Predictor is using EXPERIMENTAL scoring implementation!");
       bldr.regTreeFactory(UnsafeRegTreeFactory.INSTANCE);
     }
