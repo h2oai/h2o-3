@@ -5,8 +5,11 @@ import water.Key;
 import water.fvec.Frame;
 
 public class GenericModelParameters extends Model.Parameters {
-    
-    public Key<Frame> _mojo_key;
+
+    /**
+     * Key to the file with embedded model
+     */
+    public Key<Frame> _model_key;
     
     @Override
     public String algoName() {

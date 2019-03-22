@@ -592,16 +592,17 @@ def class_extra_for(algo):
             return False
         
         @staticmethod
-        def from_mojo_file(file=str):
+        def from_file(file=str):
             \"\"\"
-            Creates new Generic model by loading existing MOJO into library.
-            :param file: A string containing path to the MOJO to create the model from
-            :return: H2OGenericEstimator instance representing the mojo-based model
+            Creates new Generic model by loading existing embedded model into library, e.g. from H2O MOJO.
+            The imported model must be supported by H2O.
+            :param file: A string containing path to the file to create the model from
+            :return: H2OGenericEstimator instance representing the generic model
             \"\"\"
             from h2o import lazy_import, get_frame
-            mojo_key = lazy_import(file)
-            mojo_bytes_frame = get_frame(mojo_key[0])
-            model = H2OGenericEstimator(mojo_key = mojo_bytes_frame)
+            model_key = lazy_import(file)
+            model_bytes_frame = get_frame(model_key[0])
+            model = H2OGenericEstimator(model_key = model_bytes_frame)
             model.train()
             
             return model

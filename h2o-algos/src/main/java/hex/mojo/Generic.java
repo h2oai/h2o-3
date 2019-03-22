@@ -52,7 +52,7 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
     class MojoDelegatingModelDriver extends Driver {
         @Override
         public void computeImpl() {
-            final ByteVec mojoBytes = getUploadedMojo(_parms._mojo_key);
+            final ByteVec mojoBytes = getUploadedMojo(_parms._model_key);
             final MojoModel mojoModel;
             try {
                 final MojoReaderBackend readerBackend = MojoReaderBackendFactory.createReaderBackend(mojoBytes.openStream(_job._key), MojoReaderBackendFactory.CachingStrategy.MEMORY);

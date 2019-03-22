@@ -3,33 +3,34 @@
 #'
 # -------------------------- generic -------------------------- #
 #' 
-#' Imports a generic model into H2O
+#' Imports a generic model into H2O. Such model can be used then used for scoring and obtaining
+#' additional information about the model. The imported model has to be supported by H2O.
 #' 
 #' @param model_id Destination id for this model; auto-generated if not specified.
-#' @param mojo_key Key to an uploaded MOJO archive
+#' @param model_key Key to the self-contained model archive already uploaded to H2O.
 #' @examples
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
 #' 
-#' generic_model <- h2o.genericModel("/path/to/mojo.zip")
+#' generic_model <- h2o.genericModel("/path/to/model.zip")
 #' predictions <- h2o.predict(generic_model, dataset)
 #' }
 #' @export
 h2o.generic <- function(
                         model_id = NULL,
-                        mojo_key = NULL
+                        model_key = NULL
                         ) 
 {
 
-  # Required args: mojo_file_path
-  if (is.null(mojo_key)) stop("argument 'mojo_key' must be provided")
+  # Required args: model_key
+  if (is.null(model_key)) stop("argument 'model_key' must be provided")
   # Parameter list to send to model builder
   parms <- list()
   if (!missing(model_id))
     parms$model_id <- model_id
-  if (!missing(mojo_key))
-    parms$mojo_key <- mojo_key
+  if (!missing(model_key))
+    parms$model_key <- model_key
   # Error check and build model
   .h2o.modelJob('generic', parms, h2oRestApiVersion = 3) 
 }

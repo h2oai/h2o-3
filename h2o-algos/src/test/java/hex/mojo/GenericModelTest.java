@@ -56,7 +56,7 @@ public class GenericModelTest extends TestUtil {
             mojo = importMojo(originalModelMojoFile.getAbsolutePath());
 
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
-            genericModelParameters._mojo_key = mojo;
+            genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
             generic.init(false);
             genericModel = generic.trainModel().get();
@@ -103,7 +103,7 @@ public class GenericModelTest extends TestUtil {
             mojo = importMojo(originalModelMojoFile.getAbsolutePath());
 
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
-            genericModelParameters._mojo_key = mojo;
+            genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
             generic.init(false);
             genericModel = generic.trainModel().get();
@@ -151,7 +151,7 @@ public class GenericModelTest extends TestUtil {
             mojo = importMojo(originalModelMojoFile.getAbsolutePath());
 
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
-            genericModelParameters._mojo_key = mojo;
+            genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
             generic.init(false);
             genericModel = generic.trainModel().get();
@@ -199,7 +199,7 @@ public class GenericModelTest extends TestUtil {
             mojo = importMojo(originalModelMojoFile.getAbsolutePath());
 
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
-            genericModelParameters._mojo_key = mojo;
+            genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
             generic.init(false);
             genericModel = generic.trainModel().get();
@@ -247,7 +247,7 @@ public class GenericModelTest extends TestUtil {
             mojo = importMojo(originalModelMojoFile.getAbsolutePath());
 
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
-            genericModelParameters._mojo_key = mojo;
+            genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
             generic.init(false);
             genericModel = generic.trainModel().get();
@@ -295,7 +295,7 @@ public class GenericModelTest extends TestUtil {
             mojo = importMojo(originalModelMojoFile.getAbsolutePath());
 
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
-            genericModelParameters._mojo_key = mojo;
+            genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
             generic.init(false);
             genericModel = generic.trainModel().get();
@@ -342,7 +342,7 @@ public class GenericModelTest extends TestUtil {
             mojo = importMojo(originalModelMojoFile.getAbsolutePath());
 
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
-            genericModelParameters._mojo_key = mojo;
+            genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
             generic.init(false);
             genericModel = generic.trainModel().get();
@@ -391,7 +391,7 @@ public class GenericModelTest extends TestUtil {
             mojo = importMojo(originalModelMojoFile.getAbsolutePath());
 
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
-            genericModelParameters._mojo_key = mojo;
+            genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
             generic.init(false);
             genericModel = generic.trainModel().get();
@@ -439,7 +439,7 @@ public class GenericModelTest extends TestUtil {
             mojo = importMojo(originalModelMojoFile.getAbsolutePath());
 
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
-            genericModelParameters._mojo_key = mojo;
+            genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
             generic.init(false);
             genericModel = generic.trainModel().get();
@@ -487,7 +487,7 @@ public class GenericModelTest extends TestUtil {
             mojo = importMojo(originalModelMojoFile.getAbsolutePath());
 
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
-            genericModelParameters._mojo_key = mojo;
+            genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
             generic.init(false);
             genericModel = generic.trainModel().get();
@@ -539,7 +539,7 @@ public class GenericModelTest extends TestUtil {
             
             // Create Generic model from given imported MOJO
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
-            genericModelParameters._mojo_key = mojo;
+            genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
             generic.init(false);
             genericModel = generic.trainModel().get();
@@ -589,7 +589,7 @@ public class GenericModelTest extends TestUtil {
 
             // Create Generic model from given imported MOJO
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
-            genericModelParameters._mojo_key = mojo;
+            genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
             generic.init(false);
             genericModel = generic.trainModel().get();
@@ -639,7 +639,7 @@ public class GenericModelTest extends TestUtil {
 
             // Create Generic model from given imported MOJO
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
-            genericModelParameters._mojo_key = mojo;
+            genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
             generic.init(false);
             genericModel = generic.trainModel().get();
@@ -688,7 +688,7 @@ public class GenericModelTest extends TestUtil {
 
             // Create Generic model from given imported MOJO
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
-            genericModelParameters._mojo_key = mojo;
+            genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
             generic.init(false);
             genericModel = generic.trainModel().get();

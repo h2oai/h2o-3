@@ -15,7 +15,7 @@ def mojo_model_glm_test():
     original_model_filename = tempfile.mkdtemp()
     original_model_filename = glm.download_mojo(original_model_filename)
       
-    model = H2OGenericEstimator.from_mojo_file(original_model_filename)
+    model = H2OGenericEstimator.from_file(original_model_filename)
     assert model is not None
     predictions = model.predict(airlines)
     assert predictions is not None

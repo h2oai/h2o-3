@@ -23,7 +23,7 @@ class H2OGenericEstimator(H2OEstimator):
     def __init__(self, **kwargs):
         super(H2OGenericEstimator, self).__init__()
         self._parms = {}
-        names_list = {"model_id", "mojo_key"}
+        names_list = {"model_id", "model_key"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -36,18 +36,18 @@ class H2OGenericEstimator(H2OEstimator):
                 raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
 
     @property
-    def mojo_key(self):
+    def model_key(self):
         """
-        Key to an uploaded MOJO archive
+        Key to the self-contained model archive already uploaded to H2O.
 
         Type: ``H2OFrame``.
         """
-        return self._parms.get("mojo_key")
+        return self._parms.get("model_key")
 
-    @mojo_key.setter
-    def mojo_key(self, mojo_key):
-        assert_is_type(mojo_key, None, H2OFrame)
-        self._parms["mojo_key"] = mojo_key
+    @model_key.setter
+    def model_key(self, model_key):
+        assert_is_type(model_key, None, H2OFrame)
+        self._parms["model_key"] = model_key
 
 
 
@@ -59,16 +59,17 @@ class H2OGenericEstimator(H2OEstimator):
         return False
 
     @staticmethod
-    def from_mojo_file(file=str):
+    def from_file(file=str):
         """
-        Creates new Generic model by loading existing MOJO into library.
-        :param file: A string containing path to the MOJO to create the model from
-        :return: H2OGenericEstimator instance representing the mojo-based model
+        Creates new Generic model by loading existing embedded model into library, e.g. from H2O MOJO.
+        The imported model must be supported by H2O.
+        :param file: A string containing path to the file to create the model from
+        :return: H2OGenericEstimator instance representing the generic model
         """
         from h2o import lazy_import, get_frame
-        mojo_key = lazy_import(file)
-        mojo_bytes_frame = get_frame(mojo_key[0])
-        model = H2OGenericEstimator(mojo_key = mojo_bytes_frame)
+        model_key = lazy_import(file)
+        model_bytes_frame = get_frame(model_key[0])
+        model = H2OGenericEstimator(model_key = model_bytes_frame)
         model.train()
 
         return model

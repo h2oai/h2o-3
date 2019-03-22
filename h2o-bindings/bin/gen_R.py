@@ -189,8 +189,8 @@ def gen_module(schema, algo, module):
         yield "     stop('argument \"stop_column\" must be a column name or an index')"
         yield "  }"
     if algo == "generic":
-        yield "  # Required args: mojo_file_path"
-        yield "  if (is.null(mojo_key)) stop(\"argument 'mojo_key' must be provided\")"
+        yield "  # Required args: model_key"
+        yield "  if (is.null(model_key)) stop(\"argument 'model_key' must be provided\")"
     if algo == "word2vec":
         yield "  # training_frame is required if pre_trained frame is not specified"
         yield "  if (missing(pre_trained) && missing(training_frame)) stop(\"argument \'training_frame\' is missing, with no default\")"
@@ -492,7 +492,8 @@ def help_preamble_for(algo):
         """
     if algo == "generic":
         return """
-            Imports a generic model into H2O
+            Imports a generic model into H2O. Such model can be used then used for scoring and obtaining
+            additional information about the model. The imported model has to be supported by H2O.
         """
 
 def help_details_for(algo):
@@ -661,7 +662,7 @@ def help_example_for(algo):
         library(h2o)
         h2o.init()
         
-        generic_model <- h2o.genericModel("/path/to/mojo.zip")
+        generic_model <- h2o.genericModel("/path/to/model.zip")
         predictions <- h2o.predict(generic_model, dataset)
         }"""
 

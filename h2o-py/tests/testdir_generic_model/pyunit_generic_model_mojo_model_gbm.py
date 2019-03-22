@@ -17,7 +17,7 @@ def mojo_model_test():
     
     key = h2o.lazy_import(original_model_filename)
     fr = h2o.get_frame(key[0])
-    model = H2OGenericEstimator(mojo_key = fr)
+    model = H2OGenericEstimator(model_key = fr)
     model.train()
     predictions = model.predict(airlines)
     assert predictions is not None
@@ -28,7 +28,7 @@ def mojo_model_test():
     assert len(model._model_json["output"]["model_summary"]._cell_values) > 0
     
     # Test constructor generating the model from existing MOJO file
-    model = H2OGenericEstimator.from_mojo_file(original_model_filename)
+    model = H2OGenericEstimator.from_file(original_model_filename)
     assert model is not None
     predictions = model.predict(airlines)
     assert predictions is not None
