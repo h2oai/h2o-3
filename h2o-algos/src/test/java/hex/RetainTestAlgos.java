@@ -67,7 +67,7 @@ public class RetainTestAlgos extends TestUtil {
         GBMModel model = null;
         Frame trainingFrame = null, preds = null;
         try {
-            trainingFrame = parse_test_file("/home/pavel/AirlinesTrain.csv");
+            trainingFrame = parse_test_file("./smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
 
             // Test the training frame has not been deleted
             testRetainFrame(trainingFrame);
