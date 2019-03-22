@@ -3668,12 +3668,14 @@ print.h2o.stackedEnsemble.summary <- function(x, ...) cat(x, sep = "\n")
 
 #' Imports MOJO under given path, creating a Generic model with it.
 #'
-#' Usage example:
-#' generic_model <- h2o.genericModel("/path/to/mojo.zip")
-#' predictions <- h2o.predict(generic_model, dataset)
-#'
 #' @param mojo_file_path Filesystem path to the MOJO
 #' @return Returns H2O Generic Model based on given MOJO
+#'
+#' Usage example:
+#' \donttest{
+#' generic_model <- h2o.genericModel("/path/to/mojo.zip")
+#' predictions <- h2o.predict(generic_model, dataset)
+#' }
 #' @export
 h2o.genericModel <- function(mojo_file_path){
   file_key <- h2o.importFile(mojo_file_path, parse = FALSE)
