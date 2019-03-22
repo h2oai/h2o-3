@@ -11,6 +11,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 
+import static org.junit.Assert.*;
+
 
 // test cases:
 // skipMissing = TRUE/FALSE
@@ -32,7 +34,7 @@ public class DataInfoTest extends TestUtil {
               null,        // valid
               1,           // num responses
               true,        // use all factor levels
-              DataInfo.TransformType.STANDARDIZE,  // predictor transform
+              DataInfo.TransformType.NONE,  // predictor transform
               DataInfo.TransformType.NONE,         // response  transform
               true,        // skip missing
               false,       // impute missing
@@ -64,7 +66,7 @@ public class DataInfoTest extends TestUtil {
               null,        // valid
               1,           // num responses
               true,        // use all factor levels
-              DataInfo.TransformType.STANDARDIZE,  // predictor transform
+              DataInfo.TransformType.DEMEAN,  // predictor transform
               DataInfo.TransformType.NONE,         // response  transform
               true,        // skip missing
               false,       // impute missing
@@ -84,7 +86,7 @@ public class DataInfoTest extends TestUtil {
               null,        // valid
               1,           // num responses
               true,        // use all factor levels
-              DataInfo.TransformType.STANDARDIZE,  // predictor transform
+              DataInfo.TransformType.NONE,  // predictor transform
               DataInfo.TransformType.NONE,         // response  transform
               true,        // skip missing
               false,       // impute missing
@@ -118,7 +120,7 @@ public class DataInfoTest extends TestUtil {
               null,        // valid
               1,           // num responses
               false,        // use all factor levels
-              DataInfo.TransformType.STANDARDIZE,  // predictor transform
+              DataInfo.TransformType.DEMEAN,  // predictor transform
               DataInfo.TransformType.NONE,         // response  transform
               true,        // skip missing
               false,       // impute missing
@@ -611,5 +613,43 @@ public class DataInfoTest extends TestUtil {
         }
       }
     }.doAll(di._adaptedFrame);
+  }
+
+  @Test
+  public void dataInfoTransformsDataTest() {
+    
+    Frame fr = new TestFrameBuilder()
+            .withName("testFrame")
+            .withColNames("ColA", "response")
+            .withVecTypes(Vec.T_NUM, Vec.T_NUM)
+            .withDataForCol(0, ar(1, 3, 6))
+            .withDataForCol(1, ar(5, 10, 7))
+            .build();
+    try {
+      DataInfo di = new DataInfo(
+              fr.clone(),
+              null,
+              1, //nResponses
+              true,
+              DataInfo.TransformType.STANDARDIZE, //do not standardize
+              DataInfo.TransformType.NONE, //do not standardize response
+              false, //whether to skip missing
+              false, // do not replace NAs in numeric cols with mean
+              false,  // always add a bucket for missing values
+              false, // observation weights
+              false,
+              false,
+              false
+      );
+//      DKV.put(di._key, di._adaptedFrame);
+      
+      printOutFrameAsTable(fr, true, 10);
+      printOutFrameAsTable(di._adaptedFrame, true, 10);
+      assertTrue(isBitIdentical(fr, di._adaptedFrame));
+      fail();
+    } catch (AssertionError ex) {
+      System.out.println("!!!!!!!!!!! Frames are identical. Is it expected here? ");
+      fr.delete();
+    }
   }
 }

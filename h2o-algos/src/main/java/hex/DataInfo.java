@@ -926,6 +926,7 @@ public class DataInfo extends Keyed<DataInfo> {
     }
     public void setResponse(int i, double z) {response[i] = z;}
 
+    // TODO this method is not being used
     public void standardize(double[] normSub, double[] normMul) {
       if(numIds == null){
         for(int i = 0; i < numVals.length; ++i)
@@ -1058,6 +1059,8 @@ public class DataInfo extends Keyed<DataInfo> {
         double d = chunks[_cats + i].atd(rid); // can be NA if skipMissing() == false
         if (Double.isNaN(d))
           d = _numMeans[numValsIdx];
+        
+        // Here is where standardisation happens
         if (_normMul != null && _normSub != null)
           d = (d - _normSub[numValsIdx]) * _normMul[numValsIdx];
         row.numVals[numValsIdx++] = d;

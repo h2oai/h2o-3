@@ -1127,8 +1127,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           DataInfo activeData = _state.activeData();
           double [] beta_nostd = activeData.denormalizeBeta(beta);
           DataInfo.TransformType transform = activeData._predictor_transform;
+          // TODO Why are we disabling Transform in the block where we want to standardize?
           activeData.setPredictorTransform(DataInfo.TransformType.NONE);
           Gram g = new GLMIterationTask(_job._key,activeData,new GLMWeightsFun(_parms),beta_nostd).doAll(activeData._adaptedFrame)._gram;
+          // TODO enabling it back...see hotfix comments to the commit affd062d9d842a4f5a7d7fa9908107ef7b9e0e34
           activeData.setPredictorTransform(transform); // just in case, restore the trasnform
           g.mul(_parms._obj_reg);
           chol = g.cholesky(null);

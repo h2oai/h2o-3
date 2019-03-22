@@ -14,6 +14,7 @@ import water.api.Handler;
 import water.api.schemas3.KeyV3;
 import water.fvec.*;
 import water.fvec.Vec.VectorGroup;
+import water.util.TwoDimTable;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -63,6 +64,7 @@ public class MakeGLMModelHandler extends Handler {
 
   public static Frame oneHot(Frame fr, Model.InteractionSpec interactions, boolean useAll, boolean standardize, final boolean interactionsOnly, final boolean skipMissing) {
     final DataInfo dinfo = new DataInfo(fr,null,1,useAll,standardize?TransformType.STANDARDIZE:TransformType.NONE,TransformType.NONE,skipMissing,false,false,false,false,false, interactions);
+    
     Frame res;
     if( interactionsOnly ) {
       if( null==dinfo._interactionVecs ) throw new IllegalArgumentException("no interactions");
@@ -120,6 +122,7 @@ public class MakeGLMModelHandler extends Handler {
         }
       }.doAll(types, dinfo._adaptedFrame.vecs()).outputFrame(Key.make("OneHot"+Key.make().toString()), dinfo.coefNames(), null);
     }
+     printOutFrameAsTable(res, true, 20);
     dinfo.dropInteractions();
     dinfo.remove();
     return res;
@@ -163,5 +166,20 @@ public class MakeGLMModelHandler extends Handler {
     input.destination_frame.fillFromImpl(k);
     DKV.put(new Frame(k, names,vecs));
     return input;
+  }
+
+
+  public static void printOutFrameAsTable(Frame fr, boolean rollups, long limit) {
+    assert limit <= Integer.MAX_VALUE;
+    TwoDimTable twoDimTable = fr.toTwoDimTable(0, (int) limit, rollups);
+    System.out.println(twoDimTable.toString(2, true));
+  }
+
+  public void printOutColumnsMetadata(Frame fr) {
+    for (String header : fr.toTwoDimTable().getColHeaders()) {
+      String type = fr.vec(header).get_type_str();
+      int cardinality = fr.vec(header).cardinality();
+      System.out.println(header + " - " + type + String.format("; Cardinality = %d", cardinality));
+    }
   }
 }

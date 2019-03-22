@@ -160,7 +160,7 @@ public class GLMTest  extends TestUtil {
       // params._response = 1;
       params._response_column = fr._names[1];
       params._lambda = new double[]{0};
-      params._standardize = false;
+      params._standardize = true;
       model = new GLM(params).trainModel().get();
       for (double c : model.beta())
         assertEquals(Math.log(2), c, 1e-2); // only 1e-2 precision cause the perfect solution is too perfect -> will trigger grid search
@@ -176,7 +176,7 @@ public class GLMTest  extends TestUtil {
       // params2._response = 1;
       params2._response_column = fr._names[1];
       params2._lambda = new double[]{0};
-      params2._standardize = true;
+      params2._standardize = false;
       params2._beta_epsilon = 1e-5;
       model = new GLM(params2).trainModel().get();
       assertEquals(0.3396, model.beta()[1], 1e-1);
@@ -624,7 +624,7 @@ public class GLMTest  extends TestUtil {
     try {
       // H2O differs on intercept and race, same residual deviance though
       GLMParameters params = new GLMParameters();
-      params._standardize = true;
+      params._standardize = false;
       params._family = Family.binomial;
       params._beta_constraints = betaConstraints._key;
       params._response_column = "CAPSULE";
@@ -692,7 +692,7 @@ public class GLMTest  extends TestUtil {
     try {
       // H2O differs on intercept and race, same residual deviance though
       GLMParameters params = new GLMParameters();
-      params._standardize = true;
+      params._standardize = false;
       params._family = Family.binomial;
       params._solver = Solver.COORDINATE_DESCENT_NAIVE;
       params._response_column = "IsDepDelayed";
@@ -721,7 +721,7 @@ public class GLMTest  extends TestUtil {
     try {
       // H2O differs on intercept and race, same residual deviance though
       GLMParameters params = new GLMParameters();
-      params._standardize = true;
+      params._standardize = false;
       params._family = Family.binomial;
       params._solver = Solver.COORDINATE_DESCENT;
       params._response_column = "IsDepDelayed";
@@ -748,7 +748,7 @@ public class GLMTest  extends TestUtil {
     try {
       // H2O differs on intercept and race, same residual deviance though
       GLMParameters params = new GLMParameters();
-      params._standardize = true;
+      params._standardize = false;
       params._family = Family.gaussian;
       params._solver = Solver.COORDINATE_DESCENT_NAIVE;
       params._response_column = "C1";

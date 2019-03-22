@@ -2,8 +2,10 @@ package hex;
 
 import hex.glm.GLMModel;
 import hex.splitframe.ShuffleSplitFrame;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.DKV;
 import water.Key;
 import water.MRTask;
 import water.TestUtil;
@@ -26,12 +28,21 @@ public class DataInfoTestAdapt extends TestUtil {
     Model.InteractionSpec interactions = Model.InteractionSpec.allPairwise(new String[]{"class", "sepal_len"});
 
     boolean useAll=false;
-    boolean standardize=false;  // golden frame is standardized before splitting, while frame we want to check would be standardized post-split (not exactly what we want!)
+    boolean standardize=true;  // golden frame is standardized before splitting, while frame we want to check would be standardized post-split (not exactly what we want!)
     boolean skipMissing=true;
     try {
       fr = parse_test_file(Key.make("a.hex"), "smalldata/iris/iris_wheader.csv");
       fr.swap(3, 4);
+
+      Frame frCopy = fr.deepCopy(Key.make().toString());
+      DKV.put(frCopy);
+      
+      // This is the only place where standardisation could have happened before splitting. By enabling `standardisation = true` I expect column to be changed 
       expanded = GLMModel.GLMOutput.expand(fr, interactions, useAll, standardize,skipMissing);   // here's the "golden" frame
+      
+      printOutFrameAsTable(expanded,true, 20);
+      // THIS shows that with ` standardize=true; ` 
+      Assert.assertTrue(isBitIdentical(new Frame(frCopy.vec("sepal_wid")), new Frame(fr.vec("sepal_wid"))));
 
       // now split fr and expanded
       long seed;
@@ -41,8 +52,16 @@ public class DataInfoTestAdapt extends TestUtil {
       // check1: verify splits. expand frSplits with DataInfo and check against expandSplits
       checkSplits(frSplits,expandSplits,interactions,useAll,standardize);
 
+      Frame splitCopy = frSplits[0].deepCopy(Key.make().toString());
+      DKV.put(splitCopy);
+      
       // now take the test frame from frSplits, and adapt it to a DataInfo built on the train frame
       dinfo = makeInfo(frSplits[0], interactions, useAll, standardize);
+
+      printOutFrameAsTable(dinfo._adaptedFrame, true, 20);
+      // THIS shows that with ` standardize=true; ` splits are not being changed as well
+      Assert.assertTrue(isBitIdentical(new Frame(splitCopy.vec("sepal_wid")), new Frame(dinfo._adaptedFrame.vec("sepal_wid"))));
+      
       GLMModel.GLMParameters parms = new GLMModel.GLMParameters();
       parms._response_column = "petal_wid";
       Model.InteractionBuilder interactionBldr = interactionBuilder(dinfo);

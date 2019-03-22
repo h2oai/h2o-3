@@ -124,7 +124,7 @@ public class GLMBasicTestRegression extends TestUtil {
     parms._ignored_columns = new String[]{"C1"};
 //    parms._remove_collinear_columns = true;
     parms._response_column = "IsDepDelayed";
-    parms._standardize = true;
+    parms._standardize = true; // if we change here then it will fail
     parms._objective_epsilon = 0;
     parms._gradient_epsilon = 1e-10;
     parms._max_iterations = 1000;
@@ -145,7 +145,7 @@ public class GLMBasicTestRegression extends TestUtil {
     parms._train = _weighted._key;
     parms._ignored_columns = new String[]{_weighted.name(0)};
     parms._response_column = _weighted.name(1);
-    parms._standardize = true;
+    parms._standardize = false;
     parms._objective_epsilon = 0;
     parms._gradient_epsilon = 1e-10;
     parms._max_iterations = 1000;
@@ -189,7 +189,7 @@ public class GLMBasicTestRegression extends TestUtil {
     parms._train = _weighted._key;
     parms._ignored_columns = new String[]{_weighted.name(0)};
     parms._response_column = _weighted.name(1);
-    parms._standardize = true;
+    parms._standardize = false;
     parms._objective_epsilon = 0;
     parms._gradient_epsilon = 1e-10;
     parms._max_iterations = 1000;
@@ -201,7 +201,7 @@ public class GLMBasicTestRegression extends TestUtil {
       parms._solver = s;
       parms._offset_column = "C20";
       parms._compute_p_values = true;
-      parms._standardize = false;
+      parms._standardize = true;
       model1 = new GLM(parms).trainModel().get();
       HashMap<String, Double> coefs1 = model1.coefficients();
       System.out.println("coefs1 = " + coefs1);
@@ -341,7 +341,7 @@ public class GLMBasicTestRegression extends TestUtil {
     parms._ignored_columns = new String[]{};
     // "response_column":"Claims","offset_column":"logInsured"
     parms._response_column = "Infections";
-    parms._standardize = false;
+    parms._standardize = true;
     parms._lambda = new double[]{0};
     parms._alpha = new double[]{0};
     parms._gradient_epsilon = 1e-10;
@@ -404,7 +404,7 @@ public class GLMBasicTestRegression extends TestUtil {
       // "response_column":"Claims","offset_column":"logInsured"
       parms._response_column = "Claims";
       parms._offset_column = "logInsured";
-      parms._standardize = false;
+      parms._standardize = true;
       parms._lambda = new double[]{0};
       parms._alpha = new double[]{0};
       parms._objective_epsilon = 0;
@@ -486,7 +486,7 @@ public class GLMBasicTestRegression extends TestUtil {
     parms._tweedie_variance_power = 1.5;
     parms._tweedie_link_power = 1 - parms._tweedie_variance_power;
     parms._train = _earinf._key;
-    parms._standardize = false;
+    parms._standardize = true;
     parms._lambda = new double[]{0};
     parms._alpha = new double[]{0};
     parms._response_column = "Infections";
@@ -558,7 +558,7 @@ public class GLMBasicTestRegression extends TestUtil {
 
     GLMParameters parms = new GLMParameters(Family.poisson);
     parms._train = _canCarTrain._key;
-    parms._standardize = false;
+    parms._standardize = true;
     parms._lambda = new double[]{0};
     parms._alpha = new double[]{0};
     parms._response_column = "Claims";
@@ -641,7 +641,7 @@ public class GLMBasicTestRegression extends TestUtil {
 //    Number of Fisher Scoring iterations: 2
     GLMParameters params = new GLMParameters(Family.gaussian);
     params._response_column = "CAPSULE";
-    params._standardize = false;
+    params._standardize = true;
     params._train = _prostateTrain._key;
     params._compute_p_values = true;
     params._lambda = new double[]{0};
@@ -762,10 +762,12 @@ public class GLMBasicTestRegression extends TestUtil {
 //    VOL         -0.18129997  0.1620383 -1.11887108 2.631951e-01
 //    GLEASON      0.91750972  0.1963285  4.67333842 2.963429e-06
 
-    params._standardize = true;
+    //TODO Comment above says that following section is about STANDARDIZED case but when we disable it test still passes. Looks like tolerance is not small enough
+    params._standardize = false;
 
     try {
-      model = new GLM(params).trainModel().get();
+      GLM glm1 = new GLM(params);
+      model = glm1.trainModel().get();
       String[] names_expected = new String[]{"Intercept", "ID", "AGE", "RACE.R2", "RACE.R3", "DPROS.b", "DPROS.c", "DPROS.d", "DCAPS.b", "PSA", "VOL", "GLEASON"};
       // do not compare std_err here, depends on the coefficients
 //      double[] stder_expected = new double[]{1.5687858,   0.1534062,   0.1449847,   1.5423974, 1.5827190,   0.3950883,   0.4161974,  0.5426512,   0.5179591,   0.2244733, 0.1620383,   0.1963285};
@@ -782,7 +784,7 @@ public class GLMBasicTestRegression extends TestUtil {
       double[] pvals_actual = model._output.pValues();
       for (int i = 0; i < zvals_expected.length; ++i) {
         int id = coefMap.get(names_actual[i]);
-        assertEquals(zvals_expected[id], zvals_actual[i], Math.abs(zvals_expected[id]) * 1e-5);
+        assertEquals(zvals_expected[id], zvals_actual[i], Math.abs(zvals_expected[id]) * 1e-7);
         assertEquals(pvals_expected[id], pvals_actual[i], pvals_expected[id] * 1e-3);
       }
       predict = model.score(params._train.get());
@@ -797,7 +799,7 @@ public class GLMBasicTestRegression extends TestUtil {
     }
 
     // Airlines (has collinear columns)
-    params._standardize = true;
+    params._standardize = false;
     params._remove_collinear_columns = true;
     params._train = _airlines._key;
     params._response_column = "IsDepDelayed";
