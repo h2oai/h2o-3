@@ -1859,4 +1859,11 @@ public class ArrayUtils {
     return ary;
   }
 
+  public static boolean isInstance(Object object, Class[] comparedClasses) {
+    for (Class c : comparedClasses) {
+      if (c.isInstance(object)) return true;
+    }
+    return false;
+  }
+
 }

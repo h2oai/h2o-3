@@ -3,9 +3,14 @@ package hex.mojo;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.genmodel.*;
+import hex.genmodel.algos.drf.DrfMojoModel;
+import hex.genmodel.algos.gbm.GbmMojoModel;
+import hex.genmodel.algos.glm.GlmMojoModel;
+import hex.tree.isofor.IsolationForestModel;
 import water.Key;
 import water.fvec.ByteVec;
 import water.fvec.Frame;
+import water.util.ArrayUtils;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -15,6 +20,8 @@ import java.util.Objects;
  * Only H2O Mojos are currently supported.
  */
 public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, GenericModelOutput> {
+    
+    private static final Class[] SUPPORTED_MOJOS = new Class[]{GlmMojoModel.class, GbmMojoModel.class, IsolationForestModel.class, DrfMojoModel.class};
 
     public Generic(GenericModelParameters genericParameters){
         super(genericParameters);
@@ -57,6 +64,10 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
             try {
                 final MojoReaderBackend readerBackend = MojoReaderBackendFactory.createReaderBackend(mojoBytes.openStream(_job._key), MojoReaderBackendFactory.CachingStrategy.MEMORY);
                 mojoModel = ModelMojoReader.readFrom(readerBackend, true);
+                
+                if(!ArrayUtils.isInstance(mojoModel, SUPPORTED_MOJOS)){
+                    throw new IllegalArgumentException(String.format("Unsupported MOJO model %s. ", mojoModel.getClass().getName()));
+                }
 
                 final GenericModelOutput genericModelOutput = new GenericModelOutput(mojoModel._modelDescriptor);
                 final GenericModel genericModel = new GenericModel(_result, _parms, genericModelOutput, mojoModel, mojoBytes);
