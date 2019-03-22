@@ -6,6 +6,7 @@ import biz.k11i.xgboost.tree.RegTree;
 import biz.k11i.xgboost.tree.RegTreeNode;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
+import hex.genmodel.algos.XGLeafAssignMojo;
 import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
@@ -18,7 +19,7 @@ import java.util.Arrays;
 /**
  * "Gradient Boosting Machine" MojoModel
  */
-public abstract class XGBoostMojoModel extends MojoModel implements SharedTreeGraphConverter,Closeable {
+public abstract class XGBoostMojoModel extends MojoModel implements SharedTreeGraphConverter,Closeable, XGLeafAssignMojo {
 
   private static final String SPACE = " ";
 

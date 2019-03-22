@@ -3,6 +3,7 @@ package hex.genmodel.easy;
 import hex.ModelCategory;
 import hex.genmodel.GenModel;
 import hex.genmodel.IClusteringModel;
+import hex.genmodel.algos.XGLeafAssignMojo;
 import hex.genmodel.algos.deepwater.DeepwaterMojoModel;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.algos.glrm.GlrmMojoModel;
@@ -537,6 +538,13 @@ public class EasyPredictModelWrapper implements Serializable {
     double[] rawData = nanArray(m.nfeatures());
     rawData = fillRawData(data, rawData);
     return ((SharedTreeMojoModel) m).getLeafNodeAssignments(rawData);
+  }
+
+
+  public float[] xgLeafNodeAssignmentExtended(RowData data) throws PredictException {
+    double[] rawData = nanArray(m.nfeatures());
+    rawData = fillRawData(data, rawData);
+    return ((XGLeafAssignMojo) m).getLeafNodeAssignments(rawData);
   }
 
   /**
