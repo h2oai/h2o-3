@@ -6,7 +6,7 @@ import hex.genmodel.*;
 import hex.genmodel.algos.drf.DrfMojoModel;
 import hex.genmodel.algos.gbm.GbmMojoModel;
 import hex.genmodel.algos.glm.GlmMojoModel;
-import hex.tree.isofor.IsolationForestModel;
+import hex.genmodel.algos.isofor.IsolationForestMojoModel;
 import water.Key;
 import water.fvec.ByteVec;
 import water.fvec.Frame;
@@ -21,7 +21,7 @@ import java.util.Objects;
  */
 public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, GenericModelOutput> {
     
-    private static final Class[] SUPPORTED_MOJOS = new Class[]{GlmMojoModel.class, GbmMojoModel.class, IsolationForestModel.class, DrfMojoModel.class};
+    private static final Class[] SUPPORTED_MOJOS = new Class[]{GlmMojoModel.class, GbmMojoModel.class, IsolationForestMojoModel.class, DrfMojoModel.class};
 
     public Generic(GenericModelParameters genericParameters){
         super(genericParameters);
