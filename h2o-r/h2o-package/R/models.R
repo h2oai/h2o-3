@@ -3672,6 +3672,7 @@ print.h2o.stackedEnsemble.summary <- function(x, ...) cat(x, sep = "\n")
 #' @return Returns H2O Generic Model based on give embedded model
 #'
 #' Usage example:
+#' @examples
 #' \donttest{
 #' generic_model <- h2o.genericModel(file_path = "/path/to/mojo.zip")
 #' predictions <- h2o.predict(generic_model, dataset)
