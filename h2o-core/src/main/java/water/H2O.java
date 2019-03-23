@@ -1867,38 +1867,7 @@ final public class H2O {
     if( v != null ) v.removePersist();
   }
   public static void raw_clear() { STORE.clear(); }
-
-  /**
-   * Cleans H2O's DKV while retaining specified collection of {@link Key}s.
-   * Only Frame or Model Keys are retained, others are silently ignored.
-   * In case of Frames, only the Frame key is possible. All the Frame-related keys are discovered automatically.
-   *
-   * @param keys Keys to retain, Frame and Model keys only.
-   */
-  public static void retain(final Collection<Key> keys) {
-    Objects.requireNonNull(keys);
-
-    final Set<Key> retainedKeys = new HashSet<>(keys.size());
-    retainedKeys.addAll(keys);
-    final Collection<Value> storeKeys = STORE.values();
-
-    for (final Key key : keys) {
-      final Value value = Value.STORE_get(key);
-      if (value.isFrame()) {
-        retainedKeys.addAll(((Frame) value.get()).allKeys());
-      }
-    }
-
-    for (final Value value : storeKeys) {
-      if (retainedKeys.contains(value._key)) {
-        continue;
-      }
-      if (!value.isModel() && !value.isFrame()) continue;
-
-      ((Keyed) value.get()).remove();
-    }
-  }
-
+  
   public static boolean containsKey( Key key ) { return STORE.get(key) != null; }
   static Key getk( Key key ) { return STORE.getk(key); }
   public static Set<Key> localKeySet( ) { return STORE.keySet(); }

@@ -134,18 +134,16 @@ public class DKVTest extends TestUtil {
     Frame frame = null;
 
     try {
-      frame = TestUtil.parse_test_file("smalldata/testng/airlines_train.csv");
-      List<Key> retainedKeys = new ArrayList<Key>();
-      retainedKeys.add(frame._key);
-      H2O.retain(retainedKeys);
+      frame = TestUtil.parse_test_file("./smalldata/testng/airlines_train.csv");
+      new DKV.RetainKeysTask(new Key[]{frame._key}).doAllNodes();
       assertTrue(H2O.STORE.containsKey(frame._key));
       assertNotNull(DKV.get(frame._key));
 
       for (Vec vec : frame.vecs()) {
-        assertTrue(H2O.STORE.containsKey(vec._key));
+        assertNotNull(vec._key);
 
         for (int i = 0; i < vec.nChunks(); i++) {
-          assertTrue(H2O.STORE.containsKey(vec.chunkKey(i)));
+          assertNotNull(DKV.get(vec.chunkKey(i)));
         }
       }
       
@@ -160,15 +158,14 @@ public class DKVTest extends TestUtil {
 
     try {
       frame = TestUtil.parse_test_file("smalldata/testng/airlines_train.csv");
-      List<Key> retainedKeys = new ArrayList<>();
-      H2O.retain(retainedKeys);
+      new DKV.RetainKeysTask(new Key[]{}).doAllNodes();
       assertNull(DKV.get(frame._key));
 
       for (Vec vec : frame.vecs()) {
-        assertFalse(H2O.STORE.containsKey(vec._key));
+        assertNull(vec._key);
 
         for (int i = 0; i < vec.nChunks(); i++) {
-          assertFalse(H2O.STORE.containsKey(vec.chunkKey(i)));
+          assertNull(DKV.get(vec.chunkKey(i)));
         }
       }
 

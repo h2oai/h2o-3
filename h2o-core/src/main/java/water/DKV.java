@@ -1,7 +1,7 @@
 package water;
 
-import water.fvec.Frame;
-
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -223,5 +223,32 @@ public abstract class DKV {
     // Get data "the hard way"
     RPC<TaskGetKey> tgk = TaskGetKey.start(home,key);
     return blocking ? TaskGetKey.get(tgk) : null;
+  }
+
+  public static final class RetainKeysTask extends MRTask<RetainKeysTask> {
+
+    private final Key[] _retainedKeys;
+
+    public RetainKeysTask(Key[] retainedKeys) {
+      _retainedKeys = retainedKeys;
+    }
+
+    @Override
+    protected void setupLocal() {
+      final Set<Key> retainedKeys = new HashSet<>(_retainedKeys.length);
+      retainedKeys.addAll(Arrays.asList(_retainedKeys));
+      final Collection<Value> storeKeys = H2O.STORE.values();
+      Futures removalFutures = new Futures();
+      for (final Value value : storeKeys) {
+        if (retainedKeys.contains(value._key)) {
+          continue;
+        }
+        if (!value.isModel() && !value.isFrame()) continue;
+
+        // It is important to trigger the removal strategy on the Keyed object itself
+        ((Keyed) value.get()).remove(removalFutures);
+      }
+      removalFutures.blockForPending();
+    }
   }
 }

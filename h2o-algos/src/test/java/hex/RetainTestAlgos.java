@@ -6,10 +6,7 @@ import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.DKV;
-import water.H2O;
-import water.Key;
-import water.TestUtil;
+import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
@@ -23,7 +20,7 @@ public class RetainTestAlgos extends TestUtil {
 
     @BeforeClass()
     public static void setup() {
-        stall_till_cloudsize(1);
+        stall_till_cloudsize(3);
     }
 
     @Test
@@ -31,7 +28,7 @@ public class RetainTestAlgos extends TestUtil {
         NaiveBayesModel model = null;
         Frame trainingFrame = null, preds = null;
         try {
-            trainingFrame = parse_test_file("smalldata/iris/iris_wheader.csv");
+            trainingFrame = parse_test_file("./smalldata/iris/iris_wheader.csv");
             List<Key> retainedKeys = new ArrayList<>();
             retainedKeys.add(trainingFrame._key);
             // Test the training frame has not been deleted
@@ -102,10 +99,7 @@ public class RetainTestAlgos extends TestUtil {
     }
 
     private static void testRetainFrame(Frame trainingFrame) {
-        List<Key> retainedKeys = new ArrayList<>();
-        retainedKeys.add(trainingFrame._key);
-
-        H2O.retain(retainedKeys);
+        new DKV.RetainKeysTask(new Key[]{trainingFrame._key}).doAllNodes();
         assertTrue(H2O.STORE.containsKey(trainingFrame._key));
         assertNotNull(DKV.get(trainingFrame._key));
 
@@ -120,16 +114,13 @@ public class RetainTestAlgos extends TestUtil {
     
     private static void testRetainModel(Model model, Frame trainingFrame){
         assertNotNull(DKV.get(model._key));
-        List<Key> retainedKeys = new ArrayList<>();
-        retainedKeys.add(model._key);
-        H2O.retain(retainedKeys);
+        new DKV.RetainKeysTask(new Key[]{model._key}).doAllNodes();
         assertNotNull(DKV.get(model._key));
         
-        assertNull(DKV.get(trainingFrame._key));
     }
     
-    private static void testModelDeletion(Model model){
-        H2O.retain(new ArrayList<Key>());
+    private static void testModelDeletion(final Model model){
+        new DKV.RetainKeysTask(new Key[]{}).doAllNodes();
         assertNull(DKV.get(model._key));
     }
 }
