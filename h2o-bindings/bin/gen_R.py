@@ -658,7 +658,7 @@ def help_example_for(algo):
         # http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/stacked-ensembles.html
         """
     if algo == "generic":
-        return """\donttest{
+        return """\dontrun{
         library(h2o)
         h2o.init()
         

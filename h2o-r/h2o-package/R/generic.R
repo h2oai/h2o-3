@@ -9,7 +9,7 @@
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param model_key Key to the self-contained model archive already uploaded to H2O.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #' 
