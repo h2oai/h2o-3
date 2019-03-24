@@ -20,7 +20,7 @@ public class RetainTestAlgos extends TestUtil {
 
     @BeforeClass()
     public static void setup() {
-        stall_till_cloudsize(3);
+        stall_till_cloudsize(1);
     }
 
     @Test
