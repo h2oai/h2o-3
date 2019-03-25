@@ -1,8 +1,8 @@
 package hex.schemas;
 
-import hex.mojo.GenericModel;
-import hex.mojo.GenericModelOutput;
-import hex.mojo.GenericModelParameters;
+import hex.generic.GenericModel;
+import hex.generic.GenericModelOutput;
+import hex.generic.GenericModelParameters;
 import water.api.API;
 import water.api.schemas3.ModelOutputSchemaV3;
 import water.api.schemas3.ModelSchemaV3;

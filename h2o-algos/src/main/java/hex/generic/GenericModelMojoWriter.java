@@ -1,4 +1,4 @@
-package hex.mojo;
+package hex.generic;
 
 import hex.ModelMojoWriter;
 import hex.genmodel.utils.IOUtils;

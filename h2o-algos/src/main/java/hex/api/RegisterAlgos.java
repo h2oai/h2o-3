@@ -1,7 +1,7 @@
 package hex.api;
 
 import hex.ModelBuilder;
-import hex.mojo.Generic;
+import hex.generic.Generic;
 import hex.tree.TreeHandler;
 import water.api.AlgoAbstractRegister;
 import water.api.RestApiContext;
