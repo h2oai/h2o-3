@@ -160,9 +160,9 @@ public class DKVTest extends TestUtil {
       frame = TestUtil.parse_test_file("smalldata/testng/airlines_train.csv");
       new DKV.RetainKeysTask(new Key[]{}).doAllNodes();
       assertNull(DKV.get(frame._key));
-
+      
       for (Vec vec : frame.vecs()) {
-        assertNull(vec._key);
+        assertNull(DKV.get(vec._key));
 
         for (int i = 0; i < vec.nChunks(); i++) {
           assertNull(DKV.get(vec.chunkKey(i)));
