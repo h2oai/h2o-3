@@ -514,7 +514,7 @@ public class AstGroup extends AstPrimitive {
   // Main worker MRTask.  Makes 1 pass over the data, and accumulates both all
   // groups and all aggregates
   public static class GBTask extends MRTask<GBTask> {
-    final IcedHashMap<G, String> _gss; // Shared per-node, common, racy
+    IcedHashMap<G, String> _gss; // each thread will have its own IcedHashMap
     private final int[] _gbCols; // Columns used to define group
     private final AGG[] _aggs;   // Aggregate descriptions
     private final int _medianCounts;
@@ -523,47 +523,40 @@ public class AstGroup extends AstPrimitive {
     GBTask(int[] gbCols, AGG[] aggs, int medianCounts) {
       _gbCols = gbCols;
       _aggs = aggs;
-      _gss = new IcedHashMap<>();
       _medianCounts = medianCounts;
     }
 
     @Override
     public void map(Chunk[] cs) {
       // Groups found in this Chunk
-      IcedHashMap<G, String> gs = new IcedHashMap<>();
+      _gss = new IcedHashMap<>();
       G gWork = new G(_gbCols.length, _aggs, _medianCounts); // Working Group
       G gOld;                   // Existing Group to be filled in
       for (int row = 0; row < cs[0]._len; row++) {
         // Find the Group being worked on
         gWork.fill(row, cs, _gbCols);            // Fill the worker Group for the hashtable lookup
-        if (gs.putIfAbsent(gWork, "") == null) { // Insert if not absent (note: no race, no need for atomic)
+        if (_gss.putIfAbsent(gWork, "") == null) { // Insert if not absent (note: no race, no need for atomic)
           gOld = gWork;                          // Inserted 'gWork' into table
           gWork = new G(_gbCols.length, _aggs, _medianCounts);   // need entirely new G
-        } else gOld = gs.getk(gWork);            // Else get existing group
+        } else gOld = _gss.getk(gWork);            // Else get existing group
 
         for (int i = 0; i < _aggs.length; i++) // Accumulate aggregate reductions
           _aggs[i].op(gOld._dss, gOld._ns, i, cs[_aggs[i]._col].atd(row));
       }
-      // This is a racy update into the node-local shared table of groups
-      reduce(gs);               // Atomically merge Group stats
     }
 
-    // Racy update on a subtle path: reduction is always single-threaded, but
-    // the shared global hashtable being reduced into is ALSO being written by
-    // parallel map calls.
+    // combine IcedHashMap from all threads here.
     @Override
     public void reduce(GBTask t) {
-      if (_gss != t._gss) reduce(t._gss);
-    }
-
-    // Non-blocking race-safe update of the shared per-node groups hashtable
-    private void reduce(IcedHashMap<G, String> r) {
-      for (G rg : r.keySet())
-        if (_gss.putIfAbsent(rg, "") != null) {
-          G lg = _gss.getk(rg);
-          for (int i = 0; i < _aggs.length; i++)
-            _aggs[i].atomic_op(lg._dss, lg._ns, i, rg._dss[i], rg._ns[i]); // Need to atomically merge groups here
+      if (_gss != t._gss) {
+        for (G rg : t._gss.keySet()) {
+          if (_gss.putIfAbsent(rg, "") != null) {
+            G lg = _gss.getk(rg);
+            for (int i = 0; i < _aggs.length; i++)
+              _aggs[i].atomic_op(lg._dss, lg._ns, i, rg._dss[i], rg._ns[i]); // Need to atomically merge groups here
+          }
         }
+      }
     }
   }
 

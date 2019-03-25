@@ -10,6 +10,7 @@ import water.Keyed;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.rapids.vals.ValFrame;
+import water.Scope;
 
 import static org.junit.Assert.assertTrue;
 
@@ -256,7 +257,58 @@ public class GroupByTest extends TestUtil {
 
     ids.delete();
     Keyed.remove(Key.make("cov"));
-  }    
+  }
+
+  // I copied this test from Andrey Spiridonov and added fix to make sure there is no leaked key and also
+  // added one more test, median to the groupby operations.
+  @Test
+  public void groupThenAggregateForNumeratorAndDenominatorTest() {
+
+    Frame etalon = null;
+    for (int attempt = 0; attempt < 300; attempt++) {
+      Scope.enter();
+      try {
+        Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+        Scope.track(fr);
+        String responseColumn = "survived";
+
+        String teColumnName = "home.dest";
+
+        int teColumnIndex = fr.find(teColumnName);
+        int responseColumnIndex = fr.find(responseColumn);
+
+        String tree = String.format("(GB %s [%d]  sum %s \"all\" nrow %s \"all\")", fr._key,
+                teColumnIndex, responseColumnIndex, responseColumnIndex);
+        Val val = Rapids.exec(tree);
+        Frame groupedFrame = val.getFrame();
+        groupedFrame._key = Key.make();
+        DKV.put(groupedFrame._key, groupedFrame);
+
+        if (etalon == null) {
+          etalon = groupedFrame;
+          Scope.untrack(etalon.keys());
+          Frame.export(etalon, "encoding_map_etalon.csv", etalon._key.toString(), true, 1).get();
+        } else {
+          Scope.track(groupedFrame);
+          try {
+            assertTrue("Failed attempt number " + attempt, isBitIdentical(etalon, groupedFrame));
+          } catch (AssertionError ex) {
+            Frame.export(groupedFrame, "encoding_map_badboy" + attempt + ".csv", groupedFrame._key.toString(),
+                    true, 1).get();
+            throw ex;
+          }
+        }
+        // printOutFrameAsTable(groupedFrame, false, 100); // remove this for speedup
+      } finally {
+        Scope.exit();
+      }
+    }
+    if (etalon != null) { // bug here, need to do this to avoid leaked keys.
+      DKV.remove(etalon._key);
+      etalon.delete();
+    }
+  }
+
 
 
   private void chkDim( Frame fr, int col, int row ) {
