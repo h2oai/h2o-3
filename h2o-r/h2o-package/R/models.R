@@ -246,6 +246,11 @@ h2o.getFutureModel <- function(object,verbose=FALSE) {
   param_values
 }
 
+.is.int64 <- function(v) {
+    number <- suppressWarnings(as.numeric(v))
+    if(is.na(number)) return(False)
+    number > -2^63 & number < 2^63 & (floor(number)==ceiling(number))
+}
 
 # Check definition of given parameters in given list of parameters
 # Returns error message or empty string
@@ -291,13 +296,6 @@ h2o.getFutureModel <- function(object,verbose=FALSE) {
     }
   e
 }
-
-.is.int64 <- function(v) {
-  number <- suppressWarnings(as.numeric(v))
-  if(is.na(number)) return(False)
-  number > -2^63 & number < 2^63 & (floor(number)==ceiling(number))
-}
-
 
 .h2o.transformParam <- function(paramDef, paramValue, collapseArrays = TRUE) {
   # Fetch mapping for given Java to R types
