@@ -39,7 +39,6 @@ public class TargetEncodingHyperparamsEvaluator extends Iced {
     DKV.put(trainCopy);
 
     String[] originalIgnoredColumns = modelBuilder._parms._ignored_columns;
-    String foldColumnName = modelBuilder._parms._fold_column;
 
     try {
       String responseColumn = modelBuilder._parms._response_column;
@@ -54,11 +53,16 @@ public class TargetEncodingHyperparamsEvaluator extends Iced {
           // Maybe we can use the same folds that we will use for splitting but in that case we will have only 4 folds for encoding map
           // generation and application of this map to the frame that was used for creating map
           foldColumnForTE = modelBuilder._job._key.toString() + "_fold";
-          int nfolds = 7;
+          int nfolds = 5;
           addKFoldColumn(trainCopy, foldColumnForTE, nfolds, seedForFoldColumn);
 
+          //TODO consider optimising this as encoding map will be the same for whole runs as long as we only use KFold scenario with same seed for fold assignments
           encodingMap = tec.prepareEncodingMap(trainCopy, responseColumn, foldColumnForTE, true);
+//          Frame.export(encodingMap.get("home.dest"), "evaluator_cv_kfold.csv", encodingMap.get("home.dest")._key.toString(), true, 1).get();
+
           trainEncoded = tec.applyTargetEncoding(trainCopy, responseColumn, encodingMap, KFold, foldColumnForTE, teParams.isWithBlendedAvg(), teParams.getNoiseLevel(), true, seedForFoldColumn);
+//          Frame.export(trainEncoded, "evaluator_encoded_train_cv_kfold.csv", trainEncoded._key.toString(), true, 1).get();
+
           break;
         case LeaveOneOut:
         case None:

@@ -198,6 +198,26 @@ public class TargetEncoderFrameHelper {
     return data;
   }
 
+  // Note: Is supposed to be used with small frames
+  public static double[][] frameAsArray(Frame frame, String[] columnsToIgnore) {
+    Frame frameCopy = frame.deepCopy(Key.make().toString());
+    DKV.put(frameCopy);
+    
+    for (String columnName : columnsToIgnore) {
+      frameCopy.remove(columnName).remove();
+    }
+    
+    double[][] data = new double[frameCopy.numCols()][(int)frameCopy.numRows()];
+    for (int colIdx = 0; colIdx < frameCopy.numCols(); colIdx++) {
+      Vec currentColumn = frameCopy.vec(colIdx);
+      for (int rowIdx = 0; rowIdx < frameCopy.numRows(); rowIdx++) {
+        data[colIdx][rowIdx] = currentColumn.at(rowIdx);
+      }
+      
+    }
+    return data;
+  }
+
   /**
    * @return Frame that is registered in DKV
    */

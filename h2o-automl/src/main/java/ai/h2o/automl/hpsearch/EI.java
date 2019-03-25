@@ -157,8 +157,8 @@ public class EI extends AcquisitionFunction {
         double exploitationTerm = mterm.atd(i) * cdf.atd(i);
         double explorationTerm = Math.sqrt(variance.atd(i)) * pdf.atd(i);
         Log.info("Exploitation/exploration ->  " + exploitationTerm + " / " + explorationTerm);
-        Log.warn("!!!!!!!!!!!!!!! exploitationTerm is commented out" );
-        af.set(i, exploitationTerm + explorationTerm);
+//        Log.warn("!!!!!!!!!!!!!!! exploitationTerm is commented out" );
+        af.set(i, exploitationTerm + explorationTerm * 1.3);
       }
     }
   }

@@ -24,8 +24,6 @@ public class GridSearchVsSMBOBenchmark extends water.TestUtil {
     asFactor(fr, responseColumnName);
     return fr;
   }
-  
-  int topListSize = 3;
 
   private GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> [] findBestTargetEncodingParams(Frame fr, String responseColumnName, int numberOfIterations, long seed) {
 
@@ -66,34 +64,39 @@ public class GridSearchVsSMBOBenchmark extends water.TestUtil {
     mb.init(false);
     return gridSearchTEParamsSelectionStrategy.getBestParamsWithEvaluation(mb);
   }
+
+  int topListSize = 10;
   
   @Test
   public void benchmark() {
-    int numberOfSearchIterations = 189; //377; 
+    int numberOfSearchIterations = 189;  
     String responseColumnName = "survived";
     Frame frForRGS = null;
     Frame frameForSMBO = null;
     Random generator = new Random();
     
-    int successCount = 0;
+    int[] successCountPerRank = new int[topListSize];
+    int successCountTotal = 0;
+    
     int averageIndexWhenBestParamsWasFoundSMBO = 0;
     double averageTimeRGS = 0;
     double averageTimeSMBO = 0;
 
-    int numberOfRuns = 10;
+    int numberOfRuns = 1;
     for (int seedAttempt = 0; seedAttempt < numberOfRuns; seedAttempt++) {
       long seed = generator.nextLong();
       try {
+        long start2 = System.currentTimeMillis();
+        frameForSMBO = getPreparedTitanicFrame("survived");
+        
+        Evaluated<TargetEncodingParams> bestParamsFromSMBO = findBestTargetEncodingParamsWithSMBO(frameForSMBO, responseColumnName, 0.2, seed);
+        long timeWithSMBO = System.currentTimeMillis() - start2;
+
         long start1 = System.currentTimeMillis();
         frForRGS = getPreparedTitanicFrame("survived");
         Evaluated<TargetEncodingParams> [] bestParamsFromRGS = findBestTargetEncodingParams(frForRGS, responseColumnName, numberOfSearchIterations, seed);
         long timeWithRGS = System.currentTimeMillis() - start1;
-
-        long start2 = System.currentTimeMillis();
-        frameForSMBO = getPreparedTitanicFrame("survived");
-//        Evaluated<TargetEncodingParams> bestParamsFromSMBO = findBestTargetEncodingParamsWithSMBO(frameForSMBO, responseColumnName, 1, seed);
-        Evaluated<TargetEncodingParams> bestParamsFromSMBO = findBestTargetEncodingParamsWithSMBO(frameForSMBO, responseColumnName, 0.15, seed);
-        long timeWithSMBO = System.currentTimeMillis() - start2;
+        
         System.out.println("Time with GRS: " + timeWithRGS);
         System.out.println("Time with SMBO: " + timeWithSMBO);
 
@@ -104,20 +107,29 @@ public class GridSearchVsSMBOBenchmark extends water.TestUtil {
         System.out.println("bestParamsFromRGS.getScore(): " + bestParamsFromRGS[0].getScore());
 
         // If SMBO prediction is in top `topListSize` then it is considered as a success
-        if(bestParamsFromSMBO.getScore() >= bestParamsFromRGS[topListSize - 1].getScore()) successCount++;
+        for (int rankIdx = 0; rankIdx < topListSize; rankIdx++) {
+          if(bestParamsFromSMBO.getScore() >= bestParamsFromRGS[rankIdx].getScore()) {
+            successCountPerRank[rankIdx]++;
+            successCountTotal++;
+            break;
+          }
+        }
 
         System.out.println("Index of best found params for " + seedAttempt + "st attempt : " + bestParamsFromSMBO.getIndex() );
 
         averageIndexWhenBestParamsWasFoundSMBO += bestParamsFromSMBO.getIndex();
-//        assertTrue(bestParamsFromSMBO.getScore() == bestParamsFromRGS.getScore());
-//        assertTrue(timeWithSMBO <= timeWithRGS);
 
-      } finally {
+      } catch (Exception ex) {
+        throw ex;
+      } {
         frForRGS.delete();
         frameForSMBO.delete();
       }
     }
-    System.out.println("Number of times SBMO beat RGS is " + successCount + " out of total " + numberOfRuns + " runs. Probability: " + (double)successCount / numberOfRuns);
+    System.out.println("\n\nNumber of times SBMO beat RGS is " + successCountTotal + " out of total " + numberOfRuns + " runs. Probability: " + (double)successCountTotal / numberOfRuns);
+    for (int rankIdx = 0; rankIdx < topListSize; rankIdx++) {
+      System.out.println("Number of times SBMO found value with rank=" + rankIdx + " is " + successCountPerRank[rankIdx]);
+    }
     System.out.println("Average index of best found(locally) params: " + (double) averageIndexWhenBestParamsWasFoundSMBO / numberOfRuns );
     System.out.println("Average time RGS: " + averageTimeRGS / numberOfRuns );
     System.out.println("Average time SMBO: " + averageTimeSMBO / numberOfRuns );

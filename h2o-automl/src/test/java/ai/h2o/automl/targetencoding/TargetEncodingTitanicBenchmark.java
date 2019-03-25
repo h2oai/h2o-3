@@ -1,5 +1,6 @@
 package ai.h2o.automl.targetencoding;
 
+import ai.h2o.automl.AutoMLBenchmarkingHelper;
 import hex.ModelMetricsBinomial;
 import hex.ScoreKeeper;
 import hex.genmodel.utils.DistributionFamily;
@@ -15,6 +16,7 @@ import water.fvec.Frame;
 import java.util.Map;
 import java.util.Random;
 
+import static ai.h2o.automl.AutoMLBenchmarkingHelper.getPreparedTitanicFrame;
 import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
 
 /*
@@ -34,29 +36,26 @@ public class TargetEncodingTitanicBenchmark extends TestUtil {
     long splittingSeed = 2345;
     try {
 
-      BlendingParams params = new BlendingParams(3, 1);
+      //1, isWithBlending = true, smoothing = 10.0, inflection_point = 100.0 // AUC = 0.8212778782399036
+      BlendingParams params = new BlendingParams(100, 10);
       String targetColumnName = "survived";
-      String[] teColumns = {"cabin", "home.dest", "embarked"};
+      String[] teColumns = {"cabin", "home.dest"/*, "embarked"*/};
       String foldColumnName = "fold";
-      String[] teColumnsWithFold = {"cabin", "home.dest", "embarked", foldColumnName};
+      String[] teColumnsWithFold = {"cabin", "home.dest"/*, "embarked"*/, foldColumnName};
 
       TargetEncoder tec = new TargetEncoder(teColumns, params);
 
-      Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train.csv");
-      Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid.csv");
-      Frame testFrame = parse_test_file(Key.make("titanic_test_parsed"), "smalldata/gbm_test/titanic_test.csv");
-      asFactor(trainFrame, targetColumnName);
-      asFactor(validFrame, targetColumnName);
-      asFactor(testFrame, targetColumnName);
-      printOutColumnsMetadata(testFrame);
+      Frame fr = getPreparedTitanicFrame(targetColumnName);
+      Frame[] splits = AutoMLBenchmarkingHelper.getRandomSplitsFromDataframe(fr, new double[]{0.7, 0.15, 0.15}, splittingSeed);
+      Frame trainFrame = splits[0];
+      Frame validFrame = splits[1];
+      Frame testFrame = splits[2];
+      Frame.export(trainFrame, "te_benchmark_train.csv", trainFrame._key.toString(), true, 1).get();
+
 
       Scope.track(trainFrame, validFrame, testFrame);
 
-      addKFoldColumn(trainFrame, foldColumnName, 5, 1234L);
-
-      trainFrame.remove(new String[]{"name", "ticket", "boat", "body"});
-      validFrame.remove(new String[]{"name", "ticket", "boat", "body"});
-      testFrame.remove(new String[]{"name", "ticket", "boat", "body"});
+      addKFoldColumn(trainFrame, foldColumnName, 5, splittingSeed);
 
       boolean withBlendedAvg = true;
       boolean withNoiseOnlyForTraining = true;
@@ -94,7 +93,7 @@ public class TargetEncodingTitanicBenchmark extends TestUtil {
       parms._stopping_metric = ScoreKeeper.StoppingMetric.AUC;
       parms._stopping_rounds = 5;
       parms._ignored_columns = teColumnsWithFold;
-      parms._seed = 1234L;
+      parms._seed = splittingSeed;
       GBM job = new GBM(parms);
       gbm = job.trainModel().get();
 

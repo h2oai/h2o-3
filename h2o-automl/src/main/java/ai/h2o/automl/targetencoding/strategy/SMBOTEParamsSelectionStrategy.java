@@ -1,5 +1,7 @@
 package ai.h2o.automl.targetencoding.strategy;
 
+import ai.h2o.automl.hpsearch.GPSMBO;
+import ai.h2o.automl.hpsearch.GPSurrogateModel;
 import ai.h2o.automl.hpsearch.RFSMBO;
 import ai.h2o.automl.targetencoding.TargetEncoderFrameHelper;
 import ai.h2o.automl.targetencoding.TargetEncodingParams;
@@ -113,12 +115,15 @@ public class SMBOTEParamsSelectionStrategy extends GridBasedTEParamsSelectionStr
     //Should be chosen automatically based on the task
     boolean theBiggerTheBetter = true;
     
-    RFSMBO rfsmbo = new RFSMBO(theBiggerTheBetter){};
+//    RFSMBO rfsmbo = new RFSMBO(theBiggerTheBetter){};
+    GPSMBO rfsmbo = new GPSMBO(theBiggerTheBetter){};
     int seqAttemptsBeforeStopping = (int) (unexploredHyperspaceAsFrame.numRows() * _earlyStoppingRatio);
-//    int totalAttemptsBeforeStopping = (int) (unexploredHyperspaceAsFrame.numRows()  * 0.25); // TODO hardcoded parameter
-    int totalAttemptsBeforeStopping = (int) (unexploredHyperspaceAsFrame.numRows() * 0.22 ); // TODO hardcoded parameter
+    
+    int totalAttemptsBeforeStopping = (int) (unexploredHyperspaceAsFrame.numRows() * 0.4 ); // TODO hardcoded parameter
+    
     EarlyStopper earlyStopper = new EarlyStopper(seqAttemptsBeforeStopping, totalAttemptsBeforeStopping, thresholdScoreFromPriors, theBiggerTheBetter);
 
+    long startTimeForSMBO = System.currentTimeMillis();
     while(earlyStopper.proceed() && unexploredHyperspaceAsFrame.numRows() > 0 ) {
       
       if(rfsmbo.hasNoPrior()) {
@@ -152,6 +157,14 @@ public class SMBOTEParamsSelectionStrategy extends GridBasedTEParamsSelectionStr
       int evaluationSequenceNumber = _evaluatedQueue.size();
       _evaluatedQueue.add(new Evaluated<>(param, evaluationResult, evaluationSequenceNumber));
     }
+
+    long timeWithSMBO = System.currentTimeMillis() - startTimeForSMBO;
+    
+    System.out.println("Time spent on choosing best HPs: " + timeWithSMBO);
+
+    // TODO consider removing as it is for dev benchmarking
+    GPSurrogateModel gpSurrogateModel = (GPSurrogateModel) (rfsmbo.surrogateModel());
+    System.out.println("Total time for standardisation: " +gpSurrogateModel.totalTimeStandardisation);
 
     exporter.exportToCSV("scores_smbo_" + modelBuilder._parms.fullName());
     Evaluated<TargetEncodingParams> targetEncodingParamsEvaluated = _evaluatedQueue.peek();

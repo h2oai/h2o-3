@@ -9,6 +9,12 @@ import water.rapids.StratificationAssistant;
 
 public class AutoMLBenchmarkingHelper extends TestUtil {
 
+  public static Frame getPreparedTitanicFrame(String responseColumnName) {
+    Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+    fr.remove(new String[]{"name", "ticket", "boat", "body"});
+    asFactor(fr, responseColumnName);
+    return fr;
+  }
 
   static public Frame[] getRandomSplitsFromDataframe(Frame fr, double[] ratios, long splitSeed) {
     Key<Frame>[] keys = aro(Key.<Frame>make(), Key.<Frame>make(), Key.<Frame>make());
@@ -37,8 +43,8 @@ public class AutoMLBenchmarkingHelper extends TestUtil {
 
   public static double getScoreBasedOn(Frame fr, Model model) {
     model.score(fr);
-    hex.ModelMetricsBinomial mmWithoutTE = hex.ModelMetricsBinomial.getFromDKV(model, fr);
-    return mmWithoutTE.auc();
+    hex.ModelMetricsBinomial mmb = hex.ModelMetricsBinomial.getFromDKV(model, fr);
+    return mmb.auc();
   }
 
   public static double getCumulativeLeaderboardScore(Frame split, Leaderboard leaderboardWithTE) {

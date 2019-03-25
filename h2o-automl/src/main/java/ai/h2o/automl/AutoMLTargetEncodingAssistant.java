@@ -93,8 +93,6 @@ class AutoMLTargetEncodingAssistant{
 
     String[] columnsToEncode = getApplicationStrategy().getColumnsToEncode();
 
-    appendOriginalTEColumnsNamesToIgnoredListOfColumns(columnsToEncode);
-
     if (columnsToEncode.length > 0) {
 
       //TODO move it inside TargetEncoder. add constructor ? not all the parameters are used durin
@@ -120,11 +118,14 @@ class AutoMLTargetEncodingAssistant{
             
             String foldColumnForTE = null;
             foldColumnForTE = _modelBuilder._job._key.toString() + "_te_fold_column";
-            int nfolds = 7;
+            int nfolds = 5;
             addKFoldColumn(trainCopy, foldColumnForTE, nfolds, seed);
 
             encodingMap = tec.prepareEncodingMap(trainCopy, responseColumnName, foldColumnForTE, true);
+            Frame.export(encodingMap.get("home.dest"), "assistant_cv_kfold.csv", encodingMap.get("home.dest")._key.toString(), true, 1).get();
             Frame encodedTrainingFrame  = tec.applyTargetEncoding(trainCopy, responseColumnName, encodingMap, KFold, foldColumnForTE, withBlendedAvg, noiseLevel, imputeNAsWithNewCategory, seed);
+
+            Frame.export(encodedTrainingFrame, "assistant_encoded_train_cv_kfold.csv", encodedTrainingFrame._key.toString(), true, 1).get();
 
             copyEncodedColumnsToDestinationFrameAndRemoveSource(columnsToEncode, encodedTrainingFrame, _trainingFrame);
 
@@ -214,6 +215,9 @@ class AutoMLTargetEncodingAssistant{
       }
 
     }
+
+    setColumnsToIgnore(columnsToEncode);
+
   }
   
   private Frame[] splitByRatio(Frame fr,double[] ratios, long seed) {
@@ -224,7 +228,7 @@ class AutoMLTargetEncodingAssistant{
   // Due to TE we want to exclude original column so that we can use only encoded ones. 
   // We need to be careful and reset value in _buildSpec back as next modelBuilder in AutoML sequence will exclude this 
   // columns even before we will have a chance to apply TE.
-  void appendOriginalTEColumnsNamesToIgnoredListOfColumns(String[] columnsToEncode) {
+  void setColumnsToIgnore(String[] columnsToEncode) {
     _buildSpec.input_spec.ignored_columns = concat(_buildSpec.input_spec.ignored_columns, columnsToEncode);
   }
 
