@@ -1,6 +1,9 @@
 package water.parser;
 
+import org.junit.Before;
 import org.junit.Test;
+import water.TestUtil;
+import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 
 import static org.junit.Assert.*;
@@ -9,6 +12,11 @@ import static org.junit.Assert.*;
  * Unit test for methods of ARFFParser, for integration tests {@see ParserTestARFF}
  */
 public class ARFFParserTest {
+
+  @Before
+  public void setUp() throws Exception {
+    TestUtil.stall_till_cloudsize(1);
+  }
 
   @Test
   public void testProcessArffHeader() throws Exception {
@@ -52,6 +60,47 @@ public class ARFFParserTest {
   @Test
   public void testProcessArffHeader_unsupportedType() {
     runWithException("@attribute BLAH RELATIONAL", "Relational ARFF format is not supported.");
+  }
+  
+  @Test
+  public void nonLineMarkers_use_default(){
+    ParseSetup parseSetup = new ParseSetup();
+    parseSetup._parse_type = DefaultParserProviders.CSV_INFO;
+    parseSetup._check_header = ParseSetup.NO_HEADER;
+    parseSetup._separator = ',';
+    parseSetup._column_types = new byte[]{Vec.T_NUM,Vec.T_NUM,Vec.T_NUM,Vec.T_NUM, Vec.T_CAT};
+    parseSetup._column_names = new String[]{"Name"};
+    parseSetup._number_columns = 5;
+    parseSetup._single_quotes = false;
+    final ARFFParser parser = new ARFFParser(parseSetup, null);
+
+    final NFSFileVec data = TestUtil.makeNfsFileVec("./smalldata/arff-examples/dataWeka/iris.arff");
+    final Parser.ByteAryData byteAryData = new Parser.ByteAryData(data.getFirstBytes(), 0);
+    final ParseWriter parseWriter = new PreviewParseWriter(parseSetup._number_columns);
+    final PreviewParseWriter outWriter = (PreviewParseWriter) parser.parseChunk(0, byteAryData, parseWriter);
+    assertEquals(5, outWriter._ncols);
+    assertEquals(150, outWriter._nlines);
+  }
+
+  @Test
+  public void nonLineMarkers_modified(){
+    ParseSetup parseSetup = new ParseSetup();
+    parseSetup._parse_type = DefaultParserProviders.CSV_INFO;
+    parseSetup._check_header = ParseSetup.NO_HEADER;
+    parseSetup._separator = ',';
+    parseSetup._column_types = new byte[]{Vec.T_NUM,Vec.T_NUM,Vec.T_NUM,Vec.T_NUM, Vec.T_CAT};
+    parseSetup._column_names = new String[]{"Name"};
+    parseSetup._number_columns = 5;
+    parseSetup._single_quotes = false;
+    parseSetup._nonDataLineMarkers = new byte[]{'@'}; // Instead of using default settings, this should be used
+    final ARFFParser parser = new ARFFParser(parseSetup, null);
+
+    final NFSFileVec data = TestUtil.makeNfsFileVec("./smalldata/arff-examples/dataWeka/iris.arff");
+    final Parser.ByteAryData byteAryData = new Parser.ByteAryData(data.getFirstBytes(), 0);
+    final ParseWriter parseWriter = new PreviewParseWriter(parseSetup._number_columns);
+    final PreviewParseWriter outWriter = (PreviewParseWriter) parser.parseChunk(0, byteAryData, parseWriter);
+    assertEquals(5, outWriter._ncols);
+    assertEquals(153, outWriter._nlines); // Three lines more, as the last three lines start with '%'
   }
 
   private void runWithException(String attrSpec, String exceptedMessage) {

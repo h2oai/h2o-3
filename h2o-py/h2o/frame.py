@@ -309,11 +309,13 @@ class H2OFrame(object):
         raise H2OValueError("Column '%r' does not exist in the frame" % col)
 
 
-    def _import_parse(self, path, pattern, destination_frame, header, separator, column_names, column_types, na_strings, skipped_columns=None):
+    def _import_parse(self, path, pattern, destination_frame, header, separator, column_names, column_types, na_strings,
+                      skipped_columns=None, custom_non_data_line_markers = None):
         if H2OFrame.__LOCAL_EXPANSION_ON_SINGLE_IMPORT__ and is_type(path, str) and "://" not in path:  # fixme: delete those 2 lines, cf. PUBDEV-5717
             path = os.path.abspath(path)
         rawkey = h2o.lazy_import(path, pattern)
-        self._parse(rawkey, destination_frame, header, separator, column_names, column_types, na_strings, skipped_columns)
+        self._parse(rawkey, destination_frame, header, separator, column_names, column_types, na_strings,
+                    skipped_columns, custom_non_data_line_markers)
         return self
 
 
@@ -325,8 +327,9 @@ class H2OFrame(object):
 
 
     def _parse(self, rawkey, destination_frame="", header=None, separator=None, column_names=None, column_types=None,
-               na_strings=None, skipped_columns=None):
-        setup = h2o.parse_setup(rawkey, destination_frame, header, separator, column_names, column_types, na_strings, skipped_columns)
+               na_strings=None, skipped_columns=None, custom_non_data_line_markers = None):
+        setup = h2o.parse_setup(rawkey, destination_frame, header, separator, column_names, column_types, na_strings,
+                                skipped_columns, custom_non_data_line_markers)
         return self._parse_raw(setup)
 
 
@@ -342,7 +345,8 @@ class H2OFrame(object):
              "delete_on_done": True,
              "blocking": False,
              "column_types": None,
-             "skipped_columns":None
+             "skipped_columns":None,
+             "custom_non_data_line_markers": setup["custom_non_data_line_markers"]
              }
 
         if setup["column_names"]: p["column_names"] = None

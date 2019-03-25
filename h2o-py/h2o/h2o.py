@@ -364,7 +364,7 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
 
 
 def import_file(path=None, destination_frame=None, parse=True, header=0, sep=None, col_names=None, col_types=None,
-                na_strings=None, pattern=None, skipped_columns=None):
+                na_strings=None, pattern=None, skipped_columns=None, custom_non_data_line_markers = None):
     """
     Import a dataset that is already on the cluster.
 
@@ -401,6 +401,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     :param pattern: Character string containing a regular expression to match file(s) in the folder if `path` is a
         directory.
     :param skipped_columns: an integer list of column indices to skip and not parsed into the final frame from the import file.
+    :param custom_non_data_line_markers: If a line in imported file starts with any character in given string it will NOT be imported. Empty string means all lines are imported, None means that default behaviour for given format will be used
 
     :returns: a new :class:`H2OFrame` instance.
 
@@ -432,7 +433,8 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     if not parse:
         return lazy_import(path, pattern)
     else:
-        return H2OFrame()._import_parse(path, pattern, destination_frame, header, sep, col_names, col_types, na_strings, skipped_columns)
+        return H2OFrame()._import_parse(path, pattern, destination_frame, header, sep, col_names, col_types, na_strings,
+                                        skipped_columns, custom_non_data_line_markers)
 
 
 def import_hive_table(database=None, table=None, partitions=None, allow_multi_format=False):
@@ -556,7 +558,7 @@ def import_sql_select(connection_url, select_query, username, password, optimize
 
 
 def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, column_names=None,
-                column_types=None, na_strings=None, skipped_columns=None):
+                column_types=None, na_strings=None, skipped_columns=None, custom_non_data_line_markers=None):
     """
     Retrieve H2O's best guess as to what the structure of the data file is.
 
@@ -592,6 +594,7 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     :param na_strings: A list of strings, or a list of lists of strings (one list per column), or a dictionary
         of column names to strings which are to be interpreted as missing values.
     :param skipped_columns: an integer lists of column indices to skip and not parsed into the final frame from the import file.
+    :param custom_non_data_line_markers: If a line in imported file starts with any character in given string it will NOT be imported. Empty string means all lines are imported, None means that default behaviour for given format will be used
 
     :returns: a dictionary containing parse parameters guessed by the H2O backend.
     """
@@ -614,6 +617,9 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     kwargs = {"check_header": header, "source_frames": [quoted(frame_id) for frame_id in raw_frames]}
     if separator:
         kwargs["separator"] = ord(separator)
+    
+    if custom_non_data_line_markers is not None:
+        kwargs["custom_non_data_line_markers"] = custom_non_data_line_markers;
 
     j = api("POST /3/ParseSetup", data=kwargs)
     if "warnings" in j and j["warnings"]:
@@ -714,6 +720,7 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
             for colidx in skipped_columns:
                 if (colidx < 0): raise ValueError("skipped column index cannot be negative")
                 j["skipped_columns"].append(colidx)
+    
 
     # quote column names and column types also when not specified by user
     if j["column_names"]: j["column_names"] = list(map(quoted, j["column_names"]))
