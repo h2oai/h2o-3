@@ -294,8 +294,19 @@ final public class H2O {
 
     /** -context_path=jetty_context_path; the context path for jetty */
     public String context_path = "";
+
+    public KeyValueArg[] extra_headers = new KeyValueArg[0];
   }
 
+  public static class KeyValueArg {
+    public final String _key;
+    public final String _value;
+    private KeyValueArg(String key, String value) {
+      _key = key;
+      _value = value;
+    }
+  } 
+  
   /**
    * A class containing all of the arguments for H2O.
    */
@@ -663,6 +674,12 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         trgt.features_level = ModelBuilder.BuilderVisibility.valueOfIgnoreCase(args[i]);
         Log.info(String.format("Limiting algorithms available to level: %s", trgt.features_level.name()));
+      } else if (s.matches("add_http_header")) {
+        i = s.incrementAndCheck(i, args);
+        String key = args[i];
+        i = s.incrementAndCheck(i, args);
+        String value = args[i];
+        trgt.extra_headers = ArrayUtils.append(trgt.extra_headers, new KeyValueArg(key, value));
       } else {
         parseFailed("Unknown argument (" + s + ")");
       }
