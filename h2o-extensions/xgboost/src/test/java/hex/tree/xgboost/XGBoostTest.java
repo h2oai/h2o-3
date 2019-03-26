@@ -1608,6 +1608,51 @@ public class XGBoostTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testScoringWithUnseenCategoricals() {
+    try {
+      Scope.enter();
+      final Frame training = new TestFrameBuilder()
+              .withName("trainFrame")
+              .withColNames("y", "x1", "x2")
+              .withVecTypes(Vec.T_NUM, Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ard(0, 0, 2, 3, 4, 5.6, 7))
+              .withDataForCol(1, ar("A", "B", "C", "E", "F", "I", "J"))
+              .withDataForCol(2, ar("A", "B,", "A", "C", "A", "B", "A"))
+              .withChunkLayout(2, 2, 2, 1)
+              .build();
+      Scope.track(training);
+
+      final Frame test = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("y", "x1", "x2")
+              .withVecTypes(Vec.T_NUM, Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ard(0, 0, 2, 3, 4, 5.6, 7))
+              .withDataForCol(1, ar("X", "Y", "U", "W", "W", "Z", "Q"))
+              .withDataForCol(2, ar("X", "Y,", "U", "W", "W", "Z", "Q"))
+              .withChunkLayout(2, 2, 2, 1)
+              .build();
+      Scope.track(test);
+      
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.sparse;
+      parms._response_column = "y";
+      parms._train = training._key;
+      parms._seed = 42;
+      parms._ntrees = 5;
+
+      XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      Scope.track_generic(model);
+
+      Frame preds = model.score(test);
+      Scope.track(preds);
+      assertEquals(test.numRows(), preds.numRows());
+    } finally {
+      Scope.exit();
+    }
+  }
+  
+  
   private static XGBoostModel trainWithConstraints(XGBoostModel.XGBoostParameters p, KeyValue... constraints) {
     XGBoostModel.XGBoostParameters parms = (XGBoostModel.XGBoostParameters) p.clone();
     parms._monotone_constraints = constraints;
