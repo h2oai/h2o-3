@@ -20,11 +20,7 @@ import static ai.h2o.automl.AutoMLBenchmarkingHelper.getPreparedTitanicFrame;
 import static ai.h2o.automl.AutoMLBenchmarkingHelper.getScoreBasedOn;
 import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
 
-/*
-  Be aware that `smalldata/gbm_test/titanic_*.csv` files are not present in the repo. Replace with your own splits.
- */
 public class TargetEncodingTitanicBenchmark extends TestUtil {
-
 
   @BeforeClass public static void setup() {
     stall_till_cloudsize(1);
@@ -37,7 +33,7 @@ public class TargetEncodingTitanicBenchmark extends TestUtil {
     long splittingSeed = 2345;
     try {
 
-      //1, isWithBlending = true, smoothing = 10.0, inflection_point = 100.0 // AUC = 0.8212778782399036
+      //1, isWithBlending = true, smoothing = 10.0, inflection_point = 100.0 // AUC = 0.8212778782399036 as best from RGS with given seed
       BlendingParams params = new BlendingParams(100, 10);
       String targetColumnName = "survived";
       String[] teColumns = {"cabin", "home.dest"/*, "embarked"*/};
@@ -51,8 +47,6 @@ public class TargetEncodingTitanicBenchmark extends TestUtil {
       Frame trainFrame = splits[0];
       Frame validFrame = splits[1];
       Frame testFrame = splits[2];
-      Frame.export(trainFrame, "te_benchmark_train.csv", trainFrame._key.toString(), true, 1).get();
-
 
       Scope.track(trainFrame, validFrame, testFrame);
 
@@ -66,7 +60,6 @@ public class TargetEncodingTitanicBenchmark extends TestUtil {
       Map<String, Frame> encodingMap = tec.prepareEncodingMap(trainFrame, targetColumnName, foldColumnName, withImputationForNAsInOriginalColumns);
 
       Frame trainEncoded = tec.applyTargetEncoding(trainFrame, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, withBlendedAvg, noiseLevelForTraining, withImputationForNAsInOriginalColumns,splittingSeed);
-
 
       // Preparing valid frame
       Frame validEncoded = tec.applyTargetEncoding(validFrame, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName, withBlendedAvg,0.0, withImputationForNAsInOriginalColumns, splittingSeed);
@@ -94,7 +87,6 @@ public class TargetEncodingTitanicBenchmark extends TestUtil {
       parms._keep_cross_validation_models = false;
       parms._keep_cross_validation_predictions = false;
       parms._keep_cross_validation_fold_assignment = false;
-//      parms._max_runtime_secs = 3599.991;
       GBM job = new GBM(parms);
       gbm = job.trainModel().get();
 
@@ -103,19 +95,20 @@ public class TargetEncodingTitanicBenchmark extends TestUtil {
 
       Frame preds = gbm.score(testEncoded);
       Scope.track(preds);
-      
-      double validationMetrics = gbm._output._validation_metrics.auc_obj()._auc;
+
+//      double validationMetrics = gbm._output._validation_metrics.auc_obj()._auc;
 
       double auc = getScoreBasedOn(testEncoded, gbm);
 
-      // Without target encoding
-      double auc2 = trainDefaultGBM(targetColumnName, splittingSeed);
+      double aucWithoutTE = trainDefaultGBM(targetColumnName, splittingSeed);
 
       System.out.println("AUC with encoding:" + auc);
-      System.out.println("AUC without encoding:" + auc2);
+      System.out.println("AUC without encoding:" + aucWithoutTE);
 
-      Assert.assertTrue(auc2 < auc);
+      Assert.assertTrue(aucWithoutTE < auc);
       encodingMapCleanUp(encodingMap);
+      
+      fr.delete();
     } finally {
       if( gbm != null ) {
         gbm.delete();
@@ -128,32 +121,30 @@ public class TargetEncodingTitanicBenchmark extends TestUtil {
   @Test
   public void leaveOneOutHoldoutTypeTest() {
     GBMModel gbm = null;
-    Scope.enter();
+    Frame fr = null;
     Random generator = new Random();
     double avgAUCWith = 0.0;
     double avgAUCWithoutTE = 0.0;
-    int numberOfRuns = 20;
+    int numberOfRuns = 2;
     for (int seedAttempt = 0; seedAttempt < numberOfRuns; seedAttempt++) {
+        Scope.enter();
         long splitSeed = generator.nextLong();
+        Frame[] splits = null;
+        
         try {
           BlendingParams params = new BlendingParams(2, 10);
           String[] teColumns = {/*"cabin", */"embarked", "home.dest"};
-//      String[] teColumns = {"embarked", "home.dest"};
           String targetColumnName = "survived";
 
           TargetEncoder tec = new TargetEncoder(teColumns, params);
 
-          Frame[] splits = getTitanicSplits(splitSeed);
+          fr = getPreparedTitanicFrame(targetColumnName);
+          splits = AutoMLBenchmarkingHelper.getRandomSplitsFromDataframe(fr, new double[]{0.7, 0.15, 0.15}, splitSeed);
           Frame trainFrame = splits[0];
           Frame validFrame = splits[1];
           Frame testFrame = splits[2];
 
           Scope.track(trainFrame, validFrame, testFrame);
-
-          trainFrame.remove(new String[]{"name", "ticket", "boat", "body"});
-          validFrame.remove(new String[]{"name", "ticket", "boat", "body"});
-          testFrame.remove(new String[]{"name", "ticket", "boat", "body"});
-
           boolean withBlendedAvg = true;
           boolean withImputationForNAsInOriginalColumns = true;
 
@@ -194,13 +185,8 @@ public class TargetEncodingTitanicBenchmark extends TestUtil {
 
           System.out.println(gbm._output._variable_importances.toString(2, true));
 
-          Frame preds = gbm.score(testEncoded);
-          Scope.track(preds);
+          double auc  = getScoreBasedOn(testEncoded, gbm);
 
-          hex.ModelMetricsBinomial mm = ModelMetricsBinomial.make(preds.vec(2), testEncoded.vec(parms._response_column));
-          double auc = mm._auc._auc;
-
-          // Without target encoding
           double aucWithoutTE = trainDefaultGBM(targetColumnName, splitSeed);
 
           System.out.println("AUC with encoding:" + auc);
@@ -211,6 +197,7 @@ public class TargetEncodingTitanicBenchmark extends TestUtil {
 
           encodingMapCleanUp(encodingMap);
         } finally {
+          if(fr!=null) fr.delete();
           if (gbm != null) {
             gbm.delete();
             gbm.deleteCrossValidationModels();
@@ -225,53 +212,33 @@ public class TargetEncodingTitanicBenchmark extends TestUtil {
     Assert.assertTrue(avgAUCWith > avgAUCWithoutTE);  
   }
   
-  private Frame[] getTitanicSplits(long splittingSeed) {
-    String targetColumnName = "survived";
-
-    Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
-    asFactor(fr, targetColumnName);
-
-    Key[] keys = new Key[]{Key.<Frame>make(), Key.<Frame>make(), Key.<Frame>make()};
-    Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(fr, keys, new double[]{0.7, 0.15,0.15}, splittingSeed);
-    return splits;
-  }
-  
   @Test
   public void noneHoldoutTypeTest() {
     Scope.enter();
     long splittingSeed = 1234;
     try {
 
-      BlendingParams params = new BlendingParams(3, 1); //k = 3, f = 1 AUC=0.8664  instead of for k = 20, f = 10 -> AUC=0.8523
+      BlendingParams params = new BlendingParams(3, 1); 
       String[] teColumns = {"cabin", "embarked", "home.dest"};
       String targetColumnName = "survived";
 
       TargetEncoder tec = new TargetEncoder(teColumns, params);
 
-      Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train_wteh.csv");
-      Frame teHoldoutFrame = parse_test_file(Key.make("titanic_te_holdout_parsed"), "smalldata/gbm_test/titanic_te_holdout.csv");
-      Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid.csv");
-      Frame testFrame = parse_test_file(Key.make("titanic_test_parsed"), "smalldata/gbm_test/titanic_test.csv");
-      asFactor(trainFrame, targetColumnName);
-      asFactor(teHoldoutFrame, targetColumnName);
-      asFactor(validFrame, targetColumnName);
-      asFactor(testFrame, targetColumnName);
+      Frame fr = getPreparedTitanicFrame(targetColumnName);
+      Scope.track(fr);
+      
+      Frame[] splits = AutoMLBenchmarkingHelper.getRandomSplitsFromDataframe(fr, new double[]{0.7, 0.1, 0.1, 0.1}, splittingSeed);
+      Frame trainFrame = splits[0];
+      Frame teHoldoutFrame = splits[1];
+      Frame validFrame = splits[2];
+      Frame testFrame = splits[3];
 
       Scope.track(trainFrame, teHoldoutFrame, validFrame, testFrame);
-
-      trainFrame.remove(new String[]{"name", "ticket", "boat", "body"});
-      teHoldoutFrame.remove(new String[]{"name", "ticket", "boat", "body"});
-      validFrame.remove(new String[]{"name", "ticket", "boat", "body"});
-      testFrame.remove(new String[]{"name", "ticket", "boat", "body"});
-
-      // TODO we need to make it automatically just in case if user will try to load frames from separate sources like we did here
-      Frame teHoldoutFrameFactorized = asFactor(teHoldoutFrame, "cabin");
-      Scope.track(teHoldoutFrameFactorized);
 
       boolean withNoiseOnlyForTraining = true;
       boolean withImputation = true;
 
-      Map<String, Frame> encodingMap = tec.prepareEncodingMap(teHoldoutFrameFactorized, targetColumnName, null, withImputation);
+      Map<String, Frame> encodingMap = tec.prepareEncodingMap(teHoldoutFrame, targetColumnName, null, withImputation);
 
       Frame trainEncoded;
       if (withNoiseOnlyForTraining) {
@@ -334,15 +301,16 @@ public class TargetEncodingTitanicBenchmark extends TestUtil {
   private double trainDefaultGBM(String targetColumnName, long seed) {
     GBMModel gbm2 = null;
     Scope.enter();
+    Frame fr = null;
     try {
-      Frame[] splits = getTitanicSplits(seed);
+      fr = getPreparedTitanicFrame(targetColumnName);
+      
+      Frame[] splits = AutoMLBenchmarkingHelper.getRandomSplitsFromDataframe(fr, new double[]{0.7, 0.15, 0.15}, seed);
       Frame trainFrame = splits[0];
       Frame validFrame = splits[1];
       Frame testFrame = splits[2];
 
-      trainFrame.remove(new String[]{"name", "ticket", "boat", "body"});
-      validFrame.remove(new String[]{"name", "ticket", "boat", "body"});
-      testFrame.remove(new String[]{"name", "ticket", "boat", "body"});
+      Scope.track(trainFrame, validFrame, testFrame);
 
       GBMModel.GBMParameters parms2 = new GBMModel.GBMParameters();
       parms2._train = trainFrame._key;
@@ -369,6 +337,7 @@ public class TargetEncodingTitanicBenchmark extends TestUtil {
       double auc2 = mm2._auc._auc;
       return auc2;
     } finally {
+      if(fr!=null) fr.delete();
       if( gbm2 != null ) {
         gbm2.delete();
         gbm2.deleteCrossValidationModels();
