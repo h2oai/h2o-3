@@ -592,9 +592,11 @@ print.H2OTable <- function(x, header=TRUE, ...) {
   if( raw ) rawREST
   else {
     res <- .h2o.fromJSON(jsonlite::fromJSON(rawREST,simplifyDataFrame=FALSE, bigint_as_char=TRUE))
-    resToCompare <- .h2o.fromJSON(jsonlite::fromJSON(rawREST,simplifyDataFrame=FALSE))
-    if(!isTRUE(all.equal(res, resToCompare))){
+    if(getOption("h2o.warning.on.json.string.conversion", FALSE)) {
+      resToCompare <- .h2o.fromJSON(jsonlite::fromJSON(rawREST,simplifyDataFrame=FALSE))
+      if(!isTRUE(all.equal(res, resToCompare))){
         warning("During parsing the JSON response from H2O API to R bindings a conversion from long to string has occurred.")
+      }
     }
     res
   }
