@@ -65,6 +65,12 @@ calcOptimalChunkSize <- function(filePath, numCols, cores, cloudSize){
 }
 
 calculateChunkSize <- function() {
+    if(!"bit64" %in% installed.packages()){
+        install.packages("bit64")
+    }
+    if(!"bitops" %in% installed.packages()){
+        install.packages("bitops")
+    }
     library(bitops)
     library(bit64)
 
@@ -75,10 +81,17 @@ calculateChunkSize <- function() {
     locate("smalldata/wa_cannabis/raw/Dashboard_Usable_Sales_w_Weight_Daily.csv")
     )
 
-    # Number of cores
-    cores <- 8
+    info <- capture.output(h2o.clusterInfo())
+
+    reg <- gregexpr("(\\d+)", info[8], TRUE)
+    match <-regmatches(info[8], reg)
     # Number of nodes
-    cloudSize <- 1
+    cloudSize <- as.numeric(match[[1]][2])
+
+    reg <- gregexpr("(\\d+)", info[11], TRUE)
+    match <-regmatches(info[11], reg)
+    # Number of cores
+    cores <- as.numeric(match[[1]][2])
 
     for (filePath in filePaths){
         # Read data and parse setup to get number of columns 
