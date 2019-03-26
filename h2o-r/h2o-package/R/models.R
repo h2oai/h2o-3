@@ -247,9 +247,9 @@ h2o.getFutureModel <- function(object,verbose=FALSE) {
 }
 
 .is.int64 <- function(v) {
-    number <- suppressWarnings(as.numeric(v))
-    if(is.na(number)) return(False)
-    number > -2^63 & number < 2^63 & (floor(number)==ceiling(number))
+  number <- suppressWarnings(as.numeric(v))
+  if(is.na(number)) FALSE
+  else number > -2^63 & number < 2^63 & (floor(number)==ceiling(number))
 }
 
 # Check definition of given parameters in given list of parameters
