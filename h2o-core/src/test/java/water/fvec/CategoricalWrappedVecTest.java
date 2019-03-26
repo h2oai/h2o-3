@@ -2,12 +2,16 @@ package water.fvec;
 
 import org.junit.*;
 
+import water.Keyed;
+import water.Lockable;
 import water.Scope;
 import water.TestUtil;
 import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.RandomUtils;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 public class CategoricalWrappedVecTest extends TestUtil {
@@ -41,6 +45,19 @@ public class CategoricalWrappedVecTest extends TestUtil {
       if( v1!=null ) v1.delete();
       if( v2!=null ) v2.delete();
       Scope.exit();
+    }
+  }
+
+  @Test public void testAdaptBadVec() {
+    List<Keyed> removables = new ArrayList<>();
+    try {
+      Vec bad = Vec.makeCons(Double.NaN, 10, 1)[0]; removables.add(bad);
+      Assert.assertTrue(bad.isBad());
+      Vec adapted = bad.adaptTo(new String[]{"dummy"}); removables.add(adapted);
+      Assert.assertTrue(adapted instanceof CategoricalWrappedVec);
+      Assert.assertTrue(adapted.isBad());
+    } finally {
+      for (Keyed k: removables) { k.remove(); }
     }
   }
 
