@@ -35,6 +35,7 @@ for python_version in "${array[@]}"; do
 
   echo "###### Installing dependencies for Python ${python_version} ######"
   su jenkins -c ". /envs/h2o_env_python${python_version}/bin/activate && pip install -r test-requirements.txt"
+  su jenkins -c "mkdir -p ~/.config/matplotlib/ && echo "backend: Agg" > ~/.config/matplotlib/matplotlibrc"
 done
 
 rm test-requirements.txt
