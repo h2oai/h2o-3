@@ -30,10 +30,11 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
     stall_till_cloudsize(1);
   }
 
-  long autoMLSeed = 7890;
+  long autoMLSeed = 2345;
 
   int numberOfModelsToCompareWith = 1;
-  Algo[] excludeAlgos = {Algo.DeepLearning, Algo.DRF, Algo.GLM, Algo.XGBoost /* Algo.GBM,*/, Algo.StackedEnsemble};
+  Algo[] excludeAlgos = {Algo.DeepLearning, Algo.DRF, Algo.GLM /*Algo.XGBoost*/ , Algo.GBM, Algo.StackedEnsemble}; // only XGB
+//  Algo[] excludeAlgos = {Algo.DeepLearning, /*Algo.DRF,*/ Algo.GLM, Algo.XGBoost /* Algo.GBM,*/, Algo.StackedEnsemble};
 
 
   @Test
@@ -52,9 +53,9 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
     double avgCumulativeAUCWith = 0.0;
     double avgCumulativeWithoutTE = 0.0;
 
-    int numberOfRuns = 1;
+    int numberOfRuns = 5;
     for (int seedAttempt = 0; seedAttempt < numberOfRuns; seedAttempt++) {
-      long splitSeed = 2345;//generator.nextLong(); // TODO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      long splitSeed = generator.nextLong(); 
       try {
         AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
 
@@ -63,8 +64,6 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
         Frame train = splits[0];
         Frame valid = splits[1];
         Frame leaderboardFrame = splits[2];
-        Frame.export(train, "automl_te_train.csv", train._key.toString(), true, 1).get();
-
 
         autoMLBuildSpec.input_spec.training_frame = train._key;
         autoMLBuildSpec.input_spec.validation_frame = valid._key;
@@ -79,12 +78,12 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
 
         autoMLBuildSpec.te_spec.seed = splitSeed;
         long seed = autoMLBuildSpec.te_spec.seed;
-//        TEParamsSelectionStrategy gridSearchTEParamsSelectionStrategy =
-//                new SMBOTEParamsSelectionStrategy(leaderboardFrame, 0.20, responseColumnName, thresholdTEApplicationStrategy.getColumnsToEncode(), true, seed);
+        TEParamsSelectionStrategy gridSearchTEParamsSelectionStrategy =
+                new SMBOTEParamsSelectionStrategy(leaderboardFrame, 0.15, responseColumnName, thresholdTEApplicationStrategy.getColumnsToEncode(), true, seed);
 
         // Note: If we want to check how helpful is the best hyperparameters it is faster to fun full grid search
-        TEParamsSelectionStrategy gridSearchTEParamsSelectionStrategy =
-                new GridSearchTEParamsSelectionStrategy(fr, 389, responseColumnName, thresholdTEApplicationStrategy.getColumnsToEncode(), true, seed);
+//        TEParamsSelectionStrategy gridSearchTEParamsSelectionStrategy = 
+//                new GridSearchTEParamsSelectionStrategy(fr, 189, responseColumnName, thresholdTEApplicationStrategy.getColumnsToEncode(), true, seed);
 
 
         autoMLBuildSpec.te_spec.application_strategy = thresholdTEApplicationStrategy;
@@ -97,7 +96,7 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
         autoMLBuildSpec.build_control.keep_cross_validation_predictions = false;
 
         aml = AutoML.startAutoML(autoMLBuildSpec);
-        aml.get();
+        aml.get();    
 
         leader = aml.leader();
         Leaderboard leaderboardWithTE = aml.leaderboard();

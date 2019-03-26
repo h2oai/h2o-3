@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Random;
 
 import static ai.h2o.automl.AutoMLBenchmarkingHelper.getPreparedTitanicFrame;
+import static ai.h2o.automl.AutoMLBenchmarkingHelper.getScoreBasedOn;
 import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
 
 /*
@@ -58,24 +59,20 @@ public class TargetEncodingTitanicBenchmark extends TestUtil {
       addKFoldColumn(trainFrame, foldColumnName, 5, splittingSeed);
 
       boolean withBlendedAvg = true;
-      boolean withNoiseOnlyForTraining = true;
       boolean withImputationForNAsInOriginalColumns = true;
 
+      double noiseLevelForTraining = 0.0;
 
       Map<String, Frame> encodingMap = tec.prepareEncodingMap(trainFrame, targetColumnName, foldColumnName, withImputationForNAsInOriginalColumns);
 
-      Frame trainEncoded;
-      if (withNoiseOnlyForTraining) {
-        trainEncoded = tec.applyTargetEncoding(trainFrame, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, withBlendedAvg, withImputationForNAsInOriginalColumns,1234);
-      } else {
-        trainEncoded = tec.applyTargetEncoding(trainFrame, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, withBlendedAvg, 0.0, withImputationForNAsInOriginalColumns,1234);
-      }
+      Frame trainEncoded = tec.applyTargetEncoding(trainFrame, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, withBlendedAvg, noiseLevelForTraining, withImputationForNAsInOriginalColumns,splittingSeed);
+
 
       // Preparing valid frame
-      Frame validEncoded = tec.applyTargetEncoding(validFrame, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName, withBlendedAvg,0.0, withImputationForNAsInOriginalColumns, 1234);
+      Frame validEncoded = tec.applyTargetEncoding(validFrame, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName, withBlendedAvg,0.0, withImputationForNAsInOriginalColumns, splittingSeed);
 
       // Preparing test frame
-      Frame testEncoded = tec.applyTargetEncoding(testFrame, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName,withBlendedAvg, 0.0, withImputationForNAsInOriginalColumns,1234);
+      Frame testEncoded = tec.applyTargetEncoding(testFrame, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName, withBlendedAvg, 0.0, withImputationForNAsInOriginalColumns,splittingSeed);
 
       Scope.track(trainEncoded, validEncoded, testEncoded);
       printOutColumnsMetadata(trainEncoded);
@@ -94,6 +91,10 @@ public class TargetEncodingTitanicBenchmark extends TestUtil {
       parms._stopping_rounds = 5;
       parms._ignored_columns = teColumnsWithFold;
       parms._seed = splittingSeed;
+      parms._keep_cross_validation_models = false;
+      parms._keep_cross_validation_predictions = false;
+      parms._keep_cross_validation_fold_assignment = false;
+//      parms._max_runtime_secs = 3599.991;
       GBM job = new GBM(parms);
       gbm = job.trainModel().get();
 
@@ -102,9 +103,10 @@ public class TargetEncodingTitanicBenchmark extends TestUtil {
 
       Frame preds = gbm.score(testEncoded);
       Scope.track(preds);
+      
+      double validationMetrics = gbm._output._validation_metrics.auc_obj()._auc;
 
-      hex.ModelMetricsBinomial mm = ModelMetricsBinomial.make(preds.vec(2), testEncoded.vec(parms._response_column));
-      double auc = mm._auc._auc;
+      double auc = getScoreBasedOn(testEncoded, gbm);
 
       // Without target encoding
       double auc2 = trainDefaultGBM(targetColumnName, splittingSeed);

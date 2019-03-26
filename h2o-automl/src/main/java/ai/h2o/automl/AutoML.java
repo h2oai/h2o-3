@@ -4,6 +4,7 @@ import ai.h2o.automl.UserFeedbackEvent.Stage;
 import ai.h2o.automl.targetencoding.strategy.TEApplicationStrategy;
 import hex.Model;
 import hex.ModelBuilder;
+import hex.ScoreKeeper;
 import hex.ScoreKeeper.StoppingMetric;
 import hex.ensemble.StackedEnsembleModel;
 import hex.ensemble.StackedEnsembleModel.StackedEnsembleParameters;
@@ -16,6 +17,7 @@ import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
 import hex.splitframe.ShuffleSplitFrame;
 import hex.tree.SharedTreeModel.SharedTreeParameters;
 import hex.tree.drf.DRFModel.DRFParameters;
+import hex.tree.gbm.GBMModel;
 import hex.tree.gbm.GBMModel.GBMParameters;
 import hex.tree.xgboost.XGBoostModel.XGBoostParameters;
 import water.*;
@@ -30,6 +32,7 @@ import water.util.ArrayUtils;
 import water.util.Countdown;
 import water.util.IcedHashMapGeneric;
 import water.util.Log;
+import water.util.TwoDimTable;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -770,7 +773,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     // NOTE: here we will also affect `_buildSpec.input_spec.ignored_columns`. We will switch it back below in `finally` block after model is trained.
     String[] originalIgnoredColumns = buildSpec.input_spec.ignored_columns;
-    performTargetEncoding(builder);  
+    performTargetEncoding(builder); 
+    // We are changing `ignored_columns` in `performTargetEncoding` method  
+    builder._parms._ignored_columns = buildSpec.input_spec.ignored_columns; //TODO mayebe it is better to directly change builder from assistant
+    builder._parms._keep_cross_validation_predictions = false; //TODO mayebe it is better to directly change builder from assistant
 
     Log.debug("Training model: " + algoName + ", time remaining (ms): " + timeRemainingMs());
     try {

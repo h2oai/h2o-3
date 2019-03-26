@@ -89,10 +89,10 @@ class AutoMLTargetEncodingAssistant{
 
   void performAutoTargetEncoding() {
 
-    Log.info("Best TE parameters were selected to be: holdout_type = " + _teParams.getHoldoutType() + ", isWithBlending = " + _teParams.isWithBlendedAvg() + ", smoothing = " + _teParams.getBlendingParams().getF() + ", inflection_point = " + _teParams.getBlendingParams().getK());
+    Log.info("Best TE parameters were selected to be: holdout_type = " + _teParams.getHoldoutType() + ", isWithBlending = " + _teParams.isWithBlendedAvg() + ", smoothing = " + _teParams.getBlendingParams().getF() + ", inflection_point = " + _teParams.getBlendingParams().getK() + ", noise_level = " + _teParams.getNoiseLevel());
 
     String[] columnsToEncode = getApplicationStrategy().getColumnsToEncode();
-
+  
     if (columnsToEncode.length > 0) {
 
       //TODO move it inside TargetEncoder. add constructor ? not all the parameters are used durin
@@ -161,6 +161,8 @@ class AutoMLTargetEncodingAssistant{
 
             Frame encodedTrainingFrame = tec.applyTargetEncoding(_trainingFrame, responseColumnName, encodingMap, holdoutType, foldColumnName, withBlendedAvg, noiseLevel, imputeNAsWithNewCategory, seed);
             copyEncodedColumnsToDestinationFrameAndRemoveSource(columnsToEncode, encodedTrainingFrame, _trainingFrame);
+            _trainingFrame._key = Key.make();
+            DKV.put(_trainingFrame);
 
             if(_validationFrame != null) {
               Frame encodedValidationFrame = tec.applyTargetEncoding(_validationFrame, responseColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName, withBlendedAvg, 0, imputeNAsWithNewCategory, seed);
