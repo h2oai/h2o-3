@@ -151,7 +151,6 @@ class ModelBase(backwards_compatible()):
                     data={"leaf_node_assignment": True, "leaf_node_assignment_type": type})
         return h2o.get_frame(j["predictions_frame"]["name"])
 
-
     def staged_predict_proba(self, test_data):
         """
         Predict class probabilities at each stage of an H2O Model (only GBM models).
@@ -170,6 +169,26 @@ class ModelBase(backwards_compatible()):
                     data={"predict_staged_proba": True})
         return h2o.get_frame(j["predictions_frame"]["name"])
 
+    def predict_contributions(self, test_data):
+        """
+        Predict feature contributions - SHAP values on an H2O Model (only GBM and XGBoost models).
+        
+        Returned H2OFrame has shape (#rows, #features + 1) - there is a feature contribution column for each input
+        feature, the last column is the model bias (same value for each row). The sum of the feature contributions
+        and the bias term is equal to the raw prediction of the model. Raw prediction of tree-based model is the sum 
+        of the predictions of the individual trees before before the inverse link function is applied to get the actual
+        prediction. For Gaussian distribution the sum of the contributions is equal to the model prediction. 
+
+        Note: Multinomial classification models are currently not supported.
+
+        :param H2OFrame test_data: Data on which to calculate contributions.
+
+        :returns: A new H2OFrame made of feature contributions.
+        """
+        if not isinstance(test_data, h2o.H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
+        j = h2o.api("POST /3/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
+                    data={"predict_contributions": True})
+        return h2o.get_frame(j["predictions_frame"]["name"])
 
     def predict(self, test_data, custom_metric = None, custom_metric_func = None):
         """

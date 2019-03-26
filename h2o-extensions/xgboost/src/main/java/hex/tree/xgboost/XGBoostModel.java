@@ -4,14 +4,14 @@ import biz.k11i.xgboost.Predictor;
 import biz.k11i.xgboost.gbm.GBTree;
 import biz.k11i.xgboost.gbm.GradBooster;
 import biz.k11i.xgboost.tree.RegTree;
+import biz.k11i.xgboost.tree.RegTreeImpl;
 import biz.k11i.xgboost.tree.RegTreeNode;
+import biz.k11i.xgboost.tree.TreeSHAPHelper;
 import biz.k11i.xgboost.util.FVec;
 import hex.*;
 import hex.genmodel.GenModel;
-import hex.genmodel.algos.tree.SharedTreeGraph;
-import hex.genmodel.algos.tree.SharedTreeNode;
-import hex.genmodel.algos.tree.SharedTreeSubgraph;
-import hex.genmodel.algos.tree.SharedTreeGraphConverter;
+import hex.genmodel.algos.tree.*;
+import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.algos.xgboost.XGBoostNativeMojoModel;
 import hex.genmodel.utils.DistributionFamily;
@@ -27,9 +27,7 @@ import hex.ModelMetrics;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static hex.tree.xgboost.XGBoost.makeDataInfo;
 import static hex.genmodel.algos.xgboost.XGBoostMojoModel.ObjectiveType;
@@ -599,6 +597,10 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   @Override
   public Frame scoreContributions(Frame frame, Key<Frame> destination_key) {
+    return scoreContributions(frame, destination_key, false);
+  }
+
+  public Frame scoreContributions(Frame frame, Key<Frame> destination_key, boolean approx) {
     Frame adaptFrm = new Frame(frame);
     adaptTestForTrain(adaptFrm, true, false);
 
@@ -606,11 +608,59 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     assert di != null;
     final String[] outputNames = ArrayUtils.append(di.coefNames(), "BiasTerm");
 
-    return new PredictContribApproxTask(di)
+    return makePredictContribTask(di, approx)
             .doAll(outputNames.length, Vec.T_NUM, adaptFrm)
             .outputFrame(destination_key, outputNames, null);
   }
+  
+  private MRTask<?> makePredictContribTask(DataInfo di, boolean approx) {
+    return approx ? new PredictContribApproxTask(di) : new PredictTreeSHAPTask(di);
+  }
 
+  private class PredictTreeSHAPTask extends MRTask<PredictTreeSHAPTask> {
+    private final DataInfo _di;
+
+    private transient XGBoostJavaMojoModel _mojo; 
+
+    private PredictTreeSHAPTask(DataInfo di) {
+      _di = di;
+    }
+
+    @Override
+    protected void setupLocal() {
+      _mojo = new XGBoostJavaMojoModel(model_info()._boosterBytes, 
+              _output._names, _output._domains, _output.responseName(), true);
+    }
+
+    @Override
+    public void map(Chunk chks[], NewChunk[] nc) {
+      MutableOneHotEncoderFVec rowFVec = new MutableOneHotEncoderFVec(_di, _output._sparse);
+
+      double[] input = MemoryManager.malloc8d(chks.length);
+      float[] contribs = MemoryManager.malloc4f(nc.length);
+
+      Object workspace = _mojo.makeContributionsWorkspace();
+
+      for (int row = 0; row < chks[0]._len; row++) {
+        for (int i = 0; i < chks.length; i++) {
+          input[i] = chks[i].atd(row);
+        }
+        for (int i = 0; i < contribs.length; i++) {
+          contribs[i] = 0;
+        }
+        rowFVec.setInput(input);
+
+        // calculate Shapley values
+        _mojo.calculateContributions(rowFVec, contribs, workspace);
+
+        for (int i = 0; i < nc.length; i++) {
+          nc[i].addNum(contribs[i]);
+        }
+      }
+    }
+
+  }
+  
   private class PredictContribApproxTask extends MRTask<PredictContribApproxTask> {
     private final BoosterParms _boosterParms;
 

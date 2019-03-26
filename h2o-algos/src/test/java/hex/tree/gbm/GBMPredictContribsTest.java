@@ -7,15 +7,15 @@ import hex.util.NaiveTreeSHAP;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.MRTask;
-import water.MemoryManager;
-import water.Scope;
-import water.TestUtil;
+import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
 import water.util.ArrayUtils;
 
 import static hex.genmodel.utils.DistributionFamily.gaussian;
+import static junit.framework.TestCase.assertTrue;
 
 public class GBMPredictContribsTest extends TestUtil {
 
@@ -37,6 +37,7 @@ public class GBMPredictContribsTest extends TestUtil {
       parms._nbins = 50;
       parms._learn_rate = .2f;
       parms._score_each_iteration = true;
+      parms._seed = 42;
 
       GBM job = new GBM(parms);
       GBMModel gbm = job.trainModel().get();
@@ -48,6 +49,39 @@ public class GBMPredictContribsTest extends TestUtil {
       for (int i = 0; i < parms._ntrees; i++) {
         new CheckTreeSHAPTask(gbm, i).doAll(adapted);
       }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testScoreContributionsGaussian() {
+    try {
+      Scope.enter();
+      Frame fr = Scope.track(parse_test_file("smalldata/junit/titanic_alt.csv"));
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = fr._key;
+      parms._distribution = gaussian;
+      parms._response_column = "age";
+      parms._ntrees = 5;
+      parms._max_depth = 4;
+      parms._min_rows = 1;
+      parms._nbins = 50;
+      parms._learn_rate = .2f;
+      parms._score_each_iteration = true;
+      parms._seed = 42;
+
+      GBM job = new GBM(parms);
+      GBMModel gbm = job.trainModel().get();
+      Scope.track_generic(gbm);
+
+      Frame contributions = gbm.scoreContributions(fr, Key.<Frame>make("contributions_titatnic"));
+      Scope.track(contributions);
+
+      Frame contribsAggregated = new RowSumTask().doAll(Vec.T_NUM, contributions).outputFrame();
+      Scope.track(contribsAggregated);
+
+      assertTrue(gbm.testJavaScoring(fr, contribsAggregated, 1e-6));
     } finally {
       Scope.exit();
     }
@@ -95,6 +129,18 @@ public class GBMPredictContribsTest extends TestUtil {
 
         // compare naive and actual contributions
         Assert.assertArrayEquals(naiveContribs, ArrayUtils.toDouble(contribs), 1e-6);
+      }
+    }
+  }
+  
+  private static class RowSumTask extends MRTask<RowSumTask> {
+    @Override
+    public void map(Chunk[] cs, NewChunk nc) {
+      for (int i = 0; i < cs[0]._len; i++) {
+        double sum = 0;
+        for (Chunk c : cs)
+          sum += c.atd(i);
+        nc.addNum(sum);
       }
     }
   }

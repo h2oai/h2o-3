@@ -321,7 +321,8 @@ reference:
       - plot.H2OModel 
       - plot.H2OTabulate
       - predict.H2OAutoML 
-      - predict.H2OModel 
+      - predict.H2OModel
+      - predict_contributions.H2OModel 
       - predict_leaf_node_assignment.H2OModel
       - print.H2OFrame 
       - print.H2OTable 

@@ -1529,7 +1529,7 @@ public class XGBoostTest extends TestUtil {
   }
 
   @Test
-  public void testScoreContributions() throws IOException, XGBoostError {
+  public void testScoreApproxContributions() throws IOException, XGBoostError {
     Scope.enter();
     try {
       Frame tfr = Scope.track(parse_test_file("./smalldata/junit/weather.csv"));
@@ -1553,7 +1553,7 @@ public class XGBoostTest extends TestUtil {
       Scope.track_generic(model);
       Log.info(model);
 
-      Frame contributions = model.scoreContributions(tfr, Key.<Frame>make());
+      Frame contributions = model.scoreContributions(tfr, Key.<Frame>make(), true);
       Scope.track(contributions);
 
       assertEquals("BiasTerm", contributions.names()[contributions.names().length - 1]);
