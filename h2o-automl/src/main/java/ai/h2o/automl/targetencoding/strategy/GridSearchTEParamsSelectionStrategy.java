@@ -8,7 +8,7 @@ import water.util.TwoDimTable;
 import java.util.*;
 
 /**
- * For now it should be named RandomGridSearchTEParamsStrategy
+ *  Random grid search for searching optimal hyperparameters for target encoding
  */
 public class GridSearchTEParamsSelectionStrategy extends GridBasedTEParamsSelectionStrategy {
 
@@ -21,21 +21,27 @@ public class GridSearchTEParamsSelectionStrategy extends GridBasedTEParamsSelect
   private TargetEncodingHyperparamsEvaluator _evaluator = new TargetEncodingHyperparamsEvaluator();
 //  private GridSearchTEStratifiedEvaluator _evaluator = new GridSearchTEStratifiedEvaluator();
   
-  
-  private int _numberOfIterations; // or should be a strategy that will be in charge of stopping.
+  private int _numberOfIterations;
 
-  public GridSearchTEParamsSelectionStrategy(Frame leaderboard, int numberOfIterations, String responseColumn, String[] columnsToEncode, boolean theBiggerTheBetter, long seed) {
+  public GridSearchTEParamsSelectionStrategy(Frame leaderboard, double ratioOfHyperSpaceToExplore, String responseColumn, String[] columnsToEncode, boolean theBiggerTheBetter, long seed) {
     _seed = seed;
     
     _leaderboardData = leaderboard;
-    _numberOfIterations = numberOfIterations;
     _responseColumn = responseColumn;
     _columnsToEncode = columnsToEncode;
+    
+    _ratioOfHyperSpaceToExplore = ratioOfHyperSpaceToExplore;
     _theBiggerTheBetter = theBiggerTheBetter;
     
-    _evaluatedQueue = new PriorityQueue<>(numberOfIterations, new EvaluatedComparator(theBiggerTheBetter));
   }
-  
+
+  @Override
+  public void setTESearchSpace(ModelValidationMode modelValidationMode) {
+    super.setTESearchSpace(modelValidationMode);
+    _numberOfIterations = (int)( _randomSelector._grid.size() * _ratioOfHyperSpaceToExplore);
+    _evaluatedQueue = new PriorityQueue<>(_numberOfIterations, new EvaluatedComparator(_theBiggerTheBetter));
+  }
+
   @Override
   public TargetEncodingParams getBestParams(ModelBuilder modelBuilder) {
     return getBestParamsWithEvaluation(modelBuilder).getItem();
@@ -45,6 +51,7 @@ public class GridSearchTEParamsSelectionStrategy extends GridBasedTEParamsSelect
     assert _modelValidationMode != null : "`setTESearchSpace()` method should has been called to setup appropriate grid search.";
     
     SMBOTEParamsSelectionStrategy.Exporter exporter = new SMBOTEParamsSelectionStrategy.Exporter();
+    
     //TODO Consider adding stratified sampling here
     try {
       for (int attempt = 0; attempt < _numberOfIterations; attempt++) {

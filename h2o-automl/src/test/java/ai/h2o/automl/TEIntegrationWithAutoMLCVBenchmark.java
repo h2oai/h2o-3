@@ -25,8 +25,8 @@ public class TEIntegrationWithAutoMLCVBenchmark extends water.TestUtil {
 
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
-  int numberOfModelsToCompareWith = 4;
-  Algo[] excludeAlgos = {Algo.DeepLearning , /*Algo.DRF,*/ Algo.GLM,  /*Algo.XGBoost,*//* Algo.GBM,*/ Algo.StackedEnsemble};
+  int numberOfModelsToCompareWith = 1;
+  Algo[] excludeAlgos = {Algo.DeepLearning , Algo.DRF, Algo.GLM,  Algo.XGBoost,/* Algo.GBM,*/ Algo.StackedEnsemble};
 //  Algo[] excludeAlgos = {Algo.DeepLearning , Algo.DRF, Algo.GLM,  /*Algo.XGBoost,*/ Algo.GBM, Algo.StackedEnsemble};
   
   
@@ -52,7 +52,7 @@ public class TEIntegrationWithAutoMLCVBenchmark extends water.TestUtil {
     double avgAUCWith = 0.0;
     double avgAUCWithoutTE = 0.0;
 
-    int numberOfRuns = 3;
+    int numberOfRuns = 5;
 
     for (int seedAttempt = 0; seedAttempt < numberOfRuns; seedAttempt++) {
       long nextSeed = generator.nextLong(); 
@@ -69,19 +69,12 @@ public class TEIntegrationWithAutoMLCVBenchmark extends water.TestUtil {
         Vec responseColumn = fr.vec(responseColumnName);
         TEApplicationStrategy thresholdTEApplicationStrategy = new ThresholdTEApplicationStrategy(fr, responseColumn, 5);
 
-        double SMBOEarlyStoppingRatio = 0.15;
+        autoMLBuildSpec.te_spec.ratio_of_hyperspace_to_explore = 0.4;
+        autoMLBuildSpec.te_spec.early_stopping_ratio = 0.15;
         autoMLBuildSpec.te_spec.seed = nextSeed;
-        TEParamsSelectionStrategy gridSearchTEParamsSelectionStrategy =
-                new SMBOTEParamsSelectionStrategy(fr, SMBOEarlyStoppingRatio, responseColumnName, thresholdTEApplicationStrategy.getColumnsToEncode(), true, nextSeed);
-
-        // Note: If we want to check how helpful is the best hyperparameters it is faster to fun full grid search
-//        TEParamsSelectionStrategy gridSearchTEParamsSelectionStrategy =
-//                new GridSearchTEParamsSelectionStrategy(fr, 189, responseColumnName, thresholdTEApplicationStrategy.getColumnsToEncode(), true, nextSeed);
-
 
         autoMLBuildSpec.te_spec.application_strategy = thresholdTEApplicationStrategy;
-        autoMLBuildSpec.te_spec.params_selection_strategy = gridSearchTEParamsSelectionStrategy;
-
+        autoMLBuildSpec.te_spec.params_selection_strategy = HPsSelectionStrategy.SMBO;
 
         autoMLBuildSpec.build_control.project_name = "with_te" + nextSeed;
         autoMLBuildSpec.build_control.stopping_criteria.set_max_models(numberOfModelsToCompareWith);

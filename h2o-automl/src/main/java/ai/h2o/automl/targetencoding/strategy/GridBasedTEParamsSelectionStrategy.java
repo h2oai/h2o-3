@@ -6,6 +6,7 @@ public abstract class GridBasedTEParamsSelectionStrategy extends TEParamsSelecti
 
   protected ModelValidationMode _modelValidationMode;
   protected RandomSelector _randomSelector;
+  protected double _ratioOfHyperSpaceToExplore;
   protected long _seed;
 
   public void setTESearchSpace(ModelValidationMode modelValidationMode) {

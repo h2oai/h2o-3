@@ -29,7 +29,7 @@ class AutoMLTargetEncodingAssistant{
   private Frame _trainingFrame;   
   private Frame _validationFrame; 
   private Frame _leaderboardFrame;
-  private Vec _responseColumn;
+  private String _responseColumnName;
   private Vec _foldColumn;
   private AutoMLBuildSpec _buildSpec;
   private ModelBuilder _modelBuilder;
@@ -37,7 +37,9 @@ class AutoMLTargetEncodingAssistant{
   private boolean _CVEarlyStoppingEnabled;
 
   private TEParamsSelectionStrategy _teParamsSelectionStrategy;
+  
   private TEApplicationStrategy _applicationStrategy;
+  private final String[] _columnsToEncode;
   
   // This field will be initialised with the optimal target encoding params returned from TEParamsSelectionStrategy
   private TargetEncodingParams _teParams;
@@ -45,7 +47,6 @@ class AutoMLTargetEncodingAssistant{
   AutoMLTargetEncodingAssistant(Frame trainingFrame, // maybe we don't need all these as we are working with particular modelBuilder and not the main AutoML data
                                 Frame validationFrame,
                                 Frame leaderboardFrame, 
-                                Vec responseColumn,
                                 Vec foldColumn,
                                 AutoMLBuildSpec buildSpec,
                                 ModelBuilder modelBuilder) {
@@ -53,7 +54,8 @@ class AutoMLTargetEncodingAssistant{
     _trainingFrame = modelBuilder.train();
     _validationFrame = validationFrame;
     _leaderboardFrame = leaderboardFrame;
-    _responseColumn = responseColumn;
+    _responseColumnName = _modelBuilder._parms._response_column;
+
     _foldColumn = foldColumn;
     _buildSpec = buildSpec;
 
@@ -61,23 +63,40 @@ class AutoMLTargetEncodingAssistant{
 
     // Application strategy
     TEApplicationStrategy applicationStrategy = buildSpec.te_spec.application_strategy;
-    _applicationStrategy = applicationStrategy != null ? applicationStrategy : new AllCategoricalTEApplicationStrategy(trainingFrame, responseColumn);
+    _applicationStrategy = applicationStrategy != null ? applicationStrategy : new AllCategoricalTEApplicationStrategy(trainingFrame, _responseColumnName);
+    _columnsToEncode = _applicationStrategy.getColumnsToEncode();
+
+    //TODO what is the canonical way to get metric we are going to use. DistributionFamily, leaderboard metrics?
+    boolean theBiggerTheBetter = _modelBuilder._parms.train().vec(_responseColumnName).get_type() != Vec.T_NUM;
+    double ratioOfHyperspaceToExplore = buildSpec.te_spec.ratio_of_hyperspace_to_explore;
 
     // Selection strategy
-    TEParamsSelectionStrategy teParamsSelectionStrategy = buildSpec.te_spec.params_selection_strategy;
-    _teParamsSelectionStrategy = teParamsSelectionStrategy != null ? teParamsSelectionStrategy : new FixedTEParamsStrategy(TargetEncodingParams.DEFAULT);
-
-    //TODO  It is better for user to specify strategy as just enum value, and we can initalize selection strategy here without presetups. 
-    // But in that case we will not be able to provide `FixedTEParamsStrategy`
+    HPsSelectionStrategy teParamsSelectionStrategy = buildSpec.te_spec.params_selection_strategy;
+    switch(teParamsSelectionStrategy) {
+      case RGS:
+        _teParamsSelectionStrategy = new GridSearchTEParamsSelectionStrategy(leaderboardFrame, ratioOfHyperspaceToExplore,
+                _responseColumnName, _columnsToEncode, theBiggerTheBetter, buildSpec.te_spec.seed);
+        break;
+      case Fixed:
+        TargetEncodingParams targetEncodingParams = new TargetEncodingParams(new BlendingParams(5, 1), TargetEncoder.DataLeakageHandlingStrategy.KFold, 0.01);
+        _teParamsSelectionStrategy = new FixedTEParamsStrategy(targetEncodingParams);
+        break;
+      case SMBO:
+      default:
+        double smboEarlyStoppingRatio = buildSpec.te_spec.early_stopping_ratio;
+        _teParamsSelectionStrategy = new SMBOTEParamsSelectionStrategy(leaderboardFrame, smboEarlyStoppingRatio, ratioOfHyperspaceToExplore,
+                _responseColumnName, _columnsToEncode, theBiggerTheBetter, buildSpec.te_spec.seed);
+    }
     
-    // Pre-setup based on AutoML's ways of validating models 
+    // Pre-setup for grid-based strategies based on AutoML's ways of validating models 
     if(_teParamsSelectionStrategy instanceof GridBasedTEParamsSelectionStrategy ) {
-      
+
+      GridBasedTEParamsSelectionStrategy selectionStrategy = (GridBasedTEParamsSelectionStrategy) _teParamsSelectionStrategy;
       if(_CVEarlyStoppingEnabled) {
-        ((GridBasedTEParamsSelectionStrategy) _teParamsSelectionStrategy).setTESearchSpace(ModelValidationMode.CV);
+        selectionStrategy.setTESearchSpace(ModelValidationMode.CV);
       }
       else {
-        ((GridBasedTEParamsSelectionStrategy) _teParamsSelectionStrategy).setTESearchSpace(ModelValidationMode.VALIDATION_FRAME);
+        selectionStrategy.setTESearchSpace(ModelValidationMode.VALIDATION_FRAME);
       }
     }
     
@@ -105,8 +124,7 @@ class AutoMLTargetEncodingAssistant{
 
       TargetEncoder tec = new TargetEncoder(columnsToEncode, blendingParams);
 
-      String responseColumnName = _trainingFrame.name(_trainingFrame.find(_responseColumn));
-
+      String responseColumnName = _responseColumnName;
       Map<String, Frame> encodingMap = null;
 
       Frame trainCopy = _trainingFrame.deepCopy(Key.make("train_frame_copy_for_encodings_generation_" + Key.make()).toString());
@@ -122,11 +140,7 @@ class AutoMLTargetEncodingAssistant{
             addKFoldColumn(trainCopy, foldColumnForTE, nfolds, seed);
 
             encodingMap = tec.prepareEncodingMap(trainCopy, responseColumnName, foldColumnForTE, true);
-            Frame.export(encodingMap.get("home.dest"), "assistant_cv_kfold.csv", encodingMap.get("home.dest")._key.toString(), true, 1).get();
             Frame encodedTrainingFrame  = tec.applyTargetEncoding(trainCopy, responseColumnName, encodingMap, KFold, foldColumnForTE, withBlendedAvg, noiseLevel, imputeNAsWithNewCategory, seed);
-
-            Frame.export(encodedTrainingFrame, "assistant_encoded_train_cv_kfold.csv", encodedTrainingFrame._key.toString(), true, 1).get();
-
             copyEncodedColumnsToDestinationFrameAndRemoveSource(columnsToEncode, encodedTrainingFrame, _trainingFrame);
 
             break;
@@ -142,22 +156,16 @@ class AutoMLTargetEncodingAssistant{
             String foldColumnName = getFoldColumnName();
             String autoGeneratedFoldColumnForTE = "te_fold_column";
 
-            // If our best TE params, returned from selection strategy, contains DataLeakageHandlingStrategy.KFold as holdoutType
+            // 1) If our best TE params, returned from selection strategy, contains DataLeakageHandlingStrategy.KFold as holdoutType
             // then we need kfold column with preferably the same folds as during grid search. 
-            // Case when original _trainingFrame does not have fold column. Even with CV enabled we at this point have not yet reached code of folds autoassignments.
+            // 2) Case when original _trainingFrame does not have fold column. Even with CV enabled we at this point have not yet reached code of folds autoassignments.
             // Best we can do is to add fold column with the same seed as we use during Grid search of TE parameters. Otherwise just apply to the `_foldColumn` from the AutoML setup.
             if(foldColumnName == null) {
-              foldColumnName = autoGeneratedFoldColumnForTE; // TODO introduce config `AutoMLTEControl` keep_te_fold_assignments
+              foldColumnName = autoGeneratedFoldColumnForTE; // TODO consider introducing config `AutoMLTEControl` keep_te_fold_assignments
               int nfolds = 5; // TODO move to `AutoMLTEControl`
               addKFoldColumn(_trainingFrame, foldColumnName, nfolds, seed);
             }
             encodingMap = tec.prepareEncodingMap(_trainingFrame, responseColumnName, foldColumnName, imputeNAsWithNewCategory);
-
-            // Case when we ignore validation frame and do early stopping based on CV models. Leaderboard is not used as well as we are using CV metrics to order model in the Leaderboard.
-            if(_trainingFrame != null && _buildSpec.build_control.nfolds!=0) {
-              // Ideally we would split training frame either train/test or train/valid/test. But we are not going to use these splits as we do CV.
-              //This is bad as we will train CV models on data that contributed to the test splits of corresponding CV models.
-            }
 
             Frame encodedTrainingFrame = tec.applyTargetEncoding(_trainingFrame, responseColumnName, encodingMap, holdoutType, foldColumnName, withBlendedAvg, noiseLevel, imputeNAsWithNewCategory, seed);
             copyEncodedColumnsToDestinationFrameAndRemoveSource(columnsToEncode, encodedTrainingFrame, _trainingFrame);

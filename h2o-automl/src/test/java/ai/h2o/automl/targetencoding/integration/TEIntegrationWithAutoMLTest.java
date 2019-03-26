@@ -86,15 +86,11 @@ public class TEIntegrationWithAutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.fold_column = foldColumnName;
       autoMLBuildSpec.input_spec.response_column = responseColumnName;
-
-      TargetEncodingParams targetEncodingParams = new TargetEncodingParams(new BlendingParams(5, 1), TargetEncoder.DataLeakageHandlingStrategy.KFold, 0.01);
-      TEParamsSelectionStrategy fixedTEParamsStrategy =  new FixedTEParamsStrategy(targetEncodingParams);
-
-      Vec responseColumn = fr.vec(responseColumnName);
-      TEApplicationStrategy teApplicationStrategy = new AllCategoricalTEApplicationStrategy(fr, responseColumn); //TODO we can introduce ENUM and create factory based on it
+      
+      TEApplicationStrategy teApplicationStrategy = new AllCategoricalTEApplicationStrategy(fr, responseColumnName);
       
       autoMLBuildSpec.te_spec.application_strategy = teApplicationStrategy;
-      autoMLBuildSpec.te_spec.params_selection_strategy = fixedTEParamsStrategy;
+      autoMLBuildSpec.te_spec.params_selection_strategy = HPsSelectionStrategy.Fixed;
 
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
       autoMLBuildSpec.build_control.keep_cross_validation_models = false;
@@ -154,13 +150,14 @@ public class TEIntegrationWithAutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.fold_column = foldColumnName;
       autoMLBuildSpec.input_spec.response_column = responseColumnName;
 
+      TEApplicationStrategy teApplicationStrategy = new AllCategoricalTEApplicationStrategy(fr, responseColumnName);
+      
+      //Same as hardcoded in AutoMLTargetEncodingAssistant
       TargetEncodingParams targetEncodingParams = new TargetEncodingParams(new BlendingParams(5, 1), TargetEncoder.DataLeakageHandlingStrategy.KFold, 0.01);
-      TEParamsSelectionStrategy fixedTEParamsStrategy =  new FixedTEParamsStrategy(targetEncodingParams);
 
-      TEApplicationStrategy teApplicationStrategy = new AllCategoricalTEApplicationStrategy(fr, fr.vec(responseColumnName));
 
       autoMLBuildSpec.te_spec.application_strategy = teApplicationStrategy;
-      autoMLBuildSpec.te_spec.params_selection_strategy = fixedTEParamsStrategy;
+      autoMLBuildSpec.te_spec.params_selection_strategy = HPsSelectionStrategy.Fixed;
       autoMLBuildSpec.te_spec.seed = 2345;
 
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
@@ -224,14 +221,11 @@ public class TEIntegrationWithAutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.fold_column = foldColumnName;
       autoMLBuildSpec.input_spec.response_column = responseColumnName;
 
-      TargetEncodingParams targetEncodingParams = new TargetEncodingParams(new BlendingParams(5, 1), TargetEncoder.DataLeakageHandlingStrategy.KFold, 0.01);
-      TEParamsSelectionStrategy fixedTEParamsStrategy =  new FixedTEParamsStrategy(targetEncodingParams);
-
       Vec responseColumn = fr.vec(responseColumnName);
       TEApplicationStrategy teApplicationStrategy = new ThresholdTEApplicationStrategy(fr, responseColumn, 5);
 
       autoMLBuildSpec.te_spec.application_strategy = teApplicationStrategy;
-      autoMLBuildSpec.te_spec.params_selection_strategy = fixedTEParamsStrategy;
+      autoMLBuildSpec.te_spec.params_selection_strategy = HPsSelectionStrategy.Fixed;
 
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
       autoMLBuildSpec.build_control.keep_cross_validation_models = false;
@@ -295,14 +289,11 @@ public class TEIntegrationWithAutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.validation_frame = validationFrame._key;
       autoMLBuildSpec.input_spec.response_column = responseColumnName;
 
-      TargetEncodingParams targetEncodingParams = new TargetEncodingParams(new BlendingParams(5, 1), TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, 0.01);
-      TEParamsSelectionStrategy fixedTEParamsStrategy =  new FixedTEParamsStrategy(targetEncodingParams);
-
       Vec responseColumn = fr.vec(responseColumnName);
       TEApplicationStrategy teApplicationStrategy = new ThresholdTEApplicationStrategy(fr, responseColumn, 5);
 
       autoMLBuildSpec.te_spec.application_strategy = teApplicationStrategy;
-      autoMLBuildSpec.te_spec.params_selection_strategy = fixedTEParamsStrategy;
+      autoMLBuildSpec.te_spec.params_selection_strategy = HPsSelectionStrategy.Fixed;
 
       autoMLBuildSpec.build_control.nfolds = 0;
       autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(1);

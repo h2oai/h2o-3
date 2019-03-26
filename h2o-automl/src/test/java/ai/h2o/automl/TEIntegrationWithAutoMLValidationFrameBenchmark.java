@@ -1,8 +1,5 @@
 package ai.h2o.automl;
 
-import ai.h2o.automl.targetencoding.BlendingParams;
-import ai.h2o.automl.targetencoding.TargetEncoder;
-import ai.h2o.automl.targetencoding.TargetEncodingParams;
 import ai.h2o.automl.targetencoding.strategy.*;
 import hex.Model;
 import org.junit.Assert;
@@ -33,8 +30,8 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
   long autoMLSeed = 2345;
 
   int numberOfModelsToCompareWith = 1;
-  Algo[] excludeAlgos = {Algo.DeepLearning, Algo.DRF, Algo.GLM /*Algo.XGBoost*/ , Algo.GBM, Algo.StackedEnsemble}; // only XGB
-//  Algo[] excludeAlgos = {Algo.DeepLearning, /*Algo.DRF,*/ Algo.GLM, Algo.XGBoost /* Algo.GBM,*/, Algo.StackedEnsemble};
+//  Algo[] excludeAlgos = {Algo.DeepLearning, Algo.DRF, Algo.GLM /*Algo.XGBoost*/ , Algo.GBM, Algo.StackedEnsemble}; // only XGB
+  Algo[] excludeAlgos = {Algo.DeepLearning, /*Algo.DRF,*/ Algo.GLM, Algo.XGBoost /* Algo.GBM,*/, Algo.StackedEnsemble};
 
 
   @Test
@@ -53,7 +50,10 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
     double avgCumulativeAUCWith = 0.0;
     double avgCumulativeWithoutTE = 0.0;
 
-    int numberOfRuns = 5;
+    double averageTimeWithTE = 0;
+    double averageTimeWithoutTE = 0;
+
+    int numberOfRuns = 1;
     for (int seedAttempt = 0; seedAttempt < numberOfRuns; seedAttempt++) {
       long splitSeed = generator.nextLong(); 
       try {
@@ -76,18 +76,12 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
         Vec responseColumn = train.vec(responseColumnName);
         TEApplicationStrategy thresholdTEApplicationStrategy = new ThresholdTEApplicationStrategy(train, responseColumn, 5);
 
+        autoMLBuildSpec.te_spec.ratio_of_hyperspace_to_explore = 0.4;
+        autoMLBuildSpec.te_spec.early_stopping_ratio = 0.15;
         autoMLBuildSpec.te_spec.seed = splitSeed;
-        long seed = autoMLBuildSpec.te_spec.seed;
-        TEParamsSelectionStrategy gridSearchTEParamsSelectionStrategy =
-                new SMBOTEParamsSelectionStrategy(leaderboardFrame, 0.15, responseColumnName, thresholdTEApplicationStrategy.getColumnsToEncode(), true, seed);
-
-        // Note: If we want to check how helpful is the best hyperparameters it is faster to fun full grid search
-//        TEParamsSelectionStrategy gridSearchTEParamsSelectionStrategy = 
-//                new GridSearchTEParamsSelectionStrategy(fr, 189, responseColumnName, thresholdTEApplicationStrategy.getColumnsToEncode(), true, seed);
-
 
         autoMLBuildSpec.te_spec.application_strategy = thresholdTEApplicationStrategy;
-        autoMLBuildSpec.te_spec.params_selection_strategy = gridSearchTEParamsSelectionStrategy;
+        autoMLBuildSpec.te_spec.params_selection_strategy = HPsSelectionStrategy.SMBO;
 
         autoMLBuildSpec.build_control.project_name = "with_te_" + splitSeed;
         autoMLBuildSpec.build_control.stopping_criteria.set_max_models(numberOfModelsToCompareWith);
@@ -95,9 +89,11 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
         autoMLBuildSpec.build_control.keep_cross_validation_models = false;
         autoMLBuildSpec.build_control.keep_cross_validation_predictions = false;
 
+        long start1 = System.currentTimeMillis();
         aml = AutoML.startAutoML(autoMLBuildSpec);
-        aml.get();    
-
+        aml.get();
+        long timeWithTE = System.currentTimeMillis() - start1;
+        
         leader = aml.leader();
         Leaderboard leaderboardWithTE = aml.leaderboard();
         assertTrue(leaderboardWithTE.getModels().length == numberOfModelsToCompareWith);
@@ -111,7 +107,10 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
         frForWithoutTE = fr.deepCopy(Key.make().toString());
         DKV.put(frForWithoutTE);
         splitsForWithoutTE = AutoMLBenchmarkingHelper.getRandomSplitsFromDataframe(frForWithoutTE, new double[]{0.7, 0.15, 0.15}, splitSeed);
+
+        long start2 = System.currentTimeMillis();
         Leaderboard leaderboardWithoutTE = trainBaselineAutoMLWithoutTE(splitsForWithoutTE, responseColumnName, splitSeed);
+        long timeWithoutTE = System.currentTimeMillis() - start2;
 
         double cumulativeLeaderboardScoreWithoutTE = 0;
         cumulativeLeaderboardScoreWithoutTE = getCumulativeLeaderboardScore(leaderboardFrame, leaderboardWithoutTE);
@@ -119,13 +118,16 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
         Model leaderFromWithoutTE = leaderboardWithoutTE.getLeader();
         double aucWithoutTE = getScoreBasedOn(leaderboardFrame, leaderFromWithoutTE);
 
-        System.out.println("Performance on leaderboardFrame frame with TE: AUC = " + aucWithTE);
-        System.out.println("Performance on leaderboardFrame frame without TE: AUC = " + aucWithoutTE);
+        System.out.println("Performance on leaderboardFrame frame with TE ( attempt " + seedAttempt + ") : AUC = " + aucWithTE);
+        System.out.println("Performance on leaderboardFrame frame without TE ( attempt " + seedAttempt + ") : AUC = " + aucWithoutTE);
         avgAUCWith += aucWithTE;
         avgAUCWithoutTE += aucWithoutTE;
 
         avgCumulativeAUCWith += cumulativeLeaderboardScoreWithTE;
         avgCumulativeWithoutTE += cumulativeLeaderboardScoreWithoutTE;
+
+        averageTimeWithTE += timeWithTE;
+        averageTimeWithoutTE += timeWithoutTE;
 
       } finally {
         if (leader != null) leader.delete();
@@ -135,13 +137,21 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
     }
     avgAUCWith = avgAUCWith / numberOfRuns;
     avgAUCWithoutTE = avgAUCWithoutTE / numberOfRuns;
-    System.out.println("Average AUC with encoding:" + avgAUCWith);
-    System.out.println("Average AUC without encoding:" + avgAUCWithoutTE);
+
+    averageTimeWithTE = averageTimeWithTE / numberOfRuns;
+    averageTimeWithoutTE = averageTimeWithoutTE / numberOfRuns;
+    
+    System.out.println("Average AUC by leader with encoding:" + avgAUCWith);
+    System.out.println("Average AUC by leader without encoding:" + avgAUCWithoutTE);
 
     avgCumulativeAUCWith = avgCumulativeAUCWith / numberOfRuns;
     avgCumulativeWithoutTE = avgCumulativeWithoutTE / numberOfRuns;
     System.out.println("Average cumulative AUC with encoding: " + avgCumulativeAUCWith);
     System.out.println("Average cumulative AUC without encoding: " + avgCumulativeWithoutTE);
+    
+    System.out.println("Average time with target encoding: " + averageTimeWithTE);
+    System.out.println("Average time without target encoding: " + averageTimeWithoutTE);
+    
     Assert.assertTrue(avgAUCWith > avgAUCWithoutTE);
     H2O.STORE.clear();
   }
@@ -157,7 +167,7 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
   }
 
   @Test
-  public void stratified_tvl_splits_vs_stratified_tvl_withoutTE_benchmark_with_leaderboard_evaluation() {
+  public void stratified_tvl_splits_withTE_vs_stratified_tvl_withoutTE_benchmark_with_leaderboard_evaluation() {
     AutoML aml = null;
     Frame fr = null;
     Frame[] splitsForWithoutTE = null;
@@ -196,13 +206,12 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
         Vec responseColumn = train.vec(responseColumnName);
         TEApplicationStrategy thresholdTEApplicationStrategy = new ThresholdTEApplicationStrategy(train, responseColumn, 5);
 
-        autoMLBuildSpec.te_spec.seed = 3456;
-        long seed = autoMLBuildSpec.te_spec.seed;
-        TEParamsSelectionStrategy gridSearchTEParamsSelectionStrategy =
-                new SMBOTEParamsSelectionStrategy(leaderboardFrame, 0.2, responseColumnName, thresholdTEApplicationStrategy.getColumnsToEncode(), true, seed);
+        autoMLBuildSpec.te_spec.ratio_of_hyperspace_to_explore = 0.4;
+        autoMLBuildSpec.te_spec.early_stopping_ratio = 0.15;
+        autoMLBuildSpec.te_spec.seed = splitSeed;
 
         autoMLBuildSpec.te_spec.application_strategy = thresholdTEApplicationStrategy;
-        autoMLBuildSpec.te_spec.params_selection_strategy = gridSearchTEParamsSelectionStrategy;
+        autoMLBuildSpec.te_spec.params_selection_strategy = HPsSelectionStrategy.SMBO;
 
         autoMLBuildSpec.build_control.project_name = "with_te_" + splitSeed;
         autoMLBuildSpec.build_control.stopping_criteria.set_max_models(numberOfModelsToCompareWith);

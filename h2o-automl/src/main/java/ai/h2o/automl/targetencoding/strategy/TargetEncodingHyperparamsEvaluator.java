@@ -230,6 +230,7 @@ public class TargetEncodingHyperparamsEvaluator extends Iced {
   
       switch (modelValidationMode) {
       case CV:
+        assert leaderboard == null : "Leaderboard frame should not be provided in case of CV evaluations in AutoML";
         return evaluateForCVMode(teParams, modelBuilder, columnsToEncode, seedForFoldColumn);
       case VALIDATION_FRAME: 
       default:

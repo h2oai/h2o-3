@@ -20,13 +20,16 @@ public class SMBOTEParamsSelectionStrategy extends GridBasedTEParamsSelectionStr
   private String[] _columnsToEncode; // we might want to search for subset as well
   private boolean _theBiggerTheBetter;
 
+  private int _numberOfPriorEvals;
+  private double _ratioOfHyperspaceToExplore;
+
   private PriorityQueue<Evaluated<TargetEncodingParams>> _evaluatedQueue;
   private TargetEncodingHyperparamsEvaluator _evaluator = new TargetEncodingHyperparamsEvaluator();
 //    private GridSearchTEStratifiedEvaluator _evaluator = new GridSearchTEStratifiedEvaluator();
 
   private double _earlyStoppingRatio;
 
-  public SMBOTEParamsSelectionStrategy(Frame leaderboard, double earlyStoppingRatio, String responseColumn, String[] columnsToEncode, boolean theBiggerTheBetter, long seed) {
+  public SMBOTEParamsSelectionStrategy(Frame leaderboard, double earlyStoppingRatio, double ratioOfHyperspaceToExplore, String responseColumn, String[] columnsToEncode, boolean theBiggerTheBetter, long seed) {
     _seed = seed;
     
     _leaderboardData = leaderboard;
@@ -34,8 +37,21 @@ public class SMBOTEParamsSelectionStrategy extends GridBasedTEParamsSelectionStr
     _responseColumn = responseColumn;
     _columnsToEncode = columnsToEncode;
     _theBiggerTheBetter = theBiggerTheBetter;
+
+    // Default is hardcoded. Not exposed to the user for now.
+    _numberOfPriorEvals = 5;
+    _ratioOfHyperspaceToExplore = ratioOfHyperspaceToExplore;
     
-    _evaluatedQueue = new PriorityQueue<>(10, new EvaluatedComparator(theBiggerTheBetter));
+    _evaluatedQueue = new PriorityQueue<>(_numberOfPriorEvals, new EvaluatedComparator(theBiggerTheBetter));
+  }
+
+  /**
+   *  User can set different number of grid entries he wants to evaluate eagerly before surrogate model will get a chance to give predictions
+   * @param numberOfPriorEvals
+   */
+  public void setNumberOfPriorEvals(int numberOfPriorEvals) {
+    assert numberOfPriorEvals <= _randomSelector._grid.size() : "Number of eager evaluations for prior should be within range [0, #entries_in_grid]";
+    _numberOfPriorEvals = numberOfPriorEvals;
   }
   
   static class EarlyStopper {
@@ -47,10 +63,10 @@ public class SMBOTEParamsSelectionStrategy extends GridBasedTEParamsSelectionStr
     private int _totalAttemptsCount = 0;
     private int _fruitlessAttemptsSinceLastResetCount = 0;
 
-    public EarlyStopper(int seqAttemptsBeforeStopping, int totalAttemptsBeforeStopping, double initialThreshold, boolean theBiggerTheBetter) {
-      
-      _seqAttemptsBeforeStopping = seqAttemptsBeforeStopping;
-      _totalAttemptsBeforeStopping = totalAttemptsBeforeStopping;
+    public EarlyStopper(double earlyStoppingRatio, double ratioOfHyperspaceToExplore, int numberOfUnexploredEntries, double initialThreshold, boolean theBiggerTheBetter) {
+
+      _seqAttemptsBeforeStopping = (int) (numberOfUnexploredEntries * earlyStoppingRatio);
+      _totalAttemptsBeforeStopping = (int) (numberOfUnexploredEntries * ratioOfHyperspaceToExplore );
       _currentThreshold = initialThreshold;
       _theBiggerTheBetter = theBiggerTheBetter;
     }
@@ -84,9 +100,8 @@ public class SMBOTEParamsSelectionStrategy extends GridBasedTEParamsSelectionStr
 
     double thresholdScoreFromPriors = 0;
     
-    int numberOfPriorEvals = 5;
-    GridSearchTEParamsSelectionStrategy.GridEntry[] entriesForPrior = wholeSpace.subList(0, numberOfPriorEvals).toArray(new GridSearchTEParamsSelectionStrategy.GridEntry[0]);
-    double[] priorScores = new double[numberOfPriorEvals];
+    GridSearchTEParamsSelectionStrategy.GridEntry[] entriesForPrior = wholeSpace.subList(0, _numberOfPriorEvals).toArray(new GridSearchTEParamsSelectionStrategy.GridEntry[0]);
+    double[] priorScores = new double[_numberOfPriorEvals];
     int priorIndex = 0;
     for(GridSearchTEParamsSelectionStrategy.GridEntry entry :entriesForPrior) {
       TargetEncodingParams param = new TargetEncodingParams(entry.getItem());
@@ -106,22 +121,16 @@ public class SMBOTEParamsSelectionStrategy extends GridBasedTEParamsSelectionStr
     priorHpsAsFrame.add("score", Vec.makeVec(priorScores, Vec.newKey()));
     Frame priorHpsWithScores = priorHpsAsFrame;
 
-    GridSearchTEParamsSelectionStrategy.GridEntry[] unexploredHyperSpace = wholeSpace.subList(numberOfPriorEvals, wholeSpace.size()).toArray(new GridSearchTEParamsSelectionStrategy.GridEntry[0]);
+    GridSearchTEParamsSelectionStrategy.GridEntry[] unexploredHyperSpace = wholeSpace.subList(_numberOfPriorEvals, wholeSpace.size()).toArray(new GridSearchTEParamsSelectionStrategy.GridEntry[0]);
     //TODO it should contain only undiscovered. We will need one more cache for already selected ones.
     Frame unexploredHyperspaceAsFrame = hyperspaceMapToFrame(unexploredHyperSpace);
 
     printOutFrameAsTable(unexploredHyperspaceAsFrame);
-
-    //Should be chosen automatically based on the task
-    boolean theBiggerTheBetter = true;
     
 //    RFSMBO rfsmbo = new RFSMBO(theBiggerTheBetter){};
-    GPSMBO rfsmbo = new GPSMBO(theBiggerTheBetter){};
-    int seqAttemptsBeforeStopping = (int) (unexploredHyperspaceAsFrame.numRows() * _earlyStoppingRatio);
+    GPSMBO rfsmbo = new GPSMBO(_theBiggerTheBetter){};
     
-    int totalAttemptsBeforeStopping = (int) (unexploredHyperspaceAsFrame.numRows() * 0.4 ); // TODO hardcoded parameter
-    
-    EarlyStopper earlyStopper = new EarlyStopper(seqAttemptsBeforeStopping, totalAttemptsBeforeStopping, thresholdScoreFromPriors, theBiggerTheBetter);
+    EarlyStopper earlyStopper = new EarlyStopper(_earlyStoppingRatio, _ratioOfHyperspaceToExplore, unexploredHyperSpace.length, thresholdScoreFromPriors, _theBiggerTheBetter);
 
     long startTimeForSMBO = System.currentTimeMillis();
     while(earlyStopper.proceed() && unexploredHyperspaceAsFrame.numRows() > 0 ) {
@@ -172,6 +181,7 @@ public class SMBOTEParamsSelectionStrategy extends GridBasedTEParamsSelectionStr
     return targetEncodingParamsEvaluated;
   }
 
+  //TODO dev tool
   static class Exporter {
     private ArrayList<Double> surrogatePredictions = new ArrayList<>(); //TODO add support for surrogatePredictions export
     private ArrayList<Double> scores = new ArrayList<>();

@@ -23,7 +23,7 @@ public class StratificationCVBenchmark extends water.TestUtil {
 
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
-  // TE is disabled. Purpose of the test is to see how helpful is stratification for CV case 
+  // TE is disabled. Purpose of the test is to see how helpful stratification is for CV case 
   @Test public void stratified_vs_auto_assigned_random_folds_CV_scenario_benchmark() {
     AutoML aml=null;
     Frame fr=null;
@@ -45,23 +45,11 @@ public class StratificationCVBenchmark extends water.TestUtil {
       Frame withAssignments = StratificationAssistant.assignKFolds(train, 5, responseColumnName, seed);
 
       autoMLBuildSpec.input_spec.training_frame = withAssignments._key;
-//      autoMLBuildSpec.build_control.nfolds = 5;
-
       autoMLBuildSpec.input_spec.response_column = responseColumnName;
       autoMLBuildSpec.input_spec.fold_column = "fold";
-
-      Vec responseColumn = withAssignments.vec(responseColumnName);
-      TEApplicationStrategy thresholdTEApplicationStrategy = new ThresholdTEApplicationStrategy(withAssignments, responseColumn, 5);
-
-      int numberOfIterations = 378;
       
       autoMLBuildSpec.te_spec.enabled = false;
-      TEParamsSelectionStrategy gridSearchTEParamsSelectionStrategy =
-              new GridSearchTEParamsSelectionStrategy(withAssignments, numberOfIterations, responseColumnName, thresholdTEApplicationStrategy.getColumnsToEncode(), true, seed);;
-
-      autoMLBuildSpec.te_spec.application_strategy = thresholdTEApplicationStrategy;
-      autoMLBuildSpec.te_spec.params_selection_strategy = gridSearchTEParamsSelectionStrategy;
-
+      
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
       autoMLBuildSpec.build_control.stopping_criteria.set_seed(7891);
       autoMLBuildSpec.build_control.keep_cross_validation_models = false;

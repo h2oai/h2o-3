@@ -56,8 +56,9 @@ public class GridSearchVsSMBOBenchmark extends water.TestUtil {
     TEApplicationStrategy strategy = new ThresholdTEApplicationStrategy(fr, fr.vec("survived"), 4);
     String[] columnsToEncode = strategy.getColumnsToEncode();
 
+    double ratioOfHyperspaceToExplore = 0.4;
     SMBOTEParamsSelectionStrategy gridSearchTEParamsSelectionStrategy =
-            new SMBOTEParamsSelectionStrategy(fr, earlyStoppingRatio, responseColumnName, columnsToEncode, true, seed);
+            new SMBOTEParamsSelectionStrategy(fr, earlyStoppingRatio, ratioOfHyperspaceToExplore, responseColumnName, columnsToEncode, true, seed);
 
     gridSearchTEParamsSelectionStrategy.setTESearchSpace(ModelValidationMode.VALIDATION_FRAME);
     ModelBuilder mb = TargetEncodingTestFixtures.modelBuilderWithValidFrameFixture(fr, responseColumnName, seed);
@@ -82,7 +83,7 @@ public class GridSearchVsSMBOBenchmark extends water.TestUtil {
     double averageTimeRGS = 0;
     double averageTimeSMBO = 0;
 
-    int numberOfRuns = 1;
+    int numberOfRuns = 5;
     for (int seedAttempt = 0; seedAttempt < numberOfRuns; seedAttempt++) {
       long seed = generator.nextLong();
       try {
