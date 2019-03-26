@@ -369,12 +369,12 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   }
 
   @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
-    ab.putKey(model_info._dataInfoKey);
+    ab.putKey(model_info.getDataInfoKey());
     return super.writeAll_impl(ab);
   }
 
   @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
-    ab.getKey(model_info._dataInfoKey, fs);
+    ab.getKey(model_info.getDataInfoKey(), fs);
     return super.readAll_impl(ab, fs);
   }
 
@@ -423,7 +423,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   @Override // per row scoring is slow and should be avoided!
   public double[] score0(final double[] data, final double[] preds, final double offset) {
-    final DataInfo di = model_info._dataInfoKey.get();
+    final DataInfo di = model_info.dataInfo();
     assert di != null;
     final double threshold = defaultThreshold();
     Booster booster = null;
@@ -448,14 +448,14 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   }
 
   private BigScorePredict setupBigScorePredictNative() {
-    DataInfo di = model_info()._dataInfoKey.get();
+    DataInfo di = model_info().dataInfo();
     assert di != null;
     BoosterParms boosterParms = XGBoostModel.createParams(_parms, _output.nclasses(), di.coefNames());
     return new XGBoostBigScorePredict(boosterParms);
   }
 
   private BigScorePredict setupBigScorePredictJava() {
-    final DataInfo di = model_info._dataInfoKey.get();
+    final DataInfo di = model_info.dataInfo();
     assert di != null;
     return new XGBoostJavaBigScorePredict(di, _output, defaultThreshold(), model_info()._boosterBytes);
   }
@@ -602,7 +602,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     Frame adaptFrm = new Frame(frame);
     adaptTestForTrain(adaptFrm, true, false);
 
-    DataInfo di = model_info()._dataInfoKey.get();
+    DataInfo di = model_info().dataInfo();
     assert di != null;
     final String[] outputNames = ArrayUtils.append(di.coefNames(), "BiasTerm");
 
@@ -642,8 +642,10 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   @Override
   protected Futures remove_impl(Futures fs) {
-    if (model_info()._dataInfoKey !=null)
-      model_info()._dataInfoKey.get().remove(fs);
+    DataInfo di = model_info().dataInfo();
+    if (di != null) {
+      di.remove(fs);
+    }
     return super.remove_impl(fs);
   }
 
@@ -680,7 +682,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     SharedTreeGraph sharedTreeGraph = new SharedTreeGraph();
     final SharedTreeSubgraph sharedTreeSubgraph = sharedTreeGraph.makeSubgraph(_output._training_metrics._description);
 
-    final XGBoostUtils.FeatureProperties featureProperties = XGBoostUtils.assembleFeatureNames(model_info._dataInfoKey.get()); // XGBoost's usage of one-hot encoding assumed
+    final XGBoostUtils.FeatureProperties featureProperties = XGBoostUtils.assembleFeatureNames(model_info.dataInfo()); // XGBoost's usage of one-hot encoding assumed
     constructSubgraph(treeNodes, sharedTreeSubgraph.makeRootNode(), 0, sharedTreeSubgraph, featureProperties, true); // Root node is at index 0
     return sharedTreeGraph;
   }

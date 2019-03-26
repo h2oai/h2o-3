@@ -65,7 +65,7 @@ public class XGBoostSetupTask extends AbstractXGBoostTask<XGBoostSetupTask> {
 
   private DMatrix makeLocalMatrix() throws XGBoostError {
       return XGBoostUtils.convertFrameToDMatrix(
-              _sharedModel._dataInfoKey,
+              _sharedModel.dataInfo(),
               _trainFrame,
               true,
               _parms._response_column,

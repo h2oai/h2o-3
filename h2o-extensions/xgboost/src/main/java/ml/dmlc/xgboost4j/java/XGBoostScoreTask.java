@@ -155,7 +155,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
             Rabit.init(rabitEnv);
 
             data = XGBoostUtils.convertChunksToDMatrix(
-                    sharedmodel._dataInfoKey,
+                    sharedmodel.dataInfo(),
                     cs,
                     fr.find(parms._response_column),
                     -1, // not used for preds

@@ -5,7 +5,6 @@ import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import ml.dmlc.xgboost4j.java.util.BigDenseMatrix;
 import water.H2O;
-import water.Key;
 import water.LocalMR;
 import water.MrFun;
 import water.fvec.Chunk;
@@ -59,14 +58,14 @@ public class XGBoostUtils {
      * @return DMatrix
      * @throws XGBoostError
      */
-    public static DMatrix convertFrameToDMatrix(Key<DataInfo> dataInfoKey,
+    public static DMatrix convertFrameToDMatrix(DataInfo di,
                                                 Frame f,
                                                 boolean onlyLocal,
                                                 String response,
                                                 String weight,
                                                 String fold,
                                                 boolean sparse) throws XGBoostError {
-
+        assert di != null;
         int[] chunks;
         Vec vec = f.anyVec();
         if(!onlyLocal) {
@@ -88,8 +87,6 @@ public class XGBoostUtils {
         }
         final int nRows = (int) nRowsL;
 
-        final DataInfo di = dataInfoKey.get();
-        assert di != null;
         final DMatrix trainMat;
 
         // In the future this 2 arrays might also need to be rewritten into float[][],
@@ -273,7 +270,7 @@ public class XGBoostUtils {
      * @return DMatrix
      * @throws XGBoostError
      */
-    public static DMatrix convertChunksToDMatrix(Key<DataInfo> dataInfoKey,
+    public static DMatrix convertChunksToDMatrix(DataInfo di,
                                                  Chunk[] chunks,
                                                  int response,
                                                  int weight,
@@ -282,7 +279,6 @@ public class XGBoostUtils {
         int nRows = chunks[0]._len;
 
         DMatrix trainMat;
-        DataInfo di = dataInfoKey.get();
 
         float[] resp = malloc4f(nRows);
         float[] weights = null;

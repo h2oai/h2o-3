@@ -17,7 +17,7 @@ import java.util.Arrays;
  */
 final public class XGBoostModelInfo extends Iced {
   public final XGBoostModel.XGBoostParameters _parameters; // not used, kept for debugging purposes
-  public final Key<DataInfo> _dataInfoKey;
+  private final Key<DataInfo> _dataInfoKey;
 
   public String _featureMap;
   public byte[] _boosterBytes; // internal state of native backend
@@ -69,6 +69,10 @@ final public class XGBoostModelInfo extends Iced {
     return res;
   }
 
+  public Key<DataInfo> getDataInfoKey() {
+    return _dataInfoKey;
+  }
+  
   public DataInfo dataInfo() {
     return _dataInfoKey.get();
   }
