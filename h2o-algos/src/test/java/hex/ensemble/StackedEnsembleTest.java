@@ -862,6 +862,7 @@ public class StackedEnsembleTest extends TestUtil {
             seParams._train = train._key;
             seParams._response_column = target;
             seParams._base_models = ArrayUtils.append(grid.getModelKeys());
+            seParams._metalearner_algorithm = algo;
             seParams._seed = seed;
             StackedEnsembleModel se = new StackedEnsemble(seParams).trainModel().get(); deletables.add(se);
 
