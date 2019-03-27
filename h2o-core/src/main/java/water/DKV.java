@@ -243,6 +243,7 @@ public abstract class DKV {
         if (retainedKeys.contains(value._key)) {
           continue;
         }
+        if(value.isNull()) continue;
         if (!value.isModel() && !value.isFrame()) continue;
 
         // It is important to trigger the removal strategy on the Keyed object itself
