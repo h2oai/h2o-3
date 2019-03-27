@@ -48,3 +48,11 @@ Miscellaneous
    :maxdepth: 1
 
    data-science/word2vec
+
+Generic Models
+--------------
+
+.. toctree::
+   :maxdepth: 1
+
+   data-science/generic
