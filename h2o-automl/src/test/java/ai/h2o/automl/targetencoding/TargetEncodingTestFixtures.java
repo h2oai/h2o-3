@@ -59,12 +59,11 @@ public class TargetEncodingTestFixtures {
     return builder;
   }
   
-  // TODO use this method and remove the one in the test
-  public static ModelBuilder modelBuilderWithValidFrameFixture(Frame fr, String responseColumnName , long builderSeed) {
+  public static ModelBuilder modelBuilderGBMWithValidFrameFixture(Frame train, Frame valid, String responseColumnName , long builderSeed) {
     Algo algo = Algo.GBM;
     String algoUrlName = algo.name().toLowerCase();
     String algoName = ModelBuilder.algoName(algoUrlName);
-    Key<Model> testModelKey = Key.make("testModelKey");
+    Key<Model> testModelKey = Key.make("testModelKey_" + Key.make().toString());
 
     Job<Model> job = new Job<>(testModelKey, ModelBuilder.javaName(algoUrlName), algoName);
     ModelBuilder builder = ModelBuilder.make(algoUrlName, job, testModelKey);
@@ -77,11 +76,10 @@ public class TargetEncodingTestFixtures {
     builder._parms = gbmParameters;
     builder._parms._seed = builderSeed;
 
-    Frame splits[] = AutoMLBenchmarkingHelper.split2ByRatio(fr, 0.8, 0.2, 2345L);
-    builder._parms._train = splits[0]._key;
-    builder._parms._valid = splits[1]._key;
+    builder._parms._train = train._key;
+    builder._parms._valid = valid._key;
     builder._parms._response_column = responseColumnName;
-
+    
     return builder;
   }
 

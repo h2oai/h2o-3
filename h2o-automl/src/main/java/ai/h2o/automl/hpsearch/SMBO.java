@@ -28,20 +28,27 @@ public abstract class SMBO {
 
   public boolean hasNoPrior() {
     return _history == null || _history.numRows() == 0;
-  };
+  }
 
   public void updatePrior(Frame hyperparametersWithScore){
-    _history = TargetEncoderFrameHelper.rBind(_history, hyperparametersWithScore);
-
+    Frame newHistory = TargetEncoderFrameHelper.rBind(_history, hyperparametersWithScore);
+    if(!hasNoPrior()) _history.delete();
+    _history = newHistory;
+    
     AcquisitionFunction acquisitionFunction = acquisitionFunction();
     if(!acquisitionFunction.isIncumbentColdStartSetupHappened()) {
       Frame bestFromPrior = getBestRowByColumn(history(), "score", true);
-      acquisitionFunction.setIncumbent(bestFromPrior.vec("score").at(0));
+      Vec bestScore = bestFromPrior.vec("score");
+      acquisitionFunction.setIncumbent(bestScore.at(0));
+      bestFromPrior.delete();
+      bestScore.remove();
     } else {
-      double newScoreOnOF = hyperparametersWithScore.vec("score").at(0);
+      Vec bestScoreVec = hyperparametersWithScore.vec("score");
+      double newScoreOnOF = bestScoreVec.at(0);
       acquisitionFunction.updateIncumbent(newScoreOnOF);
+      bestScoreVec.remove();
     }
-  };
+  }
 
   /**
    *  Should be overwritten by user with given objective function evaluation
@@ -54,36 +61,53 @@ public abstract class SMBO {
   public abstract AcquisitionFunction acquisitionFunction();
   
   public Frame getNextBestHyperparameters(Frame unexploredHyperspace) {
+    Vec afEvaluations = null;
+    Frame bestHPsBasedOnAF = null;
     
-    // 1) evaluate whole searchspace with surrogate model. Model is trained on history.
-    Frame evaluatedHyperspace = surrogateModel().evaluate(unexploredHyperspace, history());
-
-    printOutFrameAsTable(evaluatedHyperspace, false, 30);
+    Frame historyCopy  = history().deepCopy(Key.make().toString()); // TODO experimental
+    DKV.put(historyCopy);
     
-    Vec medians = evaluatedHyperspace.vec("prediction");
-    Vec variances = evaluatedHyperspace.vec("variance");
-    AcquisitionFunction acquisitionFunction = acquisitionFunction();
-    
-    Vec afEvaluations = acquisitionFunction.compute(medians, variances);
-    evaluatedHyperspace.add("afEvaluations", afEvaluations);
+    try {
+      // evaluate whole searchspace with surrogate model. Model is trained on history.
+      Frame evaluatedHyperspace = surrogateModel().evaluate(unexploredHyperspace, historyCopy);
 
-    Frame bestHPsBasedOnAF = getBestRowByColumn(evaluatedHyperspace, "afEvaluations", true);
+      printOutFrameAsTable(evaluatedHyperspace, false, 30);
 
-    //Removing predictions as on the next iteration we will have updated prior and new predictions
-    unexploredHyperspace.remove("prediction").remove();
-    unexploredHyperspace.remove("variance").remove();
-    unexploredHyperspace.remove("afEvaluations").remove();
-    printOutFrameAsTable(bestHPsBasedOnAF);
-    return bestHPsBasedOnAF;
-  };
+      Vec medians = evaluatedHyperspace.vec("prediction");
+      Vec variances = evaluatedHyperspace.vec("variance");
+      AcquisitionFunction acquisitionFunction = acquisitionFunction();
+
+      afEvaluations = acquisitionFunction.compute(medians, variances);
+
+      evaluatedHyperspace.add("afEvaluations", afEvaluations);
+
+      bestHPsBasedOnAF = getBestRowByColumn(evaluatedHyperspace, "afEvaluations", true);
+
+      //Removing predictions as on the next iteration we will have updated prior and new predictions
+      unexploredHyperspace.remove("prediction").remove();
+      unexploredHyperspace.remove("variance").remove();
+      unexploredHyperspace.remove("afEvaluations").remove();
+      
+      printOutFrameAsTable(bestHPsBasedOnAF);
+
+      return bestHPsBasedOnAF;
+    } catch (Exception ex){
+      if(afEvaluations!=null) afEvaluations.remove();
+      if(bestHPsBasedOnAF!=null) bestHPsBasedOnAF.delete();
+      throw ex;
+    } finally {
+      historyCopy.delete();
+    }
+  }
   
   Frame getBestRowByColumn(Frame fr, String columnName, boolean theBiggerTheBetter) {
     int columnIdx = fr.find(columnName);
     Frame sorted = fr.sort(new int[] {columnIdx}, new int[] {-1});
-    printOutFrameAsTable(sorted, false, 30);
+    
     Frame bestHPsBasedOnCriteria = sorted.deepSlice(new long[]{0}, null);
     bestHPsBasedOnCriteria._key = Key.make("best_candidate_" + Key.make());
     DKV.put(bestHPsBasedOnCriteria);
+    sorted.delete();
     return bestHPsBasedOnCriteria;
   }
 

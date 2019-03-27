@@ -1,5 +1,6 @@
 package ai.h2o.automl.targetencoding.strategy;
 
+import ai.h2o.automl.AutoMLBenchmarkingHelper;
 import ai.h2o.automl.targetencoding.TargetEncoder;
 import ai.h2o.automl.targetencoding.TargetEncodingParams;
 import ai.h2o.automl.targetencoding.TargetEncodingTestFixtures;
@@ -12,6 +13,7 @@ import water.fvec.Frame;
 import java.util.HashMap;
 
 import static ai.h2o.automl.targetencoding.TargetEncodingTestFixtures.modelBuilderWithCVFixture;
+import static ai.h2o.automl.targetencoding.TargetEncodingTestFixtures.modelBuilderGBMWithValidFrameFixture;
 import static org.junit.Assert.*;
 
 public class TargetEncodingHyperparamsEvaluatorTest extends TestUtil {
@@ -21,50 +23,70 @@ public class TargetEncodingHyperparamsEvaluatorTest extends TestUtil {
     stall_till_cloudsize(1);
   }
 
+  @Test
+  public void fixtureForMBTest() {
+
+    Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+    String responseColumnName = "survived";
+
+    asFactor(fr, responseColumnName);
+
+    Frame[] splits = AutoMLBenchmarkingHelper.getRandomSplitsFromDataframe(fr, new double[]{0.7, 0.3}, 2345);
+    Frame train = splits[0];
+    Frame valid = splits[1];
+    long builderSeed = 3456;
+    ModelBuilder modelBuilder = modelBuilderGBMWithValidFrameFixture(train, valid, responseColumnName, builderSeed);
+
+    modelBuilder.trainModel().get();
+    assertTrue(modelBuilder.train().vec("Tree_0") == null);
+    printOutFrameAsTable(modelBuilder.train());
+  }
+
   // We test here that we can reuse model builder by cloning it.
   // Also we check that two evaluations with the same TE params return same result.
   @Test 
   public void evaluateMethodWorksWithModelBuilder() {
     Frame fr = null;
-    Frame frCopy = null;
+    Frame train = null;
+    Frame valid = null;
+    Frame leaderboard = null;
+    ModelBuilder modelBuilder = null;
     try {
       fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
       String responseColumnName = "survived";
 
       asFactor(fr, responseColumnName);
-      
-      frCopy = fr.deepCopy(Key.make().toString());
-      DKV.put(frCopy);
 
-      TEApplicationStrategy strategy = new ThresholdTEApplicationStrategy(fr, fr.vec(responseColumnName), 4);
+      Frame[] splits = AutoMLBenchmarkingHelper.getRandomSplitsFromDataframe(fr, new double[]{0.7, 0.15, 0.15}, 2345);
+      train = splits[0];
+      valid = splits[1];
+      leaderboard = splits[2];
+
+      TEApplicationStrategy strategy = new ThresholdTEApplicationStrategy(train, train.vec(responseColumnName), 4);
 
       TargetEncodingHyperparamsEvaluator evaluator = new TargetEncodingHyperparamsEvaluator();
 
       TargetEncodingParams randomTEParams = TargetEncodingTestFixtures.randomTEParams();
       long builderSeed = 3456;
-      ModelBuilder modelBuilder = modelBuilderWithCVFixture(fr, responseColumnName, builderSeed);
-      
+      modelBuilder = modelBuilderGBMWithValidFrameFixture(train, valid, responseColumnName, builderSeed);
       String[] columnsToEncode = strategy.getColumnsToEncode();
-
+      
       modelBuilder.init(false); //verifying that we can call init and then modify builder in evaluator
+      ModelBuilder clonedModelBuilder = ModelBuilder.clone(modelBuilder);
       
       int seedForFoldColumn = 2345;
-      //TODO change null into Leaderboard
-      double auc = evaluator.evaluate(randomTEParams, modelBuilder, ModelValidationMode.VALIDATION_FRAME,null, columnsToEncode, seedForFoldColumn);
+      double auc = evaluator.evaluate(randomTEParams, modelBuilder, ModelValidationMode.VALIDATION_FRAME, leaderboard, columnsToEncode, seedForFoldColumn);
       
-      System.out.println("AUC with target encoding: " + auc);
-      printOutFrameAsTable(modelBuilder._parms.train(), false, 5);
-
-      ModelBuilder clonedModelBuilder = ModelBuilder.clone(modelBuilder);
       clonedModelBuilder.init(false);
-      double auc2 = evaluator.evaluate(randomTEParams, clonedModelBuilder, ModelValidationMode.VALIDATION_FRAME,null, columnsToEncode, seedForFoldColumn); // checking that we can reuse modelBuilder
-
-      assertTrue(isBitIdentical(frCopy, modelBuilder._parms.train()));
+      // checking that we can reuse modelBuilder
+      double auc2 = evaluator.evaluate(randomTEParams, clonedModelBuilder, ModelValidationMode.VALIDATION_FRAME, leaderboard, columnsToEncode, seedForFoldColumn);
+      assertTrue(isBitIdentical(clonedModelBuilder._parms.train(), modelBuilder._parms.train()));
       assertTrue(auc > 0);
       assertEquals(auc, auc2, 1e-5);
     } finally {
-      fr.delete();
-      frCopy.delete();
+      if(fr!=null) fr.delete();
+      if(train!=null) train.delete();
+      if(leaderboard!=null) leaderboard.delete();
     }
   }
 

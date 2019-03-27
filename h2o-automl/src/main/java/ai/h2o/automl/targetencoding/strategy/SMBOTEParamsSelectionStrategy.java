@@ -8,8 +8,10 @@ import ai.h2o.automl.targetencoding.TargetEncodingParams;
 import hex.ModelBuilder;
 import water.DKV;
 import water.Key;
+import water.Scope;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.Log;
 
 import java.util.*;
 
@@ -42,7 +44,7 @@ public class SMBOTEParamsSelectionStrategy extends GridBasedTEParamsSelectionStr
     _numberOfPriorEvals = 5;
     _ratioOfHyperspaceToExplore = ratioOfHyperspaceToExplore;
     
-    _evaluatedQueue = new PriorityQueue<>(_numberOfPriorEvals, new EvaluatedComparator(theBiggerTheBetter));
+    _evaluatedQueue = new PriorityQueue<>(100, new EvaluatedComparator(theBiggerTheBetter));
   }
 
   /**
@@ -50,7 +52,7 @@ public class SMBOTEParamsSelectionStrategy extends GridBasedTEParamsSelectionStr
    * @param numberOfPriorEvals
    */
   public void setNumberOfPriorEvals(int numberOfPriorEvals) {
-    assert numberOfPriorEvals <= _randomSelector._grid.size() : "Number of eager evaluations for prior should be within range [0, #entries_in_grid]";
+    assert numberOfPriorEvals <= _randomSelector.spaceSize() : "Number of eager evaluations for prior should be within range [0, #entries_in_grid]";
     _numberOfPriorEvals = numberOfPriorEvals;
   }
   
@@ -93,92 +95,128 @@ public class SMBOTEParamsSelectionStrategy extends GridBasedTEParamsSelectionStr
 
   public Evaluated<TargetEncodingParams> getBestParamsWithEvaluation(ModelBuilder modelBuilder) {
     assert _modelValidationMode != null : "`setTESearchSpace()` method should has been called to setup appropriate hyperspace.";
-    
+
+    Frame priorHpsAsFrame = null;
+    Frame unexploredHyperspaceAsFrame = null;
+    Frame suggestedHPsEntry = null;
+
+    GPSMBO rfsmbo = null;
+
     ArrayList<GridSearchTEParamsSelectionStrategy.GridEntry> wholeSpace = materialiseHyperspace();
-    
+
     Exporter exporter = new Exporter();
 
     double thresholdScoreFromPriors = 0;
-    
+
     GridSearchTEParamsSelectionStrategy.GridEntry[] entriesForPrior = wholeSpace.subList(0, _numberOfPriorEvals).toArray(new GridSearchTEParamsSelectionStrategy.GridEntry[0]);
     double[] priorScores = new double[_numberOfPriorEvals];
     int priorIndex = 0;
-    for(GridSearchTEParamsSelectionStrategy.GridEntry entry :entriesForPrior) {
-      TargetEncodingParams param = new TargetEncodingParams(entry.getItem());
+    try {
+      for (GridSearchTEParamsSelectionStrategy.GridEntry entry : entriesForPrior) {
+        TargetEncodingParams param = new TargetEncodingParams(entry.getItem());
 
-      ModelBuilder clonedModelBuilder = ModelBuilder.clone(modelBuilder);
-      clonedModelBuilder.init(false); // in _evaluator we assume that init() has been already called
-      double evaluationResult = _evaluator.evaluate(param, clonedModelBuilder, _modelValidationMode, _leaderboardData, getColumnsToEncode(), _seed);
-      priorScores[priorIndex] = evaluationResult;
-      _evaluatedQueue.add(new Evaluated<>(param, evaluationResult, priorIndex));
+        ModelBuilder clonedModelBuilder = ModelBuilder.clone(modelBuilder);
 
-      priorIndex++;
-      thresholdScoreFromPriors = Math.max(thresholdScoreFromPriors, evaluationResult);
-      exporter.update(0.0, evaluationResult);
-    }
+        clonedModelBuilder.init(false); // in _evaluator we assume that init() has been already called
 
-    Frame priorHpsAsFrame = hyperspaceMapToFrame(entriesForPrior);
-    priorHpsAsFrame.add("score", Vec.makeVec(priorScores, Vec.newKey()));
-    Frame priorHpsWithScores = priorHpsAsFrame;
+        double evaluationResult = _evaluator.evaluate(param, clonedModelBuilder, _modelValidationMode, _leaderboardData, getColumnsToEncode(), _seed);
 
-    GridSearchTEParamsSelectionStrategy.GridEntry[] unexploredHyperSpace = wholeSpace.subList(_numberOfPriorEvals, wholeSpace.size()).toArray(new GridSearchTEParamsSelectionStrategy.GridEntry[0]);
-    //TODO it should contain only undiscovered. We will need one more cache for already selected ones.
-    Frame unexploredHyperspaceAsFrame = hyperspaceMapToFrame(unexploredHyperSpace);
+        priorScores[priorIndex] = evaluationResult;
+        _evaluatedQueue.add(new Evaluated<>(param, evaluationResult, priorIndex));
 
-    printOutFrameAsTable(unexploredHyperspaceAsFrame);
-    
-//    RFSMBO rfsmbo = new RFSMBO(theBiggerTheBetter){};
-    GPSMBO rfsmbo = new GPSMBO(_theBiggerTheBetter){};
-    
-    EarlyStopper earlyStopper = new EarlyStopper(_earlyStoppingRatio, _ratioOfHyperspaceToExplore, unexploredHyperSpace.length, thresholdScoreFromPriors, _theBiggerTheBetter);
-
-    long startTimeForSMBO = System.currentTimeMillis();
-    while(earlyStopper.proceed() && unexploredHyperspaceAsFrame.numRows() > 0 ) {
-      
-      if(rfsmbo.hasNoPrior()) {
-        rfsmbo.updatePrior(priorHpsWithScores);
+        priorIndex++;
+        thresholdScoreFromPriors = Math.max(thresholdScoreFromPriors, evaluationResult);
+        exporter.update(0.0, evaluationResult);
       }
-      
-      Frame suggestedHPsEntry = rfsmbo.getNextBestHyperparameters(unexploredHyperspaceAsFrame);
-      double idToRemove = suggestedHPsEntry.vec(suggestedHPsEntry.find("id")).at(0);
-      unexploredHyperspaceAsFrame = TargetEncoderFrameHelper.filterNotByValue(unexploredHyperspaceAsFrame, unexploredHyperspaceAsFrame.find("id"), idToRemove);
-      
-      HashMap<String, Object> suggestedHPsAsMap = singleRowFrameToMap(suggestedHPsEntry);
-      TargetEncodingParams param = new TargetEncodingParams(suggestedHPsAsMap);
 
-      final ModelBuilder clonedModelBuilder = ModelBuilder.clone(modelBuilder);
-      clonedModelBuilder.init(false); // in _evaluator we assume that init() has been already called
-      double evaluationResult = _evaluator.evaluate(param, clonedModelBuilder, _modelValidationMode, _leaderboardData, getColumnsToEncode(), _seed);
-      
-      earlyStopper.update(evaluationResult);
-      
-      printOutFrameAsTable(suggestedHPsEntry);
-      
-      //Remove prediction from surrogate and add score on objective function
-      exporter.update(suggestedHPsEntry.vec(suggestedHPsEntry.find("prediction")).at(0), evaluationResult);
-      suggestedHPsEntry.remove(suggestedHPsEntry.find("prediction")).remove();
-      suggestedHPsEntry.remove(suggestedHPsEntry.find("variance")).remove();
-      suggestedHPsEntry.remove(suggestedHPsEntry.find("afEvaluations")).remove();
-      suggestedHPsEntry.add("score", Vec.makeCon(evaluationResult, 1));
-      
-      rfsmbo.updatePrior(suggestedHPsEntry);
+      priorHpsAsFrame = hyperspaceMapToFrame(entriesForPrior);
+      priorHpsAsFrame.add("score", Vec.makeVec(priorScores, Vec.newKey()));
 
-      int evaluationSequenceNumber = _evaluatedQueue.size();
-      _evaluatedQueue.add(new Evaluated<>(param, evaluationResult, evaluationSequenceNumber));
+      Frame priorHpsAsFrameCopy = priorHpsAsFrame.deepCopy(Key.make().toString()); // Detaching from unexploredHyperspaceAsFrame
+      DKV.put(priorHpsAsFrameCopy);
+
+      Frame priorHpsWithScores = priorHpsAsFrameCopy;
+
+
+      GridSearchTEParamsSelectionStrategy.GridEntry[] unexploredHyperSpace = wholeSpace.subList(_numberOfPriorEvals, wholeSpace.size()).toArray(new GridSearchTEParamsSelectionStrategy.GridEntry[0]);
+      //TODO it should contain only undiscovered. We will need one more cache for already selected ones.
+
+
+      unexploredHyperspaceAsFrame = hyperspaceMapToFrame(unexploredHyperSpace); //TODO maybe delete here as well? !!!!!!!!!!!!!!
+
+
+      printOutFrameAsTable(unexploredHyperspaceAsFrame);
+
+//    RFSMBO rfsmbo = new RFSMBO(theBiggerTheBetter){};
+      rfsmbo = new GPSMBO(_theBiggerTheBetter) {
+      };
+
+      EarlyStopper earlyStopper = new EarlyStopper(_earlyStoppingRatio, _ratioOfHyperspaceToExplore, unexploredHyperSpace.length, thresholdScoreFromPriors, _theBiggerTheBetter);
+
+      long startTimeForSMBO = System.currentTimeMillis();
+      while (earlyStopper.proceed() && unexploredHyperspaceAsFrame.numRows() > 0) {
+        if (rfsmbo.hasNoPrior()) {
+          rfsmbo.updatePrior(priorHpsWithScores);
+        }
+
+        suggestedHPsEntry = rfsmbo.getNextBestHyperparameters(unexploredHyperspaceAsFrame);
+        double idToRemove = suggestedHPsEntry.vec(suggestedHPsEntry.find("id")).at(0);
+        int idVecIdx = unexploredHyperspaceAsFrame.find("id");
+        Frame unexploredHyperspaceWithoutSuggested = TargetEncoderFrameHelper.filterNotByValue(unexploredHyperspaceAsFrame, idVecIdx, idToRemove);
+
+        unexploredHyperspaceAsFrame.delete();
+        unexploredHyperspaceAsFrame = unexploredHyperspaceWithoutSuggested;
+
+        HashMap<String, Object> suggestedHPsAsMap = singleRowFrameToMap(suggestedHPsEntry);
+        TargetEncodingParams param = new TargetEncodingParams(suggestedHPsAsMap);
+
+        ModelBuilder clonedModelBuilder = ModelBuilder.clone(modelBuilder);
+        clonedModelBuilder.init(false); // in _evaluator we assume that init() has been already called
+        double evaluationResult = _evaluator.evaluate(param, clonedModelBuilder, _modelValidationMode, _leaderboardData, getColumnsToEncode(), _seed);
+
+        earlyStopper.update(evaluationResult);
+
+        //Remove prediction from surrogate and add score on objective function
+        exporter.update(suggestedHPsEntry.vec(suggestedHPsEntry.find("prediction")).at(0), evaluationResult);
+        suggestedHPsEntry.remove(suggestedHPsEntry.find("prediction")).remove();
+        suggestedHPsEntry.remove(suggestedHPsEntry.find("variance")).remove();
+        suggestedHPsEntry.remove(suggestedHPsEntry.find("afEvaluations")).remove();
+        suggestedHPsEntry.add("score", Vec.makeCon(evaluationResult, 1));
+
+        rfsmbo.updatePrior(suggestedHPsEntry);
+
+        int evaluationSequenceNumber = _evaluatedQueue.size();
+        _evaluatedQueue.add(new Evaluated<>(param, evaluationResult, evaluationSequenceNumber));
+        suggestedHPsEntry.delete();
+      }
+
+      long timeWithSMBO = System.currentTimeMillis() - startTimeForSMBO;
+
+      Log.info("Time spent on choosing best HPs for model " + modelBuilder._parms.fullName() + " : " + timeWithSMBO);
+      Log.info("Number of evaluated grid entries with SMBO : " + _evaluatedQueue.size() + " out of " + _randomSelector.spaceSize());
+
+      // TODO consider removing as it is for dev benchmarking
+      GPSurrogateModel gpSurrogateModel = (GPSurrogateModel) (rfsmbo.surrogateModel());
+      System.out.println("Total time for standardisation: " + gpSurrogateModel.totalTimeStandardisation);
+
+//      exporter.exportToCSV("scores_smbo_" + modelBuilder._parms.fullName());
+      Evaluated<TargetEncodingParams> targetEncodingParamsEvaluated = _evaluatedQueue.peek();
+      
+      TargetEncodingParams bestParams = targetEncodingParamsEvaluated.getItem();
+      Log.info("Best TE parameters were selected to be: holdout_type = " + bestParams.getHoldoutType() + ", isWithBlending = " +
+              bestParams.isWithBlendedAvg() + ", smoothing = " + bestParams.getBlendingParams().getF() + ", inflection_point = " +
+              bestParams.getBlendingParams().getK() + ", noise_level = " + bestParams.getNoiseLevel());
+      
+      priorHpsAsFrameCopy.delete();
+      return targetEncodingParamsEvaluated;
+    } catch (Exception ex) {
+      throw ex;
+    } finally {
+      if (priorHpsAsFrame != null) priorHpsAsFrame.delete();
+      if (unexploredHyperspaceAsFrame != null) unexploredHyperspaceAsFrame.delete();
+      if (rfsmbo.history() != null) rfsmbo.history().delete();
+      if (suggestedHPsEntry != null) suggestedHPsEntry.delete();
     }
-
-    long timeWithSMBO = System.currentTimeMillis() - startTimeForSMBO;
-    
-    System.out.println("Time spent on choosing best HPs: " + timeWithSMBO);
-
-    // TODO consider removing as it is for dev benchmarking
-    GPSurrogateModel gpSurrogateModel = (GPSurrogateModel) (rfsmbo.surrogateModel());
-    System.out.println("Total time for standardisation: " +gpSurrogateModel.totalTimeStandardisation);
-
-    exporter.exportToCSV("scores_smbo_" + modelBuilder._parms.fullName());
-    Evaluated<TargetEncodingParams> targetEncodingParamsEvaluated = _evaluatedQueue.peek();
-
-    return targetEncodingParamsEvaluated;
   }
 
   //TODO dev tool
@@ -190,6 +228,7 @@ public class SMBOTEParamsSelectionStrategy extends GridBasedTEParamsSelectionStr
     }
 
     public void exportToCSV(String modelName) {
+      Scope.enter();
       double[] scoresAsDouble = new double[scores.size()];
       for (int i = 0; i < scores.size(); i++) {
         scoresAsDouble[i] = (double) scores.toArray()[i];
@@ -197,6 +236,7 @@ public class SMBOTEParamsSelectionStrategy extends GridBasedTEParamsSelectionStr
       Vec predVec = Vec.makeVec(scoresAsDouble, Vec.newKey());
       Frame fr = new Frame(new String[]{"score"}, new Vec[]{predVec});
       Frame.export(fr,   modelName + "-" + System.currentTimeMillis() / 1000 + ".csv", "frame_name", true, 1).get();
+      Scope.exit();
     };
 
     public void update(double prediction, double score) {

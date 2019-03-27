@@ -213,8 +213,8 @@ public class TargetEncoderFrameHelper {
       for (int rowIdx = 0; rowIdx < frameCopy.numRows(); rowIdx++) {
         data[colIdx][rowIdx] = currentColumn.at(rowIdx);
       }
-      
     }
+    frameCopy.delete();
     return data;
   }
 

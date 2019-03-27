@@ -129,50 +129,57 @@ public class GPSurrogateModel extends SurrogateModel{
     DKV.put(res);
     
     printOutFrameAsTable(res);
-    return dinfo._adaptedFrame;
+    copyFr.delete();
+    dinfo._adaptedFrame.delete();
+    return res; //dinfo._adaptedFrame; //TODO should we return res?
   }
   
   public long totalTimeStandardisation = 0;
 
   @Override
   public Frame evaluate(Frame hyperparameters, Frame train) {
-    
-    printOutFrameAsTable(train);
-    long start1 = System.currentTimeMillis();
-    Frame trainStandardisedWithoutScores = standardizeFrame(train);
-    long timeWithSMBO = System.currentTimeMillis() - start1;
-    totalTimeStandardisation += timeWithSMBO;
-    
-    trainStandardisedWithoutScores.add("score", train.vec("score"));
-    trainStandardisedWithoutScores.add("id", train.vec("id"));
-    
-    printOutFrameAsTable(trainStandardisedWithoutScores);
+    Frame trainStandardisedWithoutScores = null;
+    try {
+      printOutFrameAsTable(train);
+      long start1 = System.currentTimeMillis();
+      trainStandardisedWithoutScores = standardizeFrame(train);
+      long timeWithSMBO = System.currentTimeMillis() - start1;
+      totalTimeStandardisation += timeWithSMBO;
 
-    double[][] observedData = TargetEncoderFrameHelper.frameAsArray(trainStandardisedWithoutScores, new String[]{"score", "id"});
-    DoubleMatrix observedDataDM = new DoubleMatrix(observedData);
+      trainStandardisedWithoutScores.add("score", train.vec("score"));
+      trainStandardisedWithoutScores.add("id", train.vec("id"));
 
-    double[][] observedMeans = TargetEncoderFrameHelper.frameAsArray(new Frame(trainStandardisedWithoutScores.vec("score")), new String[]{});
-    DoubleMatrix observedMeansDM = new DoubleMatrix(observedMeans).transpose();
+      printOutFrameAsTable(trainStandardisedWithoutScores);
 
-    double[][] unObservedData = TargetEncoderFrameHelper.frameAsArray(hyperparameters, new String[]{"id"});
-    DoubleMatrix unObservedDataDM = new DoubleMatrix(unObservedData);
+      double[][] observedData = TargetEncoderFrameHelper.frameAsArray(trainStandardisedWithoutScores, new String[]{"score", "id"});
+      DoubleMatrix observedDataDM = new DoubleMatrix(observedData);
 
-    //TODO too slow to do it on every step. Iterative method is needed (gradient descent)
-    long numberOfTrainingRows = train.numRows();
-    if( _currentBestSigma < 0 || numberOfTrainingRows % ( numberOfTrainingRows < 30 ? 5 : 10) == 0) {
-      double[] sigmaEll = gridSearchOverGPsHyperparameters(observedDataDM, observedMeansDM);
-      _currentBestSigma = sigmaEll[0];
-      _currentBestEll = sigmaEll[1]; //TODO we can use  average of values to prevent outliers to impact 10 runs
+      Frame scores = new Frame(trainStandardisedWithoutScores.vec("score"));
+      double[][] observedMeans = TargetEncoderFrameHelper.frameAsArray(scores, new String[]{});
+      DoubleMatrix observedMeansDM = new DoubleMatrix(observedMeans).transpose();
+
+      double[][] unObservedData = TargetEncoderFrameHelper.frameAsArray(hyperparameters, new String[]{"id"});
+      DoubleMatrix unObservedDataDM = new DoubleMatrix(unObservedData);
+
+      //TODO too slow to do it on every step. Iterative method is needed (gradient descent)
+      long numberOfTrainingRows = train.numRows();
+      if (true/*_currentBestSigma < 0 || numberOfTrainingRows % (numberOfTrainingRows < 30 ? 5 : 10) == 0*/) {
+        double[] sigmaEll = gridSearchOverGPsHyperparameters(observedDataDM, observedMeansDM);
+        _currentBestSigma = sigmaEll[0];
+        _currentBestEll = sigmaEll[1]; //TODO we can use  average of values to prevent outliers to impact 10 runs
+      }
+
+      covariance = getCovarianceMtxWithGaussianKernel(_currentBestSigma, _currentBestEll, observedDataDM, observedDataDM);
+
+      MeanVariance meanVariance = posteriorMeanAndVariance(_currentBestSigma, _currentBestEll, covariance, observedDataDM, unObservedDataDM, observedMeansDM);
+
+      hyperparameters.add("prediction", Vec.makeVec(meanVariance.mean.data, Vec.newKey()));
+      hyperparameters.add("variance", Vec.makeVec(meanVariance.variance.data, Vec.newKey()));
+
+      return hyperparameters;
+    } finally {
+      if(trainStandardisedWithoutScores != null) trainStandardisedWithoutScores.delete();
     }
-
-    covariance = getCovarianceMtxWithGaussianKernel(_currentBestSigma, _currentBestEll, observedDataDM, observedDataDM);
-    
-    MeanVariance meanVariance = posteriorMeanAndVariance(_currentBestSigma, _currentBestEll, covariance, observedDataDM, unObservedDataDM, observedMeansDM);
-    
-    hyperparameters.add("prediction", Vec.makeVec(meanVariance.mean.data, Vec.newKey()));
-    hyperparameters.add("variance", Vec.makeVec(meanVariance.variance.data, Vec.newKey()));
-    
-    return hyperparameters;
   }
   
   double[] gridSearchOverGPsHyperparameters(DoubleMatrix observedDataDM, DoubleMatrix observedMeansDM) {

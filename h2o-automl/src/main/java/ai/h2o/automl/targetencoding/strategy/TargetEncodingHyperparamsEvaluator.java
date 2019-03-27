@@ -107,17 +107,18 @@ public class TargetEncodingHyperparamsEvaluator extends Iced {
   
   private double scoreOnTest(ModelBuilder modelBuilder, Frame testEncodedFrame) {
     Model retrievedModel = null;
-    Keyed model = modelBuilder.trainModel().get();
+//    Keyed model = modelBuilder.trainModel().get(); 
+    Keyed model = modelBuilder.trainModelOnH2ONode().get(); //TODO experimental
     retrievedModel = DKV.getGet(model._key);
-    retrievedModel.score(testEncodedFrame);
+    retrievedModel.score(testEncodedFrame).delete();
 
     hex.ModelMetricsBinomial mmb = hex.ModelMetricsBinomial.getFromDKV(retrievedModel, testEncodedFrame);
     if(retrievedModel!=null) retrievedModel.delete();
-
+    model.remove();
     return mmb.auc();
   }
 
-  public double evaluateForValidationFrameMode(TargetEncodingParams teParams, ModelBuilder modelBuilder, Frame leaderboard, String[] columnsToEncode, long seedForFoldColumn) {
+  public double evaluateForValidationFrameMode(TargetEncodingParams teParams, ModelBuilder clonedModelBuilder, Frame leaderboard, String[] columnsToEncode, long seedForFoldColumn) {
     double score = 0;
     Map<String, Frame> encodingMap = null;
     Frame trainEncoded = null;
@@ -126,8 +127,8 @@ public class TargetEncodingHyperparamsEvaluator extends Iced {
 
     // As original modelBuilder could be set up in a different way... let say nfolds = 0 
     // we need to take into consideration the fact that training frame is going to be different every time as we split validation and leaderboard from it
-    Frame originalTrainingData = modelBuilder.train();
-    Frame originalValidationData = modelBuilder._parms.valid();
+    Frame originalTrainingData = clonedModelBuilder._parms.train();
+    Frame originalValidationData = clonedModelBuilder._parms.valid();
 
     Frame trainCopy = originalTrainingData.deepCopy(Key.make("train_frame_copy_for_evaluation" + Key.make()).toString());
     DKV.put(trainCopy);
@@ -138,21 +139,22 @@ public class TargetEncodingHyperparamsEvaluator extends Iced {
     Frame leaderboardCopy = leaderboard.deepCopy(Key.make("leaderboard_frame_copy_for_evaluation" + Key.make()).toString());
     DKV.put(leaderboardCopy);
 
-    String[] originalIgnoredColumns = modelBuilder._parms._ignored_columns;
+    String[] originalIgnoredColumns = clonedModelBuilder._parms._ignored_columns;
     String foldColumnForTE = null;
-
+    Key<Frame> trainPreviousKey = null;
+    Key<Frame> validPreviosKey = null;
     try {
       // We need to apply TE taking into account the way how we train and validate our models.
       // With nfolds model will assign fold column to the data but we need those folds in TE before that. So we need to generate fold column themselves and then provide it to the model.
       // But what if we already have folds from the model search level provided by user? Is it better to use different fold assignments for TE? Maybe yes - it is similar to "n-times m-folds cross-validation" idea.
 
-      String responseColumn = modelBuilder._parms._response_column;
+      String responseColumn = clonedModelBuilder._parms._response_column;
       String[] teColumnsToExclude = columnsToEncode;
       TargetEncoder tec = new TargetEncoder(columnsToEncode, teParams.getBlendingParams());
       byte holdoutType = teParams.getHoldoutType();
 
       if(holdoutType == KFold) {
-        foldColumnForTE = modelBuilder._job._key.toString() + "_fold"; //TODO quite long but feels unique though
+        foldColumnForTE = clonedModelBuilder._job._key.toString() + "_fold"; //TODO quite long but feels unique though
         //TODO default value for KFOLD target encoding. We might want to search for this value but it is quite expensive.
         // We might want to optimize and add fold column once per group of hyperparameters.
         int nfolds = 5;
@@ -185,35 +187,53 @@ public class TargetEncodingHyperparamsEvaluator extends Iced {
         trainEncoded = tec.applyTargetEncoding(trainSplitForNoneCase, responseColumn, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, teParams.isWithBlendedAvg(), 0.0, true, seedForFoldColumn);
         validEncoded = tec.applyTargetEncoding(validCopy, responseColumn, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, teParams.isWithBlendedAvg(), 0.0, true, seedForFoldColumn);
         testEncoded = tec.applyTargetEncoding(leaderboardCopy, responseColumn, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, teParams.isWithBlendedAvg(), 0.0, true, seedForFoldColumn);
+        trainSplitForNoneCase.delete();
+        holdoutSplitForNoneCase.delete();
       }
 
 
-      modelBuilder._parms._ignored_columns = concat(originalIgnoredColumns, teColumnsToExclude);
+      clonedModelBuilder._parms._ignored_columns = concat(originalIgnoredColumns, teColumnsToExclude);
 
       // Temporary set encoded frame as training set and afterwards we can set original back
       // It look like model is using frames from modelBuilder but reports to the console come from modelBuilder._param object
-      modelBuilder.setTrain(trainEncoded);
-      modelBuilder.setValid(validEncoded);
-      modelBuilder._parms.setTrain(trainEncoded._key);
-      modelBuilder._parms._valid = validEncoded._key;
-
+      clonedModelBuilder.setTrain(trainEncoded);
+      clonedModelBuilder.setValid(validEncoded);
+      
+      //As we are replacing with encoded splits we need to keep track of the previous keys
+      trainPreviousKey = clonedModelBuilder._parms._train;
+      validPreviosKey = clonedModelBuilder._parms._valid;
+      clonedModelBuilder._parms.setTrain(trainEncoded._key);
+      clonedModelBuilder._parms.setValid(validEncoded._key);
       try {
-        score += scoreOnTest(modelBuilder, testEncoded);
+        score += scoreOnTest(clonedModelBuilder, testEncoded);
       } catch (H2OIllegalArgumentException exception) {
         Log.debug("Exception during modelBuilder evaluation: " + exception.getMessage());
+        throw exception;
       }
     } catch(Exception ex ) {
       Log.debug("Exception during applying TE in TargetEncodingHyperparamsEvaluator.evaluate(): " + ex.getMessage());
-    } finally {
-      //Setting back original frames
-      modelBuilder.setTrain(originalTrainingData);
-      modelBuilder.setValid(originalValidationData);
-      modelBuilder._parms.setTrain(originalTrainingData._key);
-      modelBuilder._parms._valid = originalValidationData._key;
+      throw ex;
 
-      modelBuilder._parms._ignored_columns = originalIgnoredColumns;
+    } finally {
+//      //Setting back original frames
+      clonedModelBuilder.train().delete();
+      clonedModelBuilder.valid().delete();
+      clonedModelBuilder._parms.train().delete();
+      clonedModelBuilder._parms.valid().delete();
+//      clonedModelBuilder.setTrain(originalTrainingData);
+//      clonedModelBuilder.setValid(originalValidationData);
+//      clonedModelBuilder._parms.setTrain(originalTrainingData._key);
+//      clonedModelBuilder._parms.setValid(originalValidationData._key);
+
+      //Removing unused splits 
+      trainPreviousKey.get().delete(); // same as clonedModelBuilder.train().delete();
+      validPreviosKey.get().delete();
+
+      clonedModelBuilder._parms._ignored_columns = originalIgnoredColumns;
       if(trainEncoded != null) trainEncoded.delete();
+      if(validEncoded != null) validEncoded.delete();
       if(testEncoded != null) testEncoded.delete();
+
       validCopy.delete();
       leaderboardCopy.delete();
       trainCopy.delete();

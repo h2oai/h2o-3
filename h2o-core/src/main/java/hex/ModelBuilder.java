@@ -175,6 +175,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     Job<Model> job = new Job<>(modelKey, ModelBuilder.javaName(modelBuilder._parms.algoName().toLowerCase()), modelBuilder._parms.algoName());
     B newMB = ModelBuilder.make(modelBuilder._parms.algoName(), job, modelKey);
     newMB._parms = modelBuilder._parms.clone();
+    
+    Frame trainCopy = modelBuilder._parms.train().deepCopy(Key.make().toString());
+    DKV.put(trainCopy);
+    newMB._parms.setTrain(trainCopy._key);
+
+    Frame validCopy = modelBuilder._parms.valid().deepCopy(Key.make().toString());
+    DKV.put(validCopy);
+    newMB._parms.setValid(validCopy._key);
+    
     return newMB;
   }
 
@@ -194,7 +203,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** Validation frame: derived from the parameter's validation frame, excluding
    *  all ignored columns, all constant and bad columns, perhaps flipping the
    *  response column to a Categorical, etc.  Is null if no validation key is set.  */
-  protected final Frame valid() { return _valid; }
+  public final Frame valid() { return _valid; }
   protected transient Frame _valid;
 
   public void setValid(Frame valid) {

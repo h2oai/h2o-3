@@ -48,46 +48,53 @@ public class EI extends AcquisitionFunction {
    * @return weighted(exploitation/extrapolation) evaluation of the unseen entries from the hyperparameters space
    */
   public Vec compute(Vec medians, Vec variances) {
-    
-    Frame zComponents = new Frame(new String[]{"median", "variance"}, new Vec[]{medians, variances});
-    Vec zeroVecForM = medians.makeCon(0);
-    zComponents.add("mTerm", zeroVecForM);
-    int mTermColumnIdx = 2;
-    
-    Vec zeroVec = medians.makeCon(0);
-    String zColumnName = "z_value";
-    zComponents.add(zColumnName, zeroVec);
-    int zValueColumnIdx = 3;
-    
-    new ComputeMTermAndZ(_incumbent, _tradeOff, _theBiggerTheBetter, mTermColumnIdx, zValueColumnIdx).doAll(zComponents);
+    Vec mediansCopy = medians.makeCopy();
+    Vec variancesCopy = variances.makeCopy();
+    Frame zComponents = null;
+    Frame pdfComponents = null;
+    Frame cdfComponents = null;
+    try {
+      zComponents = new Frame(new String[]{"median", "variance"}, new Vec[]{mediansCopy, variancesCopy});
+      Vec zeroVecForM = mediansCopy.makeCon(0);
+      zComponents.add("mTerm", zeroVecForM);
+      int mTermColumnIdx = 2;
 
-    System.out.println("MTerm and Z");
-//    printOutFrameAsTable(zComponents, false, zComponents.numRows());
+      Vec zeroVec = mediansCopy.makeCon(0);
+      String zColumnName = "z_value";
+      zComponents.add(zColumnName, zeroVec);
+      int zValueColumnIdx = 3;
 
-    Vec Z = zComponents.vec(zValueColumnIdx);
-    Vec mTerm = zComponents.vec(mTermColumnIdx);
+      new ComputeMTermAndZ(_incumbent, _tradeOff, _theBiggerTheBetter, mTermColumnIdx, zValueColumnIdx).doAll(zComponents);
 
-    Vec zeroVecForCDF = medians.makeCon(0);
-    Frame cdfComponents = new Frame(new String[]{"z", "cdf"}, new Vec[]{Z, zeroVecForCDF});
+      Log.debug("MTerm and Z");
+      Vec Z = zComponents.vec(zValueColumnIdx);
+      Vec mTerm = zComponents.vec(mTermColumnIdx);
 
-    Vec zeroVecForPDF = medians.makeCon(0);
-    Frame pdfComponents = new Frame(new String[]{"z", "pdf"}, new Vec[]{Z, zeroVecForPDF});
+      Vec zeroVecForCDF = mediansCopy.makeCon(0);
+      cdfComponents = new Frame(new String[]{"z", "cdf"}, new Vec[]{Z, zeroVecForCDF});
 
-    new ComputePDF().doAll(pdfComponents);
-    new ComputeCDF().doAll(cdfComponents);
-    
-//    System.out.println("PDF");
-//    printOutFrameAsTable(pdfComponents, false, pdfComponents.numRows());
-//    System.out.println("CDF");
-//    printOutFrameAsTable(cdfComponents, false, cdfComponents.numRows());
-    
-    Vec zeroVecForAF = medians.makeCon(0);
-    String acquisitionFunColumnName = "af";
-    Frame afComponents = new Frame(new String[]{"mterm", "variance", "pdf", "cdf", acquisitionFunColumnName}, new Vec[]{mTerm, variances, pdfComponents.vec("pdf"), cdfComponents.vec("cdf"), zeroVecForAF});
+      Vec zeroVecForPDF = mediansCopy.makeCon(0);
+      pdfComponents = new Frame(new String[]{"z", "pdf"}, new Vec[]{Z, zeroVecForPDF});
 
-    new ComputeAF().doAll(afComponents);
-    
-    return afComponents.vec(acquisitionFunColumnName);
+      new ComputePDF().doAll(pdfComponents);
+      new ComputeCDF().doAll(cdfComponents);
+
+      Vec zeroVecForAF = mediansCopy.makeCon(0);
+      String acquisitionFunColumnName = "af";
+      Frame afComponents = new Frame(new String[]{"mterm", "variance", "pdf", "cdf", acquisitionFunColumnName}, new Vec[]{mTerm, variancesCopy, pdfComponents.vec("pdf"), cdfComponents.vec("cdf"), zeroVecForAF});
+
+      new ComputeAF().doAll(afComponents);
+      
+      Vec afComponentsVec = afComponents.vec(acquisitionFunColumnName);
+      
+      return afComponentsVec;
+    } finally {
+      if(zComponents!= null) zComponents.delete();
+      if(cdfComponents!= null) cdfComponents.delete();
+      if(pdfComponents!= null) pdfComponents.delete();
+      mediansCopy.remove();
+      variancesCopy.remove();
+    }
   }
 
   static class ComputeMTermAndZ extends MRTask<ComputeMTermAndZ> {

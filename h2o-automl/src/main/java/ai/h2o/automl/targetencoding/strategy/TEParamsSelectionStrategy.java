@@ -59,6 +59,7 @@ public abstract class TEParamsSelectionStrategy extends Iced {
 
     HashMap<String, Object[]> _grid;
     String[] _dimensionNames;
+
     private int _spaceSize;
     transient private Set<Integer> _visitedPermutationHashes = new LinkedHashSet<>(); // what are the cases of retrieving automl from DKV?
     Random _randomGen;
@@ -105,18 +106,12 @@ public abstract class TEParamsSelectionStrategy extends Iced {
       }
       return chosenIndices;
     }
-
-    public static class GridSearchCompleted extends Exception{
-
+    
+    public int spaceSize() {
+      return _spaceSize;
     }
 
-    // overwrite it with custom combinations
-    protected boolean skipIndices(int[] possibleIndices) {
-      if (possibleIndices[0] == 0 ) {
-        _visitedPermutationHashes.add(hashIntArray(possibleIndices));
-      }
-      return true;
-    }
+    public static class GridSearchCompleted extends Exception{ }
 
     private int calculateSpaceSize(Map<String, Object[]> grid) {
       String[] dimensionNames = grid.keySet().toArray(new String[0]);

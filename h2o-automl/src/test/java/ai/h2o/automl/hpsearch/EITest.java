@@ -29,6 +29,9 @@ public class EITest extends TestUtil {
     Frame frame = new Frame(afs);
     printOutFrameAsTable(frame, false, frame.numRows());
     
+    afs.remove();
+    medians.remove();
+    variances.remove();
   }
   
   @Test

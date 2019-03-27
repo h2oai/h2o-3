@@ -1,5 +1,6 @@
 package ai.h2o.automl.targetencoding.strategy;
 
+import ai.h2o.automl.AutoMLBenchmarkingHelper;
 import ai.h2o.automl.targetencoding.TargetEncoder;
 import ai.h2o.automl.targetencoding.TargetEncodingParams;
 import ai.h2o.automl.targetencoding.TargetEncodingTestFixtures;
@@ -20,20 +21,26 @@ public class SMBOTEParamsSelectionStrategyTest  extends TestUtil {
     stall_till_cloudsize(1);
   }
 
+  // TODO duplication with GridSearchVsSMBOBenchmark
   private GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> findBestTargetEncodingParams(Frame fr, String responseColumnName, int numberOfIterations) {
 
     asFactor(fr, responseColumnName);
 
+    Frame splits[] = AutoMLBenchmarkingHelper.getRandomSplitsFromDataframe(fr, new double[]{0.7, 0.15,0.15}, 2345L);
+    Frame train = splits[0];
+    Frame valid = splits[1];
+    Frame leaderboard = splits[2];
+    
     TEApplicationStrategy strategy = new ThresholdTEApplicationStrategy(fr, fr.vec("survived"), 4);
     String[] columnsToEncode = strategy.getColumnsToEncode();
 
     long seedForFoldColumn = 2345L;
 
     GridSearchTEParamsSelectionStrategy gridSearchTEParamsSelectionStrategy =
-            new GridSearchTEParamsSelectionStrategy(fr, numberOfIterations, responseColumnName, columnsToEncode, true, seedForFoldColumn);
+            new GridSearchTEParamsSelectionStrategy(leaderboard, numberOfIterations, responseColumnName, columnsToEncode, true, seedForFoldColumn);
 
     gridSearchTEParamsSelectionStrategy.setTESearchSpace(ModelValidationMode.VALIDATION_FRAME);
-    ModelBuilder mb = TargetEncodingTestFixtures.modelBuilderWithValidFrameFixture(fr, responseColumnName, seedForFoldColumn);
+    ModelBuilder mb = TargetEncodingTestFixtures.modelBuilderGBMWithValidFrameFixture(train, valid, responseColumnName, seedForFoldColumn);
     mb.init(false);
     return gridSearchTEParamsSelectionStrategy.getBestParamsWithEvaluation(mb);
   }

@@ -669,9 +669,10 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
       addKFoldColumn(fr, foldColumnForTE, nfolds, 1234);
 
       Key[] keys = new Key[]{Key.<Frame>make("train_LOO"), Key.<Frame>make("test_LOO")};
-      Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(fr, keys, new double[]{0.8, 0.2}, 42);
+      Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(fr, keys, new double[]{0.7, 0.15, 0.15}, 42);
       Frame trainSplit = splits[0];
-      Frame testSplit = splits[1];
+      Frame validSplit = splits[1];
+      Frame testSplit = splits[2];
 
       String[] columnNamesToEncode = {"cabin", "home.dest"};
       TargetEncoder tec = new TargetEncoder(columnNamesToEncode);
@@ -683,9 +684,10 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
       byte holdoutType = TargetEncoder.DataLeakageHandlingStrategy.KFold;
       
       Frame trainEncoded = tec.applyTargetEncoding(trainSplit, responseColumn, encodingMap, holdoutType, foldColumnForTE, true, 0.01, true, seedForNoise);
+      Frame validEncoded = tec.applyTargetEncoding(validSplit, responseColumn, encodingMap, holdoutType, foldColumnForTE, true, 0.0, true, seedForNoise);
       Frame testEncoded = tec.applyTargetEncoding(testSplit, responseColumn, encodingMap, holdoutType, foldColumnForTE, true, 0.0, true, seedForNoise);
 
-      ModelBuilder modelBuilder = TargetEncodingTestFixtures.modelBuilderWithValidFrameFixture(trainEncoded, responseColumn, builderSeed);
+      ModelBuilder modelBuilder = TargetEncodingTestFixtures.modelBuilderGBMWithValidFrameFixture(trainEncoded, validEncoded, responseColumn, builderSeed);
       modelBuilder.init(false);
       
       modelBuilder._parms._ignored_columns = concat(columnNamesToEncode, new String[] {foldColumnForTE});
@@ -718,9 +720,10 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
       asFactor(fr, responseColumn);
 
       Key[] keys = new Key[]{Key.<Frame>make("train_LOO"), Key.<Frame>make("test_LOO")};
-      Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(fr, keys, new double[]{0.8, 0.2}, 42);
+      Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(fr, keys, new double[]{0.7, 0.15, 0.15}, 42);
       Frame trainSplit = splits[0];
-      Frame testSplit = splits[1];
+      Frame validSplit = splits[1];
+      Frame testSplit = splits[2];
 
       String[] columnNamesToEncode = {"cabin", "home.dest"};
       TargetEncoder tec = new TargetEncoder(columnNamesToEncode);
@@ -731,9 +734,10 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
       long builderSeed = 3456;
       byte leaveOneOutHoldout = TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut;
       Frame trainEncoded = tec.applyTargetEncoding(trainSplit, responseColumn, encodingMap, leaveOneOutHoldout, false, 0.0, true, seedForNoise);
+      Frame validEncoded = tec.applyTargetEncoding(validSplit, responseColumn, encodingMap, leaveOneOutHoldout, false, 0.0, true, seedForNoise);
       Frame testEncoded = tec.applyTargetEncoding(testSplit, responseColumn, encodingMap, leaveOneOutHoldout, false, 0.0, true, seedForNoise);
 
-      ModelBuilder modelBuilder = TargetEncodingTestFixtures.modelBuilderWithValidFrameFixture(trainEncoded, responseColumn, builderSeed);
+      ModelBuilder modelBuilder = TargetEncodingTestFixtures.modelBuilderGBMWithValidFrameFixture(trainEncoded, validEncoded, responseColumn, builderSeed);
       modelBuilder.init(false);
       modelBuilder._parms._ignored_columns = columnNamesToEncode;
 
@@ -765,12 +769,13 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
       Key[] keys = new Key[]{Key.<Frame>make("train_LOO"), Key.<Frame>make("test_LOO")};
       Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(fr, keys, new double[]{0.8, 0.2}, 42);
       Frame trainSplit = splits[0];
-      Frame testSplit = splits[1];
+      Frame validSplit = splits[1];
+      Frame testSplit = splits[2];
 
       long builderSeed = 3456;
 
       // TODO how come we are able to train model without validation frame if we don't use CV?
-      ModelBuilder modelBuilder = TargetEncodingTestFixtures.modelBuilderWithValidFrameFixture(trainSplit, responseColumn, builderSeed);
+      ModelBuilder modelBuilder = TargetEncodingTestFixtures.modelBuilderGBMWithValidFrameFixture(trainSplit, validSplit, responseColumn, builderSeed);
       modelBuilder.init(false);
 
       Keyed model = modelBuilder.trainModel().get();

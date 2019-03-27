@@ -38,7 +38,7 @@ public class GridSearchTEParamsSelectionStrategy extends GridBasedTEParamsSelect
   @Override
   public void setTESearchSpace(ModelValidationMode modelValidationMode) {
     super.setTESearchSpace(modelValidationMode);
-    _numberOfIterations = (int)( _randomSelector._grid.size() * _ratioOfHyperSpaceToExplore);
+    _numberOfIterations = (int)( _randomSelector.spaceSize() * _ratioOfHyperSpaceToExplore);
     _evaluatedQueue = new PriorityQueue<>(_numberOfIterations, new EvaluatedComparator(_theBiggerTheBetter));
   }
 
@@ -71,7 +71,7 @@ public class GridSearchTEParamsSelectionStrategy extends GridBasedTEParamsSelect
       // just proceed by returning best gridEntry found so far
     }
 
-    exporter.exportToCSV("scores_random_" + modelBuilder._parms.fullName());
+//    exporter.exportToCSV("scores_random_" + modelBuilder._parms.fullName());
     
     Evaluated<TargetEncodingParams> targetEncodingParamsEvaluated = _evaluatedQueue.peek();
 

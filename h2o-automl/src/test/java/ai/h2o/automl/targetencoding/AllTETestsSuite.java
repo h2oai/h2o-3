@@ -15,7 +15,7 @@ import org.junit.runners.Suite;
         TargetEncodingMultiClassTargetTest.class,
         TargetEncodingTargetColumnTest.class,
         TargetEncodingExceptionsHandlingTest.class,
-        TargetEncodingFrameHelperTest.class,
+        TargetEncoderFrameHelperTest.class,
         TargetEncodingImmutabilityTest.class,
         BroadcastJoinTest.class
 })

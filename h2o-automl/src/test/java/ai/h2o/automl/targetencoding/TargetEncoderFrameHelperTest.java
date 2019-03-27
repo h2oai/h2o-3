@@ -12,16 +12,31 @@ import water.fvec.Vec;
 
 import java.util.Arrays;
 
+import static ai.h2o.automl.AutoMLBenchmarkingHelper.getPreparedTitanicFrame;
 import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.*;
 import static org.junit.Assert.*;
 
-public class TargetEncodingFrameHelperTest extends TestUtil {
+public class TargetEncoderFrameHelperTest extends TestUtil {
 
 
   @BeforeClass public static void setup() {
     stall_till_cloudsize(1);
   }
 
+  @Test
+  public void frameAsArray() {
+    Frame scores = new TestFrameBuilder()
+            .withName("testFrame")
+            .withColNames("scores")
+            .withVecTypes(Vec.T_NUM)
+            .withDataForCol(0, ard(0.85, 0.96))
+            .build();
+    double[][] observedMeans = TargetEncoderFrameHelper.frameAsArray(scores, new String[]{});
+    assertArrayEquals(new double[]{0.85, 0.96} , observedMeans[0], 1e-5);
+    
+    scores.delete();
+  }
+  
   @Test
   public void addVecToFrameTest() {
     Scope.enter();
@@ -93,6 +108,21 @@ public class TargetEncodingFrameHelperTest extends TestUtil {
       Scope.exit();
     }
   }
+  @Test
+  public void filterByValueWithRealDatasetTest() {
+    Scope.enter();
+    try {
+      Frame fr = getPreparedTitanicFrame("survived");
+      Scope.track(fr);
+      Frame result = filterByValue(fr, 0, 42);
+      Scope.track(result);
+
+//      assertEquals(1L, result.numRows());
+//      assertEquals("6", result.vec(1).stringAt(0));
+    } finally {
+      Scope.exit();
+    }
+  }
 
   @Test
   public void filterNotByValueTest() {
@@ -112,6 +142,25 @@ public class TargetEncodingFrameHelperTest extends TestUtil {
       assertVecEquals(vec(1, 33), result.vec(0), 1e-5);
     } finally {
       Scope.exit();
+    }
+  }
+  
+  
+  @Test
+  public void filterNotByValueWithRealDatasetTest() {
+//    Scope.enter();
+    try {
+      Frame fr = getPreparedTitanicFrame("survived");
+//      Scope.track(fr);
+      Frame result = filterNotByValue(fr,0, 42);
+//      Scope.track(result);
+
+      fr.delete();
+      result.delete();
+//      assertEquals(2L, result.numRows());
+//      assertVecEquals(vec(1, 33), result.vec(0), 1e-5);
+    } finally {
+//      Scope.exit();
     }
   }
 
