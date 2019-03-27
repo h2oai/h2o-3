@@ -8,39 +8,33 @@ test.4659 <- function() {
 
     prostate.hex<-as.h2o(prostate.hex)
     prostate.hex$weight<-1
-
-    print("prepare data")
-    prostate_train<-prostate.hex[1:300,]
-    prostate_test<-prostate.hex[301:380,]
+    
+    prostateTrain<-prostate.hex[1:300,]
+    prostateTest<-prostate.hex[301:380,]
 
     # delete response variable from test data
-    prostate_test<-prostate_test[,-3]
-
-    print("GLM 1")
+    prostateTest<-prostateTest[,-3]
+    
     model<-h2o.glm(y = "AGE", x = c("our_factor"),
-    training_frame = prostate_train,offset_column="weight")
-    print("Predict train")
-    predict(model,newdata=prostate_train)
-    print("Predict train")
-    predict(model,newdata=prostate_test)
+    training_frame = prostateTrain,offset_column="weight")
+    predict(model,newdata=prostateTrain)
+    predict(model,newdata=prostateTest)
 
-    print("GLM 2")
+    # Failed when response column was missing and there is only one feature 
     model<-h2o.glm(y = "AGE", x = c("our_factor"),
-    training_frame = prostate_train)
-    print("Predict train")
-    predict(model,newdata=prostate_train)
-    print("Predict test")
-    # Failed assert 
-    predict(model,newdata=prostate_test)
-
-    print("GBM 1")
-    model<-h2o.gbm(y = "AGE", x = c("our_factor"),
-    training_frame = prostate_train,categorical_encoding = "OneHotExplicit")
-    print("Predict train")
-    predict(model,newdata=prostate_train)
-    print("Predict test")
-    # Failed Test/Validation dataset has no columns in common with the training set
-    predict(model,newdata=prostate_test)
+    training_frame = prostateTrain)
+    predict(model,newdata=prostateTrain)
+    predict(model,newdata=prostateTest)
+    
+    # Failed when original columns names does not fit with edited frame columns with dummy NA column for response column
+    model<-h2o.gbm(y = "AGE", x = c("our_factor"), training_frame = prostateTrain,categorical_encoding = "OneHotExplicit")
+    predictionResponse <- predict(model,newdata=prostateTrain)
+    predict(model,newdata=prostateTest)
+    
+    # Delete response variable from train data to compare result predictions
+    predictionWithoutResponse <- predict(model, newdata=prostateTrain[,-3])
+    # Result predictions should be the same 
+    expect_equal(predictionResponse, predictionWithoutResponse)
 }
 
 doTest("PUBDEV-4659", test.4659)

@@ -1166,7 +1166,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         // In case the test set has extra columns not in the training set - check that all original pre-encoding columns are available in the test set
         // We could be lenient here and fill missing columns with NA, but then it gets difficult to decide whether this frame is pre/post encoding, if a certain fraction of columns mismatch...
         for (String s : origNames) {
-          match &= ArrayUtils.contains(test.names(), s);
+          match &= (s == response) || ArrayUtils.contains(test.names(), s);
           if (!match) break;
         }
       }
