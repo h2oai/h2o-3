@@ -9,7 +9,10 @@ import java.io.*;
 
 public class GenericModelMojoWriter extends ModelMojoWriter<GenericModel, GenericModelParameters, GenericModelOutput> {
 
-    private final ByteVec _mojoBytes;
+    private ByteVec _mojoBytes;
+
+    public GenericModelMojoWriter() {
+    }
 
     public GenericModelMojoWriter(ByteVec _mojoBytes) {
         this._mojoBytes = _mojoBytes;
