@@ -1,14 +1,13 @@
-Generic model
---------
+Generic Models
+--------------
 
 Introduction
 ~~~~~~~~~~~~
-Generic model provides means to use external, pre-trained models in H2O. Mainly for the purpose of scoring. Depending on each external model, metrics and other model information might be obtained as well. Currently, only selected H2O MOJOs are supported.
 
-Importing a generic model is available from Python, R and Flow.
+A Generic model provides a means to use external, pre-trained models in H2O - mainly for the purpose of scoring. Depending on each external model, metrics and other model information might be obtained as well. Currently, only selected H2O MOJOs are supported. (See the :ref:`mojo_quickstart` section for information about creating MOJOs.)
 
 Supported MOJOs
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
 
 Only a subset of H2O MOJO models is supported in this version. 
 
@@ -17,11 +16,13 @@ Only a subset of H2O MOJO models is supported in this version.
 -  IRF (Isolation Random Forest)
 -  GLM (Generalized Linear Model)
 
-Importing a Generic model
+Importing a Generic Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-As the model is generic, there are no hyperparameters and there is no real training phase. H2O imports the model and
-embraces it for the purpose of scoring. Information output about the model may be limited.
+Importing a Generic model is available from Python, R, and Flow. As the model is generic, there are no hyperparameters and there is no real training phase for Generic models. H2O imports the model and embraces it for the purpose of scoring. Information output about the model may be limited.
+
+Importing in R or Python
+''''''''''''''''''''''''
 
 .. example-code::
    .. code-block:: r
@@ -50,13 +51,18 @@ embraces it for the purpose of scoring. Information output about the model may b
     new_observations = h2o.import_file(path='new_observations.csv')
     predictions = generic_model.predict(new_observations)
 
+Retrieving a Generic Model in Flow
+''''''''''''''''''''''''''''''''''
 
-In Flow, click on 'Models' in the top menu and select 'Generic'. It is however required to import or upload the generic model (most likely a MOJO) beforehand. In order to to do, go to 'Data' in the top menu and select 'import files' or 'upload files'.
+To retrieve a Generic model in Flow:
 
-Advanced Generic model initialization
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1. Import or upload the Generic model (most likely a MOJO). To do this, click on **Data** in the top menu and select either **Import Files** or **Upload File**.
+2. Retrieve the Generic model by clicking **Models** in the top menu and selecting **Generic**.
 
-It is also possible to construct Generic model from already uploaded MOJO bytes. There is no need to import the MOJO
+Advanced Generic Model Initialization
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+It is also possible to construct a Generic model from already uploaded MOJO bytes. In this case, there is no need to import the MOJO
 every time a Generic model is created.
 
 .. example-code::
