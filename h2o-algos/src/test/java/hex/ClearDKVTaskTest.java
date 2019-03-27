@@ -16,7 +16,7 @@ import java.util.List;
 import static hex.genmodel.utils.DistributionFamily.AUTO;
 import static org.junit.Assert.*;
 
-public class RetainTestAlgos extends TestUtil {
+public class ClearDKVTaskTest extends TestUtil {
 
     @BeforeClass()
     public static void setup() {
@@ -99,7 +99,7 @@ public class RetainTestAlgos extends TestUtil {
     }
 
     private static void testRetainFrame(Frame trainingFrame) {
-        new DKV.RetainKeysTask(new Key[]{trainingFrame._key}).doAllNodes();
+        new DKV.ClearDKVTask(new Key[]{trainingFrame._key}).doAllNodes();
         assertTrue(H2O.STORE.containsKey(trainingFrame._key));
         assertNotNull(DKV.get(trainingFrame._key));
 
@@ -114,13 +114,13 @@ public class RetainTestAlgos extends TestUtil {
     
     private static void testRetainModel(Model model, Frame trainingFrame){
         assertNotNull(DKV.get(model._key));
-        new DKV.RetainKeysTask(new Key[]{model._key}).doAllNodes();
+        new DKV.ClearDKVTask(new Key[]{model._key}).doAllNodes();
         assertNotNull(DKV.get(model._key));
         
     }
     
     private static void testModelDeletion(final Model model){
-        new DKV.RetainKeysTask(new Key[]{}).doAllNodes();
+        new DKV.ClearDKVTask(new Key[]{}).doAllNodes();
         assertNull(DKV.get(model._key));
     }
 }

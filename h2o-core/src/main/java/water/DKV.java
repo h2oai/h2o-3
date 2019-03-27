@@ -225,11 +225,18 @@ public abstract class DKV {
     return blocking ? TaskGetKey.get(tgk) : null;
   }
 
-  public static final class RetainKeysTask extends MRTask<RetainKeysTask> {
+  /**
+   * Clears keys in all H2O nodes, except for the ones marked as retained
+   */
+  public static final class ClearDKVTask extends MRTask<ClearDKVTask> {
 
     private final Key[] _retainedKeys;
 
-    public RetainKeysTask(Key[] retainedKeys) {
+    /**
+     * 
+     * @param retainedKeys Keys that are NOT deleted and will remain in DKV
+     */
+    public ClearDKVTask(Key[] retainedKeys) {
       _retainedKeys = retainedKeys;
     }
 

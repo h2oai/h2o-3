@@ -11,9 +11,7 @@ import water.fvec.Vec;
 import water.util.IcedInt;
 import water.util.IcedInt.AtomicIncrementAndGet;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Random;
 
 import static org.junit.Assert.*;
@@ -135,7 +133,7 @@ public class DKVTest extends TestUtil {
 
     try {
       frame = TestUtil.parse_test_file("./smalldata/testng/airlines_train.csv");
-      new DKV.RetainKeysTask(new Key[]{frame._key}).doAllNodes();
+      new DKV.ClearDKVTask(new Key[]{frame._key}).doAllNodes();
       assertTrue(H2O.STORE.containsKey(frame._key));
       assertNotNull(DKV.get(frame._key));
 
@@ -158,7 +156,7 @@ public class DKVTest extends TestUtil {
 
     try {
       frame = TestUtil.parse_test_file("smalldata/testng/airlines_train.csv");
-      new DKV.RetainKeysTask(new Key[]{}).doAllNodes();
+      new DKV.ClearDKVTask(new Key[]{}).doAllNodes();
       assertNull(DKV.get(frame._key));
       
       for (Vec vec : frame.vecs()) {
