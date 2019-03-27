@@ -49,6 +49,11 @@ test.seed.string <- function() {
     params$seed <- -86643543351427037621
     message <- "\"seed\" must be of type long or string long, but got a number which cannot be converted to long."
     expect_error(do.call(h2o.gbm, params), warn_string_of_interest=message)
+
+    # Expect error when passing non-long number as the seed parameter
+    params$seed <- "hello"
+    message <- "\"seed\" must be of type long or string long, but got a string which cannot be converted to long."
+    expect_error(do.call(h2o.gbm, params), warn_string_of_interest=message)
     
     options("h2o.warning.on.json.string.conversion" = TRUE)
     params$seed <- -1
