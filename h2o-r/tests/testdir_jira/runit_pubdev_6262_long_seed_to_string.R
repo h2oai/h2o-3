@@ -37,9 +37,20 @@ test.seed.string <- function() {
 
     # Expect warning when using long number in R
     params$seed <- -8664354335142703762
-    message <- "The seed has maximum number of digits which can be used in R as a number."
+    message <- "R can handle only 53-bit integer without loss."
     expect_warning(do.call(h2o.gbm, params), warn_string_of_interest=message)
 
+    # Expect warning when using bigger number than 53 bit 
+    params$seed <- 9007199254740992
+    message <- "R can handle only 53-bit integer without loss."
+    expect_warning(do.call(h2o.gbm, params), warn_string_of_interest=message)
+    
+    # should pass without loss, seed is less than 2^53
+    params$seed <- 9007199254740991
+    gbm_model <- do.call(h2o.gbm, params)
+    seed <- h2o.get_seed(gbm_model)
+    expect_equal(params$seed, seed)
+    
     # Expect error when passing non-long string as the seed parameter
     params$seed <- "-86643543351427037621"
     message <- "\"seed\" must be of type long or string long, but got a string which cannot be converted to long."
