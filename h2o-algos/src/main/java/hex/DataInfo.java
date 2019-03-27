@@ -1272,4 +1272,16 @@ public class DataInfo extends Keyed<DataInfo> {
     }
     return res;
   }
+
+  /**
+   * Creates a DataInfo for scoring on a test Frame from a DataInfo instance created during model training
+   * This is a lightweight version of the method only usable for models that don't use advanced features of DataInfo (eg. interaction terms)
+   * @return DataInfo for scoring
+   */
+  public DataInfo scoringInfo() {
+    DataInfo res = IcedUtils.deepCopy(this);
+    res._valid = true;
+    return res;
+  }
+
 }
