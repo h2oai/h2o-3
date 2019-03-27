@@ -383,10 +383,10 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     return new XGBoostMojoWriter(this);
   }
 
-  private ModelMetrics makeMetrics(Frame data, Frame originalData, String description) {
+  private ModelMetrics makeMetrics(Frame data, Frame originalData, boolean isTrain, String description) {
     Log.debug("Making metrics: " + description);
     XGBoostScoreTask.XGBoostScoreTaskResult score = XGBoostScoreTask.runScoreTask(
-            model_info(), _output, _parms, null, data, originalData, true, this);
+            model_info(), _output, _parms, null, data, originalData, isTrain, true, this);
     score.preds.remove();
     return score.mm;
   }
@@ -398,13 +398,13 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
    * @param _valid validation data (optional, can be null)
    */
   final void doScoring(Frame _train, Frame _trainOrig, Frame _valid, Frame _validOrig) {
-    ModelMetrics mm = makeMetrics(_train, _trainOrig, "Metrics reported on training frame");
+    ModelMetrics mm = makeMetrics(_train, _trainOrig, true, "Metrics reported on training frame");
     _output._training_metrics = mm;
     _output._scored_train[_output._ntrees].fillFrom(mm);
     addModelMetrics(mm);
     // Optional validation part
     if (_valid!=null) {
-      mm = makeMetrics(_valid, _validOrig, "Metrics reported on validation frame");
+      mm = makeMetrics(_valid, _validOrig, false, "Metrics reported on validation frame");
       _output._validation_metrics = mm;
       _output._scored_valid[_output._ntrees].fillFrom(mm);
       addModelMetrics(mm);
@@ -444,26 +444,25 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   @Override
   protected BigScorePredict setupBigScorePredict(BigScore bs) {
-    return useJavaScoring() ? setupBigScorePredictJava() : setupBigScorePredictNative();
+    DataInfo di = model_info().scoringInfo(false); // always for validation scoring info for scoring (we are not in the training phase)
+    return useJavaScoring() ? setupBigScorePredictJava(di) : setupBigScorePredictNative(di);
   }
 
-  private BigScorePredict setupBigScorePredictNative() {
-    DataInfo di = model_info().dataInfo();
-    assert di != null;
+  private BigScorePredict setupBigScorePredictNative(DataInfo di) {
     BoosterParms boosterParms = XGBoostModel.createParams(_parms, _output.nclasses(), di.coefNames());
-    return new XGBoostBigScorePredict(boosterParms);
+    return new XGBoostBigScorePredict(di, boosterParms);
   }
 
-  private BigScorePredict setupBigScorePredictJava() {
-    final DataInfo di = model_info.dataInfo();
-    assert di != null;
+  private BigScorePredict setupBigScorePredictJava(DataInfo di) {
     return new XGBoostJavaBigScorePredict(di, _output, defaultThreshold(), model_info()._boosterBytes);
   }
 
   private class XGBoostBigScorePredict implements BigScorePredict {
+    private final DataInfo _dataInfo;
     private final BoosterParms _boosterParms;
 
-    private XGBoostBigScorePredict(BoosterParms boosterParms) {
+    private XGBoostBigScorePredict(DataInfo dataInfo, BoosterParms boosterParms) {
+      _dataInfo = dataInfo;
       _boosterParms = boosterParms;
     }
 
@@ -474,7 +473,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     }
 
     private float[][] scoreChunk(Frame fr, Chunk[] chks) {
-      return XGBoostScoreTask.scoreChunk(model_info(), _parms, _boosterParms, _output, fr, chks);
+      return XGBoostScoreTask.scoreChunk(model_info(), _dataInfo, _parms, _boosterParms, _output, fr, chks);
     }
   }
 
@@ -620,7 +619,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
     @Override
     public void map(Chunk chks[], NewChunk[] nc) {
-      float[][] contrib = XGBoostScoreTask.scoreChunkContribApprox(model_info(), _parms, _boosterParms, _output, _fr, chks);
+      XGBoostModelInfo modelInfo = model_info();
+      DataInfo dataInfo = modelInfo.scoringInfo(false);
+      float[][] contrib = XGBoostScoreTask.scoreChunkContribApprox(modelInfo, dataInfo, _parms, _boosterParms, _output, _fr, chks);
       for (float[] rowContrib : contrib) {
         for (int j = 0; j < rowContrib.length; j++) {
           nc[j].addNum(rowContrib[j]);
@@ -651,7 +652,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   @Override
   public SharedTreeGraph convert(final int treeNumber, final String treeClassName) {
-    GradBooster booster = null;
+    GradBooster booster;
     try {
       booster = new Predictor(new ByteArrayInputStream(model_info._boosterBytes)).getBooster();
     } catch (IOException e) {

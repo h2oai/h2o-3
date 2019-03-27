@@ -77,4 +77,8 @@ final public class XGBoostModelInfo extends Iced {
     return _dataInfoKey.get();
   }
 
+  public DataInfo scoringInfo(boolean isTrain) {
+    return isTrain ? dataInfo() : dataInfo().scoringInfo();
+  }
+  
 }
