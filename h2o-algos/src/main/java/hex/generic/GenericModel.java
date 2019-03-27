@@ -79,7 +79,7 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
     }
 
     @Override
-    public ModelMojoWriter getMojo() {
+    public GenericModelMojoWriter getMojo() {
         return new GenericModelMojoWriter(_mojoBytes);
     }
 }
