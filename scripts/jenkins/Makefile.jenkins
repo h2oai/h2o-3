@@ -352,8 +352,8 @@ test-package-hadoop:
 		scripts/jenkins/config/ \
 		h2o-hadoop-2/tests/python/ h2o-hadoop-2/h2o-*-assembly/build/libs/h2odriver.jar \
 		h2o-hadoop-3/tests/python/ h2o-hadoop-3/h2o-*-assembly/build/libs/h2odriver.jar \
-		h2o-hadoop-common/tests/python/ \
-		h2o-hive/tests/python h2o-hive/tests/R
+		h2o-hadoop-common/tests/python/ h2o-hadoop-common/tests/R/ \
+		h2o-hive/tests/python/ h2o-hive/tests/R/
 
 ifeq ($(HIVE_VERSION_MAJOR),3)
 test-hadoop-common-smoke-hive:
@@ -380,6 +380,7 @@ test-hadoop-3-smoke-standalone: test-hadoop-common-smoke-standalone
 
 test-kerberos-common:
 	cd h2o-hadoop-common/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --kerb.principal $$KERB_PRINCIPAL
+	cd h2o-hadoop-common/tests/R && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --kerb.principal $$KERB_PRINCIPAL
 
 test-kerberos-hadoop-2-standalone: test-kerberos-common
 	cd h2o-hadoop-2/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --kerb.principal $$KERB_PRINCIPAL
