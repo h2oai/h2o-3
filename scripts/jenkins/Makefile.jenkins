@@ -86,7 +86,7 @@ test-pyunit-small-automl: lookup-automl-tests
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 6 --jvm.xmx 3g --testlist .lookup.txt
 
 test-py-demos:
-	export NO_GCE_CHECK=True && cd h2o-py/demos/ && ../../scripts/run.py --wipeall --numclouds 4 --baseport 56789 --jvm.xmx 10g
+	export NO_GCE_CHECK=True && export MPLBACKEND=Agg && cd h2o-py/demos/ && ../../scripts/run.py --wipeall --numclouds 4 --baseport 56789 --jvm.xmx 10g
 
 test-pyunit-medium-large: lookup-hdfs-tests
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 1 --numnodes 5 --jvm.xmx 15g --excludelist .lookup.txt
