@@ -10,11 +10,11 @@
 #' @param model_key Key to the self-contained model archive already uploaded to H2O.
 #' @examples
 #' \dontrun{
-#' library(h2o)
-#' h2o.init()
+#' # library(h2o)
+#' # h2o.init()
 #' 
-#' generic_model <- h2o.genericModel("/path/to/model.zip")
-#' predictions <- h2o.predict(generic_model, dataset)
+#' # generic_model <- h2o.genericModel("/path/to/model.zip")
+#' # predictions <- h2o.predict(generic_model, dataset)
 #' }
 #' @export
 h2o.generic <- function(

@@ -659,11 +659,11 @@ def help_example_for(algo):
         """
     if algo == "generic":
         return """\dontrun{
-        library(h2o)
-        h2o.init()
+        # library(h2o)
+        # h2o.init()
         
-        generic_model <- h2o.genericModel("/path/to/model.zip")
-        predictions <- h2o.predict(generic_model, dataset)
+        # generic_model <- h2o.genericModel("/path/to/model.zip")
+        # predictions <- h2o.predict(generic_model, dataset)
         }"""
 
 def get_extra_params_for(algo):
