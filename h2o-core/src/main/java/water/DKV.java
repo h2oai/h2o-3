@@ -226,15 +226,16 @@ public abstract class DKV {
   }
 
   /**
-   * Clears keys in all H2O nodes, except for the ones marked as retained
+   * Clears keys in all H2O nodes, except for the ones marked as retained.
+   * Only Model and Frame keys are retained. If a key of any other type is provided, it will be removed as well.
    */
   public static final class ClearDKVTask extends MRTask<ClearDKVTask> {
 
-    private final Key[] _retainedKeys;
+    private final Key[] _retainedKeys; // Only model and frame keys
 
     /**
-     * 
-     * @param retainedKeys Keys that are NOT deleted and will remain in DKV
+     *
+     * @param retainedKeys Keys that are NOT deleted and will remain in DKV. Only Model keys and Frame keys are accepted
      */
     public ClearDKVTask(Key[] retainedKeys) {
       _retainedKeys = retainedKeys;
