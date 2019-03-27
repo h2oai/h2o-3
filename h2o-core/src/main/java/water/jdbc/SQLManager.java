@@ -275,24 +275,23 @@ public class SQLManager {
 
       // Finally read the data into an H2O Frame
       _j.update(0L, "Importing data");
-      final String importTable = source_table;
       final ConnectionPoolProvider provider = new ConnectionPoolProvider(_connection_url, _username, _password, vec.nChunks());
       final Frame fr;
 
       if (SqlFetchMode.DISTRIBUTED.equals(_fetch_mode)) {
-        fr = new SqlTableToH2OFrame(importTable, _database_type, _columns, columnNames, numCol, _j, provider)
+        fr = new SqlTableToH2OFrame(source_table, _database_type, _columns, columnNames, numCol, _j, provider)
                 .doAll(columnH2OTypes, vec)
                 .outputFrame(_destination_key, columnNames, null);
       } else {
-        fr = new SqlTableToH2OFrameStreaming(importTable, _database_type, _columns, columnNames, numCol, _j, provider)
+        fr = new SqlTableToH2OFrameStreaming(source_table, _database_type, _columns, columnNames, numCol, _j, provider)
                 .readTable(vec, columnH2OTypes, _destination_key);
       }
       vec.remove();
 
       DKV.put(fr);
       ParseDataset.logParseResults(fr);
-      if (importTable.equals(SQLManager.TEMP_TABLE_NAME))
-        dropTempTable(_connection_url, _username, _password);
+      if (source_table.equals(_tempTableName))
+        dropTempTable(_connection_url, _username, _password, source_table);
       tryComplete();
     }
 
@@ -764,11 +763,11 @@ public class SQLManager {
     }
   }
 
-  private static void dropTempTable(String connection_url, String username, String password) {
+  private static void dropTempTable(String connection_url, String username, String password, String tableName) {
     Connection conn = null;
     Statement stmt = null;
 
-    String drop_table_query = "DROP TABLE " + SQLManager.TEMP_TABLE_NAME;
+    String drop_table_query = "DROP TABLE " + tableName;
     try {
       conn = DriverManager.getConnection(connection_url, username, password);
       stmt = conn.createStatement();
