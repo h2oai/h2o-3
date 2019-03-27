@@ -28,27 +28,27 @@ embraces it for the purpose of scoring. Information output about the model may b
 
     data <- h2o.importFile(path = 'training_dataset.csv')
     cols <- c("Some column", "Another column")
-    model.original <- h2o.glm(x=cols, y = "response", training_frame = data)    
+    original_model <- h2o.glm(x=cols, y = "response", training_frame = data)    
 
     path <- "/path/to/model/directory"
-    mojo.destination <- h2o.download_mojo(model = model.original, path = path)
-    model.generic <- h2o.genericModel(mojo.destination)
+    mojo_destination <- h2o.download_mojo(model = original_model, path = path)
+    generic_model <- h2o.genericModel(mojo_destination)
 
     new_observations <- h2o.importFile(path = 'new_observations.csv')
-    h2o.predict(model.generic, new_observations)
+    h2o.predict(generic_model, new_observations)
 
    .. code-block:: python
 
     data = h2o.import_file(path='training_dataset.csv')
-    glm = H2OGeneralizedLinearEstimator()
-    glm.train(x = ["Some column", "Another column"], y = "response", training_frame=data)
+    model = H2OGeneralizedLinearEstimator()
+    model.train(x = ["Some column", "Another column"], y = "response", training_frame=data)
 
     path = '/path/to/model/directory/model.zip'
-    drf.download_mojo(path)
+    model.download_mojo(path)
 
-    model = H2OGenericEstimator.from_file(path)
+    generic_model = H2OGenericEstimator.from_file(path)
     new_observations = h2o.import_file(path='new_observations.csv')
-    predictions = model.predict(new_observations)
+    predictions = generic_model.predict(new_observations)
 
 
 In Flow, click on 'Models' in the top menu and select 'Generic'. It is however required to import or upload the generic model (most likely a MOJO) beforehand. In order to to do, go to 'Data' in the top menu and select 'import files' or 'upload files'.
@@ -64,29 +64,29 @@ every time a Generic model is created.
 
     data <- h2o.importFile(path = 'training_dataset.csv')
     cols <- c("Some column", "Another column")
-    model.original <- h2o.glm(x=cols, y = "response", training_frame = data)    
+    original_model <- h2o.glm(x=cols, y = "response", training_frame = data)    
 
     path <- "/path/to/model/directory"
-    mojo.destination <- h2o.download_mojo(model = model.original, path = path)
+    mojo_destination <- h2o.download_mojo(model = original_model, path = path)
     
     # Only import or upload MOJO model data, do not initialize the generic model yet
-    imported_mojo_key <- h2o.importFile(mojo.destination, parse = FALSE)
+    imported_mojo_key <- h2o.importFile(mojo_destination, parse = FALSE)
     # Build the generic model later, when needed 
-    model.generic <- h2o.generic(model_key = imported_mojo_key)
+    generic_model <- h2o.generic(model_key = imported_mojo_key)
 
     new_observations <- h2o.importFile(path = 'new_observations.csv')
-    h2o.predict(model.generic, new_observations)
+    h2o.predict(generic_model, new_observations)
 
    .. code-block:: python
 
     data = h2o.import_file(path='training_dataset.csv')
-    glm = H2OGeneralizedLinearEstimator()
-    glm.train(x = ["Some column", "Another column"], y = "response", training_frame=data)
+    model = H2OGeneralizedLinearEstimator()
+    model.train(x = ["Some column", "Another column"], y = "response", training_frame=data)
 
     path = '/path/to/model/directory/model.zip'
-    drf.download_mojo(path)
+    model.download_mojo(path)
     
     imported_mojo_key = h2o.lazy_import(file)
-    model = H2OGenericEstimator(model_key = get_frame(model_key[0]))
+    generic_model = H2OGenericEstimator(model_key = get_frame(model_key[0]))
     new_observations = h2o.import_file(path='new_observations.csv')
-    predictions = model.predict(new_observations)
+    predictions = generic_model.predict(new_observations)
