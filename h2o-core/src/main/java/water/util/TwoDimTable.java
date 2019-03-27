@@ -13,14 +13,14 @@ import java.util.Arrays;
  * Fields can be empty
  */
 public class TwoDimTable extends Iced {
-  private String     tableHeader;
-  private String     tableDescription;
-  private String[]   rowHeaders;
-  private String[]   colHeaders;
-  private String[]   colTypes;
-  private String[]   colFormats;
-  private IcedWrapper[][] cellValues;
-  private String     colHeaderForRowHeaders;
+    private String     tableHeader;
+    private String     tableDescription;
+    private String[]   rowHeaders;
+    private String[]   colHeaders;
+    private String[]   colTypes;
+    private String[]   colFormats;
+    private IcedWrapper[][] cellValues;
+    private String     colHeaderForRowHeaders;
 
   //public static final double emptyDouble = Double.longBitsToDouble(0x7ff8000000000100L); //also a NaN, but not Double.NaN (0x7ff8000000000000)
   public static final double emptyDouble = Double.MIN_VALUE*2; //Some unlikely value

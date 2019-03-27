@@ -139,7 +139,7 @@ class H2OEstimator(ModelBase):
         if "__class__" in parms:  # FIXME: hackt for PY3
             del parms["__class__"]
         is_auto_encoder = bool(parms.get("autoencoder"))
-        is_supervised = not(is_auto_encoder or algo in {"aggregator", "pca", "svd", "kmeans", "glrm", "word2vec", "isolationforest"})
+        is_supervised = not(is_auto_encoder or algo in {"aggregator", "pca", "svd", "kmeans", "glrm", "word2vec", "isolationforest", "generic"})
         if not training_frame_exists:
             names = training_frame.names
             ncols = training_frame.ncols
@@ -206,7 +206,7 @@ class H2OEstimator(ModelBase):
         is_auto_encoder = "autoencoder" in parms and parms["autoencoder"]
         is_unsupervised = is_auto_encoder or self.algo in {"aggregator", "pca", "svd", "kmeans", "glrm", "word2vec", "isolationforest"}
         if is_auto_encoder and y is not None: raise ValueError("y should not be specified for autoencoder.")
-        if not is_unsupervised and y is None: raise ValueError("Missing response")
+        if not is_unsupervised and y is None and self.algo not in ["generic"]: raise ValueError("Missing response")
 
         # Step 3
         if not training_frame_exists:

@@ -3665,3 +3665,20 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
 
 #' @export
 print.h2o.stackedEnsemble.summary <- function(x, ...) cat(x, sep = "\n")
+
+#' Imports MOJO under given path, creating a Generic model with it.
+#'
+#' @param model_file_path Filesystem path to the model imported
+#' @return Returns H2O Generic Model based on give embedded model
+#'
+#' Usage example:
+#' @examples
+#' \donttest{
+#' generic_model <- h2o.genericModel(file_path = "/path/to/mojo.zip")
+#' predictions <- h2o.predict(generic_model, dataset)
+#' }
+#' @export
+h2o.genericModel <- function(model_file_path){
+  model_file_key <- h2o.importFile(model_file_path, parse = FALSE)
+  h2o.generic(model_key = model_file_key)
+}

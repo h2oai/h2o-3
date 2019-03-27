@@ -26,6 +26,7 @@ from .estimators.deeplearning import H2ODeepLearningEstimator
 from .estimators.deepwater import H2ODeepWaterEstimator
 from .estimators.estimator_base import H2OEstimator
 from .estimators.xgboost import H2OXGBoostEstimator
+from .estimators.generic import H2OGenericEstimator
 from .estimators.gbm import H2OGradientBoostingEstimator
 from .estimators.glm import H2OGeneralizedLinearEstimator
 from .estimators.glrm import H2OGeneralizedLowRankEstimator
@@ -803,6 +804,7 @@ def get_model(model_id):
     elif algo == "deepwater":    m = H2ODeepWaterEstimator()
     elif algo == "xgboost":      m = H2OXGBoostEstimator()
     elif algo == "word2vec":     m = H2OWord2vecEstimator()
+    elif algo == "generic": m = H2OGenericEstimator()
     elif algo == "deeplearning":
         if model_json["output"]["model_category"] == "AutoEncoder":
             m = H2OAutoEncoderEstimator()

@@ -71,6 +71,12 @@ Unsupervised
     :show-inheritance:
     :members:
 
+:mod:`H2OGenericEstimator`
+--------------------------
+.. autoclass:: h2o.estimators.generic.H2OGenericEstimator
+    :show-inheritance:
+    :members:
+
 :mod:`H2OGeneralizedLowRankEstimator`
 -------------------------------------
 .. autoclass:: h2o.estimators.glrm.H2OGeneralizedLowRankEstimator

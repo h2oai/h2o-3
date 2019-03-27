@@ -3,6 +3,7 @@ package hex.genmodel.algos.tree;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.drf.DrfMojoModel;
 import hex.genmodel.algos.gbm.GbmMojoModel;
+import hex.genmodel.descriptor.VariableImportances;
 import hex.genmodel.utils.ByteBufferWrapper;
 import hex.genmodel.utils.GenmodelBitSet;
 
@@ -50,6 +51,8 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
      * GLM's beta used for calibrating output probabilities using Platt Scaling.
      */
     protected double[] _calib_glm_beta;
+
+    protected VariableImportances _variable_importances;
 
 
     protected void postInit() {
@@ -971,5 +974,4 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
         }
         return trees_result;
     }
-
 }

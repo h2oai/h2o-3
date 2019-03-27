@@ -102,7 +102,10 @@ def gen_module(schema, algo, module):
         for line in lines:
             yield "#' %s" % line.lstrip()
     yield "#' @export"
-    yield "h2o.%s <- function(%s," % (module, get_extra_params_for(algo))
+    if algo == "generic":
+        yield "h2o.%s <- function(" % (module)
+    else:
+        yield "h2o.%s <- function(%s," % (module, get_extra_params_for(algo))
     # yield indent("training_frame,", 17 + len(algo))
     list = []
     for param in schema["parameters"]:
@@ -185,6 +188,9 @@ def gen_module(schema, algo, module):
         yield "  if(!is.character(stop_column) && !is.numeric(stop_column)) {"
         yield "     stop('argument \"stop_column\" must be a column name or an index')"
         yield "  }"
+    if algo == "generic":
+        yield "  # Required args: model_key"
+        yield "  if (is.null(model_key)) stop(\"argument 'model_key' must be provided\")"
     if algo == "word2vec":
         yield "  # training_frame is required if pre_trained frame is not specified"
         yield "  if (missing(pre_trained) && missing(training_frame)) stop(\"argument \'training_frame\' is missing, with no default\")"
@@ -200,7 +206,7 @@ def gen_module(schema, algo, module):
         yield "             error = function(err) {"
         yield "               stop(\"argument \'pre_trained\' must be a valid H2OFrame or key\")"
         yield "             })"
-    else:
+    elif algo not in ["generic"]:
         yield "  # Required args: training_frame"
         yield "  if (missing(training_frame)) stop(\"argument \'training_frame\' is missing, with no default\")"
         # yield "  if( missing(validation_frame) ) validation_frame = NULL"
@@ -210,7 +216,7 @@ def gen_module(schema, algo, module):
         yield "           error = function(err) {"
         yield "             stop(\"argument \'training_frame\' must be a valid H2OFrame or key\")"
         yield "           })"
-    if algo not in ["word2vec", "aggregator", "coxph", "isolationforest"]:
+    if algo not in ["word2vec", "aggregator", "coxph", "isolationforest", "generic"]:
         yield "  # Validation_frame must be a key or an H2OFrame object"
         yield "  if (!is.null(validation_frame)) {"
         yield "     if (!is.H2OFrame(validation_frame))"
@@ -221,7 +227,8 @@ def gen_module(schema, algo, module):
         yield "  }"
     yield "  # Parameter list to send to model builder"
     yield "  parms <- list()"
-    yield "  parms$training_frame <- training_frame"
+    if algo not in ["generic"]:
+        yield "  parms$training_frame <- training_frame"
     if algo == "glrm":
         yield " if(!missing(cols))"
         yield " parms$ignored_columns <- .verify_datacols(training_frame, cols)$cols_ignore"
@@ -253,7 +260,7 @@ def gen_module(schema, algo, module):
         yield "      parms$ignored_columns <- setdiff(parms$ignored_columns, fold_column)"
         yield "    }"
         yield "  }"
-    else:
+    elif algo not in ["generic"]:
         yield "  if(!missing(x))"
         yield "    parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore"
     if algo == "svd":
@@ -483,6 +490,11 @@ def help_preamble_for(algo):
         return """
             Trains an Isolation Forest model
         """
+    if algo == "generic":
+        return """
+            Imports a generic model into H2O. Such model can be used then used for scoring and obtaining
+            additional information about the model. The imported model has to be supported by H2O.
+        """
 
 def help_details_for(algo):
     if algo == "naivebayes":
@@ -645,6 +657,14 @@ def help_example_for(algo):
         # See example R code here:
         # http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/stacked-ensembles.html
         """
+    if algo == "generic":
+        return """\dontrun{
+        # library(h2o)
+        # h2o.init()
+        
+        # generic_model <- h2o.genericModel("/path/to/model.zip")
+        # predictions <- h2o.predict(generic_model, dataset)
+        }"""
 
 def get_extra_params_for(algo):
     if algo == "glrm":
@@ -657,6 +677,8 @@ def get_extra_params_for(algo):
         return "training_frame = NULL"
     elif algo == "coxph":
         return "x, event_column, training_frame"
+    elif algo == "generic":
+        return ""
     else:
         return "training_frame, x"
 
@@ -678,6 +700,8 @@ def help_extra_params_for(algo):
             #' @param destination_key (Optional) The unique key assigned to the resulting model.
             #'                        Automatically generated if none is provided."""
     elif algo == "word2vec":
+        return None
+    elif algo == "generic":
         return None
     else:  #Aggregator, PCA, SVD, K-Means: can this be grouped in with the others?  why are only character names supported?
         return """#' @param x A vector containing the \code{character} names of the predictors in the model."""

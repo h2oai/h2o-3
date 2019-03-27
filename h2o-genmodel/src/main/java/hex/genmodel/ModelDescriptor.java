@@ -1,6 +1,10 @@
 package hex.genmodel;
 
 import hex.ModelCategory;
+import hex.genmodel.descriptor.Table;
+import hex.genmodel.descriptor.VariableImportances;
+
+import java.io.Serializable;
 
 public interface ModelDescriptor {
 
@@ -11,6 +15,12 @@ public interface ModelDescriptor {
   String algoName();
 
   String algoFullName();
+  
+  String offsetColumn();
+  
+  String weightsColumn();
+  
+  String foldColumn();
 
   ModelCategory getModelCategory();
 
@@ -33,5 +43,9 @@ public interface ModelDescriptor {
   String uuid();
 
   String timestamp();
+  
+  VariableImportances variableImportances();
+  
+  Table modelSummary();
 
 }
