@@ -41,11 +41,11 @@ Importing in R or Python
    .. code-block:: python
 
     data = h2o.import_file(path='training_dataset.csv')
-    model = H2OGeneralizedLinearEstimator()
-    model.train(x = ["Some column", "Another column"], y = "response", training_frame=data)
+    original_model = H2OGeneralizedLinearEstimator()
+    original_model.train(x = ["Some column", "Another column"], y = "response", training_frame=data)
 
     path = '/path/to/model/directory/model.zip'
-    model.download_mojo(path)
+    original_model.download_mojo(path)
 
     generic_model = H2OGenericEstimator.from_file(path)
     new_observations = h2o.import_file(path='new_observations.csv')
@@ -86,11 +86,11 @@ every time a Generic model is created.
    .. code-block:: python
 
     data = h2o.import_file(path='training_dataset.csv')
-    model = H2OGeneralizedLinearEstimator()
-    model.train(x = ["Some column", "Another column"], y = "response", training_frame=data)
+    original_model = H2OGeneralizedLinearEstimator()
+    original_model.train(x = ["Some column", "Another column"], y = "response", training_frame=data)
 
     path = '/path/to/model/directory/model.zip'
-    model.download_mojo(path)
+    original_model.download_mojo(path)
     
     imported_mojo_key = h2o.lazy_import(file)
     generic_model = H2OGenericEstimator(model_key = get_frame(model_key[0]))
