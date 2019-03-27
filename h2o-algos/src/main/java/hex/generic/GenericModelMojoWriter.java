@@ -11,6 +11,7 @@ public class GenericModelMojoWriter extends ModelMojoWriter<GenericModel, Generi
 
     private ByteVec _mojoBytes;
 
+    @SuppressWarnings("unused")  // Called through reflection in ModelBuildersHandler
     public GenericModelMojoWriter() {
     }
 
@@ -21,7 +22,7 @@ public class GenericModelMojoWriter extends ModelMojoWriter<GenericModel, Generi
 
     @Override
     public String mojoVersion() {
-        return "1.0";
+        return "1.00";
     }
 
     @Override
