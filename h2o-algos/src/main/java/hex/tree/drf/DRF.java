@@ -6,19 +6,13 @@ import hex.tree.*;
 import hex.tree.DTree.DecidedNode;
 import hex.tree.DTree.LeafNode;
 import hex.tree.DTree.UndecidedNode;
-import water.Iced;
 import water.Job;
 import water.Key;
 import water.MRTask;
 import water.fvec.C0DChunk;
 import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.fvec.Vec;
-import water.util.IcedHashMap;
-import water.util.TwoDimTable;
 
-import java.util.Arrays;
-import java.util.Map;
 import java.util.Random;
 
 import static hex.genmodel.GenModel.getPrediction;
@@ -92,8 +86,6 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
     public transient TreeMeasuresCollector.TreeMeasures[/*features*/] _treeMeasuresOnSOOB;
     // Variable importance based on tree split decisions
     private transient float[/*nfeatures*/] _improvPerVar;
-    
-    private transient TreesPerInstancePredictions _treesPerInstancePredictions = new TreesPerInstancePredictions();
 
     private void initTreeMeasurements() {
       _improvPerVar = new float[_ncols];
@@ -163,23 +155,8 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       growTrees(ktrees, leafs, _rand);
 
       // Move rows into the final leaf rows - fill "Tree" and OUT_BAG_TREES columns and zap the NIDs column
-      double[] idx = new double[(int)_train.numRows()];
-      for(int i = 0; i < _train.numRows(); i++) {
-        idx[i] = i;
-      }
-      
-      boolean collectConfidenceData = true; // TODO parameter
+      CollectPreds cp = new CollectPreds(ktrees,leafs,_model.defaultThreshold()).doAll(_train,_parms._build_tree_one_node);
 
-      String id_for_confidence_metrics = "id_for_confidence_metrics";
-      if(collectConfidenceData && _train.find(id_for_confidence_metrics) == -1) {
-        _train.add(id_for_confidence_metrics, Vec.makeCon(Vec.newKey(), idx));
-      }
-      int indexOfIdColumn = _train.find(id_for_confidence_metrics);
-      CollectPreds cp = new CollectPreds(ktrees,leafs,_model.defaultThreshold(), indexOfIdColumn).doAll(_train,_parms._build_tree_one_node);
-
-      IcedHashMap<Integer, Double[]> predictionsMap = cp._predictionsMap;
-      _treesPerInstancePredictions.append(predictionsMap);
-      
       if (isClassifier())   asVotes(_treeMeasuresOnOOB).append(cp.rightVotes, cp.allRows); // Track right votes over OOB rows for this tree
       else /* regression */ asSSE  (_treeMeasuresOnOOB).append(cp.sse, cp.allRows);
 
@@ -268,21 +245,17 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       /* @IN */  double _threshold;      // Sum of squares for this tree only
       /* @OUT */ double rightVotes; // number of right votes over OOB rows (performed by this tree) represented by DTree[] _trees
       /* @OUT */ double allRows;    // number of all OOB rows (sampled by this tree)
-      /* @OUT */ float sse;      // Sum of squares for this tree only       
-      /* @OUT */ int _indexOfIdColumn;
-      IcedHashMap<Integer, Double[]> _predictionsMap = new IcedHashMap<>();
-      CollectPreds(DTree trees[], int leafs[], double threshold, int indexOfIdColumn) { _trees=trees; _threshold = threshold; _indexOfIdColumn = indexOfIdColumn; }
+      /* @OUT */ float sse;      // Sum of squares for this tree only
+      CollectPreds(DTree trees[], int leafs[], double threshold) { _trees=trees; _threshold = threshold; }
       final boolean importance = true;
       @Override public void map( Chunk[] chks ) {
         final Chunk    y       = importance ? chk_resp(chks) : null; // Response
         final double[] rpred   = importance ? new double[1+_nclass] : null; // Row prediction
         final double[] rowdata = importance ? new double[_ncols] : null; // Pre-allocated row data
         final Chunk   oobt  = chk_oobt(chks); // Out-of-bag rows counter over all trees
-        final Chunk   idColumn  = chks[_indexOfIdColumn]; 
         final Chunk   weights  = hasWeightCol() ? chk_weight(chks) : new C0DChunk(1, chks[0]._len); // Out-of-bag rows counter over all trees
         // Iterate over all rows
         for( int row=0; row<oobt._len; row++ ) {
-          int globalRowId = (int) idColumn.at8(row);
           double weight = weights.atd(row);
           final boolean wasOOBRow = ScoreBuildHistogram.isOOBRow((int)chk_nids(chks,0).at8(row));
           // For all tree (i.e., k-classes)
@@ -312,9 +285,6 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
                 //   - for classification: cumulative number of votes for this row
                 //   - for regression: cumulative sum of prediction of each tree - has to be normalized by number of trees
                 double prediction = ((LeafNode) tree.node(leafnid)).pred(); // Prediction for this k-class and this row
-                
-                _predictionsMap.put(globalRowId, new Double[]{prediction});
-                
                 if (importance) rpred[1 + k] = (float) prediction; // for both regression and classification
                 ct.set(row, (float) (ct.atd(row) + prediction));
               }
@@ -345,43 +315,12 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
         rightVotes += mrt.rightVotes;
         allRows    += mrt.allRows;
         sse        += mrt.sse;
-        _predictionsMap.putAll(mrt._predictionsMap);
       }
     }
 
     @Override protected DRFModel makeModel( Key modelKey, DRFModel.DRFParameters parms) {
       return new DRFModel(modelKey,parms,new DRFModel.DRFOutput(DRF.this));
     }
-  }
-
-  public static class TreesPerInstancePredictions extends Iced {
-    
-    IcedHashMap<Integer, Double[]> _predictionsFromNTrees = new IcedHashMap<>();;
-    
-    public TreesPerInstancePredictions append(IcedHashMap<Integer, Double[]> _predictions) {
-      for( Map.Entry<Integer, Double[]> entry : _predictions.entrySet()) {
-        _predictionsFromNTrees.put(entry.getKey(), concat(_predictionsFromNTrees.get(entry.getKey()), entry.getValue()));
-      }
-      return  this;
-    }
-  }
-
-  public static Double[] concat(Double[] first, Double[] second) {
-    if(first == null) return second;
-    if(second == null) return first;
-    Double[] result = Arrays.copyOf(first, first.length + second.length);
-    System.arraycopy(second, 0, result, first.length, second.length);
-    return result;
-  }
-
-  public static void printOutFrameAsTable(Frame fr) {
-    printOutFrameAsTable(fr, false, fr.numRows());
-  }
-
-  public static void printOutFrameAsTable(Frame fr, boolean rollups, long limit) {
-    assert limit <= Integer.MAX_VALUE;
-    TwoDimTable twoDimTable = fr.toTwoDimTable(0, (int) limit, rollups);
-    System.out.println(twoDimTable.toString(2, true));
   }
 
   // Read the 'tree' columns, do model-specific math and put the results in the

@@ -8,7 +8,6 @@ import static hex.genmodel.GenModel.createAuxKey;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.glm.GLMModel;
-import hex.tree.drf.DRFModel;
 import hex.util.LinearAlgebraUtils;
 import water.*;
 import water.codegen.CodeGenerator;
@@ -433,42 +432,11 @@ public abstract class SharedTreeModel<
   @Override protected double[] score0(double[/*ncols*/] data, double[/*nclasses+1*/] preds) {
     return score0(data, preds, 0.0);
   }
-  
-  public transient IcedHashMap<Integer, Double[]> _lastScoringPerTreePredictionsMap = new IcedHashMap<>();
 
   protected double[] score0(double[] data, double[] preds, double offset, int ntrees) {
     Arrays.fill(preds,0);
-    if(SharedTreeModel.this instanceof DRFModel) // TODO and maybe check some flag
-      return scoreWithVariance(data, preds, offset, ntrees);
-    else
-      return score0(data, preds, offset, 0, ntrees);
+    return score0(data, preds, offset, 0, ntrees);
   }
-
-  protected double[] scoreWithVariance(double[] data, double[] preds, double offset, int ntrees) {
-    Arrays.fill(preds,0);
-    double[] perTreePreds = new double[ntrees];
-    double[] results = scoreWithVariance(data, preds, offset, 0, ntrees, perTreePreds);
-    int key = ArrayUtils.hashArray(data);
-    if(_lastScoringPerTreePredictionsMap.containsKey(key)) {
-      Log.warn("Map keys collision happened during addition to `_lastScoringPerTreePredictionsMap` ");
-    }
-    _lastScoringPerTreePredictionsMap.put(key, ArrayUtils.box(perTreePreds));
-    return results;
-  }
-
-  protected double[] scoreWithVariance(double[] data, double[] preds, double offset, int startTree, int ntrees, double[] perTreePreds) {
-    // Prefetch trees into the local cache if it is necessary
-    // Invoke scoring
-    int predIdx = 0;
-    for( int tidx=startTree; tidx<ntrees; tidx++ ) {
-      double[] currentTreePrediction = new double[1];
-      scorePerLineWithVariance(data, preds, tidx, currentTreePrediction); // TODO we can use separate method here as well
-      perTreePreds[predIdx] = currentTreePrediction[0];
-      predIdx++;
-    }
-    return preds;
-  }
-  
 
   protected double[] score0(double[] data, double[] preds, double offset, int startTree, int ntrees) {
     // Prefetch trees into the local cache if it is necessary
@@ -485,18 +453,6 @@ public abstract class SharedTreeModel<
       if (keys[c] != null) {
         double pred = DKV.get(keys[c]).<CompressedTree>get().score(data,_output._domains);
         assert (!Double.isInfinite(pred));
-        preds[keys.length == 1 ? 0 : c + 1] += pred;
-      }
-    }
-  }
-
-  private void scorePerLineWithVariance(double[] data, double[] preds, int treeIdx, double[] perTreePrediction) {
-    Key[] keys = _output._treeKeys[treeIdx];
-    for( int c=0; c<keys.length; c++ ) {
-      if (keys[c] != null) {
-        double pred = DKV.get(keys[c]).<CompressedTree>get().score(data,_output._domains);
-        assert (!Double.isInfinite(pred));
-        perTreePrediction[0] = pred;
         preds[keys.length == 1 ? 0 : c + 1] += pred;
       }
     }

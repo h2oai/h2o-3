@@ -22,20 +22,6 @@ public class TargetEncoderFrameHelperTest extends TestUtil {
   @BeforeClass public static void setup() {
     stall_till_cloudsize(1);
   }
-
-  @Test
-  public void frameAsArray() {
-    Frame scores = new TestFrameBuilder()
-            .withName("testFrame")
-            .withColNames("scores")
-            .withVecTypes(Vec.T_NUM)
-            .withDataForCol(0, ard(0.85, 0.96))
-            .build();
-    double[][] observedMeans = TargetEncoderFrameHelper.frameAsArray(scores, new String[]{});
-    assertArrayEquals(new double[]{0.85, 0.96} , observedMeans[0], 1e-5);
-    
-    scores.delete();
-  }
   
   @Test
   public void addVecToFrameTest() {

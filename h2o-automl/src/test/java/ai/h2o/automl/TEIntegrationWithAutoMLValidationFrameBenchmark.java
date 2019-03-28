@@ -182,7 +182,7 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
     double avgCumulativeAUCWith = 0.0;
     double avgCumulativeWithoutTE = 0.0;
 
-    int numberOfRuns = 10;
+    int numberOfRuns = 1;
     for (int seedAttempt = 0; seedAttempt < numberOfRuns; seedAttempt++) {
       long splitSeed = generator.nextLong();
       try {
