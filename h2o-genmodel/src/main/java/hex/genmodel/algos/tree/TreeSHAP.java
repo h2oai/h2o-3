@@ -9,11 +9,8 @@ package hex.genmodel.algos.tree;
 import ai.h2o.algos.tree.INode;
 import ai.h2o.algos.tree.INodeStat;
 
-/**
- * Warning: Experimental (alpha-level) code - needs testing for correctness and benchmarking!
- *
- * NOT thread safe, internal state is mutated in order to avoid memory allocation on a per-observation level
- */
+import java.io.Serializable;
+
 public class TreeSHAP<R, N extends INode<R>, S extends INodeStat> implements TreeSHAPPredictor<R> {
 
   private final int rootNodeId;
