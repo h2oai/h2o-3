@@ -56,7 +56,7 @@ public class XGBoostTest extends TestUtil {
   @Before
   public void setupMojoJavaScoring() {
     System.setProperty("sys.ai.h2o.xgboost.scoring.java.enable", confMojoJavaScoring); // mojo scoring
-    System.setProperty("sys.ai.h2o.xgboost.predict.java.enable", confMojoJavaScoring); // in-h2o predict
+    System.setProperty("sys.ai.h2o.xgboost.predict.java.enable", confJavaPredict); // in-h2o predict
   }
 
   public static final class FrameMetadata {
