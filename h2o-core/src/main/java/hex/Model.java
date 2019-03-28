@@ -1195,8 +1195,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       boolean isWeights = weights != null && names[i].equals(weights);
       boolean isOffset = offset != null && names[i].equals(offset);
       boolean isFold = fold != null && names[i].equals(fold);
+      Log.info(names[i]+ "is response: "+isResponse+ " is wights: "+isWeights+ " is offset: "+isOffset+ " is fold "+isFold);
       // If a training set column is missing in the test set, complain (if it's ok, fill in with NAs (or 0s if it's a fold-column))
       if (vec == null) {
+        Log.info("Vec is null");
         if (isResponse && computeMetrics)
           throw new IllegalArgumentException("Test/Validation dataset is missing response column '" + response + "'");
         else if (isOffset)
@@ -1213,6 +1215,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           else if (isFold) defval = 0;
           else {
             defval = parms.missingColumnsType();
+            Log.info("convNan++");
             convNaN++;
           }
           vec = test.anyVec().makeCon(defval);
@@ -1225,7 +1228,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         }
       }
       if( vec != null ) {          // I have a column with a matching name
+        Log.info("Vec is not null");
         if( domains[i] != null ) { // Model expects an categorical
+          Log.info("Domains is not null");
           if (vec.isString())
             vec = VecUtils.stringToCategorical(vec); //turn a String column into a categorical column (we don't delete the original vec here)
           if( expensive && vec.domain() != domains[i] && !Arrays.equals(vec.domain(),domains[i]) ) { // Result needs to be the same categorical
@@ -1253,7 +1258,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             throw new IllegalArgumentException("Test/Validation dataset has categorical column '" + names[i] + "' which is real-valued in the training data");
           }
         }
+        Log.info("Vec is good");
         good++;      // Assumed compatible; not checking e.g. Strings vs UUID
+      } else {
+        Log.info("Vec is not good");
       }
       vvecs[i] = vec;
     }

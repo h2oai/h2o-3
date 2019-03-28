@@ -15,22 +15,26 @@ test.4659 <- function() {
     # delete response variable from test data
     prostateTest<-prostateTest[,-3]
     
+    print("GLM 1")
     model<-h2o.glm(y = "AGE", x = c("our_factor"),
     training_frame = prostateTrain,offset_column="weight")
     predict(model,newdata=prostateTrain)
     predict(model,newdata=prostateTest)
 
     # Failed when response column was missing and there is only one feature 
+    print("GLM 2")
     model<-h2o.glm(y = "AGE", x = c("our_factor"),
     training_frame = prostateTrain)
     predict(model,newdata=prostateTrain)
     predict(model,newdata=prostateTest)
     
     # Failed when original columns names does not fit with edited frame columns with dummy NA column for response column
+    print("GBM 1")
     model<-h2o.gbm(y = "AGE", x = c("our_factor"), training_frame = prostateTrain,categorical_encoding = "OneHotExplicit")
     predictionResponse <- predict(model,newdata=prostateTrain)
     predict(model,newdata=prostateTest)
-    
+
+    print("Prediction check")
     # Delete response variable from train data to compare result predictions
     predictionWithoutResponse <- predict(model, newdata=prostateTrain[,-3])
     # Result predictions should be the same 
