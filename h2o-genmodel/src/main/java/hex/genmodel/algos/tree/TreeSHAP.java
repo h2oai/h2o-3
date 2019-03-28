@@ -25,7 +25,7 @@ public class TreeSHAP<R, N extends INode<R>, S extends INodeStat> implements Tre
     this.expectedTreeValue = treeMeanValue();
   }
 
-  private static class PathElement {
+  private static class PathElement implements Serializable {
     int feature_index;
     float zero_fraction;
     float one_fraction;
