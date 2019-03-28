@@ -3668,14 +3668,32 @@ print.h2o.stackedEnsemble.summary <- function(x, ...) cat(x, sep = "\n")
 
 #' Imports MOJO under given path, creating a Generic model with it.
 #'
+#' Usage example:
+#' generic_model <- h2o.genericModel(model_file_path = "/path/to/mojo.zip")
+#' predictions <- h2o.predict(generic_model, dataset)
+#'
 #' @param model_file_path Filesystem path to the model imported
 #' @return Returns H2O Generic Model based on give embedded model
 #'
-#' Usage example:
 #' @examples
 #' \donttest{
-#' generic_model <- h2o.genericModel(model_file_path = "/path/to/mojo.zip")
-#' predictions <- h2o.predict(generic_model, dataset)
+#'
+#' # Import default Iris dataset as H2O frame
+#' data <- as.h2o(iris)
+#'
+#' # Train a very simple GBM model
+#' features <- c("Sepal.Length", "Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width")
+#' original_model <- h2o.gbm(x=features, y = "Species", training_frame = data)
+#'
+#' # Download the trained GBM model as MOJO (temporary directory used in this example)
+#' mojo_original_name <- h2o.download_mojo(model = original_model, path = tempdir())
+#' mojo_original_path <- paste0(tempdir(),"/",mojo_original_name)
+#'
+#' # Import the MOJO as Generic model
+#' generic_model <- h2o.genericModel(mojo_original_path)
+#'
+#' # Perform scoring with the generic model
+#' generic_model_predictions  <- h2o.predict(generic_model, data)
 #' }
 #' @export
 h2o.genericModel <- function(model_file_path){
