@@ -63,7 +63,7 @@ public class GridSearchVsSMBOBenchmark extends water.TestUtil {
     TEApplicationStrategy strategy = new ThresholdTEApplicationStrategy(fr, fr.vec("survived"), 4);
     String[] columnsToEncode = strategy.getColumnsToEncode();
 
-    double ratioOfHyperspaceToExplore = 0.1;
+    double ratioOfHyperspaceToExplore = 0.4;
     SMBOTEParamsSelectionStrategy gridSearchTEParamsSelectionStrategy =
             new SMBOTEParamsSelectionStrategy(leaderboard, earlyStoppingRatio, ratioOfHyperspaceToExplore, responseColumnName, columnsToEncode, true, seed);
 
@@ -83,7 +83,7 @@ public class GridSearchVsSMBOBenchmark extends water.TestUtil {
   // Here we run RGS through whole hyperspace (or part of it) to get real OF evaluations for every grid entry so that we can understand how good our SMBO search is.
   @Test
   public void benchmark() {
-    double ratioOfHyperSpaceToExplore = 0.1; // total size = 189;  
+    double ratioOfHyperSpaceToExplore = 0.4; // total size = 189;  
     String responseColumnName = "survived";
     Frame frForRGS = null;
     Frame frameForSMBO = null;
