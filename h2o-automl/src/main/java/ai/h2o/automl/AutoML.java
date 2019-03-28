@@ -369,13 +369,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   private void learn() {
-    defaultRandomForest();
-    defaultExtremelyRandomTrees();
-    defaultSearchGLM(null);
     defaultXGBoosts(false);
+    defaultSearchGLM(null);
+    defaultRandomForest();
 //    defaultXGBoosts(true);
     defaultGBMs();
     defaultDeepLearning();
+    defaultExtremelyRandomTrees();
     defaultSearchXGBoost(null, false);
 //    defaultSearchXGBoost(null, true);
     defaultSearchGBM(null);
