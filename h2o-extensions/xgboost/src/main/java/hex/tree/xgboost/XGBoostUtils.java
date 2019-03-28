@@ -96,7 +96,7 @@ public class XGBoostUtils {
         if (weightVector != null) {
             weights = malloc4f(nRows);
         }
-
+        sparse = true;
         if (sparse) {
             Log.debug("Treating matrix as sparse.");
             // 1 0 2 0
@@ -338,7 +338,7 @@ public class XGBoostUtils {
         }
     }
 
-    private static final int ARRAY_MAX = Integer.MAX_VALUE - 10;
+    private static final int ARRAY_MAX = 10;
 
     private static long denseChunk(BigDenseMatrix data,
                                    int[] chunks, int[] nRowsByChunk, Frame f, Vec weightsVec, Vec respVec, DataInfo di,
@@ -507,7 +507,7 @@ public class XGBoostUtils {
         long size = sparseMatrixDimensions._nonZeroElementsCount;
         int rowHeadersSize = (int) sparseMatrixDimensions._rowIndicesCount;
 
-        trainMat = new DMatrix(rowHeaders, colIndex, data, DMatrix.SparseType.CSR, di.fullN(), rowHeadersSize, size);
+        trainMat = new DMatrix(rowHeaders, colIndex, data, DMatrix.SparseType.CSR, di.fullN(), actualRows, size);
         assert trainMat.rowNum() == actualRows;
         return trainMat;
     }
@@ -522,9 +522,12 @@ public class XGBoostUtils {
 
         // extract predictors
         int nonZeroCount = 0;
-        int currentRow = 0;
-        int currentCol = 0;
+        int rowPointer = 0;
+        int colPointer = 0;
         int rwRow = 0;
+        
+        int rowHeaderRowPointer = 0;
+        int rowHeaderColPointer = 0;
 
         for (Integer chunk : chunks) {
             for(long i = f.anyVec().espc()[chunk]; i < f.anyVec().espc()[chunk+1]; i++) {
@@ -534,65 +537,93 @@ public class XGBoostUtils {
                 // enlarge final data arrays by 2x if needed
 
                 for (int j = 0; j < di._cats; ++j) {
-                    data[currentRow][currentCol] = 1; //one-hot encoding
+                    if(colPointer == ARRAY_MAX){
+                        colPointer = 0;
+                        rowPointer++;
+                    }
+                    data[rowPointer][colPointer] = 1; //one-hot encoding
                     if (vecs[j].isNA(i)) {
-                        colIndex[currentRow][currentCol++] = di.getCategoricalId(j, Float.NaN);
+                        colIndex[rowPointer][colPointer++] = di.getCategoricalId(j, Float.NaN);
                     } else {
-                        colIndex[currentRow][currentCol++] = di.getCategoricalId(j, vecs[j].at8(i));
+                        colIndex[rowPointer][colPointer++] = di.getCategoricalId(j, vecs[j].at8(i));
                     }
                     nonZeroCount++;
                 }
 
                 for (int j = 0; j < di._nums; ++j) {
+                    if(colPointer == ARRAY_MAX){
+                        colPointer = 0;
+                        rowPointer++;
+                    }
                     float val = (float) vecs[di._cats + j].at(i);
                     if (val != 0) {
-                        data[currentRow][currentCol] = val;
-                        colIndex[currentRow][currentCol++] = di._catOffsets[di._catOffsets.length - 1] + j;
+                        data[rowPointer][colPointer] = val;
+                        colIndex[rowPointer][colPointer++] = di._catOffsets[di._catOffsets.length - 1] + j;
                         nonZeroCount++;
                     }
                 }
-
-                rowHeaders[0][++actualRows] = nonZeroCount;
+                
+                if(rowHeaderColPointer == ARRAY_MAX){
+                    rowHeaderColPointer = 0;
+                    rowHeaderRowPointer++;
+                }
+                rowHeaders[rowHeaderRowPointer][rowHeaderColPointer++] = nonZeroCount;
+                actualRows++;
 
                 rwRow = setResponseAndWeight(w, resp, weights, respVec, rwRow, i);
             }
         }
-
-        return actualRows;
+        return actualRows + 1;
     }
 
     private static int initializeFromChunks(Chunk[] chunks, int weight, DataInfo di, int actualRows, long[][] rowHeaders, float[][] data, int[][] colIndex, int respIdx, float[] resp, float[] weights) {
         int nonZeroCount = 0;
-        int currentRow = 0;
+        int rowPointer = 0;
         int currentCol = 0;
         int rwRow = 0;
+
+        int rowHeaderRowPointer = 0;
+        int rowHeaderColPointer = 0;
 
         for (int i = 0; i < chunks[0].len(); i++) {
             if (weight != -1 && chunks[weight].atd(i) == 0) continue;
 
             for (int j = 0; j < di._cats; ++j) {
-                data[currentRow][currentCol] = 1; //one-hot encoding
+                if(currentCol == ARRAY_MAX){
+                    currentCol = 0;
+                    rowPointer++;
+                }
+                data[rowPointer][currentCol] = 1; //one-hot encoding
                 if (chunks[j].isNA(i)) {
-                    colIndex[currentRow][currentCol++] = di.getCategoricalId(j, Float.NaN);
+                    colIndex[rowPointer][currentCol++] = di.getCategoricalId(j, Float.NaN);
                 } else {
-                    colIndex[currentRow][currentCol++] = di.getCategoricalId(j, chunks[j].at8(i));
+                    colIndex[rowPointer][currentCol++] = di.getCategoricalId(j, chunks[j].at8(i));
                 }
                 nonZeroCount++;
             }
             for (int j = 0; j < di._nums; ++j) {
+                if(currentCol == ARRAY_MAX){
+                    currentCol = 0;
+                    rowPointer++;
+                }
                 float val = (float) chunks[di._cats + j].atd(i);
                 if (val != 0) {
-                    data[currentRow][currentCol] = val;
-                    colIndex[currentRow][currentCol++] = di._catOffsets[di._catOffsets.length - 1] + j;
+                    data[rowPointer][currentCol] = val;
+                    colIndex[rowPointer][currentCol++] = di._catOffsets[di._catOffsets.length - 1] + j;
                     nonZeroCount++;
                 }
             }
 
-            rowHeaders[0][++actualRows] = nonZeroCount;
+            if(rowHeaderColPointer == ARRAY_MAX){
+                rowHeaderColPointer = 0;
+                rowHeaderRowPointer++;
+            }
+            rowHeaders[rowHeaderRowPointer][rowHeaderColPointer++] = nonZeroCount;
+            actualRows++;
 
             rwRow = setResponseAndWeight(chunks, respIdx, weight, resp, weights, rwRow, i);
         }
-        return actualRows;
+        return actualRows + 1;
     }
 
     static class SparseItem {
@@ -776,7 +807,7 @@ public class XGBoostUtils {
     private static SparseMatrixDimensions calculateCSRMatrixDimensions(Chunk[] chunks, DataInfo di, int weightColIndex){
 
         long nonZeroElementsCount = 0;
-        long rowIndicesCount = 0;
+        long rowIndicesCount = chunks[0].len();
 
         for (int i = 0; i < chunks[0].len(); i++) {
             // Rows with zero weights are going to be ignored
@@ -786,13 +817,11 @@ public class XGBoostUtils {
             nonZeroElementsCount += di._cats;
 
             for (int j = 0; j < di._nums; ++j) {
-                float val = (float) chunks[di._cats + j].atd(i);
+                double val = chunks[di._cats + j].atd(i);
                 if (val != 0) {
                     nonZeroElementsCount++;
                 }
             }
-            rowIndicesCount++;
-
         }
 
         return new SparseMatrixDimensions(nonZeroElementsCount, ++rowIndicesCount);
@@ -809,7 +838,7 @@ public class XGBoostUtils {
                 nonZeroElementsCount+= di._cats;
 
                 for (int j = 0; j < di._nums; ++j) {
-                    float val = (float) vecs[di._cats + j].at(i);
+                    double val = vecs[di._cats + j].at(i);
                     if (val != 0) {
                         nonZeroElementsCount++;
                     }
