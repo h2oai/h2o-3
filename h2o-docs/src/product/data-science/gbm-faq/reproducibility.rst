@@ -70,7 +70,7 @@ Reproducibility
        gbm_v1 <- h2o.gbm(y = "Species", training_frame = df, sample_rate = 0.7)
 
        # Reproduce GBM
-       seed <- gbm_v1@allparameters$seed
+       seed <- h2o.get_seed(gbm_v1)
        gbm_v2 <- h2o.gbm(y = "Species", training_frame = df, sample_rate = 0.7, seed = seed)
 
     .. code-block:: python
@@ -115,10 +115,10 @@ Reproducibility
       .. code-block:: python
 
        # Load data with defined chunk size       
-       raw_train = h2o.import_file(PATH_TO_TRAIN_FILE, parse = FALSE)
-       training_frame = h2o.parse_raw(data=raw_train, 
-                                      chunk_size = CHUNK_SIZE_TRAIN, 
-                                      destination_frame = "train.hex")
+       raw_train = h2o.import_file(PATH_TO_TRAIN_FILE, parse = False)
+       setup = h2o.parse_setup(raw_train)
+       setup['chunk_size'] = CHUNK_SIZE_TRAIN
+       training_frame = h2o.parse_raw(setup)
 
  4. Repeat Steps 2-3 if you used validation data.  
  5. Train the model in R or in Flow. If you are using Flow, you will be able to see the datasets from the Frames menu when you select **Data > List All Frames**. 
