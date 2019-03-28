@@ -4,7 +4,6 @@ from tests import pyunit_utils
 from h2o.targetencoder import TargetEncoder
 import random
 
-
 def split_data(frame = None, seed = None):
   splits = frame.split_frame(ratios=[.8,.1], seed=seed)
   targetColumnName = "survived"
@@ -39,7 +38,6 @@ def titanic_without_te(frame = None, seeds = None):
       print("AUC without te: " + str(current_seed) + " = " + str(auc))
     return sum_of_aucs / len(seeds)
 
-
 def titanic_with_te_kfoldstrategy(frame = None, seeds = None):
     sum_of_aucs = 0
     for current_seed in seeds:
@@ -54,6 +52,12 @@ def titanic_with_te_kfoldstrategy(frame = None, seeds = None):
       targetEncoder = TargetEncoder(x= teColumns, y= targetColumnName,
                                     fold_column= foldColumnName, blended_avg= True, inflection_point = 3, smoothing = 1)
       targetEncoder.fit(frame=ds['train'])
+
+      encodingMapFramesKeys = list(map(lambda x: h2o.get_frame(x['key']['name']), targetEncoder._encodingMap.frames))
+
+      encodingMapFramesKeys[0].describe()
+      encodingMapFramesKeys[1].describe()
+      encodingMapFramesKeys[2].describe()
 
       encodedTrain = targetEncoder.transform(frame=ds['train'], holdout_type="kfold", seed=1234)
       encodedValid = targetEncoder.transform(frame=ds['valid'], holdout_type="none", noise=0.0)
