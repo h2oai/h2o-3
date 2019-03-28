@@ -151,21 +151,13 @@ public class DKVTest extends TestUtil {
   }
 
   @Test
-  public void testRetainNothing() {
+  public void testRetainNothing() throws InterruptedException {
     Frame frame = null;
 
     try {
       frame = TestUtil.parse_test_file("smalldata/testng/airlines_train.csv");
       new DKV.ClearDKVTask(new Key[]{}).doAllNodes();
       assertNull(DKV.get(frame._key));
-      
-      for (Vec vec : frame.vecs()) {
-        assertNull(DKV.get(vec._key));
-
-        for (int i = 0; i < vec.nChunks(); i++) {
-          assertNull(DKV.get(vec.chunkKey(i)));
-        }
-      }
 
     } finally {
       if (frame != null) frame.delete();
