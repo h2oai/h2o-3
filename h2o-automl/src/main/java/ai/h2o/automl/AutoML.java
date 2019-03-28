@@ -928,9 +928,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 //    xgBoostParameters._min_split_improvement = 0.01f;
 
     //XGB 1
-    xgBoostParameters._max_depth = 5;
-    xgBoostParameters._min_rows = 3;
-    xgBoostParameters._sample_rate = 0.8;
+    xgBoostParameters._max_depth = 20;
+    xgBoostParameters._min_rows = 10;
+    xgBoostParameters._sample_rate = 0.6;
     xgBoostParameters._col_sample_rate = 0.8;
     xgBoostParameters._col_sample_rate_per_tree = 0.8;
 
@@ -964,9 +964,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     pollAndUpdateProgress(Stage.ModelTraining,  key.toString(), work, this.job(), xgBoostJob);
 
     //XGB 3
-    xgBoostParameters._max_depth = 20;
-    xgBoostParameters._min_rows = 10;
-    xgBoostParameters._sample_rate = 0.6;
+    xgBoostParameters._max_depth = 5;
+    xgBoostParameters._min_rows = 3;
+    xgBoostParameters._sample_rate = 0.8;
     xgBoostParameters._col_sample_rate = 0.8;
     xgBoostParameters._col_sample_rate_per_tree = 0.8;
 
