@@ -2,6 +2,153 @@
 
 ## H2O
 
+### Yates (3.24.0.1) - 4/1/2019
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yates/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yates/1/index.html</a>
+
+Download at: TBD
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5790'>PUBDEV-5790</a>] -         H2O imports headers into first row of the dataframe (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6159'>PUBDEV-6159</a>] - The AutoMLTest.java test suite now runs correctly on a local machine.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6189'>PUBDEV-6189</a>] - Fixed an issue in as_date that occurred when the column included NAs.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6208'>PUBDEV-6208</a>] - AutoML no longer fails if one of the Stacked Ensemble models is deleted.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6230'>PUBDEV-6230</a>] -         Fix link in Python Client (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6231'>PUBDEV-6231</a>] - In Deep Learning, fixed an issue that occurred when running one-hot-encoding on categoricals. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6266'>PUBDEV-6266</a>] - In predictions, fixed an issue that resulted in a "Categorical value out of bounds error" when calling a model.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6284'>PUBDEV-6284</a>] - The Python API no longer reverses the labels for positive and negative values in the standardized coefficients plot legend.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6319'>PUBDEV-6319</a>] -         AstGroup is inconsistent if we run it multiple times (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6346'>PUBDEV-6346</a>] - In R, fixed an issue that cause group_by mean to only calculate one column when multiple columns were specified.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6350'>PUBDEV-6350</a>] -         confusion_matrix method returns matrices for other metrics (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6357'>PUBDEV-6357</a>] - Fixed an issue that resulted in a "Categorical value out of bounds error" when calling a model using Python.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6367'>PUBDEV-6367</a>] -         Rows starting with # are dropped when they shouldn&#39;t be (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6368'>PUBDEV-6368</a>] - Fixed an SVM import failure.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6373'>PUBDEV-6373</a>] -         ArrayIndexOutOfBoundsException while loading file from S3 (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6377'>PUBDEV-6377</a>] -          java.lang.ArrayIndexOutOfBoundsException: 2147483637 (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6379'>PUBDEV-6379</a>] - Fixed handling of BAD state in CategoricalWrapperVec.
+</li>
+</ul>
+    
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4680'>PUBDEV-4680</a>] - Added Blending mode to Stacked Ensembles, which can be specified with the `blending_frame` parameter. With Blending mode, you do not use cross-validation preds to train the metalearner. Instead you score the base models on a holdout set and use those predicted values. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5801'>PUBDEV-5801</a>] - Model output now includes column names and types. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5809'>PUBDEV-5809</a>] - AutoML now includes a max_runtime_secs_per_model option.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5925'>PUBDEV-5925</a>] - In GLM, added support for negative binomial family.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6056'>PUBDEV-6056</a>] - For GBM predictions, users can now retrieve predicted feature contributions (SHAP values). (STILL OPEN, BUT MERGED) 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6089'>PUBDEV-6089</a>] -         AutoML: expose Userfeedback to R + Py clients after renaming it to EventLog (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6136'>PUBDEV-6136</a>] - Added support for Generic Models, which provide a means to use external, pretrained MOJO models in H2O for scoring. Currently only GBM, DRF, IF, and GLM MOJO models are supported. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6180'>PUBDEV-6180</a>] - Added the blending_frame parameter to Stacked Ensembles in Flow.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6196'>PUBDEV-6196</a>] - Added an include_algos parameter to AutoML in the R and Python APIs. Note that in Flow, users can specify exclude_algos only.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6213'>PUBDEV-6213</a>] -         Implement Broadcast Join for Target Encoding (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6255'>PUBDEV-6255</a>] -         Target Encoding MOJO (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6339'>PUBDEV-6339</a>] - In the R and Python clients, added a function that calculates the chunk size based on raw size of the data, number of CPU cores, and number of nodes.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6344'>PUBDEV-6344</a>] - Added ability to import from Hive using metadata from Metastore.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6358'>PUBDEV-6358</a>] - Users can now choose the database where import_sql_select creates a temporary table.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6365'>PUBDEV-6365</a>] - Added support for monotonicity constraints for binomial GBMs.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6374'>PUBDEV-6374</a>] - Users can now define custom HTTP headers using an `-add_http_header` option. 
+</li>
+</ul>
+    
+<h4>Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4982'>PUBDEV-4982</a>] - Fixed an issue that caused the pyunit_lending_club_munging_assembly_large.py and pyunit_assembly_munge_large.py tests to sometimes fail when run inside a Docker container. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5876'>PUBDEV-5876</a>] - Simplified and improved the GLM COD implementation.
+</li>
+</ul>
+    
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4343'>PUBDEV-4343</a>] -         Documentation: Update the stacking online tutorial (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5491'>PUBDEV-5491</a>] - SQLite support is available via any JDBC driver in streaming mode.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5993'>PUBDEV-5993</a>] - Updated Retrofit and okHttp dependecies.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6129'>PUBDEV-6129</a>] - Target Encoding is now available in the Python client.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6176'>PUBDEV-6176</a>] - Moved StackedEnsembleModel to hex.ensemble packages. In prior versions, this was in a root hex package.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6188'>PUBDEV-6188</a>] - Secret key ID and secret key are available for s3:// AWS protocol. 
+<ul><li>This can be done in the R client using:
+<br>h2o.setS3Credentials(accessKeyId, accesSecretKey) </li>
+<br><li>and in the Python client using:
+<br>from h2o.persist import set_s3_credentials
+<br>set_s3_credentials(access_key_id, secret_access_key)</li></ul>
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6217'>PUBDEV-6217</a>] - Users can now specify AWS credentials at runtime. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6254'>PUBDEV-6254</a>] - The new blending_frame parameter is now available in AutoML.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6334'>PUBDEV-6334</a>] - Fixed an error in the Javadoc for the Frame.java sort function.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6363'>PUBDEV-6363</a>] - Fixed Hive delegation token generation.
+</li>
+</ul>
+                    
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4977'>PUBDEV-4977</a>] - Removed FAQ indicating that Java 9 was not yet supported.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6024'>PUBDEV-6024</a>] - Added more information to the GBM Reproducibility topic. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6040'>PUBDEV-6040</a>] - Added a Python Target Encoding example. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6179'>PUBDEV-6179</a>] - Added the blending_frame parameter to Stacked Ensembles documentation.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6280'>PUBDEV-6280</a>] - Added information about the Negative Binomial family to the GLM booklet and the user guide.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6331'>PUBDEV-6331</a>] - Added include_algos,e xclude_algos, max_models, and max_runtime_secs_per_model examples to the Parameters appendix.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6362'>PUBDEV-6362</a>] - In the User Guide and R an Python documentation, replaced references to "H2O Cloud" with "H2O Cluster". 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6375'>PUBDEV-6375</a>] - Added information about predict_contributions to the Performance and Prediction chapter.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6381'>PUBDEV-6381</a>] - In the GBM chapter, noted that monotone_constraints is available for Bernoulli distributions in addition to Gaussian distributions.
+</li>
+</ul>
+                                                        
+
+
+
 ### Xu (3.22.1.6) - 3/13/2019
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/6/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-xu/6/index.html</a>
