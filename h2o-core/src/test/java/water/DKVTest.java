@@ -6,13 +6,15 @@ import org.junit.Ignore;
 import org.junit.Test;
 import water.H2O.H2OCallback;
 import water.H2O.H2OCountedCompleter;
+import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.IcedInt;
 import water.util.IcedInt.AtomicIncrementAndGet;
 
-import static org.junit.Assert.assertTrue;
-
 import java.util.Arrays;
 import java.util.Random;
+
+import static org.junit.Assert.*;
 
 /**
  * Created by tomasnykodym on 10/5/15.
@@ -121,6 +123,52 @@ public class DKVTest extends TestUtil {
       Assert.assertFalse(Arrays.equals(((Bytes) DKV.getGet(k1))._b, bytes1._b));
     } finally {
       DKV.remove(k1);
+    }
+  }
+
+  // Retaining models & integration test with models is in h2o-algos subproject.
+  @Test
+  public void testRetainFrame() {
+    Frame frame = null;
+
+    try {
+      frame = TestUtil.parse_test_file("./smalldata/testng/airlines_train.csv");
+      new DKV.ClearDKVTask(new Key[]{frame._key}).doAllNodes();
+      assertTrue(H2O.STORE.containsKey(frame._key));
+      assertNotNull(DKV.get(frame._key));
+
+      for (Vec vec : frame.vecs()) {
+        assertNotNull(vec._key);
+
+        for (int i = 0; i < vec.nChunks(); i++) {
+          assertNotNull(DKV.get(vec.chunkKey(i)));
+        }
+      }
+      
+    } finally {
+      if (frame != null) frame.delete();
+    }
+  }
+
+  @Test
+  public void testRetainNothing() {
+    Frame frame = null;
+
+    try {
+      frame = TestUtil.parse_test_file("smalldata/testng/airlines_train.csv");
+      new DKV.ClearDKVTask(new Key[]{}).doAllNodes();
+      assertNull(DKV.get(frame._key));
+      
+      for (Vec vec : frame.vecs()) {
+        assertNull(DKV.get(vec._key));
+
+        for (int i = 0; i < vec.nChunks(); i++) {
+          assertNull(DKV.get(vec.chunkKey(i)));
+        }
+      }
+
+    } finally {
+      if (frame != null) frame.delete();
     }
   }
 

@@ -10,6 +10,7 @@ import water.UDPRebooted.ShutdownTsk;
 import water.api.RequestServer;
 import water.exceptions.H2OFailException;
 import water.exceptions.H2OIllegalArgumentException;
+import water.fvec.Frame;
 import water.init.AbstractBuildVersion;
 import water.init.AbstractEmbeddedH2OConfig;
 import water.init.JarHash;
@@ -37,16 +38,7 @@ import java.net.MulticastSocket;
 import java.net.NetworkInterface;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -1892,6 +1884,7 @@ final public class H2O {
     if( v != null ) v.removePersist();
   }
   public static void raw_clear() { STORE.clear(); }
+  
   public static boolean containsKey( Key key ) { return STORE.get(key) != null; }
   static Key getk( Key key ) { return STORE.getk(key); }
   public static Set<Key> localKeySet( ) { return STORE.keySet(); }
