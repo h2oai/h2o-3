@@ -19,4 +19,17 @@ public class RegressionModelPrediction extends AbstractPrediction {
    * Multinomial models: [probability T1.C1, probability T1.C2, ..., Tt.Cc]
    */
   public double[] stageProbabilities;
+
+  /**
+   * Per-feature prediction contributions (SHAP values).
+   * Size of the returned array is #features + 1 - there is a feature contribution column for each input feature, 
+   * the last item is the model bias. The sum of the feature contributions and the bias term is equal to the raw 
+   * prediction of the model. Raw prediction of tree-based model is the sum of the predictions of the individual
+   * trees before the inverse link function is applied to get the actual prediction.
+   * For Gaussian distribution the sum of the contributions is equal to the model prediction.
+   *
+   * (Optional) Available only for supported models (GBM, XGBoost). 
+   */
+  public float[] contributions;
+
 }
