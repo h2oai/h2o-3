@@ -1216,14 +1216,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           vec = test.anyVec().makeCon(defval);
           toDelete.put(vec._key, "adapted missing vectors");
           String str = "Test/Validation dataset is missing column '" + names[i] + "': substituting in a column of " + defval;
-          if (isResponse || isWeights)
+          if (isResponse || isWeights || isFold)
             Log.info(str); // we are doing a "pure" predict (computeMetrics is false), don't complain to the user
           else
             msgs.add(str);
         }
       }
-      if( vec != null ) {          // I have a column with a matching name
-        if( domains[i] != null ) { // Model expects an categorical
+      if( vec != null) {          // I have a column with a matching name
+        // Do not transform response, weights and fold columns if the metrics are not computed - case predict on test data.
+        boolean transform = computeMetrics || (!isResponse && !isWeights && !isFold);
+        if( domains[i] != null && transform) { // Model expects an categorical
           if (vec.isString())
             vec = VecUtils.stringToCategorical(vec); //turn a String column into a categorical column (we don't delete the original vec here)
           if( expensive && vec.domain() != domains[i] && !Arrays.equals(vec.domain(),domains[i]) ) { // Result needs to be the same categorical
@@ -1242,7 +1244,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
               msgs.add("Test/Validation dataset column '" + names[i] + "' has levels not trained on: " + Arrays.toString(Arrays.copyOfRange(ds, domains[i].length, ds.length)));
             vec = evec;
           }
-        } else if(vec.isCategorical()) {
+        } else if(vec.isCategorical() && transform) {
           if (parms._categorical_encoding == Parameters.CategoricalEncodingScheme.LabelEncoder) {
             Vec evec = vec.toNumericVec();
             toDelete.put(evec._key, "label encoded vec");
