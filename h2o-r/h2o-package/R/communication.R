@@ -121,7 +121,7 @@
       postBody <- sub('\"\\{', '\\{',postBody)
       postBody <- sub('\\}\"', '\\}',postBody)
     }
-
+    
   .__curlError = FALSE
   .__curlErrorMessage = ""
   httpStatusCode = -1L
@@ -313,7 +313,6 @@
   if (missing(h2oRestApiVersion)) {
     h2oRestApiVersion = .h2o.__REST_API_VERSION
   }
-
   .h2o.doRawREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
                  parms = parms, method = method, fileUploadInfo,autoML=autoML, ...)
 }
@@ -583,7 +582,6 @@ print.H2OTable <- function(x, header=TRUE, ...) {
   }
 
   rawREST <- ""
-
   if( !is.null(timeout) ){
     rawREST <- .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = page, parms = .params, method = method, timeout = timeout)
   }else if(autoML == TRUE){
@@ -591,11 +589,18 @@ print.H2OTable <- function(x, header=TRUE, ...) {
   }else{
     rawREST <- .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = page, parms = .params, method = method)
   }
-
   if( raw ) rawREST
-  else      .h2o.fromJSON(jsonlite::fromJSON(rawREST,simplifyDataFrame=FALSE))
+  else {
+    res <- .h2o.fromJSON(jsonlite::fromJSON(rawREST,simplifyDataFrame=FALSE, bigint_as_char=TRUE))
+    if(getOption("h2o.warning.on.json.string.conversion", FALSE)) {
+      resToCompare <- .h2o.fromJSON(jsonlite::fromJSON(rawREST,simplifyDataFrame=FALSE))
+      if(!isTRUE(all.equal(res, resToCompare))){
+        warning("During parsing the JSON response from H2O API to R bindings a conversion from long to string has occurred.")
+      }
+    }
+    res
+  }
 }
-
 
 #-----------------------------------------------------------------------------------------------------------------------
 #   H2O Server Health & Info
