@@ -74,7 +74,7 @@ public class TEIntegrationWithAutoMLCVBenchmark extends water.TestUtil {
         autoMLBuildSpec.te_spec.seed = nextSeed;
 
         autoMLBuildSpec.te_spec.application_strategy = thresholdTEApplicationStrategy;
-        autoMLBuildSpec.te_spec.params_selection_strategy = HPsSelectionStrategy.SMBO;
+        autoMLBuildSpec.te_spec.params_selection_strategy = HPsSelectionStrategy.RGS;
 
         autoMLBuildSpec.build_control.project_name = "with_te" + nextSeed;
         autoMLBuildSpec.build_control.stopping_criteria.set_max_models(numberOfModelsToCompareWith);

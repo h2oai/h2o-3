@@ -49,8 +49,8 @@ public class GridSearchTEParamsSelectionStrategy extends GridBasedTEParamsSelect
 
   public Evaluated<TargetEncodingParams> getBestParamsWithEvaluation(ModelBuilder modelBuilder) {
     assert _modelValidationMode != null : "`setTESearchSpace()` method should has been called to setup appropriate grid search.";
-    
-    SMBOTEParamsSelectionStrategy.Exporter exporter = new SMBOTEParamsSelectionStrategy.Exporter();
+
+    HPSearchPerformanceExporter exporter = new HPSearchPerformanceExporter();
     
     //TODO Consider adding stratified sampling here
     try {

@@ -180,9 +180,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     DKV.put(trainCopy);
     newMB._parms.setTrain(trainCopy._key);
 
-    Frame validCopy = modelBuilder._parms.valid().deepCopy(Key.make().toString());
-    DKV.put(validCopy);
-    newMB._parms.setValid(validCopy._key);
+    // Case when we rely on performance on validation frame instead of CV metrics
+    if(modelBuilder._parms.valid() != null) {
+      Frame validCopy = modelBuilder._parms.valid().deepCopy(Key.make().toString());
+      DKV.put(validCopy);
+      newMB._parms.setValid(validCopy._key);
+    }
     
     return newMB;
   }

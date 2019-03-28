@@ -6,7 +6,6 @@ dependencies {
   compile project(":h2o-algos")
   compile project(":h2o-ext-xgboost")
 
-  compile 'org.jblas:jblas:1.2.4' // temporarily adding this for POC
   // Test dependencies only
   testCompile "junit:junit:${junitVersion}"
   testCompile "org.mockito:mockito-core:2.23.0"

@@ -35,7 +35,7 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
 
 
   @Test
-  public void random_tvl_split_with_SMBO_vs_random_tvl_split_withoutTE_benchmark_with_leaderboard_evaluation() {
+  public void random_tvl_split_with_RGS_vs_random_tvl_split_withoutTE_benchmark_with_leaderboard_evaluation() {
     AutoML aml = null;
     Frame fr = null;
     Frame[] splitsForWithoutTE = null;
@@ -53,7 +53,7 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
     double averageTimeWithTE = 0;
     double averageTimeWithoutTE = 0;
 
-    int numberOfRuns = 1;
+    int numberOfRuns = 10;
     for (int seedAttempt = 0; seedAttempt < numberOfRuns; seedAttempt++) {
       long splitSeed = generator.nextLong(); 
       try {
@@ -81,7 +81,7 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
         autoMLBuildSpec.te_spec.seed = splitSeed;
 
         autoMLBuildSpec.te_spec.application_strategy = thresholdTEApplicationStrategy;
-        autoMLBuildSpec.te_spec.params_selection_strategy = HPsSelectionStrategy.SMBO;
+        autoMLBuildSpec.te_spec.params_selection_strategy = HPsSelectionStrategy.RGS;
 
         autoMLBuildSpec.build_control.project_name = "with_te_" + splitSeed;
         autoMLBuildSpec.build_control.stopping_criteria.set_max_models(numberOfModelsToCompareWith);
@@ -182,7 +182,7 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
     double avgCumulativeAUCWith = 0.0;
     double avgCumulativeWithoutTE = 0.0;
 
-    int numberOfRuns = 3;
+    int numberOfRuns = 10;
     for (int seedAttempt = 0; seedAttempt < numberOfRuns; seedAttempt++) {
       long splitSeed = generator.nextLong();
       try {
@@ -190,7 +190,7 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
 
         fr = getPreparedTitanicFrame(responseColumnName);
 
-        Frame[] splits = AutoMLBenchmarkingHelper.getStratifiedSplits(fr, responseColumnName, 0.8, splitSeed);
+        Frame[] splits = AutoMLBenchmarkingHelper.getStratifiedTVLSplits(fr, responseColumnName, 0.8, splitSeed);
         Frame train = splits[0];
         Frame valid = splits[1];
         Frame leaderboardFrame = splits[2];
@@ -211,7 +211,7 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
         autoMLBuildSpec.te_spec.seed = splitSeed;
 
         autoMLBuildSpec.te_spec.application_strategy = thresholdTEApplicationStrategy;
-        autoMLBuildSpec.te_spec.params_selection_strategy = HPsSelectionStrategy.SMBO;
+        autoMLBuildSpec.te_spec.params_selection_strategy = HPsSelectionStrategy.RGS;
 
         autoMLBuildSpec.build_control.project_name = "with_te_" + splitSeed;
         autoMLBuildSpec.build_control.stopping_criteria.set_max_models(numberOfModelsToCompareWith);
@@ -234,7 +234,7 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
 
         frForWithoutTE = fr.deepCopy(Key.make().toString());
         DKV.put(frForWithoutTE);
-        splitsForWithoutTE = AutoMLBenchmarkingHelper.getStratifiedSplits(frForWithoutTE, responseColumnName, 0.8, splitSeed);
+        splitsForWithoutTE = AutoMLBenchmarkingHelper.getStratifiedTVLSplits(frForWithoutTE, responseColumnName, 0.8, splitSeed);
         Leaderboard leaderboardWithoutTE = trainBaselineAutoMLWithoutTE(splitsForWithoutTE, responseColumnName, splitSeed);
         double cumulativeLeaderboardScoreWithoutTE = 0;
         cumulativeLeaderboardScoreWithoutTE = getCumulativeLeaderboardScore(leaderboardFrame, leaderboardWithoutTE);

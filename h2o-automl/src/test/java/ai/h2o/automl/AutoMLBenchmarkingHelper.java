@@ -37,7 +37,7 @@ public class AutoMLBenchmarkingHelper extends TestUtil {
     return splits;
   }
   
-  static public Frame[] getStratifiedSplits(Frame fr, String responseColumnName, double trainRatio, long splitSeed) {
+  static public Frame[] getStratifiedTVLSplits(Frame fr, String responseColumnName, double trainRatio, long splitSeed) {
 
     Frame[] splitsTrainOther = StratificationAssistant.split(fr, responseColumnName, trainRatio, splitSeed);
     Frame train = splitsTrainOther[0];

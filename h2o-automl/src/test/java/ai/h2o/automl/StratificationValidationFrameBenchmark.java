@@ -1,9 +1,5 @@
 package ai.h2o.automl;
 
-import ai.h2o.automl.targetencoding.BlendingParams;
-import ai.h2o.automl.targetencoding.TargetEncoder;
-import ai.h2o.automl.targetencoding.TargetEncodingParams;
-import ai.h2o.automl.targetencoding.strategy.*;
 import hex.Model;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -61,7 +57,7 @@ public class StratificationValidationFrameBenchmark extends water.TestUtil {
         Frame testFrame = splitsTrainTest[1];
 
         double trainRatio = 0.7; // This split ration proved to give more advantage to stratified strategy. but if we need just max performance on testFrame -> 0.8 is better
-        Frame[] splits = AutoMLBenchmarkingHelper.getStratifiedSplits(trainOrig, responseColumnName, trainRatio, splitSeed);
+        Frame[] splits = AutoMLBenchmarkingHelper.getStratifiedTVLSplits(trainOrig, responseColumnName, trainRatio, splitSeed);
         Frame train = splits[0];
         Frame valid = splits[1];
         Frame leaderboard = splits[2];

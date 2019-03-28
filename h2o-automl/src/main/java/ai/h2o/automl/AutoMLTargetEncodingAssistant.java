@@ -73,19 +73,15 @@ class AutoMLTargetEncodingAssistant{
     // Selection strategy
     HPsSelectionStrategy teParamsSelectionStrategy = buildSpec.te_spec.params_selection_strategy;
     switch(teParamsSelectionStrategy) {
-      case RGS:
-        _teParamsSelectionStrategy = new GridSearchTEParamsSelectionStrategy(leaderboardFrame, ratioOfHyperspaceToExplore,
-                _responseColumnName, _columnsToEncode, theBiggerTheBetter, buildSpec.te_spec.seed);
-        break;
       case Fixed:
         TargetEncodingParams targetEncodingParams = new TargetEncodingParams(new BlendingParams(5, 1), TargetEncoder.DataLeakageHandlingStrategy.KFold, 0.01);
         _teParamsSelectionStrategy = new FixedTEParamsStrategy(targetEncodingParams);
         break;
-      case SMBO:
+      case RGS:
       default:
-        double smboEarlyStoppingRatio = buildSpec.te_spec.early_stopping_ratio;
-        _teParamsSelectionStrategy = new SMBOTEParamsSelectionStrategy(leaderboardFrame, smboEarlyStoppingRatio, ratioOfHyperspaceToExplore,
+        _teParamsSelectionStrategy = new GridSearchTEParamsSelectionStrategy(leaderboardFrame, ratioOfHyperspaceToExplore,
                 _responseColumnName, _columnsToEncode, theBiggerTheBetter, buildSpec.te_spec.seed);
+        break;
     }
     
     // Pre-setup for grid-based strategies based on AutoML's ways of validating models 
