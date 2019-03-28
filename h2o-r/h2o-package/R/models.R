@@ -3674,7 +3674,7 @@ print.h2o.stackedEnsemble.summary <- function(x, ...) cat(x, sep = "\n")
 #' Usage example:
 #' @examples
 #' \donttest{
-#' generic_model <- h2o.genericModel(file_path = "/path/to/mojo.zip")
+#' generic_model <- h2o.genericModel(model_file_path = "/path/to/mojo.zip")
 #' predictions <- h2o.predict(generic_model, dataset)
 #' }
 #' @export
