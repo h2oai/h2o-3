@@ -3,6 +3,10 @@ package hex.tree.gbm;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.genmodel.algos.tree.TreeSHAP;
+import hex.genmodel.easy.EasyPredictModelWrapper;
+import hex.genmodel.easy.RowData;
+import hex.genmodel.easy.exception.PredictException;
+import hex.genmodel.easy.prediction.RegressionModelPrediction;
 import hex.util.NaiveTreeSHAP;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -14,8 +18,12 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 
+import java.io.IOException;
+
 import static hex.genmodel.utils.DistributionFamily.gaussian;
 import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 public class GBMPredictContribsTest extends TestUtil {
 
@@ -55,7 +63,7 @@ public class GBMPredictContribsTest extends TestUtil {
   }
 
   @Test
-  public void testScoreContributionsGaussian() {
+  public void testScoreContributionsGaussian() throws IOException, PredictException  {
     try {
       Scope.enter();
       Frame fr = Scope.track(parse_test_file("smalldata/junit/titanic_alt.csv"));
@@ -75,13 +83,28 @@ public class GBMPredictContribsTest extends TestUtil {
       GBMModel gbm = job.trainModel().get();
       Scope.track_generic(gbm);
 
-      Frame contributions = gbm.scoreContributions(fr, Key.<Frame>make("contributions_titatnic"));
+      Frame contributions = gbm.scoreContributions(fr, Key.<Frame>make("contributions_titanic"));
       Scope.track(contributions);
 
       Frame contribsAggregated = new RowSumTask().doAll(Vec.T_NUM, contributions).outputFrame();
       Scope.track(contribsAggregated);
 
       assertTrue(gbm.testJavaScoring(fr, contribsAggregated, 1e-6));
+
+      // Now test MOJO scoring
+      EasyPredictModelWrapper.Config cfg = new EasyPredictModelWrapper.Config()
+              .setModel(gbm.toMojo())
+              .setEnableContributions(true);
+      EasyPredictModelWrapper wrapper = new EasyPredictModelWrapper(cfg);
+
+      for (long row = 0; row < fr.numRows(); row++) {
+        RowData rd = toRowData(fr, gbm._output._names, row);
+        RegressionModelPrediction pr = wrapper.predictRegression(rd);
+        for (int c = 0; c < contributions.numCols(); c++) {
+          assertArrayEquals("Contributions should match, row=" + row,
+                  toNumericRow(contributions, row), ArrayUtils.toDouble(pr.contributions), 0);
+        }
+      }
     } finally {
       Scope.exit();
     }
