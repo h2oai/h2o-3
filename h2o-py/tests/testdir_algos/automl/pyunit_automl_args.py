@@ -201,8 +201,13 @@ def test_nfolds_eq_0():
 def test_balance_classes():
     print("Check balance_classes & related args work properly")
     ds = import_dataset()
-    aml = H2OAutoML(project_name="py_aml_balance_classes_etc", max_models=3,
-                    balance_classes=True, class_sampling_factors=[0.2, 1.4], max_after_balance_size=3.0, seed=1)
+    aml = H2OAutoML(project_name="py_aml_balance_classes_etc",
+                    exclude_algos=['XGBoost'],  # XGB doesn't support balance_classes
+                    max_models=3,
+                    balance_classes=True,
+                    class_sampling_factors=[0.2, 1.4],
+                    max_after_balance_size=3.0,
+                    seed=1)
     aml.train(y=ds['target'], training_frame=ds['train'])
     _, non_se, _ = get_partitioned_model_names(aml.leaderboard)
     amodel = h2o.get_model(non_se[0])

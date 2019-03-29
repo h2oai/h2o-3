@@ -10,20 +10,22 @@ test.pojo <- function() {
 
     #Build AutoML
     iris.hex <- h2o.uploadFile(locate("smalldata/iris/iris.csv"), "iris.hex")
-    hh <- h2o.automl(x=c(1,2,3,4),y=5,training_frame=iris.hex, max_models=3)
+    hh <- h2o.automl(x=c(1,2,3,4),
+                     y=5,
+                     training_frame=iris.hex,
+                     exclude_algos=c("XGBoost", "StackedEnsemble"), # XGB and SE don't support POJO
+                     max_models=3)
 
     #Download POJO
-    if (hh@leader@algorithm != "stackedensemble") {
-        print(sprintf("Dowloading POJO..."))
-        start_time <- proc.time()[[3]]
-        pojo_file <- h2o.download_pojo(hh,path=path) #check pojo
-        end_time <- proc.time()[[3]]
-        cat(sprintf("POJO file is %.2f bytes", object.size(pojo_file)),"\n")
-        cat(sprintf("Time taken to dowloand POJO: %.2f",end_time - start_time))
+    print(sprintf("Dowloading POJO..."))
+    start_time <- proc.time()[[3]]
+    pojo_file <- h2o.download_pojo(hh,path=path) #check pojo
+    end_time <- proc.time()[[3]]
+    cat(sprintf("POJO file is %.2f bytes", object.size(pojo_file)),"\n")
+    cat(sprintf("Time taken to dowloand POJO: %.2f",end_time - start_time))
 
-        #Download genmodel
-        h2o.download_pojo(hh,path=path,get_jar=TRUE) #Check genmodel.jar
-    }
+    #Download genmodel
+    h2o.download_pojo(hh,path=path,get_jar=TRUE) #Check genmodel.jar
 
     #Delete tmp directory
     on.exit(unlink(path,recursive=TRUE))
