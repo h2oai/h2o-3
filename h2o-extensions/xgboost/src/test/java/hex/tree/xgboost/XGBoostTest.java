@@ -7,6 +7,10 @@ import hex.genmodel.MojoReaderBackendFactory;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.algos.xgboost.XGBoostMojoReader;
 import hex.genmodel.algos.xgboost.XGBoostNativeMojoModel;
+import hex.genmodel.easy.EasyPredictModelWrapper;
+import hex.genmodel.easy.RowData;
+import hex.genmodel.easy.exception.PredictException;
+import hex.genmodel.easy.prediction.BinomialModelPrediction;
 import hex.genmodel.utils.DistributionFamily;
 import ml.dmlc.xgboost4j.java.*;
 import ml.dmlc.xgboost4j.java.DMatrix;
@@ -28,6 +32,8 @@ import water.util.TwoDimTable;
 import java.io.*;
 import java.util.*;
 
+import static hex.genmodel.utils.DistributionFamily.bernoulli;
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.*;
 import static water.util.FileUtils.locateFile;
 
@@ -1651,8 +1657,51 @@ public class XGBoostTest extends TestUtil {
       Scope.exit();
     }
   }
-  
-  
+
+  @Test
+  public void testScoreContributionsBernoulli() throws IOException, PredictException {
+    Assume.assumeTrue("true".equalsIgnoreCase(confMojoJavaScoring));
+    try {
+      Scope.enter();
+      Frame fr = Scope.track(parse_test_file("smalldata/junit/titanic_alt.csv"));
+      fr.replace(fr.find("survived"), fr.vec("survived").toCategoricalVec());
+      DKV.put(fr);
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._train = fr._key;
+      parms._distribution = bernoulli;
+      parms._response_column = "survived";
+      parms._ntrees = 5;
+      parms._max_depth = 4;
+      parms._min_rows = 1;
+      parms._learn_rate = .2f;
+      parms._score_each_iteration = true;
+      parms._seed = 42;
+
+      hex.tree.xgboost.XGBoost job = new hex.tree.xgboost.XGBoost(parms);
+      XGBoostModel model = job.trainModel().get();
+      Scope.track_generic(model);
+
+      Frame contributions = model.scoreContributions(fr, Key.<Frame>make("contributions_titanic"));
+      Scope.track(contributions);
+
+      MojoModel mojo = model.toMojo();
+
+      EasyPredictModelWrapper.Config cfg = new EasyPredictModelWrapper.Config()
+              .setModel(mojo)
+              .setEnableContributions(true);
+      EasyPredictModelWrapper wrapper = new EasyPredictModelWrapper(cfg);
+
+      for (long row = 0; row < fr.numRows(); row++) {
+        RowData rd = toRowData(fr, model._output._names, row);
+        BinomialModelPrediction pr = wrapper.predictBinomial(rd);
+        assertArrayEquals("Contributions should match, row=" + row, 
+                toNumericRow(contributions, row), ArrayUtils.toDouble(pr.contributions), 0);
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
   private static XGBoostModel trainWithConstraints(XGBoostModel.XGBoostParameters p, KeyValue... constraints) {
     XGBoostModel.XGBoostParameters parms = (XGBoostModel.XGBoostParameters) p.clone();
     parms._monotone_constraints = constraints;

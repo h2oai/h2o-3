@@ -8,7 +8,9 @@ import biz.k11i.xgboost.tree.RegTree;
 import biz.k11i.xgboost.tree.TreeSHAPHelper;
 import biz.k11i.xgboost.util.FVec;
 import hex.genmodel.GenModel;
+import hex.genmodel.PredictContributionsFactory;
 import hex.genmodel.algos.tree.*;
+import hex.genmodel.PredictContributions;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -20,7 +22,7 @@ import java.util.List;
  * Implementation of XGBoostMojoModel that uses Pure Java Predict
  * see https://github.com/h2oai/xgboost-predictor
  */
-public final class XGBoostJavaMojoModel extends XGBoostMojoModel {
+public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements PredictContributionsFactory {
 
   private Predictor _predictor;
   private TreeSHAPPredictor<FVec> _treeSHAPPredictor;
@@ -86,6 +88,13 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel {
   public final float[] calculateContributions(FVec row, float[] out_contribs, Object workspace) {
     _treeSHAPPredictor.calculateContributions(row, out_contribs, 0, -1, workspace);
     return out_contribs;
+  }
+
+  @Override
+  public final PredictContributions makeContributionsPredictor() {
+    TreeSHAPPredictor<FVec> treeSHAPPredictor = _treeSHAPPredictor != null ? 
+            _treeSHAPPredictor : makeTreeSHAPPredictor(_predictor);
+    return new XGBoostContributionsPredictor(treeSHAPPredictor);
   }
 
   static ObjFunction getObjFunction(String name) {
@@ -171,6 +180,23 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel {
 
       final boolean isHot = _catValues[_catMap[index]] == index;
       return isHot ? 1 : _notHot;
+    }
+  }
+
+  private final class XGBoostContributionsPredictor implements PredictContributions {
+    private final TreeSHAPPredictor<FVec> _treeSHAPPredictor;
+    private final Object _workspace;
+
+    public XGBoostContributionsPredictor(TreeSHAPPredictor<FVec> treeSHAPPredictor) {
+      _treeSHAPPredictor = treeSHAPPredictor;
+      _workspace = _treeSHAPPredictor.makeWorkspace();
+    }
+
+    @Override
+    public float[] calculateContributions(double[] input) {
+      FVec row = _1hotFactory.fromArray(input);
+      float[] contribs = new float[_nums + _catOffsets[_cats] + 1];
+      return  _treeSHAPPredictor.calculateContributions(row, contribs, 0, -1, _workspace);
     }
   }
 
