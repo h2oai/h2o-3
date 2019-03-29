@@ -216,10 +216,11 @@ Now we will perform target encoding on ``addr_state`` to see if this representat
 
 Target encoding in H2O-3 is performed in two steps:
 
-1. Create (fit) a target encoding map. This will contain the sum of the response column and the count. This can include an optional ``fold_column``. 
-2. Transform a target encoding map. The target encoding map is applied to the data by adding new columns with the target encoding values.
+1. Create (fit) a target encoding map using ``target_encode_fit``. This will contain the sum of the response column and the count. This can include an optional ``fold_column``.
 
-The following options are available when performing target encoding, including options to prevent overfitting:
+2. Transform a target encoding map using ``target_encode_transform`` . The target encoding map is applied to the data by adding new columns with the target encoding values.
+
+The following options are available when performing target encoding, with some options preventing overfitting:
 
 -  ``holdout_type``
 -  ``blended_avg``
@@ -278,15 +279,15 @@ Fit the Target Encoding Map
     train$fold <- h2o.kfold_column(train, nfolds=5, seed = 1234)
     te_map <- h2o.target_encode_fit(train, x = list("addr_state"), 
                                     y = response, fold_column = "fold")
-    head(te_map$addr_state)
 
-    ##   addr_state fold numerator denominator
-    ## 1         AK    0         3          11
-    ## 2         AK    1         0           5
-    ## 3         AK    2         1          10
-    ## 4         AK    3         2          13
-    ## 5         AK    4         1           7
-    ## 6         AL    0         7          52
+   .. code-block:: python
+
+    from h2o.targetencoder import TargetEncoder
+    fold = train.kfold_column(n_folds=5, seed=1234)
+    predictor = "addr_state"
+
+    te_map = TargetEncoder(x=predictor, y=response, fold_column=fold, seed=1234)
+    te_map.fit(train)
 
 Transform Target Encoding
 '''''''''''''''''''''''''
@@ -306,18 +307,16 @@ For our training data, we will use the parameters:
 
     ext_train <- h2o.target_encode_transform(train, x = list("addr_state"), y = response, 
                                              target_encode_map = te_map, holdout_type = "kfold",
-                                             blended_avg = TRUE, seed = 1234)
+                                             fold_column="fold", blended_avg = TRUE, 
+                                             inflection_point=3, smoothing=1, seed = 1234)
 
-    head(ext_train[c("addr_state", "fold", "TargetEncode_addr_state")])
+   .. code-block:: python
 
-    ##   addr_state fold TargetEncode_addr_state
-    ## 1         AK    0               0.1212239
-    ## 2         AK    0               0.1212239
-    ## 3         AK    0               0.1212239
-    ## 4         AK    0               0.1212239
-    ## 5         AK    0               0.1212239
-    ## 6         AK    0               0.1212239
-
+    ext_train = TargetEncoder(x=predictor, y=response, target_encode_map=te_map,
+                              holdout_type="kfold", fold_column="fold",
+                              blended_avg=True, inflection_point=3,
+                              smoothing=1, seed=1234)
+    ext_train.transform(train)
 
 **Apply Target Encoding to Testing Dataset**
 
@@ -333,18 +332,14 @@ We do not need to apply any of the overfitting prevention techniques because our
     ext_test <- h2o.target_encode_transform(test, x = list("addr_state"), y = response,
                                             target_encode_map = te_map, holdout_type = "none",
                                             fold_column = "fold", noise = 0,
-                                            blended_avg = FALSE)
+                                            blended_avg = FALSE, seed=1234)
 
-    head(ext_test[c("addr_state", "TargetEncode_addr_state")])
+   .. code-block:: python
 
-    ##   addr_state TargetEncode_addr_state
-    ## 1         AK               0.1521739
-    ## 2         AK               0.1521739
-    ## 3         AK               0.1521739
-    ## 4         AK               0.1521739
-    ## 5         AK               0.1521739
-    ## 6         AK               0.1521739
-
+    ext_test = TargetEncoder(x=predictor, y=response, target_encode_map=te_map,
+                              fold_column="fold", holdout_type="none", 
+                              blended_avg=False, noise=0, seed=1234)
+    ext_train.transform(test)
 
 
 Train Model with KFold Target Encoding
@@ -358,7 +353,7 @@ Train a new model, this time replacing the ``addr_state`` with the ``TargetEncod
     predictors <- c("loan_amnt", "int_rate", "emp_length", "annual_inc", 
                     "dti", "delinq_2yrs", "revol_util", "total_acc", 
                     "longest_credit_length", "verification_status", "term", 
-                    "purpose", "home_ownership", "TargetEncode_addr_state")
+                    "purpose", "home_ownership", "addr_state_te")
 
     gbm_state_te <- h2o.gbm(x = predictors, 
                             y = response, 
@@ -371,6 +366,21 @@ Train a new model, this time replacing the ``addr_state`` with the ``TargetEncod
                             stopping_tolerance = 0.001,
                             model_id = "gbm_state_te.hex")
 
+   .. code-block:: python
+
+    predictors = ["loan_amnt", "int_rate", "emp_length", "annual_inc", 
+                    "dti", "delinq_2yrs", "revol_util", "total_acc", 
+                    "longest_credit_length", "verification_status", "term", 
+                    "purpose", "home_ownership", "addr_state_te"]
+
+    gbm_state_te = H2OGradientBoostingEstimator(score_tree_interval = 10, 
+                            ntrees = 500,
+                            stopping_rounds = 5, 
+                            stopping_metric = "AUC", 
+                            stopping_tolerance = 0.001,
+                            model_id = "gbm_state_te.hex")
+    gbm_state_te.train(x=predictors, y=response, 
+                      training_frame=ext_train, validation_frame=ext_test)
 
 The AUC of the first and second model is shown below:
 
@@ -387,10 +397,25 @@ The AUC of the first and second model is shown below:
 
     auc_comparison
                            Model       AUC
-    1         No Target Encoding 0.7198658
-    2              No addr_state 0.7270537
-    3 addr_state Target Encoding 0.7254448
+    1         No Target Encoding 0.7070187
+    2              No addr_state 0.7076197
+    3 addr_state Target Encoding 0.7087891
 
+   .. code-block:: python
+
+    # Get the AUC on the training and testing data:
+
+    baseline_auc = gbm_baseline(train=auc_baseline)
+    baseline_auc
+    707018686126265
+
+    train_auc = gbm_baseline.auc(train=ext_train)
+    train_auc
+    0.7492599314713426
+
+    valid_auc = gbm_baseline.auc(valid=ext_test)
+    valid_auc
+    0.7087891
 
 We see a slight increase in the AUC on the test data. Now the ``addr_state`` has much smaller variable importance. It is no longer the most important feature but the 8th.
 
@@ -400,6 +425,10 @@ We see a slight increase in the AUC on the test data. Now the ``addr_state`` has
     # Variable Importance
     h2o.varimp_plot(gbm_state_te)
 
+   .. code-block:: python
+
+    # Variable Importance
+    gbm_baseline.varimp_plot()
 
 .. figure:: ../images/gbm_variable_importance2.png
    :alt: GBM Variable importance - second run
