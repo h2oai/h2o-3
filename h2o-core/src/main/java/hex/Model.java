@@ -1208,7 +1208,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         } else if (expensive) {   // generate warning even for response columns.  Other tests depended on this.
           final double defval;
           if (isWeights) defval = 1; // note: even though computeMetrics is false we should still have sensible weights (GLM skips rows with NA weights)
-          else if (isFold) defval = 0;
+          else if (isFold && domains[i] == null) defval = 0;
           else {
             defval = parms.missingColumnsType();
             convNaN++;
@@ -1224,8 +1224,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
       if( vec != null) {          // I have a column with a matching name
         // Do not transform response, weights and fold columns if the metrics are not computed - case predict on test data.
-        boolean transform = computeMetrics || (!isResponse && !isWeights && !isFold);
-        if( domains[i] != null && transform) { // Model expects an categorical
+        if( domains[i] != null) { // Model expects an categorical
           if (vec.isString())
             vec = VecUtils.stringToCategorical(vec); //turn a String column into a categorical column (we don't delete the original vec here)
           if( expensive && vec.domain() != domains[i] && !Arrays.equals(vec.domain(),domains[i]) ) { // Result needs to be the same categorical
@@ -1244,7 +1243,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
               msgs.add("Test/Validation dataset column '" + names[i] + "' has levels not trained on: " + Arrays.toString(Arrays.copyOfRange(ds, domains[i].length, ds.length)));
             vec = evec;
           }
-        } else if(vec.isCategorical() && transform) {
+        } else if(vec.isCategorical()) {
           if (parms._categorical_encoding == Parameters.CategoricalEncodingScheme.LabelEncoder) {
             Vec evec = vec.toNumericVec();
             toDelete.put(evec._key, "label encoded vec");
