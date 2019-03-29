@@ -562,6 +562,7 @@ public class ParseSetup extends Iced {
       else if (setupA._parse_type.equals(CSV_INFO) && setupB._parse_type.equals(ARFF_INFO)) {
         mergedSetup._parse_type = ARFF_INFO;
         mergedSetup._column_types = setupB._column_types;
+        mergedSetup._nonDataLineMarkers = setupB._nonDataLineMarkers;
       } else if (setupA.isCompatible(setupB)) {
         mergedSetup._column_previews = PreviewParseWriter.unifyColumnPreviews(setupA._column_previews, setupB._column_previews);
       } else
