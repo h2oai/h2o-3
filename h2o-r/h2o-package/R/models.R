@@ -2470,6 +2470,17 @@ setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata, valid=FAL
   h2o.confusionMatrix(metrics, ...)
 })
 
+
+.h2o.max_metrics <- c('absolute_mcc', 'accuracy',
+                      'f0point5', 'f1', 'f2',
+                      'mean_per_class_accuracy', 'min_per_class_accuracy',
+                      'precision', 'recall', 'specificity'
+                      # 'fpr', 'fallout',                    # could be enabled maybe once PUBDEV-6366 is fixed
+                      # 'fnr', 'missrate', 'sensitivity',
+                      # 'tpr', 'recall',
+                      # 'tnr', 'specificity'
+                      )
+
 #' @rdname h2o.confusionMatrix
 #' @export
 setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds=NULL, metrics=NULL) {
@@ -2497,18 +2508,19 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds=
   # error check the metrics_list and thresholds_list
   if( !all(sapply(thresholds_list, f <- function(x) is.numeric(x) && x >= 0 && x <= 1)) )
     stop("All thresholds must be numbers between 0 and 1 (inclusive).")
-  allowable_metrics <- c("min_per_class_accuracy", "absolute_mcc", "tnr", "fnr", "fpr", "tpr","precision", "accuracy", "f0point5", "f2", "f1")
-  if( !all(sapply(metrics_list, f <- function(x) x %in% allowable_metrics)) )
-      stop(paste("The only allowable metrics are ", paste(allowable_metrics, collapse=', ')))
+  if( !all(sapply(metrics_list, f <- function(x) x %in% .h2o.max_metrics)) )
+      stop(paste("The only allowable metrics are ", paste(.h2o.max_metrics, collapse=', ')))
 
   # make one big list that combines the thresholds and metric-thresholds
   metrics_thresholds = lapply(metrics_list, f <- function(x) h2o.find_threshold_by_max_metric(object, x))
   thresholds_list <- append(thresholds_list, metrics_thresholds)
+  first_metrics_thresholds_offset <- length(thresholds_list) - length(metrics_thresholds)
 
   thresh2d <- object@metrics$thresholds_and_metric_scores
   actual_thresholds <- thresh2d$threshold
   d <- object@metrics$domain
-  m <- lapply(thresholds_list,function(t) {
+  m <- lapply(seq_along(thresholds_list), function(i) {
+    t <- thresholds_list[[i]]
     row <- h2o.find_row_by_threshold(object,t)
     if( is.null(row) ) NULL
     else {
@@ -2525,7 +2537,7 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds=
       rownames(tbl) <- rnames
       header <-  "Confusion Matrix (vertical: actual; across: predicted) "
       if(t %in% metrics_thresholds) {
-        m <- metrics_list[which(t == metrics_thresholds)]
+        m <- metrics_list[i - first_metrics_thresholds_offset]
         if( length(m) > 1) m <- m[[1]]
         header <- paste(header, "for max", m, "@ threshold =", t)
       } else {
