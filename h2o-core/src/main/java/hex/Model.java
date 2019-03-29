@@ -1167,9 +1167,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         // We could be lenient here and fill missing columns with NA, but then it gets difficult to decide whether this frame is pre/post encoding, if a certain fraction of columns mismatch...
         for (String s : origNames) {
           // test data could not have respose column, weights, fold column and offset column
-          boolean couldMiss = s.equals(response) || s.equals(weights) || s.equals(fold) || s.equals(offset); 
+          boolean couldMiss = s.equals(response) || s.equals(weights) || s.equals(fold); 
           match &= couldMiss || ArrayUtils.contains(test.names(), s);
-          Log.info("Coudl miss "+s+": "+couldMiss+", test names contains: "+ArrayUtils.contains(test.names(), s));
           if (!match) break;
         }
       }
