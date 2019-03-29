@@ -1,7 +1,7 @@
 ``blending_frame``
 ------------------
 
-- Available in: Stacked Ensembles
+- Available in: Stacked Ensembles, AutoML
 - Hyperparameter: no
 
 Description
