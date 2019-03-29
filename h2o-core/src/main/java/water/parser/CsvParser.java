@@ -22,7 +22,6 @@ public class CsvParser extends Parser {
 
   CsvParser( ParseSetup ps, Key jobKey ) {
     super(ps, jobKey);
-    if(_setup._nonDataLineMarkers == null) _setup._nonDataLineMarkers = nonDataLineMarkersDefault();
   }
 
   protected byte[] nonDataLineMarkersDefault() {
