@@ -46,6 +46,10 @@
         <name>hive.users.in.admin.role</name>
         <value>hdfs,hive</value>
     </property>
+    <property>
+        <name>hive.server2.enable.doAs</name>
+        <value>false</value>
+    </property>
 
     <property>
         <name>mapred.tez.java.opts</name>
