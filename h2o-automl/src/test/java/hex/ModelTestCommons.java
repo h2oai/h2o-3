@@ -6,7 +6,7 @@ import water.Key;
 import java.io.IOException;
 
 public interface ModelTestCommons {
-  public static class TestModel extends Model {
+  class TestModel extends Model {
     TestModel( Key key, Parameters p, Output o ) { super(key,p,o); }
     @Override
     public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) { throw H2O.unimpl(); }

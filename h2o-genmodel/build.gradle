@@ -24,8 +24,6 @@ javadoc {
 dependencies {
   testCompile "com.google.guava:guava:16.0.1"
   testCompile 'org.mockito:mockito-core:2.18.3'
-  testCompile 'org.powermock:powermock-module-junit4-legacy:1.7.1' 
-  testCompile 'org.powermock:powermock-api-mockito2:1.7.1'
   testCompile "junit:junit:${junitVersion}"
   compile "net.sf.opencsv:opencsv:2.3"
   compile "com.google.code.gson:gson:2.6.2"

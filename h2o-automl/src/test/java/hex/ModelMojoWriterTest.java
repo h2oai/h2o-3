@@ -8,10 +8,13 @@ import org.junit.Test;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
+import ai.h2o.automl.targetencoding.TargetEncoderFrameHelper;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.Map;
+
+import static org.junit.Assert.fail;
 
 /**
  * This test should be moved to h2o-core module once we move all TargetEncoding related classes there as well. 
@@ -19,8 +22,8 @@ import java.util.Map;
 public class ModelMojoWriterTest extends TestUtil implements ModelTestCommons {
 
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }
+  
   Frame trainFrame = parse_test_file("./smalldata/gbm_test/titanic.csv");
-  String fileName = "test_mojo_te.zip";
   
   private Map<String, Frame> getTEMap() {
     
@@ -54,14 +57,15 @@ public class ModelMojoWriterTest extends TestUtil implements ModelTestCommons {
       Assert.assertTrue(new File(fileName).exists());
 
     } catch (Exception ex) {
-      System.out.println(ex.getMessage());
+      fail();
     } finally {
       File file = new File(fileName);
       if (file.exists()) {
         file.delete();
       }
+      trainFrame.delete();
+      TargetEncoderFrameHelper.encodingMapCleanUp(teMap);
     }
-    //TODO leaked keys
   }
 
 }

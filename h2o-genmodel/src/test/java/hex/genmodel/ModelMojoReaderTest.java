@@ -19,7 +19,7 @@ public class ModelMojoReaderTest {
   }
   
   @Test
-  public void parseTargetEncodingMap() {
+  public void parseTargetEncodingMap() throws Exception {
     
     String test = new StringBuilder()
             .append("[embarked]\n")
@@ -29,21 +29,13 @@ public class ModelMojoReaderTest {
             .append("Male = 3 42\n")
             .append("Female = 5 42")
             .toString();
-    
+
     Reader inputString = new StringReader(test);
     BufferedReader encodingsBR = new BufferedReader(inputString);
 
-    try {
+    TestMojoReader testMojoReader = new TestMojoReader();
+    Map<String, Map<String, int[]>> parsedEncodings = testMojoReader.parseTargetEncodingMap(encodingsBR);
+    assertArrayEquals(parsedEncodings.get("embarked").get("C"), new int[]{2, 4});
 
-      TestMojoReader testMojoReader = new TestMojoReader();
-//      TestMojoReader spyMojoReader = PowerMockito.spy(testMojoReader);
-//      PowerMockito.doNothing().when(spyMojoReader, "readAll");
-
-      Map<String, Map<String, int[]>> parsedEncodings = testMojoReader.parseTargetEncodingMap(encodingsBR);
-      assertArrayEquals(parsedEncodings.get("embarked").get("C"), new int[] {2,4});
-
-    } catch (Exception ex) {
-      System.out.println(ex.getMessage());
-    }
   }
 }

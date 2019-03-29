@@ -898,7 +898,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   } // Output
 
   protected String[][] scoringDomains() { return _output._domains; }
-  
+
   public void addTargetEncodingMap(Map<String, Frame> encodingMap) {
     IcedHashMap<String, Map<String, TEComponents>> transformedEncodingMap = new IcedHashMap<>();
     for (Map.Entry<String, Frame> entry : encodingMap.entrySet()) {
@@ -913,14 +913,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   private static class FrameToTETable extends MRTask<FrameToTETable> {
     private IcedHashMap<String, TEComponents> table = new IcedHashMap<>();
-    
+
     public FrameToTETable() {
     }
 
     @Override
     public void map(Chunk[] cs) {
       Chunk categoricalChunk = cs[0];
-      String [] domain = categoricalChunk.vec().domain();
+      String[] domain = categoricalChunk.vec().domain();
       int numRowsInChunk = categoricalChunk._len;
       for (int i = 0; i < numRowsInChunk; i++) {
         int[] numeratorAndDenominator = new int[2]; // TODO reuse array
