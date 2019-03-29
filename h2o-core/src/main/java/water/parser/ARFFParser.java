@@ -31,7 +31,8 @@ class ARFFParser extends CsvParser {
   static ParseSetup guessSetup(ByteVec bv, byte[] bits, byte sep, boolean singleQuotes, String[] columnNames, String[][] naStrings,
                                byte[] nonDataLineMarkers) {
     if (columnNames != null) throw new UnsupportedOperationException("ARFFParser doesn't accept columnNames.");
-    if(nonDataLineMarkers == null) nonDataLineMarkers = NON_DATA_LINE_MARKERS_DEFAULT;
+    if (nonDataLineMarkers == null)
+      nonDataLineMarkers = NON_DATA_LINE_MARKERS_DEFAULT;
 
     // Parse all lines starting with @ until EOF or @DATA
     boolean haveData = false;
@@ -134,7 +135,7 @@ class ARFFParser extends CsvParser {
     naStrings = addDefaultNAs(naStrings, ncols);
 
     // Return the final setup
-    return new ParseSetup(ARFF_INFO, sep, singleQuotes, ParseSetup.NO_HEADER, ncols, labels, ctypes, domains, naStrings, data);
+    return new ParseSetup(ARFF_INFO, sep, singleQuotes, ParseSetup.NO_HEADER, ncols, labels, ctypes, domains, naStrings, data, nonDataLineMarkers);
   }
 
   private static String[][] addDefaultNAs(String[][] naStrings, int nCols) {
