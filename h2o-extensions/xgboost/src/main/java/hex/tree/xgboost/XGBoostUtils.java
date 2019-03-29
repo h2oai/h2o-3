@@ -96,7 +96,6 @@ public class XGBoostUtils {
         if (weightVector != null) {
             weights = malloc4f(nRows);
         }
-        sparse = true;
         if (sparse) {
             Log.debug("Treating matrix as sparse.");
             // 1 0 2 0
@@ -152,7 +151,7 @@ public class XGBoostUtils {
                 totalRows += f.anyVec().chunkLen(chunkId);
             }
         }
-        return (int) Math.ceil(totalRows * cols / ARRAY_MAX);
+        return (int) Math.ceil(totalRows * cols / SPARSE_MATRIX_DIM);
     }
 
 
@@ -337,8 +336,9 @@ public class XGBoostUtils {
             }
         }
     }
-
-    private static final int ARRAY_MAX = 10;
+    
+    //Maximum size of one dimension of SPARSE matrix with data. Sparse matrix is square matrix.
+    protected static int SPARSE_MATRIX_DIM = Integer.MAX_VALUE - 10;
 
     private static long denseChunk(BigDenseMatrix data,
                                    int[] chunks, int[] nRowsByChunk, Frame f, Vec weightsVec, Vec respVec, DataInfo di,
@@ -504,10 +504,9 @@ public class XGBoostUtils {
         }
 
 
-        long size = sparseMatrixDimensions._nonZeroElementsCount;
-        int rowHeadersSize = (int) sparseMatrixDimensions._rowIndicesCount;
 
-        trainMat = new DMatrix(rowHeaders, colIndex, data, DMatrix.SparseType.CSR, di.fullN(), actualRows, size);
+        trainMat = new DMatrix(rowHeaders, colIndex, data, DMatrix.SparseType.CSR, di.fullN(), actualRows,
+                sparseMatrixDimensions._nonZeroElementsCount);
         assert trainMat.rowNum() == actualRows;
         return trainMat;
     }
@@ -528,20 +527,33 @@ public class XGBoostUtils {
         
         int rowHeaderRowPointer = 0;
         int rowHeaderColPointer = 0;
+        
+        int lastNonZeroRow = 0;
 
         for (Integer chunk : chunks) {
             for(long i = f.anyVec().espc()[chunk]; i < f.anyVec().espc()[chunk+1]; i++) {
                 if (w != null && w.at(i) == 0) continue;
-
-                final int startNonZeroCount = nonZeroCount;
-                // enlarge final data arrays by 2x if needed
+                actualRows++;
+                if(rowHeaderColPointer == SPARSE_MATRIX_DIM){
+                    rowHeaderColPointer = 0;
+                    rowHeaderRowPointer++;
+                }
+                boolean foundNonZero = false;
 
                 for (int j = 0; j < di._cats; ++j) {
-                    if(colPointer == ARRAY_MAX){
+                    if(colPointer == SPARSE_MATRIX_DIM){
                         colPointer = 0;
                         rowPointer++;
                     }
-                    data[rowPointer][colPointer] = 1; //one-hot encoding
+                    data[rowPointer][colPointer] = 1; //one-hot encoding // TODO: Check it!
+                    
+                    if(!foundNonZero){
+                        foundNonZero = true;
+                        for (int k = lastNonZeroRow; k < actualRows; k++) {
+                        rowHeaders[rowHeaderRowPointer][rowHeaderColPointer++] = nonZeroCount;
+                        }
+                        lastNonZeroRow = actualRows;
+                    }
                     if (vecs[j].isNA(i)) {
                         colIndex[rowPointer][colPointer++] = di.getCategoricalId(j, Float.NaN);
                     } else {
@@ -551,7 +563,7 @@ public class XGBoostUtils {
                 }
 
                 for (int j = 0; j < di._nums; ++j) {
-                    if(colPointer == ARRAY_MAX){
+                    if(colPointer == SPARSE_MATRIX_DIM){
                         colPointer = 0;
                         rowPointer++;
                     }
@@ -559,21 +571,21 @@ public class XGBoostUtils {
                     if (val != 0) {
                         data[rowPointer][colPointer] = val;
                         colIndex[rowPointer][colPointer++] = di._catOffsets[di._catOffsets.length - 1] + j;
+                        if(!foundNonZero){
+                            foundNonZero = true;
+                            for (int k = lastNonZeroRow; k < actualRows; k++) {
+                                rowHeaders[rowHeaderRowPointer][rowHeaderColPointer++] = nonZeroCount;
+                            }
+                            lastNonZeroRow = actualRows;
+                        }
                         nonZeroCount++;
                     }
                 }
                 
-                if(rowHeaderColPointer == ARRAY_MAX){
-                    rowHeaderColPointer = 0;
-                    rowHeaderRowPointer++;
-                }
-                rowHeaders[rowHeaderRowPointer][rowHeaderColPointer++] = nonZeroCount;
-                actualRows++;
-
                 rwRow = setResponseAndWeight(w, resp, weights, respVec, rwRow, i);
             }
         }
-        return actualRows + 1;
+        return actualRows;
     }
 
     private static int initializeFromChunks(Chunk[] chunks, int weight, DataInfo di, int actualRows, long[][] rowHeaders, float[][] data, int[][] colIndex, int respIdx, float[] resp, float[] weights) {
@@ -584,16 +596,30 @@ public class XGBoostUtils {
 
         int rowHeaderRowPointer = 0;
         int rowHeaderColPointer = 0;
+        int lastNonZeroRow = 0;
 
         for (int i = 0; i < chunks[0].len(); i++) {
             if (weight != -1 && chunks[weight].atd(i) == 0) continue;
+            actualRows++;
+            if(rowHeaderColPointer == SPARSE_MATRIX_DIM){
+                rowHeaderColPointer = 0;
+                rowHeaderRowPointer++;
+            }
+            boolean foundNonZero = false;
 
             for (int j = 0; j < di._cats; ++j) {
-                if(currentCol == ARRAY_MAX){
+                if(currentCol == SPARSE_MATRIX_DIM){
                     currentCol = 0;
                     rowPointer++;
                 }
                 data[rowPointer][currentCol] = 1; //one-hot encoding
+                if(!foundNonZero){
+                    foundNonZero = true;
+                    for (int k = lastNonZeroRow; k < actualRows; k++) {
+                        rowHeaders[rowHeaderRowPointer][rowHeaderColPointer++] = nonZeroCount;
+                    }
+                    lastNonZeroRow = actualRows;
+                }
                 if (chunks[j].isNA(i)) {
                     colIndex[rowPointer][currentCol++] = di.getCategoricalId(j, Float.NaN);
                 } else {
@@ -602,7 +628,7 @@ public class XGBoostUtils {
                 nonZeroCount++;
             }
             for (int j = 0; j < di._nums; ++j) {
-                if(currentCol == ARRAY_MAX){
+                if(currentCol == SPARSE_MATRIX_DIM){
                     currentCol = 0;
                     rowPointer++;
                 }
@@ -610,20 +636,20 @@ public class XGBoostUtils {
                 if (val != 0) {
                     data[rowPointer][currentCol] = val;
                     colIndex[rowPointer][currentCol++] = di._catOffsets[di._catOffsets.length - 1] + j;
+                    if(!foundNonZero){
+                        foundNonZero = true;
+                        for (int k = lastNonZeroRow; k < actualRows; k++) {
+                            rowHeaders[rowHeaderRowPointer][rowHeaderColPointer++] = nonZeroCount;
+                        }
+                        lastNonZeroRow = actualRows;
+                    }
                     nonZeroCount++;
                 }
             }
-
-            if(rowHeaderColPointer == ARRAY_MAX){
-                rowHeaderColPointer = 0;
-                rowHeaderRowPointer++;
-            }
-            rowHeaders[rowHeaderRowPointer][rowHeaderColPointer++] = nonZeroCount;
-            actualRows++;
-
+            
             rwRow = setResponseAndWeight(chunks, respIdx, weight, resp, weights, rwRow, i);
         }
-        return actualRows + 1;
+        return actualRows;
     }
 
     static class SparseItem {
@@ -689,7 +715,7 @@ public class XGBoostUtils {
             enlargeTables(data, rowIndex, sparseCol.size(), currentRow, currentCol);
 
             for (int j=0;j<sparseCol.size();++j) {
-                if(currentCol == ARRAY_MAX) {
+                if(currentCol == SPARSE_MATRIX_DIM) {
                     currentCol = 0;
                     currentRow++;
                 }
@@ -710,8 +736,8 @@ public class XGBoostUtils {
             }
         }
         colHeaders[0][nCols] = nz;
-        data[data.length - 1] = Arrays.copyOf(data[data.length - 1], nz % ARRAY_MAX);
-        rowIndex[rowIndex.length - 1] = Arrays.copyOf(rowIndex[rowIndex.length - 1], nz % ARRAY_MAX);
+        data[data.length - 1] = Arrays.copyOf(data[data.length - 1], nz % SPARSE_MATRIX_DIM);
+        rowIndex[rowIndex.length - 1] = Arrays.copyOf(rowIndex[rowIndex.length - 1], nz % SPARSE_MATRIX_DIM);
         int actualRows = countUnique(rowIndex);
 
         trainMat = new DMatrix(colHeaders, rowIndex, data, DMatrix.SparseType.CSC, actualRows, di.fullN(), nz);
@@ -725,7 +751,7 @@ public class XGBoostUtils {
             return 0;
         }
 
-        BitSet values = new BitSet(ARRAY_MAX);
+        BitSet values = new BitSet(SPARSE_MATRIX_DIM);
 
         int count = 1;
         for (int i = 0; i < array.length; i++) {
@@ -742,14 +768,14 @@ public class XGBoostUtils {
     // Assumes both matrices are getting filled at the same rate and will require the same amount of space
     private static void enlargeTables(float[][] data, int[][] rowIndex, int cols, int currentRow, int currentCol) {
         while (data[currentRow].length < currentCol + cols) {
-            if(data[currentRow].length == ARRAY_MAX) {
+            if(data[currentRow].length == SPARSE_MATRIX_DIM) {
                 currentCol = 0;
                 cols -= (data[currentRow].length - currentCol);
                 currentRow++;
                 data[currentRow] = malloc4f(ALLOCATED_ARRAY_LEN);
                 rowIndex[currentRow] = malloc4(ALLOCATED_ARRAY_LEN);
             } else {
-                int newLen = (int) Math.min((long) data[currentRow].length << 1L, (long) ARRAY_MAX);
+                int newLen = (int) Math.min((long) data[currentRow].length << 1L, (long) SPARSE_MATRIX_DIM);
                 data[currentRow] = Arrays.copyOf(data[currentRow], newLen);
                 rowIndex[currentRow] = Arrays.copyOf(rowIndex[currentRow], newLen);
             }
@@ -765,19 +791,20 @@ public class XGBoostUtils {
      */
     private static SparseMatrix allocateCSRMatrix(SparseMatrixDimensions sparseMatrixDimensions) {
         // Number of rows in non-zero elements matrix
-        final int dataRowsNumber = (int) (sparseMatrixDimensions._nonZeroElementsCount / ARRAY_MAX);
-        final int dataLastRowSize = (int)(sparseMatrixDimensions._nonZeroElementsCount % ARRAY_MAX);
+        final int dataRowsNumber = (int) (sparseMatrixDimensions._nonZeroElementsCount / SPARSE_MATRIX_DIM);
+        final int dataLastRowSize = (int)(sparseMatrixDimensions._nonZeroElementsCount % SPARSE_MATRIX_DIM);
         //Number of rows in matrix with row indices
-        final int rowIndicesRowsNumber = (int)(sparseMatrixDimensions._rowIndicesCount / ARRAY_MAX);
-        final int rowIndicesLastRowSize = (int)(sparseMatrixDimensions._rowIndicesCount % ARRAY_MAX);
+        final int rowIndicesRowsNumber = (int)(sparseMatrixDimensions._rowIndicesCount / SPARSE_MATRIX_DIM);
+        final int rowIndicesLastRowSize = (int)(sparseMatrixDimensions._rowIndicesCount % SPARSE_MATRIX_DIM);
         // Number of rows in matrix with column indices of sparse matrix non-zero elements
-        final int colIndicesRowsNumber = (int)(sparseMatrixDimensions._nonZeroElementsCount / ARRAY_MAX);
-        final int colIndicesLastRowSize = (int)(sparseMatrixDimensions._nonZeroElementsCount % ARRAY_MAX);
+        // There is one column index per each non-zero element, no need to recalculate.
+        final int colIndicesRowsNumber = dataRowsNumber;
+        final int colIndicesLastRowSize = dataLastRowSize;
 
         // Sparse matrix elements (non-zero elements)
         float[][] sparseData = new float[dataLastRowSize == 0 ? dataRowsNumber : dataRowsNumber + 1][];
         for (int sparseDataRow = 0; sparseDataRow < sparseData.length - 1; sparseDataRow++) {
-            sparseData[sparseDataRow] = malloc4f(ARRAY_MAX);
+            sparseData[sparseDataRow] = malloc4f(SPARSE_MATRIX_DIM);
         }
         if (dataLastRowSize > 0) {
             sparseData[sparseData.length - 1] = malloc4f(dataLastRowSize);
@@ -785,7 +812,7 @@ public class XGBoostUtils {
         // Row indices
         long[][] rowIndices = new long[rowIndicesLastRowSize == 0 ? rowIndicesRowsNumber : rowIndicesRowsNumber + 1][];
         for (int rowIndicesRow = 0; rowIndicesRow < rowIndices.length - 1; rowIndicesRow++) {
-            rowIndices[rowIndicesRow] = malloc8(ARRAY_MAX);
+            rowIndices[rowIndicesRow] = malloc8(SPARSE_MATRIX_DIM);
         }
         if (rowIndicesLastRowSize > 0) {
             rowIndices[rowIndices.length - 1] = malloc8(rowIndicesLastRowSize);
@@ -794,7 +821,7 @@ public class XGBoostUtils {
         // Column indices
         int[][] colIndices = new int[colIndicesLastRowSize == 0 ? colIndicesRowsNumber : colIndicesRowsNumber + 1][];
         for (int colIndicesRow = 0; colIndicesRow < colIndices.length - 1; colIndicesRow++) {
-            colIndices[colIndicesRow] = malloc4(ARRAY_MAX);
+            colIndices[colIndicesRow] = malloc4(SPARSE_MATRIX_DIM);
         }
         if (colIndicesLastRowSize > 0) {
             colIndices[colIndices.length - 1] = malloc4(colIndicesLastRowSize);
@@ -807,12 +834,12 @@ public class XGBoostUtils {
     private static SparseMatrixDimensions calculateCSRMatrixDimensions(Chunk[] chunks, DataInfo di, int weightColIndex){
 
         long nonZeroElementsCount = 0;
-        long rowIndicesCount = chunks[0].len();
+        long rowIndicesCount = 0;
 
         for (int i = 0; i < chunks[0].len(); i++) {
             // Rows with zero weights are going to be ignored
             if (weightColIndex != -1 && chunks[weightColIndex].atd(i) == 0) continue;
-
+            rowIndicesCount++;
 
             nonZeroElementsCount += di._cats;
 
@@ -824,7 +851,7 @@ public class XGBoostUtils {
             }
         }
 
-        return new SparseMatrixDimensions(nonZeroElementsCount, ++rowIndicesCount);
+        return new SparseMatrixDimensions(nonZeroElementsCount, rowIndicesCount);
     }
 
     private static SparseMatrixDimensions calculateCSRMatrixDimensions(Frame f, int[] chunks, Vec.Reader[] vecs, Vec.Reader w, DataInfo di) {
@@ -834,6 +861,7 @@ public class XGBoostUtils {
         for (Integer chunk : chunks) {
             for (long i = f.anyVec().espc()[chunk]; i < f.anyVec().espc()[chunk + 1]; i++) {
                 if (w != null && w.at(i) == 0) continue;
+                rowIndicesCount++;
 
                 nonZeroElementsCount+= di._cats;
 
@@ -843,11 +871,10 @@ public class XGBoostUtils {
                         nonZeroElementsCount++;
                     }
                 }
-                rowIndicesCount++;
             }
         }
 
-        return new SparseMatrixDimensions(nonZeroElementsCount, ++rowIndicesCount);
+        return new SparseMatrixDimensions(nonZeroElementsCount, rowIndicesCount);
     }
 
 
