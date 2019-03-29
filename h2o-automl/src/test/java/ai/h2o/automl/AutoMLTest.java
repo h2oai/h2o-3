@@ -269,11 +269,10 @@ public class AutoMLTest extends water.TestUtil {
     Model leader = null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      fr = parse_test_file("./smalldata/airlines/AirlinesTrain.csv");
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
-      autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(30);
       autoMLBuildSpec.build_control.keep_cross_validation_fold_assignment = false;
 
       aml = AutoML.makeAutoML(Key.<AutoML>make(), new Date(), autoMLBuildSpec);

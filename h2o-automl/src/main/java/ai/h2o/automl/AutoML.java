@@ -927,25 +927,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     xgBoostParameters._learn_rate = 0.05;
 //    xgBoostParameters._min_split_improvement = 0.01f;
 
-    //XGB 1
-    xgBoostParameters._max_depth = 20;
-    xgBoostParameters._min_rows = 10;
-    xgBoostParameters._sample_rate = 0.6;
-    xgBoostParameters._col_sample_rate = 0.8;
-    xgBoostParameters._col_sample_rate_per_tree = 0.8;
-
-    if (emulateLightGBM) {
-      xgBoostParameters._max_leaves = 1 << xgBoostParameters._max_depth;
-      xgBoostParameters._max_depth = xgBoostParameters._max_depth * 2;
-//      xgBoostParameters._min_data_in_leaf = (float) xgBoostParameters._min_rows;
-      xgBoostParameters._min_sum_hessian_in_leaf = (float) xgBoostParameters._min_rows;
-    }
-
-    key = modelKey(algo.name());
-    xgBoostJob = trainModel(key, work, xgBoostParameters);
-    pollAndUpdateProgress(Stage.ModelTraining,  key.toString(), work, this.job(), xgBoostJob);
-
-    //XGB 2
+    //XGB 1 (medium depth)
     xgBoostParameters._max_depth = 10;
     xgBoostParameters._min_rows = 5;
     xgBoostParameters._sample_rate = 0.6;
@@ -963,7 +945,25 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     xgBoostJob = trainModel(key, work, xgBoostParameters);
     pollAndUpdateProgress(Stage.ModelTraining,  key.toString(), work, this.job(), xgBoostJob);
 
-    //XGB 3
+    //XGB 2 (deep)
+    xgBoostParameters._max_depth = 20;
+    xgBoostParameters._min_rows = 10;
+    xgBoostParameters._sample_rate = 0.6;
+    xgBoostParameters._col_sample_rate = 0.8;
+    xgBoostParameters._col_sample_rate_per_tree = 0.8;
+
+    if (emulateLightGBM) {
+      xgBoostParameters._max_leaves = 1 << xgBoostParameters._max_depth;
+      xgBoostParameters._max_depth = xgBoostParameters._max_depth * 2;
+//      xgBoostParameters._min_data_in_leaf = (float) xgBoostParameters._min_rows;
+      xgBoostParameters._min_sum_hessian_in_leaf = (float) xgBoostParameters._min_rows;
+    }
+
+    key = modelKey(algo.name());
+    xgBoostJob = trainModel(key, work, xgBoostParameters);
+    pollAndUpdateProgress(Stage.ModelTraining,  key.toString(), work, this.job(), xgBoostJob);
+
+    //XGB 3 (shallow)
     xgBoostParameters._max_depth = 5;
     xgBoostParameters._min_rows = 3;
     xgBoostParameters._sample_rate = 0.8;

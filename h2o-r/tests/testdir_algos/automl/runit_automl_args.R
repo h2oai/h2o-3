@@ -323,6 +323,7 @@ automl.args.test <- function() {
                             training_frame = ds$train,
                             nfolds = 3,
                             max_models = max_models,
+                            exclude_algos = c('XGBoost'),  # XGB doesn't support balance_classes
                             balance_classes = TRUE,
                             max_after_balance_size = 3.0,
                             class_sampling_factors = c(0.2, 1.4),
