@@ -6,20 +6,16 @@
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yates/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yates/1/index.html</a>
 
-Download at: TBD
-
 <h4>Bug</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5790'>PUBDEV-5790</a>] -         H2O imports headers into first row of the dataframe (STILL OPEN)
-</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6159'>PUBDEV-6159</a>] - The AutoMLTest.java test suite now runs correctly on a local machine.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6189'>PUBDEV-6189</a>] - Fixed an issue in as_date that occurred when the column included NAs.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6208'>PUBDEV-6208</a>] - AutoML no longer fails if one of the Stacked Ensemble models is deleted.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6230'>PUBDEV-6230</a>] -         Fix link in Python Client (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6230'>PUBDEV-6230</a>] - Removed elipses after the H2O server link when launching the Python client.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6231'>PUBDEV-6231</a>] - In Deep Learning, fixed an issue that occurred when running one-hot-encoding on categoricals. 
 </li>
@@ -27,19 +23,21 @@ Download at: TBD
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6284'>PUBDEV-6284</a>] - The Python API no longer reverses the labels for positive and negative values in the standardized coefficients plot legend.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6319'>PUBDEV-6319</a>] -         AstGroup is inconsistent if we run it multiple times (STILL OPEN)
-</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6346'>PUBDEV-6346</a>] - In R, fixed an issue that cause group_by mean to only calculate one column when multiple columns were specified.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6350'>PUBDEV-6350</a>] -         confusion_matrix method returns matrices for other metrics (STILL OPEN)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6357'>PUBDEV-6357</a>] - Fixed an issue that resulted in a "Categorical value out of bounds error" when calling a model using Python.
 </li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6360'>PUBDEV-6360</a>] - Improved the error message that displays when a user attempts to modify an Enum/categorical column as if it were a string. 
+</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6367'>PUBDEV-6367</a>] -         Rows starting with # are dropped when they shouldn&#39;t be (STILL OPEN)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6368'>PUBDEV-6368</a>] - Fixed an SVM import failure.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6373'>PUBDEV-6373</a>] -         ArrayIndexOutOfBoundsException while loading file from S3 (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6376'>PUBDEV-6376</a>] - Fixed an issue that caused the default StackedEnsemble prediction to fail when applied to a test dataset without a response column.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6377'>PUBDEV-6377</a>] -          java.lang.ArrayIndexOutOfBoundsException: 2147483637 (STILL OPEN)
 </li>
@@ -58,17 +56,13 @@ Download at: TBD
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5925'>PUBDEV-5925</a>] - In GLM, added support for negative binomial family.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6056'>PUBDEV-6056</a>] - For GBM predictions, users can now retrieve predicted feature contributions (SHAP values). (STILL OPEN, BUT MERGED) 
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6089'>PUBDEV-6089</a>] -         AutoML: expose Userfeedback to R + Py clients after renaming it to EventLog (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6056'>PUBDEV-6056</a>] - For GBM predictions, users can now retrieve predicted feature contributions (SHAP values). (STILL OPEN) 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6136'>PUBDEV-6136</a>] - Added support for Generic Models, which provide a means to use external, pretrained MOJO models in H2O for scoring. Currently only GBM, DRF, IF, and GLM MOJO models are supported. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6180'>PUBDEV-6180</a>] - Added the blending_frame parameter to Stacked Ensembles in Flow.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6196'>PUBDEV-6196</a>] - Added an include_algos parameter to AutoML in the R and Python APIs. Note that in Flow, users can specify exclude_algos only.
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6213'>PUBDEV-6213</a>] -         Implement Broadcast Join for Target Encoding (STILL OPEN)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6255'>PUBDEV-6255</a>] -         Target Encoding MOJO (STILL OPEN)
 </li>
@@ -81,6 +75,8 @@ Download at: TBD
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6365'>PUBDEV-6365</a>] - Added support for monotonicity constraints for binomial GBMs.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6374'>PUBDEV-6374</a>] - Users can now define custom HTTP headers using an `-add_http_header` option. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6386'>PUBDEV-6386</a>] -        XGBoost MOJO should use Java predictor by default (STILL OPEN)
 </li>
 </ul>
     
@@ -121,6 +117,8 @@ Download at: TBD
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6363'>PUBDEV-6363</a>] - Fixed Hive delegation token generation.
 </li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6388'>PUBDEV-6388</a>] - Reordered the algorithms train in AutoML and prioritized hardcoded XGBoost models. (STILL OPEN)
+</li>
 </ul>
                     
 <h4>Docs</h4>
@@ -141,6 +139,8 @@ Download at: TBD
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6362'>PUBDEV-6362</a>] - In the User Guide and R an Python documentation, replaced references to "H2O Cloud" with "H2O Cluster". 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6375'>PUBDEV-6375</a>] - Added information about predict_contributions to the Performance and Prediction chapter.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6381'>PUBDEV-6378</a>] - Added a "Generic Models" chapter to the Algorithms section.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6381'>PUBDEV-6381</a>] - In the GBM chapter, noted that monotone_constraints is available for Bernoulli distributions in addition to Gaussian distributions.
 </li>
