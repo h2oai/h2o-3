@@ -12,6 +12,7 @@ import water.fvec.Frame;
 
 import java.util.Map;
 
+import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
@@ -22,18 +23,24 @@ public class ModelTest extends TestUtil implements ModelTestCommons {
 
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
-
-  private Map<String, Frame> getTEMapForTitanicDataset() {
+  String foldColumnNameForTE = "te_fold_column";
+  
+  private Map<String, Frame> getTEMapForTitanicDataset(boolean withFoldColumn) {
     Frame trainFrame = null;
     try {
       trainFrame = parse_test_file("./smalldata/gbm_test/titanic.csv");
       String responseColumnName = "survived";
       asFactor(trainFrame, responseColumnName);
+      
+      if(withFoldColumn) {
+        int nfolds = 5;
+        addKFoldColumn(trainFrame, foldColumnNameForTE, nfolds, 1234);
+      }
 
       BlendingParams params = new BlendingParams(3, 1);
       String[] teColumns = {"home.dest", "embarked"};
       TargetEncoder targetEncoder = new TargetEncoder(teColumns, params);
-      Map<String, Frame> testEncodingMap = targetEncoder.prepareEncodingMap(trainFrame, responseColumnName, null);
+      Map<String, Frame> testEncodingMap = targetEncoder.prepareEncodingMap(trainFrame, responseColumnName, withFoldColumn ? foldColumnNameForTE: null);
       return testEncodingMap;
     } finally {
       if(trainFrame != null) trainFrame.delete();
@@ -44,7 +51,7 @@ public class ModelTest extends TestUtil implements ModelTestCommons {
     TestModel.TestParam p = new TestModel.TestParam();
     TestModel.TestOutput o = new TestModel.TestOutput();
     TestModel testModel = new TestModel(Key.make(),p,o);
-    Map<String, Frame> teMap = getTEMapForTitanicDataset();
+    Map<String, Frame> teMap = getTEMapForTitanicDataset(false);
     testModel.addTargetEncodingMap(teMap);
 
     checkEncodings(testModel._output._target_encoding_map);
@@ -55,7 +62,7 @@ public class ModelTest extends TestUtil implements ModelTestCommons {
     TestModel.TestParam p = new TestModel.TestParam();
     TestModel.TestOutput o = new TestModel.TestOutput();
     TestModel testModel = new TestModel(Key.make(),p,o);
-    Map<String, Frame> teMap = getTEMapForTitanicDataset();
+    Map<String, Frame> teMap = getTEMapForTitanicDataset(false);
     testModel.addTargetEncodingMap(teMap);
 
     ModelDescriptor md = testModel.modelDescriptor();
@@ -70,7 +77,33 @@ public class ModelTest extends TestUtil implements ModelTestCommons {
     TestModel.TestParam p = new TestModel.TestParam();
     TestModel.TestOutput o = new TestModel.TestOutput();
     TestModel testModel = new TestModel(Key.make(),p,o);
-    Map<String, Frame> teMap = getTEMapForTitanicDataset();
+    Map<String, Frame> teMap = getTEMapForTitanicDataset(false);
+    testModel.addTargetEncodingMap(teMap);
+
+    ModelDescriptor md = testModel.getMojo().model.modelDescriptor();
+
+    Map<String, Map<String, int[]>> targetEncodingMap = md.targetEncodingMap();
+
+    checkEncodingsInts(targetEncodingMap);
+    TargetEncoderFrameHelper.encodingMapCleanUp(teMap);
+  }
+
+  @Test public void getMojoFoldCase() {
+    TestModel.TestParam p = new TestModel.TestParam();
+    TestModel.TestOutput o = new TestModel.TestOutput();
+    TestModel testModel = new TestModel(Key.make(),p,o);
+    Map<String, Frame> teMap = getTEMapForTitanicDataset(true);
+
+    
+    // Note:  following block should be used by user if the want to add  encoding map to model and to mojo. 
+    // Following iteration over encoding maps and regrouping without folds could be hidden inside `model.addTargetEncodingMap()` 
+    // but we need TargetEncoder in h2o-core package then so that we can reuse its functionality
+    for(Map.Entry<String, Frame> entry : teMap.entrySet()) {
+      Frame grouped = TargetEncoder.groupingIgnoringFoldColumn(foldColumnNameForTE, entry.getValue(), entry.getKey());
+      entry.getValue().delete();
+      teMap.put(entry.getKey(), grouped);
+    }
+
     testModel.addTargetEncodingMap(teMap);
 
     ModelDescriptor md = testModel.getMojo().model.modelDescriptor();

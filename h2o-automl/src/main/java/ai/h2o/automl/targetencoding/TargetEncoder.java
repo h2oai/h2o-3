@@ -221,7 +221,7 @@ public class TargetEncoder {
         return true;
     }
 
-    Frame groupByTEColumnAndAggregate(Frame data, int teColumnIndex) {
+    public static Frame groupByTEColumnAndAggregate(Frame data, int teColumnIndex) {
       int numeratorColumnIndex = data.find("numerator");
       int denominatorColumnIndex = data.find("denominator");
       AstGroup.AGG[] aggs = new AstGroup.AGG[2];
@@ -595,7 +595,7 @@ public class TargetEncoder {
                 try {
                   foldColumnIsInEncodingMapCheck(foldColumnName, encodingMapForCurrentTEColumn);
 
-                  groupedTargetEncodingMap = groupingIgnoringFordColumn(foldColumnName, encodingMapForCurrentTEColumn, teColumnName);
+                  groupedTargetEncodingMap = groupingIgnoringFoldColumn(foldColumnName, encodingMapForCurrentTEColumn, teColumnName);
 
                   int teColumnIndexInGroupedEncodingMap = groupedTargetEncodingMap.find(teColumnName);
                   dataWithMergedAggregationsL = mergeByTEColumn(dataWithAllEncodings, groupedTargetEncodingMap, teColumnIndex, teColumnIndexInGroupedEncodingMap);
@@ -628,7 +628,7 @@ public class TargetEncoder {
                 Frame dataWithMergedAggregationsN = null;
                 try {
                   foldColumnIsInEncodingMapCheck(foldColumnName, encodingMapForCurrentTEColumn);
-                  groupedTargetEncodingMapForNone = groupingIgnoringFordColumn(foldColumnName, encodingMapForCurrentTEColumn, teColumnName);
+                  groupedTargetEncodingMapForNone = groupingIgnoringFoldColumn(foldColumnName, encodingMapForCurrentTEColumn, teColumnName);
                   int teColumnIndexInGroupedEncodingMapNone = groupedTargetEncodingMapForNone.find(teColumnName);
                   dataWithMergedAggregationsN = mergeByTEColumn(dataWithAllEncodings, groupedTargetEncodingMapForNone, teColumnIndex, teColumnIndexInGroupedEncodingMapNone);
 
@@ -687,7 +687,7 @@ public class TargetEncoder {
         }
     }
 
-    Frame groupingIgnoringFordColumn(String foldColumnName, Frame targetEncodingMap, String teColumnName) {
+    public static Frame groupingIgnoringFoldColumn(String foldColumnName, Frame targetEncodingMap, String teColumnName) {
         if (foldColumnName != null) {
             int teColumnIndex = targetEncodingMap.find(teColumnName);
 
