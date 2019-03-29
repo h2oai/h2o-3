@@ -1166,7 +1166,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         // In case the test set has extra columns not in the training set - check that all original pre-encoding columns are available in the test set
         // We could be lenient here and fill missing columns with NA, but then it gets difficult to decide whether this frame is pre/post encoding, if a certain fraction of columns mismatch...
         for (String s : origNames) {
-          match &= (s == response) || ArrayUtils.contains(test.names(), s);
+          // test data could not have respose column, weights, fold column and offset column
+          boolean couldMiss = s.equals(response) || s.equals(weights) || s.equals(fold) || s.equals(offset); 
+          match &= couldMiss || ArrayUtils.contains(test.names(), s);
+          Log.info("Coudl miss "+s+": "+couldMiss+", test names contains: "+ArrayUtils.contains(test.names(), s));
           if (!match) break;
         }
       }
@@ -1195,10 +1198,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       boolean isWeights = weights != null && names[i].equals(weights);
       boolean isOffset = offset != null && names[i].equals(offset);
       boolean isFold = fold != null && names[i].equals(fold);
-      Log.info(names[i]+ "is response: "+isResponse+ " is wights: "+isWeights+ " is offset: "+isOffset+ " is fold "+isFold);
       // If a training set column is missing in the test set, complain (if it's ok, fill in with NAs (or 0s if it's a fold-column))
       if (vec == null) {
-        Log.info("Vec is null");
         if (isResponse && computeMetrics)
           throw new IllegalArgumentException("Test/Validation dataset is missing response column '" + response + "'");
         else if (isOffset)
@@ -1206,7 +1207,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         else if (isWeights && computeMetrics) {
           if (expensive) {
             vec = test.anyVec().makeCon(1);
-            toDelete.put(vec._key, "adapted missing vectors");
             msgs.add(H2O.technote(1, "Test/Validation dataset is missing weights column '" + names[i] + "' (needed because a response was found and metrics are to be computed): substituting in a column of 1s"));
           }
         } else if (expensive) {   // generate warning even for response columns.  Other tests depended on this.
@@ -1215,7 +1215,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           else if (isFold) defval = 0;
           else {
             defval = parms.missingColumnsType();
-            Log.info("convNan++");
             convNaN++;
           }
           vec = test.anyVec().makeCon(defval);
@@ -1228,9 +1227,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         }
       }
       if( vec != null ) {          // I have a column with a matching name
-        Log.info("Vec is not null");
         if( domains[i] != null ) { // Model expects an categorical
-          Log.info("Domains is not null");
           if (vec.isString())
             vec = VecUtils.stringToCategorical(vec); //turn a String column into a categorical column (we don't delete the original vec here)
           if( expensive && vec.domain() != domains[i] && !Arrays.equals(vec.domain(),domains[i]) ) { // Result needs to be the same categorical
@@ -1258,10 +1255,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             throw new IllegalArgumentException("Test/Validation dataset has categorical column '" + names[i] + "' which is real-valued in the training data");
           }
         }
-        Log.info("Vec is good");
         good++;      // Assumed compatible; not checking e.g. Strings vs UUID
-      } else {
-        Log.info("Vec is not good");
       }
       vvecs[i] = vec;
     }
