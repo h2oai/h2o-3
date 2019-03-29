@@ -2,10 +2,12 @@ package hex.genmodel.easy;
 
 import hex.ModelCategory;
 import hex.genmodel.GenModel;
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.HashMap;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 public class EasyPredictModelWrapperWithTargetEncodingTest {
 
@@ -27,8 +29,8 @@ public class EasyPredictModelWrapperWithTargetEncodingTest {
     
     modelWrapper.transformWithTargetEncoding(row);
     
-    Assert.assertEquals((double) row.get("embarked_te"), (double) encodingComponents[0] / encodingComponents[1], 1e-5);
-    Assert.assertNotEquals((double) row.get("embarked_te"), (double) encodingComponents[0] / encodingComponents[1] + 0.1, 1e-5);
+    assertEquals((double) row.get("embarked_te"), (double) encodingComponents[0] / encodingComponents[1], 1e-5);
+    assertNotEquals((double) row.get("embarked_te"), (double) encodingComponents[0] / encodingComponents[1] + 0.1, 1e-5);
   }
 
 

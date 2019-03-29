@@ -574,11 +574,10 @@ public class EasyPredictModelWrapper implements Serializable {
     Map<String, Map<String, int[]>> targetEncodingMap = getTargetEncodingMap();
     for (Map.Entry<String, Map<String, int[]>> columnToEncodingsMap : targetEncodingMap.entrySet()) {
       String columnName = columnToEncodingsMap.getKey();
-      String originalValue = (String) data.get(columnName); // TODO otherwise exception
-      Map<String, int[]> encodings = columnToEncodingsMap.getValue(); // Should we store encodings separately as numerator and denominator?
+      String originalValue = (String) data.get(columnName);
+      Map<String, int[]> encodings = columnToEncodingsMap.getValue(); 
       int[] correspondingNumAndDen = encodings.get(originalValue);
       double calculatedFrequency = (double) correspondingNumAndDen[0] / correspondingNumAndDen[1];
-//      data.remove(columnName); // TODO should we remove previous entries?
       data.put(columnName+"_te", calculatedFrequency);
     }
   }

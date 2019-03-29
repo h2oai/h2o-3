@@ -253,7 +253,7 @@ public abstract class AbstractMojoWriter {
    * Creates section `target_encoding_map` in model.ini file that store keys for retrieving map for target encoding
    */
   private void writeTargetEncodingMap() throws IOException {
-    startWritingTextFile("feature_engineering/targetencoding.ini");
+    startWritingTextFile("feature_engineering/target_encoding.ini");
     for (Map.Entry<String, Map<String, int[]>> columnEncodingsMap : model.targetEncodingMap().entrySet()) {
       writeln("[" + columnEncodingsMap.getKey() +"]");
       Map<String, int[]> encodings = columnEncodingsMap.getValue();

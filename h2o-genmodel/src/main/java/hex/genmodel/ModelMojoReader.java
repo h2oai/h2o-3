@@ -181,7 +181,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     _model._priorClassDistrib = readkv("prior_class_distrib");
     _model._modelClassDistrib = readkv("model_class_distrib");
     _model._offsetColumn = readkv("offset_column");
-    _model._targetEncodingMap = parseTargetEncodingMap(_reader.getTextFile("feature_engineering/targetencoding.ini"));
+    _model._targetEncodingMap = parseTargetEncodingMap(_reader.getTextFile("feature_engineering/target_encoding.ini"));
     _model._mojo_version = ((Number) readkv("mojo_version")).doubleValue();
     checkMaxSupportedMojoVersion();
     readModelData();

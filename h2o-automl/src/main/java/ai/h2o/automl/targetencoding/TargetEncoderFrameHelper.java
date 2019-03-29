@@ -12,9 +12,10 @@ import water.fvec.task.UniqTask;
 import water.rapids.ast.prims.advmath.AstKFold;
 import water.rapids.ast.prims.mungers.AstGroup;
 
+import java.util.Map;
 import java.util.Random;
 
-class TargetEncoderFrameHelper {
+public class TargetEncoderFrameHelper {
 
   /** @return the expanded with constant vector Frame, for flow-coding */
   static Frame addCon(Frame fr, String appendedColumnName, long constant ) { fr.add(appendedColumnName, Vec.makeCon(constant, fr.numRows(), Vec.T_NUM)); return fr; }
@@ -112,6 +113,12 @@ class TargetEncoderFrameHelper {
     frame._key = Key.make();
     DKV.put(frame);
     return frame;
+  }
+
+  static public void encodingMapCleanUp(Map<String, Frame> encodingMap) {
+    for (Map.Entry<String, Frame> map : encodingMap.entrySet()) {
+      map.getValue().delete();
+    }
   }
 
 }
