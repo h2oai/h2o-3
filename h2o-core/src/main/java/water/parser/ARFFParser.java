@@ -19,13 +19,7 @@ class ARFFParser extends CsvParser {
   private static final byte GUESS_SEP = ParseSetup.GUESS_SEP;
   private static final byte[] NON_DATA_LINE_MARKERS_DEFAULT = {'%', '@'};
 
-  ARFFParser(ParseSetup ps, Key jobKey) { super(ps, jobKey); }
-
-  @Override
-  protected byte[] nonDataLineMarkersDefault() {
-    return NON_DATA_LINE_MARKERS_DEFAULT;
-  }
-
+  ARFFParser(ParseSetup ps, Key jobKey) { super(ps, NON_DATA_LINE_MARKERS_DEFAULT, jobKey); }
 
   /** Try to parse the bytes as ARFF format  */
   static ParseSetup guessSetup(ByteVec bv, byte[] bits, byte sep, boolean singleQuotes, String[] columnNames, String[][] naStrings,

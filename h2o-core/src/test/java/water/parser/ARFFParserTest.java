@@ -72,6 +72,7 @@ public class ARFFParserTest {
     parseSetup._column_names = new String[]{"Name"};
     parseSetup._number_columns = 5;
     parseSetup._single_quotes = false;
+    parseSetup._nonDataLineMarkers = new byte[]{'%', '@'};
     final ARFFParser parser = new ARFFParser(parseSetup, null);
 
     final NFSFileVec data = TestUtil.makeNfsFileVec("./smalldata/arff-examples/dataWeka/iris.arff");

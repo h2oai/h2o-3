@@ -20,15 +20,16 @@ public class CsvParser extends Parser {
   private static final int HAS_HEADER = ParseSetup.HAS_HEADER;
   private static final byte[] NON_DATA_LINE_MARKERS_DEFAULT = {'#'};
 
+  private final byte[] _nonDataLineMarkers; 
+
   CsvParser( ParseSetup ps, Key jobKey ) {
+    this(ps, NON_DATA_LINE_MARKERS_DEFAULT, jobKey);
+  }
+
+  CsvParser(ParseSetup ps, byte[] defaultNonDataLineMarkers, Key jobKey) {
     super(ps, jobKey);
+    _nonDataLineMarkers = ps._nonDataLineMarkers != null ? ps._nonDataLineMarkers : defaultNonDataLineMarkers;
   }
-
-  protected byte[] nonDataLineMarkersDefault() {
-    return NON_DATA_LINE_MARKERS_DEFAULT;
-  }
-
-
 
   // Parse this one Chunk (in parallel with other Chunks)
   @SuppressWarnings("fallthrough")
@@ -67,7 +68,7 @@ public class CsvParser extends Parser {
     byte c = bits[offset];
     // skip comments for the first chunk (or if not a chunk)
     if( cidx == 0 ) {
-      while (ArrayUtils.contains(_setup._nonDataLineMarkers, c) || isEOL(c)) {
+      while (ArrayUtils.contains(_nonDataLineMarkers, c) || isEOL(c)) {
         while ((offset < bits.length) && (bits[offset] != CHAR_CR) && (bits[offset  ] != CHAR_LF)) {
 //          System.out.print(String.format("%c",bits[offset]));
           ++offset;
@@ -234,7 +235,7 @@ MAIN_LOOP:
               state = EXPECT_COND_LF;
             break;
           }
-          if (ArrayUtils.contains(_setup._nonDataLineMarkers, c)) {
+          if (ArrayUtils.contains(_nonDataLineMarkers, c)) {
             state = SKIP_LINE;
             break;
           }
@@ -527,7 +528,7 @@ MAIN_LOOP:
 
   @Override protected int fileHasHeader(byte[] bits, ParseSetup ps) {
     boolean hasHdr = true;
-    String[] lines = getFirstLines(bits, ps._single_quotes, ps._nonDataLineMarkers);
+    String[] lines = getFirstLines(bits, ps._single_quotes, _nonDataLineMarkers);
     if (lines != null && lines.length > 0) {
       String[] firstLine = determineTokens(lines[0], _setup._separator, _setup._single_quotes);
       if (_setup._column_names != null) {
@@ -687,7 +688,8 @@ MAIN_LOOP:
    */
   static ParseSetup guessSetup(byte[] bits, byte sep, int ncols, boolean singleQuotes, int checkHeader,
                                String[] columnNames, byte[] columnTypes, String[][] naStrings, byte[] nonDataLineMarkers) {
-    if(nonDataLineMarkers == null) nonDataLineMarkers = NON_DATA_LINE_MARKERS_DEFAULT;
+    if (nonDataLineMarkers == null)
+      nonDataLineMarkers = NON_DATA_LINE_MARKERS_DEFAULT;
     int lastNewline = bits.length-1;
     while(lastNewline > 0 && !CsvParser.isEOL(bits[lastNewline]))lastNewline--;
     if(lastNewline > 0) bits = Arrays.copyOf(bits,lastNewline+1);
