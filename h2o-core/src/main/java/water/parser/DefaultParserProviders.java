@@ -39,10 +39,9 @@ public final class DefaultParserProviders {
     }
 
     @Override
-    public ParseSetup guessSetup(ByteVec bv, byte[] bits, byte sep, int ncols, boolean singleQuotes,
-                                 int checkHeader, String[] columnNames, byte[] columnTypes,
-                                 String[][] domains, String[][] naStrings) {
-      return ARFFParser.guessSetup(bv, bits, sep, singleQuotes, columnNames, naStrings);
+    public ParseSetup guessInitSetup(ByteVec v, byte[] bits, ParseSetup ps) {
+      return ARFFParser.guessSetup(v, bits, ps._separator, ps._single_quotes, ps._column_names, ps._na_strings,
+              ps._nonDataLineMarkers);
     }
   }
 
@@ -99,11 +98,11 @@ public final class DefaultParserProviders {
     }
 
     @Override
-    public ParseSetup guessSetup(ByteVec bv, byte[] bits, byte sep, int ncols, boolean singleQuotes,
-                                 int checkHeader, String[] columnNames, byte[] columnTypes,
-                                 String[][] domains, String[][] naStrings) {
-      return CsvParser.guessSetup(bits, sep, ncols, singleQuotes, checkHeader, columnNames, columnTypes, naStrings);
+    public ParseSetup guessInitSetup(ByteVec v, byte[] bits, ParseSetup ps) {
+      return CsvParser.guessSetup(bits, ps._separator, ps._number_columns, ps._single_quotes, ps._check_header,
+              ps._column_names, ps._column_types, ps._na_strings, ps._nonDataLineMarkers);
     }
+    
   }
 
   public final static class GuessParserProvider extends AbstractParserProvide {
