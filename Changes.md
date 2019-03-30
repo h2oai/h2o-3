@@ -31,7 +31,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yates/1/index.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6360'>PUBDEV-6360</a>] - Improved the error message that displays when a user attempts to modify an Enum/categorical column as if it were a string. 
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6367'>PUBDEV-6367</a>] -         Rows starting with # are dropped when they shouldn&#39;t be (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6367'>PUBDEV-6367</a>] - Rows that start with a # symbol are no longer dropped during the import process.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6368'>PUBDEV-6368</a>] - Fixed an SVM import failure.
 </li>
@@ -117,8 +117,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yates/1/index.
 
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4977'>PUBDEV-4977</a>] - Removed FAQ indicating that Java 9 was not yet supported.
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6040'>PUBDEV-6040</a>] - Added a Python Target Encoding example. (STILL OPEN)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6136'>PUBDEV-6136</a>] - Added a "Generic Models" chapter to the Algorithms section.
 </li>
