@@ -2,7 +2,7 @@
 
 ## H2O
 
-### Yates (3.24.0.1) - 4/1/2019
+### Yates (3.24.0.1) - 3/31/2019
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yates/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yates/1/index.html</a>
 
@@ -52,7 +52,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yates/1/index.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5925'>PUBDEV-5925</a>] - In GLM, added support for negative binomial family.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6056'>PUBDEV-6056</a>] - For GBM predictions, users can now retrieve predicted feature contributions (SHAP values). 
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6056'>PUBDEV-6056</a>] - For GBM and XGBoost models, users can now generate feature contributions (SHAP values). 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6136'>PUBDEV-6136</a>] - Added support for Generic Models, which provide a means to use external, pretrained MOJO models in H2O for scoring. Currently only GBM, DRF, IF, and GLM MOJO models are supported. 
 </li>
