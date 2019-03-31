@@ -124,6 +124,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yates/1/index.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6280'>PUBDEV-6280</a>] - Added information about the Negative Binomial family to the GLM booklet and the user guide.
 </li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6289'>PUBDV-6289</a>] - Improved the R and Python client documentation for the `sum` function.
+</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6331'>PUBDEV-6331</a>] - Added include_algos,e xclude_algos, max_models, and max_runtime_secs_per_model examples to the Parameters appendix.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6362'>PUBDEV-6362</a>] - In the User Guide and R an Python documentation, replaced references to "H2O Cloud" with "H2O Cluster". 
@@ -132,6 +134,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yates/1/index.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6381'>PUBDEV-6381</a>] - In the GBM chapter, noted that monotone_constraints is available for Bernoulli distributions in addition to Gaussian distributions.
 </li>
+<li>Improved the GBM Reproducibility FAQ.</li>
 </ul>
                                                         
 
