@@ -55,13 +55,15 @@ Reproducibility
 
  3. Save the H2O binary model. Refer to :ref:`save_and_load_model` for more information. The binary model will contain the H2O version and the parameters used to train the model.
 
- 4. Train the GBM model using the same:
+ 4. Save the H2O logs.  Refer to [Downloading Logs](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/logs.rst)
+
+ 5. Train the GBM model using the same:
 	
    - training data (information about the training data saved in Step 1)
    - cluster configuration (information about the cluster configuration saved in Step 2)
    - parameters (information about the parameters saved in Step 3)
 
- You do not need to explicitly set a seed to make a GBM model reproducible.  If no seed is set, then H2O-3 will randomly choose a seed.  This seed is saved in the binary model.  To reproduce your model, you can extract the seed from the binary model and re-train the GBM with the seed set.
+ You do not need to explicitly set a seed to make a GBM model freproducible.  If no seed is set, then H2O-3 will randomly choose a seed.  This seed is saved in the binary model.  To reproduce your model, you can extract the seed from the binary model and re-train the GBM with the seed set.
    
  .. example-code::
     .. code-block:: r
@@ -121,7 +123,7 @@ Reproducibility
        training_frame = h2o.parse_raw(setup)
 
  4. Repeat Steps 2-3 if you used validation data.  
- 5. Train the model in R or in Flow. If you are using Flow, you will be able to see the datasets from the Frames menu when you select **Data > List All Frames**. 
+ 5. Train your model. If you are using Flow, you will be able to see the datasets from the Frames menu when you select **Data > List All Frames**. 
 
   .. figure:: ../../images/GBMReproducibility_ListAllFrames.png
      :alt: List of All Frames
@@ -143,7 +145,7 @@ Reproducibility
 
  In versions of H2O-3 before 3.16.04 or Steam Versions before 1.4.4, the node that triggered the traininig of the model was not necessarily the leader node of the cluster. This variability can cause issues in reproducibility. In order to guarantee reproducibility, we must connect to the same node of the H2O cluster as was done during training of the initial model. The steps below outline how to do this:
 
- 1. Review the logs of the initial model. This will tell us what node we will need to connect to in order to reproduce the model. The logs will have a folder for each node in the cluster
+ 1. Use the logs of the initial model to determine the node order
 
     .. figure:: ../../images/GBMReproducibility_NodeLogs.png
        :alt: Logs for each node
@@ -158,17 +160,38 @@ Reproducibility
     .. figure:: ../../images/GBMReproducibility_CloudOrder_Logs.png
        :alt: Order of the H2O cloud
        
-    The first node listed is the node we will need to connect to in order to reproduce the model. In this case, it is: ``172.16.2.182:54323``.
+    Copy the list of nodes - this describes the order of the nodes.  Save this information in a separate document.  Below is an example.
 
-   c. Determine which node this IP and port correspond to. You can do this by going back to the H2O logs and seeing which node has the same IP and port.
+    	* Node 1: mr-0xd4.0xdata.loc/172.16.2.184:54325
+		* Node 2: mr-0xd5.0xdata.loc/172.16.2.185:54323
+		* Node 3: mr-0xd9.0xdata.loc/172.16.2.189:54321
+
+
+   2. Find the IP and Port of the node that was processing requests in the H2O cluster	
+
+   a. In the logs search for: ``ParseSetup``
 			
-    .. figure:: ../../images/GBMReproducibility_NodeLogs.png
-       :alt: Logs for each node
+    .. figure:: ../../images/GBMReproducibility_ParseSetup.png
+       :alt: Node Processing Requests
 		
 	
-    In this case, the node with the same IP and port: ``172.16.2.182:54323`` is ``node0``. To reproduce the model, we must always connect to the first node: ``node0``.
+    You may have to try opening multiple zip files to find this term in the logs.  
+
+   b. Identify the IP and Port that processed the ParseSetup request - this will be the IP and Port in the ParseSetup line
+
+      .. figure:: ../../images/GBMReproducibility_NodeGettingRequests.png
+       :alt: IP and Port of Node Processing Requests
+
+ 3. Determine the order of the node found in Step 2.
+
+ 	a. Using the node order document created in Step 1, identify the position of the node that is processing the requests
 	
- 2. Start up a new H2O cluster in the command line. This is the H2O cluster we will use to reproduce the model. For example: 
+	In our example, the IP and Port processing requests was:``172.16.2.184:54325``.  We will need to find where that node is in our node order document.
+
+	In our example, this is the first node in our list.
+
+	
+ 4. Start up a new H2O cluster in the command line. This is the H2O cluster we will use to reproduce the model. For example: 
 
   ::
 
@@ -176,13 +199,13 @@ Reproducibility
    
   This cluster must have the same number of nodes as the cluster used to train the inital model.
 	
- 3. Open Flow. When the H2O cluster is up, you will see the following similar output in the command line. Open Flow using the URL provided in the output.
+ 5. Open Flow. When the H2O cluster is up, you will see the following similar output in the command line. Open Flow using the URL provided in the output.
 
    ::
 
     Open H2O Flow in your web browser: http://172.16.2.189:54321
  
- 4. Review the Cluster Status in Flow by selecting **Admin > Cluster Status**. 
+ 6. Review the Cluster Status in Flow by selecting **Admin > Cluster Status**. 
 
   .. figure:: ../../images/GBMReproducibility_ClusterStatusButton.png
      :alt: Button in Flow to access cluster status
@@ -190,13 +213,13 @@ Reproducibility
   .. figure:: ../../images/GBMReproducibility_ClusterStatus.png
      :alt: Cluster Status
 
- 5. Find the IP address that corresponds to the node we need to connect to from Step 1. Remember that in our example, we have to connect to the first node listed (``node0``). This means that we need to connect to the first node listed in the Cluster Status.
+ 7. Find the IP address that corresponds to the node we need to connect to from Step 1. Remember that in our example, we have to connect to the first node listed. This means that we need to connect to the first node listed in the Cluster Status.
 
   .. figure:: ../../images/GBMReproducibility_ClusterStatusNodeSelected.png
      :alt: Leader Node highlighted in cluster status
      :width: 447
      :height: 372
  
- 6. Use the selected IP address to connect to H2O from R, Python, or Flow and re-train the model you are interested in reproducing. 
+ 8. Use the selected IP address to connect to H2O from R, Python, or Flow and re-train the model you are interested in reproducing. 
    
   **Note**: If you are using Flow, this means you must open Flow in a new browser with the IP and port selected.
