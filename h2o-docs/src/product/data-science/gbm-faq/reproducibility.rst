@@ -143,7 +143,7 @@ Reproducibility
 
 - **How do I reproduce a model where model training was not triggered from the leader node?**
 
- In versions of H2O-3 before 3.16.04 or Steam Versions before 1.4.4, the node that triggered the traininig of the model was not necessarily the leader node of the cluster. This variability can cause issues in reproducibility. In order to guarantee reproducibility, we must connect to the same node of the H2O cluster as was done during training of the initial model. The steps below outline how to do this:
+ In versions of H2O-3 before 3.16.04 or Steam Versions before 1.4.4, the node that triggered the training of the model was not necessarily the leader node of the cluster. This variability can cause issues in reproducibility. In order to guarantee reproducibility, we must connect to the same node of the H2O cluster as was done during training of the initial model. The steps below outline how to do this:
 
  1. Use the logs of the initial model to determine the node order
 
