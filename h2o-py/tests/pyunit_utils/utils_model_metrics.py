@@ -49,6 +49,18 @@ class CustomOneFunc:
     def metric(self, l):
         return 1
 
+CustomOneFuncStr = '''
+class CustomOneFunc:
+    def map(self, pred, act, w, o, model):
+        return  []
+
+    def reduce(self, l, r):
+        return []
+
+    def metric(self, l):
+        return 1
+'''
+
 def assert_metrics_equal(metric, metric_name1, metric_name2, msg=None):
     metric_name1 = metric_name1 if metric_name1 in metric._metric_json else metric_name1.upper()
     metric_name2 = metric_name2 if metric_name2 in metric._metric_json else metric_name2.upper()
