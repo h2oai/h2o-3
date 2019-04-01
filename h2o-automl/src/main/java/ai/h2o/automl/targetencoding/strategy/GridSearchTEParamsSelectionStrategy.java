@@ -14,12 +14,11 @@ public class GridSearchTEParamsSelectionStrategy extends GridBasedTEParamsSelect
 
   private Frame _leaderboardData;
   private String _responseColumn;
-  private String[] _columnsToEncode; // we might want to search for subset as well
   private boolean _theBiggerTheBetter;
 
   private PriorityQueue<Evaluated<TargetEncodingParams>> _evaluatedQueue;
   private TargetEncodingHyperparamsEvaluator _evaluator = new TargetEncodingHyperparamsEvaluator();
-//  private GridSearchTEStratifiedEvaluator _evaluator = new GridSearchTEStratifiedEvaluator();
+  //  private GridSearchTEStratifiedEvaluator _evaluator = new GridSearchTEStratifiedEvaluator(); // add parameter to switch between stratified vs non-stratified
   
   private int _numberOfIterations;
 
@@ -32,13 +31,19 @@ public class GridSearchTEParamsSelectionStrategy extends GridBasedTEParamsSelect
     
     _ratioOfHyperSpaceToExplore = ratioOfHyperSpaceToExplore;
     _theBiggerTheBetter = theBiggerTheBetter;
-    
+
+    //After filtering out some categorical columns with `applicationStrategy` we can try to search for optimal combination as well. 
+    // This covers the case with no columns to encode, i.e. no target encoding
+    _columnNameToIdxMap = new HashMap<>();//leaderboard.find(_columnsToEncode);
+    for (String column : _columnsToEncode) {
+      _columnNameToIdxMap.put(column, (double) leaderboard.find(column));
+    }
   }
 
   @Override
   public void setTESearchSpace(ModelValidationMode modelValidationMode) {
     super.setTESearchSpace(modelValidationMode);
-    _numberOfIterations = (int)( _randomSelector.spaceSize() * _ratioOfHyperSpaceToExplore);
+    _numberOfIterations = (int)( _randomGridEntrySelector.spaceSize() * _ratioOfHyperSpaceToExplore);
     _evaluatedQueue = new PriorityQueue<>(_numberOfIterations, new EvaluatedComparator(_theBiggerTheBetter));
   }
 
@@ -56,18 +61,18 @@ public class GridSearchTEParamsSelectionStrategy extends GridBasedTEParamsSelect
     try {
       for (int attempt = 0; attempt < _numberOfIterations; attempt++) {
 
-        GridEntry selected = _randomSelector.getNext(); // Maybe we don't need to have a GridEntry
+        GridEntry selected = _randomGridEntrySelector.getNext(); // Maybe we don't need to have a GridEntry
 
         TargetEncodingParams param = new TargetEncodingParams(selected.getItem());
 
         ModelBuilder clonedModelBuilder = ModelBuilder.clone(modelBuilder);
         clonedModelBuilder.init(false); // in _evaluator we assume that init() has been already called
 
-        double evaluationResult = _evaluator.evaluate(param, clonedModelBuilder, _modelValidationMode, _leaderboardData, getColumnsToEncode(), _seed);
+        double evaluationResult = _evaluator.evaluate(param, clonedModelBuilder, _modelValidationMode, _leaderboardData, _seed);
         _evaluatedQueue.add(new Evaluated<>(param, evaluationResult, attempt));
         exporter.update(0, evaluationResult);
       }
-    } catch (RandomSelector.GridSearchCompleted ex) {
+    } catch (RandomGridEntrySelector.GridSearchCompleted ex) {
       // just proceed by returning best gridEntry found so far
     }
 

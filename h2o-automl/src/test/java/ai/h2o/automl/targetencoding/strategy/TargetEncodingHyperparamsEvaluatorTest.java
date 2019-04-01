@@ -63,23 +63,24 @@ public class TargetEncodingHyperparamsEvaluatorTest extends TestUtil {
       leaderboard = splits[2];
 
       TEApplicationStrategy strategy = new ThresholdTEApplicationStrategy(train, train.vec(responseColumnName), 4);
-
+      String[] columnsToEncode = strategy.getColumnsToEncode();
+      
       TargetEncodingHyperparamsEvaluator evaluator = new TargetEncodingHyperparamsEvaluator();
 
-      TargetEncodingParams randomTEParams = TargetEncodingTestFixtures.randomTEParams();
+      TargetEncodingParams randomTEParams = TargetEncodingTestFixtures.randomTEParams(columnsToEncode);
       long builderSeed = 3456;
       modelBuilder = modelBuilderGBMWithValidFrameFixture(train, valid, responseColumnName, builderSeed);
-      String[] columnsToEncode = strategy.getColumnsToEncode();
+      
       
       modelBuilder.init(false); //verifying that we can call init and then modify builder in evaluator
       ModelBuilder clonedModelBuilder = ModelBuilder.clone(modelBuilder);
       
       int seedForFoldColumn = 2345;
-      double auc = evaluator.evaluate(randomTEParams, modelBuilder, ModelValidationMode.VALIDATION_FRAME, leaderboard, columnsToEncode, seedForFoldColumn);
+      double auc = evaluator.evaluate(randomTEParams, modelBuilder, ModelValidationMode.VALIDATION_FRAME, leaderboard, seedForFoldColumn);
       
       clonedModelBuilder.init(false);
       // checking that we can reuse modelBuilder
-      double auc2 = evaluator.evaluate(randomTEParams, clonedModelBuilder, ModelValidationMode.VALIDATION_FRAME, leaderboard, columnsToEncode, seedForFoldColumn);
+      double auc2 = evaluator.evaluate(randomTEParams, clonedModelBuilder, ModelValidationMode.VALIDATION_FRAME, leaderboard, seedForFoldColumn);
       assertTrue(isBitIdentical(clonedModelBuilder._parms.train(), modelBuilder._parms.train()));
       assertTrue(auc > 0);
       assertEquals(auc, auc2, 1e-5);
@@ -118,16 +119,16 @@ public class TargetEncodingHyperparamsEvaluatorTest extends TestUtil {
 
 
     for (int teParamAttempt = 0; teParamAttempt < 30; teParamAttempt++) {
-      GridSearchTEParamsSelectionStrategy.RandomSelector randomSelector = new GridSearchTEParamsSelectionStrategy.RandomSelector(_grid, testSeed);
+      TEParamsSelectionStrategy.RandomGridEntrySelector randomGridEntrySelector = new TEParamsSelectionStrategy.RandomGridEntrySelector(_grid, testSeed);
       GridSearchTEParamsSelectionStrategy.GridEntry selected = null;
       try {
-        selected = randomSelector.getNext();
-      } catch (GridSearchTEParamsSelectionStrategy.RandomSelector.GridSearchCompleted ex) {
+        selected = randomGridEntrySelector.getNext();
+      } catch (TEParamsSelectionStrategy.RandomGridEntrySelector.GridSearchCompleted ex) {
 
       } 
 
       TargetEncodingParams param = new TargetEncodingParams(selected.getItem());
-      TargetEncodingParams tmpParam  = new TargetEncodingParams(null, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, 0.0);
+//      TargetEncodingParams param  = new TargetEncodingParams(strategy.getColumnsToEncode(),null, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, 0.0);
 
 
       double lastResult = 0.0;
@@ -135,12 +136,12 @@ public class TargetEncodingHyperparamsEvaluatorTest extends TestUtil {
         ModelBuilder clonedModelBuilder = ModelBuilder.clone(modelBuilder);
         clonedModelBuilder.init(false);
         
-        double evaluationResult = targetEncodingHyperparamsEvaluator.evaluate(tmpParam, clonedModelBuilder, ModelValidationMode.VALIDATION_FRAME, null, strategy.getColumnsToEncode(), testSeed);
+        double evaluationResult = targetEncodingHyperparamsEvaluator.evaluate(param, clonedModelBuilder, ModelValidationMode.VALIDATION_FRAME, null, testSeed);
         if(lastResult == 0.0) lastResult = evaluationResult;
         else {
           
           assertEquals("evaluationAttempt #" + evaluationAttempt + " for teParamAttempt #" + 
-                  teParamAttempt + " has failed. " + tmpParam , lastResult, evaluationResult, precisionForAUCEvaluations);
+                  teParamAttempt + " has failed. " + param , lastResult, evaluationResult, precisionForAUCEvaluations);
         }
       }
     }

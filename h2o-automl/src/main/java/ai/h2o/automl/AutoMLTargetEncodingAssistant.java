@@ -11,6 +11,7 @@ import water.Key;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
+import water.util.StringUtils;
 import water.util.TwoDimTable;
 
 import java.util.Map;
@@ -74,7 +75,7 @@ class AutoMLTargetEncodingAssistant{
     HPsSelectionStrategy teParamsSelectionStrategy = buildSpec.te_spec.params_selection_strategy;
     switch(teParamsSelectionStrategy) {
       case Fixed:
-        TargetEncodingParams targetEncodingParams = new TargetEncodingParams(new BlendingParams(5, 1), TargetEncoder.DataLeakageHandlingStrategy.KFold, 0.01);
+        TargetEncodingParams targetEncodingParams = new TargetEncodingParams(_columnsToEncode, new BlendingParams(5, 1), TargetEncoder.DataLeakageHandlingStrategy.KFold, 0.01);
         _teParamsSelectionStrategy = new FixedTEParamsStrategy(targetEncodingParams);
         break;
       case RGS:
@@ -83,7 +84,7 @@ class AutoMLTargetEncodingAssistant{
                 _responseColumnName, _columnsToEncode, theBiggerTheBetter, buildSpec.te_spec.seed);
         break;
     }
-    
+
     // Pre-setup for grid-based strategies based on AutoML's ways of validating models 
     if(_teParamsSelectionStrategy instanceof GridBasedTEParamsSelectionStrategy ) {
 
@@ -104,9 +105,11 @@ class AutoMLTargetEncodingAssistant{
 
   void performAutoTargetEncoding() {
 
-    Log.info("Best TE parameters were selected to be: holdout_type = " + _teParams.getHoldoutType() + ", isWithBlending = " + _teParams.isWithBlendedAvg() + ", smoothing = " + _teParams.getBlendingParams().getF() + ", inflection_point = " + _teParams.getBlendingParams().getK() + ", noise_level = " + _teParams.getNoiseLevel());
-
-    String[] columnsToEncode = getApplicationStrategy().getColumnsToEncode();
+    String[] columnsToEncode = _teParams.getColumnsToEncode();
+    
+    Log.info("Best TE parameters were selected to be: columnsToEncode = [ " + StringUtils.join(",", columnsToEncode ) + 
+            " ], holdout_type = " + _teParams.getHoldoutType() + ", isWithBlending = " + _teParams.isWithBlendedAvg() + ", smoothing = " + 
+            _teParams.getBlendingParams().getF() + ", inflection_point = " + _teParams.getBlendingParams().getK() + ", noise_level = " + _teParams.getNoiseLevel());
   
     if (columnsToEncode.length > 0) {
 

@@ -772,7 +772,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     // NOTE: here we will also affect `_buildSpec.input_spec.ignored_columns`. We will switch it back below in `finally` block after model is trained.
     String[] originalIgnoredColumns = buildSpec.input_spec.ignored_columns;
+    
     performTargetEncoding(builder); 
+    
     // We are changing `ignored_columns` in `performTargetEncoding` method  
     builder._parms._ignored_columns = buildSpec.input_spec.ignored_columns; //TODO mayebe it is better to directly change builder from assistant
     builder._parms._keep_cross_validation_predictions = false; //TODO mayebe it is better to directly change builder from assistant

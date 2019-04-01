@@ -8,10 +8,8 @@ import hex.ModelBuilder;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.AutoBuffer;
-import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.rapids.StratificationAssistant;
 
 import java.util.Comparator;
@@ -33,18 +31,16 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
     Frame fr = null;
     try {
       fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
-      int numberOfIterations = 1;
-      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsEv = findBestTargetEncodingParams(fr ,"survived", numberOfIterations);
+      double ratioOfHPToExplore = 0.1;
+      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsEv = findBestTargetEncodingParams(fr ,"survived", ratioOfHPToExplore);
       bestParamsEv.getItem();
       
     } finally {
       fr.delete();
     }
-    
   }
 
-  //TODO duplication with GridSearchVsSMBOBenchmark
-  private GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> findBestTargetEncodingParams(Frame fr, String responseColumnName, int numberOfIterations) {
+  private GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> findBestTargetEncodingParams(Frame fr, String responseColumnName, double ratioOfHPToExplore) {
 
     asFactor(fr, responseColumnName);
     
@@ -59,62 +55,18 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
     long seedForFoldColumn = 2345L;
 
     GridSearchTEParamsSelectionStrategy gridSearchTEParamsSelectionStrategy =
-            new GridSearchTEParamsSelectionStrategy(leaderboard, numberOfIterations, responseColumnName, columnsToEncode, true, seedForFoldColumn);
+            new GridSearchTEParamsSelectionStrategy(leaderboard, ratioOfHPToExplore, responseColumnName, columnsToEncode, true, seedForFoldColumn);
 
     gridSearchTEParamsSelectionStrategy.setTESearchSpace(ModelValidationMode.VALIDATION_FRAME);
     ModelBuilder mb = TargetEncodingTestFixtures.modelBuilderGBMWithValidFrameFixture(train, valid, responseColumnName, seedForFoldColumn);
     mb.init(false);
-    return gridSearchTEParamsSelectionStrategy.getBestParamsWithEvaluation(mb);
-  }
-
-  @Test
-  public void perModelTEParametersAreBetterTest() {
+    TEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsWithEvaluation = gridSearchTEParamsSelectionStrategy.getBestParamsWithEvaluation(mb);
     
-    int numberOfSearchIterations = 20;
-    Frame fr = null;
-    Frame fr2 = null;
-    Frame fr3 = null;
-    Scope.enter();
-    try {
-      fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
-      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsFromGLM = findBestTargetEncodingParams(fr, "survived", numberOfSearchIterations);
-      
-      fr2 = parse_test_file("./smalldata/gbm_test/titanic.csv");
-      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsFromGBM = findBestTargetEncodingParams(fr2, "survived", numberOfSearchIterations);
-
-      fr3 = parse_test_file("./smalldata/gbm_test/titanic.csv");
-      long seedForFoldColumn = 2345L;
-      final String foldColumnForTE = "custom_fold";
-      int nfolds = 5;
-      addKFoldColumn(fr3, foldColumnForTE, nfolds, seedForFoldColumn);
-
-      String responseColumnName = "survived";
-
-      asFactor(fr3, responseColumnName);
-
-      Vec survivedVec = fr3.vec("survived");
-      TEApplicationStrategy strategy = new ThresholdTEApplicationStrategy(fr3, survivedVec, 4);
-
-      TargetEncodingHyperparamsEvaluator evaluator = new TargetEncodingHyperparamsEvaluator();
-
-//      double gbmWithBestGLMParams = evaluator.evaluate(bestParamsFromGLM._item, new Algo[]{Algo.GBM}, fr3, responseColumnName, foldColumnForTE, strategy.getColumnsToEncode());
-//      double gbmWithBestGBMParams = evaluator.evaluate(bestParamsFromGBM._item, new Algo[]{Algo.GBM}, fr3, responseColumnName, foldColumnForTE, strategy.getColumnsToEncode());
-//
-//      assertTrue(gbmWithBestGBMParams > gbmWithBestGLMParams);
-//      assertTrue(bestParamsFromGBM.getScore() == gbmWithBestGBMParams);
-//      
-//      double glmWithBestGLMParams = evaluator.evaluate(bestParamsFromGLM._item, new Algo[]{Algo.GLM}, fr3, responseColumnName, foldColumnForTE, strategy.getColumnsToEncode());
-//      double glmWithBestGBMParams = evaluator.evaluate(bestParamsFromGBM._item, new Algo[]{Algo.GLM}, fr3, responseColumnName, foldColumnForTE, strategy.getColumnsToEncode());
-//
-//      assertTrue(glmWithBestGLMParams > glmWithBestGBMParams);
-//      assertTrue(bestParamsFromGLM.getScore() == glmWithBestGLMParams);
-      
-    } finally {
-      Scope.exit();
-      fr.delete();
-      fr2.delete();
-      fr3.delete();
-    }
+    train.delete();
+    valid.delete();
+    leaderboard.delete();
+    
+    return bestParamsWithEvaluation;
   }
   
   @Test
@@ -124,9 +76,9 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
     PriorityQueue<GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams>> evaluatedQueue = new PriorityQueue<>(200, comparator);
     
     
-    TargetEncodingParams params1 = TargetEncodingTestFixtures.randomTEParams();
-    TargetEncodingParams params2 = TargetEncodingTestFixtures.randomTEParams();
-    TargetEncodingParams params3 = TargetEncodingTestFixtures.randomTEParams();
+    TargetEncodingParams params1 = TargetEncodingTestFixtures.randomTEParams(null);
+    TargetEncodingParams params2 = TargetEncodingTestFixtures.randomTEParams(null);
+    TargetEncodingParams params3 = TargetEncodingTestFixtures.randomTEParams(null);
     evaluatedQueue.add(new GridSearchTEParamsSelectionStrategy.Evaluated<>(params1, 0.9984, 0));
     evaluatedQueue.add(new GridSearchTEParamsSelectionStrategy.Evaluated<>(params2, 0.9996, 1));
     evaluatedQueue.add(new GridSearchTEParamsSelectionStrategy.Evaluated<>(params3, 0.9784, 2));
@@ -146,24 +98,25 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
     searchParams.put("_smoothing", new Double[]{5.0, 10.0, 20.0});
     searchParams.put("_holdoutType", new Byte[]{TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, TargetEncoder.DataLeakageHandlingStrategy.KFold});
 
-    GridSearchTEParamsSelectionStrategy.RandomSelector randomSelector = new GridSearchTEParamsSelectionStrategy.RandomSelector(searchParams);
+    TEParamsSelectionStrategy.RandomGridEntrySelector randomGridEntrySelector = new TEParamsSelectionStrategy.RandomGridEntrySelector(searchParams);
     int sizeOfSpace = 252;
     try {
       for (int i = 0; i < sizeOfSpace; i++) {
-        randomSelector.getNext();
+        randomGridEntrySelector.getNext();
       }
-    } catch (GridSearchTEParamsSelectionStrategy.RandomSelector.GridSearchCompleted ex) {
+    } catch (TEParamsSelectionStrategy.RandomGridEntrySelector.GridSearchCompleted ex) {
       
     }
-    assertEquals(sizeOfSpace, randomSelector.getVisitedPermutationHashes().size());
+    
+    assertEquals(sizeOfSpace, randomGridEntrySelector.getVisitedPermutationHashes().size());
 
     try {
-      //Check that cache with permutations will not increase in size after extra `getNext` call when grid has been already discovered. But we still will get some random item.
-      randomSelector.getNext();
-    } catch (GridSearchTEParamsSelectionStrategy.RandomSelector.GridSearchCompleted ex) {
+      //Check that cache with permutations will not increase in size after extra `getNext` call when grid has been already discovered.
+      randomGridEntrySelector.getNext();
+    } catch (TEParamsSelectionStrategy.RandomGridEntrySelector.GridSearchCompleted ex) {
 
     }
-    assertEquals(sizeOfSpace, randomSelector.getVisitedPermutationHashes().size());
+    assertEquals(sizeOfSpace, randomGridEntrySelector.getVisitedPermutationHashes().size());
   }
 
   /**
@@ -214,9 +167,9 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
     HashMap<String, Object[]> searchParams = new HashMap<>();
     searchParams.put("_withBlending", new Boolean[]{true, false});
     
-    GridSearchTEParamsSelectionStrategy.RandomSelector randomSelector = new GridSearchTEParamsSelectionStrategy.RandomSelector(searchParams);
+    TEParamsSelectionStrategy.RandomGridEntrySelector randomGridEntrySelector = new TEParamsSelectionStrategy.RandomGridEntrySelector(searchParams);
     AutoBuffer ab = new AutoBuffer();
-    String json = new String(randomSelector.writeJSON(ab).buf());
+    String json = new String(randomGridEntrySelector.writeJSON(ab).buf());
 
   }
   

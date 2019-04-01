@@ -20,19 +20,15 @@ public class TargetEncodingTestFixtures {
 
   }
 
-  public static TargetEncodingParams defaultTEParams() {
-    return new TargetEncodingParams(new BlendingParams(3, 1), TargetEncoder.DataLeakageHandlingStrategy.KFold, 0.01);
-  }
-  
-  public static TargetEncodingParams randomTEParams(long seed) {
+  public static TargetEncodingParams randomTEParams(String[] columnsToEncode, long seed) {
     Random generator = seed == -1 ? new Random() : new Random(seed);
     double pivot = generator.nextDouble();
     byte strategy = pivot >= 0.5 ? TargetEncoder.DataLeakageHandlingStrategy.KFold : TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut;
-    return new TargetEncodingParams(new BlendingParams(3, 1), strategy, 0.01);
+    return new TargetEncodingParams(columnsToEncode, new BlendingParams(3, 1), strategy, 0.01);
   }
   
-  public static TargetEncodingParams randomTEParams() {
-    return randomTEParams(-1);
+  public static TargetEncodingParams randomTEParams(String[] columnsToEncode) {
+    return randomTEParams(columnsToEncode, -1);
   }
 
   // TODO use this method and remove the one in the test

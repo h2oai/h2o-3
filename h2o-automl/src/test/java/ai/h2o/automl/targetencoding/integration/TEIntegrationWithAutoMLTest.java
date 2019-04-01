@@ -152,9 +152,7 @@ public class TEIntegrationWithAutoMLTest extends water.TestUtil {
 
       TEApplicationStrategy teApplicationStrategy = new AllCategoricalTEApplicationStrategy(fr, responseColumnName);
       
-      //Same as hardcoded in AutoMLTargetEncodingAssistant
-      TargetEncodingParams targetEncodingParams = new TargetEncodingParams(new BlendingParams(5, 1), TargetEncoder.DataLeakageHandlingStrategy.KFold, 0.01);
-
+      TargetEncodingParams targetEncodingParams = new TargetEncodingParams(teApplicationStrategy.getColumnsToEncode(), new BlendingParams(5, 1), TargetEncoder.DataLeakageHandlingStrategy.KFold, 0.01);
 
       autoMLBuildSpec.te_spec.application_strategy = teApplicationStrategy;
       autoMLBuildSpec.te_spec.params_selection_strategy = HPsSelectionStrategy.Fixed;

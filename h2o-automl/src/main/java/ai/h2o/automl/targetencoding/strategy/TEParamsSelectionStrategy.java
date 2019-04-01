@@ -55,7 +55,7 @@ public abstract class TEParamsSelectionStrategy extends Iced {
     }
   }
 
-  public static class RandomSelector extends Iced<RandomSelector> {
+  public static class RandomGridEntrySelector extends Iced<RandomGridEntrySelector> {
 
     HashMap<String, Object[]> _grid;
     String[] _dimensionNames;
@@ -64,14 +64,14 @@ public abstract class TEParamsSelectionStrategy extends Iced {
     transient private Set<Integer> _visitedPermutationHashes = new LinkedHashSet<>(); // what are the cases of retrieving automl from DKV?
     Random _randomGen;
 
-    public RandomSelector(HashMap<String, Object[]> grid, long seed) {
+    public RandomGridEntrySelector(HashMap<String, Object[]> grid, long seed) {
       _grid = grid;
       _randomGen = new Random(seed);
       _dimensionNames = _grid.keySet().toArray(new String[0]);
       _spaceSize = calculateSpaceSize(_grid);
     }
 
-    public RandomSelector(HashMap<String, Object[]> grid) {
+    public RandomGridEntrySelector(HashMap<String, Object[]> grid) {
       this(grid, -1);
     }
 
