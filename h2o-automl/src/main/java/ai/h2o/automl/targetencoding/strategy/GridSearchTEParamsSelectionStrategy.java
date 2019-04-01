@@ -22,22 +22,16 @@ public class GridSearchTEParamsSelectionStrategy extends GridBasedTEParamsSelect
   
   private int _numberOfIterations;
 
-  public GridSearchTEParamsSelectionStrategy(Frame leaderboard, double ratioOfHyperSpaceToExplore, String responseColumn, String[] columnsToEncode, boolean theBiggerTheBetter, long seed) {
+  public GridSearchTEParamsSelectionStrategy(Frame leaderboard, double ratioOfHyperSpaceToExplore, String responseColumn, Map<String, Double> columnNameToIdxMap, boolean theBiggerTheBetter, long seed) {
     _seed = seed;
     
     _leaderboardData = leaderboard;
     _responseColumn = responseColumn;
-    _columnsToEncode = columnsToEncode;
+    _columnNameToIdxMap = columnNameToIdxMap;
     
     _ratioOfHyperSpaceToExplore = ratioOfHyperSpaceToExplore;
     _theBiggerTheBetter = theBiggerTheBetter;
 
-    //After filtering out some categorical columns with `applicationStrategy` we can try to search for optimal combination as well. 
-    // This covers the case with no columns to encode, i.e. no target encoding
-    _columnNameToIdxMap = new HashMap<>();//leaderboard.find(_columnsToEncode);
-    for (String column : _columnsToEncode) {
-      _columnNameToIdxMap.put(column, (double) leaderboard.find(column));
-    }
   }
 
   @Override

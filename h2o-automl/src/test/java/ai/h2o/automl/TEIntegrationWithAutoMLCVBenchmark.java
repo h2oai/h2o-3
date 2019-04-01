@@ -52,7 +52,7 @@ public class TEIntegrationWithAutoMLCVBenchmark extends water.TestUtil {
     double avgAUCWith = 0.0;
     double avgAUCWithoutTE = 0.0;
 
-    int numberOfRuns = 5;
+    int numberOfRuns = 1;
 
     for (int seedAttempt = 0; seedAttempt < numberOfRuns; seedAttempt++) {
       long nextSeed = generator.nextLong(); 

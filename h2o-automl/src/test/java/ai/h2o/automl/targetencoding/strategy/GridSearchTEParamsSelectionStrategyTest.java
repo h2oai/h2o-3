@@ -14,6 +14,7 @@ import water.rapids.StratificationAssistant;
 
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.PriorityQueue;
 
 import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
@@ -54,8 +55,12 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
 
     long seedForFoldColumn = 2345L;
 
+    Map<String, Double> _columnNameToIdxMap = new HashMap<>();
+    for (String column : columnsToEncode) {
+      _columnNameToIdxMap.put(column, (double) fr.find(column));
+    }
     GridSearchTEParamsSelectionStrategy gridSearchTEParamsSelectionStrategy =
-            new GridSearchTEParamsSelectionStrategy(leaderboard, ratioOfHPToExplore, responseColumnName, columnsToEncode, true, seedForFoldColumn);
+            new GridSearchTEParamsSelectionStrategy(leaderboard, ratioOfHPToExplore, responseColumnName, _columnNameToIdxMap, true, seedForFoldColumn);
 
     gridSearchTEParamsSelectionStrategy.setTESearchSpace(ModelValidationMode.VALIDATION_FRAME);
     ModelBuilder mb = TargetEncodingTestFixtures.modelBuilderGBMWithValidFrameFixture(train, valid, responseColumnName, seedForFoldColumn);

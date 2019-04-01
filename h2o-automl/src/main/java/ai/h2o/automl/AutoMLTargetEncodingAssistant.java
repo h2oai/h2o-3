@@ -14,6 +14,7 @@ import water.util.Log;
 import water.util.StringUtils;
 import water.util.TwoDimTable;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import static ai.h2o.automl.targetencoding.TargetEncoder.DataLeakageHandlingStrategy.KFold;
@@ -80,8 +81,14 @@ class AutoMLTargetEncodingAssistant{
         break;
       case RGS:
       default:
+        //After filtering out some categorical columns with `applicationStrategy` we can try to search for optimal combination as well. 
+        // This covers the case with no columns to encode, i.e. no target encoding
+        Map<String, Double> _columnNameToIdxMap = new HashMap<>();//leaderboard.find(_columnsToEncode);
+        for (String column : _columnsToEncode) {
+          _columnNameToIdxMap.put(column, (double) _trainingFrame.find(column));
+        }
         _teParamsSelectionStrategy = new GridSearchTEParamsSelectionStrategy(leaderboardFrame, ratioOfHyperspaceToExplore,
-                _responseColumnName, _columnsToEncode, theBiggerTheBetter, buildSpec.te_spec.seed);
+                _responseColumnName, _columnNameToIdxMap, theBiggerTheBetter, buildSpec.te_spec.seed);
         break;
     }
 
