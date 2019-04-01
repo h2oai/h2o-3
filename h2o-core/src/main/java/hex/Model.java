@@ -1223,7 +1223,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         }
       }
       if( vec != null) {          // I have a column with a matching name
-        // Do not transform response, weights and fold columns if the metrics are not computed - case predict on test data.
         if( domains[i] != null) { // Model expects an categorical
           if (vec.isString())
             vec = VecUtils.stringToCategorical(vec); //turn a String column into a categorical column (we don't delete the original vec here)
