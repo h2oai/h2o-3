@@ -778,6 +778,7 @@ public class XGBoostTest extends TestUtil {
       parms._train = tfr._key;
       parms._response_column = "AGE";
       parms._ignored_columns = new String[]{"ID"};
+      parms._backend = XGBoostModel.XGBoostParameters.Backend.cpu;
 
       model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
 
