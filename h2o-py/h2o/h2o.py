@@ -1422,6 +1422,8 @@ def _default_source_provider(obj):
         for name, member in inspect.getmembers(obj):
             if inspect.ismethod(member):
                 class_def += inspect.getsource(member)
+            elif inspect.isfunction(member):
+                class_def += inspect.getsource(member)
         return class_def
 
 
