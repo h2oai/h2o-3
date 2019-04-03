@@ -1,6 +1,8 @@
 package water.parser;
 
+import org.junit.Before;
 import org.junit.Test;
+import water.TestUtil;
 import water.fvec.Vec;
 import water.util.StringUtils;
 
@@ -9,6 +11,11 @@ import java.util.StringTokenizer;
 import static org.junit.Assert.*;
 
 public class CsvParserTest {
+
+  @Before
+  public void setUp() {
+    TestUtil.stall_till_cloudsize(1);
+  }
 
   @Test
   public void determineTokens_multipleByteCharacters() {
@@ -32,6 +39,7 @@ public class CsvParserTest {
     parseSetup._column_names = new String[]{"Name"};
     parseSetup._number_columns = 1;
     parseSetup._single_quotes = false;
+    parseSetup._nonDataLineMarkers = new byte[0];
     CsvParser csvParser = new CsvParser(parseSetup, null);
 
     final Parser.ByteAryData byteAryData = new Parser.ByteAryData(StringUtils.bytesOf("\"\"\"abcd\"\"\""), 0);
@@ -53,6 +61,7 @@ public class CsvParserTest {
     parseSetup._column_names = new String[]{"Name"};
     parseSetup._number_columns = 1;
     parseSetup._single_quotes = true;
+    parseSetup._nonDataLineMarkers = new byte[0];
     CsvParser csvParser = new CsvParser(parseSetup, null);
 
     final Parser.ByteAryData byteAryData = new Parser.ByteAryData(StringUtils.bytesOf("'''abcd'''"), 0);
@@ -74,6 +83,7 @@ public class CsvParserTest {
     parseSetup._column_names = new String[]{"Name"};
     parseSetup._number_columns = 1;
     parseSetup._single_quotes = true;
+    parseSetup._nonDataLineMarkers = new byte[0];
     CsvParser csvParser = new CsvParser(parseSetup, null);
 
     final Parser.ByteAryData byteAryData = new Parser.ByteAryData(StringUtils.bytesOf("'''''abcd'''''"), 0);
@@ -95,6 +105,7 @@ public class CsvParserTest {
     parseSetup._column_names = new String[]{"Name"};
     parseSetup._number_columns = 1;
     parseSetup._single_quotes = false;
+    parseSetup._nonDataLineMarkers = new byte[0];
     CsvParser csvParser = new CsvParser(parseSetup, null);
 
     final Parser.ByteAryData byteAryData = new Parser.ByteAryData(StringUtils.bytesOf("\"'abcd'\""), 0);
@@ -116,6 +127,7 @@ public class CsvParserTest {
     parseSetup._column_names = new String[]{"Name"};
     parseSetup._number_columns = 1;
     parseSetup._single_quotes = false;
+    parseSetup._nonDataLineMarkers = new byte[0];
     CsvParser csvParser = new CsvParser(parseSetup, null);
 
     final Parser.ByteAryData byteAryData = new Parser.ByteAryData(StringUtils.bytesOf("\"\"\"\"\"abcd\"\"\"\"\""), 0);
@@ -137,6 +149,7 @@ public class CsvParserTest {
     parseSetup._column_names = new String[]{"Name"};
     parseSetup._number_columns = 1;
     parseSetup._single_quotes = false;
+    parseSetup._nonDataLineMarkers = new byte[0];
     CsvParser csvParser = new CsvParser(parseSetup, null);
 
     final Parser.ByteAryData byteAryData = new Parser.ByteAryData(StringUtils.bytesOf("\",\""), 0);
@@ -157,6 +170,7 @@ public class CsvParserTest {
     parseSetup._column_types = new byte[]{Vec.T_STR};
     parseSetup._column_names = new String[]{"IsDepDelayed","fYear","fMonth","fDayofMonth","fDayOfWeek","UniqueCarrier","Origin","Dest","Distance"};
     parseSetup._number_columns = 9;
+    parseSetup._nonDataLineMarkers = new byte[0];
     CsvParser csvParser = new CsvParser(parseSetup, null);
 
     final Parser.ByteAryData byteAryData = new Parser.ByteAryData(StringUtils.bytesOf("\"YES\",\"f1987\",\"f10\",\"f14\",\"f3\",\"PS\",\"SAN\",\"SFO\",447\n" +
@@ -186,6 +200,7 @@ public class CsvParserTest {
     parseSetup._column_types = new byte[]{Vec.T_STR};
     parseSetup._column_names = new String[]{"PassengerId","Survived","Pclass","Name","Sex","Age","SibSp","Parch","Ticket","Fare","Cabin","Embarked"};
     parseSetup._number_columns = 12;
+    parseSetup._nonDataLineMarkers = new byte[0];
     CsvParser csvParser = new CsvParser(parseSetup, null);
 
     final String parsedString = "102,0,3,\"Petroff, Mr. Pastcho (\"\"Pentcho\"\")\",male,,0,0,349215,7.8958,,S";
@@ -222,6 +237,7 @@ public class CsvParserTest {
     parseSetup._column_types = new byte[]{Vec.T_STR};
     parseSetup._column_names = new String[]{"PassengerId","Survived","Pclass","Name","Sex","Age","SibSp","Parch","Ticket","Fare","Cabin","Embarked"};
     parseSetup._number_columns = 12;
+    parseSetup._nonDataLineMarkers = new byte[0];
     CsvParser csvParser = new CsvParser(parseSetup, null);
 
     final String parsedString = "1,0,3,\"Braund, Mr. Owen Harris\",male,22,1,0,A/5 21171,7.25,,S\r\n"
@@ -233,8 +249,6 @@ public class CsvParserTest {
     assertEquals(2, outWriter.lineNum());
     assertEquals(0, outWriter._invalidLines);
     assertFalse(outWriter.hasErrors());
-
-    final StringTokenizer stringTokenizer = new StringTokenizer(parsedString, ",");
 
     for (int lineIndex = 1; lineIndex < 3; lineIndex++) {
       for (int colIndex = 0; colIndex < parseSetup._number_columns; colIndex++) {
@@ -254,6 +268,53 @@ public class CsvParserTest {
     assertEquals("PC 17599", outWriter._data[2][8]);
     assertEquals("C85", outWriter._data[2][10]);
     assertEquals("Cumings, Mrs. John Bradley (Florence Briggs Thayer)", outWriter._data[2][3]);
+  }
+  @Test
+  public void nonLineMarkers_use_default(){
+    ParseSetup parseSetup = new ParseSetup();
+    parseSetup._parse_type = DefaultParserProviders.CSV_INFO;
+    parseSetup._check_header = ParseSetup.HAS_HEADER;
+    parseSetup._separator = ',';
+    parseSetup._column_types = new byte[]{Vec.T_NUM,Vec.T_NUM,Vec.T_NUM};
+    parseSetup._column_names = new String[]{"Name"};
+    parseSetup._number_columns = 3;
+    parseSetup._single_quotes = false;
+    parseSetup._nonDataLineMarkers = new byte[]{'#'};
+    CsvParser parser = new CsvParser(parseSetup, null);
+
+    final String parsedString = "C1,C2,C3\n"
+            + "1,2,3\n"
+            + "# 3,4,5\n"
+            + "6,7,8\n";
+    final Parser.ByteAryData byteAryData = new Parser.ByteAryData(StringUtils.bytesOf(parsedString), 0);
+    final ParseWriter parseWriter = new PreviewParseWriter(parseSetup._number_columns);
+    final PreviewParseWriter outWriter = (PreviewParseWriter) parser.parseChunk(0, byteAryData, parseWriter);
+    assertEquals(3, outWriter._ncols);
+    assertEquals(2, outWriter._nlines); // First line is headers, third line is skipped
+  }
+
+  @Test
+  public void nonLineMarkers_modified(){
+    ParseSetup parseSetup = new ParseSetup();
+    parseSetup._parse_type = DefaultParserProviders.CSV_INFO;
+    parseSetup._check_header = ParseSetup.HAS_HEADER;
+    parseSetup._separator = ',';
+    parseSetup._column_types = new byte[]{Vec.T_STR,Vec.T_NUM,Vec.T_NUM};
+    parseSetup._column_names = new String[]{"Name"};
+    parseSetup._number_columns = 3;
+    parseSetup._single_quotes = false;
+    parseSetup._nonDataLineMarkers = new byte[0]; // Non data line markers are set to null, thus defaults should be used
+    CsvParser parser = new CsvParser(parseSetup, null);
+
+    final String parsedString = "C1,C2,C3\n"
+            + "1,2,3\n"
+            + "#3,4,5\n"
+            + "6,7,8\n";
+    final Parser.ByteAryData byteAryData = new Parser.ByteAryData(StringUtils.bytesOf(parsedString), 0);
+    final ParseWriter parseWriter = new PreviewParseWriter(parseSetup._number_columns);
+    final PreviewParseWriter outWriter = (PreviewParseWriter) parser.parseChunk(0, byteAryData, parseWriter);
+    assertEquals(3, outWriter._ncols);
+    assertEquals(3, outWriter._nlines); // First line is headers, third line is skipped
   }
 
 }

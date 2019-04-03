@@ -78,7 +78,6 @@ public abstract class ParserProvider {
   }
 
   /** Returns parser setup of throws exception if input is not recognized */
-  // FIXME: should be more flexible
   public ParseSetup guessSetup(ByteVec v, byte[] bits, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames, byte[] columnTypes, String[][] domains, String[][] naStrings) {
     throw new UnsupportedOperationException("Not implemented. This method is kept only for backwards compatibility. " +
             "Override methods guessInitSetup & guessFinalSetup if you are implementing a new parser.");

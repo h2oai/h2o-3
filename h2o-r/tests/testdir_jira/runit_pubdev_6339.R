@@ -77,8 +77,7 @@ calculateChunkSize <- function() {
     filePaths = c(locate("smalldata/arcene/arcene_train.data"),
     locate("smalldata/census_income/adult_data.csv"),
     locate("smalldata/chicago/chicagoAllWeather.csv"),
-    locate("smalldata/gbm_test/alphabet_cattest.csv"),
-    locate("smalldata/wa_cannabis/raw/Dashboard_Usable_Sales_w_Weight_Daily.csv")
+    locate("smalldata/gbm_test/alphabet_cattest.csv")
     )
 
     info <- capture.output(h2o.clusterInfo())

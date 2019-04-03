@@ -488,6 +488,20 @@ This function predicts against a test frame. For every row in the test frame, th
 
 This function returns an H2OFrame object with categorical leaf assignment identifiers for each tree in the model.
 
+Predict Contributions
+~~~~~~~~~~~~~~~~~~~~~
+
+Each returned H2OFrame has a specific shape (#rows, #features + 1). This includes a feature contribution column for each input feature, with the last column being the model bias (same value for each row). The sum of the feature contributions and the bias term is equal to the raw prediction of the model. Raw prediction of tree-based model is the sum of the predictions of the individual trees before before the inverse link function is applied to get the actual prediction. For Gaussian distribution, the sum of the contributions is equal to the model prediction. 
+
+For GBM and XGBoost problems, the ``predict_contributions`` returns a new H2OFrame with the predicted feature contributions - SHAP values on an H2O model.
+        
+**Note**: Multinomial classification models are currently not supported.
+
+Predict Stage Probabilities
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Use the ``staged_predict_proba`` function to predict class probabilities at each stage of an H2O Model. Note that this can only be used with GBM.
+
 Prediction Threshold
 ~~~~~~~~~~~~~~~~~~~~
 

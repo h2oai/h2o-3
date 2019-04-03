@@ -1,6 +1,7 @@
 package water;
 
 import hex.CreateFrame;
+import hex.genmodel.easy.RowData;
 import org.junit.AfterClass;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -999,4 +1000,32 @@ public class TestUtil extends Iced {
     }
   }
 
+  protected static RowData toRowData(Frame fr, String[] columns, long row) {
+    RowData rd = new RowData();
+    for (String col : columns) {
+      Vec v = fr.vec(col);
+      if (!v.isNumeric() && !v.isCategorical()) {
+        throw new UnsupportedOperationException("Unsupported column type for column '" + col + "': " + v.get_type_str());
+      }
+      if (!v.isNA(row)) {
+        Object val;
+        if (v.isCategorical()) {
+          val = v.domain()[(int) v.at8(row)];
+        } else {
+          val = v.at(row);
+        }
+        rd.put(col, val);
+      }
+    }
+    return rd;
+  }
+  
+  protected static double[] toNumericRow(Frame fr, long row) {
+    double[] result = new double[fr.numCols()];
+    for (int i = 0; i < result.length; i++) {
+      result[i] = fr.vec(i).at(row);
+    }
+    return result;
+  }
+  
 }

@@ -57,7 +57,7 @@ def calculate_chunk_size(file_path, num_cols, cores, cloud_size):
     # get maximal line size from file in bytes
     max_line_length = 0
     total_size = 0
-    with open(file_path) as input_file:
+    with open(file_path, "rU") as input_file:
         for line in input_file:
             size = len(line)
             total_size = total_size + size

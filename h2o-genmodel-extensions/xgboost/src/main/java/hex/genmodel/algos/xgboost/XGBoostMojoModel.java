@@ -53,7 +53,7 @@ public abstract class XGBoostMojoModel extends MojoModel implements SharedTreeGr
   public int[] _catOffsets;
   public boolean _useAllFactorLevels;
   public boolean _sparse;
-    public String _featureMap;
+  public String _featureMap;
 
   public XGBoostMojoModel(String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);

@@ -352,7 +352,8 @@ def call(final pipelineContext) {
     }
 
     def stageTemplate = [
-      target: target, timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+      target: target, timeoutValue: 45,
+      component: pipelineContext.getBuildConfig().COMPONENT_ANY,
       additionalTestPackages: [
               pipelineContext.getBuildConfig().COMPONENT_HADOOP,
               pipelineContext.getBuildConfig().COMPONENT_PY,
@@ -412,7 +413,7 @@ def call(final pipelineContext) {
     }
 
     def stageTemplate = [
-            target: target, timeoutValue: 30, 
+            target: target, timeoutValue: 45,
             component: pipelineContext.getBuildConfig().COMPONENT_ANY,
             additionalTestPackages: [
                     pipelineContext.getBuildConfig().COMPONENT_HADOOP,

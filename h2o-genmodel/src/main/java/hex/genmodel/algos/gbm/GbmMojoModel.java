@@ -1,16 +1,20 @@
 package hex.genmodel.algos.gbm;
 
 import hex.genmodel.GenModel;
-import hex.genmodel.algos.tree.SharedTreeMojoModel;
-import hex.genmodel.algos.tree.SharedTreeGraphConverter;
+import hex.genmodel.PredictContributions;
+import hex.genmodel.PredictContributionsFactory;
+import hex.genmodel.algos.tree.*;
 import hex.genmodel.utils.DistributionFamily;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static hex.genmodel.utils.DistributionFamily.*;
 
 /**
  * "Gradient Boosting Machine" MojoModel
  */
-public final class GbmMojoModel extends SharedTreeMojoModel implements SharedTreeGraphConverter {
+public final class GbmMojoModel extends SharedTreeMojoModel implements SharedTreeGraphConverter, PredictContributionsFactory {
     public DistributionFamily _family;
     public double _init_f;
 
@@ -58,6 +62,38 @@ public final class GbmMojoModel extends SharedTreeMojoModel implements SharedTre
 
     public String[] leaf_node_assignment(double[] row) {
         return getDecisionPath(row);
+    }
+
+    @Override
+    public PredictContributions makeContributionsPredictor() {
+        if (_nclasses > 2) {
+            throw new UnsupportedOperationException("Predicting contributions for multinomial classification problems is not yet supported.");
+        }
+        SharedTreeGraph graph = _computeGraph(-1);
+        final SharedTreeNode[] empty = new SharedTreeNode[0];
+        List<TreeSHAPPredictor<double[]>> treeSHAPs = new ArrayList<>(graph.subgraphArray.size());
+        for (SharedTreeSubgraph tree : graph.subgraphArray) {
+            SharedTreeNode[] nodes = tree.nodesArray.toArray(empty);
+            treeSHAPs.add(new TreeSHAP<>(nodes, nodes, 0));
+        }
+        TreeSHAPPredictor<double[]> predictor = new TreeSHAPEnsemble<>(treeSHAPs, (float) _init_f);
+        return new GbmContributionsPredictor(predictor);
+    }
+
+    private final class GbmContributionsPredictor implements PredictContributions {
+        private final TreeSHAPPredictor<double[]> _treeSHAPPredictor;
+        private final Object _workspace;
+
+        private GbmContributionsPredictor(TreeSHAPPredictor<double[]> treeSHAPPredictor) {
+            _treeSHAPPredictor = treeSHAPPredictor;
+            _workspace = _treeSHAPPredictor.makeWorkspace();
+        }
+
+        @Override
+        public float[] calculateContributions(double[] input) {
+            float[] contribs = new float[nfeatures() + 1];
+            return  _treeSHAPPredictor.calculateContributions(input, contribs, 0, -1, _workspace);
+        }
     }
 
 }
