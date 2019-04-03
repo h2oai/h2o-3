@@ -73,7 +73,7 @@ public class TargetEncodingTestFixtures {
     builder._parms._seed = builderSeed;
 
     builder._parms._train = train._key;
-    builder._parms._valid = valid._key;
+    if(valid!=null) builder._parms._valid = valid._key;
     builder._parms._response_column = responseColumnName;
     
     return builder;

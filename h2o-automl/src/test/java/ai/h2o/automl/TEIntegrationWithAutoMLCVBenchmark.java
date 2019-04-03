@@ -93,7 +93,6 @@ public class TEIntegrationWithAutoMLCVBenchmark extends water.TestUtil {
         Leaderboard leaderboardWithoutTE = train_AutoML_withoutTE_with_auto_assigned_folds(fr2, responseColumnName, nextSeed);
         Model withoutTELeader = leaderboardWithoutTE.getLeader();
 
-//        double aucWithoutTE0 = withoutTELeader._output._cross_validation_metrics.auc_obj()._auc;
         double aucWithoutTE = withoutTELeader.auc();
 
         System.out.println("Performance on holdout split with TE: AUC = " + aucWithTE);

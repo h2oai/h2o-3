@@ -6,6 +6,7 @@ import ai.h2o.automl.targetencoding.TargetEncodingParams;
 import ai.h2o.automl.targetencoding.TargetEncodingTestFixtures;
 import hex.ModelBuilder;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
 import water.fvec.Frame;
@@ -79,8 +80,10 @@ public class TargetEncodingHyperparamsEvaluatorTest extends TestUtil {
       double auc = evaluator.evaluate(randomTEParams, modelBuilder, ModelValidationMode.VALIDATION_FRAME, leaderboard, seedForFoldColumn);
       
       clonedModelBuilder.init(false);
-      // checking that we can reuse modelBuilder
+      
+      // checking that we can clone/reuse modelBuilder
       double auc2 = evaluator.evaluate(randomTEParams, clonedModelBuilder, ModelValidationMode.VALIDATION_FRAME, leaderboard, seedForFoldColumn);
+      
       assertTrue(isBitIdentical(clonedModelBuilder._parms.train(), modelBuilder._parms.train()));
       assertTrue(auc > 0);
       assertEquals(auc, auc2, 1e-5);
@@ -91,7 +94,7 @@ public class TargetEncodingHyperparamsEvaluatorTest extends TestUtil {
     }
   }
 
-
+  @Ignore
   @Test
   public void checkThatForAnyHyperParametersCombinationWeGetConsistentEvaluationsFromModelBuilderFixture() {
 

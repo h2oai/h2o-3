@@ -27,82 +27,87 @@ public class TargetEncodingHyperparamsEvaluator extends Iced {
     
   }
 
-  public double evaluateForCVMode(TargetEncodingParams teParams, ModelBuilder modelBuilder, long seedForFoldColumn) {
+  public double evaluateForCVMode(TargetEncodingParams teParams, ModelBuilder clonedModelBuilder, long seedForFoldColumn) {
 
     double score = 0;
-    Map<String, Frame> encodingMap = null;
-    Frame trainEncoded = null;
-    Frame testEncoded = null;
-    Frame originalTrainingData = modelBuilder.train();
+    if (teParams.getColumnsToEncode().length != 0) {
+      Map<String, Frame> encodingMap = null;
+      Frame trainEncoded = null;
+      Key<Frame> trainPreviousKey = null;
+      Frame originalTrainingData = clonedModelBuilder.train();
 
-    Frame trainCopy = originalTrainingData.deepCopy(Key.make("train_frame_copy_for_evaluation" + Key.make()).toString());
-    DKV.put(trainCopy);
+      Frame trainCopy = originalTrainingData.deepCopy(Key.make("train_frame_copy_for_evaluation" + Key.make()).toString());
+      DKV.put(trainCopy);
 
-    String[] originalIgnoredColumns = modelBuilder._parms._ignored_columns;
-
-    try {
-      String responseColumn = modelBuilder._parms._response_column;
-      String[] teColumnsToExclude = teParams.getColumnsToEncode();
-      TargetEncoder tec = new TargetEncoder(teParams.getColumnsToEncode(), teParams.getBlendingParams());
-      byte holdoutType = teParams.getHoldoutType();
-
-      String foldColumnForTE = null;
-
-      switch (holdoutType) {
-        case KFold:
-          // Maybe we can use the same folds that we will use for splitting but in that case we will have only 4 folds for encoding map
-          // generation and application of this map to the frame that was used for creating map
-          foldColumnForTE = modelBuilder._job._key.toString() + "_fold";
-          int nfolds = 5;
-          addKFoldColumn(trainCopy, foldColumnForTE, nfolds, seedForFoldColumn);
-
-          //TODO consider optimising this as encoding map will be the same for whole runs as long as we only use KFold scenario with same seed for fold assignments
-          encodingMap = tec.prepareEncodingMap(trainCopy, responseColumn, foldColumnForTE, true);
-//          Frame.export(encodingMap.get("home.dest"), "evaluator_cv_kfold.csv", encodingMap.get("home.dest")._key.toString(), true, 1).get();
-
-          trainEncoded = tec.applyTargetEncoding(trainCopy, responseColumn, encodingMap, KFold, foldColumnForTE, teParams.isWithBlendedAvg(), teParams.getNoiseLevel(), true, seedForFoldColumn);
-//          Frame.export(trainEncoded, "evaluator_encoded_train_cv_kfold.csv", trainEncoded._key.toString(), true, 1).get();
-
-          break;
-        case LeaveOneOut:
-        case None:
-        default:
-          // For `None` strategy we can make sure that holdouts from `otherFolds` frame are being chosen in a mutually exclusive way across all folds
-          throw new IllegalStateException("Only `KFold` strategy is being used in current version for CV mode.");
-      }
-
-      modelBuilder._parms._ignored_columns = concat(concat(originalIgnoredColumns, teColumnsToExclude), new String[]{ foldColumnForTE});
-
-      modelBuilder.setTrain(trainEncoded);
-      modelBuilder._parms.setTrain(trainEncoded._key);
-
+      String[] originalIgnoredColumns = clonedModelBuilder._parms._ignored_columns;
       try {
-        Model retrievedModel = null;
-        Keyed model = modelBuilder.trainModel().get();
-        retrievedModel = DKV.getGet(model._key);
-        double cvScore = retrievedModel._output._cross_validation_metrics.auc_obj()._auc;
-        score += cvScore;
-      } catch (Exception exception) {
-        Log.debug("Exception during modelBuilder evaluation: " + exception.getMessage());
-      }
-      
-    } catch(Exception ex ) {
-      Log.debug("Exception during applying TE in TargetEncodingHyperparamsEvaluator.evaluate(): " + ex.getMessage());
-    } finally {
-      //Setting back original frames
-      modelBuilder.setTrain(originalTrainingData);
-      modelBuilder._parms.setTrain(originalTrainingData._key);
+        String responseColumn = clonedModelBuilder._parms._response_column;
+        String[] teColumnsToExclude = teParams.getColumnsToEncode();
+        TargetEncoder tec = new TargetEncoder(teParams.getColumnsToEncode(), teParams.getBlendingParams());
+        byte holdoutType = teParams.getHoldoutType();
 
-      modelBuilder._parms._ignored_columns = originalIgnoredColumns;
-      if(testEncoded != null) testEncoded.delete();
-      if(trainCopy != null) trainCopy.delete();
-      if (encodingMap == null) {
-        Log.debug("Illegal state. encodingMap == null.");
-      } else {
-        TargetEncoderFrameHelper.encodingMapCleanUp(encodingMap);
+        String foldColumnForTE = null;
+
+        switch (holdoutType) {
+          case KFold:
+            // Maybe we can use the same folds that we will use for splitting but in that case we will have only 4 folds for encoding map
+            // generation and application of this map to the frame that was used for creating map
+            foldColumnForTE = clonedModelBuilder._job._key.toString() + "_fold";
+            int nfolds = 5;
+            addKFoldColumn(trainCopy, foldColumnForTE, nfolds, seedForFoldColumn);
+
+            //TODO consider optimising this as encoding map will be the same for whole runs as long as we only use KFold scenario with same seed for fold assignments
+            encodingMap = tec.prepareEncodingMap(trainCopy, responseColumn, foldColumnForTE, true);
+
+            trainEncoded = tec.applyTargetEncoding(trainCopy, responseColumn, encodingMap, KFold, foldColumnForTE, teParams.isWithBlendedAvg(), teParams.getNoiseLevel(), true, seedForFoldColumn);
+            break;
+          case LeaveOneOut:
+          case None:
+          default:
+            // For `None` strategy we can make sure that holdouts from `otherFolds` frame are being chosen in a mutually exclusive way across all folds
+            throw new IllegalStateException("Only `KFold` strategy is being used in current version for CV mode.");
+        }
+
+        clonedModelBuilder._parms._ignored_columns = concat(concat(originalIgnoredColumns, teColumnsToExclude), new String[]{foldColumnForTE});
+
+        clonedModelBuilder.setTrain(trainEncoded);
+
+        trainPreviousKey = clonedModelBuilder._parms._train;
+        clonedModelBuilder._parms.setTrain(trainEncoded._key);
+        trainPreviousKey.get().delete();
+
+        score += scoreCV(clonedModelBuilder);
+      } catch (Exception ex) {
+        throw ex;
+      } finally {
+        //Setting back original data
+        clonedModelBuilder._parms._ignored_columns = originalIgnoredColumns;
+
+        trainCopy.delete();
+        if (trainEncoded != null) trainEncoded.delete();
+        if (encodingMap == null) {
+          Log.debug("Illegal state. encodingMap == null.");
+        } else {
+          TargetEncoderFrameHelper.encodingMapCleanUp(encodingMap);
+        }
       }
+    } else {
+      score += scoreCV(clonedModelBuilder);
     }
+    //Cleanup for cloned builder
+    clonedModelBuilder.train().delete();
+    if (clonedModelBuilder._parms.train() != null) clonedModelBuilder._parms.train().delete();
     return score;
+  }
+  
+  private double scoreCV(ModelBuilder modelBuilder) {
+    Model retrievedModel = null;
+    Keyed model = modelBuilder.trainModel().get();
+    retrievedModel = DKV.getGet(model._key);
+    double cvScore = retrievedModel._output._cross_validation_metrics.auc_obj()._auc;
+    retrievedModel.delete();
+    retrievedModel.deleteCrossValidationModels();
+    return cvScore;
   }
   
   private double scoreOnTest(ModelBuilder modelBuilder, Frame testEncodedFrame) {
@@ -214,12 +219,6 @@ public class TargetEncodingHyperparamsEvaluator extends Iced {
         throw ex;
 
       } finally {
-//      //Setting back original frames
-        clonedModelBuilder.train().delete();
-        clonedModelBuilder.valid().delete();
-        clonedModelBuilder._parms.train().delete();
-        clonedModelBuilder._parms.valid().delete();
-
         //Removing unused splits 
         trainPreviousKey.get().delete();
         validPreviosKey.get().delete();
@@ -239,8 +238,16 @@ public class TargetEncodingHyperparamsEvaluator extends Iced {
         }
       }
     } else {
+      Frame leaderboardCopy = leaderboard.deepCopy(Key.make("leaderboard_frame_copy_for_evaluation" + Key.make()).toString()); // TODO consider to avoid copy
+      DKV.put(leaderboardCopy);
       score += scoreOnTest(clonedModelBuilder, leaderboard);
+      leaderboardCopy.delete();
     }
+    //Cleanup for cloned builder
+    clonedModelBuilder.train().delete();
+    clonedModelBuilder.valid().delete();
+    if(clonedModelBuilder._parms.train()!=null) clonedModelBuilder._parms.train().delete();
+    if(clonedModelBuilder._parms.valid()!=null) clonedModelBuilder._parms.valid().delete();
     return score;
   }
 

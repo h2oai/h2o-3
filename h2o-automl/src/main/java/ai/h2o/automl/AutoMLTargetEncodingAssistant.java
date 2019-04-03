@@ -32,24 +32,30 @@ class AutoMLTargetEncodingAssistant{
   private Frame _validationFrame; 
   private Frame _leaderboardFrame;
   private String _responseColumnName;
-  private Vec _foldColumn;
   private AutoMLBuildSpec _buildSpec;
   private ModelBuilder _modelBuilder;
   private String[] _originalIgnoredColumns;
   private boolean _CVEarlyStoppingEnabled;
 
+  public TEParamsSelectionStrategy getTeParamsSelectionStrategy() {
+    return _teParamsSelectionStrategy;
+  }
+
   private TEParamsSelectionStrategy _teParamsSelectionStrategy;
   
   private TEApplicationStrategy _applicationStrategy;
-  private final String[] _columnsToEncode;
-  
+  private String[] _columnsToEncode;
+
+  public TargetEncodingParams getBestTEParams() {
+    return _teParams;
+  }
+
   // This field will be initialised with the optimal target encoding params returned from TEParamsSelectionStrategy
   private TargetEncodingParams _teParams;
 
   AutoMLTargetEncodingAssistant(Frame trainingFrame, // maybe we don't need all these as we are working with particular modelBuilder and not the main AutoML data
                                 Frame validationFrame,
-                                Frame leaderboardFrame, 
-                                Vec foldColumn,
+                                Frame leaderboardFrame,
                                 AutoMLBuildSpec buildSpec,
                                 ModelBuilder modelBuilder) {
     _modelBuilder = modelBuilder;
@@ -58,22 +64,24 @@ class AutoMLTargetEncodingAssistant{
     _leaderboardFrame = leaderboardFrame;
     _responseColumnName = _modelBuilder._parms._response_column;
 
-    _foldColumn = foldColumn;
     _buildSpec = buildSpec;
 
     _CVEarlyStoppingEnabled = _modelBuilder._parms.valid() == null;
 
+  }
+
+  void init() {
     // Application strategy
-    TEApplicationStrategy applicationStrategy = buildSpec.te_spec.application_strategy;
-    _applicationStrategy = applicationStrategy != null ? applicationStrategy : new AllCategoricalTEApplicationStrategy(trainingFrame, _responseColumnName);
+    TEApplicationStrategy applicationStrategy = _buildSpec.te_spec.application_strategy;
+    _applicationStrategy = applicationStrategy != null ? applicationStrategy : new AllCategoricalTEApplicationStrategy(_trainingFrame, _responseColumnName);
     _columnsToEncode = _applicationStrategy.getColumnsToEncode();
 
     //TODO what is the canonical way to get metric we are going to use. DistributionFamily, leaderboard metrics?
     boolean theBiggerTheBetter = _modelBuilder._parms.train().vec(_responseColumnName).get_type() != Vec.T_NUM;
-    double ratioOfHyperspaceToExplore = buildSpec.te_spec.ratio_of_hyperspace_to_explore;
+    double ratioOfHyperspaceToExplore = _buildSpec.te_spec.ratio_of_hyperspace_to_explore;
 
     // Selection strategy
-    HPsSelectionStrategy teParamsSelectionStrategy = buildSpec.te_spec.params_selection_strategy;
+    HPsSelectionStrategy teParamsSelectionStrategy = _buildSpec.te_spec.params_selection_strategy;
     switch(teParamsSelectionStrategy) {
       case Fixed:
         TargetEncodingParams targetEncodingParams = new TargetEncodingParams(_columnsToEncode, new BlendingParams(5, 1), TargetEncoder.DataLeakageHandlingStrategy.KFold, 0.01);
@@ -87,15 +95,15 @@ class AutoMLTargetEncodingAssistant{
         for (String column : _columnsToEncode) {
           _columnNameToIdxMap.put(column, (double) _trainingFrame.find(column));
         }
-        _teParamsSelectionStrategy = new GridSearchTEParamsSelectionStrategy(leaderboardFrame, ratioOfHyperspaceToExplore,
-                _responseColumnName, _columnNameToIdxMap, theBiggerTheBetter, buildSpec.te_spec.seed);
+        _teParamsSelectionStrategy = new GridSearchTEParamsSelectionStrategy(_leaderboardFrame, ratioOfHyperspaceToExplore,
+                _responseColumnName, _columnNameToIdxMap, theBiggerTheBetter, _buildSpec.te_spec.seed);
         break;
     }
 
     // Pre-setup for grid-based strategies based on AutoML's ways of validating models 
-    if(_teParamsSelectionStrategy instanceof GridBasedTEParamsSelectionStrategy ) {
+    if(getTeParamsSelectionStrategy() instanceof GridBasedTEParamsSelectionStrategy ) {
 
-      GridBasedTEParamsSelectionStrategy selectionStrategy = (GridBasedTEParamsSelectionStrategy) _teParamsSelectionStrategy;
+      GridBasedTEParamsSelectionStrategy selectionStrategy = (GridBasedTEParamsSelectionStrategy) getTeParamsSelectionStrategy();
       if(_CVEarlyStoppingEnabled) {
         selectionStrategy.setTESearchSpace(ModelValidationMode.CV);
       }
@@ -104,28 +112,29 @@ class AutoMLTargetEncodingAssistant{
       }
     }
     
-    _teParams = _teParamsSelectionStrategy.getBestParams(modelBuilder);
+    _teParams = getTeParamsSelectionStrategy().getBestParams(_modelBuilder);
     
-    _originalIgnoredColumns = modelBuilder._parms._ignored_columns;
+    _originalIgnoredColumns = _modelBuilder._parms._ignored_columns;
   }
 
 
   void performAutoTargetEncoding() {
 
-    String[] columnsToEncode = _teParams.getColumnsToEncode();
+    TargetEncodingParams bestTEParams = getBestTEParams();
+    String[] columnsToEncode = bestTEParams.getColumnsToEncode();
     
     Log.info("Best TE parameters were selected to be: columnsToEncode = [ " + StringUtils.join(",", columnsToEncode ) + 
-            " ], holdout_type = " + _teParams.getHoldoutType() + ", isWithBlending = " + _teParams.isWithBlendedAvg() + ", smoothing = " + 
-            _teParams.getBlendingParams().getF() + ", inflection_point = " + _teParams.getBlendingParams().getK() + ", noise_level = " + _teParams.getNoiseLevel());
+            " ], holdout_type = " + bestTEParams.getHoldoutType() + ", isWithBlending = " + bestTEParams.isWithBlendedAvg() + ", smoothing = " + 
+            bestTEParams.getBlendingParams().getF() + ", inflection_point = " + bestTEParams.getBlendingParams().getK() + ", noise_level = " + bestTEParams.getNoiseLevel());
   
     if (columnsToEncode.length > 0) {
 
       //TODO move it inside TargetEncoder. add constructor ? not all the parameters are used durin
-      BlendingParams blendingParams = _teParams.getBlendingParams();
-      boolean withBlendedAvg = _teParams.isWithBlendedAvg();
-      boolean imputeNAsWithNewCategory = _teParams.isImputeNAsWithNewCategory();
-      byte holdoutType = _teParams.getHoldoutType();
-      double noiseLevel = _teParams.getNoiseLevel();
+      BlendingParams blendingParams = bestTEParams.getBlendingParams();
+      boolean withBlendedAvg = bestTEParams.isWithBlendedAvg();
+      boolean imputeNAsWithNewCategory = bestTEParams.isImputeNAsWithNewCategory();
+      byte holdoutType = bestTEParams.getHoldoutType();
+      double noiseLevel = bestTEParams.getNoiseLevel();
       long seed = _buildSpec.te_spec.seed;
 
       TargetEncoder tec = new TargetEncoder(columnsToEncode, blendingParams);
@@ -285,7 +294,7 @@ class AutoMLTargetEncodingAssistant{
 
   public String getFoldColumnName() {
     if(_teParams.getHoldoutType() == TargetEncoder.DataLeakageHandlingStrategy.KFold) {
-      int foldColumnIndex = _trainingFrame.find(_foldColumn);
+      int foldColumnIndex = _trainingFrame.find(_modelBuilder._parms._fold_column);
       return foldColumnIndex != -1 ? _trainingFrame.name(foldColumnIndex) : null;
     }
     else 

@@ -28,27 +28,48 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
   }
   
   @Test
-  public void strategyDoesNotLeakKeys() {
+  public void strategyDoesNotLeakKeysWithValidationFrameMode() {
     Frame fr = null;
     try {
       fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
-      double ratioOfHPToExplore = 0.1;
-      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsEv = findBestTargetEncodingParams(fr ,"survived", ratioOfHPToExplore);
+      double ratioOfHPToExplore = 0.05;
+      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsEv = findBestTargetEncodingParams(fr , ModelValidationMode.VALIDATION_FRAME, "survived", ratioOfHPToExplore);
       bestParamsEv.getItem();
-      
     } finally {
       fr.delete();
     }
   }
 
-  private GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> findBestTargetEncodingParams(Frame fr, String responseColumnName, double ratioOfHPToExplore) {
+  @Test
+  public void strategyDoesNotLeakKeysWithCVMode() {
+    Frame fr = null;
+    try {
+      fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      double ratioOfHPToExplore = 0.05;
+      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsEv = findBestTargetEncodingParams(fr , ModelValidationMode.CV, "survived", ratioOfHPToExplore);
+      bestParamsEv.getItem();
+    } finally {
+      fr.delete();
+    }
+  }
+
+  private GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> findBestTargetEncodingParams(Frame fr, ModelValidationMode modelValidationMode, String responseColumnName, double ratioOfHPToExplore) {
 
     asFactor(fr, responseColumnName);
-    
-    Frame splits[] = AutoMLBenchmarkingHelper.getRandomSplitsFromDataframe(fr, new double[]{0.7, 0.15,0.15}, 2345L);
-    Frame train = splits[0];
-    Frame valid = splits[1];
-    Frame leaderboard = splits[2];
+    Frame train = null;
+    Frame valid = null;
+    Frame leaderboard = null;
+    switch (modelValidationMode) {
+      case CV:
+        train = fr;
+        break;
+      case VALIDATION_FRAME:
+        Frame splits[] = AutoMLBenchmarkingHelper.getRandomSplitsFromDataframe(fr, new double[]{0.7, 0.15,0.15}, 2345L);
+        train = splits[0];
+        valid = splits[1];
+        leaderboard = splits[2];
+
+    }
 
     TEApplicationStrategy strategy = new ThresholdTEApplicationStrategy(fr, fr.vec("survived"), 4);
     String[] columnsToEncode = strategy.getColumnsToEncode();
@@ -62,14 +83,21 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
     GridSearchTEParamsSelectionStrategy gridSearchTEParamsSelectionStrategy =
             new GridSearchTEParamsSelectionStrategy(leaderboard, ratioOfHPToExplore, responseColumnName, _columnNameToIdxMap, true, seedForFoldColumn);
 
-    gridSearchTEParamsSelectionStrategy.setTESearchSpace(ModelValidationMode.VALIDATION_FRAME);
-    ModelBuilder mb = TargetEncodingTestFixtures.modelBuilderGBMWithValidFrameFixture(train, valid, responseColumnName, seedForFoldColumn);
+    gridSearchTEParamsSelectionStrategy.setTESearchSpace(modelValidationMode);
+    ModelBuilder mb = null;
+    switch (modelValidationMode) {
+      case CV:
+        mb = TargetEncodingTestFixtures.modelBuilderWithCVFixture(train, responseColumnName, seedForFoldColumn);
+        break;
+      case VALIDATION_FRAME:
+        mb = TargetEncodingTestFixtures.modelBuilderGBMWithValidFrameFixture(train, valid, responseColumnName, seedForFoldColumn);
+    }
     mb.init(false);
     TEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsWithEvaluation = gridSearchTEParamsSelectionStrategy.getBestParamsWithEvaluation(mb);
     
-    train.delete();
-    valid.delete();
-    leaderboard.delete();
+    if(train != null) train.delete();
+    if(valid != null) valid.delete();
+    if(leaderboard != null) leaderboard.delete();
     
     return bestParamsWithEvaluation;
   }
@@ -139,11 +167,11 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
     Frame frBaseLine = null;
     try {
       frFull = parse_test_file("./smalldata/gbm_test/titanic.csv");
-      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsFromGLM_FULL = findBestTargetEncodingParams(frFull, "survived", numberOfSearchIterations);
+      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsFromGLM_FULL = findBestTargetEncodingParams(frFull, ModelValidationMode.VALIDATION_FRAME, "survived", numberOfSearchIterations);
 
       frameThatWillBeSampledByHalf = parse_test_file("./smalldata/gbm_test/titanic.csv");
       sampledByHalf = StratificationAssistant.sample(frameThatWillBeSampledByHalf, responseColumnName, 0.5, 1234L);
-      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsFromGLM_HALF = findBestTargetEncodingParams(sampledByHalf, "survived", numberOfSearchIterations);
+      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsFromGLM_HALF = findBestTargetEncodingParams(sampledByHalf, ModelValidationMode.VALIDATION_FRAME,"survived", numberOfSearchIterations);
 
       double scoreFull = bestParamsFromGLM_FULL.getScore();
       double scoreHalf = bestParamsFromGLM_HALF.getScore();
@@ -188,13 +216,13 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
     try {
       long start1 = System.currentTimeMillis();
       frFull = parse_test_file("./smalldata/gbm_test/titanic.csv");
-      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsFromGLM_FULL = findBestTargetEncodingParams(frFull, "survived", numberOfSearchIterations);
+      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsFromGLM_FULL = findBestTargetEncodingParams(frFull, ModelValidationMode.VALIDATION_FRAME,"survived", numberOfSearchIterations);
       long timeWithoutSampling = System.currentTimeMillis() - start1;
 
       long start2 = System.currentTimeMillis();
       frameThatWillBeSampledByHalf = parse_test_file("./smalldata/gbm_test/titanic.csv");
       sampledByHalf = StratificationAssistant.sample(frameThatWillBeSampledByHalf, responseColumnName, 0.5, 1234L);
-      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsFromGLM_HALF = findBestTargetEncodingParams(sampledByHalf, "survived", numberOfSearchIterations);
+      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsFromGLM_HALF = findBestTargetEncodingParams(sampledByHalf, ModelValidationMode.VALIDATION_FRAME,"survived", numberOfSearchIterations);
       long timeWithSampling = System.currentTimeMillis() - start2;
       System.out.println("Time without sampling: " + timeWithoutSampling);
       System.out.println("Time with sampling: " + timeWithSampling);

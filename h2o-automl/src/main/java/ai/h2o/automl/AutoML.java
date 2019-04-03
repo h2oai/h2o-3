@@ -297,9 +297,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       AutoMLTargetEncodingAssistant teAssistant = new AutoMLTargetEncodingAssistant(getTrainingFrame(),
               getValidationFrame(),
               getLeaderboardFrame(),
-              getFoldColumn(),
               buildSpec,
               modelBuilder);
+
+      teAssistant.init();
 
       teAssistant.performAutoTargetEncoding();
     }
