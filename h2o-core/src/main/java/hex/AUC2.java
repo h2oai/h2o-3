@@ -387,9 +387,22 @@ public class AUC2 extends Iced {
     // tried the original: merge bins with the least distance between bin
     // centers.  Same problem for sorted data.
     private int find_smallest() {
-      if( _ssx == -1 ) return (_ssx = find_smallest_impl());
+      if( _ssx == -1 ) {
+        _ssx = find_smallest_impl();
+        assert _ssx != -1 : toDebugString();
+      }
       return _ssx;
     }
+
+    private String toDebugString() {
+      return "_ssx = " + _ssx + 
+              "; n = " + _n +
+              "; ths = " + Arrays.toString(_ths) +
+              "; tps = " + Arrays.toString(_tps) +
+              "; fps = " + Arrays.toString(_fps) + 
+              "; sqe = " + Arrays.toString(_sqe);
+    }
+
     private int find_smallest_impl() {
       double minSQE = Double.MAX_VALUE;
       int minI = -1;
