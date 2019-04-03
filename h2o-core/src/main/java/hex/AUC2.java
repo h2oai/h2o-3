@@ -350,6 +350,7 @@ public class AUC2 extends Iced {
         if( self_is_larger ) x--; else y--;
       }
       _n += bldr._n;
+      _ssx = -1; // We no longer know what bin has the smallest error
 
       // Merge elements with least squared-error increase until we get fewer
       // than _nBins and no duplicates.  May require many merges.
