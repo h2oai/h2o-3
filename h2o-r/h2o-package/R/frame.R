@@ -287,7 +287,7 @@ h2o.getId <- function(x) attr( .eval.frame(x), "id")
 #' @param x An H2OFrame
 #' @return A list of types per column
 #' @export
-h2o.getTypes <- function(x) attr( .eval.frame(x), "types")
+h2o.getTypes <- function(x){.eval.frame(x); .fetch.data(x, 10L); attr(x, "types")}
 
 #'
 #' Rename an H2O object.
