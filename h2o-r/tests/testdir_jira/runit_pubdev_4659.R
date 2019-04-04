@@ -2,37 +2,40 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../scripts/h2o-r-test-setup.R")
 
 
+# These test check problems with a prediction on testing data which are not the same as training data.
+# For example, the response column or the weights column is missing in testing data.
 test_4659 <- function() {
     prostate = read.csv(locate("smalldata/logreg/prostate.csv"))
-    prostate$our_factor<-as.factor(paste0("Q",c(rep(c(1:380),1))))
+    prostate$our_factor <-as.factor(paste0("Q",c(rep(c(1:380),1))))
+    prostate$weight <- runif(nrow(prostate), 0, 1)
+    prostate$offset <- runif(nrow(prostate), 0, 1)
 
     prostate<-as.h2o(prostate)
-    prostate$weight<-1
-    
     prostate_train<-prostate[1:300,]
     prostate_test<-prostate[301:380,]
 
     # delete response variable from test data
     prostate_test<-prostate_test[,-3]
-    
-    print("GLM 1")
-    model<-h2o.glm(y = "AGE", x = c("our_factor"), training_frame = prostate_train,offset_column="weight")
+
+    print("GLM pass without problem")
+    # Pass without problems 
+    model<-h2o.glm(y = "AGE", x = c("our_factor"), training_frame = prostate_train,offset_column="offset")
     predict(model,newdata=prostate_train)
     predict(model,newdata=prostate_test)
 
-    # Failed when response column was missing and there is only one feature 
-    print("GLM 2")
+    print("GLM problem when test data has only one data column without response")
+    # Failed when response column was missing and there is only one feature
     model<-h2o.glm(y = "AGE", x = c("our_factor"), training_frame = prostate_train)
     predict(model,newdata=prostate_train)
     predict(model,newdata=prostate_test)
-    
+
+    print("GLM problem when original columns names does not fit with edited frame columns")
     # Failed when original columns names does not fit with edited frame columns with dummy NA column for response column
-    print("GBM 1")
     model<-h2o.gbm(y = "AGE", x = c("our_factor"), training_frame = prostate_train,categorical_encoding = "OneHotExplicit")
     prediction_response <- predict(model,newdata=prostate_train)
     predict(model,newdata=prostate_test)
 
-    print("Prediction check")
+    print("Compare predictions")
     # Delete response variable from train data to compare result predictions
     prediction_without_response <- predict(model, newdata=prostate_train[,-3])
     # Result predictions should be the same 
