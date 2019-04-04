@@ -1,6 +1,8 @@
 package hex.tree.xgboost;
 
-import hex.ModelMetricsMultinomial;
+import hex.DataInfo;
+import ml.dmlc.xgboost4j.java.DMatrix;
+import ml.dmlc.xgboost4j.java.XGBoostError;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -9,6 +11,8 @@ import water.MRTask;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.fvec.TestFrameBuilder;
+import water.fvec.Vec;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -21,7 +25,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static water.TestUtil.ard;
 
 public class XGBoostUtilsTest {
 
@@ -90,6 +96,30 @@ public class XGBoostUtilsTest {
       Scope.exit();
     }
     
+  }
+  
+  @Test
+  public void testSparsematrix() throws XGBoostError {
+
+    Frame frame = null;
+    try {
+      frame = Scope.track(new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("C1", "C2", "C3", "C4")
+              .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
+              .withDataForCol(0, ard(1, 0, 3, 1))
+              .withDataForCol(1, ard(0, 0, 0, 0))
+              .withDataForCol(2, ard(2, 0, 0, 0))
+              .withDataForCol(3, ard(0, 0, 0, 4))
+              .build());
+
+      final DMatrix response = XGBoostUtils.convertFrameToDMatrix(new DataInfo(frame, null, true, DataInfo.TransformType.NONE, false, false, false),
+              frame, false, "C4", null, null, true);
+      assertNotNull(response);
+
+    } finally {
+      if (frame != null) frame.remove();
+    }
   }
 
   private static String[] readLines(URL url) throws IOException{
