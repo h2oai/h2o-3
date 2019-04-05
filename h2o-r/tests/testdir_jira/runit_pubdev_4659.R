@@ -7,7 +7,6 @@ source("../../scripts/h2o-r-test-setup.R")
 test_4659 <- function() {
     prostate = read.csv(locate("smalldata/logreg/prostate.csv"))
     prostate$our_factor <-as.factor(paste0("Q",c(rep(c(1:380),1))))
-    prostate$weight <- runif(nrow(prostate), 0, 1)
     prostate$offset <- runif(nrow(prostate), 0, 1)
 
     prostate<-as.h2o(prostate)
@@ -17,11 +16,12 @@ test_4659 <- function() {
     # delete response variable from test data
     prostate_test<-prostate_test[,-3]
 
-    print("GLM pass without problem")
+    print("GLM predicts NA")
     # Pass without problems 
     model<-h2o.glm(y = "AGE", x = c("our_factor"), training_frame = prostate_train,offset_column="offset")
-    predict(model,newdata=prostate_train)
-    predict(model,newdata=prostate_test)
+    prediction <- predict(model,newdata=prostate_train)
+    prediction_test <- predict(model,newdata=prostate_test)
+    expect_false(all(is.na(prediction_test)))
 
     print("GLM problem when test data has only one data column without response")
     # Failed when response column was missing and there is only one feature

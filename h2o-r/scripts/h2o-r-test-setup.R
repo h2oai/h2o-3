@@ -9,7 +9,7 @@ options(scipen=999)
 #'
 #'
 H2O.IP                      <<- "127.0.0.1"
-H2O.PORT                    <<- 54321
+H2O.PORT                    <<- 54323
 H2O.HTTPS                   <<- FALSE
 USERNAME                    <<- NA_character_
 PASSWORD                    <<- NA_character_
