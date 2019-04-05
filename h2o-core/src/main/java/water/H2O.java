@@ -1578,16 +1578,7 @@ final public class H2O {
       Log.warn("");
     }
 
-    for (AbstractH2OExtension e : extManager.getCoreExtensions()) {
-      String n = e.getExtensionName() + " ";
-      AbstractBuildVersion abv = e.getBuildVersion();
-      Log.info(n + "Build git branch: ", abv.branchName());
-      Log.info(n + "Build git hash: ", abv.lastCommitHash());
-      Log.info(n + "Build git describe: ", abv.describe());
-      Log.info(n + "Build project version: ", abv.projectVersion());
-      Log.info(n + "Built by: ", abv.compiledBy());
-      Log.info(n + "Built on: ", abv.compiledOn());
-    }
+    Log.info("Found H2O Core extensions: " + extManager.getCoreExtensions());
     Log.info("Processed H2O arguments: ", Arrays.toString(arguments));
 
     Runtime runtime = Runtime.getRuntime();
