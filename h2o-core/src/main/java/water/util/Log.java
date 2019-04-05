@@ -7,13 +7,10 @@ import water.H2O;
 import water.persist.PersistManager;
 
 import java.io.File;
-import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 
 /** Log for H2O. 
  *
@@ -38,6 +35,7 @@ abstract public class Log {
   static int _level=INFO;
   static boolean _quiet = false;
   private static org.apache.log4j.Logger _logger = null;
+  private static boolean _bufferMessages = true;
   // Common pre-header
   private static String _preHeader;
   // A little bit of startup buffering
@@ -59,6 +57,11 @@ abstract public class Log {
     int lvl = valueOf(sLvl);
     if( lvl != -1 ) _level = lvl;
     _quiet = quiet;
+  }
+  
+  public static void notifyAboutNetworkingInitialized() {
+    _bufferMessages = false; // at this point we can create the log files and use a correct prefix ip:port for each log message
+    assert H2O.SELF_ADDRESS != null && H2O.H2O_PORT != 0;
   }
   
   public static void setLogLevel(String sLvl, boolean quiet) {
@@ -117,7 +120,7 @@ abstract public class Log {
     StringBuilder sb = new StringBuilder();
     for( Object o : objs ) sb.append(o);
     String res = sb.toString();
-    if( H2O.SELF_ADDRESS == null ) { // Oops, need to buffer until we can do a proper header
+    if( _bufferMessages ) { // Oops, need to buffer until we can do a proper header
       INIT_MSGS.add(res);
       return;
     }
@@ -206,6 +209,9 @@ abstract public class Log {
   private static String getLogFileNamePrefix() throws Exception {
     if (H2O.SELF_ADDRESS == null) {
       throw new Exception("H2O.SELF_ADDRESS not yet defined");
+    }
+    if (H2O.H2O_PORT == 0) {
+      throw new Exception("H2O.H2O_PORT is not yet determined");
     }
     String ip = H2O.SELF_ADDRESS.getHostAddress();
     int port = H2O.API_PORT;
