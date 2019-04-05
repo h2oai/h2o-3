@@ -522,7 +522,7 @@ public class GBMTest extends TestUtil {
     Scope.enter();
     try {
       final Key<Frame> target = Key.make();
-      Frame train = Scope.track(parse_test_file("/smalldata/logreg/prostate.csv"));
+      Frame train = Scope.track(parse_test_file("./smalldata/logreg/prostate.csv"));
       train.remove("ID").remove();     // Remove unique ID
       int ci = train.find("RACE");
       Scope.track(train.replace(ci, train.vecs()[ci].toCategoricalVec()));   // Convert response 'Angaus' to categorical

@@ -295,6 +295,17 @@ PySparkling documentation is available for `2.1 <http://docs.h2o.ai/sparkling-wa
 
 PySparkling can be installed by downloading and running the PySparkling shell or using ``pip``. PySparkling can also be installed from the PyPi repository. Follow the instructions on the `Download page <http://h2o.ai/download>`__ for Sparkling Water.
 
+RSparkling
+~~~~~~~~~~
+
+The rsparkling R package is an extension package for sparklyr that creates an R front-end for the Sparkling Water package from H2O. This provides an interface to H2O’s high performance, distributed machine learning algorithms on Spark using R.
+
+This package implements basic functionality (creating an H2OContext, showing the H2O Flow interface, and converting between Spark DataFrames and H2O Frames). The main purpose of this package is to provide a connector between sparklyr and H2O’s machine learning algorithms.
+
+The rsparkling package uses sparklyr for Spark job deployment and initialization of Sparkling Water. After that, users can use the regular H2O R package for modeling. 
+
+Refer to the `Sparkling Water User Guide <http://docs.h2o.ai/#sparkling-water>`__ for more information.
+
 Python Users
 --------------
 

@@ -350,6 +350,7 @@ public class AUC2 extends Iced {
         if( self_is_larger ) x--; else y--;
       }
       _n += bldr._n;
+      _ssx = -1; // We no longer know what bin has the smallest error
 
       // Merge elements with least squared-error increase until we get fewer
       // than _nBins and no duplicates.  May require many merges.
@@ -387,9 +388,22 @@ public class AUC2 extends Iced {
     // tried the original: merge bins with the least distance between bin
     // centers.  Same problem for sorted data.
     private int find_smallest() {
-      if( _ssx == -1 ) return (_ssx = find_smallest_impl());
+      if( _ssx == -1 ) {
+        _ssx = find_smallest_impl();
+        assert _ssx != -1 : toDebugString();
+      }
       return _ssx;
     }
+
+    private String toDebugString() {
+      return "_ssx = " + _ssx + 
+              "; n = " + _n +
+              "; ths = " + Arrays.toString(_ths) +
+              "; tps = " + Arrays.toString(_tps) +
+              "; fps = " + Arrays.toString(_fps) + 
+              "; sqe = " + Arrays.toString(_sqe);
+    }
+
     private int find_smallest_impl() {
       double minSQE = Double.MAX_VALUE;
       int minI = -1;

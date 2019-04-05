@@ -156,5 +156,26 @@ public class AUCBuilderTest {
 
     abstract void fillRandomVals(double[] values);
   }
-  
+
+  @Test
+  public void testPubDev6399ReduceDoesntUsePreviousKnownSSX() {
+    AUC2.AUCBuilder abL = new AUC2.AUCBuilder(10);
+    for (int i = 0; i < abL._nBins; i++) {
+      abL.perRow(i, 1, 1);
+    }
+    abL.perRow(5.5, 1, 1); // insert something in the middle and cause a bin merge
+    assertEquals(0, abL._ssx); // bin with smallest error is known but shouldn't be used!
+    
+    AUC2.AUCBuilder abR = new AUC2.AUCBuilder(10);
+    abR.perRow(9, 1, 1); // single element, should be appended at the end when merging and then de-duped
+
+    double[] expected = Arrays.copyOf(abL._ths, abL._n);
+
+    // reduce!
+    abL.reduce(abR);
+
+    double[] ths = Arrays.copyOf(abL._ths, abL._n);
+    assertArrayEquals(expected, ths, 0);
+  }
+
 }
