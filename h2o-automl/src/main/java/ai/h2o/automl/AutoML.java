@@ -773,20 +773,37 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     // NOTE: here we will also affect `_buildSpec.input_spec.ignored_columns`. We will switch it back below in `finally` block after model is trained.
     String[] originalIgnoredColumns = buildSpec.input_spec.ignored_columns;
+
+    Frame trainMBOriginal = builder.train();
     
-    performTargetEncoding(builder); 
+    performTargetEncoding(builder);
+    Frame trainTE = builder.train();
     
     // We are changing `ignored_columns` in `performTargetEncoding` method  
-    builder._parms._ignored_columns = buildSpec.input_spec.ignored_columns; //TODO mayebe it is better to directly change builder from assistant
-    builder._parms._keep_cross_validation_predictions = false; //TODO mayebe it is better to directly change builder from assistant
+    builder._parms._ignored_columns = buildSpec.input_spec.ignored_columns; //TODO maybe it is better to directly change builder from assistant
+    builder._parms._keep_cross_validation_predictions = false; //TODO maybe it is better to directly change builder from assistant
 
     Log.debug("Training model: " + algoName + ", time remaining (ms): " + timeRemainingMs());
+    Job trainingModelJob = null;
     try {
-      return builder.trainModelOnH2ONode();
+      trainingModelJob = builder.trainModelOnH2ONode();
+      return trainingModelJob;
     } catch (H2OIllegalArgumentException exception) {
       userFeedback.warn(Stage.ModelTraining, "Skipping training of model "+key+" due to exception: "+exception);
       return null;
     } finally {
+      trainingModelJob.get(); // Note: we have to block and only then remove data with te encodings
+      if(trainTE.numRows() != trainMBOriginal.numRows()) // Only when we change training frame ( e.g. when holdout strategy is NONE)
+        trainTE.delete();
+      else {
+        String[] teColumns = ArrayUtils.difference(buildSpec.input_spec.ignored_columns, originalIgnoredColumns);
+        for (String teColumn : teColumns) {
+          if(builder.train().vec(teColumn+"_te") != null)
+            builder.train().remove(teColumn+"_te").remove();
+        }
+      }
+      builder.setTrain(trainMBOriginal);
+      builder._parms._keep_cross_validation_predictions = true;
       buildSpec.input_spec.ignored_columns = originalIgnoredColumns;
     }
   }

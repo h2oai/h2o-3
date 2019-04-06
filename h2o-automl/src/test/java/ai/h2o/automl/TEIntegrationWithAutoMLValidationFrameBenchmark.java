@@ -29,12 +29,11 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
 
   long autoMLSeed = 2345;
 
-  int numberOfModelsToCompareWith = 1;
+  int numberOfModelsToCompareWith = 4;
 //  Algo[] excludeAlgos = {Algo.DeepLearning, Algo.DRF, Algo.GLM /*Algo.XGBoost*/ , Algo.GBM, Algo.StackedEnsemble}; // only XGB
   Algo[] excludeAlgos = {Algo.DeepLearning, /*Algo.DRF,*/ Algo.GLM /*Algo.XGBoost*/ /* Algo.GBM,*/, Algo.StackedEnsemble};
 
 
-  @Ignore //Fix keys leakage and uncomment assertion
   @Test
   public void random_tvl_split_with_RGS_vs_random_tvl_split_withoutTE_benchmark_with_leaderboard_evaluation() {
     AutoML aml = null;
@@ -60,7 +59,7 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
     double averageTimeWithTE = 0;
     double averageTimeWithoutTE = 0;
 
-    int numberOfRuns = 1;
+    int numberOfRuns = 2;
     for (int seedAttempt = 0; seedAttempt < numberOfRuns; seedAttempt++) {
       long splitSeed = generator.nextLong(); 
       try {
@@ -83,7 +82,7 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
         Vec responseColumn = trainSplit.vec(responseColumnName);
         TEApplicationStrategy thresholdTEApplicationStrategy = new ThresholdTEApplicationStrategy(trainSplit, responseColumn, 5);
 
-        autoMLBuildSpec.te_spec.ratio_of_hyperspace_to_explore = 0.4;
+        autoMLBuildSpec.te_spec.ratio_of_hyperspace_to_explore = 0.05;
         autoMLBuildSpec.te_spec.early_stopping_ratio = 0.15;
         autoMLBuildSpec.te_spec.seed = splitSeed;
 
@@ -112,7 +111,6 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
         frForWithoutTE = fr.deepCopy(Key.make().toString());
         DKV.put(frForWithoutTE);
         splitsForWithoutTE = AutoMLBenchmarkingHelper.getRandomSplitsFromDataframe(frForWithoutTE, new double[]{0.7, 0.15, 0.15}, splitSeed);
-
         long start2 = System.currentTimeMillis();
         amlWithoutTE = trainBaselineAutoMLWithoutTE(splitsForWithoutTE, responseColumnName, splitSeed);
         leaderboardWithoutTE = amlWithoutTE.leaderboard();
@@ -142,8 +140,11 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
         if (validSplit != null) validSplit.delete();
         if (leaderboardSplit != null) leaderboardSplit.delete();
         
-        aml.leaderboard().deleteWithChildren();
-        if (aml != null) aml.delete();
+        
+        if (aml != null) {
+          aml.leaderboard().deleteWithChildren();
+          aml.delete();
+        }
         if(leaderboardWithoutTE!=null) leaderboardWithoutTE.deleteWithChildren();
         if (amlWithoutTE != null) amlWithoutTE.delete();
 
