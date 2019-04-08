@@ -223,6 +223,10 @@ subprojects {
         maven {
           url "http://repository.mapr.com/maven/"
         }
+        maven {
+            name = "local-h2o-nexus-repo"
+            url = uri("http://nexus:8081/nexus/repository/public")
+        }
     }
 
     // Publish artifacts - we should filter subproject in future but now apply publisher plugin
