@@ -2,6 +2,7 @@ package hex.api.xgboost;
 
 import hex.tree.xgboost.XGBoost;
 import hex.tree.xgboost.XGBoostExtension;
+import water.ExtensionManager;
 import water.api.AlgoAbstractRegister;
 import water.api.RestApiContext;
 import water.api.SchemaServer;
@@ -13,6 +14,8 @@ public class RegisterRestApi extends AlgoAbstractRegister {
 
   @Override
   public void registerEndPoints(RestApiContext context) {
+    XGBoostExtension ext = (XGBoostExtension) ExtensionManager.getInstance().getCoreExtension(XGBoostExtension.NAME);
+    ext.logNativeLibInfo();
     XGBoost xgBoostMB = new XGBoost(true);
     // Register XGBoost model builder REST API
     registerModelBuilder(context, xgBoostMB, SchemaServer.getStableVersion());

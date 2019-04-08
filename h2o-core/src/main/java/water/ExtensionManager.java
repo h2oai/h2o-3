@@ -73,12 +73,16 @@ public class ExtensionManager {
     return sb;
   }
 
+  public AbstractH2OExtension getCoreExtension(String extensionName) {
+    return coreExtensions.get(extensionName);
+  }
+  
   public Collection<AbstractH2OExtension> getCoreExtensions() {
     return coreExtensions.values();
   }
 
-  public boolean isCoreExtensionsEnabled(String extensionName){
-    AbstractH2OExtension ext = coreExtensions.get(extensionName);
+  public boolean isCoreExtensionsEnabled(String extensionName) {
+    AbstractH2OExtension ext = getCoreExtension(extensionName);
     return ext != null && ext.isEnabled();
   }
 
