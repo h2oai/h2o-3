@@ -29,7 +29,7 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
 
   long autoMLSeed = 2345;
 
-  int numberOfModelsToCompareWith = 4;
+  int numberOfModelsToCompareWith = 1;
 //  Algo[] excludeAlgos = {Algo.DeepLearning, Algo.DRF, Algo.GLM /*Algo.XGBoost*/ , Algo.GBM, Algo.StackedEnsemble}; // only XGB
   Algo[] excludeAlgos = {Algo.DeepLearning, /*Algo.DRF,*/ Algo.GLM /*Algo.XGBoost*/ /* Algo.GBM,*/, Algo.StackedEnsemble};
 
@@ -172,7 +172,7 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
     System.out.println("Average time with target encoding: " + averageTimeWithTE);
     System.out.println("Average time without target encoding: " + averageTimeWithoutTE);
     
-//    Assert.assertTrue(avgAUCWith > avgAUCWithoutTE);
+    Assert.assertTrue(avgAUCWith > avgAUCWithoutTE);
   }
   
   @Test
@@ -189,7 +189,14 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
   @Test
   public void stratified_tvl_splits_withTE_vs_stratified_tvl_withoutTE_benchmark_with_leaderboard_evaluation() {
     AutoML aml = null;
+    AutoML amlWithoutTE = null;
+    Leaderboard leaderboardWithoutTE = null;
+    
     Frame fr = null;
+    Frame trainSplit = null;
+    Frame validSplit = null;
+    Frame leaderboardSplit = null;
+    
     Frame[] splitsForWithoutTE = null;
     Frame frForWithoutTE = null;
     Model leader = null;
@@ -211,22 +218,22 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
         fr = getPreparedTitanicFrame(responseColumnName);
 
         Frame[] splits = AutoMLBenchmarkingHelper.getStratifiedTVLSplits(fr, responseColumnName, 0.8, splitSeed);
-        Frame train = splits[0];
-        Frame valid = splits[1];
-        Frame leaderboardFrame = splits[2];
+        /*trainSplit = splits[0];
+        validSplit = splits[1];
+        leaderboardSplit = splits[2];*/
 
-        autoMLBuildSpec.input_spec.training_frame = train._key;
-        autoMLBuildSpec.input_spec.validation_frame = valid._key;
-        autoMLBuildSpec.input_spec.leaderboard_frame = leaderboardFrame._key;
+        /*autoMLBuildSpec.input_spec.training_frame = trainSplit._key;
+        autoMLBuildSpec.input_spec.validation_frame = validSplit._key;
+        autoMLBuildSpec.input_spec.leaderboard_frame = leaderboardSplit._key;
         autoMLBuildSpec.build_control.nfolds = 0;
         autoMLBuildSpec.input_spec.response_column = responseColumnName;
 
         autoMLBuildSpec.build_models.exclude_algos = excludeAlgos;
 
-        Vec responseColumn = train.vec(responseColumnName);
-        TEApplicationStrategy thresholdTEApplicationStrategy = new ThresholdTEApplicationStrategy(train, responseColumn, 5);
+        Vec responseColumn = trainSplit.vec(responseColumnName);
+        TEApplicationStrategy thresholdTEApplicationStrategy = new ThresholdTEApplicationStrategy(trainSplit, responseColumn, 5);
 
-        autoMLBuildSpec.te_spec.ratio_of_hyperspace_to_explore = 0.4;
+        autoMLBuildSpec.te_spec.ratio_of_hyperspace_to_explore = 0.05;
         autoMLBuildSpec.te_spec.early_stopping_ratio = 0.15;
         autoMLBuildSpec.te_spec.seed = splitSeed;
 
@@ -240,26 +247,26 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
         autoMLBuildSpec.build_control.keep_cross_validation_predictions = false;
 
         aml = AutoML.startAutoML(autoMLBuildSpec);
-        aml.get();
+        aml.get();*/
 
-        leader = aml.leader();
+        /*leader = aml.leader();
         Leaderboard leaderboardWithTE = aml.leaderboard();
         assertTrue(leaderboardWithTE.getModels().length == numberOfModelsToCompareWith);
         double cumulativeLeaderboardScoreWithTE = 0;
-        cumulativeLeaderboardScoreWithTE = getCumulativeLeaderboardScore(leaderboardFrame, leaderboardWithTE);
+        cumulativeLeaderboardScoreWithTE = getCumulativeLeaderboardScore(leaderboardSplit, leaderboardWithTE);
 
-        double aucWithTE = getScoreBasedOn(leaderboardFrame, leader);
+        double aucWithTE = getScoreBasedOn(leaderboardSplit, leader);*/
 
-        trainingFrame = aml.getTrainingFrame();
-
-        frForWithoutTE = fr.deepCopy(Key.make().toString());
+        /*frForWithoutTE = fr.deepCopy(Key.make().toString());
         DKV.put(frForWithoutTE);
+        
         splitsForWithoutTE = AutoMLBenchmarkingHelper.getStratifiedTVLSplits(frForWithoutTE, responseColumnName, 0.8, splitSeed);
-        /*Leaderboard leaderboardWithoutTE = trainBaselineAutoMLWithoutTE(splitsForWithoutTE, responseColumnName, splitSeed);
+        amlWithoutTE = trainBaselineAutoMLWithoutTE(splitsForWithoutTE, responseColumnName, splitSeed);
+        leaderboardWithoutTE = amlWithoutTE.leaderboard();
         double cumulativeLeaderboardScoreWithoutTE = 0;
-        cumulativeLeaderboardScoreWithoutTE = getCumulativeLeaderboardScore(leaderboardFrame, leaderboardWithoutTE);
+        cumulativeLeaderboardScoreWithoutTE = getCumulativeLeaderboardScore(leaderboardSplit, leaderboardWithoutTE);
         Model leaderFromWithoutTE = leaderboardWithoutTE.getLeader();
-        double aucWithoutTE = getScoreBasedOn(leaderboardFrame, leaderFromWithoutTE);
+        double aucWithoutTE = getScoreBasedOn(leaderboardSplit, leaderFromWithoutTE);
 
         System.out.println("Performance on leaderboardFrame frame with TE: AUC = " + aucWithTE);
         System.out.println("Performance on leaderboardFrame frame without TE: AUC = " + aucWithoutTE);
@@ -270,10 +277,23 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
         avgCumulativeWithoutTE += cumulativeLeaderboardScoreWithoutTE;*/
 
       } finally {
-        if (leader != null) leader.delete();
-        if (aml != null) aml.delete();
-        if (trainingFrame != null) trainingFrame.delete();
+        if (fr != null) fr.delete();
+        if (trainSplit != null) trainSplit.delete();
+        if (validSplit != null) validSplit.delete();
+        if (leaderboardSplit != null) leaderboardSplit.delete();
+
+        if (aml != null) {
+          aml.leaderboard().deleteWithChildren();
+          aml.delete();
+        }
+        if(leaderboardWithoutTE!=null) leaderboardWithoutTE.deleteWithChildren();
+        if (amlWithoutTE != null) amlWithoutTE.delete();
+        
         if (frForWithoutTE != null) frForWithoutTE.delete();
+        /*for (Frame split : splitsForWithoutTE) {
+          split.delete();
+        }*/
+        
       }
     }
 
@@ -286,7 +306,7 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
     avgCumulativeWithoutTE = avgCumulativeWithoutTE / numberOfRuns;
     System.out.println("Average cumulative AUC with encoding: " + avgCumulativeAUCWith);
     System.out.println("Average cumulative AUC without encoding: " + avgCumulativeWithoutTE);
-    Assert.assertTrue(avgAUCWith > avgAUCWithoutTE);
+//    Assert.assertTrue(avgAUCWith > avgAUCWithoutTE);
   }
 
 
