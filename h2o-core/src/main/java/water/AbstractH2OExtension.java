@@ -71,4 +71,10 @@ public abstract class AbstractH2OExtension {
   public boolean isEnabled() {
     return true;
   }
+
+  @Override
+  public final String toString() {
+    return getExtensionName();
+  }
+
 }
