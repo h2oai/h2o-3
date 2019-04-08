@@ -132,11 +132,11 @@ public class AUC2 extends Iced {
 
   /** Default bins, good answers on a highly unbalanced sorted (and reverse
    *  sorted) datasets */
-  public AUC2( Vec probs, Vec actls ) { this(NBINS,probs,actls); }
+  AUC2( Vec probs, Vec actls ) { this(NBINS,probs,actls); }
 
   /** User-specified bin limits.  Time taken is product of nBins and rows;
    *  large nBins can be very slow. */
-  AUC2( int nBins, Vec probs, Vec actls ) { this(new AUC_Impl(nBins).doAll(probs,actls)._bldr); }
+  private AUC2( int nBins, Vec probs, Vec actls ) { this(new AUC_Impl(nBins).doAll(probs,actls)._bldr); }
 
   public AUC2( AUCBuilder bldr ) {
     // Copy result arrays into base object, shrinking to match actual bins
@@ -247,7 +247,7 @@ public class AUC2 extends Iced {
     }
     @Override public void reduce( AUC_Impl auc ) { _bldr.reduce(auc._bldr); }
   }
-
+  
   public static class AUCBuilder extends Iced {
     final int _nBins;
     int _n;                     // Current number of bins
@@ -441,6 +441,17 @@ public class AUC2 extends Iced {
     }
 
     private double k( int idx ) { return _tps[idx]+_fps[idx]; }
+
+    double[] getThs() {
+      return Arrays.copyOf(_ths, _n);
+    }
+    double[] getTotalWeights() {
+      double[] ws = Arrays.copyOf(_tps, _n);
+      for (int i = 0; i < _n; i++) {
+        ws[i] += _fps[i];
+      }
+      return ws;
+    }
   }
 
 

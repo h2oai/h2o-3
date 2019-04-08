@@ -1,6 +1,7 @@
 package hex;
 
 import org.junit.Test;
+import water.TestUtil;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -178,4 +179,34 @@ public class AUCBuilderTest {
     assertArrayEquals(expected, ths, 0);
   }
 
+  @Test // shows why confusion matrix is only approximated (PUBDEV-5243) 
+  public void test1PassBinning() {
+    AUC2.AUCBuilder ab = new AUC2.AUCBuilder(3);
+    ab.perRow(0, 0, 1);
+    ab.perRow(0.5, 0, 1);
+    ab.perRow(1.0, 1, 1);
+    assertArrayEquals(new double[]{0, 0.50, 1.0}, ab.getThs(), 0);
+    
+    // move the center of the middle bin to the right
+    ab.perRow(0.74, 1, 1);
+    assertArrayEquals(new double[]{0, 0.62, 1.0}, ab.getThs(), 0);
+    // now move it bellow 0.5
+    ab.perRow(0.38, 0, 10);
+    assertArrayEquals(new double[]{0, 0.42, 1.0}, ab.getThs(), 0);
+    // move the right bin left to 0.75
+    ab.perRow(0.5, 0, 1);
+    assertArrayEquals(new double[]{0, 0.42, 0.75}, ab.getThs(), 0);
+
+    assertArrayEquals(new double[]{1.0, 12.0, 2.0}, ab.getTotalWeights(), 0);
+    /*
+        cntr: values
+    bin 0.00: 0.00
+    bin 0.42: 0.50, 0.74, 0.38 (10x)
+    bin 0.75: 1.00, 0.50
+    
+    Note: 0.5 is accounted for in both bin-0.42 and bin-0.75
+          value 0.74 is now covered by bin-0.42
+     */
+  }
+  
 }
