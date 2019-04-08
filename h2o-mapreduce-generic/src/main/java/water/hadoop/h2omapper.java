@@ -147,7 +147,7 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
     Thread counterThread = new CounterThread(context, counter);
     counterThread.start();
 
-    // Hadoop will set the tmpdir to a directory in the container task is running
+    // Hadoop will set the tmpdir to a directory inside of the container
     // It is important to write to a directory that is in the container otherwise eg. logs can be overwriting each other
     String ice_root = System.getProperty("java.io.tmpdir");
 
