@@ -10,15 +10,13 @@ import org.junit.Test;
 import water.AutoBuffer;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.rapids.StratificationAssistant;
 
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.PriorityQueue;
 
-import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
 
@@ -151,50 +149,7 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
     }
     assertEquals(sizeOfSpace, randomGridEntrySelector.getVisitedPermutationHashes().size());
   }
-
-  /**
-   *  We assume that 1) sampling might change selection of best target encoding's hyper parameters( hard to test in a consistent way) 
-   *                  2) Even with RGS over TE params with sampled dataset we do better than without TE
-   *                  3) Sampling might hurt performance of the GRS over TE params
-   */
-  @Test 
-  public void samplingAssumptionTest() {
-    int numberOfSearchIterations = 252;
-    String responseColumnName = "survived";
-    Frame frFull = null;
-    Frame frameThatWillBeSampledByHalf = null;
-    Frame sampledByHalf = null;
-    Frame frBaseLine = null;
-    try {
-      frFull = parse_test_file("./smalldata/gbm_test/titanic.csv");
-      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsFromGLM_FULL = findBestTargetEncodingParams(frFull, ModelValidationMode.VALIDATION_FRAME, "survived", numberOfSearchIterations);
-
-      frameThatWillBeSampledByHalf = parse_test_file("./smalldata/gbm_test/titanic.csv");
-      sampledByHalf = StratificationAssistant.sample(frameThatWillBeSampledByHalf, responseColumnName, 0.5, 1234L);
-      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsFromGLM_HALF = findBestTargetEncodingParams(sampledByHalf, ModelValidationMode.VALIDATION_FRAME,"survived", numberOfSearchIterations);
-
-      double scoreFull = bestParamsFromGLM_FULL.getScore();
-      double scoreHalf = bestParamsFromGLM_HALF.getScore();
-      
-      // expecting that best K and F parameters will shift to a smaller and bigger values correspondingly after sampling given the same DataLeakageHandlingStrategy 
-      assertTrue(bestParamsFromGLM_FULL.getItem().getHoldoutType() != bestParamsFromGLM_HALF.getItem().getHoldoutType());
-      
-      frBaseLine = parse_test_file("./smalldata/gbm_test/titanic.csv");
-      String[] columnsOtExclude = new String[]{};
-      double scoreBaseLine = TargetEncodingHyperparamsEvaluator.evaluateWithGLM(frBaseLine, responseColumnName, columnsOtExclude);
-      
-      assertTrue(scoreBaseLine < scoreHalf);
-      
-      assertTrue(scoreFull > scoreHalf);
-      
-    } finally {
-      frFull.delete();
-      frameThatWillBeSampledByHalf.delete();
-      sampledByHalf.delete();
-      frBaseLine.delete();
-    }
-  }
-
+  
   @Test
   public void randomSelectorSerialization() {
     HashMap<String, Object[]> searchParams = new HashMap<>();
@@ -204,37 +159,6 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
     AutoBuffer ab = new AutoBuffer();
     String json = new String(randomGridEntrySelector.writeJSON(ab).buf());
 
-  }
-  
-  @Test 
-  public void speedupBySamplingAssumptionTest() {
-    int numberOfSearchIterations = 252;
-    String responseColumnName = "survived";
-    Frame frFull = null;
-    Frame frameThatWillBeSampledByHalf = null;
-    Frame sampledByHalf = null;
-    try {
-      long start1 = System.currentTimeMillis();
-      frFull = parse_test_file("./smalldata/gbm_test/titanic.csv");
-      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsFromGLM_FULL = findBestTargetEncodingParams(frFull, ModelValidationMode.VALIDATION_FRAME,"survived", numberOfSearchIterations);
-      long timeWithoutSampling = System.currentTimeMillis() - start1;
-
-      long start2 = System.currentTimeMillis();
-      frameThatWillBeSampledByHalf = parse_test_file("./smalldata/gbm_test/titanic.csv");
-      sampledByHalf = StratificationAssistant.sample(frameThatWillBeSampledByHalf, responseColumnName, 0.5, 1234L);
-      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsFromGLM_HALF = findBestTargetEncodingParams(sampledByHalf, ModelValidationMode.VALIDATION_FRAME,"survived", numberOfSearchIterations);
-      long timeWithSampling = System.currentTimeMillis() - start2;
-      System.out.println("Time without sampling: " + timeWithoutSampling);
-      System.out.println("Time with sampling: " + timeWithSampling);
-
-      assertTrue(timeWithoutSampling * 0.65 <= timeWithSampling + 3000 && timeWithoutSampling * 0.65 >= timeWithSampling - 3000);
-
-
-    } finally {
-      frFull.delete();
-      frameThatWillBeSampledByHalf.delete();
-      sampledByHalf.delete();
-    }
   }
   
 }

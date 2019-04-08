@@ -1,22 +1,19 @@
 package ai.h2o.automl;
 
-import ai.h2o.automl.targetencoding.strategy.*;
+import ai.h2o.automl.targetencoding.strategy.HPsSelectionStrategy;
+import ai.h2o.automl.targetencoding.strategy.TEApplicationStrategy;
+import ai.h2o.automl.targetencoding.strategy.ThresholdTEApplicationStrategy;
 import hex.Model;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.DKV;
-import water.Key;
 import water.Scope;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.rapids.StratificationAssistant;
-import water.util.Log;
 
 import java.util.Random;
 
-import static ai.h2o.automl.AutoMLBenchmarkingHelper.*;
-import static org.junit.Assert.*;
+import static ai.h2o.automl.AutoMLBenchmarkingHelper.getPreparedTitanicFrame;
+import static org.junit.Assert.assertTrue;
 
 /**
  * We want to test here the cases when we use CV for Early Stopping
@@ -28,17 +25,6 @@ public class TEIntegrationWithAutoMLCVBenchmark extends water.TestUtil {
   int numberOfModelsToCompareWith = 1;
   Algo[] excludeAlgos = {Algo.DeepLearning , Algo.DRF, Algo.GLM,  Algo.XGBoost,/* Algo.GBM,*/ Algo.StackedEnsemble};
 //  Algo[] excludeAlgos = {Algo.DeepLearning , Algo.DRF, Algo.GLM,  /*Algo.XGBoost,*/ Algo.GBM, Algo.StackedEnsemble};
-  
-  
-  @Test public void customFoldColumnCVScenarioTest() {
-  }
-
-  @Test public void gridSearchEndedUpWithKFoldStrategyTest() {
-  }
-  
-  @Test public void testThatDifferentTESearchSpacesAreBeingChosenDependingOnValidationModeOfAutoMLTest() {
-    
-  }
 
   // Note: don't forget to keep cv predictions so that auc() method returns cv metric.
   @Test public void te_vs_withoutTE_benchmark_withCVPredictionUsedForComparison() {

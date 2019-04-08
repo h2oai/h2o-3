@@ -5,7 +5,6 @@ import hex.splitframe.ShuffleSplitFrame;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.rapids.StratificationAssistant;
 
 public class AutoMLBenchmarkingHelper extends TestUtil {
 
@@ -28,23 +27,6 @@ public class AutoMLBenchmarkingHelper extends TestUtil {
     splits = ShuffleSplitFrame.shuffleSplitFrame(fr, keys, ratios, splitSeed);
     return splits;
   }
-
-  static public Frame[] split2ByRatio(Frame frame, double first, double second, long seed) {
-    double[] ratios = new double[]{first, second};
-    Key<Frame>[] keys = new Key[] {Key.make(), Key.make()};
-    Frame[] splits = null;
-    splits = ShuffleSplitFrame.shuffleSplitFrame(frame, keys, ratios, seed);
-    return splits;
-  }
-  
-  static public Frame[] getStratifiedTVLSplits(Frame fr, String responseColumnName, double trainRatio, long splitSeed) {
-
-    Frame[] splitsTrainOther = StratificationAssistant.split(fr, responseColumnName, trainRatio, splitSeed);
-    Frame train = splitsTrainOther[0];
-    Frame[] splitsValidLeader = StratificationAssistant.split(splitsTrainOther[1], responseColumnName, 0.5, splitSeed);
-    return new Frame[]{train, splitsValidLeader[0], splitsValidLeader[1]};
-  }
-
 
   public static double getScoreBasedOn(Frame fr, Model model) {
     model.score(fr).delete();
