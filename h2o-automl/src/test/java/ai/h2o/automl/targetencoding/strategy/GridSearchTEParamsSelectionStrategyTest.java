@@ -79,7 +79,7 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
       _columnNameToIdxMap.put(column, (double) fr.find(column));
     }
     GridSearchTEParamsSelectionStrategy gridSearchTEParamsSelectionStrategy =
-            new GridSearchTEParamsSelectionStrategy(leaderboard, ratioOfHPToExplore, responseColumnName, _columnNameToIdxMap, true, seedForFoldColumn);
+            new GridSearchTEParamsSelectionStrategy(leaderboard, ratioOfHPToExplore, responseColumnName, _columnNameToIdxMap, true, true, seedForFoldColumn);
 
     gridSearchTEParamsSelectionStrategy.setTESearchSpace(modelValidationMode);
     ModelBuilder mb = null;

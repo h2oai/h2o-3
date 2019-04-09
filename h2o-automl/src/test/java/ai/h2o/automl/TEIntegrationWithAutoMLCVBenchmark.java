@@ -1,5 +1,6 @@
 package ai.h2o.automl;
 
+import ai.h2o.automl.targetencoding.integration.AutoMLBuildSpec;
 import ai.h2o.automl.targetencoding.strategy.HPsSelectionStrategy;
 import ai.h2o.automl.targetencoding.strategy.TEApplicationStrategy;
 import ai.h2o.automl.targetencoding.strategy.ThresholdTEApplicationStrategy;

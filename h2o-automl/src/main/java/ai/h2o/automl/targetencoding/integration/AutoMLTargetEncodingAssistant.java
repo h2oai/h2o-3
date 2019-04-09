@@ -1,4 +1,4 @@
-package ai.h2o.automl;
+package ai.h2o.automl.targetencoding.integration;
 
 import ai.h2o.automl.targetencoding.BlendingParams;
 import ai.h2o.automl.targetencoding.TargetEncoder;
@@ -26,7 +26,7 @@ import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.concat;
  * Perform TargetEncoding based on a strategy of searching best TE parameters. 
  * Side effects will be done mostly through mutating modelBuilder.
  */
-class AutoMLTargetEncodingAssistant{
+public class AutoMLTargetEncodingAssistant{
 
   private Frame _trainingFrame;   
   private Frame _validationFrame; 
@@ -53,7 +53,7 @@ class AutoMLTargetEncodingAssistant{
   // This field will be initialised with the optimal target encoding params returned from TEParamsSelectionStrategy
   private TargetEncodingParams _teParams;
 
-  AutoMLTargetEncodingAssistant(Frame trainingFrame, // maybe we don't need all these as we are working with particular modelBuilder and not the main AutoML data
+  public AutoMLTargetEncodingAssistant(Frame trainingFrame, // maybe we don't need all these as we are working with particular modelBuilder and not the main AutoML data
                                 Frame validationFrame,
                                 Frame leaderboardFrame,
                                 AutoMLBuildSpec buildSpec,
@@ -70,7 +70,7 @@ class AutoMLTargetEncodingAssistant{
 
   }
 
-  void init() {
+  public void init() {
     // Application strategy
     TEApplicationStrategy applicationStrategy = _buildSpec.te_spec.application_strategy;
     _applicationStrategy = applicationStrategy != null ? applicationStrategy : new AllCategoricalTEApplicationStrategy(_trainingFrame, _responseColumnName);
@@ -96,7 +96,7 @@ class AutoMLTargetEncodingAssistant{
           _columnNameToIdxMap.put(column, (double) _trainingFrame.find(column));
         }
         _teParamsSelectionStrategy = new GridSearchTEParamsSelectionStrategy(_leaderboardFrame, ratioOfHyperspaceToExplore,
-                _responseColumnName, _columnNameToIdxMap, theBiggerTheBetter, _buildSpec.te_spec.seed);
+                _responseColumnName, _columnNameToIdxMap, theBiggerTheBetter, _buildSpec.te_spec.search_over_columns,  _buildSpec.te_spec.seed);
         break;
     }
 
@@ -118,7 +118,7 @@ class AutoMLTargetEncodingAssistant{
   }
 
 
-  void performAutoTargetEncoding() {
+  public void performAutoTargetEncoding() {
 
     TargetEncodingParams bestTEParams = getBestTEParams();
     String[] columnsToEncode = bestTEParams.getColumnsToEncode();

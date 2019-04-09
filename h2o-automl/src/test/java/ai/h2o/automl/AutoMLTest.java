@@ -1,5 +1,6 @@
 package ai.h2o.automl;
 
+import ai.h2o.automl.targetencoding.integration.AutoMLBuildSpec;
 import hex.Model;
 import hex.SplitFrame;
 import org.junit.BeforeClass;
@@ -10,7 +11,6 @@ import water.Lockable;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
-import water.util.Log;
 
 import java.util.ArrayList;
 import java.util.Date;

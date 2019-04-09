@@ -1,13 +1,10 @@
 package ai.h2o.automl.targetencoding.integration;
 
 import ai.h2o.automl.AutoML;
-import ai.h2o.automl.AutoMLBuildSpec;
-import ai.h2o.automl.targetencoding.BlendingParams;
-import ai.h2o.automl.targetencoding.TargetEncoder;
-import ai.h2o.automl.targetencoding.TargetEncoderFrameHelper;
-import ai.h2o.automl.targetencoding.TargetEncodingParams;
+import ai.h2o.automl.targetencoding.*;
 import ai.h2o.automl.targetencoding.strategy.*;
 import hex.Model;
+import hex.ModelBuilder;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.DKV;
@@ -16,8 +13,10 @@ import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 
+import java.util.HashMap;
 import java.util.Map;
 
+import static ai.h2o.automl.AutoMLBenchmarkingHelper.getPreparedTitanicFrame;
 import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.encodingMapCleanUp;
 import static org.junit.Assert.*;
 
@@ -323,5 +322,64 @@ public class TEIntegrationWithAutoMLTest extends water.TestUtil {
   public void checkThatAllModelsInTheLeaderboardGotIgnoredColumnsTest() {
     // it is expected that we will have original columns for encodings listed in the `_ignored_columns` array.
 //    assertArrayEquals(leaderWithTE._parms._ignored_columns, teApplicationStrategy.getColumnsToEncode());
+  }
+
+  @Test
+  public void grid_search_over_selected_categorical_columns_is_configurable() {
+
+    boolean[] searchOverColumnsPossibleValues = new boolean[]{true, false};
+
+    for (boolean searchOverColumns : searchOverColumnsPossibleValues) {
+
+      String responseColumnName = "survived";
+      Frame train = getPreparedTitanicFrame(responseColumnName);
+
+      AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+      autoMLBuildSpec.input_spec.training_frame = train._key;
+      autoMLBuildSpec.build_control.nfolds = 5;
+      autoMLBuildSpec.input_spec.response_column = responseColumnName;
+
+      Vec responseColumn = train.vec(responseColumnName);
+      TEApplicationStrategy thresholdTEApplicationStrategy = new ThresholdTEApplicationStrategy(train, responseColumn, 5);
+
+      autoMLBuildSpec.te_spec.ratio_of_hyperspace_to_explore = 0.05;
+      autoMLBuildSpec.te_spec.early_stopping_ratio = 0.05;
+      autoMLBuildSpec.te_spec.search_over_columns = searchOverColumns;
+      autoMLBuildSpec.te_spec.seed = 1234;
+
+      autoMLBuildSpec.te_spec.application_strategy = thresholdTEApplicationStrategy;
+      autoMLBuildSpec.te_spec.params_selection_strategy = HPsSelectionStrategy.RGS;
+
+      ModelBuilder modelBuilder = TargetEncodingTestFixtures.modelBuilderWithCVFixture(train, responseColumnName, 1234);
+      modelBuilder.init(false);
+
+      AutoMLTargetEncodingAssistant teAssistant = new AutoMLTargetEncodingAssistant(train,
+              null,
+              null,
+              autoMLBuildSpec,
+              modelBuilder);
+
+      teAssistant.init();
+
+      teAssistant.performAutoTargetEncoding();
+
+      GridBasedTEParamsSelectionStrategy selectionStrategy = (GridBasedTEParamsSelectionStrategy) teAssistant.getTeParamsSelectionStrategy();
+      HashMap<String, Object[]> grid = selectionStrategy.getRandomGridEntrySelector().grid();
+      
+      if(searchOverColumns) {
+        assertEquals(2, grid.get("_column_to_encode_cabin").length);
+        assertEquals(2, grid.get("_column_to_encode_home.dest").length);
+        assertTrue(modelBuilder.train().vec("home.dest_te") != null);
+        assertTrue(modelBuilder.train().vec("cabin_te") == null);
+      } else {
+        assertEquals(1, grid.get("_column_to_encode_cabin").length);
+        assertEquals(1, grid.get("_column_to_encode_home.dest").length);
+        assertTrue(modelBuilder.train().vec("home.dest_te") != null);
+        assertTrue(modelBuilder.train().vec("cabin_te") != null);
+      }
+
+      modelBuilder.train().delete();
+      train.delete();
+    }
   }
 }

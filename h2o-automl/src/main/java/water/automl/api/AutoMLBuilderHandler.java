@@ -1,7 +1,7 @@
 package water.automl.api;
 
 import ai.h2o.automl.AutoML;
-import ai.h2o.automl.AutoMLBuildSpec;
+import ai.h2o.automl.targetencoding.integration.AutoMLBuildSpec;
 import water.api.Handler;
 import water.api.schemas3.JobV3;
 import water.automl.api.schemas3.AutoMLBuildSpecV99;

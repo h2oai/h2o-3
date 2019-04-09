@@ -1,10 +1,10 @@
 package ai.h2o.automl;
 
 import ai.h2o.automl.UserFeedbackEvent.Stage;
-import ai.h2o.automl.targetencoding.strategy.TEApplicationStrategy;
+import ai.h2o.automl.targetencoding.integration.AutoMLBuildSpec;
+import ai.h2o.automl.targetencoding.integration.AutoMLTargetEncodingAssistant;
 import hex.Model;
 import hex.ModelBuilder;
-import hex.ScoreKeeper;
 import hex.ScoreKeeper.StoppingMetric;
 import hex.ensemble.StackedEnsembleModel;
 import hex.ensemble.StackedEnsembleModel.StackedEnsembleParameters;
@@ -17,7 +17,6 @@ import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
 import hex.splitframe.ShuffleSplitFrame;
 import hex.tree.SharedTreeModel.SharedTreeParameters;
 import hex.tree.drf.DRFModel.DRFParameters;
-import hex.tree.gbm.GBMModel;
 import hex.tree.gbm.GBMModel.GBMParameters;
 import hex.tree.xgboost.XGBoostModel.XGBoostParameters;
 import water.*;
@@ -31,13 +30,12 @@ import water.util.ArrayUtils;
 import water.util.Countdown;
 import water.util.IcedHashMapGeneric;
 import water.util.Log;
-import water.util.TwoDimTable;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria.AUTO_STOPPING_TOLERANCE;
+import static ai.h2o.automl.targetencoding.integration.AutoMLBuildSpec.AutoMLStoppingCriteria.AUTO_STOPPING_TOLERANCE;
 
 
 /**

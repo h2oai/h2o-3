@@ -9,7 +9,6 @@ import water.util.TwoDimTable;
 
 import java.util.*;
 
-//TODO Either perform random grid search over parameters or introduce evolutionary selection algo, or just fixed/default values
 public abstract class TEParamsSelectionStrategy extends Iced {
   
   public abstract TargetEncodingParams getBestParams(ModelBuilder modelBuilder);
@@ -109,6 +108,10 @@ public abstract class TEParamsSelectionStrategy extends Iced {
     
     public int spaceSize() {
       return _spaceSize;
+    }
+
+    public HashMap<String, Object[]> grid() {
+      return _grid;
     }
 
     public static class GridSearchCompleted extends Exception{ }

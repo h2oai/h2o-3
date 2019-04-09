@@ -22,12 +22,19 @@ public class GridSearchTEParamsSelectionStrategy extends GridBasedTEParamsSelect
   
   private int _numberOfIterations;
 
-  public GridSearchTEParamsSelectionStrategy(Frame leaderboard, double ratioOfHyperSpaceToExplore, String responseColumn, Map<String, Double> columnNameToIdxMap, boolean theBiggerTheBetter, long seed) {
+  public GridSearchTEParamsSelectionStrategy(Frame leaderboard,
+                                             double ratioOfHyperSpaceToExplore,
+                                             String responseColumn,
+                                             Map<String, Double> columnNameToIdxMap,
+                                             boolean theBiggerTheBetter,
+                                             boolean searchOverColumns,
+                                             long seed) {
     _seed = seed;
     
     _leaderboardData = leaderboard;
     _responseColumn = responseColumn;
     _columnNameToIdxMap = columnNameToIdxMap;
+    _searchOverColumns = searchOverColumns;
     
     _ratioOfHyperSpaceToExplore = ratioOfHyperSpaceToExplore;
     _theBiggerTheBetter = theBiggerTheBetter;

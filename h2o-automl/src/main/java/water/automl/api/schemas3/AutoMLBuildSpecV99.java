@@ -2,8 +2,8 @@ package water.automl.api.schemas3;
 
 
 import ai.h2o.automl.Algo;
-import ai.h2o.automl.AutoMLBuildSpec;
-import ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria;
+import ai.h2o.automl.targetencoding.integration.AutoMLBuildSpec;
+import ai.h2o.automl.targetencoding.integration.AutoMLBuildSpec.AutoMLStoppingCriteria;
 import hex.ScoreKeeper;
 import water.api.API;
 import water.api.EnumValuesProvider;
@@ -16,7 +16,7 @@ import water.util.PojoUtils;
 
 import java.util.Map;
 
-import static ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria.AUTO_STOPPING_TOLERANCE;
+import static ai.h2o.automl.targetencoding.integration.AutoMLBuildSpec.AutoMLStoppingCriteria.AUTO_STOPPING_TOLERANCE;
 
 // TODO: this is about to change from SchemaV3 to RequestSchemaV3:
 public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpecV99> {

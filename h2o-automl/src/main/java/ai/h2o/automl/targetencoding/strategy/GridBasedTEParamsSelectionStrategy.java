@@ -11,6 +11,8 @@ public abstract class GridBasedTEParamsSelectionStrategy extends TEParamsSelecti
   protected double _ratioOfHyperSpaceToExplore;
   protected String[] _columnsToEncode; // TODO maybe we don't need this as we have `_columnNameToIdxMap`
   protected transient Map<String, Double> _columnNameToIdxMap;
+  protected boolean _searchOverColumns;
+  
   protected long _seed;
   
   // Note: representing every value in a grid as a double is convenient if we will want to store materialised version of a grid in a Frame for SMBO
@@ -24,7 +26,8 @@ public abstract class GridBasedTEParamsSelectionStrategy extends TEParamsSelecti
    
     // Expanding columns to encode into multiple grid dimensions 
     for (Map.Entry<String, Double> columnName2IdxMapping : _columnNameToIdxMap.entrySet()) {
-      _grid.put("_column_to_encode_" + columnName2IdxMapping.getKey(), new Double[]{columnName2IdxMapping.getValue(), -1.0});
+      Double[] values = _searchOverColumns ? new Double[]{columnName2IdxMapping.getValue(), -1.0} : new Double[] {columnName2IdxMapping.getValue()};
+      _grid.put("_column_to_encode_" + columnName2IdxMapping.getKey(), values);
     }
 
     switch (modelValidationMode) {
@@ -41,6 +44,11 @@ public abstract class GridBasedTEParamsSelectionStrategy extends TEParamsSelecti
 
     _randomGridEntrySelector = new RandomGridEntrySelector(_grid, _seed);
     Log.info("Size of TE hyperspace to explore " + _randomGridEntrySelector.spaceSize());
+  }
+
+
+  public RandomGridEntrySelector getRandomGridEntrySelector() {
+    return _randomGridEntrySelector;
   }
 }
 

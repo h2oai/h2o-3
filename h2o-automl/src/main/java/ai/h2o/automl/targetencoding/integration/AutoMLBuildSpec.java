@@ -1,8 +1,8 @@
-package ai.h2o.automl;
+package ai.h2o.automl.targetencoding.integration;
 
+import ai.h2o.automl.Algo;
 import ai.h2o.automl.targetencoding.strategy.HPsSelectionStrategy;
 import ai.h2o.automl.targetencoding.strategy.TEApplicationStrategy;
-import ai.h2o.automl.targetencoding.strategy.TEParamsSelectionStrategy;
 import hex.ScoreKeeper;
 import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
 import water.Iced;
@@ -177,6 +177,7 @@ public class AutoMLBuildSpec extends Iced {
     public HPsSelectionStrategy params_selection_strategy;
     public double early_stopping_ratio;
     public double ratio_of_hyperspace_to_explore;
+    public boolean search_over_columns = true;
     public long seed = new Random().nextLong();
   }
 

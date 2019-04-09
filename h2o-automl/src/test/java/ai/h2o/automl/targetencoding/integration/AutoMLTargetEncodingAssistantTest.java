@@ -1,5 +1,6 @@
-package ai.h2o.automl;
+package ai.h2o.automl.targetencoding.integration;
 
+import ai.h2o.automl.AutoMLBenchmarkingHelper;
 import ai.h2o.automl.targetencoding.BlendingParams;
 import ai.h2o.automl.targetencoding.TargetEncoder;
 import ai.h2o.automl.targetencoding.TargetEncodingParams;

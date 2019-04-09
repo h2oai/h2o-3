@@ -1,5 +1,6 @@
 package ai.h2o.automl;
 
+import ai.h2o.automl.targetencoding.integration.AutoMLBuildSpec;
 import ai.h2o.automl.targetencoding.strategy.*;
 import hex.Model;
 import org.junit.Assert;
@@ -83,6 +84,7 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
 
         autoMLBuildSpec.te_spec.ratio_of_hyperspace_to_explore = 0.05;
         autoMLBuildSpec.te_spec.early_stopping_ratio = 0.15;
+        autoMLBuildSpec.te_spec.search_over_columns = false;
         autoMLBuildSpec.te_spec.seed = splitSeed;
 
         autoMLBuildSpec.te_spec.application_strategy = thresholdTEApplicationStrategy;
