@@ -38,125 +38,129 @@ public class XGBoostUtilsTest extends TestUtil {
   public void tearDown() {
     revertDefaultSparseMatrixMaxSize();
   }
-  @Test
-  public void parseFeatureScores() throws IOException, ParseException {
-    String[] modelDump = readLines(getClass().getResource("xgbdump.txt"));
-    String[] expectedVarImps = readLines(getClass().getResource("xgbvarimps.txt"));
 
-    Map<String, XGBoostUtils.FeatureScore> scores = XGBoostUtils.parseFeatureScores(modelDump);
-    double totalGain = 0;
-    double totalCover = 0;
-    double totalFrequency = 0;
-    for (XGBoostUtils.FeatureScore score : scores.values()) {
-      totalGain += score._gain;
-      totalCover += score._cover;
-      totalFrequency += score._frequency;
+  public static final class XGBoostUtilsTestSingleRun extends XGBoostUtilsTest {
+
+    @Test
+    public void parseFeatureScores() throws IOException, ParseException {
+      String[] modelDump = readLines(getClass().getResource("xgbdump.txt"));
+      String[] expectedVarImps = readLines(getClass().getResource("xgbvarimps.txt"));
+
+      Map<String, XGBoostUtils.FeatureScore> scores = XGBoostUtils.parseFeatureScores(modelDump);
+      double totalGain = 0;
+      double totalCover = 0;
+      double totalFrequency = 0;
+      for (XGBoostUtils.FeatureScore score : scores.values()) {
+        totalGain += score._gain;
+        totalCover += score._cover;
+        totalFrequency += score._frequency;
+      }
+
+      NumberFormat nf = NumberFormat.getInstance(Locale.US);
+      for (String varImp : expectedVarImps) {
+        String[] vals = varImp.split(" ");
+        XGBoostUtils.FeatureScore score = scores.get(vals[0]);
+        assertNotNull("Score " + vals[0] + " should ve calculated", score);
+        float expectedGain = nf.parse(vals[1]).floatValue();
+        assertEquals("Gain of " + vals[0], expectedGain, score._gain / totalGain, 1e-6);
+        float expectedCover = nf.parse(vals[2]).floatValue();
+        assertEquals("Cover of " + vals[0], expectedCover, score._cover / totalCover, 1e-6);
+        float expectedFrequency = nf.parse(vals[3]).floatValue();
+        assertEquals("Frequency of " + vals[0], expectedFrequency, score._frequency / totalFrequency, 1e-6);
+      }
     }
 
-    NumberFormat nf = NumberFormat.getInstance(Locale.US);
-    for (String varImp : expectedVarImps) {
-      String[] vals = varImp.split(" ");
-      XGBoostUtils.FeatureScore score = scores.get(vals[0]);
-      assertNotNull("Score " + vals[0] + " should ve calculated", score);
-      float expectedGain = nf.parse(vals[1]).floatValue();
-      assertEquals("Gain of " + vals[0], expectedGain, score._gain / totalGain, 1e-6);
-      float expectedCover = nf.parse(vals[2]).floatValue();
-      assertEquals("Cover of " + vals[0], expectedCover, score._cover / totalCover, 1e-6);
-      float expectedFrequency = nf.parse(vals[3]).floatValue();
-      assertEquals("Frequency of " + vals[0], expectedFrequency, score._frequency / totalFrequency, 1e-6);
+    @Test
+    public void testCSRPredictionComparison_cars() {
+      //Cars is a 100% dense dataset (useful edge case)
+      try {
+        Scope.enter();
+        final String response = "cylinders";
+        final Frame frame = TestUtil.parse_test_file("smalldata/junit/cars.csv");
+        Scope.track(frame);
+        final Frame testFrame = TestUtil.parse_test_file("smalldata/testng/cars_test.csv");
+        Scope.track(testFrame);
+
+        testCSRPredictions(frame, response, testFrame);
+      } finally {
+        Scope.exit();
+      }
     }
-  }
 
-  @Test
-  public void testCSRPredictionComparison_cars() {
-    //Cars is a 100% dense dataset (useful edge case)
-    try {
-      Scope.enter();
-      final String response = "cylinders";
-      final Frame frame = TestUtil.parse_test_file("smalldata/junit/cars.csv");
-      Scope.track(frame);
-      final Frame testFrame = TestUtil.parse_test_file("smalldata/testng/cars_test.csv");
-      Scope.track(testFrame);
+    @Test
+    public void testCSRPredictionComparison_airlines() {
+      try {
+        Scope.enter();
+        final String response = "IsDepDelayed";
 
-      testCSRPredictions(frame, response, testFrame);
-    } finally {
-      Scope.exit();
+        final Frame frame = TestUtil.parse_test_file("smalldata/testng/airlines.csv");
+        Scope.track(frame);
+        final Frame testFrame = TestUtil.parse_test_file("smalldata/testng/airlines_test.csv");
+        Scope.track(testFrame);
+
+        testCSRPredictions(frame, response, testFrame );
+      } finally {
+        Scope.exit();
+      }
     }
-  }
 
-  @Test
-  public void testCSRPredictionComparison_airlines() {
-    try {
-      Scope.enter();
-      final String response = "IsDepDelayed";
+    @Test
+    public void testCSRPredictionComparison_airQuality() {
+      try {
+        Scope.enter();
+        final String response = "Ozone";
 
-      final Frame frame = TestUtil.parse_test_file("smalldata/testng/airlines.csv");
-      Scope.track(frame);
-      final Frame testFrame = TestUtil.parse_test_file("smalldata/testng/airlines_test.csv");
-      Scope.track(testFrame);
-      
-      testCSRPredictions(frame, response, testFrame );
-    } finally {
-      Scope.exit();
+        final Frame frame = TestUtil.parse_test_file("smalldata/testng/airquality_train1.csv");
+        Scope.track(frame);
+        final Frame testFrame = TestUtil.parse_test_file("smalldata/testng/airquality_validation1.csv");
+        Scope.track(testFrame);
+
+        testCSRPredictions(frame, response, testFrame );
+      } finally {
+        Scope.exit();
+      }
     }
-  }
 
-  @Test
-  public void testCSRPredictionComparison_airQuality() {
-    try {
-      Scope.enter();
-      final String response = "Ozone";
+    @Test
+    public void testCSRPredictionComparison_prostate() {
+      try {
+        Scope.enter();
+        final String response = "GLEASON";
 
-      final Frame frame = TestUtil.parse_test_file("smalldata/testng/airquality_train1.csv");
-      Scope.track(frame);
-      final Frame testFrame = TestUtil.parse_test_file("smalldata/testng/airquality_validation1.csv");
-      Scope.track(testFrame);
+        final Frame frame = TestUtil.parse_test_file("smalldata/testng/prostate_train.csv");
+        Scope.track(frame);
+        final Frame testFrame = TestUtil.parse_test_file("smalldata/testng/prostate_test.csv");
+        Scope.track(testFrame);
 
-      testCSRPredictions(frame, response, testFrame );
-    } finally {
-      Scope.exit();
+        testCSRPredictions(frame, response, testFrame );
+      } finally {
+        Scope.exit();
+      }
     }
-  }
 
-  @Test
-  public void testCSRPredictionComparison_prostate() {
-    try {
-      Scope.enter();
-      final String response = "GLEASON";
+    @Test
+    public void testSparsematrixNumLines() throws XGBoostError {
 
-      final Frame frame = TestUtil.parse_test_file("smalldata/testng/prostate_train.csv");
-      Scope.track(frame);
-      final Frame testFrame = TestUtil.parse_test_file("smalldata/testng/prostate_test.csv");
-      Scope.track(testFrame);
+      Frame frame = null;
+      try {
+        frame = Scope.track(new TestFrameBuilder()
+                .withName("testFrame")
+                .withColNames("C1", "C2", "C3", "C4")
+                .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
+                .withDataForCol(0, ard(1, 0, 3, 1))
+                .withDataForCol(1, ard(0, 0, 0, 0))
+                .withDataForCol(2, ard(2, 0, 0, 0))
+                .withDataForCol(3, ard(0, 0, 0, 4))
+                .build());
+        final DMatrix response = XGBoostUtils.convertFrameToDMatrix(new DataInfo(frame, null, true, DataInfo.TransformType.NONE, false, false, false),
+                frame, true, "C4", null, null, true);
+        assertNotNull(response);
+        assertEquals(4, response.rowNum());
+        assertArrayEquals(arf(0, 0, 0, 4), response.getLabel(), 0f);
 
-      testCSRPredictions(frame, response, testFrame );
-    } finally {
-      Scope.exit();
-    }
-  }
-
-  @Test
-  public void testSparsematrixNumLines() throws XGBoostError {
-
-    Frame frame = null;
-    try {
-      frame = Scope.track(new TestFrameBuilder()
-              .withName("testFrame")
-              .withColNames("C1", "C2", "C3", "C4")
-              .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
-              .withDataForCol(0, ard(1, 0, 3, 1))
-              .withDataForCol(1, ard(0, 0, 0, 0))
-              .withDataForCol(2, ard(2, 0, 0, 0))
-              .withDataForCol(3, ard(0, 0, 0, 4))
-              .build());
-      final DMatrix response = XGBoostUtils.convertFrameToDMatrix(new DataInfo(frame, null, true, DataInfo.TransformType.NONE, false, false, false),
-              frame, true, "C4", null, null, true);
-      assertNotNull(response);
-      assertEquals(4, response.rowNum());
-      assertArrayEquals(arf(0, 0, 0, 4), response.getLabel(), 0f);
-
-    } finally {
-      if (frame != null) frame.remove();
+      } finally {
+        if (frame != null) frame.remove();
+      }
     }
   }
 
