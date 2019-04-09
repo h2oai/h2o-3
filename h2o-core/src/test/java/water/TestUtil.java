@@ -1050,18 +1050,7 @@ public class TestUtil extends Iced {
       final Vec f1Vec = f1.vec(vecNum);
       final Vec f2Vec = f2.vec(vecNum);
 
-      if (f1Vec.length() != f2Vec.length()) {
-        throw new IllegalStateException(String.format("Length of vectors in column %o is not equal: {%o,%o}",
-                vecNum, f1Vec.length(), f2Vec.length()));
-      }
-
-      for (int i = 0; i < f1Vec.length(); i++) {
-        if (f1Vec.at(i) != f2Vec.at(i)) {
-          throw new IllegalStateException(String.format("Not equal values found in column %o: {%f, %f}",
-                  vecNum,f1Vec.at(i), f2Vec.at(i)));
-        }
-      }
-
+      assertVecEquals(f1Vec, f2Vec, 0);
     }
 
     return true;
