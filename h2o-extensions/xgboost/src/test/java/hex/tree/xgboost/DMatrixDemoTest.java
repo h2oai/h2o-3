@@ -21,7 +21,7 @@ public class DMatrixDemoTest {
 
   @Rule
   public TemporaryFolder tmp = new TemporaryFolder();
-  
+
   @Test // shows how to convert a small (=fits in a single java array) to DMatrix using our "2D" API
   public void convertSmallUnitMatrix2DAPI() throws XGBoostError {
     DMatrix dMatrix = null;
@@ -48,14 +48,10 @@ public class DMatrixDemoTest {
 
     int pos = 0;
     for (int m = 0; m < N; m++) {
-      for (int n = 0; n < N; n++) {
-        if (m == n) {
-          values[0][pos] = 1;
-          colIndices[0][pos] = m;
-          rowHeaders[0][pos] = pos;
-          pos++;
-        }
-      }
+      values[0][pos] = 1;
+      colIndices[0][pos] = m;
+      rowHeaders[0][pos] = pos;
+      pos++;
     }
     rowHeaders[0][pos] = pos;
     assertEquals(N, pos);
@@ -73,7 +69,7 @@ public class DMatrixDemoTest {
 
     return new DMatrix(rowHeaders, colIndices, values, DMatrix.SparseType.CSR, shapeParam, shapeParam2, ndata);
   }
-  
+
   @Test // shows how to convert any unit matrix (= no size limits) to DMatrix using our "2D" API
   public void convertUnitMatrix2DAPI() throws XGBoostError, IOException {
     final int ARR_MAX_LEN = 17;
@@ -93,17 +89,13 @@ public class DMatrixDemoTest {
 
       long pos = 0;
       for (int m = 0; m < N; m++) {
-        for (int n = 0; n < N; n++) {
-          if (m == n) {
-            int arr_idx = (int) (pos / ARR_MAX_LEN);
-            int arr_pos = (int) (pos % ARR_MAX_LEN);
+        int arr_idx = (int) (pos / ARR_MAX_LEN);
+        int arr_pos = (int) (pos % ARR_MAX_LEN);
 
-            values[arr_idx][arr_pos] = 1;
-            colIndices[arr_idx][arr_pos] = m;
-            rowHeaders[arr_idx][arr_pos] = pos;
-            pos++;
-          }
-        }
+        values[arr_idx][arr_pos] = 1;
+        colIndices[arr_idx][arr_pos] = m;
+        rowHeaders[arr_idx][arr_pos] = pos;
+        pos++;
       }
       int arr_idx = (int) (pos / ARR_MAX_LEN);
       int arr_pos = (int) (pos % ARR_MAX_LEN);
@@ -145,7 +137,7 @@ public class DMatrixDemoTest {
     l._lastRowLen = (int) (size - ((long) l._numRegRows * l._regRowLen)); // allow empty last row (easier and it shouldn't matter)
     return l;
   }
-  
+
   private static class Layout {
     int _numRegRows;
     int _regRowLen;
@@ -179,5 +171,5 @@ public class DMatrixDemoTest {
     }
 
   }
-  
+
 }
