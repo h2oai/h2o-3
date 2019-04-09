@@ -6,6 +6,7 @@ import ai.h2o.automl.targetencoding.integration.AutoMLTargetEncodingAssistant;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ScoreKeeper.StoppingMetric;
+import hex.deeplearning.DeepLearning;
 import hex.ensemble.StackedEnsembleModel;
 import hex.ensemble.StackedEnsembleModel.StackedEnsembleParameters;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
@@ -771,14 +772,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // NOTE: here we will also affect `_buildSpec.input_spec.ignored_columns`. We will switch it back below in `finally` block after model is trained.
     String[] originalIgnoredColumns = buildSpec.input_spec.ignored_columns;
 
-    Frame trainMBOriginal = builder.train();
+    Frame trainMBBeforeTE = builder.train();
     
     performTargetEncoding(builder);
-    Frame trainTE = builder.train();
+    Frame trainMBAfterTE = builder.train();
     
     // We are changing `ignored_columns` in `performTargetEncoding` method  
     builder._parms._ignored_columns = buildSpec.input_spec.ignored_columns; //TODO maybe it is better to directly change builder from assistant
-    builder._parms._keep_cross_validation_predictions = false; //TODO maybe it is better to directly change builder from assistant
 
     Log.debug("Training model: " + algoName + ", time remaining (ms): " + timeRemainingMs());
     Job trainingModelJob = null;
@@ -790,18 +790,30 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       return null;
     } finally {
       trainingModelJob.get(); // Note: we have to block and only then remove data with te encodings
-      if(trainTE.numRows() != trainMBOriginal.numRows()) // Only when we change training frame ( e.g. when holdout strategy is NONE)
-        trainTE.delete();
-      else {
-        String[] teColumns = ArrayUtils.difference(buildSpec.input_spec.ignored_columns, originalIgnoredColumns);
-        for (String teColumn : teColumns) {
-          if(builder.train().vec(teColumn+"_te") != null)
-            builder.train().remove(teColumn+"_te").remove();
+      
+      // Now we need to remove what we have added during TE to original data of current model builder
+      if(trainMBAfterTE.numRows() != trainMBBeforeTE.numRows()) // Only when we change training frame by setting it to another one ( e.g. when holdout strategy is NONE)
+        trainMBAfterTE.delete();
+      else if(builder instanceof DeepLearning) { // DeepLearning change training data in the builder so we need to remove what DL has overwritten without caring to cleanup.
+        if(getLeaderboardFrame() != null)  // Validation frame case
+          trainMBAfterTE.delete();
+        else { // CV case
+          removeTEColumnsFrom(originalIgnoredColumns, trainMBAfterTE);
         }
       }
-      builder.setTrain(trainMBOriginal);
-      builder._parms._keep_cross_validation_predictions = true;
+      else {
+        removeTEColumnsFrom(originalIgnoredColumns, builder.train());
+      }
+      builder.setTrain(trainMBBeforeTE);
       buildSpec.input_spec.ignored_columns = originalIgnoredColumns;
+    }
+  }
+
+  private void removeTEColumnsFrom(String[] originalIgnoredColumns, Frame train) {
+    String[] teColumns = ArrayUtils.difference(buildSpec.input_spec.ignored_columns, originalIgnoredColumns);
+    for (String teColumn : teColumns) {
+      if (train.vec(teColumn + "_te") != null)
+        train.remove(teColumn + "_te").remove();
     }
   }
 

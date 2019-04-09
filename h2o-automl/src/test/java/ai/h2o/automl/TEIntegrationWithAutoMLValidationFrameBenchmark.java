@@ -31,7 +31,9 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
 
   int numberOfModelsToCompareWith = 1;
   
-  Algo[] excludeAlgos = {Algo.DeepLearning, /*Algo.DRF,*/ Algo.GLM /*Algo.XGBoost*/ /* Algo.GBM,*/, Algo.StackedEnsemble};
+  Algo[] excludeAlgos = {/*Algo.DeepLearning,*/ Algo.DRF, Algo.GLM , Algo.XGBoost , Algo.GBM, Algo.StackedEnsemble};
+//  Algo[] excludeAlgos = {Algo.DeepLearning/*, Algo.DRF*/, Algo.GLM , Algo.XGBoost , Algo.GBM, Algo.StackedEnsemble};
+//  Algo[] excludeAlgos = {Algo.DeepLearning, /*Algo.DRF,*/ Algo.GLM /*Algo.XGBoost*/ /* Algo.GBM,*/, Algo.StackedEnsemble};
 
 
   @Test
@@ -39,6 +41,7 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
     AutoML aml = null;
     AutoML amlWithoutTE = null;
     Frame fr = null;
+    Leaderboard leaderboardWithTE = null;
     Leaderboard leaderboardWithoutTE = null;
     Frame[] splitsForWithoutTE = null;
     Frame frForWithoutTE = null;
@@ -59,9 +62,9 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
     double averageTimeWithTE = 0;
     double averageTimeWithoutTE = 0;
 
-    int numberOfRuns = 2;
+    int numberOfRuns = 5;
     for (int seedAttempt = 0; seedAttempt < numberOfRuns; seedAttempt++) {
-      long splitSeed = generator.nextLong(); 
+      long splitSeed = generator.nextLong();  // Note: DL's predictions are not stable so we can get different bestHPs from selection strategy even when we pass same seeds everywhere.
       try {
         AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
 
@@ -86,6 +89,7 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
         autoMLBuildSpec.te_spec.early_stopping_ratio = 0.15;
         autoMLBuildSpec.te_spec.search_over_columns = false;
         autoMLBuildSpec.te_spec.seed = splitSeed;
+        autoMLBuildSpec.te_spec.enabled = true;
 
         autoMLBuildSpec.te_spec.application_strategy = thresholdTEApplicationStrategy;
         autoMLBuildSpec.te_spec.params_selection_strategy = HPsSelectionStrategy.RGS;
@@ -95,6 +99,8 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
         autoMLBuildSpec.build_control.stopping_criteria.set_seed(autoMLSeed);
         autoMLBuildSpec.build_control.keep_cross_validation_models = false;
         autoMLBuildSpec.build_control.keep_cross_validation_predictions = false;
+        
+        autoMLBuildSpec.build_control.stopping_criteria.set_seed(splitSeed);
 
         long start1 = System.currentTimeMillis();
         aml = AutoML.startAutoML(autoMLBuildSpec);
@@ -102,7 +108,10 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
         long timeWithTE = System.currentTimeMillis() - start1;
         
         leader = aml.leader();
-        Leaderboard leaderboardWithTE = aml.leaderboard();
+        assertTrue(leader._output._cross_validation_predictions == null);
+        
+        leaderboardWithTE = aml.leaderboard();
+        
         assertTrue(leaderboardWithTE.getModels().length == numberOfModelsToCompareWith);
         double cumulativeLeaderboardScoreWithTE = 0;
         cumulativeLeaderboardScoreWithTE = getCumulativeLeaderboardScore(leaderboardSplit, leaderboardWithTE);
@@ -150,8 +159,10 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
         if (amlWithoutTE != null) amlWithoutTE.delete();
 
         if (frForWithoutTE != null) frForWithoutTE.delete();
-        for (Frame split : splitsForWithoutTE) {
-          split.delete();
+        if(splitsForWithoutTE != null) {
+          for (Frame split : splitsForWithoutTE) {
+            split.delete();
+          }
         }
       }
     }

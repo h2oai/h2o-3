@@ -30,8 +30,9 @@ public class TEIntegrationWithAutoMLCVBenchmark extends water.TestUtil {
 
   long autoMLSeed = 2345;
 
-  int numberOfModelsToCompareWith = 2;
-  Algo[] excludeAlgos = {Algo.DeepLearning, /*Algo.DRF,*/ Algo.GLM /*Algo.XGBoost*/ /* Algo.GBM,*/, Algo.StackedEnsemble};
+  int numberOfModelsToCompareWith = 1;
+//  Algo[] excludeAlgos = {Algo.DeepLearning, /*Algo.DRF,*/ Algo.GLM /*Algo.XGBoost*/ /* Algo.GBM,*/, Algo.StackedEnsemble};
+  Algo[] excludeAlgos = {/*Algo.DeepLearning,*/ Algo.DRF, Algo.GLM , Algo.XGBoost , Algo.GBM, Algo.StackedEnsemble};
 
   @Test
   public void random_tvl_split_with_RGS_vs_random_tvl_split_withoutTE_benchmark_with_leaderboard_evaluation() {
@@ -51,7 +52,7 @@ public class TEIntegrationWithAutoMLCVBenchmark extends water.TestUtil {
     double averageTimeWithTE = 0;
     double averageTimeWithoutTE = 0;
 
-    int numberOfRuns = 3;
+    int numberOfRuns = 5;
     for (int seedAttempt = 0; seedAttempt < numberOfRuns; seedAttempt++) {
       long splitSeed = generator.nextLong(); 
       try {
