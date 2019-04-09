@@ -30,7 +30,7 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
   long autoMLSeed = 2345;
 
   int numberOfModelsToCompareWith = 1;
-//  Algo[] excludeAlgos = {Algo.DeepLearning, Algo.DRF, Algo.GLM /*Algo.XGBoost*/ , Algo.GBM, Algo.StackedEnsemble}; // only XGB
+  
   Algo[] excludeAlgos = {Algo.DeepLearning, /*Algo.DRF,*/ Algo.GLM /*Algo.XGBoost*/ /* Algo.GBM,*/, Algo.StackedEnsemble};
 
 

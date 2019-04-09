@@ -51,7 +51,7 @@ public class AutoMLTargetEncodingAssistantTest extends water.TestUtil{
     autoMLBuildSpec.te_spec.application_strategy = thresholdTEApplicationStrategy;
     autoMLBuildSpec.te_spec.params_selection_strategy = HPsSelectionStrategy.RGS;
 
-    ModelBuilder modelBuilder = TargetEncodingTestFixtures.modelBuilderWithCVFixture(train, responseColumnName, 1234);
+    ModelBuilder modelBuilder = TargetEncodingTestFixtures.modelBuilderGBMWithCVFixture(train, responseColumnName, 1234);
     modelBuilder.init(false);
     
     AutoMLTargetEncodingAssistant teAssistant = new AutoMLTargetEncodingAssistant(train,

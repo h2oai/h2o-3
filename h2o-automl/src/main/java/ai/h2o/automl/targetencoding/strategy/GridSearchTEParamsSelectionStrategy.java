@@ -88,10 +88,6 @@ public class GridSearchTEParamsSelectionStrategy extends GridBasedTEParamsSelect
     return _responseColumn;
   }
 
-  public String[] getColumnsToEncode() {
-    return _columnsToEncode;
-  }
-
   public boolean isTheBiggerTheBetter() {
     return _theBiggerTheBetter;
   }

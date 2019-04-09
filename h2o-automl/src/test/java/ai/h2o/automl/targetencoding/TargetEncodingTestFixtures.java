@@ -24,14 +24,19 @@ public class TargetEncodingTestFixtures {
     Random generator = seed == -1 ? new Random() : new Random(seed);
     double pivot = generator.nextDouble();
     byte strategy = pivot >= 0.5 ? TargetEncoder.DataLeakageHandlingStrategy.KFold : TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut;
-    return new TargetEncodingParams(columnsToEncode, new BlendingParams(3, 1), strategy, 0.01);
+    return new TargetEncodingParams(columnsToEncode, new BlendingParams(generator.nextInt(5) + 1, generator.nextInt(10) + 1), strategy, 0.01);
+  }
+
+  public static TargetEncodingParams randomTEParams(String[] columnsToEncode, byte holdoutStrategy, long seed) {
+    Random generator = seed == -1 ? new Random() : new Random(seed);
+    return new TargetEncodingParams(columnsToEncode, new BlendingParams(generator.nextInt(5) + 1, generator.nextInt(10) + 1), holdoutStrategy, 0.01);
   }
   
   public static TargetEncodingParams randomTEParams(String[] columnsToEncode) {
     return randomTEParams(columnsToEncode, -1);
   }
 
-  public static ModelBuilder modelBuilderWithCVFixture(Frame fr, String responseColumnName , long builderSeed) {
+  public static ModelBuilder modelBuilderGBMWithCVFixture(Frame fr, String responseColumnName , long builderSeed) {
     Algo algo = Algo.GBM;
     String algoUrlName = algo.name().toLowerCase();
     String algoName = ModelBuilder.algoName(algoUrlName);

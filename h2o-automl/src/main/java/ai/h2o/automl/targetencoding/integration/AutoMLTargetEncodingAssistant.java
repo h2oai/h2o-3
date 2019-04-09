@@ -34,7 +34,6 @@ public class AutoMLTargetEncodingAssistant{
   private String _responseColumnName;
   private AutoMLBuildSpec _buildSpec;
   private ModelBuilder _modelBuilder;
-  private String[] _originalIgnoredColumns;
   private boolean _CVEarlyStoppingEnabled;
 
   public TEParamsSelectionStrategy getTeParamsSelectionStrategy() {
@@ -113,8 +112,6 @@ public class AutoMLTargetEncodingAssistant{
     }
     
     _teParams = getTeParamsSelectionStrategy().getBestParams(_modelBuilder);
-    
-    _originalIgnoredColumns = _modelBuilder._parms._ignored_columns;
   }
 
 

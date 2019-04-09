@@ -4,6 +4,7 @@ import ai.h2o.automl.AutoMLBenchmarkingHelper;
 import ai.h2o.automl.targetencoding.TargetEncoder;
 import ai.h2o.automl.targetencoding.TargetEncodingParams;
 import ai.h2o.automl.targetencoding.TargetEncodingTestFixtures;
+import hex.Model;
 import hex.ModelBuilder;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -12,8 +13,9 @@ import water.*;
 import water.fvec.Frame;
 
 import java.util.HashMap;
+import java.util.Random;
 
-import static ai.h2o.automl.targetencoding.TargetEncodingTestFixtures.modelBuilderWithCVFixture;
+import static ai.h2o.automl.targetencoding.TargetEncodingTestFixtures.modelBuilderGBMWithCVFixture;
 import static ai.h2o.automl.targetencoding.TargetEncodingTestFixtures.modelBuilderGBMWithValidFrameFixture;
 import static org.junit.Assert.*;
 
@@ -38,9 +40,18 @@ public class TargetEncodingHyperparamsEvaluatorTest extends TestUtil {
     long builderSeed = 3456;
     ModelBuilder modelBuilder = modelBuilderGBMWithValidFrameFixture(train, valid, responseColumnName, builderSeed);
 
-    modelBuilder.trainModel().get();
-    assertTrue(modelBuilder.train().vec("Tree_0") == null);
-    printOutFrameAsTable(modelBuilder.train());
+    // Just testing that we can train a model from the fixture
+    Keyed model = modelBuilder.trainModel().get();
+
+    // Checking that we can't reuse model builder as after the training it is being left in unusable state
+    assertTrue(modelBuilder.train().vec("Tree_0") != null);
+    
+    fr.delete();
+    train.delete();
+    valid.delete();
+
+    Model retrievedModel = DKV.getGet(model._key);
+    retrievedModel.delete();
   }
 
   // We test here that we can reuse model builder by cloning it.
@@ -112,9 +123,9 @@ public class TargetEncodingHyperparamsEvaluatorTest extends TestUtil {
 
       TargetEncodingHyperparamsEvaluator evaluator = new TargetEncodingHyperparamsEvaluator();
 
-      TargetEncodingParams randomTEParams = TargetEncodingTestFixtures.randomTEParams(columnsToEncode);
+      TargetEncodingParams randomTEParams = TargetEncodingTestFixtures.randomTEParams(columnsToEncode, TargetEncoder.DataLeakageHandlingStrategy.KFold);
       long builderSeed = 3456;
-      modelBuilder = modelBuilderWithCVFixture(train,responseColumnName, builderSeed);
+      modelBuilder = modelBuilderGBMWithCVFixture(train,responseColumnName, builderSeed);
 
 
       modelBuilder.init(false); //verifying that we can call init and then modify builder in evaluator
@@ -136,7 +147,6 @@ public class TargetEncodingHyperparamsEvaluatorTest extends TestUtil {
     }
   }
 
-  @Ignore
   @Test
   public void checkThatForAnyHyperParametersCombinationWeGetConsistentEvaluationsFromModelBuilderFixture() {
 
@@ -144,26 +154,25 @@ public class TargetEncodingHyperparamsEvaluatorTest extends TestUtil {
     double precisionForAUCEvaluations = 1e-5;
     
     HashMap<String, Object[]> _grid = new HashMap<>();
-    _grid.put("_withBlending", new Boolean[]{true, false});
+    _grid.put("_withBlending", new Double[]{1.0});
     _grid.put("_noise_level", new Double[]{0.0, 0.1, 0.01});
-    _grid.put("_inflection_point", new Integer[]{1, 2, 3, 5, 10, 50, 100});
+    _grid.put("_inflection_point", new Double[]{1.0, 2.0, 3.0, 5.0, 10.0, 50.0, 100.0});
     _grid.put("_smoothing", new Double[]{5.0, 10.0, 20.0});
-    _grid.put("_holdoutType", new Byte[]{TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut,TargetEncoder.DataLeakageHandlingStrategy.KFold, TargetEncoder.DataLeakageHandlingStrategy.None});
+    _grid.put("_holdoutType", new Double[]{0.0, 1.0, 2.0});
 
-    long testSeed = 2345; //TODO maybe -1?
-    long builderSeed = 3456; 
+    long builderSeed = new Random().nextLong(); 
 
     TargetEncodingHyperparamsEvaluator targetEncodingHyperparamsEvaluator = new TargetEncodingHyperparamsEvaluator();
 
     Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
     String responseColumnName = "survived";
     asFactor(fr, responseColumnName);
-    ModelBuilder modelBuilder = modelBuilderWithCVFixture(fr, responseColumnName, builderSeed); // TODO try different model builders
+    ModelBuilder modelBuilder = modelBuilderGBMWithCVFixture(fr, responseColumnName, builderSeed); 
     modelBuilder.init(false); // Should we init before cloning? Like in real use case we clone after initialisation of the original modelBuilder.
-    TEApplicationStrategy strategy = new ThresholdTEApplicationStrategy(fr, fr.vec(responseColumnName), 4);
 
+    for (int teParamAttempt = 0; teParamAttempt < 3; teParamAttempt++) {
+      long testSeed = new Random().nextLong();
 
-    for (int teParamAttempt = 0; teParamAttempt < 30; teParamAttempt++) {
       TEParamsSelectionStrategy.RandomGridEntrySelector randomGridEntrySelector = new TEParamsSelectionStrategy.RandomGridEntrySelector(_grid, testSeed);
       GridSearchTEParamsSelectionStrategy.GridEntry selected = null;
       try {
@@ -173,15 +182,13 @@ public class TargetEncodingHyperparamsEvaluatorTest extends TestUtil {
       } 
 
       TargetEncodingParams param = new TargetEncodingParams(selected.getItem());
-//      TargetEncodingParams param  = new TargetEncodingParams(strategy.getColumnsToEncode(),null, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, 0.0);
-
 
       double lastResult = 0.0;
-      for (int evaluationAttempt = 0; evaluationAttempt < 50; evaluationAttempt++) {
+      for (int evaluationAttempt = 0; evaluationAttempt < 3; evaluationAttempt++) {
         ModelBuilder clonedModelBuilder = ModelBuilder.clone(modelBuilder);
         clonedModelBuilder.init(false);
         
-        double evaluationResult = targetEncodingHyperparamsEvaluator.evaluate(param, clonedModelBuilder, ModelValidationMode.VALIDATION_FRAME, null, testSeed);
+        double evaluationResult = targetEncodingHyperparamsEvaluator.evaluate(param, clonedModelBuilder, ModelValidationMode.CV, null, testSeed);
         if(lastResult == 0.0) lastResult = evaluationResult;
         else {
           
@@ -191,37 +198,13 @@ public class TargetEncodingHyperparamsEvaluatorTest extends TestUtil {
       }
     }
     
+    fr.delete();
   }
   
   @Test
   public void evaluateMethodWorksWithModelBuilderAndIgnoredColumns() {
     //TODO check case when original model builder has ignored columns
+    // how to check which columns have been used during training? through variable importance object?
   }
-  
- /* @Test
-  public void evaluateMethodDoesNotLeakKeys() {
-    Frame fr = null;
-    try {
-      fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
-
-      long seedForFoldColumn = 2345L;
-      final String foldColumnForTE = "custom_fold";
-      int nfolds = 5;
-      addKFoldColumn(fr, foldColumnForTE, nfolds, seedForFoldColumn);
-
-      String responseColumnName = "survived";
-
-      asFactor(fr, responseColumnName);
-
-      TEApplicationStrategy strategy = new ThresholdTEApplicationStrategy(fr, fr.vec("survived"), 4);
-
-      TargetEncodingHyperparamsEvaluator evaluator = new TargetEncodingHyperparamsEvaluator();
-
-      TargetEncodingParams anyParams = TargetEncodingTestFixtures.defaultTEParams();
-      evaluator.evaluate(anyParams, new Algo[]{Algo.GBM}, fr, responseColumnName, foldColumnForTE, strategy.getColumnsToEncode());
-    } finally {
-      fr.delete();
-    }
-  }*/
   
 }

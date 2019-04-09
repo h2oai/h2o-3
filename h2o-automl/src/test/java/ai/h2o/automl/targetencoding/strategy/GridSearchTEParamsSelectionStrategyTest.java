@@ -7,7 +7,6 @@ import ai.h2o.automl.targetencoding.TargetEncodingTestFixtures;
 import hex.ModelBuilder;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.AutoBuffer;
 import water.TestUtil;
 import water.fvec.Frame;
 
@@ -85,7 +84,7 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
     ModelBuilder mb = null;
     switch (modelValidationMode) {
       case CV:
-        mb = TargetEncodingTestFixtures.modelBuilderWithCVFixture(train, responseColumnName, seedForFoldColumn);
+        mb = TargetEncodingTestFixtures.modelBuilderGBMWithCVFixture(train, responseColumnName, seedForFoldColumn);
         break;
       case VALIDATION_FRAME:
         mb = TargetEncodingTestFixtures.modelBuilderGBMWithValidFrameFixture(train, valid, responseColumnName, seedForFoldColumn);
@@ -148,17 +147,6 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
 
     }
     assertEquals(sizeOfSpace, randomGridEntrySelector.getVisitedPermutationHashes().size());
-  }
-  
-  @Test
-  public void randomSelectorSerialization() {
-    HashMap<String, Object[]> searchParams = new HashMap<>();
-    searchParams.put("_withBlending", new Boolean[]{true, false});
-    
-    TEParamsSelectionStrategy.RandomGridEntrySelector randomGridEntrySelector = new TEParamsSelectionStrategy.RandomGridEntrySelector(searchParams);
-    AutoBuffer ab = new AutoBuffer();
-    String json = new String(randomGridEntrySelector.writeJSON(ab).buf());
-
   }
   
 }

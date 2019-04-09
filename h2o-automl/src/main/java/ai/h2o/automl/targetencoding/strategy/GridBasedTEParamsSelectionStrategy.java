@@ -9,7 +9,6 @@ public abstract class GridBasedTEParamsSelectionStrategy extends TEParamsSelecti
   protected ModelValidationMode _modelValidationMode;
   protected RandomGridEntrySelector _randomGridEntrySelector;
   protected double _ratioOfHyperSpaceToExplore;
-  protected String[] _columnsToEncode; // TODO maybe we don't need this as we have `_columnNameToIdxMap`
   protected transient Map<String, Double> _columnNameToIdxMap;
   protected boolean _searchOverColumns;
   
