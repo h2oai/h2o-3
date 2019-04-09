@@ -48,14 +48,10 @@ public class DMatrixDemoTest {
 
     int pos = 0;
     for (int m = 0; m < N; m++) {
-      for (int n = 0; n < N; n++) {
-        if (m == n) {
           values[0][pos] = 1;
           colIndices[0][pos] = m;
           rowHeaders[0][pos] = pos;
           pos++;
-        }
-      }
     }
     rowHeaders[0][pos] = pos;
     assertEquals(N, pos);
@@ -93,8 +89,6 @@ public class DMatrixDemoTest {
 
       long pos = 0;
       for (int m = 0; m < N; m++) {
-        for (int n = 0; n < N; n++) {
-          if (m == n) {
             int arr_idx = (int) (pos / ARR_MAX_LEN);
             int arr_pos = (int) (pos % ARR_MAX_LEN);
 
@@ -102,8 +96,6 @@ public class DMatrixDemoTest {
             colIndices[arr_idx][arr_pos] = m;
             rowHeaders[arr_idx][arr_pos] = pos;
             pos++;
-          }
-        }
       }
       int arr_idx = (int) (pos / ARR_MAX_LEN);
       int arr_pos = (int) (pos % ARR_MAX_LEN);
