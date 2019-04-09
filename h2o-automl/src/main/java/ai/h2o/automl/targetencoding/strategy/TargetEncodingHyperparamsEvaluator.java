@@ -97,6 +97,7 @@ public class TargetEncodingHyperparamsEvaluator extends Iced {
     //Cleanup for cloned builder
     clonedModelBuilder.train().delete();
     if (clonedModelBuilder._parms.train() != null) clonedModelBuilder._parms.train().delete();
+    
     return score;
   }
   
@@ -107,6 +108,8 @@ public class TargetEncodingHyperparamsEvaluator extends Iced {
     double cvScore = retrievedModel._output._cross_validation_metrics.auc_obj()._auc;
     retrievedModel.delete();
     retrievedModel.deleteCrossValidationModels();
+    retrievedModel.deleteCrossValidationPreds();
+    
     return cvScore;
   }
   

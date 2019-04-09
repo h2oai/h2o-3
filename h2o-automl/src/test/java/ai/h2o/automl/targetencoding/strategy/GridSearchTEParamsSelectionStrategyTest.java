@@ -43,7 +43,7 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
     Frame fr = null;
     try {
       fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
-      double ratioOfHPToExplore = 0.05;
+      double ratioOfHPToExplore = 0.01;
       GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncodingParams> bestParamsEv = findBestTargetEncodingParams(fr , ModelValidationMode.CV, "survived", ratioOfHPToExplore);
       bestParamsEv.getItem();
     } finally {

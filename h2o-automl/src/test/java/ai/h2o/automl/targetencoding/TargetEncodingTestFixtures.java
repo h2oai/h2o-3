@@ -31,7 +31,6 @@ public class TargetEncodingTestFixtures {
     return randomTEParams(columnsToEncode, -1);
   }
 
-  // TODO use this method and remove the one in the test
   public static ModelBuilder modelBuilderWithCVFixture(Frame fr, String responseColumnName , long builderSeed) {
     Algo algo = Algo.GBM;
     String algoUrlName = algo.name().toLowerCase();
@@ -52,6 +51,8 @@ public class TargetEncodingTestFixtures {
     builder._parms._train = fr._key;
     builder._parms._response_column = responseColumnName;
     builder._parms._nfolds = 5;
+    builder._parms._keep_cross_validation_models = true;
+    builder._parms._keep_cross_validation_predictions = true;
     return builder;
   }
   

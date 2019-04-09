@@ -94,6 +94,48 @@ public class TargetEncodingHyperparamsEvaluatorTest extends TestUtil {
     }
   }
 
+  @Test
+  public void evaluateMethodWorksWithModelBuilder_CV_case() {
+    Frame train = null;
+    Frame leaderboard = null;
+    ModelBuilder modelBuilder = null;
+    try {
+      train = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      String responseColumnName = "survived";
+
+      asFactor(train, responseColumnName);
+
+      leaderboard = null;
+
+      TEApplicationStrategy strategy = new ThresholdTEApplicationStrategy(train, train.vec(responseColumnName), 4);
+      String[] columnsToEncode = strategy.getColumnsToEncode();
+
+      TargetEncodingHyperparamsEvaluator evaluator = new TargetEncodingHyperparamsEvaluator();
+
+      TargetEncodingParams randomTEParams = TargetEncodingTestFixtures.randomTEParams(columnsToEncode);
+      long builderSeed = 3456;
+      modelBuilder = modelBuilderWithCVFixture(train,responseColumnName, builderSeed);
+
+
+      modelBuilder.init(false); //verifying that we can call init and then modify builder in evaluator
+      ModelBuilder clonedModelBuilder = ModelBuilder.clone(modelBuilder);
+
+      int seedForFoldColumn = 2345;
+      double auc = evaluator.evaluate(randomTEParams, modelBuilder, ModelValidationMode.CV, leaderboard, seedForFoldColumn);
+
+      clonedModelBuilder.init(false);
+
+      // checking that we can clone/reuse modelBuilder
+      double auc2 = evaluator.evaluate(randomTEParams, clonedModelBuilder, ModelValidationMode.CV, leaderboard, seedForFoldColumn);
+
+      assertTrue(isBitIdentical(clonedModelBuilder._parms.train(), modelBuilder._parms.train()));
+      assertTrue(auc > 0);
+      assertEquals(auc, auc2, 1e-5);
+    } finally {
+      if(train!=null) train.delete();
+    }
+  }
+
   @Ignore
   @Test
   public void checkThatForAnyHyperParametersCombinationWeGetConsistentEvaluationsFromModelBuilderFixture() {

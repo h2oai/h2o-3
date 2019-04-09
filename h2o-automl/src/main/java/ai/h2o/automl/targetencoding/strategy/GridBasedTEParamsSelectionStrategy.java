@@ -13,7 +13,7 @@ public abstract class GridBasedTEParamsSelectionStrategy extends TEParamsSelecti
   protected transient Map<String, Double> _columnNameToIdxMap;
   protected long _seed;
   
-  // Note: representing every value in a grid as a double is convenient if we will want to store materialised version of a grid in a Frame
+  // Note: representing every value in a grid as a double is convenient if we will want to store materialised version of a grid in a Frame for SMBO
   public void setTESearchSpace(ModelValidationMode modelValidationMode) {
     
     HashMap<String, Object[]> _grid = new HashMap<>();

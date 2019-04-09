@@ -24,6 +24,7 @@ public class TargetEncodingParams extends Iced {
     this._noiseLevel = noiseLevel;
   }
   
+  // TODO add test
   public TargetEncodingParams( byte holdoutType) {
     this._withBlendedAvg = false;
     this._blendingParams = null;

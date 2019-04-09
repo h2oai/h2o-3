@@ -34,10 +34,17 @@ public class AutoMLBenchmarkingHelper extends TestUtil {
     return mmb.auc();
   }
 
-  public static double getCumulativeLeaderboardScore(Frame split, Leaderboard leaderboardWithTE) {
+  public static double getCumulativeLeaderboardScore(Frame split, Leaderboard leaderboard) {
     double cumulative = 0.0;
-    for( Model model : leaderboardWithTE.getModels()) {
+    for( Model model : leaderboard.getModels()) {
       cumulative += getScoreBasedOn(split, model);
+    }
+    return cumulative;
+  }
+  public static double getCumulativeAUCScore(Leaderboard leaderboard) {
+    double cumulative = 0.0;
+    for( Model model : leaderboard.getModels()) {
+      cumulative += model.auc();
     }
     return cumulative;
   }
