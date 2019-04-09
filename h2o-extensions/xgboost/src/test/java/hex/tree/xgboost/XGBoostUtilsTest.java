@@ -1,36 +1,34 @@
 package hex.tree.xgboost;
 
 import hex.DataInfo;
+import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
+import ml.dmlc.xgboost4j.java.Rabit;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import water.MRTask;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
-import water.util.FrameUtils;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.URL;
+import java.security.SecureRandom;
 import java.text.NumberFormat;
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
 public class XGBoostUtilsTest extends TestUtil {
 
   private static final int DEFAULT_SPARSE_MATRIX_SIZE = XGBoostUtils.SPARSE_MATRIX_DIM;
-  
   @BeforeClass
   public static void beforeClass(){
     TestUtil.stall_till_cloudsize(1);
@@ -138,23 +136,6 @@ public class XGBoostUtilsTest extends TestUtil {
   }
 
   @Test
-  public void testCSRPredictionComparison_synthetic_sparse() {
-    try {
-      Scope.enter();
-      final String response = "y_gamma";
-
-      final Frame frame = TestUtil.parse_test_file("smalldata/testng/synthetic_sparse_train.csv");
-      Scope.track(frame);
-      final Frame testFrame = TestUtil.parse_test_file("smalldata/testng/synthetic_sparse_test.csv");
-      Scope.track(testFrame);
-
-      testCSRPredictions(frame, response, testFrame );
-    } finally {
-      Scope.exit();
-    }
-  }
-
-  @Test
   public void testSparsematrixNumLines() throws XGBoostError {
 
     Frame frame = null;
@@ -179,7 +160,7 @@ public class XGBoostUtilsTest extends TestUtil {
     }
   }
 
-  private static String[] readLines(URL url) throws IOException{
+  private static String[] readLines(URL url) throws IOException {
     List<String> lines = new ArrayList<>();
     try (BufferedReader r = new BufferedReader(new InputStreamReader(url.openStream()))) {
       String line;
@@ -280,6 +261,247 @@ public class XGBoostUtilsTest extends TestUtil {
     } finally {
       Scope.exit();
     }
+  }
+
+
+  protected static float[] createRandomLabelCol(final int colLen) {
+    float[] label = new float[colLen];
+    final Random random = new SecureRandom();
+
+    for (int i = 0; i < label.length; i++) {
+      label[i] = (float) random.nextGaussian();
+    }
+
+
+    return label;
+  }
+
+  protected static void attachLabelToFrame(final Frame frame, final float[] values) {
+    final Vec vec = Vec.makeVec(values, frame.anyVec().group().addVec());
+    frame.add("response", vec);
+  }
+
+  protected static Matrices createIdentityMatrices(final int dim, final int maxArrLen) throws XGBoostError {
+    long[][] rowHeaders = createLayout(dim + 1, maxArrLen).allocateLong();
+    int[][] colIndices = createLayout(dim, maxArrLen).allocateInt();
+    float[][] values = createLayout(dim, maxArrLen).allocateFloat();
+
+    TestFrameBuilder testFrameBuilder = new TestFrameBuilder()
+            .withUniformVecTypes(dim, Vec.T_NUM);
+
+    long pos = 0;
+    for (int m = 0; m < dim; m++) {
+      int arr_idx = (int) (pos / maxArrLen);
+      int arr_pos = (int) (pos % maxArrLen);
+
+      testFrameBuilder = testFrameBuilder.withDataForCol(m, genIdentityMatrixFrameCol(m, dim));
+      values[arr_idx][arr_pos] = 1;
+      colIndices[arr_idx][arr_pos] = m;
+      rowHeaders[arr_idx][arr_pos] = pos;
+      pos++;
+    }
+    int arr_idx = (int) (pos / maxArrLen);
+    int arr_pos = (int) (pos % maxArrLen);
+    rowHeaders[arr_idx][arr_pos] = pos;
+    assertEquals(dim, pos);
+
+    final DMatrix dMatrix = new DMatrix(rowHeaders, colIndices, values, DMatrix.SparseType.CSR, dim, dim + 1, dim);
+
+    return new Matrices(dMatrix, testFrameBuilder.build());
+  }
+
+  private static double[] genIdentityMatrixFrameCol(final int colIdx, final int len) {
+    final double[] column = new double[len];
+    column[colIdx] = 1;
+    return column;
+  }
+
+
+  protected static class Matrices {
+    private final DMatrix _dmatrix;
+    private final Frame _h2oFrame;
+
+    public Matrices(DMatrix dmatrix, Frame h2oFrame) {
+      _dmatrix = dmatrix;
+      _h2oFrame = h2oFrame;
+    }
+  }
+
+  private static CsrLayout createLayout(long size, int maxArrLen) {
+    CsrLayout l = new CsrLayout();
+    l._numRegRows = (int) (size / maxArrLen);
+    l._regRowLen = maxArrLen;
+    l._lastRowLen = (int) (size - ((long) l._numRegRows * l._regRowLen)); // allow empty last row (easier and it shouldn't matter)
+    return l;
+  }
+
+  private static class CsrLayout {
+    int _numRegRows;
+    int _regRowLen;
+    int _lastRowLen;
+
+    long[][] allocateLong() {
+      long[][] result = new long[_numRegRows + 1][];
+      for (int i = 0; i < _numRegRows; i++) {
+        result[i] = new long[_regRowLen];
+      }
+      result[result.length - 1] = new long[_lastRowLen];
+      return result;
+    }
+
+    int[][] allocateInt() {
+      int[][] result = new int[_numRegRows + 1][];
+      for (int i = 0; i < _numRegRows; i++) {
+        result[i] = new int[_regRowLen];
+      }
+      result[result.length - 1] = new int[_lastRowLen];
+      return result;
+    }
+
+    float[][] allocateFloat() {
+      float[][] result = new float[_numRegRows + 1][];
+      for (int i = 0; i < _numRegRows; i++) {
+        result[i] = new float[_regRowLen];
+      }
+      result[result.length - 1] = new float[_lastRowLen];
+      return result;
+    }
+
+  }
+
+  /**
+   * Compares H2O XGBoost preds with native preds
+   *
+   * @param nativePreds Native predictions
+   * @param h2oPreds    H2O-provided predictions
+   * @param delta
+   */
+  private static void comparePreds(final float[][] nativePreds, final Vec h2oPreds, final float delta) {
+    if (nativePreds.length != h2oPreds.length()) {
+      throw new IllegalStateException(String.format("Predictions do not have the same length. Native: %x, H2O: %x",
+              nativePreds.length,
+              h2oPreds.length()));
+
+    }
+    for (int i = 0; i < nativePreds.length; i++) {
+      assertEquals(nativePreds[i][0], (float) h2oPreds.at(i), delta);
+    }
+  }
+
+
+  @RunWith(Parameterized.class)
+  public static final class XGBoostSparseMatrixTest extends XGBoostUtilsTest {
+
+    private static final int MAX_ARR_SIZE = Integer.MAX_VALUE - 10;
+
+    @Parameterized.Parameters
+    public static Collection<Object[]> data() {
+      return Arrays.asList(new Object[][]{
+              {30, 10, MAX_ARR_SIZE},
+              {30, 10, 10},
+              {30, MAX_ARR_SIZE, MAX_ARR_SIZE},
+              {300, 10, MAX_ARR_SIZE},
+              {300, 10, 10},
+              {300, MAX_ARR_SIZE, MAX_ARR_SIZE},
+              {1000, 10, MAX_ARR_SIZE},
+              {1000, 10, 10},
+              {1000, MAX_ARR_SIZE, MAX_ARR_SIZE}
+      });
+    }
+
+    @Parameterized.Parameter(0)
+    public int matrixDimension;
+    @Parameterized.Parameter(1)
+    public int maxArrayLen; // Maximum length of second dimension of arrays used in XGBoostUtils to represent sparse data
+    @Parameterized.Parameter(2)
+    public int maxNativeArrayLen; //Maximum length of the second dimension of arrays used to hand over sparse data to "native" XGBoost4J
+
+    @Test
+    public void testCSRPredictions_compare_with_native() throws XGBoostError {
+
+      Frame trainingFrame = null;
+      XGBoostModel model = null;
+      Booster booster = null;
+      Frame h2oPreds = null;
+      try {
+        Map<String, String> rabitEnv = new HashMap<>();
+        rabitEnv.put("DMLC_TASK_ID", "0");
+        Rabit.init(rabitEnv);
+
+        // Prepare data matrices & label
+        final Matrices matrices = createIdentityMatrices(matrixDimension, Integer.MAX_VALUE - 10);
+        trainingFrame = matrices._h2oFrame;
+        final DMatrix train = matrices._dmatrix;
+        float[] label = createRandomLabelCol(matrixDimension);
+        train.setLabel(label);
+        attachLabelToFrame(matrices._h2oFrame, label);
+
+        // Train native XGBoost model via XGBoost4J
+        final int nround = 5;
+        final Map<String, Object> nativeParms = new HashMap<String, Object>() {
+          {
+            put("objective", "reg:linear");
+            put("eta", 1.0); //ETA 1.0 to make any differences in training matrices instantly noticeable
+            put("max_depth", 16);
+            put("ntrees", 5);
+            put("colsample_bytree", 1.0);
+            put("tree_method", "exact");
+            put("backend", "cpu");
+            put("booster", "gbtree");
+            put("lambda", 1.0);
+            put("grow_policy", "depthwise");
+            put("nthread", 12);
+            put("subsample", 1.0);
+            put("colsample_bylevel", 1.0);
+            put("max_delta_step", 0.0);
+            put("min_child_weight", 1.0);
+            put("gamma", 0.0);
+            put("seed", 1);
+          }
+        };
+
+        Map<String, DMatrix> watches = new HashMap<String, DMatrix>() {
+          {
+            put("train", train);
+          }
+        };
+
+
+        booster = ml.dmlc.xgboost4j.java.XGBoost.train(train, nativeParms, nround, watches, null, null);
+        assertNotNull(booster);
+        final float[][] predict = booster.predict(train);
+        assertNotNull(predict);
+
+
+        // Train H2O XGBoostModel
+        setSparseMatrixMaxDimensions(maxArrayLen); // Force the internal representation of the matrix to use both dimension of the array
+        XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+        parms._ntrees = 5;
+        parms._eta = 1.0; //ETA 1.0 to make any differences in training matrices instantly noticeable
+        parms._max_depth = 16;
+        parms._stopping_rounds = nround;
+        parms._train = matrices._h2oFrame._key;
+        parms._response_column = "response";
+        parms._backend = XGBoostModel.XGBoostParameters.Backend.cpu;
+        parms._tree_method = XGBoostModel.XGBoostParameters.TreeMethod.exact;
+        parms._seed = 1;
+        model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+        assertNotNull(model);
+
+        h2oPreds = model.score(trainingFrame);
+
+        comparePreds(predict, h2oPreds.vec("predict"), 1e-6f);
+
+
+      } finally {
+        Rabit.shutdown();
+        if (trainingFrame != null) trainingFrame.delete();
+        if (model != null) model.delete();
+        if (booster != null) booster.dispose();
+        if (h2oPreds != null) h2oPreds.delete();
+      }
+    }
+
   }
 
 }
