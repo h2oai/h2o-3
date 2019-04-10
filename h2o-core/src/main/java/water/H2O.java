@@ -10,7 +10,6 @@ import water.UDPRebooted.ShutdownTsk;
 import water.api.RequestServer;
 import water.exceptions.H2OFailException;
 import water.exceptions.H2OIllegalArgumentException;
-import water.fvec.Frame;
 import water.init.AbstractBuildVersion;
 import water.init.AbstractEmbeddedH2OConfig;
 import water.init.JarHash;
@@ -1121,7 +1120,15 @@ final public class H2O {
     Log.fatal("Stacktrace: ");
     Log.fatal(Arrays.toString(Thread.currentThread().getStackTrace()));
 
-    H2O.shutdown(-1);
+    // H2O fail() exists because of coding errors - but what if usage of fail() was itself a coding error?
+    // Property "suppress.shutdown.on.failure" can be used in the case when someone is seeing shutdowns on production
+    // because a developer incorrectly used fail() instead of just throwing a (recoverable) exception
+    boolean suppressShutdown = getSysBoolProperty("suppress.shutdown.on.failure", false);
+    if (! suppressShutdown) {
+      H2O.shutdown(-1);
+    } else {
+      throw new IllegalStateException("Suppressed shutdown for failure: " + msg, cause);
+    }
 
     // unreachable
     return new H2OFailException(msg);
