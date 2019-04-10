@@ -1,13 +1,32 @@
-/* Sticker footer */
+/* Sticky footer */
+
+/**
+ * Basic idea: https://philipwalton.github.io/solved-by-flexbox/demos/sticky-footer/
+ * Details: https://github.com/philipwalton/solved-by-flexbox/blob/master/assets/css/components/site.css
+ *
+ * .Site -> body > .container
+ * .Site-content -> body > .container .row
+ * .footer -> footer
+ *
+ * Key idea seems to be to ensure that .container and __all its parents__
+ * have height set to 100%
+ *
+ */
+
+html, body {
+  height: 100%;
+}
+
 body > .container {
   display: flex;
-  padding-top: 60px;
-  min-height: calc(100vh);
+  height: 100%;
   flex-direction: column;
+
+  padding-top: 60px;
 }
 
 body > .container .row {
-  flex: 1;
+  flex: 1 0 auto;
 }
 
 footer {
@@ -16,6 +35,7 @@ footer {
   border-top: 1px solid #e5e5e5;
   color: #666;
   display: flex;
+  flex-shrink: 0;
 }
 footer p {
   margin-bottom: 0;
@@ -36,6 +56,17 @@ img.icon {
 
 img {
   max-width: 100%;
+}
+
+/* Fix bug in bootstrap (only seen in firefox) */
+summary {
+  display: list-item;
+}
+
+/* Typographic tweaking ---------------------------------*/
+
+.contents .page-header {
+  margin-top: calc(-60px + 1em);
 }
 
 /* Section anchors ---------------------------------*/
@@ -68,7 +99,7 @@ a.anchor {
 
 .contents h1, .contents h2, .contents h3, .contents h4 {
   padding-top: 60px;
-  margin-top: -60px;
+  margin-top: -40px;
 }
 
 /* Static header placement on mobile devices */
@@ -100,16 +131,19 @@ a.anchor {
   margin-bottom: 0.5em;
 }
 
+.orcid {
+  height: 16px;
+  vertical-align: middle;
+}
+
 /* Reference index & topics ----------------------------------------------- */
 
 .ref-index th {font-weight: normal;}
-.ref-index h2 {font-size: 20px;}
 
 .ref-index td {vertical-align: top;}
+.ref-index .icon {width: 40px;}
 .ref-index .alias {width: 40%;}
-.ref-index .title {width: 60%;}
-
-.ref-index .alias {width: 40%;}
+.ref-index-icons .alias {width: calc(40% - 40px);}
 .ref-index .title {width: 60%;}
 
 .ref-arguments th {text-align: right; padding-right: 10px;}
@@ -137,6 +171,12 @@ pre, code {
   color: #333;
 }
 
+pre code {
+  overflow: auto;
+  word-wrap: normal;
+  white-space: pre;
+}
+
 pre .img {
   margin: 5px 0;
 }
@@ -151,6 +191,10 @@ code a, pre a {
   color: #375f84;
 }
 
+a.sourceLine:hover {
+  text-decoration: none;
+}
+
 .fl      {color: #1514b5;}
 .fu      {color: #000000;} /* function */
 .ch,.st  {color: #036a07;} /* string */
@@ -161,3 +205,32 @@ code a, pre a {
 .error   { color: orange;  font-weight: bolder;}
 .warning { color: #6A0366; font-weight: bolder;}
 
+/* Clipboard --------------------------*/
+
+.hasCopyButton {
+  position: relative;
+}
+
+.btn-copy-ex {
+  position: absolute;
+  right: 0;
+  top: 0;
+  visibility: hidden;
+}
+
+.hasCopyButton:hover button.btn-copy-ex {
+  visibility: visible;
+}
+
+/* mark.js ----------------------------*/
+
+mark {
+  background-color: rgba(255, 255, 51, 0.5);
+  border-bottom: 2px solid rgba(255, 153, 51, 0.3);
+  padding: 1px;
+}
+
+/* vertical spacing after htmlwidgets */
+.html-widget {
+  margin-bottom: 10px;
+}

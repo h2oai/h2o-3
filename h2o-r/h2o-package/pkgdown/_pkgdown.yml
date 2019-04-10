@@ -115,6 +115,8 @@ reference:
       - h2o.flow
       - h2o.gainsLift
       - h2o.gbm
+      - h2o.generic
+      - h2o.genericModel
       - h2o.getAutoML
       - h2o.getConnection
       - h2o.getFrame
@@ -139,6 +141,7 @@ reference:
       - h2o.hit_ratio_table
       - h2o.hour
       - h2o.ifelse
+      - h2o.import_hive_table
       - h2o.import_sql_select
       - h2o.import_sql_table
       - h2o.importFile
@@ -239,6 +242,7 @@ reference:
       - h2o.scoreHistory
       - h2o.sd 
       - h2o.sdev
+      - h2o.set_s3_credentials
       - h2o.setLevels
       - h2o.setTimezone
       - h2o.show_progress
