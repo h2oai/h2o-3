@@ -2081,7 +2081,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           return true;
         } catch (Exception e) {
           e.printStackTrace();
-          throw H2O.fail("Internal POJO compilation failed",e);
+          throw new IllegalStateException("Internal POJO compilation failed",e);
         }
 
         // Check that POJO has the expected interfaces
@@ -2131,7 +2131,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             features = MemoryManager.malloc8d(genmodel._names.length);
           } catch (IOException e1) {
             e1.printStackTrace();
-            throw H2O.fail("Internal MOJO loading failed", e1);
+            throw new IllegalStateException("Internal MOJO loading failed", e1);
           } finally {
             boolean deleted = new File(filename).delete();
             if (!deleted) Log.warn("Failed to delete the file");
