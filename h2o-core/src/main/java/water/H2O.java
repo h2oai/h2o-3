@@ -1073,6 +1073,20 @@ final public class H2O {
   private static final ExtensionManager extManager = ExtensionManager.getInstance();
 
   /**
+   * Retrieves a value of an H2O system property
+   * @param name property name
+   * @param def default value
+   * @return value of the system property or default value if property was not defined
+   */
+  public static String getSysProperty(String name, String def) {
+    return System.getProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + name, def);
+  }
+
+  public static boolean getSysBoolProperty(String name, boolean def) {
+    return Boolean.parseBoolean(getSysProperty(name, String.valueOf(def)));
+  }
+
+  /**
    * Throw an exception that will cause the request to fail, but the cluster to continue.
    * @see #fail(String, Throwable)
    * @return never returns
