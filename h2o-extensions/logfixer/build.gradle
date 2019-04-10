@@ -1,0 +1,5 @@
+description = "H2O Extension for fixing log prefix in older H2O versions"
+
+dependencies {
+    compile project(":h2o-core")
+}
