@@ -5,10 +5,7 @@ import ai.h2o.automl.targetencoding.BlendingParams;
 import ai.h2o.automl.targetencoding.TargetEncoder;
 import ai.h2o.automl.targetencoding.TargetEncodingParams;
 import ai.h2o.automl.targetencoding.TargetEncodingTestFixtures;
-import ai.h2o.automl.targetencoding.strategy.GridBasedTEParamsSelectionStrategy;
-import ai.h2o.automl.targetencoding.strategy.HPsSelectionStrategy;
-import ai.h2o.automl.targetencoding.strategy.TEApplicationStrategy;
-import ai.h2o.automl.targetencoding.strategy.ThresholdTEApplicationStrategy;
+import ai.h2o.automl.targetencoding.strategy.*;
 import hex.ModelBuilder;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -260,5 +257,62 @@ public class AutoMLTargetEncodingAssistantTest extends water.TestUtil{
     validSplit.delete();
     leaderboardSplit.delete();
 
+  }
+
+  // Fixed selection strategy
+  @Test
+  public void performAutoTargetEncoding_validation_frame_fixed_application_strategy() {
+    String responseColumnName = "survived";
+    Frame fr = getPreparedTitanicFrame(responseColumnName);
+
+    AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+    Frame[] splits = AutoMLBenchmarkingHelper.getRandomSplitsFromDataframe(fr, new double[]{0.7, 0.15, 0.15}, 1234);
+    Frame trainSplit = splits[0];
+    Frame validSplit = splits[1];
+    Frame leaderboardSplit = splits[2];
+
+    autoMLBuildSpec.input_spec.training_frame = trainSplit._key;
+    autoMLBuildSpec.input_spec.validation_frame = validSplit._key;
+    autoMLBuildSpec.input_spec.leaderboard_frame = leaderboardSplit._key;
+    autoMLBuildSpec.build_control.nfolds = 0;
+    autoMLBuildSpec.input_spec.response_column = responseColumnName;
+
+    Vec responseColumn = fr.vec(responseColumnName);
+    TEApplicationStrategy thresholdTEApplicationStrategy = new ThresholdTEApplicationStrategy(fr, responseColumn, 5);
+
+    autoMLBuildSpec.te_spec.ratio_of_hyperspace_to_explore = 0.1;
+    autoMLBuildSpec.te_spec.early_stopping_ratio = 0.05;
+    autoMLBuildSpec.te_spec.seed = 1234;
+
+    autoMLBuildSpec.te_spec.application_strategy = thresholdTEApplicationStrategy;
+    
+    ModelBuilder modelBuilder = TargetEncodingTestFixtures.modelBuilderGBMWithValidFrameFixture(trainSplit, validSplit, responseColumnName, 1234);
+    modelBuilder.init(false);
+
+    // Fixed selection strategy
+    autoMLBuildSpec.te_spec.params_selection_strategy = HPsSelectionStrategy.Fixed;
+    TargetEncodingParams targetEncodingParams = new TargetEncodingParams(new BlendingParams(5, 1), TargetEncoder.DataLeakageHandlingStrategy.KFold, 0.01);
+    autoMLBuildSpec.te_spec.fixedTEParams = targetEncodingParams;
+
+    AutoMLTargetEncodingAssistant teAssistant = new AutoMLTargetEncodingAssistant(fr,
+            null,
+            null,
+            autoMLBuildSpec,
+            modelBuilder);
+
+    teAssistant.init();
+
+    assertTrue(teAssistant.getTeParamsSelectionStrategy() instanceof FixedTEParamsStrategy);
+    
+    TargetEncodingParams bestParams = teAssistant.getTeParamsSelectionStrategy().getBestParams(null);
+    assertArrayEquals(thresholdTEApplicationStrategy.getColumnsToEncode(), bestParams.getColumnsToEncode());
+    assertEquals(targetEncodingParams.getBlendingParams().getK(), bestParams.getBlendingParams().getK(), 1e-5);
+    assertEquals(targetEncodingParams.getBlendingParams().getF(), bestParams.getBlendingParams().getF(), 1e-5);
+
+    modelBuilder.train().delete();
+    fr.delete();
+    trainSplit.delete();
+    validSplit.delete();
+    leaderboardSplit.delete();
   }
 }

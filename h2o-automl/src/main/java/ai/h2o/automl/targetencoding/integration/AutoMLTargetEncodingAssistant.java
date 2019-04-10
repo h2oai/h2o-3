@@ -82,8 +82,8 @@ public class AutoMLTargetEncodingAssistant{
     HPsSelectionStrategy teParamsSelectionStrategy = _buildSpec.te_spec.params_selection_strategy;
     switch(teParamsSelectionStrategy) {
       case Fixed:
-        TargetEncodingParams targetEncodingParams = new TargetEncodingParams(_columnsToEncode, new BlendingParams(5, 1), TargetEncoder.DataLeakageHandlingStrategy.KFold, 0.01);
-        _teParamsSelectionStrategy = new FixedTEParamsStrategy(targetEncodingParams);
+        _buildSpec.te_spec.fixedTEParams.setColumnsToEncode(_columnsToEncode);
+        _teParamsSelectionStrategy = new FixedTEParamsStrategy(_buildSpec.te_spec.fixedTEParams);
         break;
       case RGS:
       default:

@@ -17,19 +17,15 @@ public class TargetEncodingParams extends Iced {
   private boolean _imputeNAsWithNewCategory = true;
 
   public TargetEncodingParams(String[] columnsToEncode, BlendingParams blendingParams, byte holdoutType, double noiseLevel) {
-    _columnsToEncode = columnsToEncode;
+    this(blendingParams, holdoutType, noiseLevel);
+    this.setColumnsToEncode(columnsToEncode);
+  } 
+  
+  public TargetEncodingParams(BlendingParams blendingParams, byte holdoutType, double noiseLevel) {
     if(blendingParams != null) this._withBlendedAvg = true;
     this._blendingParams = blendingParams;
     this._holdoutType = holdoutType;
     this._noiseLevel = noiseLevel;
-  }
-  
-  // TODO add test
-  public TargetEncodingParams( byte holdoutType) {
-    this._withBlendedAvg = false;
-    this._blendingParams = null;
-    this._holdoutType = holdoutType;
-    this._noiseLevel = 0;
   }
   
   public TargetEncodingParams( Map<String, Object> gridEntry) {
@@ -64,6 +60,10 @@ public class TargetEncodingParams extends Iced {
 
   public String[] getColumnsToEncode() {
     return _columnsToEncode;
+  }
+  
+  public void setColumnsToEncode(String[] columnsToEncode) {
+    _columnsToEncode = columnsToEncode;
   }
   
   public BlendingParams getBlendingParams() {
