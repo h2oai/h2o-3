@@ -77,7 +77,6 @@ public class AutoMLTargetEncodingAssistant{
 
     //TODO what is the canonical way to get metric we are going to use. DistributionFamily, leaderboard metrics?
     boolean theBiggerTheBetter = _modelBuilder._parms.train().vec(_responseColumnName).get_type() != Vec.T_NUM;
-    double ratioOfHyperspaceToExplore = _buildSpec.te_spec.ratio_of_hyperspace_to_explore;
 
     // Selection strategy
     HPsSelectionStrategy teParamsSelectionStrategy = _buildSpec.te_spec.params_selection_strategy;
@@ -94,8 +93,8 @@ public class AutoMLTargetEncodingAssistant{
         for (String column : _columnsToEncode) {
           _columnNameToIdxMap.put(column, (double) _trainingFrame.find(column));
         }
-        _teParamsSelectionStrategy = new GridSearchTEParamsSelectionStrategy(_leaderboardFrame, ratioOfHyperspaceToExplore,
-                _responseColumnName, _columnNameToIdxMap, theBiggerTheBetter, _buildSpec.te_spec.search_over_columns,  _buildSpec.te_spec.seed);
+        _teParamsSelectionStrategy = new GridSearchTEParamsSelectionStrategy(_leaderboardFrame,
+                _responseColumnName, _columnNameToIdxMap, theBiggerTheBetter, _buildSpec.te_spec);
         break;
     }
 

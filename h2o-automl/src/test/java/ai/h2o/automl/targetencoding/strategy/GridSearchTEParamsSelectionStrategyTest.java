@@ -4,6 +4,7 @@ import ai.h2o.automl.AutoMLBenchmarkingHelper;
 import ai.h2o.automl.targetencoding.TargetEncoder;
 import ai.h2o.automl.targetencoding.TargetEncodingParams;
 import ai.h2o.automl.targetencoding.TargetEncodingTestFixtures;
+import ai.h2o.automl.targetencoding.integration.AutoMLBuildSpec;
 import hex.ModelBuilder;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -73,12 +74,17 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
 
     long seedForFoldColumn = 2345L;
 
+    AutoMLBuildSpec.AutoMLTEControl autoMLTEControl = new AutoMLBuildSpec.AutoMLTEControl();
+    autoMLTEControl.ratio_of_hyperspace_to_explore = 0.4;
+    autoMLTEControl.search_over_columns = true;
+    autoMLTEControl.seed = seedForFoldColumn;
+
     Map<String, Double> _columnNameToIdxMap = new HashMap<>();
     for (String column : columnsToEncode) {
       _columnNameToIdxMap.put(column, (double) fr.find(column));
     }
     GridSearchTEParamsSelectionStrategy gridSearchTEParamsSelectionStrategy =
-            new GridSearchTEParamsSelectionStrategy(leaderboard, ratioOfHPToExplore, responseColumnName, _columnNameToIdxMap, true, true, seedForFoldColumn);
+            new GridSearchTEParamsSelectionStrategy(leaderboard, responseColumnName, _columnNameToIdxMap, true, autoMLTEControl);
 
     gridSearchTEParamsSelectionStrategy.setTESearchSpace(modelValidationMode);
     ModelBuilder mb = null;

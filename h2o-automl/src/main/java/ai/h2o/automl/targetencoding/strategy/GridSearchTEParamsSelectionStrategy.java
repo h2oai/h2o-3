@@ -1,6 +1,7 @@
 package ai.h2o.automl.targetencoding.strategy;
 
 import ai.h2o.automl.targetencoding.TargetEncodingParams;
+import ai.h2o.automl.targetencoding.integration.AutoMLBuildSpec;
 import hex.ModelBuilder;
 import water.fvec.Frame;
 import water.util.TwoDimTable;
@@ -23,20 +24,18 @@ public class GridSearchTEParamsSelectionStrategy extends GridBasedTEParamsSelect
   private int _numberOfIterations;
 
   public GridSearchTEParamsSelectionStrategy(Frame leaderboard,
-                                             double ratioOfHyperSpaceToExplore,
                                              String responseColumn,
                                              Map<String, Double> columnNameToIdxMap,
                                              boolean theBiggerTheBetter,
-                                             boolean searchOverColumns,
-                                             long seed) {
-    _seed = seed;
+                                             AutoMLBuildSpec.AutoMLTEControl teBuildSpec) {
+    _seed = teBuildSpec.seed;
     
     _leaderboardData = leaderboard;
     _responseColumn = responseColumn;
     _columnNameToIdxMap = columnNameToIdxMap;
-    _searchOverColumns = searchOverColumns;
-    
-    _ratioOfHyperSpaceToExplore = ratioOfHyperSpaceToExplore;
+    _searchOverColumns = teBuildSpec.search_over_columns;
+
+    _ratioOfHyperSpaceToExplore = teBuildSpec.ratio_of_hyperspace_to_explore;
     _theBiggerTheBetter = theBiggerTheBetter;
 
   }
