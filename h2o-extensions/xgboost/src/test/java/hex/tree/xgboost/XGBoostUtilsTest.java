@@ -145,18 +145,18 @@ public class XGBoostUtilsTest extends TestUtil {
       try {
         frame = Scope.track(new TestFrameBuilder()
                 .withName("testFrame")
-                .withColNames("C1", "C2", "C3", "C4")
-                .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
-                .withDataForCol(0, ard(1, 0, 3, 1))
-                .withDataForCol(1, ard(0, 0, 0, 0))
-                .withDataForCol(2, ard(2, 0, 0, 0))
-                .withDataForCol(3, ard(0, 0, 0, 4))
+                .withColNames("C1", "C2", "C3")
+                .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
+                .withDataForCol(0, ard(0, 1, 0))
+                .withDataForCol(1, ard(0, 2, 0))
+                .withDataForCol(2, ard(0, 3, 0))
                 .build());
         final DMatrix response = XGBoostUtils.convertFrameToDMatrix(new DataInfo(frame, null, true, DataInfo.TransformType.NONE, false, false, false),
-                frame, true, "C4", null, null, true);
+                frame, true, "C3", null, null, true);
         assertNotNull(response);
-        assertEquals(4, response.rowNum());
-        assertArrayEquals(arf(0, 0, 0, 4), response.getLabel(), 0f);
+        assertEquals(3, response.rowNum());
+        assertArrayEquals(arf(0, 3, 0), response.getLabel(), 0f);
+        
 
       } finally {
         if (frame != null) frame.remove();

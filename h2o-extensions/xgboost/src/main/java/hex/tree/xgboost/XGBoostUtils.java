@@ -585,7 +585,13 @@ public class XGBoostUtils {
                 rwRow = setResponseAndWeight(w, resp, weights, respVec, rwRow, i);
             }
         }
-        rowHeaders[rowHeaders.length - 1][rowHeaders[rowHeaders.length - 1].length - 1] = nonZeroCount;
+        for (int k = lastNonZeroRow; k <= actualRows; k++) {
+            if(rowHeaderColPointer == SPARSE_MATRIX_DIM){
+                rowHeaderColPointer = 0;
+                rowHeaderRowPointer++;
+            }
+            rowHeaders[rowHeaderRowPointer][rowHeaderColPointer++] = nonZeroCount;
+        }
         return actualRows;
     }
 
@@ -651,7 +657,13 @@ public class XGBoostUtils {
             
             rwRow = setResponseAndWeight(chunks, respIdx, weight, resp, weights, rwRow, i);
         }
-        rowHeaders[rowHeaders.length - 1][rowHeaders[rowHeaders.length - 1].length - 1] = nonZeroCount;
+        for (int k = lastNonZeroRow; k <= actualRows; k++) {
+            if(rowHeaderColPointer == SPARSE_MATRIX_DIM){
+                rowHeaderColPointer = 0;
+                rowHeaderRowPointer++;
+            }
+            rowHeaders[rowHeaderRowPointer][rowHeaderColPointer++] = nonZeroCount;
+        }
         return actualRows;
     }
 
