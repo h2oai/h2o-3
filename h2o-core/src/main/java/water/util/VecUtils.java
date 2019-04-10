@@ -84,7 +84,12 @@ public class VecUtils {
             nc.addNA();
           } else {
             c.atStr(bs, row);
-            nc.addNum(lookupTable.get(bs.toSanitizedString()), 0);
+            String strRepresentation = bs.toString();
+            if (strRepresentation.contains("\uFFFD")) {
+              nc.addNum(lookupTable.get(bs.toSanitizedString()), 0);
+            } else {
+              nc.addNum(lookupTable.get(strRepresentation), 0);
+            }
           }
         }
       }
@@ -607,7 +612,6 @@ public class VecUtils {
 
   private static class CollectStringVecDomain extends MRTask<CollectStringVecDomain> {
 
-    private static String PLACEHOLDER = "nothing";
 
     private IcedHashMap<String, IcedInt> _uniques = null;
 
@@ -623,7 +627,12 @@ public class VecUtils {
       for (int i = 0; i < c.len(); i++) {
         if (!c.isNA(i)) {
           c.atStr(bs, i);
-          _uniques.put(bs.toSanitizedString(), _placeHolder);
+          final String strRepresentation = bs.toString();
+          if (strRepresentation.contains("\uFFFD")) {
+            _uniques.put(bs.toSanitizedString(), _placeHolder);
+          } else {
+            _uniques.put(strRepresentation, _placeHolder);
+          }
         }
       }
     }
