@@ -71,7 +71,7 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
 
   public KMeansModel(Key selfKey, KMeansParameters parms, KMeansOutput output) { super(selfKey,parms,output); }
 
-  @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
+  @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain, Chunk[] cs) {
     assert domain == null;
     return new ModelMetricsClustering.MetricBuilderClustering(_output.nfeatures(),_output._k[_output._k.length-1]);
   }
@@ -106,7 +106,7 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
 
       f = new Frame(Key.<Frame>make(destination_key), f.names(), f.vecs());
       DKV.put(f);
-      makeMetricBuilder(null).makeModelMetrics(this, orig, null, null);
+      makeMetricBuilder(null, null).makeModelMetrics(this, orig, null, null);
       return f;
     }
   }

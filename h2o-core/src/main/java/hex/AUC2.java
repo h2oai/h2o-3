@@ -2,6 +2,7 @@ package hex;
 
 import water.Iced;
 import water.MRTask;
+import water.MemoryManager;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Vec;
@@ -9,6 +10,7 @@ import water.util.fp.Function;
 import water.util.fp.Functions;
 
 import java.util.Arrays;
+import java.util.concurrent.ArrayBlockingQueue;
 
 import static hex.AUC2.ThresholdCriterion.precision;
 import static hex.AUC2.ThresholdCriterion.recall;
@@ -145,6 +147,9 @@ public class AUC2 extends Iced {
     _ths = Arrays.copyOf(bldr._ths,_nBins);
     _tps = Arrays.copyOf(bldr._tps,_nBins);
     _fps = Arrays.copyOf(bldr._fps,_nBins);
+    System.out.println("THS: " + Arrays.toString(_ths));
+    System.out.println("TPS: " + Arrays.toString(_tps));
+    System.out.println("FPS: " + Arrays.toString(_fps));
     // Reverse everybody; thresholds from 1 down to 0, easier to read
     for( int i=0; i<((_nBins)>>1); i++ ) {
       double tmp= _ths[i];  _ths[i] = _ths[_nBins-1-i]; _ths[_nBins-1-i] = tmp ;
@@ -240,14 +245,77 @@ public class AUC2 extends Iced {
     AUCBuilder _bldr;
     AUC_Impl( int nBins ) { _nBins = nBins; }
     @Override public void map( Chunk ps, Chunk as ) {
-      AUCBuilder bldr = _bldr = new AUCBuilder(_nBins);
+      AUCBuilder bldr = _bldr = new AUCBuilder2Pass(NBINS, ps.len());
       for( int row = 0; row < ps._len; row++ )
         if( !ps.isNA(row) && !as.isNA(row) )
           bldr.perRow(ps.atd(row),(int)as.at8(row),1);
+      bldr.finalizeChunk();
     }
     @Override public void reduce( AUC_Impl auc ) { _bldr.reduce(auc._bldr); }
   }
-  
+
+  static AUCBuilder makeAUCBuilder(Chunk[] cs) { 
+    if (cs == null || cs.length == 0) {
+      return new AUCBuilder(NBINS);
+    } else {
+      return new AUCBuilder2Pass(NBINS, cs[0].len());
+    }
+  }
+
+  public static class AUCBuilder2Pass extends AUCBuilder {
+    private transient int _nPreds; // expected maximum number of predictions
+    private transient int _cPreds; // current number of predictions
+    private transient double[] _preds;
+    private transient int[] _acts;
+    private transient double[] _weights;
+    private transient double _maxPred;
+
+    private AUCBuilder2Pass(int nBins, int nPreds) {
+      super(nBins);
+      _nPreds = nPreds;
+      _preds = MemoryManager.malloc8d(_nPreds);
+      _acts = MemoryManager.malloc4(_nPreds);
+      _weights = MemoryManager.malloc8d(_nPreds);
+      _maxPred = 0;
+    }
+
+    @Override
+    public void perRow(double pred, int act, double w) {
+      super.perRow(pred, act, w);
+      _preds[_cPreds] = pred;
+      _acts[_cPreds] = act;
+      _weights[_cPreds] = w;
+      _cPreds++;
+      if (pred > _maxPred) {
+        _maxPred = pred;
+      }
+    }
+
+    @Override
+    public void finalizeChunk() {
+      if (_n == 0)
+        return;
+      Arrays.fill(_sqe, 0);
+      Arrays.fill(_tps, 0);
+      Arrays.fill(_fps, 0);
+      _ths[_n-1] = _maxPred;
+      for (int i = 0; i < _n; i++) {
+        double pred = _preds[i];
+        int act = _acts[i];
+        double w = _weights[i];
+        int idx = Arrays.binarySearch(_ths, 0, _n, pred);
+        if (idx >= 0) {
+          if (act==0) _fps[idx] += w; else _tps[idx] += w; // One more count; no change in squared error
+        }
+        if (idx < 0) {
+          idx = -idx-1;
+        }
+        _sqe[idx] = compute_delta_error(_ths[idx], _fps[idx] + _tps[idx], pred, w);
+        if (act==0) _fps[idx] += w; else _tps[idx] += w;
+      }
+    }
+  }
+
   public static class AUCBuilder extends Iced {
     final int _nBins;
     int _n;                     // Current number of bins
@@ -429,7 +497,7 @@ public class AUC2 extends Iced {
     }
 
 
-    private double compute_delta_error( double ths1, double n1, double ths0, double n0 ) {
+    protected double compute_delta_error( double ths1, double n1, double ths0, double n0 ) {
       // If thresholds vary by less than a float ULP, treat them as the same.
       // Some models only output predictions to within float accuracy (so a
       // variance here is junk), and also it's not statistically sane to have
@@ -441,6 +509,10 @@ public class AUC2 extends Iced {
     }
 
     private double k( int idx ) { return _tps[idx]+_fps[idx]; }
+
+    public void finalizeChunk() {
+      // intentionally empty
+    }
 
     double[] getThs() {
       return Arrays.copyOf(_ths, _n);

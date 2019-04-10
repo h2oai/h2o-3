@@ -13,6 +13,7 @@ import water.*;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
+import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.udf.CFuncRef;
@@ -107,10 +108,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     return res;
   }
 
-  @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
+  @Override
+  public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain, Chunk[] cs) {
     if(domain == null && (_parms._family == Family.binomial || _parms._family == Family.quasibinomial))
       domain = binomialClassNames;
-    return new GLMMetricBuilder(domain, _ymu, new GLMWeightsFun(_parms), _output.bestSubmodel().rank(), true, _parms._intercept);
+    return new GLMMetricBuilder(domain, cs, _ymu, new GLMWeightsFun(_parms), _output.bestSubmodel().rank(), true, _parms._intercept);
   }
 
   protected double [] beta_internal(){

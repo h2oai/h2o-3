@@ -2,6 +2,7 @@ package hex;
 
 import org.junit.*;
 import water.*;
+import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
@@ -14,7 +15,7 @@ public class ModelAdaptTest extends TestUtil {
   private static class AModel extends Model {
     AModel( Key key, Parameters p, Output o ) { super(key,p,o); }
     @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) { throw H2O.unimpl(); }
-    @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) { throw H2O.unimpl(); }
+    @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain, Chunk[] cs) { throw H2O.unimpl(); }
     static class AParms extends Model.Parameters {
       public String algoName() { return "A"; }
       public String fullName() { return "A"; }

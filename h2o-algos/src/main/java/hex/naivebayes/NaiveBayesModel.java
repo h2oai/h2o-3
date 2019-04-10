@@ -12,6 +12,7 @@ import water.api.schemas3.ModelSchemaV3;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
+import water.fvec.Chunk;
 import water.util.JCodeGen;
 import water.util.SBPrintStream;
 import water.util.TwoDimTable;
@@ -59,9 +60,9 @@ public class NaiveBayesModel extends Model<NaiveBayesModel,NaiveBayesModel.Naive
   }
 
   // TODO: Constant response shouldn't be regression. Need to override getModelCategory()
-  @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
+  @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain, Chunk[] cs) {
     switch(_output.getModelCategory()) {
-      case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain);
+      case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain, cs);
       case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(domain.length,domain);
       default: throw H2O.unimpl();
     }

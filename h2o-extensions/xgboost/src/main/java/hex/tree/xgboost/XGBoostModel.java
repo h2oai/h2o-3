@@ -175,9 +175,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   }
 
   @Override
-  public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
+  public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain, Chunk[] cs) {
     switch(_output.getModelCategory()) {
-      case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain);
+      case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain, cs);
       case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(),domain);
       case Regression:  return new ModelMetricsRegression.MetricBuilderRegression();
       default: throw H2O.unimpl();

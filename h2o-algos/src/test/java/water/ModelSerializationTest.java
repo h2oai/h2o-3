@@ -19,6 +19,7 @@ import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
+import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
 import water.util.Log;
@@ -213,7 +214,7 @@ public class ModelSerializationTest extends TestUtil {
   /** Dummy model to test model serialization */
   static class BlahModel extends Model<BlahModel, BlahModel.BlahParameters, BlahModel.BlahOutput> {
     public BlahModel(Key selfKey, BlahParameters params, BlahOutput output) { super(selfKey, params, output); }
-    @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) { return null; }
+    @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain, Chunk[] cs) { return null; }
     @Override protected double[] score0(double[] data, double[] preds) { return new double[0]; }
     static class BlahParameters extends Model.Parameters {
       public String algoName() { return "Blah"; }

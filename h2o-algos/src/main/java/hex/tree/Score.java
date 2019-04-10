@@ -64,7 +64,7 @@ public class Score extends CMetricScoringTask<Score> {
     // If this is a score-on-train AND DRF, then oobColIdx makes sense,
     // otherwise this field is unused.
     final int oobColIdx = _bldr.idx_oobt();
-    _mb = m.makeMetricBuilder(domain);
+    _mb = m.makeMetricBuilder(domain, chks);
 //    _gainsLiftBuilder = _bldr._model._output.nclasses()==2 ? new GainsLift.GainsLiftBuilder(_fr.vec(_bldr.idx_tree(0)).pctiles()) : null;
     final double[] cdists = _mb._work; // Temp working array for class distributions
     // If working a validation set, need to push thru official model scoring
@@ -162,7 +162,7 @@ public class Score extends CMetricScoringTask<Score> {
     String[] domain = resp.domain();
     if (domain == null && model._parms._distribution == DistributionFamily.quasibinomial)
       domain = new String[]{"0", "1"};
-    ModelMetrics.MetricBuilder mb = model.makeMetricBuilder(domain);
+    ModelMetrics.MetricBuilder mb = model.makeMetricBuilder(domain, null);
     return mb.makePredictionCache(model, resp);
   }
 

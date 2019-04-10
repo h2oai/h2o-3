@@ -135,7 +135,15 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     protected double _logloss;
     protected AUC2.AUCBuilder _auc;
 
-    public MetricBuilderBinomial( String[] domain ) { super(2,domain); _auc = new AUC2.AUCBuilder(AUC2.NBINS); }
+    public MetricBuilderBinomial(String[] domain, Chunk[] cs) {
+      super(2, domain);
+      _auc = AUC2.makeAUCBuilder(cs);
+      
+    }
+
+    public MetricBuilderBinomial(String[] domain) {
+      this(domain, null);
+    }
 
     public double auc() {return new AUC2(_auc)._auc;}
     public double pr_auc() { return new AUC2(_auc)._pr_auc;}
@@ -175,7 +183,12 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       _auc.perRow(ds[2], iact, w);
       return ds;                // Flow coding
     }
-
+    
+    @Override
+    public void finalizeChunk() {
+      _auc.finalizeChunk();
+    } 
+    
     @Override public void reduce( T mb ) {
       super.reduce(mb); // sumseq, count
       _logloss += mb._logloss;

@@ -417,6 +417,8 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
       _wYY += mb._wYY;
     }
 
+    public void finalizeChunk() {};
+    
     public void postGlobal() {
       postGlobal(null);
     }

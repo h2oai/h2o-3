@@ -1457,7 +1457,7 @@ public class GLMTest  extends TestUtil {
     public void map(Chunk[] chks) {
       super.map(chks);
 
-      _val2 = (GLMMetricBuilder) _m.makeMetricBuilder(chks[chks.length - 1].vec().domain());
+      _val2 = (GLMMetricBuilder) _m.makeMetricBuilder(chks[chks.length - 1].vec().domain(), chks);
       double[] ds = new double[3];
 
       float[] actual = new float[1];
@@ -1466,6 +1466,8 @@ public class GLMTest  extends TestUtil {
         actual[0] = (float) chks[chks.length - 1].atd(i);
         _val2.perRow(ds, actual, _m);
       }
+
+      _val2.finalizeChunk();
     }
 
     public void reduce(GLMIterationTask gmt) {

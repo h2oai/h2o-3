@@ -99,7 +99,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
   public PCAModel(Key selfKey, PCAParameters parms, PCAOutput output) { super(selfKey,parms,output); }
 
   @Override
-  public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
+  public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain, Chunk[] cs) {
     return new ModelMetricsPCA.PCAModelMetrics(_parms._k);
   }
 
@@ -129,7 +129,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
 
     f = new Frame(Key.<Frame>make(destination_key), f.names(), f.vecs());
     DKV.put(f);
-    makeMetricBuilder(null).makeModelMetrics(this, origFr, null, null);
+    makeMetricBuilder(null, null).makeModelMetrics(this, origFr, null, null);
     return f;
   }
 

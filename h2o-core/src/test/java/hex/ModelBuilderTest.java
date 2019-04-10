@@ -3,6 +3,7 @@ package hex;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
+import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
@@ -172,7 +173,7 @@ public class ModelBuilderTest extends TestUtil {
       super(selfKey, parms, output);
     }
     @Override
-    public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
+    public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain, Chunk[] cs) {
       return null;
     }
     @Override

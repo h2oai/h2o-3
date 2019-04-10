@@ -5,6 +5,7 @@ import hex.ModelCategory;
 import hex.ModelMetrics;
 import water.H2O;
 import water.Key;
+import water.fvec.Chunk;
 
 public class QuantileModel extends Model<QuantileModel,QuantileModel.QuantileParameters,QuantileModel.QuantileOutput> {
 
@@ -31,7 +32,7 @@ public class QuantileModel extends Model<QuantileModel,QuantileModel.QuantilePar
   QuantileModel( Key selfKey, QuantileParameters parms, QuantileOutput output) { super(selfKey,parms,output); }
 
   @Override
-  public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
+  public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain, Chunk[] cs) {
     throw H2O.unimpl("No model metrics for Quantile.");
   }
 

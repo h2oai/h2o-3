@@ -116,9 +116,10 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
    */
   public final DeepLearningParameters get_params() { return model_info.get_params(); }
 
-  @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
+  @Override
+  public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain, Chunk[] cs) {
     switch(_output.getModelCategory()) {
-      case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain);
+      case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain, cs);
       case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(),domain);
       case Regression:  return new ModelMetricsRegression.MetricBuilderRegression();
       case AutoEncoder: return new ModelMetricsAutoEncoder.MetricBuilderAutoEncoder(_output.nfeatures());
@@ -587,7 +588,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
       Frame of = new Frame(Key.<Frame>make(destination_key), names, f.vecs());
       DKV.put(of);
-      makeMetricBuilder(null).makeModelMetrics(this, orig, null, null);
+      makeMetricBuilder(null, null).makeModelMetrics(this, orig, null, null);
       return of;
     }
   }

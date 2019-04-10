@@ -849,7 +849,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   public ModelMetrics addMetrics(ModelMetrics mm) { return addModelMetrics(mm); }
 
-  public abstract ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain);
+  public abstract ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain, Chunk[] cs);
 
   /** Full constructor */
   public Model(Key<M> selfKey, P parms, O output) {
@@ -1610,7 +1610,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       Chunk offsetChunk = _output.hasOffset() ? chks[_output.offsetIdx()] : null;
       Chunk responseChunk = null;
       float [] actual = null;
-      _mb = Model.this.makeMetricBuilder(_domain);
+      _mb = Model.this.makeMetricBuilder(_domain, chks);
       if (_computeMetrics) {
         if (isSupervised()) {
           actual = new float[1];
@@ -1648,6 +1648,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
               cpreds[c].addNum(preds[c]);
           }
         }
+        _mb.finalizeChunk();
       }
     }
 

@@ -71,7 +71,7 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
   }
 
   @Override
-  public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
+  public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain, Chunk[] cs) {
     return null;
   }
 

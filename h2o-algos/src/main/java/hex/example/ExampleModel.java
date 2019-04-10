@@ -5,6 +5,7 @@ import hex.ModelCategory;
 import hex.ModelMetrics;
 import water.H2O;
 import water.Key;
+import water.fvec.Chunk;
 
 public class ExampleModel extends Model<ExampleModel,ExampleModel.ExampleParameters,ExampleModel.ExampleOutput> {
 
@@ -27,7 +28,7 @@ public class ExampleModel extends Model<ExampleModel,ExampleModel.ExampleParamet
   ExampleModel( Key selfKey, ExampleParameters parms, ExampleOutput output) { super(selfKey,parms,output); }
 
   @Override
-  public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
+  public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain, Chunk[] cs) {
     throw H2O.unimpl("No Model Metrics for ExampleModel.");
   }
 

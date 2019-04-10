@@ -9,6 +9,7 @@ import hex.glm.GLMModel;
 import hex.tree.drf.DRFModel;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
+import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.nbhm.NonBlockingHashSet;
 import water.udf.CFuncRef;
@@ -178,7 +179,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     throw new UnsupportedOperationException("StackedEnsembleModel.score0() should never be called: the code paths that normally go here should call predictScoreImpl().");
   }
 
-  @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
+  @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain, Chunk[] cs) {
     throw new UnsupportedOperationException("StackedEnsembleModel.makeMetricBuilder should never be called!");
   }
 

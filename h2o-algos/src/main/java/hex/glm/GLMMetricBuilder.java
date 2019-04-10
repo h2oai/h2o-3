@@ -12,6 +12,7 @@ import hex.ModelMetricsSupervised.MetricBuilderSupervised;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMWeightsFun;
 import water.H2O;
+import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
@@ -36,7 +37,7 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
   final boolean _intercept;
   private final double [] _ymu;
   final boolean _computeMetrics;
-  public GLMMetricBuilder(String[] domain, double [] ymu, GLMWeightsFun glmf, int rank, boolean computeMetrics, boolean intercept){
+  public GLMMetricBuilder(String[] domain, Chunk[] cs, double [] ymu, GLMWeightsFun glmf, int rank, boolean computeMetrics, boolean intercept){
     super(domain == null?0:domain.length, domain);
     _rank = rank;
     _glmf = glmf;
@@ -47,7 +48,7 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
       switch(_glmf._family){
         case binomial:
         case quasibinomial:
-          _metricBuilder = new MetricBuilderBinomial(domain);
+          _metricBuilder = new MetricBuilderBinomial(domain, cs);
           break;
         case multinomial:
           _metricBuilder = new MetricBuilderMultinomial(domain.length,domain);

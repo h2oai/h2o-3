@@ -121,9 +121,9 @@ public abstract class SharedTreeModel<
     }
   }
 
-  @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
+  @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain, Chunk[] cs) {
     switch(_output.getModelCategory()) {
-      case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain);
+      case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain, cs);
       case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(),domain);
       case Regression:  return new ModelMetricsRegression.MetricBuilderRegression();
       default: throw H2O.unimpl();

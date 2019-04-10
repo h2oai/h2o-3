@@ -17,6 +17,7 @@ import hex.ModelMetricsRegression;
 import water.DKV;
 import water.Key;
 import water.TestUtil;
+import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.util.FrameUtils;
 
@@ -76,7 +77,7 @@ class NullModel extends Model<NullModel, NullModelParameters, NullModelOutput> {
     super(selfKey, parms, output);
   }
   @Override
-  public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
+  public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain, Chunk[] cs) {
     switch(_output.getModelCategory()) {
       case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain);
       case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(), domain);

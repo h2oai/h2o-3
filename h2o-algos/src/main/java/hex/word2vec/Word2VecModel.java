@@ -21,7 +21,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
   }
 
   @Override
-  public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
+  public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain, Chunk[] cs) {
     throw H2O.unimpl("No Model Metrics for Word2Vec.");
   }
 

@@ -7,6 +7,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
 import water.api.schemas3.ModelParametersSchemaV3;
+import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
@@ -163,7 +164,7 @@ class BogusModel extends Model<BogusModel,BogusModel.BogusParameters,BogusModel.
   }
   public static class BogusOutput extends Model.Output { }
   BogusModel( Key selfKey, BogusParameters parms, BogusOutput output) { super(selfKey,parms,output); }
-  @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) { throw H2O.fail(); }
+  @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain, Chunk[] cs) { throw H2O.fail(); }
   @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) { throw H2O.fail(); }
 }
 

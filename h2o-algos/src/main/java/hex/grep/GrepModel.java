@@ -5,6 +5,7 @@ import hex.ModelCategory;
 import hex.ModelMetrics;
 import water.H2O;
 import water.Key;
+import water.fvec.Chunk;
 
 public class GrepModel extends Model<GrepModel,GrepModel.GrepParameters,GrepModel.GrepOutput> {
 
@@ -27,7 +28,7 @@ public class GrepModel extends Model<GrepModel,GrepModel.GrepParameters,GrepMode
   GrepModel( Key selfKey, GrepParameters parms, GrepOutput output) { super(selfKey,parms,output); }
 
   @Override
-  public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
+  public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain, Chunk[] cs) {
     throw H2O.unimpl("GrepModel does not have Model Metrics.");
   }
 

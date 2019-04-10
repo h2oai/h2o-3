@@ -93,9 +93,10 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
    */
   public final DeepWaterParameters get_params() { return model_info.get_params(); }
 
-  @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
+  @Override
+  public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain, Chunk[] cs) {
     switch(_output.getModelCategory()) {
-      case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain);
+      case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain, cs);
       case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(),domain);
       case Regression:  return new ModelMetricsRegression.MetricBuilderRegression();
       case AutoEncoder: return new ModelMetricsAutoEncoder.MetricBuilderAutoEncoder(_output.nfeatures());
@@ -818,7 +819,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
         score_data.add(score_data.get(pick));
       }
 
-      _mb = makeMetricBuilder(_domain);
+      _mb = makeMetricBuilder(_domain, null);
       assert(isSupervised()); //not yet implemented for autoencoder
       int cols = _output.nclasses() + (_output.isClassifier()?1:0);
       if (_makePreds) {

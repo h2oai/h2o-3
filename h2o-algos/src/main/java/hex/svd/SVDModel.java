@@ -116,7 +116,7 @@ public class SVDModel extends Model<SVDModel, SVDModel.SVDParameters, SVDModel.S
     return super.readAll_impl(ab,fs);
   }
 
-  @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
+  @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain, Chunk[] cs) {
     return new ModelMetricsSVD.SVDModelMetrics(_parms._nv);
   }
 
@@ -164,7 +164,7 @@ public class SVDModel extends Model<SVDModel, SVDModel.SVDParameters, SVDModel.S
 
     f = new Frame(Key.<Frame>make(destination_key), f.names(), f.vecs());
     DKV.put(f);
-    makeMetricBuilder(null).makeModelMetrics(this, orig, null, null);
+    makeMetricBuilder(null, null).makeModelMetrics(this, orig, null, null);
     return f;
   }
 

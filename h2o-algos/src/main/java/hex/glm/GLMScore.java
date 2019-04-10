@@ -158,7 +158,7 @@ public class GLMScore extends MRTask<GLMScore> {
       }
     }
     if (_computeMetrics) {
-      _mb = _m.makeMetricBuilder(_domain);
+      _mb = _m.makeMetricBuilder(_domain, chks);
       ps = _mb._work;  // Sized for the union of test and train classes
     } else
       ps = new double[_m._output._nclasses+1];
@@ -175,6 +175,9 @@ public class GLMScore extends MRTask<GLMScore> {
         _dinfo.extractDenseRow(chks, rid, r);
         processRow(r,res,ps,preds,ncols);
       }
+    }
+    if (_computeMetrics) {
+      _mb.finalizeChunk();
     }
     if (_j != null) _j.update(1);
   }

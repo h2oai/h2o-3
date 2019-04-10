@@ -10,6 +10,7 @@ import hex.tree.isofor.ModelMetricsAnomaly;
 import water.H2O;
 import water.Key;
 import water.fvec.ByteVec;
+import water.fvec.Chunk;
 
 import java.io.IOException;
 
@@ -40,12 +41,12 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
     }
 
     @Override
-    public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
+    public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain, Chunk[] cs) {
         switch(_output.getModelCategory()) {
             case Unknown:
                 throw new IllegalStateException("Model category is unknown");
             case Binomial:
-                return new ModelMetricsBinomial.MetricBuilderBinomial(domain);
+                return new ModelMetricsBinomial.MetricBuilderBinomial(domain, cs);
             case Multinomial:
                 return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(), domain);
             case Ordinal:

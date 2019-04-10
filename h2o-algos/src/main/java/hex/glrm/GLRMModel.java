@@ -339,7 +339,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
       float[] atmp = new float[_ncolA];
       double[] xtmp = new double[_ncolX];
       double[] preds = new double[_ncolA];
-      _mb = GLRMModel.this.makeMetricBuilder(null);
+      _mb = GLRMModel.this.makeMetricBuilder(null, chks);
 
       if (_save_imputed) {
         for (int row = 0; row < chks[0]._len; row++) {
@@ -354,6 +354,8 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
           compute_metrics(chks, row, atmp, p);
         }
       }
+
+      _mb.finalizeChunk();
     }
 
     @Override public void reduce(GLRMScore other) {
@@ -413,7 +415,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     return (ModelMetricsGLRM) mm;
   }
 
-  @Override public ModelMetricsGLRM.GlrmModelMetricsBuilder makeMetricBuilder(String[] domain) {
+  @Override public ModelMetricsGLRM.GlrmModelMetricsBuilder makeMetricBuilder(String[] domain, Chunk[] cs) {
     return new ModelMetricsGLRM.GlrmModelMetricsBuilder(_parms._k, _output._permutation, _parms._impute_original);
   }
 }

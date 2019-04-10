@@ -5,6 +5,7 @@ import hex.ModelMetrics;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.SharedTreeModel;
 import water.Key;
+import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.util.SBPrintStream;
 
@@ -49,7 +50,7 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
   public IsolationForestModel(Key<IsolationForestModel> selfKey, IsolationForestParameters parms, IsolationForestOutput output ) { super(selfKey, parms, output); }
 
   @Override
-  public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
+  public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain, Chunk[] cs) {
     return new ModelMetricsAnomaly.MetricBuilderAnomaly("Isolation Forest Metrics");
   }
 
