@@ -7,6 +7,7 @@ import ml.dmlc.xgboost4j.java.Rabit;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import org.junit.After;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -27,6 +28,7 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 
+@Ignore("Parent for XGBoostUtilsTest, no actual tests here")
 public class XGBoostUtilsTest extends TestUtil {
 
   protected static final int DEFAULT_SPARSE_MATRIX_SIZE = XGBoostUtils.SPARSE_MATRIX_DIM;
