@@ -632,14 +632,17 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   }
 
+  /**
+   * Container for numerator and denominator that are being used for calculation of target encodings.
+   */
   public static class TEComponents extends Iced<TEComponents> {
-    private int[] _components;
-    public TEComponents(int[] components) {
-      _components = components;
+    private int[] _numeratorAndDenominator;
+    public TEComponents(int[] numeratorAndDenominator) {
+      _numeratorAndDenominator = numeratorAndDenominator;
     }
 
-    public int[] getComponents() {
-      return _components;
+    public int[] getNumeratorAndDenominator() {
+      return _numeratorAndDenominator;
     }
   }
   /** Model-specific output class.  Each model sub-class contains an instance
@@ -901,30 +904,38 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   public void addTargetEncodingMap(Map<String, Frame> encodingMap) {
     IcedHashMap<String, Map<String, TEComponents>> transformedEncodingMap = new IcedHashMap<>();
+    Map<String, Model.FrameToTETable> tasks = new HashMap<>();
+    
     for (Map.Entry<String, Frame> entry : encodingMap.entrySet()) {
-      String key = entry.getKey();
+      
       Frame encodingsForParticularColumn = entry.getValue();
-      IcedHashMap<String, TEComponents> table = new FrameToTETable().doAll(encodingsForParticularColumn).getResult().table;
+      Model.FrameToTETable task = new FrameToTETable().dfork(encodingsForParticularColumn);
 
-      transformedEncodingMap.put(key, table);
+      tasks.put(entry.getKey(), task);
+    }
+
+    for (Map.Entry<String, Model.FrameToTETable> taskEntry : tasks.entrySet()) {
+      transformedEncodingMap.put(taskEntry.getKey(), taskEntry.getValue().getResult().table);
     }
     _output._target_encoding_map = transformedEncodingMap;
   }
 
-  private static class FrameToTETable extends MRTask<FrameToTETable> {
-    private IcedHashMap<String, TEComponents> table = new IcedHashMap<>();
+  static class FrameToTETable extends MRTask<FrameToTETable> {
+    IcedHashMap<String, TEComponents> table = new IcedHashMap<>();
 
-    public FrameToTETable() {
-    }
+    public FrameToTETable() { }
 
     @Override
     public void map(Chunk[] cs) {
       Chunk categoricalChunk = cs[0];
       String[] domain = categoricalChunk.vec().domain();
       int numRowsInChunk = categoricalChunk._len;
+      // Note: we don't store fold column as we need only to be able to give predictions for data which is not encoded yet. 
+      // We need folds only for the case when we applying TE to the frame which we are going to train our model on. 
+      // But this is done once and then we don't need them anymore.
       for (int i = 0; i < numRowsInChunk; i++) {
-        int[] numeratorAndDenominator = new int[2]; // TODO reuse array
-        numeratorAndDenominator[0] = (int) cs[1].at8(i); //TODO what about fold column case? 
+        int[] numeratorAndDenominator = new int[2];
+        numeratorAndDenominator[0] = (int) cs[1].at8(i);
         numeratorAndDenominator[1] = (int) cs[2].at8(i);
         int factor = (int) categoricalChunk.at8(i);
         String factorName = domain[factor];
@@ -2709,7 +2720,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           Map<String, TEComponents> encodingsForParticularColumn = entry.getValue();
           Map<String, int[]> encodingsForColumnMap = new HashMap<>();
           for (Map.Entry<String, TEComponents> kv : encodingsForParticularColumn.entrySet()) {
-            encodingsForColumnMap.put(kv.getKey(), kv.getValue().getComponents());
+            encodingsForColumnMap.put(kv.getKey(), kv.getValue().getNumeratorAndDenominator());
           }
           transformedEncodingMap.put(columnName, encodingsForColumnMap);
         }

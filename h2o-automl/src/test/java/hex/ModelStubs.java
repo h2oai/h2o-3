@@ -1,25 +1,28 @@
 package hex;
 
+import hex.Model;
+import hex.ModelMetrics;
+import hex.ModelMojoWriter;
 import water.H2O;
 import water.Key;
 
 import java.io.IOException;
 
-public interface ModelTestCommons {
-  class TestModel extends Model {
-    TestModel( Key key, Parameters p, Output o ) { super(key,p,o); }
+public interface ModelStubs {
+  public class TestModel extends Model {
+    public TestModel( Key key, Parameters p, Output o ) { super(key,p,o); }
     @Override
     public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) { throw H2O.unimpl(); }
     @Override
     protected double[] score0(double[] data, double[] preds) { throw H2O.unimpl(); }
 
-    static class TestParam extends Parameters {
+    public static class TestParam extends Parameters {
       public String algoName() { return "A"; }
       public String fullName() { return "A"; }
       public String javaName() { return TestModel.class.getName(); }
       @Override public long progressUnits() { return 0; }
     }
-    static class TestOutput extends Output { }
+    public static class TestOutput extends Output { }
 
     @Override
     public ModelMojoWriter getMojo() {

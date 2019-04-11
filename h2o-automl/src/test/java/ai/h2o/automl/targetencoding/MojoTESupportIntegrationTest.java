@@ -8,20 +8,18 @@ import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.BinomialModelPrediction;
 import hex.genmodel.utils.DistributionFamily;
-import hex.splitframe.ShuffleSplitFrame;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Map;
@@ -38,8 +36,11 @@ public class MojoTESupportIntegrationTest extends TestUtil {
   private Frame fr = null;
 
   @Test
-  public void withTargetEncodingsFromGenModelEnd2EndTest() {
+  public void withTargetEncodingsFromGenModelEnd2EndTest() throws IOException, PredictException  {
 
+    String mojoFileName = "gbm_mojo_te.zip";
+    Model gbm = null;
+    Map<String, Frame> testEncodingMap = null;
     Scope.enter();
     try {
       fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
@@ -48,13 +49,6 @@ public class MojoTESupportIntegrationTest extends TestUtil {
       
       asFactor(fr, responseColumnName);
 
-      Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(fr, new Key[]{Key.make(), Key.make()}, new double[]{0.8, 0.2}, 1234);
-
-      Frame trainSplit = splits[0];
-      Frame testSplit = splits[1]; // Unused
-      testSplit.delete();
-      
-      
       // Preparing Target encoding 
       BlendingParams params = new BlendingParams(3, 1);
       String[] teColumns = {"home.dest", "embarked"};
@@ -62,9 +56,10 @@ public class MojoTESupportIntegrationTest extends TestUtil {
 
       TargetEncoder tec = new TargetEncoder(teColumns, params);
 
-      Map<String, Frame> testEncodingMap = tec.prepareEncodingMap(trainSplit, responseColumnName, null);
-      Frame trainEncodedSplit = tec.applyTargetEncoding(trainSplit, responseColumnName, testEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, true, true, 1234);
-
+      testEncodingMap = tec.prepareEncodingMap(fr, responseColumnName, null);
+      Frame trainEncodedSplit = tec.applyTargetEncoding(fr, responseColumnName, testEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, true, true, 1234);
+      Scope.track(trainEncodedSplit);
+      
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
       parms._train = trainEncodedSplit._key;
       parms._response_column = responseColumnName;
@@ -79,7 +74,7 @@ public class MojoTESupportIntegrationTest extends TestUtil {
       parms._seed = 1234L;
 
       GBM job = new GBM(parms);
-      Model gbm = job.trainModel().get();
+      gbm = job.trainModel().get();
       
       gbm.addTargetEncodingMap(testEncodingMap); // Maybe we should also do this through ModelBuilder
 
@@ -87,17 +82,15 @@ public class MojoTESupportIntegrationTest extends TestUtil {
       System.out.println(gbm._output);
       System.out.println("Model AUC " + gbm.auc());
 
-      String fileName = "gbm_mojo_te.zip";
-
-      FileOutputStream modelOutput = new FileOutputStream(fileName);
+      FileOutputStream modelOutput = new FileOutputStream(mojoFileName);
       gbm.getMojo().writeTo(modelOutput);
       modelOutput.close();
-      System.out.println("Model written out as a mojo to file " + fileName);
+      System.out.println("Model written out as a mojo to file " + mojoFileName);
 
       // Let's load model that we just have written and use it for prediction.
       EasyPredictModelWrapper model = null;
 
-      model = new EasyPredictModelWrapper(MojoModel.load(fileName)); // TODO why we store GenModel even though we pass MojoModel?
+      model = new EasyPredictModelWrapper(MojoModel.load(mojoFileName)); // TODO why we store GenModel even though we pass MojoModel?
 
       // RowData that is not encoded yet
       RowData rowToPredictFor = new RowData();
@@ -126,7 +119,7 @@ public class MojoTESupportIntegrationTest extends TestUtil {
       int[] encodingComponentsForEmbarked = targetEncodingMap.get("embarked").get(embarkedFactorValue);
       double encodingForHomeEmbarked = (double) encodingComponentsForEmbarked[0] / encodingComponentsForEmbarked[1];
       
-      Assert.assertEquals((double) rowToPredictFor.get("home.dest_te"), encodingForHomeDest, 1e-5);
+      assertEquals((double) rowToPredictFor.get("home.dest_te"), encodingForHomeDest, 1e-5);
 
       // Check that prediction from both original model and genmodel are the same. Here we maually substituted factors.
       // We can do this transformation with target encoder either but for one row it is inconvenient as we will have to deal with half-defined domains.
@@ -148,6 +141,7 @@ public class MojoTESupportIntegrationTest extends TestUtil {
 
 
       Frame predictionFromOriginalModel = gbm.score(testFrameAsRowData);
+      Scope.track(predictionFromOriginalModel);
 
       System.out.println("Class probabilities from original model: ");
       printOutFrameAsTable(predictionFromOriginalModel);
@@ -156,18 +150,15 @@ public class MojoTESupportIntegrationTest extends TestUtil {
       assertEquals(predictionFromOriginalModel.vec("p0").at(0), predictionFromLoadedModel.classProbabilities[0], 1e-5);
       assertEquals(predictionFromOriginalModel.vec("p1").at(0), predictionFromLoadedModel.classProbabilities[1], 1e-5);
 
+    } finally {
+      if(testEncodingMap != null) 
+        TargetEncoderFrameHelper.encodingMapCleanUp(testEncodingMap);
       if( gbm != null ) {
         gbm.delete();
         gbm.deleteCrossValidationModels();
       }
-      predictionFromOriginalModel.delete();
-      trainEncodedSplit.delete();
-      trainSplit.delete();
-      testEncodingMap.get("embarked").delete(); 
-      testEncodingMap.get("home.dest").delete();
-    } catch (IOException | PredictException ex) {
-      throw new AssertionError(ex.getMessage());
-    } finally {
+      File mojoFile = new File(mojoFileName);
+      if(mojoFile.exists()) mojoFile.delete();
       Scope.exit();
     }
   }
