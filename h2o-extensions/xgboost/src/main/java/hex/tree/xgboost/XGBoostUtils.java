@@ -465,7 +465,7 @@ public class XGBoostUtils {
         return csr(chunks, weight, respIdx, null, null, null, null, null, nRows, di, resp, weights);
     }
 
-    private static DMatrix csr(Chunk[] chunks, int weight, int respIdx, // for MR task
+    protected static DMatrix csr(Chunk[] chunks, int weight, int respIdx, // for MR task
                                Frame f, int[] chunksIds, Vec.Reader[] vecs, Vec.Reader w, Vec.Reader respReader, // for setupLocal
                                int nRows, DataInfo di, float[] resp, float[] weights)
         throws XGBoostError {
@@ -484,7 +484,7 @@ public class XGBoostUtils {
             sparseMatrixDimensions = calculateCSRMatrixDimensions(chunks, di, weight);
             SparseMatrix sparseMatrix = allocateCSRMatrix(sparseMatrixDimensions);
             data = sparseMatrix._sparseData;
-            rowHeaders = sparseMatrix._rowIndices;
+            rowHeaders = sparseMatrix._rowHeaders;
             colIndex = sparseMatrix._colIndices;
 
             actualRows = initializeFromChunks(
@@ -495,7 +495,7 @@ public class XGBoostUtils {
             sparseMatrixDimensions = calculateCSRMatrixDimensions(f, chunksIds, vecs, w, di);
             SparseMatrix sparseMatrix = allocateCSRMatrix(sparseMatrixDimensions);
             data = sparseMatrix._sparseData;
-            rowHeaders = sparseMatrix._rowIndices;
+            rowHeaders = sparseMatrix._rowHeaders;
             colIndex = sparseMatrix._colIndices;
             actualRows = initalizeFromChunkIds(
                     f, chunksIds, vecs, w,
@@ -511,7 +511,7 @@ public class XGBoostUtils {
         return trainMat;
     }
 
-    private static int initalizeFromChunkIds(Frame f, int[] chunks, Vec.Reader[] vecs, Vec.Reader w, DataInfo di, int actualRows,
+    protected static int initalizeFromChunkIds(Frame f, int[] chunks, Vec.Reader[] vecs, Vec.Reader w, DataInfo di, int actualRows,
                                              long[][] rowHeaders, float[][] data, int[][] colIndex,
                                              Vec.Reader respVec, float[] resp, float[] weights) {
         // CSR:
@@ -809,8 +809,8 @@ public class XGBoostUtils {
         final int dataRowsNumber = (int) (sparseMatrixDimensions._nonZeroElementsCount / SPARSE_MATRIX_DIM);
         final int dataLastRowSize = (int)(sparseMatrixDimensions._nonZeroElementsCount % SPARSE_MATRIX_DIM);
         //Number of rows in matrix with row indices
-        final int rowIndicesRowsNumber = (int)(sparseMatrixDimensions._rowIndicesCount / SPARSE_MATRIX_DIM);
-        final int rowIndicesLastRowSize = (int)(sparseMatrixDimensions._rowIndicesCount % SPARSE_MATRIX_DIM);
+        final int rowIndicesRowsNumber = (int)(sparseMatrixDimensions._rowHeadersCount / SPARSE_MATRIX_DIM);
+        final int rowIndicesLastRowSize = (int)(sparseMatrixDimensions._rowHeadersCount % SPARSE_MATRIX_DIM);
         // Number of rows in matrix with column indices of sparse matrix non-zero elements
         // There is one column index per each non-zero element, no need to recalculate.
         final int colIndicesRowsNumber = dataRowsNumber;
@@ -849,7 +849,7 @@ public class XGBoostUtils {
         return new SparseMatrix(sparseData, rowIndices, colIndices);
     }
 
-    private static SparseMatrixDimensions calculateCSRMatrixDimensions(Chunk[] chunks, DataInfo di, int weightColIndex){
+    protected static SparseMatrixDimensions calculateCSRMatrixDimensions(Chunk[] chunks, DataInfo di, int weightColIndex){
 
         long nonZeroElementsCount = 0;
         long rowIndicesCount = 0;
@@ -872,7 +872,7 @@ public class XGBoostUtils {
         return new SparseMatrixDimensions(nonZeroElementsCount, ++rowIndicesCount);
     }
 
-    private static SparseMatrixDimensions calculateCSRMatrixDimensions(Frame f, int[] chunks, Vec.Reader[] vecs, Vec.Reader w, DataInfo di) {
+    protected static SparseMatrixDimensions calculateCSRMatrixDimensions(Frame f, int[] chunks, Vec.Reader[] vecs, Vec.Reader w, DataInfo di) {
         long nonZeroElementsCount = 0;
         long rowIndicesCount = 0;
 
@@ -900,8 +900,8 @@ public class XGBoostUtils {
      * Dimensions of a Sparse Matrix
      */
     protected static final class SparseMatrixDimensions{
-        private final long _nonZeroElementsCount;
-        private final long _rowIndicesCount;
+        protected final long _nonZeroElementsCount;
+        protected final long _rowHeadersCount;
 
         /**
          * Constructs an instance of {@link SparseMatrixDimensions}
@@ -912,7 +912,7 @@ public class XGBoostUtils {
          */
         public SparseMatrixDimensions(long nonZeroElementsCount, long rowIndicesCount) {
             _nonZeroElementsCount = nonZeroElementsCount;
-            _rowIndicesCount = rowIndicesCount;
+            _rowHeadersCount = rowIndicesCount;
         }
     }
 
@@ -921,7 +921,7 @@ public class XGBoostUtils {
      */
     protected static final class SparseMatrix {
         protected final float[][] _sparseData;
-        protected final long[][] _rowIndices;
+        protected final long[][] _rowHeaders;
         protected final int[][] _colIndices;
 
         /**
@@ -933,7 +933,7 @@ public class XGBoostUtils {
          */
         public SparseMatrix(final float[][] sparseData, final long[][] rowIndices, final int[][] colIndices) {
             _sparseData = sparseData;
-            _rowIndices = rowIndices;
+            _rowHeaders = rowIndices;
             _colIndices = colIndices;
         }
     }

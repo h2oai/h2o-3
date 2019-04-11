@@ -16,6 +16,7 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
+import water.util.VecUtils;
 
 import java.io.*;
 import java.net.URL;
@@ -164,7 +165,154 @@ public class XGBoostUtilsTest extends TestUtil {
         if (frame != null) frame.remove();
       }
     }
+
+    @Test
+    public void testSparsematrixInit() throws XGBoostError {
+
+      Frame frame = null;
+      try {
+        frame = Scope.track(new TestFrameBuilder()
+                .withName("testFrame")
+                .withColNames("C1", "C2", "C3")
+                .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
+                .withDataForCol(0, ard(0, 1, 0))
+                .withDataForCol(1, ard(0, 2, 0))
+                .withDataForCol(2, ard(0, 3, 0))
+                .build());
+        final String response = "C3";
+        final Vec vec = frame.anyVec();
+        final int[] chunksIds = VecUtils.getLocalChunkIds(frame.anyVec());
+        float[] resp = new float[(int) vec.length()];
+        float[] weights = null;
+        final Vec.Reader respReader = frame.vec(response).new Reader();
+        final DataInfo di = new DataInfo(frame, null, true, DataInfo.TransformType.NONE, false, false, false);
+        Vec.Reader[] vecs = new Vec.Reader[frame.numCols()];
+        for (int i = 0; i < vecs.length; ++i) {
+          vecs[i] = frame.vec(i).new Reader();
+        }
+        final int nrows = (int) vec.length();
+
+        int actualRows = 0;
+
+        XGBoostUtilsTest.setSparseMatrixMaxDimensions(3);
+        // Calculate sparse matrix dimensions
+        final XGBoostUtils.SparseMatrixDimensions sparseMatrixDimensions = XGBoostUtils.calculateCSRMatrixDimensions(frame, chunksIds, vecs, null, di);
+        assertNotNull(sparseMatrixDimensions);
+        assertEquals(3, sparseMatrixDimensions._nonZeroElementsCount);
+        assertEquals(4, sparseMatrixDimensions._rowHeadersCount); // 3 rows + 1 final index
+
+        // Allocate necessary memory blocks
+        final XGBoostUtils.SparseMatrix sparseMatrix = XGBoostUtils.allocateCSRMatrix(sparseMatrixDimensions);
+        assertNotNull(sparseMatrix);
+        assertNotNull(sparseMatrix._colIndices);
+        assertNotNull(sparseMatrix._rowHeaders);
+
+        XGBoostUtilsTest.checkSparseDataStructuresAllocation(sparseMatrix, sparseMatrixDimensions._nonZeroElementsCount,
+                nrows);
+
+        // Initialize allocated matrices with actual data
+        actualRows = XGBoostUtils.initalizeFromChunkIds(
+                frame, chunksIds, vecs, null, di, actualRows, sparseMatrix._rowHeaders,
+                sparseMatrix._sparseData, sparseMatrix._colIndices,
+                respReader, resp, weights);
+
+        assertEquals(3, actualRows);
+
+        checkSparseDataInitialization(sparseMatrix, new float[]{1, 2, 3},
+                new long[]{0, 0, 3, 3},// First row has zero NZEs, zero is also at the beginning of second row.  Stays 3 after second row.
+                new int[]{0, 1, 2}); // All three cells have non-zero value occupied in second row
+
+
+        final DMatrix dMatrix = new DMatrix(sparseMatrix._rowHeaders, sparseMatrix._colIndices, sparseMatrix._sparseData,
+                DMatrix.SparseType.CSR, di.fullN(), actualRows + 1, sparseMatrixDimensions._nonZeroElementsCount);
+        
+        assertEquals(nrows, dMatrix.rowNum());
+      } finally {
+        if (frame != null) frame.remove();
+      }
+    }
   }
+
+  /**
+   * Checks size allocations of sparse data
+   *
+   * @param sparseMatrix    Sparse matrix data structures, including preallocated two-dimensional array prepared to be filled
+   *                        with non-zero elements
+   * @param nonZeroElements Number of non-zero elements found in original non-compressed matrix
+   * @param originalMatrixrows Number of rows in the original matrix
+   */
+  private static void checkSparseDataStructuresAllocation(final XGBoostUtils.SparseMatrix sparseMatrix, final long nonZeroElements,
+                                                          final int originalMatrixrows) {
+    final float[][] data = sparseMatrix._sparseData;
+    final int[][] colIndices = sparseMatrix._colIndices;
+    assertNotNull(data);
+
+    long expectArrNumrows = nonZeroElements / XGBoostUtils.SPARSE_MATRIX_DIM;
+    if (nonZeroElements % XGBoostUtils.SPARSE_MATRIX_DIM != 0) expectArrNumrows++;
+
+    assertEquals(expectArrNumrows, data.length);
+
+    long expectedArrRowSize = Math.min(MAX_ARR_SIZE, nonZeroElements);
+    expectedArrRowSize = Math.min(expectedArrRowSize, XGBoostUtils.SPARSE_MATRIX_DIM);
+
+
+    for (int i = 0; i < data.length - 1; i++) { // Last row might be of different size
+      assertEquals(expectedArrRowSize, data[i].length);
+      assertEquals(expectedArrRowSize, colIndices[i].length); // Number of column indices equals the number of NZE
+    }
+
+    final long expectedLastArrRowSize = nonZeroElements % XGBoostUtils.SPARSE_MATRIX_DIM;
+
+    if (expectedLastArrRowSize == 0) { // Is last row differently sized ?
+      assertEquals(expectedArrRowSize, data[data.length - 1].length);
+      assertEquals(expectedArrRowSize, colIndices[colIndices.length - 1].length);
+    } else {
+      assertEquals(expectedLastArrRowSize, data[data.length - 1].length);
+      assertEquals(expectedLastArrRowSize, colIndices[colIndices.length - 1].length);
+    }
+    
+    long numRowHeaders = 0;
+    for (int i = 0; i < sparseMatrix._rowHeaders.length; i++) {
+      numRowHeaders += sparseMatrix._rowHeaders[i].length;
+    }
+    
+    assertEquals(originalMatrixrows + 1, numRowHeaders);
+  }
+
+  private static void checkSparseDataInitialization(final XGBoostUtils.SparseMatrix sparseMatrix,
+                                                    final float[] expectedNZEs, final long[] expectedRowHeaders,
+                                                    final int[] expectedColIndices) {
+
+    // Check expected non-zero elements are in the resulting array structures
+    final float[][] data = sparseMatrix._sparseData;
+    int nzePointer = 0;
+    for (int i = 0; i < data.length; i++) {
+      for (int j = 0; j < data[i].length; j++) {
+        assertEquals(expectedNZEs[nzePointer++], data[i][j], 0d);
+      }
+    }
+
+    // Check expected row headers are properly filled in the matrix
+    final long[][] rowHeaders = sparseMatrix._rowHeaders;
+    int rowHeadersPtr = 0;
+    for (int i = 0; i < rowHeaders.length; i++) {
+      for (int j = 0; j < rowHeaders[i].length; j++) {
+        assertEquals(expectedRowHeaders[rowHeadersPtr++], rowHeaders[i][j], 0d);
+      }
+    }
+
+    final int[][] colIndices = sparseMatrix._colIndices;
+    int colIdxPtr = 0;
+
+    for (int i = 0; i < colIndices.length; i++) {
+      for (int j = 0; j < colIndices[i].length; j++) {
+        assertEquals(expectedColIndices[colIdxPtr++], colIndices[i][j], 0d);
+
+      }
+    }
+
+  }
+
 
   private static String[] readLines(URL url) throws IOException {
     List<String> lines = new ArrayList<>();
