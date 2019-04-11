@@ -2,7 +2,6 @@ package hex;
 
 import ai.h2o.automl.targetencoding.BlendingParams;
 import ai.h2o.automl.targetencoding.TargetEncoder;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Key;
@@ -14,12 +13,12 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.util.Map;
 
-import static org.junit.Assert.fail;
+import static org.junit.Assert.assertTrue;
 
 /**
  * This test should be moved to h2o-core module once we move all TargetEncoding related classes there as well. 
  */
-public class ModelMojoWriterTest extends TestUtil implements ModelTestCommons {
+public class ModelMojoWriterTest extends TestUtil implements ModelStubs {
 
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }
   
@@ -37,7 +36,7 @@ public class ModelMojoWriterTest extends TestUtil implements ModelTestCommons {
     return testEncodingMap;
   }
 
-  @Test public void writeModelToZipFile() {
+  @Test public void writeModelToZipFile() throws Exception{
     TestModel.TestParam p = new TestModel.TestParam();
     TestModel.TestOutput o = new TestModel.TestOutput();
     o.setNames(trainFrame.names());
@@ -54,10 +53,8 @@ public class ModelMojoWriterTest extends TestUtil implements ModelTestCommons {
       testModel.getMojo().writeTo(modelOutput);
       modelOutput.close();
 
-      Assert.assertTrue(new File(fileName).exists());
+      assertTrue(new File(fileName).exists());
 
-    } catch (Exception ex) {
-      fail();
     } finally {
       File file = new File(fileName);
       if (file.exists()) {
