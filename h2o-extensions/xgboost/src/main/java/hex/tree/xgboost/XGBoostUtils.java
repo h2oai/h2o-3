@@ -804,7 +804,7 @@ public class XGBoostUtils {
      * @param sparseMatrixDimensions Dimensions of a sparse matrix
      * @return An instance of {@link SparseMatrix} with pre-allocated backing arrays.
      */
-    private static SparseMatrix allocateCSRMatrix(SparseMatrixDimensions sparseMatrixDimensions) {
+    protected static SparseMatrix allocateCSRMatrix(SparseMatrixDimensions sparseMatrixDimensions) {
         // Number of rows in non-zero elements matrix
         final int dataRowsNumber = (int) (sparseMatrixDimensions._nonZeroElementsCount / SPARSE_MATRIX_DIM);
         final int dataLastRowSize = (int)(sparseMatrixDimensions._nonZeroElementsCount % SPARSE_MATRIX_DIM);
@@ -899,7 +899,7 @@ public class XGBoostUtils {
     /**
      * Dimensions of a Sparse Matrix
      */
-    private static final class SparseMatrixDimensions{
+    protected static final class SparseMatrixDimensions{
         private final long _nonZeroElementsCount;
         private final long _rowIndicesCount;
 
@@ -919,10 +919,10 @@ public class XGBoostUtils {
     /**
      * Sparse Matrix representation for XGBoost
      */
-    private static final class SparseMatrix {
-        private final float[][] _sparseData;
-        private final long[][] _rowIndices;
-        private final int[][] _colIndices;
+    protected static final class SparseMatrix {
+        protected final float[][] _sparseData;
+        protected final long[][] _rowIndices;
+        protected final int[][] _colIndices;
 
         /**
          * Constructs a {@link SparseMatrix} instance
