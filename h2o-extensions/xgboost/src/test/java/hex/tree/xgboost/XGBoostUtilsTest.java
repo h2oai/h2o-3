@@ -203,9 +203,6 @@ public class XGBoostUtilsTest extends TestUtil {
 
         // Allocate necessary memory blocks
         final XGBoostUtils.SparseMatrix sparseMatrix = XGBoostUtils.allocateCSRMatrix(sparseMatrixDimensions);
-        assertNotNull(sparseMatrix);
-        assertNotNull(sparseMatrix._colIndices);
-        assertNotNull(sparseMatrix._rowHeaders);
 
         XGBoostUtilsTest.checkSparseDataStructuresAllocation(sparseMatrix, sparseMatrixDimensions._nonZeroElementsCount,
                 nrows);
@@ -269,9 +266,6 @@ public class XGBoostUtilsTest extends TestUtil {
 
         // Allocate necessary memory blocks
         final XGBoostUtils.SparseMatrix sparseMatrix = XGBoostUtils.allocateCSRMatrix(sparseMatrixDimensions);
-        assertNotNull(sparseMatrix);
-        assertNotNull(sparseMatrix._colIndices);
-        assertNotNull(sparseMatrix._rowHeaders);
 
         XGBoostUtilsTest.checkSparseDataStructuresAllocation(sparseMatrix, sparseMatrixDimensions._nonZeroElementsCount,
                 nrows);
@@ -339,9 +333,6 @@ public class XGBoostUtilsTest extends TestUtil {
 
         // Allocate necessary memory blocks
         final XGBoostUtils.SparseMatrix sparseMatrix = XGBoostUtils.allocateCSRMatrix(sparseMatrixDimensions);
-        assertNotNull(sparseMatrix);
-        assertNotNull(sparseMatrix._colIndices);
-        assertNotNull(sparseMatrix._rowHeaders);
 
         XGBoostUtilsTest.checkSparseDataStructuresAllocation(sparseMatrix, sparseMatrixDimensions._nonZeroElementsCount,
                 nrows);
@@ -379,6 +370,10 @@ public class XGBoostUtilsTest extends TestUtil {
    */
   private static void checkSparseDataStructuresAllocation(final XGBoostUtils.SparseMatrix sparseMatrix, final long nonZeroElements,
                                                           final int originalMatrixrows) {
+    assertNotNull(sparseMatrix);
+    assertNotNull(sparseMatrix._colIndices);
+    assertNotNull(sparseMatrix._rowHeaders);
+    
     final float[][] data = sparseMatrix._sparseData;
     final int[][] colIndices = sparseMatrix._colIndices;
     assertNotNull(data);
