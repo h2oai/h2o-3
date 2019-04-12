@@ -12,8 +12,7 @@ from h2o.utils.backward_compatibility import backwards_compatible
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.compatibility import viewitems
 from h2o.utils.shared_utils import can_use_pandas
-from h2o.utils.typechecks import I, assert_is_type, assert_satisfies, Enum
-from six import string_types
+from h2o.utils.typechecks import I, assert_is_type, assert_satisfies, Enum, is_type
 
 
 class ModelBase(backwards_compatible()):
@@ -1003,7 +1002,7 @@ class ModelBase(backwards_compatible()):
                     data_ncol = data.ncol
                     column_names = data.names
                     for colKey,val in user_splits.items():
-                        if isinstance(colKey, string_types) and colKey in column_names:
+                        if is_type(colKey, str) and colKey in column_names:
                             user_cols.append(colKey)
                         elif isinstance(colKey, int) and colKey < data_ncol:
                             user_cols.append(column_names[colKey])

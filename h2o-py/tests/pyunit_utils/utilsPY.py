@@ -7,7 +7,6 @@ from functools import reduce
 from scipy.sparse import csr_matrix
 import sys, os
 import pandas as pd
-from six import string_types
 
 try:        # works with python 2.7 not 3
     from StringIO import StringIO
@@ -45,7 +44,7 @@ import json
 import math
 from random import shuffle
 import scipy.special
-from h2o.utils.typechecks import assert_is_type
+from h2o.utils.typechecks import is_type
 import datetime
 import time # needed to randomly generate time
 import uuid # call uuid.uuid4() to generate unique uuid numbers
@@ -4048,7 +4047,7 @@ def manual_partial_dependence(model, dataframe, xlist, xname, weightV):
         cons = [xval]*nRows
         if xname in dataframe.names:
             dataframe=dataframe.drop(xname)
-        if not((isinstance(xval, string_types) and xval=='NA') or (isinstance(xval, float) and math.isnan(xval))):
+        if not((is_type(xval, str) and xval=='NA') or (isinstance(xval, float) and math.isnan(xval))):
             dataframe = dataframe.cbind(h2o.H2OFrame(cons))
             dataframe.set_name(nCols, xname)
 
