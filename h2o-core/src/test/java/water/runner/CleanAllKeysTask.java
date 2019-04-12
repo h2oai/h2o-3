@@ -5,7 +5,7 @@ import water.MRTask;
 
 import java.io.Serializable;
 
-public class CleanAllKeysTask extends MRTask<CleanAllKeysTask> implements Serializable {
+public class CleanAllKeysTask extends MRTask<CleanAllKeysTask> {
 
     @Override
     protected void setupLocal() {

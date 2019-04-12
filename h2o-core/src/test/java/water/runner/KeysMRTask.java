@@ -5,9 +5,7 @@ import water.Key;
 import water.MRTask;
 import water.Value;
 
-import java.io.Serializable;
-
-public abstract class KeysMRTask<T extends KeysMRTask<T>> extends MRTask<T> implements Serializable {
+public abstract class KeysMRTask<T extends KeysMRTask<T>> extends MRTask<T> {
 
     /**
      * Determines if a key leak is ignorable

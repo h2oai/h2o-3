@@ -51,7 +51,7 @@ public class H2ORunner extends BlockJUnit4ClassRunner {
         List<FrameworkMethod> befores = getTestClass()
                 .getAnnotatedMethods(BeforeClass.class);
         return befores.isEmpty() ? statement :
-                new H2ORunnerBefores(statement, befores, null, initKeys);
+                new H2ORunnerBefores(statement, befores, null);
     }
 
     @Override
