@@ -178,8 +178,8 @@ public class AutoMLBuildSpec extends Iced {
     public HPsSelectionStrategy params_selection_strategy;
     public TargetEncodingParams fixedTEParams;
     public double early_stopping_ratio;
-    public double ratio_of_hyperspace_to_explore;
-    public boolean search_over_columns = true;
+    public double ratio_of_hyperspace_to_explore = 0.05; // TODO Change this default when we have stopping tolerance
+    public boolean search_over_columns = false;
     public long seed = new Random().nextLong();
   }
 

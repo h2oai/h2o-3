@@ -172,6 +172,12 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     public Algo[] include_algos;
   } // class AutoMLBuildModels
 
+  public static final class AutoMLTEControlV99 extends Schema<AutoMLBuildSpec.AutoMLTEControl, AutoMLTEControlV99> {
+
+    @API(help="If automatic target encoding is enabled ot not.", direction=API.Direction.INPUT)
+    public boolean enabled;
+  } // class AutoMLTEControl
+
   ////////////////
   // Input fields
 
@@ -183,6 +189,9 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
 
   @API(help="If present, specifies details of how to train models.", direction=API.Direction.INPUT)
   public AutoMLBuildModelsV99 build_models;
+  
+  @API(help="Specification of overall controls for the target encoding process.", direction=API.Direction.INPUT)
+  public AutoMLTEControlV99 te_spec;
 
   ////////////////
   // Output fields

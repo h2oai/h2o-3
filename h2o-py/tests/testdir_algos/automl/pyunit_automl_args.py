@@ -330,6 +330,63 @@ def test_stacked_ensembles_are_trained_with_blending_frame_even_if_nfolds_eq_0()
         assert model._model_json['output']['stacking_strategy'] == 'blending'
 
 
+def test_that_target_encoding_is_enabled_but_skipped_because_there_is_no_cat_columns():
+    print("Check that enable_te argument is working")
+    ds = import_dataset()
+    aml = H2OAutoML(project_name="py_aml_te_enabled",
+                    nfolds=5, max_models=1, seed=1,
+                    target_encoding=True)
+    aml.train(y=ds['target'], training_frame=ds['train'])
+    _, non_se, _ = get_partitioned_model_names(aml.leaderboard)
+    amodel = h2o.get_model(non_se[0])
+    
+    vi_as_frame = amodel._model_json["output"]["variable_importances"].as_data_frame()
+    print(vi_as_frame['variable'].tolist())
+    for i in vi_as_frame['variable'].tolist():
+        if "_te" in i:
+            assert False
+    
+    #TODO
+    
+def test_that_target_encoding_argument_is_enabling_target_encoding():
+    print("Check that enable_te argument is working")
+    trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic.csv"), header=1)
+    responseColumnName = "survived"
+    trainingFrame[responseColumnName] = trainingFrame[responseColumnName].asfactor()
+
+    max_models = 3
+    aml = H2OAutoML(project_name="py_aml_te_enabled",
+                    nfolds=5, max_models=max_models, seed=1,
+                    target_encoding=True)
+    aml.train(y=responseColumnName, training_frame=trainingFrame)
+    
+    _, non_se, _ = get_partitioned_model_names(aml.leaderboard)
+    amodel = h2o.get_model(non_se[0])
+    amodel._model_json["output"]["variable_importances"].show()
+    vi_as_frame = amodel._model_json["output"]["variable_importances"].as_data_frame()
+    if not "home.dest_te" in vi_as_frame['variable'].tolist():
+        assert False
+    assert len(non_se) == max_models
+        
+        
+def test_that_target_encoding_argument_is_disabling_target_encoding():
+    print("Check that enable_te argument is working")
+    trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic.csv"), header=1)
+    responseColumnName = "survived"
+    trainingFrame[responseColumnName] = trainingFrame[responseColumnName].asfactor()
+    
+    aml = H2OAutoML(project_name="py_aml_te_enabled",
+                    nfolds=5, max_models=1, seed=1,
+                    target_encoding=False)
+    aml.train(y=responseColumnName, training_frame=trainingFrame)
+    
+    _, non_se, _ = get_partitioned_model_names(aml.leaderboard)
+    amodel = h2o.get_model(non_se[0])
+    amodel._model_json["output"]["variable_importances"].show()
+    vi_as_frame = amodel._model_json["output"]["variable_importances"].as_data_frame()
+    if "home.dest_te" in vi_as_frame['variable'].tolist():
+        assert False 
+
     # TO DO  PUBDEV-5676
     # Add a test that checks fold_column like in runit
 
@@ -356,4 +413,8 @@ pyunit_utils.run_tests([
     test_automl_stops_after_max_models,
     test_stacked_ensembles_are_trained_after_max_models,
     test_stacked_ensembles_are_trained_with_blending_frame_even_if_nfolds_eq_0,
+    
+    test_that_target_encoding_is_enabled_but_skipped_because_there_is_no_cat_columns,
+    test_that_target_encoding_argument_is_enabling_target_encoding,
+    test_that_target_encoding_argument_is_disabling_target_encoding
 ])

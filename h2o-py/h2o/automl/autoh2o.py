@@ -62,6 +62,7 @@ class H2OAutoML(object):
                  keep_cross_validation_predictions=False,
                  keep_cross_validation_models=False,
                  keep_cross_validation_fold_assignment=False,
+                 target_encoding=False,
                  sort_metric="AUTO",
                  export_checkpoints_dir=None):
         """
@@ -133,10 +134,14 @@ class H2OAutoML(object):
                 'max_runtime_secs': max_runtime_secs,
             }
         }
-
+        
         # Make bare minimum build_models
         self.build_models = {
             'exclude_algos': None
+        }
+
+        # Make bare minimum target encoding control 
+        self.te_spec = {
         }
 
         # nfolds must be an non-negative integer and not equal to 1:
@@ -224,6 +229,9 @@ class H2OAutoML(object):
 
         assert_is_type(keep_cross_validation_fold_assignment, bool)
         self.build_control["keep_cross_validation_fold_assignment"] = self.nfolds != 0 and keep_cross_validation_fold_assignment
+        
+        assert_is_type(target_encoding, bool)
+        self.te_spec["enabled"] = target_encoding
 
         self._job = None
         self._leader_id = None
@@ -400,6 +408,7 @@ class H2OAutoML(object):
         # This lets the back end use the defaults.
         automl_build_params['build_control'] = self.build_control
         automl_build_params['build_models']  = self.build_models
+        automl_build_params['te_spec']  = self.te_spec
 
         resp = h2o.api('POST /99/AutoMLBuilder', json=automl_build_params)
         if 'job' not in resp:
