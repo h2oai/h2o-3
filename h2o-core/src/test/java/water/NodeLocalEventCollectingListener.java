@@ -3,10 +3,11 @@ package water;
 import org.junit.Ignore;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 
 @Ignore
-public class NodeLocalEventCollectingListener implements H2OListenerExtension{
+public class NodeLocalEventCollectingListener implements H2OListenerExtension {
 
   private HashMap<String, ArrayList<Object[]>> reports;
   @Override
@@ -34,4 +35,12 @@ public class NodeLocalEventCollectingListener implements H2OListenerExtension{
   public void clear(){
     reports = new HashMap<>();
   }
+
+  public static NodeLocalEventCollectingListener getFreshInstance() {
+    Collection<H2OListenerExtension> listenerExtensions = ExtensionManager.getInstance().getListenerExtensions();
+    NodeLocalEventCollectingListener ext = (NodeLocalEventCollectingListener) listenerExtensions.iterator().next();
+    ext.clear();
+    return ext;
+  }
+
 }
