@@ -69,17 +69,17 @@ public class AutoMLTargetEncodingAssistant{
 
   }
 
-  public void init() {
-    // Application strategy
+  public void init() throws NoColumnsToEncodeException {
     TEApplicationStrategy applicationStrategy = _buildSpec.te_spec.application_strategy;
-    _applicationStrategy = applicationStrategy != null ? applicationStrategy : new AllCategoricalTEApplicationStrategy(_trainingFrame, _responseColumnName);
-    _columnsToEncode = _applicationStrategy.getColumnsToEncode();
+
+    _columnsToEncode = selectColumnsForEncoding(applicationStrategy);
 
     //TODO what is the canonical way to get metric we are going to use. DistributionFamily, leaderboard metrics?
     boolean theBiggerTheBetter = _modelBuilder._parms.train().vec(_responseColumnName).get_type() != Vec.T_NUM;
 
     // Selection strategy
-    HPsSelectionStrategy teParamsSelectionStrategy = _buildSpec.te_spec.params_selection_strategy;
+    HPsSelectionStrategy selectionStrategyFromTEScpec = _buildSpec.te_spec.params_selection_strategy;
+    HPsSelectionStrategy teParamsSelectionStrategy = selectionStrategyFromTEScpec != null ? selectionStrategyFromTEScpec : HPsSelectionStrategy.RGS;
     switch(teParamsSelectionStrategy) {
       case Fixed:
         _buildSpec.te_spec.fixedTEParams.setColumnsToEncode(_columnsToEncode);
@@ -112,6 +112,15 @@ public class AutoMLTargetEncodingAssistant{
     
     _teParams = getTeParamsSelectionStrategy().getBestParams(_modelBuilder);
   }
+
+  private String[] selectColumnsForEncoding(TEApplicationStrategy applicationStrategy) throws NoColumnsToEncodeException{
+    _applicationStrategy = applicationStrategy != null ? applicationStrategy : new AllCategoricalTEApplicationStrategy(_trainingFrame, _responseColumnName);
+    String[] columnsToEncode = _applicationStrategy.getColumnsToEncode();
+    if(columnsToEncode.length == 0) throw new NoColumnsToEncodeException();
+    return columnsToEncode;
+  }
+  
+  public static class NoColumnsToEncodeException extends Exception { }
 
 
   public void performAutoTargetEncoding() {

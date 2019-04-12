@@ -37,6 +37,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static ai.h2o.automl.targetencoding.integration.AutoMLBuildSpec.AutoMLStoppingCriteria.AUTO_STOPPING_TOLERANCE;
+import static ai.h2o.automl.targetencoding.integration.AutoMLTargetEncodingAssistant.NoColumnsToEncodeException;
 
 
 /**
@@ -286,22 +287,19 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
   }
 
-  private void performTargetEncoding(ModelBuilder modelBuilder) {
+  private void performTargetEncoding(ModelBuilder modelBuilder) throws NoColumnsToEncodeException {
 
     AutoMLBuildSpec buildSpec = getBuildSpec();
 
-    if(buildSpec.te_spec.enabled) {
+    AutoMLTargetEncodingAssistant teAssistant = new AutoMLTargetEncodingAssistant(getTrainingFrame(),
+            getValidationFrame(),
+            getLeaderboardFrame(),
+            buildSpec,
+            modelBuilder);
 
-      AutoMLTargetEncodingAssistant teAssistant = new AutoMLTargetEncodingAssistant(getTrainingFrame(),
-              getValidationFrame(),
-              getLeaderboardFrame(),
-              buildSpec,
-              modelBuilder);
+    teAssistant.init();
 
-      teAssistant.init();
-
-      teAssistant.performAutoTargetEncoding();
-    }
+    teAssistant.performAutoTargetEncoding();
   }
   
   private void handleEarlyStoppingParameters(AutoMLBuildSpec buildSpec) {
@@ -769,14 +767,28 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     // TODO: handle error_count and messages
 
-    // NOTE: here we will also affect `_buildSpec.input_spec.ignored_columns`. We will switch it back below in `finally` block after model is trained.
-    String[] originalIgnoredColumns = buildSpec.input_spec.ignored_columns;
+    if(buildSpec.te_spec.enabled) {
+      // NOTE: here we will also affect `_buildSpec.input_spec.ignored_columns`. We will switch it back below in `finally` block after model is trained.
+      String[] originalIgnoredColumns = buildSpec.input_spec.ignored_columns == null ? null : buildSpec.input_spec.ignored_columns.clone(); //TODO test
 
-    Frame trainMBBeforeTE = builder.train();
-    
-    performTargetEncoding(builder);
+      Frame trainMBBeforeTE = builder.train();
+
+      try {
+        performTargetEncoding(builder);
+        return runModelTrainingWithTEJob(key, algoName, builder, originalIgnoredColumns, trainMBBeforeTE);
+      } catch (NoColumnsToEncodeException ex) {
+        Log.info("Target encoding is enabled but there were no columns found to apply encoding to. Falling back to execution without TE.");
+        //TODO we need to make sure that builder is in a state that was before we tried to apply TE. It is most likely not the case now. Consider deep copy of ModelBuilder.
+        return runModelTrainingJob(key, algoName, builder);
+      }
+    } else {
+      return runModelTrainingJob(key, algoName, builder);
+    }
+  }
+
+  private Job<Model> runModelTrainingWithTEJob(Key<Model> key, String algoName, ModelBuilder builder, String[] originalIgnoredColumns, Frame trainMBBeforeTE) {
     Frame trainMBAfterTE = builder.train();
-    
+
     // We are changing `ignored_columns` in `performTargetEncoding` method  
     builder._parms._ignored_columns = buildSpec.input_spec.ignored_columns; //TODO maybe it is better to directly change builder from assistant
 
@@ -786,26 +798,38 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       trainingModelJob = builder.trainModelOnH2ONode();
       return trainingModelJob;
     } catch (H2OIllegalArgumentException exception) {
-      userFeedback.warn(Stage.ModelTraining, "Skipping training of model "+key+" due to exception: "+exception);
+      userFeedback.warn(Stage.ModelTraining, "Skipping training of model " + key + " due to exception: " + exception);
       return null;
     } finally {
-      trainingModelJob.get(); // Note: we have to block and only then remove data with te encodings
+      //TODO we have to block and only then remove data with te encodings. 
+      // This is bad and we probably want to use something like Future but still our object is not immutable and we can't proceed before cleaning up.
+      trainingModelJob.get(); 
       
       // Now we need to remove what we have added during TE to original data of current model builder
-      if(trainMBAfterTE.numRows() != trainMBBeforeTE.numRows()) // Only when we change training frame by setting it to another one ( e.g. when holdout strategy is NONE)
+      if (trainMBAfterTE.numRows() != trainMBBeforeTE.numRows()) // Only when we change training frame by setting it to another one ( e.g. when holdout strategy is NONE)
         trainMBAfterTE.delete();
-      else if(builder instanceof DeepLearning) { // DeepLearning change training data in the builder so we need to remove what DL has overwritten without caring to cleanup.
-        if(getLeaderboardFrame() != null)  // Validation frame case
+      else if (builder instanceof DeepLearning) { // DeepLearning change training data in the builder so we need to remove what DL has overwritten without caring to cleanup.
+        if (getLeaderboardFrame() != null)  // Validation frame case
           trainMBAfterTE.delete();
         else { // CV case
           removeTEColumnsFrom(originalIgnoredColumns, trainMBAfterTE);
         }
-      }
-      else {
+      } else {
         removeTEColumnsFrom(originalIgnoredColumns, builder.train());
       }
       builder.setTrain(trainMBBeforeTE);
       buildSpec.input_spec.ignored_columns = originalIgnoredColumns;
+    }
+  }
+
+  private Job<Model> runModelTrainingJob(Key<Model> key, String algoName, ModelBuilder builder) {
+    Log.debug("Training model: " + algoName + ", time remaining (ms): " + timeRemainingMs());
+
+    try {
+      return builder.trainModelOnH2ONode();
+    } catch (H2OIllegalArgumentException exception) {
+      userFeedback.warn(Stage.ModelTraining, "Skipping training of model " + key + " due to exception: " + exception);
+      return null;
     }
   }
 

@@ -14,6 +14,7 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 
 import static ai.h2o.automl.AutoMLBenchmarkingHelper.getPreparedTitanicFrame;
+import static ai.h2o.automl.targetencoding.integration.AutoMLTargetEncodingAssistant.*;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
@@ -27,7 +28,7 @@ public class AutoMLTargetEncodingAssistantTest extends water.TestUtil{
   
   // Check that we added encoded column to the training frame
   @Test
-  public void performAutoTargetEncoding_CV() {
+  public void performAutoTargetEncoding_CV() throws NoColumnsToEncodeException {
     String columnNameToEncode = "home.dest";
 
     String responseColumnName = "survived";
@@ -77,7 +78,7 @@ public class AutoMLTargetEncodingAssistantTest extends water.TestUtil{
   }
 
   @Test
-  public void performAutoTargetEncoding_validation_frame_KFOLD() {
+  public void performAutoTargetEncoding_validation_frame_KFOLD() throws NoColumnsToEncodeException{
     String columnNameToEncode = "home.dest";
 
     String responseColumnName = "survived";
@@ -138,7 +139,7 @@ public class AutoMLTargetEncodingAssistantTest extends water.TestUtil{
   }
 
   @Test
-  public void performAutoTargetEncoding_validation_frame_LOO() {
+  public void performAutoTargetEncoding_validation_frame_LOO() throws NoColumnsToEncodeException{
     String columnNameToEncode = "home.dest";
 
     String responseColumnName = "survived";
@@ -199,7 +200,7 @@ public class AutoMLTargetEncodingAssistantTest extends water.TestUtil{
   }
 
   @Test
-  public void performAutoTargetEncoding_validation_frame_NONE() {
+  public void performAutoTargetEncoding_validation_frame_NONE() throws NoColumnsToEncodeException{
     String columnNameToEncode = "home.dest";
 
     String responseColumnName = "survived";
@@ -261,7 +262,7 @@ public class AutoMLTargetEncodingAssistantTest extends water.TestUtil{
 
   // Fixed selection strategy
   @Test
-  public void performAutoTargetEncoding_validation_frame_fixed_application_strategy() {
+  public void performAutoTargetEncoding_validation_frame_fixed_application_strategy() throws NoColumnsToEncodeException{
     String responseColumnName = "survived";
     Frame fr = getPreparedTitanicFrame(responseColumnName);
 

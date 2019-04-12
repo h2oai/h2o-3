@@ -325,7 +325,7 @@ public class TEIntegrationWithAutoMLTest extends water.TestUtil {
   }
 
   @Test
-  public void grid_search_over_selected_categorical_columns_is_configurable() {
+  public void grid_search_over_selected_categorical_columns_is_configurable() throws AutoMLTargetEncodingAssistant.NoColumnsToEncodeException {
 
     boolean[] searchOverColumnsPossibleValues = new boolean[]{true, false};
 
