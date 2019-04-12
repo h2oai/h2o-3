@@ -27,7 +27,10 @@ public class TCPReceiverThreadTest extends TestUtil {
     try (InputStream is = apiURL.openStream()) {
       assertNull(is); // should never happen
     } catch (IOException e) {
-      assertEquals("Connection reset", e.getMessage());
+      String m = e.getMessage();
+      if (!m.equals("Connection reset") && !m.equals("Connection refused")) {
+        throw e;
+      }
     }
 
     ArrayList<Object[]> protocolFailure = ext.getData("protocol-failure");
