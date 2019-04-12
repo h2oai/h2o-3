@@ -28,7 +28,7 @@ public class TCPReceiverThreadTest extends TestUtil {
       assertNull(is); // should never happen
     } catch (IOException e) {
       String m = e.getMessage();
-      if (!m.equals("Connection reset") && !m.equals("Connection refused")) {
+      if (!m.equals("Connection reset") && !m.equals("Connection refused (Connection refused)")) {
         throw e;
       }
     }
