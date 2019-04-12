@@ -3,8 +3,9 @@ package water.runner;
 import water.H2O;
 import water.MRTask;
 
-public class CollectInitKeysTask extends MRTask<CollectInitKeysTask> {
+import java.io.Serializable;
 
+public class CollectInitKeysTask extends MRTask<CollectInitKeysTask> implements Serializable {
 
     @Override
     protected void setupLocal() {

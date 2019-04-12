@@ -4,7 +4,7 @@ import water.*;
 
 import java.util.Set;
 
-public class CleanNewKeysTask extends MRTask<CleanNewKeysTask> {
+public class CleanNewKeysTask extends KeysMRTask<CleanNewKeysTask> {
 
     @Override
     protected void setupLocal() {
@@ -19,8 +19,4 @@ public class CleanNewKeysTask extends MRTask<CleanNewKeysTask> {
         
     }
 
-    private static boolean isIgnorableKeyLeak(final Key key, final Value keyValue) {
-        return keyValue == null || keyValue.isVecGroup() || keyValue.isESPCGroup() || key == Job.LIST
-                || (keyValue.isJob() && keyValue.<Job>get().isStopped());
-    }
 }

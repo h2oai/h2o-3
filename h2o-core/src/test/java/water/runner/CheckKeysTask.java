@@ -5,7 +5,7 @@ import water.util.ArrayUtils;
 
 import java.util.*;
 
-public class CheckKeysTask extends MRTask<CheckKeysTask> {
+public class CheckKeysTask extends KeysMRTask<CheckKeysTask> {
 
     Key[] leakedKeys;
 
@@ -36,10 +36,5 @@ public class CheckKeysTask extends MRTask<CheckKeysTask> {
     @Override
     public void reduce(CheckKeysTask mrt) {
         leakedKeys = ArrayUtils.append(leakedKeys, mrt.leakedKeys);
-    }
-
-    private static boolean isIgnorableKeyLeak(final Key key, final Value keyValue) {
-        return keyValue == null || keyValue.isVecGroup() || keyValue.isESPCGroup() || key == Job.LIST
-                || (keyValue.isJob() && keyValue.<Job>get().isStopped());
     }
 }
