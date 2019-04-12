@@ -1,5 +1,6 @@
 package water.runner;
 
+import org.junit.Ignore;
 import org.junit.internal.runners.statements.RunAfters;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.MultipleFailureException;
@@ -8,6 +9,7 @@ import org.junit.runners.model.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+@Ignore
 public class H2ORunnerAfters extends RunAfters {
 
     private final Statement next;

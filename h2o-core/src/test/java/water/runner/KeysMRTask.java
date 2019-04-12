@@ -1,10 +1,12 @@
 package water.runner;
 
+import org.junit.Ignore;
 import water.Job;
 import water.Key;
 import water.MRTask;
 import water.Value;
 
+@Ignore
 public abstract class KeysMRTask<T extends KeysMRTask<T>> extends MRTask<T> {
 
     /**

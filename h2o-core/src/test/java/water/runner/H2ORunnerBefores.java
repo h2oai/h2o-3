@@ -1,11 +1,13 @@
 package water.runner;
 
+import org.junit.Ignore;
 import org.junit.internal.runners.statements.RunBefores;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.Statement;
 
 import java.util.List;
 
+@Ignore
 public class H2ORunnerBefores extends RunBefores {
     private final List<FrameworkMethod> befores;
     private final Object target;

@@ -1,10 +1,12 @@
 package water.runner;
 
+import org.junit.Ignore;
 import water.*;
 import water.util.ArrayUtils;
 
 import java.util.*;
 
+@Ignore
 public class CheckKeysTask extends KeysMRTask<CheckKeysTask> {
 
     Key[] leakedKeys;

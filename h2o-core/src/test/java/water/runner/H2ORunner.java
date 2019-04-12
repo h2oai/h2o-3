@@ -2,6 +2,7 @@ package water.runner;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.internal.AssumptionViolatedException;
 import org.junit.internal.runners.model.EachTestNotifier;
 import org.junit.runner.Description;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.Set;
 
 
+@Ignore
 public class H2ORunner extends BlockJUnit4ClassRunner {
     private TestClass testClass;
     private HashSet<Key> initKeys;

@@ -1,9 +1,11 @@
 package water.runner;
 
+import org.junit.Ignore;
 import water.*;
 
 import java.util.Set;
 
+@Ignore
 public class CleanNewKeysTask extends KeysMRTask<CleanNewKeysTask> {
 
     @Override
