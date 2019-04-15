@@ -33,6 +33,23 @@ public class EasyPredictModelWrapperWithTargetEncodingTest {
     assertNotEquals((double) row.get("embarked_te"), (double) encodingComponents[0] / encodingComponents[1] + 0.1, 1e-5);
   }
 
+  @Test
+  public void targetEncodingIsDisabledWhenEncodingMapIsNotProvided() {
+    MyAutoEncoderModel model = new MyAutoEncoderModel();
+
+    model._targetEncodingMap = null;
+
+    EasyPredictModelWrapper modelWrapper = new EasyPredictModelWrapper(model);
+
+    RowData row = new RowData();
+    row.put("embarked", "S");
+    row.put("age", 42.0);
+
+    // It is expected that there will be no exceptions and encoding will not take place 
+    modelWrapper.transformWithTargetEncoding(row);
+    assertEquals((String) row.get("embarked"), "S");
+  }
+
 
   private static class MyAutoEncoderModel extends GenModel {
     @Override

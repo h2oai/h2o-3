@@ -100,7 +100,8 @@ public class ModelTest extends TestUtil implements ModelStubs {
     
     // Note:  following block should be used by user if the want to add  encoding map to model and to mojo. 
     // Following iteration over encoding maps and regrouping without folds could be hidden inside `model.addTargetEncodingMap()` 
-    // but we need TargetEncoder in h2o-core package then so that we can reuse its functionality
+    // but we need TargetEncoder in h2o-core package then so that we can reuse its functionality.
+    // We need to move Target encoding to the module that `h2o-core` will be depending on. That way we can hide grouping logic into `addTargetEncoding` method.
     for(Map.Entry<String, Frame> entry : teMap.entrySet()) {
       Frame grouped = TargetEncoder.groupingIgnoringFoldColumn(foldColumnNameForTE, entry.getValue(), entry.getKey());
       entry.getValue().delete();

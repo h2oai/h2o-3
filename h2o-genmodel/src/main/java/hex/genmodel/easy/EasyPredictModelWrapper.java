@@ -572,13 +572,15 @@ public class EasyPredictModelWrapper implements Serializable {
 
   void transformWithTargetEncoding(RowData data) {
     Map<String, Map<String, int[]>> targetEncodingMap = getTargetEncodingMap();
-    for (Map.Entry<String, Map<String, int[]>> columnToEncodingsMap : targetEncodingMap.entrySet()) {
-      String columnName = columnToEncodingsMap.getKey();
-      String originalValue = (String) data.get(columnName);
-      Map<String, int[]> encodings = columnToEncodingsMap.getValue(); 
-      int[] correspondingNumAndDen = encodings.get(originalValue);
-      double calculatedFrequency = (double) correspondingNumAndDen[0] / correspondingNumAndDen[1];
-      data.put(columnName+"_te", calculatedFrequency);
+    if(targetEncodingMap != null) {
+      for (Map.Entry<String, Map<String, int[]>> columnToEncodingsMap : targetEncodingMap.entrySet()) {
+        String columnName = columnToEncodingsMap.getKey();
+        String originalValue = (String) data.get(columnName);
+        Map<String, int[]> encodings = columnToEncodingsMap.getValue();
+        int[] correspondingNumAndDen = encodings.get(originalValue);
+        double calculatedFrequency = (double) correspondingNumAndDen[0] / correspondingNumAndDen[1];
+        data.put(columnName + "_te", calculatedFrequency);
+      }
     }
   }
 
