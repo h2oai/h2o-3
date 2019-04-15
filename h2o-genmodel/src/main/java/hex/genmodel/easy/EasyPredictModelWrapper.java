@@ -572,13 +572,15 @@ public class EasyPredictModelWrapper implements Serializable {
 
   void transformWithTargetEncoding(RowData data) {
     Map<String, Map<String, int[]>> targetEncodingMap = getTargetEncodingMap();
-    for (Map.Entry<String, Map<String, int[]>> columnToEncodingsMap : targetEncodingMap.entrySet()) {
-      String columnName = columnToEncodingsMap.getKey();
-      String originalValue = (String) data.get(columnName);
-      Map<String, int[]> encodings = columnToEncodingsMap.getValue(); 
-      int[] correspondingNumAndDen = encodings.get(originalValue);
-      double calculatedFrequency = (double) correspondingNumAndDen[0] / correspondingNumAndDen[1];
-      data.put(columnName+"_te", calculatedFrequency);
+    if(targetEncodingMap != null) {
+      for (Map.Entry<String, Map<String, int[]>> columnToEncodingsMap : targetEncodingMap.entrySet()) {
+        String columnName = columnToEncodingsMap.getKey();
+        String originalValue = (String) data.get(columnName);
+        Map<String, int[]> encodings = columnToEncodingsMap.getValue();
+        int[] correspondingNumAndDen = encodings.get(originalValue);
+        double calculatedFrequency = (double) correspondingNumAndDen[0] / correspondingNumAndDen[1];
+        data.put(columnName + "_te", calculatedFrequency);
+      }
     }
   }
 
@@ -848,7 +850,8 @@ public class EasyPredictModelWrapper implements Serializable {
       String[] domainValues = m.getDomainValues(index);
       //TODO Target Encoding changes type of the column CAT -> NUM. 
       // `m._domain` is final so we need to check which columns are in the targetEncodingMap and whether transformations were actually applied
-      if (domainValues == null || getTargetEncodingMap().keySet().contains(dataColumnName)) { 
+      boolean encodingWasApplied = getTargetEncodingMap() != null && getTargetEncodingMap().keySet().contains(dataColumnName);
+      if (domainValues == null || encodingWasApplied) { 
         // Column is either numeric or a string (for images or text)
         double value = Double.NaN;
         Object o = data.get(dataColumnName);

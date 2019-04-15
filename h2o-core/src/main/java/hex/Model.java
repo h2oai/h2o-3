@@ -2651,17 +2651,20 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         // Note: Having int[] as a type for value is not allowed in Output class ( it must be @Freezable for distribution).
         // But writing Mojo to the disk does not have such a requirements. 
         // So had to introduce `TEComponents` class to satisfy check in `IcedHashMapBase.write_impl():59line` 
-        IcedHashMap<String, Map<String, int[]>> transformedEncodingMap = new IcedHashMap<>();
-        for (Map.Entry<String, Map<String, TEComponents>> entry : _output._target_encoding_map.entrySet()) {
-          String columnName = entry.getKey();
-          Map<String, TEComponents> encodingsForParticularColumn = entry.getValue();
-          Map<String, int[]> encodingsForColumnMap = new HashMap<>();
-          for (Map.Entry<String, TEComponents> kv : encodingsForParticularColumn.entrySet()) {
-            encodingsForColumnMap.put(kv.getKey(), kv.getValue().getNumeratorAndDenominator());
+        IcedHashMap<String, Map<String, int[]>> transformedEncodingMap = null;
+        if(_output._target_encoding_map != null) {
+          transformedEncodingMap = new IcedHashMap<>();
+          for (Map.Entry<String, Map<String, TEComponents>> entry : _output._target_encoding_map.entrySet()) {
+            String columnName = entry.getKey();
+            Map<String, TEComponents> encodingsForParticularColumn = entry.getValue();
+            Map<String, int[]> encodingsForColumnMap = new HashMap<>();
+            for (Map.Entry<String, TEComponents> kv : encodingsForParticularColumn.entrySet()) {
+              encodingsForColumnMap.put(kv.getKey(), kv.getValue().getNumeratorAndDenominator());
+            }
+            transformedEncodingMap.put(columnName, encodingsForColumnMap);
           }
-          transformedEncodingMap.put(columnName, encodingsForColumnMap);
         }
-        return transformedEncodingMap; 
+        return transformedEncodingMap;
       }
       @Override
       public String uuid() { return String.valueOf(Model.this.checksum()); }

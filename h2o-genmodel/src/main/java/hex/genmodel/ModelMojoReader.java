@@ -122,11 +122,11 @@ public abstract class ModelMojoReader<M extends MojoModel> {
    * Retrieve binary data previously saved to the mojo file using `writeblob(key, blob)`.
    */
   protected byte[] readblob(String name) throws IOException {
-    return _reader.getBinaryFile(name);
+    return getMojoReaderBackend().getBinaryFile(name);
   }
 
   protected boolean exists(String name) {
-    return _reader.exists(name);
+    return getMojoReaderBackend().exists(name);
   }
 
   /**
@@ -143,7 +143,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
    */
   protected Iterable<String> readtext(String name, boolean unescapeNewlines) throws IOException {
     ArrayList<String> res = new ArrayList<>(50);
-    BufferedReader br = _reader.getTextFile(name);
+    BufferedReader br = getMojoReaderBackend().getTextFile(name);
     try {
       String line;
       while (true) {
@@ -181,7 +181,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     _model._priorClassDistrib = readkv("prior_class_distrib");
     _model._modelClassDistrib = readkv("model_class_distrib");
     _model._offsetColumn = readkv("offset_column");
-    _model._targetEncodingMap = parseTargetEncodingMap(_reader.getTextFile("feature_engineering/target_encoding.ini"));
+    _model._targetEncodingMap = parseTargetEncodingMap("feature_engineering/target_encoding.ini");
     _model._mojo_version = ((Number) readkv("mojo_version")).doubleValue();
     checkMaxSupportedMojoVersion();
     readModelData();
@@ -191,7 +191,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
   }
 
   private ModelDescriptor readModelDescriptor() {
-    final JsonObject modelJson = JsonModelDescriptorReader.parseModelJson(_reader);
+    final JsonObject modelJson = JsonModelDescriptorReader.parseModelJson(getMojoReaderBackend());
     ModelDescriptorBuilder modelDescriptorBuilder = new ModelDescriptorBuilder(_model);
 
     final Table model_summary_table = JsonModelDescriptorReader.extractTableFromJson(modelJson, "output.model_summary");
@@ -266,7 +266,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
       int n_elements = Integer.parseInt(info[0]);
       String domfile = info[1];
       String[] domain = new String[n_elements];
-      BufferedReader br = _reader.getTextFile("domains/" + domfile);
+      BufferedReader br = getMojoReaderBackend().getTextFile("domains/" + domfile);
       try {
         String line;
         int id = 0;  // domain elements counter
@@ -286,42 +286,48 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     return domains;
   }
 
-  Map<String, Map<String, int[]>> parseTargetEncodingMap(BufferedReader source) throws IOException {
-    Map<String, Map<String, int[]>> encodingMap = new HashMap<>();
-    Map<String, int[]> encodingsForColumn = null;
-    String sectionName = null;
-    try {
-      String line;
+  Map<String, Map<String, int[]>> parseTargetEncodingMap(String pathToSource) throws IOException {
+    Map<String, Map<String, int[]>> encodingMap = null;
+    
+    if(getMojoReaderBackend().exists(pathToSource)) {
+      BufferedReader source = getMojoReaderBackend().getTextFile("feature_engineering/target_encoding.ini");
 
-      while (true) {
-        line = source.readLine();
-        if (line == null) { // EOF
-          encodingMap.put(sectionName, encodingsForColumn);
-          break;
-        }
-        line = line.trim();
-        if(sectionName == null) {
-          sectionName = matchNewSection(line);
-          encodingsForColumn = new HashMap<>();
-        } else { 
-          String matchResult = matchNewSection(line);
-          if(matchResult!= null) {
-            encodingMap.put(sectionName, encodingsForColumn);
-            encodingsForColumn = new HashMap<>();
-            sectionName = matchResult;
-            continue;
-          }
-          
-          String[] res = line.split("\\s*=\\s*", 2);
-          int[] numAndDenom = processNumeratorAndDenominator(res[1].split(" "));
-          encodingsForColumn.put(res[0], numAndDenom);
-        }
-      }
-      source.close();
-    } finally {
+      encodingMap = new HashMap<>();
+      Map<String, int[]> encodingsForColumn = null;
+      String sectionName = null;
       try {
+        String line;
+
+        while (true) {
+          line = source.readLine();
+          if (line == null) { // EOF
+            encodingMap.put(sectionName, encodingsForColumn);
+            break;
+          }
+          line = line.trim();
+          if (sectionName == null) {
+            sectionName = matchNewSection(line);
+            encodingsForColumn = new HashMap<>();
+          } else {
+            String matchResult = matchNewSection(line);
+            if (matchResult != null) {
+              encodingMap.put(sectionName, encodingsForColumn);
+              encodingsForColumn = new HashMap<>();
+              sectionName = matchResult;
+              continue;
+            }
+
+            String[] res = line.split("\\s*=\\s*", 2);
+            int[] numAndDenom = processNumeratorAndDenominator(res[1].split(" "));
+            encodingsForColumn.put(res[0], numAndDenom);
+          }
+        }
         source.close();
-      } catch (IOException e) { /* ignored */ }
+      } finally {
+        try {
+          source.close();
+        } catch (IOException e) { /* ignored */ }
+      }
     }
     return encodingMap;
   }
@@ -357,5 +363,9 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     if(_model._mojo_version > Double.parseDouble(mojoVersion())){
       throw new IOException(String.format("MOJO version incompatibility - the model MOJO version (%.2f) is higher than the current h2o version (%s) supports. Please, use the older version of h2o to load MOJO model.", _model._mojo_version, mojoVersion()));
     }
+  }
+
+  public MojoReaderBackend getMojoReaderBackend() {
+    return _reader;
   }
 }
