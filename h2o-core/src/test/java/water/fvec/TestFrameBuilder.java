@@ -91,6 +91,23 @@ public class TestFrameBuilder {
 
 
   /**
+   * Sets the vectors types to a single, uniform value for each vector
+   *
+   * @param nvecs   Number of vectors in the frame
+   * @param vecType Uniform type of the vectors
+   */
+  public TestFrameBuilder withUniformVecTypes(final int nvecs, final byte vecType) {
+    byte[] vecTypes = new byte[nvecs];
+    for (int i = 0; i < nvecs; i++) {
+      vecTypes[i] = vecType;
+    }
+
+    this.vecTypes = vecTypes;
+    return this;
+  }
+
+
+  /**
    *  Genarate random double data for a particular column
    * @param column for which to set data
    * @param size size of randomly generated column

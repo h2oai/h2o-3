@@ -1027,5 +1027,33 @@ public class TestUtil extends Iced {
     }
     return result;
   }
+
+  /**
+   * @param f1 Frame to be comapared, not null
+   * @param f2 Frame to be compared, not null
+   * @return True if matrices are precisely the same - number of columns, rows & values at each cell.
+   * @throws IllegalStateException If any inequalities are found
+   */
+  public static boolean compareFrames(final Frame f1, final Frame f2) throws IllegalStateException {
+    Objects.requireNonNull(f1);
+    Objects.requireNonNull(f2);
+
+    if (f1.numCols() != f2.numCols())
+      throw new IllegalStateException(String.format("Number of columns is not the same: {%o, %o}",
+              f1.numCols(), f2.numCols()));
+    if (f1.numRows() != f2.numRows())
+      throw new IllegalStateException(String.format("Number of rows is not the same: {%o, %o}",
+              f1.numRows(), f2.numRows()));
+
+    for (int vecNum = 0; vecNum < f1.numCols(); vecNum++) {
+
+      final Vec f1Vec = f1.vec(vecNum);
+      final Vec f2Vec = f2.vec(vecNum);
+
+      assertVecEquals(f1Vec, f2Vec, 0);
+    }
+
+    return true;
+  }
   
 }
