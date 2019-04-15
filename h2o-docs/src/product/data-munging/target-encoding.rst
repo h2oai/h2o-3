@@ -337,10 +337,11 @@ We do not need to apply any of the overfitting prevention techniques because our
 
    .. code-block:: python
 
-    ext_test = TargetEncoder(x=predictor, y=response, target_encode_map=te_map,
-                              fold_column="fold", holdout_type="none", 
-                              blended_avg=False, noise=0, seed=1234)
-    ext_train.transform(test)
+    ext_test = TargetEncoder(x=predictor, y=response,
+                             fold_column="fold", holdout_type="none", 
+                             blended_avg=False, noise=0, seed=1234)
+    ext_test.fit(test)
+    ext_test.transform(frame=test, holdout_type="none", seed=1234)
 
 
 Train Model with KFold Target Encoding
