@@ -2,6 +2,56 @@
 
 ## H2O
 
+### Yates (3.24.0.2) - 4/16/2019
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yates/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yates/2/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6221'>PUBDEV-6221</a>] - In the R client, fixed a caching issue that caused tests to fail when running commands line by line after running the entire test at once.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6369'>PUBDEV-6369</a>] - Fixed an issue that caused the  h2o.upload_custom_metric to fail when using python3.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6370'>PUBDEV-6370</a>] - Fixed an issue that caused h2o.upload_custom_metric to fail on data that includes strings.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6371'>PUBDEV-6371</a>] - Fixed an issue with the K-Means_Example.flow.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6372'>PUBDEV-6372</a>] - The IP:port that is shown for logging now matches the IP:port that is described in the makeup of the cluster.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6377'>PUBDEV-6377</a>] - In XGBoost, fixed an AIOOB issue that occurred when running large data.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6390'>PUBDEV-6390</a>] - H2O-hive is now published to Maven central.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6393'>PUBDEV-6393</a>] - The Rapids as.factor operation no longer automatically converts non-ASCII strings to sanitized forms.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6399'>PUBDEV-6399</a>] - AUCBuilder now finds the first bin to merge when merging per-chunk histograms.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6409'>PUBDEV-6409</a>] - When running H2O on Hadoop, Hadoop now writes only to its container directory.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6418'>PUBDEV-6418</a>] - Users now receive a warning if two different versions of H2O are trying to communicate on the same node.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6421'>PUBDEV-6421</a>] - Fixed an issue that caused the H2O Python package to fail to load on a fresh install from pip.
+</li>
+</ul>
+
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6310'>PUBDEV-6310</a>] - The new GCP Marketplace offering contains the option to add a network tags script.
+</li>
+</ul>
+     
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6401'>PUBDEV-6401</a>] - Fixed links to Sparkling Water topics in the Sparkling Water FAQ. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6425'>PUBDEV-6425</a>] - In CoxPH chapter, changed the link for the available R demo.
+</li>
+</ul>
+                                                        
+
 ### Yates (3.24.0.1) - 3/31/2019
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yates/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yates/1/index.html</a>
