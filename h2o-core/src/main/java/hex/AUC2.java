@@ -279,6 +279,7 @@ public class AUC2 extends Iced {
       // if its a new histogram bin with 1 count.
       assert !Double.isNaN(pred);
       assert act==0 || act==1;  // Actual better be 0 or 1
+      assert !Double.isNaN(w) && !Double.isInfinite(w);
       int idx = Arrays.binarySearch(_ths,0,_n,pred);
       if( idx >= 0 ) {          // Found already in histogram; merge results
         if( act==0 ) _fps[idx]+=w; else _tps[idx]+=w; // One more count; no change in squared error
@@ -306,7 +307,7 @@ public class AUC2 extends Iced {
           double k = k(idx);
           if (act == 0) _fps[idx] += w; else _tps[idx] += w;
           _sqe[idx] = _sqe[idx] + compute_delta_error(pred, w, _ths[idx], k);
-          _ths[idx] = (_ths[idx] * k + pred * w) / (k + w);
+          _ths[idx] = combine_centers(_ths[idx], k, pred, w);
           return;
         }
       }
@@ -358,6 +359,15 @@ public class AUC2 extends Iced {
         mergeOneBin();
     }
 
+    static double combine_centers(double ths1, double n1, double ths0, double n0) {
+      double center = (ths0 * n0 + ths1 * n1) / (n0 + n1);
+      if (Double.isNaN(center) || Double.isInfinite(center)) {
+        // use a simple average as a fallback
+        return (ths0 + ths1) / 2;
+      }
+      return center;
+    }
+    
     private void mergeOneBin( ) {
       // Too many bins; must merge bins.  Merge into bins with least total
       // squared error.  Horrible slowness linear arraycopy.
@@ -368,7 +378,7 @@ public class AUC2 extends Iced {
       double k0 = k(ssx);
       double k1 = k(ssx+1);
       _sqe[ssx] = _sqe[ssx]+_sqe[ssx+1]+compute_delta_error(_ths[ssx+1],k1,_ths[ssx],k0);
-      _ths[ssx] = (_ths[ssx]*k0 + _ths[ssx+1]*k1) / (k0+k1);
+      _ths[ssx] = combine_centers(_ths[ssx], k0, _ths[ssx+1], k1);
       _tps[ssx] += _tps[ssx+1];
       _fps[ssx] += _fps[ssx+1];
       // Slide over to crush the removed bin at index (ssx+1)
@@ -405,6 +415,8 @@ public class AUC2 extends Iced {
     }
 
     private int find_smallest_impl() {
+      if (_n == 1)
+        return 0;
       double minSQE = Double.MAX_VALUE;
       int minI = -1;
       int n = _n;
@@ -414,6 +426,19 @@ public class AUC2 extends Iced {
         double sqe = _sqe[i]+_sqe[i+1]+derr;
         if( sqe < minSQE ) {
           minI = i;  minSQE = sqe;
+        }
+      }
+      if (minI == -1) {
+        // we couldn't find any bins to merge based on SE (the math can be producing Double.Infinity or Double.NaN)
+        // revert to using a simple distance of the bin centers
+        minI = 0;
+        double minDist = _ths[1] - _ths[0];
+        for (int i = 1; i < n - 1; i++) {
+          double dist = _ths[i + 1] - _ths[i];
+          if (dist < minDist) {
+            minDist = dist;
+            minI = i;
+          }
         }
       }
       return minI;
@@ -435,6 +460,8 @@ public class AUC2 extends Iced {
       // variance here is junk), and also it's not statistically sane to have
       // a model which varies predictions by such a tiny change in thresholds.
       double delta = (float)ths1-(float)ths0;
+      if (delta == 0)
+        return 0;
       // Parallel equation drawn from:
       //  http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
       return delta*delta*n0*n1 / (n0+n1);
