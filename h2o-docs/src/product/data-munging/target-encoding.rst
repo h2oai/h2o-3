@@ -288,10 +288,10 @@ Fit the Target Encoding Map
     fold.set_names(["fold"])
     train = train.cbind(fold)
 
-    predictors = "addr_state"
+    predictor = "addr_state"
 
     from h2o.targetencoder import TargetEncoder    
-    te_map = TargetEncoder(x=predictors, y=response, fold_column="fold", blended_avg= True, inflection_point = 3, smoothing = 1)
+    te_map = TargetEncoder(x=predictor, y=response, fold_column="fold", blended_avg= True, inflection_point = 3, smoothing = 1)
     te_map.fit(train)
 
 Transform Target Encoding
@@ -317,13 +317,6 @@ For our training data, we will use the parameters:
 
    .. code-block:: python
 
-    ext_train = TargetEncoder(x=predictor, 
-                              y=response,
-                              fold_column="fold",
-                              blended_avg=True, 
-                              inflection_point=3,
-                              smoothing=1, 
-                              seed=1234)
     encoded_train = te_map.transform(frame=train, holdout_type="kfold", seed=1234)
 
 **Apply Target Encoding to Testing Dataset**
