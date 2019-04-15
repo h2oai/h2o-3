@@ -1031,7 +1031,7 @@ public class TestUtil extends Iced {
   /**
    *
    * Compares two frames. Two frames are equal if and only if they contain the same number of columns, rows,
-   * and value at each cell (coordinate) is the same. Column names are ignored, as well as chunks sizes and all other
+   * and values at each cell (coordinate) are the same. Column names are ignored, as well as chunks sizes and all other
    * aspects besides those explicitly mentioned.
    * 
    * @param f1 Frame to be compared, not null
