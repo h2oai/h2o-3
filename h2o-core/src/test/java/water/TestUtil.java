@@ -1029,7 +1029,12 @@ public class TestUtil extends Iced {
   }
 
   /**
-   * @param f1 Frame to be comapared, not null
+   *
+   * Compares two frames. Two frames are equal if and only if they contain the same number of columns, rows,
+   * and values at each cell (coordinate) are the same. Column names are ignored, as well as chunks sizes and all other
+   * aspects besides those explicitly mentioned.
+   * 
+   * @param f1 Frame to be compared, not null
    * @param f2 Frame to be compared, not null
    * @return True if matrices are precisely the same - number of columns, rows & values at each cell.
    * @throws IllegalStateException If any inequalities are found
