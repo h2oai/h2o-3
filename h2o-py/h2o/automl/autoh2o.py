@@ -63,6 +63,9 @@ class H2OAutoML(object):
                  keep_cross_validation_models=False,
                  keep_cross_validation_fold_assignment=False,
                  target_encoding=False,
+                 te_early_stopping_ratio=0.5,
+                 te_search_over_columns=False,
+                 te_ratio_of_hyperspace_to_explore=1.0,
                  sort_metric="AUTO",
                  export_checkpoints_dir=None):
         """
@@ -232,6 +235,15 @@ class H2OAutoML(object):
         
         assert_is_type(target_encoding, bool)
         self.te_spec["enabled"] = target_encoding
+        
+        assert_is_type(te_early_stopping_ratio, float)
+        self.te_spec["early_stopping_ratio"] = te_early_stopping_ratio
+        
+        assert_is_type(te_search_over_columns, bool)
+        self.te_spec["search_over_columns"] = te_search_over_columns
+        
+        assert_is_type(te_ratio_of_hyperspace_to_explore, float)
+        self.te_spec["ratio_of_hyperspace_to_explore"] = te_ratio_of_hyperspace_to_explore
 
         self._job = None
         self._leader_id = None

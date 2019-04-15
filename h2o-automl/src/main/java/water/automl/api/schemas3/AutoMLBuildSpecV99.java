@@ -176,6 +176,15 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
 
     @API(help="If automatic target encoding is enabled ot not.", direction=API.Direction.INPUT)
     public boolean enabled;
+    
+    @API(help="Defines how many not improving attempts we will make until stop early .", direction=API.Direction.INPUT)
+    public double early_stopping_ratio;
+    
+    @API(help="Defines whether we want to search for the best combination of columns to encode .", direction=API.Direction.INPUT)
+    public boolean search_over_columns;
+    
+    @API(help="Defines max part of the hyperspace that will be explored.", direction=API.Direction.INPUT)
+    public double ratio_of_hyperspace_to_explore;
   } // class AutoMLTEControl
 
   ////////////////

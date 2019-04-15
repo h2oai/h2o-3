@@ -385,9 +385,75 @@ def test_that_target_encoding_argument_is_disabling_target_encoding():
     amodel._model_json["output"]["variable_importances"].show()
     vi_as_frame = amodel._model_json["output"]["variable_importances"].as_data_frame()
     if "home.dest_te" in vi_as_frame['variable'].tolist():
-        assert False 
+        assert False
 
-    # TO DO  PUBDEV-5676
+def test_that_target_encoding_argument_early_stopping_ratio_is_working():
+    print("Check that te_early_stopping_ratio argument is working")
+    trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic.csv"), header=1)
+    responseColumnName = "survived"
+    trainingFrame[responseColumnName] = trainingFrame[responseColumnName].asfactor()
+
+    aml = H2OAutoML(project_name="py_aml_te_enabled",
+                    nfolds=5, max_models=1, seed=1,
+                    target_encoding=True, te_early_stopping_ratio=0.1)
+    aml.train(y=responseColumnName, training_frame=trainingFrame)
+    #TODO difficult to test it from client. As we use Random Grid search we can't say that with bigger `te_early_stopping_ratio` it will take longer to stop. 
+
+def test_that_target_encoding_argument_te_search_over_columns_is_working():
+    print("Check that te_search_over_columns argument is working")
+    trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic.csv"), header=1)
+    responseColumnName = "survived"
+    trainingFrame[responseColumnName] = trainingFrame[responseColumnName].asfactor()
+
+    start = time.time()
+    aml = H2OAutoML(project_name="py_aml_te_enabled",
+                    nfolds=5, max_models=1, seed=1,
+                    target_encoding=True,
+                    te_early_stopping_ratio=0.01,
+                    te_search_over_columns=False)
+    aml.train(y=responseColumnName, training_frame=trainingFrame)
+    end = time.time()
+
+
+    start_with_search = time.time()
+    aml = H2OAutoML(project_name="py_aml_te_enabled_with_search",
+                    nfolds=5, max_models=1, seed=1,
+                    target_encoding=True,
+                    te_early_stopping_ratio=0.01,
+                    te_search_over_columns=True)
+    aml.train(y=responseColumnName, training_frame=trainingFrame)
+    end_with_search = time.time()
+    assert end-start < end_with_search - start_with_search
+
+def test_that_target_encoding_argument_te_ratio_of_hyperspace_to_explore_is_working():
+    print("Check that te_ratio_of_hyperspace_to_explore argument is working")
+    trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic.csv"), header=1)
+    responseColumnName = "survived"
+    trainingFrame[responseColumnName] = trainingFrame[responseColumnName].asfactor()
+
+    start = time.time()
+    aml = H2OAutoML(project_name="py_aml_te_enabled",
+                    nfolds=5, max_models=1, seed=1,
+                    target_encoding=True, 
+                    te_ratio_of_hyperspace_to_explore=0.01)
+    aml.train(y=responseColumnName, training_frame=trainingFrame)
+    end = time.time()
+
+    start_with_bigger_ratio = time.time()
+    aml = H2OAutoML(project_name="py_aml_te_enabled_with_search",
+                    nfolds=5, max_models=1, seed=1,
+                    target_encoding=True,
+                    te_ratio_of_hyperspace_to_explore=0.05)
+    aml.train(y=responseColumnName, training_frame=trainingFrame)
+    
+    end_with_bigger_ratio = time.time()
+    time_with_smaller_ratio = end - start
+    time_with_bigger_ratio = end_with_bigger_ratio - start_with_bigger_ratio
+    print("time_with_smaller_ratio = " + str(time_with_smaller_ratio))
+    print("time_with_bigger_ratio = " + str(time_with_bigger_ratio))
+    assert time_with_smaller_ratio < time_with_bigger_ratio
+
+        # TO DO  PUBDEV-5676
     # Add a test that checks fold_column like in runit
 
 pyunit_utils.run_tests([
@@ -416,5 +482,8 @@ pyunit_utils.run_tests([
     
     test_that_target_encoding_is_enabled_but_skipped_because_there_is_no_cat_columns,
     test_that_target_encoding_argument_is_enabling_target_encoding,
-    test_that_target_encoding_argument_is_disabling_target_encoding
+    test_that_target_encoding_argument_is_disabling_target_encoding,
+    test_that_target_encoding_argument_early_stopping_ratio_is_working,
+    test_that_target_encoding_argument_te_search_over_columns_is_working,
+    test_that_target_encoding_argument_te_ratio_of_hyperspace_to_explore_is_working
 ])
