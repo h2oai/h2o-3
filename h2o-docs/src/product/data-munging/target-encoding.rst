@@ -288,6 +288,7 @@ Fit the Target Encoding Map
     fold.set_names(["fold"])
     train = train.cbind(fold)
 
+    # Set the predictor to be "addr_state"
     predictor = "addr_state"
 
     from h2o.targetencoder import TargetEncoder    
@@ -337,9 +338,13 @@ We do not need to apply any of the overfitting prevention techniques because our
 
    .. code-block:: python
 
-    ext_test = TargetEncoder(x=predictor, y=response,
-                             fold_column="fold", holdout_type="none", 
-                             blended_avg=False, noise=0, seed=1234)
+    # Add a fold column to the test set
+    fold = test.kfold_column(n_folds=5, seed=1234)
+    fold.set_names(["fold"])
+    test = test.cbind(fold)
+
+    # Create, fit, and apply (transform) the target encoding
+    ext_test = TargetEncoder(x=predictor, y=response, fold_column="fold", blended_avg=False, noise=0, seed=1234)
     ext_test.fit(test)
     ext_test.transform(frame=test, holdout_type="none", seed=1234)
 
