@@ -56,6 +56,9 @@ class TargetEncoder(object):
         """
         Creates instance of the TargetEncoder class and setting parameters that will be used in both `train` and `transform` methods.
         """
+
+        if(type(x) == str or type(x) == int):
+            x = [x]
         self._teColumns = x
         self._responseColumnName = y
         self._foldColumnName = fold_column

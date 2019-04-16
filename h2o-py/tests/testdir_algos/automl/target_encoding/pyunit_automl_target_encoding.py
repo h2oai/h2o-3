@@ -245,7 +245,8 @@ def test_that_both_deprecated_and_new_parameters_are_working_together():
         assert issubclass(w[-1].category, DeprecationWarning)
         assert "Parameter blending_avg is deprecated; use blended_avg instead" == str(w[-1].message)
 
-def test_teColumns_parameter_as_single_element():
+
+def test_teColumns_parameter_as_single_column_name():
     print("Check fit method can accept non-array single column to encode")
     targetColumnName = "survived"
     foldColumnName = "kfold_column" # it is strange that we can't set name for generated kfold
@@ -262,6 +263,30 @@ def test_teColumns_parameter_as_single_element():
     assert encodingMap.map_keys['string'] == [teColumns]
     assert encodingMap.frames[0]['num_rows'] == 583
     
+    
+    trainingFrame = targetEncoder.transform(trainingFrame, holdout_type="kfold", seed=1234)
+    assert "home.dest_te" in trainingFrame.columns
+
+
+def test_teColumns_parameter_as_single_column_index():
+    print("Check fit method can accept non-array single column to encode")
+    targetColumnName = "survived"
+    foldColumnName = "kfold_column" # it is strange that we can't set name for generated kfold
+
+    teColumns = 13 # stands for "home.dest" column
+    targetEncoder = TargetEncoder(x= teColumns, y= targetColumnName,
+                                  fold_column= foldColumnName, blending_avg= True, inflection_point = 3, smoothing = 1)
+    trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic.csv"), header=1)
+
+    trainingFrame[targetColumnName] = trainingFrame[targetColumnName].asfactor()
+    trainingFrame[foldColumnName] = trainingFrame.kfold_column(n_folds=5, seed=1234)
+
+    encodingMap = targetEncoder.fit(frame=trainingFrame)
+    assert encodingMap.map_keys['string'] == [trainingFrame.columns[teColumns]]
+    trainingFrame = targetEncoder.transform(trainingFrame, holdout_type="kfold", seed=1234)
+    assert "home.dest_te" in trainingFrame.columns
+
+
 
 def pubdev_6474_test_more_than_two_columns_to_encode_case():
     import pandas as pd
@@ -367,7 +392,8 @@ testList = [
     test_target_encoding_seed_is_working,
     test_ability_to_pass_column_parameters_as_indexes,
     test_that_both_deprecated_and_new_parameters_are_working_together,
-    test_teColumns_parameter_as_single_element,
+    test_teColumns_parameter_as_single_column_name,
+    test_teColumns_parameter_as_single_column_index,
     pubdev_6474_test_more_than_two_columns_to_encode_case,
     test_blending_params_are_within_valid_range,
     test_that_error_will_be_thrown_if_user_has_not_used_fold_column,
