@@ -292,8 +292,8 @@ Fit the Target Encoding Map
     predictor = "addr_state"
 
     from h2o.targetencoder import TargetEncoder    
-    te_map = TargetEncoder(x=predictor, y=response, fold_column="fold", blended_avg= True, inflection_point = 3, smoothing = 1)
-    te_map.fit(train)
+    target_encoder = TargetEncoder(x=predictor, y=response, fold_column="fold", blended_avg= True, inflection_point = 3, smoothing = 1)
+    target_encoder.fit(train)
 
 Transform Target Encoding
 '''''''''''''''''''''''''
@@ -311,48 +311,66 @@ For our training data, we will use the parameters:
 .. example-code::
    .. code-block:: r
 
-    ext_train <- h2o.target_encode_transform(train, x = list("addr_state"), y = response, 
+    encoded_train <- h2o.target_encode_transform(train, x = list("addr_state"), y = response, 
                                              target_encode_map = te_map, holdout_type = "kfold",
                                              fold_column="fold", blended_avg = TRUE, 
                                              inflection_point=3, smoothing=1, seed = 1234)
 
    .. code-block:: python
 
-    encoded_train = te_map.transform(frame=train, holdout_type="kfold", seed=1234)
+    ## Create a fold column in the train dataset
+    #fold = train.kfold_column(n_folds=5, seed=1234)
+    #fold.set_names(["fold"])
+    #train = train.cbind(fold)
+    #
+    ## Set the predictor to be "addr_state"
+    #predictor = "addr_state"
+    #
+    #from h2o.targetencoder import TargetEncoder    
+    #target_encoder = TargetEncoder(x=predictor, y=response, fold_column="fold", blended_avg= True, inflection_point = 3, smoothing = 1)
+    #target_encoder.fit(train)
+    
+    # By default noise = 0.01 will be applied if user does not provide it 
+    encoded_train = target_encoder.transform(frame=train, holdout_type="kfold", seed=1234)
 
 **Apply Target Encoding to Testing Dataset**
 
 We do not need to apply any of the overfitting prevention techniques because our target encoding map was created on the training data, not the testing data.
 
 -  ``holdout_type="none"``
--  ``blended_avg=FALSE``
+-  ``blended_avg=TRUE``
 -  ``noise=0`` 
 
 .. example-code::
    .. code-block:: r
 
-    ext_test <- h2o.target_encode_transform(test, x = list("addr_state"), y = response,
+    encoded_test <- h2o.target_encode_transform(test, x = list("addr_state"), y = response,
                                             target_encode_map = te_map, holdout_type = "none",
                                             fold_column = "fold", noise = 0,
-                                            blended_avg = FALSE, seed=1234)
+                                            blended_avg = TRUE, seed=1234)
 
    .. code-block:: python
 
-    # Add a fold column to the test set
-    fold = test.kfold_column(n_folds=5, seed=1234)
-    fold.set_names(["fold"])
-    test = test.cbind(fold)
-
-    # Create, fit, and apply (transform) the target encoding
-    ext_test = TargetEncoder(x=predictor, y=response, fold_column="fold", blended_avg=False, noise=0, seed=1234)
-    ext_test.fit(test)
-    ext_test.transform(frame=test, holdout_type="none", seed=1234)
+    ## Create a fold column in the train dataset
+    #fold = train.kfold_column(n_folds=5, seed=1234)
+    #fold.set_names(["fold"])
+    #train = train.cbind(fold)
+    #
+    ## Set the predictor to be "addr_state"
+    #predictor = "addr_state"
+    #
+    #from h2o.targetencoder import TargetEncoder    
+    #target_encoder = TargetEncoder(x=predictor, y=response, fold_column="fold", blended_avg= True, inflection_point = 3, smoothing = 1)
+    #target_encoder.fit(train)
+    
+    # Applying encoding map that was generated on `train` data to the `test`. Transform method will use `blended_avg` argument with value that was set for `target_encoder` object
+    encoded_test = target_encoder.transform(frame=test, holdout_type="none", , noise=0.0, seed=1234)
 
 
 Train Model with KFold Target Encoding
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Train a new model, this time replacing the ``addr_state`` with the ``TargetEncode_addr_state``.
+Train a new model, this time replacing the ``addr_state`` with the ``addr_state_te``.
 
 .. example-code::
    .. code-block:: r
@@ -364,7 +382,7 @@ Train a new model, this time replacing the ``addr_state`` with the ``TargetEncod
 
     gbm_state_te <- h2o.gbm(x = predictors, 
                             y = response, 
-                            training_frame = ext_train, 
+                            training_frame = encoded_train, 
                             validation_frame = ext_test, 
                             score_tree_interval = 10, 
                             ntrees = 500,
@@ -387,7 +405,7 @@ Train a new model, this time replacing the ``addr_state`` with the ``TargetEncod
                             stopping_tolerance = 0.001,
                             model_id = "gbm_state_te.hex")
     gbm_state_te.train(x=predictors, y=response, 
-                      training_frame=ext_train, validation_frame=ext_test)
+                      training_frame=encoded_train, validation_frame=encoded_test)
 
 The AUC of the first and second model is shown below:
 
