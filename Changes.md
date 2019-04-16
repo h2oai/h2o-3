@@ -25,6 +25,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yates/2/index.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6393'>PUBDEV-6393</a>] - The Rapids as.factor operation no longer automatically converts non-ASCII strings to sanitized forms.
 </li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6395'>PUBDEV-6395</a>] - Fixed an AIOOB error in the AUC builder. 
+</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6399'>PUBDEV-6399</a>] - AUCBuilder now finds the first bin to merge when merging per-chunk histograms.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6409'>PUBDEV-6409</a>] - When running H2O on Hadoop, Hadoop now writes only to its container directory.
