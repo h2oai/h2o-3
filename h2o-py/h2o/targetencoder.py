@@ -10,6 +10,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from h2o.expr import ExprNode
 from h2o.frame import H2OFrame
 from h2o.utils.typechecks import (assert_is_type)
+from h2o import get_frame
 import warnings
 
 __all__ = ("TargetEncoder", )
@@ -115,3 +116,6 @@ class TargetEncoder(object):
                                             self._responseColumnName, self._foldColumnName,
                                             self._blending, self._inflectionPoint, self._smoothing,
                                             noise, seed))
+
+    def encoding_map_frames(self):
+        return list(map(lambda x: get_frame(x['key']['name']), self._encodingMap.frames))

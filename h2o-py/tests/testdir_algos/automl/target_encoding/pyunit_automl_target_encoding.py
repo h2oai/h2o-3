@@ -283,7 +283,27 @@ def test_teColumns_parameter_as_single_column_index():
     encodingMap = targetEncoder.fit(frame=trainingFrame)
     assert encodingMap.map_keys['string'] == [trainingFrame.columns[teColumns]]
     trainingFrame = targetEncoder.transform(trainingFrame, holdout_type="kfold", seed=1234)
-    assert "home.dest_te" in trainingFrame.columns 
+    assert "home.dest_te" in trainingFrame.columns
+
+
+def test_that_encoding_maps_are_accessible_as_frames():
+    print("Check that we can access encoding maps as data frames")
+    targetColumnName = "survived"
+    foldColumnName = "kfold_column" # it is strange that we can't set name for generated kfold
+
+    teColumns = "home.dest"
+    targetEncoder = TargetEncoder(x= teColumns, y= targetColumnName,
+                                  fold_column= foldColumnName, blending_avg= True, inflection_point = 3, smoothing = 1)
+    trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic.csv"), header=1)
+
+    trainingFrame[targetColumnName] = trainingFrame[targetColumnName].asfactor()
+    trainingFrame[foldColumnName] = trainingFrame.kfold_column(n_folds=5, seed=1234)
+
+    targetEncoder.fit(frame=trainingFrame)
+
+    encodingMapFramesKeys = targetEncoder.encoding_map_frames()
+
+    assert len([value for value in encodingMapFramesKeys[0].columns if value in teColumns]) > 0
 
 
 testList = [
@@ -298,7 +318,8 @@ testList = [
     test_ability_to_pass_column_parameters_as_indexes,
     test_that_both_deprecated_and_new_parameters_are_working_together,
     test_teColumns_parameter_as_single_column_name,
-    test_teColumns_parameter_as_single_column_index
+    test_teColumns_parameter_as_single_column_index,
+    test_that_encoding_maps_are_accessible_as_frames
 ]
 
 if __name__ == "__main__":
