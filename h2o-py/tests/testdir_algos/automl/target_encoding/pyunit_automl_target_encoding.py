@@ -381,6 +381,26 @@ def test_that_warning_will_be_shown_if_we_add_noise_for_none_strategy():
         assert "Attempt to apply noise with holdout_type=`none` strategy" == str(w[-1].message)
 
 
+def test_that_encoding_maps_are_accessible_as_frames():
+    print("Check that we can access encoding maps as data frames")
+    targetColumnName = "survived"
+    foldColumnName = "kfold_column" # it is strange that we can't set name for generated kfold
+
+    teColumns = "home.dest"
+    targetEncoder = TargetEncoder(x= teColumns, y= targetColumnName,
+                                  fold_column= foldColumnName, blending_avg= True, inflection_point = 3, smoothing = 1)
+    trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic.csv"), header=1)
+
+    trainingFrame[targetColumnName] = trainingFrame[targetColumnName].asfactor()
+    trainingFrame[foldColumnName] = trainingFrame.kfold_column(n_folds=5, seed=1234)
+
+    targetEncoder.fit(frame=trainingFrame)
+
+    encodingMapFramesKeys = targetEncoder.encoding_map_frames()
+
+    assert len([value for value in encodingMapFramesKeys[0].columns if value in teColumns]) > 0
+
+
 testList = [
     test_target_encoding_parameters,
     test_target_encoding_fit_method,
@@ -397,7 +417,8 @@ testList = [
     pubdev_6474_test_more_than_two_columns_to_encode_case,
     test_blending_params_are_within_valid_range,
     test_that_error_will_be_thrown_if_user_has_not_used_fold_column,
-    test_that_warning_will_be_shown_if_we_add_noise_for_none_strategy
+    test_that_warning_will_be_shown_if_we_add_noise_for_none_strategy,
+    test_that_encoding_maps_are_accessible_as_frames
 ]
 
 if __name__ == "__main__":

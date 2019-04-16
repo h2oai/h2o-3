@@ -53,12 +53,6 @@ def titanic_with_te_kfoldstrategy(frame = None, seeds = None):
                                     fold_column= foldColumnName, blended_avg= True, inflection_point = 3, smoothing = 1)
       targetEncoder.fit(frame=ds['train'])
 
-      encodingMapFramesKeys = list(map(lambda x: h2o.get_frame(x['key']['name']), targetEncoder._encodingMap.frames))
-
-      encodingMapFramesKeys[0].describe()
-      encodingMapFramesKeys[1].describe()
-      encodingMapFramesKeys[2].describe()
-
       encodedTrain = targetEncoder.transform(frame=ds['train'], holdout_type="kfold", seed=1234)
       encodedValid = targetEncoder.transform(frame=ds['valid'], holdout_type="none", noise=0.0)
       encodedTest = targetEncoder.transform(frame=ds['test'], holdout_type="none", noise=0.0)
