@@ -58,7 +58,8 @@ public abstract class ModelMojoReader<M extends MojoModel> {
       ModelMojoReader mmr = ModelMojoFactory.INSTANCE.getMojoReader(algo);
       mmr._lkv = info;
       mmr._reader = reader;
-      mmr.readAll(readModelDescriptor);
+      boolean isTargetEncodingUsed = info.containsKey("target_encoding_is_used") && ((RawValue) info.get("target_encoding_is_used")).parse(false);
+      mmr.readAll(readModelDescriptor, isTargetEncodingUsed);
       return mmr._model;
     } finally {
       if (reader instanceof Closeable)
@@ -165,7 +166,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
   // Private
   //--------------------------------------------------------------------------------------------------------------------
 
-  private void readAll(final boolean readModelDescriptor) throws IOException {
+  private void readAll(final boolean readModelDescriptor, final boolean readTargetEncoding) throws IOException {
     String[] columns = (String[]) _lkv.get("[columns]");
     String[][] domains = parseModelDomains(columns.length);
     boolean isSupervised = readkv("supervised");
@@ -181,12 +182,14 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     _model._priorClassDistrib = readkv("prior_class_distrib");
     _model._modelClassDistrib = readkv("model_class_distrib");
     _model._offsetColumn = readkv("offset_column");
-    _model._targetEncodingMap = parseTargetEncodingMap("feature_engineering/target_encoding.ini");
     _model._mojo_version = ((Number) readkv("mojo_version")).doubleValue();
     checkMaxSupportedMojoVersion();
     readModelData();
     if (readModelDescriptor) {
       _model._modelDescriptor = readModelDescriptor();
+    }
+    if (readTargetEncoding) {
+      _model._targetEncodingMap = parseTargetEncodingMap("feature_engineering/target_encoding.ini");
     }
   }
 

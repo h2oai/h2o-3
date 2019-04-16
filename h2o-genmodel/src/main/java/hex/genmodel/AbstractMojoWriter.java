@@ -184,6 +184,7 @@ public abstract class AbstractMojoWriter {
     writekv("default_threshold", model.defaultThreshold());
     writekv("prior_class_distrib", Arrays.toString(model.priorClassDist()));
     writekv("model_class_distrib", Arrays.toString(model.modelClassDist()));
+    writekv("target_encoding_is_used", model.targetEncodingMap() != null);
     writekv("timestamp", model.timestamp());
   }
 
