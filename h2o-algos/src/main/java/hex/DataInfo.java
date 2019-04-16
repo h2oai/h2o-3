@@ -521,7 +521,7 @@ public class DataInfo extends Keyed<DataInfo> {
       ignoredCols[ignoredCnt++] = k+_cats;
     Frame f = new Frame(_adaptedFrame.names().clone(),_adaptedFrame.vecs().clone());
     if(ignoredCnt > 0) f.remove(Arrays.copyOf(ignoredCols,ignoredCnt));
-    assert catLvls.length < f.numCols():"cats = " + catLvls.length + " numcols = " + f.numCols();
+    assert catLvls.length <= f.numCols():"cats = " + catLvls.length + " numcols = " + f.numCols();
     double [] normSub = null;
     double [] normMul = null;
     int id = Arrays.binarySearch(cols,numStart());
