@@ -58,6 +58,9 @@ class TargetEncoder(object):
             threshold between the posterior and the prior probability.
 
         """
+
+        if(type(x) == str or type(x) == int):
+            x = [x]
         self._teColumns = x
         self._responseColumnName = y
         self._foldColumnName = fold_column
