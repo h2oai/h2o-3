@@ -35,6 +35,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yates/2/index.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6421'>PUBDEV-6421</a>] - Fixed an issue that caused the H2O Python package to fail to load on a fresh install from pip.
 </li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6433'>PUBDEV-6433</a>] - Fixed an error that occurred when running multiple concurrent Group-By operations.
+</li>
 </ul>
 
 <h4>Improvement</h4>
@@ -47,6 +49,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yates/2/index.
 <h4>Docs</h4>
 
 <ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6040'>PUBDEV-6040</a>] - Added Python examples to the Target Encoding topic.
+</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6401'>PUBDEV-6401</a>] - Fixed links to Sparkling Water topics in the Sparkling Water FAQ. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6425'>PUBDEV-6425</a>] - In CoxPH chapter, changed the link for the available R demo.
