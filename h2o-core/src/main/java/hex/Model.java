@@ -1210,7 +1210,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         } else if (expensive) {   // generate warning even for response columns.  Other tests depended on this.
           final double defval;
           if (isWeights) defval = 1; // note: even though computeMetrics is false we should still have sensible weights (GLM skips rows with NA weights)
-          else if (isFold) defval = 0;
+          else if (isFold && domains[i] == null) defval = 0;
           else {
             defval = parms.missingColumnsType();
             convNaN++;
@@ -1218,14 +1218,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           vec = test.anyVec().makeCon(defval);
           toDelete.put(vec._key, "adapted missing vectors");
           String str = "Test/Validation dataset is missing column '" + names[i] + "': substituting in a column of " + defval;
-          if (isResponse || isWeights)
+          if (isResponse || isWeights || isFold)
             Log.info(str); // we are doing a "pure" predict (computeMetrics is false), don't complain to the user
           else
             msgs.add(str);
         }
       }
-      if( vec != null ) {          // I have a column with a matching name
-        if( domains[i] != null ) { // Model expects an categorical
+      if( vec != null) {          // I have a column with a matching name
+        if( domains[i] != null) { // Model expects an categorical
           if (vec.isString())
             vec = VecUtils.stringToCategorical(vec); //turn a String column into a categorical column (we don't delete the original vec here)
           if( expensive && vec.domain() != domains[i] && !Arrays.equals(vec.domain(),domains[i]) ) { // Result needs to be the same categorical
