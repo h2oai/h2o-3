@@ -8,7 +8,6 @@ import water.rapids.Merge;
 import water.rapids.Rapids;
 import water.rapids.Val;
 import water.rapids.ast.prims.mungers.AstGroup;
-import water.util.FrameUtils;
 import water.util.Log;
 import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.*;
 
@@ -138,29 +137,21 @@ public class TargetEncoder {
       AstGroup.AGG[] aggs = new AstGroup.AGG[2];
 
       AstGroup.NAHandling na = AstGroup.NAHandling.ALL;
-      aggs[0] = new AstGroup.AGG(AstGroup.FCN.sum, targetIndex, na, (int) fr.vec(targetIndex).max() + 1);
-      aggs[1] = new AstGroup.AGG(AstGroup.FCN.nrow, targetIndex, na, (int) fr.vec(targetIndex).max() + 1);
+      aggs[0] = new AstGroup.AGG(AstGroup.FCN.sum, targetIndex, na, -1);
+      aggs[1] = new AstGroup.AGG(AstGroup.FCN.nrow, targetIndex, na, -1);
 
-      Frame result = new AstGroup().performGroupingWithAggregations(fr, groupByColumns, aggs, -1).getFrame();
+      Frame result = new AstGroup().performGroupingWithAggregations(fr, groupByColumns, aggs).getFrame();
       return register(result);
     }
 
-    // This method is mutating data frame
     Frame ensureTargetColumnIsBinaryCategorical(Frame data, String targetColumnName) {
-        int targetIndex = data.find(targetColumnName);
-        if (data.vec(targetIndex).isCategorical()){
-            Vec targetVec = data.vec(targetIndex);
-            if(targetVec.cardinality() == 2) {
-                return data;
-            }
-            else {
-                throw new IllegalStateException("`target` must be a binary vector. We do not support multi-class target case for now");
-            }
-        }
-        else {
+        Vec targetVec = data.vec(targetColumnName);
+        if (!targetVec.isCategorical())
           throw new IllegalStateException("`target` must be a binary categorical vector. We do not support multi-class and continuos target case for now");
-        }
-    };
+        if (targetVec.cardinality() != 2)
+          throw new IllegalStateException("`target` must be a binary vector. We do not support multi-class target case for now");
+        return data;
+    }
 
 
   public Map<String, Frame> prepareEncodingMap(Frame data, String targetColumnName, String foldColumnName) {
@@ -236,10 +227,10 @@ public class TargetEncoder {
       AstGroup.AGG[] aggs = new AstGroup.AGG[2];
 
       AstGroup.NAHandling na = AstGroup.NAHandling.ALL;
-      aggs[0] = new AstGroup.AGG(AstGroup.FCN.sum, numeratorColumnIndex, na, (int) data.vec(numeratorColumnIndex).max() + 1);
-      aggs[1] = new AstGroup.AGG(AstGroup.FCN.sum, denominatorColumnIndex, na, (int) data.vec(denominatorColumnIndex).max() + 1);
+      aggs[0] = new AstGroup.AGG(AstGroup.FCN.sum, numeratorColumnIndex, na, -1);
+      aggs[1] = new AstGroup.AGG(AstGroup.FCN.sum, denominatorColumnIndex, na, -1);
 
-      Frame result = new AstGroup().performGroupingWithAggregations(data, new int[]{teColumnIndex}, aggs, -1).getFrame();
+      Frame result = new AstGroup().performGroupingWithAggregations(data, new int[]{teColumnIndex}, aggs).getFrame();
       return register(result);
     }
 
