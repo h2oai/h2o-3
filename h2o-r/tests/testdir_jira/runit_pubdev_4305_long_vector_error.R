@@ -11,6 +11,7 @@ function() {
     dataH2o = as.h2o(data)
     dim(dataH2o)
     dataDF = as.data.frame(dataH2o)
+    #expect_true(all(data == dataDF))
 }
 
 doTest("PUBDEV-4305", pubdev.4305.test)

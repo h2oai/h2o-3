@@ -3395,6 +3395,29 @@ as.h2o.Matrix <- function(x, destination_frame="", ...) {
 as.data.frame.H2OFrame <- function(x, ...) {
   # Force loading of the types
   .fetch.data(x,1L)
+    
+  # Get column types from H2O to set the dataframe types correctly
+  colClasses <- attr(x, "types")
+  colClasses <- gsub("numeric", NA, colClasses) # let R guess the appropriate numeric type
+  colClasses <- gsub("int", NA, colClasses) # let R guess the appropriate numeric typepodobne jako mame
+  colClasses <- gsub("real", NA, colClasses) # let R guess the appropriate numeric type
+  colClasses <- gsub("enum", "factor", colClasses)
+  colClasses <- gsub("uuid", "character", colClasses)
+  colClasses <- gsub("string", "character", colClasses)
+  colClasses <- gsub("time", NA, colClasses) # change to Date after ingestion
+
+  # Convert all date columns to POSIXct
+  dates <- attr(x, "types") %in% "time"
+
+  MAX_INTEGER_LIMIT <- 2147483647
+
+  nCol <- attr(x, "ncol")
+  nRow <- attr(x, "nrow")
+    
+  #if(nCol * nRow > MAX_INTEGER_LIMIT){
+  #  stop("It is not possible convert H2OFrame to data.frame/data.table. The H2OFrame is bigger than vector size limit for R (number columns * number of rows have to be less than 2147483647)")  
+  #}  
+    
   # Versions of R prior to 3.1 should not use hex string.
   # Versions of R including 3.1 and later should use hex string.
   use_hex_string <- getRversion() >= "3.1"
@@ -3404,41 +3427,57 @@ as.data.frame.H2OFrame <- function(x, ...) {
                       '&hex_string=', as.numeric(use_hex_string))
   
   verbose <- getOption("h2o.verbose", FALSE)
+    
   if (verbose) pt <- proc.time()[[3]]
-  ttt <- .h2o.doSafeGET(urlSuffix = urlSuffix)
-  if (verbose) cat(sprintf("fetching from h2o frame to R using '.h2o.doSafeGET' took %.2fs\n", proc.time()[[3]]-pt))
-  n <- nchar(ttt)
+  payload <- .h2o.doSafeGET(urlSuffix = urlSuffix, binary=TRUE)
+  payloadSize <- object.size(payload)
 
-  # Delete last 1 or 2 characters if it's a newline.
-  # Handle \r\n (for windows) or just \n (for not windows).
-  chars_to_trim <- 0L
-  if (n >= 2L) {
-    c <- substr(ttt, n, n)
-    if (c == "\n") chars_to_trim <- chars_to_trim + 1L
-    if (chars_to_trim > 0L) {
-      c <- substr(ttt, n-1L, n-1L)
-      if (c == "\r") chars_to_trim <- chars_to_trim + 1L
+# Delete last 1 or 2 characters if it's a newline.
+# Handle \r\n (for windows) or just \n (for not windows).
+  chtt <- 0  
+  calcCharsToTrim <- function(last, secondLast){
+    charsToTrim <- 0
+    if (last == "\n") charsToTrim  <- charsToTrim  + 1L
+    if (charsToTrim > 0L) {
+      if (secondLast == "\r") charsToTrim <- charsToTrim + 1L
     }
-  }
-
-  if (chars_to_trim > 0L) {
-    ttt2 <- substr(ttt, 1L, n-chars_to_trim)
-    ttt <- ttt2
-  }
-
-  # Get column types from H2O to set the dataframe types correctly
-  colClasses <- attr(x, "types")
-  colClasses <- gsub("numeric", NA, colClasses) # let R guess the appropriate numeric type
-  colClasses <- gsub("int", NA, colClasses) # let R guess the appropriate numeric type
-  colClasses <- gsub("real", NA, colClasses) # let R guess the appropriate numeric type
-  colClasses <- gsub("enum", "factor", colClasses)
-  colClasses <- gsub("uuid", "character", colClasses)
-  colClasses <- gsub("string", "character", colClasses)
-  colClasses <- gsub("time", NA, colClasses) # change to Date after ingestion
+    charsToTrim
+  }  
   
-  # Convert all date columns to POSIXct
-  dates <- attr(x, "types") %in% "time"
+  if(payloadSize < MAX_INTEGER_LIMIT)  {
+    useCon <- TRUE
+    ttt <- rawToChar(payload)
+    n <- nchar(n)
+    if(n >= 2){  
+      chtt <- calcCharsToTrim(substr(ttt, n, n), substr(ttt, n-1, n-1))
+    }
+    if (chtt > 0) {
+      ttt <- substr(ttt, 1, n-chtt)
+    }
+  } else {
+    # Data are too big to use the rawToChar method - instead, save binary data to a temporary file 
+    useCon <- FALSE
+    ttt <- tempfile("writebigdata", tempdir(), ".csv")
+    outputFile <- file(ttt, "wb")  
+    from <- 1
+    n <- length(payload)
+    # The chunk size should be optimal to distribute data into similarly sized chunks
+    # to avoid the last chunk has only a small amount of data 
+    chunkSize <- ceiling(n/ceiling(n/MAX_INTEGER_LIMIT)) 
+    conFlag <- TRUE
+    while(conFlag){
+      to <- from + chunkSize
+      if(to >= n)  {
+          to <- n - calcCharsToTrim(rawToChar(payload[n]), rawToChar(payload[n-1]))
+          conFlag <- FALSE
+      }
+      writeBin(payload[from:to], outputFile)
+      from <- to + 1
+    }
+    close(outputFile)
+  }
   
+  if (verbose) cat(sprintf("fetching from h2o frame to R using '.h2o.doSafeGET' took %.2fs\n", proc.time()[[3]]-pt))
   if (verbose) pt <- proc.time()[[3]]
   if (getOption("h2o.fread", TRUE) && use.package("data.table")) {
     df <- data.table::fread(ttt, blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, showProgress=FALSE, data.table=FALSE, ...)
@@ -3447,8 +3486,12 @@ as.data.frame.H2OFrame <- function(x, ...) {
     fun <- "fread"
   } else {
     # Substitute NAs for blank cells rather than skipping
-    df <- read.csv((tcon <- textConnection(ttt)), blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, ...)
-    close(tcon)
+    if(useCon){
+      df <- read.csv((tcon <- textConnection(ttt)), blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, ...)
+      close(tcon)
+    } else {
+      df <- read.csv(ttt, blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, ...)  
+    }
     if (sum(dates))
       for (i in which(dates)) class(df[[i]]) = "POSIXct"
     fun <- "read.csv"
