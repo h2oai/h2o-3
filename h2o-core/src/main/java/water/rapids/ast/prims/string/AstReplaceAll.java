@@ -9,7 +9,8 @@ import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 
-import java.util.Locale;
+import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * Accepts a frame with a single string column, a regex pattern string, a replacement substring,
@@ -65,16 +66,27 @@ public class AstReplaceAll extends AstPrimitive {
   }
 
   private Vec replaceAllCategoricalCol(Vec vec, String pattern, String replacement, boolean ignoreCase) {
+    final Pattern compiledPattern = Pattern.compile(pattern); // Compile the pattern once before replacement
     String[] doms = vec.domain().clone();
-    for (int i = 0; i < doms.length; ++i)
+    Set<String> newDomainSet = new HashSet<>(); // The pattern might create multiple domains with the same name
+    for (int i = 0; i < doms.length; ++i) {
       doms[i] = ignoreCase
-          ? doms[i].toLowerCase(Locale.ENGLISH).replaceAll(pattern, replacement)
-          : doms[i].replaceAll(pattern, replacement);
+              ? compiledPattern.matcher(doms[i].toLowerCase(Locale.ENGLISH)).replaceAll(replacement)
+              : compiledPattern.matcher(doms[i]).replaceAll(replacement);
+      newDomainSet.add(doms[i]);
+    }
 
-    return vec.makeCopy(doms);
+    if (newDomainSet.size() == doms.length) {
+      // Avoid remapping if cardinality is the same
+      newDomainSet = null;
+      return vec.makeCopy(doms);
+    } else {
+      newDomainSet = null;
+      return vec.remapDomain(doms);
+    }
   }
 
-  private Vec replaceAllStringCol(Vec vec, String pat, String rep, boolean ic) {
+  private Vec replaceAllStringCol(Vec vec, final String pat, String rep, boolean ic) {
     final String pattern = pat;
     final String replacement = rep;
     final boolean ignoreCase = ic;
@@ -89,14 +101,15 @@ public class AstReplaceAll extends AstPrimitive {
 //          ((CStrChunk) chk).asciiReplaceAll(newChk);
 //        } else { //UTF requires Java string methods for accuracy
           BufferedString tmpStr = new BufferedString();
+          final Pattern compiledPattern = Pattern.compile(pattern); // Compile the pattern once before replacements
           for (int i = 0; i < chk._len; i++) {
             if (chk.isNA(i))
               newChk.addNA();
             else {
               if (ignoreCase)
-                newChk.addStr(chk.atStr(tmpStr, i).toString().toLowerCase(Locale.ENGLISH).replaceAll(pattern, replacement));
+                newChk.addStr(compiledPattern.matcher(chk.atStr(tmpStr, i).toString().toLowerCase(Locale.ENGLISH)).replaceAll(replacement));
               else
-                newChk.addStr(chk.atStr(tmpStr, i).toString().replaceAll(pattern, replacement));
+                newChk.addStr(compiledPattern.matcher(chk.atStr(tmpStr, i).toString()).replaceAll(replacement));
             }
           }
         }

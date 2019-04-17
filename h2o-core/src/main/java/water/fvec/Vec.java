@@ -5,9 +5,7 @@ import water.nbhm.NonBlockingHashMap;
 import water.parser.BufferedString;
 import water.util.*;
 
-import java.util.Arrays;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
 
 /** A distributed vector/array/column of uniform data.
  *
@@ -469,6 +467,70 @@ public class Vec extends Keyed<Vec> {
     v.setMeta(type,domain);
     DKV.put(v);
     return v;
+  }
+
+  public Vec remapDomain(final String[] newDomainValues) {
+    // Sanity checks
+    Objects.requireNonNull(newDomainValues);
+    if (_domain == null)
+      throw new UnsupportedOperationException("Unable to remap domain values on a non-categorical vector.");
+    if (newDomainValues.length != _domain.length) {
+      throw new IllegalArgumentException(String.format("For each of original domain levels, there must be a new mapping." +
+              "There are %o domain levels, however %o mappings were supplied.", _domain.length, newDomainValues.length));
+    }
+
+    // Create a map of new domain values pointing to indices in the array of old domain values in this vec
+    final Map<String, Set<Integer>> map = new HashMap<>();
+    for (int i = 0; i < newDomainValues.length; i++) {
+      Set<Integer> indices = map.get(newDomainValues[i]);
+      if (indices == null) {
+        indices = new HashSet<>(1);
+        indices.add(i);
+        map.put(newDomainValues[i], indices);
+      } else {
+        indices.add(i);
+      }
+    }
+
+    // Map from the old domain to the new domain
+    // There might actually be less domain levels after the transformation
+    final int[] indicesMap = MemoryManager.malloc4(_domain.length);
+    final String[] reducedDomain = new String[map.size()];
+    int reducedDomainIdx = 0;
+    for (String e : map.keySet()) {
+      final Set<Integer> oldDomainIndices = map.get(e);
+      reducedDomain[reducedDomainIdx] = e;
+      for (int idx : oldDomainIndices) {
+        indicesMap[idx] = reducedDomainIdx;
+      }
+      reducedDomainIdx++;
+    }
+
+    final Vec copy = makeCopy();
+    new RemapDomainTask(indicesMap)
+            .doAll(copy);
+    copy.setMeta(Vec.T_CAT, reducedDomain);
+    return copy;
+  }
+
+  /**
+   * Maps old categorical values (indices to old array of domain levels) to new categorical values
+   * (indices to a new array with new domain levels). Uses a simple array for mapping, 
+   */
+  private class RemapDomainTask extends MRTask<RemapDomainTask> {
+
+    private final int[] _domainIndicesMap;
+
+    public RemapDomainTask(int[] domainIndicesMap) {
+      _domainIndicesMap = domainIndicesMap;
+    }
+
+    @Override
+    public void map(Chunk c) {
+      for (int i = 0; i < c.len(); i++) {
+        c.set(i, _domainIndicesMap[(int) c.at8(i)]);
+      }
+    }
   }
 
   public Vec doCopy() {
