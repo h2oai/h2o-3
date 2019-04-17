@@ -324,9 +324,8 @@ h2o.import_hive_table <- function(database, table, partitions = NULL, allow_mult
 #' can now be loaded using this method.)
 #'
 #' @param path The path of the H2O Model to be imported.
-#'        and port of the server running H2O.
 #' @return Returns a \linkS4class{H2OModel} object of the class corresponding to the type of model
-#'         built.
+#'         loaded.
 #' @seealso \code{\link{h2o.saveModel}, \linkS4class{H2OModel}}
 #' @examples
 #' \dontrun{
