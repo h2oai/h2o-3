@@ -24,6 +24,27 @@ def pubdev_6394():
     assert transformedFrame.ncols == 1
     assert transformedFrame.nrows == originalFrame.nrows
     assert transformedFrame.type('C1') == 'enum'
+    assert transformedFrame['C1'].categories() == expectedCategories
+    
+    # Test gsub without changing the cardinality
+
+    data = [['location'],
+            ['ab'],
+            ['ac'],
+            ['ad'],
+            ['ae'],
+            ['af']]
+
+    originalFrame = H2OFrame(data, header=True, column_types=['enum'])
+    assert originalFrame.type('location') == 'enum'
+    assert originalFrame.categories() ==  ['ab', 'ac','ad', 'ae', 'af']
+
+    expectedCategories = ['b', 'c', 'd', 'e', 'f']
+    transformedFrame = originalFrame['location'].gsub('a', '')
+    print(transformedFrame)
+    
+    assert transformedFrame.ncols == 1
+    assert transformedFrame.nrows == originalFrame.nrows
     assert transformedFrame.type('C1') == 'enum'
     assert transformedFrame['C1'].categories() == expectedCategories
     
