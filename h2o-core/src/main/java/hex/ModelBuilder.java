@@ -170,23 +170,23 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return mb;
   }
 
-  public static <B extends ModelBuilder> B clone(ModelBuilder modelBuilder) {
+  public <B extends ModelBuilder> B makeCopy() {
     Key<Model> modelKey = Key.<Model>make(); // TODO using random key name for now
-    Job<Model> job = new Job<>(modelKey, ModelBuilder.javaName(modelBuilder._parms.algoName().toLowerCase()), modelBuilder._parms.algoName());
-    B newMB = ModelBuilder.make(modelBuilder._parms.algoName(), job, modelKey);
-    newMB._parms = modelBuilder._parms.clone();
-    
-    Frame trainCopy = modelBuilder._parms.train().deepCopy(Key.make().toString());
+    Job<Model> job = new Job<>(modelKey, ModelBuilder.javaName(this._parms.algoName().toLowerCase()), this._parms.algoName());
+    B newMB = ModelBuilder.make(this._parms.algoName(), job, modelKey);
+    newMB._parms = this._parms.clone();
+
+    Frame trainCopy = this._parms.train().deepCopy(Key.make().toString());
     DKV.put(trainCopy);
     newMB._parms.setTrain(trainCopy._key);
 
     // Case when we rely on performance on validation frame instead of CV metrics
-    if(modelBuilder._parms.valid() != null) {
-      Frame validCopy = modelBuilder._parms.valid().deepCopy(Key.make().toString());
+    if(this._parms.valid() != null) {
+      Frame validCopy = this._parms.valid().deepCopy(Key.make().toString());
       DKV.put(validCopy);
       newMB._parms.setValid(validCopy._key);
     }
-    
+
     return newMB;
   }
 

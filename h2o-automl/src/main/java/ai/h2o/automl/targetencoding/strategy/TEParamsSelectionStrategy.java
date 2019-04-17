@@ -96,7 +96,7 @@ public abstract class TEParamsSelectionStrategy extends Iced {
           chosenIndices[i] = chosenIndex;
         }
         hashOfIndices = hashIntArray(chosenIndices);
-      } while (_visitedPermutationHashes.contains(hashOfIndices) && _visitedPermutationHashes.size() != _spaceSize /*&& skipIndices(chosenIndices)*/);
+      } while (_visitedPermutationHashes.contains(hashOfIndices) && _visitedPermutationHashes.size() != _spaceSize);
       _visitedPermutationHashes.add(hashOfIndices);
 
       if(_visitedPermutationHashes.size() == _spaceSize) {

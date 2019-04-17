@@ -9,6 +9,8 @@ public abstract class GridBasedTEParamsSelectionStrategy extends TEParamsSelecti
   protected ModelValidationMode _modelValidationMode;
   protected RandomGridEntrySelector _randomGridEntrySelector;
   protected double _ratioOfHyperSpaceToExplore;
+  protected double _earlyStoppingRatio;
+  
   protected transient Map<String, Double> _columnNameToIdxMap;
   protected boolean _searchOverColumns;
   
@@ -45,6 +47,41 @@ public abstract class GridBasedTEParamsSelectionStrategy extends TEParamsSelecti
     Log.info("Size of TE hyperspace to explore " + _randomGridEntrySelector.spaceSize());
   }
 
+  static class EarlyStopper {
+    private int _seqAttemptsBeforeStopping;
+    private int _totalAttemptsBeforeStopping;
+    private double _currentThreshold;
+    private boolean _theBiggerTheBetter;
+    private int _totalAttemptsCount = 0;
+    private int _fruitlessAttemptsSinceLastResetCount = 0;
+
+    public EarlyStopper(double earlyStoppingRatio, double ratioOfHyperspaceToExplore, int numberOfUnexploredEntries, double initialThreshold, boolean theBiggerTheBetter) {
+
+      _seqAttemptsBeforeStopping = (int) (numberOfUnexploredEntries * earlyStoppingRatio);
+      _totalAttemptsBeforeStopping = (int) (numberOfUnexploredEntries * ratioOfHyperspaceToExplore );
+      _currentThreshold = initialThreshold;
+      _theBiggerTheBetter = theBiggerTheBetter;
+    }
+
+    public boolean proceed() {
+      return _fruitlessAttemptsSinceLastResetCount < _seqAttemptsBeforeStopping && _totalAttemptsCount < _totalAttemptsBeforeStopping;
+    };
+
+    public void update(double newValue) {
+      boolean conditionToContinue = _theBiggerTheBetter ? newValue <= _currentThreshold : newValue > _currentThreshold;
+      if(conditionToContinue) _fruitlessAttemptsSinceLastResetCount++;
+      else {
+        _fruitlessAttemptsSinceLastResetCount = 0;
+        _currentThreshold = newValue;
+      }
+      _totalAttemptsCount++;
+    }
+
+    public int getTotalAttemptsCount() {
+      return _totalAttemptsCount;
+    }
+
+  }
 
   public RandomGridEntrySelector getRandomGridEntrySelector() {
     return _randomGridEntrySelector;

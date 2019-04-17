@@ -176,8 +176,8 @@ public class AutoMLBuildSpec extends Iced {
     public boolean enabled = true;
     public TEApplicationStrategy application_strategy;
     public HPsSelectionStrategy params_selection_strategy;
-    public TargetEncodingParams fixedTEParams;
-    public double early_stopping_ratio;
+    public TargetEncodingParams fixedTEParams; 
+    public double early_stopping_ratio = 1.0;
     public double ratio_of_hyperspace_to_explore;
     public boolean search_over_columns = true;
     public long seed = new Random().nextLong();

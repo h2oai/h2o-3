@@ -11,12 +11,11 @@ import org.junit.Test;
 import water.TestUtil;
 import water.fvec.Frame;
 
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.PriorityQueue;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
 
@@ -75,8 +74,9 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
     long seedForFoldColumn = 2345L;
 
     AutoMLBuildSpec.AutoMLTEControl autoMLTEControl = new AutoMLBuildSpec.AutoMLTEControl();
-    autoMLTEControl.ratio_of_hyperspace_to_explore = 0.4;
+    autoMLTEControl.ratio_of_hyperspace_to_explore = 0.1;
     autoMLTEControl.search_over_columns = true;
+    autoMLTEControl.early_stopping_ratio = 1.0;
     autoMLTEControl.seed = seedForFoldColumn;
 
     Map<String, Double> _columnNameToIdxMap = new HashMap<>();
@@ -153,6 +153,75 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
 
     }
     assertEquals(sizeOfSpace, randomGridEntrySelector.getVisitedPermutationHashes().size());
+  }
+
+  @Test
+  public void earlyStoppingRatioTest() {
+
+    Map<String, Double> columnNameToIdxMap = new HashMap<>();
+    AutoMLBuildSpec.AutoMLTEControl teSpec = new AutoMLBuildSpec.AutoMLTEControl();
+    teSpec.search_over_columns = false;
+    teSpec.early_stopping_ratio = 0.1;
+    teSpec.ratio_of_hyperspace_to_explore = 0.3;
+
+    TargetEncodingHyperparamsEvaluator evaluatorMock = mock(TargetEncodingHyperparamsEvaluator.class);
+    
+    when(evaluatorMock.evaluate(any(TargetEncodingParams.class), any(ModelBuilder.class), any(ModelValidationMode.class), any(Frame.class), anyLong())).thenReturn(0.42);
+
+    // Let's check only CV case. Logic for stopping is using same code for both cases.
+    GridSearchTEParamsSelectionStrategy selectionStrategy = 
+            new GridSearchTEParamsSelectionStrategy(null, "survived", columnNameToIdxMap, true, teSpec, evaluatorMock);
+    selectionStrategy.setTESearchSpace(ModelValidationMode.CV);
+    
+    ModelBuilder modelBuilderMock = mock(ModelBuilder.class);
+    when(modelBuilderMock.makeCopy()).thenReturn(modelBuilderMock);
+    doNothing().when(modelBuilderMock).init(anyBoolean());
+
+    selectionStrategy.getBestParams(modelBuilderMock);
+
+
+    int actuallyEvaluatedCount = selectionStrategy.getEvaluatedQueue().size();
+    double expectedToEvaluate = teSpec.early_stopping_ratio * selectionStrategy.getRandomGridEntrySelector().spaceSize();
+    assertEquals((int) expectedToEvaluate + 1, actuallyEvaluatedCount, 1e-5);
+  }
+
+  @Test
+  public void earlyStopperTest() {
+    double _earlyStoppingRatio = 0.1;
+    double _ratioOfHyperSpaceToExplore = 0.2;
+    int _numberOfIterations = 100;
+
+    GridBasedTEParamsSelectionStrategy.EarlyStopper earlyStopper = new GridBasedTEParamsSelectionStrategy.EarlyStopper(_earlyStoppingRatio, _ratioOfHyperSpaceToExplore, _numberOfIterations, -1, true);
+    int counter = 0;
+    while(earlyStopper.proceed()) {
+      earlyStopper.update(0.42);
+      counter++;
+    }
+    
+    assertEquals(11, counter); // 1 for changing  -1 to 0.42 and then 10 fruitless attempts
+  }
+  
+  @Test
+  public void early_stopping_does_not_happening_when_we_improve_within_early_stopping_ratio_test() {
+    double earlyStoppingRatio = 0.1;
+    double ratioOfHyperSpaceToExplore = 0.2;
+    int numberOfIterations = 100;
+
+    GridBasedTEParamsSelectionStrategy.EarlyStopper earlyStopper = new GridBasedTEParamsSelectionStrategy.EarlyStopper(earlyStoppingRatio, ratioOfHyperSpaceToExplore, numberOfIterations, -1, true);
+    int counter = 0;
+    double score = 0.42;
+    
+    while(earlyStopper.proceed()) {
+      if (counter % 10 == 9) {
+        score += 0.1;
+        earlyStopper.update(score);
+      } else
+        earlyStopper.update(score);
+        
+      counter++;
+    }
+    
+    assertEquals(numberOfIterations * ratioOfHyperSpaceToExplore, counter, 1e-5);
   }
   
 }

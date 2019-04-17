@@ -27,10 +27,7 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.nbhm.NonBlockingHashMap;
-import water.util.ArrayUtils;
-import water.util.Countdown;
-import water.util.IcedHashMapGeneric;
-import water.util.Log;
+import water.util.*;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -272,9 +269,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       userFeedback.info(Stage.Workflow, "Build control seed: " + buildSpec.build_control.stopping_criteria.seed() +
               (buildSpec.build_control.stopping_criteria.seed() == -1 ? " (random)" : ""));
 
-    handleDatafileParameters(buildSpec);
-
-      handleCVParameters(buildSpec);
+      handleDatafileParameters(buildSpec);
 
       handleEarlyStoppingParameters(buildSpec);
 
@@ -315,14 +310,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       }
     }
   }
-
-  private void handleCVParameters(AutoMLBuildSpec buildSpec) {
-    if (null != buildSpec.input_spec.fold_column && 5 != buildSpec.build_control.nfolds)
-      throw new H2OIllegalArgumentException("Cannot specify fold_column and a non-default nfolds value at the same time.");
-    if (null != buildSpec.input_spec.fold_column)
-      userFeedback.warn(Stage.Workflow, "Custom fold column, " + buildSpec.input_spec.fold_column + ", will be used. nfolds value will be ignored.");
-  }
-
 
   WorkAllocations planWork() {
     if (buildSpec.build_models.exclude_algos != null && buildSpec.build_models.include_algos != null) {

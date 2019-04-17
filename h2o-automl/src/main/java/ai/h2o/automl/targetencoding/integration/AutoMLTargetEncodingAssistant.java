@@ -82,6 +82,7 @@ public class AutoMLTargetEncodingAssistant{
     HPsSelectionStrategy teParamsSelectionStrategy = selectionStrategyFromTEScpec != null ? selectionStrategyFromTEScpec : HPsSelectionStrategy.RGS;
     switch(teParamsSelectionStrategy) {
       case Fixed:
+        assert _buildSpec.te_spec.fixedTEParams != null : "When `HPsSelectionStrategy.Fixed` selection strategy is chosen it is required to provide `buildSpec.te_spec.fixedTEParams`";
         _buildSpec.te_spec.fixedTEParams.setColumnsToEncode(_columnsToEncode);
         _teParamsSelectionStrategy = new FixedTEParamsStrategy(_buildSpec.te_spec.fixedTEParams);
         break;

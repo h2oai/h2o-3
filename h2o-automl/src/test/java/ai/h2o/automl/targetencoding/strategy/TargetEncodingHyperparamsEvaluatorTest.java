@@ -7,7 +7,6 @@ import ai.h2o.automl.targetencoding.TargetEncodingTestFixtures;
 import hex.Model;
 import hex.ModelBuilder;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
 import water.fvec.Frame;
@@ -85,7 +84,7 @@ public class TargetEncodingHyperparamsEvaluatorTest extends TestUtil {
       
       
       modelBuilder.init(false); //verifying that we can call init and then modify builder in evaluator
-      ModelBuilder clonedModelBuilder = ModelBuilder.clone(modelBuilder);
+      ModelBuilder clonedModelBuilder = modelBuilder.makeCopy();
       
       int seedForFoldColumn = 2345;
       double auc = evaluator.evaluate(randomTEParams, modelBuilder, ModelValidationMode.VALIDATION_FRAME, leaderboard, seedForFoldColumn);
@@ -129,7 +128,7 @@ public class TargetEncodingHyperparamsEvaluatorTest extends TestUtil {
 
 
       modelBuilder.init(false); //verifying that we can call init and then modify builder in evaluator
-      ModelBuilder clonedModelBuilder = ModelBuilder.clone(modelBuilder);
+      ModelBuilder clonedModelBuilder = modelBuilder.makeCopy();
 
       int seedForFoldColumn = 2345;
       double auc = evaluator.evaluate(randomTEParams, modelBuilder, ModelValidationMode.CV, leaderboard, seedForFoldColumn);
@@ -185,7 +184,7 @@ public class TargetEncodingHyperparamsEvaluatorTest extends TestUtil {
 
       double lastResult = 0.0;
       for (int evaluationAttempt = 0; evaluationAttempt < 3; evaluationAttempt++) {
-        ModelBuilder clonedModelBuilder = ModelBuilder.clone(modelBuilder);
+        ModelBuilder clonedModelBuilder = modelBuilder.makeCopy();
         clonedModelBuilder.init(false);
         
         double evaluationResult = targetEncodingHyperparamsEvaluator.evaluate(param, clonedModelBuilder, ModelValidationMode.CV, null, testSeed);

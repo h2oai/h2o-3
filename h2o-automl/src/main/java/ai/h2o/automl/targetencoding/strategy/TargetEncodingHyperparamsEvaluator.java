@@ -281,7 +281,7 @@ public class TargetEncodingHyperparamsEvaluator extends Iced {
     return ShuffleSplitFrame.shuffleSplitFrame(fr, keys, ratios, seed);
   }
 
-  @Deprecated
+  @Deprecated // TODO remove
   static double evaluateWithGLM(Frame inputData, String responseColumn, String[] columnsToExclude) {
         GLMModel.GLMParameters params = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.binomial); //TODO we should pass a parameter to decise which Family to use
         GLMModel model = null;

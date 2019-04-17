@@ -18,24 +18,34 @@ public class GridSearchTEParamsSelectionStrategy extends GridBasedTEParamsSelect
   private boolean _theBiggerTheBetter;
 
   private PriorityQueue<Evaluated<TargetEncodingParams>> _evaluatedQueue;
-  private TargetEncodingHyperparamsEvaluator _evaluator = new TargetEncodingHyperparamsEvaluator();
-  //  private GridSearchTEStratifiedEvaluator _evaluator = new GridSearchTEStratifiedEvaluator(); // add parameter to switch between stratified vs non-stratified
-  
-  private int _numberOfIterations;
+  private TargetEncodingHyperparamsEvaluator _evaluator = null;
 
   public GridSearchTEParamsSelectionStrategy(Frame leaderboard,
                                              String responseColumn,
                                              Map<String, Double> columnNameToIdxMap,
                                              boolean theBiggerTheBetter,
                                              AutoMLBuildSpec.AutoMLTEControl teBuildSpec) {
+
+    this(leaderboard, responseColumn, columnNameToIdxMap, theBiggerTheBetter, teBuildSpec, new TargetEncodingHyperparamsEvaluator());
+  }
+  
+  public GridSearchTEParamsSelectionStrategy(Frame leaderboard,
+                                             String responseColumn,
+                                             Map<String, Double> columnNameToIdxMap,
+                                             boolean theBiggerTheBetter,
+                                             AutoMLBuildSpec.AutoMLTEControl teBuildSpec,
+                                             TargetEncodingHyperparamsEvaluator evaluator) {
     _seed = teBuildSpec.seed;
     
+    _evaluator = evaluator;
+
     _leaderboardData = leaderboard;
     _responseColumn = responseColumn;
     _columnNameToIdxMap = columnNameToIdxMap;
     _searchOverColumns = teBuildSpec.search_over_columns;
 
     _ratioOfHyperSpaceToExplore = teBuildSpec.ratio_of_hyperspace_to_explore;
+    _earlyStoppingRatio = teBuildSpec.early_stopping_ratio;
     _theBiggerTheBetter = theBiggerTheBetter;
 
   }
@@ -43,8 +53,8 @@ public class GridSearchTEParamsSelectionStrategy extends GridBasedTEParamsSelect
   @Override
   public void setTESearchSpace(ModelValidationMode modelValidationMode) {
     super.setTESearchSpace(modelValidationMode);
-    _numberOfIterations = (int)( _randomGridEntrySelector.spaceSize() * _ratioOfHyperSpaceToExplore);
-    _evaluatedQueue = new PriorityQueue<>(_numberOfIterations, new EvaluatedComparator(_theBiggerTheBetter));
+    int expectedNumberOfEntries = (int)( _randomGridEntrySelector.spaceSize() * _ratioOfHyperSpaceToExplore);
+    _evaluatedQueue = new PriorityQueue<>(expectedNumberOfEntries, new EvaluatedComparator(_theBiggerTheBetter));
   }
 
   @Override
@@ -55,28 +65,34 @@ public class GridSearchTEParamsSelectionStrategy extends GridBasedTEParamsSelect
   public Evaluated<TargetEncodingParams> getBestParamsWithEvaluation(ModelBuilder modelBuilder) {
     assert _modelValidationMode != null : "`setTESearchSpace()` method should has been called to setup appropriate grid search.";
 
-    HPSearchPerformanceExporter exporter = new HPSearchPerformanceExporter();
+    EarlyStopper earlyStopper = new EarlyStopper(_earlyStoppingRatio, _ratioOfHyperSpaceToExplore, _randomGridEntrySelector.spaceSize(), -1, _theBiggerTheBetter);
+    
+    //TODO remove exporter related logic before merging
+    //HPSearchPerformanceExporter exporter = new HPSearchPerformanceExporter();
     
     //TODO Consider adding stratified sampling here
     try {
-      for (int attempt = 0; attempt < _numberOfIterations; attempt++) {
+      while (earlyStopper.proceed()) {
 
         GridEntry selected = _randomGridEntrySelector.getNext(); // Maybe we don't need to have a GridEntry
 
         TargetEncodingParams param = new TargetEncodingParams(selected.getItem());
 
-        ModelBuilder clonedModelBuilder = ModelBuilder.clone(modelBuilder);
+        ModelBuilder clonedModelBuilder = modelBuilder.makeCopy();
         clonedModelBuilder.init(false); // in _evaluator we assume that init() has been already called
 
         double evaluationResult = _evaluator.evaluate(param, clonedModelBuilder, _modelValidationMode, _leaderboardData, _seed);
-        _evaluatedQueue.add(new Evaluated<>(param, evaluationResult, attempt));
-        exporter.update(0, evaluationResult);
+
+        earlyStopper.update(evaluationResult);
+        
+        _evaluatedQueue.add(new Evaluated<>(param, evaluationResult, earlyStopper.getTotalAttemptsCount()));
+        //exporter.update(0, evaluationResult);
       }
     } catch (RandomGridEntrySelector.GridSearchCompleted ex) {
       // just proceed by returning best gridEntry found so far
     }
 
-//    exporter.exportToCSV("scores_random_" + modelBuilder._parms.fullName());
+    //exporter.exportToCSV("scores_random_" + modelBuilder._parms.fullName());
     
     Evaluated<TargetEncodingParams> targetEncodingParamsEvaluated = _evaluatedQueue.peek();
 
