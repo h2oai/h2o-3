@@ -82,7 +82,9 @@ public class AstReplaceAll extends AstPrimitive {
       return vec.makeCopy(doms);
     } else {
       newDomainSet = null;
-      return vec.remapDomain(doms);
+      final Vec copy = vec.makeCopy();
+      copy.remapDomain(doms);
+      return copy;
     }
   }
 

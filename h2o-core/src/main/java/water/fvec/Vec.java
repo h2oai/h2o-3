@@ -469,7 +469,22 @@ public class Vec extends Keyed<Vec> {
     return v;
   }
 
-  public Vec remapDomain(final String[] newDomainValues) {
+  /**
+   * Remaps vec's current domain levels to a new set of values. The cardinality of the new set of domain values might be
+   * less than or equal to the cardinality of current domain values. The new domain set is automatically extracted from
+   * the given mapping array.
+   * <p>
+   * Changes are made to this very vector, no copying is done. If you need the original vector to remain unmodified,
+   * please make sure to copy it first.
+   *
+   * @param newDomainValues An array of new domain values. For each old domain value, there must be a new value in
+   *                        this array. The value at each index of newDomainValues array represents the new mapping for
+   *                        this very index. May not be null.
+   * @throws UnsupportedOperationException When invoked on non-categorical vector
+   * @throws IllegalArgumentException      Length of newDomainValues must be equal to length of current domain values of
+   *                                       this vector
+   */
+  public void remapDomain(final String[] newDomainValues) throws UnsupportedOperationException, IllegalArgumentException {
     // Sanity checks
     Objects.requireNonNull(newDomainValues);
     if (_domain == null)
@@ -506,11 +521,9 @@ public class Vec extends Keyed<Vec> {
       reducedDomainIdx++;
     }
 
-    final Vec copy = makeCopy();
     new RemapDomainTask(indicesMap)
-            .doAll(copy);
-    copy.setMeta(Vec.T_CAT, reducedDomain);
-    return copy;
+            .doAll(this);
+    this.setMeta(Vec.T_CAT, reducedDomain);
   }
 
   /**
