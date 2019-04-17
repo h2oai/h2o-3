@@ -1,8 +1,9 @@
 from h2o import H2OFrame
 from tests import pyunit_utils
 
-
 def pubdev_6394():
+    # JUnit tests are to be found in RapidsTest class
+    
     data = [['location'],
              ['Ｘ県 Ａ市'],
              ['Ｘ県 Ｂ市'],

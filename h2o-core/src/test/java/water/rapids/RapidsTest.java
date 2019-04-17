@@ -809,4 +809,66 @@ public class RapidsTest extends TestUtil {
       Scope.exit();
     }
   }
+
+  @Test
+  public void testAstReplaceAll() {
+    try {
+      Scope.enter();
+
+      final Frame frame = new TestFrameBuilder().
+              withVecTypes(Vec.T_CAT)
+              .withColNames("location")
+              .withDataForCol(0, ar("ab", "ac", "ad"))
+              .withName("fr")
+              .build();
+      Scope.track(frame);
+
+      final Frame transformedFrame = Rapids.exec("(replaceall (cols_py fr 'location') 'a' '' 0)").getFrame();
+      assertNotNull(transformedFrame);
+
+      assertEquals(frame.numRows(), transformedFrame.numRows());
+      assertEquals(frame.numCols(), transformedFrame.numCols());
+      final Vec vec = transformedFrame.vec(0);
+      assertEquals("b", vec.stringAt(0));
+      assertEquals("c", vec.stringAt(1));
+      assertEquals("d", vec.stringAt(2));
+
+
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testAstReplaceAll_cardinalityChange() {
+    try {
+      Scope.enter();
+
+      final Frame frame = new TestFrameBuilder().
+              withVecTypes(Vec.T_CAT)
+              .withColNames("location")
+              .withDataForCol(0, ar("Ｘ県 Ａ市", "Ｘ県 Ｂ市", "Ｘ県 Ｂ市", "Ｙ県 Ｃ市", "Ｙ県 Ｃ市"))
+              .withName("fr")
+              .build();
+      Scope.track(frame);
+
+      final Frame transformedFrame = Rapids.exec("(replaceall (cols_py fr 'location') ' .*' '' 0)").getFrame();
+      assertNotNull(transformedFrame);
+
+      assertEquals(frame.numRows(), transformedFrame.numRows());
+      assertEquals(frame.numCols(), transformedFrame.numCols());
+      final Vec vec = transformedFrame.vec(0);
+      assertEquals("Ｘ県", vec.stringAt(0));
+      assertEquals("Ｘ県", vec.stringAt(1));
+      assertEquals("Ｘ県", vec.stringAt(2));
+      assertEquals("Ｙ県", vec.stringAt(3));
+      assertEquals("Ｙ県", vec.stringAt(4));
+
+      assertEquals(2, vec.cardinality());
+      assertArrayEquals(new String[]{"Ｘ県", "Ｙ県"}, vec.domain());
+
+    } finally {
+      Scope.exit();
+    }
+  }
 }
