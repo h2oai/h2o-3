@@ -749,6 +749,40 @@ h2o.clusterInfo <- function() {
   }
 }
 
+.h2o.translateJobType <- function(type) {
+    if (is.null(type)) {
+      return('Removed')
+    }
+    switch (type,
+      'Key<Frame>' = 'Frame',
+      'Key<Model>' = 'Model',
+      'Key<Grid>' = 'Grid',
+      'Key<PartialDependence>' = 'PartialDependence',
+      'Key<AutoML>' = 'Auto Model',
+      'Key<ScalaCodeResult>' = 'Scala Code Execution',
+      'Key<KeyedVoid>' = 'Void',
+      'Unknown'
+    )
+}
+
+#' Return list of jobs performed by the H2O cluster
+#' @export
+h2o.list_jobs <- function() {
+  myJobUrlSuffix <- paste0(.h2o.__JOBS)
+  rawResponse <- .h2o.doSafeGET(urlSuffix = myJobUrlSuffix)
+  jsonObject <- .h2o.fromJSON(jsonlite::fromJSON(rawResponse, simplifyDataFrame=FALSE))
+  df <- data.frame()
+  for (job in jsonObject$jobs) {
+    df <- rbind(df, data.frame(
+      type=.h2o.translateJobType(job$dest$type),
+      dest=job$dest$name,
+      description=job$description,
+      status=job$status
+    ))
+  }
+  df
+}
+
 #' Check H2O Server Health
 #'
 #' Warn if there are sick nodes.
