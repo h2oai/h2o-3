@@ -123,7 +123,6 @@ public class TCPReceiverThread extends Thread {
         if (wrappedSocket != null) {
           try { wrappedSocket.close(); } catch (Exception e2) { Log.trace(e2); }
         }
-        e.printStackTrace();
         // On any error from anybody, close all sockets & re-open
         Log.err("IO error on TCP port "+H2O.H2O_PORT+": ",e);
         saw_error = true;
