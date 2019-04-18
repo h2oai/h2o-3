@@ -3409,21 +3409,21 @@ as.data.frame.H2OFrame <- function(x, ...) {
   dates <- attr(x, "types") %in% "time"
 
   MAX_INTEGER_LIMIT <- 2147483647
-
+    
   nCol <- attr(x, "ncol")
   nRow <- attr(x, "nrow")
     
-  #if(nCol * nRow > MAX_INTEGER_LIMIT){
-  #  stop("It is not possible convert H2OFrame to data.frame/data.table. The H2OFrame is bigger than vector size limit for R (number columns * number of rows have to be less than 2147483647)")  
-  #}  
+  if(nCol * nRow > MAX_INTEGER_LIMIT){
+    stop("It is not possible convert H2OFrame to data.frame/data.table. The H2OFrame is bigger than vector size limit for R (number columns * number of rows have to be less than 2147483647)")  
+  }  
     
   # Versions of R prior to 3.1 should not use hex string.
   # Versions of R including 3.1 and later should use hex string.
-  use_hex_string <- getRversion() >= "3.1"
+  useHexString <- getRversion() >= "3.1"
 
   urlSuffix <- paste0('DownloadDataset',
                       '?frame_id=', URLencode( h2o.getId(x)),
-                      '&hex_string=', as.numeric(use_hex_string))
+                      '&hex_string=', as.numeric(useHexString))
   
   verbose <- getOption("h2o.verbose", FALSE)
     
@@ -3431,8 +3431,8 @@ as.data.frame.H2OFrame <- function(x, ...) {
   payload <- .h2o.doSafeGET(urlSuffix = urlSuffix, binary=TRUE)
   payloadSize <- object.size(payload)
 
-# Delete last 1 or 2 characters if it's a newline.
-# Handle \r\n (for windows) or just \n (for not windows).
+  # Delete last 1 or 2 characters if it's a newline. 
+  # Handle \r\n (for windows) or just \n (for not windows).
   chtt <- 0  
   calcCharsToTrim <- function(last, secondLast){
     charsToTrim <- 0
@@ -3446,7 +3446,7 @@ as.data.frame.H2OFrame <- function(x, ...) {
   if(payloadSize < MAX_INTEGER_LIMIT)  {
     useCon <- TRUE
     ttt <- rawToChar(payload)
-    n <- nchar(n)
+    n <- nchar(ttt)
     if(n >= 2){  
       chtt <- calcCharsToTrim(substr(ttt, n, n), substr(ttt, n-1, n-1))
     }
@@ -3475,8 +3475,8 @@ as.data.frame.H2OFrame <- function(x, ...) {
     }
     close(outputFile)
   }
-  
   if (verbose) cat(sprintf("fetching from h2o frame to R using '.h2o.doSafeGET' took %.2fs\n", proc.time()[[3]]-pt))
+  
   if (verbose) pt <- proc.time()[[3]]
   if (getOption("h2o.fread", TRUE) && use.package("data.table")) {
     df <- data.table::fread(ttt, blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, showProgress=FALSE, data.table=FALSE, ...)
