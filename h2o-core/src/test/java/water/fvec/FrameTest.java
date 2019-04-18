@@ -34,7 +34,7 @@ public class FrameTest extends TestUtil {
               .build());
       assertEquals(4, train1.anyVec().nonEmptyChunks());
       final Frame train2 = Scope.track(new TestFrameBuilder()
-              .withName("testFrame")
+              .withName("testFrame2")
               .withColNames("ColA", "Response")
               .withVecTypes(Vec.T_NUM, Vec.T_CAT)
               .withDataForCol(0, ard(1, 2, 3, 4, 0))
