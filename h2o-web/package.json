@@ -26,7 +26,7 @@
     "coffeescript": "^2.3.2",
     "diecut": "^0.0.1",
     "marked": "^0.6.2",
-    "fiction": "^0.0.4",
+    "fiction": "^0.0.5",
     "fs-extra": "^7.0.1",
     "htmlparser2": "^3.10.0",
     "js-yaml": "^3.13.1",
