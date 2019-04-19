@@ -15,6 +15,7 @@ import sys
 import tempfile
 import traceback
 import warnings
+import csv23
 from io import StringIO
 from types import FunctionType
 
@@ -1283,7 +1284,6 @@ class H2OFrame(object):
             else:
                 print("num {}".format(" ".join(it[0] if it else "nan" for it in h2o.as_list(self[:10, i], False)[1:])))
 
-
     def as_data_frame(self, use_pandas=True, header=True):
         """
         Obtain the dataset as a python-local object.
@@ -1299,7 +1299,7 @@ class H2OFrame(object):
         if can_use_pandas() and use_pandas:
             import pandas
             return pandas.read_csv(StringIO(self.get_frame_data()), low_memory=False, skip_blank_lines=False)
-        frame = [row for row in csv.reader(StringIO(self.get_frame_data()))]
+        frame = [row for row in csv23.reader(StringIO(self.get_frame_data()))]
         if not header:
             frame.pop(0)
         return frame
