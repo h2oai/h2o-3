@@ -1,4 +1,4 @@
-#Connecting R Studio to Sparkling Water
+# Connecting R Studio to Sparkling Water
 
 If you have connected to H2O from [RStudio](http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/index.html#R) before, the process for connecting to Sparkling Water from RStudio is very similar. 
 

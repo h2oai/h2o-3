@@ -2,23 +2,24 @@ package water.util;
 
 import hex.CreateFrame;
 import hex.Model;
-import hex.ToEigenVec;
+import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.hamcrest.CoreMatchers;
 import water.DKV;
 import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.fvec.FrameTestUtil;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Random;
+
+import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -113,7 +114,7 @@ public class FrameUtilsTest extends TestUtil {
               .withChunkLayout(2, 2, 2, 1)
               .build();
       Frame result = FrameUtils.categoricalEncoder(f, new String[]{"CatCol1"},
-              Model.Parameters.CategoricalEncodingScheme.OneHotExplicit, null);
+              Model.Parameters.CategoricalEncodingScheme.OneHotExplicit, null, -1);
       Scope.track(result);
       assertArrayEquals(
               new String[]{"NumCol", "CatCol2.A", "CatCol2.B", "CatCol2.C", "CatCol2.missing(NA)", "CatCol1"},
@@ -134,6 +135,130 @@ public class FrameUtilsTest extends TestUtil {
     } finally {
       Scope.exit();
     }
+  }
+
+  // This test is used to test some utilities that I have written to make sure they function as planned.
+  @Test
+  public void testIDColumnOperationEncoder() {
+    Scope.enter();
+    Random _rand = new Random();
+    int numRows = 1000;
+    int rowsToTest = _rand.nextInt(numRows);
+    try {
+      FrameTestUtil.Create1IDColumn tempO = new FrameTestUtil.Create1IDColumn(numRows);
+      Frame f = tempO.doAll(tempO.returnFrame()).returnFrame();
+      Scope.track(f);
+
+      ArrayList<Integer> badRows = new FrameTestUtil.CountAllRowsPresented(0, f).doAll(f).findMissingRows();
+      assertEquals("All rows should be present but not!", badRows.size(), 0);
+      long countAppear = new FrameTestUtil.CountIntValueRows(rowsToTest, 0,
+              0, f).doAll(f).getNumberAppear();
+      assertEquals("All values should appear only once.", countAppear, 1);
+
+      // delete a row to make sure it is not found again.
+      f.remove(rowsToTest);  // row containing value rowsToTest is no longer there.
+      countAppear = new FrameTestUtil.CountIntValueRows(2000, 0, 0,
+              f).doAll(f).getNumberAppear();
+      assertEquals("Value of interest should not been found....", countAppear, 0);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void getColumnIndexByName() {
+    Scope.enter();
+    try {
+
+      Frame fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA", "ColB")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM)
+              .withDataForCol(0, ar("a", "b"))
+              .withDataForCol(1, ard(1, 1))
+              .build();
+      Scope.track(fr);
+
+      assertEquals(0, fr.find("ColA"));
+      assertEquals(1, fr.find("ColB"));
+
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  // I want to test and make sure the CalculateWeightMeanSTD will calculate the correct weighted mean and STD
+  // for a column of a dataset using another column as the weight column.  Note that the weighted
+  @Test
+  public void testCalculateWeightMeanSTD() {
+    Scope.enter();
+    try {
+      Frame trainData = parse_test_file("smalldata/prostate/prostate.csv");
+      Scope.track(trainData);
+      Vec orig = trainData.remove(trainData.numCols() - 1);
+      Vec[] weights = new Vec[2];
+      weights[0] = orig.makeCon(2.0); // constant weight, should give same answer as normal
+
+      weights[1] = orig.makeCon(1.0); // increasing weights
+      for (int rindex = 0; rindex < orig.length(); rindex++) {
+        weights[1].set(rindex, rindex + 1);
+      }
+      Scope.track(orig);
+      Scope.track(weights[0]);
+      Scope.track(weights[1]);
+
+      Frame test = new Frame(new String[]{"weight0", "weight1"},weights);
+      test._key = Key.make();
+      Scope.track(test);
+      FrameUtils.CalculateWeightMeanSTD calMeansSTDW1 = new FrameUtils.CalculateWeightMeanSTD();
+      calMeansSTDW1.doAll(trainData.vec(0), test.vec(0)); // calculate statistic with constant weight
+      // compare with results with no weights, should be the same
+      assert Math.abs(trainData.vec(0).mean()-calMeansSTDW1.getWeightedMean())<1e-10:"Error, weighted mean "+
+              calMeansSTDW1.getWeightedMean()+ " and expected mean "+trainData.vec(0).mean()+" should equal but not.";
+      assert Math.abs(trainData.vec(0).sigma()-calMeansSTDW1.getWeightedSigma())<1e-10:"Error, weighted sigma "+
+              calMeansSTDW1.getWeightedSigma()+ " and expected sigma "+trainData.vec(0).sigma()+" should equal but not.";
+
+      FrameUtils.CalculateWeightMeanSTD calMeansSTDW2 = new FrameUtils.CalculateWeightMeanSTD();
+      calMeansSTDW2.doAll(trainData.vec(0), test.vec(1)); // calculate statistic with increasing weight
+      double[] meanSigma = calWeightedMeanSigma(trainData, test,0, 1);
+      assert Math.abs(meanSigma[0]-calMeansSTDW2.getWeightedMean())<1e-10:"Error, weighted mean "+
+              calMeansSTDW1.getWeightedMean()+ " and expected mean "+meanSigma[0]+" should equal but not.";
+      assert Math.abs(meanSigma[1]-calMeansSTDW2.getWeightedSigma())<1e-10:"Error, weighted sigma "+
+              calMeansSTDW1.getWeightedSigma()+ " and expected sigma "+meanSigma[1]+" should equal but not.";
+
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  /*
+  calculate weighted mean and sigma from theory.
+   */
+  public double[] calWeightedMeanSigma(Frame dataFrame,Frame weightF, int targetIndex, int WeightIndex) {
+    double[] meanSigma = new double[2];
+    int zeroWeightCount = 0;
+    double weightSum = 0.0;
+    double weightEleSum = 0.0;
+    double weightedEleSqSum = 0.0;
+
+    for (int rindex=0; rindex < dataFrame.numRows(); rindex++) {
+      double tempWeight = weightF.vec(WeightIndex).at(rindex);
+      if (Math.abs(tempWeight) > 0) {
+        double tempVal = dataFrame.vec(targetIndex).at(rindex);
+        double weightedtempVal = tempVal*tempWeight;
+
+        weightSum += tempWeight;
+        weightEleSum += weightedtempVal;
+        weightedEleSqSum += weightedtempVal*tempVal;
+      } else {
+        zeroWeightCount++;
+      }
+    }
+    meanSigma[0] = weightEleSum/weightSum;
+    double scale = (dataFrame.numRows()-zeroWeightCount)/(dataFrame.numRows()-zeroWeightCount-1.0);
+    meanSigma[1] = Math.sqrt(scale*(weightedEleSqSum/weightSum-meanSigma[0]*meanSigma[0]));
+
+    return meanSigma;
   }
 
 }

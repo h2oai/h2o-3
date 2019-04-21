@@ -7,6 +7,7 @@ import water.Key;
 import water.MRTask;
 import water.TestUtil;
 import water.fvec.*;
+import water.persist.VecDataInputStream;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;

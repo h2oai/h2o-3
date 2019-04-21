@@ -2,17 +2,34 @@ package water.fvec;
 
 import org.junit.*;
 
+import water.Keyed;
+import water.Lockable;
 import water.Scope;
 import water.TestUtil;
 import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.RandomUtils;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 public class CategoricalWrappedVecTest extends TestUtil {
   @BeforeClass static public void setup() {  stall_till_cloudsize(1); }
 
+  @Test public void testAdaptToDoubleDomain(){
+    Vec v0 = Vec.makeCon(Vec.newKey(),3.14,2.7,0.33333,-123.456,1.65e9,-500.50);
+    Vec v1 = v0.adaptTo(new String[]{"0.270e1","-123.456"});
+    Assert.assertArrayEquals(new String[]{"0.270e1","-123.456","-500.5","0.33333","3.14","1.65E9"},v1.domain());
+    Assert.assertEquals(v1.at8(0),4);
+    Assert.assertEquals(v1.at8(1),0);
+    Assert.assertEquals(v1.at8(2),3);
+    Assert.assertEquals(v1.at8(3),1);
+    Assert.assertEquals(v1.at8(4),5);
+    Assert.assertEquals(v1.at8(5),2);
+    v0.remove();
+    v1.remove();
+  }
   // Need to move test files over
   @Test public void testAdaptTo() {
     Scope.enter();
@@ -20,7 +37,7 @@ public class CategoricalWrappedVecTest extends TestUtil {
     try {
       v1 = parse_test_file("smalldata/junit/mixcat_train.csv");
       v2 = parse_test_file("smalldata/junit/mixcat_test.csv");
-      CategoricalWrappedVec vv = v2.vecs()[0].adaptTo(v1.vecs()[0].domain());
+      CategoricalWrappedVec vv = (CategoricalWrappedVec) v2.vecs()[0].adaptTo(v1.vecs()[0].domain());
       Assert.assertArrayEquals("Mapping differs",new int[]{0,1,3},vv._map);
       Assert.assertArrayEquals("Mapping differs",new String[]{"A","B","C","D"},vv.domain());
       vv.remove();
@@ -28,6 +45,19 @@ public class CategoricalWrappedVecTest extends TestUtil {
       if( v1!=null ) v1.delete();
       if( v2!=null ) v2.delete();
       Scope.exit();
+    }
+  }
+
+  @Test public void testAdaptBadVec() {
+    List<Keyed> removables = new ArrayList<>();
+    try {
+      Vec bad = Vec.makeCons(Double.NaN, 10, 1)[0]; removables.add(bad);
+      Assert.assertTrue(bad.isBad());
+      Vec adapted = bad.adaptTo(new String[]{"dummy"}); removables.add(adapted);
+      Assert.assertTrue(adapted instanceof CategoricalWrappedVec);
+      Assert.assertTrue(adapted.isBad());
+    } finally {
+      for (Keyed k: removables) { k.remove(); }
     }
   }
 

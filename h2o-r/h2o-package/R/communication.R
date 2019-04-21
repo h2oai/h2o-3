@@ -23,7 +23,7 @@
   FALSE
 }
 
-.h2o.calcBaseURL <- function(conn,h2oRestApiVersion, urlSuffix) {
+.h2o.calcBaseURL <- function(conn, h2oRestApiVersion, urlSuffix) {
   if( missing(conn) ) conn <- h2o.getConnection()
   stopifnot(is(conn, "H2OConnection"))
   stopifnot(is.character(urlSuffix))
@@ -121,7 +121,7 @@
       postBody <- sub('\"\\{', '\\{',postBody)
       postBody <- sub('\\}\"', '\\}',postBody)
     }
-
+    
   .__curlError = FALSE
   .__curlErrorMessage = ""
   httpStatusCode = -1L
@@ -159,7 +159,7 @@
     #can then be brought back into R as a raw vector and then used in different ways, e.g. uncompressed
     #with the Rcompression package, or written to a file via writeBin. We can also convert the raw vector to of type
     #character.
-    tmp <- tryCatch(curlPerform(url = url,
+    tmp <- tryCatch(curlPerform(url = URLencode(url),
                                   customrequest = method,
                                   writefunction = write,
                                   headerfunction = h$update,
@@ -184,7 +184,7 @@
     h = basicHeaderGatherer()
     t = basicTextGatherer(.mapUnicode = FALSE)
     header['Expect'] = ''
-    tmp = tryCatch(postForm(uri = url,
+    tmp = tryCatch(postForm(uri = URLencode(url),
                             .params = list(fileUploadInfo = fileUploadInfo),
                             .opts=curlOptions(writefunction = t$update,
                                               headerfunction = h$update,
@@ -205,9 +205,9 @@
     if(!autoML){
       header['Expect'] = ''
     }else{
-      header = "Content-Type: application/json"
+      header["Content-Type"] <- "application/json"
     }
-    tmp = tryCatch(curlPerform(url = url,
+    tmp = tryCatch(curlPerform(url = URLencode(url),
                                postfields = postBody,
                                writefunction = t$update,
                                headerfunction = h$update,
@@ -267,9 +267,11 @@
 #'     $httpStatusMessage  -- A string describing the httpStatusCode.
 #'     $payload            -- The raw response payload as a character vector.
 #'
+#' @param conn H2OConnection
 #' @param h2oRestApiVersion (Optional) A version number to prefix to the urlSuffix.  If no version is provided, the version prefix is skipped.
 #' @param urlSuffix The partial URL suffix to add to the calculated base URL for the instance
 #' @param parms (Optional) Parameters to include in the request
+#' @param ... (Optional) Additional parameters.
 #' @return A list object as described above
 .h2o.doRawGET <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix, parms, ...) {
   .h2o.doRawREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
@@ -291,10 +293,12 @@
 #'     $httpStatusMessage  -- A string describing the httpStatusCode.
 #'     $payload            -- The raw response payload as a character vector.
 #'
+#' @param conn H2OConnection
 #' @param h2oRestApiVersion (Optional) A version number to prefix to the urlSuffix.  If no version is provided, the version prefix is skipped.
 #' @param urlSuffix The partial URL suffix to add to the calculated base URL for the instance
 #' @param parms (Optional) Parameters to include in the request
 #' @param fileUploadInfo (Optional) Information to POST (NOTE: changes Content-type from XXX-www-url-encoded to multi-part).  Use fileUpload(normalizePath("/path/to/file")).
+#' @param ... (Optional) Additional parameters.
 #' @return A list object as described above
 .h2o.doRawPOST <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix, parms, fileUploadInfo, ...) {
   .h2o.doRawREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
@@ -309,7 +313,6 @@
   if (missing(h2oRestApiVersion)) {
     h2oRestApiVersion = .h2o.__REST_API_VERSION
   }
-
   .h2o.doRawREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
                  parms = parms, method = method, fileUploadInfo,autoML=autoML, ...)
 }
@@ -319,6 +322,7 @@
 #' @param h2oRestApiVersion (Optional) A version number to prefix to the urlSuffix.  If no version is provided, a default version is chosen for you.
 #' @param urlSuffix The partial URL suffix to add to the calculated base URL for the instance
 #' @param parms (Optional) Parameters to include in the request
+#' @param ... (Optional) Additional parameters.
 #' @return A list object as described above
 .h2o.doGET <- function(h2oRestApiVersion, urlSuffix, parms, ...) {
   .h2o.doREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
@@ -330,6 +334,7 @@
 #' @param h2oRestApiVersion (Optional) A version number to prefix to the urlSuffix.  If no version is provided, a default version is chosen for you.
 #' @param urlSuffix The partial URL suffix to add to the calculated base URL for the instance
 #' @param parms (Optional) Parameters to include in the request
+#' @param ... (Optional) Additional parameters.
 #' @return A list object as described above
 .h2o.doPOST <- function(h2oRestApiVersion, urlSuffix, parms, ...) {
   .h2o.doREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
@@ -391,6 +396,7 @@
 #' @param h2oRestApiVersion (Optional) A version number to prefix to the urlSuffix.  If no version is provided, a default version is chosen for you.
 #' @param urlSuffix The partial URL suffix to add to the calculated base URL for the instance
 #' @param parms (Optional) Parameters to include in the request
+#' @param ... (Optional) Additional parameters.
 #' @return The raw response payload as a character vector
 .h2o.doSafeGET <- function(h2oRestApiVersion, urlSuffix, parms, ...) {
   .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
@@ -407,6 +413,7 @@
 #' @param urlSuffix The partial URL suffix to add to the calculated base URL for the instance
 #' @param parms (Optional) Parameters to include in the request
 #' @param fileUploadInfo (Optional) Information to POST (NOTE: changes Content-type from XXX-www-url-encoded to multi-part).  Use fileUpload(normalizePath("/path/to/file")).
+#' @param ... (Optional) Additional parameters.
 #' @return The raw response payload as a character vector
 .h2o.doSafePOST <- function(h2oRestApiVersion, urlSuffix, parms, fileUploadInfo, ...) {
   .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
@@ -496,7 +503,7 @@
 .format.helper <- function(x, format) {
     tryCatch(
       if( is.list(x) ) lapply(x, .format.helper, format)
-      else             sapply(x, function(i) if( is.na(i) ) "" else sprintf(format, i))
+      else             sapply(x, function(i) if( is.na(i) ) "NA" else sprintf(format, i))
     , error=function(e) {
       print("\n\n Format Error \n\n")
       print("x:"); print(x); print("format: "); print(format); print(e)
@@ -575,7 +582,6 @@ print.H2OTable <- function(x, header=TRUE, ...) {
   }
 
   rawREST <- ""
-
   if( !is.null(timeout) ){
     rawREST <- .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = page, parms = .params, method = method, timeout = timeout)
   }else if(autoML == TRUE){
@@ -583,11 +589,18 @@ print.H2OTable <- function(x, header=TRUE, ...) {
   }else{
     rawREST <- .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = page, parms = .params, method = method)
   }
-
   if( raw ) rawREST
-  else      .h2o.fromJSON(jsonlite::fromJSON(rawREST,simplifyDataFrame=FALSE))
+  else {
+    res <- .h2o.fromJSON(jsonlite::fromJSON(rawREST,simplifyDataFrame=FALSE, bigint_as_char=TRUE))
+    if(getOption("h2o.warning.on.json.string.conversion", FALSE)) {
+      resToCompare <- .h2o.fromJSON(jsonlite::fromJSON(rawREST,simplifyDataFrame=FALSE))
+      if(!isTRUE(all.equal(res, resToCompare))){
+        warning("During parsing the JSON response from H2O API to R bindings a conversion from long to string has occurred.")
+      }
+    }
+    res
+  }
 }
-
 
 #-----------------------------------------------------------------------------------------------------------------------
 #   H2O Server Health & Info
@@ -607,7 +620,25 @@ h2o.clusterIsUp <- function(conn = h2o.getConnection()) {
   if (rv$httpStatusCode == 401)
     warning("401 Unauthorized Access.  Did you forget to provide a username and password?")
 
-  ((rv$httpStatusCode == 200) || (rv$httpStatusCode == 301))
+  if((rv$httpStatusCode == 200) || (rv$httpStatusCode == 301)) {
+    res <- .h2o.fromJSON(
+             jsonlite::fromJSON(
+               .h2o.doRawGET(conn = conn, urlSuffix = .h2o.__CLOUD, h2oRestApiVersion = .h2o.__REST_API_VERSION)$payload,
+               simplifyDataFrame=FALSE
+             )
+           )
+
+    if(!is.na(conn@name) && res$cloud_name != conn@name) {
+        warning(sprintf("Trying to connect to cloud name [%s] but found [%s]!", conn@name, res$cloud_name))
+        return(FALSE)
+    }
+
+    # Make sure the cached name is always up to date and we don't use the name from the previous h2o.init() run.
+    .h2o.jar.env$name = conn@name
+
+    return(TRUE)
+  }
+  return(FALSE)
 }
 
 #'
@@ -618,6 +649,29 @@ h2o.clusterIsUp <- function(conn = h2o.getConnection()) {
 #' @export
 h2o.killMinus3 <- function() {
   rv <- .h2o.doSafeGET(urlSuffix="KillMinus3")
+}
+
+.h2o.list_extensions <- function(endpoint){
+  res <- .h2o.fromJSON(jsonlite::fromJSON(.h2o.doSafeGET(urlSuffix = endpoint), simplifyDataFrame=FALSE))
+  lapply(res$capabilities, function(x) x$name)
+}
+
+#' List all H2O registered extensions
+#' @export
+h2o.list_all_extensions <- function() {
+  .h2o.list_extensions(endpoint = .h2o.__ALL_CAPABILITIES)
+}
+
+#' List registered core extensions
+#' @export
+h2o.list_core_extensions <- function() {
+  .h2o.list_extensions(endpoint = .h2o.__CORE_CAPABILITIES)
+}
+
+#' List registered API extensions
+#' @export
+h2o.list_api_extensions <- function() {
+  .h2o.list_extensions(endpoint = .h2o.__API_CAPABILITIES)
 }
 
 #' Print H2O cluster info
@@ -645,6 +699,8 @@ h2o.clusterInfo <- function() {
     res <- .h2o.fromJSON(jsonlite::fromJSON(.h2o.doSafeGET(urlSuffix = .h2o.__CLOUD), simplifyDataFrame=FALSE))
   }
 
+  extensions <- h2o.list_api_extensions()
+
   nodeInfo <- res$nodes
   freeMem  <- sum(sapply(nodeInfo,function(x) as.numeric(x['free_mem']))) / (1024 * 1024 * 1024)
   numCPU   <- sum(sapply(nodeInfo,function(x) as.numeric(x['num_cpus'])))
@@ -667,6 +723,8 @@ h2o.clusterInfo <- function() {
 
   cat(paste0("R is connected to the H2O cluster", m))
   cat("    H2O cluster uptime:        ", .readableTime(as.numeric(res$cloud_uptime_millis)), "\n")
+  cat("    H2O cluster timezone:      ", res$cloud_internal_timezone, "\n")
+  cat("    H2O data parsing timezone: ", res$datafile_parser_timezone, "\n")
   cat("    H2O cluster version:       ", res$version, "\n")
   cat("    H2O cluster version age:   ", res$build_age, if (res$build_too_old) "!!!" else "", "\n")
   cat("    H2O cluster name:          ", res$cloud_name, "\n")
@@ -679,6 +737,7 @@ h2o.clusterInfo <- function() {
   cat("    H2O Connection port:       ", port, "\n")
   cat("    H2O Connection proxy:      ", proxy, "\n")
   cat("    H2O Internal Security:     ", res$internal_security_enabled, "\n")
+  cat("    H2O API Extensions:        ", paste(extensions, collapse = ", "), "\n")
   cat("    R Version:                 ", R.version.string, "\n")
 
   cpusLimited = sapply(nodeInfo, function(x) x[['num_cpus']] > 1L && x[['nthreads']] != 1L && x[['cpus_allowed']] == 1L)
@@ -751,7 +810,7 @@ h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
 #' Check if Progress Bar is Enabled
 #'
 .h2o.is_progress <- function() {
-  progress <- mget("PROGRESS_BAR", .pkg.env, ifnotfound=TRUE)
+  progress <- mget("PROGRESS_BAR", .pkg.env, ifnotfound = TRUE)
   if (is.list(progress)) progress <- unlist(progress)
   progress
 }
@@ -760,7 +819,7 @@ h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
 #   Job Polling
 #-----------------------------------------------------------------------------------------------------------------------
 
-.h2o.__waitOnJob <- function(job_key, pollInterval = 1) {
+.h2o.__waitOnJob <- function(job_key, pollInterval = 1, verboseModelScoringHistory=FALSE) {
   progressBar <- .h2o.is_progress()
   if (progressBar) pb <- txtProgressBar(style = 3L)
   keepRunning <- TRUE
@@ -777,7 +836,6 @@ h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
       }
 
       job = jobs[[1]]
-
       status = job$status
       stopifnot(is.character(status))
 
@@ -823,6 +881,15 @@ h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
 
       if (keepRunning) {
         Sys.sleep(pollInterval)
+        if(verboseModelScoringHistory){
+          cat(paste0("\nScoring History for Model ",job$dest$name, " at ", Sys.time(),"\n"))
+          print(paste0("Model Build is ", job$progress*100, "% done..."))
+          if(!is.null(job$progress_msg)){
+            print(tail(h2o.getModel(job$dest$name)@model$scoring_history))
+          }else{
+            print("Scoring history is not available yet...") #Catch 404 with scoring history. Can occur when nfolds >=2
+          }
+        }
       } else {
         if (progressBar) {
           close(pb)
@@ -841,7 +908,7 @@ h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
 
 #------------------------------------ Utilities ------------------------------------#
 h2o.getBaseURL <- function(conn) {
-  .h2o.calcBaseURL( conn, urlSuffix = "")
+  .h2o.calcBaseURL(conn, urlSuffix = "")
 }
 
 #' Get h2o version

@@ -10,13 +10,9 @@ def h2oget_frame():
     """
     Python API test: h2o.get_frame(frame_id)
     """
-    try:
-        frame1 = h2o.import_file(pyunit_utils.locate("smalldata/jira/hexdev_29.csv"))
-        frame2 = h2o.get_frame(frame1.frame_id)
-        assert_is_type(frame2, H2OFrame)
-    except Exception as e:
-        assert False, "h2o.get_frame() command is not working."
-
+    frame1 = h2o.import_file(pyunit_utils.locate("smalldata/jira/hexdev_29.csv"))
+    frame2 = h2o.get_frame(frame1.frame_id)
+    assert_is_type(frame2, H2OFrame)
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(h2oget_frame)

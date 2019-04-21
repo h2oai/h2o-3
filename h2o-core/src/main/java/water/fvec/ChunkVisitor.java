@@ -33,7 +33,7 @@ public abstract class ChunkVisitor {
   }
 
   void addValue(long m, int e) {
-    addValue((double) m * PrettyPrint.pow10(e));
+    addValue(PrettyPrint.pow10(m,e));
   }
 
   void addZeros(int zeros) {
@@ -169,10 +169,14 @@ public abstract class ChunkVisitor {
     }
     @Override
     public void addValue(double val) {
-      int i = (int)val;
-      if( i != val)
-        throw new RuntimeException(val + " does not fit into int");
-      vals[_k++] = i;
+      if (Double.isNaN(val)) {
+        vals[_k++] = _na;
+      } else {
+        int i = (int) val;
+        if (i != val)
+          throw new RuntimeException(val + " does not fit into int");
+        vals[_k++] = i;
+      }
     }
     @Override
     public void addZeros(int zeros) {

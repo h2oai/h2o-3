@@ -17,6 +17,7 @@ public class AstEq extends AstBinOp {
     return "==";
   }
 
+  @Override
   public double op(double l, double r) {
     return MathUtils.equalsWithinOneSmallUlp(l, r) ? 1 : 0;
   }

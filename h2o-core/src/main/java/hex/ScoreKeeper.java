@@ -8,7 +8,6 @@ import water.util.Log;
 import water.util.MathUtils;
 
 import java.util.Arrays;
-import java.util.Comparator;
 
 /**
  * Low-weight keeper of scores
@@ -23,10 +22,15 @@ public class ScoreKeeper extends Iced {
   public double _rmsle = Double.NaN;
   public double _logloss = Double.NaN;
   public double _AUC = Double.NaN;
+  public double _pr_auc = Double.NaN;
   public double _classError = Double.NaN;
   public double _mean_per_class_error = Double.NaN;
+  public double _custom_metric = Double.NaN;
   public float[] _hitratio;
   public double _lift = Double.NaN; //Lift in top group
+  public double _r2 = Double.NaN;
+  public double _anomaly_score = Double.NaN;
+  public double _anomaly_score_normalized = Double.NaN;
 
   public ScoreKeeper() {}
 
@@ -72,11 +76,14 @@ public class ScoreKeeper extends Iced {
       _mean_residual_deviance = ((ModelMetricsRegression)m)._mean_residual_deviance;
       _mae = ((ModelMetricsRegression)m)._mean_absolute_error;
       _rmsle = ((ModelMetricsRegression)m)._root_mean_squared_log_error;
+      _r2 = ((ModelMetricsRegression)m).r2();
     }
     if (m instanceof ModelMetricsBinomial) {
       _logloss = ((ModelMetricsBinomial)m)._logloss;
+      _r2 = ((ModelMetricsBinomial)m).r2();
       if (((ModelMetricsBinomial)m)._auc != null) {
         _AUC = ((ModelMetricsBinomial) m)._auc._auc;
+        _pr_auc = ((ModelMetricsBinomial) m)._auc.pr_auc();
         _classError = ((ModelMetricsBinomial) m)._auc.defaultErr();
         _mean_per_class_error = ((ModelMetricsBinomial)m).mean_per_class_error();
       }
@@ -90,12 +97,27 @@ public class ScoreKeeper extends Iced {
       _classError = ((ModelMetricsMultinomial)m)._cm.err();
       _mean_per_class_error = ((ModelMetricsMultinomial)m).mean_per_class_error();
       _hitratio = ((ModelMetricsMultinomial)m)._hit_ratios;
+      _r2 = ((ModelMetricsMultinomial)m).r2();
+    } else if (m instanceof ModelMetricsOrdinal) {
+      _logloss = ((ModelMetricsOrdinal)m)._logloss;
+      _classError = ((ModelMetricsOrdinal)m)._cm.err();
+      _mean_per_class_error = ((ModelMetricsOrdinal)m).mean_per_class_error();
+      _hitratio = ((ModelMetricsOrdinal)m)._hit_ratios;
+      _r2 = ((ModelMetricsOrdinal)m).r2();
+    } else if (m instanceof ScoreKeeperAware) {
+      ((ScoreKeeperAware) m).fillTo(this);
     }
+    if (m._custom_metric != null )
+      _custom_metric =  m._custom_metric.value;
   }
 
-  public enum StoppingMetric { AUTO, deviance, logloss, MSE, RMSE,MAE,RMSLE, AUC, lift_top_group, misclassification, mean_per_class_error}
-  public static boolean moreIsBetter(StoppingMetric criterion) {
-    return (criterion == StoppingMetric.AUC || criterion == StoppingMetric.lift_top_group);
+  public enum StoppingMetric { AUTO, deviance, logloss, MSE, RMSE,MAE,RMSLE, AUC, lift_top_group, misclassification, mean_per_class_error, custom, custom_increasing} //, r2}
+  static boolean moreIsBetter(StoppingMetric criterion) {
+    return (criterion == StoppingMetric.AUC || criterion == StoppingMetric.lift_top_group || criterion == StoppingMetric.custom_increasing); // || criterion == StoppingMetric.r2);
+  }
+  // only for those metrics where "less is better"
+  private static boolean hasLowerBound(StoppingMetric criterion) {
+    return criterion != StoppingMetric.deviance;
   }
 
   /** Based on the given array of ScoreKeeper and stopping criteria should we stop early? */
@@ -109,6 +131,7 @@ public class ScoreKeeper extends Iced {
     }
 
     boolean moreIsBetter = moreIsBetter(criterion);
+    boolean hasLowerBound = hasLowerBound(criterion);
     double movingAvg[] = new double[k+1]; //need one moving average value for the last k+1 scoring events
     double lastBeforeK = moreIsBetter ? -Double.MAX_VALUE : Double.MAX_VALUE;
     double bestInLastK = moreIsBetter ? -Double.MAX_VALUE : Double.MAX_VALUE;
@@ -170,6 +193,13 @@ public class ScoreKeeper extends Iced {
           case lift_top_group:
             val = skj._lift;
             break;
+ /*         case r2:
+            val = skj._r2;
+            break; */
+          case custom:
+          case custom_increasing:
+            val = skj._custom_metric;
+            break;
           default:
             throw H2O.unimpl("Undefined stopping criterion.");
         }
@@ -189,6 +219,9 @@ public class ScoreKeeper extends Iced {
     assert(bestInLastK != Double.MAX_VALUE);
     if (verbose)
       Log.info("Windowed averages (window size " + k + ") of " + what + " " + (k+1) + " " + criterion.toString() + " metrics: " + Arrays.toString(movingAvg));
+
+    if (lastBeforeK==0 && !moreIsBetter && hasLowerBound) // eg. deviance - less better and can be negative
+      return true;
 
     double ratio = bestInLastK / lastBeforeK;
     if (Double.isNaN(ratio)) return false;
@@ -222,78 +255,9 @@ public class ScoreKeeper extends Iced {
             && MathUtils.compare(_logloss, o._logloss, 1e-6, 1e-6)
             && MathUtils.compare(_classError, o._classError, 1e-6, 1e-6)
             && MathUtils.compare(_mean_per_class_error, o._mean_per_class_error, 1e-6, 1e-6)
+            && MathUtils.compare(_r2, o._r2, 1e-6, 1e-6)
             && MathUtils.compare(_lift, o._lift, 1e-6, 1e-6);
   }
-
-  public static Comparator<ScoreKeeper> comparator(StoppingMetric criterion) {
-    switch (criterion) {
-      case AUC:
-        return new Comparator<ScoreKeeper>() {
-          @Override
-          public int compare(ScoreKeeper o1, ScoreKeeper o2) {
-            return (int)Math.signum(o2._AUC - o1._AUC); // moreIsBetter
-          }
-        };
-      case RMSE:
-        return new Comparator<ScoreKeeper>() {
-          @Override
-          public int compare(ScoreKeeper o1, ScoreKeeper o2) {
-            return (int)Math.signum(o1._rmse - o2._rmse); // lessIsBetter
-          }
-        };
-      case MAE:
-        return new Comparator<ScoreKeeper>() {
-          @Override
-          public int compare(ScoreKeeper o1, ScoreKeeper o2) {
-            return (int)Math.signum(o1._mae - o2._mae); // lessIsBetter
-          }
-        };
-      case RMSLE:
-        return new Comparator<ScoreKeeper>() {
-          @Override
-          public int compare(ScoreKeeper o1, ScoreKeeper o2) {
-            return (int)Math.signum(o1._rmsle - o2._rmsle); // lessIsBetter
-          }
-        };
-      case deviance:
-        return new Comparator<ScoreKeeper>() {
-          @Override
-          public int compare(ScoreKeeper o1, ScoreKeeper o2) {
-            return (int)Math.signum(o1._mean_residual_deviance - o2._mean_residual_deviance); // lessIsBetter
-          }
-        };
-      case logloss:
-        return new Comparator<ScoreKeeper>() {
-          @Override
-          public int compare(ScoreKeeper o1, ScoreKeeper o2) {
-            return (int)Math.signum(o1._logloss - o2._logloss); // lessIsBetter
-          }
-        };
-      case misclassification:
-        return new Comparator<ScoreKeeper>() {
-          @Override
-          public int compare(ScoreKeeper o1, ScoreKeeper o2) {
-            return (int)Math.signum(o1._classError - o2._classError); // lessIsBetter
-          }
-        };
-      case mean_per_class_error:
-        return new Comparator<ScoreKeeper>() {
-          @Override
-          public int compare(ScoreKeeper o1, ScoreKeeper o2) {
-            return (int)Math.signum(o1._mean_per_class_error - o2._mean_per_class_error); // lessIsBetter
-          }
-        };
-      case lift_top_group:
-        return new Comparator<ScoreKeeper>() {
-          @Override
-          public int compare(ScoreKeeper o1, ScoreKeeper o2) {
-            return (int)Math.signum(o2._lift - o1._lift); // moreIsBetter
-          }
-        };
-      default:
-        throw H2O.unimpl("Undefined stopping criterion.");
-    } // switch
-  } // comparator
 
   @Override
   public String toString() {
@@ -304,10 +268,17 @@ public class ScoreKeeper extends Iced {
             ",_rmsle=" + _rmsle +
         ", _logloss=" + _logloss +
         ", _AUC=" + _AUC +
+            ", _pr_auc="+_pr_auc+
         ", _classError=" + _classError +
         ", _mean_per_class_error=" + _mean_per_class_error +
         ", _hitratio=" + Arrays.toString(_hitratio) +
         ", _lift=" + _lift +
+      //  ", _r2=" + _r2 +
         '}';
   }
+
+  public interface ScoreKeeperAware {
+    void fillTo(ScoreKeeper sk);
+  }
+
 }

@@ -616,7 +616,22 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
    *  @return At least as large as the count of non-zeros, but may be significantly smaller than the {@link #_len} */
   public int sparseLenZero() {return _len;}
 
+  /**
+   * Skips a section of either NAs or Zeros in a sparse chunk.
+   * Note: This method can only be used when NAs and Zeros have the same meaning to the caller!
+   * @param rid Start search from this index (excluded).
+   * @return Index of a next non-sparse value (this can include NA and Zero
+   * depending on if the chunk is zero-sparse or na-sparse).
+   */
   public int nextNZ(int rid){ return rid + 1;}
+
+  /**
+   * Version of nextNZ() that allows caller to prevent skipping NAs.
+   * @param rid Start search from this index (excluded).
+   * @param onlyTrueZero if true, only actual Zeros can be skipped. NA-sparse chunks will be treated as dense.
+   * @return Index of a next non-sparse value.
+   */
+  public int nextNZ(int rid, boolean onlyTrueZero) { return rid + 1; }
 
   /**
    *  Get indeces of non-zero values stored in this chunk
@@ -640,18 +655,6 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
    *  skipping over large runs of NAs in a row.
    *  @return At least as large as the count of non-NAs, but may be significantly smaller than the {@link #_len} */
   public int sparseLenNA() {return _len;}
-
-  // Next non-NA. Analogous to nextNZ()
-  public int nextNNA(int rid){ return rid + 1;}
-
-  /** Get chunk-relative indices of values (nonnas for nasparse, all for dense)
-   *  stored in this chunk.  For dense chunks, this will contain indices of all
-   *  the rows in this chunk.
-   *  @return array of chunk-relative indices of values stored in this chunk. */
-  public int nonnas(int [] res) {
-    for( int i = 0; i < _len; ++i) res[i] = i;
-    return _len;
-  }
 
   /** Report the Chunk min-value (excluding NAs), or NaN if unknown.  Actual
    *  min can be higher than reported.  Used to short-cut RollupStats for

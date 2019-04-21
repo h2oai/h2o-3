@@ -13,6 +13,7 @@ import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.udf.CFuncRef;
 import water.util.JCodeGen;
 import water.util.SBPrintStream;
 import water.util.TwoDimTable;
@@ -29,6 +30,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
 
     public DataInfo.TransformType _transform = DataInfo.TransformType.NONE; // Data transformation
     public Method _pca_method = Method.GramSVD;   // Method for computing PCA
+    public PCAImplementation _pca_implementation = PCAImplementation.getFastestImplementation();   // PCA implementation
     public int _k = 1;                     // Number of principal components
     public int _max_iterations = 1000;     // Max iterations
     public boolean _use_all_factor_levels = false;   // When expanding categoricals, should first level be kept or dropped?
@@ -102,7 +104,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
   }
 
   @Override
-  protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, final Job j, boolean computeMetrics) {
+  protected Frame predictScoreImpl(Frame origFr, Frame adaptedFr, String destination_key, final Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
     Frame adaptFrm = new Frame(adaptedFr);
     for(int i = 0; i < _parms._k; i++)
       adaptFrm.add("PC"+String.valueOf(i+1),adaptFrm.anyVec().makeZero());
@@ -127,7 +129,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
 
     f = new Frame(Key.<Frame>make(destination_key), f.names(), f.vecs());
     DKV.put(f);
-    makeMetricBuilder(null).makeModelMetrics(this, orig, null, null);
+    makeMetricBuilder(null).makeModelMetrics(this, origFr, null, null);
     return f;
   }
 

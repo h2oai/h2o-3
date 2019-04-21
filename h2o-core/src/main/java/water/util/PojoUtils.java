@@ -138,7 +138,12 @@ public class PojoUtils {
             //
             // You can't use reflection to set an int[] with an Integer[].  Argh.
             // TODO: other types of arrays. . .
-            if (dest_field.getType().getComponentType() == double.class && orig_field.getType().getComponentType() == Double.class) {
+            if (dest_field.getType().getComponentType().isAssignableFrom(orig_field.getType().getComponentType())) {
+              //
+              //Assigning an T[] to an U[] if T extends U
+              //
+              dest_field.set(dest, orig_field.get(origin));
+            } else if (dest_field.getType().getComponentType() == double.class && orig_field.getType().getComponentType() == Double.class) {
               //
               // Assigning an Double[] to an double[]
               //
@@ -282,8 +287,9 @@ public class PojoUtils {
             //
             // Assigning an impl field into a schema field, e.g. a DeepLearningParameters into a DeepLearningParametersV2.
             //
-            dest_field.set(dest, SchemaServer.schema(/* ((Schema)dest).getSchemaVersion() TODO: remove HACK!! */ 3,
-                (Class<? extends Iced>)orig_field.get(origin).getClass()).fillFromImpl((Iced) orig_field.get(origin)));
+            int dest_version = Schema.extractVersionFromSchemaName(dest_field.getType().getSimpleName());
+            Iced ori = (Iced)orig_field.get(origin);
+            dest_field.set(dest, SchemaServer.schema(dest_version, ori.getClass()).fillFromImpl(ori));
           } else if (Schema.class.isAssignableFrom(orig_field.getType()) && Schema.getImplClass((Class<? extends Schema>)orig_field.getType()).isAssignableFrom(dest_field.getType())) {
             //
             // Assigning a schema field into an impl field, e.g. a DeepLearningParametersV2 into a DeepLearningParameters.
@@ -300,7 +306,7 @@ public class PojoUtils {
             if (null == v || null == v.get()) {
               dest_field.set(dest, null);
             } else {
-              if (((Schema)dest_field.get(dest)).getImplClass().isAssignableFrom(v.get().getClass())) {
+              if (((Schema)dest_field.get(dest)).getImplClass().isAssignableFrom(v.get().getClass())) {   //FIXME: dest_field.get(dest) can be null!
                 Schema s = ((Schema)dest_field.get(dest));
                 dest_field.set(dest, SchemaServer.schema(s.getSchemaVersion(), s.getImplClass()).fillFromImpl(v.get()));
               } else {
@@ -466,37 +472,65 @@ public class PojoUtils {
           f.set(o, ((Integer) value).intValue());
         else if (f.getType() == long.class && (value.getClass() == Long.class || value.getClass() == Integer.class))
           f.set(o, ((Long) value).longValue());
+        else if (f.getType() == float.class && (value instanceof Number))
+          f.set(o, ((Number) value).floatValue());
         else {
           // Double -> double, Integer -> int will work:
           f.set(o, value);
         }
-      } else if (f.getType().isArray() && value.getClass().isArray()) {
-        if (f.getType().getComponentType() == value.getClass().getComponentType()) {
+      } else if (f.getType().isArray() && (value.getClass().isArray()) || value instanceof List) {
+        final Class<?> valueComponentType;
+        if (value instanceof List) {
+          List<?> valueList = (List<?>) value;
+          if (valueList.isEmpty()) {
+            valueComponentType = f.getType().getComponentType();
+            value = java.lang.reflect.Array.newInstance(valueComponentType, 0);
+          } else {
+            value = valueList.toArray();
+            valueComponentType = valueList.get(0).getClass();
+          }
+        } else {
+          valueComponentType = value.getClass().getComponentType();
+        }
+
+        if (f.getType().getComponentType() == valueComponentType) {
           // array of the same type on both sides
           f.set(o, value);
-        } else if (f.getType().getComponentType() == int.class && value.getClass().getComponentType() == Integer.class) {
-          Integer[] valuesTyped = ((Integer[])value);
+        } else if (f.getType().getComponentType() == int.class && valueComponentType == Integer.class) {
+          Object[] valuesTyped = ((Object[])value);
           int[] valuesCast = new int[valuesTyped.length];
           for (int i = 0; i < valuesTyped.length; i++)
-            valuesCast[i] = valuesTyped[i];
+            valuesCast[i] = ((Number) valuesTyped[i]).intValue();
           f.set(o, valuesCast);
-        } else if (f.getType().getComponentType() == long.class && value.getClass().getComponentType() == Long.class) {
-          Long[] valuesTyped = ((Long[])value);
+        } else if (f.getType().getComponentType() == long.class && valueComponentType == Long.class) {
+          Object[] valuesTyped = ((Object[])value);
           long[] valuesCast = new long[valuesTyped.length];
           for (int i = 0; i < valuesTyped.length; i++)
-            valuesCast[i] = valuesTyped[i];
+            valuesCast[i] = ((Number) valuesTyped[i]).longValue();
           f.set(o, valuesCast);
-        } else if (f.getType().getComponentType() == double.class && (value.getClass().getComponentType() == Float.class || value.getClass().getComponentType() == Double.class || value.getClass().getComponentType() == Integer.class || value.getClass().getComponentType() == Long.class)) {
-          Double[] valuesTyped = ((Double[])value);
+        } else if (f.getType().getComponentType() == double.class && (valueComponentType == Float.class || valueComponentType == Double.class || valueComponentType == Integer.class || valueComponentType == Long.class)) {
+          Object[] valuesTyped = ((Object[])value);
           double[] valuesCast = new double[valuesTyped.length];
           for (int i = 0; i < valuesTyped.length; i++)
-            valuesCast[i] = valuesTyped[i];
+            valuesCast[i] = ((Number) valuesTyped[i]).doubleValue();
           f.set(o, valuesCast);
-        } else if (f.getType().getComponentType() == float.class && (value.getClass().getComponentType() == Float.class || value.getClass().getComponentType() == Double.class || value.getClass().getComponentType() == Integer.class || value.getClass().getComponentType() == Long.class)) {
-          Float[] valuesTyped = ((Float[])value);
+        } else if (f.getType().getComponentType() == float.class && (valueComponentType == Float.class || valueComponentType == Double.class || valueComponentType == Integer.class || valueComponentType == Long.class)) {
+          Object[] valuesTyped = ((Object[]) value);
           float[] valuesCast = new float[valuesTyped.length];
           for (int i = 0; i < valuesTyped.length; i++)
-            valuesCast[i] = valuesTyped[i];
+            valuesCast[i] = ((Number) valuesTyped[i]).floatValue();
+          f.set(o, valuesCast);
+        } else if(f.getType().getComponentType().isEnum()) {
+          Object[] valuesTyped = ((Object[]) value);
+          Enum[] valuesCast = (Enum[])java.lang.reflect.Array.newInstance(f.getType().getComponentType(), ((Object[]) value).length);
+          for (int i = 0; i < valuesTyped.length; i++) {
+            String v = (String)valuesTyped[i];
+            try {
+              valuesCast[i] = Enum.valueOf((Class<Enum>) f.getType().getComponentType(), v);
+            } catch (IllegalArgumentException e) {
+              throw new IllegalArgumentException("Field = " + fieldName + " element cannot be set to value = " + value, e);
+            }
+          }
           f.set(o, valuesCast);
         } else {
           throw new IllegalArgumentException("setField can't yet convert an array of: " + value.getClass().getComponentType() + " to an array of: " + f.getType().getComponentType());

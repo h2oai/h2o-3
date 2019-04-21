@@ -4,6 +4,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import water.TestUtil;
 import water.parser.BufferedString;
+import water.util.TwoDimTable;
+
+import java.util.Random;
 
 import static org.junit.Assert.*;
 
@@ -148,21 +151,81 @@ public class TestFrameBuilderTest extends TestUtil {
   }
 
   @Test
-  public void testCategorical(){
-    final Frame fr = new TestFrameBuilder()
-            .withName("frameName")
+  public void withRandomIntDataForColTest(){
+    long seed = 44L;
+    int size = 1000;
+    int min = 1;
+    int max = 5;
+
+    Frame fr = new TestFrameBuilder()
+            .withName("testFrame")
             .withColNames("ColA")
-            .withVecTypes(Vec.T_CAT)
-            .withDataForCol(0, ar("A", "B", "C", "A")) // 2 A, 1 B, 1 C
+            .withVecTypes(Vec.T_NUM)
+            .withRandomIntDataForCol(0, size, min, max, seed)
             .build();
 
-    assertArrayEquals(fr.vec(0).domain(), ar("A", "B", "C"));
-    assertEquals(fr.vec(0).cardinality(), 3);
 
-    assertEquals(fr.vec(0).at(0), 0, DELTA);
-    assertEquals(fr.vec(0).at(1), 1, DELTA);
-    assertEquals(fr.vec(0).at(2), 2, DELTA);
-    assertEquals(fr.vec(0).at(3), 0, DELTA);
-    fr.remove();
+    printOutFrameAsTable(fr, false, size);
+    Vec generatedVec = fr.vec(0);
+    for(int i = 0; i < size; i++) {
+      assertTrue(generatedVec.at(i) <= max && generatedVec.at(i) >= min);
+    }
+
+    fr.delete();
+  }
+
+  @Test
+  public void withRandomDoubleDataForColTest(){
+    long seed = 44L;
+    int size = 1000;
+    int min = 1;
+    int max = 5;
+
+    Frame fr = new TestFrameBuilder()
+            .withName("testFrame")
+            .withColNames("ColA")
+            .withVecTypes(Vec.T_NUM)
+            .withRandomDoubleDataForCol(0, size, min, max, seed)
+            .build();
+
+
+    printOutFrameAsTable(fr, false, size);
+    Vec generatedVec = fr.vec(0);
+    for(int i = 0; i < size; i++) {
+      assertTrue(generatedVec.at(i) <= max && generatedVec.at(i) >= min);
+    }
+
+    fr.delete();
+  }
+
+  @Test
+  public void numRowsIsWorkingForRandomlyGeneratedColumnsTest(){
+    long seed = 44L;
+    Frame fr = new TestFrameBuilder()
+            .withName("testFrame")
+            .withColNames("ColA")
+            .withVecTypes(Vec.T_NUM)
+            .withRandomDoubleDataForCol(0, 1000, 1, 5, seed)
+            .build();
+
+    long numberOfRowsGenerated = fr.numRows();
+    assertEquals(1000, numberOfRowsGenerated);
+
+    fr.delete();
+  }
+
+  @Test
+  public void withRandomBinaryDataForColTest(){
+    long seed = 44L;
+    Frame fr = new TestFrameBuilder()
+            .withName("testFrame")
+            .withColNames("ColA")
+            .withVecTypes(Vec.T_CAT)
+            .withRandomBinaryDataForCol(0, 1000, seed)
+            .build();
+
+    assertEquals(2, fr.vec("ColA").cardinality());
+
+    fr.delete();
   }
 }

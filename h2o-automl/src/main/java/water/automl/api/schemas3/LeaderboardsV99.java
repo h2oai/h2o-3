@@ -8,7 +8,7 @@ public class LeaderboardsV99 extends RequestSchemaV3<LeaderboardsHandler.Leaderb
 
   // Input fields
   @API(help="Name of project of interest", json=false)
-  public String project;
+  public String project_name;
 
   // Output fields
   @API(help="Leaderboards", direction=API.Direction.OUTPUT)

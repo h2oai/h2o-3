@@ -7,12 +7,13 @@ import org.apache.log4j.spi.LoggingEvent;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.H2O;
-import water.JettyHTTPD;
 import water.TestUtil;
+import water.init.NetworkInit;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.File;
 import java.io.IOException;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -26,8 +27,11 @@ import static org.mockito.Mockito.when;
 public class CustomHttpFilterTest extends TestUtil {
   @BeforeClass static public void setup() {
     stall_till_cloudsize(1);
-    new RegisterResourceRoots().register(System.getProperty("user.dir")+ "/..");  // h2o-core/.., register the web bits (so we don't get errs below)
-    H2O.finalizeRegistration();  // calls jetty.acceptRequests
+    // h2o-core/.., register the web bits (so we don't get errs below)
+    String relativeResourcePath = System.getProperty("user.dir")+ "/..";
+    H2O.registerResourceRoot(new File(relativeResourcePath + File.separator + "h2o-web/src/main/resources/www"));
+    H2O.registerResourceRoot(new File(relativeResourcePath + File.separator + "h2o-core/src/main/resources/www"));
+    H2O.startServingRestApi();  // calls jetty.acceptRequests
   }
 
   @Test public void testNoLog() throws Exception {
@@ -42,9 +46,10 @@ public class CustomHttpFilterTest extends TestUtil {
 
     // let's filter out all GETs
     RequestServer.setFilters(RequestServer.defaultFilter(), new RequestServer.HttpLogFilter() {
-      @Override public boolean filter(RequestUri uri, Properties header, Properties parms) {
+      @Override public RequestServer.LogFilterLevel filter(RequestUri uri, Properties header, Properties parms) {
         String[] path = uri.getPath();
-        return path[1].equals("GET");
+        if (path[1].equals("GET")) return RequestServer.LogFilterLevel.DO_NOT_LOG;
+        else return RequestServer.LogFilterLevel.LOG;
       }
     });
 
@@ -91,12 +96,13 @@ public class CustomHttpFilterTest extends TestUtil {
     when(request.getParameterMap()).thenReturn(new HashMap<String, String[]>());
 
     when(response.getOutputStream()).thenReturn(new ServletOutputStream() {
+
       @Override public void write(int b) throws IOException {
       }
     });
 
     // start the request lifecycle
-    H2O.getJetty().getServer().getChildHandlersByClass(JettyHTTPD.GateHandler.class)[0].handle("/", null, request, response);
+    NetworkInit.h2oHttpView.gateHandler(request, response);
     new RequestServer().doGet(request, response);
 
   }

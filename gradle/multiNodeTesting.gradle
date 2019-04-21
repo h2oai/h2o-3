@@ -1,9 +1,13 @@
 // Actually run the tests by building a cluster of free-running JVMs first.
 task testSingleNode(type: Exec) {
     dependsOn jar, testJar
-    
+
+    environment "ROOT_DIR", rootDir
     environment "PROJECT_NAME", project.name
     environment "BUILD_DIR", project.buildDir
+    doFirst {
+        environment "JVM_CLASSPATH", sourceSets.test.runtimeClasspath.asPath
+    }
 
     def args = ['bash', './testSingleNode.sh']
     if (project.hasProperty("jacocoCoverage")) {
@@ -13,11 +17,13 @@ task testSingleNode(type: Exec) {
 }
 task testSingleNodeOneProc(type: Exec) {
     dependsOn jar, testJar
-    if (project.hasProperty("java6Convert")) {
-        environment "TEST_JAVA_HOME", System.getenv("JAVA_6_HOME")
-    }
+
+    environment "ROOT_DIR", rootDir
     environment "PROJECT_NAME", project.name
     environment "BUILD_DIR", project.buildDir
+    doFirst {
+        environment "JVM_CLASSPATH", sourceSets.test.runtimeClasspath.asPath
+    }
 
     def args = ['bash', './testSingleNodeOneProc.sh']
     if (project.hasProperty("jacocoCoverage")) {
@@ -27,9 +33,13 @@ task testSingleNodeOneProc(type: Exec) {
 }
 task testMultiNode(type: Exec) {
     dependsOn jar, testJar
-    
+
+    environment "ROOT_DIR", rootDir
     environment "PROJECT_NAME", project.name
     environment "BUILD_DIR", project.buildDir
+    doFirst {
+        environment "JVM_CLASSPATH", sourceSets.test.runtimeClasspath.asPath
+    }
 
     def args = ['bash', './testMultiNode.sh']
 

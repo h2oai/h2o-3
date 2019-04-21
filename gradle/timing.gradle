@@ -11,19 +11,22 @@ class Timing {
     String name
 }
 
+import java.util.concurrent.TimeUnit
+
 // Log timings per task.
 class TimingsListener implements TaskExecutionListener, BuildListener {
-    private Clock clock
+    private long startTime
     private timings = []
 
     @Override
     void beforeExecute(Task task) {
-        clock = new org.gradle.util.Clock()
+        startTime = System.nanoTime()
     }
 
     @Override
     void afterExecute(Task task, TaskState taskState) {
-        def secs = (double)(clock.timeInMs / 1000.0)
+        def ms = TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS)
+        def secs = (double)(ms / 1000.0)
         def timing = new Timing(secs, task.path)
         timings.add(timing)
         if (secs >= 1) {

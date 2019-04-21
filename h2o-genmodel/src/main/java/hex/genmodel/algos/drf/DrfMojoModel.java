@@ -1,18 +1,20 @@
 package hex.genmodel.algos.drf;
 
 import hex.genmodel.GenModel;
+import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
+import hex.genmodel.algos.tree.SharedTreeGraphConverter;
 
 
 /**
  * "Distributed Random Forest" MojoModel
  */
-public final class DrfMojoModel extends SharedTreeMojoModel {
+public final class DrfMojoModel extends SharedTreeMojoModel implements SharedTreeGraphConverter {
     protected boolean _binomial_double_trees;
 
 
-    public DrfMojoModel(String[] columns, String[][] domains) {
-        super(columns, domains);
+    public DrfMojoModel(String[] columns, String[][] domains, String responseColumn) {
+        super(columns, domains, responseColumn);
     }
 
     /**
@@ -21,7 +23,12 @@ public final class DrfMojoModel extends SharedTreeMojoModel {
     @Override
     public final double[] score0(double[] row, double offset, double[] preds) {
         super.scoreAllTrees(row, preds);
+        return unifyPreds(row, offset, preds);
+    }
 
+
+    @Override
+    public final double[] unifyPreds(double[] row, double offset, double[] preds) {
         // Correct the predictions -- see `DRFModel.toJavaUnifyPreds`
         if (_nclasses == 1) {
             // Regression

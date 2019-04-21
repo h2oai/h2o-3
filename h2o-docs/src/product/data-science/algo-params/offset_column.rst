@@ -1,7 +1,7 @@
 ``offset_column``
 -----------------
 
-- Available in: GBM, DRF, Deep Learning, GLM
+- Available in: GBM, Deep Learning, GLM, CoxPH
 - Hyperparameter: no
 
 
@@ -10,13 +10,13 @@ Description
 
 An offset is a per-row “bias value” that is used during model training. For Gaussian distributions, offsets can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. 
 
-When used with GBM, Deep Learning, or GLM distributions/family-link functions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For example, you may have fitted some other (logistic) regression using other variables (and data), and now you want to see if the present variables can add anything. So you use the predicted logit from the other model as an offset in. To get the logit from a predicted probability in H2O, you can use this expression: :math:`\text{logit} = \text{log}\big(\frac{prob}{(1-prob)}\big)`.
+When used with distributions/family-link functions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For example, you may have fitted some other (logistic) regression using other variables (and data), and now you want to see if the present variables can add anything. So you use the predicted logit from the other model as an offset in. To get the logit from a predicted probability in H2O, you can use this expression: :math:`\text{logit} = \text{log}\big(\frac{prob}{(1-prob)}\big)`.
 
-**Note**: 
+**Notes**: 
 
-- An offset column can only be used for regression problems.
 - This option is not applicable for multinomial distributions
 - The offset column cannot be the same as the `fold_column <fold_column.html>`__. 
+- This option can be specified in XGBoost, but it is not supported.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
@@ -95,7 +95,7 @@ Example
 
 	# try using the `offset_column` parameter:
 	# initialize the estimator then train the model
-	boston_gbm = H2OGradientBoostingEstimator(offset_column = "offset_column", seed = 1234)
+	boston_gbm = H2OGradientBoostingEstimator(offset_column = "offset", seed = 1234)
 	boston_gbm.train(x=predictors, y=response, training_frame=train, validation_frame=valid)
 
 	# print the mse for validation set

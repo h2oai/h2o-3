@@ -17,40 +17,36 @@ def h2ocreate_frame():
 
     Copied from pyunit_NOPASS_javapredict_dynamic_data_paramsDL.py
     """
-
-    try:
-        # Generate random dataset
-        dataset_params = {}
-        dataset_params['rows'] = random.sample(list(range(50,150)),1)[0]
-        dataset_params['cols'] = random.sample(list(range(3,6)),1)[0]
-        dataset_params['categorical_fraction'] = round(random.random(),1)
-        left_over = (1 - dataset_params['categorical_fraction'])
-        dataset_params['integer_fraction'] = round(left_over - round(random.uniform(0,left_over),1),1)
-        if dataset_params['integer_fraction'] + dataset_params['categorical_fraction'] == 1:
-            if dataset_params['integer_fraction'] > dataset_params['categorical_fraction']:
-                dataset_params['integer_fraction'] = dataset_params['integer_fraction'] - 0.1
-            else:
-                dataset_params['categorical_fraction'] = dataset_params['categorical_fraction'] - 0.1
-        dataset_params['missing_fraction'] = random.uniform(0,0.5)
-        dataset_params['has_response'] = False
-        dataset_params['randomize'] = True
-        dataset_params['factors'] = random.randint(2,5)
-        print("Dataset parameters: {0}".format(dataset_params))
-
-        distribution = random.sample(['bernoulli','multinomial','gaussian','poisson','gamma'], 1)[0]
-        if   distribution == 'bernoulli': dataset_params['response_factors'] = 2
-        elif distribution == 'gaussian':  dataset_params['response_factors'] = 1
-        elif distribution == 'multinomial': dataset_params['response_factors'] = random.randint(3,5)
+    # Generate random dataset
+    dataset_params = {}
+    dataset_params['rows'] = random.sample(list(range(50,150)),1)[0]
+    dataset_params['cols'] = random.sample(list(range(3,6)),1)[0]
+    dataset_params['categorical_fraction'] = round(random.random(),1)
+    left_over = (1 - dataset_params['categorical_fraction'])
+    dataset_params['integer_fraction'] = round(left_over - round(random.uniform(0,left_over),1),1)
+    if dataset_params['integer_fraction'] + dataset_params['categorical_fraction'] == 1:
+        if dataset_params['integer_fraction'] > dataset_params['categorical_fraction']:
+            dataset_params['integer_fraction'] = dataset_params['integer_fraction'] - 0.1
         else:
-            dataset_params['has_response'] = False
-        print("Distribution: {0}".format(distribution))
+            dataset_params['categorical_fraction'] = dataset_params['categorical_fraction'] - 0.1
+    dataset_params['missing_fraction'] = random.uniform(0,0.5)
+    dataset_params['has_response'] = False
+    dataset_params['randomize'] = True
+    dataset_params['factors'] = random.randint(2,5)
+    print("Dataset parameters: {0}".format(dataset_params))
 
-        train = h2o.create_frame(**dataset_params)
-        assert_is_type(train, H2OFrame)
-        assert train.ncol==dataset_params['cols'], "h2o.create_frame() create frame with wrong column number."
-        assert train.nrow==dataset_params['rows'], "h2o.create_frame() create frame with wrong row number."
-    except Exception as e:
-        assert False, "h2o.create_frame() command not is working."
+    distribution = random.sample(['bernoulli','multinomial','gaussian','poisson','gamma'], 1)[0]
+    if   distribution == 'bernoulli': dataset_params['response_factors'] = 2
+    elif distribution == 'gaussian':  dataset_params['response_factors'] = 1
+    elif distribution == 'multinomial': dataset_params['response_factors'] = random.randint(3,5)
+    else:
+        dataset_params['has_response'] = False
+    print("Distribution: {0}".format(distribution))
+
+    train = h2o.create_frame(**dataset_params)
+    assert_is_type(train, H2OFrame)
+    assert train.ncol==dataset_params['cols'], "h2o.create_frame() create frame with wrong column number."
+    assert train.nrow==dataset_params['rows'], "h2o.create_frame() create frame with wrong row number."
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(h2ocreate_frame)

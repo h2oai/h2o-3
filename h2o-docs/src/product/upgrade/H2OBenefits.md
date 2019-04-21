@@ -10,30 +10,30 @@ The main benefits to using H2O are:
  - **Fast performance**: Create models in minutes using H2O's unique in-memory capabilities
   
  
-##What H2O Provides
+## What H2O Provides
 
-###Better Predictions
+### Better Predictions
 
 - Powerful, ready-to-use algorithms that derive insights from all your data
 
-###Speed
+### Speed
 
 - In-memory parallel processing for real-time responsiveness, increasing efficiency, and running models without sampling
 
-###Ease of Use
+### Ease of Use
 
 - Flow, an intuitive web UI that is designed to simplify a data scientist's workflow, allows you to modify, save, export, and share your workflow with others
 
-###Extensibility
+### Extensibility
 
 - Seamless Hadoop integration with distributed data ingestion from HDFS and S3
 - Models are built using Java and can be exported as Plain Old Java Objects (POJO) for integration in your custom application
 
-###Scalability
+### Scalability
 
 - Easy to iterate, develop, and train models on large data without extra modeling time
 
-###Real-time Scoring
+### Real-time Scoring
 
 - Predict and score more accurately and 10x faster than the next best technology on the market
 
@@ -48,6 +48,9 @@ K-Means | A method to uncover groups or clusters of data points often used for s
 Anomaly Detection | Identify the outliers in your data by invoking a powerful pattern recognition model.
 Deep Learning | Model high-level abstractions in data by using non-linear transformations in a layer-by-layer method. Deep learning is an example of unsupervised learning and can make use of unlabeled data that other algorithms cannot.
 Naïve Bayes | A probabilistic classifier that assumes the value of a particular feature is unrelated to the presence or absence of any other feature, given the class variable. It is often used in text categorization.
+Stacked Ensembles | A supervised ensemble machine learning algorithm that finds the optimal combination of a collection of prediction algorithms using a process called stacking.
+XGBoost | An optimized distributed gradient boosting library designed to be highly efficient, flexible, and portable. This algorithm provides parallel tree boosting (also known as GBDT, GBM) that solves many data science problems in a fast and accurate way.
+Word2vec | An algorithm that takes a text corpus as an input and produces the word vectors as output. The algorithm first creates a vocabulary from the training text data and then learns vector representations of the words.
 
 ### Scoring Models with Confidence
 Score Tool | Description	
@@ -60,7 +63,7 @@ AUC | A graphical plot to visualize the performance of a model by its sensitivit
 
 --- 
 
-###Use Cases
+### Use Cases
 
 - Fraud detection 
 - Churn identification to prevent turnover
@@ -71,7 +74,7 @@ AUC | A graphical plot to visualize the performance of a model by its sensitivit
 - Evaluation of ad campaign effectiveness
 - Customer classification to predict purchase behavior or renewal rates
 
-###Customer Examples
+### Customer Examples
 
 - Cisco saw a 15x increase in speed after implementing H2O into their Propensity to Buy (P2B) modeling factory.
 - Paypal uses H2O's Deep Learning algorithm for fraud detection and prevention.
@@ -79,26 +82,32 @@ AUC | A graphical plot to visualize the performance of a model by its sensitivit
 - MarketShare uses H2O for marketing optimization to improve efficiency in cross-channel attribution and forecasting. 
 
  
-##Required Resources
+## Required Resources
  
-###Hardware and Software
+### Hardware and Software
 
 - Java is required to run H2O. GNU compiler for Java and Open JDK are not supported. 
 - The amount of memory required depends on the size of your data. We recommend having four times as much memory as your largest dataset. 
 - To view a one-page document that outlines the system configurations we recommend, click [here](http://h2o.ai/product/recommended-systems-for-h2o/). 
 
-###Data
+### Data
 
 H2O works with tabular data, which can be imported as a single file or as a directory of files. The following formats are supported: 
  
- - ARFF
- - XLS/XLSX
- - CSV
- - SVMLight
+CSV (delimited) files
+ORC
+SVMLight
+ARFF
+XLS
+XLSX
+Avro (without multifile parsing or column type modification)
+Parquet
+
+>Note that ORC is available only if H2O is running as a Hadoop job.
  
  The data does not need to be perfect, as some munging can be performed within H2O (such as excluding columns with a specified percentage of missing values). However, the more precise your dataset is, the more accurate your models will be. 
  
-###Support Team
+### Support Team
 
 H2O is designed to be easy to both set up and use, but we recommend assembling a team that includes: 
 

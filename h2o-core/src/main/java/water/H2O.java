@@ -1,37 +1,48 @@
 package water;
 
-import com.brsanthu.googleanalytics.DefaultRequest;
-import com.brsanthu.googleanalytics.GoogleAnalytics;
+import hex.ModelBuilder;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinWorkerThread;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
-
 import water.UDPRebooted.ShutdownTsk;
-import water.api.RestApiExtension;
 import water.api.RequestServer;
-import water.api.SchemaServer;
 import water.exceptions.H2OFailException;
 import water.exceptions.H2OIllegalArgumentException;
-import water.init.*;
+import water.init.AbstractBuildVersion;
+import water.init.AbstractEmbeddedH2OConfig;
+import water.init.JarHash;
+import water.init.NetworkInit;
+import water.init.NodePersistentStorage;
 import water.nbhm.NonBlockingHashMap;
+import water.parser.DecryptionTool;
 import water.parser.ParserService;
 import water.persist.PersistManager;
+import water.server.ServletUtils;
 import water.util.*;
+import water.webserver.iface.WebServer;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Field;
-import java.net.*;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.MulticastSocket;
+import java.net.NetworkInterface;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
+import static water.util.JavaVersionUtils.JAVA_VERSION;
 
 /**
 * Start point for creating or joining an <code>H2O</code> Cloud.
@@ -86,7 +97,7 @@ final public class H2O {
             "          IP address of this node.\n" +
             "\n" +
             "    -port <port>\n" +
-            "          Port number for this node (note: port+1 is also used).\n" +
+            "          Port number for this node (note: port+1 is also used by default).\n" +
             "          (The default port is " + ARGS.port + ".)\n" +
             "\n" +
             "    -network <IPv4network1Specification>[,<IPv4network2Specification> ...]\n" +
@@ -118,6 +129,10 @@ final public class H2O {
             "    -client\n" +
             "          Launch H2O node in client mode.\n" +
             "\n" +
+            "    -notify_local <fileSystemPath>" +
+            "          Specifies a file to write when the node is up. The file contains one line with the IP and" +
+            "          port of the embedded web server. e.g. 192.168.1.100:54321" +
+            "\n" +
             "    -context_path <context_path>\n" +
             "          The context path for jetty.\n" +
             "\n" +
@@ -133,16 +148,22 @@ final public class H2O {
             "          Use Jetty HashLoginService\n" +
             "\n" +
             "    -ldap_login\n" +
-            "          Use Jetty LdapLoginService\n" +
+            "          Use Jetty Ldap login module\n" +
             "\n" +
             "    -kerberos_login\n" +
-            "          Use Kerberos LoginService\n" +
+            "          Use Jetty Kerberos login module\n" +
+            "\n" +
+            "    -spnego_login\n" +
+            "          Use Jetty SPNEGO login service\n" +
             "\n" +
             "    -pam_login\n" +
-            "          Use PAM LoginService\n" +
+            "          Use Jetty PAM login module\n" +
             "\n" +
             "    -login_conf <filename>\n" +
             "          LoginService configuration file\n" +
+            "\n" +
+            "    -spnego_properties <filename>\n" +
+            "          SPNEGO login module configuration file\n" +
             "\n" +
             "    -form_auth\n" +
             "          Enables Form-based authentication for Flow (default is Basic authentication)\n" +
@@ -176,7 +197,7 @@ final public class H2O {
 
     System.out.print(s);
 
-    for (AbstractH2OExtension e : H2O.getCoreExtensions()) {
+    for (AbstractH2OExtension e : extManager.getCoreExtensions()) {
       e.printHelp();
     }
   }
@@ -204,17 +225,23 @@ final public class H2O {
     /** -hash_login enables HashLoginService */
     public boolean hash_login = false;
 
-    /** -ldap_login enables LdapLoginService */
+    /** -ldap_login enables ldaploginmodule */
     public boolean ldap_login = false;
 
-    /** -kerberos_login enables KerberosLoginService */
+    /** -kerberos_login enables krb5loginmodule */
     public boolean kerberos_login = false;
 
-    /** -pam_login enables PAMLoginService */
+    /** -kerberos_login enables SpnegoLoginService */
+    public boolean spnego_login = false;
+
+    /** -pam_login enables pamloginmodule */
     public boolean pam_login = false;
 
     /** -login_conf is login configuration service file on local filesystem */
     public String login_conf = null;
+
+    /** -spnego_properties is SPNEGO configuration file on local filesystem */
+    public String spnego_properties = null;
 
     /** -form_auth enables Form-based authentication */
     public boolean form_auth = false;
@@ -232,6 +259,9 @@ final public class H2O {
     /** -internal_security_enabled is a boolean that indicates if internal communication paths are secured*/
     public boolean internal_security_enabled = false;
 
+    /** -decrypt_tool specifies the DKV key where a default decrypt tool will be installed*/
+    public String decrypt_tool = null;
+
     //-----------------------------------------------------------------------------------
     // Networking
     //-----------------------------------------------------------------------------------
@@ -240,6 +270,9 @@ final public class H2O {
 
     /** -baseport=####; Port to start upward searching from. */
     public int baseport = 54321;
+
+    /** -port_offset=####; Offset between the API(=web) port and the internal communication port; api_port + port_offset = h2o_port */
+    public int port_offset = 1;
 
     /** -web_ip=ip4_or_ip6; IP used for web server. By default it listen to all interfaces. */
     public String web_ip = null;
@@ -252,8 +285,19 @@ final public class H2O {
 
     /** -context_path=jetty_context_path; the context path for jetty */
     public String context_path = "";
+
+    public KeyValueArg[] extra_headers = new KeyValueArg[0];
   }
 
+  public static class KeyValueArg {
+    public final String _key;
+    public final String _value;
+    private KeyValueArg(String key, String value) {
+      _key = key;
+      _value = value;
+    }
+  } 
+  
   /**
    * A class containing all of the arguments for H2O.
    */
@@ -304,6 +348,9 @@ final public class H2O {
     /** -client, -client=true; Client-only; no work; no homing of Keys (but can cache) */
     public boolean client;
 
+    /** specifies a file to write when the node is up */
+    public String notify_local;
+
     //-----------------------------------------------------------------------------------
     // HDFS & AWS
     //-----------------------------------------------------------------------------------
@@ -318,9 +365,6 @@ final public class H2O {
 
     /** --ga_hadoop_ver=ga_hadoop_ver; Version string for Hadoop */
     public String ga_hadoop_ver = null;
-
-    /** --ga_opt_out; Turns off usage reporting to Google Analytics  */
-    public boolean ga_opt_out = false;
 
     //-----------------------------------------------------------------------------------
     // Debugging
@@ -337,10 +381,14 @@ final public class H2O {
     /** -quiet Enable quiet mode and avoid any prints to console, useful for client embedding */
     public boolean quiet = false;
 
-    public boolean useUDP = false;
+    /** Timeout specifying how long to wait before we check if the client has disconnected from this node */
+    public long clientDisconnectTimeout = HeartBeatThread.CLIENT_TIMEOUT * 20;
 
-    /** -no_latest_check Do not attempt to retrieve latest H2O version from S3 on startup */
-    public boolean noLatestCheck = false;
+    /**
+     * Optionally disable algorithms marked as beta or experimental.
+     * Everything is on by default.
+     */
+    public ModelBuilder.BuilderVisibility features_level = ModelBuilder.BuilderVisibility.Experimental;
 
     @Override public String toString() {
       StringBuilder result = new StringBuilder();
@@ -375,6 +423,7 @@ final public class H2O {
     public boolean launchedWithHadoopJar() {
       return hdfs_skip;
     }
+
   }
 
   public static void parseFailed(String message) {
@@ -410,6 +459,17 @@ final public class H2O {
       parseFailed("Argument " + _lastMatchedFor + " must be an integer (was given '" + a + "')" );
       return 0;
     }
+
+    public int parsePort(String portString){
+      int portNum = parseInt(portString);
+      if(portNum < 0 || portNum > 65535){
+        parseFailed("Argument " + _lastMatchedFor + " must be an integer between 0 and 65535");
+        return 0;
+      }else{
+        return portNum;
+      }
+    }
+
     @Override public String toString() { return _s; }
   }
 
@@ -417,13 +477,13 @@ final public class H2O {
    * Dead stupid argument parser.
    */
   static void parseArguments(String[] args) {
-    for (AbstractH2OExtension e : H2O.getCoreExtensions()) {
+    for (AbstractH2OExtension e : extManager.getCoreExtensions()) {
       args = e.parseArguments(args);
     }
     parseH2OArgumentsTo(args, ARGS);
   }
 
-  static OptArgs parseH2OArgumentsTo(String[] args, OptArgs trgt) {
+  public static OptArgs parseH2OArgumentsTo(String[] args, OptArgs trgt) {
     for (int i = 0; i < args.length; i++) {
       OptString s = new OptString(args[i]);
       if (s.matches("h") || s.matches("help")) {
@@ -442,11 +502,15 @@ final public class H2O {
       }
       else if (s.matches("port")) {
         i = s.incrementAndCheck(i, args);
-        trgt.port = s.parseInt(args[i]);
+        trgt.port = s.parsePort(args[i]);
       }
       else if (s.matches("baseport")) {
         i = s.incrementAndCheck(i, args);
-        trgt.baseport = s.parseInt(args[i]);
+        trgt.baseport = s.parsePort(args[i]);
+      }
+      else if (s.matches("port_offset")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.port_offset = s.parsePort(args[i]); // port offset has the same properties as a port, we don't allow negative offsets
       }
       else if (s.matches("ip")) {
         i = s.incrementAndCheck(i, args);
@@ -462,6 +526,10 @@ final public class H2O {
       }
       else if (s.matches("client")) {
         trgt.client = true;
+      }
+      else if (s.matches("notify_local")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.notify_local = args[i];
       }
       else if (s.matches("user_name")) {
         i = s.incrementAndCheck(i, args);
@@ -517,7 +585,6 @@ final public class H2O {
       else if (s.matches("ga_opt_out")) {
         // JUnits pass this as a system property, but it usually a flag without an arg
         if (i+1 < args.length && args[i+1].equals("yes")) i++;
-        trgt.ga_opt_out = true;
       }
       else if (s.matches("log_level")) {
         i = s.incrementAndCheck(i, args);
@@ -531,9 +598,6 @@ final public class H2O {
       }
       else if (s.matches("quiet")) {
         trgt.quiet = true;
-      }
-      else if(s.matches("useUDP")) {
-        trgt.useUDP = true;
       }
       else if(s.matches("cleaner")) {
         trgt.cleaner = true;
@@ -555,12 +619,19 @@ final public class H2O {
       else if (s.matches("kerberos_login")) {
         trgt.kerberos_login = true;
       }
+      else if (s.matches("spnego_login")) {
+        trgt.spnego_login = true;
+      }
       else if (s.matches("pam_login")) {
         trgt.pam_login = true;
       }
       else if (s.matches("login_conf")) {
         i = s.incrementAndCheck(i, args);
         trgt.login_conf = args[i];
+      }
+      else if (s.matches("spnego_properties")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.spnego_properties = args[i];
       }
       else if (s.matches("form_auth")) {
         trgt.form_auth = true;
@@ -574,10 +645,33 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         trgt.internal_security_conf = args[i];
       }
-      else if (s.matches("no_latest_check")) {
-        trgt.noLatestCheck = true;
+      else if (s.matches("decrypt_tool")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.decrypt_tool = args[i];
       }
-      else {
+      else if (s.matches("no_latest_check")) {
+        // ignored
+      }
+      else if(s.matches(("client_disconnect_timeout"))){
+        i = s.incrementAndCheck(i, args);
+        int clientDisconnectTimeout = s.parseInt(args[i]);
+        if (clientDisconnectTimeout <= 0) {
+          throw new IllegalArgumentException("Interval for checking if client is disconnected has to be positive (milliseconds).");
+        }
+        trgt.clientDisconnectTimeout = clientDisconnectTimeout;
+      } else if (s.matches("useUDP")) {
+        Log.warn("Support for UDP communication was removed from H2O, using TCP.");
+      } else if (s.matches("features")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.features_level = ModelBuilder.BuilderVisibility.valueOfIgnoreCase(args[i]);
+        Log.info(String.format("Limiting algorithms available to level: %s", trgt.features_level.name()));
+      } else if (s.matches("add_http_header")) {
+        i = s.incrementAndCheck(i, args);
+        String key = args[i];
+        i = s.incrementAndCheck(i, args);
+        String value = args[i];
+        trgt.extra_headers = ArrayUtils.append(trgt.extra_headers, new KeyValueArg(key, value));
+      } else {
         parseFailed("Unknown argument (" + s + ")");
       }
     }
@@ -601,12 +695,13 @@ final public class H2O {
     if (ARGS.hash_login) login_arg_count++;
     if (ARGS.ldap_login) login_arg_count++;
     if (ARGS.kerberos_login) login_arg_count++;
+    if (ARGS.spnego_login) login_arg_count++;
     if (ARGS.pam_login) login_arg_count++;
     if (login_arg_count > 1) {
-      parseFailed("Can only specify one of -hash_login, -ldap_login, -kerberos_login and -pam_login");
+      parseFailed("Can only specify one of -hash_login, -ldap_login, -kerberos_login, -spnego_login and -pam_login");
     }
 
-    if (ARGS.hash_login || ARGS.ldap_login || ARGS.kerberos_login || ARGS.pam_login) {
+    if (ARGS.hash_login || ARGS.ldap_login || ARGS.kerberos_login || ARGS.pam_login || ARGS.spnego_login) {
       if (H2O.ARGS.login_conf == null) {
         parseFailed("Must specify -login_conf argument");
       }
@@ -614,6 +709,15 @@ final public class H2O {
       if (H2O.ARGS.form_auth) {
         parseFailed("No login method was specified. Form-based authentication can only be used in conjunction with of a LoginService.\n" +
                 "Pick a LoginService by specifying '-<method>_login' option.");
+      }
+    }
+
+    if (ARGS.spnego_login) {
+      if (H2O.ARGS.spnego_properties == null) {
+        parseFailed("Must specify -spnego_properties argument");
+      }
+      if (H2O.ARGS.form_auth) {
+        parseFailed("Form-based authentication not supported when SPNEGO login is enabled.");
       }
     }
 
@@ -626,15 +730,10 @@ final public class H2O {
     }
 
     // Validate extension arguments
-    for (AbstractH2OExtension e : H2O.getCoreExtensions()) {
+    for (AbstractH2OExtension e : extManager.getCoreExtensions()) {
       e.validateArguments();
     }
   }
-
-  // Google analytics performance measurement
-  public static GoogleAnalytics GA;
-  public static int CLIENT_TYPE_GA_CUST_DIM = 1;
-  public static int CLIENT_ID_GA_CUST_DIM = 2;
 
   //-------------------------------------------------------------------------------------------------------------------
   // Embedded configuration for a full H2O node to be implanted in another
@@ -658,15 +757,32 @@ final public class H2O {
    * @param port Port this H2O can be reached at (for REST API and browser).
    * @param size Number of H2O instances in the cloud.
    */
-  public static void notifyAboutCloudSize(InetAddress ip, int port, int size) {
+  public static void notifyAboutCloudSize(InetAddress ip, int port, InetAddress leaderIp, int leaderPort, int size) {
+    if (ARGS.notify_local != null && !ARGS.notify_local.trim().isEmpty()) {
+      final File notifyFile = new File(ARGS.notify_local);
+      final File parentDir = notifyFile.getParentFile();
+      if (parentDir != null && !parentDir.isDirectory()) {
+        if (!parentDir.mkdirs()) {
+          Log.err("Cannot make parent dir for notify file.");
+          H2O.exit(-1);
+        }
+      }
+      try(BufferedWriter output = new BufferedWriter(new FileWriter(notifyFile))) {
+        output.write(SELF_ADDRESS.getHostAddress());
+        output.write(':');
+        output.write(Integer.toString(API_PORT));
+        output.flush();
+      } catch ( IOException e ) {
+        e.printStackTrace();
+      }
+    }
     if (embeddedH2OConfig == null) { return; }
-    embeddedH2OConfig.notifyAboutCloudSize(ip, port, size);
+    embeddedH2OConfig.notifyAboutCloudSize(ip, port, leaderIp, leaderPort, size);
   }
 
 
   public static void closeAll() {
-    try { NetworkInit._udpSocket.close(); } catch( IOException ignore ) { }
-    try { H2O.getJetty().stop(); } catch( Exception ignore ) { }
+    try { H2O.getWebServer().stop(); } catch( Exception ignore ) { }
     try { NetworkInit._tcpSocket.close(); } catch( IOException ignore ) { }
     PersistManager PM = H2O.getPM();
     if( PM != null ) PM.getIce().cleanUp();
@@ -698,7 +814,7 @@ final public class H2O {
   public static int orderlyShutdown() {
     return orderlyShutdown(-1);
   }
-  
+
   public static int orderlyShutdown(int timeout) {
     boolean [] confirmations = new boolean[H2O.CLOUD.size()];
     if (H2O.SELF.index() >= 0) { // Do not wait for clients to shutdown
@@ -733,16 +849,7 @@ final public class H2O {
 
   //-------------------------------------------------------------------------------------------------------------------
 
-  public static final AbstractBuildVersion ABV;
-  static {
-    AbstractBuildVersion abv = AbstractBuildVersion.UNKNOWN_VERSION;
-    try {
-      Class klass = Class.forName("water.init.BuildVersion");
-      java.lang.reflect.Constructor constructor = klass.getConstructor();
-      abv = (AbstractBuildVersion) constructor.newInstance();
-    } catch (Exception ignore) { }
-    ABV = abv;
-  }
+  public static final AbstractBuildVersion ABV = AbstractBuildVersion.getBuildVersion();
 
   //-------------------------------------------------------------------------------------------------------------------
 
@@ -755,6 +862,9 @@ final public class H2O {
     if (LogManager.getCurrentLoggers().hasMoreElements()) {
       _haveInheritedLog4jConfiguration = true;
       return;
+    } else if (System.getProperty("log4j.configuration") != null) {
+      _haveInheritedLog4jConfiguration = true;
+      return;
     }
 
     // Disable logging from a few specific classes at startup.
@@ -764,8 +874,13 @@ final public class H2O {
     // The trick is the output path / file isn't known until the H2O API PORT is chosen,
     // so real logger initialization has to happen somewhat late in the startup lifecycle.
     java.util.Properties p = new java.util.Properties();
-    p.setProperty("log4j.logger.org.reflections.Reflections", "WARN");
+    p.setProperty("log4j.rootCategory", "WARN, console");
     p.setProperty("log4j.logger.org.eclipse.jetty", "WARN");
+
+    p.setProperty("log4j.appender.console", "org.apache.log4j.ConsoleAppender");
+    p.setProperty("log4j.appender.console.layout", "org.apache.log4j.PatternLayout");
+    p.setProperty("log4j.appender.console.layout.ConversionPattern", "%m%n");
+
     PropertyConfigurator.configure(p);
     System.setProperty("org.eclipse.jetty.LEVEL", "WARN");
 
@@ -774,108 +889,6 @@ final public class H2O {
     System.setProperty("org.eclipse.jetty.util.log.class", "org.eclipse.jetty.util.log.StdErrLog");
   }
 
-  //-------------------------------------------------------------------------------------------------------------------
-
-  // Be paranoid and check that this doesn't happen twice.
-  private static boolean extensionsRegistered = false;
-  private static long registerExtensionsMillis = 0;
-
-  /**
-   * Register H2O extensions.
-   * <p/>
-   * Use SPI to find all classes that extends water.AbstractH2OExtension
-   * and call H2O.addCoreExtension() for each.
-   */
-  public static void registerExtensions() {
-    if (extensionsRegistered) {
-      throw H2O.fail("Extensions already registered");
-    }
-
-    long before = System.currentTimeMillis();
-    ServiceLoader<AbstractH2OExtension> extensionsLoader = ServiceLoader.load(AbstractH2OExtension.class);
-    for (AbstractH2OExtension ext : extensionsLoader) {
-      if (ext.isEnabled()) {
-        ext.init();
-        addCoreExtension(ext);
-      }
-    }
-    extensionsRegistered = true;
-
-    registerExtensionsMillis = System.currentTimeMillis() - before;
-  }
-
-  private static ArrayList<AbstractH2OExtension> coreExtensions = new ArrayList<>();
-
-  public static void addCoreExtension(AbstractH2OExtension e) {
-    coreExtensions.add(e);
-  }
-
-  private static ArrayList<RestApiExtension> restApiExtensions = new ArrayList<>();
-
-  public static void addRestAPIExtension(RestApiExtension e){
-    restApiExtensions.add(e);
-  }
-  public static ArrayList<AbstractH2OExtension> getCoreExtensions() {
-    return coreExtensions;
-  }
-
-  public static ArrayList<RestApiExtension> getRestApiExtensions(){
-    return restApiExtensions;
-  }
-
-  //-------------------------------------------------------------------------------------------------------------------
-
-  // Be paranoid and check that this doesn't happen twice.
-  private static boolean apisRegistered = false;
-
-  /**
-   * Register REST API routes.
-   *
-   * Use reflection to find all classes that inherit from {@link water.api.AbstractRegister}
-   * and call the register() method for each.
-   *
-   * @param relativeResourcePath Relative path from running process working dir to find web resources.
-   */
-  public static void registerRestApis(String relativeResourcePath) {
-    if (apisRegistered) {
-      throw H2O.fail("APIs already registered");
-    }
-
-    // Log extension registrations here so the message is grouped in the right spot.
-    List<String> registeredH2OExts = new ArrayList<>();
-    for (AbstractH2OExtension e : H2O.getCoreExtensions()) {
-      e.printInitialized();
-      registeredH2OExts.add(e.getExtensionName());
-    }
-    Log.info("Registered " + H2O.getCoreExtensions().size() + " core extensions in: " + registerExtensionsMillis + "ms");
-    Log.info("Registered H2O core extensions: " + Arrays.toString(registeredH2OExts.toArray()));
-
-    long before = System.currentTimeMillis();
-    RequestServer.DummyRestApiContext dummyRestApiContext = new RequestServer.DummyRestApiContext();
-    ServiceLoader<RestApiExtension> restApiExtensionLoader = ServiceLoader.load(RestApiExtension.class);
-    List<String> registeredRestApiExts = new ArrayList<>();
-    for (RestApiExtension r : restApiExtensionLoader) {
-      try {
-        r.register(relativeResourcePath);
-        r.registerEndPoints(dummyRestApiContext);
-        r.registerSchemas(dummyRestApiContext);
-        registeredRestApiExts.add(r.getName());
-        H2O.addRestAPIExtension(r);
-      } catch (Exception e) {
-        Log.info("Cannot register extension: " + r + ". Skipping it...");
-      }
-    }
-    
-    apisRegistered = true;
-
-    long registerApisMillis = System.currentTimeMillis() - before;
-    Log.info("Registered: " + RequestServer.numRoutes() + " REST APIs in: " + registerApisMillis + "ms");
-    Log.info("Registered REST API extensions: " + Arrays.toString(registeredRestApiExts.toArray()));
-
-    // Register all schemas
-    SchemaServer.registerAllSchemasIfNecessary(dummyRestApiContext.getAllSchemas());
-  }
-  
   //-------------------------------------------------------------------------------------------------------------------
 
   public static class AboutEntry {
@@ -929,7 +942,7 @@ final public class H2O {
     sb.append(desc).append("_model_");
 
     // Append user agent string if we can figure it out.
-    String source = JettyHTTPD.getUserAgent();
+    String source = ServletUtils.getUserAgent();
     if (source != null) {
       StringBuilder ua = new StringBuilder();
 
@@ -1048,9 +1061,29 @@ final public class H2O {
 
   // Used to gate default worker threadpool sizes
   public static final int NUMCPUS = Runtime.getRuntime().availableProcessors();
-  // Best-guess process ID
-  public static long PID = -1L;
 
+  // Best-guess process ID
+  public static final long PID;
+  static {
+    PID = getCurrentPID();
+  }
+
+  // Extension Manager instance
+  private static final ExtensionManager extManager = ExtensionManager.getInstance();
+
+  /**
+   * Retrieves a value of an H2O system property
+   * @param name property name
+   * @param def default value
+   * @return value of the system property or default value if property was not defined
+   */
+  public static String getSysProperty(String name, String def) {
+    return System.getProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + name, def);
+  }
+
+  public static boolean getSysBoolProperty(String name, boolean def) {
+    return Boolean.parseBoolean(getSysProperty(name, String.valueOf(def)));
+  }
 
   /**
    * Throw an exception that will cause the request to fail, but the cluster to continue.
@@ -1087,7 +1120,15 @@ final public class H2O {
     Log.fatal("Stacktrace: ");
     Log.fatal(Arrays.toString(Thread.currentThread().getStackTrace()));
 
-    H2O.shutdown(-1);
+    // H2O fail() exists because of coding errors - but what if usage of fail() was itself a coding error?
+    // Property "suppress.shutdown.on.failure" can be used in the case when someone is seeing shutdowns on production
+    // because a developer incorrectly used fail() instead of just throwing a (recoverable) exception
+    boolean suppressShutdown = getSysBoolProperty("suppress.shutdown.on.failure", false);
+    if (! suppressShutdown) {
+      H2O.shutdown(-1);
+    } else {
+      throw new IllegalStateException("Suppressed shutdown for failure: " + msg, cause);
+    }
 
     // unreachable
     return new H2OFailException(msg);
@@ -1242,14 +1283,54 @@ final public class H2O {
     return task;
   }
 
-  public static abstract class H2OFuture<T> implements Future<T> {
-    public final T getResult(){
+  /**
+   * Executes a runnable on a regular H2O Node (= not on a client).
+   * If the current H2O Node is a regular node, the runnable will be executed directly (RemoteRunnable#run will be invoked).
+   * If the current H2O Node is a client node, the runnable will be send to a leader node of the cluster and executed there.
+   * The caller shouldn't make any assumptions on where the code will be run.
+   * @param runnable code to be executed
+   * @param <T> RemoteRunnable
+   * @return executed runnable (will be a different instance if executed remotely).
+   */
+  public static <T extends RemoteRunnable> T runOnH2ONode(T runnable) {
+    H2ONode node = H2O.ARGS.client ? H2O.CLOUD.leader() : H2O.SELF;
+    return runOnH2ONode(node, runnable);
+  }
+
+  // package-private for unit tests
+  static <T extends RemoteRunnable> T runOnH2ONode(H2ONode node, T runnable) {
+    if (node == H2O.SELF) {
+      // run directly
+      runnable.run();
+      return runnable;
+    } else {
+      RunnableWrapperTask<T> task = new RunnableWrapperTask<>(runnable);
       try {
-        return get();
-      } catch (InterruptedException | ExecutionException e) {
-        throw new RuntimeException(e);
+        return new RPC<>(node, task).call().get()._runnable;
+      } catch (DistributedException e) {
+        Log.trace("Exception in calling runnable on a remote node",  e);
+        Throwable cause = e.getCause();
+        throw cause instanceof RuntimeException ? (RuntimeException) cause : e;
       }
     }
+  }
+
+  private static class RunnableWrapperTask<T extends RemoteRunnable> extends DTask<RunnableWrapperTask<T>> {
+    private final T _runnable;
+    private RunnableWrapperTask(T runnable) {
+      _runnable = runnable;
+    }
+    @Override
+    public void compute2() {
+      _runnable.setupOnRemote();
+      _runnable.run();
+      tryComplete();
+    }
+  }
+
+  public abstract static class RemoteRunnable<T extends RemoteRunnable> extends Iced<T> {
+    public void setupOnRemote() {}
+    public abstract void run();
   }
 
   /** Simple wrapper over F/J {@link CountedCompleter} to support priority
@@ -1388,7 +1469,7 @@ final public class H2O {
     public abstract void callback(T t);
   }
 
-  public static int H2O_PORT; // Both TCP & UDP cluster ports
+  public static int H2O_PORT; // H2O TCP Port
   public static int API_PORT; // RequestServer and the API HTTP port
 
   /**
@@ -1406,6 +1487,10 @@ final public class H2O {
     return String.format(address instanceof Inet6Address
                     ? "%s://[%s]:%d%s" : "%s://%s:%d%s",
             schema, address.getHostAddress(), port, contextPath);
+  }
+
+  public static String getURL(String schema, String hostname, int port, String contextPath) {
+    return String.format("%s://%s:%d%s", schema, hostname, port, contextPath);
   }
 
   // The multicast discovery port
@@ -1469,7 +1554,7 @@ final public class H2O {
 
   /* A static list of acceptable Cloud members passed via -flatfile option.
    * It is updated also when a new client appears. */
-  private static HashSet<H2ONode> STATIC_H2OS = null;
+  private static Set<H2ONode> STATIC_H2OS = null;
 
   /* List of all clients that ever connected to this cloud. Keys are IP:PORT of these clients */
   private static Map<String, H2ONode> CLIENTS_MAP = new ConcurrentHashMap<>();
@@ -1487,44 +1572,34 @@ final public class H2O {
   // as part of joining the cluster so all nodes have the same value.
   public static final long CLUSTER_ID = System.currentTimeMillis();
 
-  private static JettyHTTPD jetty;
-  public static void setJetty(JettyHTTPD value) {
-    jetty = value;
+  private static WebServer webServer;
+  public static void setWebServer(WebServer value) {
+    webServer = value;
   }
-  public static JettyHTTPD getJetty() {
-    return jetty;
+  public static WebServer getWebServer() {
+    return webServer;
   }
 
   /** If logging has not been setup yet, then Log.info will only print to
    *  stdout.  This allows for early processing of the '-version' option
    *  without unpacking the jar file and other startup stuff.  */
   private static void printAndLogVersion(String[] arguments) {
-    String latestVersion = ARGS.noLatestCheck ? "?" : ABV.getLatestH2OVersion();
     Log.init(ARGS.log_level, ARGS.quiet);
     Log.info("----- H2O started " + (ARGS.client?"(client)":"") + " -----");
     Log.info("Build git branch: " + ABV.branchName());
     Log.info("Build git hash: " + ABV.lastCommitHash());
     Log.info("Build git describe: " + ABV.describe());
-    Log.info("Build project version: " + ABV.projectVersion() + " (latest version: " + latestVersion + ")");
+    Log.info("Build project version: " + ABV.projectVersion());
     Log.info("Build age: " + PrettyPrint.toAge(ABV.compiledOnDate(), new Date()));
     Log.info("Built by: '" + ABV.compiledBy() + "'");
     Log.info("Built on: '" + ABV.compiledOn() + "'");
 
     if (ABV.isTooOld()) {
-      Log.warn("\n*** Your H2O version is too old! Please download the latest version " + latestVersion + " from http://h2o.ai/download/ ***");
+      Log.warn("\n*** Your H2O version is too old! Please download the latest version from http://h2o.ai/download/ ***");
       Log.warn("");
     }
 
-    for (AbstractH2OExtension e : H2O.getCoreExtensions()) {
-      String n = e.getExtensionName() + " ";
-      AbstractBuildVersion abv = e.getBuildVersion();
-      Log.info(n + "Build git branch: ", abv.branchName());
-      Log.info(n + "Build git hash: ", abv.lastCommitHash());
-      Log.info(n + "Build git describe: ", abv.describe());
-      Log.info(n + "Build project version: ", abv.projectVersion());
-      Log.info(n + "Built by: ", abv.compiledBy());
-      Log.info(n + "Built on: ", abv.compiledOn());
-    }
+    Log.info("Found H2O Core extensions: " + extManager.getCoreExtensions());
     Log.info("Processed H2O arguments: ", Arrays.toString(arguments));
 
     Runtime runtime = Runtime.getRuntime();
@@ -1539,48 +1614,33 @@ final public class H2O {
     Log.info ("Machine physical memory: " + (totalMemory==-1 ? "NA" : PrettyPrint.bytes(totalMemory)));
   }
 
-  private static void startGAStartupReport() {
-    new GAStartupReportThread().start();
-  }
-
   /** Initializes the local node and the local cloud with itself as the only member. */
   private static void startLocalNode() {
-    PID = -1L;
-    try {
-      String n = ManagementFactory.getRuntimeMXBean().getName();
-      int i = n.indexOf('@');
-      if( i != -1 ) PID = Long.parseLong(n.substring(0, i));
-    } catch( Throwable ignore ) { }
-
     // Figure self out; this is surprisingly hard
     NetworkInit.initializeNetworkSockets();
-    // Do not forget to put SELF into the static configuration (to simulate
-    // proper multicast behavior)
-    if( !ARGS.client && STATIC_H2OS != null && !STATIC_H2OS.contains(SELF)) {
-      Log.warn("Flatfile configuration does not include self: " + SELF+ " but contains " + STATIC_H2OS);
-      STATIC_H2OS.add(SELF);
+
+    // Do not forget to put SELF into the static configuration (to simulate proper multicast behavior)
+    if ( !ARGS.client && H2O.isFlatfileEnabled() && !H2O.isNodeInFlatfile(SELF)) {
+      Log.warn("Flatfile configuration does not include self: " + SELF + ", but contains " + H2O.getFlatfile());
+      H2O.addNodeToFlatfile(SELF);
     }
 
-    Log.info ("H2O cloud name: '" + ARGS.name + "' on " + SELF+
-              (ARGS.flatfile==null
-               ? (", discovery address "+CLOUD_MULTICAST_GROUP+":"+CLOUD_MULTICAST_PORT)
-               : ", static configuration based on -flatfile "+ARGS.flatfile));
+    Log.info("H2O cloud name: '" + ARGS.name + "' on " + SELF +
+            (H2O.isFlatfileEnabled()
+                    ? (", discovery address " + CLOUD_MULTICAST_GROUP + ":" + CLOUD_MULTICAST_PORT)
+                    : ", static configuration based on -flatfile " + ARGS.flatfile));
 
     if (!H2O.ARGS.disable_web) {
       Log.info("If you have trouble connecting, try SSH tunneling from your local machine (e.g., via port 55555):\n" +
-          "  1. Open a terminal and run 'ssh -L 55555:localhost:"
-          + API_PORT + " " + System.getProperty("user.name") + "@" + SELF_ADDRESS.getHostAddress() + "'\n" +
-          "  2. Point your browser to " + jetty.getScheme() + "://localhost:55555");
+              "  1. Open a terminal and run 'ssh -L 55555:localhost:"
+              + API_PORT + " " + System.getProperty("user.name") + "@" + SELF_ADDRESS.getHostAddress() + "'\n" +
+              "  2. Point your browser to " + NetworkInit.h2oHttpView.getScheme() + "://localhost:55555");
     }
 
     // Create the starter Cloud with 1 member
     SELF._heartbeat._jar_md5 = JarHash.JARHASH;
     SELF._heartbeat._client = ARGS.client;
     SELF._heartbeat._cloud_name_hash = ARGS.name.hashCode();
-
-    if(ARGS.client){
-      reportClient(H2O.SELF); // report myself as the client to myself
-    }
   }
 
   /** Starts the worker threads, receiver threads, heartbeats and all other
@@ -1589,19 +1649,6 @@ final public class H2O {
     // We've rebooted the JVM recently. Tell other Nodes they can ignore task
     // prior tasks by us. Do this before we receive any packets
     UDPRebooted.T.reboot.broadcast();
-
-    // Start the UDPReceiverThread, to listen for requests from other Cloud
-    // Nodes. There should be only 1 of these, and it never shuts down.
-    // Started first, so we can start parsing UDP packets
-    if(H2O.ARGS.useUDP) {
-      new UDPReceiverThread(NetworkInit._udpSocket).start();
-      // Start a UDP timeout worker thread. This guy only handles requests for
-      // which we have not received a timely response and probably need to
-      // arrange for a re-send to cover a dropped UDP packet.
-      new UDPTimeOutThread().start();
-      // Same same for a dropped ACK needing an ACKACK back.
-      new H2ONode.AckAckTimeOutThread().start();
-    }
 
     // Start the MultiReceiverThread, to listen for multi-cast requests from
     // other Cloud Nodes. There should be only 1 of these, and it never shuts
@@ -1620,9 +1667,12 @@ final public class H2O {
 
   }
 
+  @Deprecated
   static public void register(
-      String method_url, Class<? extends water.api.Handler> hclass, String method, String apiName, String summary
+          String method_url, Class<? extends water.api.Handler> hclass, String method, String apiName, String summary
   ) {
+    Log.warn("The H2O.register method is deprecated and will be removed in the next major release." +
+            "Please register REST API endpoints as part of their corresponding REST API extensions!");
     RequestServer.registerEndpoint(apiName, method_url, hclass, method, summary);
   }
 
@@ -1643,9 +1693,9 @@ final public class H2O {
   /**
    * This switch Jetty into accepting mode.
    */
-  static public void startServingRestApi() {
+  public static void startServingRestApi() {
     if (!H2O.ARGS.disable_web) {
-      jetty.acceptRequests();
+      NetworkInit.h2oHttpView.acceptRequests();
     }
   }
 
@@ -1660,14 +1710,17 @@ final public class H2O {
   public final H2ONode[] _memary;
 
   // mapping from a node ip to node index
-  private final HashMap<String, Integer> _node_ip_to_index;
+  private HashMap<String, Integer> _node_ip_to_index;
   final int _hash;
 
   public H2ONode getNodeByIpPort(String ipPort) {
     if(_node_ip_to_index != null) {
       Integer index = _node_ip_to_index.get(ipPort);
       if (index != null) {
-        if(index <= -1 || index >= _memary.length){
+        if(index == -1){
+          return H2O.SELF;
+        } else if(index <= -1 || index >= _memary.length){
+          // index -1 should not happen anymore as well
           throw new RuntimeException("Mapping from node id to node index contains: " + index + ", however this node" +
                   "does not exist!");
         }
@@ -1693,10 +1746,6 @@ final public class H2O {
   H2O( H2ONode[] h2os, int hash, int idx ) {
     _memary = h2os;             // Need to clone?
     java.util.Arrays.sort(_memary);       // ... sorted!
-    _node_ip_to_index = new HashMap<>();
-    for(H2ONode node: _memary){
-      _node_ip_to_index.put(node.getIpPortString(), node.index());
-    }
     _hash = hash;               // And record hash for cloud rollover
     _idx = (char)(idx&0x0ff);   // Roll-over at 256
   }
@@ -1711,6 +1760,11 @@ final public class H2O {
       CLOUDS[idx] = CLOUD = new H2O(h2os,hash,idx);
     }
     SELF._heartbeat._cloud_size=(char)CLOUD.size();
+
+    H2O.CLOUD._node_ip_to_index = new HashMap<>();
+    for(H2ONode node: H2O.CLOUD._memary){
+      H2O.CLOUD._node_ip_to_index.put(node.getIpPortString(), node.index());
+    }
   }
 
   // Is nnn larger than old (counting for wrap around)? Gets confused if we
@@ -1723,8 +1777,8 @@ final public class H2O {
   }
 
   public final int size() { return _memary.length; }
-  final H2ONode leader() {
-    return _memary[0]; 
+  public final H2ONode leader() {
+    return _memary[0];
   }
 
   // Find the node index for this H2ONode, or a negative number on a miss
@@ -1842,6 +1896,7 @@ final public class H2O {
     if( v != null ) v.removePersist();
   }
   public static void raw_clear() { STORE.clear(); }
+  
   public static boolean containsKey( Key key ) { return STORE.get(key) != null; }
   static Key getk( Key key ) { return STORE.getk(key); }
   public static Set<Key> localKeySet( ) { return STORE.keySet(); }
@@ -1903,12 +1958,19 @@ final public class H2O {
 
   /**
    * Check if the Java version is not supported
+   *
    * @return true if not supported
    */
   public static boolean checkUnsupportedJava() {
-    String version = System.getProperty("java.version");
-    if (version != null && !(version.startsWith("1.6") || version.startsWith("1.7") || version.startsWith("1.8"))) {
-      System.err.println("Only Java 1.6-1.8 supported, version is " + version);
+    if (Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.noJavaVersionCheck")) {
+      return false;
+    }
+
+    // Notes: 
+    // - make sure that the following whitelist is logically consistent with whitelist in R code - see function .h2o.check_java_version in connection.R
+    // - upgrade of the javassist library should be considered when adding support for a new java version
+    if (JAVA_VERSION.isKnown() && !isUserEnabledJavaVersion() && (JAVA_VERSION.getMajor()<7 || JAVA_VERSION.getMajor()>11)) {
+      System.err.println("Only Java 7, 8, 9, 10 and 11 are supported, system version is " + System.getProperty("java.version"));
       return true;
     }
     String vmName = System.getProperty("java.vm.name");
@@ -1919,8 +1981,27 @@ final public class H2O {
     return false;
   }
 
+  private static boolean isUserEnabledJavaVersion() {
+    String extraJavaVersionsStr = System.getProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.allowJavaVersions");
+    if (extraJavaVersionsStr == null || extraJavaVersionsStr.isEmpty())
+      return false;
+    String[] vs = extraJavaVersionsStr.split(",");
+    for (String v : vs) {
+      int majorVersion = Integer.valueOf(v);
+      if (JAVA_VERSION.getMajor() == majorVersion) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   // --------------------------------------------------------------------------
   public static void main( String[] args ) {
+   H2O.configureLogging();
+   extManager.registerCoreExtensions();
+   extManager.registerListenerExtensions();
+   extManager.registerAuthExtensions();
+
    long time0 = System.currentTimeMillis();
 
    if (checkUnsupportedJava())
@@ -1977,45 +2058,6 @@ final public class H2O {
     Log.info("X-h2o-cluster-id: " + H2O.CLUSTER_ID);
     Log.info("User name: '" + H2O.ARGS.user_name + "'");
 
-    // Register with GA or not
-    long time3 = System.currentTimeMillis();
-    List<String> gaidList;  // fetching this list takes ~100ms
-    if((new File(".h2o_no_collect")).exists()
-            || (new File(System.getProperty("user.home")+File.separator+".h2o_no_collect")).exists()
-            || ARGS.ga_opt_out
-            || (gaidList = JarHash.getResourcesList("gaid")).contains("CRAN")
-            || H2O.ABV.isDevVersion()) {
-      GA = null;
-      Log.info("Opted out of sending usage metrics.");
-    } else {
-      try {
-        GA = new GoogleAnalytics("UA-56665317-1", "H2O", ABV.projectVersion());
-        DefaultRequest defReq = GA.getDefaultRequest();
-        String gaid = null;
-        if (gaidList.size() > 0) {
-          if (gaidList.size() > 1) Log.debug("More than once resource seen in gaid dir.");
-          for (String str : gaidList) {
-            if (str.matches("........-....-....-....-............")
-                && !str.equals("XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX")) {
-              gaid = str;
-              break;
-            }
-          }
-        }
-        if (gaid == null) { // No UUID, create one
-          gaid = defReq.clientId();
-          gaid = gaid.replaceFirst("........-","ANONYMOU-");
-        }
-        defReq.customDimension(CLIENT_ID_GA_CUST_DIM, gaid);
-        GA.setDefaultRequest(defReq);
-      } catch(Throwable t) {
-        Log.POST(11, t.toString());
-        StackTraceElement[] stes = t.getStackTrace();
-        for (StackTraceElement ste : stes)
-          Log.POST(11, ste.toString());
-      }
-    }
-
     // Epic Hunt for the correct self InetAddress
     long time4 = System.currentTimeMillis();
     Log.info("IPv6 stack selected: " + IS_IPV6);
@@ -2039,7 +2081,7 @@ final public class H2O {
 
     // Allow core extensions to perform initialization that requires the network.
     long time6 = System.currentTimeMillis();
-    for (AbstractH2OExtension ext: coreExtensions) {
+    for (AbstractH2OExtension ext: extManager.getCoreExtensions()) {
       ext.onLocalNodeStarted();
     }
 
@@ -2057,7 +2099,9 @@ final public class H2O {
     long time7 = System.currentTimeMillis();
     RuntimeMXBean rtBean = ManagementFactory.getRuntimeMXBean();
     Log.debug("H2O launch parameters: "+ARGS.toString());
-    Log.debug("Boot class path: "+ rtBean.getBootClassPath());
+    if (rtBean.isBootClassPathSupported()) {
+      Log.debug("Boot class path: " + rtBean.getBootClassPath());
+    }
     Log.debug("Java class path: "+ rtBean.getClassPath());
     Log.debug("Java library path: "+ rtBean.getLibraryPath());
 
@@ -2104,18 +2148,25 @@ final public class H2O {
     new HeartBeatThread().start();
 
     long time11 = System.currentTimeMillis();
-    if (GA != null)
-      startGAStartupReport();
 
     // Log registered parsers
     Log.info("Registered parsers: " + Arrays.toString(ParserService.INSTANCE.getAllProviderNames(true)));
+
+    // Start thread checking client disconnections
+    if (Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.clientDisconnectAttack")) {
+      // for development only!
+      Log.warn("Client Random Disconnect attack is enabled - use only for debugging! More warnings to follow ;)");
+      new ClientRandomDisconnectThread().start();
+    } else {
+      // regular mode of operation
+      new ClientDisconnectCheckThread().start();
+    }
 
     long time12 = System.currentTimeMillis();
     Log.debug("Timing within H2O.main():");
     Log.debug("    Args parsing & validation: " + (time1 - time0) + "ms");
     Log.debug("    Get ICE root: " + (time2 - time1) + "ms");
-    Log.debug("    Print log version: " + (time3 - time2) + "ms");
-    Log.debug("    Register GA: " + (time4 - time3) + "ms");
+    Log.debug("    Print log version: " + (time4 - time2) + "ms");
     Log.debug("    Detect network address: " + (time5 - time4) + "ms");
     Log.debug("    Start local node: " + (time6 - time5) + "ms");
     Log.debug("    Extensions onLocalNodeStarted(): " + (time7 - time6) + "ms");
@@ -2126,59 +2177,57 @@ final public class H2O {
     Log.debug("    Start GA: " + (time12 - time11) + "ms");
   }
 
+  /** Find PID of the current process, use -1 if we can't find the value. */
+  private static long getCurrentPID() {
+    try {
+      String n = ManagementFactory.getRuntimeMXBean().getName();
+      int i = n.indexOf('@');
+      if(i != -1) {
+        return Long.parseLong(n.substring(0, i));
+      } else {
+        return -1L;
+      }
+    } catch(Throwable ignore) {
+      return -1L;
+    }
+  }
+
   // Die horribly
   public static void die(String s) {
     Log.fatal(s);
     H2O.exit(-1);
   }
 
-  public static class GAStartupReportThread extends Thread {
-    final private int sleepMillis = 150 * 1000; //2.5 min
-
-    // Constructor.
-    public GAStartupReportThread() {
-      super("GAStartupReport");        // Only 9 characters get printed in the log.
-      setDaemon(true);
-      setPriority(MAX_PRIORITY - 2);
-    }
-
-    // Class main thread.
-    @Override
-    public void run() {
-      try {
-        Thread.sleep (sleepMillis);
-      }
-      catch (Exception ignore) {};
-      GAUtils.logStartup();
-    }
-  }
-
-
-  /** Add node to a manual multicast list.
-   *  Note: the method is valid only if -flatfile option was specified on commandline*
-   * @param node  h2o node
-   * @return true if node was already in the multicast list.
+  /**
+   * Add node to a manual multicast list.
+   * Note: the method is valid only if -flatfile option was specified on commandline
+   *
+   * @param node H2O node
+   * @return true if the node was already in the multicast list.
    */
   public static boolean addNodeToFlatfile(H2ONode node) {
     assert isFlatfileEnabled() : "Trying to use flatfile, but flatfile is not enabled!";
     return STATIC_H2OS.add(node);
   }
 
-  /** Remove node from a manual multicast list.
-    *  Note: the method is valid only if -flatfile option was specified on commandline*
-    * @param node  h2o node
-    * @return true if node was already in the multicast list.
-    */
-  public static boolean removeNodeFromFlatfile(H2ONode node){
-      assert isFlatfileEnabled() : "Trying to use flatfile, but flatfile is not enabled!";
-      return STATIC_H2OS.remove(node);
-    }
-
-  /** Check if a node is included in a manual multicast list.
-   *  Note: the method is valid only if -flatfile option was specified on commandline
+  /**
+   * Remove node from a manual multicast list.
+   * Note: the method is valid only if -flatfile option was specified on commandline
    *
-   * @param node  h2o node
-   * @return true if node was already in the multicast list.
+   * @param node H2O node
+   * @return true if the node was in the multicast list.
+   */
+  public static boolean removeNodeFromFlatfile(H2ONode node) {
+    assert isFlatfileEnabled() : "Trying to use flatfile, but flatfile is not enabled!";
+    return STATIC_H2OS.remove(node);
+  }
+
+  /**
+   * Check if a node is included in a manual multicast list.
+   * Note: the method is valid only if -flatfile option was specified on commandline
+   *
+   * @param node H2O node
+   * @return true if the node is in the multicast list.
    */
   public static boolean isNodeInFlatfile(H2ONode node) {
     assert isFlatfileEnabled() : "Trying to use flatfile, but flatfile is not enabled!";
@@ -2186,47 +2235,99 @@ final public class H2O {
   }
 
   /**
-   * Is manual multicast enabled?
-   * @return  true if `-flatfile` option was specified on commandline
+   * Check if manual multicast is enabled.
+   *
+   * @return true if -flatfile option was specified on commandline
    */
   public static boolean isFlatfileEnabled() {
     return STATIC_H2OS != null;
   }
 
-  /** Setup a set of nodes which should be contacted during
-   * manual multicast.
-   * @param nodes  set of H2O nodes.
+  /**
+   * Setup a set of nodes which should be contacted during manual multicast
+   *
+   * @param nodes set of H2O nodes
    */
-  public static void setFlatfile(HashSet<H2ONode> nodes) {
-    STATIC_H2OS = nodes;
-  }
-
-  /** Returns a set of nodes which are contacted during manual
-   * multicast. The returned value can be modified by the user since
-   * the call return a copy of the original set.
-   * @return  set of nodes
-   */
-  public static HashSet<H2ONode> getFlatfile() {
-    return (HashSet<H2ONode>) STATIC_H2OS.clone();
-  }
-
-  public static H2ONode reportClient(H2ONode client){
-    H2ONode oldClient = CLIENTS_MAP.put(client.getIpPortString(), client);
-    if(oldClient == null){
-      Log.info("New client discovered at " + client);
+  public static void setFlatfile(Set<H2ONode> nodes) {
+    if (nodes == null) {
+      STATIC_H2OS = null;
+    } else {
+      STATIC_H2OS = Collections.newSetFromMap(new ConcurrentHashMap<H2ONode, Boolean>());
+      STATIC_H2OS.addAll(nodes);
     }
-    return oldClient;
   }
 
-  public static H2ONode removeClient(H2ONode client){
-    return CLIENTS_MAP.remove(client.getIpPortString());
+  /**
+   * Returns a set of nodes which are contacted during manual multi-cast.
+   *
+   * @return set of H2O nodes
+   */
+  public static Set<H2ONode> getFlatfile() {
+    return new HashSet<>(STATIC_H2OS);
   }
 
-  public static HashSet<H2ONode> getClients(){
-    return new HashSet<>(CLIENTS_MAP.values());
+  /**
+   * Forgets H2O client
+   */
+  static boolean removeClient(H2ONode client){
+    return client.removeClient();
+  }
+
+  public static H2ONode[] getClients(){
+    return H2ONode.getClients();
   }
 
   public static H2ONode getClientByIPPort(String ipPort){
-    return CLIENTS_MAP.get(ipPort);
+    return H2ONode.getClientByIPPort(ipPort);
   }
+
+  public static Key<DecryptionTool> defaultDecryptionTool() {
+    return H2O.ARGS.decrypt_tool != null ? Key.<DecryptionTool>make(H2O.ARGS.decrypt_tool) : null;
+  }
+
+  /**
+   * Select last 15 bytes from the jvm boot start time and return it as short. If the timestamp is 0, we increment it by
+   * 1 to be able to distinguish between client and node as -0 is the same as 0.
+   */
+  private static short truncateTimestamp(long jvmStartTime){
+    int bitMask = (1 << 15) - 1;
+    // select the lower 15 bits
+    short timestamp = (short) (jvmStartTime & bitMask);
+    // if the timestamp is 0 return 1 to be able to distinguish between positive and negative values
+    return timestamp == 0 ? 1 : timestamp;
+  }
+
+
+  /**
+   * Calculate node timestamp from Current's node information. We use start of jvm boot time and information whether
+   * we are client or not. We combine these 2 information and create a char(2 bytes) with this info in a single variable.
+   */
+  static short calculateNodeTimestamp() {
+    return calculateNodeTimestamp(TimeLine.JVM_BOOT_MSEC, H2O.ARGS.client);
+  }
+
+  /**
+   * Calculate node timestamp from the provided information. We use start of jvm boot time and information whether
+   * we are client or not.
+   *
+   * The negative timestamp represents a client node, the positive one a regular H2O node
+   *
+   * @param bootTimestamp H2O node boot timestamp
+   * @param amIClient true if this node is client, otherwise false
+   */
+  static short calculateNodeTimestamp(long bootTimestamp, boolean amIClient) {
+    short timestamp = truncateTimestamp(bootTimestamp);
+    //if we are client, return negative timestamp, otherwise positive
+    return amIClient ? (short) -timestamp : timestamp;
+  }
+
+  /**
+   * Decodes whether the node is client or regular node from the timestamp
+   * @param timestamp timestamp
+   * @return true if timestamp is from client node, false otherwise
+   */
+  static boolean decodeIsClient(short timestamp) {
+    return timestamp < 0;
+  }
+
 }

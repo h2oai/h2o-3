@@ -23,6 +23,6 @@ Splitting
 
  ``nbins`` and ``nbins_top_level`` are both for numerics (real and integer). ``nbins_top_level`` is the number of bins GBM uses at the top of each tree. It then divides by 2 at each ensuing level to find a new number. ``nbins`` controls when GBM stops dividing by 2.
 
-- **Doesn't GBM do the same thing as RF for col_sample_rate < 1 ?**
+- **Doesn't GBM do the same thing as RF for splitting?**
 
  Yes for splitting, there is no difference between RF and GBM. They both use the same tree splitting.

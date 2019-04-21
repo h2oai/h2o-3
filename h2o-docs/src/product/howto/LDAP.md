@@ -1,13 +1,13 @@
-#Connecting to H2O over LDAP
+# Connecting to H2O over LDAP
 
 If your network uses an LDAP protocol, perform the following steps to connect to H2O: 
 
-0. Launch H2O. 
-0. Copy the URL that displays in the H2O output. In the following example, the # symbols represent the numbers in the IP address. 
+1. Launch H2O. 
+2. Copy the URL that displays in the H2O output. In the following example, the # symbols represent the numbers in the IP address. 
 
    `Open H2O Flow in your web browser: https://###.##.###.##:54321`
-0. Paste the URL into your browser. 
-0. Log in using your LDAP credentials.
+3. Paste the URL into your browser. 
+4. Log in using your LDAP credentials.
 
 H2O is now ready to use. 
 

@@ -37,6 +37,10 @@ def iris_dl_grid():
     assert combo in total_grid_space
     total_grid_space.remove(combo)
 
+  print("Check correct type value....")
+  model_type = gs[0].type
+  true_model_type = "classifier"
+  assert model_type == true_model_type, "Type of model ({0}) is incorrect, expected value is {1}.".format(model_type, true_model_type)
 
 
 if __name__ == "__main__":

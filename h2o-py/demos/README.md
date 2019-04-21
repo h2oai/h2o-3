@@ -1,7 +1,7 @@
 Launching iPython Examples
 =========================
 
-##Prerequisites:
+## Prerequisites:
 
 - Python 2.7
 
@@ -60,7 +60,7 @@ Running Python Examples
 To set up your Python environment to run these examples, download and install H2O from Python using the instructions above. 
 
 
-###Available Demos
+### Available Demos
 
 - [Predict Airline Delays](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/airlines_demo_small.ipynb) - Uses historical airlines flight data to build multiple classification models to label any flight as either delayed or not delayed.
 - [Chicago Crime Rate](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/H2O_chicago_crimes.ipynb) - Uses weather and city statistics to compare arrest rates with the total crimes for each category. 
@@ -72,27 +72,28 @@ To set up your Python environment to run these examples, download and install H2
 - [Airline Confusion Matrices](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/confusion_matrices_binomial.ipynb) - Uses the airlines dataset to generate confusion matrices for algorithm performance analysis.
 - [Deep Learning for Prostate Cancer Analysis](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/deeplearning.ipynb) - Uses the prostate dataset to build a Deep Learning model. 
 - [Airlines Prep](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/prep_airlines.ipynb) - Condition the airline dataset by filtering out NAs if the departure delay in the input dataset is unknown. Anything longer than `minutesOfDelayWeTolerate` is treated as delayed. 
-- [GBM model using prostate dataset](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/prostate_gbm.ipynb) - Creates a GBM model using the prostate dataset.  
+- [GBM model using prostate dataset](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/prostate_gbm.ipynb) - Creates a GBM model using the prostate dataset.
 - [Balance Classes](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/rf_balance_classes.ipynb) - Imports the airlines dataset, parses it, displays a summary, and runs GLM with a binomial link function. 
 - [Clustering with KMeans](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/kmeans_aic_bic_diagnostics.ipynb) - Demonstrates kmeans clusters and different diagnostics for selecting the number of clusters.  Link to data is provided in the notebook.
 - [EEG Eye State](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/H2O_tutorial_eeg_eyestate.ipynb) - Uses EEG data collected from an Emotiv Neuroheadset and classifies eye state (open vs closed) with a GBM.  
+- [Tree fetch demo](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/tree_demo.ipynb) - Trains a basic GBM model based on Airlines dataset & fetches the tree behind the model. Exploration of the tree fetched is explained.
 
 
 
-###Corresponding Datasets
+### Corresponding Datasets
 
 
-####Airlines Datasets 
+#### Airlines Datasets 
 
 - [AirlinesTest](https://github.com/h2oai/h2o-2/raw/master/smalldata/airlines/AirlinesTest.csv.zip) and [AirlinesTrain](https://github.com/h2oai/h2o-2/raw/master/smalldata/airlines/AirlinesTrain.csv.zip) - Used in [Confusion Matrix & ROC](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/cm_roc.ipynb), [Airline Confusion Matrices](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/confusion_matrices_binomial.ipynb), [Balance Classes](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/rf_balance_classes.ipynb) and [Balance Classes](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/rf_balance_classes.ipynb)
 
 - [Allyears2k_headers](https://github.com/h2oai/h2o-2/raw/master/smalldata/airlines/allyears2k_headers.zip) - Used in [Predict Airline Delays](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/airlines_demo_small.ipynb), [Imputation](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/imputation.ipynb), [Not Equal Factor](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/not_equal_factor.ipynb), and [Airlines Prep](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/prep_airlines.ipynb)
 
-####Chicago Crime
+#### Chicago Crime
 
 - [chicagoAllWeather](https://github.com/h2oai/sparkling-water/raw/master/examples/smalldata/chicagoAllWeather.csv), [chicagoCensus](https://github.com/h2oai/sparkling-water/raw/master/examples/smalldata/chicagoCensus.csv), and [chicagoCrimes10k](https://github.com/h2oai/sparkling-water/raw/master/examples/smalldata/chicagoCrimes10k.csv) - Used in [Chicago Crime Rate](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/H2O_chicago_crimes.ipynb)
 
-####Citibike Data
+#### Citibike Data
  - Used in [NYC Citibike Demand with Weather](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/citi_bike_large.ipynb) 
   
   	* [2013-07 - 157MB](https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/citibike-nyc/2013-07.csv)
@@ -118,6 +119,6 @@ To set up your Python environment to run these examples, download and install H2
     * [NYC Hourly Weather - 2014](https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/citibike-nyc/31081_New_York_City__Hourly_2014.csv)
 
 
-####Prostate Data
+#### Prostate Data
 
 - [Prostate Dataset](https://github.com/h2oai/sparkling-water/raw/master/examples/smalldata/prostate.csv) - Used in [Deep Learning for Prostate Cancer Analysis](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/deeplearning.ipynb) and [GBM model using prostate dataset](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/prostate_gbm.ipynb)

@@ -1,20 +1,27 @@
 # ... On Hadoop
 
+>**Note**: This topic is no longer being maintained. Refer to [Hadoop Users](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/welcome.rst#hadoop-users) for the most up-to-date documentation.
+
 Currently supported versions:
 
-- CDH 5.2
-- CDH 5.3
-- CDH 5.4.2
-- CDH 5.5.3
-- CDH 5.6.0
-- CDH 5.7.0
-- HDP 2.1
+- CDH 5.4
+- CDH 5.5
+- CDH 5.6
+- CDH 5.7
+- CDH 5.8
+- CDH 5.10
+- CDH 5.13
+- CDH 5.14
 - HDP 2.2
 - HDP 2.3
 - HDP 2.4
-- MapR 4.0.1
+- HDP 2.5
+- HDP 2.6
+- MapR 4.0
 - MapR 5.0
 - MapR 5.1
+- MapR 5.2
+- IOP 4.2
 
 **Important Points to Remember**:
 
@@ -39,7 +46,7 @@ Optionally specify this port using the `-driverport` option in the `hadoop jar` 
 
 **Path 2: mapper to mapper**
 
-Optionally specify this port using the `-baseport` option in the `hadoop jar` command (refer to [Hadoop Launch Parameters](#LaunchParam) below. This port and the next subsequent port are opened on the mapper hosts (the Hadoop worker nodes) where the H2O mapper nodes are placed by the Resource Manager. By default, ports 54321 (TCP) and 54322 (TCP & UDP) are used.
+Optionally specify this port using the `-baseport` option in the `hadoop jar` command (refer to [Hadoop Launch Parameters](#LaunchParam) below. This port and the next subsequent port are opened on the mapper hosts (the Hadoop worker nodes) where the H2O mapper nodes are placed by the Resource Manager. By default, ports 54321 and 54322 are used.
 
 The mapper port is adaptive: if 54321 and 54322 are not available, H2O will try 54323 and 54324 and so on. The mapper port is designed to be adaptive because sometimes if the YARN cluster is low on resources, YARN will place two H2O mappers for the same H2O cluster request on the same physical host. For this reason, we recommend opening a range of more than two ports (20 ports should be sufficient).
 
@@ -54,14 +61,14 @@ Tutorial
 The following tutorial will walk the user through the download or build of H2O and the parameters involved in launching H2O from the command line.
 
 
-0. Download the latest H2O release for your version of Hadoop. Refer to the <a href="http://www.h2o.ai/download/h2o/hadoop">H2O on Hadoop Download page</a>.
+1. Download the latest H2O release for your version of Hadoop. Refer to the <a href="http://www.h2o.ai/download/h2o/hadoop">H2O on Hadoop Download page</a>.
 
-0. Prepare the job input on the Hadoop Node by unzipping the build file and changing to the directory with the Hadoop and H2O's driver jar files.
+2. Prepare the job input on the Hadoop Node by unzipping the build file and changing to the directory with the Hadoop and H2O's driver jar files.
 
 		unzip h2o-{{project_version}}-*.zip
 		cd h2o-{{project_version}}-*
 
-0. To launch H2O nodes and form a cluster on the Hadoop cluster, run:
+3. To launch H2O nodes and form a cluster on the Hadoop cluster, run:
 
 		hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -output hdfsOutputDirName
 
@@ -73,7 +80,7 @@ The following tutorial will walk the user through the download or build of H2O a
 
 	 - *output* is the name of the directory created each time a H2O cloud is created so it is necessary for the name to be unique each time it is launched.
 
-0. To monitor your job, direct your web browser to your standard job tracker Web UI.
+4. To monitor your job, direct your web browser to your standard job tracker Web UI.
 To access H2O's Web UI, direct your web browser to one of the launched instances. If you are unsure where your JVM is launched,
 review the output from your command after the nodes has clouded up and formed a cluster. Any of the nodes' IP addresses will work as there is no master node.
 

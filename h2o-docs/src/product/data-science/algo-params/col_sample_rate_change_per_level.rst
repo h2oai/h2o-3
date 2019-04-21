@@ -1,13 +1,13 @@
 ``col_sample_rate_change_per_level``
 ------------------------------------
 
-- Available in: GBM, DRF
+- Available in: GBM, DRF, Isolation Forest
 - Hyperparameter: yes
 
 Description
 ~~~~~~~~~~~
 
-This option specifies the relative change of the column sampling rate for every level. For example, if you want to specify how the sampling rate per split should change as a function of the tree depth, you might consider the following:
+This option specifies the relative change of the column sampling rate for every level (without replacement). For example, if you want to specify how the sampling rate per split should change as a function of the tree depth, you might consider the following:
 
 - level 0: ``col_sample_rate``
 - level 1: ``col_sample_rate`` * factor
@@ -22,7 +22,7 @@ As indicated above, this option is multiplicative with ``col_sample_rate``. The 
 
 	col_sample_rate_per_tree * col_sample_rate * col_sample_rate_change_per_level^depth
 
-This option defaults to 1.0 and can be in the range of 0.0 to 2.0.
+This option defaults to 1.0 and must be > 0.0 and <= 2.0.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~

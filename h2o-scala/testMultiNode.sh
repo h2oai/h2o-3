@@ -69,7 +69,7 @@ fi
 
 
 # Command to invoke test
-JVM="nice $JAVA_CMD $COVERAGE -Djunit.reports.dir="$BUILD_DIR/test-results" -ea -cp build/${PROJECT_NAME}/libs/${PROJECT_NAME}.jar${SEP}build/${PROJECT_NAME}/libs/${PROJECT_NAME}-test.jar${SEP}../h2o-core/build/libs/h2o-core.jar${SEP}../h2o-core/build/libs/h2o-core-test.jar${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
+JVM="nice $JAVA_CMD $COVERAGE -Djunit.reports.dir="$BUILD_DIR/test-results" -ea -cp ${JVM_CLASSPATH} ${ADDITIONAL_TEST_JVM_OPTS}"
 echo "$JVM" > $OUTDIR/jvm_cmd.txt
 
 # Runner
@@ -102,6 +102,6 @@ fi
 
 # Launch last driver JVM.  All output redir'd at the OS level to sandbox files.
 echo Running h2o-scala junit tests...
-($JVM $TEST_SSL -Ddoonly.tests=$DOONLY -Dignore.tests=$IGNORE -Dbuild.id=$BUILD_ID -Djob.name=$JOB_NAME -Dgit.commit=$GIT_COMMIT -Dgit.branch=$GIT_BRANCH -Dai.h2o.name=$CLUSTER_NAME -Dai.h2o.baseport=$CLUSTER_BASEPORT -Dai.h2o.ga_opt_out=yes $JACOCO_FLAG $JUNIT_RUNNER `cat $OUTDIR/tests.txt` 2>&1 ; echo $? > $OUTDIR/status.0) 1> $OUTDIR/out.0 2>&1
+($JVM $TEST_SSL -DcloudSize=5 -Ddoonly.tests=$DOONLY -Dignore.tests=$IGNORE -Dbuild.id=$BUILD_ID -Djob.name=$JOB_NAME -Dgit.commit=$GIT_COMMIT -Dgit.branch=$GIT_BRANCH -Dai.h2o.name=$CLUSTER_NAME -Dai.h2o.ip=$H2O_NODE_IP -Dai.h2o.baseport=$CLUSTER_BASEPORT -Dai.h2o.ga_opt_out=yes $JACOCO_FLAG $JUNIT_RUNNER `cat $OUTDIR/tests.txt` 2>&1 ; echo $? > $OUTDIR/status.0) 1> $OUTDIR/out.0 2>&1
 
 cleanup

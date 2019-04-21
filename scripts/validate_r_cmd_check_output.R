@@ -5,10 +5,20 @@
 # NOTE whitelist to be used by grepl, for each check step
 whitelist = list(
   "CRAN incoming feasibility" = c("Maintainer:",
+                                  "New maintainer:",
+                                  "Erin LeDell <erin@h2o.ai>",
+                                  "Old maintainer",
+                                  "Erin LeDell <erin@h2o.ai>",
                                   "Checking URLs requires 'libcurl' support in the R build",
                                   "Package has FOSS license, installs .class/.jar but has no 'java' directory",
+                                  "Version contains large components .*",
+                                  "Size of tarball: .* bytes",
                                   "Insufficient package version", # when we check older version of package than current available on CRAN
-                                  "Days since last update"), # when we submit to CRAN recently
+                                  "Days since last update", # when we submit to CRAN recently
+                                  "Number of updates in past 6 months"), # when we submit to CRAN too often
+  "DESCRIPTION meta-information" = c("Author field differs from that derived from Authors@R",
+                                     "Author:",
+                                     "Authors@R:"),
   "package dependencies" = c("No repository set, so cyclic dependency check skipped",
                              "Package suggested but not available for checking"),
   "installed package size" = c("installed size is .*Mb", # h2o.jar is installed

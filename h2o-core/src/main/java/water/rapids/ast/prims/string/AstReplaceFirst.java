@@ -61,7 +61,7 @@ public class AstReplaceFirst extends AstPrimitive {
       i++;
     }
 
-    return new ValFrame(new Frame(nvs));
+    return new ValFrame(new Frame(fr.names(), nvs));
   }
 
   private Vec replaceFirstCategoricalCol(Vec vec, String pattern, String replacement, boolean ignoreCase) {

@@ -17,6 +17,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
         "training_frame",
         "validation_frame",
         "nfolds",
+        "keep_cross_validation_models",
         "keep_cross_validation_predictions",
         "keep_cross_validation_fold_assignment",
         "fold_assignment",
@@ -99,7 +100,8 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
         "categorical_encoding",
         "elastic_averaging",
         "elastic_averaging_moving_rate",
-        "elastic_averaging_regularization"
+        "elastic_averaging_regularization",
+        "export_checkpoints_dir"
     };
 
 

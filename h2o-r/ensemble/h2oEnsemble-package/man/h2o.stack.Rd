@@ -82,7 +82,7 @@ The version of the h2oEnsemble R package.
 }
 \references{
 \href{https://github.com/h2oai/h2o-3/tree/master/h2o-r/ensemble}{H2O Ensemble Homepage}	\cr
-\href{http://learn.h2o.ai/content/tutorials/ensembles-stacking/index.html}{H2O Ensemble Tutorial}	\cr
+\href{https://github.com/h2oai/h2o-tutorials/blob/master/tutorials/ensembles-stacking/h2oEnsemble_tutorial.md}{H2O Ensemble Tutorial}	\cr
 \cr	
 LeDell, E. (2015) Scalable Ensemble Learning and Computationally Efficient Variance Estimation (Doctoral Dissertation).  University of California, Berkeley, USA.\cr
 \url{http://www.stat.berkeley.edu/~ledell/papers/ledell-phd-thesis.pdf}\cr
@@ -106,16 +106,16 @@ Erin LeDell \email{erin@h2o.ai}
 \examples{
 \dontrun{
     
-# An example of binary classification on a local machine using h2o.ensemble
+# An example of binary classification on a local machine using h2o.stack
 
 library(h2oEnsemble)
-localH2O <- h2o.init(nthreads = -1) # Start H2O cluster using all available CPU threads
+h2o.init(nthreads = -1) # Start H2O cluster using all available CPU threads
 
 
 # Import a sample binary outcome train/test set into R
-train <- h2o.importFile("http://www.stat.berkeley.edu/~ledell/data/higgs_10k.csv")
-test <- h2o.importFile("http://www.stat.berkeley.edu/~ledell/data/higgs_test_5k.csv")
-y <- "C1"
+train <- h2o.importFile("https://s3.amazonaws.com/erin-data/higgs/higgs_train_5k.csv")
+test <- h2o.importFile("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
+y <- "response"
 x <- setdiff(names(train), y)
 family <- "binomial"
 
@@ -147,7 +147,7 @@ gbm1 <- h2o.gbm(x = x, y = y, distribution = "bernoulli",
                 fold_assignment = "Modulo",
                 keep_cross_validation_predictions = TRUE)
 
-rf1 <- h2o.randomForest(x = x, y = y, #distribution = "bernoulli",
+rf1 <- h2o.randomForest(x = x, y = y, # distribution not used for RF
                         training_frame = train,
                         seed = 1,
                         nfolds = nfolds,
@@ -174,19 +174,19 @@ stack <- h2o.stack(models = models,
 perf <- h2o.ensemble_performance(stack, newdata = test)
 
 print(perf)
-#Base learner performance, sorted by metric:
-#                                   learner       AUC
-#1          GLM_model_R_1459208808410_23420 0.6870772
-#4 DeepLearning_model_R_1459208808410_25042 0.7167811
-#3          DRF_model_R_1459208808410_24305 0.7697072
-#2          GBM_model_R_1459208808410_23438 0.7817096
-#
-#
-#H2O Ensemble Performance on <newdata>:
-#----------------
-#Family: binomial
-#
-#Ensemble performance (AUC): 0.787814391608448
+# Base learner performance, sorted by specified metric:
+#                                    learner       AUC
+# 1          GLM_model_R_1480128759162_16643 0.6822933
+# 4 DeepLearning_model_R_1480128759162_18909 0.7016809
+# 3          DRF_model_R_1480128759162_17790 0.7546005
+# 2          GBM_model_R_1480128759162_16661 0.7780807
+# 
+# 
+# H2O Ensemble Performance on <newdata>:
+# ----------------
+# Family: binomial
+# 
+# Ensemble performance (AUC): 0.781241759877087
 
 
 }

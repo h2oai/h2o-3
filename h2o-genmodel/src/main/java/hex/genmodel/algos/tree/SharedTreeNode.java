@@ -1,16 +1,22 @@
 package hex.genmodel.algos.tree;
 
+import ai.h2o.algos.tree.INode;
+import ai.h2o.algos.tree.INodeStat;
+import hex.genmodel.tools.PrintMojo;
 import hex.genmodel.utils.GenmodelBitSet;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Objects;
 
 /**
  * Node in a tree.
  * A node (optionally) contains left and right edges to the left and right child nodes.
  */
-class SharedTreeNode {
+public class SharedTreeNode implements INode<double[]>, INodeStat {
+  final int internalId; // internal tree id (that links the node back to the array of nodes of the tree) - don't confuse with user-facing nodeNumber!
   final SharedTreeNode parent;
   final int subgraphNumber;
   int nodeNumber;
@@ -26,7 +32,7 @@ class SharedTreeNode {
   float predValue = Float.NaN;
   float squaredError = Float.NaN;
   SharedTreeNode leftChild;
-  SharedTreeNode rightChild;
+  public SharedTreeNode rightChild;
 
   // Whether NA for this colId is reachable to this node.
   private boolean inclusiveNa;
@@ -41,7 +47,8 @@ class SharedTreeNode {
    * @param sn Tree number
    * @param d Node depth within the tree
    */
-  SharedTreeNode(SharedTreeNode p, int sn, int d) {
+  SharedTreeNode(int id, SharedTreeNode p, int sn, int d) {
+    internalId = id;
     parent = p;
     subgraphNumber = sn;
     depth = d;
@@ -55,11 +62,12 @@ class SharedTreeNode {
     return nodeNumber;
   }
 
-  float getWeight() {
+  @Override
+  public float getWeight() {
     return weight;
   }
 
-  void setNodeNumber(int id) {
+  public void setNodeNumber(int id) {
     nodeNumber = id;
   }
 
@@ -67,7 +75,7 @@ class SharedTreeNode {
     weight = w;
   }
 
-  void setCol(int v1, String v2) {
+  public void setCol(int v1, String v2) {
     colId = v1;
     colName = v2;
   }
@@ -76,7 +84,7 @@ class SharedTreeNode {
     return colId;
   }
 
-  void setLeftward(boolean v) {
+  public void setLeftward(boolean v) {
     leftward = v;
   }
 
@@ -84,8 +92,12 @@ class SharedTreeNode {
     naVsRest = v;
   }
 
-  void setSplitValue(float v) {
+  public void setSplitValue(float v) {
     splitValue = v;
+  }
+
+  public void setColName(String colName) {
+    this.colName = colName;
   }
 
   void setBitset(String[] v1, GenmodelBitSet v2) {
@@ -94,11 +106,11 @@ class SharedTreeNode {
     bs = v2;
   }
 
-  void setPredValue(float v) {
+  public void setPredValue(float v) {
     predValue = v;
   }
 
-  void setSquaredError(float v) {
+  public void setSquaredError(float v) {
     squaredError = v;
   }
 
@@ -213,11 +225,11 @@ class SharedTreeNode {
     v.setInclusiveLevels(childInclusiveLevels);
   }
 
-  void setInclusiveNa(boolean v) {
+  public void setInclusiveNa(boolean v) {
     inclusiveNa = v;
   }
 
-  private boolean getInclusiveNa() {
+  public boolean getInclusiveNa() {
     return inclusiveNa;
   }
 
@@ -225,7 +237,7 @@ class SharedTreeNode {
     inclusiveLevels = v;
   }
 
-  private BitSet getInclusiveLevels() {
+  public BitSet getInclusiveLevels() {
     return inclusiveLevels;
   }
 
@@ -234,19 +246,23 @@ class SharedTreeNode {
   }
 
   public void print() {
-    System.out.println("        Node " + nodeNumber);
-    System.out.println("            weight:      " + weight);
-    System.out.println("            depth:       " + depth);
-    System.out.println("            colId:       " + colId);
-    System.out.println("            colName:     " + ((colName != null) ? colName : ""));
-    System.out.println("            leftward:    " + leftward);
-    System.out.println("            naVsRest:    " + naVsRest);
-    System.out.println("            splitVal:    " + splitValue);
-    System.out.println("            isBitset:    " + isBitset());
-    System.out.println("            predValue:   " + predValue);
-    System.out.println("            squaredErr:  " + squaredError);
-    System.out.println("            leftChild:   " + ((leftChild != null) ? leftChild.getName() : ""));
-    System.out.println("            rightChild:  " + ((rightChild != null) ? rightChild.getName() : ""));
+    print(System.out, null);
+  }
+
+  public void print(PrintStream out, String description) {
+    out.println("        Node " + nodeNumber + (description != null ? " (" + description + ")" : ""));
+    out.println("            weight:      " + weight);
+    out.println("            depth:       " + depth);
+    out.println("            colId:       " + colId);
+    out.println("            colName:     " + ((colName != null) ? colName : ""));
+    out.println("            leftward:    " + leftward);
+    out.println("            naVsRest:    " + naVsRest);
+    out.println("            splitVal:    " + splitValue);
+    out.println("            isBitset:    " + isBitset());
+    out.println("            predValue:   " + predValue);
+    out.println("            squaredErr:  " + squaredError);
+    out.println("            leftChild:   " + ((leftChild != null) ? leftChild.getName() : ""));
+    out.println("            rightChild:  " + ((rightChild != null) ? rightChild.getName() : ""));
   }
 
   void printEdges() {
@@ -264,7 +280,7 @@ class SharedTreeNode {
     return "SG_" + subgraphNumber + "_Node_" + nodeNumber;
   }
 
-  private boolean isBitset() {
+  public boolean isBitset() {
     return (domainValues != null);
   }
 
@@ -272,29 +288,32 @@ class SharedTreeNode {
     return s.replace("\"", "\\\"");
   }
 
-  private void printDotNode(PrintStream os, boolean detail) {
+  private void printDotNode(PrintStream os, boolean detail, PrintMojo.PrintTreeOptions treeOptions) {
     os.print("\"" + getDotName() + "\"");
     os.print(" [");
 
     if (leftChild==null && rightChild==null) {
-      os.print("label=\"");
-      os.print(predValue);
+      os.print("fontsize="+treeOptions._fontSize+", label=\"");
+      float predv = treeOptions._setDecimalPlace?treeOptions.roundNPlace(predValue):predValue;
+      os.print(predv);
     }
     else if (isBitset()) {
-      os.print("shape=box,label=\"");
+      os.print("shape=box, fontsize="+treeOptions._fontSize+", label=\"");
       os.print(escapeQuotes(colName));
     }
     else {
       assert(! Float.isNaN(splitValue));
-      os.print("shape=box,label=\"");
-      os.print(escapeQuotes(colName) + " < " + splitValue);
+      float splitV = treeOptions._setDecimalPlace?treeOptions.roundNPlace(splitValue):splitValue;
+      os.print("shape=box, fontsize="+treeOptions._fontSize+", label=\"");
+      os.print(escapeQuotes(colName) + " < " + splitV);
     }
 
     if (detail) {
       os.print("\\n\\nN" + getNodeNumber() + "\\n");
       if (leftChild != null || rightChild != null) {
         if (!Float.isNaN(predValue)) {
-          os.print("\\nPred: " + predValue);
+          float predv = treeOptions._setDecimalPlace?treeOptions.roundNPlace(predValue):predValue;
+          os.print("\\nPred: " + predv);
         }
       }
       if (!Float.isNaN(squaredError)) {
@@ -320,25 +339,27 @@ class SharedTreeNode {
    * Recursively print nodes at a particular depth level in the tree.  Useful to group them so they render properly.
    * @param os output stream
    * @param levelToPrint level number
-   * @param detail include addtional node detail information
+   * @param detail include additional node detail information
    */
-  void printDotNodesAtLevel(PrintStream os, int levelToPrint, boolean detail) {
+  void printDotNodesAtLevel(PrintStream os, int levelToPrint, boolean detail, PrintMojo.PrintTreeOptions treeOptions) {
     if (getDepth() == levelToPrint) {
-      printDotNode(os, detail);
+      printDotNode(os, detail, treeOptions);
       return;
     }
 
     assert (getDepth() < levelToPrint);
 
     if (leftChild != null) {
-      leftChild.printDotNodesAtLevel(os, levelToPrint, detail);
+      leftChild.printDotNodesAtLevel(os, levelToPrint, detail, treeOptions);
     }
     if (rightChild != null) {
-      rightChild.printDotNodesAtLevel(os, levelToPrint, detail);
+      rightChild.printDotNodesAtLevel(os, levelToPrint, detail, treeOptions);
     }
   }
 
-  private void printDotEdgesCommon(PrintStream os, int maxLevelsToPrintPerEdge, ArrayList<String> arr, SharedTreeNode child) {
+  private void printDotEdgesCommon(PrintStream os, int maxLevelsToPrintPerEdge, ArrayList<String> arr,
+                                   SharedTreeNode child, float totalWeight, boolean detail,
+                                   PrintMojo.PrintTreeOptions treeOptions) {
     if (isBitset()) {
       BitSet childInclusiveLevels = child.getInclusiveLevels();
       int total = childInclusiveLevels.cardinality();
@@ -351,7 +372,20 @@ class SharedTreeNode {
         arr.add(total + " levels");
       }
     }
-    os.print("label=\"");
+
+    if (detail) {
+      try {
+        final int max_width = 15 - 1;
+        float width = child.getWeight() / totalWeight * max_width;
+        int intWidth = Math.round(width) + 1;
+        os.print("penwidth=");
+        os.print(intWidth);
+        os.print(",");
+      } catch (Exception ignore) {
+      }
+    }
+
+    os.print("fontsize="+treeOptions._fontSize+", label=\"");
     for (String s : arr) {
       os.print(escapeQuotes(s) + "\\n");
     }
@@ -363,8 +397,11 @@ class SharedTreeNode {
    * Recursively print all edges in the tree.
    * @param os output stream
    * @param maxLevelsToPrintPerEdge Limit the number of individual categorical level names printed per edge
+   * @param totalWeight total weight of all observations (used to determine edge thickness)
+   * @param detail include additional edge detail information
    */
-  void printDotEdges(PrintStream os, int maxLevelsToPrintPerEdge) {
+  void printDotEdges(PrintStream os, int maxLevelsToPrintPerEdge, float totalWeight, boolean detail,
+                     PrintMojo.PrintTreeOptions treeOptions) {
     assert (leftChild == null) == (rightChild == null);
 
     if (leftChild != null) {
@@ -384,7 +421,7 @@ class SharedTreeNode {
         }
       }
 
-      printDotEdgesCommon(os, maxLevelsToPrintPerEdge, arr, leftChild);
+      printDotEdgesCommon(os, maxLevelsToPrintPerEdge, arr, leftChild, totalWeight, detail, treeOptions);
     }
 
     if (rightChild != null) {
@@ -401,7 +438,135 @@ class SharedTreeNode {
         }
       }
 
-      printDotEdgesCommon(os, maxLevelsToPrintPerEdge, arr, rightChild);
+      printDotEdgesCommon(os, maxLevelsToPrintPerEdge, arr, rightChild, totalWeight, detail, treeOptions);
     }
   }
+
+  public SharedTreeNode getParent() {
+    return parent;
+  }
+
+  public int getSubgraphNumber() {
+    return subgraphNumber;
+  }
+
+  public String getColName() {
+    return colName;
+  }
+
+  public boolean isLeftward() {
+    return leftward;
+  }
+
+  public boolean isNaVsRest() {
+    return naVsRest;
+  }
+
+  public float getSplitValue() {
+    return splitValue;
+  }
+
+  public String[] getDomainValues() {
+    return domainValues;
+  }
+
+  public void setDomainValues(String[] domainValues) {
+    this.domainValues = domainValues;
+  }
+
+  public GenmodelBitSet getBs() {
+    return bs;
+  }
+
+  public float getPredValue() {
+    return predValue;
+  }
+
+  public float getSquaredError() {
+    return squaredError;
+  }
+
+  public SharedTreeNode getLeftChild() {
+    return leftChild;
+  }
+
+  public SharedTreeNode getRightChild() {
+    return rightChild;
+  }
+
+  public boolean isInclusiveNa() {
+    return inclusiveNa;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    SharedTreeNode that = (SharedTreeNode) o;
+    return subgraphNumber == that.subgraphNumber &&
+            nodeNumber == that.nodeNumber &&
+            Float.compare(that.weight, weight) == 0 &&
+            depth == that.depth &&
+            colId == that.colId &&
+            leftward == that.leftward &&
+            naVsRest == that.naVsRest &&
+            Float.compare(that.splitValue, splitValue) == 0 &&
+            Float.compare(that.predValue, predValue) == 0 &&
+            Float.compare(that.squaredError, squaredError) == 0 &&
+            inclusiveNa == that.inclusiveNa &&
+            Objects.equals(colName, that.colName) &&
+            Arrays.equals(domainValues, that.domainValues) &&
+            Objects.equals(leftChild, that.leftChild) &&
+            Objects.equals(rightChild, that.rightChild) &&
+            Objects.equals(inclusiveLevels, that.inclusiveLevels);
+  }
+
+  @Override
+  public int hashCode() {
+
+    return Objects.hash(subgraphNumber, nodeNumber);
+  }
+
+  // This is the generic Node API (needed by TreeSHAP)
+  
+  @Override
+  public final boolean isLeaf() {
+    return leftChild == null && rightChild == null;
+  }
+
+  @Override
+  public final float getLeafValue() {
+    return predValue;
+  }
+
+  @Override
+  public final int getSplitIndex() {
+    return colId;
+  }
+
+  @Override
+  public final int next(double[] value) {
+    final double d = value[colId];
+
+    if (Double.isNaN(d) || 
+            (bs != null && !bs.isInRange((int)d)) || (domainValues != null && domainValues.length <= (int)d)
+            ? !leftward : !naVsRest && (bs == null ? d >= splitValue : bs.contains((int)d))) {
+      // go RIGHT
+      return getRightChildIndex();
+    } else {
+      // go LEFT
+      return getLeftChildIndex();
+    }
+  }
+
+  @Override
+  public final int getLeftChildIndex() {
+    return leftChild != null ? leftChild.internalId : -1;
+  }
+
+  @Override
+  public final int getRightChildIndex() {
+    return rightChild != null ? rightChild.internalId : -1;
+  }
+
 }

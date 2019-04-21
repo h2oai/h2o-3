@@ -61,32 +61,51 @@ public class AstIfElse extends AstPrimitive {
     // Frame test.  Frame result.
     if (val.type() == Val.ROW)
       return row_ifelse((ValRow) val, asts[2].exec(env), asts[3].exec(env));
+
     Frame tst = val.getFrame();
+    Frame fr = new Frame(tst);
 
     // If all zero's, return false and never execute true.
-    Frame fr = new Frame(tst);
     Val tval = null;
     for (Vec vec : tst.vecs())
       if (vec.min() != 0 || vec.max() != 0) {
-        tval = exec_check(env, stk, tst, asts[2], fr);
+        tval = exec_check(env, stk, tst, asts[2]);
         break;
-      }
+      } else
+        tval = Unevaluated.INSTANCE;
+    // If all nonzero's (or NA's), then never execute false.
+    Val fval = null;
+    for (Vec vec : tst.vecs())
+      if (vec.nzCnt() + vec.naCnt() < vec.length()) {
+        fval = exec_check(env, stk, tst, asts[3]);
+        break;
+      } else
+        fval = Unevaluated.INSTANCE;
+
+    // If one of the ASTs was not evaluated use the other one as a placeholder (only the type information of the placeholder will be used)
+    if (tval == Unevaluated.INSTANCE && fval == Unevaluated.INSTANCE) { // neither of them are defined, result will NAs
+      tval = null;
+      fval = null;
+    } else if (tval == Unevaluated.INSTANCE) { // true-AST is unevaluated, use false-value as a placeholder with correct type
+      tval = fval;
+    } else if (fval == Unevaluated.INSTANCE) { // false-AST is unevaluated, use true-value as a placeholder with correct type
+      fval = tval;
+    }
+
     final boolean has_tfr = tval != null && tval.isFrame();
     final String ts = (tval != null && tval.isStr()) ? tval.getStr() : null;
     final double td = (tval != null && tval.isNum()) ? tval.getNum() : Double.NaN;
     final int[] tsIntMap = new int[tst.numCols()];
 
-    // If all nonzero's (or NA's), then never execute false.
-    Val fval = null;
-    for (Vec vec : tst.vecs())
-      if (vec.nzCnt() + vec.naCnt() < vec.length()) {
-        fval = exec_check(env, stk, tst, asts[3], fr);
-        break;
-      }
     final boolean has_ffr = fval != null && fval.isFrame();
     final String fs = (fval != null && fval.isStr()) ? fval.getStr() : null;
     final double fd = (fval != null && fval.isNum()) ? fval.getNum() : Double.NaN;
     final int[] fsIntMap = new int[tst.numCols()];
+
+    if (has_tfr)
+      fr.add(tval.getFrame());
+    if (has_ffr)
+      fr.add(fval.getFrame());
 
     String[][] domains = null;
     final int[][] maps = new int[tst.numCols()][];
@@ -188,13 +207,12 @@ public class AstIfElse extends AstPrimitive {
     return map;
   }
 
-  Val exec_check(Env env, Env.StackHelp stk, Frame tst, AstRoot ast, Frame xfr) {
+  Val exec_check(Env env, Env.StackHelp stk, Frame tst, AstRoot ast) {
     Val val = ast.exec(env);
     if (val.isFrame()) {
       Frame fr = stk.track(val).getFrame();
       if (tst.numCols() != fr.numCols() || tst.numRows() != fr.numRows())
         throw new IllegalArgumentException("ifelse test frame and other frames must match dimensions, found " + tst + " and " + fr);
-      xfr.add(fr);
     }
     return val;
   }
@@ -233,5 +251,12 @@ public class AstIfElse extends AstPrimitive {
     }
     return new ValRow(ds, ns);
   }
+
+  private static class Unevaluated extends Val {
+    static Unevaluated INSTANCE = new Unevaluated();
+    @Override
+    public int type() { return -1; }
+  }
+
 }
 

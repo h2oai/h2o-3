@@ -2,6 +2,7 @@ package water.api.schemas3;
 
 import water.Iced;
 import water.api.API;
+import water.jdbc.SqlFetchMode;
 
 
 public class ImportSQLTableV99 extends RequestSchemaV3<Iced,ImportSQLTableV99> {
@@ -16,6 +17,12 @@ public class ImportSQLTableV99 extends RequestSchemaV3<Iced,ImportSQLTableV99> {
   @API(help = "select_query")
   public String select_query = "";
 
+  @API(help = "use_temp_table")
+  public String use_temp_table = null;
+
+  @API(help = "temp_table_name")
+  public String temp_table_name = null;
+
   @API(help = "username", required = true)
   public String username;
 
@@ -25,7 +32,7 @@ public class ImportSQLTableV99 extends RequestSchemaV3<Iced,ImportSQLTableV99> {
   @API(help = "columns")
   public String columns = "*";
 
-  @API(help = "optimize")
-  public boolean optimize = true;
+  @API(help = "Mode for data loading. All modes may not be supported by all databases.")
+  public String fetch_mode;
 
 }

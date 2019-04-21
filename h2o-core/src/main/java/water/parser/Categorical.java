@@ -60,30 +60,31 @@ public final class Categorical extends Iced {
     return  _map.keySet().toArray(new BufferedString[_map.size()]);
   }
 
-  public static final int MAX_EXAMPLES = 10;
-  // TODO(Vlad): either make sure it works, or just get rid of it
-  public void convertToUTF8(int col){
-    int hexConvCnt = 0;
+  /**
+   * Converts domain values represented as BufferedStrings to UTF-8 encoding {@see BufferedString.toString()}.
+   * If the source value is not actually in UTF-8, the characters will be represented in hexadecimal notation.
+   * @param col user-facing index of the column to which the categoricals belong (only for logging/debugging)
+   */
+  void convertToUTF8(int col) {
+    int hexConvLeft = 10;
     BufferedString[] bStrs = _map.keySet().toArray(new BufferedString[_map.size()]);
     StringBuilder hexSB = new StringBuilder();
-    for (int i =0; i < bStrs.length; i++) {
-      String s = bStrs[i].toString();
-      if (!bStrs[i].sameString(s)) {
-        if (s.contains("\uFFFD")) { // make weird chars into hex
-          s = bStrs[i].bytesToString();
-          if (hexConvCnt++ < MAX_EXAMPLES) hexSB.append(s +", ");
-          if (hexConvCnt == MAX_EXAMPLES) hexSB.append("...");
-        }
-        int val = _map.get(bStrs[i]);
-        _map.remove(bStrs[i]);
-        bStrs[i] = new BufferedString(s);
-        _map.put(bStrs[i], val);
+    for (int i = 0; i < bStrs.length; i++) {
+      String s = bStrs[i].toString(); // converts to String using UTF-8 encoding
+      if (bStrs[i].equalsAsciiString(s))
+        continue; // quick check for the typical case without new object allocation & map modification
+      if (s.contains("\uFFFD")) { // converted string contains Unicode replacement character => sanitize the (whole) string
+        s = bStrs[i].toSanitizedString();
+        if (hexConvLeft-- > 0) hexSB.append(s).append(", ");
+        if (hexConvLeft == 0) hexSB.append("...");
       }
+      int val = _map.get(bStrs[i]);
+      _map.remove(bStrs[i]);
+      bStrs[i] = new BufferedString(s);
+      _map.put(bStrs[i], val);
     }
-    if (hexConvCnt > 0) Log.info("Found categoricals with non-UTF-8 characters in the "
-        + PrettyPrint.withOrdinalIndicator(col)
-        + " column. Converting unrecognized characters into hex:  "
-        + hexSB.toString());
+    if (hexSB.length() > 0) Log.info("Found categoricals with non-UTF-8 characters or NULL character in the " +
+        PrettyPrint.withOrdinalIndicator(col) + " column. Converting unrecognized characters into hex:  " + hexSB.toString());
   }
 
   // Since this is a *concurrent* hashtable, writing it whilst its being

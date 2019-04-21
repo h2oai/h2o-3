@@ -7,9 +7,12 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class UserFeedbackEvent extends Iced {
+
   public enum Level {
-    Debug, Info, Warn;
+    Debug, Info, Warn
   }
+  private final int longestLevel = longestLevel(); // for formatting
+
 
   public enum Stage {
     Workflow,
@@ -19,6 +22,7 @@ public class UserFeedbackEvent extends Iced {
     FeatureCreation,
     ModelTraining,
   }
+  private final int longestStage = longestStage(); // for formatting
 
   private long timestamp;
   transient private AutoML autoML;
@@ -52,6 +56,20 @@ public class UserFeedbackEvent extends Iced {
     this.message = message;
   }
 
+
+  private static int longestStage() {
+    int longest = -1;
+    for (Stage stage : Stage.values())
+      longest = Math.max(longest, stage.name().length());
+    return longest;
+  }
+
+  private static int longestLevel() {
+    int longest = -1;
+    for (Level level : Level.values())
+      longest = Math.max(longest, level.name().length());
+    return longest;
+  }
 
   protected static final String[] colHeaders = { "timestamp",
                                                  "level",
@@ -87,5 +105,15 @@ public class UserFeedbackEvent extends Iced {
     table.set(row, col++, level);
     table.set(row, col++, stage);
     table.set(row, col++, message);
+  }
+
+  @Override
+  public String toString() {
+    return String.format("%-12s %-" + longestLevel + "s %-" + longestStage + "s %s",
+            timestampFormat.format(new Date(timestamp)),
+            level,
+            stage,
+            message
+    );
   }
 }

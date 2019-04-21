@@ -1,16 +1,12 @@
 package water.util;
 
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import water.TestUtil;
 
 import java.util.Random;
 
-public class IcedBitSetTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
-
+public class IcedBitSetTest {
   static void check(IcedBitSet bs, int bitoff, Integer[] idx) {
     String correct = "{";
     if (bitoff > 0) {
@@ -29,9 +25,7 @@ public class IcedBitSetTest extends TestUtil {
     }
     correct += "}";
     String s = bs.toString();
-//    System.out.println(s);
-//    System.out.println(correct);
-    Assert.assertTrue(s.equals(correct));
+    Assert.assertEquals(correct, s);
   }
 
   static void fill(IcedBitSet bs, Integer[] idx) {
@@ -94,12 +88,6 @@ public class IcedBitSetTest extends TestUtil {
     fill(bs, idx);
     Assert.assertEquals(bs.size(), Math.max(32,len));
     check(bs, 0, idx);
-  }
-
-  @Test (expected = AssertionError.class) public void outOfBounds() {
-    int len = 32 + (int) (10000 * new Random().nextDouble());
-    IcedBitSet bs = new IcedBitSet(len);
-    bs.set(len);
   }
 
   @Test public void fillSparse() {

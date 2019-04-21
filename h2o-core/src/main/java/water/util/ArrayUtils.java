@@ -550,9 +550,17 @@ public class ArrayUtils {
     return result;
   }
 
-  public static boolean contains(String[] names, String name) {
-    if (null == names) return false;
-    for (String n : names) if (n.equals(name)) return true;
+  public static <T> boolean contains(T[] arr, T target) {
+    if (null == arr) return false;
+    for (T t : arr) {
+      if (t == target) return true;
+      if (t != null && t.equals(target))  return true;
+    }
+    return false;
+  }
+
+  static public boolean contains(byte[] a, byte d) {
+    for (byte anA : a) if (anA == d) return true;
     return false;
   }
 
@@ -890,10 +898,12 @@ public class ArrayUtils {
     return cnt;
   }
 
-  public static boolean isInt(String s) {
-    if (s == null || s.isEmpty()) return false;
-    int i = s.charAt(0)=='-' ? 1 : 0;
-    for(; i<s.length();i++) if (!Character.isDigit(s.charAt(i))) return false;
+  public static boolean isInt(String... ary) {
+    for(String s:ary) {
+      if (s == null || s.isEmpty()) return false;
+      int i = s.charAt(0) == '-' ? 1 : 0;
+      for (; i < s.length(); i++) if (!Character.isDigit(s.charAt(i))) return false;
+    }
     return true;
   }
 
@@ -1206,6 +1216,17 @@ public class ArrayUtils {
     }
     return c;
   }
+  public static double [] sortedMerge(double[] a, double [] b) {
+    double [] c = MemoryManager.malloc8d(a.length + b.length);
+    int i = 0, j = 0;
+    for(int k = 0; k < c.length; ++k){
+      if(i == a.length) c[k] = b[j++];
+      else if(j == b.length)c[k] = a[i++];
+      else if(b[j] < a[i]) c[k] = b[j++];
+      else c[k] = a[i++];
+    }
+    return c;
+  }
   // sparse sortedMerge (ids and vals)
   public static void sortedMerge(int[] aIds, double [] aVals, int[] bIds, double [] bVals, int [] resIds, double [] resVals) {
     int i = 0, j = 0;
@@ -1236,6 +1257,12 @@ public class ArrayUtils {
   }
 
   public static String[] select(String[] ary, int[] idxs) {
+    String [] res  = new String[idxs.length];
+    for(int i = 0; i < res.length; ++i)
+      res[i] = ary[idxs[i]];
+    return res;
+  }
+  public static String[] select(String[] ary, byte[] idxs) {
     String [] res  = new String[idxs.length];
     for(int i = 0; i < res.length; ++i)
       res[i] = ary[idxs[i]];
@@ -1410,7 +1437,7 @@ public class ArrayUtils {
     if(s == null)return ary;
     int cnt = 0;
     int idx = find(ary,s);
-    while(idx > 0) {
+    while(idx >= 0) {
       ++cnt;
       idx = find(ary,s,++idx);
     }
@@ -1423,6 +1450,18 @@ public class ArrayUtils {
     return res;
   }
 
+  public static int[] sorted_set_diff(int[] x, int[] y) {
+    assert isSorted(x);
+    assert isSorted(y);
+    int [] res = new int[x.length];
+    int j = 0, k = 0;
+    for(int i = 0; i < x.length; i++){
+      while(j < y.length && y[j] < x[i])j++;
+      if(j == y.length || y[j] != x[i])
+        res[k++] = x[i];
+    }
+    return Arrays.copyOf(res,k);
+  }
   /*
       This class is written to copy the contents of a frame to a 2-D double array.
    */
@@ -1790,4 +1829,41 @@ public class ArrayUtils {
       if (vals[i - 1] > vals[i]) return false;
     return true;
   }
+  public static boolean isSorted(double[] vals) {
+    for (int i = 1; i < vals.length; ++i)
+      if (vals[i - 1] > vals[i]) return false;
+    return true;
+  }
+
+  public static double[] constAry(int len, double c) {
+    double[] ary = new double[len];
+    Arrays.fill(ary, c);
+    return ary;
+  }
+
+  public static double[] toDouble(float[] floats) {
+    if (floats == null)
+      return null;
+    double[] ary = new double[floats.length];
+    for (int i = 0; i < floats.length; i++)
+      ary[i] = floats[i];
+    return ary;
+  }
+
+  public static double[] toDouble(int[] ints) {
+    if (ints == null)
+      return null;
+    double[] ary = new double[ints.length];
+    for (int i = 0; i < ints.length; i++)
+      ary[i] = ints[i];
+    return ary;
+  }
+
+  public static boolean isInstance(Object object, Class[] comparedClasses) {
+    for (Class c : comparedClasses) {
+      if (c.isInstance(object)) return true;
+    }
+    return false;
+  }
+
 }

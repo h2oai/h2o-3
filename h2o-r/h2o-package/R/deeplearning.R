@@ -4,17 +4,18 @@
 # -------------------------- Deep Learning - Neural Network -------------------------- #
 #' 
 #' Build a Deep Neural Network model using CPUs
-#' Builds a feed-forward multilayer artificial neural network on an H2OFrame
 #' 
-#' @param x A vector containing the names or indices of the predictor variables to use in building the model.
-#'        If x is missing,then all columns except y are used.
-#' @param y The name of the response variable in the model.If the data does not contain a header, this is the first column
-#'        index, and increasing from left to right. (The response must be either an integer or a
-#'        categorical variable).
+#' Builds a feed-forward multilayer artificial neural network on an H2OFrame.
+#' 
+#' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
+#'        If x is missing, then all columns except y are used.
+#' @param y The name or column index of the response variable in the data. The response must be either a numeric or a
+#'        categorical/factor variable. If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
 #' @param model_id Destination id for this model; auto-generated if not specified.
-#' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
+#' @param training_frame Id of the training data frame.
 #' @param validation_frame Id of the validation data frame.
-#' @param nfolds Number of folds for N-fold cross-validation (0 to disable or >= 2). Defaults to 0.
+#' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
+#' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to TRUE.
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to FALSE.
 #' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to FALSE.
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will
@@ -25,7 +26,9 @@
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
 #' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
 #'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
-#'        weights are not allowed.
+#'        weights are not allowed. Note: Weights are per-row observation weights and do not increase the size of the
+#'        data frame. This is typically the number of times a row is repeated, but non-integer values are supported as
+#'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 #' @param offset_column Offset column. This will be added to the combination of columns before applying the link function.
 #' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
 #'        FALSE.
@@ -93,9 +96,10 @@
 #' @param regression_stop Stopping criterion for regression error (MSE) on training data (-1 to disable). Defaults to 1e-06.
 #' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
 #'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 5.
-#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression) Must be one of:
-#'        "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification",
-#'        "mean_per_class_error". Defaults to AUTO.
+#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression). Note that custom
+#'        and custom_increasing can only be used in GBM and DRF with the Python client. Must be one of: "AUTO",
+#'        "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification",
+#'        "mean_per_class_error", "custom", "custom_increasing". Defaults to AUTO.
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
@@ -126,27 +130,30 @@
 #' @param export_weights_and_biases \code{Logical}. Whether to export Neural Network weights and biases to H2O Frames. Defaults to FALSE.
 #' @param mini_batch_size Mini-batch size (smaller leads to better fit, larger can speed up and generalize better). Defaults to 1.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
-#'        "Binary", "Eigen", "LabelEncoder", "SortByResponse". Defaults to AUTO.
+#'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
 #' @param elastic_averaging \code{Logical}. Elastic averaging between compute nodes can improve distributed model convergence.
 #'        #Experimental Defaults to FALSE.
 #' @param elastic_averaging_moving_rate Elastic averaging moving rate (only if elastic averaging is enabled). Defaults to 0.9.
 #' @param elastic_averaging_regularization Elastic averaging regularization strength (only if elastic averaging is enabled). Defaults to 0.001.
+#' @param export_checkpoints_dir Automatically export generated models to this directory.
+#' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree for GBM, DRF, & XGBoost. Metrics per epoch for Deep Learning). Defaults to FALSE.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
 #' @examples
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
-#' iris.hex <- as.h2o(iris)
-#' iris.dl <- h2o.deeplearning(x = 1:4, y = 5, training_frame = iris.hex)
+#' iris_hf <- as.h2o(iris)
+#' iris_dl <- h2o.deeplearning(x = 1:4, y = 5, training_frame = iris_hf, seed=123456)
 #' 
 #' # now make a prediction
-#' predictions <- h2o.predict(iris.dl, iris.hex)
+#' predictions <- h2o.predict(iris_dl, iris_hf)
 #' }
 #' @export
 h2o.deeplearning <- function(x, y, training_frame,
                              model_id = NULL,
                              validation_frame = NULL,
                              nfolds = 0,
+                             keep_cross_validation_models = TRUE,
                              keep_cross_validation_predictions = FALSE,
                              keep_cross_validation_fold_assignment = FALSE,
                              fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
@@ -201,7 +208,7 @@ h2o.deeplearning <- function(x, y, training_frame,
                              classification_stop = 0,
                              regression_stop = 1e-06,
                              stopping_rounds = 5,
-                             stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error"),
+                             stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
                              stopping_tolerance = 0,
                              max_runtime_secs = 0,
                              score_validation_sampling = c("Uniform", "Stratified"),
@@ -223,23 +230,25 @@ h2o.deeplearning <- function(x, y, training_frame,
                              reproducible = FALSE,
                              export_weights_and_biases = FALSE,
                              mini_batch_size = 1,
-                             categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse"),
+                             categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                              elastic_averaging = FALSE,
                              elastic_averaging_moving_rate = 0.9,
-                             elastic_averaging_regularization = 0.001
+                             elastic_averaging_regularization = 0.001,
+                             export_checkpoints_dir = NULL,
+                             verbose = FALSE 
                              ) 
 {
-  #If x is missing, then assume user wants to use all columns as features.
-  if(missing(x)){
-     if(is.numeric(y)){
-         x <- setdiff(col(training_frame),y)
-     }else{
-         x <- setdiff(colnames(training_frame),y)
+  # If x is missing, then assume user wants to use all columns as features.
+  if (missing(x)) {
+     if (is.numeric(y)) {
+         x <- setdiff(col(training_frame), y)
+     } else {
+         x <- setdiff(colnames(training_frame), y)
      }
   }
 
   # Required args: training_frame
-  if( missing(training_frame) ) stop("argument 'training_frame' is missing, with no default")
+  if (missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
   # Training_frame must be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
      tryCatch(training_frame <- h2o.getFrame(training_frame),
@@ -270,6 +279,8 @@ h2o.deeplearning <- function(x, y, training_frame,
     parms$validation_frame <- validation_frame
   if (!missing(nfolds))
     parms$nfolds <- nfolds
+  if (!missing(keep_cross_validation_models))
+    parms$keep_cross_validation_models <- keep_cross_validation_models
   if (!missing(keep_cross_validation_predictions))
     parms$keep_cross_validation_predictions <- keep_cross_validation_predictions
   if (!missing(keep_cross_validation_fold_assignment))
@@ -435,8 +446,10 @@ h2o.deeplearning <- function(x, y, training_frame,
     parms$elastic_averaging_moving_rate <- elastic_averaging_moving_rate
   if (!missing(elastic_averaging_regularization))
     parms$elastic_averaging_regularization <- elastic_averaging_regularization
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
   # Error check and build model
-  .h2o.modelJob('deeplearning', parms, h2oRestApiVersion=3) 
+  .h2o.modelJob('deeplearning', parms, h2oRestApiVersion = 3, verbose=verbose) 
 }
 
 #' Anomaly Detection via H2O Deep Learning Model
@@ -455,14 +468,14 @@ h2o.deeplearning <- function(x, y, training_frame,
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
-#' prosPath = system.file("extdata", "prostate.csv", package = "h2o")
-#' prostate.hex = h2o.importFile(path = prosPath)
-#' prostate.dl = h2o.deeplearning(x = 3:9, training_frame = prostate.hex, autoencoder = TRUE,
+#' prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate = h2o.importFile(path = prostate_path)
+#' prostate_dl = h2o.deeplearning(x = 3:9, training_frame = prostate, autoencoder = TRUE,
 #'                                hidden = c(10, 10), epochs = 5)
-#' prostate.anon = h2o.anomaly(prostate.dl, prostate.hex)
-#' head(prostate.anon)
-#' prostate.anon.per.feature = h2o.anomaly(prostate.dl, prostate.hex, per_feature=TRUE)
-#' head(prostate.anon.per.feature)
+#' prostate_anon = h2o.anomaly(prostate_dl, prostate)
+#' head(prostate_anon)
+#' prostate_anon_per_feature = h2o.anomaly(prostate_dl, prostate, per_feature=TRUE)
+#' head(prostate_anon_per_feature)
 #' }
 #' @export
 h2o.anomaly <- function(object, data, per_feature=FALSE) {

@@ -1,16 +1,14 @@
 package water.util;
 
-import water.*;
-import water.H2O.H2OCallback;
-import water.H2O.H2OCountedCompleter;
+import water.H2O;
+import water.Key;
+import water.MRTask;
 import water.fvec.*;
-import water.nbhm.NonBlockingHashMap;
+import water.parser.BufferedString;
 
 import java.util.Arrays;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import water.parser.BufferedString;
 import static water.util.RandomUtils.getRNG;
 
 public class MRUtils {

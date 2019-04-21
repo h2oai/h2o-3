@@ -10,6 +10,7 @@ H2O Documentation
    frame
    modeling
    model_categories
+   tree
    metrics
    assembly
    backend

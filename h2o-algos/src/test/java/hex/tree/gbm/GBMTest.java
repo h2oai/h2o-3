@@ -1,19 +1,25 @@
 package hex.tree.gbm;
 
 import hex.*;
+import hex.genmodel.algos.gbm.GbmMojoModel;
+import hex.genmodel.algos.tree.SharedTreeNode;
+import hex.genmodel.algos.tree.SharedTreeSubgraph;
+import hex.genmodel.easy.EasyPredictModelWrapper;
+import hex.genmodel.easy.RowData;
+import hex.genmodel.easy.exception.PredictException;
+import hex.genmodel.easy.prediction.BinomialModelPrediction;
+import hex.genmodel.easy.prediction.MultinomialModelPrediction;
 import hex.genmodel.utils.DistributionFamily;
+import hex.tree.Constraints;
 import hex.tree.SharedTreeModel;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
 import water.*;
 import water.api.StreamingSchema;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.RebalanceDataSet;
-import water.fvec.Vec;
+import water.fvec.*;
+import water.parser.BufferedString;
 import water.parser.ParseDataset;
 import water.util.*;
 
@@ -21,20 +27,49 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
+import org.junit.runners.Parameterized;
 
 import static hex.genmodel.utils.DistributionFamily.*;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static water.fvec.FVecTest.makeByteVec;
 
+@RunWith(Parameterized.class)
 public class GBMTest extends TestUtil {
 
+  @Rule
+  public transient ExpectedException expectedException = ExpectedException.none();
+
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }
+
+  @Parameterized.Parameters(name = "{index}: gbm({0})")
+  public static Iterable<?> data() {
+    if (MINCLOUDSIZE > 1) {
+      return Collections.singletonList("Default");
+    } else {
+      // only run scenario "EmulateConstraints" for cloud size 1 (to avoid too long test execution)
+      return Arrays.asList("Default", "EmulateConstraints");
+    }
+  }
+  
+  @Parameterized.Parameter
+  public String test_type;
+  
+  // Note: use this method to create an instance of GBMParameters (needed for Parameterized test)
+  private GBMModel.GBMParameters makeGBMParameters() {
+    if ("EmulateConstraints".equals(test_type)) {
+      return new GBMModel.GBMParameters() {
+        @Override
+        Constraints emptyConstraints(Frame f) {
+          if (_distribution == DistributionFamily.gaussian || _distribution == DistributionFamily.bernoulli) {
+            return new Constraints(new int[f.numCols()], _distribution, true);
+          } else 
+            return null;
+        }
+      };
+    } else 
+      return new GBMModel.GBMParameters();
+  }
 
   private abstract class PrepData { abstract int prep(Frame fr); }
 
@@ -45,7 +80,7 @@ public class GBMTest extends TestUtil {
     Frame fr = null, fr2 = null;
     try {
       fr = parse_test_file("./smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = fr._key;
       parms._distribution = gaussian;
       parms._response_column = fr._names[1]; // Row in col 0, dependent in col 1, predictor in col 2
@@ -180,7 +215,7 @@ public class GBMTest extends TestUtil {
       }
       DKV.put(fr);             // Update frame after hacking it
 
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       if( idx < 0 ) idx = ~idx;
       parms._train = fr._key;
       parms._response_column = fr._names[idx];
@@ -221,7 +256,7 @@ public class GBMTest extends TestUtil {
   // Test-on-Train.  Slow test, needed to build a good model.
   @Test public void testGBMTrainTest() {
     GBMModel gbm = null;
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     try {
       Scope.enter();
       parms._valid = parse_test_file("smalldata/gbm_test/ecology_eval.csv")._key;
@@ -257,7 +292,7 @@ public class GBMTest extends TestUtil {
   // Predict with no actual, after training
   @Test public void testGBMPredict() {
     GBMModel gbm = null;
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     Frame pred=null, res=null;
     Scope.enter();
     try {
@@ -291,7 +326,7 @@ public class GBMTest extends TestUtil {
   // Scoring should output original probabilities and probabilities calibrated by Platt Scaling
   @Test public void testGBMPredictWithCalibration() {
     GBMModel gbm = null;
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     Scope.enter();
     try {
       Frame train = parse_test_file("smalldata/gbm_test/ecology_model.csv");
@@ -336,7 +371,7 @@ public class GBMTest extends TestUtil {
   // Adapt a trained model to a test dataset with different categoricals
   @Test public void testModelAdaptMultinomial() {
     GBMModel gbm = null;
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     try {
       Scope.enter();
       Frame v;
@@ -377,46 +412,212 @@ public class GBMTest extends TestUtil {
     }
   }
 
-  // A test of locking the input dataset during model building.
-  @Test public void testModelLock() {
-    GBM gbm=null;
-    Frame fr=null;
+  @Test public void testPredictLeafNodeAssignment() {
     Scope.enter();
     try {
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
-      fr = parse_test_file("smalldata/gbm_test/ecology_model.csv");
+      final Key<Frame> target = Key.make();
+      Frame train = Scope.track(parse_test_file("smalldata/gbm_test/ecology_model.csv"));
+      train.remove("Site").remove();     // Remove unique ID
+      int ci = train.find("Angaus");
+      Scope.track(train.replace(ci, train.vecs()[ci].toCategoricalVec()));   // Convert response 'Angaus' to categorical
+      DKV.put(train);                    // Update frame after hacking it
+
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._train = train._key;
+      parms._response_column = "Angaus"; // Train on the outcome
+      parms._distribution = DistributionFamily.multinomial;
+
+      GBMModel gbm = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
+
+      Frame pred = Scope.track(parse_test_file("smalldata/gbm_test/ecology_eval.csv"));
+      pred.remove("Angaus").remove();    // No response column during scoring
+
+      Frame nodeIds = Scope.track(gbm.scoreLeafNodeAssignment(pred, Model.LeafNodeAssignment.LeafNodeAssignmentType.Node_ID, target));
+      Frame nodePaths = Scope.track(gbm.scoreLeafNodeAssignment(pred, Model.LeafNodeAssignment.LeafNodeAssignmentType.Path, target));
+
+      assertArrayEquals(nodePaths._names, nodeIds._names);
+      assertEquals(nodePaths.numRows(), nodeIds.numRows());
+
+      for (int i = 0; i < nodePaths.numCols(); i++) {
+        String[] paths = nodePaths.vec(i).domain();
+        Vec.Reader pathVecRdr = nodePaths.vec(i).new Reader();
+        Vec.Reader nodeIdVecRdr = nodeIds.vec(i).new Reader();
+        SharedTreeSubgraph tree = gbm.getSharedTreeSubgraph(i, 0);
+        for (long j = 0; j < nodePaths.numRows(); j++) {
+          String path = paths[(int) pathVecRdr.at8(j)];
+          int nodeId = (int) nodeIdVecRdr.at8(j);
+          SharedTreeNode node = tree.walkNodes(path);
+          assertEquals(node.getNodeNumber(), nodeId);
+        }
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  /**
+   * Staged predictions test (prediction probabilities of trees per iteration) - binomial data.
+   */
+  @Test public void testPredictStagedProbabilitiesBinomial() {
+    Scope.enter();
+    try {
+      final Key<Frame> target = Key.make();
+      Frame train = Scope.track(parse_test_file("smalldata/gbm_test/ecology_model.csv"));
+      train.remove("Site").remove();     // Remove unique ID
+      int ci = train.find("Angaus");
+      Scope.track(train.replace(ci, train.vecs()[ci].toCategoricalVec()));   // Convert response 'Angaus' to categorical
+      DKV.put(train);                    // Update frame after hacking it
+
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._train = train._key;
+      parms._response_column = "Angaus"; // Train on the outcome
+      parms._distribution = DistributionFamily.bernoulli;
+
+      GBMModel gbm = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
+      Frame stagedProbabilities = Scope.track(gbm.scoreStagedPredictions(train, target));
+      Frame predictions = gbm.score(train);
+      try {
+        GbmMojoModel mojoModel = (GbmMojoModel) gbm.toMojo();
+        EasyPredictModelWrapper model = new EasyPredictModelWrapper(
+                new EasyPredictModelWrapper.Config().setModel(mojoModel).setEnableStagedProbabilities(true)
+        );
+        // test for the first 10 rows in training data
+        for(int r = 0; r < 10; r++) {
+          double[] stagedProbabilitiesRow = new double[stagedProbabilities.numCols()];
+          for(int c = 0; c < stagedProbabilities.numCols(); c++) {
+            stagedProbabilitiesRow[c] = stagedProbabilities.vec(c).at(r);
+          }
+          RowData tmpRow = new RowData();
+          BufferedString bStr = new BufferedString();
+          for (int c = 0; c < train.numCols(); c++) {
+            if (train.vec(c).isCategorical()) {
+              tmpRow.put(train.names()[c], train.vec(c).atStr(bStr, r).toString());
+            } else {
+              tmpRow.put(train.names()[c], train.vec(c).at(r));
+            }
+          }
+          BinomialModelPrediction tmpPrediction = model.predictBinomial(tmpRow);
+          double[] mojoStageProbabilitiesRow = tmpPrediction.stageProbabilities;
+          assertArrayEquals(stagedProbabilitiesRow, mojoStageProbabilitiesRow, 1e-15);
+          
+          double final_prediction = predictions.vec(1).at(r);
+          assertEquals(final_prediction, stagedProbabilitiesRow[stagedProbabilitiesRow.length-1], 1e-15);
+        }
+        } catch(IOException | PredictException ex){
+          fail(ex.toString());
+        } finally{
+          gbm.delete();
+          if (stagedProbabilities != null) stagedProbabilities.delete();
+          if (predictions != null) predictions.delete();
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  /**
+   * Staged predictions test (prediction probabilities of trees per iteration) - multinomial data.
+   */
+  @Test public void testPredictStagedProbabilitiesMultinomial() {
+    Scope.enter();
+    try {
+      final Key<Frame> target = Key.make();
+      Frame train = Scope.track(parse_test_file("./smalldata/logreg/prostate.csv"));
+      train.remove("ID").remove();     // Remove unique ID
+      int ci = train.find("RACE");
+      Scope.track(train.replace(ci, train.vecs()[ci].toCategoricalVec()));   // Convert response 'Angaus' to categorical
+      DKV.put(train);                    // Update frame after hacking it
+
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._train = train._key;
+      parms._response_column = "RACE"; // Train on the outcome
+      parms._distribution = DistributionFamily.multinomial;
+
+      GBMModel gbm = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
+      Frame stagedProbabilities = Scope.track(gbm.scoreStagedPredictions(train, target));
+      Frame predictions = gbm.score(train);
+      try {
+        GbmMojoModel mojoModel = (GbmMojoModel) gbm.toMojo();
+        EasyPredictModelWrapper model = new EasyPredictModelWrapper(
+                new EasyPredictModelWrapper.Config().setModel(mojoModel).setEnableStagedProbabilities(true)
+        );
+        // test for the first 10 rows in training data
+        for(int r = 0; r < 10; r++) {
+          double[] stagedProbabilitiesRow = new double[stagedProbabilities.numCols()];
+          for (int c = 0; c < stagedProbabilities.numCols(); c++) {
+            stagedProbabilitiesRow[c] = stagedProbabilities.vec(c).at(r);
+          }
+
+          RowData tmpRow = new RowData();
+          BufferedString bStr = new BufferedString();
+          for (int c = 0; c < train.numCols(); c++) {
+            if (train.vec(c).isCategorical()) {
+              tmpRow.put(train.names()[c], train.vec(c).atStr(bStr, r).toString());
+            } else {
+              tmpRow.put(train.names()[c], train.vec(c).at(r));
+            }
+          }
+          
+          MultinomialModelPrediction tmpPrediction = model.predictMultinomial(tmpRow);
+          double[] mojoStageProbabilitiesRow = tmpPrediction.stageProbabilities;
+          assertArrayEquals(stagedProbabilitiesRow, mojoStageProbabilitiesRow, 1e-15);
+
+          double[] final_prediction = {predictions.vec(1).at(r), predictions.vec(2).at(r), predictions.vec(3).at(r)};
+          assertArrayEquals(final_prediction, Arrays.copyOfRange(stagedProbabilitiesRow, stagedProbabilitiesRow.length-3, stagedProbabilitiesRow.length), 1e-15);
+        }
+      } catch (IOException | PredictException ex) {
+        fail(ex.toString());
+      } finally {
+        gbm.delete();
+        if (stagedProbabilities != null) stagedProbabilities.delete();
+        if (predictions != null) predictions.delete();
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  // A test of locking the input dataset during model building.
+  @Test public void testModelLock() {
+    Scope.enter();
+    try {
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      Frame fr = Scope.track(parse_test_file("smalldata/gbm_test/ecology_model.csv"));
       fr.remove("Site").remove();        // Remove unique ID
       int ci = fr.find("Angaus");
       Scope.track(fr.replace(ci, fr.vecs()[ci].toCategoricalVec()));   // Convert response 'Angaus' to categorical
       DKV.put(fr);                       // Update after hacking
       parms._train = fr._key;
       parms._response_column = "Angaus"; // Train on the outcome
-      parms._ntrees = 10;
+      parms._ntrees = 50;
       parms._max_depth = 10;
       parms._min_rows = 1;
-      parms._nbins = 20;
       parms._learn_rate = .2f;
+      parms._seed = 42L;
       parms._distribution = DistributionFamily.multinomial;
-      gbm = new GBM(parms);
+      GBM gbm = new GBM(parms);
+      
       gbm.trainModel();
-      try { Thread.sleep(100); } catch( Exception ignore ) { }
+      try { Thread.sleep(100); }
+      catch( Exception e ) { e.printStackTrace(); } // just in case
 
+      boolean delete_ok = false;
       try {
         Log.info("Trying illegal frame delete.");
         fr.delete();            // Attempted delete while model-build is active
-        Assert.fail("Should toss IAE instead of reaching here");
+        delete_ok = true;
+        Log.err("Frame " + fr._key + " was deleted while it should have been locked!");
       } catch( IllegalArgumentException ignore ) {
       } catch( RuntimeException re ) {
         assertTrue( re.getCause() instanceof IllegalArgumentException);
       }
-
-      Log.info("Getting model");
-      GBMModel model = gbm.get();
+      
+      Log.info("Getting model"); // in order to clean it up
+      Scope.track_generic(gbm.get());
       Assert.assertTrue(gbm.isStopped()); //HEX-1817
-      if( model != null ) model.delete();
-
+      
+      Assert.assertFalse("Frame " + fr._key + " was deleted while it should have been locked!", delete_ok);
     } finally {
-      if( fr  != null ) fr .remove();
       Scope.exit();
     }
   }
@@ -424,8 +625,8 @@ public class GBMTest extends TestUtil {
   //  MSE generated by GBM with/without validation dataset should be same
   @Test public void testModelScoreKeeperEqualityOnProstateBernoulli() {
     final PrepData prostatePrep = new PrepData() { @Override int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("CAPSULE"); } };
-    ScoreKeeper[] scoredWithoutVal = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, false, DistributionFamily.bernoulli)._scored_train;
-    ScoreKeeper[] scoredWithVal    = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, true , DistributionFamily.bernoulli)._scored_valid;
+    ScoreKeeper[] scoredWithoutVal = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, false, bernoulli)._scored_train;
+    ScoreKeeper[] scoredWithVal    = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, true , bernoulli)._scored_valid;
     Assert.assertArrayEquals("GBM has to report same list of MSEs for run without/with validation dataset (which is equal to training data)", scoredWithoutVal, scoredWithVal);
   }
 
@@ -436,10 +637,17 @@ public class GBMTest extends TestUtil {
     Assert.assertArrayEquals("GBM has to report same list of MSEs for run without/with validation dataset (which is equal to training data)", scoredWithoutVal, scoredWithVal);
   }
 
+  @Test public void testModelScoreKeeperEqualityOnProstateQuasibinomial() {
+    final PrepData prostatePrep = new PrepData() { @Override int prep(Frame fr) { fr.remove("ID").remove(); return ~fr.find("CAPSULE"); } };
+    ScoreKeeper[] scoredWithoutVal = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, false, quasibinomial)._scored_train;
+    ScoreKeeper[] scoredWithVal    = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, true , quasibinomial)._scored_valid;
+    Assert.assertArrayEquals("GBM has to report same list of MSEs for run without/with validation dataset (which is equal to training data)", scoredWithoutVal, scoredWithVal);
+  }
+
   @Test public void testModelScoreKeeperEqualityOnProstateMultinomial() {
     final PrepData prostatePrep = new PrepData() { @Override int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("RACE"); } };
-    ScoreKeeper[] scoredWithoutVal = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, false, DistributionFamily.multinomial)._scored_train;
-    ScoreKeeper[] scoredWithVal    = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, true , DistributionFamily.multinomial)._scored_valid;
+    ScoreKeeper[] scoredWithoutVal = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, false, multinomial)._scored_train;
+    ScoreKeeper[] scoredWithVal    = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, true , multinomial)._scored_valid;
     Assert.assertArrayEquals("GBM has to report same list of MSEs for run without/with validation dataset (which is equal to training data)", scoredWithoutVal, scoredWithVal);
   }
 
@@ -452,23 +660,30 @@ public class GBMTest extends TestUtil {
 
   @Test public void testModelScoreKeeperEqualityOnTitanicBernoulli() {
     final PrepData titanicPrep = new PrepData() { @Override int prep(Frame fr) { return fr.find("survived"); } };
-    ScoreKeeper[] scoredWithoutVal = basicGBM("./smalldata/junit/titanic_alt.csv", titanicPrep, false, DistributionFamily.bernoulli)._scored_train;
-    ScoreKeeper[] scoredWithVal    = basicGBM("./smalldata/junit/titanic_alt.csv", titanicPrep, true , DistributionFamily.bernoulli)._scored_valid;
+    ScoreKeeper[] scoredWithoutVal = basicGBM("./smalldata/junit/titanic_alt.csv", titanicPrep, false, bernoulli)._scored_train;
+    ScoreKeeper[] scoredWithVal    = basicGBM("./smalldata/junit/titanic_alt.csv", titanicPrep, true , bernoulli)._scored_valid;
+    Assert.assertArrayEquals("GBM has to report same list of MSEs for run without/with validation dataset (which is equal to training data)", scoredWithoutVal, scoredWithVal);
+  }
+
+  @Test public void testModelScoreKeeperEqualityOnTitanicQuasibinomial() {
+    final PrepData titanicPrep = new PrepData() { @Override int prep(Frame fr) { return fr.find("survived"); } };
+    ScoreKeeper[] scoredWithoutVal = basicGBM("./smalldata/junit/titanic_alt.csv", titanicPrep, false, quasibinomial)._scored_train;
+    ScoreKeeper[] scoredWithVal    = basicGBM("./smalldata/junit/titanic_alt.csv", titanicPrep, true , quasibinomial)._scored_valid;
     Assert.assertArrayEquals("GBM has to report same list of MSEs for run without/with validation dataset (which is equal to training data)", scoredWithoutVal, scoredWithVal);
   }
 
   @Test public void testModelScoreKeeperEqualityOnTitanicMultinomial() {
     final PrepData titanicPrep = new PrepData() { @Override int prep(Frame fr) { return fr.find("survived"); } };
-    ScoreKeeper[] scoredWithoutVal = basicGBM("./smalldata/junit/titanic_alt.csv", titanicPrep, false, DistributionFamily.multinomial)._scored_train;
-    ScoreKeeper[] scoredWithVal    = basicGBM("./smalldata/junit/titanic_alt.csv", titanicPrep, true , DistributionFamily.multinomial)._scored_valid;
+    ScoreKeeper[] scoredWithoutVal = basicGBM("./smalldata/junit/titanic_alt.csv", titanicPrep, false, multinomial)._scored_train;
+    ScoreKeeper[] scoredWithVal    = basicGBM("./smalldata/junit/titanic_alt.csv", titanicPrep, true , multinomial)._scored_valid;
     Assert.assertArrayEquals("GBM has to report same list of MSEs for run without/with validation dataset (which is equal to training data)", scoredWithoutVal, scoredWithVal);
   }
 
   @Test public void testBigCat() {
     final PrepData prep = new PrepData() { @Override int prep(Frame fr) { return fr.find("y"); } };
-    basicGBM("./smalldata/gbm_test/50_cattest_test.csv" , prep, false, DistributionFamily.bernoulli);
-    basicGBM("./smalldata/gbm_test/50_cattest_train.csv", prep, false, DistributionFamily.bernoulli);
-    basicGBM("./smalldata/gbm_test/swpreds_1000x3.csv", prep, false, DistributionFamily.bernoulli);
+    basicGBM("./smalldata/gbm_test/50_cattest_test.csv" , prep, false, bernoulli);
+    basicGBM("./smalldata/gbm_test/50_cattest_train.csv", prep, false, bernoulli);
+    basicGBM("./smalldata/gbm_test/swpreds_1000x3.csv", prep, false, bernoulli);
   }
 
   // Test uses big data and is too slow for a pre-push
@@ -489,7 +704,7 @@ public class GBMTest extends TestUtil {
       DKV.put(vfr);
 
       // Same parms for all
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._valid = vfr._key;
       parms._response_column = "TARGET_D";
@@ -549,7 +764,7 @@ public class GBMTest extends TestUtil {
       DKV.put(vfr);
 
       // Same parms for all
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._valid = vfr._key;
       parms._response_column = "C785";
@@ -593,7 +808,7 @@ public class GBMTest extends TestUtil {
 //      DKV.put(tfr);
 
       for (int i=0; i<N; ++i) {
-        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        GBMModel.GBMParameters parms = makeGBMParameters();
         parms._train = tfr._key;
         parms._response_column = "C55";
         parms._nbins = 1000;
@@ -652,7 +867,7 @@ public class GBMTest extends TestUtil {
       }
       DKV.put(tfr);
       for (int i=0; i<N; ++i) {
-        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        GBMModel.GBMParameters parms = makeGBMParameters();
         parms._train = tfr._key;
         parms._response_column = "IsDepDelayed";
         parms._nbins = 10;
@@ -713,7 +928,7 @@ public class GBMTest extends TestUtil {
       }
       DKV.put(tfr);
       for (int i=0; i<N; ++i) {
-        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        GBMModel.GBMParameters parms = makeGBMParameters();
         parms._train = tfr._key;
         parms._response_column = "IsDepDelayed";
         parms._nbins = 10;
@@ -725,7 +940,7 @@ public class GBMTest extends TestUtil {
         parms._balance_classes = true;
         parms._seed = 0;
         parms._build_tree_one_node = true;
-        
+
         // Build a first model; all remaining models should be equal
         GBMModel gbm = new GBM(parms).trainModel().get();
         assertEquals(gbm._output._ntrees, parms._ntrees);
@@ -756,7 +971,7 @@ public class GBMTest extends TestUtil {
       Scope.track(tfr.replace(1, tfr.vecs()[1].toCategoricalVec()));
       DKV.put(tfr);
       for (int i=0; i<N; ++i) {
-        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        GBMModel.GBMParameters parms = makeGBMParameters();
         parms._train = tfr._key;
         parms._response_column = "y";
         parms._ntrees = 1;
@@ -798,7 +1013,7 @@ public class GBMTest extends TestUtil {
       DKV.put(vfr);
 
       // Build model
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._valid = vfr._key;
       parms._response_column = "V55";
@@ -861,7 +1076,7 @@ public class GBMTest extends TestUtil {
     try {
       tfr = parse_test_file("smalldata/junit/no_weights.csv");
       DKV.put(tfr);
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = "response";
       parms._seed = 0xdecaf;
@@ -900,7 +1115,7 @@ public class GBMTest extends TestUtil {
     try {
       tfr = parse_test_file("smalldata/junit/weights_all_ones.csv");
       DKV.put(tfr);
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = "response";
       parms._weights_column = "weight";
@@ -942,7 +1157,7 @@ public class GBMTest extends TestUtil {
     try {
       tfr = parse_test_file("smalldata/junit/weights_all_twos.csv");
       DKV.put(tfr);
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = "response";
       parms._weights_column = "weight";
@@ -984,7 +1199,7 @@ public class GBMTest extends TestUtil {
     try {
       tfr = parse_test_file("smalldata/junit/weights_all_tiny.csv");
       DKV.put(tfr);
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = "response";
       parms._weights_column = "weight";
@@ -1026,7 +1241,7 @@ public class GBMTest extends TestUtil {
     try {
       tfr = parse_test_file("smalldata/junit/no_weights_shuffled.csv");
       DKV.put(tfr);
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = "response";
       parms._seed = 0xdecaf;
@@ -1067,7 +1282,7 @@ public class GBMTest extends TestUtil {
     try {
       tfr = parse_test_file("smalldata/junit/weights.csv");
       DKV.put(tfr);
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = "response";
       parms._weights_column = "weight";
@@ -1109,7 +1324,7 @@ public class GBMTest extends TestUtil {
     try {
       tfr = parse_test_file("smalldata/junit/weights.csv");
       DKV.put(tfr);
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = "response";
       parms._weights_column = "weight";
@@ -1152,7 +1367,7 @@ public class GBMTest extends TestUtil {
     try {
       tfr = parse_test_file("smalldata/junit/weights.csv");
       DKV.put(tfr);
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = "response";
       parms._min_rows = 1;
@@ -1202,7 +1417,7 @@ public class GBMTest extends TestUtil {
     try {
       tfr = parse_test_file("smalldata/junit/weights.csv");
       DKV.put(tfr);
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = "response";
       parms._min_rows = 1;
@@ -1247,7 +1462,7 @@ public class GBMTest extends TestUtil {
       tfr = parse_test_file("smalldata/junit/weights.csv");
       vfr = parse_test_file("smalldata/junit/weights.csv");
       DKV.put(tfr);
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._valid = vfr._key;
       parms._response_column = "response";
@@ -1292,7 +1507,7 @@ public class GBMTest extends TestUtil {
       tfr.add("economy_20mpg", old.toCategoricalVec()); // response to last column
       DKV.put(tfr);
 
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = "economy_20mpg";
       parms._min_rows = 1;
@@ -1338,7 +1553,7 @@ public class GBMTest extends TestUtil {
       tfr.remove("name").remove(); // Remove unique id
       DKV.put(tfr);
 
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = "economy_20mpg";
       parms._fold_column = "cylinders";
@@ -1347,6 +1562,7 @@ public class GBMTest extends TestUtil {
       DKV.put(tfr);
       parms._ntrees = 10;
       parms._keep_cross_validation_fold_assignment = true;
+      parms._keep_cross_validation_models = true;
 
       GBM job1 = new GBM(parms);
       gbm1 = job1.trainModel().get();
@@ -1385,11 +1601,12 @@ public class GBMTest extends TestUtil {
       }.doAll(tfr.vec("cylinders"));
       DKV.put(tfr);
 
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = "economy_20mpg";
       parms._fold_column = "cylinders";
       parms._ntrees = 10;
+      parms._keep_cross_validation_models = true;
 
       GBM job1 = new GBM(parms);
       gbm1 = job1.trainModel().get();
@@ -1418,11 +1635,12 @@ public class GBMTest extends TestUtil {
       old.remove();
       DKV.put(tfr);
 
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = "economy_20mpg";
       parms._fold_column = "folds";
       parms._ntrees = 10;
+      parms._keep_cross_validation_models = true;
 
       GBM job1 = new GBM(parms);
       gbm1 = job1.trainModel().get();
@@ -1454,7 +1672,7 @@ public class GBMTest extends TestUtil {
         tfr.remove(s).remove();
       }
       DKV.put(tfr);
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = "IsDepDelayed";
       parms._seed = 234;
@@ -1507,7 +1725,7 @@ public class GBMTest extends TestUtil {
         }
         DKV.put(tfr);
         DKV.put(vfr);
-        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        GBMModel.GBMParameters parms = makeGBMParameters();
         parms._train = tfr._key;
         parms._response_column = "Cost";
         parms._seed = 0xdecaf;
@@ -1550,7 +1768,7 @@ public class GBMTest extends TestUtil {
         try {
           tfr = parse_test_file("./smalldata/gbm_test/ecology_model.csv");
           DKV.put(tfr);
-          GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+          GBMModel.GBMParameters parms = makeGBMParameters();
           parms._train = tfr._key;
           parms._response_column = "Angaus"; //regression
           parms._seed = 123;
@@ -1614,7 +1832,7 @@ public class GBMTest extends TestUtil {
           for (float col_sample_rate_per_tree : col_sample_rates_per_tree) {
             Scope.enter();
             try {
-              GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+              GBMModel.GBMParameters parms = makeGBMParameters();
               parms._train = ksplits[0];
               parms._valid = ksplits[1];
               parms._response_column = "Angaus"; //regression
@@ -1689,7 +1907,7 @@ public class GBMTest extends TestUtil {
 //      Scope.track(tfr.replace(54, tfr.vecs()[54].toCategoricalVec())._key);
       DKV.put(tfr);
 
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = "C55";
       parms._seed = 1234;
@@ -1718,7 +1936,7 @@ public class GBMTest extends TestUtil {
 
   @Test public void testLaplace2() {
     GBMModel gbm = null;
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     Frame pred=null, res=null;
     Scope.enter();
     try {
@@ -1755,7 +1973,7 @@ public class GBMTest extends TestUtil {
 
   @Test public void testQuantileRegression() {
     GBMModel gbm = null;
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     Frame pred=null, res=null;
     Scope.enter();
     try {
@@ -1780,7 +1998,7 @@ public class GBMTest extends TestUtil {
 
       // Build a POJO, validate same results
       Assert.assertTrue(gbm.testJavaScoring(pred, res, 1e-15));
-      Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance - 10.69611) < 1e-4);
+      Assert.assertEquals( 10.69611, ((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance,1e-1);
 
     } finally {
       parms._train.remove();
@@ -1793,7 +2011,7 @@ public class GBMTest extends TestUtil {
 
   @Test public void missingAndUnseenValues() {
     GBMModel gbm = null;
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     Frame train=null, test=null, train_preds=null, test_preds=null;
     Scope.enter();
     try {
@@ -1891,7 +2109,7 @@ public class GBMTest extends TestUtil {
       double[] loglosses = new double[N];
       for (int i = 0; i < N; ++i) {
         // Load data, hack frames
-        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        GBMModel.GBMParameters parms = makeGBMParameters();
         parms._train = ksplits[0];
         parms._valid = ksplits[1];
         parms._response_column = tfr.names()[resp];
@@ -1942,7 +2160,7 @@ public class GBMTest extends TestUtil {
       double[] loglosses = new double[N];
       for (int i = 0; i < N; ++i) {
         // Load data, hack frames
-        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        GBMModel.GBMParameters parms = makeGBMParameters();
         parms._train = ksplits[0];
         parms._valid = ksplits[1];
         parms._response_column = tfr.names()[resp];
@@ -1986,7 +2204,7 @@ public class GBMTest extends TestUtil {
       // Invoke the job
       sf.exec().get();
       ksplits = sf._destination_frames;
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = ksplits[0];
       parms._valid = ksplits[1];
       parms._response_column = tfr.names()[resp];
@@ -2014,7 +2232,7 @@ public class GBMTest extends TestUtil {
     String xy = ",0\n1,0\n2,0\n3,0\n4,-10\n,0";
     Key tr = Key.make("train");
     Frame df = ParseDataset.parse(tr, makeByteVec(Key.make("xy"), xy));
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     parms._train = tr;
     parms._response_column = "C2";
     parms._min_rows = 1;
@@ -2042,7 +2260,7 @@ public class GBMTest extends TestUtil {
     String xy = ",10\n1,0\n2,0\n3,0\n4,10\n,10";
     Key tr = Key.make("train");
     Frame df = ParseDataset.parse(tr, makeByteVec(Key.make("xy"), xy));
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     parms._train = tr;
     parms._response_column = "C2";
     parms._min_rows = 1;
@@ -2070,7 +2288,7 @@ public class GBMTest extends TestUtil {
     String xy = ",0\n1,0\n2,0\n3,0\n4,10\n,0";
     Key tr = Key.make("train");
     Frame df = ParseDataset.parse(tr, makeByteVec(Key.make("xy"), xy));
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     parms._train = tr;
     parms._response_column = "C2";
     parms._min_rows = 1;
@@ -2098,7 +2316,7 @@ public class GBMTest extends TestUtil {
     String xy = ",5\n1,0\n2,0\n3,0\n4,0\n,3";
     Key tr = Key.make("train");
     Frame df = ParseDataset.parse(tr, makeByteVec(Key.make("xy"), xy));
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     parms._train = tr;
     parms._response_column = "C2";
     parms._min_rows = 1;
@@ -2126,7 +2344,7 @@ public class GBMTest extends TestUtil {
     String xy = "-9,5\n1,0\n2,0\n3,0\n4,0\n-9,3";
     Key tr = Key.make("train");
     Frame df = ParseDataset.parse(tr, makeByteVec(Key.make("xy"), xy));
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     parms._train = tr;
     parms._response_column = "C2";
     parms._min_rows = 1;
@@ -2154,7 +2372,7 @@ public class GBMTest extends TestUtil {
     String xy = ",0\nA,0\nB,0\nA,0\nD,-10\n,0";
     Key tr = Key.make("train");
     Frame df = ParseDataset.parse(tr, makeByteVec(Key.make("xy"), xy));
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     parms._train = tr;
     parms._response_column = "C2";
     parms._min_rows = 1;
@@ -2182,7 +2400,7 @@ public class GBMTest extends TestUtil {
     String xy = ",10\nA,0\nB,0\nA,0\n4,10\n,10";
     Key tr = Key.make("train");
     Frame df = ParseDataset.parse(tr, makeByteVec(Key.make("xy"), xy));
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     parms._train = tr;
     parms._response_column = "C2";
     parms._min_rows = 1;
@@ -2210,7 +2428,7 @@ public class GBMTest extends TestUtil {
     String xy = ",0\nA,0\nB,0\nA,0\nD,10\n,0";
     Key tr = Key.make("train");
     Frame df = ParseDataset.parse(tr, makeByteVec(Key.make("xy"), xy));
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     parms._train = tr;
     parms._response_column = "C2";
     parms._min_rows = 1;
@@ -2238,7 +2456,7 @@ public class GBMTest extends TestUtil {
     String xy = ",5\nA,0\nB,0\nA,0\nD,0\n,3";
     Key tr = Key.make("train");
     Frame df = ParseDataset.parse(tr, makeByteVec(Key.make("xy"), xy));
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     parms._train = tr;
     parms._response_column = "C2";
     parms._min_rows = 1;
@@ -2271,7 +2489,7 @@ public class GBMTest extends TestUtil {
     Key te = Key.make("test");
     Frame df2 = ParseDataset.parse(te, makeByteVec(Key.make("te"), test));
 
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     parms._train = tr;
     parms._response_column = "C2";
     parms._min_rows = 1;
@@ -2304,7 +2522,7 @@ public class GBMTest extends TestUtil {
 
   @Test public void unseenMissing() {
     GBMModel gbm = null;
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     Frame train=null, test=null, train_preds=null, test_preds=null;
     Scope.enter();
     try {
@@ -2400,7 +2618,7 @@ public class GBMTest extends TestUtil {
       }
       DKV.put(tfr);
       for (int i=0; i<N; ++i) {
-        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        GBMModel.GBMParameters parms = makeGBMParameters();
         parms._train = tfr._key;
         parms._response_column = "IsDepDelayed";
         parms._nbins = 10;
@@ -2441,7 +2659,7 @@ public class GBMTest extends TestUtil {
         tfr.remove(s).remove();
       }
       DKV.put(tfr);
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = "IsDepDelayed";
       parms._seed = 1234;
@@ -2486,7 +2704,7 @@ public class GBMTest extends TestUtil {
     Key te = Key.make("test");
     Frame df2 = ParseDataset.parse(te, makeByteVec(Key.make("te"), test));
 
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     parms._train = tr;
     parms._response_column = "C2";
     parms._min_rows = 1;
@@ -2520,7 +2738,7 @@ public class GBMTest extends TestUtil {
 
   @Test public void testHuber2() {
     GBMModel gbm = null;
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     Frame pred=null, res=null;
     Scope.enter();
     try {
@@ -2545,7 +2763,7 @@ public class GBMTest extends TestUtil {
 
       // Build a POJO, validate same results
       Assert.assertTrue(gbm.testJavaScoring(pred, res, 1e-15));
-      Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._MSE - 1485) < 1);
+      Assert.assertEquals( 1485, ((ModelMetricsRegression)gbm._output._training_metrics)._MSE,50);
       Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance - 256.88) < 1);
 
     } finally {
@@ -2564,7 +2782,7 @@ public class GBMTest extends TestUtil {
 
     try {
       tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = tfr.lastVecName();
       parms._seed = 0xdecaf;
@@ -2589,7 +2807,7 @@ public class GBMTest extends TestUtil {
 
     try {
       tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = tfr.lastVecName();
       parms._seed = 0xdecaf;
@@ -2597,8 +2815,18 @@ public class GBMTest extends TestUtil {
 
       gbm = new GBM(parms).trainModel().get();
 
-      Assert.assertEquals(2.9423857564,((ModelMetricsRegression) gbm._output._training_metrics)._MSE,1e-5);
-      Assert.assertEquals(2.9423857564,((ModelMetricsRegression) gbm._output._training_metrics)._mean_residual_deviance,1e-5);
+      if ("Default".equals(test_type)) {
+        Assert.assertEquals(2.9423857564, ((ModelMetricsRegression) gbm._output._training_metrics)._MSE, 1e-5);
+        Assert.assertEquals(2.9423857564, ((ModelMetricsRegression) gbm._output._training_metrics)._mean_residual_deviance, 1e-5);
+      } else if ("EmulateConstraints".equals(test_type)) {
+        // This demonstrates the artificially constrained models are slightly different
+        // This is because we directly re-use the split predictions instead using values in Gamma Pass
+        // also see Split#splat
+        Assert.assertEquals(2.9422145249, ((ModelMetricsRegression) gbm._output._training_metrics)._MSE, 1e-5);
+        Assert.assertEquals(2.9422145249, ((ModelMetricsRegression) gbm._output._training_metrics)._mean_residual_deviance, 1e-5);
+      } else {
+        fail();
+      }
 
     } finally {
       if (tfr != null) tfr.delete();
@@ -2614,7 +2842,7 @@ public class GBMTest extends TestUtil {
 
     try {
       tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = tfr.lastVecName();
       parms._seed = 0xdecaf;
@@ -2641,21 +2869,19 @@ public class GBMTest extends TestUtil {
 
     try {
       tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = tfr.lastVecName();
       parms._seed = 0xdecaf;
       parms._distribution = huber;
       parms._huber_alpha = 1e-2; //everything is an outlier and we should get laplace loss
-
       gbm = new GBM(parms).trainModel().get();
-
       Assert.assertEquals(8.05716257,((ModelMetricsRegression)gbm._output._training_metrics)._MSE,0.3);
 
       // Huber loss can be derived from MAE since no obs weights
       double delta = 0.0047234; //hardcoded from output
       double MAE = 1.42298; //see laplace above
-      Assert.assertEquals((2*MAE-delta)*delta,((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance,2e-4);
+      Assert.assertEquals((2*MAE-delta)*delta,((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance,1e-1);
 
     } finally {
       if (tfr != null) tfr.delete();
@@ -2671,7 +2897,7 @@ public class GBMTest extends TestUtil {
 
     try {
       tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = tfr.lastVecName();
       parms._seed = 0xdecaf;
@@ -2697,7 +2923,7 @@ public class GBMTest extends TestUtil {
 
     try {
       tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = tfr._key;
       parms._response_column = tfr.lastVecName();
       parms._seed = 0xdecaf;
@@ -2720,7 +2946,7 @@ public class GBMTest extends TestUtil {
   @Test
   public void testDeviances() {
     for (DistributionFamily dist : DistributionFamily.values()) {
-      if (dist == modified_huber) continue;
+      if (dist == modified_huber || dist == quasibinomial || dist == ordinal) continue;
       Frame tfr = null;
       Frame res = null;
       Frame preds = null;
@@ -2728,7 +2954,7 @@ public class GBMTest extends TestUtil {
 
       try {
         tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
-        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        GBMModel.GBMParameters parms = makeGBMParameters();
         parms._train = tfr._key;
         String resp = tfr.lastVecName();
         if (dist==modified_huber || dist==bernoulli || dist==multinomial) {
@@ -2765,14 +2991,14 @@ public class GBMTest extends TestUtil {
   @Test
   public void testCatEncoding() {
     for (Model.Parameters.CategoricalEncodingScheme c : Model.Parameters.CategoricalEncodingScheme.values()) {
-      if (c == Model.Parameters.CategoricalEncodingScheme.OneHotInternal) continue;
+      if (c != Model.Parameters.CategoricalEncodingScheme.AUTO) continue;
       Frame tfr = null;
       GBMModel gbm = null;
       Frame fr2 = null;
 
       try {
         tfr = parse_test_file("./smalldata/junit/weather.csv");
-        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        GBMModel.GBMParameters parms = makeGBMParameters();
         parms._train = tfr._key;
         parms._response_column = tfr.lastVecName();
         parms._ntrees = 5;
@@ -2795,13 +3021,13 @@ public class GBMTest extends TestUtil {
   @Test
   public void testCatEncodingCV() {
     for (Model.Parameters.CategoricalEncodingScheme c : Model.Parameters.CategoricalEncodingScheme.values()) {
-      if (c == Model.Parameters.CategoricalEncodingScheme.OneHotInternal) continue;
+      if (c != Model.Parameters.CategoricalEncodingScheme.AUTO) continue;
       Frame tfr = null;
       GBMModel gbm = null;
 
       try {
         tfr = parse_test_file("./smalldata/junit/weather.csv");
-        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        GBMModel.GBMParameters parms = makeGBMParameters();
         parms._train = tfr._key;
         parms._response_column = tfr.lastVecName();
         parms._ntrees = 5;
@@ -2822,7 +3048,7 @@ public class GBMTest extends TestUtil {
     GBMModel model = null;
     Scope.enter();
     try {
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       fr = parse_test_file("smalldata/gbm_test/ecology_model.csv");
       fr.remove("Site").remove();
       fr.remove("SegSumT").remove();
@@ -2865,7 +3091,7 @@ public class GBMTest extends TestUtil {
     GBMModel model = null;
     Scope.enter();
     try {
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      GBMModel.GBMParameters parms = makeGBMParameters();
       fr = parse_test_file("smalldata/airlines/allyears2k_headers.zip");
 
       Frame fr2 = new Frame(Key.<Frame>make(), new String[]{"C","R"}, new Vec[]{fr.vec("Origin"),fr.vec("IsDepDelayed")});
@@ -2896,7 +3122,7 @@ public class GBMTest extends TestUtil {
 
   public void highCardinality(int nbins_cats) {
     GBMModel gbm = null;
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    GBMModel.GBMParameters parms = makeGBMParameters();
     Frame train=null, test=null, train_preds=null, test_preds=null;
     Scope.enter();
     try {
@@ -3000,7 +3226,7 @@ public class GBMTest extends TestUtil {
       int i=0;
       for (int nbins_cats : vals) {
         GBMModel model = null;
-        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        GBMModel.GBMParameters parms = makeGBMParameters();
         Frame train, train_preds=null;
         Scope.enter();
         train = parse_test_file("smalldata/gbm_test/alphabet_cattest.csv");
@@ -3044,4 +3270,454 @@ public class GBMTest extends TestUtil {
     }
   }
 
+  @Test
+  public void RegressionCars() {
+    Frame tfr = null;
+    Frame trainFrame = null;
+    Frame testFrame = null;
+    Frame preds = null;
+    GBMModel model = null;
+    Scope.enter();
+    try {
+      // Parse frame into H2O
+      tfr = parse_test_file("./smalldata/junit/cars.csv");
+      DKV.put(tfr);
+
+      // split into train/test
+      SplitFrame sf = new SplitFrame(tfr, new double[] { 0.7, 0.3 }, null);
+      sf.exec().get();
+      Key[] ksplits = sf._destination_frames;
+      trainFrame = (Frame)ksplits[0].get();
+      testFrame = (Frame)ksplits[1].get();
+
+      // define special columns
+//      String response = "cylinders"; // passes
+      String response = "economy (mpg)"; //fails
+
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._train = trainFrame._key;
+      parms._valid = testFrame._key;
+      parms._response_column = response;
+      parms._ignored_columns = new String[]{"name"};
+//      parms._dmatrix_type = GBMModel.GBMParameters.DMatrixType.dense;
+//      parms._backend = GBMModel.GBMParameters.Backend.cpu;
+//      parms._tree_method = GBMModel.GBMParameters.TreeMethod.exact;
+
+      model = new hex.tree.gbm.GBM(parms).trainModel().get();
+      Log.info(model);
+
+      preds = model.score(testFrame);
+      Assert.assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
+      Assert.assertEquals(
+          ((ModelMetricsRegression)model._output._validation_metrics).mae(),
+          ModelMetricsRegression.make(preds.anyVec(), testFrame.vec(response), DistributionFamily.gaussian).mae(),
+          1e-5
+      );
+      Assert.assertTrue(preds.anyVec().sigma() > 0);
+
+    } finally {
+      Scope.exit();
+      if (trainFrame!=null) trainFrame.remove();
+      if (testFrame!=null) testFrame.remove();
+      if (tfr!=null) tfr.remove();
+      if (preds!=null) preds.remove();
+      if (model!=null) {
+        model.delete();
+      }
+    }
+  }
+
+  @Test
+  public void testCustomEarlyStoppingValidation() {
+    try {
+      Scope.enter();
+      Frame training = Scope.track(parse_test_file("./smalldata/junit/cars.csv"));
+      String response = "economy (mpg)";
+
+      ScoreKeeper.StoppingMetric[] customStoppingMetrics = new ScoreKeeper.StoppingMetric[]{
+              ScoreKeeper.StoppingMetric.custom, ScoreKeeper.StoppingMetric.custom_increasing
+      };
+      for (ScoreKeeper.StoppingMetric stoppingMetric : customStoppingMetrics) {
+        GBMModel model = null;
+        try {
+          GBMModel.GBMParameters parms = makeGBMParameters();
+          parms._train = training._key;
+          parms._response_column = response;
+          parms._ignored_columns = new String[]{"name"};
+          parms._stopping_rounds = 2;
+          parms._stopping_metric = stoppingMetric;
+
+          model = new hex.tree.gbm.GBM(parms).trainModel().get();
+          fail("Custom stopping " + " shouldn't work without a custom metric");
+        } catch (H2OModelBuilderIllegalArgumentException e) {
+          if (e.getMessage() == null || !e.getMessage().contains("ERRR on field: _stopping_metric: " +
+                  "Custom metric function needs to be defined in order to use it for early stopping.")) {
+            throw e;
+          }
+          // suppress the expected exception
+        } finally {
+          if (model != null) {
+            model.delete();
+          }
+        }
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+
+  // PUBDEV-3482
+  @Test public void testQuasibinomial(){
+    Scope.enter();
+    // test it behaves like binomial on binary data
+    GBMModel model=null, model2=null, model3=null;
+    Frame fr = parse_test_file("smalldata/glm_test/prostate_cat_replaced.csv");
+    // turn numeric response 0/1 into a categorical factor
+    Frame preds=null, preds2=null, preds3=null;
+    Vec r = fr.vec("CAPSULE").toCategoricalVec();
+    fr.remove("CAPSULE").remove();
+    fr.add("CAPSULE", r);
+    DKV.put(fr);
+
+    // same dataset, but keep numeric response 0/1
+    Frame fr2 = parse_test_file("smalldata/glm_test/prostate_cat_replaced.csv");
+
+    // same dataset, but make numeric response 0/2, can only be handled by quasibinomial
+    Frame fr3 = parse_test_file("smalldata/glm_test/prostate_cat_replaced.csv");
+    new MRTask() {
+      @Override
+      public void map(Chunk[] cs) {
+        for (int i=0;i<cs[0]._len;++i) {
+          cs[1].set(i, cs[1].at8(i) == 1 ? 2 : 0);
+        }
+      }
+    }.doAll(fr3);
+
+    try {
+      GBMModel.GBMParameters params = new GBMModel.GBMParameters();
+      params._response_column = "CAPSULE";
+      params._ignored_columns = new String[]{"ID"};
+      params._seed = 1234;
+      params._ntrees = 500;
+      params._nfolds = 3;
+      params._learn_rate = 0.01;
+      params._min_rows = 1;
+      params._min_split_improvement = 0;
+      params._stopping_rounds = 10;
+      params._stopping_tolerance = 0;
+
+      // binomial - categorical response, optimize logloss
+      params._train = fr._key;
+      params._distribution = DistributionFamily.bernoulli;
+      GBM gbm = new GBM(params);
+      model = gbm.trainModel().get();
+      preds = model.score(fr);
+
+      // quasibinomial - numeric response 0/1, minimize deviance (negative log-likelihood)
+      params._distribution = DistributionFamily.quasibinomial;
+      params._train = fr2._key;
+      GBM gbm2 = new GBM(params);
+      model2 = gbm2.trainModel().get();
+      preds2 = model2.score(fr2);
+
+      // quasibinomial - numeric response 0/20, minimize deviance (negative log-likelihood)
+      params._distribution = DistributionFamily.quasibinomial;
+      params._train = fr3._key;
+      GBM gbm3 = new GBM(params);
+      model3 = gbm3.trainModel().get();
+      preds3 = model3.score(fr3);
+
+      // Done building model; produce a score column with predictions
+      if (preds!=null)
+        Log.info(preds.toTwoDimTable());
+      if (preds2!=null)
+        Log.info(preds2.toTwoDimTable());
+      if (preds3!=null)
+        Log.info(preds3.toTwoDimTable());
+
+      // compare training metrics of both models
+      if (model!=null && model2!=null) {
+        assertEquals(
+            ((ModelMetricsBinomial) model._output._training_metrics).logloss(),
+            ((ModelMetricsBinomial) model2._output._training_metrics).logloss(), 2e-3);
+
+        // compare CV metrics of both models
+        assertEquals(
+            ((ModelMetricsBinomial) model._output._cross_validation_metrics).logloss(),
+            ((ModelMetricsBinomial) model2._output._cross_validation_metrics).logloss(), 1e-3);
+      }
+
+      // Build a POJO/MOJO, validate same results
+      if (model2!=null)
+        Assert.assertTrue(model2.testJavaScoring(fr2,preds2,1e-15));
+      if (model3!=null)
+        Assert.assertTrue(model3.testJavaScoring(fr3,preds3,1e-15));
+
+      // compare training predictions of both models (just compare probs)
+      if (preds!=null && preds2!=null) {
+        preds.remove(0);
+        preds2.remove(0);
+        assertTrue(isIdenticalUpToRelTolerance(preds, preds2, 1e-2));
+      }
+    } finally {
+      if (preds!=null) preds.delete();
+      if (preds2!=null) preds2.delete();
+      if (preds3!=null) preds3.delete();
+      if (fr!=null) fr.delete();
+      if (fr2!=null) fr2.delete();
+      if (fr3!=null) fr3.delete();
+      if(model != null){
+        model.deleteCrossValidationModels();
+        model.delete();
+      }
+      if(model2 != null){
+        model2.deleteCrossValidationModels();
+        model2.delete();
+      }
+      if(model3 != null){
+        model3.deleteCrossValidationModels();
+        model3.delete();
+      }
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testMonotoneConstraintsInverse() {
+    Scope.enter();
+    try {
+      final String response = "power (hp)";
+
+      Frame f = parse_test_file("smalldata/junit/cars.csv");
+      f.replace(f.find(response), f.vecs()[f.find("cylinders")].toNumericVec()).remove();
+      DKV.put(Scope.track(f));
+
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._response_column = response;
+      parms._train = f._key;
+      parms._ignored_columns = new String[]{"name"};
+      parms._seed = 42;
+
+      GBMModel.GBMParameters noConstrParams = (GBMModel.GBMParameters) parms.clone();
+      GBMModel noConstrModel = new GBM(noConstrParams).trainModel().get();
+      Scope.track_generic(noConstrModel);
+
+      assertTrue(noConstrModel._output._varimp.toMap().get("cylinders") > 0);
+
+      GBMModel.GBMParameters constrParams = (GBMModel.GBMParameters) parms.clone();
+      constrParams._monotone_constraints = new KeyValue[] {new KeyValue("cylinders", -1)};
+      GBMModel constrModel = new GBM(constrParams).trainModel().get();
+      Scope.track_generic(constrModel);
+
+      // we essentially eliminated the effect of the feature by setting an inverted constraint
+      assertEquals(constrModel._output._varimp.toMap().get("cylinders"), 0, 0);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testMonotoneConstraintsProstate() {
+    try {
+      Scope.enter();
+      Frame f = Scope.track(parse_test_file("smalldata/logreg/prostate.csv"));
+      f.replace(f.find("CAPSULE"), f.vec("CAPSULE").toNumericVec());
+      DKV.put(f);
+  
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._response_column = "CAPSULE";
+      parms._train = f._key;
+      parms._monotone_constraints = new KeyValue[] {new KeyValue("AGE", 1)};
+      parms._ignored_columns = new String[]{"ID"};
+      parms._ntrees = 50;
+      parms._seed = 42;
+
+      String[] uniqueAges = Scope.track(f.vec("AGE").toCategoricalVec()).domain();
+
+      GBMModel model = new GBM(parms).trainModel().get();
+      Scope.track_generic(model);
+
+      Vec lastPreds = null;
+      for (String ageStr : uniqueAges) {
+        final int age = Integer.parseInt(ageStr);
+        
+        new MRTask() {
+          @Override
+          public void map(Chunk c) {
+            for (int i = 0; i < c._len; i++)
+              c.set(i, age);
+          }
+        }.doAll(f.vec("AGE"));
+        assertEquals(age, f.vec("AGE").min(), 0);
+        assertEquals(age, f.vec("AGE").max(), 0);
+
+        Vec currentPreds = Scope.track(model.score(f)).anyVec();
+        if (lastPreds != null)
+          for (int i = 0; i < lastPreds.length(); i++) {
+            assertTrue("age=" + age + ", id=" + f.vec("ID").at8(i), lastPreds.at(i) <= currentPreds.at(i));
+          }
+        lastPreds = currentPreds;
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testMonotoneConstraintsUnsupported() {
+    try {
+      Scope.enter();
+      Frame f = Scope.track(parse_test_file("smalldata/logreg/prostate.csv"));
+      f.replace(f.find("CAPSULE"), f.vec("CAPSULE").toNumericVec());
+      DKV.put(f);
+
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._response_column = "CAPSULE";
+      parms._train = f._key;
+      parms._monotone_constraints = new KeyValue[]{new KeyValue("AGE", 1)};
+      parms._distribution = DistributionFamily.tweedie;
+
+      expectedException.expectMessage("ERRR on field: _monotone_constraints: " +
+              "Monotone constraints are only supported for Gaussian and Bernoulli distributions, your distribution: tweedie.");
+      GBMModel model = new GBM(parms).trainModel().get();
+      Scope.track_generic(model);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testMonotoneConstraintSingleSplit() {
+    checkMonotonic(2);
+  }
+
+  @Test
+  public void testMonotoneConstraintMultiSplit() {
+    checkMonotonic(5);
+  }
+
+  private void checkMonotonic(int depth) {
+    try {
+      Scope.enter();
+      int len = 10000;
+      Frame train = makeSinFrame(len);
+
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._response_column = "y";
+      parms._train = train._key;
+      parms._seed = 42;
+      parms._max_depth = depth;
+      parms._monotone_constraints = new KeyValue[]{new KeyValue("x", 1)};
+
+      GBMModel gbm = new GBM(parms).trainModel().get();
+      Scope.track_generic(gbm);
+
+      Frame scored = Scope.track(gbm.score(train));
+      double last = -1;
+      for (int i = 0; i < len; i++) {
+        double pred = scored.vec(0).at(i);
+        assertTrue("pred = " + pred + " > " + last, pred >= last);
+        last = pred;
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  private static Frame makeSinFrame(final int len) {
+    Vec blueprint = Scope.track(Vec.makeZero(len));
+    Frame train = new MRTask() {
+      @Override
+      public void map(Chunk c, NewChunk ncX, NewChunk ncY) {
+        for (int i = 0; i < c._len; i++) {
+          Random r = RandomUtils.getRNG(c.start() + i);
+          double x = (c.start() + i) / (double) len * Math.PI / 2;
+          double noise = Math.abs(r.nextDouble()) * 0.1;
+          double y = Math.sin(x) + noise;
+          ncX.addNum(x);
+          ncY.addNum(y);
+        }
+      }
+    }.doAll(new byte[]{Vec.T_NUM, Vec.T_NUM}, blueprint)
+            .outputFrame(Key.<Frame>make(), new String[]{"x", "y"}, null);
+    Scope.track(train);
+    return train;
+  }
+
+  @Test
+  public void demonstratePubDev6356() {
+    try {
+      Scope.enter();
+      final int N = 1000;
+      double[] columnData = new double[N];
+      double[] responseData = new double[N];
+      Arrays.fill(responseData, Double.NaN);
+      int cnt = 100;
+      for (int i = 0; i < cnt; i++) {
+        columnData[i] = 1;
+        responseData[i] = 1;
+        columnData[i + cnt] = 2;
+        responseData[i + cnt] = 2;
+      }
+
+      // 1. Create a frame with no NAs and train a shallow GBM model
+      TestFrameBuilder builder_noNA = new TestFrameBuilder()
+              .withName("testFrame_noNA")
+              .withColNames("x", "y")
+              .withVecTypes(Vec.T_NUM, Vec.T_NUM)
+              .withDataForCol(0, Arrays.copyOf(columnData, cnt*2))
+              .withDataForCol(1, Arrays.copyOf(responseData, cnt*2));
+
+      Frame train_noNA = Scope.track(builder_noNA.build());
+
+      GBMModel.GBMParameters parms_noNA = new GBMModel.GBMParameters();
+      parms_noNA._response_column = "y";
+      parms_noNA._train = train_noNA._key;
+      parms_noNA._seed = 42;
+      parms_noNA._max_depth = 2;
+      parms_noNA._ntrees = 1;
+      parms_noNA._learn_rate = 1;
+
+      GBMModel gbm_noNA = new GBM(parms_noNA).trainModel().get();
+      Scope.track_generic(gbm_noNA);
+
+      assertEquals(1.0, gbm_noNA.score(ard(1)), 0);
+      assertEquals(2.0, gbm_noNA.score(ard(2)), 0);
+
+      assertEquals(1.0, gbm_noNA.score(ard(0)), 0); // No values x=0 were observed in training -> we don't know anything about them
+
+      // 1. Create a frame with NAs and train a GBM model using the same parameters 
+      TestFrameBuilder builder_NA = new TestFrameBuilder()
+              .withName("testFrame_NA")
+              .withColNames("x", "y")
+              .withVecTypes(Vec.T_NUM, Vec.T_NUM)
+              .withDataForCol(0, columnData)
+              .withDataForCol(1, responseData);
+
+      Frame train_NA = Scope.track(builder_NA.build());
+
+      GBMModel.GBMParameters parms_NA = new GBMModel.GBMParameters();
+      parms_NA._response_column = "y";
+      parms_NA._train = train_NA._key;
+      parms_NA._seed = 42;
+      parms_NA._max_depth = 2;
+      parms_NA._ntrees = 1;
+      parms_NA._learn_rate = 1;
+
+      GBMModel gbm_NA = new GBM(parms_NA).trainModel().get();
+      Scope.track_generic(gbm_NA);
+
+      assertEquals(1.0, gbm_NA.score(ard(1)), 0);
+      assertEquals(2.0, gbm_NA.score(ard(2)), 0);
+
+      assertEquals(1.5, gbm_NA.score(ard(0)), 0); // Values x=0 shouldn't have been seen in training 
+                                                                      // because they only correspond to NA response
+                                                                      // but we still learned something about those rows!
+                                                                      // PUBDEV-6356 
+    } finally {
+      Scope.exit();
+    }
+  }
+  
 }

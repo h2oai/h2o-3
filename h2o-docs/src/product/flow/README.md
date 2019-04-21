@@ -1,4 +1,6 @@
-#Flow Web UI ...
+# Flow Web UI ...
+
+>**Note**: This topic is no longer being maintained. Refer to the [Using Flow - H2O's Web UI](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/flow.rst) topic for the most up-to-date documentation.
 
 H2O Flow is an open-source user interface for H2O. It is a web-based interactive environment that allows you to combine code execution, text, mathematics, plots, and rich media in a single document. 
 
@@ -10,7 +12,7 @@ H2O Flow sends commands to H2O as a sequence of executable cells. The cells can 
 
 While H2O Flow supports REST API, R scripts, and CoffeeScript, no programming experience is required to run H2O Flow. You can click your way through any H2O operation without ever writing a single line of code. You can even disable the input cells to run H2O Flow using only the GUI. H2O Flow is designed to guide you every step of the way, by providing input prompts, interactive help, and example flows. 
 
-##Introduction
+## Introduction
 
 This guide will walk you through how to use H2O's web UI, H2O Flow. To view a demo video of H2O Flow, click <a href="https://www.youtube.com/watch?feature=player_embedded&v=wzeuFfbW7WE" target="_blank">here</a>. 
 
@@ -72,14 +74,14 @@ Before getting started with H2O Flow, make sure you understand the different cel
 There are two modes for cells: edit and command. 
 
 <a name="EditMode"></a>
-###Using Edit Mode
+### Using Edit Mode
 In edit mode, the cell is yellow with a blinking bar to indicate where text can be entered and there is an orange flag to the left of the cell.
 
 
 ![Edit Mode](images/Flow_EditMode.png)
  
 <a name="CmdMode"></a>
-###Using Command Mode
+### Using Command Mode
  In command mode, the flag is yellow. The flag also indicates the cell's format: 
 
 - **MD**: Markdown 
@@ -113,7 +115,7 @@ In edit mode, the cell is yellow with a blinking bar to indicate where text can 
  
  ![Cell executing](images/Flow_cellmode_runningflag.png)
 
-###Changing Cell Formats
+### Changing Cell Formats
 
 To change the cell's format (for example, from code to Markdown), make sure you are in command (not edit) mode and that the cell you want to change is selected. The easiest way to do this is to click on the flag to the left of the cell. Enter the keyboard shortcut for the format you want to use. The flag's text changes to display the current format. 
 
@@ -130,7 +132,7 @@ Heading 5     | `5`
 Heading 6     | `6` 
 
 
-###Running Cells
+### Running Cells
 
 
 The series of buttons at the top of the page below the menus run cells in a flow. 
@@ -149,7 +151,7 @@ The series of buttons at the top of the page below the menus run cells in a flow
 
 
 
-###Running Flows
+### Running Flows
 When you run the flow, a progress bar indicates the current status of the flow. You can cancel the currently running flow by clicking the **Stop** button in the progress bar. 
 
   ![Flow Progress Bar](images/Flow_progressbar.png)
@@ -162,7 +164,7 @@ When the flow is complete, a message displays in the upper right.
 >**Note**: If there is an error in the flow, H2O Flow stops at the cell that contains the error. 
 
 
-###Using Keyboard Shortcuts
+### Using Keyboard Shortcuts
 
 Here are some important keyboard shortcuts to remember: 
 
@@ -178,20 +180,20 @@ The following commands must be entered in [command mode](#CmdMode).
 
 You can view these shortcuts by clicking **Help** > **Keyboard Shortcuts** or by clicking the **Help** tab in the sidebar. 
 
-###Using Variables in Cells
+### Using Variables in Cells
 
 Variables can be used to store information such as download locations. To use a variable in Flow: 
 
-0. Define the variable in a code cell (for example, `locA = "https://h2o-public-test-data.s3.amazonaws.com/bigdata/laptop/kdd2009/small-churn/kdd_train.csv"`). 
+1. Define the variable in a code cell (for example, `locA = "https://h2o-public-test-data.s3.amazonaws.com/bigdata/laptop/kdd2009/small-churn/kdd_train.csv"`). 
   ![Flow variable definition](images/Flow_VariableDefinition.png)
-0. Run the cell. H2O validates the variable. 
+2. Run the cell. H2O validates the variable. 
   ![Flow variable validation](images/Flow_VariableValidation.png)
-0. Use the variable in another code cell (for example, `importFiles [locA]`). 
+3. Use the variable in another code cell (for example, `importFiles [locA]`). 
   ![Flow variable example](images/Flow_VariableExample.png)
 To further simplify your workflow, you can save the cells containing the variables and definitions as [clips](#Clips). 
 
 
-###Using Flow Buttons
+### Using Flow Buttons
 There are also a series of buttons at the top of the page below the flow name that allow you to save the current flow, add a new cell, move cells up or down, run the current cell, and cut, copy, or paste the current cell. If you hover over the button, a description of the button's function displays. 
 
  ![Flow buttons](images/Flow_buttons.png)
@@ -224,6 +226,7 @@ There are multiple ways to import data in H2O flow:
 
 After selecting the file to import, the file path displays in the "Search Results" section. To import a single file, click the plus sign next to the file. To import all files in the search results, click the **Add all** link. The files selected for import display in the "Selected Files" section. 
 ![Import Files](images/Flow_import.png)
+
 >**Note**: If the file is compressed, it will only be read using a single thread. For best performance, we recommend uncompressing the file before importing, as this will allow use of the faster multithreaded distributed parallel reader during import. Please note that .zip files containing multiple files are not currently supported. 
 
 
@@ -238,7 +241,7 @@ After you click the **Import** button, the raw code for the current job displays
 
  ![Import Files - Results](images/Flow_import_results.png)
 
-##Uploading Data
+## Uploading Data
 
 To upload a local file, click the **Data** menu and select **Upload File...**. Click the **Choose File** button, select the file, click the **Choose** button, then click the **Upload** button. 
   
@@ -254,7 +257,7 @@ Ok, now that your data is available in H2O Flow, let's move on to the next step:
 ---
 
 <a name="ParseData"></a>
-##Parsing Data
+## Parsing Data
 
 After you have imported your data, parse the data.
 
@@ -686,35 +689,35 @@ To generate a Plain Old Java Object (POJO) that can use the model outside of H2O
 
 ---
 
-###Exporting and Importing Models
+### Exporting and Importing Models
 
 **To export a built model:**
 
-0. Click the **Model** menu at the top of the screen. 
-0. Select *Export Model...*
-0. In the `exportModel` cell that appears, select the model from the drop-down *Model:* list.
-0. Enter a location for the exported model in the *Path:* entry field. 
+1. Click the **Model** menu at the top of the screen. 
+2. Select *Export Model...*
+3. In the `exportModel` cell that appears, select the model from the drop-down *Model:* list.
+4. Enter a location for the exported model in the *Path:* entry field. 
 	>**Note**: If you specify a location that doesn't exist, it will be created. For example, if you only enter `test` in the *Path:* entry field, the model will be exported to `h2o-3/test`. 
-0. To overwrite any files with the same name, check the *Overwrite:* checkbox. 
-0. Click the **Export** button. A confirmation message displays when the model has been successfully exported. 
+5. To overwrite any files with the same name, check the *Overwrite:* checkbox. 
+6. Click the **Export** button. A confirmation message displays when the model has been successfully exported. 
 
   ![Export Model](images/ExportModel.png)
 
 
 **To import a built model:** 
 
-0. Click the **Model** menu at the top of the screen. 
-0. Select *Import Model...*
-0. Enter the location of the model in the *Path:* entry field. 
+1. Click the **Model** menu at the top of the screen. 
+2. Select *Import Model...*
+3. Enter the location of the model in the *Path:* entry field. 
 	>**Note**: The file path must be complete (e.g., `Users/h2o-user/h2o-3/exported_models`). Do not rename models while importing. 
-0. To overwrite any files with the same name, check the *Overwrite:* checkbox. 
-0. Click the **Import** button. A confirmation message displays when the model has been successfully imported. To view the imported model, click the **View Model** button. 
+4. To overwrite any files with the same name, check the *Overwrite:* checkbox. 
+5. Click the **Import** button. A confirmation message displays when the model has been successfully imported. To view the imported model, click the **View Model** button. 
 
   ![Import Model](images/ImportModel.png)
 
 ---
 
-###Using Grid Search 
+### Using Grid Search 
 
 
 To include a parameter in a grid search in Flow, check the checkbox in the *Grid?* column to the right of the parameter name (highlighted in red in the image below). 
@@ -730,7 +733,7 @@ To include a parameter in a grid search in Flow, check the checkbox in the *Grid
 
 ---
 
-###Checkpointing Models
+### Checkpointing Models
 
 Some model types, such as DRF, GBM, and Deep Learning, support checkpointing. A checkpoint resumes model training so that you can iterate your model. The dataset must be the same. The following  model parameters must be the same when restarting a model from a checkpoint:
 
@@ -766,16 +769,16 @@ Can be modified | | |
 `elastic_averaging_moving_rate`| `elastic_averaging_regularization`| `mini_batch_size`
 
 
-0. After building your model, copy the `model_id`. To view the `model_id`, click the **Model** menu then click **List All Models**. 
-0. Select the model type from the drop-down **Model** menu. 
+1. After building your model, copy the `model_id`. To view the `model_id`, click the **Model** menu then click **List All Models**. 
+2. Select the model type from the drop-down **Model** menu. 
 	>**Note**: The model type must be the same as the checkpointed model. 
-0. Paste the copied `model_id` in the *checkpoint* entry field. 
-0. Click the **Build Model** button. The model will resume training. 
+3. Paste the copied `model_id` in the *checkpoint* entry field. 
+4. Click the **Build Model** button. The model will resume training. 
 
 
 ---
 
-###Interpreting Model Results
+### Interpreting Model Results
 
 **Scoring history**: [GBM](#GBM), [DL](#DL) Represents the error rate of the model as it is built. Typically, the error rate will be higher at the beginning (the left side of the graph) then decrease as the model building completes and accuracy improves. Can include mean squared error (MSE) and deviance. 
 
@@ -898,16 +901,16 @@ Datasets can be split within Flow for use in model training and testing.
 
  ![splitFrame cell](images/Flow_splitFrame.png)
 
-0. To split a frame, click the **Assist Me** button, then click **splitFrame**.
+1. To split a frame, click the **Assist Me** button, then click **splitFrame**.
   
   >**Note**: You can also click the drop-down **Data** menu and select **Split Frame...**.
-0. From the drop-down **Frame:** list, select the frame to split. 
-0. In the second **Ratio** entry field, specify the fractional value to determine the split. The first **Ratio** field is automatically calculated based on the values entered in the second **Ratio** field. 
+2. From the drop-down **Frame:** list, select the frame to split. 
+3. In the second **Ratio** entry field, specify the fractional value to determine the split. The first **Ratio** field is automatically calculated based on the values entered in the second **Ratio** field. 
    
   >**Note**: Only fractional values between 0 and 1 are supported (for example, enter `.5` to split the frame in half). The total sum of the ratio values must equal one. H2O automatically adjusts the ratio values to equal one; if unsupported values are entered, an error displays.  
-0. In the **Key** entry field, specify a name for the new frame. 
-0. (Optional) To add another split, click the **Add a split** link. To remove a split, click the `X` to the right of the **Key** entry field. 
-0. Click the **Create** button.  
+4. In the **Key** entry field, specify a name for the new frame. 
+5. (Optional) To add another split, click the **Add a split** link. To remove a split, click the `X` to the right of the **Key** entry field. 
+6. Click the **Create** button.  
 
 ---
 ### Creating Frames
@@ -1131,7 +1134,7 @@ To view the stack trace information for a specific node, select it from the drop
 
 ---
 
-##Viewing Network Test Results
+## Viewing Network Test Results
 
 To view network test results, click the **Admin** menu, then click **Network Test**. 
 
@@ -1169,18 +1172,18 @@ To obtain the most recent information, click the **Refresh** button.
 ---
 
 <a name="ReportIssue"></a>
-##Reporting Issues
+## Reporting Issues
 
 If you experience an error with Flow, you can submit a JIRA ticket to notify our team. 
 
-0. First, click the **Admin** menu, then click **Download Logs**. This will download a file contains information that will help our developers identify the cause of the issue.  
-0. Click the **Help** menu, then click **Report an issue**. This will open our JIRA page where you can file your ticket.  
-0. Click the **Create** button at the top of the JIRA page. 
-0. Attach the log file from the first step, write a description of the error you experienced, then click the **Create** button at the bottom of the page. Our team will work to resolve the issue and you can track the progress of your ticket in JIRA. 
+1. First, click the **Admin** menu, then click **Download Logs**. This will download a file contains information that will help our developers identify the cause of the issue.  
+2. Click the **Help** menu, then click **Report an issue**. This will open our JIRA page where you can file your ticket.  
+3. Click the **Create** button at the top of the JIRA page. 
+4. Attach the log file from the first step, write a description of the error you experienced, then click the **Create** button at the bottom of the page. Our team will work to resolve the issue and you can track the progress of your ticket in JIRA. 
 
 ---
 
-##Requesting Help
+## Requesting Help
 
 If you have a Google account, you can submit a request for assistance with H2O on our Google Groups page, [H2Ostream](https://groups.google.com/forum/#!forum/h2ostream). 
 
@@ -1193,6 +1196,8 @@ To access H2Ostream from Flow:
 
 
 You can also email your question to [h2ostream@googlegroups.com](mailto:h2ostream@googlegroups.com). 
+
+Or, you can post your question on [Stack Overflow](https://stackoverflow.com/questions/tagged/h2o) using the "h2o" tag.
 
 
 ---

@@ -2,12 +2,12 @@
 # This example uses the technique of generating a random grid of base learners for maximum diversity
 
 library(h2oEnsemble)  # Requires version >=0.1.8 of h2oEnsemble
-localH2O <-  h2o.init(nthreads = -1)  # Start an H2O cluster with nthreads = num cores on your machine
+h2o.init(nthreads = -1)  # Start an H2O cluster with nthreads = num cores on your machine
 
 
 # Import a sample binary outcome train/test set into R
-train <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/testng/higgs_train_5k.csv")
-test <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/testng/higgs_test_5k.csv")
+train <- h2o.importFile("https://s3.amazonaws.com/erin-data/higgs/higgs_train_5k.csv")
+test <- h2o.importFile("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
 y <- "response"
 x <- setdiff(names(train), y)
 family <- "binomial"

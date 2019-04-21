@@ -1,11 +1,11 @@
 package water.persist;
 
-import water.H2O;
-import water.Key;
-import water.MRTask;
-import water.Value;
+import org.joda.time.Period;
+import water.*;
+import water.api.FSIOException;
+import water.api.HDFSIOException;
 import water.exceptions.H2OIllegalArgumentException;
-import water.fvec.UploadFileVec;
+import water.parser.BufferedString;
 import water.util.FileUtils;
 import water.util.Log;
 import water.persist.Persist.PersistEntry;
@@ -15,6 +15,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
@@ -28,21 +29,23 @@ import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
  * on what is on the classpath.
  */
 public class PersistManager {
-  final static public int MAX_BACKENDS = 8;
+
+  public static final int MAX_BACKENDS = 8;
 
   /** Property which enable HDFS as default fallback persistent layer. For example,
    * if swift fs is regirestered properly under HDFS and user specifies swift based URI, the persist
    * layer forwards the request through HDFS API. */
-  final static String PROP_ENABLE_HDFS_FALLBACK = SYSTEM_PROP_PREFIX + "persist.enable.hdfs.fallback";
+  private static final String PROP_ENABLE_HDFS_FALLBACK = SYSTEM_PROP_PREFIX + "persist.enable.hdfs.fallback";
 
   /** Persistence schemes; used as file prefixes eg "hdfs://some_hdfs_path/some_file" */
-  public static class Schemes {
-    public static final String FILE = "file";
-    public static final String HDFS = "hdfs";
-    public static final String S3   = "s3";
-    public static final String S3N  = "s3n";
-    public static final String S3A  = "s3a";
-    public static final String NFS  = "nfs";
+  public interface Schemes {
+    String FILE = "file";
+    String HDFS = "hdfs";
+    String S3   = "s3";
+    String S3N  = "s3n";
+    String S3A  = "s3a";
+    String GCS  = "gs";
+    String NFS  = "nfs";
   }
 
   public static class PersistStatsEntry {
@@ -84,6 +87,10 @@ public class PersistManager {
     }
   }
 
+  public boolean isGcsPath(String path) {
+    return path.toLowerCase().startsWith("gs://");
+  }
+
   public PersistManager(URI iceRoot) {
     I = new Persist[MAX_BACKENDS];
     stats = new PersistStatsEntry[MAX_BACKENDS];
@@ -123,8 +130,19 @@ public class PersistManager {
 //      }
     }
 
-    I[Value.ICE ] = ice;
-    I[Value.NFS ] = new PersistNFS();
+    I[Value.ICE] = ice;
+    I[Value.NFS] = new PersistNFS();
+
+    try {
+      Class klass = Class.forName("water.persist.PersistHTTP");
+      java.lang.reflect.Constructor constructor = klass.getConstructor();
+      I[Value.HTTP] = (Persist) constructor.newInstance();
+      Log.info("Subsystem for distributed import from HTTP/HTTPS successfully initialized");
+    }
+    catch (Throwable ignore) {
+      I[Value.HTTP] = new PersistEagerHTTP();
+      Log.info("Distributed HTTP import not available (import from HTTP/HTTPS will be eager)");
+    }
 
     try {
       Class klass = Class.forName("water.persist.PersistHdfs");
@@ -143,6 +161,15 @@ public class PersistManager {
       Log.info("S3 subsystem successfully initialized");
     } catch (Throwable ignore) {
       Log.info("S3 subsystem not available");
+    }
+
+    try {
+      Class klass = Class.forName("water.persist.PersistGcs");
+      java.lang.reflect.Constructor constructor = klass.getConstructor();
+      I[Value.GCS] = (Persist) constructor.newInstance();
+      Log.info("GCS subsystem successfully initialized");
+    } catch (Throwable ignore) {
+      Log.info("GCS subsystem not available");
     }
   }
 
@@ -181,18 +208,20 @@ public class PersistManager {
    * @throws water.exceptions.H2OIllegalArgumentException in case of unsupported scheme
    */
   public final Key anyURIToKey(URI uri) throws IOException {
-    Key ikey = null;
+    Key ikey;
     String scheme = uri.getScheme();
-    if("s3".equals(scheme)) {
+    if ("s3".equals(scheme)) {
       ikey = I[Value.S3].uriToKey(uri);
     } else if ("hdfs".equals(scheme)) {
       ikey = I[Value.HDFS].uriToKey(uri);
     } else if ("s3".equals(scheme) || "s3n".equals(scheme) || "s3a".equals(scheme)) {
       ikey = I[Value.HDFS].uriToKey(uri);
+    } else if ("gs".equals(scheme)) {
+      ikey = I[Value.GCS].uriToKey(uri);
     } else if ("file".equals(scheme) || scheme == null) {
       ikey = I[Value.NFS].uriToKey(uri);
     } else if (useHdfsAsFallback() && I[Value.HDFS].canHandle(uri.toString())) {
-        ikey = I[Value.HDFS].uriToKey(uri);
+      ikey = I[Value.HDFS].uriToKey(uri);
     } else {
       throw new H2OIllegalArgumentException("Unsupported schema '" + scheme + "' for given uri " + uri);
     }
@@ -219,6 +248,11 @@ public class PersistManager {
    * @return List of matches
    */
   public List<String> calcTypeaheadMatches(String filter, int limit) {
+    filter = filter.trim();
+    if (filter.isEmpty()) {
+      return Collections.emptyList();
+    }
+    
     String s = filter.toLowerCase();
     if (s.startsWith("http:") || s.startsWith("https:")) {
       if (httpUrlExists(filter)) {
@@ -231,6 +265,8 @@ public class PersistManager {
       }
     } else if(s.startsWith("s3://")) {
       return I[Value.S3].calcTypeaheadMatches(filter, limit);
+    } else if(s.startsWith("gs://")) {
+      return I[Value.GCS].calcTypeaheadMatches(filter, limit);
     } else if (s.startsWith("hdfs:")
                || s.startsWith("s3n:")
                || s.startsWith("s3a:")
@@ -244,6 +280,73 @@ public class PersistManager {
     }
 
     return I[Value.NFS].calcTypeaheadMatches(filter, limit);
+  }
+
+  public void importFiles(String[] paths, String pattern, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
+    if (paths.length == 1) {
+      importFiles(paths[0], pattern, files, keys, fails, dels);
+      return;
+    }
+
+    ImportFilesTask importFilesTask = new ImportFilesTask(paths, pattern);
+    H2O.submitTask(new LocalMR(importFilesTask, paths.length)).join();
+
+    ImportFilesTask.addAllTo(importFilesTask._pFiles, files);
+    ImportFilesTask.addAllTo(importFilesTask._pKeys, keys);
+    ImportFilesTask.addAllTo(importFilesTask._pFails, fails);
+    ImportFilesTask.addAllTo(importFilesTask._pDels, dels);
+  }
+
+  private static class ImportFilesTask extends MrFun<ImportFilesTask> {
+
+    private final String[] _paths;
+    private final String _pattern;
+
+    BufferedString[][] _pFiles;
+    BufferedString[][] _pKeys;
+    BufferedString[][] _pFails;
+    BufferedString[][] _pDels;
+
+    public ImportFilesTask(String[] paths, String pattern) {
+      _paths = paths;
+      _pattern = pattern;
+      _pFiles = new BufferedString[paths.length][];
+      _pKeys = new BufferedString[paths.length][];
+      _pFails = new BufferedString[paths.length][];
+      _pDels = new BufferedString[paths.length][];
+    }
+
+    @Override
+    protected void map(int t) {
+      ArrayList<String> pFiles = new ArrayList<>();
+      ArrayList<String> pKeys = new ArrayList<>();
+      ArrayList<String> pFails = new ArrayList<>();
+      ArrayList<String> pDels = new ArrayList<>();
+
+      H2O.getPM().importFiles(_paths[t], _pattern, pFiles, pKeys, pFails, pDels);
+
+      _pFiles[t] = toArray(pFiles);
+      _pKeys[t] = toArray(pKeys);
+      _pFails[t] = toArray(pFails);
+      _pDels[t] = toArray(pDels);
+    }
+
+    private static BufferedString[] toArray(List<String> ls) {
+      BufferedString[] bss = new BufferedString[ls.size()];
+      int i = 0;
+      for (String s : ls) {
+        bss[i++] = new BufferedString(s);
+      }
+      return bss;
+    }
+
+    private static void addAllTo(BufferedString[][] bssAry, ArrayList<String> target) {
+      for (BufferedString[] bss : bssAry) {
+        for (BufferedString bs : bss)
+          target.add(bs.toString());
+      }
+    }
+
   }
 
   /**
@@ -270,20 +373,13 @@ public class PersistManager {
     if (scheme == null || "file".equals(scheme)) {
       I[Value.NFS].importFiles(path, pattern, files, keys, fails, dels);
     } else if ("http".equals(scheme) || "https".equals(scheme)) {
-      try {
-        java.net.URL url = new URL(path);
-        Key destination_key = Key.make(path);
-        java.io.InputStream is = url.openStream();
-        UploadFileVec.ReadPutStats stats = new UploadFileVec.ReadPutStats();
-        UploadFileVec.readPut(destination_key, is, stats);
-        files.add(path);
-        keys.add(destination_key.toString());
-      } catch( Throwable e) {
-        fails.add(path); // Fails for e.g. broken sockets silently swallow exceptions and just record the failed path
-      }
+      I[Value.HTTP].importFiles(path, pattern, files, keys, fails, dels);
     } else if ("s3".equals(scheme)) {
       if (I[Value.S3] == null) throw new H2OIllegalArgumentException("S3 support is not configured");
       I[Value.S3].importFiles(path, pattern, files, keys, fails, dels);
+    } else if ("gs".equals(scheme)) {
+      if (I[Value.GCS] == null) throw new H2OIllegalArgumentException("GCS support is not configured");
+      I[Value.GCS].importFiles(path, pattern, files, keys, fails, dels);
     } else if ("hdfs".equals(scheme) ||
         "s3n:".equals(scheme) ||
         "s3a:".equals(scheme) ||
@@ -302,7 +398,6 @@ public class PersistManager {
       }
     }
 
-    return;
   }
 
 
@@ -325,6 +420,8 @@ public class PersistManager {
       validateHdfsConfigured();
       PersistEntry[] arr = I[Value.HDFS].list(path);
       return arr;
+    } else if (isGcsPath(path)) {
+      return I[Value.GCS].list(path);
     }
 
     File dir = new File(path);
@@ -347,6 +444,8 @@ public class PersistManager {
       validateHdfsConfigured();
       boolean b = I[Value.HDFS].exists(path);
       return b;
+    } else if (isGcsPath(path)) {
+      return I[Value.GCS].exists(path);
     }
 
     File f = new File(path);
@@ -384,6 +483,61 @@ public class PersistManager {
     return new CheckLocalDirTask(path).doAllNodes()._result;
   }
 
+  /**
+   * Check whether given path represents a writable directory. If such path does not exist
+   * it will try to create the directory and if successful it is safe to assume that such
+   * directory is writable.
+   * @param path Path to check if a writable directory
+   * @return true if given path is a writable directory, false otherwise
+   */
+  public boolean isWritableDirectory(String path) {
+    URI pathAsUri = FileUtils.getURI(path);
+    Persist persist = getPersistForURI(pathAsUri);
+    String pathUriStr = pathAsUri.toString();
+    if (persist.isDirectory(pathUriStr)) {
+      return isDirectoryWritable(persist, path);
+    } else if (persist.exists(pathUriStr)) {
+      // exists but its not a directory
+      return false;
+    } else {
+      String existingParent = getExistingParent(persist, pathUriStr);
+      if (existingParent != null) {
+        return isDirectoryWritable(persist, existingParent);
+      } else {
+        return false;
+      }
+    }
+  }
+
+  /*
+  Check that a directory is writable by creating and deleting a file.
+   */
+  private boolean isDirectoryWritable(Persist persist, String path) {
+    OutputStream os = null;
+    try {
+      String testFileUriStr = FileUtils.getURI(path + "/.h2oWriteCheck").toString();
+      os = persist.create(testFileUriStr, true);
+      os.close();
+      persist.delete(testFileUriStr);
+      return true;
+    } catch (IOException | HDFSIOException | FSIOException e) {
+      return false;
+    } finally {
+      FileUtils.close(os);
+    }
+  }
+
+  private String getExistingParent(Persist persist, String path) {
+    String parent = persist.getParent(path);
+    if (parent == null) {
+      return null;
+    } else if (persist.exists(parent)) {
+      return parent;
+    } else {
+      return getExistingParent(persist, parent);
+    }
+  }
+
   private static class CheckLocalDirTask extends MRTask<CheckLocalDirTask> {
     String _path;
     // OUT
@@ -411,6 +565,8 @@ public class PersistManager {
       validateHdfsConfigured();
       long l = I[Value.HDFS].length(path);
       return l;
+    } else if (isGcsPath(path)) {
+      return I[Value.GCS].length(path);
     }
 
     File f = new File(path);
@@ -426,6 +582,8 @@ public class PersistManager {
       validateHdfsConfigured();
       InputStream os = I[Value.HDFS].open(path);
       return os;
+    } else if (isGcsPath(path)) {
+      return I[Value.GCS].open(path);
     }
 
     try {
@@ -447,6 +605,8 @@ public class PersistManager {
       validateHdfsConfigured();
       boolean b = I[Value.HDFS].mkdirs(path);
       return b;
+    } else if (isGcsPath(path)){
+      return I[Value.GCS].mkdirs(path);
     }
 
     File f = new File(path);
@@ -460,6 +620,9 @@ public class PersistManager {
       boolean b = I[Value.HDFS].rename(fromPath, toPath);
       return b;
     }
+    if (isGcsPath(fromPath) || isGcsPath(toPath)) {
+      return I[Value.GCS].rename(fromPath, toPath);
+    }
 
     File f = new File(fromPath);
     File t = new File(toPath);
@@ -471,6 +634,8 @@ public class PersistManager {
     if (isHdfsPath(path)) {
       validateHdfsConfigured();
       return I[Value.HDFS].create(path, overwrite);
+    } else if (isGcsPath(path)) {
+      return I[Value.GCS].create(path, overwrite);
     }
 
     try {
@@ -492,6 +657,8 @@ public class PersistManager {
       validateHdfsConfigured();
       boolean b = I[Value.HDFS].delete(path);
       return b;
+    } else if (isGcsPath(path)) {
+      return I[Value.GCS].delete(path);
     }
 
     File f = new File(path);
@@ -516,6 +683,8 @@ public class PersistManager {
           return I[Value.HDFS];
         case Schemes.S3:
           return I[Value.S3];
+        case Schemes.GCS:
+          return I[Value.GCS];
         default:
           if (useHdfsAsFallback() && I[Value.HDFS] != null && I[Value.HDFS].canHandle(uri.toString())) {
             return I[Value.HDFS];

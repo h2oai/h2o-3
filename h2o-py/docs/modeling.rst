@@ -49,6 +49,12 @@ Supervised
     :show-inheritance:
     :members:
 
+:mod:`H2OXGBoostEstimator`
+--------------------------
+.. autoclass:: h2o.estimators.xgboost.H2OXGBoostEstimator
+    :show-inheritance:
+    :members:
+
 
 Unsupervised
 ++++++++++++
@@ -65,9 +71,21 @@ Unsupervised
     :show-inheritance:
     :members:
 
+:mod:`H2OGenericEstimator`
+--------------------------
+.. autoclass:: h2o.estimators.generic.H2OGenericEstimator
+    :show-inheritance:
+    :members:
+
 :mod:`H2OGeneralizedLowRankEstimator`
 -------------------------------------
 .. autoclass:: h2o.estimators.glrm.H2OGeneralizedLowRankEstimator
+    :show-inheritance:
+    :members:
+
+:mod:`H2OIsolationForestEstimator`
+----------------------------------
+.. autoclass:: h2o.estimators.isolation_forest.H2OIsolationForestEstimator
     :show-inheritance:
     :members:
 
@@ -86,6 +104,12 @@ Unsupervised
 
 Miscellaneous
 +++++++++++++
+
+:mod:`H2OAutoML`
+----------------
+.. autoclass:: h2o.automl.autoh2o.H2OAutoML
+    :show-inheritance:
+    :members:
 
 :mod:`H2OEstimator`
 -------------------

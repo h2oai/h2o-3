@@ -88,16 +88,16 @@ else
   fi
 fi
 
-JVM="nice $JAVA_CMD -ea -Xmx3g -Xms3g -cp build/libs/h2o-algos-test.jar${SEP}build/libs/h2o-algos.jar${SEP}../h2o-core/build/libs/h2o-core-test.jar${SEP}../h2o-core/build/libs/h2o-core.jar${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
+JVM="nice $JAVA_CMD -ea -Xmx3g -Xms3g -cp ${JVM_CLASSPATH} ${ADDITIONAL_TEST_JVM_OPTS}"
 echo "$JVM" > $OUTDIR/jvm_cmd.txt
 
 SSL=""
 # Launch 3 helper JVMs.  All output redir'd at the OS level to sandbox files.
 CLUSTER_NAME=junit_cluster_$$
 CLUSTER_BASEPORT=44000
-$JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.1 2>&1 & PID_1=$!
-$JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.2 2>&1 & PID_2=$!
-$JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.3 2>&1 & PID_3=$!
+$JVM water.H2O -name $CLUSTER_NAME -ip 127.0.0.1 -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.1 2>&1 & PID_1=$!
+$JVM water.H2O -name $CLUSTER_NAME -ip 127.0.0.1 -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.2 2>&1 & PID_2=$!
+$JVM water.H2O -name $CLUSTER_NAME -ip 127.0.0.1 -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.3 2>&1 & PID_3=$!
 
 INTERFACE=${TSHARK_INTERFACE:-"eth0"}
 
@@ -118,9 +118,9 @@ cleanup
 SSL_CONFIG="src/test/resources/ssl.properties"
 SSL="-internal_security_conf "$SSL_CONFIG
 CLUSTER_NAME=$CLUSTER_NAME"_2"
-$JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.1 2>&1 & PID_1=$!
-$JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.2 2>&1 & PID_2=$!
-$JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.3 2>&1 & PID_3=$!
+$JVM water.H2O -name $CLUSTER_NAME -ip 127.0.0.1 -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.1 2>&1 & PID_1=$!
+$JVM water.H2O -name $CLUSTER_NAME -ip 127.0.0.1 -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.2 2>&1 & PID_2=$!
+$JVM water.H2O -name $CLUSTER_NAME -ip 127.0.0.1 -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.3 2>&1 & PID_3=$!
 
 echo Running SSL test...
 

@@ -11,6 +11,7 @@ import logging
 import os
 import warnings
 import webbrowser
+import types
 
 
 from h2o.backend import H2OConnection
@@ -24,19 +25,23 @@ from .estimators.deeplearning import H2OAutoEncoderEstimator
 from .estimators.deeplearning import H2ODeepLearningEstimator
 from .estimators.deepwater import H2ODeepWaterEstimator
 from .estimators.estimator_base import H2OEstimator
+from .estimators.xgboost import H2OXGBoostEstimator
+from .estimators.generic import H2OGenericEstimator
 from .estimators.gbm import H2OGradientBoostingEstimator
 from .estimators.glm import H2OGeneralizedLinearEstimator
 from .estimators.glrm import H2OGeneralizedLowRankEstimator
 from .estimators.kmeans import H2OKMeansEstimator
 from .estimators.naive_bayes import H2ONaiveBayesEstimator
+from .estimators.pca import H2OPrincipalComponentAnalysisEstimator
 from .estimators.random_forest import H2ORandomForestEstimator
 from .estimators.stackedensemble import H2OStackedEnsembleEstimator
+from .estimators.word2vec import H2OWord2vecEstimator
+from .estimators.isolation_forest import H2OIsolationForestEstimator
 from .expr import ExprNode
 from .frame import H2OFrame
 from .grid.grid_search import H2OGridSearch
 from .job import H2OJob
 from .model.model_base import ModelBase
-from .transforms.decomposition import H2OPCA
 from .transforms.decomposition import H2OSVD
 from .utils.debugging import *  # NOQA
 from .utils.compatibility import *  # NOQA
@@ -50,8 +55,9 @@ warnings.filterwarnings('ignore', category=DeprecationWarning, module='.*/IPytho
 
 h2oconn = None  # type: H2OConnection
 
+
 def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_certificates=None, auth=None,
-            proxy=None,cookies=None, verbose=True, config=None):
+            proxy=None, cookies=None, verbose=True, config=None):
     """
     Connect to an existing H2O server, remote or local.
 
@@ -64,8 +70,8 @@ def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_ce
     :param port: Port number that H2O service is listening to.
     :param https: Set to True to connect via https:// instead of http://.
     :param verify_ssl_certificates: When using https, setting this to False will disable SSL certificates verification.
-    :param auth: Either a (username, password) pair for basic authentication, or one of the requests.auth
-                 authenticator objects.
+    :param auth: Either a (username, password) pair for basic authentication, an instance of h2o.auth.SpnegoAuth
+                 or one of the requests.auth authenticator objects.
     :param proxy: Proxy server address.
     :param cookies: Cookie (or list of) to add to request
     :param verbose: Set to False to disable printing connection status messages.
@@ -81,9 +87,8 @@ def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_ce
     else:
         h2oconn = H2OConnection.open(server=server, url=url, ip=ip, port=port, https=https,
                                      auth=auth, verify_ssl_certificates=verify_ssl_certificates,
-                                     proxy=proxy,cookies=cookies,
+                                     proxy=proxy, cookies=cookies,
                                      verbose=verbose)
-        h2oconn.cluster.timezone = "UTC"
         if verbose:
             h2oconn.cluster.show_status()
     return h2oconn
@@ -141,15 +146,19 @@ def version_check():
               "version from http://h2o.ai/download/".format(ci.build_age))
 
 
-def init(url=None, ip=None, port=None, https=None, insecure=None, username=None, password=None,
-         cookies=None, proxy=None, start_h2o=True, nthreads=-1, ice_root=None, enable_assertions=True,
-         max_mem_size=None, min_mem_size=None, strict_version_check=None, ignore_config=False, **kwargs):
+def init(url=None, ip=None, port=None, name=None, https=None, insecure=None, username=None, password=None,
+         cookies=None, proxy=None, start_h2o=True, nthreads=-1, ice_root=None, log_dir=None, log_level=None,
+         enable_assertions=True, max_mem_size=None, min_mem_size=None, strict_version_check=None, ignore_config=False,
+         extra_classpath=None, jvm_custom_args=None, bind_to_localhost=True, **kwargs):
     """
     Attempt to connect to a local server, or if not successful start a new server and connect to it.
 
     :param url: Full URL of the server to connect to (can be used instead of `ip` + `port` + `https`).
     :param ip: The ip address (or host name) of the server where H2O is running.
     :param port: Port number that H2O service is listening to.
+    :param name: Cluster name. If None while connecting to an existing cluster it will not check the cluster name.
+                 If set then will connect only if the target cluster name matches. If no instance is found and decides to start a local
+                 one then this will be used as the cluster name or a random one will be generated if set to None.
     :param https: Set to True to connect via https:// instead of http://.
     :param insecure: When using https, setting this to True will disable SSL certificates verification.
     :param username: Username and
@@ -159,17 +168,22 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
     :param start_h2o: If False, do not attempt to start an h2o server when connection to an existing one failed.
     :param nthreads: "Number of threads" option when launching a new h2o server.
     :param ice_root: Directory for temporary files for the new h2o server.
+    :param log_dir: Directory for H2O logs to be stored if a new instance is started. Ignored if connecting to an existing node.
+    :param log_level: The logger level for H2O if a new instance is started. One of TRACE,DEBUG,INFO,WARN,ERRR,FATA. Default is INFO. Ignored if connecting to an existing node.
     :param enable_assertions: Enable assertions in Java for the new h2o server.
-    :param max_mem_size: Maximum memory to use for the new h2o server.
-    :param min_mem_size: Minimum memory to use for the new h2o server.
+    :param max_mem_size: Maximum memory to use for the new h2o server. Integer input will be evaluated as gigabytes.  Other units can be specified by passing in a string (e.g. "160M" for 160 megabytes).
+    :param min_mem_size: Minimum memory to use for the new h2o server. Integer input will be evaluated as gigabytes.  Other units can be specified by passing in a string (e.g. "160M" for 160 megabytes).
     :param strict_version_check: If True, an error will be raised if the client and server versions don't match.
     :param ignore_config: Indicates whether a processing of a .h2oconfig file should be conducted or not. Default value is False.
+    :param extra_classpath: List of paths to libraries that should be included on the Java classpath when starting H2O from Python.
     :param kwargs: (all other deprecated attributes)
+    :param jvm_custom_args: Customer, user-defined argument's for the JVM H2O is instantiated in. Ignored if there is an instance of H2O already running and the client connects to it.
     """
     global h2oconn
     assert_is_type(url, str, None)
     assert_is_type(ip, str, None)
     assert_is_type(port, int, str, None)
+    assert_is_type(name, str, None)
     assert_is_type(https, bool, None)
     assert_is_type(insecure, bool, None)
     assert_is_type(username, str, None)
@@ -179,12 +193,18 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
     assert_is_type(start_h2o, bool, None)
     assert_is_type(nthreads, int)
     assert_is_type(ice_root, str, None)
+    assert_is_type(log_dir, str, None)
+    assert_is_type(log_level, str, None)
+    assert_satisfies(log_level, log_level in [None, "TRACE", "DEBUG", "INFO", "WARN", "ERRR", "FATA"])
     assert_is_type(enable_assertions, bool)
     assert_is_type(max_mem_size, int, str, None)
     assert_is_type(min_mem_size, int, str, None)
     assert_is_type(strict_version_check, bool, None)
+    assert_is_type(extra_classpath, [str], None)
+    assert_is_type(jvm_custom_args, [str], None)
+    assert_is_type(bind_to_localhost, bool)
     assert_is_type(kwargs, {"proxies": {str: str}, "max_mem_size_GB": int, "min_mem_size_GB": int,
-                            "force_connect": bool})
+                            "force_connect": bool, "as_port": bool})
 
     def get_mem_size(mmint, mmgb):
         if not mmint:  # treat 0 and "" as if they were None
@@ -239,28 +259,30 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
 
     if not start_h2o:
         print("Warning: if you don't want to start local H2O server, then use of `h2o.connect()` is preferred.")
-    if ip and ip != "localhost" and ip != "127.0.0.1" and start_h2o:
-        print("Warning: connecting to remote server but falling back to local... Did you mean to use `h2o.connect()`?")
     try:
-        h2oconn = H2OConnection.open(url=url, ip=ip, port=port, https=https,
+        h2oconn = H2OConnection.open(url=url, ip=ip, port=port, name=name, https=https,
                                      verify_ssl_certificates=verify_ssl_certificates,
                                      auth=auth, proxy=proxy,cookies=cookies, verbose=True,
-                                     _msgs=("Checking whether there is an H2O instance running at {url}",
+                                     _msgs=("Checking whether there is an H2O instance running at {url} ",
                                             "connected.", "not found."))
     except H2OConnectionError:
         # Backward compatibility: in init() port parameter really meant "baseport" when starting a local server...
-        if port and not str(port).endswith("+"):
+        if port and not str(port).endswith("+") and not kwargs.get("as_port", False):
             port = str(port) + "+"
         if not start_h2o: raise
+        if ip and not (ip == "localhost" or ip == "127.0.0.1"):
+            raise H2OConnectionError('Can only start H2O launcher if IP address is localhost.')
         hs = H2OLocalServer.start(nthreads=nthreads, enable_assertions=enable_assertions, max_mem_size=mmax,
-                                  min_mem_size=mmin, ice_root=ice_root, port=port)
+                                  min_mem_size=mmin, ice_root=ice_root, log_dir=log_dir, log_level=log_level,
+                                  port=port, name=name,
+                                  extra_classpath=extra_classpath, jvm_custom_args=jvm_custom_args,
+                                  bind_to_localhost=bind_to_localhost)
         h2oconn = H2OConnection.open(server=hs, https=https, verify_ssl_certificates=not insecure,
                                      auth=auth, proxy=proxy,cookies=cookies, verbose=True)
     if check_version:
         version_check()
     h2oconn.cluster.timezone = "UTC"
     h2oconn.cluster.show_status()
-
 
 def lazy_import(path, pattern=None):
     """
@@ -273,22 +295,20 @@ def lazy_import(path, pattern=None):
     """
     assert_is_type(path, str, [str])
     assert_is_type(pattern, str, None)
-    if is_type(path, str):
-        return _import(path, pattern)
-    else:
-        return [_import(p, pattern)[0] for p in path]
+    paths = [path] if is_type(path, str) else path
+    return _import_multi(paths, pattern)
 
 
-def _import(path, pattern):
-    assert_is_type(path, str)
+def _import_multi(paths, pattern):
+    assert_is_type(paths, [str])
     assert_is_type(pattern, str, None)
-    j = api("GET /3/ImportFiles", data={"path": path, "pattern": pattern})
-    if j["fails"]: raise ValueError("ImportFiles of " + path + " failed on " + str(j["fails"]))
+    j = api("POST /3/ImportFilesMulti", {"paths": paths, "pattern": pattern})
+    if j["fails"]: raise ValueError("ImportFiles of '" + ".".join(paths) + "' failed on " + str(j["fails"]))
     return j["destination_frames"]
 
 
 def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None, col_types=None,
-                na_strings=None):
+                na_strings=None, skipped_columns=None):
     """
     Upload a dataset from the provided local path to the H2O cluster.
 
@@ -317,6 +337,7 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
           Times can also contain "AM" or "PM".
     :param na_strings: A list of strings, or a list of lists of strings (one list per column), or a dictionary
         of column names to strings which are to be interpreted as missing values.
+    :param skipped_columns: an integer lists of column indices to skip and not parsed into the final frame from the import file.
 
     :returns: a new :class:`H2OFrame` instance.
 
@@ -333,14 +354,17 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
     assert_is_type(col_names, [str], None)
     assert_is_type(col_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
+    assert (skipped_columns==None) or isinstance(skipped_columns, list), \
+        "The skipped_columns should be an list of column names!"
+
     check_frame_id(destination_frame)
     if path.startswith("~"):
         path = os.path.expanduser(path)
-    return H2OFrame()._upload_parse(path, destination_frame, header, sep, col_names, col_types, na_strings)
+    return H2OFrame()._upload_parse(path, destination_frame, header, sep, col_names, col_types, na_strings, skipped_columns)
 
 
 def import_file(path=None, destination_frame=None, parse=True, header=0, sep=None, col_names=None, col_types=None,
-                na_strings=None, pattern=None):
+                na_strings=None, pattern=None, skipped_columns=None, custom_non_data_line_markers = None):
     """
     Import a dataset that is already on the cluster.
 
@@ -353,7 +377,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     :param path: path(s) specifying the location of the data to import or a path to a directory of files to import
     :param destination_frame: The unique hex key assigned to the imported file. If none is given, a key will be
         automatically generated.
-    :param parse: If True, the file should be parsed after import.
+    :param parse: If True, the file should be parsed after import. If False, then a list is returned containing the file path.
     :param header: -1 means the first line is data, 0 means guess, 1 means first line is header.
     :param sep: The field separator character. Values on each line of the file are separated by
         this character. If not provided, the parser will automatically detect the separator.
@@ -376,6 +400,8 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
         of column names to strings which are to be interpreted as missing values.
     :param pattern: Character string containing a regular expression to match file(s) in the folder if `path` is a
         directory.
+    :param skipped_columns: an integer list of column indices to skip and not parsed into the final frame from the import file.
+    :param custom_non_data_line_markers: If a line in imported file starts with any character in given string it will NOT be imported. Empty string means all lines are imported, None means that default behaviour for given format will be used
 
     :returns: a new :class:`H2OFrame` instance.
 
@@ -398,6 +424,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     assert_is_type(col_names, [str], None)
     assert_is_type(col_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
+    assert isinstance(skipped_columns, (type(None), list)), "The skipped_columns should be an list of column names!"
     check_frame_id(destination_frame)
     patharr = path if isinstance(path, list) else [path]
     if any(os.path.split(p)[0] == "~" for p in patharr):
@@ -406,10 +433,35 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     if not parse:
         return lazy_import(path, pattern)
     else:
-        return H2OFrame()._import_parse(path, pattern, destination_frame, header, sep, col_names, col_types, na_strings)
+        return H2OFrame()._import_parse(path, pattern, destination_frame, header, sep, col_names, col_types, na_strings,
+                                        skipped_columns, custom_non_data_line_markers)
 
 
-def import_sql_table(connection_url, table, username, password, columns=None, optimize=True):
+def import_hive_table(database=None, table=None, partitions=None, allow_multi_format=False):
+    """
+    Import Hive table to H2OFrame in memory.
+
+    Make sure to start H2O with Hive on classpath. Uses hive-site.xml on classpath to connect to Hive.
+
+    :param database: Name of Hive database (default database will be used by default)
+    :param table: name of Hive table to import
+    :param partitions: a list of lists of strings - partition key column values of partitions you want to import.
+    :param allow_multi_format: enable import of partitioned tables with different storage formats used. WARNING:
+        this may fail on out-of-memory for tables with a large number of small partitions.
+
+    :returns: an :class:`H2OFrame` containing data of the specified Hive table.
+
+    :examples:
+        >>> my_citibike_data = h2o.import_hive_table("default", "table", [["2017", "01"], ["2017", "02"]])
+    """    
+    assert_is_type(database, str, None)
+    assert_is_type(table, str)
+    assert_is_type(partitions, [[str]], None)
+    p = { "database": database, "table": table, "partitions": partitions, "allow_multi_format": allow_multi_format }
+    j = H2OJob(api("POST /3/ImportHiveTable", data=p), "Import Hive Table").poll()
+    return get_frame(j.dest_key)
+
+def import_sql_table(connection_url, table, username, password, columns=None, optimize=True, fetch_mode=None):
     """
     Import SQL table to H2OFrame in memory.
 
@@ -420,8 +472,7 @@ def import_sql_table(connection_url, table, username, password, columns=None, op
         java -cp <path_to_h2o_jar>:<path_to_jdbc_driver_jar> water.H2OApp
 
     Also see :func:`import_sql_select`.
-    Currently supported SQL databases are MySQL, PostgreSQL, and MariaDB. Support for Oracle 12g and Microsoft SQL
-    Server is forthcoming.
+    Currently supported SQL databases are MySQL, PostgreSQL, MariaDB, Hive, Oracle and Microsoft SQL.
 
     :param connection_url: URL of the SQL database connection as specified by the Java Database Connectivity (JDBC)
         Driver. For example, "jdbc:mysql://localhost:3306/menagerie?&useSSL=false"
@@ -429,7 +480,9 @@ def import_sql_table(connection_url, table, username, password, columns=None, op
     :param columns: a list of column names to import from SQL table. Default is to import all columns.
     :param username: username for SQL server
     :param password: password for SQL server
-    :param optimize: optimize import of SQL table for faster imports. Experimental.
+    :param optimize: DEPRECATED. Ignored - use fetch_mode instead. Optimize import of SQL table for faster imports.
+    :param fetch_mode: Set to DISTRIBUTED to enable distributed import. Set to SINGLE to force a sequential read by a single node
+        from the database.
 
     :returns: an :class:`H2OFrame` containing data of the specified SQL table.
 
@@ -446,14 +499,17 @@ def import_sql_table(connection_url, table, username, password, columns=None, op
     assert_is_type(password, str)
     assert_is_type(columns, [str], None)
     assert_is_type(optimize, bool)
-    p = {"connection_url": connection_url, "table": table, "username": username, "password": password, "optimize": optimize}
+    assert_is_type(fetch_mode, str, None)
+    p = {"connection_url": connection_url, "table": table, "username": username, "password": password,
+         "fetch_mode": fetch_mode}
     if columns:
         p["columns"] = ", ".join(columns)
     j = H2OJob(api("POST /99/ImportSQLTable", data=p), "Import SQL Table").poll()
     return get_frame(j.dest_key)
 
 
-def import_sql_select(connection_url, select_query, username, password, optimize=True):
+def import_sql_select(connection_url, select_query, username, password, optimize=True, 
+                      use_temp_table=None, temp_table_name=None, fetch_mode=None):
     """
     Import the SQL table that is the result of the specified SQL query to H2OFrame in memory.
 
@@ -463,15 +519,19 @@ def import_sql_select(connection_url, select_query, username, password, optimize
 
       java -cp <path_to_h2o_jar>:<path_to_jdbc_driver_jar> water.H2OApp
 
-    Also see h2o.import_sql_table. Currently supported SQL databases are MySQL, PostgreSQL, and MariaDB. Support
-    for Oracle 12g and Microsoft SQL Server is forthcoming.
+    Also see h2o.import_sql_table. Currently supported SQL databases are MySQL, PostgreSQL, MariaDB, Hive, Oracle 
+    and Microsoft SQL Server.
 
     :param connection_url: URL of the SQL database connection as specified by the Java Database Connectivity (JDBC)
         Driver. For example, "jdbc:mysql://localhost:3306/menagerie?&useSSL=false"
     :param select_query: SQL query starting with `SELECT` that returns rows from one or more database tables.
     :param username: username for SQL server
     :param password: password for SQL server
-    :param optimize: optimize import of SQL table for faster imports. Experimental.
+    :param optimize: DEPRECATED. Ignored - use fetch_mode instead. Optimize import of SQL table for faster imports.
+    :param use_temp_table: whether a temporary table should be created from select_query
+    :param temp_table_name: name of temporary table to be created from select_query
+    :param fetch_mode: Set to DISTRIBUTED to enable distributed import. Set to SINGLE to force a sequential read by a single node
+        from the database.
 
     :returns: an :class:`H2OFrame` containing data of the specified SQL query.
 
@@ -481,21 +541,24 @@ def import_sql_select(connection_url, select_query, username, password, optimize
         >>> username = "root"
         >>> password = "abc123"
         >>> my_citibike_data = h2o.import_sql_select(conn_url, select_query,
-        ...                                          username, password)
+        ...                                          username, password, fetch_mode)
     """
     assert_is_type(connection_url, str)
     assert_is_type(select_query, str)
     assert_is_type(username, str)
     assert_is_type(password, str)
     assert_is_type(optimize, bool)
+    assert_is_type(use_temp_table, bool, None)
+    assert_is_type(temp_table_name, str, None)
+    assert_is_type(fetch_mode, str, None)
     p = {"connection_url": connection_url, "select_query": select_query, "username": username, "password": password,
-         "optimize": optimize}
+         "use_temp_table": use_temp_table, "temp_table_name": temp_table_name, "fetch_mode": fetch_mode}
     j = H2OJob(api("POST /99/ImportSQLTable", data=p), "Import SQL Table").poll()
     return get_frame(j.dest_key)
 
 
 def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, column_names=None,
-                column_types=None, na_strings=None):
+                column_types=None, na_strings=None, skipped_columns=None, custom_non_data_line_markers=None):
     """
     Retrieve H2O's best guess as to what the structure of the data file is.
 
@@ -510,10 +573,12 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     :param header: -1 means the first line is data, 0 means guess, 1 means first line is header.
     :param separator: The field separator character. Values on each line of the file are separated by
         this character. If not provided, the parser will automatically detect the separator.
-    :param column_names: A list of column names for the file.
+    :param column_names: A list of column names for the file. If skipped_columns are specified, only list column names
+         of columns that are not skipped.
     :param column_types: A list of types or a dictionary of column names to types to specify whether columns
         should be forced to a certain type upon import parsing. If a list, the types for elements that are
-        one will be guessed. The possible types a column may have are:
+        one will be guessed. If skipped_columns are specified, only list column types of columns that are not skipped.
+        The possible types a column may have are:
 
         - "unknown" - this will force the column to be parsed as all NA
         - "uuid"    - the values in the column must be true UUID or will be parsed as NA
@@ -528,6 +593,8 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
 
     :param na_strings: A list of strings, or a list of lists of strings (one list per column), or a dictionary
         of column names to strings which are to be interpreted as missing values.
+    :param skipped_columns: an integer lists of column indices to skip and not parsed into the final frame from the import file.
+    :param custom_non_data_line_markers: If a line in imported file starts with any character in given string it will NOT be imported. Empty string means all lines are imported, None means that default behaviour for given format will be used
 
     :returns: a dictionary containing parse parameters guessed by the H2O backend.
     """
@@ -550,22 +617,47 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     kwargs = {"check_header": header, "source_frames": [quoted(frame_id) for frame_id in raw_frames]}
     if separator:
         kwargs["separator"] = ord(separator)
+    
+    if custom_non_data_line_markers is not None:
+        kwargs["custom_non_data_line_markers"] = custom_non_data_line_markers;
 
     j = api("POST /3/ParseSetup", data=kwargs)
     if "warnings" in j and j["warnings"]:
         for w in j["warnings"]:
             warnings.warn(w)
     # TODO: really should be url encoding...
-    # TODO: clean up all this
     if destination_frame:
         j["destination_frame"] = destination_frame
+
+    parse_column_len = len(j["column_types"]) if skipped_columns is None else (len(j["column_types"])-len(skipped_columns))
+    tempColumnNames = j["column_names"] if j["column_names"] is not None else gen_header(j["number_columns"])
+    useType = [True]*len(tempColumnNames)
+    if skipped_columns is not None:
+        useType = [True]*len(tempColumnNames)
+
+        for ind in range(len(tempColumnNames)):
+            if ind in skipped_columns:
+                useType[ind]=False
+
     if column_names is not None:
         if not isinstance(column_names, list): raise ValueError("col_names should be a list")
-        if len(column_names) != len(j["column_types"]): raise ValueError(
-            "length of col_names should be equal to the number of columns: %d vs %d"
-            % (len(column_names), len(j["column_types"])))
+        if (skipped_columns is not None) and len(skipped_columns)>0:
+            if (len(column_names)) != parse_column_len:
+                raise ValueError(
+                    "length of col_names should be equal to the number of columns parsed: %d vs %d"
+                    % (len(column_names), parse_column_len))
+        else:
+            if len(column_names) != len(j["column_types"]): raise ValueError(
+                "length of col_names should be equal to the number of columns: %d vs %d"
+                % (len(column_names), len(j["column_types"])))
         j["column_names"] = column_names
-    if column_types is not None:
+        counter = 0
+        for ind in range(len(tempColumnNames)):
+            if useType[ind]:
+                tempColumnNames[ind]=column_names[counter]
+                counter=counter+1
+
+    if (column_types is not None): # keep the column types to include all columns
         if isinstance(column_types, dict):
             # overwrite dictionary to ordered list of column types. if user didn't specify column type for all names,
             # use type provided by backend
@@ -575,18 +667,28 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
                 "names specified in col_types is not a subset of the column names")
             idx = 0
             column_types_list = []
-            for name in j["column_names"]:
+
+            for name in tempColumnNames: # column_names may have already been changed
                 if name in column_types:
                     column_types_list.append(column_types[name])
                 else:
                     column_types_list.append(j["column_types"][idx])
                 idx += 1
+
             column_types = column_types_list
+
         elif isinstance(column_types, list):
-            if len(column_types) != len(j["column_types"]): raise ValueError(
-                "length of col_types should be equal to the number of columns")
-            column_types = [column_types[i] if column_types[i] else j["column_types"][i] for i in
-                            range(len(column_types))]
+            if len(column_types) != parse_column_len: raise ValueError(
+                "length of col_types should be equal to the number of parsed columns")
+            # need to expand it out to all columns, not just the parsed ones
+            column_types_list = j["column_types"]
+            counter = 0
+            for ind in range(len(j["column_types"])):
+                if useType[ind] and (column_types[counter]!=None):
+                    column_types_list[ind]=column_types[counter]
+                    counter=counter+1
+
+            column_types = column_types_list
         else:  # not dictionary or list
             raise ValueError("col_types should be a list of types or a dictionary of column names to types")
         j["column_types"] = column_types
@@ -611,6 +713,14 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
             raise ValueError(
                 "na_strings should be a list, a list of lists (one list per column), or a dictionary of column "
                 "names to strings which are to be interpreted as missing values")
+
+    if skipped_columns is not None:
+        if isinstance(skipped_columns, list):
+            j["skipped_columns"] = []
+            for colidx in skipped_columns:
+                if (colidx < 0): raise ValueError("skipped column index cannot be negative")
+                j["skipped_columns"].append(colidx)
+    
 
     # quote column names and column types also when not specified by user
     if j["column_names"]: j["column_names"] = list(map(quoted, j["column_names"]))
@@ -691,7 +801,7 @@ def get_model(model_id):
     model_json = api("GET /3/Models/%s" % model_id)["models"][0]
     algo = model_json["algo"]
     if algo == "svd":            m = H2OSVD()
-    elif algo == "pca":          m = H2OPCA()
+    elif algo == "pca":          m = H2OPrincipalComponentAnalysisEstimator()
     elif algo == "drf":          m = H2ORandomForestEstimator()
     elif algo == "naivebayes":   m = H2ONaiveBayesEstimator()
     elif algo == "kmeans":       m = H2OKMeansEstimator()
@@ -699,12 +809,16 @@ def get_model(model_id):
     elif algo == "glm":          m = H2OGeneralizedLinearEstimator()
     elif algo == "gbm":          m = H2OGradientBoostingEstimator()
     elif algo == "deepwater":    m = H2ODeepWaterEstimator()
+    elif algo == "xgboost":      m = H2OXGBoostEstimator()
+    elif algo == "word2vec":     m = H2OWord2vecEstimator()
+    elif algo == "generic": m = H2OGenericEstimator()
     elif algo == "deeplearning":
         if model_json["output"]["model_category"] == "AutoEncoder":
             m = H2OAutoEncoderEstimator()
         else:
             m = H2ODeepLearningEstimator()
     elif algo == "stackedensemble": m = H2OStackedEnsembleEstimator()
+    elif algo == "isolationforest": m = H2OIsolationForestEstimator()
     else:
         raise ValueError("Unknown algo type: " + algo)
     m._resolve_model(model_id, model_json)
@@ -741,7 +855,7 @@ def get_grid(grid_id):
     return gs
 
 
-def get_frame(frame_id):
+def get_frame(frame_id, **kwargs):
     """
     Obtain a handle to the frame in H2O with the frame_id key.
 
@@ -749,7 +863,7 @@ def get_frame(frame_id):
     :returns: an :class:`H2OFrame` object
     """
     assert_is_type(frame_id, str)
-    return H2OFrame.get_frame(frame_id)
+    return H2OFrame.get_frame(frame_id, **kwargs)
 
 
 def no_progress():
@@ -764,6 +878,15 @@ def no_progress():
 def show_progress():
     """Enable the progress bar (it is enabled by default)."""
     H2OJob.__PROGRESS_BAR__ = True
+
+
+def enable_expr_optimizations(flag):
+    """Enable expression tree local optimizations."""
+    ExprNode.__ENABLE_EXPR_OPTIMIZATIONS__ = flag
+
+
+def is_expr_optimizations_enabled():
+    return ExprNode.__ENABLE_EXPR_OPTIMIZATIONS__
 
 
 def log_and_echo(message=""):
@@ -866,6 +989,9 @@ def download_pojo(model, path="", get_jar=True, jar_name=""):
     assert_is_type(path, str)
     assert_is_type(get_jar, bool)
 
+    if not model.have_pojo:
+        raise H2OValueError("Export to POJO not supported")
+
     if path == "":
         java_code = api("GET /3/Models.java/%s" % model.model_id)
         print(java_code)
@@ -938,13 +1064,16 @@ def download_all_logs(dirname=".", filename=None):
 
 def save_model(model, path="", force=False):
     """
-    Save an H2O Model object to disk.
+    Save an H2O Model object to disk. (Note that ensemble binary models can now be saved using this method.)
 
     :param model: The model object to save.
     :param path: a path to save the model at (hdfs, s3, local)
     :param force: if True overwrite destination directory in case it exists, or throw exception if set to False.
 
     :returns: the path of the saved model
+
+    :examples:
+        >>> path = h2o.save_model(my_model, dir=my_path)
     """
     assert_is_type(model, ModelBase)
     assert_is_type(path, str)
@@ -955,7 +1084,7 @@ def save_model(model, path="", force=False):
 
 def load_model(path):
     """
-    Load a saved H2O model from disk.
+    Load a saved H2O model from disk. (Note that ensemble binary models can now be loaded using this method.)
 
     :param path: the full path of the H2O Model to be imported.
 
@@ -993,7 +1122,7 @@ def export_file(frame, path, force=False, parts=1):
 
 
 def cluster():
-    """Return :class:`H2OCluster` object describing the backend H2O cloud."""
+    """Return :class:`H2OCluster` object describing the backend H2O cluster."""
     return h2oconn.cluster if h2oconn else None
 
 
@@ -1247,12 +1376,161 @@ def make_metrics(predicted, actual, domain=None, distribution=None):
               data={"domain": domain, "distribution": distribution})
     return res["model_metrics"]
 
+
 def flow():
     """
     Open H2O Flow in your browser.
 
     """
     webbrowser.open(connection().base_url, new = 1)
+
+
+def _put_key(file_path, dest_key=None, overwrite=True):
+    """
+    Upload given file into DKV and save it under give key as raw object.
+
+    :param dest_key:  name of destination key in DKV
+    :param file_path:  path to file to upload
+    :return: key name if object was uploaded successfully
+    """
+    ret = api("POST /3/PutKey?destination_key={}&overwrite={}".format(dest_key if dest_key else '', overwrite),
+              filename=file_path)
+    return ret["destination_key"]
+
+
+def _create_zip_file(dest_filename, *content_list):
+    from .utils.shared_utils import InMemoryZipArch
+    with InMemoryZipArch(dest_filename) as zip_arch:
+        for filename, file_content in content_list:
+            zip_arch.append(filename, file_content)
+    return dest_filename
+
+
+def _default_source_provider(obj):
+    import inspect
+    # First try to get source code via inspect
+    try:
+        return '    '.join(inspect.getsourcelines(obj)[0])
+    except (OSError, TypeError):
+        # It seems like we are in interactive shell and
+        # we do not have access to class source code directly
+        # At this point we can:
+        # (1) get IPython history and find class definition, or
+        # (2) compose body of class from methods, since it is still possible to get
+        #     method body
+        class_def = "class {}:\n".format(obj.__name__)
+        for name, member in inspect.getmembers(obj):
+            if inspect.ismethod(member):
+                class_def += inspect.getsource(member)
+            elif inspect.isfunction(member):
+                class_def += inspect.getsource(member)
+        return class_def
+
+
+def upload_custom_metric(func, func_file="metrics.py", func_name=None, class_name=None, source_provider=None):
+    """
+    Upload given metrics function into H2O cluster.
+
+    The metrics can have different representation:
+      - class: needs to implement map(pred, act, weight, offset, model), reduce(l, r) and metric(l) methods
+      - string: the same as in class case, but the class is given as a string
+
+    :param func:  metric representation: string, class
+    :param func_file:  internal name of file to save given metrics representation
+    :param func_name:  name for h2o key under which the given metric is saved
+    :param class_name: name of class wrapping the metrics function (when supplied as string)
+    :param source_provider: a function which provides a source code for given function
+    :return: reference to uploaded metrics function
+
+    :examples:
+        >>> class CustomMaeFunc:
+        >>>     def map(self, pred, act, w, o, model):
+        >>>         return [abs(act[0] - pred[0]), 1]
+        >>>
+        >>>     def reduce(self, l, r):
+        >>>         return [l[0] + r[0], l[1] + r[1]]
+        >>>
+        >>>     def metric(self, l):
+        >>>         return l[0] / l[1]
+        >>>
+        >>>
+        >>> h2o.upload_custom_metric(CustomMaeFunc, func_name="mae")
+        >>>
+        >>> custom_func_str = '''class CustomMaeFunc:
+        >>>     def map(self, pred, act, w, o, model):
+        >>>         return [abs(act[0] - pred[0]), 1]
+        >>>
+        >>>     def reduce(self, l, r):
+        >>>         return [l[0] + r[0], l[1] + r[1]]
+        >>>
+        >>>     def metric(self, l):
+        >>>         return l[0] / l[1]'''
+        >>>
+        >>>
+        >>> h2o.upload_custom_metric(custom_func_str, class_name="CustomMaeFunc", func_name="mae")
+    """
+    import tempfile
+    import inspect
+
+    # Use default source provider
+    if not source_provider:
+        source_provider = _default_source_provider
+
+    # The template wraps given metrics representation
+    _CFUNC_CODE_TEMPLATE = """# Generated code
+import water.udf.CMetricFunc as MetricFunc
+
+# User given metric function as a class implementing
+# 3 methods defined by interface CMetricFunc
+{}
+
+# Generated user metric which satisfies the interface
+# of Java MetricFunc
+class {}Wrapper({}, MetricFunc, object):
+    pass
+
+"""
+
+    assert_satisfies(func, inspect.isclass(func) or isinstance(func, str),
+                     "The argument func needs to be string or class !")
+    assert_satisfies(func_file, func_file is not None,
+                     "The argument func_file is missing!")
+    assert_satisfies(func_file, func_file.endswith('.py'),
+                     "The argument func_file needs to end with '.py'")
+    code = None
+    derived_func_name = None
+    module_name = func_file[:-3]
+    if isinstance(func, str):
+        assert_satisfies(class_name, class_name is not None,
+                         "The argument class_name is missing! " +
+                         "It needs to reference the class in given string!")
+        code = _CFUNC_CODE_TEMPLATE.format(func, class_name, class_name)
+        derived_func_name = "metrics_{}".format(class_name)
+        class_name = "{}.{}Wrapper".format(module_name, class_name)
+    else:
+        assert_satisfies(func, inspect.isclass(func), "The parameter `func` should be str or class")
+        for method in ['map', 'reduce', 'metric']:
+            assert_satisfies(func, method in func.__dict__, "The class `func` needs to define method `{}`".format(method))
+
+        assert_satisfies(class_name, class_name is None,
+                         "If class is specified then class_name parameter needs to be None")
+
+        class_name = "{}.{}Wrapper".format(module_name, func.__name__)
+        derived_func_name = "metrics_{}".format(func.__name__)
+        code = _CFUNC_CODE_TEMPLATE.format(source_provider(func), func.__name__, func.__name__)
+
+    # If the func name is not given, use whatever we can derived from given definition
+    if not func_name:
+        func_name = derived_func_name
+    # Saved into jar file
+    tmpdir = tempfile.mkdtemp(prefix="h2o-func")
+    func_arch_file = _create_zip_file("{}/func.jar".format(tmpdir), (func_file, code))
+    # Upload into K/V
+    dest_key = _put_key(func_arch_file, dest_key=func_name)
+    # Reference
+    return "python:{}={}".format(dest_key, class_name)
+
+
 #-----------------------------------------------------------------------------------------------------------------------
 # Private
 #-----------------------------------------------------------------------------------------------------------------------

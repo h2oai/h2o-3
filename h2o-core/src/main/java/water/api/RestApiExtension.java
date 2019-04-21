@@ -1,5 +1,9 @@
 package water.api;
 
+import water.AbstractH2OExtension;
+
+import java.util.List;
+
 /**
  * REST API registration endpoint.
  *
@@ -11,15 +15,6 @@ package water.api;
  *   - register Schemas to provide a new definition of REST API input/output
  */
 public interface RestApiExtension {
-
-  /**
-   * TODO: would be better to pass Jetty object to register `jetty.register(new ApiHandler())
-   * @param relativeResourcePath
-   *
-   * @deprecated use {@link #registerEndPoints(RestApiContext)}
-   */
-  @Deprecated
-  void register(String relativeResourcePath);
 
   /**
    *
@@ -35,4 +30,7 @@ public interface RestApiExtension {
 
   /** Provide name of the REST API extension. */
   String getName();
+
+  /** List of core extensions on which this rest api depends on */
+  List<String> getRequiredCoreExtensions();
 }

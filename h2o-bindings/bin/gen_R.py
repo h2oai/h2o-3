@@ -38,6 +38,13 @@ def gen_module(schema, algo, module):
     for param in schema["parameters"]:
         if param["name"] in ["ignored_columns", "response_column", "max_confusion_matrix_size"]:
             continue
+        if algo == "drf":
+            if param["name"] == "offset_column":
+                yield "#' @param offset_column Offset column. This argument is deprecated and has no use for Random Forest."
+                continue
+            if param["name"] == "distribution":
+                yield "#' @param distribution Distribution. This argument is deprecated and has no use for Random Forest."
+                continue
         if algo == "naivebayes":
             if param["name"] == "min_sdev":
                 yield "#' @param threshold This argument is deprecated, use `min_sdev` instead. The minimum standard deviation to use for observations without enough data. "
@@ -56,7 +63,10 @@ def gen_module(schema, algo, module):
                 yield "#' @param eps_prob Cutoff below which probability is replaced with min_prob."
                 continue
         if param["name"] == "seed":
-            yield "#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)"
+            if algo != "stackedensemble":
+                yield "#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)"
+            else:
+                yield "#' @param seed Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number)"
             if algo in ["deeplearning", "deepwater"]:
                 yield "#'        Note: only reproducible when running single threaded."
             yield "#'        Defaults to -1 (time-based random number)."
@@ -66,9 +76,15 @@ def gen_module(schema, algo, module):
             phelp = "\code{Logical}. " + phelp
         if param["values"]:
             phelp += " Must be one of: %s." % ", ".join('"%s"' % p for p in param["values"])
+        if (param["name"]==u'distribution') and (not(algo==u'glm') and not(algo==u'gbm')):    # quasibinomial only in glm, gbm
+            phelp=phelp.replace(' "quasibinomial",',"")
+        if (param["name"]==u'distribution') and not(algo==u'glm'):    # ordinal only in glm
+            phelp=phelp.replace(' "ordinal",',"")
         if param["default_value"] is not None:
             phelp += " Defaults to %s." % normalize_value(param, True)
         yield "#' @param %s %s" % (param["name"], bi.wrap(phelp, indent=("#'        "), indent_first=False))
+    if algo in ["deeplearning","drf", "gbm","xgboost"]:
+        yield "#' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree for GBM, DRF, & XGBoost. Metrics per epoch for Deep Learning). Defaults to FALSE."
     if help_details:
         yield "#' @details %s" % bi.wrap(help_details, indent=("#'          "), indent_first=False)
     if help_return:
@@ -86,7 +102,10 @@ def gen_module(schema, algo, module):
         for line in lines:
             yield "#' %s" % line.lstrip()
     yield "#' @export"
-    yield "h2o.%s <- function(%s," % (module, get_extra_params_for(algo))
+    if algo == "generic":
+        yield "h2o.%s <- function(" % (module)
+    else:
+        yield "h2o.%s <- function(%s," % (module, get_extra_params_for(algo))
     # yield indent("training_frame,", 17 + len(algo))
     list = []
     for param in schema["parameters"]:
@@ -107,16 +126,26 @@ def gen_module(schema, algo, module):
             if param["name"] == "eps_prob":
                 list.append(indent("eps_prob = %s" % normalize_value(param), 17 + len(module)))
                 continue
-        list.append(indent("%s = %s" % (param["name"], normalize_value(param)), 17 + len(module)))
+        if (param["name"]==u'distribution'):
+            temp = normalize_value(param)
+            if not(algo==u'glm') and not(algo==u'gbm'):    # quasibinomial only in glm, gbm
+                temp = temp.replace(' "quasibinomial",',"")
+            if not(algo==u'glm'):
+                temp = temp.replace(' "ordinal",',"")
+            list.append(indent("%s = %s" % (param["name"], temp), 17 + len(module)))
+        else:
+            list.append(indent("%s = %s" % (param["name"], normalize_value(param)), 17 + len(module)))
+    if algo in ["deeplearning","drf", "gbm","xgboost"]:
+        list.append(indent("verbose = FALSE ",17 + len(module)))
     yield ",\n".join(list)
     yield indent(") \n{", 17 + len(module))
-    if algo in ["deeplearning", "deepwater", "drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
-        yield "  #If x is missing, then assume user wants to use all columns as features."
-        yield "  if(missing(x)){"
-        yield "     if(is.numeric(y)){"
-        yield "         x <- setdiff(col(training_frame),y)"
-        yield "     }else{"
-        yield "         x <- setdiff(colnames(training_frame),y)"
+    if algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
+        yield "  # If x is missing, then assume user wants to use all columns as features."
+        yield "  if (missing(x)) {"
+        yield "     if (is.numeric(y)) {"
+        yield "         x <- setdiff(col(training_frame), y)"
+        yield "     } else {"
+        yield "         x <- setdiff(colnames(training_frame), y)"
         yield "     }"
         yield "  }"
         if algo == "gbm":
@@ -138,9 +167,33 @@ def gen_module(schema, algo, module):
             yield "    beta_constraints <- as.h2o(beta_constraints)"
             yield "  }"
     yield ""
+    if algo == "coxph":
+        yield "  # If x is missing, then assume user wants to use all columns as features."
+        yield "  if (missing(x)) {"
+        yield "     if (is.numeric(event_column)) {"
+        yield "         x <- setdiff(col(training_frame), event_column)"
+        yield "     } else {"
+        yield "         x <- setdiff(colnames(training_frame), event_column)"
+        yield "     }"
+        yield "  }"
+        yield "  if (is.null(interactions_only) && (! is.null(interactions) || ! is.null(interaction_pairs))) {"
+        yield "     used <- unique(c(interactions, unlist(sapply(interaction_pairs, function(x) {x[1]})), unlist(sapply(interaction_pairs, function(x) {x[2]}))))"
+        yield "     interactions_only <- setdiff(used, x)"
+        yield "     x <- c(x, interactions_only)"
+        yield "  }"
+        yield "  if (! is.null(stratify_by)) {"
+        yield "     stratify_by_only <- setdiff(stratify_by, x)"
+        yield "     x <- c(x, stratify_by_only)"
+        yield "  }"
+        yield "  if(!is.character(stop_column) && !is.numeric(stop_column)) {"
+        yield "     stop('argument \"stop_column\" must be a column name or an index')"
+        yield "  }"
+    if algo == "generic":
+        yield "  # Required args: model_key"
+        yield "  if (is.null(model_key)) stop(\"argument 'model_key' must be provided\")"
     if algo == "word2vec":
         yield "  # training_frame is required if pre_trained frame is not specified"
-        yield "  if( missing(pre_trained) && missing(training_frame) ) stop(\"argument \'training_frame\' is missing, with no default\")"
+        yield "  if (missing(pre_trained) && missing(training_frame)) stop(\"argument \'training_frame\' is missing, with no default\")"
         yield "  # training_frame must be a key or an H2OFrame object"
         yield "  if (!missing(training_frame) && !is.H2OFrame(training_frame))"
         yield "    tryCatch(training_frame <- h2o.getFrame(training_frame),"
@@ -153,9 +206,9 @@ def gen_module(schema, algo, module):
         yield "             error = function(err) {"
         yield "               stop(\"argument \'pre_trained\' must be a valid H2OFrame or key\")"
         yield "             })"
-    else:
+    elif algo not in ["generic"]:
         yield "  # Required args: training_frame"
-        yield "  if( missing(training_frame) ) stop(\"argument \'training_frame\' is missing, with no default\")"
+        yield "  if (missing(training_frame)) stop(\"argument \'training_frame\' is missing, with no default\")"
         # yield "  if( missing(validation_frame) ) validation_frame = NULL"
         yield "  # Training_frame must be a key or an H2OFrame object"
         yield "  if (!is.H2OFrame(training_frame))"
@@ -163,7 +216,7 @@ def gen_module(schema, algo, module):
         yield "           error = function(err) {"
         yield "             stop(\"argument \'training_frame\' must be a valid H2OFrame or key\")"
         yield "           })"
-    if algo not in ["stackedensemble", "word2vec"]:
+    if algo not in ["word2vec", "aggregator", "coxph", "isolationforest", "generic"]:
         yield "  # Validation_frame must be a key or an H2OFrame object"
         yield "  if (!is.null(validation_frame)) {"
         yield "     if (!is.H2OFrame(validation_frame))"
@@ -174,13 +227,16 @@ def gen_module(schema, algo, module):
         yield "  }"
     yield "  # Parameter list to send to model builder"
     yield "  parms <- list()"
-    yield "  parms$training_frame <- training_frame"
+    if algo not in ["generic"]:
+        yield "  parms$training_frame <- training_frame"
     if algo == "glrm":
         yield " if(!missing(cols))"
         yield " parms$ignored_columns <- .verify_datacols(training_frame, cols)$cols_ignore"
-    elif algo in ["deeplearning", "deepwater", "drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
+    elif algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes", "stackedensemble", "coxph"]:
         if any(param["name"] == "autoencoder" for param in schema["parameters"]):
             yield "  args <- .verify_dataxy(training_frame, x, y, autoencoder)"
+        elif algo == "coxph":
+            yield "  args <- .verify_dataxy(training_frame, x, event_column)"
         else:
             yield "  args <- .verify_dataxy(training_frame, x, y)"
         if any(param["name"] == "offset_column" for param in schema["parameters"]):
@@ -188,12 +244,23 @@ def gen_module(schema, algo, module):
         if any(param["name"] == "weights_column" for param in schema["parameters"]):
             yield "  if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]"
         if algo != "stackedensemble":
-            yield "  if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]"
+            if algo == "coxph":
+                yield "  if( !missing(start_column) && !is.null(start_column)) args$x_ignore <- args$x_ignore[!( start_column == args$x_ignore )]"
+                yield "  if( !missing(stop_column) && !is.null(stop_column)) args$x_ignore <- args$x_ignore[!( stop_column == args$x_ignore )]"
+            else:
+                yield "  if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]"
             yield "  parms$ignored_columns <- args$x_ignore"
         yield "  parms$response_column <- args$y\n"
     elif algo == "word2vec":
         yield ""
-    else:
+    elif algo == "kmeans":
+        yield "  if(!missing(x)){"
+        yield "    parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore"
+        yield "    if(!missing(fold_column)){"
+        yield "      parms$ignored_columns <- setdiff(parms$ignored_columns, fold_column)"
+        yield "    }"
+        yield "  }"
+    elif algo not in ["generic"]:
         yield "  if(!missing(x))"
         yield "    parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore"
     if algo == "svd":
@@ -203,9 +270,30 @@ def gen_module(schema, algo, module):
         yield "      parms$model_id <- destination_key"
         yield "    }"
         yield "  }"
+    #if algo == "stackedensemble":
+    #    yield "  if (!missing(model_id))"
+    #    yield "    parms$model_id <- model_id"
     if algo == "stackedensemble":
-        yield "  if (!missing(model_id))"
-        yield "    parms$model_id <- model_id"
+        yield " # Get the base models from model IDs (if any) that will be used for constructing model summary"
+        yield " if(!is.list(base_models) && is.vector(x)) {"
+        yield "    base_models <- as.list(base_models)"
+        yield " }"
+        yield " baselearners <- lapply(base_models, function(base_model) {"
+        yield "   if (is.character(base_model))"
+        yield "     base_model <- h2o.getModel(base_model)"
+        yield "   base_model"
+        yield " })"
+        yield " # Get base model IDs that will be passed to REST API later"
+        yield " if (length(base_models) == 0) stop('base_models is empty')"
+        yield "  # If base_models contains models instead of ids, replace with model id"
+        yield "  for (i in 1:length(base_models)) {"
+        yield "    if (inherits(base_models[[i]], 'H2OModel')) {"
+        yield "      base_models[[i]] <- base_models[[i]]@model_id"
+        yield "    }"
+        yield "  }"
+        yield " "
+        yield "  if (!missing(metalearner_params))"
+        yield "      parms$metalearner_params <- as.character(toJSON(metalearner_params, pretty = TRUE))"
     for param in schema["parameters"]:
         if param["name"] in ["ignored_columns", "response_column", "training_frame", "max_confusion_matrix_size"]:
             continue
@@ -236,61 +324,138 @@ def gen_module(schema, algo, module):
             yield " if (!missing(eps_prob))"
             yield "   parms$%s <- eps_prob" % param["name"]
             continue
+        if param["name"] == "metalearner_params":
+            continue
+        if algo == "drf" and (param["name"] == "offset_column" or param["name"] == "distribution"):
+            yield "  if (!missing(%s))" % param["name"]
+            yield "    warning(\"Argument %s is deprecated and has no use for Random Forest.\")" % param["name"]
+            if param["name"] == "distribution":
+                yield "    parms$%s <- 'AUTO'" % (param["name"])
+            else:
+                yield "    parms$%s <- NULL" % (param["name"])
+            continue
         yield "  if (!missing(%s))" % param["name"]
         yield "    parms$%s <- %s" % (param["name"], param["name"])
     if help_extra_checks:
         lines = help_extra_checks.split("\n")
         for line in lines:
             yield "%s" % line
-    if algo != "glm":
+    if algo not in ["aggregator", "glm", "deeplearning", "drf", "gbm", "xgboost", "stackedensemble"]:
         yield "  # Error check and build model"
-        yield "  .h2o.modelJob('%s', parms, h2oRestApiVersion=%d) \n}" % (algo, 99 if algo in ["svd", "stackedensemble"] else 3)
+        yield "  .h2o.modelJob('%s', parms, h2oRestApiVersion = %d) \n}" % (algo, 99 if algo in ["svd", "stackedensemble"] else 3)
+    if algo in ["stackedensemble"]:
+        yield "  # Error check and build model"
+        yield "  model <- .h2o.modelJob('%s', parms, h2oRestApiVersion = %d)" % (algo, 99 if algo in ["svd", "stackedensemble"] else 3)
+        yield "  # Convert metalearner_params back to list if not NULL"
+        yield "  if (!missing(metalearner_params)) {"
+        yield "      model@parameters$metalearner_params <- list(fromJSON(model@parameters$metalearner_params))[[1]] #Need the `[[ ]]` to avoid a nested list"
+        yield "  }"
+        yield """
+  model@model$model_summary <- capture.output({
+
+    print_ln <- function(...) cat(..., sep = "\n")
+
+    print_ln(paste0("Number of Base Models: ", length(baselearners)))
+    print_ln("\nBase Models (count by algorithm type):")
+    print(table(unlist(lapply(baselearners, function(baselearner) baselearner@algorithm))))
+
+
+    print_ln("\nMetalearner:\n")
+    print_ln(paste0(
+      "Metalearner algorithm: ",
+      ifelse(length(metalearner_algorithm) > 1, "glm", metalearner_algorithm)))
+
+    if (metalearner_nfolds != 0) {
+      print_ln("Metalearner cross-validation fold assignment:")
+      print_ln(paste0(
+        "  Fold assignment scheme: ",
+        ifelse(length(metalearner_fold_assignment) > 1, "Random", metalearner_fold_assignment)))
+      print_ln(paste0("  Number of folds: ", metalearner_nfolds))
+      print_ln(paste0(
+        "  Fold column: ",
+        ifelse(is.null(metalearner_fold_column), "NULL", metalearner_fold_column )))
+    }
+
+    if (!missing(metalearner_params))
+      print_ln(paste0("Metalearner hyperparameters: ", parms$metalearner_params))
+
+  })
+  class(model@model$model_summary) <- "h2o.stackedEnsemble.summary"
+        """
+        yield "  return(model)"
+        yield "}"
+    if algo in ["deeplearning", "drf", "gbm", "xgboost"]:
+        yield "  # Error check and build model"
+        yield "  .h2o.modelJob('%s', parms, h2oRestApiVersion = %d, verbose=verbose) \n}" % (algo, 99 if algo in ["svd", "stackedensemble"] else 3)
     if help_afterword:
         lines = help_afterword.split("\n")
         for line in lines:
             yield line.lstrip()
 
 def help_preamble_for(algo):
+    if algo == "aggregator":
+        return """
+            Build an Aggregated Frame
+
+            Builds an Aggregated Frame of an H2OFrame.
+        """
     if algo == "deeplearning":
         return """
             Build a Deep Neural Network model using CPUs
-            Builds a feed-forward multilayer artificial neural network on an H2OFrame
+
+            Builds a feed-forward multilayer artificial neural network on an H2OFrame.
         """
     if algo == "stackedensemble":
         return """
+            Builds a Stacked Ensemble
+
             Build a stacked ensemble (aka. Super Learner) using the H2O base
             learning algorithms specified by the user.
         """
     if algo == "deepwater":
         return """
             Build a Deep Learning model using multiple native GPU backends
-            Builds a deep neural network on an H2OFrame containing various data sources
+
+            Builds a deep neural network on an H2OFrame containing various data sources.
+        """
+    if algo == "xgboost":
+        return """
+            Build an eXtreme Gradient Boosting model
+
+            Builds a eXtreme Gradient Boosting model using the native XGBoost backend.
         """
     if algo == "drf":
         return """
-        Builds a Random Forest Model on an H2OFrame
-    """
+            Build a Random Forest model
+
+            Builds a Random Forest model on an H2OFrame.
+        """
     if algo == "gbm":
         return """
-            Builds gradient boosted classification trees and gradient boosted regression trees on a parsed data set.
+            Build gradient boosted classification or regression trees
 
+            Builds gradient boosted classification trees and gradient boosted regression trees on a parsed data set.
             The default distribution function will guess the model type based on the response column type.
             In order to run properly, the response column must be an numeric for "gaussian" or an
             enum for "bernoulli" or "multinomial".
         """
     if algo == "glm":
         return """
+            Fit a generalized linear model
+
             Fits a generalized linear model, specified by a response variable, a set of predictors, and a
             description of the error distribution.
         """
     if algo == "glrm":
         return """
-        Generalized low rank decomposition of an H2O data frame.
-    """
+            Generalized low rank decomposition of an H2O data frame
+
+            Builds a generalized low rank decomposition of an H2O data frame
+        """
     if algo == "kmeans":
         return """
-        Performs k-means clustering on an H2O dataset.
-    """
+             Performs k-means clustering on an H2O dataset
+        """
     if algo == "naivebayes":
         return """
             Compute naive Bayes probabilities on an H2O dataset.
@@ -304,17 +469,32 @@ def help_preamble_for(algo):
         """
     if algo == "pca":
         return """
+            Principal component analysis of an H2O data frame
+
             Principal components analysis of an H2O data frame using the power method
             to calculate the singular value decomposition of the Gram matrix.
         """
     if algo == "svd":
         return """
-        Singular value decomposition of an H2O data frame using the power method.
-    """
+            Singular value decomposition of an H2O data frame using the power method
+       """
     if algo == "word2vec":
         return """
-        Trains a word2vec model on a String column of an H2O data frame.
-    """
+            Trains a word2vec model on a String column of an H2O data frame
+        """
+    if algo == "coxph":
+        return """
+            Trains a Cox Proportional Hazards Model (CoxPH) on an H2O dataset
+        """
+    if algo == "isolationforest":
+        return """
+            Trains an Isolation Forest model
+        """
+    if algo == "generic":
+        return """
+            Imports a generic model into H2O. Such model can be used then used for scoring and obtaining
+            additional information about the model. The imported model has to be supported by H2O.
+        """
 
 def help_details_for(algo):
     if algo == "naivebayes":
@@ -367,28 +547,42 @@ def help_references_for(algo):
         return """N. Halko, P.G. Martinsson, J.A. Tropp. {Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions}[http://arxiv.org/abs/0909.4061]. SIAM Rev., Survey and Review section, Vol. 53, num. 2, pp. 217-288, June 2011."""
 
 def help_example_for(algo):
+    if algo == "aggregator":
+        return """\donttest{
+            library(h2o)
+            h2o.init()
+            df <- h2o.createFrame(rows=100, cols=5, categorical_fraction=0.6, integer_fraction=0,
+                                  binary_fraction=0, real_range=100, integer_range=100, missing_fraction=0)
+            target_num_exemplars=1000
+            rel_tol_num_exemplars=0.5
+            encoding="Eigen"
+            agg <- h2o.aggregator(training_frame=df,
+                                 target_num_exemplars=target_num_exemplars,
+                                 rel_tol_num_exemplars=rel_tol_num_exemplars,
+                                 categorical_encoding=encoding)
+            }"""
     if algo == "deeplearning":
         return """\donttest{
             library(h2o)
             h2o.init()
-            iris.hex <- as.h2o(iris)
-            iris.dl <- h2o.deeplearning(x = 1:4, y = 5, training_frame = iris.hex)
+            iris_hf <- as.h2o(iris)
+            iris_dl <- h2o.deeplearning(x = 1:4, y = 5, training_frame = iris_hf, seed=123456)
 
             # now make a prediction
-            predictions <- h2o.predict(iris.dl, iris.hex)
+            predictions <- h2o.predict(iris_dl, iris_hf)
             }"""
     if algo == "gbm":
         return """\donttest{
         library(h2o)
         h2o.init()
 
-        # Run regression GBM on australia.hex data
-        ausPath <- system.file("extdata", "australia.csv", package="h2o")
-        australia.hex <- h2o.uploadFile(path = ausPath)
+        # Run regression GBM on australia data
+        australia_path <- system.file("extdata", "australia.csv", package = "h2o")
+        australia <- h2o.uploadFile(path = australia_path)
         independent <- c("premax", "salmax","minairtemp", "maxairtemp", "maxsst",
                          "maxsoilmoist", "Max_czcs")
         dependent <- "runoffnew"
-        h2o.gbm(y = dependent, x = independent, training_frame = australia.hex,
+        h2o.gbm(y = dependent, x = independent, training_frame = australia,
                 ntrees = 3, max_depth = 3, min_rows = 2)
         }"""
     if algo == "glm":
@@ -396,106 +590,135 @@ def help_example_for(algo):
         h2o.init()
 
         # Run GLM of CAPSULE ~ AGE + RACE + PSA + DCAPS
-        prostatePath = system.file("extdata", "prostate.csv", package = "h2o")
-        prostate.hex = h2o.importFile(path = prostatePath, destination_frame = "prostate.hex")
-        h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), training_frame = prostate.hex,
+        prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
+        prostate = h2o.importFile(path = prostate_path)
+        h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), training_frame = prostate,
                 family = "binomial", nfolds = 0, alpha = 0.5, lambda_search = FALSE)
 
         # Run GLM of VOL ~ CAPSULE + AGE + RACE + PSA + GLEASON
-        myX = setdiff(colnames(prostate.hex), c("ID", "DPROS", "DCAPS", "VOL"))
-        h2o.glm(y = "VOL", x = myX, training_frame = prostate.hex, family = "gaussian",
+        predictors = setdiff(colnames(prostate), c("ID", "DPROS", "DCAPS", "VOL"))
+        h2o.glm(y = "VOL", x = predictors, training_frame = prostate, family = "gaussian",
                 nfolds = 0, alpha = 0.1, lambda_search = FALSE)
 
 
         # GLM variable importance
         # Also see:
         #   https://github.com/h2oai/h2o/blob/master/R/tests/testdir_demos/runit_demo_VI_all_algos.R
-        data.hex = h2o.importFile(
-          path = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/demos/bank-additional-full.csv",
-          destination_frame = "data.hex")
-        myX = 1:20
-        myY="y"
-        my.glm = h2o.glm(x=myX, y=myY, training_frame=data.hex, family="binomial", standardize=TRUE,
-                         lambda_search=TRUE)
+        bank = h2o.importFile(
+          path = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/demos/bank-additional-full.csv")
+        predictors = 1:20
+        target="y"
+        glm = h2o.glm(x=predictors, y=target, training_frame=bank, family="binomial", standardize=TRUE,
+                      lambda_search=TRUE)
+        h2o.std_coef_plot(glm, num_of_features = 20)
         }"""
     if algo == "glrm":
         return """\donttest{
             library(h2o)
             h2o.init()
-            ausPath <- system.file("extdata", "australia.csv", package="h2o")
-            australia.hex <- h2o.uploadFile(path = ausPath)
-            h2o.glrm(training_frame = australia.hex, k = 5, loss = "Quadratic", regularization_x = "L1",
+            australia_path <- system.file("extdata", "australia.csv", package = "h2o")
+            australia <- h2o.uploadFile(path = australia_path)
+            h2o.glrm(training_frame = australia, k = 5, loss = "Quadratic", regularization_x = "L1",
                      gamma_x = 0.5, gamma_y = 0, max_iterations = 1000)
             }"""
     if algo == "kmeans":
         return """\donttest{
         library(h2o)
         h2o.init()
-        prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-        prostate.hex <- h2o.uploadFile(path = prosPath)
-        h2o.kmeans(training_frame = prostate.hex, k = 10, x = c("AGE", "RACE", "VOL", "GLEASON"))
+        prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+        prostate <- h2o.uploadFile(path = prostate_path)
+        h2o.kmeans(training_frame = prostate, k = 10, x = c("AGE", "RACE", "VOL", "GLEASON"))
         }"""
     if algo == "naivebayes":
         return """\donttest{
         h2o.init()
-        votesPath <- system.file("extdata", "housevotes.csv", package="h2o")
-        votes.hex <- h2o.uploadFile(path = votesPath, header = TRUE)
-        h2o.naiveBayes(x = 2:17, y = 1, training_frame = votes.hex, laplace = 3)
+        votes_path <- system.file("extdata", "housevotes.csv", package = "h2o")
+        votes <- h2o.uploadFile(path = votes_path, header = TRUE)
+        h2o.naiveBayes(x = 2:17, y = 1, training_frame = votes, laplace = 3)
         }"""
     if algo == "pca":
         return """\donttest{
         library(h2o)
         h2o.init()
-        ausPath <- system.file("extdata", "australia.csv", package="h2o")
-        australia.hex <- h2o.uploadFile(path = ausPath)
-        h2o.prcomp(training_frame = australia.hex, k = 8, transform = "STANDARDIZE")
+        australia_path <- system.file("extdata", "australia.csv", package = "h2o")
+        australia <- h2o.uploadFile(path = australia_path)
+        h2o.prcomp(training_frame = australia, k = 8, transform = "STANDARDIZE")
         }"""
     if algo == "svd":
         return """\donttest{
         library(h2o)
         h2o.init()
-        ausPath <- system.file("extdata", "australia.csv", package="h2o")
-        australia.hex <- h2o.uploadFile(path = ausPath)
-        h2o.svd(training_frame = australia.hex, nv = 8)
+        australia_path <- system.file("extdata", "australia.csv", package = "h2o")
+        australia <- h2o.uploadFile(path = australia_path)
+        h2o.svd(training_frame = australia, nv = 8)
         }"""
     if algo == "stackedensemble":
         return """
-        # See example R code here: 
+        # See example R code here:
         # http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/stacked-ensembles.html
-        """        
+        """
+    if algo == "generic":
+        return """\dontrun{
+        # library(h2o)
+        # h2o.init()
+        
+        # generic_model <- h2o.genericModel("/path/to/model.zip")
+        # predictions <- h2o.predict(generic_model, dataset)
+        }"""
 
 def get_extra_params_for(algo):
     if algo == "glrm":
         return "training_frame, cols = NULL"
-    elif algo in ["deeplearning", "deepwater", "drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
+    elif algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
         return "x, y, training_frame"
     elif algo == "svd":
         return "training_frame, x, destination_key"
     elif algo == "word2vec":
         return "training_frame = NULL"
+    elif algo == "coxph":
+        return "x, event_column, training_frame"
+    elif algo == "generic":
+        return ""
     else:
         return "training_frame, x"
 
 def help_extra_params_for(algo):
     if algo == "glrm":
         return "#' @param cols (Optional) A vector containing the data columns on which k-means operates."
-    elif algo in ["deeplearning", "deepwater","drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
-        return """#' @param x A vector containing the names or indices of the predictor variables to use in building the model.
-            #'        If x is missing,then all columns except y are used.
-            #' @param y The name of the response variable in the model.If the data does not contain a header, this is the first column
-            #'        index, and increasing from left to right. (The response must be either an integer or a
-            #'        categorical variable)."""
+    elif algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes"]:
+        x_string = """#' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
+            #'        If x is missing, then all columns except y are used."""
+    elif algo == "coxph":
+        return """#' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
+            #'        If x is missing, then all columns except event_column, start_column and stop_column are used.
+            #' @param event_column The name of binary data column in the training frame indicating the occurrence of an event."""
+    elif algo == "stackedensemble":
+        x_string = """#' @param x (Optional). A vector containing the names or indices of the predictor variables to use in building the model.
+            #'           If x is missing, then all columns except y are used.  Training frame is used only to compute ensemble training metrics. """
     elif algo == "svd":
         return """#' @param x A vector containing the \code{character} names of the predictors in the model.
-            #' @param destination_key (Optional) The unique hex key assigned to the resulting model.
+            #' @param destination_key (Optional) The unique key assigned to the resulting model.
             #'                        Automatically generated if none is provided."""
     elif algo == "word2vec":
         return None
-    else:
+    elif algo == "generic":
+        return None
+    else:  #Aggregator, PCA, SVD, K-Means: can this be grouped in with the others?  why are only character names supported?
         return """#' @param x A vector containing the \code{character} names of the predictors in the model."""
+    if algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
+        return x_string + "\n" + """#' @param y The name or column index of the response variable in the data. The response must be either a numeric or a
+            #'        categorical/factor variable. If the response is numeric, then a regression model will be trained, otherwise it will train a classification model."""
 
 
 def help_extra_checks_for(algo):
+    if algo == "aggregator":
+        # Add aggregator@model$aggregated_frame_id reference to generated model
+        # TODO Change h2oRestApiVersion to 3, when Aggregator is not experimental
+        return """
+  m <- .h2o.modelJob('aggregator', parms, h2oRestApiVersion=99)
+  m@model$aggregated_frame_id <- m@model$output_frame$name
+  m\n}
+        """
     if algo == "glm":
         return """
   if( !missing(interactions) ) {
@@ -588,6 +811,35 @@ def help_extra_checks_for(algo):
         """
 
 def help_afterword_for(algo):
+    if algo == "aggregator":
+        return """
+            #' Retrieve an aggregated frame from an Aggregator model
+            #'
+            #' Retrieve an aggregated frame from the Aggregator model and use it to create a new frame.
+            #'
+            #' @param model an \linkS4class{H2OClusteringModel} corresponding from a \code{h2o.aggregator} call.
+            #' @examples
+            #' \donttest{
+            #' library(h2o)
+            #' h2o.init()
+            #' df <- h2o.createFrame(rows=100, cols=5, categorical_fraction=0.6, integer_fraction=0,
+            #'                       binary_fraction=0, real_range=100, integer_range=100, missing_fraction=0)
+            #' target_num_exemplars=1000
+            #' rel_tol_num_exemplars=0.5
+            #' encoding="Eigen"
+            #' agg <- h2o.aggregator(training_frame=df,
+            #'                      target_num_exemplars=target_num_exemplars,
+            #'                      rel_tol_num_exemplars=rel_tol_num_exemplars,
+            #'                      categorical_encoding=encoding)
+            #' # Use the aggregated frame to create a new dataframe
+            #' new_df <- h2o.aggregated_frame(agg)
+            #' }
+            #' @export
+            h2o.aggregated_frame <- function(model) {
+              key <- model@model$aggregated_frame_id
+              h2o.getFrame(key)
+            }
+        """
     if algo == "deeplearning":
         return """
             #' Anomaly Detection via H2O Deep Learning Model
@@ -606,14 +858,14 @@ def help_afterword_for(algo):
             #' \donttest{
             #' library(h2o)
             #' h2o.init()
-            #' prosPath = system.file("extdata", "prostate.csv", package = "h2o")
-            #' prostate.hex = h2o.importFile(path = prosPath)
-            #' prostate.dl = h2o.deeplearning(x = 3:9, training_frame = prostate.hex, autoencoder = TRUE,
+            #' prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
+            #' prostate = h2o.importFile(path = prostate_path)
+            #' prostate_dl = h2o.deeplearning(x = 3:9, training_frame = prostate, autoencoder = TRUE,
             #'                                hidden = c(10, 10), epochs = 5)
-            #' prostate.anon = h2o.anomaly(prostate.dl, prostate.hex)
-            #' head(prostate.anon)
-            #' prostate.anon.per.feature = h2o.anomaly(prostate.dl, prostate.hex, per_feature=TRUE)
-            #' head(prostate.anon.per.feature)
+            #' prostate_anon = h2o.anomaly(prostate_dl, prostate)
+            #' head(prostate_anon)
+            #' prostate_anon_per_feature = h2o.anomaly(prostate_dl, prostate, per_feature=TRUE)
+            #' head(prostate_anon_per_feature)
             #' }
             #' @export
             h2o.anomaly <- function(object, data, per_feature=FALSE) {
@@ -625,17 +877,39 @@ def help_afterword_for(algo):
         """
     if algo == "deepwater":
         return """
-            #' Ask the H2O server whether a Deep Water model can be built (depends on availability of native backends)
-            #' Returns True if a deep water model can be built, or False otherwise.
-            #' @param h2oRestApiVersion (Optional) Specific version of the REST API to use
+            #' Determines whether Deep Water is available
             #'
+            #' Ask the H2O server whether a Deep Water model can be built. (Depends on availability of native backends.)
+            #' Returns TRUE if a Deep Water model can be built, or FALSE otherwise.
+            #' @param h2oRestApiVersion (Optional) Specific version of the REST API to use.
+            #' @export
             h2o.deepwater.available <- function(h2oRestApiVersion = .h2o.__REST_API_VERSION) {
-                visibility = .h2o.__remoteSend(method = "GET", h2oRestApiVersion = h2oRestApiVersion, .h2o.__MODEL_BUILDERS("deepwater"))$model_builders[["deepwater"]][["visibility"]]
+                res <- .h2o.__remoteSend(method = "GET",
+                                         h2oRestApiVersion = h2oRestApiVersion,
+                                         page = .h2o.__MODEL_BUILDERS("deepwater"))
+                visibility <- res$model_builders[["deepwater"]][["visibility"]]
                 if (visibility == "Experimental") {
                     print("Cannot build a Deep Water model - no backend found.")
+                    available <- FALSE
+                } else {
+                   available <- TRUE
+                }
+                return(available)
+            }
+        """
+    if algo == "xgboost":
+        return """
+            #' Determines whether an XGBoost model can be built
+            #'
+            #' Ask the H2O server whether a XGBoost model can be built. (Depends on availability of native backend.)
+            #' Returns True if a XGBoost model can be built, or False otherwise.
+            #' @export
+            h2o.xgboost.available <- function() {
+                if (!("XGBoost" %in% h2o.list_core_extensions())) {
+                    print("Cannot build a XGboost model - no backend found.")
                     return(FALSE)
                 } else {
-                   return(TRUE)
+                    return(TRUE)
                 }
             }
         """
@@ -655,7 +929,9 @@ def help_afterword_for(algo):
                m
             }
 
-            #' Extract full regularization path from glm model (assuming it was run with lambda search option)
+            #' Extract full regularization path from a GLM model
+            #'
+            #' Extract the full regularization path from a GLM model (assuming it was run with the lambda search option).
             #'
             #' @param model an \linkS4class{H2OModel} corresponding from a \code{h2o.glm} call.
             #' @export
@@ -726,8 +1002,8 @@ def help_afterword_for(algo):
             #    args <- .verify_dataxy(training_frame, x, y)
             #    parms$ignored_columns <- args$x_ignore
             #    parms$response_column <- args$y
-            #    parms$training_frame  = training_frame
-            #    parms$beta_constraints = beta_constraints
+            #    parms$training_frame  <- training_frame
+            #    parms$beta_constraints <- beta_constraints
             #    if(!missing(model_id))
             #      parms$model_id <- model_id
             #    if(!missing(validation_frame))
@@ -788,12 +1064,11 @@ def help_afterword_for(algo):
             #' \donttest{
             #' library(h2o)
             #' h2o.init()
-            #' irisPath <- system.file("extdata", "iris_wheader.csv", package="h2o")
-            #' iris.hex <- h2o.uploadFile(path = irisPath)
-            #' iris.glrm <- h2o.glrm(training_frame = iris.hex, k = 4, transform = "STANDARDIZE",
+            #' iris_hf <- as.h2o(iris)
+            #' iris_glrm <- h2o.glrm(training_frame = iris_hf, k = 4, transform = "STANDARDIZE",
             #'                       loss = "Quadratic", multi_loss = "Categorical", max_iterations = 1000)
-            #' iris.rec <- h2o.reconstruct(iris.glrm, iris.hex, reverse_transform = TRUE)
-            #' head(iris.rec)
+            #' iris_rec <- h2o.reconstruct(iris_glrm, iris_hf, reverse_transform = TRUE)
+            #' head(iris_rec)
             #' }
             #' @export
             h2o.reconstruct <- function(object, data, reverse_transform=FALSE) {
@@ -821,12 +1096,11 @@ def help_afterword_for(algo):
             #' \donttest{
             #' library(h2o)
             #' h2o.init()
-            #' irisPath <- system.file("extdata", "iris_wheader.csv", package="h2o")
-            #' iris.hex <- h2o.uploadFile(path = irisPath)
-            #' iris.glrm <- h2o.glrm(training_frame = iris.hex, k = 4, loss = "Quadratic",
+            #' iris_hf <- as.h2o(iris)
+            #' iris_glrm <- h2o.glrm(training_frame = iris_hf, k = 4, loss = "Quadratic",
             #'                       multi_loss = "Categorical", max_iterations = 1000)
-            #' iris.parch <- h2o.proj_archetypes(iris.glrm, iris.hex)
-            #' head(iris.parch)
+            #' iris_parch <- h2o.proj_archetypes(iris_glrm, iris_hf)
+            #' head(iris_parch)
             #' }
             #' @export
             h2o.proj_archetypes <- function(object, data, reverse_transform=FALSE) {
@@ -841,6 +1115,7 @@ def algo_to_modelname(algo):
     if algo == "aggregator": return "H2O Aggregator Model"
     if algo == "deeplearning": return "Deep Learning - Neural Network"
     if algo == "deepwater": return "Deep Water - Neural Network"
+    if algo == "xgboost": return "XGBoost"
     if algo == "drf": return "Random Forest Model in H2O"
     if algo == "gbm": return "Gradient Boosting Machine"
     if algo == "glm": return "H2O Generalized Linear Models"
@@ -856,7 +1131,9 @@ def indent(string, n):
     return " " * n + string
 
 def normalize_value(param, is_help = False):
-    if not(is_help) and param["type"][:4] == "enum":  
+    if param["name"] == "metalearner_params":
+        return "NULL"
+    if not(is_help) and param["type"][:4] == "enum":
         return "c(%s)" % ", ".join('"%s"' % p for p in param["values"])
     if param["default_value"] is None:
         if param["type"] in ["short", "int", "long", "double"]:
@@ -866,7 +1143,7 @@ def normalize_value(param, is_help = False):
     if not(is_help) and "[]" in param["type"]:
         if param["name"] == "base_models":
             return "list()"
-        else:    
+        else:
             return "c(%s)" % ", ".join('%s' % p for p in param["default_value"])
     if param["type"] == "boolean":
         return str(param["default_value"]).upper()
@@ -881,13 +1158,12 @@ def main():
     bi.init("R", "../../../h2o-r/h2o-package/R", clear_dir=False)
 
     for name, mb in bi.model_builders().items():
-        if name in ["aggregator"]:
-            continue
         module = name
         file_name = name
         if name == "drf":
             module = "randomForest"
             file_name = "randomforest"
+        if name == "isolationforest": module = "isolationForest"
         if name == "naivebayes": module = "naiveBayes"
         if name == "stackedensemble": module = "stackedEnsemble"
         if name == "pca": module = "prcomp"

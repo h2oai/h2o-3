@@ -25,6 +25,7 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
       {"C1S","1-Byte Fractions"},
       {"C2","2-Byte Integers"},
       {"C2S","2-Byte Fractions"},
+      {"CDecimal","N-Byte Fractions"},
       {"C4","4-Byte Integers"},
       {"C4S","4-Byte Fractions"},
       {"C4F","4-byte Reals"},

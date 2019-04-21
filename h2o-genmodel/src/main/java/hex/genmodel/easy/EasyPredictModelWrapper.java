@@ -2,9 +2,15 @@ package hex.genmodel.easy;
 
 import hex.ModelCategory;
 import hex.genmodel.GenModel;
+import hex.genmodel.IClusteringModel;
+import hex.genmodel.PredictContributions;
+import hex.genmodel.PredictContributionsFactory;
 import hex.genmodel.algos.deepwater.DeepwaterMojoModel;
-import hex.genmodel.algos.word2vec.Word2VecMojoModel;
+import hex.genmodel.algos.tree.SharedTreeMojoModel;
+import hex.genmodel.algos.glrm.GlrmMojoModel;
+import hex.genmodel.algos.deeplearning.DeeplearningMojoModel;
 import hex.genmodel.algos.word2vec.WordEmbeddingModel;
+import hex.genmodel.easy.error.VoidErrorConsumer;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.exception.PredictNumberFormatException;
 import hex.genmodel.easy.exception.PredictUnknownCategoricalLevelException;
@@ -13,16 +19,12 @@ import hex.genmodel.easy.prediction.*;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.Map;
 
 /**
  * An easy-to-use prediction wrapper for generated models.  Instantiate as follows.  The following two are equivalent.
@@ -43,24 +45,61 @@ import java.util.concurrent.atomic.AtomicLong;
  * An alternate behavior is to automatically convert unknown categorical levels to N/A.  To do this, use
  * setConvertUnknownCategoricalLevelsToNa(true) instead.
  *
- * If you choose to convert unknown categorical levels to N/A, you can see how many times this is happening
- * with the following methods:
+ * Detection of unknown categoricals may be observed by registering an implementation of {@link ErrorConsumer}
+ * in the process of {@link Config} creation.
+ * 
+ * Advanced scoring features are disabled by default for performance reasons. Configuration flags
+ * allow the user to output also
+ *  - leaf node assignment,
+ *  - GLRM reconstructed matrix,
+ *  - staged probabilities,
+ *  - prediction contributions (SHAP values).
  *
- *     getTotalUnknownCategoricalLevelsSeen()
- *     getUnknownCategoricalLevelsSeenPerColumn()
+ * Deprecation note: Total number of unknown categorical variables is newly accessible by registering {@link hex.genmodel.easy.error.CountingErrorConsumer}.
+ *
  *
  * <p></p>
  * See the top-of-tree master version of this file <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-genmodel/src/main/java/hex/genmodel/easy/EasyPredictModelWrapper.java" target="_blank">here on github</a>.
  */
-public class EasyPredictModelWrapper implements java.io.Serializable {
+public class EasyPredictModelWrapper implements Serializable {
   // These private members are read-only after the constructor.
-  private final GenModel m;
+  public final GenModel m;
   private final HashMap<String, Integer> modelColumnNameToIndexMap;
-  private final HashMap<Integer, HashMap<String, Integer>> domainMap;
+  public final HashMap<Integer, HashMap<String, Integer>> domainMap;
+  private final ErrorConsumer errorConsumer;
 
   private final boolean convertUnknownCategoricalLevelsToNa;
   private final boolean convertInvalidNumbersToNa;
-  private final ConcurrentHashMap<String,AtomicLong> unknownCategoricalLevelsSeenPerColumn;
+  private final boolean useExtendedOutput;
+  private final boolean enableLeafAssignment;
+  private final boolean enableGLRMReconstruct;  // if set true, will return the GLRM resconstructed value, A_hat=X*Y instead of just X
+  private final boolean enableStagedProbabilities; // if set true, staged probabilities from tree agos are returned
+  private final boolean enableContributions; // if set to true, will return prediction contributions (SHAP values) - for GBM & XGBoost
+
+  private final PredictContributions predictContributions;
+  
+  /**
+   * Observer interface with methods corresponding to errors during the prediction.
+   */
+  public static abstract class ErrorConsumer implements Serializable {
+    /**
+     * Observe transformation error for data from the predicted dataset.
+     *
+     * @param columnName Name of the column for which the error is raised
+     * @param value      Original value that could not be transformed properly
+     * @param message    Transformation error message
+     */
+    public abstract void dataTransformError(String columnName, Object value, String message);
+
+    /**
+     * Previously unseen categorical level has been detected
+     *
+     * @param columnName Name of the column to which the categorical value belongs
+     * @param value      Original value
+     * @param message    Reason and/or actions taken
+     */
+    public abstract void unseenCategorical(String columnName, Object value, String message);
+  }
 
   /**
    * Configuration builder for instantiating a Wrapper.
@@ -69,6 +108,12 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
     private GenModel model;
     private boolean convertUnknownCategoricalLevelsToNa = false;
     private boolean convertInvalidNumbersToNa = false;
+    private boolean useExtendedOutput = false;
+    private ErrorConsumer errorConsumer;
+    private boolean enableLeafAssignment = false;  // default to false
+    private boolean enableGLRMReconstrut = false;
+    private boolean enableStagedProbabilities = false;
+    private boolean enableContributions = false;
 
     /**
      * Specify model object to wrap.
@@ -97,6 +142,54 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
       return this;
     }
 
+    public Config setEnableLeafAssignment(boolean val) throws IOException {
+      if (val && (model==null))
+        throw new IOException("enableLeafAssignment cannot be set with null model.  Call setModel() first.");
+      if (val && !(model instanceof SharedTreeMojoModel))
+        throw new IOException("enableLeafAssignment can be set to true only with SharedTreeMojoModel," +
+                " i.e. with GBM or DRF.");
+
+      enableLeafAssignment = val;
+      return this;
+    }
+
+    public Config setEnableGLRMReconstrut(boolean value) throws IOException {
+      if (value && (model==null))
+        throw new IOException("Cannot set enableGLRMReconstruct for a null model.  Call config.setModel() first.");
+
+      if (value && !(model instanceof GlrmMojoModel))
+        throw new IOException("enableGLRMReconstruct shall only be used with GlrmMojoModels.");
+      enableGLRMReconstrut = value;
+      return this;
+    }
+
+    public Config setEnableStagedProbabilities (boolean val) throws IOException {
+        if (val && (model==null))
+            throw new IOException("enableStagedProbabilities cannot be set with null model.  Call setModel() first.");
+        if (val && !(model instanceof SharedTreeMojoModel))
+            throw new IOException("enableStagedProbabilities can be set to true only with SharedTreeMojoModel," +
+                    " i.e. with GBM or DRF.");
+
+        enableStagedProbabilities  = val;
+        return this;
+    }
+
+    public boolean getEnableGLRMReconstrut() { return enableGLRMReconstrut; }
+
+    public Config setEnableContributions(boolean val) throws IOException {
+      if (val && (model==null))
+        throw new IOException("setEnableContributions cannot be set with null model.  Call setModel() first.");
+      if (val && !(model instanceof PredictContributionsFactory))
+        throw new IOException("setEnableContributions can be set to true only with GBM or XGBoost models.");
+      if (val && (ModelCategory.Multinomial.equals(model.getModelCategory()))) {
+        throw new IOException("setEnableContributions is not yet supported for multinomial classification models.");
+      }
+      enableContributions = val;
+      return this;
+    }
+
+    public boolean getEnableContributions() { return enableContributions; }
+
     /**
      * @return Setting for unknown categorical levels handling
      */
@@ -117,6 +210,47 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
     public boolean getConvertInvalidNumbersToNa() {
       return convertInvalidNumbersToNa;
     }
+
+    /**
+     * Specify whether to include additional metadata in the prediction output.
+     * This feature needs to be supported by a particular model and type of metadata
+     * is model specific.
+     *
+     * @param value if true, then the Prediction result will contain extended information
+     *              about the prediction (this will be specific to a particular model).
+     * @return this config object
+     */
+    public Config setUseExtendedOutput(boolean value) {
+      useExtendedOutput = value;
+      return this;
+    }
+
+    public boolean getUseExtendedOutput() {
+      return useExtendedOutput;
+    }
+
+    public boolean getEnableLeafAssignment() { return enableLeafAssignment;}
+
+    public boolean getEnableStagedProbabilities() { return enableStagedProbabilities;}
+
+    /**
+     * @return An instance of ErrorConsumer used to build the {@link EasyPredictModelWrapper}. Null if there is no instance.
+     */
+    public ErrorConsumer getErrorConsumer() {
+      return errorConsumer;
+    }
+
+    /**
+     * Specify an instance of {@link ErrorConsumer} the {@link EasyPredictModelWrapper} is going to call
+     * whenever an error defined by the {@link ErrorConsumer} instance occurs.
+     *
+     * @param errorConsumer An instance of {@link ErrorConsumer}
+     * @return This {@link Config} object
+     */
+    public Config setErrorConsumer(final ErrorConsumer errorConsumer) {
+      this.errorConsumer = errorConsumer;
+      return this;
+    }
   }
 
   /**
@@ -126,6 +260,8 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
    */
   public EasyPredictModelWrapper(Config config) {
     m = config.getModel();
+    // Ensure an error consumer is always instantiated to avoid missing null-check errors.
+    errorConsumer = config.getErrorConsumer() == null ? new VoidErrorConsumer() : config.getErrorConsumer();
 
     // Create map of column names to index number.
     modelColumnNameToIndexMap = new HashMap<>();
@@ -135,11 +271,23 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
     }
 
     // How to handle unknown categorical levels.
-    unknownCategoricalLevelsSeenPerColumn = new ConcurrentHashMap<>();
     convertUnknownCategoricalLevelsToNa = config.getConvertUnknownCategoricalLevelsToNa();
     convertInvalidNumbersToNa = config.getConvertInvalidNumbersToNa();
-    setupConvertUnknownCategoricalLevelsToNa();
+    useExtendedOutput = config.getUseExtendedOutput();
+    enableLeafAssignment = config.getEnableLeafAssignment();
+    enableGLRMReconstruct = config.getEnableGLRMReconstrut();
+    enableStagedProbabilities = config.getEnableStagedProbabilities();
+    enableContributions = config.getEnableContributions();
 
+    if (enableContributions) {
+      if (!(m instanceof PredictContributionsFactory)) {
+        throw new IllegalStateException("Model " + m.getClass().getName() + " cannot be used to predict contributions.");
+      }
+      predictContributions = ((PredictContributionsFactory) m).makeContributionsPredictor();
+    } else {
+      predictContributions = null;
+    }
+    
     // Create map of input variable domain information.
     // This contains the categorical string to numeric mapping.
     domainMap = new HashMap<>();
@@ -166,34 +314,6 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
             .setModel(model));
   }
 
-  /**
-   * Get the total number unknown categorical levels seen.
-   *
-   * A single prediction may contribute more than one to the count.
-   * The count is only updated when setConvertUnknownCategoricalLevelsToNa is set to true.
-   *
-   * @return A long value.
-   */
-  public long getTotalUnknownCategoricalLevelsSeen() {
-    ConcurrentHashMap<String, AtomicLong> map = getUnknownCategoricalLevelsSeenPerColumn();
-    long total = 0;
-    for (AtomicLong l : map.values()) {
-      total += l.get();
-    }
-    return total;
-  }
-
-  /**
-   * Get unknown categorical level counts.
-   *
-   * A single prediction may contribute to more than one count.
-   * Counts are only updated when setConvertUnknownCategoricalLevelsToNa is set to true.
-   *
-   * @return A hash map with a per-column count of unknown categorical levels seen when making predictions.
-   */
-  public ConcurrentHashMap<String, AtomicLong> getUnknownCategoricalLevelsSeenPerColumn() {
-    return unknownCategoricalLevelsSeenPerColumn;
-  }
 
   /**
    * Make a prediction on a new data point.
@@ -217,6 +337,8 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
         return predictBinomial(data);
       case Multinomial:
         return predictMultinomial(data);
+      case Ordinal:
+        return predictOrdinal(data);
       case Clustering:
         return predictClustering(data);
       case Regression:
@@ -225,6 +347,8 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
         return predictDimReduction(data);
       case WordEmbedding:
         return predictWord2Vec(data);
+      case AnomalyDetection:
+        return predictAnomalyDetection(data);
 
       case Unknown:
         throw new PredictException("Unknown model category");
@@ -239,15 +363,83 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
 
   /**
    * Make a prediction on a new data point using an AutoEncoder model.
-   *
    * @param data A new data point.
    * @return The prediction.
    * @throws PredictException
    */
   public AutoEncoderModelPrediction predictAutoEncoder(RowData data) throws PredictException {
-    double[] preds = preamble(ModelCategory.AutoEncoder, data);
-    throw new RuntimeException("Unimplemented " + preds.length);
+    validateModelCategory(ModelCategory.AutoEncoder);
+
+    int size = m.getPredsSize(ModelCategory.AutoEncoder);
+    double[] output = new double[size];
+    double[] rawData = nanArray(m.nfeatures());
+    rawData = fillRawData(data, rawData);
+    output = m.score0(rawData, output);
+
+    AutoEncoderModelPrediction p = new AutoEncoderModelPrediction();
+    p.original = expandRawData(rawData, output.length);
+    p.reconstructed = output;
+    p.reconstructedRowData = reconstructedToRowData(output);
+    if (m instanceof DeeplearningMojoModel){
+      DeeplearningMojoModel mojoModel = ((DeeplearningMojoModel)m);
+      p.mse =  mojoModel.calculateReconstructionErrorPerRowData(p.original, p.reconstructed);
+    }
+    return p;
   }
+
+  /**
+   * Creates a 1-hot encoded representation of the input data.
+   * @param data raw input as seen by the score0 function
+   * @param size target size of the output array
+   * @return 1-hot encoded data
+   */
+  private double[] expandRawData(double[] data, int size) {
+    double[] expanded = new double[size];
+    int pos = 0;
+    for (int i = 0; i < data.length; i++) {
+      if (m._domains[i] == null) {
+        expanded[pos] = data[i];
+        pos++;
+      } else {
+        int idx = Double.isNaN(data[i]) ? m._domains[i].length : (int) data[i];
+        expanded[pos + idx] = 1.0;
+        pos += m._domains[i].length + 1;
+      }
+    }
+    return expanded;
+  }
+
+  /**
+   * Converts output of AutoEncoder to a RowData structure. Categorical fields are represented by
+   * a map of domain values -> reconstructed values, missing domain value is represented by a 'null' key
+   * @param reconstructed raw output of AutoEncoder
+   * @return reconstructed RowData structure
+   */
+  private RowData reconstructedToRowData(double[] reconstructed) {
+    RowData rd = new RowData();
+    int pos = 0;
+    for (int i = 0; i < m.nfeatures(); i++) {
+      Object value;
+      if (m._domains[i] == null) {
+        value = reconstructed[pos++];
+      } else {
+        value = catValuesAsMap(m._domains[i], reconstructed, pos);
+        pos += m._domains[i].length + 1;
+      }
+      rd.put(m._names[i], value);
+    }
+    return rd;
+  }
+
+  private static Map<String, Double> catValuesAsMap(String[] cats, double[] reconstructed, int offset) {
+    Map<String, Double> result = new HashMap<>(cats.length + 1);
+    for (int i = 0; i < cats.length; i++) {
+      result.put(cats[i], reconstructed[i + offset]);
+    }
+    result.put(null, reconstructed[offset + cats.length]);
+    return result;
+  }
+
   /**
    * Make a prediction on a new data point using a Dimension Reduction model (PCA, GLRM)
    * @param data A new data point.
@@ -255,13 +447,17 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
    * @throws PredictException
    */
   public DimReductionModelPrediction predictDimReduction(RowData data) throws PredictException {
-    double[] preds = preamble(ModelCategory.DimReduction, data);
+    double[] preds = preamble(ModelCategory.DimReduction, data);  // preds contains the x factor
 
     DimReductionModelPrediction p = new DimReductionModelPrediction();
     p.dimensions = preds;
-
+    if (m instanceof GlrmMojoModel && ((GlrmMojoModel) m)._archetypes_raw != null && this.enableGLRMReconstruct)  // only for verion 1.10 or higher
+      p.reconstructed = ((GlrmMojoModel) m).impute_data(preds, new double[m.nfeatures()], ((GlrmMojoModel) m)._nnums,
+              ((GlrmMojoModel) m)._ncats, ((GlrmMojoModel) m)._permutation, ((GlrmMojoModel) m)._reverse_transform,
+              ((GlrmMojoModel) m)._normMul, ((GlrmMojoModel) m)._normSub, ((GlrmMojoModel) m)._losses,
+              ((GlrmMojoModel) m)._transposed, ((GlrmMojoModel) m)._archetypes_raw, ((GlrmMojoModel) m)._catOffsets,
+              ((GlrmMojoModel) m)._numLevels);
     return p;
-
   }
   /**
    * Lookup word embeddings for a given word (or set of words).
@@ -292,6 +488,33 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
     return p;
 
   }
+
+  /**
+   * Make a prediction on a new data point using a Binomial model.
+   *
+   * @param data A new data point.
+   * @return The prediction.
+   * @throws PredictException
+   */
+  public AnomalyDetectionPrediction predictAnomalyDetection(RowData data) throws PredictException {
+    double[] preds = preamble(ModelCategory.AnomalyDetection, data, 0.0);
+
+    AnomalyDetectionPrediction p = new AnomalyDetectionPrediction();
+    p.normalizedScore = preds[0];
+    p.score = preds[1];
+    if (enableLeafAssignment) { // only get leaf node assignment if enabled
+      SharedTreeMojoModel.LeafNodeAssignments assignments = leafNodeAssignmentExtended(data);
+      p.leafNodeAssignments = assignments._paths;
+      p.leafNodeAssignmentIds = assignments._nodeIds;
+    }
+    if (enableStagedProbabilities) {
+        double[] rawData = nanArray(m.nfeatures());
+        rawData = fillRawData(data, rawData);
+        p.stageProbabilities = ((SharedTreeMojoModel) m).scoreStagedPredictions(rawData, preds.length);
+    }
+    return p;
+  }
+
   /**
    * Make a prediction on a new data point using a Binomial model.
    *
@@ -300,12 +523,31 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
    * @throws PredictException
    */
   public BinomialModelPrediction predictBinomial(RowData data) throws PredictException {
-    double[] preds = preamble(ModelCategory.Binomial, data);
+    return predictBinomial(data, 0.0);
+  }
+
+  /**
+   * Make a prediction on a new data point using a Binomial model.
+   *
+   * @param data A new data point.
+   * @param offset An offset for the prediction.
+   * @return The prediction.
+   * @throws PredictException
+   */
+  public BinomialModelPrediction predictBinomial(RowData data, double offset) throws PredictException {
+    double[] preds = preamble(ModelCategory.Binomial, data, offset);
 
     BinomialModelPrediction p = new BinomialModelPrediction();
+    if (enableLeafAssignment) { // only get leaf node assignment if enabled
+      SharedTreeMojoModel.LeafNodeAssignments assignments = leafNodeAssignmentExtended(data);
+      p.leafNodeAssignments = assignments._paths;
+      p.leafNodeAssignmentIds = assignments._nodeIds;
+    }
     double d = preds[0];
     p.labelIndex = (int) d;
     String[] domainValues = m.getDomainValues(m.getResponseIdx());
+    if (domainValues == null && m.getNumResponseClasses() == 2)
+      domainValues = new String[]{"0", "1"}; // quasibinomial
     p.label = domainValues[p.labelIndex];
     p.classProbabilities = new double[m.getNumResponseClasses()];
     System.arraycopy(preds, 1, p.classProbabilities, 0, p.classProbabilities.length);
@@ -313,7 +555,30 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
       p.calibratedClassProbabilities = new double[m.getNumResponseClasses()];
       System.arraycopy(preds, 1, p.calibratedClassProbabilities, 0, p.calibratedClassProbabilities.length);
     }
+    if (enableStagedProbabilities) {
+        double[] rawData = nanArray(m.nfeatures());
+        rawData = fillRawData(data, rawData);
+        p.stageProbabilities = ((SharedTreeMojoModel) m).scoreStagedPredictions(rawData, preds.length);
+    }
+    if (enableContributions) {
+      double[] rawData = nanArray(m.nfeatures());
+      rawData = fillRawData(data, rawData);
+      p.contributions = predictContributions.calculateContributions(rawData);
+    }
     return p;
+  }
+
+  @SuppressWarnings("unused") // not used in this class directly, kept for backwards compatibility
+  public String[] leafNodeAssignment(RowData data) throws PredictException {
+    double[] rawData = nanArray(m.nfeatures());
+    rawData = fillRawData(data, rawData);
+    return ((SharedTreeMojoModel) m).getDecisionPath(rawData);
+  }
+
+  public SharedTreeMojoModel.LeafNodeAssignments leafNodeAssignmentExtended(RowData data) throws PredictException {
+    double[] rawData = nanArray(m.nfeatures());
+    rawData = fillRawData(data, rawData);
+    return ((SharedTreeMojoModel) m).getLeafNodeAssignments(rawData);
   }
 
   /**
@@ -324,9 +589,62 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
    * @throws PredictException
    */
   public MultinomialModelPrediction predictMultinomial(RowData data) throws PredictException {
-    double[] preds = preamble(ModelCategory.Multinomial, data);
+    return predictMultinomial(data, 0D);
+  }
+
+  /**
+   * Make a prediction on a new data point using a Multinomial model.
+   *
+   * @param data A new data point.
+   * @param offset Prediction offset
+   * @return The prediction.
+   * @throws PredictException
+   */
+  public MultinomialModelPrediction predictMultinomial(RowData data, double offset) throws PredictException {
+    double[] preds = preamble(ModelCategory.Multinomial, data, offset);
 
     MultinomialModelPrediction p = new MultinomialModelPrediction();
+    if (enableLeafAssignment) { // only get leaf node assignment if enabled
+      SharedTreeMojoModel.LeafNodeAssignments assignments = leafNodeAssignmentExtended(data);
+      p.leafNodeAssignments = assignments._paths;
+      p.leafNodeAssignmentIds = assignments._nodeIds;
+    }
+    p.classProbabilities = new double[m.getNumResponseClasses()];
+    p.labelIndex = (int) preds[0];
+    String[] domainValues = m.getDomainValues(m.getResponseIdx());
+    p.label = domainValues[p.labelIndex];
+    System.arraycopy(preds, 1, p.classProbabilities, 0, p.classProbabilities.length);
+    if (enableStagedProbabilities) {
+        double[] rawData = nanArray(m.nfeatures());
+        rawData = fillRawData(data, rawData);
+        p.stageProbabilities = ((SharedTreeMojoModel) m).scoreStagedPredictions(rawData, preds.length);
+    }
+    return p;
+  }
+
+  /**
+   * Make a prediction on a new data point using a Ordinal model.
+   *
+   * @param data A new data point.
+   * @return The prediction.
+   * @throws PredictException
+   */
+  public OrdinalModelPrediction predictOrdinal(RowData data) throws PredictException {
+    return predictOrdinal(data, 0D);
+  }
+
+  /**
+   * Make a prediction on a new data point using a Ordinal model.
+   *
+   * @param data A new data point.
+   * @param offset Prediction offset
+   * @return The prediction.
+   * @throws PredictException
+   */
+  public OrdinalModelPrediction predictOrdinal(RowData data, double offset) throws PredictException {
+    double[] preds = preamble(ModelCategory.Ordinal, data, offset);
+
+    OrdinalModelPrediction p = new OrdinalModelPrediction();
     p.classProbabilities = new double[m.getNumResponseClasses()];
     p.labelIndex = (int) preds[0];
     String[] domainValues = m.getDomainValues(m.getResponseIdx());
@@ -364,18 +682,6 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
     return sortByDescendingClassProbability(domainValues, classProbabilities);
   }
 
-  /**
-   * A helper function to return an array of multinomial class probabilities for a prediction in sorted order.
-   * The returned array has the most probable class in position 0.
-   *
-   * @param p The prediction.
-   * @return An array with sorted class probabilities.
-   */
-  public SortedClassProbability[] sortByDescendingClassProbability(MultinomialModelPrediction p) {
-    String[] domainValues = m.getDomainValues(m.getResponseIdx());
-    double[] classProbabilities = p.classProbabilities;
-    return sortByDescendingClassProbability(domainValues, classProbabilities);
-  }
 
   /**
    * Make a prediction on a new data point using a Clustering model.
@@ -385,10 +691,20 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
    * @throws PredictException
    */
   public ClusteringModelPrediction predictClustering(RowData data) throws PredictException {
-    double[] preds = preamble(ModelCategory.Clustering, data);
-
     ClusteringModelPrediction p = new ClusteringModelPrediction();
-    p.cluster = (int) preds[0];
+    if (useExtendedOutput && (m instanceof IClusteringModel)) {
+      IClusteringModel cm = (IClusteringModel) m;
+      // setup raw input
+      double[] rawData = nanArray(m.nfeatures());
+      rawData = fillRawData(data, rawData);
+      // get cluster assignment & distances
+      final int k = cm.getNumClusters();
+      p.distances = new double[k];
+      p.cluster = cm.distances(rawData, p.distances);
+    } else {
+      double[] preds = preamble(ModelCategory.Clustering, data);
+      p.cluster = (int) preds[0];
+    }
 
     return p;
   }
@@ -401,30 +717,37 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
    * @throws PredictException
    */
   public RegressionModelPrediction predictRegression(RowData data) throws PredictException {
-    double[] preds = preamble(ModelCategory.Regression, data);
-
-    RegressionModelPrediction p = new RegressionModelPrediction();
-    p.value = preds[0];
-
-    return p;
+    return predictRegression(data, 0D);
   }
 
   /**
-   * Make a prediction on a new data point using a k-LIME model.
+   * Make a prediction on a new data point using a Regression model.
    *
    * @param data A new data point.
+   * @param offset Prediction offset
    * @return The prediction.
    * @throws PredictException
    */
-  public KLimeModelPrediction predictKLime(RowData data) throws PredictException {
-    double[] preds = preamble(ModelCategory.Regression, data);
+  public RegressionModelPrediction predictRegression(RowData data, double offset) throws PredictException {
+    double[] preds = preamble(ModelCategory.Regression, data, offset);
 
-    KLimeModelPrediction p = new KLimeModelPrediction();
+    RegressionModelPrediction p = new RegressionModelPrediction();
+    if (enableLeafAssignment) { // only get leaf node assignment if enabled
+      SharedTreeMojoModel.LeafNodeAssignments assignments = leafNodeAssignmentExtended(data);
+      p.leafNodeAssignments = assignments._paths;
+      p.leafNodeAssignmentIds = assignments._nodeIds;
+    }
     p.value = preds[0];
-    p.cluster = (int) preds[1];
-    p.reasonCodes = new double[preds.length - 2];
-    System.arraycopy(preds, 2, p.reasonCodes, 0, p.reasonCodes.length);
-
+    if (enableStagedProbabilities) {
+        double[] rawData = nanArray(m.nfeatures());
+        rawData = fillRawData(data, rawData);
+        p.stageProbabilities = ((SharedTreeMojoModel) m).scoreStagedPredictions(rawData, preds.length);
+    }
+    if (enableContributions) {
+      double[] rawData = nanArray(m.nfeatures());
+      rawData = fillRawData(data, rawData);
+      p.contributions = predictContributions.calculateContributions(rawData);
+    }
     return p;
   }
 
@@ -463,20 +786,8 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
   // Private methods below this line.
   //----------------------------------------------------------------------
 
-  private void setupConvertUnknownCategoricalLevelsToNa() {
-    if (convertUnknownCategoricalLevelsToNa) {
-      for (int i = 0; i < m.getNumCols(); i++) {
-        String[] domainValues = m.getDomainValues(i);
-        if (domainValues != null) {
-          String columnName = m.getNames()[i];
-          unknownCategoricalLevelsSeenPerColumn.put(columnName, new AtomicLong());
-        }
-      }
-    }
-    else {
-      unknownCategoricalLevelsSeenPerColumn.clear();
-    }
-  }
+
+
 
   private void validateModelCategory(ModelCategory c) throws PredictException {
     if (!m.getModelCategories().contains(c))
@@ -484,18 +795,23 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
   }
 
   // This should have been called predict(), because that's what it does
-  private double[] preamble(ModelCategory c, RowData data) throws PredictException {
+  protected double[] preamble(ModelCategory c, RowData data) throws PredictException {
+    return preamble(c, data, 0.0);
+  }
+  protected double[] preamble(ModelCategory c, RowData data, double offset) throws PredictException {
     validateModelCategory(c);
-    return predict(data, new double[m.getPredsSize(c)]);
+    return predict(data, offset, new double[m.getPredsSize(c)]);
   }
 
-  private void setToNaN(double[] arr) {
-    for (int i = 0; i < arr.length; i++) {
+  private static double[] nanArray(int len) {
+    double[] arr = new double[len];
+    for (int i = 0; i < len; i++) {
       arr[i] = Double.NaN;
     }
+    return arr;
   }
 
-  private double[] fillRawData(RowData data, double[] rawData) throws PredictException {
+  protected double[] fillRawData(RowData data, double[] rawData) throws PredictException {
 
     // TODO: refactor
     boolean isImage = m instanceof DeepwaterMojoModel && ((DeepwaterMojoModel) m)._problem_type.equals("image");
@@ -572,6 +888,11 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
             rawData[i] = _destData[i];
           return rawData;
         }
+
+        if (Double.isNaN(value)) {
+          // If this point is reached, the original value remains NaN.
+          errorConsumer.dataTransformError(dataColumnName, o, "Given non-categorical value is unparseable, treating as NaN.");
+        }
         rawData[index] = value;
       }
       else {
@@ -588,9 +909,9 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
           if (levelIndex == null) {
             if (convertUnknownCategoricalLevelsToNa) {
               value = Double.NaN;
-              unknownCategoricalLevelsSeenPerColumn.get(dataColumnName).incrementAndGet();
-            }
-            else {
+              errorConsumer.unseenCategorical(dataColumnName, o, "Previously unseen categorical level detected, marking as NaN.");
+            } else {
+              errorConsumer.dataTransformError(dataColumnName, o, "Unknown categorical level detected.");
               throw new PredictUnknownCategoricalLevelException("Unknown categorical level (" + dataColumnName + "," + levelName + ")", dataColumnName, levelName);
             }
           }
@@ -598,8 +919,10 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
             value = levelIndex;
           }
         } else if (o instanceof Double && Double.isNaN((double)o)) {
+            errorConsumer.dataTransformError(dataColumnName, o, "Missing factor value detected, setting to NaN");
           value = (double)o; //Missing factor is the only Double value allowed
         } else {
+          errorConsumer.dataTransformError(dataColumnName, o, "Unknown categorical variable type.");
           throw new PredictUnknownTypeException(
                   "Unexpected object type " + o.getClass().getName() + " for categorical column " + dataColumnName);
         }
@@ -609,11 +932,16 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
     return rawData;
   }
 
-  private double[] predict(RowData data, double[] preds) throws PredictException {
-    double[] rawData = new double[m.nfeatures()];
-    setToNaN(rawData);
+  protected double[] predict(RowData data, double offset, double[] preds) throws PredictException {
+    double[] rawData = nanArray(m.nfeatures());
     rawData = fillRawData(data, rawData);
-    preds = m.score0(rawData, preds);
+    if (offset == 0) {
+      preds = m.score0(rawData, preds);
+    }
+    else {
+      preds = m.score0(rawData, offset, preds);
+    }
     return preds;
   }
+
 }

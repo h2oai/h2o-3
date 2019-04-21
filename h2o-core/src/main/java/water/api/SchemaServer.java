@@ -1,11 +1,5 @@
 package water.api;
 
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
 import water.H2O;
 import water.Iced;
 import water.exceptions.H2OIllegalArgumentException;
@@ -14,6 +8,12 @@ import water.util.Log;
 import water.util.Pair;
 import water.util.ReflectionUtils;
 
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  *
  */
@@ -21,6 +21,7 @@ public class SchemaServer {
 
   private static final int HIGHEST_SUPPORTED_VERSION = 4;
   private static final int EXPERIMENTAL_VERSION = 99;
+  private static final int STABLE_VERSION = 3;
   private static int LATEST_VERSION = -1;
   private static boolean schemas_registered = false;
 
@@ -66,13 +67,13 @@ public class SchemaServer {
    */
   public static int getExperimentalVersion() { return EXPERIMENTAL_VERSION; }
 
+  public static int getStableVersion() { return STABLE_VERSION; }
+
 
   public static void checkIfRegistered(Schema schema) {
     if (schemas_registered && !schema_to_iced.containsKey(schema.getSchemaName()))
       throw H2O.fail("Schema " + schema.getSchemaName() + " was instantiated before it was registered...\n"
-                     + "Did you forget to add an entry into your META-INF/services/water.api.Schema file, or\n"
-                     + "annotate your '" + schema.getSchemaName() + "' by annotation @AutoService(water.api.Schema.class)\n"
-                     + "if you are using auto-service?");
+                     + "Did you forget to add an entry into your META-INF/services/water.api.Schema file?");
   }
 
 
@@ -148,6 +149,7 @@ public class SchemaServer {
           if (name.equals("__meta") || name.equals("__http_status") || name.equals("_exclude_fields") ||
               name.equals("__schema") || name.equals("_fields")) continue;
           if (name.equals("Gini")) continue; // proper name
+          if (name.equals("pr_auc")) continue;
           if (name.endsWith("AUC")) continue; // trainAUC, validAUC
 
           // TODO: remove after we move these into a TwoDimTable:

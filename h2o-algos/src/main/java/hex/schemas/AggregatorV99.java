@@ -22,12 +22,15 @@ public class AggregatorV99 extends ModelBuilderSchema<Aggregator,AggregatorV99,A
 //            "radius_scale",
             "transform",
             "categorical_encoding",
+            "save_mapping_frame",
+            "num_iteration_without_new_exemplar",
 //            "pca_method",
 //            "k",
 //            "max_iterations",
 //            "seed",
 //            "use_all_factor_levels",
 //            "max_runtime_secs"
+            "export_checkpoints_dir"
     };
 //    @API(help = "Radius scaling", gridable = true)
 //    public double radius_scale;
@@ -47,7 +50,7 @@ public class AggregatorV99 extends ModelBuilderSchema<Aggregator,AggregatorV99,A
     @API(help = "Targeted number of exemplars", direction = API.Direction.INOUT, gridable = true, level= API.Level.secondary)
     public int target_num_exemplars;
 
-    @API(help = "Relative tolerance for number of exemplars (e.g, 0.5 is +/- 50%)", direction = API.Direction.INOUT, gridable = true, level= API.Level.secondary)
+    @API(help = "Relative tolerance for number of exemplars (e.g, 0.5 is +/- 50 percents)", direction = API.Direction.INOUT, gridable = true, level= API.Level.secondary)
     public double rel_tol_num_exemplars;
 
     @API(help = "RNG seed for initialization", direction = API.Direction.INOUT, level= API.Level.secondary)
@@ -55,5 +58,11 @@ public class AggregatorV99 extends ModelBuilderSchema<Aggregator,AggregatorV99,A
 
     @API(help = "Whether first factor level is included in each categorical expansion", direction = API.Direction.INOUT, level= API.Level.expert)
     public boolean use_all_factor_levels;
+
+    @API(help = "Whether to export the mapping of the aggregated frame", direction = API.Direction.INOUT, level= API.Level.expert)
+    public boolean save_mapping_frame;
+
+    @API(help = "The number of iterations to run before aggregator exits if the number of exemplars collected didn't change", direction = API.Direction.INOUT, level= API.Level.expert)
+    public int num_iteration_without_new_exemplar;
   }
 }

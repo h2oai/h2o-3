@@ -1,21 +1,23 @@
 package water.api;
 
-import java.io.*;
-import java.net.URI;
-import java.util.*;
-
 import hex.Model;
-import hex.ModelMojoWriter;
 import hex.PartialDependence;
-import hex.genmodel.MojoModel;
 import water.*;
-import water.api.FramesHandler.Frames;
 import water.api.schemas3.*;
-import water.exceptions.*;
+import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2OKeyNotFoundArgumentException;
+import water.exceptions.H2OKeyWrongTypeArgumentException;
+import water.exceptions.H2OKeysNotFoundArgumentException;
 import water.fvec.Frame;
 import water.persist.Persist;
 import water.util.FileUtils;
 import water.util.JCodeGen;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.URI;
+import java.util.*;
 
 public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,S>>
     extends Handler {
@@ -26,30 +28,13 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
     public Model[] models;
     public boolean find_compatible_frames = false;
 
-    public static Model[] fetchAll() {
-      final Key[] modelKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
-        @Override
-        public boolean filter(KeySnapshot.KeyInfo k) {
-          return Value.isSubclassOf(k._type, Model.class);
-        }
-      }).keys();
-
-      Model[] models = new Model[modelKeys.length];
-      for (int i = 0; i < modelKeys.length; i++) {
-        Model model = getFromDKV("(none)", modelKeys[i]);
-        models[i] = model;
-      }
-
-      return models;
-    }
-
     /**
      * Fetch all the Frames so we can see if they are compatible with our Model(s).
      */
     protected Map<Frame, Set<String>> fetchFrameCols() {
       if (!find_compatible_frames) return null;
       // caches for this request
-      Frame[] all_frames = Frames.fetchAll();
+      Frame[] all_frames = Frame.fetchAll();
       Map<Frame, Set<String>> all_frames_cols = new HashMap<>();
       for (Frame f : all_frames)
         all_frames_cols.put(f, new HashSet<>(Arrays.asList(f._names)));
@@ -91,7 +76,7 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public ModelsV3 list(int version, ModelsV3 s) {
     Models m = s.createAndFillImpl();
-    m.models = Models.fetchAll();
+    m.models = Model.fetchAll();
     return (ModelsV3) s.fillFromImplWithSynopsis(m);
   }
 
@@ -136,12 +121,12 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
       m.models = new Model[1];
       m.models[0] = model;
       m.find_compatible_frames = true;
-      Frame[] compatible = Models.findCompatibleFrames(model, Frames.fetchAll(), m.fetchFrameCols());
+      Frame[] compatible = Models.findCompatibleFrames(model, Frame.fetchAll(), m.fetchFrameCols());
       s.compatible_frames = new FrameV3[compatible.length]; // TODO: FrameBaseV3
       ((ModelSchemaV3)s.models[0]).compatible_frames = new String[compatible.length];
       int i = 0;
       for (Frame f : compatible) {
-        s.compatible_frames[i] = new FrameV3(f).fillFromImpl(f); // TODO: FrameBaseV3
+        s.compatible_frames[i] = new FrameV3(f);
         ((ModelSchemaV3)s.models[0]).compatible_frames[i] = f._key.toString();
         i++;
       }
@@ -152,6 +137,9 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
 
   public StreamingSchema fetchJavaCode(int version, ModelsV3 s) {
     final Model model = getFromDKV("key", s.model_id.key());
+    if (!model.havePojo()) {
+      throw H2O.unimpl(String.format("%s does not support export to POJO", model._parms.fullName()));
+    }
     final String filename = JCodeGen.toJavaId(s.model_id.key().toString()) + ".java";
     // Return stream writer for given model
     return new StreamingSchema(model.new JavaModelStreamWriter(s.preview), filename);
@@ -160,6 +148,9 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
   @SuppressWarnings("unused") // called from the RequestServer through reflection
   public StreamingSchema fetchMojo(int version, ModelsV3 s) {
     Model model = getFromDKV("key", s.model_id.key());
+    if (!model.haveMojo()) {
+      throw H2O.unimpl(String.format("%s does not support export to MOJO", model._parms.fullName()));
+    }
     String filename = JCodeGen.toJavaId(s.model_id.key().toString()) + ".zip";
     return new StreamingSchema(model.getMojo(), filename);
   }
@@ -211,45 +202,36 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
     return models;
   }
 
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public ModelsV3 importModel(int version, ModelImportV3 mimport) {
     ModelsV3 s = Schema.newInstance(ModelsV3.class);
     try {
-      URI targetUri = FileUtils.getURI(mimport.dir);
-      Persist p = H2O.getPM().getPersistForURI(targetUri);
-      InputStream is = p.open(targetUri.toString());
-      final AutoBuffer ab = new AutoBuffer(is);
-      ab.sourceName = targetUri.toString();
-      Model model = (Model)Keyed.readAll(ab);
+      Model<?, ?, ?> model = Model.importBinaryModel(mimport.dir);
       s.models = new ModelSchemaV3[]{(ModelSchemaV3) SchemaServer.schema(version, model).fillFromImpl(model)};
-    } catch (FSIOException e) {
-      throw new H2OIllegalArgumentException("dir", "importModel", mimport.dir);
+    } catch (IOException | FSIOException e) {
+      throw new H2OIllegalArgumentException("dir", "importModel", e);
     }
     return s;
   }
 
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public ModelExportV3 exportModel(int version, ModelExportV3 mexport) {
     Model model = getFromDKV("model_id", mexport.model_id.key());
     try {
-      URI targetUri = FileUtils.getURI(mexport.dir); // Really file, not dir
-      Persist p = H2O.getPM().getPersistForURI(targetUri);
-      OutputStream os = p.create(targetUri.toString(),mexport.force);
-      model.writeAll(new AutoBuffer(os,true)).close();
+      URI targetUri = model.exportBinaryModel(mexport.dir, mexport.force); // mexport.dir: Really file, not dir
       // Send back
       mexport.dir = "file".equals(targetUri.getScheme()) ? new File(targetUri).getCanonicalPath() : targetUri.toString();
-    } catch (IOException e) {
+    } catch (IOException | FSIOException e) {
       throw new H2OIllegalArgumentException("dir", "exportModel", e);
     }
     return mexport;
   }
 
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public ModelExportV3 exportMojo(int version, ModelExportV3 mexport) {
     Model model = getFromDKV("model_id", mexport.model_id.key());
     try {
-      URI targetUri = FileUtils.getURI(mexport.dir); // Really file, not dir
-      Persist p = H2O.getPM().getPersistForURI(targetUri);
-      OutputStream os = p.create(targetUri.toString(),mexport.force);
-      ModelMojoWriter mojo = model.getMojo();
-      mojo.writeTo(os);
+      URI targetUri = model.exportMojo(mexport.dir, mexport.force); // mexport.dir: Really file, not dir
       // Send back
       mexport.dir = "file".equals(targetUri.getScheme()) ? new File(targetUri).getCanonicalPath() : targetUri.toString();
     } catch (IOException e) {
@@ -258,6 +240,7 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
     return mexport;
   }
 
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public ModelExportV3 exportModelDetails(int version, ModelExportV3 mexport){
     Model model = getFromDKV("model_id", mexport.model_id.key());
     try {

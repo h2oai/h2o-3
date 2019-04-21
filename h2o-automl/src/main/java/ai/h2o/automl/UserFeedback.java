@@ -3,6 +3,7 @@ package ai.h2o.automl;
 import water.DKV;
 import water.Key;
 import water.Keyed;
+import water.util.Log;
 import water.util.TwoDimTable;
 
 import static water.Key.make;
@@ -16,30 +17,33 @@ public class UserFeedback extends Keyed<UserFeedback> {
     this.autoML = autoML;
 
     UserFeedback old = DKV.getGet(this._key);
-
-    if (null == old) {
+    if (null == old || null == feedbackEvents) {
       feedbackEvents = new UserFeedbackEvent[0];
       DKV.put(this);
     }
   }
 
-  private UserFeedback() {
+  public static String idForRun(Key<AutoML> runKey) {
+    if (null == runKey)
+      return "AutoML_Feedback_dummy";
+    return "AutoML_Feedback_" + runKey.toString();
   }
-
-  public static String idForRun(Key<AutoML> runKey) { return "AutoML_Feedback_" + runKey.toString(); }
 
   /** Add a Debug UserFeedbackEvent and log. */
   public void debug(UserFeedbackEvent.Stage stage, String message) {
+    Log.debug(stage+": "+message);
     addEvent(new UserFeedbackEvent(autoML, UserFeedbackEvent.Level.Debug, stage, message));
   }
 
   /** Add a Info UserFeedbackEvent and log. */
   public void info(UserFeedbackEvent.Stage stage, String message) {
+    Log.info(stage+": "+message);
     addEvent(new UserFeedbackEvent(autoML, UserFeedbackEvent.Level.Info, stage, message));
   }
 
   /** Add a Warn UserFeedbackEvent and log. */
   public void warn(UserFeedbackEvent.Stage stage, String message) {
+    Log.warn(stage+": "+message);
     addEvent(new UserFeedbackEvent(autoML, UserFeedbackEvent.Level.Warn, stage, message));
   }
 
@@ -54,8 +58,6 @@ public class UserFeedback extends Keyed<UserFeedback> {
     feedbackEvents = new UserFeedbackEvent[feedbackEvents.length + 1];
     System.arraycopy(oldEvents, 0, feedbackEvents, 0, oldEvents.length);
     feedbackEvents[oldEvents.length] = event;
-
-    EckoClient.addEvent(event);
   } // addEvent
 
   /**

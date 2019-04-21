@@ -31,10 +31,10 @@ from h2o.schemas.error import H2OErrorV3, H2OModelBuilderErrorV3
 from h2o.two_dim_table import H2OTwoDimTable
 from h2o.utils.backward_compatibility import backwards_compatible, CallableString
 from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.shared_utils import stringify_list, print2
+from h2o.utils.shared_utils import stringify_list, stringify_dict, print2
 from h2o.utils.typechecks import (assert_is_type, assert_matches, assert_satisfies, is_type, numeric)
 from h2o.model.metrics_base import (H2ORegressionModelMetrics, H2OClusteringModelMetrics, H2OBinomialModelMetrics,
-                                    H2OMultinomialModelMetrics, H2OAutoEncoderModelMetrics)
+                                    H2OMultinomialModelMetrics, H2OOrdinalModelMetrics, H2OAutoEncoderModelMetrics)
 
 __all__ = ("H2OConnection", "H2OConnectionConf", )
 
@@ -70,7 +70,7 @@ class H2OConnectionConf(object):
     """List of allowed property names exposed by this class"""
     allowed_properties = ["ip", "port", "https", "context_path", "verify_ssl_certificates",
                           "proxy", "auth", "cookies", "verbose"]
-    
+
     def _fill_from_config(self, config):
         """
         Fill this instance from given dictionary.
@@ -209,7 +209,7 @@ class H2OConnection(backwards_compatible()):
     url_pattern = r"^(https?)://((?:[\w-]+\.)*[\w-]+):(\d+)/?((/[\w-]+)+)?$"
 
     @staticmethod
-    def open(server=None, url=None, ip=None, port=None, https=None, auth=None, verify_ssl_certificates=True,
+    def open(server=None, url=None, ip=None, port=None, name=None, https=None, auth=None, verify_ssl_certificates=True,
              proxy=None, cookies=None, verbose=True, _msgs=None):
         r"""
         Establish connection to an existing H2O server.
@@ -233,6 +233,7 @@ class H2OConnection(backwards_compatible()):
         :param url: full url of the server to connect to.
         :param ip: target server's IP address or hostname (default "localhost").
         :param port: H2O server's port (default 54321).
+        :param name: H2O cluster name.
         :param https: if True then connect using https instead of http (default False).
         :param verify_ssl_certificates: if False then SSL certificate checking will be disabled (default True). This
             setting should rarely be disabled, as it makes your connection vulnerable to man-in-the-middle attacks. When
@@ -257,7 +258,8 @@ class H2OConnection(backwards_compatible()):
         if server is not None:
             assert_is_type(server, H2OLocalServer)
             assert_is_type(ip, None, "`ip` should be None when `server` parameter is supplied")
-            assert_is_type(url, None, "`ip` should be None when `server` parameter is supplied")
+            assert_is_type(url, None, "`url` should be None when `server` parameter is supplied")
+            assert_is_type(name, None, "`name` should be None when `server` parameter is supplied")
             if not server.is_running():
                 raise H2OConnectionError("Unable to connect to server because it is not running")
             ip = server.ip
@@ -267,6 +269,7 @@ class H2OConnection(backwards_compatible()):
         elif url is not None:
             assert_is_type(url, str)
             assert_is_type(ip, None, "`ip` should be None when `url` parameter is supplied")
+            assert_is_type(name, str, None)
             # We don't allow any Unicode characters in the URL. Maybe some day we will...
             match = assert_matches(url, H2OConnection.url_pattern)
             scheme = match.group(1)
@@ -280,6 +283,7 @@ class H2OConnection(backwards_compatible()):
             if is_type(port, str) and port.isdigit(): port = int(port)
             assert_is_type(ip, str)
             assert_is_type(port, int)
+            assert_is_type(name, str, None)
             assert_is_type(https, bool)
             assert_matches(ip, r"(?:[\w-]+\.)*[\w-]+")
             assert_satisfies(port, 1 <= port <= 65535)
@@ -297,6 +301,7 @@ class H2OConnection(backwards_compatible()):
         conn._verbose = bool(verbose)
         conn._local_server = server
         conn._base_url = "%s://%s:%d%s" % (scheme, ip, port, context_path)
+        conn._name = server.name if server else name
         conn._verify_ssl_cert = bool(verify_ssl_certificates)
         conn._auth = auth
         conn._cookies = cookies
@@ -445,7 +450,7 @@ class H2OConnection(backwards_compatible()):
         Return the session id of the current connection.
 
         The session id is issued (through an API request) the first time it is requested, but no sooner. This is
-        because generating a session id puts it into the DKV on the server, which effectively locks the cloud. Once
+        because generating a session id puts it into the DKV on the server, which effectively locks the cluster. Once
         issued, the session id will stay the same until the connection is closed.
         """
         if self._session_id is None:
@@ -455,13 +460,17 @@ class H2OConnection(backwards_compatible()):
 
     @property
     def cluster(self):
-        """H2OCluster object describing the underlying cloud."""
+        """H2OCluster object describing the underlying cluster."""
         return self._cluster
 
     @property
     def base_url(self):
         """Base URL of the server, without trailing ``"/"``. For example: ``"https://example.com:54321"``."""
         return self._base_url
+
+    @property
+    def name(self):
+        return self._name
 
     @property
     def proxy(self):
@@ -523,6 +532,7 @@ class H2OConnection(backwards_compatible()):
         self._stage = 0             # 0 = not connected, 1 = connected, -1 = disconnected
         self._session_id = None     # Rapids session id; issued upon request only
         self._base_url = None       # "{scheme}://{ip}:{port}"
+        self._name = None
         self._verify_ssl_cert = None
         self._auth = None           # Authentication token
         self._proxies = None        # `proxies` dictionary in the format required by the requests module
@@ -540,15 +550,15 @@ class H2OConnection(backwards_compatible()):
 
     def _test_connection(self, max_retries=5, messages=None):
         """
-        Test that the H2O cluster can be reached, and retrieve basic cloud status info.
+        Test that the H2O cluster can be reached, and retrieve basic cluster status info.
 
-        :param max_retries: Number of times to try to connect to the cloud (with 0.2s intervals).
+        :param max_retries: Number of times to try to connect to the cluster (with 0.2s intervals).
 
-        :returns: Cloud information (an H2OCluster object)
+        :returns: Cluster information (an H2OCluster object)
         :raises H2OConnectionError, H2OServerError:
         """
         if messages is None:
-            messages = ("Connecting to H2O server at {url}..", "successful.", "failed.")
+            messages = ("Connecting to H2O server at {url} ..", "successful.", "failed.")
         self._print(messages[0].format(url=self._base_url), end="")
         cld = None
         errors = []
@@ -558,6 +568,11 @@ class H2OConnection(backwards_compatible()):
                 raise H2OServerError("Local server was unable to start")
             try:
                 cld = self.request("GET /3/Cloud")
+
+                if self.name and cld.cloud_name != self.name:
+                    raise H2OConnectionError(
+                        "Connected to cloud %s but requested %s." % (cld.cloud_name, self.name)
+                    )
                 if cld.consensus and cld.cloud_healthy:
                     self._print(" " + messages[1])
                     return cld
@@ -602,8 +617,11 @@ class H2OConnection(backwards_compatible()):
             if value is None: continue  # don't send args set to None so backend defaults take precedence
             if isinstance(value, list):
                 value = stringify_list(value)
-            elif isinstance(value, dict) and "__meta" in value and value["__meta"]["schema_name"].endswith("KeyV3"):
-                value = value["name"]
+            elif isinstance(value, dict):
+                if "__meta" in value and value["__meta"]["schema_name"].endswith("KeyV3"):
+                    value = value["name"]
+                else:
+                    value = stringify_dict(value)
             else:
                 value = str(value)
             res[key] = value
@@ -835,6 +853,7 @@ class H2OResponse(dict):
         if schema == "ModelMetricsClusteringV3": return H2OClusteringModelMetrics.make(keyvals)
         if schema == "ModelMetricsBinomialV3": return H2OBinomialModelMetrics.make(keyvals)
         if schema == "ModelMetricsMultinomialV3": return H2OMultinomialModelMetrics.make(keyvals)
+        if schema == "ModelMetricsOrdinalV3": return H2OOrdinalModelMetrics.make(keyvals)
         if schema == "ModelMetricsAutoEncoderV3": return H2OAutoEncoderModelMetrics.make(keyvals)
         return super(H2OResponse, cls).__new__(cls, keyvals)
 

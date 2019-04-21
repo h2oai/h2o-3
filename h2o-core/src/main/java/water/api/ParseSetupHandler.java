@@ -1,10 +1,5 @@
 package water.api;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import water.DKV;
 import water.Key;
 import water.api.schemas3.ParseSetupV3;
@@ -13,6 +8,11 @@ import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 import water.util.DistributedException;
 import water.util.PojoUtils;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static water.parser.DefaultParserProviders.GUESS_INFO;
 
@@ -46,10 +46,12 @@ public class ParseSetupHandler extends Handler {
         throw new H2OIllegalArgumentException(ex2.getMessage());
       throw ex;
     }
-    if(ps._errs != null && ps._errs.length > 0) {
-      p.warnings = new String[ps._errs.length];
-      for (int i = 0; i < ps._errs.length; ++i)
-        p.warnings[i] = ps._errs[i].toString();
+    ps.setSkippedColumns(p.skipped_columns);  // setup the skipped_columns here
+    ps.setParseColumnIndices(ps.getNumberColumns(), ps.getSkippedColumns());
+    if(ps.errs() != null && ps.errs().length > 0) {
+      p.warnings = new String[ps.errs().length];
+      for (int i = 0; i < ps.errs().length; ++i)
+        p.warnings[i] = ps.errs().toString();
     }
     // TODO: ParseSetup throws away the srcs list. . .
     if ((null == p.column_name_filter || "".equals(p.column_name_filter)) && (0 == p.column_offset) && (0 == p.column_count)) {

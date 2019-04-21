@@ -69,12 +69,6 @@ documentation, launch H2O using the following command:
 
 --------------
 
-**How does H2O handle UDP packet failures? Does H2O quit or retry?**
-
- In standard settings, H2O only uses UDP for cloud forming and only if you do not provide a flat file. All other communication is done via TCP. Cloud forming with no flat file is done by repeated broadcasts that are repeated until the cloud forms.
-
---------------
-
 **How do I import data from HDFS in R and in Flow?**
 
 To import from HDFS in R:

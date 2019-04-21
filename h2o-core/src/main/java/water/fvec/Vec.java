@@ -271,13 +271,25 @@ public class Vec extends Keyed<Vec> {
    *  @return Number of chunks */
   public int nChunks() { return espc().length-1; }
 
+  /**
+   * Number of non-empty chunks, also see {@link #nChunks}
+   * @return Number of non-empty chunks
+   */
+  public int nonEmptyChunks() {
+    int nonEmptyCnt = nChunks();
+    for (int i = 1; i < _espc.length; i++)
+      if (_espc[i-1] == _espc[i])
+        nonEmptyCnt--;
+    return nonEmptyCnt;
+  }
+
   /** Convert a chunk-index into a starting row #.  For constant-sized chunks
    *  this is a little shift-and-add math.  For variable-sized chunks this is a
    *  table lookup. */
   long chunk2StartElem( int cidx ) { return espc()[cidx]; }
 
   /** Number of rows in chunk. Does not fetch chunk content. */
-  private int chunkLen( int cidx ) { espc(); return (int) (_espc[cidx + 1] - _espc[cidx]); }
+  public int chunkLen( int cidx ) { espc(); return (int) (_espc[cidx + 1] - _espc[cidx]); }
 
   /** Check that row-layouts are compatible. */
   public boolean isCompatibleWith(Vec v) {
@@ -363,8 +375,16 @@ public class Vec extends Keyed<Vec> {
    * Make a new constant vector with minimal number of chunks. Used for importing SQL tables.
    *  @return New constant vector with the given row count. */
   public static Vec makeCon(long totSize, long len) {
-    int safetyInflationFactor = 8;
-    int nchunks = (int) Math.max(safetyInflationFactor * totSize / Value.MAX , 1);
+    final int safetyInflationFactor = 8;
+    int nchunks = (int) Math.max(totSize * safetyInflationFactor / Value.MAX, 1);
+    return makeConN(len, nchunks);
+  }
+
+  /**
+   * Make a new constant vector with fixed number of chunks.
+   * @return New constant vector with the given chunks number.
+   */
+  public static Vec makeConN(long len, int nchunks) {
     long[] espc = new long[nchunks+1];
     espc[0] = 0;
     for( int i=1; i<nchunks; i++ )
@@ -374,6 +394,16 @@ public class Vec extends Keyed<Vec> {
     return makeCon(0, vg, ESPC.rowLayout(vg._key, espc), T_NUM);
   }
 
+  /**
+   * @return the number of chunks that would be required when creating a Vec with given length and rows
+   */
+  public static int nChunksFor(long len, int log_rows_per_chunk, boolean redistribute) {
+    int chunks0 = (int)Math.max(1,len>>log_rows_per_chunk); // redistribute = false
+    int chunks1 = (int)Math.min( 4 * H2O.NUMCPUS * H2O.CLOUD.size(), len); // redistribute = true
+    int nchunks = (redistribute && chunks0 < chunks1 && len > 10*chunks1) ? chunks1 : chunks0;
+    return nchunks;
+  }
+
   /** Make a new constant vector with the given row count.
    *  @return New constant vector with the given row count. */
   public static Vec makeCon(double x, long len, int log_rows_per_chunk, boolean redistribute) {
@@ -381,9 +411,7 @@ public class Vec extends Keyed<Vec> {
   }
 
   public static Vec makeCon(double x, long len, int log_rows_per_chunk, boolean redistribute, byte type) {
-    int chunks0 = (int)Math.max(1,len>>log_rows_per_chunk); // redistribute = false
-    int chunks1 = (int)Math.min( 4 * H2O.NUMCPUS * H2O.CLOUD.size(), len); // redistribute = true
-    int nchunks = (redistribute && chunks0 < chunks1 && len > 10*chunks1) ? chunks1 : chunks0;
+    final int nchunks = nChunksFor(len, log_rows_per_chunk, redistribute);
     long[] espc = new long[nchunks+1];
     espc[0] = 0;
     for( int i=1; i<nchunks; i++ )
@@ -403,7 +431,7 @@ public class Vec extends Keyed<Vec> {
     for(Vec v:res)
       DKV.put(v,fs);
     fs.blockForPending();
-    System.out.println("made vecs " + Arrays.toString(res));
+//    System.out.println("made vecs " + Arrays.toString(res));
     return res;
   }
 
@@ -498,12 +526,39 @@ public class Vec extends Keyed<Vec> {
     return v;
   }
 
+  public static Vec makeVec(float [] vals, Key<Vec> vecKey){
+    Vec v = new Vec(vecKey,ESPC.rowLayout(vecKey,new long[]{0,vals.length}));
+    NewChunk nc = new NewChunk(v,0);
+    Futures fs = new Futures();
+    for(float d:vals)
+      nc.addNum(d);
+    nc.close(fs);
+    DKV.put(v._key, v, fs);
+    fs.blockForPending();
+    return v;
+  }
+
   public static Vec makeVec(String [] vals, Key<Vec> vecKey){
     Vec v = new Vec(vecKey,ESPC.rowLayout(vecKey,new long[]{0,vals.length}),null, Vec.T_STR);
     NewChunk nc = new NewChunk(v,0);
     Futures fs = new Futures();
     for(String s:vals)
       nc.addStr(s);
+    nc.close(fs);
+    DKV.put(v._key, v, fs);
+    fs.blockForPending();
+    return v;
+  }
+
+  // allow missing (NaN) categorical values
+  public static Vec makeVec(float [] vals, String [] domain, Key<Vec> vecKey){
+    Vec v = new Vec(vecKey,ESPC.rowLayout(vecKey, new long[]{0, vals.length}), domain);
+    NewChunk nc = new NewChunk(v,0);
+    Futures fs = new Futures();
+    for(float d:vals) {
+      assert(Float.isNaN(d) || (long)d == d);
+      nc.addNum(d);
+    }
     nc.close(fs);
     DKV.put(v._key, v, fs);
     fs.blockForPending();
@@ -524,6 +579,7 @@ public class Vec extends Keyed<Vec> {
     fs.blockForPending();
     return v;
   }
+
   // Warning: longs are lossily converted to doubles in nc.addNum(d)
   public static Vec makeVec(long [] vals, String [] domain, Key<Vec> vecKey){
     Vec v = new Vec(vecKey,ESPC.rowLayout(vecKey, new long[]{0, vals.length}), domain);
@@ -550,6 +606,7 @@ public class Vec extends Keyed<Vec> {
    *  and initialized to the given constant value.  */
   public Vec makeCon(final double d) { return makeCon(d, group(), _rowLayout, T_NUM); }
   public Vec makeCon(final double d, byte type) { return makeCon(d, group(), _rowLayout, type); }
+  public Vec makeCon(final byte type) { return makeCon(0, null, group(), _rowLayout, type); }
 
   private static Vec makeCon( final double d, VectorGroup group, int rowLayout, byte type ) {
     if( (long)d==d ) return makeCon((long)d, null, group, rowLayout, type);
@@ -1335,9 +1392,62 @@ public class Vec extends Keyed<Vec> {
 
   /** Make a Vec adapting this cal vector to the 'to' categorical Vec.  The adapted
    *  CategoricalWrappedVec has 'this' as it's masterVec, but returns results in the 'to'
-   *  domain (or just past it, if 'this' has elements not appearing in the 'to'
-   *  domain). */
-  public CategoricalWrappedVec adaptTo( String[] domain ) {
+   *  newDomain (or just past it, if 'this' has elements not appearing in the 'to'
+   *  newDomain). */
+  public Vec adaptTo( String[] domain ) {
+    if(!isBad() && isNumeric() && !ArrayUtils.isInt(domain)) { // try to adapt double domain
+      // treat double domain here - return full vector copy instead of mapping double to ints on the fly in a WrappedVec
+      final int oldDomainLen = domain.length;
+      int nan_cnt = 0;
+        int j = 0;
+        double [] double_domain = MemoryManager.malloc8d(domain.length);
+        for (int i = 0; i < double_domain.length; ++i)
+        try {
+          double_domain[j] = Double.parseDouble(domain[i]);
+          j++;
+        } catch(NumberFormatException ex){nan_cnt++;}
+        if(j == double_domain.length) { // only atempt to adapt if we have fully double domain,  (to preserve current behavior for ints, could relax this later)
+          if (j < double_domain.length)
+            double_domain = Arrays.copyOf(double_domain, j);
+          double[] new_double_domain = new VecUtils.CollectDoubleDomain(double_domain, 100000).doAll(this).domain();
+          if (new_double_domain.length > 0) {
+            int n = domain.length;
+            domain = Arrays.copyOf(domain, domain.length + new_double_domain.length);
+            for (int i = 0; i < new_double_domain.length; ++i)
+              domain[n + i] = String.valueOf(new_double_domain[i]);
+          }
+          Vec res = makeZero(domain);
+          double_domain = MemoryManager.malloc8d(domain.length - nan_cnt);
+          j = 0;
+          final int[] indeces = MemoryManager.malloc4(domain.length - nan_cnt);
+          int[] order_indeces = ArrayUtils.seq(0, indeces.length);
+          for (int i = 0; i < domain.length; ++i) {
+            try {
+              double_domain[j] = Double.parseDouble(domain[i]);
+              indeces[j] = i;
+              j++;
+            } catch (NumberFormatException ex) {/*ignore*/}
+          }
+          if (!ArrayUtils.isSorted(double_domain))
+            ArrayUtils.sort(order_indeces, double_domain);
+          final double[] sorted_domain_vals = ArrayUtils.select(double_domain, order_indeces);
+          final int[] sorted_indeces = ArrayUtils.select(indeces, order_indeces);
+          new MRTask() {
+            @Override
+            public void map(Chunk c0, Chunk c1) {
+              for (int i = 0; i < c0._len; ++i) {
+                double d = c0.atd(i);
+                if (Double.isNaN(d))
+                  c1.setNA(i);
+                else {
+                  c1.set(i, sorted_indeces[Arrays.binarySearch(sorted_domain_vals, d)]);
+                }
+              }
+            }
+          }.doAll(new Vec[]{this, res});
+          return res;
+        }
+    }
     return new CategoricalWrappedVec(group().addVec(),_rowLayout,domain,this._key);
   }
 

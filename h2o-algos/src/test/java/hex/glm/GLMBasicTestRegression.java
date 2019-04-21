@@ -13,9 +13,11 @@ import org.junit.Test;
 import water.DKV;
 import water.Key;
 import water.TestUtil;
+import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
+import water.fvec.Vec;
 import water.parser.ParseDataset;
 
 import java.io.File;
@@ -23,12 +25,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import water.fvec.*;
-import static water.util.FileUtils.*;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
+import static water.util.FileUtils.getFile;
 
 /**
  * Created by tomasnykodym on 6/4/15.
@@ -153,6 +151,8 @@ public class GLMBasicTestRegression extends TestUtil {
     parms._max_iterations = 1000;
     for (Solver s : GLMParameters.Solver.values()) {
 //      if(s != Solver.IRLSM)continue; //fixme: does not pass for other than IRLSM now
+      if (s.equals(Solver.GRADIENT_DESCENT_SQERR) || s.equals(Solver.GRADIENT_DESCENT_LH))
+        continue; // only used for ordinal regression
       System.out.println("===============================================================");
       System.out.println("Solver = " + s);
       System.out.println("===============================================================");
@@ -353,7 +353,8 @@ public class GLMBasicTestRegression extends TestUtil {
       parms._tweedie_variance_power = p;
       parms._tweedie_link_power = 1 - p;
       for (Solver s : /*new Solver[]{Solver.IRLSM}*/ GLMParameters.Solver.values()) {
-        if(s == Solver.COORDINATE_DESCENT_NAIVE) continue; // ignore for now, has trouble with zero columns
+        if(s == Solver.COORDINATE_DESCENT_NAIVE || s.equals(Solver.GRADIENT_DESCENT_LH)
+                || s.equals(Solver.GRADIENT_DESCENT_SQERR)) continue; // ignore for now, has trouble with zero columns
         try {
           parms._solver = s;
           model = new GLM(parms).trainModel().get();
@@ -411,7 +412,8 @@ public class GLMBasicTestRegression extends TestUtil {
       parms._gradient_epsilon = 1e-10;
       parms._max_iterations = 1000;
       for (Solver s : GLMParameters.Solver.values()) {
-        if(s == Solver.COORDINATE_DESCENT_NAIVE) continue; // skip for now, does not handle zero columns (introduced by extra missing bucket with no missing in the dataset)
+        if(s == Solver.COORDINATE_DESCENT_NAIVE || s.equals(Solver.GRADIENT_DESCENT_LH)
+        || s.equals(Solver.GRADIENT_DESCENT_SQERR)) continue; // skip for now, does not handle zero columns (introduced by extra missing bucket with no missing in the dataset)
         try {
           parms._solver = s;
           model = new GLM(parms).trainModel().get();
@@ -650,12 +652,15 @@ public class GLMBasicTestRegression extends TestUtil {
       assertFalse("should've thrown, p-values only supported with IRLSM",true);
     } catch(H2OModelBuilderIllegalArgumentException t) {
     }
+    boolean naive_descent_exception_thrown = false;
     try {
       params._solver = Solver.COORDINATE_DESCENT_NAIVE;
       new GLM(params).trainModel().get();
       assertFalse("should've thrown, p-values only supported with IRLSM",true);
-    } catch(H2OModelBuilderIllegalArgumentException t) {
+    } catch (H2OIllegalArgumentException t) {
+      naive_descent_exception_thrown = true;
     }
+    assertTrue(naive_descent_exception_thrown);
     try {
       params._solver = Solver.COORDINATE_DESCENT;
       new GLM(params).trainModel().get();

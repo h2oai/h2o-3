@@ -61,7 +61,7 @@ def cv_carsRF():
   fold_assignments = h2o.H2OFrame([[random.randint(0,num_folds-1)] for f in range(cars.nrow)])
   fold_assignments.set_names(["fold_assignments"])
   cars = cars.cbind(fold_assignments)
-  rf = H2ORandomForestEstimator(keep_cross_validation_predictions=True)
+  rf = H2ORandomForestEstimator(keep_cross_validation_models=True, keep_cross_validation_predictions=True)
   rf.train(y=response_col, x=predictors, training_frame=cars, fold_column="fold_assignments")
 
   num_cv_models = len(rf._model_json['output']['cross_validation_models'])

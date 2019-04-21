@@ -3,7 +3,7 @@
 #' Attempts to start and/or connect to and H2O instance.
 #'
 #' By default, this method first checks if an H2O instance is connectible. If it cannot connect and \code{start = TRUE} with \code{ip = "localhost"}, it will attempt to start and instance of H2O at localhost:54321.
-#' If an open ip & port of your choice are passed in, then this method will attempt to start an H2O instance at that specified ip & port.
+#' If an open ip and port of your choice are passed in, then this method will attempt to start an H2O instance at that specified ip  port.
 #'
 #' When initializing H2O locally, this method searches for h2o.jar in the R library resources (\code{system.file("java", "h2o.jar", package = "h2o")}), and if the file does not exist, it will automatically attempt to download the correct version from Amazon S3. The user must have Internet access for this process to be successful.
 #'
@@ -11,6 +11,7 @@
 #'
 #' @param ip Object of class \code{character} representing the IP address of the server where H2O is running.
 #' @param port Object of class \code{numeric} representing the port number of the H2O server.
+#' @param name (Optional) A \code{character} string representing the H2O cluster name.
 #' @param startH2O (Optional) A \code{logical} value indicating whether to try to start H2O from R if no connection with H2O is detected. This is only possible if \code{ip = "localhost"} or \code{ip = "127.0.0.1"}.  If an existing connection is detected, R does not start H2O.
 #' @param forceDL (Optional) A \code{logical} value indicating whether to force download of the H2O executable. Defaults to FALSE, so the executable will only be downloaded if it does not already exist in the h2o R library resources directory \code{h2o/java/h2o.jar}.  This value is only used when R starts H2O.
 #' @param enable_assertions (Optional) A \code{logical} value indicating whether H2O should be launched with assertions enabled. Used mainly for error checking and debugging purposes.  This value is only used when R starts H2O.
@@ -19,6 +20,8 @@
 #' @param max_mem_size (Optional) A \code{character} string specifying the maximum size, in bytes, of the memory allocation pool to H2O. This value must a multiple of 1024 greater than 2MB. Append the letter m or M to indicate megabytes, or g or G to indicate gigabytes.  This value is only used when R starts H2O.
 #' @param min_mem_size (Optional) A \code{character} string specifying the minimum size, in bytes, of the memory allocation pool to H2O. This value must a multiple of 1024 greater than 2MB. Append the letter m or M to indicate megabytes, or g or G to indicate gigabytes.  This value is only used when R starts H2O.
 #' @param ice_root (Optional) A directory to handle object spillage. The defaul varies by OS.
+#' @param log_dir (Optional) A directory where H2O server logs are stored. The default varies by OS.
+#' @param log_level (Optional) The level of logging of H2O server. The default is INFO.
 #' @param strict_version_check (Optional) Setting this to FALSE is unsupported and should only be done when advised by technical support.
 #' @param proxy (Optional) A \code{character} string specifying the proxy path.
 #' @param https (Optional) Set this to TRUE to use https instead of http.
@@ -28,6 +31,9 @@
 #' @param cookies (Optional) Vector(or list) of cookies to add to request.
 #' @param context_path (Optional) The last part of connection URL: http://<ip>:<port>/<context_path>
 #' @param ignore_config (Optional) A \code{logical} value indicating whether a search for a .h2oconfig file should be conducted or not. Default value is FALSE.
+#' @param extra_classpath (Optional) A vector of paths to libraries to be added to the Java classpath when H2O is started from R.
+#' @param jvm_custom_args (Optional) A \code{character} list of custom arguments for the JVM where new H2O instance is going to run, if started. Ignored when connecting to an existing instance.
+#' @param bind_to_localhost (Optional) A \code{logical} flag indicating whether access to the H2O instance should be restricted to the local machine (default) or if it can be reached from other computers on the network. Only applicable when H2O is started from R.
 #' @return this method will load it and return a \code{H2OConnection} object containing the IP address and port number of the H2O server.
 #' @note Users may wish to manually upgrade their package (rather than waiting until being prompted), which requires
 #' that they fully uninstall and reinstall the H2O package, and the H2O client package. You must unload packages running
@@ -52,12 +58,15 @@
 #' h2o.init(max_mem_size = "5g")
 #' }
 #' @export
-h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = FALSE,
+h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, startH2O = TRUE, forceDL = FALSE,
                      enable_assertions = TRUE, license = NULL, nthreads = -1,
                      max_mem_size = NULL, min_mem_size = NULL,
-                     ice_root = tempdir(), strict_version_check = TRUE, proxy = NA_character_,
+                     ice_root = tempdir(), log_dir = NA_character_, log_level = NA_character_,
+                     strict_version_check = TRUE, proxy = NA_character_,
                      https = FALSE, insecure = FALSE, username = NA_character_, password = NA_character_,
-                     cookies = NA_character_, context_path = NA_character_, ignore_config = FALSE) {
+                     cookies = NA_character_, context_path = NA_character_, ignore_config = FALSE,
+                     extra_classpath = NULL, jvm_custom_args = NULL,
+                     bind_to_localhost = TRUE) {
 
     if(!(ignore_config)){
       # Check for .h2oconfig file
@@ -68,26 +77,26 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
       #Read in config if available
       if(!(is.null(config_path))){
 
-        h2oconfig = .parse.h2oconfig(config_path,print_path=TRUE)
+        h2oconfig <- .parse.h2oconfig(config_path,print_path=TRUE)
 
         #Check for each `allowed_config_keys` in the config file and set to counterparts in `h2o.init()`
         if(strict_version_check == TRUE && "init.check_version" %in% colnames(h2oconfig)){
-          strict_version_check = as.logical(trimws(toupper(as.character(h2oconfig$init.check_version))))
+          strict_version_check <- as.logical(trimws(toupper(as.character(h2oconfig$init.check_version))))
         }
         if(is.na(proxy) && "init.proxy" %in% colnames(h2oconfig)){
-          proxy = trimws(as.character(h2oconfig$init.proxy))
+          proxy <- trimws(as.character(h2oconfig$init.proxy))
         }
         if(insecure == FALSE && "init.verify_ssl_certificates" %in% colnames(h2oconfig)){
-          insecure = as.logical(trimws(toupper(as.character(h2oconfig$init.verify_ssl_certificates))))
+          insecure <- as.logical(trimws(toupper(as.character(h2oconfig$init.verify_ssl_certificates))))
         }
         if(is.na(cookies) && "init.cookies" %in% colnames(h2oconfig)){
-          cookies = as.vector(trimws(strsplit(as.character(h2oconfig$init.cookies),";")[[1]]))
+          cookies <- as.vector(trimws(strsplit(as.character(h2oconfig$init.cookies),";")[[1]]))
         }
         if(is.na(username) && "init.username" %in% colnames(h2oconfig)){
-          username = trimws(as.character(h2oconfig$init.username))
+          username <- trimws(as.character(h2oconfig$init.username))
         }
         if(is.na(password) && "init.password" %in% colnames(h2oconfig)){
-          password = trimws(as.character(h2oconfig$init.password))
+          password <- trimws(as.character(h2oconfig$init.password))
         }
       }
     }
@@ -96,6 +105,8 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
     stop("`ip` must be a non-empty character string")
   if(!is.numeric(port) || length(port) != 1L || is.na(port) || port < 0 || port > 65536)
     stop("`port` must be an integer ranging from 0 to 65536")
+  if(!is.character(name) && !nzchar(name))
+    stop("`name` must be a character string or NA_character_")
   if(!is.logical(startH2O) || length(startH2O) != 1L || is.na(startH2O))
     stop("`startH2O` must be TRUE or FALSE")
   if(!is.logical(forceDL) || length(forceDL) != 1L || is.na(forceDL))
@@ -118,6 +129,10 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
     stop("`license` must be of class character")
   if(!is.character(ice_root) || length(ice_root) != 1L || is.na(ice_root) || !nzchar(ice_root))
     stop("`ice_root` must be a non-empty character string")
+  if(!is.character(log_dir) && !nzchar(log_dir))
+    stop("`log_dir` must be a character string or NA_character_")
+  if(!is.character(log_level) && !nzchar(log_level))
+    stop("`log_level` must be a character string or NA_character_")
   if(!is.logical(strict_version_check) || length(strict_version_check) != 1L || is.na(strict_version_check))
     stop("`strict_version_check` must be TRUE or FALSE")
   if(!is.character(proxy) || !nzchar(proxy))
@@ -138,6 +153,8 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
     stop("`cookies` must be a vector of cookie values")
   if(!is.character(context_path) || !nzchar(context_path))
     stop("`context_path` must be a character string or NA_character_")
+  if(!is.null(extra_classpath) && !is.character(extra_classpath))
+    stop("`extra_classpath` must be a character vector or NULL")
 
   if ((R.Version()$major == "3") && (R.Version()$minor == "1.0")) {
     stop("H2O is not compatible with R 3.1.0\n",
@@ -152,7 +169,7 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
   if (nchar(doc_port)) port <- as.numeric(doc_port)
 
   warnNthreads <- FALSE
-  tmpConn <- new("H2OConnection", ip = ip, port = port, proxy = proxy, https = https, insecure = insecure,
+  tmpConn <- new("H2OConnection", ip = ip, port = port, name = name, proxy = proxy, https = https, insecure = insecure,
     username = username, password = password,cookies = cookies, context_path = context_path)
   if (!h2o.clusterIsUp(tmpConn)) {
     if (!startH2O)
@@ -165,8 +182,12 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
         nthreads <- 2
       }
       stdout <- .h2o.getTmpFile("stdout")
-      .h2o.startJar(ip = ip, port = port,nthreads = nthreads, max_memory = max_mem_size, min_memory = min_mem_size,
-                    enable_assertions = enable_assertions, forceDL = forceDL, license = license, ice_root = ice_root, stdout=stdout)
+      .h2o.startJar(ip = ip, port = port, name = name, nthreads = nthreads,
+                    max_memory = max_mem_size, min_memory = min_mem_size,
+                    enable_assertions = enable_assertions, forceDL = forceDL, license = license,
+                    extra_classpath = extra_classpath, ice_root = ice_root, stdout = stdout,
+                    log_dir = log_dir, log_level = log_level, context_path = context_path,
+                    jvm_custom_args = jvm_custom_args, bind_to_localhost = bind_to_localhost)
 
       count <- 0L
       cat("Starting H2O JVM and connecting: ")
@@ -185,15 +206,13 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
         print(rv$httpStatusCode)
         print(rv$curlErrorMessage)
 
-        #try a hail mary curl
-          print(system("curl 'http://localhost:54321'"))
         stop("H2O failed to start, stopping execution.")
       }
     } else
       stop("Can only start H2O launcher if IP address is localhost.")
   }
 
-  conn <- new("H2OConnection", ip = ip, port = port, proxy = proxy, https = https, insecure = insecure,
+  conn <- new("H2OConnection", ip = ip, port = port, name = .h2o.jar.env$name, proxy = proxy, https = https, insecure = insecure,
     username = username, password = password,cookies = cookies, context_path = context_path)
   assign("SERVER", conn, .pkg.env)
   cat(" Connection successful!\n\n")
@@ -251,7 +270,8 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
 #' @param password (Optional) Password to login with.
 #' @param cookies (Optional) Vector(or list) of cookies to add to request.
 #' @param context_path (Optional) The last part of connection URL: http://<ip>:<port>/<context_path>
-#' @param config (Optional) A \code{list} describing connection parameters.
+#' @param config (Optional) A \code{list} describing connection parameters. Using \code{config} makes \code{h2o.connect} ignore
+#'        other parameters and collect named list members instead (see examples).
 #' @return an instance of \code{H2OConnection} object representing a connection to the running H2O instance.
 #' @examples
 #' \dontrun{
@@ -333,7 +353,7 @@ h2o.getConnection <- function() {
 #' @note Users must call h2o.shutdown explicitly in order to shut down the local H2O instance started by R. If R is closed before H2O, then an attempt will be made to automatically shut down H2O. This only applies to local instances started with h2o.init, not remote H2O servers.
 #' @seealso \code{\link{h2o.init}}
 #' @examples
-#' # Don't run automatically to prevent accidentally shutting down a cloud
+#' # Don't run automatically to prevent accidentally shutting down a cluster
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
@@ -367,7 +387,7 @@ h2o.shutdown <- function(prompt = TRUE) {
 # **** TODO: This isn't really a cluster status... it's a node status check for the node we're connected to.
 # This is possibly confusing because this can come back without warning,
 # but if a user tries to do any remoteSend, they will get a "cloud sick warning"
-# Suggest cribbing the code from Internal.R that checks cloud status (or just call it here?)
+# Suggest cribbing the code from Internal.R that checks cluster status (or just call it here?)
 
 #' Return the status of the cluster
 #'
@@ -465,32 +485,53 @@ h2o.clusterStatus <- function() {
 }
 
 .onDetach <- function(libpath) {
-  ip_   <- "127.0.0.1"
-  port_  <- if(!is.null(.h2o.jar.env$port)) .h2o.jar.env$port else 54321
-  myURL <- paste0("http://", ip_, ":", port_)
-  print("A shutdown has been triggered. ")
-  if( url.exists(myURL) ) {
-    tryCatch(h2o.shutdown(prompt = FALSE), error = function(e) {
-      msg = paste(
-        "\n",
-        "----------------------------------------------------------------------\n",
-            "\n",
-            "Could not shut down the H2O Java Process!\n",
-            "Please shutdown H2O manually by navigating to `http://localhost:54321/Shutdown`\n\n",
-            "Windows requires the shutdown of h2o before re-installing -or- updating the h2o package.\n",
-            "For more information visit http://docs.h2o.ai\n",
-            "\n",
-            "----------------------------------------------------------------------\n",
-            sep = "")
-      warning(msg)
-    })
+  if (! getOption("h2o.dev.shutdown.disable", default = FALSE)) { # we can disable shutdown in dev (good with devtools)
+    ip_   <- "127.0.0.1"
+    port_  <- if(!is.null(.h2o.jar.env$port)) .h2o.jar.env$port else 54321
+    myURL <- paste0("http://", ip_, ":", port_)
+    print("A shutdown has been triggered. ")
+    if( url.exists(myURL) ) {
+      tryCatch(h2o.shutdown(prompt = FALSE), error = function(e) {
+        msg = paste(
+          "\n",
+          "----------------------------------------------------------------------\n",
+              "\n",
+              "Could not shut down the H2O Java Process!\n",
+              "Please shutdown H2O manually by navigating to `http://localhost:54321/Shutdown`\n\n",
+              "Windows requires the shutdown of h2o before re-installing -or- updating the h2o package.\n",
+              "For more information visit http://docs.h2o.ai\n",
+              "\n",
+              "----------------------------------------------------------------------\n",
+              sep = "")
+        warning(msg)
+      })
+    }
   }
   try(.h2o.__remoteSend("InitID", method = "DELETE"), TRUE)
 }
 
 .Last <- function() { if ( .isConnected() ) try(.h2o.__remoteSend("InitID", method = "DELETE"), TRUE)}
 
-.h2o.startJar <- function(ip = "localhost", port = 54321,nthreads = -1, max_memory = NULL, min_memory = NULL, enable_assertions = TRUE, forceDL = FALSE, license = NULL, ice_root, stdout) {
+#
+# Returns error string if the check finds a problem with version.
+# This implementation is supposed to blacklist known unsupported versions.
+#
+.h2o.check_java_version <- function(jver = NULL) {
+  if(any(grepl("GNU libgcj", jver))) {
+    return("Sorry, GNU Java is not supported for H2O.")
+  }
+  # NOTE for developers: keep the following blacklist in logically consistent with whitelist in java code - see water.H2O.checkUnsupportedJava, near line 1849
+  if (any(grepl("^java version \"1\\.[1-6]\\.", jver))) {
+    return(paste0("Your java is not supported: ", jver[1]))
+  }
+  return(NULL)
+}
+
+.h2o.startJar <- function(ip = "localhost", port = 54321, name = NULL, nthreads = -1,
+                          max_memory = NULL, min_memory = NULL,
+                          enable_assertions = TRUE, forceDL = FALSE, license = NULL, extra_classpath = NULL,
+                          ice_root, stdout, log_dir, log_level, context_path, jvm_custom_args = NULL, 
+                          bind_to_localhost) {
   command <- .h2o.checkJava()
 
   if (! is.null(license)) {
@@ -519,21 +560,20 @@ h2o.clusterStatus <- function() {
       error = function(err) {
         print(err)
         stop("You have a 32-bit version of Java. H2O works best with 64-bit Java.\n",
-        "Please download the latest Java SE JDK 7 from the following URL:\n",
-        "http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html")
+        "Please download the latest Java SE JDK 8 from the following URL:\n",
+        "http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html")
       }
     )
-
-  if(any(grepl("GNU libgcj", jver))) {
-    stop("Sorry, GNU Java is not supported for H2O.\n",
-         "Please download the latest Java SE JDK 7 from the following URL:\n",
-         "http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html")
+  jver_error <- .h2o.check_java_version(jver);
+  if (!is.null(jver_error)) {
+    stop(jver_error, "\n",
+    "Please download the latest Java SE JDK 8 from the following URL:\n",
+    "http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html")
   }
-
   if(any(grepl("Client VM", jver))) {
     warning("You have a 32-bit version of Java. H2O works best with 64-bit Java.\n",
-            "Please download the latest Java SE JDK 7 from the following URL:\n",
-            "http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html")
+            "Please download the latest Java SE JDK 8 from the following URL:\n",
+            "http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html")
 
     # Set default max_memory to be 1g for 32-bit JVM.
     if(is.null(max_memory)) max_memory = "1g"
@@ -554,13 +594,27 @@ h2o.clusterStatus <- function() {
   args <- mem_args
   ltrs <- paste0(sample(letters,3, replace = TRUE), collapse="")
   nums <- paste0(sample(0:9, 3,  replace = TRUE),     collapse="")
-  name <- paste0("H2O_started_from_R_", gsub("\\s", "_", Sys.info()["user"]),"_",ltrs,nums)
+
+  if(is.na(name)) name <- paste0("H2O_started_from_R_", gsub("\\s", "_", Sys.info()["user"]),"_",ltrs,nums)
+  .h2o.jar.env$name <- name
+
   if(enable_assertions) args <- c(args, "-ea")
-  args <- c(args, "-jar", jar_file)
+  if(!is.null(jvm_custom_args)) args <- c(args,jvm_custom_args)
+
+  class_path <- paste0(c(jar_file, extra_classpath), collapse=.Platform$path.sep)
+  args <- c(args, "-cp", class_path, "water.H2OApp")
   args <- c(args, "-name", name)
   args <- c(args, "-ip", ip)
+  if (bind_to_localhost) {
+    args <- c(args, "-web_ip", ip)
+  }
   args <- c(args, "-port", port)
   args <- c(args, "-ice_root", slashes_fixed_ice_root)
+
+  if(!is.na(log_dir)) args <- c(args, "-log_dir", log_dir)
+  if(!is.na(log_level)) args <- c(args, "-log_level", log_level)
+  if(!is.na(context_path)) args <- c(args, "-context_path", context_path)
+
   if(nthreads > 0L) args <- c(args, "-nthreads", nthreads)
   if(!is.null(license)) args <- c(args, "-license", license)
 
@@ -768,7 +822,10 @@ h2o.networkTest <- function() {
 #'
 #' Open H2O Flow in your browser
 #'
+#' @importFrom utils browseURL
 #' @export
-h2o.flow <- function(){
-  browseURL(.h2o.calcBaseURL(urlSuffix=""))
+h2o.flow <- function() {
+  conn <- h2o.getConnection()
+  url <- .h2o.calcBaseURL(conn, urlSuffix = "flow/")
+  browseURL(url)
 }

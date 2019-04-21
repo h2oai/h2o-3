@@ -1,4 +1,4 @@
-#Porting R Scripts
+# Porting R Scripts
 
 This document outlines how to port R scripts written in previous versions of H2O (Nunes 2.8.6.2 or prior, also known as "H2O Classic") for compatibility with the new H2O 3.0 API. When upgrading from H2O to H2O 3.0, most functions are the same. However, there are some differences that will need to be resolved when porting any scripts that were originally created using H2O to H2O 3.0. 
 
@@ -10,9 +10,9 @@ For additional assistance within R, enter a question mark before the command (fo
 
 There is also a "shim" available that will review R scripts created with previous versions of H2O, identify deprecated or renamed parameters, and suggest replacements. For more information, refer to the repo [here](https://github.com/h2oai/h2o-dev/blob/d9693a97da939a2b77c24507c8b40a5992192489/h2o-r/h2o-package/R/shim.R). 
 
-##Changes from H2O 2.8 to H2O 3.0
+## Changes from H2O 2.8 to H2O 3.0
 
-###`h2o.exec`
+### `h2o.exec`
 The `h2o.exec` command is no longer supported. Any workflows using `h2o.exec` must be revised to remove this command.  If the H2O 3.0 workflow contains any parameters or commands from H2O Classic, errors will result and the workflow will fail. 
 
 The purpose of `h2o.exec` was to wrap expressions so that they could be evaluated in a single `\Exec2` call. For example, 
@@ -34,23 +34,23 @@ A String array is ["f00", "b4r"], *not* "[\"f00\", \"b4r\"]"
 Only string values are enclosed in double quotation marks (`"`).  
 
 <a name="h2operf"></a>
-###`h2o.performance`
+### `h2o.performance`
 
 To access any exclusively binomial output, use `h2o.performance`, optionally with the corresponding accessor. The accessor can only use the model metrics object created by `h2o.performance`. Each accessor is named for its corresponding field (for example, `h2o.AUC`, `h2o.gini`, `h2o.F1`). `h2o.performance` supports all current algorithms except for K-Means. 
 
 If you specify a data frame as a second parameter, H2O will use the specified data frame for scoring. If you do not specify a second parameter, the training metrics for the model metrics object are used. 
 
-###`xval` and `validation` slots
+### `xval` and `validation` slots
 
 The `xval` slot has been removed, as `nfolds` is not currently supported. 
 
 The `validation` slot has been merged with the `model` slot. 
 
-###Principal Components Regression (PCR)
+### Principal Components Regression (PCR)
 
 Principal Components Regression (PCR) has also been deprecated. To obtain PCR values, create a Principal Components Analysis (PCA) model, then create a GLM model from the scored data from the PCA model. 
 
-###Saving and Loading Models
+### Saving and Loading Models
 
 Saving and loading a model from R is supported in version 3.0.0.18 and later. H2O 3.0 uses the same binary serialization method as previous versions of H2O, but saves the model and its dependencies into a directory, with each object as a separate file. The `save_CV` option for  available in previous versions of H2O has been deprecated, as `h2o.saveAll` and `h2o.loadAll` are not currently supported. The following commands are now supported: 
 
@@ -70,11 +70,11 @@ Saving and loading a model from R is supported in version 3.0.0.18 and later. H2
 
 
 <a name="GBM"></a>
-##GBM
+## GBM
 
 N-fold cross-validation and grid search will be supported in a future version of H2O 3.0. 
 
-###Renamed GBM Parameters
+### Renamed GBM Parameters
 
 The following parameters have been renamed, but retain the same functions: 
 
@@ -92,7 +92,7 @@ H2O Classic Parameter Name | H2O 3.0 Parameter Name
 `max.after.balance.size` | `max_after_balance_size`
 
 
-###Deprecated GBM Parameters
+### Deprecated GBM Parameters
 
 The following parameters have been removed: 
 
@@ -101,7 +101,7 @@ The following parameters have been removed:
 - `holdout.fraction`: The fraction of the training data to hold out for validation is no longer supported. 
 - `grid.parallelism`: Specifying the number of parallel threads to run during a grid search is no longer supported. Grid search will be supported in a future version of H2O 3.0. 
 
-###New GBM Parameters
+### New GBM Parameters
 
 The following parameters have been added: 
 
@@ -109,7 +109,7 @@ The following parameters have been added:
 - `score_each_iteration`: Display error rate information after each tree in the requested set is built. 
 - `build_tree_one_node`: Run on a single node to use fewer CPUs. 
 
-###GBM Algorithm Comparison
+### GBM Algorithm Comparison
 
 H2O Classic  | H2O 3.0 
 ------------- | -------------
@@ -151,7 +151,7 @@ H2O Classic  | H2O 3.0
 `class.sampling.factors = NULL,` | 
 `grid.parallelism = 1)` | 
 
-###Output
+### Output
 
 The following table provides the component name in H2O, the corresponding component name in H2O 3.0 (if supported), and the model type (binomial, multinomial, or all). Many components are now included in `h2o.performance`; for more information, refer to [(`h2o.performance`)](#h2operf).
 
@@ -182,11 +182,11 @@ H2O Classic | H2O 3.0  | Model Type
 ---
 
 <a name="GLM"></a>
-##GLM
+## GLM
 
  N-fold cross-validation and grid search will be supported in a future version of H2O 3.0. 
 
-###Renamed GLM Parameters
+### Renamed GLM Parameters
 
 The following parameters have been renamed, but retain the same functions:
 
@@ -199,7 +199,7 @@ H2O Classic Parameter Name | H2O 3.0 Parameter Name
  `iter.max` | `max_iterations`
  `epsilon` | `beta_epsilon`
 
-###Deprecated GLM Parameters
+### Deprecated GLM Parameters
  
 The following parameters have been removed: 
  
@@ -212,14 +212,14 @@ The following parameters have been removed:
  - `offset`: Specify a column as an offset. (may be re-added)
  - `max_predictors`: Stops training the algorithm if the number of predictors exceeds the specified value. (may be re-added)
 
-###New GLM Parameters
+### New GLM Parameters
  
  The following parameters have been added: 
  
  - `validation_frame`: Specify the validation dataset. 
  - `solver`: Select IRLSM or LBFGS. 
 
-###GLM Algorithm Comparison
+### GLM Algorithm Comparison
 
 
 H2O Classic | H2O 3.0 
@@ -258,7 +258,7 @@ H2O Classic | H2O 3.0
 `max_predictors = -1)` |
 
 
-###Output
+### Output
 
 
 The following table provides the component name in H2O, the corresponding component name in H2O 3.0 (if supported), and the model type (binomial, multinomial, or all). Many components are now included in `h2o.performance`; for more information, refer to [(`h2o.performance`)](#h2operf).
@@ -284,9 +284,9 @@ H2O Classic | H2O 3.0  | Model Type
 `@model$confusion` | &nbsp;  | `binomial`
 
 <a name="Kmeans"></a>
-##K-Means
+## K-Means
 
-###Renamed K-Means Parameters
+### Renamed K-Means Parameters
 
 The following parameters have been renamed, but retain the same functions: 
 
@@ -301,14 +301,14 @@ H2O Classic Parameter Name | H2O 3.0 Parameter Name
 
 **Note** In H2O, the `normalize` parameter was disabled by default. The `standardize` parameter is enabled by default in H2O 3.0 to provide more accurate results for datasets containing columns with large values. 
 
-###New K-Means Parameters
+### New K-Means Parameters
 
 The following parameters have been added:
 
 - `user` has been added as an additional option for the `init` parameter. Using this parameter forces the K-Means algorithm to start at the user-specified points. 
 - `user_points`: Specify starting points for the K-Means algorithm. 
 
-###K-Means Algorithm Comparison
+### K-Means Algorithm Comparison
 
 H2O Classic | H2O 3.0
 ------------- | -------------
@@ -322,7 +322,7 @@ H2O Classic | H2O 3.0
 `init = "none",` | `init = c("Furthest","Random", "PlusPlus"),`
 `seed = 0,` | `seed)`
 
-###Output
+### Output
 
 
 The following table provides the component name in H2O and the corresponding component name in H2O 3.0 (if supported).
@@ -340,13 +340,13 @@ H2O Classic | H2O 3.0
 ---
 
 <a name="DL"></a>
-##Deep Learning
+## Deep Learning
 
 N-fold cross-validation and grid search will be supported in a future version of H2O 3.0. 
 
 **Note**: If the results in the confusion matrix are incorrect, verify that `score_training_samples` is equal to 0. By default, only the first 10,000 rows are included. 
 
-###Renamed Deep Learning Parameters
+### Renamed Deep Learning Parameters
 
 The following parameters have been renamed, but retain the same functions: 
 
@@ -360,7 +360,7 @@ H2O Classic Parameter Name | H2O 3.0 Parameter Name
 `dlmodel@model$valid_class_error` | `@model$validation_metrics@$MSE`
 
 
-###Deprecated DL Parameters
+### Deprecated DL Parameters
 
 The following parameters have been removed:
 
@@ -368,7 +368,7 @@ The following parameters have been removed:
 - `holdout_fraction`: Fraction of the training data to hold out for validation.
 - `dlmodel@model$best_cutoff`: This output parameter has been removed. 
 
-###New DL Parameters
+### New DL Parameters
 
 The following parameters have been added: 
 
@@ -379,7 +379,7 @@ The following options for the `loss` parameter have been added:
 - `absolute`: Provides strong penalties for mispredictions 
 - `huber`: Can improve results for regression 
 
-###DL Algorithm Comparison
+### DL Algorithm Comparison
 
 H2O Classic  | H2O 3.0 
 ------------- | -------------
@@ -460,7 +460,7 @@ H2O Classic  | H2O 3.0
  &nbsp; | `keep_cross_validation_predictions = FALSE)`
  
  
-###Output
+### Output
 
 
 The following table provides the component name in H2O, the corresponding component name in H2O 3.0 (if supported), and the model type (binomial, multinomial, or all). Many components are now included in `h2o.performance`; for more information, refer to [(`h2o.performance`)](#h2operf).
@@ -482,9 +482,9 @@ H2O Classic | H2O 3.0  | Model Type
  ---
 
 <a name="DRF"></a>
-##Distributed Random Forest
+## Distributed Random Forest
 
-###Changes to DRF in H2O 3.0 
+### Changes to DRF in H2O 3.0 
 
 Distributed Random Forest (DRF) was represented as `h2o.randomForest(type="BigData", ...)` in H2O Classic. In H2O Classic, SpeeDRF (`type="fast"`) was not as accurate, especially for complex data with categoricals, and did not address regression problems. DRF (`type="BigData"`) was at least as accurate as SpeeDRF (`type="fast"`) and was the only algorithm that scaled to big data (data too large to fit on a single node). 
 In H2O 3.0, our plan is to improve the performance of DRF so that the data fits on a single node (optimally, for all cases), which will make SpeeDRF obsolete. Ultimately, the goal is provide a single algorithm that provides the "best of both worlds" for all datasets and use cases. 
@@ -492,7 +492,7 @@ Please note that H2O does not currently support the ability to specify the numbe
 
 **Note**: H2O 3.0 only supports DRF. SpeeDRF is no longer supported. The functionality of DRF in H2O 3.0 is similar to DRF functionality in H2O. 
 
-###Renamed DRF Parameters
+### Renamed DRF Parameters
 
 The following parameters have been renamed, but retain the same functions: 
 
@@ -510,7 +510,7 @@ H2O Classic Parameter Name | H2O 3.0 Parameter Name
 `nodesize` | `min_rows`
 
 
-###Deprecated DRF Parameters
+### Deprecated DRF Parameters
 
 The following parameters have been removed: 
 
@@ -525,13 +525,13 @@ The following parameters have been removed:
 
 
 
-###New DRF Parameters
+### New DRF Parameters
 
 The following parameter has been added: 
 
 - `build_tree_one_node`: Run on a single node to use fewer CPUs. 
 
-###DRF Algorithm Comparison
+### DRF Algorithm Comparison
 
 H2O Classic | H2O 3.0
 ------------- | -------------
@@ -565,7 +565,7 @@ H2O Classic | H2O 3.0
 `type = "fast")` | 
 
 
-###Output
+### Output
 
 
 The following table provides the component name in H2O, the corresponding component name in H2O 3.0 (if supported), and the model type (binomial, multinomial, or all). Many components are now included in `h2o.performance`; for more information, refer to [(`h2o.performance`)](#h2operf).

@@ -20,12 +20,14 @@ Supervised
 .. toctree::
    :maxdepth: 1
 
+   data-science/coxph
    data-science/deep-learning
    data-science/drf
    data-science/glm
    data-science/gbm
    data-science/naive-bayes
    data-science/stacked-ensembles
+   data-science/xgboost
 
 Unsupervised
 ------------
@@ -33,7 +35,9 @@ Unsupervised
 .. toctree::
    :maxdepth: 1
 
+   data-science/aggregator
    data-science/glrm
+   data-science/if
    data-science/k-means
    data-science/pca
 
@@ -44,3 +48,11 @@ Miscellaneous
    :maxdepth: 1
 
    data-science/word2vec
+
+Generic Models
+--------------
+
+.. toctree::
+   :maxdepth: 1
+
+   data-science/generic

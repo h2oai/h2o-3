@@ -24,7 +24,8 @@ class H2OAggregatorEstimator(H2OEstimator):
         super(H2OAggregatorEstimator, self).__init__()
         self._parms = {}
         names_list = {"model_id", "training_frame", "response_column", "ignored_columns", "ignore_const_cols",
-                      "target_num_exemplars", "rel_tol_num_exemplars", "transform", "categorical_encoding"}
+                      "target_num_exemplars", "rel_tol_num_exemplars", "transform", "categorical_encoding",
+                      "save_mapping_frame", "num_iteration_without_new_exemplar", "export_checkpoints_dir"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -35,11 +36,12 @@ class H2OAggregatorEstimator(H2OEstimator):
                 setattr(self, pname, pvalue)
             else:
                 raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
+        self._parms["_rest_version"] = 99
 
     @property
     def training_frame(self):
         """
-        Id of the training data frame (Not required, to allow initial validation of model parameters).
+        Id of the training data frame.
 
         Type: ``H2OFrame``.
         """
@@ -114,7 +116,7 @@ class H2OAggregatorEstimator(H2OEstimator):
     @property
     def rel_tol_num_exemplars(self):
         """
-        Relative tolerance for number of exemplars (e.g, 0.5 is +/- 50%)
+        Relative tolerance for number of exemplars (e.g, 0.5 is +/- 50 percents)
 
         Type: ``float``  (default: ``0.5``).
         """
@@ -147,13 +149,65 @@ class H2OAggregatorEstimator(H2OEstimator):
         Encoding scheme for categorical features
 
         One of: ``"auto"``, ``"enum"``, ``"one_hot_internal"``, ``"one_hot_explicit"``, ``"binary"``, ``"eigen"``,
-        ``"label_encoder"``, ``"sort_by_response"``  (default: ``"auto"``).
+        ``"label_encoder"``, ``"sort_by_response"``, ``"enum_limited"``  (default: ``"auto"``).
         """
         return self._parms.get("categorical_encoding")
 
     @categorical_encoding.setter
     def categorical_encoding(self, categorical_encoding):
-        assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response"))
+        assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"))
         self._parms["categorical_encoding"] = categorical_encoding
 
 
+    @property
+    def save_mapping_frame(self):
+        """
+        Whether to export the mapping of the aggregated frame
+
+        Type: ``bool``  (default: ``False``).
+        """
+        return self._parms.get("save_mapping_frame")
+
+    @save_mapping_frame.setter
+    def save_mapping_frame(self, save_mapping_frame):
+        assert_is_type(save_mapping_frame, None, bool)
+        self._parms["save_mapping_frame"] = save_mapping_frame
+
+
+    @property
+    def num_iteration_without_new_exemplar(self):
+        """
+        The number of iterations to run before aggregator exits if the number of exemplars collected didn't change
+
+        Type: ``int``  (default: ``500``).
+        """
+        return self._parms.get("num_iteration_without_new_exemplar")
+
+    @num_iteration_without_new_exemplar.setter
+    def num_iteration_without_new_exemplar(self, num_iteration_without_new_exemplar):
+        assert_is_type(num_iteration_without_new_exemplar, None, int)
+        self._parms["num_iteration_without_new_exemplar"] = num_iteration_without_new_exemplar
+
+
+    @property
+    def export_checkpoints_dir(self):
+        """
+        Automatically export generated models to this directory.
+
+        Type: ``str``.
+        """
+        return self._parms.get("export_checkpoints_dir")
+
+    @export_checkpoints_dir.setter
+    def export_checkpoints_dir(self, export_checkpoints_dir):
+        assert_is_type(export_checkpoints_dir, None, str)
+        self._parms["export_checkpoints_dir"] = export_checkpoints_dir
+
+
+
+    @property
+    def aggregated_frame(self):
+        if (self._model_json is not None and
+            self._model_json.get("output", {}).get("output_frame", {}).get("name") is not None):
+            out_frame_name = self._model_json["output"]["output_frame"]["name"]
+            return H2OFrame.get_frame(out_frame_name)

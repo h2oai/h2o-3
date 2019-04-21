@@ -1,30 +1,37 @@
 apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'java'
+apply plugin: 'com.github.hierynomus.license'
 
 description = "H2O Application Assembly"
-
 // Exclude unwanted dependencies
 configurations {
     compile.exclude module: 'junit'
     compile.exclude module: 'mockito-all'
     compile.exclude module: 'zookeeper'
-    compile.exclude module: "javax.mail.glassfish"
+    compile.exclude module: 'javax.mail.glassfish'
+    compile.exclude module: 'servlet-api'
+    compile.exclude group: 'org.mortbay.jetty' // exclude the whole group, nothing good in there
 }
 
 // Dependencies
 dependencies {
     compile project(":h2o-app")
+    runtime project(":${defaultWebserverModule}")
     compile project(":h2o-web")
     compile project(":h2o-avro-parser")
+    compile project(":h2o-persist-gcs")
     compile project(":h2o-persist-s3")
+    compile project(":h2o-persist-http")
     compile project(":h2o-persist-hdfs")
     if (project.hasProperty("doIncludeOrc") && project.doIncludeOrc == "true") {
         compile project(":h2o-orc-parser")
     }
     compile project(":h2o-parquet-parser")
-    compile "org.slf4j:slf4j-log4j12:1.7.5"
+    compile "org.slf4j:slf4j-log4j12:1.7.10"
+}
 
-    
+jar {
+    enabled = false
 }
 
 //
@@ -44,10 +51,10 @@ for (comp in optionalComponents) {
         project.ext.set(compPropVersionName, compVersion)
     }
     if (compEnabled || project.hasProperty(compPropName) && project.property(compPropName)) {
-        logger.lifecycle("== Using optional component: ${compName}, version ${project.findProperty(compPropVersionName)}")
+        logger.lifecycle("== ${project.path}: Using optional component: ${compName}, version ${project.findProperty(compPropVersionName)}")
         apply from: "$rootDir/gradle/components/${compName}.gradle"
     }
-    
+
 }
 
 shadowJar {
@@ -66,6 +73,10 @@ shadowJar {
   exclude 'devpay_products.properties'
   manifest {
     attributes 'Main-Class': 'water.H2OApp'
+  }
+  transform(com.github.jengelman.gradle.plugins.shadow.transformers.IncludeResourceTransformer.class) {
+    file = file("${buildDir}/reports/license/dependency-license.xml")
+    resource = "META-INF/license/h2o-depenencies-licenses.xml"
   }
 }
 
@@ -88,8 +99,53 @@ task copyJar(type: Copy) {
     into "${project.parent.parent.buildDir}"
     rename { it.replace(assembly, allInOne) }
 }
+
+downloadLicenses {
+    ext.apacheTwo = license('Apache License, Version 2.0', 'http://opensource.org/licenses/Apache-2.0')
+    ext.bsd = license('BSD License', 'http://www.opensource.org/licenses/bsd-license.php')
+
+    licenses = [
+            'commons-beanutils:commons-beanutils:1.7.0': apacheTwo,
+            'asm:asm-parent:3.1': bsd,
+            'org.codehaus.jettison:jettison:1.1': apacheTwo,
+            'javax.servlet.jsp:jsp-api:2.1': license('CDDL + GPLv2 with classpath exception', 'https://glassfish.dev.java.net/nonav/public/CDDL+GPL.html'),
+            'org.apache.zookeeper:zookeeper:3.4.6': apacheTwo
+    ]
+
+    aliases = [
+            (apacheTwo) : ['The Apache Software License, Version 2.0', 'Apache 2', 'Apache License Version 2.0', 'Apache License, Version 2.0', 'Apache License 2.0', license('Apache License', 'http://www.apache.org/licenses/LICENSE-2.0')],
+            (bsd) : ['BSD', license('New BSD License', 'http://www.opensource.org/licenses/bsd-license.php')]
+    ]
+}
+
+task licenseReport(dependsOn: project.tasks.getByName('downloadLicenses')) {
+    doLast {
+        def jsonLicensesFile = file("${buildDir}/reports/license/dependency-license.json")
+        def csvLicensesFile = file("${buildDir}/reports/license/dependency-license.csv")
+        def licenses = new groovy.json.JsonSlurper().parseText(jsonLicensesFile.text)
+        csvLicensesFile.withWriter('UTF-8') { w ->
+            boolean xgboostDefined = false
+            w.write('"Dependency","File","License Name","License URL"\n')
+            licenses.dependencies.each { dep ->
+                dep.licenses.each {
+                    boolean licenseValid = it.name != "No license found"
+                    if (! licenseValid) {
+                        if (dep.name == "asm:asm-parent:3.1") {
+                            // FIXME: manual override, this doesn't work for some reason!
+                            w.write("${dep.name},${dep.file},\"BSD License\",http://www.opensource.org/licenses/bsd-license.php\n")
+                        } else
+                            throw new StopExecutionException("License not found for dependency ${dep.name}. Please define dependency manually.")
+                    }
+                    w.write("${dep.name},${dep.file},\"${it.name}\",${it.url}\n")
+                }
+            }
+        }
+    }
+}
+
+// Include licences
+shadowJar.dependsOn(licenseReport)
 // Execute always copyJar
 shadowJar.finalizedBy copyJar
-// Run shadowJar as par of build
+// Run shadowJar as part of build
 jar.finalizedBy shadowJar
-

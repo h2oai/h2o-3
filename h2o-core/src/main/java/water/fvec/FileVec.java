@@ -87,6 +87,9 @@ public abstract class FileVec extends ByteVec {
       return _nChunks;
     return (int)Math.max(1,_len / _chunkSize + ((_len % _chunkSize != 0)?1:0));
   }
+  @Override public int nonEmptyChunks() {
+    return nChunks();
+  }
   @Override public boolean writable() { return false; }
 
   /** Size of vector data. */

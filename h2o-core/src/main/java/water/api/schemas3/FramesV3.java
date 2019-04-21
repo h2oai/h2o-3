@@ -17,13 +17,16 @@ public class FramesV3 extends RequestSchemaV3<Frames, FramesV3> {
   public long row_offset;
 
   @API(help="Number of rows to return", direction=API.Direction.INOUT)
-  public int row_count;
+  public int row_count = -1;
 
   @API(help="Column offset to return", direction=API.Direction.INOUT)
   public int column_offset;
 
+  @API(help="Number of full columns to return. The columns between full_column_count and column_count will be returned without the data", direction=API.Direction.INOUT)
+  public int full_column_count = -1;
+
   @API(help="Number of columns to return", direction=API.Direction.INOUT)
-  public int column_count;
+  public int column_count = -1;
 
   @API(help="Find and return compatible models?", json=false)
   public boolean find_compatible_models = false;
@@ -42,7 +45,7 @@ public class FramesV3 extends RequestSchemaV3<Frames, FramesV3> {
 
   // Output fields
   @API(help="Frames", direction=API.Direction.OUTPUT)
-  public FrameBaseV3[] frames;
+  public FrameV3[] frames;
 
   @API(help="Compatible models", direction=API.Direction.OUTPUT)
   public ModelSchemaV3[] compatible_models;
@@ -77,20 +80,6 @@ public class FramesV3 extends RequestSchemaV3<Frames, FramesV3> {
       int i = 0;
       for (Frame frame : f.frames) {
         this.frames[i++] = new FrameV3(frame, f.row_offset, f.row_count);
-      }
-    }
-    return this;
-  }
-
-  public FramesV3 fillFromImplWithSynopsis(Frames f) {
-    this.frame_id = new KeyV3.FrameKeyV3(f.frame_id);
-
-    if (f.frames != null) {
-      this.frames = new FrameSynopsisV3[f.frames.length];
-
-      int i = 0;
-      for (Frame frame : f.frames) {
-        this.frames[i++] = new FrameSynopsisV3(frame);
       }
     }
     return this;

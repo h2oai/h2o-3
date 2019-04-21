@@ -22,6 +22,8 @@ Defining a K-Means Model
 -  `validation_frame <algo-params/validation_frame.html>`__: (Optional) Specify the dataset used to evaluate
    the accuracy of the model.
 
+-  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns are used.
+
 -  `nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation.
 
 -  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Enable this option to keep the
@@ -33,7 +35,7 @@ Defining a K-Means Model
 
 -  `fold_column <algo-params/fold_column.html>`__: Specify the column that contains the cross-validation fold index assignment per observation.
 
--  `ignored_columns <algo-params/ignored_columns.html>`__: (Optional) Specify the column or columns to be exclude from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
+-  `ignored_columns <algo-params/ignored_columns.html>`__: (Optional, Python and Flow only) Specify the column or columns to be exclude from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
 
 -  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: (Optional) Specify whether to ignore constant training columns, since no information can be gained from them. This option is enabled by default.
 
@@ -67,32 +69,23 @@ Defining a K-Means Model
 - `categorical_encoding <algo-params/categorical_encoding.html>`__: Specify one of the following encoding schemes for handling categorical features:
 
   - ``auto`` or ``AUTO``: Allow the algorithm to decide (default). In K-Means, the algorithm will automatically perform ``enum`` encoding.
-  - ``one_hot_explicit`` or ``OneHotExplicit``: 1 column per categorical feature
+  - ``enum`` or ``Enum``: 1 column per categorical feature
   - ``one_hot_explicit``: N+1 new columns for categorical features with N levels
   - ``binary`` or ``Binary``: No more than 32 columns per categorical feature
   - ```eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
   - ``label_encoder`` or ``LabelEncoder``:  Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.)
-  - ``sort_by_response`` or ``SortByResponse``: Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.) 
 
 Interpreting a K-Means Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 By default, the following output displays:
 
--  A graph of the scoring history (number of iterations vs. average
-   within the cluster's sum of squares)
--  Output (model category, validation metrics if applicable, and centers
-   std)
--  Model Summary (number of clusters, number of categorical columns,
-   number of iterations, avg. within sum of squares, avg. sum of
-   squares, avg. between the sum of squares)
--  Scoring history (number of iterations, avg. change of standardized
-   centroids, avg. within cluster sum of squares)
--  Training metrics (model name, checksum name, frame name, frame
-   checksum name, description if applicable, model category, duration in
-   ms, scoring time, predictions, MSE, avg. within sum of squares, avg.
-   between sum of squares)
--  Centroid statistics (centroid number, size, within sum of squares)
+-  A graph of the scoring history (number of iterations vs. within the cluster's sum of squares)
+-  Output (model category, validation metrics if applicable, and centers std)
+-  Model Summary Model Summary (number of clusters, number of categorical columns, number of iterations, total within sum of squares, total sum of squares, total between the sum of squares. Note that Flow also returns the number of rows.)
+-  Scoring history (duration, number of iterations, number of reassigned observations, number of within cluster sum of squares)
+-  Training metrics (model name, checksum name, frame name, frame checksum name, description if applicable, model category, scoring time, predictions, MSE, RMSE, total within sum of squares, total sum of squares, total between sum of squares)
+-  Centroid statistics (centroid number, size, within cluster sum of squares)
 -  Cluster means (centroid number, column)
 
 K-Means randomly chooses starting points and converges to a local minimum of centroids. The number of clusters is arbitrary and should be thought of as a tuning parameter. The output is a matrix of the cluster assignments and the coordinates of the cluster centers in terms of the originally chosen attributes. Your cluster centers may differ slightly from run to run as this problem is Non-deterministic Polynomial-time (NP)-hard.

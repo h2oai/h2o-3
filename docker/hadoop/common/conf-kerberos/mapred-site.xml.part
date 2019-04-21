@@ -1,0 +1,11 @@
+    <!-- MapReduce Job History Server security configs -->
+    <property>
+        <name>mapreduce.jobhistory.keytab</name>
+        <value>SUBST_HADOOP_CONF_DIR/mapred.keytab</value>
+        <!-- path to the MAPRED keytab for the Job History Server -->
+    </property>
+
+    <property>
+        <name>mapreduce.jobhistory.principal</name>
+        <value>mapred/localhost@H2O.AI</value>
+    </property>

@@ -20,7 +20,7 @@ public class GlrmMojoWriter extends ModelMojoWriter<GLRMModel, GLRMModel.GLRMPar
   }
 
   @Override public String mojoVersion() {
-    return "1.00";
+    return "1.10";
   }
 
   @Override
@@ -31,6 +31,8 @@ public class GlrmMojoWriter extends ModelMojoWriter<GLRMModel, GLRMModel.GLRMPar
     writekv("gammaX", model._parms._gamma_x);
     writekv("gammaY", model._parms._gamma_y);
     writekv("ncolX", model._parms._k);
+    writekv("seed", model._parms._seed);  // store seed for later use
+    writekv("reverse_transform", model._parms._impute_original);
 
     // DataInfo mapping
     writekv("cols_permutation", model._output._permutation);
@@ -38,6 +40,7 @@ public class GlrmMojoWriter extends ModelMojoWriter<GLRMModel, GLRMModel.GLRMPar
     writekv("num_numeric", model._output._nnums);
     writekv("norm_sub", model._output._normSub);
     writekv("norm_mul", model._output._normMul);
+    writekv("transposed", model._output._archetypes_raw._transposed);
 
     // Loss functions
     writekv("ncolA", model._output._lossFunc.length);
@@ -52,6 +55,7 @@ public class GlrmMojoWriter extends ModelMojoWriter<GLRMModel, GLRMModel.GLRMPar
     writekv("ncolY", arch.nfeatures());
     writekv("nrowY", arch.rank());
     writekv("num_levels_per_category", arch._numLevels);
+    writekv("catOffsets", arch._catOffsets);
     int n = arch.rank() * arch.nfeatures();
     ByteBuffer bb = ByteBuffer.wrap(new byte[n * 8]);
     for (double[] row : arch.getY(false))

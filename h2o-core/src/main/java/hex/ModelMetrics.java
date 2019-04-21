@@ -3,11 +3,10 @@ package hex;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OKeyNotFoundArgumentException;
+import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.util.IcedHashMap;
-import water.util.Log;
-import water.util.PojoUtils;
-import water.util.TwoDimTable;
+import water.fvec.Vec;
+import water.util.*;
 
 import java.lang.reflect.Method;
 import java.util.*;
@@ -21,12 +20,15 @@ import java.util.*;
  */
 public class ModelMetrics extends Keyed<ModelMetrics> {
   public String _description;
-  final Key _modelKey;
-  final Key _frameKey;
-  final ModelCategory _model_category;
-  final long _model_checksum;
-  long _frame_checksum;  // when constant column is dropped, frame checksum changed.  Need re-assign for GLRM.
+  // Model specific information
+  private Key _modelKey;
+  private ModelCategory _model_category;
+  private long _model_checksum;
+  // Frame specific information
+  private Key _frameKey;
+  private long _frame_checksum;  // when constant column is dropped, frame checksum changed.  Need re-assign for GLRM.
   public final long _scoring_time;
+  public final CustomMetric _custom_metric;
 
   // Cached fields - cached them when needed
   private transient Model _model;
@@ -35,18 +37,14 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   public final double _MSE;     // Mean Squared Error (Every model is assumed to have this, otherwise leave at NaN)
   public final long _nobs;
 
-  public ModelMetrics(Model model, Frame frame, long nobs, double MSE, String desc) {
+  public ModelMetrics(Model model, Frame frame, long nobs, double MSE, String desc, CustomMetric customMetric) {
     super(buildKey(model, frame));
+    withModelAndFrame(model, frame);
     _description = desc;
-
-    _modelKey = model == null ? null : model._key;
-    _frameKey = frame == null ? null : frame._key;
-    _model_category = model == null ? null : model._output.getModelCategory();
-    _model_checksum = model == null ? 0 : model.checksum();
-    try { _frame_checksum = frame.checksum(); } catch (Throwable t) { }
     _MSE = MSE;
     _nobs = nobs;
     _scoring_time = System.currentTimeMillis();
+    _custom_metric = customMetric;
   }
 
   private void setModelAndFrameFields(Model model, Frame frame) {
@@ -58,6 +56,23 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
       PojoUtils.setField(this, "_frame_checksum", frame.checksum());
     }
     catch (Throwable t) { }
+  }
+
+  public final ModelMetrics withModelAndFrame(Model model, Frame frame) {
+    _modelKey = model == null ? null : model._key;
+    _model_category = model == null ? null : model._output.getModelCategory();
+    _model_checksum = model == null ? 0 : model.checksum();
+
+    _frameKey = frame == null ? null : frame._key;
+    try { _frame_checksum = frame == null ? 0 : frame.checksum(); } catch (Throwable t) { }
+
+    _key = buildKey(model, frame);
+    return this;
+  }
+
+  public ModelMetrics withDescription(String desc) {
+    _description = desc;
+    return this;
   }
 
   /**
@@ -82,13 +97,17 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     sb.append(" Description: " + (_description == null ? "N/A" : _description) + "\n");
     sb.append(" model id: " + _modelKey + "\n");
     sb.append(" frame id: " + _frameKey + "\n");
-    sb.append(" MSE: " + (float)_MSE + "\n");
-    sb.append(" RMSE: " + (float)rmse() + "\n");
-    return sb.toString();
+    return appendToStringMetrics(sb).toString();
   }
 
-  public Model model() { return _model==null ? (_model=DKV.getGet(_modelKey)) : _model; }
-  public Frame frame() { return _frame==null ? (_frame=DKV.getGet(_frameKey)) : _frame; }
+  protected StringBuilder appendToStringMetrics(StringBuilder sb) {
+    sb.append(" MSE: ").append((float)_MSE).append("\n");
+    sb.append(" RMSE: ").append((float)rmse()).append("\n");
+    return sb;
+  }
+
+  public final Model model() { return _model==null ? (_model=DKV.getGet(_modelKey)) : _model; }
+  public final Frame frame() { return _frame==null ? (_frame=DKV.getGet(_frameKey)) : _frame; }
 
   public double mse() { return _MSE; }
   public double rmse() { return Math.sqrt(_MSE);}
@@ -96,24 +115,30 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   public float[] hr() { return null; }
   public AUC2 auc_obj() { return null; }
 
-  static public double getMetricFromModel(Key<Model> key, String criterion) {
-    Model model = DKV.getGet(key);
-    if (null == model) throw new H2OIllegalArgumentException("Cannot find model " + key);
-    ModelMetrics mm =
-            model._output._cross_validation_metrics != null ?
-                    model._output._cross_validation_metrics :
-                    model._output._validation_metrics != null ?
-                            model._output._validation_metrics :
-                            model._output._training_metrics;
-    return getMetricFromModelMetric(mm, criterion);
+  public static ModelMetrics defaultModelMetrics(Model model) {
+    return model._output._cross_validation_metrics != null ? model._output._cross_validation_metrics
+        : model._output._validation_metrics != null ? model._output._validation_metrics
+        : model._output._training_metrics;
   }
 
-  static public double getMetricFromModelMetric(ModelMetrics mm, String criterion) {
-    if (null == criterion || criterion.equals("")) throw new H2OIllegalArgumentException("Need a valid criterion, but got '" + criterion + "'.");
+  public static double getMetricFromModel(Key<Model> key, String criterion) {
+    Model model = DKV.getGet(key);
+    if (null == model) throw new H2OIllegalArgumentException("Cannot find model " + key);
+    return getMetricFromModelMetric(defaultModelMetrics(model), criterion);
+  }
+
+  public static double getMetricFromModelMetric(ModelMetrics mm, String criterion) {
+    if (null == criterion || criterion.equals("")) {
+      throw new H2OIllegalArgumentException("Need a valid criterion, but got '" + criterion + "'.");
+    }
+
     Method method = null;
+    Object obj = null;
+    criterion = criterion.toLowerCase();
     ConfusionMatrix cm = mm.cm();
     try {
-      method = mm.getClass().getMethod(criterion.toLowerCase());
+      method = mm.getClass().getMethod(criterion);
+      obj = mm;
     }
     catch (Exception e) {
       // fall through
@@ -121,7 +146,8 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
 
     if (null == method && null != cm) {
       try {
-        method = cm.getClass().getMethod(criterion.toLowerCase());
+        method = cm.getClass().getMethod(criterion);
+        obj = cm;
       }
       catch (Exception e) {
         // fall through
@@ -130,20 +156,15 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     if (null == method)
       throw new H2OIllegalArgumentException("Failed to find ModelMetrics for criterion: " + criterion);
 
-    double c;
     try {
-      c = (double) method.invoke(mm);
-    } catch(Exception fallthru) {
-      try {
-        c = (double)method.invoke(cm);
-      } catch (Exception e) {
-        throw new H2OIllegalArgumentException(
-                "Failed to get metric: " + criterion + " from ModelMetrics object: " + mm,
-                "Failed to get metric: " + criterion + " from ModelMetrics object: " + mm + ", criterion: " + method + ", exception: " + e
-        );
-      }
+      return (double) method.invoke(obj);
+    } catch (Exception e) {
+      Log.err(e);
+      throw new H2OIllegalArgumentException(
+              "Failed to get metric: " + criterion + " from ModelMetrics object: " + mm,
+              "Failed to get metric: " + criterion + " from ModelMetrics object: " + mm + ", criterion: " + method + ", exception: " + e.getMessage()
+      );
     }
-    return c;
   }
 
 
@@ -189,8 +210,8 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
       Model model = modelKey.get();
       mm = ModelMetrics.getFromDKV(model, this.frame);
       if (null == mm) {
-        // call score()
-        Frame preds = model.score(this.frame);
+        // call score() and immediately delete the resulting frame to avoid leaks
+        model.score(this.frame).delete();
 
         mm = ModelMetrics.getFromDKV(model, this.frame);
         if (null == mm) {
@@ -217,12 +238,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     Set<String> res = new HashSet<>();
     Model model = DKV.getGet(key);
     if (null == model) throw new H2OIllegalArgumentException("Cannot find model " + key);
-    ModelMetrics m =
-            model._output._cross_validation_metrics != null ?
-                    model._output._cross_validation_metrics :
-                    model._output._validation_metrics != null ?
-                            model._output._validation_metrics :
-                            model._output._training_metrics;
+    ModelMetrics m = defaultModelMetrics(model);
     ConfusionMatrix cm = m.cm();
     Set<String> excluded = new HashSet<>();
     excluded.add("makeSchema");
@@ -297,17 +313,10 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
 
   public static TwoDimTable calcVarImp(VarImp vi) {
     if (vi == null) return null;
-    double[] dbl_rel_imp = new double[vi._varimp.length];
-    for (int i=0; i<dbl_rel_imp.length; ++i) {
-      dbl_rel_imp[i] = vi._varimp[i];
-    }
-    return calcVarImp(dbl_rel_imp, vi._names);
+    return calcVarImp(vi._varimp, vi._names);
   }
   public static TwoDimTable calcVarImp(final float[] rel_imp, String[] coef_names) {
-    double[] dbl_rel_imp = new double[rel_imp.length];
-    for (int i=0; i<dbl_rel_imp.length; ++i) {
-      dbl_rel_imp[i] = rel_imp[i];
-    }
+    double[] dbl_rel_imp = ArrayUtils.toDouble(rel_imp);
     return calcVarImp(dbl_rel_imp, coef_names);
   }
   public static TwoDimTable calcVarImp(final double[] rel_imp, String[] coef_names) {
@@ -356,7 +365,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
             new String[rel_imp.length][], sorted_imp);
   }
 
-  private static Key<ModelMetrics> buildKey(Key model_key, long model_checksum, Key frame_key, long frame_checksum) {
+  public static Key<ModelMetrics> buildKey(Key model_key, long model_checksum, Key frame_key, long frame_checksum) {
     return Key.make("modelmetrics_" + model_key + "@" + model_checksum + "_on_" + frame_key + "@" + frame_checksum);
   }
 
@@ -379,13 +388,16 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
    *  the {@code reduce} method called once per MRTask.reduce, and the {@code
    *  <init>} called once per MRTask.map.
    */
-  public static abstract class MetricBuilder<T extends MetricBuilder<T>> extends Iced {
+  public static abstract class MetricBuilder<T extends MetricBuilder<T>> extends Iced<T> {
     transient public double[] _work;
     public double _sumsqe;      // Sum-squared-error
     public long _count;
     public double _wcount;
     public double _wY; // (Weighted) sum of the response
     public double _wYY; // (Weighted) sum of the squared response
+
+    // Custom metric holder
+    public CustomMetric _customMetric = null;
 
     public  double weightedSigma() {
 //      double sampleCorrection = _count/(_count-1); //sample variance -> depends on the number of ACTUAL ROWS (not the weighted count)
@@ -405,7 +417,13 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
       _wYY += mb._wYY;
     }
 
-    public void postGlobal() {}
+    public void postGlobal() {
+      postGlobal(null);
+    }
+
+    public void postGlobal(CustomMetric customMetric) {
+      this._customMetric = customMetric;
+    }
 
     /**
      * Having computed a MetricBuilder, this method fills in a ModelMetrics
@@ -415,5 +433,22 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
      *@param preds Predictions of m on f (optional)  @return Filled Model Metrics object
      */
     public abstract ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds);
+
+    /**
+     * Set value of custom metric.
+     * @param customMetric  computed custom metric outside of this default builder
+     */
+    public void setCustomMetric(CustomMetric customMetric) {
+      _customMetric = customMetric;
+    }
+
+    public Frame makePredictionCache(Model m, Vec response) {
+      return null;
+    }
+
+    public void cachePrediction(double[] cdist, Chunk[] chks, int row, int cacheChunkIdx, Model m) {
+      throw new UnsupportedOperationException("Should be overridden in implementation (together with makePredictionCache(..)).");
+    }
+
   }
 }

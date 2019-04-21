@@ -4,29 +4,29 @@ Distributed Random Forest (DRF)
 Introduction
 ~~~~~~~~~~~~
 
-Distributed Random Forest (DRF) is a powerful classification and regression tool. When given a set of data, DRF generates a forest of classification (or regression) trees, rather than a single classification (or regression) tree. Each of these trees is a weak
-learner built on a subset of rows and columns. More trees will reduce
-the variance. Both classification and regression take the average prediction over all of their trees to make a final prediction, whether predicting for a class or numeric value (note: for a categorical response column, DRF maps factors  (e.g. 'dog', 'cat', 'mouse) in lexicographic order to a name lookup array with integer indices (e.g. 'cat -> 0, 'dog' -> 1, 'mouse' -> 2).
+Distributed Random Forest (DRF) is a powerful classification and regression tool. When given a set of data, DRF generates a forest of classification or regression trees, rather than a single classification or regression tree. Each of these trees is a weak learner built on a subset of rows and columns. More trees will reduce the variance. Both classification and regression take the average prediction over all of their trees to make a final prediction, whether predicting for a class or numeric value. (Note: For a categorical response column, DRF maps factors  (e.g. 'dog', 'cat', 'mouse) in lexicographic order to a name lookup array with integer indices (e.g. 'cat -> 0, 'dog' -> 1, 'mouse' -> 2.)
 
-The current version of DRF is fundamentally the same as in previous
-versions of H2O (same algorithmic steps, same histogramming techniques),
-with the exception of the following changes:
+The current version of DRF is fundamentally the same as in previous versions of H2O (same algorithmic steps, same histogramming techniques), with the exception of the following changes:
 
--  Improved ability to train on categorical variables (using the
-   ``nbins_cats`` parameter)
+-  Improved ability to train on categorical variables (using the ``nbins_cats`` parameter)
 -  Minor changes in histogramming logic for some corner cases
 -  By default, DRF builds half as many trees for binomial problems, similar to GBM: it uses a single tree to estimate class 0 (probability "p0"), and then computes the probability of class 0 as :math:`1.0 - p0`.  For multiclass problems, a tree is used to estimate the probability of each class separately.
 
-There was some code cleanup and refactoring to support the following
-features:
+There was some code cleanup and refactoring to support the following features:
 
 -  Per-row observation weights
--  Per-row offsets
 -  N-fold cross-validation
 
-DRF no longer has a special-cased histogram for classification (class
-DBinomHistogram has been superseded by DRealHistogram), since it was not
-applicable to cases with observation weights or for cross-validation.
+DRF no longer has a special-cased histogram for classification (class DBinomHistogram has been superseded by DRealHistogram) since it was not applicable to cases with observation weights or for cross-validation.
+
+.. _xrt:
+
+Extremely Randomized Trees
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In random forests, a random subset of candidate features is used to determine the most discriminative thresholds that are picked as the splitting rule. In extremely randomized trees (XRT), randomness goes one step further in the way that splits are computed. As in random forests, a random subset of candidate features is used, but instead of looking for the most discriminative thresholds, thresholds are drawn at random for each candidate feature, and the best of these randomly generated thresholds is picked as the splitting rule. This usually allows to reduce the variance of the model a bit more, at the expense of a slightly greater increase in bias.
+
+H2O supports extremely randomized trees (XRT) via ``histogram_type="Random"``. When this is specified, the algorithm will sample N-1 points from min...max and use the sorted list of those to find the best split. The cut points are random rather than uniform. For example, to generate 4 bins for some feature ranging from 0-100, 3 random numbers would be generated in this range (13.2, 89.12, 45.0). The sorted list of these random numbers forms the histogram bin boundaries e.g. (0-13.2, 13.2-45.0, 45.0-89.12, 89.12-100).
 
 Defining a DRF Model
 ~~~~~~~~~~~~~~~~~~~~
@@ -44,8 +44,9 @@ Defining a DRF Model
 
 -  `nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation.
 
--  `y <algo-params/y.html>`__: (Required) Specify the column to use as the
-   independent variable. The data can be numeric or categorical.
+-  `y <algo-params/y.html>`__: (Required) Specify the column to use as the dependent variable. The data can be numeric or categorical.
+
+-  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
 
 -  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Enable this option to keep the cross-validation prediction.
 
@@ -66,7 +67,7 @@ Defining a DRF Model
 -  `fold_column <algo-params/fold_column.html>`__: Specify the column that contains the
    cross-validation fold index assignment per observation.
 
--  `ignored_columns <algo-params/ignored_columns.html>`__: (Optional) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column
+-  `ignored_columns <algo-params/ignored_columns.html>`__: (Optional, Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column
    name to add it to the list of columns excluded from the model. To add
    all columns, click the **All** button. To remove a column from the
    list of ignored columns, click the X next to the column name. To
@@ -82,10 +83,6 @@ Defining a DRF Model
    training columns, since no information can be gained from them. This
    option is enabled by default.
 
--  `offset_column <algo-params/offset_column.html>`__: Specify a column to use as the offset. 
-
-    **Note**: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__.
-
 -  `weights_column <algo-params/weights_column.html>`__: Specify a column to use for the observation
    weights, which are used for bias correction. The specified
    ``weights_column`` must be included in the specified
@@ -100,10 +97,7 @@ Defining a DRF Model
    increase the data frame size. This option is only applicable for
    classification.
 
--  `class_sampling_factors <algo-params/class_sampling_factors.html>`__: Specify the per-class (in
-   lexicographical order) over/under-sampling ratios. By default, these
-   ratios are automatically computed during training to obtain the class
-   balance.
+-  `class_sampling_factors <algo-params/class_sampling_factors.html>`__: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. Note that this requires ``balance_classes=true``.
 
 -  `max_after_balance_size <algo-params/max_after_balance_size.html>`__: Specify the maximum relative size of
    the training data after balancing class counts (**balance\_classes**
@@ -115,7 +109,7 @@ Defining a DRF Model
 
 -  `ntrees <algo-params/ntrees.html>`__: Specify the number of trees.
 
--  `max_depth <algo-params/max_depth.html>`__: Specify the maximum tree depth.
+-  `max_depth <algo-params/max_depth.html>`__: Specify the maximum tree depth. Higher values will make the model more complex and can lead to overfitting. Setting this value to 0 specifies no limit. This value defaults to 20. 
 
 -  `min_rows <algo-params/min_rows.html>`__: Specify the minimum number of observations for a leaf
    (``nodesize`` in R).
@@ -165,7 +159,9 @@ Defining a DRF Model
     - ``lift_top_group``
     - ``misclassification``
     - ``mean_per_class_error``
-
+    - ``custom`` (Python client only)
+    - ``custom_increasing`` (Python client only)
+    
 -  `stopping_tolerance <algo-params/stopping_tolerance.html>`__: Specify the relative tolerance for the
    metric-based stopping to stop training if the improvement is less
    than this value.
@@ -188,13 +184,9 @@ Defining a DRF Model
    regression (where p is the number of predictors). The range is -1 to
    >=1.
 
--  `sample_rate <algo-params/sample_rate.html>`__: Specify the row sampling rate (x-axis). The range
-   is 0.0 to 1.0. Higher values may improve training accuracy. Test
-   accuracy improves when either columns or rows are sampled. For
-   details, refer to "Stochastic Gradient Boosting" (`Friedman,
-   1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
+-  `sample_rate <algo-params/sample_rate.html>`__: Specify the row sampling rate (x-axis). (Note that this method is sample without replacement.) The range is 0.0 to 1.0, and this value defaults to 0.6320000291. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" (`Friedman, 1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
 
--  `sample_rate_per_class <algo-params/sample_rate_per_class.html>`__: When building models from imbalanced datasets, this option specifies that each tree in the ensemble should sample from the full training dataset using a per-class-specific sampling rate rather than a global sample factor (as with `sample_rate`). The range for this option is 0.0 to 1.0. If this option is specified along with **sample_rate**, then only the first option that DRF encounters will be used.
+-  `sample_rate_per_class <algo-params/sample_rate_per_class.html>`__: When building models from imbalanced datasets, this option specifies that each tree in the ensemble should sample from the full training dataset using a per-class-specific sampling rate rather than a global sample factor (as with `sample_rate`). The range for this option is 0.0 to 1.0. Note that this method is sample without replacement.
 
 -  `binomial_double_trees <algo-params/binomial_double_trees.html>`__: (Binary classification only) Build twice
    as many trees (one per class). Enabling this option can lead to
@@ -205,7 +197,7 @@ Defining a DRF Model
    previously trained model. Use this option to build a new model as a
    continuation of a previously generated model.
 
--  `col_sample_rate_change_per_level <algo-params/col_sample_rate_change_per_level.html>`__: This option specifies to change the column sampling rate as a function of the depth in the tree. For example:
+-  `col_sample_rate_change_per_level <algo-params/col_sample_rate_change_per_level.html>`__: This option specifies to change the column sampling rate as a function of the depth in the tree. This can be a value > 0.0 and <= 2.0 and defaults to 1. (Note that this method is sample without replacement.) For example:
 
    level 1: **col\_sample_rate**
   
@@ -217,7 +209,7 @@ Defining a DRF Model
   
    etc.
 
--  `col_sample_rate_per_tree <algo-params/col_sample_rate_per_tree.html>`__: Specify the column sample rate per tree. This can be a value from 0.0 to 1.0. Note that it is multiplicative with ``col_sample_rate``, so setting both parameters to 0.8, for example, results in 64% of columns being considered at any given node to split.
+-  `col_sample_rate_per_tree <algo-params/col_sample_rate_per_tree.html>`__: Specify the column sample rate per tree. This can be a value from 0.0 to 1.0 and defaults to 1. Note that this method is sample without replacement.
 
 -  `min_split_improvement <algo-params/min_split_improvement.html>`__: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range.
 
@@ -229,17 +221,29 @@ Defining a DRF Model
 	- QuantilesGlobal
 	- RoundRobin
 
-    **Note**: H2O supports extremely randomized trees via ``histogram_type="Random"``. In extremely randomized trees (Extra-Trees), randomness goes one step further in the way splits are computed. As in Random Forests, a random subset of candidate features is used, but instead of looking for the best split, thresholds (for the split) are drawn at random for each candidate feature, and the best of these randomly-generated thresholds is picked as the splitting rule. This usually allows to reduce the variance of the model a bit more, at the expense of a slightly greater increase in bias.
-
 - `categorical_encoding <algo-params/categorical_encoding.html>`__: Specify one of the following encoding schemes for handling categorical features:
 
   - ``auto`` or ``AUTO``: Allow the algorithm to decide (default). In DRF, the algorithm will automatically perform ``enum`` encoding.
   - ``enum`` or ``Enum``: 1 column per categorical feature
+  - ``enum_limited`` or ``EnumLimited``: Automatically reduce categorical levels to the most prevalent ones during Aggregator training and only keep the **T** (1024) most frequent levels.
   - ``one_hot_explicit`` or ``OneHotExplicit``: N+1 new columns for categorical features with N levels
   - ``binary`` or ``Binary``: No more than 32 columns per categorical feature
   - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
   - ``label_encoder`` or ``LabelEncoder``:  Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.)
-  - ``sort_by_response`` or ``SortByResponse``: Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.). This is useful in GBM/DRF, for example, when you have more levels than ``nbins_cats``, and where the top level splits now have a chance at separating the data with a split. 
+  - ``sort_by_response`` or ``SortByResponse``: Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.). This is useful in GBM/DRF, for example, when you have more levels than ``nbins_cats``, and where the top level splits now have a chance at separating the data with a split. Note that this requires a specified response column.
+
+-  `calibrate_model <algo-params/calibrate_model.html>`__: Use Platt scaling to calculate calibrated class probabilities. Defaults to False.
+
+-  `calibration_frame <algo-params/calibration_frame.html>`__: Specifies the frame to be used for Platt scaling.
+
+-  **verbose**: Print scoring history to the console. For DRF, metrics are per tree. This value defaults to FALSE.
+
+-  `custom_metric_func <algo-params/custom_metric_func.html>`__: Optionally specify a custom evaluation function.
+
+-  **export_checkpoints_dir**: Optionally specify a path to a directory where every generated model will be stored when checkpointing models.
+
+-  `check_constant_response <algo-params/check_constant_response.html>`__: Check if the response column is a constant value. If enabled (default), then an exception is thrown if the response column is a constant value. If disabled, then the model will train regardless of the response column being a constant value or not.
+
 
 Interpreting a DRF Model
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -269,10 +273,10 @@ Leaf Node Assignment
 Trees cluster observations into leaf nodes, and this information can be
 useful for feature engineering or model interpretability. Use
 **h2o.predict\_leaf\_node\_assignment(** *model*, *frame* **)** to get an H2OFrame
-with the leaf node assignments, or click the checkbox when making
+with the leaf node assignments, or click the **Compute Leafe Node Assignment** checkbox when making
 predictions from Flow. Those leaf nodes represent decision rules that
 can be fed to other models (i.e., GLM with lambda search and strong
-rules) to obtain a limited set of the most important rules.
+rules) to obtain a limited set of the most important rules. 
 
 FAQ
 ~~~
@@ -280,6 +284,8 @@ FAQ
 -  **How does the algorithm handle missing values during training?**
 
   Missing values are interpreted as containing information (i.e., missing for a reason), rather than missing at random. During tree building, split decisions for every node are found by minimizing the loss function and treating missing values as a separate category that can go either left or right.
+
+  **Note**: Unlike in GLM, in DRF numerical values are handled the same way as categorical values. Missing values are not imputed with the mean, as is done by default in GLM.
 
 -  **How does the algorithm handle missing values during testing?**
 
@@ -292,7 +298,7 @@ FAQ
 -  **What happens when you try to predict on a categorical level not
    seen during training?**
 
-  DRF converts a new categorical level to a NA value in the test set, and then splits left on the NA value during scoring. The algorithm splits left on NA values because, during training, Na values are grouped with the outliers in the left-most bin.
+  DRF converts a new categorical level to a NA value in the test set, and then splits left on the NA value during scoring. The algorithm splits left on NA values because, during training, NA values are grouped with the outliers in the left-most bin.
 
 -  **Does it matter if the data is sorted?**
 
@@ -315,11 +321,29 @@ FAQ
 
   Large numbers of categoricals are handled very efficiently - there is never any one-hot encoding.
 
--  **How is variable importance calculated for DRF?**
+- **Does the algo stop splitting when all the possible splits lead to worse error measures?**
 
- Variable importance is determined by calculating the relative influence of each variable: whether that variable was selected during splitting in the tree building process and how much the squared error (over all trees) improved as a result.
+ It does if you use ``min_split_improvement`` (min_split_improvement turned ON by default (0.00001).) When properly tuned, this option can help reduce overfitting. 
 
--  **How is column sampling implemented for DRF?**
+- **When does the algo stop splitting on an internal node?**
+
+ A single tree will stop splitting when there are no more splits that satisfy the minimum rows parameter, if it reaches ``max_depth``, or if there are no splits that satisfy the ``min_split_improvement`` parameter.
+
+- **How does DRF decide which feature to split on?**
+
+ It splits on the column and level that results in the greatest reduction in residual sum of the squares (RSS) in the subtree at that point. It considers all fields available from the algorithm. Note that any use of column sampling and row sampling will cause each decision to not consider all data points, and that this is on purpose to generate more robust trees. To find the best level, the histogram binning process is used to quickly compute the potential MSE of each possible split. The number of bins is controlled via ``nbins_cats`` for categoricals, the pair of ``nbins`` (the number of bins for the histogram to build, then split at the best point), and ``nbins_top_level`` (the minimum number of bins at the root level to use to build the histogram). This number will then be decreased by a factor of two per level. 
+
+ For ``nbins_top_level``, higher = more precise, but potentially more prone to overfitting. Higher also takes more memory and possibly longer to run.
+
+- **What is the difference between nbins and nbins_top_level?**
+
+ ``nbins`` and ``nbins_top_level`` are both for numerics (real and integer). ``nbins_top_level`` is the number of bins DRF uses at the top of each tree. It then divides by 2 at each ensuing level to find a new number. ``nbins`` controls when DRF stops dividing by 2.
+
+- **How is variable importance calculated for DRF?**
+
+  When calculating variable importances, H2O-3 looks at the squared error before and after the split using a particular variable. The difference is the improvement. H2O uses the improvement in squared error for each feature that was split on (rather than the accuracy). Each features improvement is then summed up at the end to get its total feature importance (and then scaled between 0-1).
+
+- **How is column sampling implemented for DRF?**
 
   For an example model using:
 
@@ -335,7 +359,7 @@ FAQ
 
   ``mtries`` is configured independently of ``col_sample_rate_per_tree``, but it can be limited by it. For example, if ``col_sample_rate_per_tree=0.01``, then there’s only one column left for each split, regardless of how large the value for ``mtries`` is.
 
--  **Why does performance appear slower in DRF than in GBM?**
+- **Why does performance appear slower in DRF than in GBM?**
 
   With DRF, depth and size of trees can result in speed tradeoffs.
 
@@ -366,4 +390,8 @@ DRF Algorithm
 References
 ~~~~~~~~~~
 
-`P. Geurts, D. Ernst., and L. Wehenkel, “Extremely randomized trees”, Machine Learning, 63(1), 3-42, 2006. <http://link.springer.com/article/10.1007%2Fs10994-006-6226-1>`_
+`P. Geurts, D. Ernst., and L. Wehenkel, "Extremely randomized trees", Machine Learning, 63(1), 3-42, 2006. <http://link.springer.com/article/10.1007%2Fs10994-006-6226-1>`_
+
+`Niculescu-Mizil, Alexandru and Caruana, Rich, "Predicting Good Probabilities with Supervised Learning", Ithaca, NY, 2005. <http://www.datascienceassn.org/sites/default/files/Predicting%20good%20probabilities%20with%20supervised%20learning.pdf>`__ 
+
+`Nee, Daniel, "Calibrating Classifier Probabilities", 2014 <http://danielnee.com/tag/platt-scaling>`__

@@ -77,6 +77,7 @@ def cv_cars_gbm():
   cars = cars.cbind(fold_assignments)
   gbm = H2OGradientBoostingEstimator(distribution=distribution,
                                      ntrees=5,
+                                     keep_cross_validation_models=True,
                                      keep_cross_validation_predictions=True)
   gbm.train(x=predictors, y=response_col, training_frame=cars, fold_column="fold_assignments")
 

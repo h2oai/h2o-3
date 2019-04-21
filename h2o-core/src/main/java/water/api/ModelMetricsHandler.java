@@ -2,11 +2,13 @@ package water.api;
 
 import hex.*;
 import hex.genmodel.utils.DistributionFamily;
+import org.apache.commons.lang.ArrayUtils;
 import water.*;
 import water.api.schemas3.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.fvec.Frame;
+import water.udf.CFuncRef;
 import water.util.Log;
 
 class ModelMetricsHandler extends Handler {
@@ -27,6 +29,7 @@ class ModelMetricsHandler extends Handler {
     public boolean _reverse_transform;
     public boolean _leaf_node_assignment;
     public int _exemplar_index = -1;
+    public String _custom_metric_func;
 
     // Fetch all metrics that match model and/or frame
     ModelMetricsList fetch() {
@@ -118,11 +121,23 @@ class ModelMetricsHandler extends Handler {
     @API(help = "Return the leaf node assignment (optional, only for DRF/GBM models)", json = false)
     public boolean leaf_node_assignment;
 
+    @API(help = "Type of the leaf node assignment (optional, only for DRF/GBM models)", values = {"Path", "Node_ID"}, json = false)
+    public Model.LeafNodeAssignment.LeafNodeAssignmentType leaf_node_assignment_type;
+
+    @API(help = "Predict the class probabilities at each stage (optional, only for GBM models)", json = false)
+    public boolean predict_staged_proba;
+
+    @API(help = "Predict the feature contributions - Shapley values (optional, only for GBM and XGBoost models)", json = false)
+    public boolean predict_contributions;
+
     @API(help = "Retrieve all members for a given exemplar (optional, only for Aggregator models)", json = false)
     public int exemplar_index;
 
     @API(help = "Compute the deviances per row (optional, only for classification or regression models)", json = false)
     public boolean deviances;
+
+    @API(help = "Reference to custom evaluation function, format: `language:keyName=funcName`", json=false)
+    public String custom_metric_func;
 
     // Output fields
     @API(help = "ModelMetrics", direction = API.Direction.OUTPUT)
@@ -232,7 +247,12 @@ class ModelMetricsHandler extends Handler {
     if (null == DKV.get(s.frame.name)) throw new H2OKeyNotFoundArgumentException("frame", "predict", s.frame.name);
 
     ModelMetricsList parms = s.createAndFillImpl();
-    parms._model.score(parms._frame, parms._predictions_name).remove(); // throw away predictions, keep metrics as a side-effect
+
+    String customMetricFunc = s.custom_metric_func;
+    if (customMetricFunc == null) {
+      customMetricFunc = parms._model._parms._custom_metric_func;
+    }
+    parms._model.score(parms._frame, parms._predictions_name, null, true, CFuncRef.from(customMetricFunc)).remove(); // throw away predictions, keep metrics as a side-effect
     ModelMetricsListSchemaV3 mm = this.fetch(version, s);
 
     // TODO: for now only binary predictors write an MM object.
@@ -302,8 +322,14 @@ class ModelMetricsHandler extends Handler {
       if (pred.numCols()!=s.domain.length) {
         throw new H2OIllegalArgumentException("predictions_frame", "make", "For domains with " + s.domain.length + " class labels, the predictions_frame must have exactly " + s.domain.length + " columns containing the class-probabilities.");
       }
-      ModelMetricsMultinomial mm = ModelMetricsMultinomial.make(pred, act.anyVec(), s.domain);
-      s.model_metrics = new ModelMetricsMultinomialV3().fillFromImpl(mm);
+
+      if (s.distribution == DistributionFamily.ordinal) {
+        ModelMetricsOrdinal mm = ModelMetricsOrdinal.make(pred, act.anyVec(), s.domain);
+        s.model_metrics = new ModelMetricsOrdinalV3().fillFromImpl(mm);
+      } else {
+        ModelMetricsMultinomial mm = ModelMetricsMultinomial.make(pred, act.anyVec(), s.domain);
+        s.model_metrics = new ModelMetricsMultinomialV3().fillFromImpl(mm);
+      }
     } else {
       throw H2O.unimpl();
     }
@@ -311,7 +337,8 @@ class ModelMetricsHandler extends Handler {
   }
 
   /**
-   * Score a frame with the given model and return the metrics AND the prediction frame.
+   * Score a frame with the given model and return a Job that output a frame with predictions.
+   * Do *not* calculate ModelMetrics.
    */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public JobV3 predictAsync(int version, final ModelMetricsListSchemaV3 s) {
@@ -348,7 +375,7 @@ class ModelMetricsHandler extends Handler {
       @Override
       public void compute2() {
         if (s.deep_features_hidden_layer < 0 && s.deep_features_hidden_layer_name == null) {
-          parms._model.score(parms._frame, parms._predictions_name, j, true);
+          parms._model.score(parms._frame, parms._predictions_name, j, false, CFuncRef.from(s.custom_metric_func));
         }
         else if (s.deep_features_hidden_layer_name != null){
           Frame predictions = null;
@@ -367,6 +394,10 @@ class ModelMetricsHandler extends Handler {
           Frame predictions = ((Model.DeepFeatures) parms._model).scoreDeepFeatures(parms._frame, s.deep_features_hidden_layer, j);
           predictions = new Frame(Key.<Frame>make(parms._predictions_name), predictions.names(), predictions.vecs());
           DKV.put(predictions._key, predictions);
+        }
+        if ((parms._model._warningsP != null) && (parms._model._warningsP.length > 0)) { // add prediction warning here only
+          String[] allWarnings = (String[]) ArrayUtils.addAll(j.warns(), parms._model._warningsP); // copy both over
+          j.setWarnings(allWarnings);
         }
         tryComplete();
       }
@@ -395,10 +426,14 @@ class ModelMetricsHandler extends Handler {
     Frame predictions;
     Frame deviances = null;
     if (!s.reconstruction_error && !s.reconstruction_error_per_feature && s.deep_features_hidden_layer < 0 &&
-        !s.project_archetypes && !s.reconstruct_train && !s.leaf_node_assignment && s.exemplar_index < 0) {
+        !s.project_archetypes && !s.reconstruct_train && !s.leaf_node_assignment && !s.predict_staged_proba && !s.predict_contributions && s.exemplar_index < 0) {
       if (null == parms._predictions_name)
         parms._predictions_name = "predictions" + Key.make().toString().substring(0,5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
-      predictions = parms._model.score(parms._frame, parms._predictions_name);
+      String customMetricFunc = s.custom_metric_func;
+      if (customMetricFunc == null) {
+        customMetricFunc = parms._model._parms._custom_metric_func;
+      }
+      predictions = parms._model.score(parms._frame, parms._predictions_name, null, true, CFuncRef.from(customMetricFunc));
       if (s.deviances) {
         if (!parms._model.isSupervised())
           throw new H2OIllegalArgumentException("Deviances can only be computed for supervised models.");
@@ -440,7 +475,22 @@ class ModelMetricsHandler extends Handler {
         assert(Model.LeafNodeAssignment.class.isAssignableFrom(parms._model.getClass()));
         if (null == parms._predictions_name)
           parms._predictions_name = "leaf_node_assignment" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
-        predictions = ((Model.LeafNodeAssignment) parms._model).scoreLeafNodeAssignment(parms._frame, Key.<Frame>make(parms._predictions_name));
+        Model.LeafNodeAssignment.LeafNodeAssignmentType type = null == s.leaf_node_assignment_type ? Model.LeafNodeAssignment.LeafNodeAssignmentType.Path : s.leaf_node_assignment_type;
+        predictions = ((Model.LeafNodeAssignment) parms._model).scoreLeafNodeAssignment(parms._frame, type, Key.<Frame>make(parms._predictions_name));
+      } else if(s.predict_staged_proba) {
+        if (! (parms._model instanceof Model.StagedPredictions)) {
+          throw new H2OIllegalArgumentException("Model type " + parms._model._parms.algoName() + " doesn't support Staged Predictions.");
+        }
+        if (null == parms._predictions_name)
+          parms._predictions_name = "staged_proba_" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
+        predictions = ((Model.StagedPredictions) parms._model).scoreStagedPredictions(parms._frame, Key.<Frame>make(parms._predictions_name));
+      } else if(s.predict_contributions) {
+        if (! (parms._model instanceof Model.Contributions)) {
+          throw new H2OIllegalArgumentException("Model type " + parms._model._parms.algoName() + " doesn't support calculating Feature Contributions.");
+        }
+        if (null == parms._predictions_name)
+          parms._predictions_name = "contributions_" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
+        predictions = ((Model.Contributions) parms._model).scoreContributions(parms._frame, Key.<Frame>make(parms._predictions_name));
       } else if(s.exemplar_index >= 0) {
         assert(Model.ExemplarMembers.class.isAssignableFrom(parms._model.getClass()));
         if (null == parms._predictions_name)

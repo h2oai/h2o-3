@@ -18,9 +18,13 @@ test.GLM.solvers <- function() {
 
         if (family == 'binomial') { training_data[,response_col] <- as.factor(training_data[,response_col])
         } else {                    training_data[,response_col] <- as.numeric(training_data[,response_col]) }
-
-        model <- h2o.glm(x=predictors, y=response_col, training_frame=training_data, family=family, alpha=0,
+        tryCatch({
+            h2o.glm(x = predictors, y = response_col, training_frame = training_data, family = family, alpha = 0,
                          lambda=1e-5, solver=solver)
+            expect_true("COORDINATE_DESCENT_NAIVE" != solver)
+        }, error = function(e){
+            expect_true(solver == "COORDINATE_DESCENT_NAIVE");
+        })
     }
   }
 }

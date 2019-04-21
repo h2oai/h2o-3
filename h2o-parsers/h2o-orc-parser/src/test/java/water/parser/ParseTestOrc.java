@@ -1,15 +1,25 @@
 package water.parser;
 
+import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Set;
 import java.util.TreeSet;
 
+import water.Job;
+import water.Key;
 import water.TestUtil;
+import water.api.schemas3.ParseSetupV3;
+import water.fvec.Frame;
+import water.fvec.NFSFileVec;
+import water.fvec.Vec;
+import water.parser.orc.OrcParserProvider;
+import water.util.ArrayUtils;
 import water.util.FileUtils;
 import water.util.Log;
 
@@ -68,12 +78,37 @@ public class ParseTestOrc extends TestUtil {
     };
 
     @BeforeClass
-    static public void setup() { TestUtil.stall_till_cloudsize(5); }
+    static public void setup() { TestUtil.stall_till_cloudsize(1); }
 
     @BeforeClass
     static public void _preconditionJavaVersion() { // NOTE: the `_` force execution of this check after setup
         // Does not run test on Java6 since we are running on Hadoop lib
         Assume.assumeTrue("Java6 is not supported", !System.getProperty("java.version", "NA").startsWith("1.6"));
+    }
+
+    @Test public void testTypeOverrides(){
+        NFSFileVec nfs = makeNfsFileVec("smalldata/parser/orc/orc_split_elim.orc");
+        Key<Frame> outputKey = Key.make("orc_Test");
+        ParseSetup pstp = new ParseSetup(new ParseSetupV3());
+        pstp._parse_type = new OrcParserProvider.OrcParserInfo();
+        ParseSetup ps = ParseSetup.guessSetup(new Key[]{nfs._key}, pstp);
+        Assert.assertEquals(ps._parse_type.name(), "ORC");
+        ps._column_types[0] = Vec.T_BAD;
+        ps._column_types[1] = Vec.T_CAT;
+        ps._column_types[2] = Vec.T_STR;
+        ParseSetup ps2 = ParseSetup.guessSetup(new Key[]{nfs._key}, ps);
+        String errs = Arrays.deepToString(ps2.errs());
+        Assert.assertEquals(1,ps2.errs().length);
+        Assert.assertTrue(ps2.errs()[0] instanceof ParseWriter.UnsupportedTypeOverride);
+        System.out.println("types: " + Arrays.toString(ArrayUtils.select(Vec.TYPE_STR,ps2._column_types)));
+        Key k = Key.make();
+        Job<Frame> j = ParseDataset.forkParseDataset(k,new Key[]{nfs._key},ps,true)._job;
+        Frame fr = j.get();
+        String  warns = Arrays.toString(j.warns());
+        Assert.assertEquals(errs,warns);
+        Assert.assertArrayEquals(new String[]{"bar", "cat", "dog", "eat", "foo", "zebra"},fr.vec(1).domain());
+        Assert.assertTrue(fr.vec(0).isBad());
+        fr.delete();
     }
 
     @Test

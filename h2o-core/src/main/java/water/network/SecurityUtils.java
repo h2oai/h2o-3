@@ -3,6 +3,8 @@ package water.network;
 import water.util.Log;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.*;
 import java.util.Properties;
 
@@ -17,12 +19,16 @@ public class SecurityUtils {
             "com.ibm.crypto.tools.KeyTool"     // IBM Java
     };
 
+    private static StoreCredentials generateKeystore(String password, String location) throws Exception {
+        return generateKeystore(password, "h2o-internal.jks", location);
+    }
+
     private static StoreCredentials generateKeystore(String password) throws Exception {
         return generateKeystore(password, "h2o-internal.jks", "");
     }
 
     private static StoreCredentials generateKeystore(String password, String name, String location) throws Exception {
-        String path = null != location && !location.isEmpty() ? location + File.pathSeparator + name : name;
+        String path = null != location && !location.isEmpty() ? location + File.separatorChar + name : name;
         if(new File(path).exists()) {
             throw new IllegalStateException("A file under the location " + path + " already exists. Please delete it first.");
         }
@@ -43,6 +49,8 @@ public class SecurityUtils {
         Class<?> keytool = getKeyToolClass();
 
         keytool.getMethod("main", String[].class).invoke(null, (Object) genKeyArgs);
+
+        new File(path).deleteOnExit();
 
         return new StoreCredentials(name, location, password);
     }
@@ -68,7 +76,9 @@ public class SecurityUtils {
     }
 
     public static SSLCredentials generateSSLPair() throws Exception {
-        StoreCredentials jks = generateKeystore(passwordGenerator(16));
+        Path temp = Files.createTempDirectory("h2o-internal-jks-" + Long.toString(System.nanoTime()));
+        temp.toFile().deleteOnExit();
+        StoreCredentials jks = generateKeystore(passwordGenerator(16), temp.toAbsolutePath().toString());
         return new SSLCredentials(jks, jks);
     }
 
@@ -81,7 +91,9 @@ public class SecurityUtils {
     }
 
     public static String generateSSLConfig(SSLCredentials credentials) throws IOException {
-        return generateSSLConfig(credentials, "ssl.properties");
+        File temp = File.createTempFile("h2o-internal-" + Long.toString(System.nanoTime()), "-ssl.properties");
+        temp.deleteOnExit();
+        return generateSSLConfig(credentials, temp.getAbsolutePath());
     }
 
     public static String generateSSLConfig(SSLCredentials credentials, String file) throws IOException {
@@ -112,7 +124,7 @@ public class SecurityUtils {
         }
 
         public String getLocation() {
-            return null != path && !path.isEmpty() ? path + File.pathSeparator + name : name;
+            return null != path && !path.isEmpty() ? path + File.separatorChar + name : name;
         }
     }
 

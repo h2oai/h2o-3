@@ -57,7 +57,6 @@ stackedensemble.gaussian.grid.test <- function() {
                                training_frame = train,
                                validation_frame = test,
                                model_id = "my_ensemble_gbm_grid_gaussian",
-                               selection_strategy = c("choose_all"), 
                                base_models = gbm_grid@model_ids)
   
   # Check that prediction works

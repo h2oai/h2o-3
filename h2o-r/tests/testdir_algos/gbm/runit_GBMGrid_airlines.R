@@ -59,10 +59,9 @@ gbm.grid.test <- function() {
     # stacker.grid <- h2o.grid("stackedensemble", y = "IsDepDelayed", x = myX,
     #                         training_frame = air.hex,
     #                         model_id = "my_ensemble",
-    #                         selection_strategy = "choose_all",
     #                         base_models = air.grid@model_ids)
     stacker <- h2o.stackedEnsemble(x = myX, y = "IsDepDelayed", training_frame = air.hex,
-                                   model_id = "my_ensemble", selection_strategy = "choose_all",
+                                   model_id = "my_ensemble",
                                    base_models = air.grid@model_ids)
 
     predictions = h2o.predict(stacker, air.hex) # training data

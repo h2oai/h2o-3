@@ -11,10 +11,11 @@ Alternatively, you can build the h2o R package from source (see below), or insta
 
 ## Building it yourself
 
-The R package is built as part of the normal build process.
-In the top-level h2o-3 directory, use `$ ./gradlew build`.
+The R package is built as part of the normal build process. Please following [this instruction](https://github.com/h2oai/h2o-3#41-building-from-the-command-line-quick-start) to build H2O-3.
 
-To build the R component by itself, first type `$ cd h2o-r` and then type `$ ../gradlew build`.
+If you want to build the R component by itself, instead of executing `./gradlew build`, you can execute the following: `$ cd h2o-r; ../gradlew build`.
+
+The output of the build is a CRAN-like layout in the R directory.
 
 The output of the build is a CRAN-like layout in the R directory.
 
@@ -23,26 +24,26 @@ The output of the build is a CRAN-like layout in the R directory.
 
 ###  Installation from the command line after build
 
-0. Navigate to the top-level `h2o-3` directory: `cd ~/h2o-3`. 
-0. Install the H2O package for R: `R CMD INSTALL h2o-r/R/src/contrib/h2o_****.tar.gz`
+1. Navigate to the top-level `h2o-3` directory: `cd ~/h2o-3`. 
+2. Install the H2O package for R: `R CMD INSTALL h2o-r/R/src/contrib/h2o_****.tar.gz`
 
    **Note**: Do not copy and paste the command above. You must replace the asterisks (*) with the current H2O .tar version number. Look in the `h2o-3/h2o-r/R/src/contrib/` directory for the version number. 
 
 ###  Installation from within R
 
-0. Detach any currently loaded H2O package for R.  
+1. Detach any currently loaded H2O package for R.  
 
   ```
   if ("package:h2o" %in% search()) detach("package:h2o", unload=TRUE)
   ```
 
-0. Remove any previously installed H2O package for R.  
+2. Remove any previously installed H2O package for R.  
 
   ```
   if ("h2o" %in% rownames(installed.packages())) remove.packages("h2o")
   ```
 
-0. Install H2O R package along with its dependencies.
+3. Install H2O R package along with its dependencies.
   
   Install latest CRAN version:
 
@@ -152,7 +153,7 @@ Note:  As started, H2O is limited to the CRAN default of 2 CPUs.
            > localH2O = h2o.init(nthreads = -1)
 ```
 
-#Documentation/References
+# Documentation/References
 
 - [R Package Documentation](http://h2o-release.s3.amazonaws.com/h2o/latest_stable_Rdoc.html)
 - [Porting R Scripts Guide](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/upgrade/H2ODevPortingRScripts.md)

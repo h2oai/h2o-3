@@ -10,7 +10,17 @@ Spark is an elegant and powerful general-purpose, open-source, in-memory platfor
 
 Integrating these two open-source environments provides a seamless experience for users who want to make a query using Spark SQL, feed the results into H2O to build a model and make predictions, and then use the results again in Spark. For any given problem, better interoperability between tools provides a better experience. 
 
-For additional examples, please visit the Sparkling Water GitHub repository at {\url{https://github.com/h2oai/sparkling-water/tree/master/examples}}. 
+For additional examples, please visit the Sparkling Water GitHub repository at {\url{https://github.com/h2oai/sparkling-water/tree/master/examples}}.
+
+\begin{minipage}{\textwidth}
+    \textbf{Have Questions about Sparkling Water?}
+    \setlength{\parskip}{1em}
+    \begin{itemize}
+        \setlength\itemsep{1pt}
+        \item Post them on Stack Overflow using the \textbf{sparkling-water} tag at {\url{http://stackoverflow.com/questions/tagged/sparkling-water}}.
+        \item Join the chat at {\url{https://gitter.im/h2oai/sparkling-water}}.
+    \end{itemize}
+\end{minipage}
 
 \subsection{Typical Use Cases}
 Sparkling Water excels in leveraging existing Spark-based workflows needed to call advanced machine learning algorithms. We identified three the most common use-cases which are described below. 
@@ -35,7 +45,7 @@ Another use-case includes Sparkling Water as a provider of ad-hoc data transform
 \end{figure}
 
 \subsubsection{Stream Processing}
-The last use-case depicted on Figure~\ref{fig:uc3} introduces two data pipelines. The first one, called an off-line training pipeline, is invoked regularly (e.g., every hour or every day), utilizes Spark as well as H2O API and provides an H2O model as output. The H2O API allows the model to be exported in a source code form. The second one processes streaming data (with help of Spark Streaming or Storm) and utilizes the model trained in the first pipeline to score the incoming data. Since the model is exported as a code,  the streaming pipeline can be lightweight and independent on H2O or Sparkling Water infrastructure.
+The last use-case depicted on Figure~\ref{fig:uc3} introduces two data pipelines. The first one, called an off-line training pipeline, is invoked regularly (e.g., every hour or every day), utilizes Spark as well as H2O API and provides an H2O model as output. The H2O API allows the model to be exported in a form independent on H2O run-time. The second one processes streaming data (with help of Spark Streaming or Storm) and utilizes the model trained in the first pipeline to score the incoming data. Since the model is exported with no run-time dependency to H2O, the streaming pipeline can be lightweight and independent on H2O or Sparkling Water infrastructure.
 
 \begin{figure}[h]
 	\centering
@@ -52,9 +62,10 @@ Sparkling Water provides transparent integration for the H2O engine and its mach
 
  \item Use of H2O algorithms in Spark workflow
  \item Transformation between H2O and Spark data structures
- \item Use of Spark RDDs and DataFrames as input for H2O algorithms
+ \item Use of Spark RDDs, DataFrames and Datasets as input for H2O algorithms
  \item Use of H2OFrames as input for MLlib algorithms
  \item Transparent execution of Sparkling Water applications on top of Spark
+ \item Use H2O algorithms in Spark pipelines
 \end{itemize}
 
 \subsection{Supported Data Sources}
@@ -84,6 +95,7 @@ Sparkling Water can read data stored in the following formats:
   \item CSV
   \item SVMLight
   \item ARFF
+  \item Parquet
 \end{itemize}
 
 For more details, please refer to the H2O documentation at {\url{http://docs.h2o.ai}}.
@@ -91,8 +103,7 @@ For more details, please refer to the H2O documentation at {\url{http://docs.h2o
 \subsection{Supported Spark Execution Environments}
 Sparkling Water can run on top of Spark in the following ways:
 \begin{itemize}
-  \item as a local cluster (where the master node is \texttt{local},
-\texttt{local[*]}, or \texttt{local-cluster[...]})
+  \item as a local cluster (where the master node is \texttt{local} or \texttt{local[*]})
   \item as a standalone cluster\footnote{Refer to the Spark standalone documentation
 \url{http://spark.apache.org/docs/latest/spark-standalone.html}} 
 \item in a YARN environment\footnote{Refer to the Spark YARN documentation \url{http://spark.apache.org/docs/latest/running-on-yarn.html}}

@@ -41,7 +41,7 @@ def test_mojo_model(target_dir):
     download the model's MOJO, score the model remotely and fetch the predictions, score the model locally by
     running the genmodel jar, and finally compare the prediction results.
     """
-    genmodel_jar = os.path.abspath("../../../h2o-genmodel/build/libs/h2o-genmodel-all.jar")
+    genmodel_jar = os.path.abspath("../../../h2o-assemblies/genmodel/build/libs/genmodel.jar")
     assert os.path.exists(genmodel_jar), "Cannot find " + genmodel_jar
 
     report = []

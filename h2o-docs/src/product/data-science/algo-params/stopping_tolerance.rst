@@ -1,7 +1,9 @@
+.. _stopping_tolerance:
+
 ``stopping_tolerance``
 ----------------------
 
-- Available in: GBM, DRF, Deep Learning
+- Available in: GBM, DRF, Deep Learning, AutoML, XGBoost
 - Hyperparameter: yes
 
 Description
@@ -13,9 +15,16 @@ This option specifies the tolerance value by which a model must improve before t
 -  ``stopping_metric=misclassification``
 -  ``stopping_tolerance=1e-3``
 
-then the model will stop training after reaching three scoring events in a row in which a model's missclassication value does not improve by **1e-3**. These stopping options are used to increase performance by restricting the number of models that get built. 
+then the moving average for last 4 stopping rounds is calculated (the first moving average is reference value for other 3 moving averages to compare). 
 
-**Note**: ``stopping_rounds`` must be enabled for ``stopping_metric`` or ``stopping_tolerance`` to work.
+The model will stop if the **ratio** between the best moving average and reference moving average is more or equal **1-1e-3** (the misclassification is the less the better metric, for the more the better metrics the ratio have to be less or equal **1+1e-3** to stop).
+
+These stopping options are used to increase performance by restricting the number of models that get built. 
+
+**Notes**: 
+
+- ``stopping_rounds`` must be enabled for ``stopping_metric`` or ``stopping_tolerance`` to work.
+- For all supported algorithms except AutoML, this value defaults to 0.001. In AutoML, this value defaults to 0.001 if the  dataset is at least 1 million rows; otherwise it defaults to a bigger value determined by the size of the dataset and the non-NA-rate.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~

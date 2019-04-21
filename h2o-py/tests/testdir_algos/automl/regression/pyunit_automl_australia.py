@@ -17,13 +17,13 @@ def australia_automl():
     valid = fr[1]
     test = fr[2]
 
-    aml = H2OAutoML(max_runtime_secs = 30,stopping_rounds=3,stopping_tolerance=0.001)
+    aml = H2OAutoML(max_models = 2,stopping_rounds=3,stopping_tolerance=0.001)
 
     print("AutoML (Regression) run with x not provided with train, valid, and test")
     aml.train(y="runoffnew", training_frame=train,validation_frame=valid, leaderboard_frame=test)
     print(aml.leader)
     print(aml.leaderboard)
-    assert set(aml.leaderboard.col_header) == set(["","model_id", "mean_residual_deviance","rmse", "mae", "rmsle"])
+    assert set(aml.leaderboard.columns) == set(["model_id", "mean_residual_deviance","rmse", "mse", "mae", "rmsle"])
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(australia_automl)

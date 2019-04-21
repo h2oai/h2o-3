@@ -32,7 +32,8 @@ h2o.metalearn <- function(object,  #object must be an "h2o.ensemble" model fit w
   }
   if (!exists(metalearner)) {
     stop("'metalearner' function name not found.")
-  } 
+  }
+  
 
   # What type of metalearning function do we have?
   # The h2o version is memory-optimized (the N x L level-one matrix, Z, never leaves H2O memory);
@@ -43,6 +44,14 @@ h2o.metalearn <- function(object,  #object must be an "h2o.ensemble" model fit w
     metalearner_type <- "h2o"
   }
 
+  # Check that Naive Bayes is not specified for a regression problem
+  if (family == "gaussian") {
+    if (!("gaussian" %in% eval(formals(metalearner)$family))) {
+      # TO DO: should make this more generic and print specific wrapper name in violation
+      stop("The Naive Bayes function does not support regression, please choose a different metalearner.")
+    }    
+  }
+  
   # TO DO: Maybe remove this:
   # Do we want to rename this to `fit`? or overwrite original object...
   # Currently making a copy of the model

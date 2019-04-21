@@ -2,6 +2,8 @@ package water;
 
 import water.util.Log;
 
+import java.util.HashSet;
+
 
 /**
  * Extension used for checking failed nodes
@@ -116,6 +118,15 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
         }
         new FailedNodeWatchdogThread().start();
         H2O.SELF._heartbeat._watchdog_client = watchDogClient;
+        // When running on External Backend, we need to set the client disconnect timeout
+        // to the same value as the watchdogClientRetryTimeout
+
+        // Failed Watchdog thread is responsible for checking whether the client has disappeared from all the nodes
+        // in the cluster, however the ClientDisconnectCheckThread (which uses clientDisconnectTimeout) is responsible
+        // for disconnecting single clients if the timeout has been reached. In case of external backend
+        // we need to set the client disconnect timeout to the same value as the watchdogClientRetryTimeout
+        // as we don't want to remove client from specific nodes earlier
+        H2O.ARGS.clientDisconnectTimeout = watchdogClientRetryTimeout;
     }
 
     private class CheckWatchdogConnectedThread extends Thread {
@@ -128,7 +139,15 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
             try {
                 sleep(watchdogClientConnectTimeout);
                 boolean watchDogConnected = false;
-                for(H2ONode client: H2O.getClients()){
+                H2ONode[] clients = H2O.getClients();
+
+                if (Log.getLogLevel() == Log.DEBUG) {
+                    Log.debug("Checking if watchdog client connected to the cluster, available clients at this moment are: ");
+                    for (H2ONode client : clients) {
+                        Log.debug("Client: " + client.toDebugString());
+                    }
+                }
+                for(H2ONode client: clients){
                     if(client._heartbeat._watchdog_client){
                         watchDogConnected = true;
                         break;
@@ -142,33 +161,6 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
-            }
-        }
-    }
-
-    /**
-     * This method checks whether the client is disconnected from this node due to some problem such as client or network
-     * is unreachable.
-     */
-    private static void handleClientDisconnect(H2ONode node, long watchdogClientRetryTimeout) {
-        if(node._heartbeat._watchdog_client){
-            Log.warn("Watchdog client " + node + " disconnected!");
-            WatchdogClientDisconnectedTask tsk = new WatchdogClientDisconnectedTask(node, watchdogClientRetryTimeout);
-            Log.warn("Asking the rest of the nodes in the cloud whether watchdog client is really gone.");
-            if((tsk.doAllNodes()).clientDisconnectedConsensus) {
-                Log.fatal("Stopping H2O cloud since the watchdog client is disconnected from all nodes in the cluster!");
-                // we should fail with negative status as this is not planned shutdown
-                H2O.shutdown(-1);
-            }
-        }else if(node._heartbeat._client) {
-            Log.warn("Client "+ node +" disconnected!");
-        }
-
-        // in both cases remove the client since the timeout is out
-        if(node._heartbeat._client){
-            H2O.removeClient(node);
-            if(H2O.isFlatfileEnabled()){
-                H2O.removeNodeFromFlatfile(node);
             }
         }
     }
@@ -219,9 +211,28 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
         @Override
         public void run() {
             while (true) {
-                for(H2ONode client: H2O.getClients()){
+                H2ONode[] clients = H2O.getClients();
+
+                if (Log.getLogLevel() == Log.DEBUG) {
+                    Log.debug("Checking if watchdog client is connected, available clients are: ");
+                    for (H2ONode client : clients) {
+                        Log.debug("Client: " + client.toDebugString());
+                    }
+                }
+                for (H2ONode client : clients) {
                     if(isTimeoutExceeded(client, watchdogClientRetryTimeout)){
-                        handleClientDisconnect(client, watchdogClientRetryTimeout);
+                        // if timeout exceeded, check if the client is disconnected
+                        // from other nodes as well and if it is, shutdown the cluster
+                        if(client._heartbeat._watchdog_client){
+                            Log.warn("Watchdog client " + client + " disconnected!");
+                            WatchdogClientDisconnectedTask tsk = new WatchdogClientDisconnectedTask(client, watchdogClientRetryTimeout);
+                            Log.warn("Asking the rest of the nodes in the cloud whether watchdog client is really gone.");
+                            if((tsk.doAllNodes()).clientDisconnectedConsensus) {
+                                Log.fatal("Stopping H2O cloud since the watchdog client is disconnected from all nodes in the cluster!");
+                                // we should fail with negative status as this is not planned shutdown
+                                H2O.shutdown(-1);
+                            }
+                        }
                     }
                 }
 

@@ -1,7 +1,7 @@
 context("ensemble-performance")
 
 test_that( "h2o.ensemble_performance produces valid results for the H2OModelMetrics objects (binomial)", {
-  #testthat::skip_on_cran()
+  testthat::skip_on_cran()
   
   # Import a sample binary outcome train/test set into H2O
   h2o.init(nthreads = -1)
@@ -49,7 +49,7 @@ test_that( "h2o.ensemble_performance produces valid results for the H2OModelMetr
 
 
 test_that( "h2o.ensemble_performance produces valid results for the H2OModelMetrics objects (gaussian)", {
-  #testthat::skip_on_cran()
+  testthat::skip_on_cran()
   
   # Import a sample binary outcome train/test set into H2O
   h2o.init(nthreads = -1)

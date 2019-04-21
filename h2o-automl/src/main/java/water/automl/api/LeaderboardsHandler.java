@@ -43,10 +43,10 @@ public class LeaderboardsHandler extends Handler {
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public LeaderboardV99 fetch(int version, LeaderboardsV99 s) {
-    if (null == s.project)
-      throw new H2OKeyNotFoundArgumentException("Client must specify a project.");
+    if (null == s.project_name)
+      throw new H2OKeyNotFoundArgumentException("Client must specify a project_name.");
 
-      return new LeaderboardV99().fillFromImpl(getFromDKV("project", Leaderboard.idForProject(s.project)));
+      return new LeaderboardV99().fillFromImpl(getFromDKV("project_name", Leaderboard.idForProject(s.project_name)));
   }
 
   // TODO: almost identical to ModelsHandler; refactor

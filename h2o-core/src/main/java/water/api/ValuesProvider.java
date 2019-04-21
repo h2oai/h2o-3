@@ -13,7 +13,7 @@ package water.api;
  */
 public interface ValuesProvider {
 
-  Class<? extends ValuesProvider> NULL = ValuesProvider.class;
+  Class<? extends ValuesProvider> NULL = ValuesProvider.class; // default valuesProvider value in @API
 
   String[] values();
 }

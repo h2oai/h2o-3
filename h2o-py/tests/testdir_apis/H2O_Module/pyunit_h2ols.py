@@ -11,16 +11,13 @@ def h2ols():
     """
     Python API test: h2o.ls()
     """
-    try:
-        iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
-        lsObject = h2o.ls()
-        # check return type as DataFrame
-        assert_is_type(lsObject, DataFrame)
-        # check that our frame info was included in the lsObject
-        assert lsObject.values[0][0] == str(iris.frame_id), \
-            "Frame info iris.hex should have been found but h2o.ls() command failed."
-    except Exception as e:
-        assert False, "h2o.ls() command is not working."
+    iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
+    lsObject = h2o.ls()
+    # check return type as DataFrame
+    assert_is_type(lsObject, DataFrame)
+    # check that our frame info was included in the lsObject
+    assert lsObject.values[0][0] == str(iris.frame_id), \
+        "Frame info iris.hex should have been found but h2o.ls() command failed."
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(h2ols)

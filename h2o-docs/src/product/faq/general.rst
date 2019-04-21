@@ -1,13 +1,17 @@
 General
 -------
 
+**I updated my H2O to the newest version. Why can I no longer load a pre-trained model?**
+
+When saving an H2O binary model with ``h2o.saveModel`` (R), ``h2o.save_model`` (Python), or in Flow, you will only be able to load and use that saved binary model with the same version of H2O that you used to train your model. H2O binary models are not compatible across H2O versions. If you update your H2O version, then you will need to retrain your model. For production, you can save your model as a :ref:`POJO/MOJO <about-pojo-mojo>`. These artifacts are not tied to a particular version of H2O because they are just plain Java code and do not require an H2O cluster to be running.
+
 **How do I score using an exported JSON model?**
 
 Since JSON is just a representation format, it cannot be directly
 executed, so a JSON export can't be used for scoring. However, you can
 score by:
 
--  including the POJO in your execution stream and handing it
+-  including the POJO/MOJO in your execution stream and handing it
    observations one at a time
 
 or
@@ -36,13 +40,15 @@ To score a simple .CSV file, download the
 
 ::
 
-    wget https://raw.githubusercontent.com/h2oai/h2o-3/master/h2o-r/tests/testdir_javapredict/PredictCSV.java
-    mkdir gbm_model_dir
+    wget https://raw.githubusercontent.com/h2oai/h2o-3/master/h2o-genmodel/src/main/java/hex/genmodel/tools/PredictCsv.java
     javac -cp h2o-genmodel.jar -J-Xmx2g -J-XX:MaxPermSize=128m PredictCSV.java gbm_model.java -d gbm_model_dir
 
-Specify the following: - the classpath using ``-cp`` - the model name
-(or class) using ``--model`` - the csv file you want to score using
-``--input`` - the location for the predictions using ``--output``.
+Specify the following: 
+
+- the classpath using ``-cp`` 
+- the model name (or class) using ``--model`` 
+- the csv file you want to score using ``--input`` 
+- the location for the predictions using ``--output``.
 
 You must match the table column names to the order specified in the
 POJO. The output file will be in a .hex format, which is a lossless text
@@ -51,7 +57,7 @@ to read the hex strings as numerics.
 
 ::
 
-    java -ea -cp h2o-genmodel.jar:gbm_model_dir -Xmx4g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m PredictCSV --header --model gbm_model --input input.csv --output output.csv
+    java -ea -cp h2o-genmodel.jar:gbm_model_dir -Xmx4g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m hex.genmodel.tools.PredictCsv --header --model gbm_model --input input.csv --output output.csv
 
 --------------
 
@@ -190,9 +196,7 @@ vec that loads the file when necessary, and returns a key.
 
 **Does H2O support GPUs?**
 
-H2O supports GPUs as part of our Deep Water offering. Refer to the `Deep Water <https://www.h2o.ai/deep-water/>`__ product section of the H2O.ai site for more information. Users with an AWS account can also follow the `"H2O + TensorFlow on AWS GPU" <https://blog.h2o.ai/2016/07/h2o-tensorflow-on-aws-gpu/>`__ tutorial. 
-
---------------
+H2O supports GPUs as part of our H2O4GPU offering. Refer to the `H2O4GPU README <https://github.com/h2oai/h2o4gpu/blob/master/README.md>` for more information about H2O4GPU.
 
 **How can I continue working on a model in H2O after restarting?**
 

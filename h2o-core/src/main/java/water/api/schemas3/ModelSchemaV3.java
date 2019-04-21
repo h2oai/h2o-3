@@ -63,6 +63,7 @@ public class ModelSchemaV3<
 
   // Version&Schema-specific filling from the impl
   @Override public S fillFromImpl(M m) {
+    this.timestamp = m._output._job == null?-1:m._output._job.isRunning() ? 0 : m._output._job.end_time();
     this.data_frame = new KeyV3.FrameKeyV3(m._parms._train);
     this.response_column_name = m._parms._response_column;
     this.algo = m._parms.algoName().toLowerCase();
@@ -70,6 +71,8 @@ public class ModelSchemaV3<
     // Key<? extends Model> k = m._key;
     this.model_id = new ModelKeyV3<>(m._key);
     this.checksum = m.checksum();
+    this.have_pojo = m.havePojo();
+    this.have_mojo = m.haveMojo();
     parameters = createParametersSchema();
     parameters.fillFromImpl(m._parms);
     parameters.model_id = model_id;

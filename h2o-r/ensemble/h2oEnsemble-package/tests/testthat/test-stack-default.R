@@ -44,7 +44,7 @@ test_that( "h2o.stack run with default args produces valid results (binomial)", 
   #                keep_cross_validation_predictions = TRUE)
   glm2 <- h2o.glm.wrapper(x = x, y = y, family = "binomial", 
                   training_frame = train,
-                  max_iterations = 50,
+                  max_iterations = -1,
                   nfolds = nfolds,
                   fold_assignment = "Modulo",
                   keep_cross_validation_predictions = TRUE)
@@ -128,7 +128,7 @@ test_that( "h2o.ensemble run with default args produces valid results (gaussian)
   #                keep_cross_validation_predictions = TRUE)
   glm2 <- h2o.glm.wrapper(x = x, y = y, family = "gaussian", 
                           training_frame = train,
-                          max_iterations = 50,
+                          max_iterations = -1,
                           nfolds = nfolds,
                           fold_assignment = "Modulo",
                           keep_cross_validation_predictions = TRUE)

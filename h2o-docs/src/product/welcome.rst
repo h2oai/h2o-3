@@ -23,7 +23,7 @@ At a minimum, we recommend the following for compatibility with H2O:
 
 -  **Languages**: Scala, R, and Python are not required to use H2O unless you want to use H2O in those environments, but Java is always required. Supported versions include:
 
-   -  Java 7 or later. **Note**: Java 9 is not yet released and is not currently supported.
+   -  Java 7 or later
 
       - To build H2O or run H2O tests, the 64-bit JDK is required.
       - To run the H2O binary using either the command line, R, or Python packages, only 64-bit JRE is required.
@@ -31,7 +31,7 @@ At a minimum, we recommend the following for compatibility with H2O:
 
    -  Scala 2.10 or later
    -  R version 3 or later
-   -  Python 2.7.x or 3.5.x
+   -  Python 2.7.x, 3.5.x, 3.6.x 
 
 -  **Browser**: An internet browser is required to use H2O's web UI, Flow. Supported versions include the latest version of Chrome, Firefox, Safari, or Internet Explorer.
 
@@ -40,14 +40,16 @@ Additional Requirements
 
 -  **Hadoop**: Hadoop is not required to run H2O unless you want to deploy H2O on a Hadoop cluster. Supported versions are listed on the `Download page <http://www.h2o.ai/download/>`_ (when you select the Install on Hadoop tab) and include:
 
-   -  Cloudera CDH 5.2 or later (5.3 is recommended)
-   -  Hortonworks HDP 2.1 or later
+   -  Cloudera CDH 5.4 or later
+   -  Hortonworks HDP 2.2 or later
+   -  MapR 4.0 or later
+   -  IBM Open Platform 4.2
 
   Refer to the :ref:`on-hadoop` section for detailed information.
 
--  **Conda 2.7 or 3.5 repo**: Conda is not required to run H2O unless you want to run H2O on the Anaconda Cloud. Refer to the :ref:`anaconda` section for more information.
+-  **Conda 2.7, 3.5, or 3.6 repo**: Conda is not required to run H2O unless you want to run H2O on the Anaconda Cloud. Refer to the :ref:`anaconda` section for more information.
 
--  **Spark**: Version 1.6 or 2.0. Spark is only required if you want to run `Sparkling Water <https://github.com/h2oai/sparkling-water>`__.
+-  **Spark**: Version 2.1, 2.2, or 2.3. Spark is only required if you want to run `Sparkling Water <https://github.com/h2oai/sparkling-water>`__.
 
 
 New Users
@@ -166,7 +168,7 @@ At this point, determine whether you want to complete this quick start in either
     h2o-3 user$ [sudo] pip install -U requests
     h2o-3 user$ [sudo] pip install -U tabulate
     h2o-3 user$ [sudo] pip install -U future
-    h2o-3 user$ [sudo] pip install -U six
+    h2o-3 user$ [sudo] pip install -U colorama
 
     # Start python
     h2o-3 user$ python
@@ -245,9 +247,9 @@ Getting Started with Sparkling Water
 
 -  `Download Sparkling Water <http://www.h2o.ai/download/>`_: Go here to download Sparkling Water.
 
--  `Sparkling Water Development Documentation <https://github.com/h2oai/sparkling-water/blob/master/DEVEL.md>`_: Read this document first to get started with Sparkling Water.
+-  Sparkling Water Documentation for `2.1 <http://docs.h2o.ai/sparkling-water/2.1/latest-stable/doc/index.html>`__, `2.2 <http://docs.h2o.ai/sparkling-water/2.2/latest-stable/doc/index.html>`__, or `2.3 <http://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/index.html>`__: Read this document first to get started with Sparkling Water.
 
--  `Launch on Hadoop and Import from HDFS <https://github.com/h2oai/sparkling-water/tree/master/examples#sparkling-water-on-hadoop>`_: Go here to learn how to start Sparkling Water on Hadoop.
+-  Launch on Hadoop and Import from HDFS (`2.1 <http://docs.h2o.ai/sparkling-water/2.1/latest-stable/doc/devel/integ_tests.html>`__, `2.2 <http://docs.h2o.ai/sparkling-water/2.2/latest-stable/doc/devel/integ_tests.html>`__, or `2.3 <http://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/devel/integ_tests.html>`__): Go here to learn how to start Sparkling Water on Hadoop.
 
 -  `Sparkling Water Tutorials <https://github.com/h2oai/sparkling-water/tree/master/examples>`_: Go here for demos and examples.
 
@@ -255,22 +257,22 @@ Getting Started with Sparkling Water
 
    -  `Sparkling Water GBM Tutorial <https://github.com/h2oai/sparkling-water/blob/master/examples/src/main/scala/org/apache/spark/examples/h2o/CitiBikeSharingDemo.scala>`_: Go here to view a demo that uses Scala to create a GBM model.
 
-   - `Sparkling Water on YARN <http://blog.h2o.ai/2014/11/sparkling-water-on-yarn-example/>`_: Follow these instructions to run Sparkling Water on a YARN cluster.
+   - `Sparkling Water on YARN <https://www.h2o.ai/blog/sparkling-water-on-yarn-example/>`_: Follow these instructions to run Sparkling Water on a YARN cluster.
 
 -  `Building Machine Learning Applications with Sparkling Water <http://docs.h2o.ai/h2o-tutorials/latest-stable/tutorials/sparkling-water/index.html>`_: This short tutorial describes project building and demonstrates the capabilities of Sparkling Water using Spark Shell to build a Deep Learning model.
 
--  `Sparkling Water FAQ <https://github.com/h2oai/sparkling-water/blob/master/README.md#faq>`_: This FAQ provides answers to many common questions about Sparkling Water.
+-  Sparkling Water FAQ for `2.1 <http://docs.h2o.ai/sparkling-water/2.1/latest-stable/doc/FAQ.html>`__, `2.2 <http://docs.h2o.ai/sparkling-water/2.2/latest-stable/doc/FAQ.html>`__, or `2.3 <http://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/FAQ.html>`__: This FAQ provides answers to many common questions about Sparkling Water.
 
 -  `Connecting RStudio to Sparkling Water <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/Connecting_RStudio_to_Sparkling_Water.md>`_: This illustrated tutorial describes how to use RStudio to connect to Sparkling Water.
 
 Sparkling Water Blog Posts
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  `How Sparkling Water Brings H2O to Spark <http://blog.h2o.ai/2014/09/how-sparkling-water-brings-h2o-to-spark/>`_
+-  `How Sparkling Water Brings H2O to Spark <https://www.h2o.ai/blog/how-sparkling-water-brings-h2o-to-spark/>`_
 
--  `H2O - The Killer App on Spark <http://blog.h2o.ai/2014/06/h2o-killer-application-spark/>`_
+-  `H2O - The Killer App on Spark <https://www.h2o.ai/blog/h2o-killer-application-spark/>`_
 
--  `In-memory Big Data: Spark + H2O <http://blog.h2o.ai/2014/03/spark-h2o/>`_
+-  `In-memory Big Data: Spark + H2O <https://www.h2o.ai/blog/spark-h2o/>`_
 
 Sparkling Water Meetup Slide Decks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -287,16 +289,22 @@ Sparkling Water Meetup Slide Decks
 PySparkling
 ~~~~~~~~~~~~
 
-**Note**: PySparkling requires Sparkling Water 1.6 or later.
+PySparkling documentation is available for `2.1 <http://docs.h2o.ai/sparkling-water/2.1/latest-stable/doc/pysparkling.html>`__, `2.2 <http://docs.h2o.ai/sparkling-water/2.2/latest-stable/doc/pysparkling.html>`__, and `2.3 <http://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/pysparkling.html>`__.
 
-H2O's PySparkling package is not available through ``pip``. (There is `another <https://pypi.python.org/pypi/pysparkling/>`__ similarly-named package.) H2O's PySparkling package requires `EasyInstall <http://peak.telecommunity.com/DevCenter/EasyInstall>`__.
+**Note**: PySparkling requires Sparkling Water 2.1 or later. We recommended Sparkling Water 2.3. 
 
-To install H2O's PySparkling package, use the egg file included in the distribution.
+PySparkling can be installed by downloading and running the PySparkling shell or using ``pip``. PySparkling can also be installed from the PyPi repository. Follow the instructions on the `Download page <http://h2o.ai/download>`__ for Sparkling Water.
 
-1. Download `Spark 1.6 <https://spark.apache.org/downloads.html>`__.
-2. Set the ``SPARK_HOME`` and ``MASTER`` variables as described on the `Downloads page <http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.6/6/index.html>`__.
-3. Download `Sparkling Water 1.6 <http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.6/6/index.html>`__
-4. In the unpacked Sparkling Water directory, run the following command: ``easy_install --upgrade sparkling-water-1.6/py/dist/pySparkling-1.6-py2.7.egg``
+RSparkling
+~~~~~~~~~~
+
+The rsparkling R package is an extension package for sparklyr that creates an R front-end for the Sparkling Water package from H2O. This provides an interface to H2O’s high performance, distributed machine learning algorithms on Spark using R.
+
+This package implements basic functionality (creating an H2OContext, showing the H2O Flow interface, and converting between Spark DataFrames and H2O Frames). The main purpose of this package is to provide a connector between sparklyr and H2O’s machine learning algorithms.
+
+The rsparkling package uses sparklyr for Spark job deployment and initialization of Sparkling Water. After that, users can use the regular H2O R package for modeling. 
+
+Refer to the `Sparkling Water User Guide <http://docs.h2o.ai/#sparkling-water>`__ for more information.
 
 Python Users
 --------------
@@ -315,7 +323,7 @@ Pythonistas will be glad to know that H2O now provides support for this popular 
 Anaconda Cloud Users
 ~~~~~~~~~~~~~~~~~~~~
 
-You can run H2O in an Anaconda Cloud environment. Conda 2.7 and 3.5 repos are supported as are a number of H2O versions. Refer to `https://anaconda.org/h2oai/h2o/files <https://anaconda.org/h2oai/h2o/files>`__ to view a list of available H2O versions. Anaconda users can refer to the `Install on Anaconda Cloud <downloading.html#install-on-anaconda-cloud>`__ section for information about installing H2O in an Anaconda Cloud.
+You can run H2O in an Anaconda Cloud environment. Conda 2.7, 3.5, and 3.6 repos are supported as are a number of H2O versions. Refer to `https://anaconda.org/h2oai/h2o/files <https://anaconda.org/h2oai/h2o/files>`__ to view a list of available H2O versions. Anaconda users can refer to the `Install on Anaconda Cloud <downloading.html#install-on-anaconda-cloud>`__ section for information about installing H2O in an Anaconda Cloud.
 
 R Users
 -------
@@ -324,10 +332,11 @@ Currently, the only version of R that is known to be incompatible with H2O is R 
 
 To check which version of H2O is installed in R, use ``versions::installed.versions("h2o")``.
 
--  `R User Documentation <../h2o-r/h2o_package.pdf>`_: This document contains all commands in the H2O package for R, including examples and arguments. It represents the definitive guide to using H2O in R.
+-  `R User HTML <../h2o-r/docs/index.html>`__ and `R User PDF <../h2o-r/h2o_package.pdf>`__ Documentation: This document contains all commands in the H2O package for R, including examples and arguments. It represents the definitive guide to using H2O in R.
 
 -  `Connecting RStudio to Sparkling Water <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/Connecting_RStudio_to_Sparkling_Water.md>`_: This illustrated tutorial describes how to use RStudio to connect to Sparkling Water.
 
+-  `RStudio Cheat Sheet <https://github.com/rstudio/cheatsheets/raw/master/h2o.pdf>`__: Download this PDF to keep as a quick reference when using H2O in R.  
 
 **Note**: If you are running R on Linux, then you must install ``libcurl``, which allows H2O to communicate with R. We also recommend disabling SElinux and any firewalls, at least initially until you have confirmed H2O can initialize.
 
@@ -350,7 +359,7 @@ REST APIs are generated immediately out of the code, allowing users to implement
 Java Users
 --------------
 
-For Java developers, the following resources will help you create your own custom app that uses H2O.
+H2O-3 is supported with Java 7 and later. For Java developers, the following resources will help you create your own custom app that uses H2O.
 
 -  `H2O Core Java Developer Documentation <../h2o-core/javadoc/index.html>`_: The definitive Java API guide
    for the core components of H2O.
@@ -361,7 +370,7 @@ For Java developers, the following resources will help you create your own custo
 -  `h2o-genmodel (POJO/MOJO) Javadoc <../h2o-genmodel/javadoc/index.html>`_: Provides a step-by-step guide to creating and implementing POJOs or MOJOs in a Java application.
 
 Developers
---------------
+----------
 
 If you're looking to use H2O to help you develop your own apps, the following links will provide helpful references.
 
@@ -394,9 +403,9 @@ After starting multiple "worker" node processes in addition to the JUnit test pr
 
 -  H2O Scala API Developer Documentation for `Scala 2.11 <../h2o-scala_2.11/scaladoc/index.html>`__ or `Scala 2.10 <../h2o-scala_2.10/scaladoc/index.html>`__: The definitive Scala API guide for H2O.
 
--  `Hacking Algos <http://blog.h2o.ai/2014/11/hacking-algorithms-in-h2o-with-cliff/>`_: This blog post by Cliff walks you through building a new algorithm, using K-Means, Quantiles, and Grep as examples.
+-  `Hacking Algos <https://www.h2o.ai/blog/hacking-algorithms-in-h2o-with-cliff/>`_: This blog post by Cliff walks you through building a new algorithm, using K-Means, Quantiles, and Grep as examples.
 
--  `KV Store Guide <http://blog.h2o.ai/2014/05/kv-store-memory-analytics-part-2-2/>`_: Learn more about performance characteristics when implementing new algorithms.
+-  `KV Store Guide <https://www.h2o.ai/blog/kv-store-memory-analytics-part-2-2/>`_: Learn more about performance characteristics when implementing new algorithms.
 
 -  `Contributing code <https://github.com/h2oai/h2o-3/blob/master/CONTRIBUTING.md>`_: If you're interested in contributing code to H2O, we appreciate your assistance! This document describes how to access our list of Jiras that contributors can work on and how to contact us. **Note**: To access this link, you must have an `Atlassian account <https://id.atlassian.com/signup?application=mac&tenant=&continue=https%3A%2F%2Fmy.atlassian.com>`__.
 
@@ -410,21 +419,29 @@ This section describes how to use H2O on Hadoop.
 Supported Versions
 ~~~~~~~~~~~~~~~~~~
 
--  CDH 5.2
--  CDH 5.3
 -  CDH 5.4
 -  CDH 5.5
 -  CDH 5.6
 -  CDH 5.7
 -  CDH 5.8
--  HDP 2.1
+-  CDH 5.9
+-  CDH 5.10
+-  CDH 5.13
+-  CDH 5.14
+-  CDH 6.0
+-  CDH 6.1
 -  HDP 2.2
 -  HDP 2.3
 -  HDP 2.4
 -  HDP 2.5
+-  HDP 2.6
+-  HDP 3.0
+-  HDP 3.1
 -  MapR 4.0
 -  MapR 5.0
 -  MapR 5.1
+-  MapR 5.2
+-  IOP 4.2
 
 **Important Points to Remember**:
 
@@ -448,7 +465,7 @@ Optionally specify this port using the ``-driverport`` option in the ``hadoop ja
 
 **Path 2: mapper to mapper**
 
-Optionally specify this port using the ``-baseport`` option in the ``hadoop jar`` command (refer to `Hadoop Launch Parameters`_ below. This port and the next subsequent port are opened on the mapper hosts (the Hadoop worker nodes) where the H2O mapper nodes are placed by the Resource Manager. By default, ports 54321 (TCP) and 54322 (TCP & UDP) are used.
+Optionally specify this port using the ``-baseport`` option in the ``hadoop jar`` command (refer to `Hadoop Launch Parameters`_ below. This port and the next subsequent port are opened on the mapper hosts (the Hadoop worker nodes) where the H2O mapper nodes are placed by the Resource Manager. By default, ports 54321 and 54322 are used.
 
 The mapper port is adaptive: if 54321 and 54322 are not available, H2O will try 54323 and 54324 and so on. The mapper port is designed to be adaptive because sometimes if the YARN cluster is low on resources, YARN will place two H2O mappers for the same H2O cluster request on the same physical host. For this reason, we recommend opening a range of more than two ports (20 ports should be sufficient).
 
@@ -474,7 +491,7 @@ The following steps show you how to download or build H2O with Hadoop and the pa
 
    ::
 
-       hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -output hdfsOutputDirName
+     hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g
 
    The above command launches a 6g node of H2O. We recommend you launch the cluster with at least four times the memory of your data file size.
 
@@ -482,9 +499,9 @@ The following steps show you how to download or build H2O with Hadoop and the pa
 
    -  *nodes* is the number of nodes requested to form the cluster.
 
-   -  *output* is the name of the directory created each time a H2O cloud is created so it is necessary for the name to be unique each time it is launched.
+   -  *output* is the name of the directory created each time a H2O cluster is created so it is necessary for the name to be unique each time it is launched.
 
-4. To monitor your job, direct your web browser to your standard job tracker Web UI. To access H2O's Web UI, direct your web browser to one of the launched instances. If you are unsure where your JVM is launched, review the output from your command after the nodes has clouded up and formed a cluster. Any of the nodes' IP addresses will work as there is no master node.
+4. To monitor your job, direct your web browser to your standard job tracker Web UI. To access H2O's Web UI, direct your web browser to one of the launched instances. If you are unsure where your JVM is launched, review the output from your command after the nodes have clouded up and formed a cluster. Any of the nodes' IP addresses will work as there is no master node.
 
    ::
 
@@ -517,18 +534,25 @@ Hadoop Launch Parameters
 
     **Note**: For Qubole users who include the ``-disown`` flag, if your cluster is dying right after launch, add ``-Dmapred.jobclient.killjob.onexit=false`` as a launch parameter.
 
--  ``-notify <notification file name>``: Specify a file to write when the cluster is up. The file contains the IP and port of the embedded web server for one of the nodes in the cluster. All mappers must start before the H2O cloud is considered "up".
+-  ``-notify <notification file name>``: Specify a file to write when the cluster is up. The file contains the IP and port of the embedded web server for one of the nodes in the cluster. All mappers must start before the H2O cluster is considered "up".
 -  ``-mapperXmx <per mapper Java Xmx heap size>``: Specify the amount of memory to allocate to H2O (at least 6g).
--  ``-extramempercent <0-20>``: Specify the extra memory for internal JVM use outside of the Java heap. This is a percentage of ``mapperXmx``.
+-  ``-extramempercent``: Specify the extra memory for internal JVM use outside of the Java heap. This is a percentage of ``mapperXmx``. **Recommendation**: Set this to a high value when running XGBoost, for example, 120. 
 -  ``-n | -nodes <number of H2O nodes>``: Specify the number of nodes.
 -  ``-nthreads <maximum number of CPUs>``: Specify the number of CPUs to use. This defaults to using all CPUs on the host, or you can enter a positive integer.
 -  ``-baseport <initialization port for H2O nodes>``: Specify the initialization port for the H2O nodes. The default is ``54321``.
--  ``-ea``: Enable assertions to verify boolean expressions for error detection.
--  ``-verbose:gc``: Include heap and garbage collection information in the logs.
--  ``-XX:+PrintGCDetails``: Include a short message after each garbage collection.
 -  ``-license <license file name>``: Specify the directory of local filesytem location and the license file name.
 -  ``-o | -output <HDFS output directory>``: Specify the HDFS directory for the output.
 -  ``-flow_dir <Saved Flows directory>``: Specify the directory for saved flows. By default, H2O will try to find the HDFS home directory to use as the directory for flows. If the HDFS home directory is not found, flows cannot be saved unless a directory is specified using ``-flow_dir``.
+-  ``-port_offset <num>``: This parameter allows you to specify the relationship of the API port ("web port") and the internal communication port. The h2o port and API port are derived from each other, and we cannot fully decouple them. Instead, we allow you to specify an offset such that h2o port = api port + offset. This allows you to move the communication port to a specific range that can be firewalled.
+-  ``-proxy``: Enables Proxy mode.
+-  ``-report_hostname``: This flag allows the user to specify the machine hostname instead of the IP address when launching H2O Flow. This option can only be used when H2O on Hadoop is started in Proxy mode (with ``-proxy``).
+
+**JVM arguments**
+
+ -  ``-ea``: Enable assertions to verify boolean expressions for error detection.
+ -  ``-verbose:gc``: Include heap and garbage collection information in the logs. Deprecated in Java 9, removed in Java 10.
+ -  ``-XX:+PrintGCDetails``: Include a short message after each garbage collection. Deprecated in Java 9, removed in Java 10.
+ -  ``-Xlog:gc=info``: Prints garbage collection information into the logs. Introduced in Java 9. Usage enforced since Java 10. A replacement for ``-verbose:gc`` and ``-XX:+PrintGCDetails`` tags which are deprecated in Java 9 and removed in Java 10.
 
 Accessing S3 Data from Hadoop
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -551,19 +575,19 @@ Then import the data with the S3 URL path:
 
    ::
 
-       importFiles [ "s3n:/path/to/bucket/file/file.tab.gz" ]
+       importFiles [ "s3:/path/to/bucket/file/file.tab.gz" ]
 
 -  To import the data from the R API:
 
    ::
 
-       h2o.importFile(path = "s3n://bucket/path/to/file.csv")
+       h2o.importFile(path = "s3://bucket/path/to/file.csv")
 
 -  To import the data from the Python API:
 
    ::
 
-       h2o.import_frame(path = "s3n://bucket/path/to/file.csv")
+       h2o.import_frame(path = "s3://bucket/path/to/file.csv")
 
 YARN Best Practices
 ~~~~~~~~~~~~~~~~~~~
@@ -681,6 +705,39 @@ Accessing Logs
 
 Access logs for a YARN job with the ``yarn logs -applicationId <application_id>`` command from a terminal.  Note that this command must be run by the same userid as the job owner, and only after the job has finished.
 
+How H2O runs on YARN
+~~~~~~~~~~~~~~~~~~~~
+
+Let's say that you have a Hadoop cluster with six worker nodes and six HDFS nodes.
+For architectural diagramming purposes, the worker nodes and HDFS nodes are shown as separate blocks in the block diagram,
+but they may actually be running on the same physical machines.
+The ``hadoop jar`` command that you run on the edge node talks to the YARN Resource Manager to launch an H2O MRv2 (MapReduce v2) job.
+The Resource Manager places the requested number of H2O nodes (aka MRv2 mappers, aka YARN containers) -- three in this example -- on worker nodes.
+See the picture below:
+
+  .. figure:: images/h2o-on-yarn-1.png
+
+Once the H2O job's nodes all start, they find each other and create an H2O cluster (as shown by the dark blue line encircling the three H2O nodes).
+The three H2O nodes work together to perform distributed Machine Learning functions as a group, as shown below.
+
+Note how the three worker nodes that are not part of the H2O job have been removed from the picture below for explanatory purposes.
+They aren't part of the compute and memory resources used by the H2O job.
+The full complement of HDFS is still available, however:
+
+  .. figure:: images/h2o-on-yarn-2.png
+
+Data is then read in from HDFS *once* (as shown by the red lines), and stored as distributed H2O Frames in H2O's in-memory column-compressed Distributed Key/Value (DKV) store.  See the picture below:
+
+  .. figure:: images/h2o-on-yarn-3.png
+
+Machine Learning algorithms can then run very fast in a parallel and distributed way (as shown by the light blue lines).
+They iteratively sweep over the data over and over again to build models, which is why the in-memory storage makes H2O fast.
+
+Note how the HDFS nodes have been removed from the picture below for explanatory purposes, to emphasize that the data lives in memory during the model training process:
+
+  .. figure:: images/h2o-on-yarn-4.png
+
+
 Docker Users
 ------------
 
@@ -691,7 +748,7 @@ This section describes how to use H2O on Docker and walks you through the follow
 -  Building a Docker image from the Dockerfile
 -  Running the Docker build
 -  Launching H2O
--  Accessing H2O from the web browser or R
+-  Accessing H2O from the web browser or from R/Python
 
 Prerequisites
 ~~~~~~~~~~~~~
@@ -703,10 +760,9 @@ Prerequisites
    daemon window
 -  Using ``User`` directory (not ``root``)
 
-Notes
-~~~~~
+**Notes**:
 
--  Older Linux kernel versions are known to cause kernel panics that break Docker; there are ways around it, but these should be attempted at your own risk. To check the version of your kernel, run ``uname -r`` at the command prompt. The walkkthrough that follows has been tested on a Mac OS X 10.10.1.
+-  Older Linux kernel versions are known to cause kernel panics that break Docker. There are ways around it, but these should be attempted at your own risk. To check the version of your kernel, run ``uname -r`` at the command prompt. The walkthrough that follows has been tested on a Mac OS X 10.10.1.
 -  The Dockerfile always pulls the latest H2O release.
 -  The Docker image only needs to be built once.
 
@@ -718,7 +774,7 @@ Walkthrough
 Depending on your OS, select the appropriate installation method:
 
 -  `Mac
-   Installation <https://docs.docker.com/installation/mac/#installation>`__
+   Installation <https://docs.docker.com/installation/mac/#installation>`__. **Note**: By default, Docker allocates 2GB of memory for Mac installations. Be sure to increase this value. We normally suggest 3-4 times the size of the dataset for the amount of memory required.     
 -  `Ubuntu
    Installation <https://docs.docker.com/installation/ubuntulinux/>`__
 -  `Other OS Installations <https://docs.docker.com/installation/>`__
@@ -753,29 +809,25 @@ Depending on your OS, select the appropriate installation method:
 
 **Step 3 - Build Docker image from Dockerfile**
 
-From the **/data/h2o-{{branch\_name}}** directory, run:
+From the **/data/h2o-{{branch\_name}}** directory, run the following. Note below that ``v5`` represents the current version number.
 
 ::
 
     docker build -t "h2o.ai/{{branch_name}}:v5" .
 
-    **Note**: ``v5`` represents the current version number.
-
 Because it assembles all the necessary parts for the image, this process can take a few minutes.
 
 **Step 4 - Run Docker Build**
 
-On a Mac, use the argument *-p 54321:54321* to expressly map the port 54321. This is not necessary on Linux.
+On a Mac, use the argument ``-p 54321:54321`` to expressly map the port 54321. This is not necessary on Linux. Note below that ``v5`` represents the version number.
 
 ::
 
     docker run -ti -p 54321:54321 h2o.ai/{{branch_name}}:v5 /bin/bash
 
-    **Note**: ``v5`` represents the version number.
-
 **Step 5 - Launch H2O**
 
-Navigate to the ``/opt`` directory and launch H2O. Change the value of ``-Xmx`` to the amount of memory you want to allocate to the H2O instance. By default, H2O launches on port 54321.
+Navigate to the ``/opt`` directory and launch H2O. Change the value of ``-Xmx`` to the amount of memory you want to allocate to the H2O instance. By default, H2O launches on port 54321. 
 
 ::
 
@@ -784,13 +836,13 @@ Navigate to the ``/opt`` directory and launch H2O. Change the value of ``-Xmx`` 
 
 **Step 6 - Access H2O from the web browser or R**
 
--  *On Linux*: After H2O launches, copy and paste the IP address and port of the H2O instance into the address bar of your browser. In the following example, the IP is ``172.17.0.5:54321``.
+-  **On Linux**: After H2O launches, copy and paste the IP address and port of the H2O instance into the address bar of your browser. In the following example, the IP is ``172.17.0.5:54321``.
 
   ::
 
      03:58:25.963 main      INFO WATER: Cloud of size 1 formed [/172.17.0.5:54321 (00:00:00.000)]
 
--  *On OSX*: Locate the IP address of the Docker's network (``192.168.59.103`` in the following examples) that bridges to your Host OS by opening a new Terminal window (not a bash for your container) and running ``boot2docker ip``.
+-  **On OSX**: Locate the IP address of the Docker's network (``192.168.59.103`` in the following examples) that bridges to your Host OS by opening a new Terminal window (not a bash for your container) and running ``boot2docker ip``.
 
   ::
 
@@ -815,9 +867,18 @@ You can also view the IP address (``192.168.99.100`` in the example below) by sc
     docker is configured to use the default machine with IP 192.168.99.100
     For help getting started, check out the docs at https://docs.docker.com
 
-After obtaining the IP address, point your browser to the specified ip address and port. In R, you can access the instance by installing the latest version of the H2O R package and running:
+After obtaining the IP address, point your browser to the specified ip address and port to open Flow. In R and Python, you can access the instance by installing the latest version of the H2O R or Python package and then initializing H2O:
 
-::
 
+.. example-code::
+   .. code-block:: r
+
+    # Initialize H2O
     library(h2o)
     dockerH2O <- h2o.init(ip = "192.168.59.103", port = 54321)
+
+   .. code-block:: python
+
+    # Initialize H2O 
+    import h2o
+    docker_h2o = h2o.init(ip = "192.168.59.103", port = 54321) 

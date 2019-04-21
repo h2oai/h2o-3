@@ -1,112 +1,115 @@
-import org.apache.tools.ant.taskdefs.condition.Os
-import java.nio.file.FileSystems
-import java.nio.file.Files
-import java.nio.file.Path
-import java.util.zip.GZIPOutputStream
-import static java.nio.file.StandardCopyOption.*;
-
-defaultTasks 'build_python'
 description = "H2O Python Package"
 
-java.lang.String pythonexe = "python"
-java.lang.String pipexe = "pip"
-if (System.env.VIRTUAL_ENV) {
-    pythonexe = "${System.env.VIRTUAL_ENV}/bin/python".toString()
-    pipexe = "${System.env.VIRTUAL_ENV}/bin/pip".toString()
-}
-
 dependencies {
-    compile project(":h2o-assemblies:main")
+    compile project(path: ":h2o-assemblies:main", configuration: 'shadow')
 }
 
-
-def bv = new H2OBuildVersion(rootDir, version)
+def buildVersion = new H2OBuildVersion(rootDir, version)
 
 ext {
-    PROJECT_VERSION = bv.getProjectVersion()
-    T               = getProjectDir().toString()
-}
-
-
-task makeOutputDir(type: Exec) {
-    if (Os.isFamily(Os.FAMILY_WINDOWS)) {
-        commandLine getOsSpecificCommandLine(['if not exist "build\\tmp" mkdir', 'build\\tmp'])
-    } else {
-        commandLine getOsSpecificCommandLine(['mkdir', '-p', 'build/tmp'])
+    PROJECT_VERSION = buildVersion.getProjectVersion()
+    pythonexe = findProperty("pythonExec") ?: "python"
+    pipexe = findProperty("pipExec") ?: "pip"
+    if (System.env.VIRTUAL_ENV) {
+        pythonexe = "${System.env.VIRTUAL_ENV}/bin/python".toString()
+        pipexe = "${System.env.VIRTUAL_ENV}/bin/pip".toString()
     }
+    testsPath = file("tests")
 }
 
+//
+// Create a file with version for Python dist task
+//
+task createVersionFiles() {
+    doLast {
+        file("${buildDir}/h2o").mkdirs()
+        File version_file = new File("${buildDir}/h2o", "version.txt")
+        version_file.write(PROJECT_VERSION)
 
-task setProjectVersion << {
-    File INIT = new File([T, "h2o", "__init__.py"].join(File.separator))
-    println "    INIT.path = " + INIT.path
-    def txt = INIT.text
-    txt = txt.replaceAll("SUBST_PROJECT_VERSION", PROJECT_VERSION)
-            .replaceAll("SUBST_PROJECT_BUILDINFO", bv.toString())
-
-    INIT.write(txt)
-}
-
-task resetProjectVersion << {
-    File INIT = new File([T, "h2o", "__init__.py"].join(File.separator))
-    println "    INIT.path = " + INIT.path
-    def txt = INIT.text
-    txt = txt.replaceAll(PROJECT_VERSION, "SUBST_PROJECT_VERSION")
-            .replaceAll("__buildinfo__ = .*", "__buildinfo__ = \"SUBST_PROJECT_BUILDINFO\"")
-    INIT.write(txt)
+        File build_file = new File("${buildDir}/h2o", "buildinfo.txt")
+        build_file.write(buildVersion.toString())
+    }
 }
 
 task verifyDependencies(type: Exec) {
     commandLine getOsSpecificCommandLine([
-            pythonexe, "scripts/verify_requirements.py", "--metayaml", "conda/h2o/meta.yaml"
+            pythonexe, "scripts/verify_requirements.py",
+            "--metayaml", "conda/h2o/meta.yaml",
+            "--kind", "build"
     ])
 }
 
+task verifyTestDependencies(type: Exec) {
+    commandLine getOsSpecificCommandLine([
+            pythonexe, "scripts/verify_requirements.py",
+            "--metayaml", "conda/h2o/meta.yaml",
+            "--kind", "test"
+    ])
+}
 
+task copyH2OJar(type: Copy, dependsOn: [configurations.compile]) {
+    from "${rootDir}/build/h2o.jar"
+    into "${buildDir}/h2o/backend/bin/"
+}
 
-task buildDist(type: Exec) {
-    dependsOn verifyDependencies
-    dependsOn setProjectVersion
-    dependsOn makeOutputDir
+task copySrcFiles(type: Copy, dependsOn: [copyH2OJar]) {
+    from ("${projectDir}") {
+        include "setup.py"
+        include "setup.cfg"
+        include "h2o/**"
+        include "DESCRIPTION.rst"
+        include "MANIFEST.in"
+        include "README.md"
+        include "requirements.txt"
+    }
+    into "${buildDir}"
+}
 
+task buildDist(type: Exec, dependsOn: [verifyDependencies, createVersionFiles, copySrcFiles]) {
+    workingDir buildDir
     doFirst {
-        standardOutput = new FileOutputStream("build/tmp/h2o-py_buildDist.out")
+        file("${buildDir}/tmp").mkdirs()
+        standardOutput = new FileOutputStream(file("${buildDir}/tmp/h2o-py_buildDist.out"))
     }
     commandLine getOsSpecificCommandLine([pythonexe, "setup.py", "bdist_wheel"])
 }
 
-File testsPath = new File("./tests")
-
-task smokeTest(type: Exec) {
-    dependsOn build
-    println "PyUnit smoke test (run.py --wipeall --testsize s)..."
+task smokeTest(type: Exec, dependsOn: [verifyTestDependencies]) {
     workingDir testsPath
-    commandLine 'pwd'
-	List<java.lang.String> args = [pythonexe, '../../scripts/run.py', '--wipeall', '--testsize', 's']
+    List<String> args = [pythonexe, '../../scripts/run.py', '--wipeall', '--testsize', 's']
     if (project.hasProperty("jacocoCoverage")) {
         args << '--jacoco'
     }
-    commandLine args
+    commandLine getOsSpecificCommandLine(args)
 }
 
-task cleanUpSmokeTest << {
-    new File([T, "tests/results"].join(File.separator)).deleteDir()
+task pythonVersion(type: Exec) {
+    doFirst {
+        println(System.env.VIRTUAL_ENV)
+        println(environment)
+    }
+    commandLine getOsSpecificCommandLine([pythonexe, "--version"])
+}
+
+
+task cleanUpSmokeTest(type: Delete) {
+    delete file("${testsPath}/results")
 }
 
 task cleanCoverageData(type: Delete) {
-    delete files("${testsPath}/results/jacoco")
+    delete file("${testsPath}/results/jacoco")
 }
 
-task cleaner << {
-    println "Cleaning..."
-    getProjectDir().toString()
-    new File([getProjectDir().toString(), "dist"].join(File.separator)).deleteDir()
-    new File([getProjectDir().toString(), "h2o.egg-info"].join(File.separator)).deleteDir()
-    new File([getProjectDir().toString(), " build/"].join(File.separator)).deleteDir()
+task cleanBuild(type: Delete) {
+    doFirst {
+        println "Cleaning..."
+    }
+    delete file("build/")
     delete fileTree(dir: "$projectDir/h2o" , include: '**/*.pyc')
 }
 
-clean.dependsOn cleaner, cleanUpSmokeTest
-resetProjectVersion.dependsOn buildDist
-task build_python(dependsOn: resetProjectVersion)
-build.dependsOn build_python
+//
+// Define the dependencies
+//
+clean.dependsOn cleanBuild, cleanUpSmokeTest, cleanCoverageData
+build.dependsOn buildDist

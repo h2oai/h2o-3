@@ -6,6 +6,7 @@ import itertools
 import h2o
 from h2o.job import H2OJob
 from h2o.frame import H2OFrame
+from h2o.exceptions import H2OValueError
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.two_dim_table import H2OTwoDimTable
 from h2o.display import H2ODisplay
@@ -150,7 +151,7 @@ class H2OGridSearch(backwards_compatible()):
         self._job = None
 
 
-    def train(self, x, y=None, training_frame=None, offset_column=None, fold_column=None, weights_column=None,
+    def train(self, x=None, y=None, training_frame=None, offset_column=None, fold_column=None, weights_column=None,
               validation_frame=None, **params):
         """
         Train the model synchronously (i.e. do not return until the model finishes training).
@@ -170,8 +171,9 @@ class H2OGridSearch(backwards_compatible()):
         algo_params = locals()
         parms = self._parms.copy()
         parms.update({k: v for k, v in algo_params.items() if k not in ["self", "params", "algo_params", "parms"]})
-        parms["search_criteria"] = self.search_criteria
-        parms["hyper_parameters"] = self.hyper_params  # unique to grid search
+        # dictionaries have special handling in grid search, avoid the implicit conversion
+        parms["search_criteria"] = None if self.search_criteria is None else str(self.search_criteria)
+        parms["hyper_parameters"] = None if self.hyper_params  is None else str(self.hyper_params) # unique to grid search
         parms.update({k: v for k, v in list(self.model._parms.items()) if v is not None})  # unique to grid search
         parms.update(params)
         if '__class__' in parms:  # FIXME: hackt for PY3
@@ -185,7 +187,25 @@ class H2OGridSearch(backwards_compatible()):
                     parms["y"] = y[0]
                 else:
                     raise ValueError('y must be a single column reference')
-            self._estimator_type = "classifier" if tframe[y].isfactor() else "regressor"
+        if x is None:
+            if(isinstance(y, int)):
+                xset = set(range(training_frame.ncols)) - {y}
+            else:
+                xset = set(training_frame.names) - {y}
+        else:
+            xset = set()
+            if is_type(x, int, str): x = [x]
+            for xi in x:
+                if is_type(xi, int):
+                    if not (-training_frame.ncols <= xi < training_frame.ncols):
+                        raise H2OValueError("Column %d does not exist in the training frame" % xi)
+                    xset.add(training_frame.names[xi])
+                else:
+                    if xi not in training_frame.names:
+                        raise H2OValueError("Column %s not in the training frame" % xi)
+                    xset.add(xi)
+        x = list(xset)
+        parms["x"] = x
         self.build_model(parms)
 
 
@@ -201,6 +221,9 @@ class H2OGridSearch(backwards_compatible()):
         is_unsupervised = is_auto_encoder or algo == "pca" or algo == "svd" or algo == "kmeans" or algo == "glrm"
         if is_auto_encoder and y is not None: raise ValueError("y should not be specified for autoencoder.")
         if not is_unsupervised and y is None: raise ValueError("Missing response")
+        if not is_unsupervised:
+            y = y if y in training_frame.names else training_frame.names[y]
+            self.model._estimator_type = "classifier" if training_frame.types[y] == "enum" else "regressor"
         self._model_build(x, y, training_frame, validation_frame, algo_params)
 
 
@@ -251,6 +274,8 @@ class H2OGridSearch(backwards_compatible()):
                 error_index += 1
 
         self.models = [h2o.get_model(key['name']) for key in grid_json['model_ids']]
+        for model in self.models:
+            model._estimator_type = self.model._estimator_type
 
         # get first model returned in list of models from grid search to get model class (binomial, multinomial, etc)
         # sometimes no model is returned due to bad parameter values provided by the user.
@@ -731,6 +756,8 @@ class H2OGridSearch(backwards_compatible()):
             model_class = H2ORegressionGridSearch
         elif model_type == "Multinomial":
             model_class = H2OMultinomialGridSearch
+        elif model_type == "Ordinal":
+            model_class = H2OOrdinalGridSearch
         elif model_type == "AutoEncoder":
             model_class = H2OAutoEncoderGridSearch
         elif model_type == "DimReduction":

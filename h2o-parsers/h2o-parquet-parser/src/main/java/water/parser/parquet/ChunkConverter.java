@@ -11,7 +11,6 @@ import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Type;
 import water.fvec.Vec;
 import water.parser.BufferedString;
-import water.parser.ParseWriter;
 import water.util.StringUtils;
 
 /**
@@ -26,19 +25,29 @@ import water.util.StringUtils;
  */
 class ChunkConverter extends GroupConverter {
 
-  private final WriterDelegate _writer;
+  private final WriterDelegate _writer; // this guy actually performs the writing.
   private final Converter[] _converters;
+  private final boolean[] _keepColumns;
 
-  private int _currentRecordIdx = -1;
+  private long _currentRecordIdx = -1;
 
-  ChunkConverter(MessageType parquetSchema, byte[] chunkSchema, ParseWriter writer) {
-    _writer = new WriterDelegate(writer, chunkSchema.length);
-    int colIdx = 0;
+  ChunkConverter(MessageType parquetSchema, byte[] chunkSchema, WriterDelegate writer, boolean[] keepcolumns) {
+    _writer = writer;
+    _keepColumns = keepcolumns;
+
+    int colIdx = 0; // index to columns actually parsed
     _converters = new Converter[chunkSchema.length];
+    int trueColumnIndex = 0;  // count all columns including the skipped ones
     for (Type parquetField : parquetSchema.getFields()) {
       assert parquetField.isPrimitive();
-      _converters[colIdx] = newConverter(colIdx, chunkSchema[colIdx], parquetField.asPrimitiveType());
-      colIdx++;
+      if (_keepColumns[trueColumnIndex]) {
+        _converters[trueColumnIndex] = newConverter(colIdx, chunkSchema[trueColumnIndex], parquetField.asPrimitiveType());
+        colIdx++;
+      } else {
+        _converters[trueColumnIndex] = nullConverter(chunkSchema[trueColumnIndex], parquetField.asPrimitiveType());
+      }
+
+      trueColumnIndex++;
     }
   }
 
@@ -56,11 +65,64 @@ class ChunkConverter extends GroupConverter {
   @Override
   public void end() {
     _writer.endLine();
-    assert _writer.lineNum() - 1 == _currentRecordIdx;
   }
 
-  int getCurrentRecordIdx() {
+  long getCurrentRecordIdx() {
     return _currentRecordIdx;
+  }
+
+  private PrimitiveConverter nullConverter(byte vecType, PrimitiveType parquetType) {
+    switch (vecType) {
+      case Vec.T_BAD:
+      case Vec.T_CAT:
+      case Vec.T_STR:
+      case Vec.T_UUID:
+      case Vec.T_TIME:
+      case Vec.T_NUM:
+          boolean dictSupport = parquetType.getOriginalType() == OriginalType.UTF8 || parquetType.getOriginalType() == OriginalType.ENUM;
+          return new NullStringConverter(dictSupport);
+      default:
+        throw new UnsupportedOperationException("Unsupported type " + vecType);
+    }
+  }
+
+  private static class NullStringConverter extends PrimitiveConverter {
+    private final boolean _dictionarySupport;
+
+    NullStringConverter(boolean dictionarySupport) {
+      _dictionarySupport = dictionarySupport;
+    }
+
+    @Override
+    public void addBinary(Binary value) { ; }
+
+    @Override
+    public boolean hasDictionarySupport() {
+      return _dictionarySupport;
+    }
+
+    @Override
+    public void setDictionary(Dictionary dictionary) {
+    }
+
+    @Override
+    public void addValueFromDictionary(int dictionaryId) {
+    }
+
+    @Override
+    public void addBoolean(boolean value) { }
+
+    @Override
+    public void addDouble(double value) { }
+
+    @Override
+    public void addFloat(float value) { }
+
+    @Override
+    public void addInt(int value) { }
+
+    @Override
+    public void addLong(long value) { }
   }
 
   private PrimitiveConverter newConverter(int colIdx, byte vecType, PrimitiveType parquetType) {
@@ -70,21 +132,23 @@ class ChunkConverter extends GroupConverter {
       case Vec.T_STR:
       case Vec.T_UUID:
       case Vec.T_TIME:
-        if (parquetType.getOriginalType() == OriginalType.TIMESTAMP_MILLIS) {
+        if (OriginalType.TIMESTAMP_MILLIS.equals(parquetType.getOriginalType()) || parquetType.getPrimitiveTypeName().equals(PrimitiveType.PrimitiveTypeName.INT96)) {
           return new TimestampConverter(colIdx, _writer);
         } else {
           boolean dictSupport = parquetType.getOriginalType() == OriginalType.UTF8 || parquetType.getOriginalType() == OriginalType.ENUM;
           return new StringConverter(_writer, colIdx, dictSupport);
         }
       case Vec.T_NUM:
-        return new NumberConverter(colIdx, _writer);
+        if (OriginalType.DECIMAL.equals(parquetType.getOriginalType()))
+          return new DecimalConverter(colIdx, parquetType.getDecimalMetadata().getScale(), _writer);
+        else
+          return new NumberConverter(colIdx, _writer);
       default:
         throw new UnsupportedOperationException("Unsupported type " + vecType);
     }
   }
 
   private static class StringConverter extends PrimitiveConverter {
-
     private final BufferedString _bs = new BufferedString();
     private final int _colIdx;
     private final WriterDelegate _writer;
@@ -99,8 +163,7 @@ class ChunkConverter extends GroupConverter {
 
     @Override
     public void addBinary(Binary value) {
-      _bs.set(StringUtils.bytesOf(value.toStringUsingUTF8()));
-      _writer.addStrCol(_colIdx, _bs);
+      writeStrCol(StringUtils.bytesOf(value.toStringUsingUTF8()));
     }
 
     @Override
@@ -118,9 +181,14 @@ class ChunkConverter extends GroupConverter {
 
     @Override
     public void addValueFromDictionary(int dictionaryId) {
-      _bs.set(StringUtils.bytesOf(_dict[dictionaryId]));
+      writeStrCol(StringUtils.bytesOf(_dict[dictionaryId]));
+    }
+
+    private void writeStrCol(byte[] data) {
+      _bs.set(data);
       _writer.addStrCol(_colIdx, _bs);
     }
+
   }
 
   private static class NumberConverter extends PrimitiveConverter {
@@ -166,6 +234,51 @@ class ChunkConverter extends GroupConverter {
     }
   }
 
+  private static class DecimalConverter extends PrimitiveConverter {
+
+    private final int _colIdx;
+    private final WriterDelegate _writer;
+    private final BufferedString _bs = new BufferedString();
+    private final int _exp;
+
+    DecimalConverter(int colIdx, int scale, WriterDelegate writer) {
+      _colIdx = colIdx;
+      _writer = writer;
+      _exp = -scale;
+    }
+
+    @Override
+    public void addBoolean(boolean value) {
+      throw new UnsupportedOperationException("Boolean type is not supported by DecimalConverter");
+    }
+
+    @Override
+    public void addDouble(double value) {
+      throw new UnsupportedOperationException("Double type is not supported by DecimalConverter");
+    }
+
+    @Override
+    public void addFloat(float value) {
+      throw new UnsupportedOperationException("Float type is not supported by DecimalConverter");
+    }
+
+    @Override
+    public void addInt(int value) {
+      _writer.addNumCol(_colIdx, value, _exp);
+    }
+
+    @Override
+    public void addLong(long value) {
+      _writer.addNumCol(_colIdx, value, _exp);
+    }
+
+    @Override
+    public void addBinary(Binary value) {
+      throw new UnsupportedOperationException("Arbitrary precision Decimal type is currently not supported by H2O." +
+              "Please use 64-bit decimal type instead (precision <= 18).");
+    }
+  }
+
   private static class TimestampConverter extends PrimitiveConverter {
 
     private final int _colIdx;
@@ -180,51 +293,13 @@ class ChunkConverter extends GroupConverter {
     public void addLong(long value) {
       _writer.addNumCol(_colIdx, value, 0);
     }
-  }
 
-  private static class WriterDelegate {
+    @Override
+    public void addBinary(Binary value) {
+      final long timestampMillis = ParquetInt96TimestampConverter.getTimestampMillis(value);
 
-    private final ParseWriter _writer;
-    private final int _numCols;
-    private int _col;
-
-    WriterDelegate(ParseWriter writer, int numCols) {
-      _writer = writer;
-      _numCols = numCols;
-      _col = Integer.MIN_VALUE;
+      _writer.addNumCol(_colIdx, timestampMillis);
     }
-
-    void startLine() {
-      _col = -1;
-    }
-
-    void endLine() {
-      moveToCol(_numCols);
-      _writer.newLine();
-    }
-
-    int moveToCol(int colIdx) {
-      for (int c = _col + 1; c < colIdx; c++) _writer.addInvalidCol(c);
-      _col = colIdx;
-      return _col;
-    }
-
-    void addNumCol(int colIdx, long number, int exp) {
-      _writer.addNumCol(moveToCol(colIdx), number, exp);
-    }
-
-    void addNumCol(int colIdx, double d) {
-      _writer.addNumCol(moveToCol(colIdx), d);
-    }
-
-    void addStrCol(int colIdx, BufferedString str) {
-      _writer.addStrCol(moveToCol(colIdx), str);
-    }
-
-    long lineNum() {
-      return _writer.lineNum();
-    }
-
   }
 
 }

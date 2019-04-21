@@ -1,11 +1,12 @@
 package water;
 
 import jsr166y.CountedCompleter;
-import java.util.Arrays;
 import water.H2O.H2OCountedCompleter;
 import water.api.schemas3.KeyV3;
 import water.util.ArrayUtils;
 import water.util.Log;
+
+import java.util.Arrays;
 
 /** Jobs are used to do minimal tracking of long-lifetime user actions,
  *  including progress-bar updates and the ability to review in progress or
@@ -51,8 +52,21 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     super(defaultJobKey());     // Passing in a brand new Job key
     assert key==null || clz_of_T!=null;
     _result = key;              // Result (destination?) key
-    _typeid = clz_of_T==null ? 0 : TypeMap.onIce(clz_of_T);
+    _typeid = clz_of_T==null ? 0 : TypeMap.getIcedId(clz_of_T);
     _description = desc; 
+  }
+
+  /** Create a Job when a warning already exists due to bad model_id
+   *  @param key  Key of the final result
+   *  @param clz_of_T String class of the Keyed result
+   *  @param desc String description
+   *  @param warningStr String contains a warning on model_id*/
+  public Job(Key<T> key, String clz_of_T, String desc, String warningStr) {
+    this(key, clz_of_T, desc);
+    if (warningStr != null) {
+      _warns = new String[] {warningStr};
+    }
+
   }
 
   // Job Keys are pinned to this node (i.e., the node that invoked the
@@ -107,7 +121,10 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     if( !_stop_requested )      // fast path cutout
       new JAtomic() {
         @Override boolean abort(Job job) { return job._stop_requested; }
-        @Override void update(Job job) { job._stop_requested = true; }
+        @Override void update(Job job) {
+          job._stop_requested = true;
+          Log.debug("Job "+job._description+" requested to stop");
+        }
       }.apply(this);
   }
 
@@ -184,6 +201,24 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     // One-shot throw-away attempt at remove dead jobs from the jobs list
     DKV.DputIfMatch(LIST,new Value(LIST,new JobList(keys)),val,new Futures());
     return jobs;
+  }
+
+  public static final long WORK_UNKNOWN = 0L;
+
+  public final long getWork() {
+    update_from_remote();
+    return _work;
+  }
+
+  /** Set the amount of work for this job - can only be called if job was started without work specification */
+  public final void setWork(final long work) {
+    if (getWork() != WORK_UNKNOWN) {
+      throw new IllegalStateException("Cannot set work amount if it was already previously specified");
+    }
+    new JAtomic() {
+      @Override boolean abort(Job job) { return false; }
+      @Override void update(Job old) { old._work = work; }
+    }.apply(this);
   }
 
   public Job<T> start(final H2OCountedCompleter fjtask, long work, double max_runtime_secs) {
@@ -287,7 +322,6 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
       if(Job.isCancelledException(ex)) {
         new Barrier1OnCom().apply(Job.this);
-        _barrier = null;
       } else {
         try {
           Log.err(ex);
@@ -374,6 +408,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     if(_worked    != remote._worked    ) differ = true;
     if(_msg       != remote._msg       ) differ = true;
     if(_max_runtime_msecs != remote._max_runtime_msecs) differ = true;
+    if(! Arrays.equals(_warns, remote._warns)) differ = true;
     if( differ )
       synchronized(this) { 
         _stop_requested = remote._stop_requested;
@@ -384,6 +419,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
         _worked    = remote._worked    ;
         _msg       = remote._msg       ;
         _max_runtime_msecs = remote._max_runtime_msecs;
+        _warns     = remote._warns;
       }
   }
   @Override public Class<KeyV3.JobKeyV3> makeSchema() { return KeyV3.JobKeyV3.class; }

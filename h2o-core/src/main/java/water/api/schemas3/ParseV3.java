@@ -35,6 +35,9 @@ public class ParseV3 extends RequestSchemaV3<Iced, ParseV3> {
   @API(help="Value types for columns")
   public String[] column_types;
 
+  @API(help="Skipped columns indices", direction=API.Direction.INOUT)
+  public int[] skipped_columns;
+
   @API(help="Domains for categorical columns")
   public String[][] domains;
 
@@ -49,6 +52,12 @@ public class ParseV3 extends RequestSchemaV3<Iced, ParseV3> {
 
   @API(help="Block until the parse completes (as opposed to returning early and requiring polling")
   public boolean blocking;
+
+  @API(help="Key-reference to an initialized instance of a Decryption Tool")
+  public KeyV3.DecryptionToolKeyV3 decrypt_tool;
+
+  @API(help="Custom characters to be treated as non-data line markers", direction=API.Direction.INPUT)
+  public String custom_non_data_line_markers;
 
   // Output fields
   @API(help="Parse job", direction=API.Direction.OUTPUT)

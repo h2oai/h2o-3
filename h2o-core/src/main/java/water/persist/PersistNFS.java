@@ -9,6 +9,7 @@ import water.*;
 import water.exceptions.H2ONotFoundArgumentException;
 import water.fvec.NFSFileVec;
 import water.util.FileIntegrityChecker;
+import water.util.FileUtils;
 import water.util.Log;
 
 // Persistence backend for network file system.
@@ -131,7 +132,7 @@ public final class PersistNFS extends Persist {
 
   @Override
   public void importFiles(String path, String pattern, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
-    File f = new File(path);
+    File f = new File(FileUtils.getURI(path));
     if( !f.exists() ) throw new H2ONotFoundArgumentException("File " + path + " does not exist");
     FileIntegrityChecker.check(f).syncDirectory(files,keys,fails,dels);
   }

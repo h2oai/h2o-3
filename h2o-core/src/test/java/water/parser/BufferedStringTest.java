@@ -1,21 +1,12 @@
 package water.parser;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import water.AutoBuffer;
-import water.Paxos;
-import water.TestUtil;
 
 import java.util.Arrays;
 
-import static java.util.Arrays.*;
-
 import static org.junit.Assert.*;
 
-/**
- * This is mostly a skeleton of the tests, feel free to implement the cases
- * Created by vpatryshev on 1/17/17.
- */
 public class BufferedStringTest {
 
   @Test
@@ -30,15 +21,14 @@ public class BufferedStringTest {
     assertArrayEquals(expected, actual);
   }
 
-  @Ignore("This test fails currently - bugs in AutoBuffer, probably")
   @Test
   public void testRead_impl() throws Exception {
     final String source = "this is not a string";
     BufferedString sut1 = new BufferedString(source);
     AutoBuffer ab = new AutoBuffer();
     sut1.write_impl(ab);
-    ab.bufClose();
-    BufferedString sut2 = new BufferedString("what?");
+    ab.flipForReading();
+    BufferedString sut2 = new BufferedString();
     sut2.read_impl(ab);
     assertEquals(sut1, sut2);
   }
@@ -51,71 +41,17 @@ public class BufferedStringTest {
     assertEquals(2, sut1.compareTo(new BufferedString("this is not a stri")));
   }
 
-  @Test @Ignore // this is a stub
-  public void testHashCode() throws Exception {
-
-  }
-
   @Test
   public void testAddChar() throws Exception {
     final String source = "abc";
-    BufferedString sut1 = new BufferedString(source);
-    assertEquals(3, sut1.length());
+    BufferedString sut1 = new BufferedString(source.getBytes(), 0, 2);
+    assertEquals(2, sut1.length());
     sut1.addChar();
-    assertEquals(4, sut1.length());
-// TODO(vlad): fix the crash in the next line    
-//    String actual = sut1.bytesToString();
-//    assertEquals(source, actual);
-    // TODO(vlad): fix it; we don't need the cloud
-//    Paxos._commonKnowledge = true; // this is totally stupid; thank you Cliff for the fun
-// TODO(vlad): fix the crash in the next line    
-//    byte[] bytes = sut1.asBytes();
-//    assertArrayEquals(source.getBytes(), bytes);
-  }
-
-  @Test @Ignore // this is a stub
-  public void testAddBuff() throws Exception {
-
-  }
-
-  @Test @Ignore // this is a stub
-  public void testToString() throws Exception {
-
-  }
-
-  @Test @Ignore // this is a stub
-  public void testBytesToString() throws Exception {
-
-  }
-
-  @Test @Ignore // this is a stub
-  public void testToString1() throws Exception {
-
-  }
-
-  @Test @Ignore // this is a stub
-  public void testToBufferedString() throws Exception {
-
-  }
-
-  @Test @Ignore // this is a stub
-  public void testSet() throws Exception {
-
-  }
-
-  @Test @Ignore // this is a stub
-  public void testSet1() throws Exception {
-
-  }
-
-  @Test @Ignore // this is a stub
-  public void testSet2() throws Exception {
-
-  }
-
-  @Test @Ignore // this is a stub
-  public void testSetOff() throws Exception {
-
+    assertEquals(3, sut1.length());
+    String actual = sut1.toString();
+    assertEquals(source, actual);
+    byte[] bytes = sut1.getBuffer();
+    assertArrayEquals(source.getBytes(), bytes);
   }
 
   @SuppressWarnings("EqualsBetweenInconvertibleTypes")
@@ -136,39 +72,22 @@ public class BufferedStringTest {
   }
 
   @Test
-  public void testSameString() throws Exception {
+  public void testEqualsAsciiString() throws Exception {
     BufferedString sut1 = new BufferedString("abc");
-    assertFalse(sut1.sameString(null));
-    assertTrue(sut1.sameString("abc"));
-    assertFalse(sut1.sameString("ab"));
-    assertFalse(sut1.sameString("abd"));
-    assertFalse(sut1.sameString("abcd"));
-    assertFalse(sut1.sameString("abC"));
-    assertFalse(sut1.sameString("ab\u0441")); // this is Russian 'c' here
-    assertFalse(sut1.sameString("ab"));
+    assertFalse(sut1.equalsAsciiString(null));
+    assertTrue(sut1.equalsAsciiString("abc"));
+    assertFalse(sut1.equalsAsciiString("ab"));
+    assertFalse(sut1.equalsAsciiString("abd"));
+    assertFalse(sut1.equalsAsciiString("abcd"));
+    assertFalse(sut1.equalsAsciiString("abC"));
+    assertFalse(sut1.equalsAsciiString("ab\u0441")); // this is Russian 'c' here
+    assertFalse(sut1.equalsAsciiString("ab"));
     BufferedString sut2 = new BufferedString("");
-    assertTrue(sut2.sameString(""));
-    assertFalse(sut1.sameString(null));
-    assertFalse(sut2.sameString("a"));
+    assertTrue(sut2.equalsAsciiString(""));
+    assertFalse(sut1.equalsAsciiString(null));
+    assertFalse(sut2.equalsAsciiString("a"));
     BufferedString sut3 = new BufferedString("a\u0100b");
-    assertFalse(sut3.sameString("a\u0100b"));
-  }
-
-  @Ignore("This test is failing because the method is wrong and must be fixed, see PUBDEV-3957")
-  @Test public void testSameStringUTF8() throws Exception {
-    BufferedString sut4 = new BufferedString("a\u0088b");
-    assertTrue(sut4.sameString("a\u0088b"));
-  }
-
-  @Test public void testIsOneOf() throws Exception {
-    BufferedString sut = new BufferedString("abc");
-    assertFalse(sut.isOneOf(null));
-    assertFalse(sut.isOneOf(new String[]{}));
-    assertFalse(sut.isOneOf(new String[]{"", "a", "b", "ab", "bc", "abcd", "xabc"}));
-    assertTrue(sut.isOneOf(new String[]{"abc", "a", "b", "ab", "bc", "abcd"}));
-    assertTrue(sut.isOneOf(new String[]{"a", "b", "ab", "bc", "abcd", "abc"}));
-    assertTrue(sut.isOneOf(new String[]{"", "b", "ab", "bc", "abcd", "abc", "whateva"}));
-    assertTrue(sut.isOneOf(new String[]{"", null, "ab", "bc", "abcd", "abc", "whateva"}));
+    assertFalse(sut3.equalsAsciiString("a\u0100b"));
   }
 
   @Test
@@ -182,18 +101,4 @@ public class BufferedStringTest {
         expected, actual);
   }
 
-  @Test @Ignore // this is a stub
-  public void testGetOffset() throws Exception {
-
-  }
-
-  @Test @Ignore // this is a stub
-  public void testLength() throws Exception {
-
-  }
-
-  @Test @Ignore // this is a stub
-  public void testGetNumericType() throws Exception {
-
-  }
 }

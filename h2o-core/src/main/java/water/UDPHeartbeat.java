@@ -8,17 +8,17 @@ package water;
  */
 class UDPHeartbeat extends UDP {
   @Override AutoBuffer call(AutoBuffer ab) {
-    if( ab._h2o != H2O.SELF ) { // Do not update self-heartbeat object
+    if(ab._h2o != H2O.SELF ) {
+      // Do not update self-heartbeat object
       // The self-heartbeat is the sole holder of racey cloud-concensus hashes
       // and if we update it here we risk dropping an update.
-      ab._h2o._heartbeat = new HeartBeat().read(ab);
-      Paxos.doHeartbeat(ab._h2o);
-
-      // record clients this node has ever heard off only in multicast mode.
-      // in flatfile mode we can use ClientEvent to discover client nodes
-      if(!H2O.isFlatfileEnabled() && ab._h2o._heartbeat._client){
-        H2O.reportClient(ab._h2o);
+      HeartBeat hb = new HeartBeat().read(ab);
+      if (hb._cloud_name_hash != H2O.SELF._heartbeat._cloud_name_hash) {
+        return ab;
       }
+      assert ab._h2o != null;
+      ab._h2o.setHeartBeat(hb);
+      Paxos.doHeartbeat(ab._h2o);
     }
     return ab;
   }

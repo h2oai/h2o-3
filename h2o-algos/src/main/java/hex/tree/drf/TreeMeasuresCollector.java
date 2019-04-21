@@ -5,14 +5,15 @@ import java.util.Arrays;
 import java.util.Random;
 
 import static hex.genmodel.GenModel.getPrediction;
+
+import hex.tree.CompressedForest;
 import hex.tree.CompressedTree;
-import static hex.tree.DTreeScorer.scoreTree;
+
 import hex.tree.SharedTree;
 import water.Iced;
 import water.MRTask;
 import water.fvec.C0DChunk;
 import water.fvec.Chunk;
-import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.ModelUtils;
@@ -25,8 +26,8 @@ import static water.util.RandomUtils.getRNG;
  * uses inverse loop: first over all trees and over all rows in chunk.
  */
 public class TreeMeasuresCollector extends MRTask<TreeMeasuresCollector> {
+  /* @IN */ final private CompressedForest _cforest;
   /* @IN */ final private float     _rate;
-  /* @IN */       private CompressedTree[/*N*/][/*nclasses*/] _trees; // FIXME: Pass only tree-keys since serialized trees are passed over wire !!!
   /* @IN */ final private int       _var;
   /* @IN */ final private boolean   _oob;
   /* @IN */ final private int       _ncols;
@@ -40,16 +41,25 @@ public class TreeMeasuresCollector extends MRTask<TreeMeasuresCollector> {
   /* @OUT */ private double [/*ntrees*/] _nrows; // Number of scored row per tree (for classification/regression)
   /* @OUT */ private float[/*ntrees*/] _sse;   // Sum of squared errors per tree (for regression only)
 
-  private TreeMeasuresCollector(CompressedTree[/*N*/][/*nclasses*/] trees, int nclasses, int ncols, float rate, int variable, double threshold, SharedTree st) {
-    assert trees.length > 0;
-    assert nclasses == trees[0].length;
-    _trees = trees; _ncols = ncols;
+  /* Intermediate */
+  private transient CompressedForest.LocalCompressedForest _forest;
+
+  private TreeMeasuresCollector(CompressedForest cforest, int nclasses, int ncols, float rate, int variable, double threshold, SharedTree st) {
+    assert cforest._treeKeys.length > 0;
+    assert nclasses == cforest._treeKeys[0].length;
+    _cforest = cforest;
+    _ncols = ncols;
     _rate = rate; _var = variable;
-    _oob = true; _ntrees = trees.length;
+    _oob = true; _ntrees = cforest._treeKeys.length;
     _nclasses = nclasses;
     _classification = (nclasses>1);
     _threshold = threshold;
     _st = st;
+  }
+
+  @Override
+  protected void setupLocal() {
+    _forest = _cforest.fetch();
   }
 
   public static class ShuffleTask extends MRTask<ShuffleTask> {
@@ -93,7 +103,7 @@ public class TreeMeasuresCollector extends MRTask<TreeMeasuresCollector> {
     // Start iteration
     for( int tidx=0; tidx<_ntrees; tidx++) { // tree
       // OOB RNG for this tree
-      Random rng = rngForTree(_trees[tidx], cresp.cidx());
+      Random rng = rngForTree(_forest._trees[tidx], cresp.cidx());
       // Collect oob rows and permutate them
       oob = ModelUtils.sampleOOBRows(nrows, _rate, rng, oob); // reuse use the same array for sampling
       int oobcnt = oob[0]; // Get number of sample rows
@@ -115,7 +125,7 @@ public class TreeMeasuresCollector extends MRTask<TreeMeasuresCollector> {
         // - score data
         Arrays.fill(preds, 0);
         // - score only the tree
-        score0(data, preds, _trees[tidx]);
+        _forest.scoreTree(data, preds, tidx);
         // - derive a prediction
         if (_classification) {
           int pred = getPrediction(preds, null /*FIXME: should use model's _priorClassDistribution*/, data, _threshold);
@@ -133,17 +143,12 @@ public class TreeMeasuresCollector extends MRTask<TreeMeasuresCollector> {
         //if (_var<0) System.err.println("VARIMP OOB row: " + (cresp._start+row) + " : " + Arrays.toString(data) + " tree/actu: " + pred + "/" + actu);
       }
     }
-    // Clean-up
-    _trees = null;
   }
+
   @Override public void reduce( TreeMeasuresCollector t ) { ArrayUtils.add(_votes,t._votes); ArrayUtils.add(_nrows, t._nrows); ArrayUtils.add(_sse, t._sse); }
 
   public TreeVotes resultVotes() { return new TreeVotes(_votes, _nrows, _ntrees); }
   public TreeSSE   resultSSE  () { return new TreeSSE  (_sse,   _nrows, _ntrees); }
-  /* This is a copy of score0 method from DTree:615 */
-  private void score0(double data[], double preds[], CompressedTree[] ts) {
-    scoreTree(data, preds, ts);
-  }
 
   private Random rngForTree(CompressedTree[] ts, int cidx) {
     return _oob ? ts[0].rngForChunk(cidx) : new DummyRandom(); // k-class set of trees shares the same random number
@@ -155,13 +160,6 @@ public class TreeMeasuresCollector extends MRTask<TreeMeasuresCollector> {
     for (int tidx = 0; tidx < tmodel.ntrees(); tidx++) trees[tidx] = tmodel.ctree(tidx);
     return new TreeVotesCollector(trees, tmodel.nclasses(), ncols, rate, variable).doAll(f).result();
   }*/
-
-  public static TreeVotes collectVotes(CompressedTree[/*nclass || 1 for regression*/] tree, int nclasses, Frame f, int ncols, float rate, int variable, double threshold, SharedTree st) {
-    return new TreeMeasuresCollector(new CompressedTree[][] {tree}, nclasses, ncols, rate, variable, threshold, st).doAll(f).resultVotes();
-  }
-  public static TreeSSE collectSSE(CompressedTree[/*nclass || 1 for regression*/] tree, int nclasses, Frame f, int ncols, float rate, int variable, double threshold, SharedTree st) {
-    return new TreeMeasuresCollector(new CompressedTree[][] {tree}, nclasses, ncols, rate, variable, threshold, st).doAll(f).resultSSE();
-  }
 
   private static final class DummyRandom extends Random {
     @Override public final float nextFloat() { return 1.0f; }

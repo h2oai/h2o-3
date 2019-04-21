@@ -3,19 +3,30 @@
 #'
 # -------------------------- Principal Components Analysis -------------------------- #
 #' 
+#' Principal component analysis of an H2O data frame
+#' 
 #' Principal components analysis of an H2O data frame using the power method
 #' to calculate the singular value decomposition of the Gram matrix.
 #' 
 #' @param x A vector containing the \code{character} names of the predictors in the model.
 #' @param model_id Destination id for this model; auto-generated if not specified.
-#' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
+#' @param training_frame Id of the training data frame.
 #' @param validation_frame Id of the validation data frame.
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
 #' @param transform Transformation of training data Must be one of: "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE".
 #'        Defaults to NONE.
-#' @param pca_method Method for computing PCA (Caution: GLRM is currently experimental and unstable) Must be one of: "GramSVD",
-#'        "Power", "Randomized", "GLRM". Defaults to GramSVD.
+#' @param pca_method Specify the algorithm to use for computing the principal components: GramSVD - uses a distributed computation
+#'        of the Gram matrix, followed by a local SVD; Power - computes the SVD using the power iteration method
+#'        (experimental); Randomized - uses randomized subspace iteration method; GLRM - fits a generalized low-rank
+#'        model with L2 loss function and no regularization and solves for the SVD using local matrix algebra
+#'        (experimental) Must be one of: "GramSVD", "Power", "Randomized", "GLRM". Defaults to GramSVD.
+#' @param pca_impl Specify the implementation to use for computing PCA (via SVD or EVD): MTJ_EVD_DENSEMATRIX - eigenvalue
+#'        decompositions for dense matrix using MTJ; MTJ_EVD_SYMMMATRIX - eigenvalue decompositions for symmetric matrix
+#'        using MTJ; MTJ_SVD_DENSEMATRIX - singular-value decompositions for dense matrix using MTJ; JAMA - eigenvalue
+#'        decompositions for dense matrix using JAMA. References: JAMA - http://math.nist.gov/javanumerics/jama/; MTJ -
+#'        https://github.com/fommil/matrix-toolkits-java/ Must be one of: "MTJ_EVD_DENSEMATRIX", "MTJ_EVD_SYMMMATRIX",
+#'        "MTJ_SVD_DENSEMATRIX", "JAMA".
 #' @param k Rank of matrix approximation Defaults to 1.
 #' @param max_iterations Maximum training iterations Defaults to 1000.
 #' @param use_all_factor_levels \code{Logical}. Whether first factor level is included in each categorical expansion Defaults to FALSE.
@@ -24,6 +35,7 @@
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
 #'        Defaults to -1 (time-based random number).
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
+#' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @return Returns an object of class \linkS4class{H2ODimReductionModel}.
 #' @seealso \code{\link{h2o.svd}}, \code{\link{h2o.glrm}}
 #' @references N. Halko, P.G. Martinsson, J.A. Tropp. {Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions}[http://arxiv.org/abs/0909.4061]. SIAM Rev., Survey and Review section, Vol. 53, num. 2, pp. 217-288, June 2011.
@@ -31,9 +43,9 @@
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
-#' ausPath <- system.file("extdata", "australia.csv", package="h2o")
-#' australia.hex <- h2o.uploadFile(path = ausPath)
-#' h2o.prcomp(training_frame = australia.hex, k = 8, transform = "STANDARDIZE")
+#' australia_path <- system.file("extdata", "australia.csv", package = "h2o")
+#' australia <- h2o.uploadFile(path = australia_path)
+#' h2o.prcomp(training_frame = australia, k = 8, transform = "STANDARDIZE")
 #' }
 #' @export
 h2o.prcomp <- function(training_frame, x,
@@ -43,18 +55,20 @@ h2o.prcomp <- function(training_frame, x,
                        score_each_iteration = FALSE,
                        transform = c("NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE"),
                        pca_method = c("GramSVD", "Power", "Randomized", "GLRM"),
+                       pca_impl = c("MTJ_EVD_DENSEMATRIX", "MTJ_EVD_SYMMMATRIX", "MTJ_SVD_DENSEMATRIX", "JAMA"),
                        k = 1,
                        max_iterations = 1000,
                        use_all_factor_levels = FALSE,
                        compute_metrics = TRUE,
                        impute_missing = FALSE,
                        seed = -1,
-                       max_runtime_secs = 0
+                       max_runtime_secs = 0,
+                       export_checkpoints_dir = NULL
                        ) 
 {
 
   # Required args: training_frame
-  if( missing(training_frame) ) stop("argument 'training_frame' is missing, with no default")
+  if (missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
   # Training_frame must be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
      tryCatch(training_frame <- h2o.getFrame(training_frame),
@@ -86,6 +100,8 @@ h2o.prcomp <- function(training_frame, x,
     parms$transform <- transform
   if (!missing(pca_method))
     parms$pca_method <- pca_method
+  if (!missing(pca_impl))
+    parms$pca_impl <- pca_impl
   if (!missing(k))
     parms$k <- k
   if (!missing(max_iterations))
@@ -100,6 +116,8 @@ h2o.prcomp <- function(training_frame, x,
     parms$seed <- seed
   if (!missing(max_runtime_secs))
     parms$max_runtime_secs <- max_runtime_secs
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
   # Error check and build model
-  .h2o.modelJob('pca', parms, h2oRestApiVersion=3) 
+  .h2o.modelJob('pca', parms, h2oRestApiVersion = 3) 
 }

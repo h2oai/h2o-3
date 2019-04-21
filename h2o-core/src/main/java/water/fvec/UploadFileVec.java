@@ -1,5 +1,6 @@
 package water.fvec;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.io.InputStream;
 import water.*;
@@ -52,15 +53,15 @@ public class UploadFileVec extends FileVec {
     public long total_bytes;
   }
 
-  static public Key readPut(String keyname, InputStream is, ReadPutStats stats) throws Exception {
+  static public Key readPut(String keyname, InputStream is, ReadPutStats stats) throws IOException {
     return readPut(Key.make(keyname), is, stats);
   }
 
-  static public Key readPut(Key k, InputStream is, ReadPutStats stats) throws Exception {
+  static public Key readPut(Key k, InputStream is, ReadPutStats stats) throws IOException {
     return readPut_impl(k, is, stats);
   }
 
-  static private Key readPut_impl(Key key, InputStream is, ReadPutStats stats) throws Exception {
+  static private Key readPut_impl(Key key, InputStream is, ReadPutStats stats) throws IOException {
     Log.info("Reading byte InputStream into Frame:");
     Log.info("    frameKey:    " + key.toString());
     Key newVecKey = Vec.newKey();
@@ -104,7 +105,7 @@ public class UploadFileVec extends FileVec {
 
       Log.info("    Success.");
     }
-    catch (Exception e) {
+    catch (IOException e) {
       // Clean up and do not leak keys.
       Log.err("Exception caught in Frame::readPut; attempting to clean up the new frame and vector");
       Log.err(e);

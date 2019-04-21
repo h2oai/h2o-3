@@ -10,7 +10,7 @@ set -x
 
 # Set common variables.
 TOPDIR=$(cd `dirname $0` && pwd)
-HADOOP_VERSIONS="cdh5.2 cdh5.3 cdh5.4 cdh5.5 cdh5.6 cdh5.7 cdh5.8 hdp2.1 hdp2.2 hdp2.3 hdp2.4 hdp2.5 hdp2.6 mapr4.0 mapr5.0 mapr5.1 iop4.2"
+HADOOP_VERSIONS="cdh5.4 cdh5.5 cdh5.6 cdh5.7 cdh5.8 cdh5.9 cdh5.10 cdh5.13 cdh5.14 cdh6.0 cdh6.1 hdp2.2 hdp2.3 hdp2.4 hdp2.5 hdp2.6 hdp3.0 hdp3.1 mapr4.0 mapr5.0 mapr5.1 mapr5.2 iop4.2"
 
 function make_zip_common {
   PROJECT_BASE=$1
@@ -21,10 +21,10 @@ function make_zip_common {
 
   mkdir $IMAGEDIR/python
 
-  cp h2o-py/dist/*whl $IMAGEDIR/python
+  cp h2o-py/build/dist/*whl $IMAGEDIR/python
 
   mkdir -p $IMAGEDIR/bindings/java
-  cp h2o-bindings/build/libs/h2o-bindings-*.jar $IMAGEDIR/bindings/java
+  cp h2o-bindings/build/distributions/h2o-bindings-*.zip $IMAGEDIR/bindings/java
 
   cd $IMAGEDIR/..
   zip -r ${PROJECT_BASE}.zip ${PROJECT_BASE}
@@ -50,7 +50,7 @@ function make_hadoop_zip {
   IMAGEDIR=${TOPDIR}/h2o-dist/tmp/${PROJECT_BASE}
 
   mkdir -p $IMAGEDIR
-  cp h2o-hadoop/h2o-${HADOOP_VERSION}-assembly/build/libs/h2odriver.jar $IMAGEDIR
+  cp h2o-hadoop-*/h2o-${HADOOP_VERSION}-assembly/build/libs/h2odriver.jar $IMAGEDIR
   cat h2o-dist/hadoop/README.txt | sed -e "s/SUBST_BRANCH_NAME/${BRANCH_NAME}/g" | sed -e "s/SUBST_BUILD_NUMBER/${BUILD_NUMBER}/g" > ${IMAGEDIR}/README.txt
 
   make_zip_common $PROJECT_BASE $IMAGEDIR
@@ -108,15 +108,18 @@ openssl dgst target/Rjar/h2o.jar | sed 's/.*= //' > target/Rjar/h2o.jar.md5
 mkdir -p target/Python
 
 name=""
-for f in h2o-py/dist/*
+for f in h2o-py/build/dist/*
 do
   name=${f##*/}
 done
 
-cp h2o-py/dist/*whl target/Python
+cp h2o-py/build/dist/*whl target/Python
 
 cd h2o-py && sphinx-build -b html docs/ docs/docs/
 cd ..
+
+# Generate R Docs
+make -f scripts/jenkins/Makefile.jenkins r-generate-docs
 
 # Add Java bindings Jar to target.
 mkdir -p target/bindings/java
@@ -125,6 +128,9 @@ cp -p h2o-bindings/build/libs/*.jar target/bindings/java
 # Add Maven repo to target.
 mkdir target/maven
 cp -rp build/repo target/maven
+
+# Generate SHA256 from zip file
+(cd target && sha256sum h2o-*.zip > sha256.txt)
 
 # Build main h2o sphinx documentation.
 cd h2o-docs/src/product
@@ -148,6 +154,7 @@ cp -rp h2o-docs/web/* target/docs-website/h2o-docs
 cp -p h2o-docs/src/booklets/v2_2015/source/*.pdf target/docs-website/h2o-docs/booklets
 cp -p h2o-r/R/h2o_package.pdf target/docs-website/h2o-r
 cp -rp h2o-py/docs/docs target/docs-website/h2o-py
+cp -rp h2o-r/h2o-package/docs target/docs-website/h2o-r
 cp -rp h2o-core/build/docs/javadoc target/docs-website/h2o-core
 cp -rp h2o-algos/build/docs/javadoc target/docs-website/h2o-algos
 cp -rp h2o-genmodel/build/docs/javadoc target/docs-website/h2o-genmodel

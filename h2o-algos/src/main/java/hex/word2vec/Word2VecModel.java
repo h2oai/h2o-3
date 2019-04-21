@@ -282,11 +282,6 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     _output._vocab = vocab;
   }
 
-  @Override public void delete() {
-    remove();
-    super.delete();
-  }
-
   public static class Word2VecParameters extends Model.Parameters {
     public String algoName() { return "Word2Vec"; }
     public String fullName() { return "Word2Vec"; }

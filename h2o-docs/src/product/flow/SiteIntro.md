@@ -1,4 +1,6 @@
-#Welcome to H2O 3.0
+# Welcome to H2O 3.0
+
+>**Note**: This topic is no longer being maintained. Refer to this [Welcome](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/welcome.rst) topic for the most up-to-date documentation.
 
 Welcome to the H2O documentation site! Depending on your area of interest, select a learning path from the links above. 
 
@@ -18,7 +20,7 @@ Type your question in the entry field that appears at the bottom of the sidebar 
 ---
 
 <a name="New"></a>
-##New Users
+## New Users
 
 If you're just getting started with H2O, here are some links to help you learn more: 
 
@@ -52,7 +54,7 @@ If you're just getting started with H2O, here are some links to help you learn m
 ---
 
 <a name="Exp"></a>
-##Experienced Users
+## Experienced Users
 
 If you've used previous versions of H2O, the following links will help guide you through the process of upgrading to H2O 3.0. 
 
@@ -74,7 +76,7 @@ If you've used previous versions of H2O, the following links will help guide you
 ---
 
 <a name="OS"></a>
-##Enterprise Users
+## Enterprise Users
 
 If you're considering using H2O in an enterprise environment, you'll be happy to know that the H2O platform is supported on all major Hadoop distributions including Cloudera Enterprise, Hortonworks Data Platform and the MapR Apache Hadoop Distribution. 
 
@@ -99,7 +101,7 @@ For additional sales or marketing assistance, please email [sales@h2o.ai](mailto
 ---
 
 <a name="SW"></a>
-##Sparkling Water Users
+## Sparkling Water Users
 
 Sparkling Water is a gradle project with the following submodules: 
 
@@ -121,7 +123,7 @@ Sparkling Water is versioned according to the Spark versioning, so make sure to 
 - Use [Sparkling Water 1.5](http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.5/3/index.html) for Spark 1.5
 
 
-###Getting Started with Sparkling Water
+### Getting Started with Sparkling Water
 
 - <a href="http://h2o.ai/download/" target="_blank">Download Sparkling Water</a>: Go here to download Sparkling Water. 
 
@@ -143,7 +145,7 @@ Sparkling Water is versioned according to the Spark versioning, so make sure to 
 
 - <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/Connecting_RStudio_to_Sparkling_Water.md" target="_blank">Connecting RStudio to Sparkling Water</a>: This illustrated tutorial describes how to use RStudio to connect to Sparkling Water. 
 
-###Sparkling Water Blog Posts
+### Sparkling Water Blog Posts
 
 - <a href="http://h2o.ai/blog/2014/09/how-sparkling-water-brings-h2o-to-spark" target="_blank">How Sparkling Water Brings H2O to Spark</a>
 
@@ -151,7 +153,7 @@ Sparkling Water is versioned according to the Spark versioning, so make sure to 
 
 - <a href="http://h2o.ai/blog/2014/03/spark-h2o/" target="_blank">In-memory Big Data: Spark + H2O</a>
 
-###Sparkling Water Meetup Slide Decks
+### Sparkling Water Meetup Slide Decks
 
 - <a href="https://github.com/h2oai/sparkling-water/tree/master/examples/scripts" target="_blank">Sparkling Water Meetup 02/03/2015
 
@@ -162,7 +164,7 @@ Sparkling Water is versioned according to the Spark versioning, so make sure to 
 - <a href="http://www.slideshare.net/0xdata/2014-09-30sparklingwaterhandson" target="_blank">Sparkling Water Hands-On</a>
 
 
-###PySparkling
+### PySparkling
 
   >*Note*: PySparkling requires [Sparkling Water 1.5](http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.5/3/index.html) or later. 
 
@@ -178,7 +180,7 @@ To install H2O's PySparkling package, use the egg file included in the distribut
 ---
 
 <a name="Py"></a>
-##Python Users
+## Python Users
 
 Pythonistas will be glad to know that H2O now provides support for this popular programming language. Python users can also use H2O with IPython notebooks. For more information, refer to the following links. 
 
@@ -198,7 +200,7 @@ Pythonistas will be glad to know that H2O now provides support for this popular 
 ---
 
 <a name="R"></a>
-##R Users
+## R Users
 
 Don't worry, R users - we still provide R support in the latest version of H2O, just as before. The R components of H2O have been cleaned up, simplified, and standardized, so the command format is easier and more intuitive. Due to these improvements, be aware that any scripts created with previous versions of H2O will need some revision to be compatible with the latest version. 
 
@@ -217,7 +219,7 @@ To check which version of H2O is installed in R, use `versions::installed.versio
 - <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/Connecting_RStudio_to_Sparkling_Water.md" target="_blank">Connecting RStudio to Sparkling Water</a>: This illustrated tutorial describes how to use RStudio to connect to Sparkling Water. 
 
 
-###Ensembles
+### Ensembles
 
 Ensemble machine learning methods use multiple learning algorithms to obtain better predictive performance. 
 
@@ -228,7 +230,7 @@ Ensemble machine learning methods use multiple learning algorithms to obtain bet
 ---
 
 <a name="API"></a>
-##API Users
+## API Users
 
 API users will be happy to know that the APIs have been more thoroughly documented in the latest release of H2O and additional capabilities (such as exporting weights and biases for Deep Learning models) have been added. 
 
@@ -246,7 +248,7 @@ REST APIs are generated immediately out of the code, allowing users to implement
 ---
 
 <a name="Java"></a>
-##Java Users
+## Java Users
 
 For Java developers, the following resources will help you create your own custom app that uses H2O. 
 
@@ -256,7 +258,7 @@ For Java developers, the following resources will help you create your own custo
 
 - <a href="http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/docs-website/h2o-genmodel/javadoc/index.html" target="_blank">h2o-genmodel (POJO) Javadoc</a>: Provides a step-by-step guide to creating and implementing POJOs in a Java application. 
 
-###SDK Information
+### SDK Information
 
 The Java API is generated and accessible from the [download page](http://h2o.ai/download). 
 
@@ -267,7 +269,7 @@ The Java API is generated and accessible from the [download page](http://h2o.ai/
 ---
 
 <a name="Dev"></a>
-##Developers
+## Developers
 
 If you're looking to use H2O to help you develop your own apps, the following links will provide helpful references. 
 
@@ -309,7 +311,7 @@ After starting multiple "worker" node processes in addition to the JUnit test pr
 - <a href="https://github.com/h2oai/h2o-3/blob/master/CONTRIBUTING.md" target="_blank">Contributing code</a>: If you're interested in contributing code to H2O, we appreciate your assistance! This document describes how to access our list of Jiras that contributors can work on and how to contact us. **Note**: To access this link, you must have an [Atlassian account](https://id.atlassian.com/signup?application=mac&tenant=&continue=https%3A%2F%2Fmy.atlassian.com). 
 
 ---
-#Downloading H2O
+# Downloading H2O
 
 * [Download page for this build](http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/index.html)
 * [h2o.ai main download page](http://www.h2o.ai/download)

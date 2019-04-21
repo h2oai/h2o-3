@@ -3,6 +3,7 @@ package hex.kmeans;
 import hex.ModelMetrics;
 import hex.ModelMetricsClustering;
 import hex.SplitFrame;
+import hex.genmodel.easy.EasyPredictModelWrapper;
 import org.junit.*;
 import water.DKV;
 import water.Key;
@@ -21,6 +22,7 @@ import java.util.Random;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class KMeansTest extends TestUtil {
   public final double threshold = 1e-6;
@@ -405,6 +407,34 @@ public class KMeansTest extends TestUtil {
     }
   }
 
+  @Test public void testPOJOWithDistances() {
+    // Ignore test if the compiler failed to load
+    Assume.assumeTrue(water.util.JCodeGen.canCompile());
+
+    KMeansModel kmm = null;
+    Frame fr = null, fr2= null;
+    try {
+      fr = parse_test_file("smalldata/iris/iris_wheader.csv");
+      KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
+      parms._train = fr._key;
+      parms._k = 3;
+      parms._standardize = true;
+      parms._max_iterations = 10;
+      parms._init = KMeans.Initialization.Random;
+      kmm = doSeed(parms,0);
+
+      // Done building model; produce a score column with cluster choices
+      fr2 = kmm.score(fr);
+      EasyPredictModelWrapper.Config config = new EasyPredictModelWrapper.Config().setUseExtendedOutput(true);
+      Assert.assertTrue(kmm.testJavaScoring(fr, fr2, config,1e-15, 1e-15, 0.1));
+
+    } finally {
+      if( fr  != null ) fr.delete();
+      if( fr2 != null ) fr2.delete();
+      if( kmm != null ) kmm.delete();
+    }
+  }
+
   @Test public void testValidation() {
     KMeansModel kmm = null;
       for (boolean standardize : new boolean[]{true,false}) {
@@ -451,7 +481,6 @@ public class KMeansTest extends TestUtil {
     }
   }
 
-  @Ignore
   @Test public void testValidationSame() {
     for (boolean categorical : new boolean[]{true,false}) {
       for (boolean missing : new boolean[]{/*true,*/false}) { //FIXME: Enable missing PUBDEV-871
@@ -596,6 +625,39 @@ public class KMeansTest extends TestUtil {
         kmeans.deleteCrossValidationModels();
         kmeans.delete();
       }
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testTimeColumnPubdev6264() {
+    try {
+      Scope.enter();
+      Frame f = Scope.track(parse_test_file("smalldata/chicago/chicagoAllWeather.csv"));
+
+      assertEquals("Time", f.vec("date").get_type_str());
+
+      KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
+      parms._train = f._key;
+      parms._seed = 0xcaf;
+      parms._k = 3;
+
+      KMeans job = new KMeans(parms);
+      KMeansModel kmeans = (KMeansModel) Scope.track_generic(job.trainModel().get());
+      checkConsistency(kmeans);
+
+      assertEquals("date", kmeans._output._names[0]);
+      assertEquals(-1, kmeans._output._mode[0]); // time column is not treated as a categorical (PUBDEV-6264)
+
+      double minTime = f.vec("date").min();
+      double maxTime = f.vec("date").max();
+
+      assertEquals(3, kmeans._output._centers_raw.length);
+      for (double[] center : kmeans._output._centers_raw) {
+        assertTrue(center[0] >= minTime);
+        assertTrue(center[0] <= maxTime);
+      }
+    } finally {
       Scope.exit();
     }
   }

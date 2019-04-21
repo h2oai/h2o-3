@@ -1,6 +1,8 @@
-#FAQ
+# FAQ
 
-##General Troubleshooting Tips
+>**Note**: This topic is no longer being maintained. Refer to individual topics within the [FAQ](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/faq) folder for the most up-to-date version of the H2O FAQ.
+
+## General Troubleshooting Tips
 
 
 - Confirm your internet connection is active.
@@ -10,7 +12,7 @@
 - Try allocating more memory to H2O by modifying the `-Xmx` value when launching H2O from the command line (for example, `java -Xmx10g -jar h2o.jar` allocates 10g of memory for H2O). If you create a cluster with four 20g nodes (by specifying `-Xmx20g` four times), H2O will have a total of 80 gigs of memory available. For best performance, we recommend sizing your cluster to be about four times the size of your data. To avoid swapping, the `-Xmx` allocation must not exceed the physical memory on any node. Allocating the same amount of memory for all nodes is strongly recommended, as H2O works best with symmetric nodes.
 
 - Confirm that no other sessions of H2O are running. To stop all running H2O sessions, enter `ps -efww | grep h2o` in your shell (OSX or Linux).
-- Confirm ports 54321 and 54322 are available for both TCP and UDP. Launch Telnet (for Windows users) or Terminal (for OS X users), then type `telnet localhost 54321`, `telnet localhost 54322`
+- Confirm ports 54321 and 54322 are available for TCP. Launch Telnet (for Windows users) or Terminal (for OS X users), then type `telnet localhost 54321`, `telnet localhost 54322`
 - Confirm your firewall is not preventing the nodes from locating each other. If you can't launch H2O, we recommend temporarily disabling any firewalls until you can confirm they are not preventing H2O from launching.
 - Confirm the nodes are not using different versions of H2O. If the H2O initialization is not successful, look at the output in the shell - if you see `Attempting to join /localhost:54321 with an H2O version mismatch (md5 differs)`, update H2O on all the nodes to the same version.
 - Confirm that there is space in the `/tmp` directory.
@@ -64,7 +66,7 @@ This error output indicates that your Java version is not supported. Upgrade to 
 ---
 
 
-##Algorithms
+## Algorithms
 
 **What does it mean if the r2 value in my model is negative?**
 
@@ -187,10 +189,10 @@ https://github.com/h2oai/sparkling-water/blob/master/examples/scripts/craigslist
 
 Here is an example of how the prediction process works in H2O:
 
-0. Train a model using data that has a categorical predictor column with levels B,C, and D (no other levels); this level will be the "training set domain": {B,C,D}
-0. During scoring, the test set has only rows with levels A,C, and E for that column; this is the "test set domain": {A,C,E}
-0. For scoring, a combined "scoring domain" is created, which is the training domain appended with the extra test set domain entries: {B,C,D,A,E}
-0. Each model can handle these extra levels {A,E} separately during scoring.
+1. Train a model using data that has a categorical predictor column with levels B,C, and D (no other levels); this level will be the "training set domain": {B,C,D}
+2. During scoring, the test set has only rows with levels A,C, and E for that column; this is the "test set domain": {A,C,E}
+3. For scoring, a combined "scoring domain" is created, which is the training domain appended with the extra test set domain entries: {B,C,D,A,E}
+4. Each model can handle these extra levels {A,E} separately during scoring.
 
 The behavior for unseen categorical levels depends on the algorithm and how it handles missing levels (NA values):
 
@@ -228,7 +230,7 @@ To convert the response column:
 
 ---
 
-##Building H2O
+## Building H2O
 
 
 **During the build process, the following error message displays. What do I need to do to resolve it?**
@@ -261,7 +263,7 @@ Try using `./gradlew build -x test` - the build may be failing tests if data is 
 
 ---
 
-##Clusters
+## Clusters
 
 
 **When trying to launch H2O, I received the following error message: `ERROR: Too many retries starting cloud.` What should I do?**
@@ -278,7 +280,7 @@ If this does not resolve the issue, try the following additional troubleshooting
 
 - Test connectivity using curl: First, log in to the first node and enter curl http://<Node2IP>:54321 (where <Node2IP> is the IP address of the second node. Then, log in to the second node and enter curl http://<Node1IP>:54321 (where <Node1IP> is the IP address of the first node). Look for output from H2O.
 
-- Confirm ports 54321 and 54322 are available for both TCP and UDP.
+- Confirm ports 54321 and 54322 are available for TCP.
 - Confirm your firewall is not preventing the nodes from locating each other.
 - Confirm the nodes are not using different versions of H2O.
 - Confirm that the username is the same on all nodes; if not, define the cloud in the terminal when launching using `-name`:`java -jar h2o.jar -name myCloud`.
@@ -319,7 +321,7 @@ In the Flow web UI, click the **Admin** menu and select **Cluster Status**.
 H2O uses two ports:
 
 - The `REST_API` port (54321): Specify when launching H2O using `-port`; uses TCP only.
-- The `INTERNAL_COMMUNICATION` port (54322): Implied based on the port specified as the `REST_API` port, +1; requires TCP and UDP.
+- The `INTERNAL_COMMUNICATION` port (54322): Implied based on the port specified as the `REST_API` port, +1; requires TCP.
 
 You can start the cluster behind the firewall, but to reach it, you must make a tunnel to reach the `REST_API` port. To use the cluster, the `REST_API` port of at least one node must be reachable.
 
@@ -362,8 +364,7 @@ The following information displays for each message:
 
 - `HH:MM:SS:MS` and `nanosec`: The local time of the event
 - `Who`: The endpoint of the message; can be either a source/receiver node or source node and multicast for broadcasted messages
-- `I/O Type`: The type of communication (either UDP for small messages or TCP for large messages)
-   >**Note**: UDP messages are only sent if the UDP option was enabled when launching H2O or for multicast when a flatfile is not used for configuration.
+- `I/O Type`: The type of communication (TCP)
 - `Event`: The type of H2O message. The most common type is a distributed task, which displays as `exec` (the requested task) -> `ack` (results of the processed task) -> `ackck` (sender acknowledges receiving the response, task is completed and removed)
 - `rebooted`: Sent during node startup
 - `heartbeat`: Provides small message tracking information about node health, exchanged periodically between nodes
@@ -375,7 +376,7 @@ The following information displays for each message:
 ---
 
 
-##Data
+## Data
 
 **How should I format my SVMLight data before importing?**
 
@@ -424,7 +425,7 @@ Parsing Gzip files is not done in parallel, so it is sequential and uses only on
 ---
 
 
-##General
+## General
 
 **How do I score using an exported JSON model?**
 
@@ -761,7 +762,7 @@ Do Nothing and All Is Well.
 
 ---
 
-##Hadoop
+## Hadoop
 
 
 **Why did I get an error in R when I tried to save my model to my home directory in Hadoop?**
@@ -792,12 +793,6 @@ After creating and applying the desired node labels and associating them with sp
 - `-nodes <num-nodes>` represents the number of nodes
 - `-mapperXmx 6g` launches H2O with 6g of memory
 - `-output hdfsOutputDirName` specifies the HDFS output directory as `hdfsOutputDirName`
-
----
-
-**How does H2O handle UDP packet failures? Does H2O quit or retry?**
-
- In standard settings, H2O only uses UDP for cloud forming and only if you do not provide a flat file. All other communication is done via TCP. Cloud forming with no flat file is done by repeated broadcasts that are repeated until the cloud forms.
 
 ---
 
@@ -839,13 +834,20 @@ When you are running H2O on Hadoop, H2O tries to determine the home HDFS directo
 
 Each h2odriver.jar file is built with a specific Hadoop distribution so in order to have a working HDFS connection download the h2odriver.jar file for your Hadoop distribution.
 
-		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-cdh5.2.zip
-		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-cdh5.3.zip
-		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-hdp2.1.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-cdh5.4.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-cdh5.5.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-cdh5.6.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-cdh5.7.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-cdh5.8.zip
 		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-hdp2.2.zip
-    	wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-hdp2.3.zip
-		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-mapr4.0.1.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-hdp2.3.zip
+    	wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-hdp2.4.zip
+    	wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-hdp2.5.zip
+    	wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-hdp2.6.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-mapr4.0.zip
 		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-mapr5.0.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-mapr5.1.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-iop4.2.zip
 
 	**Note**: Enter only one of the above commands.
 
@@ -858,7 +860,7 @@ Then run the command to launch the H2O Application in the driver by specifying t
 
 ---
 
-##Java
+## Java
 
 **How do I use H2O with Java?**
 
@@ -929,7 +931,7 @@ EOF
 ---
 
 
-##Python
+## Python
 
 **I tried to install H2O in Python but `pip install scikit-learn` failed - what should I do?**
 
@@ -1158,7 +1160,7 @@ Yes, a notebook is available [here](https://github.com/h2oai/h2o-3/blob/master/h
 ---
 
 
-##R
+## R
 
 **Which versions of R are compatible with H2O?**
 
@@ -1576,7 +1578,7 @@ new_fr
 
 ---
 
-##Sparkling Water
+## Sparkling Water
 
 **What are the advantages of using Sparkling Water compared with H2O?**
 
@@ -1793,7 +1795,7 @@ After setting up `H2OContext`, try to run Sparkling Water again.
 ---
 
 
-##Tunneling between servers with H2O
+## Tunneling between servers with H2O
 
 To tunnel between servers (for example, due to firewalls):
 

@@ -4,12 +4,7 @@ Generalized Linear Model (GLM)
 Introduction
 ~~~~~~~~~~~~
 
-Generalized Linear Models (GLM) estimate regression models for outcomes
-following exponential distributions. In addition to the Gaussian (i.e.
-normal) distribution, these include Poisson, binomial, and gamma
-distributions. Each serves a different purpose, and depending on
-distribution and link function choice, can be used either for prediction
-or classification.
+Generalized Linear Models (GLM) estimate regression models for outcomes following exponential distributions. In addition to the Gaussian (i.e. normal) distribution, these include Poisson, binomial, and gamma distributions. Each serves a different purpose, and depending on distribution and link function choice, can be used either for prediction or classification.
 
 The GLM suite includes:
 
@@ -18,6 +13,8 @@ The GLM suite includes:
 -  Binomial regression (classification)
 -  Multinomial classification
 -  Gamma regression
+-  Ordinal regression
+-  Negative Binomial regression
 
 Defining a GLM Model
 ~~~~~~~~~~~~~~~~~~~~
@@ -37,35 +34,22 @@ Defining a GLM Model
 
 -  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations.
 
--  `y <algo-params/y.html>`__: (Required) Specify the column to use as the
-   independent variable.
+-  `y <algo-params/y.html>`__: (Required) Specify the column to use as the dependent variable.
 
-   -  For a regression model, this column must be numeric (**Real** or
-      **Int**).
-   -  For a classification model, this column must be categorical
-      (**Enum** or **String**). If the family is **Binomial**, the
-      dataset cannot contain more than two levels.
+   -  For a regression model, this column must be numeric (**Real** or **Int**).
+   -  For a classification model, this column must be categorical (**Enum** or **String**). If the family is **Binomial**, the dataset cannot contain more than two levels.
+
+-  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
 
 -  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Specify whether to keep the cross-validation predictions.
 
 -  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment.
 
--  `fold_assignment <algo-params/fold_assignment.html>`__: (Applicable only if a value for **nfolds** is specified and **fold\_column** is not specified) Specify the cross-validation fold assignment scheme. The available options are
-   AUTO (which is Random), Random, `Modulo <https://en.wikipedia.org/wiki/Modulo_operation>`__, or Stratified (which will stratify the folds based on the response variable for classification problems).
+-  `fold_assignment <algo-params/fold_assignment.html>`__: (Applicable only if a value for **nfolds** is specified and **fold_column** is not specified) Specify the cross-validation fold assignment scheme. The available options are AUTO (which is Random), Random, `Modulo <https://en.wikipedia.org/wiki/Modulo_operation>`__, or Stratified (which will stratify the folds based on the response variable for classification problems).
 
 -  `fold_column <algo-params/fold_column.html>`__: Specify the column that contains the cross-validation fold index assignment per observation.
 
--  `ignored_columns <algo-params/ignored_columns.html>`__: (Optional) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column
-   name to add it to the list of columns excluded from the model. To add
-   all columns, click the **All** button. To remove a column from the
-   list of ignored columns, click the X next to the column name. To
-   remove all columns from the list of ignored columns, click the
-   **None** button. To search for a specific column, type the column
-   name in the **Search** field above the column list. To only show
-   columns with a specific percentage of missing values, specify the
-   percentage in the **Only show columns with more than 0% missing
-   values** field. To change the selections for the hidden columns, use
-   the **Select Visible** or **Deselect Visible** buttons.
+-  `ignored_columns <algo-params/ignored_columns.html>`__: (Optional, Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
 
 -  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Enable this option to ignore constant
    training columns, since no information can be gained from them. This
@@ -83,13 +67,15 @@ Defining a GLM Model
 
 -  `family <algo-params/family.html>`__: Specify the model type.
 
-   -  If the family is **gaussian**, the data must be numeric (**Real** or **Int**).
-   -  If the family is **binomial**, the data must be categorical 2 levels/classes or binary (**Enum** or **Int**).
-   -  If the family is **multinomial**, the data can be categorical with more than two levels/classes (**Enum**).
-   -  If the family is **poisson**, the data must be numeric and non-negative (**Int**).
-   -  If the family is **gamma**, the data must be numeric and continuous and positive (**Real** or **Int**).
-   -  If the family is **tweedie**, the data must be numeric and continuous (**Real**) and non-negative.
-   -  If the family is **quasibinomial**, the data must be numeric.
+   -  If the family is **gaussian**, the response must be numeric (**Real** or **Int**). (default)
+   -  If the family is **binomial**, the response must be categorical 2 levels/classes or binary (**Enum** or **Int**).
+   -  If the family is **multinomial**, the response can be categorical with more than two levels/classes (**Enum**).
+   -  If the family is **ordinal**, the response must be categorical with at least 3 levels.
+   -  If the family is **quasibinomial**, the response must be numeric.
+   -  If the family is **poisson**, the response must be numeric and non-negative (**Int**).
+   -  If the family is **negativebinomial**, the response must be numeric and non-negative (**Int**).
+   -  If the family is **gamma**, the response must be numeric and continuous and positive (**Real** or **Int**).
+   -  If the family is **tweedie**, the response must be numeric and continuous (**Real**) and non-negative.
 
 -  `tweedie_variance_power <algo-params/tweedie_variance_power.html>`__: (Only applicable if *Tweedie* is
    specified for **Family**) Specify the Tweedie variance power.
@@ -97,27 +83,29 @@ Defining a GLM Model
 -  `tweedie_link_power <algo-params/tweedie_link_power.html>`__: (Only applicable if *Tweedie* is specified
    for **Family**) Specify the Tweedie link power.
 
--  `solver <algo-params/solver.html>`__: Specify the solver to use (AUTO, IRLSM, L\_BFGS, COORDINATE\_DESCENT\_NAIVE, or COORDINATE\_DESCENT). IRLSM is fast on problems with a small number of predictors and for lambda search with L1 penalty, while `L\_BFGS <http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf>`__ scales better for datasets with many columns. COORDINATE\_DESCENT is IRLSM with the covariance updates version of cyclical coordinate descent in the innermost loop. COORDINATE\_DESCENT\_NAIVE is IRLSM with the naive updates version of cyclical coordinate descent in the innermost loop. COORDINATE\_DESCENT\_NAIVE and COORDINATE\_DESCENT are currently experimental.
+-  `theta <algo-params/theta.html>`__: Theta value (equal to 1/r) for use with the negative binomial family. This value must be > 0 and defaults to 1e-10.  
+
+-  `solver <algo-params/solver.html>`__: Specify the solver to use (AUTO, IRLSM, L_BFGS, COORDINATE_DESCENT_NAIVE, COORDINATE_DESCENT, GRADIENT_DESCENT_LH, or GRADIENT_DESCENT_SQERR). IRLSM is fast on problems with a small number of predictors and for lambda search with L1 penalty, while `L_BFGS <http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf>`__ scales better for datasets with many columns. COORDINATE_DESCENT is IRLSM with the covariance updates version of cyclical coordinate descent in the innermost loop. COORDINATE_DESCENT_NAIVE is IRLSM with the naive updates version of cyclical coordinate descent in the innermost loop. GRADIENT_DESCENT_LH and GRADIENT_DESCENT_SQERR can only be used with the Ordinal family.
 
 -  `alpha <algo-params/alpha.html>`__: Specify the regularization distribution between L1 and L2.
 
 -  `lambda <algo-params/lambda.html>`__: Specify the regularization strength.
 
--  `lambda_search <algo-params/lambda_search.html>`__: Specify whether to enable lambda search, starting with lambda max. If you also specify a value for ``lambda_min_ratio``, then this value is interpreted as lambda min. If you do not specify a value for ``lambda_min_ratio``, then GLM will calculate the minimum lambda. 
+-  `lambda_search <algo-params/lambda_search.html>`__: Specify whether to enable lambda search, starting with lambda max (the smallest :math:`\lambda` that drives all coefficients to zero). If you also specify a value for ``lambda_min_ratio``, then this value is interpreted as lambda min. If you do not specify a value for ``lambda_min_ratio``, then GLM will calculate the minimum lambda. 
 
 -  `early_stopping <algo-params/early_stopping.html>`__: Specify whether to stop early when there is no more relative improvement on the training  or validation set.
    
--  `nlambdas <algo-params/nlambdas.html>`__: (Applicable only if **lambda\_search** is enabled) Specify the number of lambdas to use in the search. The default is 100.
+-  `nlambdas <algo-params/nlambdas.html>`__: (Applicable only if **lambda_search** is enabled) Specify the number of lambdas to use in the search. The default is 100.
 
 -  `standardize <algo-params/standardize.html>`__: Specify whether to standardize the numeric columns to have a mean of zero and unit variance. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option is enabled by default.
 
 -  `missing_values_handling <algo-params/missing_values_handling.html>`__: Specify how to handle missing values (Skip or MeanImputation).
 
--  `compute_p_values <algo-params/compute_p_values.html>`__: Request computation of p-values. Only applicable with no penalty (lambda = 0 and no beta constraints). Setting remove\_collinear\_columns is recommended. H2O will return an error if p-values are requested and there are collinear columns and remove\_collinear\_columns flag is not enabled.
+-  `compute_p_values <algo-params/compute_p_values.html>`__: Request computation of p-values. Only applicable with no penalty (lambda = 0 and no beta constraints). Setting remove_collinear_columns is recommended. H2O will return an error if p-values are requested and there are collinear columns and remove_collinear_columns flag is not enabled. Note that this option is not available for ``family="multinomial"`` or ``family="ordinal"``. 
 
 -  `remove_collinear_columns <algo-params/remove_collinear_columns.html>`__: Specify whether to automatically remove collinear columns during model-building. When enabled, collinear columns will be dropped from the model and will have 0 coefficient in the returned model. This can only be set if there is no regularization (lambda=0).
 
--  `intercept <algo-params/intercept.html>`__: Specify whether to include a constant term in the model. This option is enabled by default.
+-  `intercept <algo-params/intercept.html>`__: Specify whether to include a constant term in the model. This option is enabled by default. 
 
 -  `non_negative <algo-params/non_negative.html>`__: Specify whether to force coefficients to have non-negative values.
 
@@ -129,7 +117,7 @@ Defining a GLM Model
 
 -  `gradient_epsilon <algo-params/gradient_epsilon.html>`__: (For L-BFGS only) Specify a threshold for convergence. If the objective value (using the L-infinity norm) is less than this threshold, the model is converged.
 
--  `link <algo-params/link.html>`__: Specify a link function (Identity, Family_Default, Logit, Log, Inverse, or Tweedie).
+-  `link <algo-params/link.html>`__: Specify a link function (Identity, Family_Default, Logit, Log, Inverse, Tweedie, Ologit, Oprobit, and Ologlog).
 
    -  If the family is **Gaussian**, then **Identity**, **Log**, and **Inverse** are supported.
    -  If the family is **Binomial**, then **Logit** is supported.
@@ -138,20 +126,29 @@ Defining a GLM Model
    -  If the family is **Tweedie**, then only **Tweedie** is supported.
    -  If the family is **Multinomial**, then only **Family_Default** is supported. (This defaults to ``multinomial``.)
    -  If the family is **Quasibinomial**, then only **Logit** is supported.
+   -  If the family is **Ordinal**, then only **Ologit**, **Oprobit**, and **Ologlog** are supported. (Note that only Ologit is available for Ordinal regression.)
+   -  If the family is **Negative Binomial**, then only **Log** and **Identity** are supported.
 
--  prior: Specify prior probability for p(y==1). Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. 
+-  `prior <algo-params/prior.html>`__: Specify prior probability for p(y==1). Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. This value defaults to -1 and must be a value in the range (0,1).
    
      **Note**: This is a simple method affecting only the intercept. You may want to use weights and offset for a better fit.
 
--  `lambda_min_ratio <algo-params/lambda_min_ratio.html>`__: Specify the minimum lambda to use for lambda search (specified as a ratio of **lambda\_max**).
+-  `lambda_min_ratio <algo-params/lambda_min_ratio.html>`__: Specify the minimum lambda to use for lambda search (specified as a ratio of **lambda_max**, which is the smallest :math:`\lambda` for which the solution is all zeros).
 
--  beta_constraints: Specify a dataset to use beta constraints. The selected frame is used to constraint the coefficient vector to provide upper and lower bounds. The dataset must contain a names column with valid coefficient names.
+-  `beta_constraints <algo-params/beta_constraints.html>`__: Specify a dataset to use beta constraints. The selected frame is used to constrain the coefficient vector to provide upper and lower bounds. The dataset must contain a names column with valid coefficient names.
 
 -  `max_active_predictors <algo-params/max_active_predictors.html>`__: Specify the maximum number of active
    predictors during computation. This value is used as a stopping
    criterium to prevent expensive model building with many predictors.
 
 -  `interactions <algo-params/interactions.html>`__: Specify a list of predictor column indices to interact. All pairwise combinations will be computed for this list. 
+
+-  `interaction_pairs <algo-params/interaction_pairs.html>`__: When defining interactions, use this option to specify a list of pairwise column interactions (interactions between two variables). Note that this is different than ``interactions``, which will compute all pairwise combinations of specified columns.
+
+-  **obj_reg**: Specifies the likelihood divider in objective value computation. This defaults to 1/nobs.
+
+-  `custom_metric_func <algo-params/custom_metric_func.html>`__: Optionally specify a custom evaluation function.
+
 
 Interpreting a GLM Model
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -206,13 +203,15 @@ Families
 
 The ``family`` option specifies a probability distribution from an exponential family. You can specify one of the following, based on the response column type:
 
-- ``gaussian``: The data must be numeric (Real or Int). This is the default family.
-- ``binomial``: The data must be categorical 2 levels/classes or binary (Enum or Int).
-- ``quasibinomial``: The data must be numeric.
-- ``multinomial``: The data can be categorical with more than two levels/classes (Enum).
-- ``poisson``: The data must be numeric and non-negative (Int).
-- ``gamma``: The data must be numeric and continuous and positive (Real or Int).
-- ``tweedie``: The data must be numeric and continuous (Real) and non-negative.
+- ``gaussian``: (See `Linear Regression (Gaussian Family)`_.) The response must be numeric (Real or Int). This is the default family.
+- ``binomial``: (See `Logistic Regression (Binomial Family)`_). The response must be categorical 2 levels/classes or binary (Enum or Int).
+- ``ordinal``: (See `Logistic Ordinal Regression (Ordinal Family)`_). Requires a categorical response with at least 3 levels. (For 2-class problems, use family="binomial".)
+- ``quasibinomial``: (See `Pseudo-Logistic Regression (Quasibinomial Family)`_). The response must be numeric.
+- ``multinomial``: (See `Multiclass Classification (Multinomial Family)`_). The response can be categorical with more than two levels/classes (Enum).
+- ``poisson``: (See `Poisson Models`_). The response must be numeric and non-negative (Int).
+- ``gamma``: (See `Gamma Models`_). The response must be numeric and continuous and positive (Real or Int).
+- ``tweedie``: (See `Tweedie Models`_). The response must be numeric and continuous (Real) and non-negative.
+- ``negativebinomial``: (See `Negative Binomial Models`_). The response must be numeric and non-negative (Int).
 
 **Note**: If your response column is binomial, then you must convert that column to a categorical (``.asfactor()`` in Python and ``as.factor()`` in R) and set ``family = binomial``. The following configurations can lead to unexpected results. 
 
@@ -228,7 +227,7 @@ Linear regression corresponds to the Gaussian family model. The link function :m
 
  \hat {y} = {x^T}\beta + {\beta_0}
 
-The model is fitted by solving the least squares problem, which is equivalent to maximizing the liklihood for the Gaussian family.
+The model is fitted by solving the least squares problem, which is equivalent to maximizing the likelihood for the Gaussian family.
 
 .. math::
    
@@ -273,11 +272,62 @@ The corresponding deviance is equal to:
 
  D = -2 \sum_{i=1}^{n} \big( y_i \text{log}(\hat {y}_i) + (1 - y_i) \text{log}(1 - \hat {y}_i) \big)
 
+Logistic Ordinal Regression (Ordinal Family)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A logistic ordinal regression model is a generalized linear model that predicts ordinal variables - variables that are discreet, as in classification, but that can be ordered, as in regression.
+
+Let :math:`X_i\in\rm \Bbb I \!\Bbb R^p`, :math:`y` can belong to any of the :math:`K` classes. In logistic ordinal regression, we model the cumulative distribution function (CDF) of :math:`y` belonging to class :math:`j`, given :math:`X_i` as the logistic function:
+
+.. math::
+
+  P(y \leq j|X_i) = \phi(\beta^{T}X_i + \theta_j) = \dfrac {1} {1+ \text{exp} (-\beta^{T}X_i - \theta_j)}
+
+Compared to multiclass logistic regression, all classes share the same :math:`\beta` vector. This adds the constraint that the hyperplanes that separate the different classes are parallel for all classes. To decide which class will :math:`X_i` be predicted, we use the thresholds vector :math:`\theta`. If there are :math:`K` different classes, then :math:`\theta` is a non-decreasing vector (that is, :math:`\theta_0 \leq \theta_1 \leq \ldots \theta_{K-2})` of size :math:`K-1`. We then assign :math:`X_i` to the class :math:`j` if :math:`\beta^{T}X_i + \theta_j > 0` for the lowest class label :math:`j`.
+
+We choose a logistic function to model the probability :math:`P(y \leq j|X_i)` but other choices are possible. 
+
+To determine the values of :math:`\beta` and :math:`\theta`, we maximize the log-likelihood minus the same Regularization Penalty, as with the other families. 
+
+.. math::
+
+  L(\beta,\theta) = \sum_{i=1}^{n} \text{log} \big( \phi (\beta^{T}X_i + \theta_{y_i}) - \phi(\beta^{T}X_i + \theta_{{y_i}-1}) \big)
+
+Conventional ordinal regression uses a likelihood function to adjust the model parameters. However, during prediction, GLM looks at the log CDF odds. 
+
+.. math::
+   log \frac {P(y_i \leq j|X_i)} {1 - P(y_i \leq j|X_i)} = \beta^{T}X_i + \theta_{y_j} 
+
+As a result, there is a small disconnect between the two. To remedy this, we have implemented a new algorithm to set and adjust the model parameters. 
+
+Recall that during prediction, a dataset row represented by :math:`X_i` will be set to class :math:`j` if 
+
+.. math::
+   log \frac {P(y_i \leq j|X_i)} {1 - P(y_i \leq j|X_i)} = \beta^{T}X_i + \theta_{j} > 0
+
+and
+
+.. math::
+   \beta^{T}X_i + \theta_{j'} \leq 0 \; \text{for} \; j' < j
+
+Hence, for each training data sample :math:`(X_{i}, y_i)`, we adjust the model parameters :math:`\beta, \theta_0, \theta_1, \ldots, \theta_{K-2}` by considering the thresholds :math:`\beta^{T}X_i + \theta_j` directly. The following loss function is used to adjust the model parameters:
+
+.. figure:: ../images/ordinal_equation.png 
+   :align: center
+   :height: 243
+   :width: 565
+   :alt: Loss function 
+
+Again, you can add the Regularization Penalty to the loss function. The model parameters are adjusted by minimizing the loss function using gradient descent. When the Ordinal family is specified, the ``solver`` parameter will automatically be set to ``GRADIENT_DESCENT_LH`` and use the log-likelihood function. To adjust the model parameters using the loss function, you can set the solver parameter to ``GRADIENT_DESCENT_SQERR``. 
+
+Because only first-order methods are used in adjusting the model parameters, use Grid Search to choose the best combination of the ``obj_reg``, ``alpha``, and ``lambda`` parameters.
+
+In general, the loss function methods tend to generate better accuracies than the likelihood method. In addition, the loss function method is faster as it does not deal with logistic functions - just linear functions when adjusting the model parameters.
+
 Pseudo-Logistic Regression (Quasibinomial Family)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The quasibinomial family option works in the same way as the aforementioned binomial family. The difference is that binomial models only support 0/1 for the values of the target. A quasibinomial model supports "pseudo" logistic regression and allows for two arbitrary integer values (for example -4, 7). Additional information about the quasibinomial option can be found in the `"Estimating Effects on Rare Outcomes: Knowledge is Power" <http://biostats.bepress.com/ucbbiostat/paper310/>`__ paper.
-
 
 Multiclass Classification (Multinomial Family)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -311,6 +361,8 @@ The corresponding deviance is equal to:
 
  D = -2 \sum_{i=1}^{N} \big( y_i \text{log}(y_i / \hat {y}_i) - (y_i - \hat {y}_i) \big)
 
+Note in the equation above that H2O-3 uses the negative log of the likelihood. This is different than the way deviance is specified in https://onlinecourses.science.psu.edu/stat501/node/377/. In order to use this deviance definition, simply multiply the H2O-3 deviance by -1. 
+
 Gamma Models
 ^^^^^^^^^^^^
 
@@ -339,7 +391,7 @@ The Tweedie distribution is parametrized by variance power :math:`p`. It is defi
 - :math:`p = 1`: Poisson
 - :math:`p \in (1,2)`: Compound Poisson, non-negative with mass at zero
 - :math:`p = 2`: Gamma
-- :math:`p = 3`: Gaussian
+- :math:`p = 3`: Inverse-Gaussian
 - :math:`p > 2`: Stable, with support on the positive reals
 
 For :math:`p > 1`, the model likelood to maximize has the form:
@@ -354,36 +406,88 @@ The corresponding deviance when :math:`p \neq 1` and :math:`p \neq 2` is equal t
 
 .. math::
 
- D = -2 \sum_{i=1}^{N} y_i(y_i^{1-p} - \hat{y}_1^{1-p}) - \dfrac {(y_i^{2-p} - \hat{y}_i^{2-p})} {(2-p)}
+ D = 2\sum_{i}^N \frac{y_{i}(y_{i}^{1-p} - \hat{y}_{i}^{1-p})}{(1-p)} - \frac{(y_{i}^{2-p} - \hat{y}_{i}^{2-p})}{(2-p)}
+
+.. _negative_binomial:
+
+Negative Binomial Models
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Negative binomial regression is a generalization of Poisson regression that loosens the restrictive assumption that the variance is equal to the mean. Instead, the variance of negative binomial is a function of its mean and parameter :math:`\theta`, the dispersion parameter. 
+
+Let :math:`Y` denote a random variable with negative binomial distribution, and let :math:`\mu` be the mean. The variance of :math:`Y (\sigma^2)` will be :math:`\sigma^2 = \mu + \theta\mu^2`. The possible values of :math:`Y` are non-negative integers like 0, 1, 2, ...
+
+The negative binomial regression for an observation :math:`i` is:
+
+.. math::
+
+ Pr(Y = y_i|\mu_i, \theta) = \frac{\Gamma(y_i+\theta^{-1})}{\Gamma(\theta^{-1})\Gamma(y_i+1)} {\bigg(\frac {1} {1 + {\theta {\mu_i}}}\bigg) ^\theta}^{-1} { \bigg(\frac {{\theta {\mu_i}}} {1 + {\theta {\mu_i}}} \bigg) ^{y_i}}
+
+where :math:`\Gamma(x)` is the gamma function, and :math:`\mu_i` can be modeled as:
+
+.. math::
+
+ \mu_i=\left\{
+                \begin{array}{ll}
+                  exp (\beta^T X_i + \beta_0) \text{  for log link}\\
+                  \beta^T X_i + \beta_0 \text{  for identity link}\\
+                \end{array}
+              \right.
+
+The  negative log likelihood :math:`L(y_i,\mu_i)` function is:
+
+.. math::
+
+ ^\text{max}_{\beta,\beta_0} \bigg[ \frac{-1}{N} \sum_{i=1}^{N}  \bigg \{ \bigg( \sum_{j=0}^{y_i-1} \text{log}(j + \theta^{-1} ) \bigg) - \text{log} (\Gamma (y_i + 1)) - (y_i + \theta^{-1}) \text{log} (1 + \alpha\mu_i) + y_i \text{log}(\mu_i) + y_i \text{log} (\theta) \bigg \} \bigg]
+
+The final penalized negative log likelihood is used to find the coefficients :math:`\beta, \beta_0` given a fixed :math:`\theta` value:
+
+.. math::
+
+ L(y_i, \mu_i) + \lambda \big(\alpha || \beta || _1 + \frac{1}{2} (1 - \alpha) || \beta || _2 \big)
+
+The corresponding deviance is:
+
+.. math::
+
+ D = 2 \sum_{i=1}^{N} \bigg \{ y_i \text{log} \big(\frac{y_i}{\mu_i} \big) - (y_i + \theta^{-1}) \text{log} \frac{(1+\theta y_i)}{(1+\theta \mu_i)} \bigg \}
+
+**Note**: Future versions of this model will optimize the coefficients as well as the dispersion parameter. Please stay tuned.
 
 Links
 '''''
 
 As indicated previously, a link function :math:`g`: :math:`E(y) = \mu = {g^-1}(\eta)` relates the expected value of the response :math:`\mu` to the linear component :math:`\eta`. The link function can be any monotonic differentiable function. This relaxes the constraints on the additivity of the covariates, and it allows the response to belong to a restricted range of values depending on the chosen transformation :math:`g`.
 
-H2O's GLM supports the following link functions: Family_Default, Identity, Logit, Log, Inverse, and Tweedie.
+H2O's GLM supports the following link functions: Family_Default, Identity, Logit, Log, Inverse, Tweedie, Ologit, Oprobit, and Ologlog. 
 
 The following table describes the allowed Family/Link combinations.
 
-+----------------+-------------------------------------------------------------+
-| **Family**     | **Link Function**                                           |
-+----------------+----------------+----------+-------+-----+---------+---------+
-|                | Family_Default | Identity | Logit | Log | Inverse | Tweedie |
-+----------------+----------------+----------+-------+-----+---------+---------+
-| Binomial       | X              |          | X     |     |         |         |
-+----------------+----------------+----------+-------+-----+---------+---------+
-| Quasibinomial  | X              |          | X     |     |         |         |
-+----------------+----------------+----------+-------+-----+---------+---------+
-| Multinomial    | X              |          |       |     |         |         |
-+----------------+----------------+----------+-------+-----+---------+---------+
-| Gaussian       | X              | X        |       | X   | X       |         |
-+----------------+----------------+----------+-------+-----+---------+---------+
-| Poisson        | X              | X        |       | X   |         |         |
-+----------------+----------------+----------+-------+-----+---------+---------+
-| Gamma          | X              | X        |       | X   | X       |         |
-+----------------+----------------+----------+-------+-----+---------+---------+
-| Tweedie        | X              |          |       |     |         | X       |
-+----------------+----------------+----------+-------+-----+---------+---------+
++-------------------+-------------------------------------------------------------+--------+---------+---------+
+| **Family**        | **Link Function**                                                                        |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
+|                   | Family_Default | Identity | Logit | Log | Inverse | Tweedie | Ologit | Oprobit | Ologlog |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
+| Binomial          | X              |          | X     |     |         |         |        |         |         |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
+| Quasibinomial     | X              |          | X     |     |         |         |        |         |         |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
+| Multinomial       | X              |          |       |     |         |         |        |         |         |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
+| Ordinal           | X              |          |       |     |         |         | X      | X*      | X*      |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
+| Gaussian          | X              | X        |       | X   | X       |         |        |         |         |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
+| Poisson           | X              | X        |       | X   |         |         |        |         |         |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
+| Gamma             | X              | X        |       | X   | X       |         |        |         |         |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
+| Tweedie           | X              |          |       |     |         | X       |        |         |         |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
+| Negative Binomial | X              | X        |       | X   |         |         |        |         |         |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
+
+\* Supported with ordinal classification only; not available for ordinal regression.
 
 Regularization
 ~~~~~~~~~~~~~~
@@ -473,8 +577,10 @@ In GLM, you can specify one of the following solvers:
 - IRLSM: Iteratively Reweighted Least Squares Method (default)
 - L_BFGS: Limited-memory Broyden-Fletcher-Goldfarb-Shanno algorithm
 - AUTO: Sets the solver based on given data and parameters.
-- COORDINATE_DESCENT: Coordinate Decent (experimental)
-- COORDINATE_DESCENT_NAIVE: Coordinate Decent Naive (experimental)
+- COORDINATE_DESCENT: Coordinate Decent (not available when ``family=multinomial``)
+- COORDINATE_DESCENT_NAIVE: Coordinate Decent Naive
+- GRADIENT_DESCENT_LH: Gradient Descent Likelihood (available for Ordinal family only; default for Ordinal family)
+- GRADIENT_DESCENT_SQERR: Gradient Descent Squared Error (available for Ordinal family only)
 
 IRLSM and L-BFGS
 ''''''''''''''''
@@ -496,13 +602,17 @@ Coordinate Descent
 
 In addition to IRLSM and L-BFGS, H2O's GLM includes options for specifying Coordinate Descent. Cyclical Coordinate Descent is able to handle large datasets well and deals efficiently with sparse features. It can improve the performance when the data contains categorical variables with a large number of levels, as it is implemented to deal with such variables in a parallelized way. 
 
-**Note**: Both of these options are EXPERIMENTAL. 
-
 - Coordinate Descent is IRLSM with the covariance updates version of cyclical coordinate descent in the innermost loop. This version is faster when :math:`N > p` and :math:`p` ~ :math:`500`.
 - Coordinate Descent Naive is IRLSM with the naive updates version of cyclical coordinate descent in the innermost loop.
 - Coordinate Descent provides much better results if lambda search is enabled. Also, with bounds, it tends to get higher accuracy.
+- Coordinate Descent cannot be used with ``family=multinomial``. 
 
 Both of the above method are explained in the `glmnet paper <https://core.ac.uk/download/pdf/6287975.pdf>`__. 
+
+Gradient Descent
+''''''''''''''''
+
+For Ordinal regression problems, H2O provides options for `Gradient Descent <https://en.wikipedia.org/wiki/Gradient_descent>`__. Gradient Descent is a first-order iterative optimization algorithm for finding the minimum of a function. In H2O's GLM, conventional ordinal regression uses a likelihood function to adjust the model parameters. The model parameters are adjusted by maximizing the log-likelihood function using gradient descent. When the Ordinal family is specified, the ``solver`` parameter will automatically be set to ``GRADIENT_DESCENT_LH``. To adjust the model parameters using the loss function, you can set the solver parameter to ``GRADIENT_DESCENT_SQERR``. 
 
 Coefficients Table
 ~~~~~~~~~~~~~~~~~~

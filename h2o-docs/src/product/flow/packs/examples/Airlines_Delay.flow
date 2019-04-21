@@ -23,7 +23,7 @@
     },
     {
       "type": "md",
-      "input": "# Building a GLM Model\n\nNote:\n  * During import of the data, features **Year**, **Month**, **DayOfWeek**, and **FlightNum** were set to be parsed as enumerator or categorical rather than numeric columns.\n  * Run a logistic regression model by selecting \"binomial\" for parameter *Family*.\n  * Add some regularization by setting *alpha* to 0.5 and *lambda* to 1e-05."
+      "input": "# Building a GLM Model\n\n**Notes**:\n  * During import of the data, features **Year**, **Month**, **DayOfWeek**, and **FlightNum** were set to be parsed as enumerator or categorical rather than numeric columns.\n  * Run a logistic regression model by selecting \"binomial\" for parameter *Family*.\n  * Add some regularization by setting *alpha* to 0.5 and *lambda* to 1e-05."
     },
     {
       "type": "cs",
@@ -35,7 +35,7 @@
     },
     {
       "type": "md",
-      "input": "# Building a Deep Learning Model\n\nNote:\n  * During import of the data, features **Year**, **Month**, **DayOfWeek**, and **FlightNum** were set to be parsed as enumerator or categorical rather than numeric columns."
+      "input": "# Building a Deep Learning Model\n\n**Note**:\n  * During import of the data, features **Year**, **Month**, **DayOfWeek**, and **FlightNum** were set to be parsed as enumerator or categorical rather than numeric columns."
     },
     {
       "type": "cs",

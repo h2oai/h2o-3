@@ -3,11 +3,13 @@
 #'
 # -------------------------- Generalized Low Rank Model -------------------------- #
 #' 
-#' Generalized low rank decomposition of an H2O data frame.
+#' Generalized low rank decomposition of an H2O data frame
+#' 
+#' Builds a generalized low rank decomposition of an H2O data frame
 #' 
 #' @param cols (Optional) A vector containing the data columns on which k-means operates.
 #' @param model_id Destination id for this model; auto-generated if not specified.
-#' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
+#' @param training_frame Id of the training data frame.
 #' @param validation_frame Id of the validation data frame.
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
@@ -36,13 +38,14 @@
 #'        Defaults to -1 (time-based random number).
 #' @param init Initialization mode Must be one of: "Random", "SVD", "PlusPlus", "User". Defaults to PlusPlus.
 #' @param svd_method Method for computing SVD during initialization (Caution: Randomized is currently experimental and unstable)
-#'        Must be one of: "GramSVD", "Power", "Randomized". Defaults to Power.
+#'        Must be one of: "GramSVD", "Power", "Randomized". Defaults to Randomized.
 #' @param user_y User-specified initial Y
 #' @param user_x User-specified initial X
 #' @param expand_user_y \code{Logical}. Expand categorical columns in user-specified initial Y Defaults to TRUE.
 #' @param impute_original \code{Logical}. Reconstruct original training data by reversing transform Defaults to FALSE.
 #' @param recover_svd \code{Logical}. Recover singular values and eigenvectors of XY Defaults to FALSE.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
+#' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @return Returns an object of class \linkS4class{H2ODimReductionModel}.
 #' @seealso \code{\link{h2o.kmeans}, \link{h2o.svd}}, \code{\link{h2o.prcomp}}
 #' @references M. Udell, C. Horn, R. Zadeh, S. Boyd (2014). {Generalized Low Rank Models}[http://arxiv.org/abs/1410.0342]. Unpublished manuscript, Stanford Electrical Engineering Department
@@ -51,9 +54,9 @@
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
-#' ausPath <- system.file("extdata", "australia.csv", package="h2o")
-#' australia.hex <- h2o.uploadFile(path = ausPath)
-#' h2o.glrm(training_frame = australia.hex, k = 5, loss = "Quadratic", regularization_x = "L1",
+#' australia_path <- system.file("extdata", "australia.csv", package = "h2o")
+#' australia <- h2o.uploadFile(path = australia_path)
+#' h2o.glrm(training_frame = australia, k = 5, loss = "Quadratic", regularization_x = "L1",
 #' gamma_x = 0.5, gamma_y = 0, max_iterations = 1000)
 #' }
 #' @export
@@ -86,12 +89,13 @@ h2o.glrm <- function(training_frame, cols = NULL,
                      expand_user_y = TRUE,
                      impute_original = FALSE,
                      recover_svd = FALSE,
-                     max_runtime_secs = 0
+                     max_runtime_secs = 0,
+                     export_checkpoints_dir = NULL
                      ) 
 {
 
   # Required args: training_frame
-  if( missing(training_frame) ) stop("argument 'training_frame' is missing, with no default")
+  if (missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
   # Training_frame must be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
      tryCatch(training_frame <- h2o.getFrame(training_frame),
@@ -174,6 +178,8 @@ h2o.glrm <- function(training_frame, cols = NULL,
     parms$recover_svd <- recover_svd
   if (!missing(max_runtime_secs))
     parms$max_runtime_secs <- max_runtime_secs
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
 
   # Check if user_y is an acceptable set of user-specified starting points
   if( is.data.frame(user_y) || is.matrix(user_y) || is.list(user_y) || is.H2OFrame(user_y) ) {
@@ -212,7 +218,7 @@ h2o.glrm <- function(training_frame, cols = NULL,
   stop("Argument user_x must either be null or a valid user-defined starting X matrix.")
         
   # Error check and build model
-  .h2o.modelJob('glrm', parms, h2oRestApiVersion=3) 
+  .h2o.modelJob('glrm', parms, h2oRestApiVersion = 3) 
 }
 
 #' Reconstruct Training Data via H2O GLRM Model
@@ -235,12 +241,11 @@ h2o.glrm <- function(training_frame, cols = NULL,
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
-#' irisPath <- system.file("extdata", "iris_wheader.csv", package="h2o")
-#' iris.hex <- h2o.uploadFile(path = irisPath)
-#' iris.glrm <- h2o.glrm(training_frame = iris.hex, k = 4, transform = "STANDARDIZE",
+#' iris_hf <- as.h2o(iris)
+#' iris_glrm <- h2o.glrm(training_frame = iris_hf, k = 4, transform = "STANDARDIZE",
 #'                       loss = "Quadratic", multi_loss = "Categorical", max_iterations = 1000)
-#' iris.rec <- h2o.reconstruct(iris.glrm, iris.hex, reverse_transform = TRUE)
-#' head(iris.rec)
+#' iris_rec <- h2o.reconstruct(iris_glrm, iris_hf, reverse_transform = TRUE)
+#' head(iris_rec)
 #' }
 #' @export
 h2o.reconstruct <- function(object, data, reverse_transform=FALSE) {
@@ -268,12 +273,11 @@ h2o.getFrame(key)
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
-#' irisPath <- system.file("extdata", "iris_wheader.csv", package="h2o")
-#' iris.hex <- h2o.uploadFile(path = irisPath)
-#' iris.glrm <- h2o.glrm(training_frame = iris.hex, k = 4, loss = "Quadratic",
+#' iris_hf <- as.h2o(iris)
+#' iris_glrm <- h2o.glrm(training_frame = iris_hf, k = 4, loss = "Quadratic",
 #'                       multi_loss = "Categorical", max_iterations = 1000)
-#' iris.parch <- h2o.proj_archetypes(iris.glrm, iris.hex)
-#' head(iris.parch)
+#' iris_parch <- h2o.proj_archetypes(iris_glrm, iris_hf)
+#' head(iris_parch)
 #' }
 #' @export
 h2o.proj_archetypes <- function(object, data, reverse_transform=FALSE) {

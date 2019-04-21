@@ -8,6 +8,7 @@ import java.io.*;
  */
 public abstract class MojoModel extends GenModel {
 
+  public String _h2oVersion;
   public hex.ModelCategory _category;
   public String _uuid;
   public boolean _supervised;
@@ -17,6 +18,8 @@ public abstract class MojoModel extends GenModel {
   public double _defaultThreshold;
   public double[] _priorClassDistrib;
   public double[] _modelClassDistrib;
+  public double _mojo_version;
+  public ModelDescriptor _modelDescriptor = null;
 
   /**
    * Primary factory method for constructing MojoModel instances.
@@ -59,8 +62,8 @@ public abstract class MojoModel extends GenModel {
   @Override public String getUUID() { return _uuid; }
 
 
-  protected MojoModel(String[] columns, String[][] domains) {
-    super(columns, domains);
+  protected MojoModel(String[] columns, String[][] domains, String responseColumn) {
+    super(columns, domains, responseColumn);
   }
   
 }

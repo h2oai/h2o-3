@@ -19,6 +19,9 @@ public class ModelOutputSchemaV3<O extends Model.Output, S extends ModelOutputSc
   @API(help="Column names", direction=API.Direction.OUTPUT)
   public String[] names;
 
+  @API(help="Column types", direction=API.Direction.OUTPUT)
+  public String[] column_types; // column type mappings can be found in Vec.java, around line 198.
+
   @API(help="Domains for categorical columns", direction=API.Direction.OUTPUT, level=API.Level.expert)
   public String[][] domains;
 
@@ -34,7 +37,7 @@ public class ModelOutputSchemaV3<O extends Model.Output, S extends ModelOutputSc
   @API(help="Cross-validation fold assignment (each row is assigned to one holdout fold)", direction=API.Direction.OUTPUT, level=API.Level.expert)
   public KeyV3.FrameKeyV3 cross_validation_fold_assignment_frame_id;
 
-  @API(help="Category of the model (e.g., Binomial)", values={"Unknown", "Binomial", "Multinomial", "Regression", "Clustering", "AutoEncoder", "DimReduction", "WordEmbedding"}, direction=API.Direction.OUTPUT)
+  @API(help="Category of the model (e.g., Binomial)", values={"Unknown", "Binomial", "Ordinal", "Multinomial", "Regression", "Clustering", "AutoEncoder", "DimReduction", "WordEmbedding"}, direction=API.Direction.OUTPUT)
   public ModelCategory model_category;
 
   @API(help="Model summary", direction=API.Direction.OUTPUT, level=API.Level.critical)

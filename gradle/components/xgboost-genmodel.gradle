@@ -1,0 +1,3 @@
+dependencies {
+    compile project(":h2o-genmodel-ext-xgboost")
+}

@@ -4,17 +4,19 @@ import Jama.EigenvalueDecomposition;
 import Jama.Matrix;
 import hex.DataInfo;
 import hex.FrameTask;
+import hex.Interaction;
 import hex.ToEigenVec;
 import hex.gram.Gram;
-import water.DKV;
-import water.Job;
-import water.Key;
-import water.MRTask;
+import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
+import water.util.Log;
+
+import static java.util.Arrays.sort;
+import static org.apache.commons.lang.ArrayUtils.reverse;
 
 public class LinearAlgebraUtils {
   /*
@@ -78,6 +80,48 @@ public class LinearAlgebraUtils {
       exp_cnt++; chk_cnt++;
     }
     return tmp;
+  }
+
+  public static double[][] reshape1DArray(double[] arr, int m, int n) {
+    double[][] arr2D = new double[m][n];
+    for (int i = 0; i < m; i++) {
+      System.arraycopy(arr, i * n, arr2D[i], 0, n);
+    }
+    return arr2D;
+  }
+
+  public static EigenPair[] createSortedEigenpairs(double[] eigenvalues, double[][] eigenvectors) {
+    int count = eigenvalues.length;
+    EigenPair eigenPairs[] = new EigenPair[count];
+    for (int i = 0; i < count; i++) {
+      eigenPairs[i] = new EigenPair(eigenvalues[i], eigenvectors[i]);
+    }
+    sort(eigenPairs);
+    return eigenPairs;
+  }
+
+  public static EigenPair[] createReverseSortedEigenpairs(double[] eigenvalues, double[][] eigenvectors) {
+    EigenPair[] eigenPairs = createSortedEigenpairs(eigenvalues, eigenvectors);
+    reverse(eigenPairs);
+    return eigenPairs;
+  }
+
+  public static double[] extractEigenvaluesFromEigenpairs(EigenPair[] eigenPairs) {
+    int count = eigenPairs.length;
+    double[] eigenvalues = new double[count];
+    for (int i = 0; i < count; i++) {
+      eigenvalues[i] = eigenPairs[i].eigenvalue;
+    }
+    return eigenvalues;
+  }
+
+  public static double[][] extractEigenvectorsFromEigenpairs(EigenPair[] eigenPairs) {
+    int count = eigenPairs.length;
+    double[][] eigenvectors = new double[count][];
+    for (int i = 0; i < count; i++) {
+      eigenvectors[i] = eigenPairs[i].eigenvector;
+    }
+    return eigenvectors;
   }
 
   /**
@@ -407,7 +451,23 @@ public class LinearAlgebraUtils {
   }
 
   public static Vec toEigen(Vec src) {
-    Frame train = new Frame(Key.<Frame>make(), new String[]{"enum"}, new Vec[]{src});
+    Key<Frame> source = Key.make();
+    Key<Frame> dest = Key.make();
+    Frame train = new Frame(source, new String[]{"enum"}, new Vec[]{src});
+    int maxLevels = 1024; // keep eigen projection method reasonably fast
+    boolean created=false;
+    if (src.cardinality()>maxLevels) {
+      DKV.put(train);
+      created=true;
+      Log.info("Reducing the cardinality of a categorical column with " + src.cardinality() + " levels to " + maxLevels);
+      Interaction inter = new Interaction();
+      inter._source_frame = train._key;
+      inter._max_factors = maxLevels; // keep only this many most frequent levels
+      inter._min_occurrence = 2; // but need at least 2 observations for a level to be kept
+      inter._pairwise = false;
+      inter._factor_columns = train.names();
+      train = inter.execImpl(dest).get();
+    }
     DataInfo dinfo = new DataInfo(train, null, 0, true /*_use_all_factor_levels*/, DataInfo.TransformType.NONE,
             DataInfo.TransformType.NONE, /* skipMissing */ false, /* imputeMissing */ true,
             /* missingBucket */ false, /* weights */ false, /* offset */ false, /* fold */ false, /* intercept */ false);
@@ -420,9 +480,37 @@ public class LinearAlgebraUtils {
       rounded[i] = (float) gtsk._gram._diag[i];
     dinfo.remove();
     Vec v = new ProjectOntoEigenVector(multiple(rounded, (int) gtsk._nobs, 1)).doAll(1, (byte) 3, train).outputFrame().anyVec();
+    if (created) {
+      train.remove();
+      DKV.remove(source);
+    }
     return v;
   }
   public static ToEigenVec toEigen = new ToEigenVec() {
     @Override public Vec toEigenVec(Vec src) { return toEigen(src); }
   };
+
+  public static String getMatrixInString(double[][] matrix) {
+    int dimX = matrix.length;
+    if (dimX <= 0) {
+      return "";
+    }
+    int dimY = matrix[0].length;
+    for (int x = 1; x < dimX; x++) {
+      if (matrix[x].length != dimY) {
+        return "Stacked matrix!";
+      }
+    }
+    StringBuilder stringOfMatrix = new StringBuilder();
+    for (int x = 0; x < dimX; x++) {
+      for (int y = 0; y < dimY; y++) {
+        if (matrix[x][y] > 0) {
+          stringOfMatrix.append(' ');   // a leading space before a number
+        }
+        stringOfMatrix.append(String.format("%.4f\t", matrix[x][y]));
+      }
+      stringOfMatrix.append('\n');
+    }
+    return stringOfMatrix.toString();
+  }
 }

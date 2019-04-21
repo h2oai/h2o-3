@@ -1,16 +1,16 @@
 package water.bindings.examples;
 
+import com.google.gson.*;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 import water.bindings.pojos.*;
 import water.bindings.proxies.retrofit.*;
-import com.google.gson.*;
-import retrofit2.*;
-import retrofit2.http.*;
-import retrofit2.converter.gson.GsonConverterFactory;
-import retrofit2.Call;
+
 import java.io.IOException;
 import java.lang.reflect.Type;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Example of using generated Java bindings for REST API.
@@ -103,11 +103,13 @@ public class Example {
                                                                   null,
                                                                   null,
                                                                   null,
+                                                                  null,
                                                                   0,
                                                                   0,
                                                                   0,
-                                                                  null
-                                                                  ).execute().body();
+                                                                  null,
+                                                                  null,
+                                                                  null).execute().body();
             System.out.println("parseSetupBody: " + parseSetupBody);
 
             // STEP 3: parse into columnar Frame
@@ -124,12 +126,14 @@ public class Example {
                                                    parseSetupBody.numberColumns,
                                                    parseSetupBody.columnNames,
                                                    parseSetupBody.columnTypes,
+                                                   parseSetupBody.skippedColumns,
                                                    null, // domains
                                                    parseSetupBody.naStrings,
                                                    parseSetupBody.chunkSize,
                                                    true,
                                                    true,
-                                                   null).execute().body();
+                                                   null,
+                                                   null, null).execute().body();
             System.out.println("parseBody: " + parseBody);
 
             // STEP 5: Train the model (NOTE: step 4 is polling, which we don't require because we specified blocking for the parse above)
@@ -170,7 +174,9 @@ public class Example {
                                                                               trainingFrame.name,
                                                                               "predictions",
                                                                               null,
-                                                                              false, false, -1, null, false, false, false, false, -1, false, null).execute().body();
+                                                                              false, false, -1, null,
+                                                                              false, false, false, false, null,
+                                                                              false, false, -1, false, null, null).execute().body();
             System.out.println("predictions: " + predictions);
 
         }
@@ -193,11 +199,11 @@ public class Example {
 
         try {
             // NOTE: the Call objects returned by the service can't be reused, but they can be cloned.
-            Response<FramesV3> all_frames_response = framesService.list().execute();
+            Response<FramesListV3> all_frames_response = framesService.list().execute();
             Response<ModelsV3> all_models_response = modelsService.list().execute();
 
             if (all_frames_response.isSuccessful()) {
-                FramesV3 all_frames = all_frames_response.body();
+                FramesListV3 all_frames = all_frames_response.body();
                 System.out.println("All Frames: ");
                 System.out.println(all_frames);
             } else {
@@ -225,7 +231,7 @@ public class Example {
 
                 all_frames_response = framesService.list().execute();
                 if (all_frames_response.isSuccessful()) {
-                    FramesV3 all_frames = all_frames_response.body();
+                    FramesListV3 all_frames = all_frames_response.body();
                     System.out.println("All Frames (after createFrame): ");
                     System.out.println(all_frames);
                 } else {

@@ -1,16 +1,18 @@
 package water.rapids.ast.prims.mungers;
 
-import water.*;
+import water.H2O;
+import water.Iced;
+import water.Key;
+import water.MRTask;
 import water.fvec.*;
 import water.parser.BufferedString;
 import water.rapids.Env;
 import water.rapids.Merge;
-import water.rapids.Val;
-import water.rapids.ast.AstRoot;
-import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstNum;
 import water.rapids.ast.params.AstNumList;
+import water.rapids.vals.ValFrame;
 import water.util.IcedHashMap;
 
 import java.util.ArrayList;
@@ -26,7 +28,7 @@ import java.util.Arrays;
  * (otherwise the same column name would appear twice in the result).
  * <p/>
  * If the client side wants to allow named columns to be merged, the client
- * side is reponsible for renaming columns as needed to bring the names into
+ * side is responsible for renaming columns as needed to bring the names into
  * alignment as above.  This can be as simple as renaming the RHS to match the
  * LHS column names.  Duplicate columns NOT part of the merge are still not
  * allowed - because the resulting Frame will end up with duplicate column
@@ -35,6 +37,14 @@ import java.util.Arrays;
  * If allLeftFlag is true, all rows in the leftFrame will be included, even if
  * there is no matching row in the rightFrame, and vice-versa for
  * allRightFlag.  Missing data will appear as NAs.  Both flags can be true.
+ * </p>
+ * We support merge method hash, radix and auto.  If a user chooses auto, the
+ * algorithm will default to method radix which is the better algorithm.  It
+ * gives accurate merge results even if there are duplicated rows in the rightFrame.
+ * In addition, the radix method will allow the presences of string columns in
+ * the frames.  The Hash method will not give correct merge results if there
+ * are duplicated rows in the rightFrame.  The hash method cannot work with String columns,
+ * they need to be casted to enums/integer columns before calling merge.
  */
 public class AstMerge extends AstPrimitive {
   @Override
@@ -103,10 +113,9 @@ public class AstMerge extends AstPrimitive {
         if (lv.get_type() != rv.get_type())
           throw new IllegalArgumentException("Merging columns must be the same type, column " + l._names[ncols] +
               " found types " + lv.get_type_str() + " and " + rv.get_type_str());
-        if (lv.isString())
-          throw new IllegalArgumentException("Cannot merge Strings; flip toCategoricalVec first");
-        if (lv.isNumeric() && !lv.isInt())
-          throw new IllegalArgumentException("Equality tests on doubles rarely work, please round to integers only before merging");
+        if (method.equals("hash") && lv.isString())
+          throw new IllegalArgumentException("Cannot merge Strings with hash method; flip toCategoricalVec first" +
+                  " or set your method to auto or radix");
     }
 
     // GC now to sync nodes and get them to use young gen for the working memory. This helps get stable
@@ -120,21 +129,46 @@ public class AstMerge extends AstPrimitive {
       }
     }.doAllNodes();
 
-    if (method.equals("radix")) {
+    if (method.equals("radix") || method.equals("auto")) {  // default to radix as default merge metho
       // Build categorical mappings, to rapidly convert categoricals from the left to the right
       // With the sortingMerge approach there is no variance here: always map left to right
-      if (allRite)
-        throw new IllegalArgumentException("all.y=TRUE not yet implemented for method='radix'");
+      if (allLeft && allRite)
+        throw new IllegalArgumentException("all.x=TRUE and all.y=TRUE is not supported.  Choose one only.");
+
+      boolean onlyLeftAllOff = (allLeft && !allRite) || !allRite;
       int[][] id_maps = new int[ncols][];
-      for (int i = 0; i < ncols; i++) {
-        Vec lv = l.vec(i);
-        Vec rv = r.vec(i);
-        if (lv.isCategorical()) {
-          assert rv.isCategorical();  // if not, would have thrown above
-          id_maps[i] = CategoricalWrappedVec.computeMap(lv.domain(), rv.domain());
+      for (int i = 0; i < ncols; i++) { // flip the frame orders for allRite
+        Vec lv = onlyLeftAllOff ? l.vec(i) : r.vec(i);
+        Vec rv = onlyLeftAllOff ? r.vec(i) : l.vec(i);
+
+        if (onlyLeftAllOff ? lv.isCategorical() : rv.isCategorical()) {
+          assert onlyLeftAllOff ? rv.isCategorical() : lv.isCategorical();  // if not, would have thrown above
+          id_maps[i] = onlyLeftAllOff ? CategoricalWrappedVec.computeMap(lv.domain(), rv.domain()) : CategoricalWrappedVec.computeMap(rv.domain(), lv.domain());
         }
       }
-      return sortingMerge(l, r, allLeft, allRite, ncols, id_maps);
+
+      if (onlyLeftAllOff) {
+        return sortingMerge(l, r, allLeft, ncols, id_maps);
+      } else {  // implement allRite here by switching leftframe and riteframe.  However, column order is wrong, re-order before return
+        ValFrame tempFrame = sortingMerge(r, l, allRite, ncols, id_maps);
+        Frame mergedFrame = tempFrame.getFrame();  // need to switch order of merged frame
+        int allColNum = mergedFrame.numCols();
+        int[] colMapping = new int[allColNum];  // index into combined frame but with correct order
+        for (int index = 0; index < ncols; index++) {
+          colMapping[index] = index;    // no change to column order in the key columns
+        }
+        int offset = r.numCols() - ncols;
+        for (int index = ncols; index < l.numCols(); index++) { // set the order for right frame
+          colMapping[index] = offset + index;        // move the left columns to the front
+        }
+        offset = l.numCols() - ncols;
+        for (int index = l.numCols(); index < allColNum; index++) {
+          colMapping[index] = index - offset;
+        }
+
+        mergedFrame.reOrder(colMapping);  // reorder the frame columns for allrite = true
+        return tempFrame;
+      }
     }
 
     // Pick the frame to replicate & hash.  If one set is "all" and the other
@@ -180,7 +214,7 @@ public class AstMerge extends AstPrimitive {
       }
     }.doAllNodes();
     if (method.equals("auto") && (rows == null || rows.size() > MAX_HASH_SIZE))  // Blew out hash size; switch to a sorting join.  Matt: even with 0, rows was size 3 hence added ||
-      return sortingMerge(l, r, allLeft, allRite, ncols, id_maps);
+      return sortingMerge(l, r, allLeft, ncols, id_maps);
 
     // All of the walked set, and no dup handling on the right - which means no
     // need to replicate rows of the walked dataset.  Simple 1-pass over the
@@ -227,14 +261,13 @@ public class AstMerge extends AstPrimitive {
    * @param left    is the LHS frame; not-null.
    * @param right   is the RHS frame; not-null.
    * @param allLeft all rows in the LHS frame will appear in the result frame.
-   * @param allRite all rows in the RHS frame will appear in the result frame.
    * @param ncols   is the number of columns to join on, and these are ordered
    *                as the first ncols of both the left and right frames.
    * @param id_maps if not-null denote simple integer mappings from one
    *                categorical column to another; the width is ncols
    */
 
-  private ValFrame sortingMerge(Frame left, Frame right, boolean allLeft, boolean allRite, int ncols, int[][] id_maps) {
+  private ValFrame sortingMerge(Frame left, Frame right, boolean allLeft, int ncols, int[][] id_maps) {
     int cols[] = new int[ncols];
     for (int i = 0; i < ncols; i++) cols[i] = i;
     return new ValFrame(Merge.merge(left, right, cols, cols, allLeft, id_maps));
@@ -385,29 +418,13 @@ public class AstMerge extends AstPrimitive {
     }
 
     protected static void addElem(NewChunk nc, Chunk c, int row) {
-      if (c.isNA(row)) nc.addNA();
-      else if (c instanceof CStrChunk) nc.addStr(c, row);
-      else if (c instanceof C16Chunk) nc.addUUID(c, row);
-      else if (c.hasFloat()) nc.addNum(c.atd(row));
-      else nc.addNum(c.at8(row), 0);
+      c.extractRows(nc,row,row+1);
     }
 
     protected static void addElem(NewChunk nc, Vec v, long absRow, BufferedString bStr) {
-      switch (v.get_type()) {
-        case Vec.T_NUM:
-          nc.addNum(v.at(absRow));
-          break;
-        case Vec.T_CAT:
-        case Vec.T_TIME:
-          if (v.isNA(absRow)) nc.addNA();
-          else nc.addNum(v.at8(absRow));
-          break;
-        case Vec.T_STR:
-          nc.addStr(v.atStr(bStr, absRow));
-          break;
-        default:
-          throw H2O.unimpl();
-      }
+      Chunk c = v.chunkForRow(absRow);
+      int relRow = (int)(absRow-c.start());
+      c.extractRows(nc,relRow,relRow+1);
     }
   }
 

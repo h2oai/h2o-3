@@ -12,14 +12,13 @@ buildscript {
     //noinspection GroovyAssignabilityCheck
     dependencies {
         classpath 'org.ow2.asm:asm:5.1'
-        classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.4'
+        classpath 'com.github.jengelman.gradle.plugins:shadow:4.0.2'
         classpath 'org.gradle.api.plugins:gradle-nexus-plugin:0.7.1'
         classpath 'com.github.townsfolk:gradle-release:1.2'
         classpath 'com.adaptc.gradle:nexus-workflow:0.6'
         classpath 'org.testng:testng:6.8'
-        classpath "be.insaneprogramming.gradle:animalsniffer-gradle-plugin:+"
-        classpath 'me.champeau.gradle:jmh-gradle-plugin:0.3.1'
-        classpath 'net.ltgt.gradle:gradle-apt-plugin:0.10'
+        classpath 'be.insaneprogramming.gradle:animalsniffer-gradle-plugin:+'
+        classpath 'me.champeau.gradle:jmh-gradle-plugin:0.4.6'
         // Note: Analyze unused/undefined dependencies for each module - good for debugging
         // However, later it should be enabled by default
         //classpath 'ca.cutterslade.gradle:gradle-dependency-analyze:1.1.0'
@@ -28,6 +27,7 @@ buildscript {
 
 plugins {
     id "java"
+    id "com.github.hierynomus.license" version "0.14.0"
 }
 
 //
@@ -61,15 +61,26 @@ ext {
       project(':h2o-app'),
       project(':h2o-scala_2.10'),
       project(':h2o-scala_2.11'),
+      project(':h2o-persist-gcs'),
       project(':h2o-persist-hdfs'),
       project(':h2o-persist-s3'),
+      project(':h2o-persist-http'),
       project(':h2o-genmodel'),
       project(':h2o-bindings'),
       project(':h2o-avro-parser'),
       project(':h2o-orc-parser'),
       project(':h2o-parquet-parser'),
       project(':h2o-jaas-pam'),
-      project(':h2o-automl')
+      project(':h2o-automl'),
+      project(':h2o-genmodel-ext-xgboost'),
+      project(':h2o-ext-xgboost'),
+      project(':h2o-ext-krbstandalone'),
+      project(':h2o-ext-mojo-pipeline'),
+      project(':h2o-webserver-iface'),
+      project(':h2o-jetty-8'),
+      project(':h2o-jetty-9'),
+      project(':h2o-ext-jython-cfunc'),
+      project(':h2o-hive'),
     ]
 
     javaProjects = [
@@ -77,8 +88,10 @@ ext {
       project(':h2o-algos'),
       project(':h2o-web'),
       project(':h2o-app'),
+      project(':h2o-persist-gcs'),
       project(':h2o-persist-hdfs'),
       project(':h2o-persist-s3'),
+      project(':h2o-persist-http'),
       project(':h2o-test-integ'),
       project(':h2o-test-accuracy'),
       project(':h2o-genmodel'),
@@ -86,8 +99,18 @@ ext {
       project(':h2o-avro-parser'),
       project(':h2o-orc-parser'),
       project(':h2o-parquet-parser'),
+      project(':h2o-parquet-v17-compat'),
       project(':h2o-jaas-pam'),
-      project(':h2o-automl')
+      project(':h2o-automl'),
+      project(':h2o-genmodel-ext-xgboost'),
+      project(':h2o-ext-xgboost'),
+      project(':h2o-ext-krbstandalone'),
+      project(':h2o-ext-mojo-pipeline'),
+      project(':h2o-webserver-iface'),
+      project(':h2o-jetty-8'),
+      project(':h2o-jetty-9'),
+      project(':h2o-ext-jython-cfunc'),
+      project(':h2o-hive'),
     ]
 
     scalaProjects = [
@@ -112,18 +135,10 @@ ext {
 
     // Projects with micro-benchmarks
     ubenchProjects = [
-      project(':h2o-core')
+      project(':h2o-core'),
+      project(':h2o-algos')
     ]
     
-    // Apt required
-    // Only Java projects which needs to register core/rest/schema extensions
-    aptProjects = [
-      project(':h2o-core'),
-      project(':h2o-algos'),
-      project(':h2o-app'),
-      project(':h2o-automl')
-    ]
-
     //
     // Versions of libraries shared cross all projects
     // The version of protoc must match protobuf-java. If you don't depend on
@@ -139,7 +154,10 @@ ext {
     // They can be enabled by passing parameter "-Pwith{componentName}=true"
     // For example, `-PwithVisDataServer=true -PvisDataServerVersion=3.14.27`
     optionalComponents = [
-            [name: "visDataServer", version : "1.0.0-SNAPSHOT", enabled: false ]
+            // NAME | VERSION | IS ENABLED? | HAS GENMODEL PART ?
+            [name: "visDataServer", version : "1.0.0-SNAPSHOT", enabled: false, genmodel: false ],
+            [name: "xgboost", version: "$version", enabled: true, genmodel: true ],
+            [name: "jython-cfunc", version: "$version", enabled: true, genmodel: false],
     ]
 
     //
@@ -148,9 +166,8 @@ ext {
     h2oRESTApiVersion = '3'
 
     getOsSpecificCommandLine = { List<GString> args ->
-        return Os.isFamily(Os.FAMILY_WINDOWS) ? ['cmd', '/c'] + args : args
+        return Os.isFamily(Os.FAMILY_WINDOWS) ? ['cmd', '/c'] + args : ['/usr/bin/env'] + args
     }
-
 }
 
 //
@@ -164,6 +181,7 @@ allprojects {
 
     // Support different IDEs
     apply plugin: 'idea'
+    idea.module.inheritOutputDirs = true
     apply plugin: 'eclipse'
     apply from: "$rootDir/gradle/artifacts.gradle"
 
@@ -188,7 +206,11 @@ subprojects {
     version = rootProject.version
 
     repositories {
+        if (project.hasProperty("enableMavenLocal")) { // useful for development
+            mavenLocal()
+        }
         mavenCentral()
+        jcenter()
         maven {
           url "https://repository.cloudera.com/artifactory/cloudera-repos/"
         }
@@ -201,7 +223,6 @@ subprojects {
         maven {
           url "http://repository.mapr.com/maven/"
         }
-        // mavenLocal()
     }
 
     // Publish artifacts - we should filter subproject in future but now apply publisher plugin
@@ -238,10 +259,6 @@ subprojects {
         // Analyze dependencies 
         //apply plugin: 'ca.cutterslade.analyze'
         
-        // Apt preprocessor
-        if (project in aptProjects) {
-            apply from: "$rootDir/gradle/apt.gradle"
-        }
     }
 
     // Configure Scala projects
@@ -267,10 +284,6 @@ subprojects {
             apply from: "$rootDir/gradle/ubench.gradle"
         }
     }
-}
-
-task wrapper(type: Wrapper) {
-  gradleVersion = '3.3'
 }
 
 //
@@ -309,8 +322,8 @@ apply from: "gradle/s3sync.gradle"
 // See ~jenkins/bin/buildh2odev.sh.
 task buildH2oDevDist(type: Exec) {
     group='Dist'
-    H2OBuildVersion bv = new H2OBuildVersion(rootDir, version);
-    def buildTimeMillis = System.currentTimeMillis();
+    H2OBuildVersion bv = new H2OBuildVersion(rootDir, version)
+    def buildTimeMillis = System.currentTimeMillis()
     def buildTimeIso8601 = new Date().format("yyyy-MM-dd'T'HH:mm:ss'Z'", TimeZone.getTimeZone("UTC"))
     def buildTimeLocal = new Date()
     def projectVersion = bv.getProjectVersion()
@@ -328,6 +341,7 @@ task buildH2oDevDist(type: Exec) {
     
     commandLine './make-dist.sh'
 }
+
 
 task dist(dependsOn: buildH2oDevDist) 
 

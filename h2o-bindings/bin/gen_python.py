@@ -20,7 +20,9 @@ class PythonTypeTranslatorForCheck(bi.TypeTranslator):
         self.types["Polymorphic"] = "object"
         self.types["Object"] = "object"
         self.types["VecSpecifier"] = "str"
-        self.make_array = lambda vtype: "[%s]" % vtype
+        self.types["StringPair"] = "tuple"
+        self.types["KeyValue"] = "dict"
+        self.make_array = lambda vtype: "dict" if vtype == "dict" else "[%s]" % vtype
         self.make_array2 = lambda vtype: "[[%s]]" % vtype
         self.make_map = lambda ktype, vtype: "{%s: %s}" % (ktype, vtype)
         self.make_key = lambda itype, schema: "H2OFrame" if schema == "Key<Frame>" else "str"
@@ -46,7 +48,9 @@ class PythonTypeTranslatorForDoc(bi.TypeTranslator):
         self.types["Polymorphic"] = "object"
         self.types["Object"] = "object"
         self.types["VecSpecifier"] = "str"
-        self.make_array = lambda vtype: "List[%s]" % vtype
+        self.types["StringPair"] = "tuple"
+        self.types["KeyValue"] = "dict"
+        self.make_array = lambda vtype: "dict" if vtype == "dict" else "List[%s]" % vtype
         self.make_array2 = lambda vtype: "List[List[%s]]" % vtype
         self.make_map = lambda ktype, vtype: "Dict[%s, %s]" % (ktype, vtype)
         self.make_key = lambda itype, schema: "H2OFrame" if schema == "Key<Frame>" else "str"
@@ -124,6 +128,10 @@ def gen_module(schema, algo):
         else:
             enum_values = None
         pname = param["name"]
+        if (pname==u'distribution') and (not(algo==u'glm') and not(algo==u'gbm')):    # quasibinomial only in glm, gbm
+            enum_values.remove(u'quasibinomial')
+        if (pname==u'distribution') and (not(algo==u'glm')):    # ordinal only in glm
+            enum_values.remove(u'ordinal')
         if pname in reserved_words: pname += "_"
         param_names.append(pname)
         param["pname"] = pname
@@ -141,7 +149,12 @@ def gen_module(schema, algo):
     yield "from h2o.estimators.estimator_base import H2OEstimator"
     yield "from h2o.exceptions import H2OValueError"
     yield "from h2o.frame import H2OFrame"
-    yield "from h2o.utils.typechecks import assert_is_type, Enum, numeric"
+    if classname == "H2OStackedEnsembleEstimator":
+        yield "from h2o.utils.typechecks import assert_is_type, Enum, numeric, is_type"
+        yield "import json"
+        yield "import ast"
+    else:
+        yield "from h2o.utils.typechecks import assert_is_type, Enum, numeric"
     if extra_imports:
         yield reindent_block(extra_imports, 0) + ""
     yield ""
@@ -169,6 +182,11 @@ def gen_module(schema, algo):
     yield "            if pname == 'model_id':"
     yield "                self._id = pvalue"
     yield '                self._parms["model_id"] = pvalue'
+    if algo == 'word2vec':
+        yield '            elif pname == \'pre_trained\':'
+        yield '                setattr(self, pname, pvalue)'
+        yield '                self._determine_vec_size();'
+        yield '                setattr(self, \'vec_size\', self.vec_size)'
     yield "            elif pname in names_list:"
     yield "                # Using setattr(...) will invoke type-checking of the arguments"
     yield "                setattr(self, pname, pvalue)"
@@ -187,20 +205,46 @@ def gen_module(schema, algo):
             vals = param["dtype"][5:-1].split(", ")
             extrahelp = "One of: " + ", ".join("``%s``" % v for v in vals)
         else:
-            extrahelp = "Type: ``%s``" % param["dtype"]
+            if pname == "metalearner_params":
+                extrahelp = "Type: ``dict``"
+            else:
+                extrahelp = "Type: ``%s``" % param["dtype"]
         if param["default_value"] is None:
             extrahelp += "."
         else:
-            extrahelp += "  (default: ``%s``)." % stringify(param["default_value"])
+            if pname == "metalearner_params":
+                extrahelp += "  (default: ``None``)."
+            else:
+                extrahelp += "  (default: ``%s``)." % stringify(param["default_value"])
 
-        yield "    @property"
-        yield "    def %s(self):" % pname
+        if (pname == "offset_column" or pname == "distribution") and algo == "drf":
+            yield "    @property"
+            yield "    def %s(self):" % pname
+            yield '        """'
+            yield "        [Deprecated] %s" % bi.wrap(param["help"], indent=(" " * 8), indent_first=False)
+            yield ""
+            yield "        %s" % bi.wrap(extrahelp, indent=(" " * 8), indent_first=False)
+        else:
+            yield "    @property"
+            yield "    def %s(self):" % pname
+            yield '        """'
+            yield "        %s" % bi.wrap(param["help"], indent=(" " * 8), indent_first=False)
+            yield ""
+            yield "        %s" % bi.wrap(extrahelp, indent=(" " * 8), indent_first=False)
+        if pname == "metalearner_params":
+            yield "        Example: metalearner_gbm_params = {'max_depth': 2, 'col_sample_rate': 0.3}"
         yield '        """'
-        yield "        %s" % bi.wrap(param["help"], indent=(" " * 8), indent_first=False)
-        yield ""
-        yield "        %s" % bi.wrap(extrahelp, indent=(" " * 8), indent_first=False)
-        yield '        """'
-        yield "        return self._parms.get(\"%s\")" % sname
+        if pname != "metalearner_params":
+            yield "        return self._parms.get(\"%s\")" % sname
+        else:
+            yield "        if self._parms.get(\"%s\") != None:" % sname
+            yield "            metalearner_params_dict =  ast.literal_eval(self._parms.get(\"%s\"))" % sname
+            yield "            for k in metalearner_params_dict:"
+            yield "                if len(metalearner_params_dict[k]) == 1: #single parameter"
+            yield "                    metalearner_params_dict[k] = metalearner_params_dict[k][0]"
+            yield "            return metalearner_params_dict"
+            yield "        else:"
+            yield "            return self._parms.get(\"%s\")" % sname
         yield ""
         yield "    @%s.setter" % pname
         yield "    def %s(self, %s):" % (pname, pname)
@@ -211,9 +255,26 @@ def gen_module(schema, algo):
             yield "        assert_is_type(%s, None, numeric, [numeric])" % pname
         elif pname in {"checkpoint", "pretrained_autoencoder"}:
             yield "        assert_is_type(%s, None, str, H2OEstimator)" % pname
+        elif pname in {"base_models"}:
+            yield "         if is_type(base_models,[H2OEstimator]):"
+            yield      "            %s = [b.model_id for b in %s]" % (pname,pname)
+            yield      "            self._parms[\"%s\"] = %s" % (sname, pname)
+            yield "         else:"
+            yield "            assert_is_type(%s, None, %s)" % (pname, ptype)
+            yield "            self._parms[\"%s\"] = %s" % (sname, pname)
+        elif pname in {"metalearner_params"}:
+            yield "        assert_is_type(%s, None, %s)" % (pname, "dict")
+            yield '        if %s is not None and %s != "":' % (pname, pname)
+            yield "            for k in %s:" % (pname)
+            yield '                if ("[" and "]") not in str(metalearner_params[k]):'
+            yield "                    metalearner_params[k]=[metalearner_params[k]]"
+            yield "            self._parms[\"%s\"] = str(json.dumps(%s))" % (sname, pname)
+            yield "        else:"
+            yield "            self._parms[\"%s\"] = None" % (sname)
         else:
             yield "        assert_is_type(%s, None, %s)" % (pname, ptype)
-        yield "        self._parms[\"%s\"] = %s" % (sname, pname)
+        if pname not in {"base_models", "metalearner_params"}:
+            yield "        self._parms[\"%s\"] = %s" % (sname, pname)
         yield ""
         yield ""
     if class_extra:
@@ -227,6 +288,7 @@ def gen_module(schema, algo):
 def algo_to_classname(algo):
     if algo == "deeplearning": return "H2ODeepLearningEstimator"
     if algo == "deepwater": return "H2ODeepWaterEstimator"
+    if algo == "xgboost": return "H2OXGBoostEstimator"
     if algo == "gbm": return "H2OGradientBoostingEstimator"
     if algo == "glm": return "H2OGeneralizedLinearEstimator"
     if algo == "glrm": return "H2OGeneralizedLowRankEstimator"
@@ -236,10 +298,11 @@ def algo_to_classname(algo):
     if algo == "svd": return "H2OSingularValueDecompositionEstimator"
     if algo == "pca": return "H2OPrincipalComponentAnalysisEstimator"
     if algo == "stackedensemble": return "H2OStackedEnsembleEstimator"
+    if algo == "isolationforest": return "H2OIsolationForestEstimator"
     return "H2O" + algo.capitalize() + "Estimator"
 
 def extra_imports_for(algo):
-    if algo == "glm" or algo == "deepwater":
+    if algo == "glm" or algo == "deepwater" or algo == "xgboost":
         return "import h2o"
 
 def help_preamble_for(algo):
@@ -265,6 +328,8 @@ def help_preamble_for(algo):
             The default distribution function will guess the model type based on the response column type.
             Otherwise, the response column must be an enum for "bernoulli" or "multinomial", and numeric
             for all other distributions."""
+    if algo == "xgboost":
+        return """Builds a eXtreme Gradient Boosting model using the native XGBoost backend."""
     if algo == "naivebayes":
         return """
             The naive Bayes classifier assumes independence between predictor variables
@@ -279,6 +344,14 @@ def help_preamble_for(algo):
             or more H2O learning algorithms to improve predictive performance. It is a loss-based
             supervised learning method that finds the optimal combination of a collection of prediction
             algorithms.This method supports regression and binary classification. """
+    if algo == "isolationforest":
+        return """
+            Builds an Isolation Forest model. Isolation Forest algorithm samples the training frame
+            and in each iteration builds a tree that partitions the space of the sample observations until
+            it isolates each observation. Length of the path from root to a leaf node of the resulting tree
+            is used to calculate the anomaly score. Anomalies are easier to isolate and their average
+            tree path is expected to be shorter than paths of regular observations.
+        """
 
 def help_epilogue_for(algo):
     if algo == "deeplearning":
@@ -329,8 +402,19 @@ def init_extra_for(algo):
         return """self._parms["_rest_version"] = 3"""
     if algo == "stackedensemble":
         return """self._parms["_rest_version"] = 99"""
+    if algo == "aggregator":
+        return """self._parms["_rest_version"] = 99"""
 
 def class_extra_for(algo):
+    if algo == "aggregator":
+        # Add aggregated_frame to model
+        return """
+            @property
+            def aggregated_frame(self):
+                if (self._model_json is not None and
+                    self._model_json.get("output", {}).get("output_frame", {}).get("name") is not None):
+                    out_frame_name = self._model_json["output"]["output_frame"]["name"]
+                    return H2OFrame.get_frame(out_frame_name)"""
     if algo == "glm":
         # Before we were replacing .lambda property with .Lambda. However that violates Python naming conventions for
         # variables, so now we prefer to map that property to .lambda_. The old name remains, for compatibility reasons.
@@ -400,6 +484,131 @@ def class_extra_for(algo):
                 return True
         """
 
+    elif algo == "xgboost":
+        return """
+        # Ask the H2O server whether a XGBoost model can be built (depends on availability of native backends)
+        @staticmethod
+        def available():
+            \"\"\"
+            Returns True if a XGBoost model can be built, or False otherwise.
+            \"\"\"
+            if "XGBoost" not in h2o.cluster().list_core_extensions():
+                print("Cannot build an XGBoost model - no backend found.")
+                return False
+            else:
+                return True
+        """
+    elif algo == "stackedensemble":
+        return """
+        # Print the metalearner of an H2OStackedEnsembleEstimator.
+        def metalearner(self):
+            model = self._model_json["output"]
+            if "metalearner" in model and model["metalearner"] is not None:
+                return model["metalearner"]
+            print("No metalearner for this model")  
+              
+        #Fetch the levelone_frame_id for an H2OStackedEnsembleEstimator.   
+        def levelone_frame_id(self):
+            model = self._model_json["output"]
+            if "levelone_frame_id" in model and model["levelone_frame_id"] is not None:
+                return model["levelone_frame_id"]
+            print("No levelone_frame_id for this model")         
+            
+        def stacking_strategy(self):
+            model = self._model_json["output"]
+            if "stacking_strategy" in model and model["stacking_strategy"] is not None:
+                return model["stacking_strategy"]
+            print("No stacking strategy for this model")  
+        
+        # Override train method to support blending 
+        def train(self, x=None, y=None, training_frame=None, blending_frame=None, **kwargs):
+            assert_is_type(blending_frame, None, H2OFrame)
+            
+            def extend_parms(parms):
+                if blending_frame is not None:
+                    parms['blending_frame'] = blending_frame
+                    
+            super(self.__class__, self)._train(x, y, training_frame, extend_parms_fn=extend_parms, **kwargs)
+        """
+    elif algo == "word2vec":
+        return """
+        def _requires_training_frame(self):
+            \"\"\"
+            Determines if Word2Vec algorithm requires a training frame.
+            :return: False.
+            \"\"\"
+            return False
+
+        @staticmethod
+        def from_external(external=H2OFrame):
+            \"\"\"
+            Creates new H2OWord2vecEstimator based on an external model.
+            :param external: H2OFrame with an external model
+            :return: H2OWord2vecEstimator instance representing the external model
+            \"\"\"
+            w2v_model = H2OWord2vecEstimator(pre_trained=external)
+            w2v_model.train()
+            return w2v_model
+
+        def _determine_vec_size(self):
+            \"\"\"
+            Determines vec_size for a pre-trained model after basic model verification.
+            \"\"\"
+            first_column = self.pre_trained.types[self.pre_trained.columns[0]]
+
+            if first_column != 'string':
+                raise H2OValueError("First column of given pre_trained model %s is required to be a String",
+                                    self.pre_trained.frame_id)
+
+            if list(self.pre_trained.types.values()).count('string') > 1:
+                raise H2OValueError("There are multiple columns in given pre_trained model %s with a String type.",
+                                    self.pre_trained.frame_id)
+
+            self.vec_size = self.pre_trained.dim[1] - 1;
+        """
+    elif algo == "pca":
+        return """
+        def init_for_pipeline(self):
+            \"\"\"
+            Returns H2OPCA object which implements fit and transform method to be used in sklearn.Pipeline properly.
+            All parameters defined in self.__params, should be input parameters in H2OPCA.__init__ method.
+
+            :returns: H2OPCA object
+            \"\"\"
+            import inspect
+            from h2o.transforms.decomposition import H2OPCA
+            # check which parameters can be passed to H2OPCA init
+            var_names = list(dict(inspect.getmembers(H2OPCA.__init__.__code__))['co_varnames'])
+            parameters = {k: v for k, v in self._parms.items() if k in var_names}
+            return H2OPCA(**parameters)
+        """
+    elif algo == "generic":
+        return """
+        def _requires_training_frame(self):
+            \"\"\"
+            Determines if Generic model requires a training frame.
+            :return: False.
+            \"\"\"
+            return False
+        
+        @staticmethod
+        def from_file(file=str):
+            \"\"\"
+            Creates new Generic model by loading existing embedded model into library, e.g. from H2O MOJO.
+            The imported model must be supported by H2O.
+            :param file: A string containing path to the file to create the model from
+            :return: H2OGenericEstimator instance representing the generic model
+            \"\"\"
+            from h2o import lazy_import, get_frame
+            model_key = lazy_import(file)
+            model_bytes_frame = get_frame(model_key[0])
+            model = H2OGenericEstimator(model_key = model_bytes_frame)
+            model.train()
+            
+            return model
+        """
+
+
 def module_extra_for(algo):
     if algo == "deeplearning":
         return """
@@ -430,6 +639,8 @@ def gen_init(modules):
     for module, clz, category in sorted(modules):
         if clz == "H2OGridSearch": continue
         module_strs.append('"%s"' % clz)
+        if clz == "H2OAutoML": continue
+        module_strs.append('"%s"' % clz)
         yield "from .%s import %s" % (module, clz)
     yield ""
     yield "__all__ = ("
@@ -453,6 +664,8 @@ def gen_models_docs(modules):
             fullmodule = "h2o.estimators.%s.%s" % (module, clz)
             if clz == "H2OGridSearch":
                 fullmodule = "h2o.grid.grid_search.H2OGridSearch"
+            if clz == "H2OAutoML":
+                fullmodule = "h2o.automl.autoh2o.H2OAutoML"
             yield ":mod:`%s`" % clz
             yield "-" * (7 + len(clz))
             yield ".. autoclass:: %s" % fullmodule
@@ -470,11 +683,14 @@ def main():
 
     modules = [("deeplearning", "H2OAutoEncoderEstimator", "Unsupervised"),
                ("estimator_base", "H2OEstimator", "Miscellaneous"),
-               ("grid_search", "H2OGridSearch", "Miscellaneous")]
-    for name, mb in bi.model_builders().items():
+               ("grid_search", "H2OGridSearch", "Miscellaneous"),
+               ("automl", "H2OAutoML", "Miscellaneous")]
+    builders = filter(lambda b: b[0] != 'coxph', bi.model_builders().items()) # CoxPH is not supported in Python yet
+    for name, mb in builders:
         module = name
         if name == "drf": module = "random_forest"
         if name == "naivebayes": module = "naive_bayes"
+        if name == "isolationforest": module = "isolation_forest"
         bi.vprint("Generating model: " + name)
         bi.write_to_file("%s.py" % module, gen_module(mb, name))
         category = "Supervised" if mb["supervised"] else "Unsupervised"

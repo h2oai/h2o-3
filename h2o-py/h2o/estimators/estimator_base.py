@@ -15,18 +15,20 @@ from h2o.frame import H2OFrame
 from h2o.job import H2OJob
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.shared_utils import quoted
-from h2o.utils.typechecks import assert_is_type, is_type, numeric
+from h2o.utils.typechecks import assert_is_type, is_type, numeric, FunctionType
 from ..model.autoencoder import H2OAutoEncoderModel
 from ..model.binomial import H2OBinomialModel
 from ..model.clustering import H2OClusteringModel
 from ..model.dim_reduction import H2ODimReductionModel
 from ..model.metrics_base import (H2OBinomialModelMetrics, H2OClusteringModelMetrics, H2ORegressionModelMetrics,
                                   H2OMultinomialModelMetrics, H2OAutoEncoderModelMetrics, H2ODimReductionModelMetrics,
-                                  H2OWordEmbeddingModelMetrics)
+                                  H2OWordEmbeddingModelMetrics, H2OOrdinalModelMetrics, H2OAnomalyDetectionModelMetrics)
 from ..model.model_base import ModelBase
 from ..model.multinomial import H2OMultinomialModel
+from ..model.ordinal import H2OOrdinalModel
 from ..model.regression import H2ORegressionModel
 from ..model.word_embedding import H2OWordEmbeddingModel
+from ..model.anomaly_detection import H2OAnomalyDetectionModel
 
 
 class EstimatorAttributeError(AttributeError):
@@ -86,7 +88,7 @@ class H2OEstimator(ModelBase):
 
     def train(self, x=None, y=None, training_frame=None, offset_column=None, fold_column=None,
               weights_column=None, validation_frame=None, max_runtime_secs=None, ignored_columns=None,
-              model_id=None):
+              model_id=None, verbose=False):
         """
         Train the H2O model.
 
@@ -100,8 +102,17 @@ class H2OEstimator(ModelBase):
         :param weights_column: The name or index of the column in training_frame that holds the per-row weights.
         :param validation_frame: H2OFrame with validation data to be scored on while training.
         :param float max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+        :param bool verbose: Print scoring history to stdout. Defaults to False.
         """
-        assert_is_type(training_frame, H2OFrame)
+        self._train(x=x, y=y, training_frame=training_frame, offset_column=offset_column, fold_column=fold_column,
+                    weights_column=weights_column, validation_frame=validation_frame, max_runtime_secs=max_runtime_secs, 
+                    ignored_columns=ignored_columns, model_id=model_id, verbose=verbose)
+
+
+    def _train(self, x=None, y=None, training_frame=None, offset_column=None, fold_column=None,
+              weights_column=None, validation_frame=None, max_runtime_secs=None, ignored_columns=None,
+              model_id=None, verbose=False, extend_parms_fn=None):
+        assert_is_type(training_frame, None, H2OFrame)
         assert_is_type(validation_frame, None, H2OFrame)
         assert_is_type(y, None, int, str)
         assert_is_type(x, None, int, str, [str, int], {str, int})
@@ -111,14 +122,28 @@ class H2OEstimator(ModelBase):
         assert_is_type(weights_column, None, int, str)
         assert_is_type(max_runtime_secs, None, numeric)
         assert_is_type(model_id, None, str)
+        assert_is_type(verbose, bool)
+        assert_is_type(extend_parms_fn, None, FunctionType)
+
+        if self._requires_training_frame() and training_frame is None:
+            raise H2OValueError("Training frame required for %s algorithm, but none was given." % self.algo)
+
+        training_frame_exists = training_frame is None
+        if training_frame_exists:
+            self._verify_training_frame_params(offset_column, fold_column, weights_column, validation_frame)
+
         algo = self.algo
+        if verbose and algo not in ["drf", "gbm", "deeplearning", "xgboost"]:
+            raise H2OValueError("Verbose should only be set to True for drf, gbm, deeplearning, and xgboost models")
         parms = self._parms.copy()
         if "__class__" in parms:  # FIXME: hackt for PY3
             del parms["__class__"]
         is_auto_encoder = bool(parms.get("autoencoder"))
-        is_supervised = not(is_auto_encoder or algo in {"pca", "svd", "kmeans", "glrm", "word2vec"})
-        ncols = training_frame.ncols
-        names = training_frame.names
+        is_supervised = not(is_auto_encoder or algo in {"aggregator", "pca", "svd", "kmeans", "glrm", "word2vec", "isolationforest", "generic"})
+        if not training_frame_exists:
+            names = training_frame.names
+            ncols = training_frame.ncols
+
         if is_supervised:
             if y is None: y = "response"
             if is_type(y, int):
@@ -129,79 +154,99 @@ class H2OEstimator(ModelBase):
                 if y not in names:
                     raise H2OValueError("Column %s does not exist in the training frame" % y)
             self._estimator_type = "classifier" if training_frame.types[y] == "enum" else "regressor"
-        elif y is not None:
-            raise H2OValueError("y should not be provided for an unsupervised model")
-        assert_is_type(y, str, None)
-        ignored_columns_set = set()
-        if ignored_columns is not None:
-            if x is not None:
-                raise H2OValueError("Properties x and ignored_columns cannot be specified simultaneously")
-            for ic in ignored_columns:
-                if is_type(ic, int):
-                    if not (-ncols <= ic < ncols):
-                        raise H2OValueError("Column %d does not exist in the training frame" % ic)
-                    ignored_columns_set.add(names[ic])
-                else:
-                    if ic not in names:
-                        raise H2OValueError("Column %s not in the training frame" % ic)
-                    ignored_columns_set.add(ic)
-        if x is None:
-            xset = set(names) - {y} - ignored_columns_set
         else:
-            xset = set()
-            if is_type(x, int, str): x = [x]
-            for xi in x:
-                if is_type(xi, int):
-                    if not (-ncols <= xi < ncols):
-                        raise H2OValueError("Column %d does not exist in the training frame" % xi)
-                    xset.add(names[xi])
-                else:
-                    if xi not in names:
-                        raise H2OValueError("Column %s not in the training frame" % xi)
-                    xset.add(xi)
-        x = list(xset)
+            # If `y` is provided for an unsupervised model we'll simply ignore
+            # it. This way an unsupervised model can be used as a step in
+            # sklearn's pipeline.
+            y = None
 
-        parms["offset_column"] = offset_column
-        parms["fold_column"] = fold_column
-        parms["weights_column"] = weights_column
-        parms["max_runtime_secs"] = max_runtime_secs
+        if not training_frame_exists:
+            assert_is_type(y, str, None)
+            ignored_columns_set = set()
+            if ignored_columns is None and "ignored_columns" in parms:
+                ignored_columns = parms['ignored_columns']
+            if ignored_columns is not None:
+                if x is not None:
+                    raise H2OValueError("Properties x and ignored_columns cannot be specified simultaneously")
+                for ic in ignored_columns:
+                    if is_type(ic, int):
+                        if not (-ncols <= ic < ncols):
+                            raise H2OValueError("Column %d does not exist in the training frame" % ic)
+                        ignored_columns_set.add(names[ic])
+                    else:
+                        if ic not in names:
+                            raise H2OValueError("Column %s not in the training frame" % ic)
+                        ignored_columns_set.add(ic)
+            if x is None:
+                xset = set(names) - {y} - ignored_columns_set
+            else:
+                xset = set()
+                if is_type(x, int, str): x = [x]
+                for xi in x:
+                    if is_type(xi, int):
+                        if not (-ncols <= xi < ncols):
+                            raise H2OValueError("Column %d does not exist in the training frame" % xi)
+                        xset.add(names[xi])
+                    else:
+                        if xi not in names:
+                            raise H2OValueError("Column %s not in the training frame" % xi)
+                        xset.add(xi)
+            x = list(xset)
+            self._check_and_save_parm(parms, "offset_column", offset_column)
+            self._check_and_save_parm(parms, "weights_column", weights_column)
+            self._check_and_save_parm(parms, "fold_column", fold_column)
+
+        if max_runtime_secs is not None: parms["max_runtime_secs"] = max_runtime_secs
+
         # Overwrites the model_id parameter only if model_id is passed
         if model_id is not None:
             parms["model_id"] = model_id
 
         # Step 2
         is_auto_encoder = "autoencoder" in parms and parms["autoencoder"]
-        is_unsupervised = is_auto_encoder or self.algo in {"pca", "svd", "kmeans", "glrm", "word2vec"}
+        is_unsupervised = is_auto_encoder or self.algo in {"aggregator", "pca", "svd", "kmeans", "glrm", "word2vec", "isolationforest"}
         if is_auto_encoder and y is not None: raise ValueError("y should not be specified for autoencoder.")
-        if not is_unsupervised and y is None: raise ValueError("Missing response")
+        if not is_unsupervised and y is None and self.algo not in ["generic"]: raise ValueError("Missing response")
 
         # Step 3
-        parms["training_frame"] = training_frame
+        if not training_frame_exists:
+            parms["training_frame"] = training_frame
+            offset = parms["offset_column"]
+            folds = parms["fold_column"]
+            weights = parms["weights_column"]
+
         if validation_frame is not None: parms["validation_frame"] = validation_frame
         if is_type(y, int): y = training_frame.names[y]
         if y is not None: parms["response_column"] = y
         if not isinstance(x, (list, tuple)): x = [x]
         if is_type(x[0], int):
             x = [training_frame.names[i] for i in x]
-        offset = parms["offset_column"]
-        folds = parms["fold_column"]
-        weights = parms["weights_column"]
-        ignored_columns = list(set(training_frame.names) - set(x + [y, offset, folds, weights]))
-        parms["ignored_columns"] = None if ignored_columns == [] else [quoted(col) for col in ignored_columns]
+        if not training_frame_exists:
+            ignored_columns = list(set(training_frame.names) - set(x + [y, offset, folds, weights]))
+            parms["ignored_columns"] = None if ignored_columns == [] else [quoted(col) for col in ignored_columns]
         parms["interactions"] = (None if "interactions" not in parms or parms["interactions"] is None else
                                  [quoted(col) for col in parms["interactions"]])
+        parms["interaction_pairs"] = (None if "interaction_pairs" not in parms or parms["interaction_pairs"] is None else
+                                 [tuple(map(quoted, ip)) for ip in parms["interaction_pairs"]])
+    
+        # internal hook allowing subclasses to extend train parms 
+        if extend_parms_fn is not None:
+            extend_parms_fn(parms)
+            
         parms = {k: H2OEstimator._keyify_if_h2oframe(parms[k]) for k in parms}
+        if ("stopping_metric" in parms.keys()) and ("r2" in parms["stopping_metric"]):
+            raise H2OValueError("r2 cannot be used as an early stopping_metric yet.  Check this JIRA https://0xdata.atlassian.net/browse/PUBDEV-5381 for progress.")
         rest_ver = parms.pop("_rest_version") if "_rest_version" in parms else 3
 
-        model = H2OJob(h2o.api("POST /%d/ModelBuilders/%s" % (rest_ver, self.algo), data=parms),
-                       job_type=(self.algo + " Model Build"))
+        model_builder_json = h2o.api("POST /%d/ModelBuilders/%s" % (rest_ver, self.algo), data=parms)
+        model = H2OJob(model_builder_json, job_type=(self.algo + " Model Build"))
 
         if self._future:
             self._job = model
             self._rest_version = rest_ver
             return
 
-        model.poll()
+        model.poll(verbose_model_scoring_history=verbose)
         model_json = h2o.api("GET /%d/Models/%s" % (rest_ver, model.dest_key))["models"][0]
         self._resolve_model(model.dest_key, model_json)
 
@@ -221,9 +266,14 @@ class H2OEstimator(ModelBase):
         m = model_class()
         m._id = model_id
         m._model_json = model_json
+        m._have_pojo = model_json.get('have_pojo', True)
+        m._have_mojo = model_json.get('have_mojo', True)
         m._metrics_class = metrics_class
         m._parms = self._parms
         m._estimator_type = self._estimator_type
+        m._start_time = model_json.get('output', {}).get('start_time', None)
+        m._end_time = model_json.get('output', {}).get('end_time', None)
+        m._run_time = model_json.get('output', {}).get('run_time', None)
 
         if model_id is not None and model_json is not None and metrics_class is not None:
             # build Metric objects out of each metrics
@@ -235,7 +285,8 @@ class H2OEstimator(ModelBase):
                         model_json["output"][metric] = \
                             metrics_class(model_json["output"][metric], metric, model_json["algo"])
 
-            if m._is_xvalidated:
+            #if m._is_xvalidated:
+            if m._is_xvalidated and model_json["output"]["cross_validation_models"] is not None:
                 m._xval_keys = [i["name"] for i in model_json["output"]["cross_validation_models"]]
 
             # build a useful dict of the params
@@ -257,8 +308,9 @@ class H2OEstimator(ModelBase):
         if name == "H2OKMeansEstimator": return "kmeans"
         if name == "H2ONaiveBayesEstimator": return "naivebayes"
         if name == "H2ORandomForestEstimator": return "drf"
-        if name == "H2OPCA": return "pca"
-        if name == "H2OSVD": return "svd"
+        if name == "H2OXGBoostEstimator": return "xgboost"
+        if name in ["H2OPCA", "H2OPrincipalComponentAnalysisEstimator"]: return "pca"
+        if name in ["H2OSVD", "H2OSingularValueDecompositionEstimator"]: return "svd"
 
 
     @staticmethod
@@ -270,13 +322,13 @@ class H2OEstimator(ModelBase):
 
 
     #------ Scikit-learn Interface Methods -------
-    def fit(self, x, y=None, **params):
+    def fit(self, X, y=None, **params):
         """
         Fit an H2O model as part of a scikit-learn pipeline or grid search.
 
         A warning will be issued if a caller other than sklearn attempts to use this method.
 
-        :param H2OFrame x: An H2OFrame consisting of the predictor variables.
+        :param H2OFrame X: An H2OFrame consisting of the predictor variables.
         :param H2OFrame y: An H2OFrame consisting of the response variable.
         :param params: Extra arguments.
         :returns: The current instance of H2OEstimator for method chaining.
@@ -291,8 +343,8 @@ class H2OEstimator(ModelBase):
         if warn:
             warnings.warn("\n\n\t`fit` is not recommended outside of the sklearn framework. Use `train` instead.",
                           UserWarning, stacklevel=2)
-        training_frame = x.cbind(y) if y is not None else x
-        x = x.names
+        training_frame = X.cbind(y) if y is not None else X
+        x = X.names
         y = y.names[0] if y is not None else None
         self.train(x, y, training_frame, **params)
         return self
@@ -327,6 +379,18 @@ class H2OEstimator(ModelBase):
         self._parms.update(parms)
         return self
 
+    def _verify_training_frame_params(self, *args):
+        for param in args:
+            if param is not None:
+                raise H2OValueError("No training frame defined, yet the parameter %d is has been specified.", param)
+
+    def _requires_training_frame(self):
+        """
+        Determines if a training frame is required for given algorithm.
+        :return: True as a default value. Can be overridden by any specific algorithm.
+        """
+        return True
+
 
     @staticmethod
     def _metrics_class(model_json):
@@ -343,6 +407,9 @@ class H2OEstimator(ModelBase):
         elif model_type == "Multinomial":
             metrics_class = H2OMultinomialModelMetrics
             model_class = H2OMultinomialModel
+        elif model_type == "Ordinal":
+            metrics_class = H2OOrdinalModelMetrics
+            model_class = H2OOrdinalModel
         elif model_type == "AutoEncoder":
             metrics_class = H2OAutoEncoderModelMetrics
             model_class = H2OAutoEncoderModel
@@ -352,6 +419,63 @@ class H2OEstimator(ModelBase):
         elif model_type == "WordEmbedding":
             metrics_class = H2OWordEmbeddingModelMetrics
             model_class = H2OWordEmbeddingModel
+        elif model_type == "AnomalyDetection":
+            metrics_class = H2OAnomalyDetectionModelMetrics
+            model_class = H2OAnomalyDetectionModel
         else:
             raise NotImplementedError(model_type)
         return [metrics_class, model_class]
+
+    def convert_H2OXGBoostParams_2_XGBoostParams(self):
+        '''
+        In order to use convert_H2OXGBoostParams_2_XGBoostParams and convert_H2OFrame_2_DMatrix, you must import
+        the following toolboxes: xgboost, pandas, numpy and scipy.sparse.
+
+        Given an H2OXGBoost model, this method will generate the corresponding parameters that should be used by
+        native XGBoost in order to give exactly the same result, assuming that the same dataset
+        (derived from h2oFrame) is used to train the native XGBoost model.
+
+        Follow the steps below to compare H2OXGBoost and native XGBoost:
+
+        1. Train the H2OXGBoost model with H2OFrame trainFile and generate a prediction:
+        h2oModelD = H2OXGBoostEstimator(**h2oParamsD) # parameters specified as a dict()
+        h2oModelD.train(x=myX, y=y, training_frame=trainFile) # train with H2OFrame trainFile
+        h2oPredict = h2oPredictD = h2oModelD.predict(trainFile)
+
+        2. Derive the DMatrix from H2OFrame:
+        nativeDMatrix = trainFile.convert_H2OFrame_2_DMatrix(myX, y, h2oModelD)
+
+        3. Derive the parameters for native XGBoost:
+        nativeParams = h2oModelD.convert_H2OXGBoostParams_2_XGBoostParams()
+
+        4. Train your native XGBoost model and generate a prediction:
+        nativeModel = xgb.train(params=nativeParams[0], dtrain=nativeDMatrix, num_boost_round=nativeParams[1])
+        nativePredict = nativeModel.predict(data=nativeDMatrix, ntree_limit=nativeParams[1].
+
+        5. Compare the predictions h2oPredict from H2OXGBoost, nativePredict from native XGBoost.
+
+        :return: nativeParams, num_boost_round
+        '''
+        import xgboost as xgb
+
+        nativeParams = self._model_json["output"]["native_parameters"]
+        nativeXGBoostParams = dict()
+
+        for (a,keyname,keyvalue) in nativeParams.cell_values:
+            nativeXGBoostParams[keyname]=keyvalue
+        paramsSet = self.full_parameters
+
+        return nativeXGBoostParams, paramsSet['ntrees']['actual_value']
+
+    def _check_and_save_parm(self, parms, parameter_name, parameter_value):
+        """
+        If a parameter is not stored in parms dict save it there (even though the value is None).
+        Else check if the parameter has been already set during initialization of estimator. If yes, check the new value is the same or not. If the values are different, set the last passed value to params dict and throw UserWarning.
+        """
+        if parameter_name not in parms:
+            parms[parameter_name] = parameter_value
+        elif parameter_value is not None and parms[parameter_name] != parameter_value:
+            parms[parameter_name] = parameter_value
+            warnings.warn("\n\n\t`%s` parameter has been already set and had a different value in `train` method. The last passed value \"%s\" is used." % (parameter_name, parameter_value), UserWarning, stacklevel=2)
+
+

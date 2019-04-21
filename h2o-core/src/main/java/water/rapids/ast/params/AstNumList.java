@@ -241,7 +241,7 @@ public class AstNumList extends AstParameter {
    */
   public long index(long v) {
     int bIdx = findBase(v);
-    if (bIdx >= 0) return water.util.ArrayUtils.sum(_cnts, 0, bIdx - 1);
+    if (bIdx >= 0) return water.util.ArrayUtils.sum(_cnts, 0, bIdx);
     bIdx = -bIdx - 2;
     if (bIdx < 0) return -1L;
     assert _bases[bIdx] < v;

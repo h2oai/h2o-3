@@ -14,6 +14,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.udf.CFuncRef;
 import water.util.*;
 
 import java.lang.reflect.Field;
@@ -203,7 +204,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     makeWeightsBiases(destKey);
     _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(scoringInfo, (null != get_params()._valid), false, _output.getModelCategory(), _output.isAutoencoder());
     _output._variable_importances = calcVarImp(last_scored().variable_importances);
-    _output.setNames(dataInfo._adaptedFrame.names());
+    _output.setNames(dataInfo._adaptedFrame.names(), dataInfo._adaptedFrame.typesStr());
     _output._domains = dataInfo._adaptedFrame.domains();
     assert(Arrays.equals(_key._kb, destKey._kb));
   }
@@ -221,7 +222,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     super(destKey, parms, output);
     final DataInfo dinfo = makeDataInfo(train, valid, _parms, nClasses);
     DKV.put(dinfo);
-    _output.setNames(dinfo._adaptedFrame.names());
+    _output.setNames(dinfo._adaptedFrame.names(), dinfo._adaptedFrame.typesStr());
     _output._domains = dinfo._adaptedFrame.domains();
     _output._origNames = parms._train.get().names();
     _output._origDomains = parms._train.get().domains();
@@ -558,9 +559,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
    * @param computeMetrics
    * @return A frame containing the prediction or reconstruction
    */
-  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, Job j, boolean computeMetrics) {
+  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
     if (!get_params()._autoencoder) {
-      return super.predictScoreImpl(orig, adaptedFr, destination_key, j, computeMetrics);
+      return super.predictScoreImpl(orig, adaptedFr, destination_key, j, computeMetrics, customMetricFunc);
     } else {
       // Reconstruction
       final int len = model_info().data_info().fullN();
@@ -593,7 +594,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
   @Override
   protected double[] score0(double[] data, double[] preds) {
-    return score0(data, preds, 1, 0);
+    return score0(data, preds, 0);
   }
 
   /**
@@ -690,7 +691,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
    * @return preds, can contain NaNs
    */
   @Override
-  public double[] score0(double[] data, double[] preds, double weight, double offset) {
+  public double[] score0(double[] data, double[] preds, double offset) {
     int mb=0;
     int n=1;
 
@@ -773,7 +774,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
     Frame res = new Frame(destination_key, names, mse.vecs());
     DKV.put(res);
-    addModelMetrics(new ModelMetricsAutoEncoder(this, frame, res.numRows(), res.vecs()[0].mean() /*mean MSE*/));
+    addModelMetrics(new ModelMetricsAutoEncoder(this, frame, res.numRows(), res.vecs()[0].mean() /*mean MSE*/, CustomMetric.EMPTY));
     return res;
   }
 
@@ -815,7 +816,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     final int n=1;
     new MRTask() {
       @Override public void map( Chunk chks[] ) {
-        if (isCancelled() || job !=null && job.stop_requested()) return;
+        if (isCancelled() || job !=null && job.stop_requested()) throw new Job.JobCancelledException();
         double tmp [] = new double[len];
         final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
         for( int row=0; row<chks[0]._len; row++ ) {
@@ -928,19 +929,15 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     assert (bestModel.compareTo(this) <= 0);
   }
 
-  @Override public void delete() {
+  @Override protected Futures remove_impl(Futures fs) {
     if (_output.weights != null && _output.biases != null) {
-      for (Key k : _output.weights) {
-        if (DKV.getGet(k) != null) ((Frame) DKV.getGet(k)).delete();
-      }
-      for (Key k : _output.biases) {
-        if (DKV.getGet(k) != null) ((Frame) DKV.getGet(k)).delete();
-      }
+      for (Key k : _output.weights) if (k!=null) k.remove(fs);
+      for (Key k : _output.biases) if (k!=null) k.remove(fs);
     }
     if (actual_best_model_key!=null) DKV.remove(actual_best_model_key);
-    DKV.remove(model_info().data_info()._key);
+    DKV.remove(model_info().data_info()._key, fs);
     deleteElasticAverageModels();
-    super.delete();
+    return super.remove_impl(fs);
   }
 
   void deleteElasticAverageModels() {
@@ -973,6 +970,10 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
     final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info());
     final DeepLearningParameters p = model_info.get_params();
+    if (p._categorical_encoding != Parameters.CategoricalEncodingScheme.AUTO &&
+        p._categorical_encoding != Parameters.CategoricalEncodingScheme.OneHotInternal) {
+      throw new IllegalArgumentException("Only default categorical_encoding scheme is supported for POJO/MOJO");
+    }
 
     sb.ip("public boolean isSupervised() { return " + isSupervised() + "; }").nl();
     sb.ip("public int nfeatures() { return "+_output.nfeatures()+"; }").nl();
@@ -985,9 +986,10 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       JCodeGen.toClassWithArray(sb, "static", "NORMSUB", model_info().data_info()._normSub);//, "Standardization/Normalization offset for numerical variables.");
     }
     if (model_info().data_info()._cats > 0) {
-      JCodeGen.toStaticVar(sb, "CATS", new int[model_info().data_info()._cats], "Workspace for storing categorical input variables.");
+      sb.i(0).p("// Thread-local workspace for storing categorical input variables.").nl();
+      sb.i(0).p("final int[] CATS = new int[" + model_info().data_info()._cats +"];").nl();
     }
-    JCodeGen.toStaticVar(sb, "CATOFFSETS", model_info().data_info()._catOffsets, "Workspace for categorical offsets.");
+    JCodeGen.toStaticVar(sb, "CATOFFSETS", model_info().data_info()._catOffsets, "Offset into the workspace for categorical variables.");
     if (model_info().data_info()._normRespMul != null) {
       JCodeGen.toStaticVar(sb, "NORMRESPMUL", model_info().data_info()._normRespMul, "Standardization/Normalization scaling factor for response.");
       JCodeGen.toStaticVar(sb, "NORMRESPSUB", model_info().data_info()._normRespSub, "Standardization/Normalization offset for response.");
@@ -1011,23 +1013,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     sb.i(1).p("// Thread-local storage for neuron activation values.").nl();
     sb.i(1).p("final double[][] ACTIVATION = new double[][] {").nl();
     for (int i=0; i<neurons.length; i++) {
-      String colInfoClazz = mname + "_Activation_"+i;
-      sb.i(2).p("/* ").p(neurons[i].getClass().getSimpleName()).p(" */ ");
-      sb.p(colInfoClazz).p(".VALUES");
+      sb.i(2).p("/* ").p(neurons[i].getClass().getSimpleName()).p(" */ ").p("new double[").p(layers[i]).p("]");
       if (i!=neurons.length-1) sb.p(',');
       sb.nl();
     }
     sb.i(1).p("};").nl();
-    fileCtx.add(new CodeGenerator() {
-      @Override
-      public void generate(JCodeSB out) {
-        for (int i=0; i<neurons.length; i++) {
-          String colInfoClazz = mname + "_Activation_"+i;
-          out.i().p("// Neuron activation values for ").p(neurons[i].getClass().getSimpleName()).p(" layer").nl();
-          JCodeGen.toClassWithArray(out, null, colInfoClazz, new double[layers[i]]);
-        }
-      }
-    });
 
     // biases
     sb.i(1).p("// Neuron bias values.").nl();
@@ -1150,10 +1140,18 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       bodySb.i(1).p("if (!Double.isNaN(data[i])) {").nl();
       bodySb.i(2).p("int c = (int) data[i];").nl();
       if (model_info().data_info()._useAllFactorLevels)
-        bodySb.i(2).p("CATS[ncats++] = c + CATOFFSETS[i];").nl();
-      else
-        bodySb.i(2).p("if (c != 0) CATS[ncats++] = c + CATOFFSETS[i] - 1;").nl();
+        bodySb.i(2).p("CATS[ncats] = c + CATOFFSETS[i];").nl();
+      else {
+        bodySb.i(2).p("if (c != 0) {").nl();
+        bodySb.i(3).p("CATS[ncats] = c + CATOFFSETS[i] - 1;").nl();
+        bodySb.i(2).p("} else {").nl();
+        bodySb.i(3).p("CATS[ncats] = -1;").nl();
+        bodySb.i(2).p("}").nl();
+      }
+      bodySb.i(1).p("} else {").nl();  // set CAT level when encountering NAN
+      bodySb.i(2).p("CATS[ncats] = CATOFFSETS[i+1]-1;").nl();
       bodySb.i(1).p("}").nl();
+      bodySb.i(1).p("ncats++;").nl();
       bodySb.i().p("}").nl();
     }
     if (nums > 0) {
@@ -1169,7 +1167,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     }
     bodySb.i().p("java.util.Arrays.fill(ACTIVATION[0],0);").nl();
     if (cats > 0) {
-      bodySb.i().p("for (i=0; i<ncats; ++i) ACTIVATION[0][CATS[i]] = 1;").nl();
+      bodySb.i().p("for (i=0; i<ncats; ++i) {").nl();
+      bodySb.i(1).p("if(CATS[i] >= 0) ACTIVATION[0][CATS[i]] = 1;").nl();
+      bodySb.i(0).p("}").nl();
     }
     if (nums > 0) {
       bodySb.i().p("for (i=0; i<NUMS.length; ++i) {").nl();
@@ -1894,6 +1894,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
             break;
         }
       }
+
+      if (_distribution == DistributionFamily.quasibinomial)
+        dl.error("_distribution", "Quasibinomial is not supported for deeplearning in current H2O.");
       if (expensive) dl.checkDistributions();
 
       if (_score_training_samples < 0)
@@ -2289,6 +2292,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       }
     }
 
+  }
+
+  @Override
+  public DeepLearningMojoWriter getMojo() {
+    return new DeepLearningMojoWriter(this);
   }
 }
 

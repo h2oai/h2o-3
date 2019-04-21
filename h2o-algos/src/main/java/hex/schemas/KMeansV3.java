@@ -14,6 +14,7 @@ public class KMeansV3 extends ClusteringModelBuilderSchema<KMeans,KMeansV3,KMean
         "training_frame",
         "validation_frame",
         "nfolds",
+        "keep_cross_validation_models",
         "keep_cross_validation_predictions",
         "keep_cross_validation_fold_assignment",
         "fold_assignment",
@@ -29,7 +30,8 @@ public class KMeansV3 extends ClusteringModelBuilderSchema<KMeans,KMeansV3,KMean
         "seed",
         "init",
         "max_runtime_secs",
-        "categorical_encoding"
+        "categorical_encoding",
+        "export_checkpoints_dir"
     };
 
     // Input fields

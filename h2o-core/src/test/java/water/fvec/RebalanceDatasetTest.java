@@ -44,4 +44,29 @@ public class RebalanceDatasetTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testEmptyPubDev5873() {
+     Scope.enter();
+     try {
+       final Frame f = new TestFrameBuilder()
+               .withName("testFrame")
+               .withColNames("ColA")
+               .withVecTypes(Vec.T_NUM)
+               .withDataForCol(0, ard(Double.NaN, 1, 2, 3, 4, 5.6, 7))
+               .withChunkLayout(2, 2, 0, 0, 2, 1)
+               .build();
+       Scope.track(f);
+       assertEquals(0, f.anyVec().chunkForChunkIdx(2)._len);
+       Key<Frame> key = Key.make("rebalanced");
+       RebalanceDataSet rb = new RebalanceDataSet(f, key, 3);
+       H2O.submitTask(rb);
+       rb.join();
+       Frame rebalanced = key.get();
+       assertNotNull(rebalanced); // no exception, successful completion
+       Scope.track(rebalanced);
+     } finally {
+       Scope.exit();
+     }
+  }
+
 }

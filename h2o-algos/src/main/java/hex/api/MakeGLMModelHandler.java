@@ -2,7 +2,7 @@ package hex.api;
 
 import hex.DataInfo;
 import hex.DataInfo.TransformType;
-import hex.genmodel.utils.ArrayUtils;
+import hex.Model;
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMOutput;
 import hex.gram.Gram;
@@ -13,11 +13,10 @@ import water.MRTask;
 import water.api.Handler;
 import water.api.schemas3.KeyV3;
 import water.fvec.*;
-import water.rapids.vals.ValFrame;
+import water.fvec.Vec.VectorGroup;
 
 import java.util.Arrays;
 import java.util.Map;
-import water.fvec.Vec.VectorGroup;
 
 /**
  * Created by tomasnykodym on 3/25/15.
@@ -38,7 +37,7 @@ public class MakeGLMModelHandler extends Handler {
     DataInfo dinfo = model.dinfo();
     dinfo.setPredictorTransform(TransformType.NONE);
     // GLMOutput(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names, boolean binomial) {
-    m._output = new GLMOutput(model.dinfo(),model._output._names, model._output._domains, model._output.coefficientNames(), model._output._binomial, beta);
+    m._output = new GLMOutput(model.dinfo(),model._output._names,model._output._column_types,  model._output._domains, model._output.coefficientNames(), model._output._binomial, beta);
     DKV.put(m._key, m);
     GLMModelV3 res = new GLMModelV3();
     res.fillFromImpl(m);
@@ -58,12 +57,12 @@ public class MakeGLMModelHandler extends Handler {
   public DataInfoFrameV3 getDataInfoFrame(int version, DataInfoFrameV3 args) {
     Frame fr = DKV.getGet(args.frame.key());
     if( null==fr ) throw new IllegalArgumentException("no frame found");
-    args.result = new KeyV3.FrameKeyV3(oneHot(fr, args.interactions, args.use_all, args.standardize, args.interactions_only, true)._key);
+    args.result = new KeyV3.FrameKeyV3(oneHot(fr, Model.InteractionSpec.allPairwise(args.interactions), args.use_all, args.standardize, args.interactions_only, true)._key);
     return args;
   }
 
-  public static Frame oneHot(Frame fr, String[] interactions, boolean useAll, boolean standardize, final boolean interactionsOnly, final boolean skipMissing) {
-    final DataInfo dinfo = new DataInfo(fr,null,1,useAll,standardize?TransformType.STANDARDIZE:TransformType.NONE,TransformType.NONE,skipMissing,false,false,false,false,false,interactions);
+  public static Frame oneHot(Frame fr, Model.InteractionSpec interactions, boolean useAll, boolean standardize, final boolean interactionsOnly, final boolean skipMissing) {
+    final DataInfo dinfo = new DataInfo(fr,null,1,useAll,standardize?TransformType.STANDARDIZE:TransformType.NONE,TransformType.NONE,skipMissing,false,false,false,false,false, interactions);
     Frame res;
     if( interactionsOnly ) {
       if( null==dinfo._interactionVecs ) throw new IllegalArgumentException("no interactions");

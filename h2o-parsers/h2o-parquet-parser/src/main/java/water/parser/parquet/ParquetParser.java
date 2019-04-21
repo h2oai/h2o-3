@@ -1,9 +1,6 @@
 package water.parser.parquet;
 
-import static org.apache.parquet.hadoop.ParquetFileWriter.MAGIC;
-
 import org.apache.parquet.format.converter.ParquetMetadataConverter;
-import org.apache.parquet.hadoop.VecParquetReader;
 import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.MessageType;
@@ -11,15 +8,20 @@ import org.apache.parquet.schema.OriginalType;
 import org.apache.parquet.schema.Type;
 import water.Job;
 import water.Key;
-
+import water.exceptions.H2OUnsupportedDataFileException;
 import water.fvec.ByteVec;
 import water.fvec.Chunk;
 import water.fvec.Vec;
 import water.parser.*;
+import water.util.IcedHashMapGeneric;
 import water.util.Log;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+
+import static org.apache.parquet.hadoop.ParquetFileWriter.MAGIC;
 
 /**
  * Parquet parser for H2O distributed parsing subsystem.
@@ -33,6 +35,51 @@ public class ParquetParser extends Parser {
   ParquetParser(ParseSetup setup, Key<Job> jobKey) {
     super(setup, jobKey);
     _metadata = ((ParquetParseSetup) setup).parquetMetadata;
+  }
+
+  @Override
+  protected final StreamParseWriter sequentialParse(Vec vec, final StreamParseWriter dout) {
+    final ParquetMetadata metadata = VecParquetReader.readFooter(_metadata);
+    final int nChunks = vec.nChunks();
+    final long totalRecs = totalRecords(metadata);
+    final long nChunkRecs = ((totalRecs / nChunks) + (totalRecs % nChunks > 0 ? 1 : 0));
+    if (nChunkRecs != (int) nChunkRecs) {
+      throw new IllegalStateException("Unsupported Parquet file. Too many records (#" + totalRecs + ", nChunks=" + nChunks + ").");
+    }
+
+    final WriterDelegate w = new WriterDelegate(dout, _setup.getColumnTypes().length);
+    final VecParquetReader reader = new VecParquetReader(vec, metadata, w, _setup.getColumnTypes(), _keepColumns);
+
+    StreamParseWriter nextChunk = dout;
+    try {
+      long parsedRecs = 0;
+      for (int i = 0; i < nChunks; i++) {
+        Long recordNumber;
+        do {
+          recordNumber = reader.read();
+          if (recordNumber != null)
+            parsedRecs++;
+        } while ((recordNumber != null) && (w.lineNum() < nChunkRecs));
+        if (_jobKey != null)
+          Job.update(vec.length() / nChunks, _jobKey);
+        nextChunk.close();
+        dout.reduce(nextChunk);
+        nextChunk = nextChunk.nextChunk();
+        w.setWriter(nextChunk);
+      }
+      assert parsedRecs == totalRecs;
+    } catch (IOException e) {
+      throw new RuntimeException("Failed to parse records", e);
+    }
+    return dout;
+  }
+
+  private long totalRecords(ParquetMetadata metadata) {
+    long nr = 0;
+    for (BlockMetaData meta : metadata.getBlocks()) {
+      nr += meta.getRowCount();
+    }
+    return nr;
   }
 
   @Override
@@ -52,9 +99,9 @@ public class ParquetParser extends Parser {
       return dout;
     }
     Log.info("Processing ", metadata.getBlocks().size(), " blocks of chunk #", cidx);
-    VecParquetReader reader = new VecParquetReader(vec, metadata, dout, _setup.getColumnTypes());
+    VecParquetReader reader = new VecParquetReader(vec, metadata, dout, _setup.getColumnTypes(), _keepColumns, _setup.get_parse_columns_indices().length);
     try {
-      Integer recordNumber;
+      Long recordNumber;
       do {
         recordNumber = reader.read();
       } while (recordNumber != null);
@@ -64,7 +111,7 @@ public class ParquetParser extends Parser {
     return dout;
   }
 
-  public static ParseSetup guessSetup(ByteVec vec, byte[] bits) {
+  public static ParquetParseSetup guessFormatSetup(ByteVec vec, byte[] bits) {
     if (bits.length < MAGIC.length) {
       return null;
     }
@@ -73,10 +120,51 @@ public class ParquetParser extends Parser {
     }
     // seems like we have a Parquet file
     byte[] metadataBytes = VecParquetReader.readFooterAsBytes(vec);
-    ParquetMetadata metadata = VecParquetReader.readFooter(metadataBytes, ParquetMetadataConverter.NO_FILTER);
+    ParquetMetadata metadata = VecParquetReader.readFooter(metadataBytes);
     checkCompatibility(metadata);
-    ParquetPreviewParseWriter ppWriter = readFirstRecords(metadata, vec, MAX_PREVIEW_RECORDS);
-    return ppWriter.toParseSetup(metadataBytes);
+    return toInitialSetup(metadata.getFileMetaData().getSchema(), metadataBytes);
+  }
+
+  private static ParquetParseSetup toInitialSetup(MessageType parquetSchema, byte[] metadataBytes) {
+    byte[] roughTypes = roughGuessTypes(parquetSchema);
+    String[] columnNames = columnNames(parquetSchema);
+    return new ParquetParseSetup(columnNames, roughTypes, null, metadataBytes);
+  }
+
+  public static ParquetParseSetup guessDataSetup(ByteVec vec, ParquetParseSetup ps, boolean[] keepcolumns) {
+    ParquetPreviewParseWriter ppWriter = readFirstRecords(ps, vec, MAX_PREVIEW_RECORDS, keepcolumns);
+    return ppWriter.toParseSetup(ps.parquetMetadata);
+  }
+
+  /**
+   * Overrides unsupported type conversions/mappings specified by the user.
+   * @param vec byte vec holding bin\ary parquet data
+   * @param requestedTypes user-specified target types
+   * @return corrected types
+   */
+  public static byte[] correctTypeConversions(ByteVec vec, byte[] requestedTypes) {
+    byte[] metadataBytes = VecParquetReader.readFooterAsBytes(vec);
+    ParquetMetadata metadata = VecParquetReader.readFooter(metadataBytes, ParquetMetadataConverter.NO_FILTER);
+    byte[] roughTypes = roughGuessTypes(metadata.getFileMetaData().getSchema());
+    return correctTypeConversions(roughTypes, requestedTypes);
+  }
+
+  private static byte[] correctTypeConversions(byte[] roughTypes, byte[] requestedTypes) {
+    if (requestedTypes.length != roughTypes.length)
+      throw new IllegalArgumentException("Invalid column type specification: number of columns and number of types differ!");
+    byte[] resultTypes = new byte[requestedTypes.length];
+    for (int i = 0; i < requestedTypes.length; i++) {
+      if ((roughTypes[i] == Vec.T_NUM) || (roughTypes[i] == Vec.T_TIME)) {
+        // don't convert Parquet numeric/time type to non-numeric type in H2O
+        resultTypes[i] = roughTypes[i];
+      } else if ((roughTypes[i] == Vec.T_BAD) && (requestedTypes[i] == Vec.T_NUM)) {
+        // don't convert Parquet non-numeric type to a numeric type in H2O
+        resultTypes[i] = Vec.T_STR;
+      } else
+        // satisfy the request
+        resultTypes[i] = requestedTypes[i];
+    }
+    return resultTypes; // return types for all columns present.
   }
 
   private static class ParquetPreviewParseWriter extends PreviewParseWriter {
@@ -89,10 +177,10 @@ public class ParquetParser extends Parser {
       super();
     }
 
-    ParquetPreviewParseWriter(MessageType parquetSchema) {
-      super(parquetSchema.getPaths().size());
-      _colNames = columnNames(parquetSchema);
-      _roughTypes = roughGuessTypes(parquetSchema);
+    ParquetPreviewParseWriter(ParquetParseSetup setup) {
+      super(setup.getColumnNames().length);
+      _colNames = setup.getColumnNames();
+      _roughTypes = setup.getColumnTypes();
       setColumnNames(_colNames);
       _nlines = 0;
       _data[0] = new String[_colNames.length];
@@ -100,20 +188,10 @@ public class ParquetParser extends Parser {
 
     @Override
     public byte[] guessTypes() {
-      byte[] types = super.guessTypes();
-      for (int i = 0; i < types.length; i++) {
-        if ((_roughTypes[i] == Vec.T_NUM) || (_roughTypes[i] == Vec.T_TIME)) {
-          // don't convert Parquet numeric/time type to non-numeric type in H2O
-          types[i] = _roughTypes[i];
-        } else if ((_roughTypes[i] == Vec.T_BAD) && (types[i] == Vec.T_NUM)) {
-          // don't convert Parquet non-numeric type to a numeric type in H2O
-          types[i] = Vec.T_STR;
-        }
-      }
-      return types;
+      return correctTypeConversions(_roughTypes, super.guessTypes());
     }
 
-    ParseSetup toParseSetup(byte[] parquetMetadata) {
+    ParquetParseSetup toParseSetup(byte[] parquetMetadata) {
       byte[] types = guessTypes();
       return new ParquetParseSetup(_colNames, types, _data, parquetMetadata);
     }
@@ -133,21 +211,42 @@ public class ParquetParser extends Parser {
   }
 
   private static void checkCompatibility(ParquetMetadata metadata) {
+    // make sure we can map Parquet blocks to Chunks
     for (BlockMetaData block : metadata.getBlocks()) {
       if (block.getRowCount() > Integer.MAX_VALUE) {
-        throw new RuntimeException("Current implementation doesn't support Parquet files with blocks larger than " +
-                Integer.MAX_VALUE + " rows."); // because we map each block to a single H2O Chunk
+        IcedHashMapGeneric.IcedHashMapStringObject dbg = new IcedHashMapGeneric.IcedHashMapStringObject();
+        dbg.put("startingPos", block.getStartingPos());
+        dbg.put("rowCount", block.getRowCount());
+        throw new H2OUnsupportedDataFileException("Unsupported Parquet file (technical limitation).",
+                "Current implementation doesn't support Parquet files with blocks larger than " +
+                Integer.MAX_VALUE + " rows.", dbg); // because we map each block to a single H2O Chunk
       }
     }
+    // check that file doesn't have nested structures
+    MessageType schema = metadata.getFileMetaData().getSchema();
+    for (String[] path : schema.getPaths())
+      if (path.length != 1) {
+        throw new H2OUnsupportedDataFileException("Parquet files with nested structures are not supported.",
+                "Detected a column with a nested structure " + Arrays.asList(path));
+      }
   }
 
-  private static ParquetPreviewParseWriter readFirstRecords(ParquetMetadata metadata, ByteVec vec, int cnt) {
-    ParquetMetadata startMetadata = new ParquetMetadata(metadata.getFileMetaData(), Collections.singletonList(findFirstBlock(metadata)));
-    ParquetPreviewParseWriter ppWriter = new ParquetPreviewParseWriter(metadata.getFileMetaData().getSchema());
-    VecParquetReader reader = new VecParquetReader(vec, startMetadata, ppWriter, ppWriter._roughTypes);
+  private static ParquetPreviewParseWriter readFirstRecords(ParquetParseSetup initSetup, ByteVec vec, int cnt,
+                                                            boolean[] keepcolumns) {
+    ParquetMetadata metadata = VecParquetReader.readFooter(initSetup.parquetMetadata);
+    List<BlockMetaData> blockMetaData;
+    if (metadata.getBlocks().isEmpty()) {
+      blockMetaData = Collections.<BlockMetaData>emptyList();
+    } else {
+      final BlockMetaData firstBlock = findFirstBlock(metadata);
+      blockMetaData = Collections.singletonList(firstBlock);
+    }
+    ParquetMetadata startMetadata = new ParquetMetadata(metadata.getFileMetaData(), blockMetaData);
+    ParquetPreviewParseWriter ppWriter = new ParquetPreviewParseWriter(initSetup);
+    VecParquetReader reader = new VecParquetReader(vec, startMetadata, ppWriter, ppWriter._roughTypes, keepcolumns,initSetup.get_parse_columns_indices().length);
     try {
       int recordCnt = 0;
-      Integer recordNum;
+      Long recordNum;
       do {
         recordNum = reader.read();
       } while ((recordNum != null) && (++recordCnt < cnt));
@@ -168,6 +267,9 @@ public class ParquetParser extends Parser {
         case FLOAT:
         case DOUBLE:
           types[i] = Vec.T_NUM;
+          break;
+        case INT96:
+          types[i] = Vec.T_TIME;
           break;
         case INT64:
           types[i] = OriginalType.TIMESTAMP_MILLIS.equals(parquetType.getOriginalType()) ? Vec.T_TIME : Vec.T_NUM;
@@ -192,7 +294,7 @@ public class ParquetParser extends Parser {
   private static BlockMetaData findFirstBlock(ParquetMetadata metadata) {
     BlockMetaData firstBlockMeta = metadata.getBlocks().get(0);
     for (BlockMetaData meta : metadata.getBlocks()) {
-      if (firstBlockMeta.getStartingPos() < firstBlockMeta.getStartingPos()) {
+      if (meta.getStartingPos() < firstBlockMeta.getStartingPos()) {
         firstBlockMeta = meta;
       }
     }

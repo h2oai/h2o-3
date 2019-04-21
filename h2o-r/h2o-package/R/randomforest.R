@@ -3,17 +3,19 @@
 #'
 # -------------------------- Random Forest Model in H2O -------------------------- #
 #' 
-#' Builds a Random Forest Model on an H2OFrame
+#' Build a Random Forest model
 #' 
-#' @param x A vector containing the names or indices of the predictor variables to use in building the model.
-#'        If x is missing,then all columns except y are used.
-#' @param y The name of the response variable in the model.If the data does not contain a header, this is the first column
-#'        index, and increasing from left to right. (The response must be either an integer or a
-#'        categorical variable).
+#' Builds a Random Forest model on an H2OFrame.
+#' 
+#' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
+#'        If x is missing, then all columns except y are used.
+#' @param y The name or column index of the response variable in the data. The response must be either a numeric or a
+#'        categorical/factor variable. If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
 #' @param model_id Destination id for this model; auto-generated if not specified.
-#' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
+#' @param training_frame Id of the training data frame.
 #' @param validation_frame Id of the validation data frame.
-#' @param nfolds Number of folds for N-fold cross-validation (0 to disable or >= 2). Defaults to 0.
+#' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
+#' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to TRUE.
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to FALSE.
 #' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to FALSE.
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
@@ -23,10 +25,12 @@
 #'        "Random", "Modulo", "Stratified". Defaults to AUTO.
 #' @param fold_column Column with cross-validation fold index assignment per observation.
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
-#' @param offset_column Offset column. This will be added to the combination of columns before applying the link function.
+#' @param offset_column Offset column. This argument is deprecated and has no use for Random Forest.
 #' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
 #'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
-#'        weights are not allowed.
+#'        weights are not allowed. Note: Weights are per-row observation weights and do not increase the size of the
+#'        data frame. This is typically the number of times a row is repeated, but non-integer values are supported as
+#'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 #' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
 #'        FALSE.
 #' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
@@ -49,9 +53,10 @@
 #'        exceeds this Defaults to 1.797693135e+308.
 #' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
 #'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 0.
-#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression) Must be one of:
-#'        "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification",
-#'        "mean_per_class_error". Defaults to AUTO.
+#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression). Note that custom
+#'        and custom_increasing can only be used in GBM and DRF with the Python client. Must be one of: "AUTO",
+#'        "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification",
+#'        "mean_per_class_error", "custom", "custom_increasing". Defaults to AUTO.
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.001.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
@@ -66,16 +71,23 @@
 #' @param binomial_double_trees \code{Logical}. For binary classification: Build 2x as many trees (one per class) - can lead to higher
 #'        accuracy. Defaults to FALSE.
 #' @param checkpoint Model checkpoint to resume training with.
-#' @param col_sample_rate_change_per_level Relative change of the column sampling rate for every level (from 0.0 to 2.0) Defaults to 1.
+#' @param col_sample_rate_change_per_level Relative change of the column sampling rate for every level (must be > 0.0 and <= 2.0) Defaults to 1.
 #' @param col_sample_rate_per_tree Column sample rate per tree (from 0.0 to 1.0) Defaults to 1.
 #' @param min_split_improvement Minimum relative improvement in squared error reduction for a split to happen Defaults to 1e-05.
 #' @param histogram_type What type of histogram to use for finding optimal split points Must be one of: "AUTO", "UniformAdaptive",
 #'        "Random", "QuantilesGlobal", "RoundRobin". Defaults to AUTO.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
-#'        "Binary", "Eigen", "LabelEncoder", "SortByResponse". Defaults to AUTO.
+#'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
 #' @param calibrate_model \code{Logical}. Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide more
 #'        accurate estimates of class probabilities. Defaults to FALSE.
 #' @param calibration_frame Calibration frame for Platt Scaling
+#' @param distribution Distribution. This argument is deprecated and has no use for Random Forest.
+#' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
+#' @param export_checkpoints_dir Automatically export generated models to this directory.
+#' @param check_constant_response \code{Logical}. Check if response column is constant. If enabled, then an exception is thrown if the response
+#'        column is a constant value.If disabled, then model will train regardless of the response column being a
+#'        constant value or not. Defaults to TRUE.
+#' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree for GBM, DRF, & XGBoost. Metrics per epoch for Deep Learning). Defaults to FALSE.
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
 #' @export
@@ -83,6 +95,7 @@ h2o.randomForest <- function(x, y, training_frame,
                              model_id = NULL,
                              validation_frame = NULL,
                              nfolds = 0,
+                             keep_cross_validation_models = TRUE,
                              keep_cross_validation_predictions = FALSE,
                              keep_cross_validation_fold_assignment = FALSE,
                              score_each_iteration = FALSE,
@@ -104,7 +117,7 @@ h2o.randomForest <- function(x, y, training_frame,
                              nbins_cats = 1024,
                              r2_stopping = 1.797693135e+308,
                              stopping_rounds = 0,
-                             stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error"),
+                             stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
                              stopping_tolerance = 0.001,
                              max_runtime_secs = 0,
                              seed = -1,
@@ -118,22 +131,27 @@ h2o.randomForest <- function(x, y, training_frame,
                              col_sample_rate_per_tree = 1,
                              min_split_improvement = 1e-05,
                              histogram_type = c("AUTO", "UniformAdaptive", "Random", "QuantilesGlobal", "RoundRobin"),
-                             categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse"),
+                             categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                              calibrate_model = FALSE,
-                             calibration_frame = NULL
+                             calibration_frame = NULL,
+                             distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
+                             custom_metric_func = NULL,
+                             export_checkpoints_dir = NULL,
+                             check_constant_response = TRUE,
+                             verbose = FALSE 
                              ) 
 {
-  #If x is missing, then assume user wants to use all columns as features.
-  if(missing(x)){
-     if(is.numeric(y)){
-         x <- setdiff(col(training_frame),y)
-     }else{
-         x <- setdiff(colnames(training_frame),y)
+  # If x is missing, then assume user wants to use all columns as features.
+  if (missing(x)) {
+     if (is.numeric(y)) {
+         x <- setdiff(col(training_frame), y)
+     } else {
+         x <- setdiff(colnames(training_frame), y)
      }
   }
 
   # Required args: training_frame
-  if( missing(training_frame) ) stop("argument 'training_frame' is missing, with no default")
+  if (missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
   # Training_frame must be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
      tryCatch(training_frame <- h2o.getFrame(training_frame),
@@ -164,6 +182,8 @@ h2o.randomForest <- function(x, y, training_frame,
     parms$validation_frame <- validation_frame
   if (!missing(nfolds))
     parms$nfolds <- nfolds
+  if (!missing(keep_cross_validation_models))
+    parms$keep_cross_validation_models <- keep_cross_validation_models
   if (!missing(keep_cross_validation_predictions))
     parms$keep_cross_validation_predictions <- keep_cross_validation_predictions
   if (!missing(keep_cross_validation_fold_assignment))
@@ -179,7 +199,8 @@ h2o.randomForest <- function(x, y, training_frame,
   if (!missing(ignore_const_cols))
     parms$ignore_const_cols <- ignore_const_cols
   if (!missing(offset_column))
-    parms$offset_column <- offset_column
+    warning("Argument offset_column is deprecated and has no use for Random Forest.")
+    parms$offset_column <- NULL
   if (!missing(weights_column))
     parms$weights_column <- weights_column
   if (!missing(balance_classes))
@@ -240,6 +261,15 @@ h2o.randomForest <- function(x, y, training_frame,
     parms$calibrate_model <- calibrate_model
   if (!missing(calibration_frame))
     parms$calibration_frame <- calibration_frame
+  if (!missing(distribution))
+    warning("Argument distribution is deprecated and has no use for Random Forest.")
+    parms$distribution <- 'AUTO'
+  if (!missing(custom_metric_func))
+    parms$custom_metric_func <- custom_metric_func
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
+  if (!missing(check_constant_response))
+    parms$check_constant_response <- check_constant_response
   # Error check and build model
-  .h2o.modelJob('drf', parms, h2oRestApiVersion=3) 
+  .h2o.modelJob('drf', parms, h2oRestApiVersion = 3, verbose=verbose) 
 }

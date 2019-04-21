@@ -54,7 +54,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
 
   @Override
   public void compute2() {
-    keytmp = new byte[_keySize];
+    keytmp = MemoryManager.malloc1(_keySize);
     counts = new long[_keySize][256];
     Key k;
 
@@ -84,11 +84,11 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     _x = new byte[nbatch][];
     int b;
     for (b = 0; b < nbatch-1; b++) {
-      _o[b] = new long[_batchSize];          // TO DO?: use MemoryManager.malloc8()
-      _x[b] = new byte[_batchSize * _keySize];
+      _o[b] = MemoryManager.malloc8(_batchSize);          // TO DO?: use MemoryManager.malloc8()
+      _x[b] = MemoryManager.malloc1(_batchSize * _keySize);
     }
-    _o[b] = new long[lastSize];
-    _x[b] = new byte[lastSize * _keySize];
+    _o[b] = MemoryManager.malloc8(lastSize);
+    _x[b] = MemoryManager.malloc1(lastSize * _keySize);
 
     SplitByMSBLocal.OXbatch ox[/*node*/] = new SplitByMSBLocal.OXbatch[H2O.CLOUD.size()];
     int oxBatchNum[/*node*/] = new int[H2O.CLOUD.size()];  // which batch of OX are we on from that node?  Initialized to 0.
@@ -98,8 +98,8 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
       ox[node] = DKV.getGet(k);   // get the first batch for each node for this MSB
       DKV.remove(k);
     }
-    int oxOffset[] = new int[H2O.CLOUD.size()];
-    int oxChunkIdx[] = new int[H2O.CLOUD.size()];  // that node has n chunks and which of those are we currently on?
+    int oxOffset[] = MemoryManager.malloc4(H2O.CLOUD.size());
+    int oxChunkIdx[] = MemoryManager.malloc4(H2O.CLOUD.size());  // that node has n chunks and which of those are we currently on?
 
     int targetBatch = 0, targetOffset = 0, targetBatchRemaining = _batchSize;
     final Vec vec = _fr.anyVec();
@@ -237,11 +237,11 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
       // copy two halves to contiguous temp memory, do the below, then split it back to the two halves afterwards.
       // Straddles batches very rarely (at most once per batch) so no speed impact at all.
       _xbatch = new byte[len * _keySize];
-      System.arraycopy(_xbatch, 0, _x[batch0], (int)((start % _batchSize)*_keySize), len0*_keySize);
-      System.arraycopy(_xbatch, len0*_keySize, _x[batch1], 0, (len-len0)*_keySize);
+      System.arraycopy(_x[batch0], (int)((start % _batchSize)*_keySize),_xbatch, 0,  len0*_keySize);
+      System.arraycopy( _x[batch1], 0,_xbatch, len0*_keySize, (len-len0)*_keySize);
       _obatch = new long[len];
-      System.arraycopy(_obatch, 0, _o[batch0], (int)(start % _batchSize), len0);
-      System.arraycopy(_obatch, len0, _o[batch1], 0, len-len0);
+      System.arraycopy(_o[batch0], (int)(start % _batchSize), _obatch, 0, len0);
+      System.arraycopy(_o[batch1], 0, _obatch, len0, len-len0);
       start = 0;
     } else {
       _xbatch = _x[batch0];  // taking this outside the loop does indeed make quite a big different (hotspot isn't catching this, then)
@@ -265,10 +265,10 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     }
     if (batch1 != batch0) {
       // Put the sorted data back into original two places straddling the boundary
-      System.arraycopy(_x[batch0], (int)(origstart % _batchSize) *_keySize, _xbatch, 0, len0*_keySize);
-      System.arraycopy(_x[batch1], 0, _xbatch, len0*_keySize, (len-len0)*_keySize);
-      System.arraycopy(_o[batch0], (int)(origstart % _batchSize), _obatch, 0, len0);
-      System.arraycopy(_o[batch1], 0, _obatch, len0, len-len0);
+      System.arraycopy(_xbatch, 0,_x[batch0], (int)(origstart % _batchSize) *_keySize,  len0*_keySize);
+      System.arraycopy(_xbatch, len0*_keySize,_x[batch1], 0,  (len-len0)*_keySize);
+      System.arraycopy( _obatch, 0,_o[batch0], (int)(origstart % _batchSize), len0);
+      System.arraycopy(_obatch, len0,_o[batch1], 0,  len-len0);
     }
   }
 
@@ -318,6 +318,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     }
     long rollSum = 0;
     for (int c = 0; c < 256; c++) {
+      if (rollSum == len) break;  // done, all other bins are zero, no need to loop through them all
       final long tmp = thisHist[c];
       // important to skip zeros for logic below to undo cumulate.  Worth the
       // branch to save a deeply iterative memset back to zero

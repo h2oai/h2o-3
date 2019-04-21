@@ -1,5 +1,6 @@
 package water.util;
 
+import hex.Interaction;
 import hex.Model;
 import hex.ToEigenVec;
 import jsr166y.CountedCompleter;
@@ -13,6 +14,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -44,7 +46,7 @@ public class FrameUtils {
   /** Parse given set of URIs and produce a frame's key representing output.
    *
    * @param okey key for ouput frame. Can be null
-   * @param uris array of URI (file://, hdfs://, s3n://, s3a://, s3://, ...) to parse
+   * @param uris array of URI (file://, hdfs://, s3n://, s3a://, s3://, http://, https:// ...) to parse
    * @return a frame which is saved into DKV under okey
    * @throws IOException in case of parse error.
    */
@@ -52,16 +54,32 @@ public class FrameUtils {
     return parseFrame(okey, null, uris);
   }
 
+  public static Key eagerLoadFromHTTP(String path) throws IOException {
+    java.net.URL url = new URL(path);
+    Key destination_key = Key.make(path);
+    java.io.InputStream is = url.openStream();
+    UploadFileVec.ReadPutStats stats = new UploadFileVec.ReadPutStats();
+    UploadFileVec.readPut(destination_key, is, stats);
+    return destination_key;
+  }
+
+
   public static Frame parseFrame(Key okey, ParseSetup parseSetup, URI ...uris) throws IOException {
     if (uris == null || uris.length == 0) {
       throw new IllegalArgumentException("List of uris is empty!");
     }
     if(okey == null) okey = Key.make(uris[0].toString());
     Key[] inKeys = new Key[uris.length];
-    for (int i=0; i<uris.length; i++)  inKeys[i] = H2O.getPM().anyURIToKey(uris[i]);
+    for (int i = 0; i < uris.length; i++){
+      if ("http".equals(uris[i].getScheme()) || "https".equals(uris[i].getScheme())) {
+        inKeys[i] = eagerLoadFromHTTP(uris[i].toString());
+      } else{
+        inKeys[i] = H2O.getPM().anyURIToKey(uris[i]);
+      }
+    }
     // Return result
     return parseSetup != null ? ParseDataset.parse(okey, inKeys, true, ParseSetup.guessSetup(inKeys, parseSetup))
-                              : ParseDataset.parse(okey, inKeys);
+            : ParseDataset.parse(okey, inKeys);
   }
 
   public static ParseSetup guessParserSetup(ParseSetup userParserSetup, URI ...uris) throws IOException {
@@ -71,7 +89,7 @@ public class FrameUtils {
     return ParseSetup.guessSetup(inKeys, userParserSetup);
   }
 
-  public static Frame categoricalEncoder(Frame dataset, String[] skipCols, Model.Parameters.CategoricalEncodingScheme scheme, ToEigenVec tev) {
+  public static Frame categoricalEncoder(Frame dataset, String[] skipCols, Model.Parameters.CategoricalEncodingScheme scheme, ToEigenVec tev, int maxLevels) {
     switch (scheme) {
       case AUTO:
       case Enum:
@@ -82,6 +100,8 @@ public class FrameUtils {
         return new CategoricalOneHotEncoder(dataset, skipCols).exec().get();
       case Binary:
         return new CategoricalBinaryEncoder(dataset, skipCols).exec().get();
+      case EnumLimited:
+        return new CategoricalEnumLimitedEncoder(maxLevels, dataset, skipCols).exec().get();
       case Eigen:
         return new CategoricalEigenEncoder(tev, dataset, skipCols).exec().get();
       case LabelEncoder:
@@ -114,7 +134,7 @@ public class FrameUtils {
     }
   }
 
-  private static class Vec2ArryTsk extends MRTask<Vec2ArryTsk> {
+  public static class Vec2ArryTsk extends MRTask<Vec2ArryTsk> {
     final int N;
     public double [] res;
     public Vec2ArryTsk(int N){this.N = N;}
@@ -133,6 +153,33 @@ public class FrameUtils {
           res[i] += other.res[i]; // assuming only one nonzero
         }
       }
+    }
+  }
+
+  public static class Vecs2ArryTsk extends MRTask<Vecs2ArryTsk> {
+    final int dim1;   // treat as row
+    final int dim2;   // treat as column
+    public double [][] res;
+    public Vecs2ArryTsk(int dim1, int dim2)
+    {
+      this.dim1 = dim1;
+      this.dim2 = dim2;
+    }
+
+    @Override public void setupLocal(){
+      res = MemoryManager.malloc8d(dim1, dim2);
+    }
+    @Override public void map(Chunk[] c){
+      final int off = (int)c[0].start();
+      for (int colIndex = 0; colIndex < dim2; colIndex++) {
+        for (int rowIndex = 0; rowIndex < dim1; rowIndex++) {
+          res[off+rowIndex][colIndex] = c[colIndex].atd(rowIndex);
+        }
+      }
+    }
+
+    @Override public void reduce(Vecs2ArryTsk other){
+      ArrayUtils.add(res, other.res);
     }
   }
 
@@ -722,6 +769,84 @@ public class FrameUtils {
   /**
    * Helper to convert a categorical variable into the first eigenvector of the dummy-expanded matrix.
    */
+  public static class CategoricalEnumLimitedEncoder {
+    final Frame _frame;
+    Job<Frame> _job;
+    final String[] _skipCols;
+    final int _maxLevels;
+
+    public CategoricalEnumLimitedEncoder(int maxLevels, Frame dataset, String[] skipCols) {
+      _frame = dataset;
+      _skipCols = skipCols;
+      _maxLevels = maxLevels;
+    }
+
+    /**
+     * Driver for CategoricalEnumLimited
+     */
+    class CategoricalEnumLimitedDriver extends H2O.H2OCountedCompleter {
+      final Frame _frame;
+      final Key<Frame> _destKey;
+      final String[] _skipCols;
+      CategoricalEnumLimitedDriver(Frame frame, Key<Frame> destKey, String[] skipCols) {
+        _frame = frame; _destKey = destKey; _skipCols = skipCols;
+      }
+
+      @Override public void compute2() {
+        Vec[] frameVecs = _frame.vecs();
+        Vec[] extraVecs = new Vec[_skipCols==null?0:_skipCols.length];
+        for (int i=0; i< extraVecs.length; ++i) {
+          Vec v = _skipCols==null||_skipCols.length<=i?null:_frame.vec(_skipCols[i]); //can be null
+          if (v!=null) extraVecs[i] = v;
+        }
+//        Log.info(_frame.toTwoDimTable(0, (int)_frame.numRows()));
+        Frame outputFrame = new Frame(_destKey);
+        for (int i = 0; i < frameVecs.length; ++i) {
+          Vec src = frameVecs[i];
+          if (_skipCols!=null && ArrayUtils.find(_skipCols, _frame._names[i])>=0) continue;
+          if (src.cardinality() > _maxLevels) {
+            Key<Frame> source = Key.make();
+            Key<Frame> dest = Key.make();
+            Frame train = new Frame(source, new String[]{"enum"}, new Vec[]{src});
+            DKV.put(train);
+            Log.info("Reducing the cardinality of a categorical column with " + src.cardinality() + " levels to " + _maxLevels);
+            Interaction inter = new Interaction();
+            inter._source_frame = train._key;
+            inter._max_factors = _maxLevels; // keep only this many most frequent levels
+            inter._min_occurrence = 2; // but need at least 2 observations for a level to be kept
+            inter._pairwise = false;
+            inter._factor_columns = train.names();
+            train = inter.execImpl(dest).get();
+            outputFrame.add(_frame.name(i) + ".top_" + _maxLevels + "_levels", train.anyVec().makeCopy());
+            train.remove();
+            DKV.remove(source);
+          } else {
+            outputFrame.add(_frame.name(i), frameVecs[i].makeCopy());
+          }
+        }
+        for (int i=0;i<extraVecs.length;++i) {
+          if (extraVecs[i]!=null)
+            outputFrame.add(_skipCols[i], extraVecs[i].makeCopy());
+        }
+//        Log.info(outputFrame.toTwoDimTable(0, (int)outputFrame.numRows()));
+        DKV.put(outputFrame);
+        tryComplete();
+      }
+    }
+
+    public Job<Frame> exec() {
+      if (_frame == null)
+        throw new IllegalArgumentException("Frame doesn't exist.");
+      Key<Frame> destKey = Key.makeSystem(Key.make().toString());
+      _job = new Job<>(destKey, Frame.class.getName(), "CategoricalEnumLimited");
+      int workAmount = _frame.lastVec().nChunks();
+      return _job.start(new CategoricalEnumLimitedDriver(_frame, destKey, _skipCols), workAmount);
+    }
+  }
+
+  /**
+   * Helper to convert a categorical variable into the first eigenvector of the dummy-expanded matrix.
+   */
   public static class CategoricalEigenEncoder {
     final Frame _frame;
     Job<Frame> _job;
@@ -798,7 +923,7 @@ public class FrameUtils {
   static public void shrinkDomainsToObservedSubset(Frame frameToModifyInPlace) {
     for (Vec v : frameToModifyInPlace.vecs()) {
       if (v.isCategorical()) {
-        long[] uniques = (v.min() >= 0 && v.max() < Integer.MAX_VALUE - 4) ? new VecUtils.CollectDomainFast((int)v.max()).doAll(v).domain() : new VecUtils.CollectDomain().doAll(v).domain();
+        long[] uniques = (v.min() >= 0 && v.max() < Integer.MAX_VALUE - 4) ? new VecUtils.CollectDomainFast((int)v.max()).doAll(v).domain() : new VecUtils.CollectIntegerDomain().doAll(v).domain();
         String[] newDomain = new String[uniques.length];
         final int[] fromTo = new int[(int)ArrayUtils.maxValue(uniques)+1];
         for (int i=0;i<newDomain.length;++i) {
@@ -819,4 +944,75 @@ public class FrameUtils {
     }
   }
 
+  public static void delete(Lockable ...frs) {
+    for (Lockable l : frs) {
+      if (l != null) l.delete();
+    }
+  }
+
+  /**
+   * This class will calculate the weighted mean and standard deviatioin of a target column of a data frame
+   * with the weights specified in another column.
+   *
+   * For the weighted mean, it is calculated as (sum from i=1 to N wi*xi)/(sum from i=1 to N wi)
+   * For the weigthed std, it is calculated as
+   *    (sum from i=1 to N wi*(xi-weightedMean)*(xi-weightedMean))/(C *sum from i=1 to N wi)
+   * where C = (M-1)/M and M is the number of nonzero weights.
+   *
+   */
+  public static class CalculateWeightMeanSTD extends MRTask<CalculateWeightMeanSTD> {
+    public double _weightedEleSum;
+    public double _weightedEleSqSum;
+    public double _weightedCount;
+    public double _weightedMean;
+    public double _weightedSigma;
+    public long _nonZeroWeightsNum;
+
+    @Override
+    public void map(Chunk pcs, Chunk wcs) {
+      _weightedEleSum = 0;
+      _weightedEleSqSum = 0;
+      _weightedCount = 0;
+      _nonZeroWeightsNum = 0;
+      assert pcs._len==wcs._len:"Prediction and weight chunk should have the same length.";
+      // 0 contains prediction, 1 columns weight
+      for (int rindex = 0; rindex < pcs._len; rindex++) {
+        double weight = wcs.atd(rindex);
+        double pvalue = pcs.atd(rindex);
+        if ((!Double.isNaN(pvalue)) && (Math.abs(weight) > 0) && (!Double.isNaN(pvalue))) {
+          double v1 = pvalue * wcs.atd(rindex);
+          _weightedEleSum += v1;
+          _weightedEleSqSum += v1 * pvalue;
+
+          _weightedCount += wcs.atd(rindex);
+          _nonZeroWeightsNum++;
+        }
+      }
+    }
+
+    @Override
+    public void reduce(CalculateWeightMeanSTD other) {
+      _weightedEleSum += other._weightedEleSum;
+      _weightedEleSqSum += other._weightedEleSqSum;
+      _weightedCount += other._weightedCount;
+      _nonZeroWeightsNum += other._nonZeroWeightsNum;
+    }
+
+    @Override
+    public void postGlobal() {
+      _weightedMean = _weightedCount==0?Double.NaN:_weightedEleSum/_weightedCount;  // return NaN for bad input
+      double scale = _nonZeroWeightsNum==1?_nonZeroWeightsNum*1.0:(_nonZeroWeightsNum-1.0);
+      double scaling = _nonZeroWeightsNum*1.0/scale;
+      _weightedSigma = _weightedCount==0?Double.NaN:
+              Math.sqrt((_weightedEleSqSum/_weightedCount-_weightedMean*_weightedMean)*scaling);  // return NaN for bad input
+    }
+
+    public double getWeightedMean() {
+      return _weightedMean;
+    }
+
+    public double getWeightedSigma() {
+      return _weightedSigma;
+    }
+  }
 }

@@ -4,17 +4,15 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test.GBM.calibration.binomial <- function() {
+    set.seed(42)
 
     ecology.hex <- h2o.importFile(locate("smalldata/gbm_test/ecology_model.csv"))
     ecology.hex$Angaus <- as.factor(ecology.hex$Angaus)
+    ecology.hex$Weights <- as.h2o(sample(1:5, size = nrow(ecology.hex), replace = TRUE))
 
     ecology.split <- h2o.splitFrame(ecology.hex, seed = 12354)
     ecology.train <- ecology.split[[1]]
     ecology.calib <- ecology.split[[2]]
-
-    # introduce a weight column (artificial non-constant) ONLY to the train set (NOT the calibration one)
-    weights <- c(0, rep(1, nrow(ecology.train) - 1))
-    ecology.train$weight <- as.h2o(weights)
 
     # Train H2O GBM Model with Calibration
     ecology.model <- h2o.gbm(x = 3:13, y = "Angaus", training_frame = ecology.train,
@@ -23,21 +21,22 @@ test.GBM.calibration.binomial <- function() {
                              min_rows = 10,
                              learn_rate = 0.1,
                              distribution = "multinomial",
-                             weights_column = "weight",
+                             weights_column = "Weights",
                              calibrate_model = TRUE,
                              calibration_frame = ecology.calib
     )
 
-    predicted <- h2o.predict(ecology.model, ecology.calib)
+    predicted <- h2o.predict(ecology.model, ecology.train)
 
     # Check that calibrated probabilities were appended to the output frame
     expect_equal(colnames(predicted), c("predict", "p0", "p1", "cal_p0", "cal_p1"))
 
     # Manually scale the probabilities using GLM in R
-    manual.calib.input <- cbind(as.data.frame(predicted$p1), as.data.frame(ecology.calib$Angaus))
-    colnames(manual.calib.input) <- c("x", "y")
-    manual.calib.model <- glm(y ~ x, manual.calib.input, family = binomial)
-    manual.calib.predicted <- predict(manual.calib.model, newdata = manual.calib.input, type = "response")
+    predicted.calib <- h2o.predict(ecology.model, ecology.calib)
+    manual.calib.input <- cbind(as.data.frame(predicted.calib$p1), as.data.frame(ecology.calib[, c("Angaus", "Weights")]))
+    colnames(manual.calib.input) <- c("p1", "response", "weights")
+    manual.calib.model <- glm(response ~ p1, manual.calib.input, family = binomial, weights = weights)
+    manual.calib.predicted <- predict(manual.calib.model, newdata = as.data.frame(predicted$p1), type = "response")
 
     # Check that manually calculated probabilities match output from H2O
     expect_equal(

@@ -1,23 +1,53 @@
 package water.api;
 
-import com.google.gson.Gson;
-import water.*;
+import water.DKV;
+import water.H2O;
+import water.H2OError;
+import water.H2OModelBuilderError;
+import water.H2ONode;
+import water.RPC;
+import water.UDPRebooted;
 import water.api.schemas3.H2OErrorV3;
 import water.api.schemas3.H2OModelBuilderErrorV3;
 import water.api.schemas99.AssemblyV99;
-import water.exceptions.*;
+import water.exceptions.H2OAbstractRuntimeException;
+import water.exceptions.H2OFailException;
+import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2OModelBuilderIllegalArgumentException;
+import water.exceptions.H2ONotFoundArgumentException;
 import water.init.NodePersistentStorage;
 import water.nbhm.NonBlockingHashMap;
 import water.rapids.Assembly;
-import water.util.*;
+import water.server.ServletUtils;
+import water.util.GetLogsFromNode;
+import water.util.HttpResponseStatus;
+import water.util.IcedHashMapGeneric;
+import water.util.JCodeGen;
+import water.util.Log;
+import water.util.PojoUtils;
+import water.util.StringUtils;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -236,7 +266,7 @@ public class RequestServer extends HttpServlet {
    */
   public void doGeneric(String method, HttpServletRequest request, HttpServletResponse response) {
     try {
-      JettyHTTPD.startTransaction(request.getHeader("User-Agent"));
+      ServletUtils.startTransaction(request.getHeader("User-Agent"));
 
       // Note that getServletPath does an un-escape so that the %24 of job id's are turned into $ characters.
       String uri = request.getServletPath();
@@ -300,7 +330,7 @@ public class RequestServer extends HttpServlet {
       String choppedNanoStatus = resp.status.substring(0, 3);
       assert (choppedNanoStatus.length() == 3);
       int sc = Integer.parseInt(choppedNanoStatus);
-      JettyHTTPD.setResponseStatus(response, sc);
+      ServletUtils.setResponseStatus(response, sc);
 
       response.setContentType(resp.mimeType);
 
@@ -316,12 +346,11 @@ public class RequestServer extends HttpServlet {
 
     } catch (IOException e) {
       e.printStackTrace();
-      JettyHTTPD.setResponseStatus(response, 500);
+      ServletUtils.setResponseStatus(response, 500);
       Log.err(e);
       // Trying to send an error message or stack trace will produce another IOException...
-
     } finally {
-      JettyHTTPD.logRequest(method, request, response);
+      ServletUtils.logRequest(method, request, response);
       // Handle shutdown if it was requested.
       if (H2O.getShutdownRequested()) {
         (new Thread() {
@@ -346,7 +375,7 @@ public class RequestServer extends HttpServlet {
           }
         }).start();
       }
-      JettyHTTPD.endTransaction();
+      ServletUtils.endTransaction();
     }
   }
 
@@ -354,6 +383,7 @@ public class RequestServer extends HttpServlet {
    * Subsequent handling of the dispatch
    */
   public static NanoResponse serve(String url, String method, Properties header, Properties parms, String post_body) {
+    boolean hideParameters = true;
     try {
       // Jack priority for user-visible requests
       Thread.currentThread().setPriority(Thread.MAX_PRIORITY - 1);
@@ -362,7 +392,7 @@ public class RequestServer extends HttpServlet {
       RequestUri uri = new RequestUri(method, url);
 
       // Log the request
-      maybeLogRequest(uri, header, parms);
+      hideParameters = maybeLogRequest(uri, header, parms);
 
       // For certain "special" requests that produce non-JSON payloads we require special handling.
       NanoResponse special = maybeServeSpecial(uri);
@@ -421,6 +451,11 @@ public class RequestServer extends HttpServlet {
         else if (url.endsWith("/summary")) {
           parms.put("frame_id", url.substring(10, url.length()-8));
           route = findRouteByApiName("frameSummary");
+        }
+        // /3/Frames/{frame_id}/light
+        else if (url.endsWith("/light")) {
+          parms.put("frame_id", url.substring(10, url.length()-"/light".length()));
+          route = findRouteByApiName("lightFrame");
         }
         // /3/Frames/{frame_id}/columns
         else if (url.endsWith("/columns")) {
@@ -484,20 +519,48 @@ public class RequestServer extends HttpServlet {
       // some special cases for which we return 400 because it's likely a problem with the client request:
       if (e instanceof IllegalArgumentException || e instanceof FileNotFoundException || e instanceof MalformedURLException)
         error._http_status = HttpResponseStatus.BAD_REQUEST.getCode();
-      Log.err("Caught exception: " + error.toString() +";parms=" + parms);
+      String parmsInfo = hideParameters ? "<hidden>" : String.valueOf(parms);
+      Log.err("Caught exception: " + error.toString() + ";parms=" + parmsInfo);
       return serveError(error);
     }
   }
 
   /**
    * Log the request (unless it's an overly common one).
+   * @return flag whether the request parameters might be sensitive or not
    */
-  private static void maybeLogRequest(RequestUri uri, Properties header, Properties parms) {
-    for(HttpLogFilter f: _filters)
-      if( f.filter(uri,header,parms) ) return; // do not log anything if filtered
-    String url = uri.getUrl();
-    Log.info(uri + ", parms: " + parms);
-    GAUtils.logRequest(url, header);
+  private static boolean maybeLogRequest(RequestUri uri, Properties header, Properties parms) {
+    LogFilterLevel level = LogFilterLevel.LOG;
+    for (HttpLogFilter f : _filters)
+      level = level.reduce(f.filter(uri, header, parms));
+    switch (level) {
+      case DO_NOT_LOG: 
+        return false; // do not log the request by default but allow parameters to be logged on exceptional completion
+      case URL_ONLY:
+        Log.info(uri, ", parms: <hidden>");
+        return true; // parameters are sensitive - never log them
+      default:
+        Log.info(uri + ", parms: " + parms);
+        return false;
+    }
+  }
+  
+  public enum LogFilterLevel {
+    LOG(0), URL_ONLY(1), DO_NOT_LOG(Integer.MAX_VALUE);
+
+    private int level;
+
+    LogFilterLevel(int level) {
+      this.level = level;
+    }
+    
+    LogFilterLevel reduce(LogFilterLevel other) {
+      if (other.level > this.level) {
+        return other;
+      } else {
+        return this;
+      }
+    }
   }
 
   /**
@@ -506,7 +569,7 @@ public class RequestServer extends HttpServlet {
    * Implement this interface to create new filters used by maybeLogRequest
    */
   public interface HttpLogFilter {
-    boolean filter(RequestUri uri, Properties header, Properties parms);
+    LogFilterLevel filter(RequestUri uri, Properties header, Properties parms);
   }
 
   /**
@@ -515,19 +578,35 @@ public class RequestServer extends HttpServlet {
    */
   public static HttpLogFilter defaultFilter() {
     return new HttpLogFilter() { // this is much prettier with 1.8 lambdas
-      @Override public boolean filter(RequestUri uri, Properties header, Properties parms) {
+      @Override public LogFilterLevel filter(RequestUri uri, Properties header, Properties parms) {
+        // static web content
         String url = uri.getUrl();
         if (url.endsWith(".css") ||
-          url.endsWith(".js")  ||
-          url.endsWith(".png") ||
-          url.endsWith(".ico")) return true;
+            url.endsWith(".js")  || 
+            url.endsWith(".png") || 
+            url.endsWith(".ico")
+        ) {
+          return LogFilterLevel.DO_NOT_LOG;
+        }
+        // endpoints that might take sensitive parameters (passwords and other credentials)
         String[] path = uri.getPath();
-        return path[2].equals("Cloud") ||
-          path[2].equals("Jobs") && uri.isGetMethod() ||
-          path[2].equals("Log") ||
-          path[2].equals("Progress") ||
-          path[2].equals("Typeahead") ||
-          path[2].equals("WaterMeterCpuTicks");
+        if (path[2].equals("PersistS3") ||
+            path[2].equals("ImportSQLTable") ||
+            path[2].equals("DecryptionSetup")
+        ) {
+          return LogFilterLevel.URL_ONLY;
+        }
+        // endpoints that are called very frequently AND DON'T accept any sensitive information in parameters
+        if (path[2].equals("Cloud") ||
+            path[2].equals("Jobs") && uri.isGetMethod() ||
+            path[2].equals("Log") ||
+            path[2].equals("Progress") ||
+            path[2].equals("Typeahead") ||
+            path[2].equals("WaterMeterCpuTicks")
+        ) {
+          return LogFilterLevel.DO_NOT_LOG;
+        }
+        return LogFilterLevel.LOG;
       }
     };
   }

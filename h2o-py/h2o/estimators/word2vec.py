@@ -24,12 +24,17 @@ class H2OWord2vecEstimator(H2OEstimator):
         super(H2OWord2vecEstimator, self).__init__()
         self._parms = {}
         names_list = {"model_id", "training_frame", "min_word_freq", "word_model", "norm_model", "vec_size",
-                      "window_size", "sent_sample_rate", "init_learning_rate", "epochs", "pre_trained"}
+                      "window_size", "sent_sample_rate", "init_learning_rate", "epochs", "pre_trained",
+                      "max_runtime_secs", "export_checkpoints_dir"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue
                 self._parms["model_id"] = pvalue
+            elif pname == 'pre_trained':
+                setattr(self, pname, pvalue)
+                self._determine_vec_size();
+                setattr(self, 'vec_size', self.vec_size)
             elif pname in names_list:
                 # Using setattr(...) will invoke type-checking of the arguments
                 setattr(self, pname, pvalue)
@@ -39,7 +44,7 @@ class H2OWord2vecEstimator(H2OEstimator):
     @property
     def training_frame(self):
         """
-        Id of the training data frame (Not required, to allow initial validation of model parameters).
+        Id of the training data frame.
 
         Type: ``H2OFrame``.
         """
@@ -187,3 +192,67 @@ class H2OWord2vecEstimator(H2OEstimator):
         self._parms["pre_trained"] = pre_trained
 
 
+    @property
+    def max_runtime_secs(self):
+        """
+        Maximum allowed runtime in seconds for model training. Use 0 to disable.
+
+        Type: ``float``  (default: ``0``).
+        """
+        return self._parms.get("max_runtime_secs")
+
+    @max_runtime_secs.setter
+    def max_runtime_secs(self, max_runtime_secs):
+        assert_is_type(max_runtime_secs, None, numeric)
+        self._parms["max_runtime_secs"] = max_runtime_secs
+
+
+    @property
+    def export_checkpoints_dir(self):
+        """
+        Automatically export generated models to this directory.
+
+        Type: ``str``.
+        """
+        return self._parms.get("export_checkpoints_dir")
+
+    @export_checkpoints_dir.setter
+    def export_checkpoints_dir(self, export_checkpoints_dir):
+        assert_is_type(export_checkpoints_dir, None, str)
+        self._parms["export_checkpoints_dir"] = export_checkpoints_dir
+
+
+
+    def _requires_training_frame(self):
+        """
+        Determines if Word2Vec algorithm requires a training frame.
+        :return: False.
+        """
+        return False
+
+    @staticmethod
+    def from_external(external=H2OFrame):
+        """
+        Creates new H2OWord2vecEstimator based on an external model.
+        :param external: H2OFrame with an external model
+        :return: H2OWord2vecEstimator instance representing the external model
+        """
+        w2v_model = H2OWord2vecEstimator(pre_trained=external)
+        w2v_model.train()
+        return w2v_model
+
+    def _determine_vec_size(self):
+        """
+        Determines vec_size for a pre-trained model after basic model verification.
+        """
+        first_column = self.pre_trained.types[self.pre_trained.columns[0]]
+
+        if first_column != 'string':
+            raise H2OValueError("First column of given pre_trained model %s is required to be a String",
+                                self.pre_trained.frame_id)
+
+        if list(self.pre_trained.types.values()).count('string') > 1:
+            raise H2OValueError("There are multiple columns in given pre_trained model %s with a String type.",
+                                self.pre_trained.frame_id)
+
+        self.vec_size = self.pre_trained.dim[1] - 1;

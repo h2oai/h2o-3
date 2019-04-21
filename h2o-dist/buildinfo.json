@@ -19,16 +19,6 @@
 
     "hadoop_distributions" : [
         {
-            "distribution" : "cdh5.2",
-            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-cdh5.2.zip",
-            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-cdh5.2.zip"
-        },
-        {
-            "distribution" : "cdh5.3",
-            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-cdh5.3.zip",
-            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-cdh5.3.zip"
-        },
-        {
             "distribution" : "cdh5.4",
             "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-cdh5.4.zip",
             "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-cdh5.4.zip"
@@ -54,9 +44,34 @@
             "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-cdh5.8.zip"
         },
         {
-            "distribution" : "hdp2.1",
-            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-hdp2.1.zip",
-            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-hdp2.1.zip"
+            "distribution" : "cdh5.9",
+            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-cdh5.9.zip",
+            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-cdh5.9.zip"
+        },
+        {
+            "distribution" : "cdh5.10",
+            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-cdh5.10.zip",
+            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-cdh5.10.zip"
+        },
+        {
+            "distribution" : "cdh5.13",
+            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-cdh5.13.zip",
+            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-cdh5.13.zip"
+        },
+        {
+            "distribution" : "cdh5.14",
+            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-cdh5.14.zip",
+            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-cdh5.14.zip"
+        },
+        {
+            "distribution" : "cdh6.0",
+            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-cdh6.0.zip",
+            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-cdh6.0.zip"
+        },
+        {
+            "distribution" : "cdh6.1",
+            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-cdh6.1.zip",
+            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-cdh6.1.zip"
         },
         {
             "distribution" : "hdp2.2",
@@ -84,6 +99,16 @@
             "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-hdp2.6.zip"
         },
         {
+            "distribution" : "hdp3.0",
+            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-hdp3.0.zip",
+            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-hdp3.0.zip"
+        },
+        {
+            "distribution" : "hdp3.1",
+            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-hdp3.1.zip",
+            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-hdp3.1.zip"
+        },
+        {
             "distribution" : "mapr4.0",
             "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-mapr4.0.zip",
             "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-mapr4.0.zip"
@@ -99,6 +124,11 @@
             "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-mapr5.1.zip"
         },
         {
+            "distribution" : "mapr5.2",
+            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-mapr5.2.zip",
+            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-mapr5.2.zip"
+        },
+        {
             "distribution" : "iop4.2",
             "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-iop4.2.zip",
             "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-iop4.2.zip"
@@ -109,7 +139,7 @@
         {
             "name" : "H2O Documentation",
             "id"   : "doc-front",
-            "path" : "docs-website/index.html"
+            "path" : "http://docs.h2o.ai"
         },
         {
             "name" : "H2O User Guide",
@@ -122,9 +152,14 @@
             "path" : "https://github.com/h2oai/h2o-3/blob/SUBST_LAST_COMMIT_HASH/Changes.md"
         },
         {
-            "name" : "R User Documentation",
+            "name" : "R User Documentation (PDF)",
             "id"   : "doc-r-pdf",
             "path" : "docs-website/h2o-r/h2o_package.pdf"
+        },
+        {
+            "name" : "R User Documentation (HTML)",
+            "id"   : "doc-r-pdf",
+            "path" : "docs-website/h2o-r/docs/index.html"
         },
         {
             "name" : "Python User Documentation",
@@ -134,7 +169,7 @@
         {
             "name" : "Sparkling Water Readme",
             "id"   : "doc-sparkling-water",
-            "path" : "https://github.com/h2oai/sparkling-water/blob/master/README.md"
+            "path" : "https://github.com/h2oai/sparkling-water/blob/master/README.rst"
         },
         {
             "name" : "Migrating to H2O 3",
@@ -193,7 +228,7 @@
             "path" : "docs-website/h2o-docs/booklets/GLMBooklet.pdf"
         },
         {
-            "name" : "DeepLearning",
+            "name" : "Deep Learning",
             "id"   : "booklet-deeplearning",
             "path" : "docs-website/h2o-docs/booklets/DeepLearningBooklet.pdf"
         },
@@ -213,12 +248,12 @@
             "path" : "docs-website/h2o-docs/booklets/PythonBooklet.pdf"
         },
         {
-            "name" : "SparklingWater",
+            "name" : "Sparkling Water",
             "id"   : "booklet-sparklingwater",
             "path" : "docs-website/h2o-docs/booklets/SparklingWaterBooklet.pdf"
         },
         {
-            "name" : "DeepWaterBooklet",
+            "name" : "Deep Water",
             "id"   : "booklet-deepwater",
             "path" : "docs-website/h2o-docs/booklets/DeepWaterBooklet.pdf"
         }

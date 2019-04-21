@@ -1,6 +1,5 @@
 package hex;
 
-import java.util.Arrays;
 import water.Iced;
 import water.MRTask;
 import water.exceptions.H2OIllegalArgumentException;
@@ -8,6 +7,8 @@ import water.fvec.Chunk;
 import water.fvec.Vec;
 import water.util.fp.Function;
 import water.util.fp.Functions;
+
+import java.util.Arrays;
 
 import static hex.AUC2.ThresholdCriterion.precision;
 import static hex.AUC2.ThresholdCriterion.recall;
@@ -27,7 +28,7 @@ public class AUC2 extends Iced {
   public final double[] _tps;     // True  Positives
   public final double[] _fps;     // False Positives
   public final double _p, _n;     // Actual trues, falses
-  public final double _auc, _gini; // Actual AUC value
+  public final double _auc, _gini, _pr_auc; // Actual AUC value
   public final int _max_idx;    // Threshold that maximizes the default criterion
 
   public static final ThresholdCriterion DEFAULT_CM = ThresholdCriterion.f1;
@@ -160,23 +161,40 @@ public class AUC2 extends Iced {
     }
     _p = p;  _n = n;
     _auc = compute_auc();
+    _pr_auc = pr_auc();
     _gini = 2*_auc-1;
     _max_idx = DEFAULT_CM.max_criterion_idx(this);
   }
-  
+
+  // empty AUC, helps avoid NPE in edge cases
+  AUC2() {
+    _nBins = 0;
+    _ths = _tps = _fps = new double[0];
+    _p =_n = 0;
+    _auc = _gini = _pr_auc = Double.NaN;
+    _max_idx = -1;
+  }
+
+  private boolean isEmpty() {
+    return _nBins == 0;
+  }
+
   public double pr_auc() {
+    if (isEmpty()) {
+      return Double.NaN;
+    }
     checkRecallValidity();
     return Functions.integrate(forCriterion(recall), forCriterion(precision), 0, _nBins-1);
   }
 
-  // Checks that recall is monotonic function.
-  // According to Leland, it should be; otherwise it's an error.
+  // Checks that recall is a non-decreasing function
   void checkRecallValidity() {
     double x0 = recall.exec(this, 0);
     for (int i = 1; i < _nBins; i++) {
       double x1 = recall.exec(this, i);
-      if (x0 >= x1) 
-        throw new H2OIllegalArgumentException(""+i, "recall", ""+x1 + "<" + x0);
+      if (x0 > x1)
+        throw new H2OIllegalArgumentException(String.valueOf(i), "recall", x0 + " > " + x1);
+      x0 = x1;
     }
   }
 
@@ -240,6 +258,7 @@ public class AUC2 extends Iced {
     // Merging this bin with the next gives the least increase in squared
     // error, or -1 if not known.  Requires a linear scan to find.
     int    _ssx;
+    private boolean _useFastPath = true; // only used for unit tests to check that the
     public AUCBuilder(int nBins) {
       _nBins = nBins;
       _ths = new double[nBins<<1]; // Threshold; also the mean for this bin
@@ -249,11 +268,18 @@ public class AUC2 extends Iced {
       _ssx = -1;                   // Unknown best merge bin
     }
 
+    // Intended for unit tests only
+    AUCBuilder(int nBins, boolean useFastPath) {
+      this(nBins);
+      _useFastPath = useFastPath;
+    }
+
     public void perRow(double pred, int act, double w ) {
       // Insert the prediction into the set of histograms in sorted order, as
       // if its a new histogram bin with 1 count.
       assert !Double.isNaN(pred);
       assert act==0 || act==1;  // Actual better be 0 or 1
+      assert !Double.isNaN(w) && !Double.isInfinite(w);
       int idx = Arrays.binarySearch(_ths,0,_n,pred);
       if( idx >= 0 ) {          // Found already in histogram; merge results
         if( act==0 ) _fps[idx]+=w; else _tps[idx]+=w; // One more count; no change in squared error
@@ -263,22 +289,25 @@ public class AUC2 extends Iced {
       idx = -idx-1;             // Get index to insert at
 
       // If already full bins, try to instantly merge into an existing bin
-      if( _n > _nBins ) {       // Need to merge to shrink things
+      if (_n == _nBins &&
+              _useFastPath &&              // Optimization enabled
+              idx > 0 && idx < _n &&       // Give up for the corner cases
+              _ths[idx - 1] != _ths[idx])  // Histogram has duplicates (mergeOneBin will get rid of them)
+      {       // Need to merge to shrink things
         final int ssx = find_smallest();
-        double dssx = compute_delta_error(_ths[ssx+1],k(ssx+1),_ths[ssx],k(ssx));
-
+        double dssx = _sqe[ssx] + _sqe[ssx+1] + compute_delta_error(_ths[ssx+1], k(ssx+1), _ths[ssx], k(ssx));
         // See if this point will fold into either the left or right bin
         // immediately.  This is the desired fast-path.
-        double d0 = compute_delta_error(pred,w,_ths[idx  ],k(idx  ));
-        double d1 = compute_delta_error(_ths[idx+1],k(idx+1),pred,w);
-        if( d0 < dssx || d1 < dssx ) {
-          if( d1 < d0 ) idx++; else d0 = d1; // Pick correct bin
-          double oldk = k(idx);
-          if( act==0 ) _fps[idx]+=w;
-          else         _tps[idx]+=w;
-          _ths[idx] = _ths[idx] + (pred-_ths[idx])/oldk;
-          _sqe[idx] = _sqe[idx] + d0;
-          assert ssx == find_smallest();
+        double d0 = _sqe[idx-1] + compute_delta_error(pred,w,_ths[idx-1],k(idx-1));
+        double d1 = _sqe[idx] + compute_delta_error(_ths[idx],k(idx),pred,w);
+        if (d0 < dssx || d1 < dssx) {
+          if (d0 <= d1) idx--; // Pick correct bin
+          if (ssx == idx-1 || ssx == idx)
+            _ssx = -1;         // We don't know the minimum anymore
+          double k = k(idx);
+          if (act == 0) _fps[idx] += w; else _tps[idx] += w;
+          _sqe[idx] = _sqe[idx] + compute_delta_error(pred, w, _ths[idx], k);
+          _ths[idx] = combine_centers(_ths[idx], k, pred, w);
           return;
         }
       }
@@ -286,7 +315,8 @@ public class AUC2 extends Iced {
       // Must insert this point as it's own threshold (which is not insertion
       // point), either because we have too few bins or because we cannot
       // instantly merge the new point into an existing bin.
-      if( idx == _ssx ) _ssx = -1;  // Smallest error becomes one of the splits
+      if (idx == 0 || idx == _n ||     // Just because we didn't bother to deal with the corner cases ^^^
+              idx == _ssx) _ssx = -1;  // Smallest error becomes one of the splits
       else if( idx < _ssx ) _ssx++; // Smallest error will slide right 1
 
       // Slide over to do the insert.  Horrible slowness.
@@ -308,8 +338,6 @@ public class AUC2 extends Iced {
       // Merge sort the 2 sorted lists into the double-sized arrays.  The tail
       // half of the double-sized array is unused, but the front half is
       // probably a source.  Merge into the back.
-      //assert sorted();
-      //assert bldr.sorted();
       int x=     _n-1;
       int y=bldr._n-1;
       while( x+y+1 >= 0 ) {
@@ -323,7 +351,7 @@ public class AUC2 extends Iced {
         if( self_is_larger ) x--; else y--;
       }
       _n += bldr._n;
-      //assert sorted();
+      _ssx = -1; // We no longer know what bin has the smallest error
 
       // Merge elements with least squared-error increase until we get fewer
       // than _nBins and no duplicates.  May require many merges.
@@ -331,6 +359,15 @@ public class AUC2 extends Iced {
         mergeOneBin();
     }
 
+    static double combine_centers(double ths1, double n1, double ths0, double n0) {
+      double center = (ths0 * n0 + ths1 * n1) / (n0 + n1);
+      if (Double.isNaN(center) || Double.isInfinite(center)) {
+        // use a simple average as a fallback
+        return (ths0 + ths1) / 2;
+      }
+      return center;
+    }
+    
     private void mergeOneBin( ) {
       // Too many bins; must merge bins.  Merge into bins with least total
       // squared error.  Horrible slowness linear arraycopy.
@@ -340,8 +377,8 @@ public class AUC2 extends Iced {
       // centers based on counts.
       double k0 = k(ssx);
       double k1 = k(ssx+1);
-      _ths[ssx] = (_ths[ssx]*k0 + _ths[ssx+1]*k1) / (k0+k1);
       _sqe[ssx] = _sqe[ssx]+_sqe[ssx+1]+compute_delta_error(_ths[ssx+1],k1,_ths[ssx],k0);
+      _ths[ssx] = combine_centers(_ths[ssx], k0, _ths[ssx+1], k1);
       _tps[ssx] += _tps[ssx+1];
       _fps[ssx] += _fps[ssx+1];
       // Slide over to crush the removed bin at index (ssx+1)
@@ -361,11 +398,25 @@ public class AUC2 extends Iced {
     // tried the original: merge bins with the least distance between bin
     // centers.  Same problem for sorted data.
     private int find_smallest() {
-      if( _ssx == -1 ) return (_ssx = find_smallest_impl());
-      assert _ssx == find_smallest_impl();
+      if( _ssx == -1 ) {
+        _ssx = find_smallest_impl();
+        assert _ssx != -1 : toDebugString();
+      }
       return _ssx;
     }
+
+    private String toDebugString() {
+      return "_ssx = " + _ssx + 
+              "; n = " + _n +
+              "; ths = " + Arrays.toString(_ths) +
+              "; tps = " + Arrays.toString(_tps) +
+              "; fps = " + Arrays.toString(_fps) + 
+              "; sqe = " + Arrays.toString(_sqe);
+    }
+
     private int find_smallest_impl() {
+      if (_n == 1)
+        return 0;
       double minSQE = Double.MAX_VALUE;
       int minI = -1;
       int n = _n;
@@ -375,6 +426,19 @@ public class AUC2 extends Iced {
         double sqe = _sqe[i]+_sqe[i+1]+derr;
         if( sqe < minSQE ) {
           minI = i;  minSQE = sqe;
+        }
+      }
+      if (minI == -1) {
+        // we couldn't find any bins to merge based on SE (the math can be producing Double.Infinity or Double.NaN)
+        // revert to using a simple distance of the bin centers
+        minI = 0;
+        double minDist = _ths[1] - _ths[0];
+        for (int i = 1; i < n - 1; i++) {
+          double dist = _ths[i + 1] - _ths[i];
+          if (dist < minDist) {
+            minDist = dist;
+            minI = i;
+          }
         }
       }
       return minI;
@@ -396,22 +460,14 @@ public class AUC2 extends Iced {
       // variance here is junk), and also it's not statistically sane to have
       // a model which varies predictions by such a tiny change in thresholds.
       double delta = (float)ths1-(float)ths0;
+      if (delta == 0)
+        return 0;
       // Parallel equation drawn from:
       //  http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
       return delta*delta*n0*n1 / (n0+n1);
     }
 
     private double k( int idx ) { return _tps[idx]+_fps[idx]; }
-
-    //private boolean sorted() {
-    //  double t = _ths[0];
-    //  for( int i=1; i<_n; i++ ) {
-    //    if( _ths[i] < t )
-    //      return false;
-    //    t = _ths[i];
-    //  }
-    //  return true;
-    //}
   }
 
 

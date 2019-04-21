@@ -2,6 +2,7 @@ package water;
 
 import java.util.Arrays;
 import water.H2ONode.H2Okey;
+import water.init.JarHash;
 import water.nbhm.NonBlockingHashMap;
 import water.util.Log;
 
@@ -38,44 +39,45 @@ public abstract class Paxos {
   static synchronized int doHeartbeat( H2ONode h2o ) {
     // Kill somebody if the jar files mismatch.  Do not attempt to deal with
     // mismatched jars.
-    if( !h2o._heartbeat.check_jar_md5() ) {
-      if( H2O.CLOUD.size() > 1 ) {
-        Log.warn("Killing "+h2o+" because of H2O version mismatch (md5 differs).");
-        UDPRebooted.T.mismatch.send(h2o);
-      } else {
-        H2O.die("Attempting to join "+h2o+" with an H2O version mismatch (md5 differs).  (Is H2O already running?)  Exiting.");
+    if(!H2O.ARGS.client && !h2o._heartbeat._client) {
+      // don't check md5 for client nodes
+      if (!h2o._heartbeat.check_jar_md5()) {
+        System.out.println("Jar check fails; my hash=" + Arrays.toString(JarHash.JARHASH));
+        System.out.println("Jar check fails; received hash=" + Arrays.toString(h2o._heartbeat._jar_md5));
+        if (H2O.CLOUD.size() > 1) {
+          Log.warn("Killing " + h2o + " because of H2O version mismatch (md5 differs).");
+          UDPRebooted.T.mismatch.send(h2o);
+        } else {
+          H2O.die("Attempting to join " + h2o + " with an H2O version mismatch (md5 differs).  (Is H2O already running?)  Exiting.");
+        }
+        return 0;
       }
-      return 0;
+    }else{
+      if (!h2o._heartbeat.check_jar_md5()) { // we do not want to disturb the user in this case
+        // Just report that client with different md5 tried to connect
+        ListenerService.getInstance().report("client_wrong_md5", new Object[]{h2o._heartbeat._jar_md5});
+      }
     }
-    
+
     if(h2o._heartbeat._cloud_name_hash != H2O.SELF._heartbeat._cloud_name_hash){
       // ignore requests from this node as they are coming from different cluster
       return 0;
     }
 
-    // I am not client but received client heartbeat in flatfile mode.
-    // Means that somebody is trying to connect to this cloud.
-    // => update list of static hosts (it needs clean up)
-    if (!H2O.ARGS.client && H2O.isFlatfileEnabled()
-         && h2o._heartbeat._client
-         && !H2O.isNodeInFlatfile(h2o)) {
-      // Extend static list of nodes to multicast to propagate information to client
-      H2O.addNodeToFlatfile(h2o);
-      H2O.reportClient(h2o);
-      // A new client `h2o` is connected so we broadcast it around to other nodes
-      // Note: this could cause a temporary flood of messages since the other
-      // nodes will later inform about the connected client as well.
-      // Note: It would be helpful to have a control over flatfile-based multicast to inject a small wait.
-      UDPClientEvent.ClientEvent.Type.CONNECT.broadcast(h2o);
-    } else if (H2O.ARGS.client
-               && H2O.isFlatfileEnabled()
-               && !H2O.isNodeInFlatfile(h2o)) {
-      // This node is a client and using a flatfile to figure out a topology of the cluster.
-      // In this case we do not expect that we have a complete flatfile but use information
-      // provided by a host we received heartbeat from.
-      // That means that the host is in our flatfile already or it was notified about this client node
-      // via a node which is already in the flatfile)
-      H2O.addNodeToFlatfile(h2o);
+
+    // Update manual flatfile in case of flatfile is enabled
+    if (H2O.isFlatfileEnabled()) {
+      if (!H2O.ARGS.client && h2o._heartbeat._client && !H2O.isNodeInFlatfile(h2o)) {
+        // A new client was reported to this node so we propagate this information to all nodes in the cluster, to this
+        // as well
+        UDPClientEvent.ClientEvent.Type.CONNECT.broadcast(h2o);
+      } else if (H2O.ARGS.client && !H2O.isNodeInFlatfile(h2o)) {
+        // This node is a client and using a flatfile to figure out a topology of the cluster. The flatfile passed to the
+        // client is always modified at the start of H2O to contain only a single node. This node is used to propagate
+        // information about the client to the cluster. Once the nodes have the information about the client, then propagate
+        // themselves via heartbeat to the client
+        H2O.addNodeToFlatfile(h2o);
+      }
     }
 
     // Never heard of this dude?  See if we want to kill him off for being cloud-locked
@@ -127,7 +129,8 @@ public abstract class Paxos {
     Paxos.class.notifyAll(); // Also, wake up a worker thread stuck in DKV.put
     Paxos.print("Announcing new Cloud Membership: ", H2O.CLOUD._memary);
     Log.info("Cloud of size ", H2O.CLOUD.size(), " formed ", H2O.CLOUD.toString());
-    H2O.notifyAboutCloudSize(H2O.SELF_ADDRESS, H2O.API_PORT, H2O.CLOUD.size());
+    H2Okey leader = H2O.CLOUD.leader()._key;
+    H2O.notifyAboutCloudSize(H2O.SELF_ADDRESS, H2O.API_PORT, leader.getAddress(), leader.htm_port(), H2O.CLOUD.size());
     return 0;
   }
 
@@ -158,7 +161,7 @@ public abstract class Paxos {
         for(H2ONode n: H2O.getFlatfile()){
           if(!n._heartbeat._client && !PROPOSED.containsKey(n._key)){
             Log.info("Flatile::" + n._key + " not active in this cloud. Removing it from the list.");
-            n.stopSendThread();
+            n.removeFromCloud();
           }
         }
       }

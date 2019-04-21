@@ -23,7 +23,12 @@ class FolderMojoReaderBackend implements MojoReaderBackend {
     File f = new File(root, filename);
     byte[] out = new byte[(int) f.length()];
     DataInputStream dis = new DataInputStream(new FileInputStream(f));
-    dis.readFully(out);
+    try {
+      dis.readFully(out);
+      dis.close();
+    } finally {
+      try { dis.close(); } catch (IOException e) { /* ignored */ }
+    }
     return out;
   }
 

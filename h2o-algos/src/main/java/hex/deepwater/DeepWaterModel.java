@@ -13,6 +13,7 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.parser.BufferedString;
+import water.udf.CFuncRef;
 import water.util.FrameUtils;
 import water.util.Log;
 import water.util.PrettyPrint;
@@ -24,7 +25,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static hex.ModelMetrics.calcVarImp;
 import static water.H2O.technote;
@@ -513,32 +513,46 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
 
   private int backendCount = 0;
 
-  @Override
-  protected void setupBigScorePredict() {
-    synchronized (model_info()) {
-      backendCount++;
-      // Initial init of backend + model, backend is shared across threads
-      if (null == model_info()._backend) {
-        model_info().javaToNative();
+  private class DeepWaterBigScorePredict implements BigScorePredict, BigScoreChunkPredict {
+
+    @Override
+    public double[] score0(Chunk[] chks, double offset, int row_in_chunk, double[] tmp, double[] preds) {
+      return DeepWaterModel.this.score0(chks, offset, row_in_chunk, tmp, preds);
+    }
+
+    @Override
+    public BigScoreChunkPredict initMap(final Frame fr, final Chunk[] chks) {
+      synchronized (model_info()) {
+        backendCount++;
+        // Initial init of backend + model, backend is shared across threads
+        if (null == model_info()._backend) {
+          model_info().javaToNative();
+        }
+        // Backend already initialized, initialize model per thread
+        if (null == model_info().getModel().get()) {
+          model_info().initModel();
+        }
       }
-      // Backend already initialized, initialize model per thread
-      if (null == model_info().getModel().get()) {
-        model_info().initModel();
+      return this;
+    }
+
+    @Override
+    public void close() {
+      synchronized (model_info()) {
+        if (0 == --backendCount) {
+          // No more threads using the backend, nuke backend + model
+          model_info().nukeBackend();
+        } else if (null != model_info().getModel().get()) {
+          // Backend still used by other threads, nuke only model
+          model_info().nukeModel();
+        }
       }
     }
   }
 
   @Override
-  protected void closeBigScorePredict() {
-    synchronized (model_info()) {
-      if (0 == --backendCount) {
-        // No more threads using the backend, nuke backend + model
-        model_info().nukeBackend();
-      } else if (null != model_info().getModel().get()) {
-        // Backend still used by other threads, nuke only model
-        model_info().nukeModel();
-      }
-    }
+  protected BigScorePredict setupBigScorePredict(BigScore bs) {
+    return new DeepWaterBigScorePredict();
   }
 
   /**
@@ -561,8 +575,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     return preds;
   }
 
-  @Override public double[] score0(double[] data, double[] preds, double weight, double offset) {
-    assert(weight==1);
+  @Override public double[] score0(double[] data, double[] preds, double offset) {
     assert(offset==0);
     return score0(data, preds);
   }
@@ -913,12 +926,12 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
       }
     }
     DeepWaterBigScore(String[] domain, int ncols, double[] mean, boolean testHasWeights, boolean computeMetrics, boolean makePreds, Job j) {
-      super(domain, ncols, mean, testHasWeights, computeMetrics, makePreds, j);
+      super(domain, ncols, mean, testHasWeights, computeMetrics, makePreds, j, CFuncRef.NOP);
     }
   }
 
   @Override
-  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics) {
+  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
     final boolean makeNative = model_info()._backend ==null;
     if (makeNative) model_info().javaToNative();
     // Build up the names & domains.

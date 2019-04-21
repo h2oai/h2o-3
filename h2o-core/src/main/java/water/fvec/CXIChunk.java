@@ -146,11 +146,15 @@ public class CXIChunk extends Chunk {
 
   private transient int _previousOffset = _OFF;
 
-  @Override public int nextNZ(int i){
+  @Override public final int nextNZ(int i){
     int x = findOffset(i);
     if(x < 0) x = -x-1-_elem_sz;
     _previousOffset = x += _elem_sz;
     return getId(x);
+  }
+
+  @Override public final int nextNZ(int rid, boolean onlyTrueZero) {
+    return onlyTrueZero && _isNA ? rid + 1 : nextNZ(rid);
   }
 
   @Override

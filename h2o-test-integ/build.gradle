@@ -18,6 +18,10 @@ task runPythonMultiJVMTests(type: Exec) {
     if (project.hasProperty("jacocoCoverage")) {
         args << '--jacoco'
     }
+    if (System.getenv('ADDITIONAL_TEST_JVM_OPTS')) {
+        args += "--jvm.opts"
+        args += System.getenv('ADDITIONAL_TEST_JVM_OPTS')
+    }
     commandLine args
 }
 

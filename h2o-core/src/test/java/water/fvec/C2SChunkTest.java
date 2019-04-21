@@ -1,11 +1,17 @@
 package water.fvec;
 
-import org.junit.*;
-
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import water.Futures;
+import water.MRTask;
+import water.Scope;
 import water.TestUtil;
+import water.util.PrettyPrint;
+
+import java.io.IOException;
 import java.util.Arrays;
-import java.util.Iterator;
+import static org.junit.Assert.assertTrue;
 
 public class C2SChunkTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
@@ -30,8 +36,8 @@ public class C2SChunkTest extends TestUtil {
         Assert.assertTrue(cc.isNA_abs(0));
       }
       for (int i = 0; i < man.length; ++i) {
-        Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) cc.atd(l + i), 0);
-        Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) cc.at_abs(l + i), 0);
+        Assert.assertEquals(PrettyPrint.pow10(man[i],exp[i]), cc.atd(l + i), 0);
+        Assert.assertEquals(PrettyPrint.pow10(man[i],exp[i]), cc.at_abs(l + i), 0);
       }
       Assert.assertTrue(cc.isNA(man.length + l));
       Assert.assertTrue(cc.isNA_abs(man.length + l));
@@ -50,8 +56,8 @@ public class C2SChunkTest extends TestUtil {
         Assert.assertTrue(nc.isNA_abs(0));
       }
       for (int i = 0; i < man.length; ++i) {
-        Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) nc.atd(l + i), 0);
-        Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) nc.at_abs(l + i), 0);
+        Assert.assertEquals(PrettyPrint.pow10(man[i],exp[i]), nc.atd(l + i), 0);
+        Assert.assertEquals(PrettyPrint.pow10(man[i],exp[i]), nc.at_abs(l + i), 0);
       }
       Assert.assertTrue(nc.isNA(man.length + l));
       Assert.assertTrue(nc.isNA_abs(man.length + l));
@@ -63,8 +69,8 @@ public class C2SChunkTest extends TestUtil {
         Assert.assertTrue(cc2.isNA_abs(0));
       }
       for (int i = 0; i < man.length; ++i) {
-        Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) cc2.atd(l + i), 0);
-        Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) cc2.at_abs(l + i), 0);
+        Assert.assertEquals(PrettyPrint.pow10(man[i],exp[i]), cc2.atd(l + i), 0);
+        Assert.assertEquals(PrettyPrint.pow10(man[i],exp[i]), cc2.at_abs(l + i), 0);
       }
       Assert.assertTrue(cc2.isNA(man.length + l));
       Assert.assertTrue(cc2.isNA_abs(man.length + l));
@@ -91,8 +97,8 @@ public class C2SChunkTest extends TestUtil {
         Assert.assertTrue(cc.isNA_abs(0));
       }
       for (int i = 0; i < man.length; ++i) {
-        Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) cc.atd(l + i), 0);
-        Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) cc.at_abs(l + i), 0);
+        Assert.assertEquals(PrettyPrint.pow10(man[i],exp[i]), cc.atd(l + i), 0);
+        Assert.assertEquals(PrettyPrint.pow10(man[i],exp[i]), cc.at_abs(l + i), 0);
       }
       Assert.assertTrue(cc.isNA(man.length + l));
 
@@ -104,8 +110,8 @@ public class C2SChunkTest extends TestUtil {
         Assert.assertTrue(nc.isNA_abs(0));
       }
       for (int i = 0; i < man.length; ++i) {
-        Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) nc.atd(l + i), 0);
-        Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) nc.at_abs(l + i), 0);
+        Assert.assertEquals(PrettyPrint.pow10(man[i],exp[i]), nc.atd(l + i), 0);
+        Assert.assertEquals(PrettyPrint.pow10(man[i],exp[i]), nc.at_abs(l + i), 0);
       }
       Assert.assertTrue(nc.isNA(man.length + l));
       Assert.assertTrue(nc.isNA_abs(man.length + l));
@@ -117,8 +123,8 @@ public class C2SChunkTest extends TestUtil {
         Assert.assertTrue(cc2.isNA_abs(0));
       }
       for (int i = 0; i < man.length; ++i) {
-        Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) cc2.atd(l + i), 0);
-        Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) cc2.at_abs(l + i), 0);
+        Assert.assertEquals(PrettyPrint.pow10(man[i],exp[i]), cc2.atd(l + i), 0);
+        Assert.assertEquals(PrettyPrint.pow10(man[i],exp[i]), cc2.at_abs(l + i), 0);
       }
       Assert.assertTrue(cc2.isNA(man.length + l));
       Assert.assertTrue(cc2.isNA_abs(man.length + l));
@@ -175,5 +181,61 @@ public class C2SChunkTest extends TestUtil {
 
     Assert.assertTrue(Arrays.equals(cc._mem, cc2._mem));
     vec.remove();
+  }
+
+  @Test
+  public void test_precision() {
+    for (final int stepsz : new int[]{1/*,7, 17, 23, 31*/}) {
+      int nvals = (Short.MAX_VALUE - Short.MIN_VALUE - 1) / stepsz + ((Short.MAX_VALUE - Short.MIN_VALUE - 1) % stepsz == 0?0:1);
+      int[] exponents = new int[]{/*-32,*/-16, -8, -6, -4, -2, -1, 0, 1, 2, 4, 6, 8, 16/*,32*/};
+      long[] biases = new long[]{-1234567, -12345, -1234, -1, 0, 1, 1234, 12345, 1234567};
+      for (int exponent : exponents) {
+        for (long bias : biases) {
+          if (exponent == 0 && 100000 >= Math.abs(bias)) continue;
+          NewChunk nc = new NewChunk(null, 0);
+          double[] expected = new double[nvals];
+          int j = 0;
+          for (int i = Short.MIN_VALUE + 1; i < Short.MAX_VALUE; i += stepsz) {
+            nc.addNum(bias + i, exponent);
+            expected[j++] = Double.parseDouble((i + bias) + "e" + exponent);
+          }
+          assert j == nvals;
+          Chunk c = nc.compress().deepCopy();
+          String msg = "exp = " + exponent + " b = " + bias + " c = " + c.getClass().getSimpleName();
+          Assert.assertTrue(msg, c instanceof C2SChunk);
+          for (int i = 0; i < expected.length; ++i)
+            Assert.assertEquals(msg + " i: " + i, expected[i], c.atd(i), 0);
+        }
+      }
+    }
+  }
+
+  @Test public void testOverflow() throws IOException {
+    Scope.enter();
+    final long min = 1485333188427000000L;
+    int len = 10000;
+    try {
+      Vec dz = Vec.makeZero(len);
+      Vec z = dz.makeZero(); // make a vec consisting of C0LChunks
+      Vec v = new MRTask() {
+        @Override public void map(Chunk[] cs) {
+          for (Chunk c : cs)
+            for (int r = 0; r < c._len; r++)
+              c.set(r, r + min + c.start());
+        }
+      }.doAll(z)._fr.vecs()[0];
+      Scope.track(dz);
+      Scope.track(z);
+      Scope.track(v);
+
+      for(long i=0; i<len; i++) {
+        if( v.isNA(i) )
+          System.out.println("MISSING: " + i);
+        assertTrue("i/total: " + i + "/" + len + " min+i: " + (min+i) + " v.at8(i): " + v.at8(i) + " chk= " + v.elem2ChunkIdx(i), v.at8(i) == min + i);
+      }
+
+    } finally {
+      Scope.exit();
+    }
   }
 }

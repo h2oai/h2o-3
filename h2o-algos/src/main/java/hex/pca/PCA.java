@@ -1,7 +1,5 @@
 package hex.pca;
 
-import Jama.Matrix;
-import Jama.SingularValueDecomposition;
 import hex.DataInfo;
 import hex.ModelBuilder;
 import hex.ModelCategory;
@@ -51,7 +49,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
   @Override public boolean havePojo() { return true; }
   @Override public boolean haveMojo() { return false; }
 
-  @Override protected void checkMemoryFootPrint() {
+  @Override protected void checkMemoryFootPrint_impl() {
 
     HeartBeat hb = H2O.SELF._heartbeat; // todo: Add to H2O object memory information so we don't have to use heartbeat.
     //   int numCPUs= H2O.NUMCPUS;   // proper way to get number of CPUs.
@@ -60,12 +58,17 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
     boolean useGramSVD = _parms._pca_method == PCAParameters.Method.GramSVD;
     boolean usePower = _parms._pca_method == PCAParameters.Method.Power;
     boolean useRandomized = _parms._pca_method == PCAParameters.Method.Randomized;
-    double gramSize =  _train.lastVec().nChunks()==1 ? 1 :
-            Math.log((double) _train.lastVec().nChunks()) / Math.log(2.); // gets to zero if nChunks=1
+    boolean useGLRM = _parms._pca_method == PCAParameters.Method.GLRM;
 
-    long mem_usage = (useGramSVD || usePower || useRandomized) ? (long) (hb._cpus_allowed * p * p * 8/*doubles*/ *
+    // gets to zero if nChunks=1.  Denote number of reduces to combine results from chunks.  Each chunk will store
+    // its gram matrix using half the memory needed since it is symmetrical.  Hence, total number of of grams
+    // that will be created will be multiplied by the gram matrix size * number of reduces to be done.
+    double gramSize =  _train.lastVec().nChunks()==1 ? 1 :
+            Math.log((double) _train.lastVec().nChunks()) / Math.log(2.);
+
+    long mem_usage = (useGramSVD || usePower || useRandomized || useGLRM) ? (long) (hb._cpus_allowed * p * p * 8/*doubles*/ *
             gramSize) : 1; //one gram per core
-    long mem_usage_w = (useGramSVD || usePower || useRandomized) ? (long) (hb._cpus_allowed * r * r *
+    long mem_usage_w = (useGramSVD || usePower || useRandomized || useGLRM) ? (long) (hb._cpus_allowed * r * r *
             8/*doubles*/ * gramSize) : 1;
 
     long max_mem = hb.get_free_mem();
@@ -77,9 +80,13 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
       error("_train", msg);
     }
-
-    if (mem_usage > mem_usage_w) {  // choose the most memory efficient one
-      _wideDataset = true;   // set to true if wide dataset is detected
+    // _wideDataset is true if original memory does not fit.
+    if (mem_usage > max_mem) {
+      _wideDataset = true;  // have to set _wideDataset in this case
+    } else {  // both ways fit into memory.  Want to choose wideDataset if p is too big.
+      if ((p > 5000) && ( r < 5000)) {
+        _wideDataset = true;
+      }
     }
   }
 
@@ -135,7 +142,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       String[] colHeaders = new String[_parms._k];
       Arrays.fill(colTypes, "double");
       Arrays.fill(colFormats, "%5f");
-
+  
       assert rowNames.length == pca._output._eigenvectors_raw.length;
       for (int i = 0; i < colHeaders.length; i++) {
         colHeaders[i] = "PC" + String.valueOf(i + 1);
@@ -240,12 +247,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       pca._output._total_variance = dfcorr * gram.diagSum();  // Since gram = X'X/n, but variance requires n-1 in denominator
       buildTables(pca, dinfo.coefNames());
     }
-
-    protected void computeStatsFillModel(PCAModel pca, DataInfo dinfo, SingularValueDecomposition svd, Gram gram,
-                                         long nobs) {
-      computeStatsFillModel(pca, dinfo, svd.getSingularValues(), svd.getV().getArray(), gram, nobs);
-    }
-
+  
     // Main worker thread
     @Override
     public void computeImpl() {
@@ -308,7 +310,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           GramTask gtsk = null;
 
           if (_wideDataset) {
-            ogtsk = new OuterGramTask(_job._key, dinfo).doAll(dinfo._adaptedFrame);
+            ogtsk = new OuterGramTask(_job._key, dinfo).doAll(dinfo._adaptedFrame); // 30 times slower than gram
             gram = ogtsk._gram;
             model._output._nobs = ogtsk._nobs;
           } else {
@@ -329,30 +331,31 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
             throw new IllegalArgumentException("Found validation errors: " + validationErrors());
           }
 
-          // Compute SVD of Gram A'A/n using JAMA library
-          // Note: Singular values ordered in weakly descending order by algorithm
+          // Compute SVD of Gram A'A/n using netlib-java (MTJ) library
           _job.update(1, "Calculating SVD of Gram matrix locally");
-          Matrix gramJ = _wideDataset ? new Matrix(ogtsk._gram.getXX()) : new Matrix(gtsk._gram.getXX());
-          SingularValueDecomposition svdJ = gramJ.svd();
-          _job.update(1, "Computing stats from SVD");
-          // correct for the eigenvector by t(A)*eigenvector for wide dataset
-          if (_wideDataset) {
-            double[][] eigenVecs = transformEigenVectors(dinfo, svdJ.getV().getArray());
-            computeStatsFillModel(model, dinfo, svdJ.getSingularValues(), eigenVecs, gram, model._output._nobs);
-          } else {
-            computeStatsFillModel(model, dinfo, svdJ, gram, model._output._nobs);
+          double[][] gramMatrix;
+          gramMatrix = _wideDataset ? ogtsk._gram.getXX() : gtsk._gram.getXX();
+          PCAInterface svd = null;
+          svd = PCAImplementationFactory.createSVDImplementation(gramMatrix, _parms._pca_implementation);
+          assert svd != null;
+          double[][] rightEigenvectors = svd.getPrincipalComponents();
+          if (_wideDataset) {       // correct for the eigenvector by t(A)*eigenvector for wide dataset
+            rightEigenvectors = getTransformedEigenvectors(dinfo, rightEigenvectors);
           }
+          double[] variances = svd.getVariances();
+          PCA.this._job.update(1, "Computing stats from SVD using "
+              + _parms._pca_implementation.toString());
+          computeStatsFillModel(model, dinfo, variances, rightEigenvectors, gram, model._output._nobs);
           model._output._training_time_ms.add(System.currentTimeMillis());
-
           // generate variables for scoring_history generation
-          LinkedHashMap<String, ArrayList> scoreTable = new LinkedHashMap<String, ArrayList>();
+          LinkedHashMap<String, ArrayList> scoreTable = new LinkedHashMap<>();
           scoreTable.put("Timestamp", model._output._training_time_ms);
           model._output._scoring_history = createScoringHistoryTableDR(scoreTable, "Scoring History for GramSVD",
-                  _job.start_time());
-        //  model._output._scoring_history.tableHeader = "Scoring history from GLRM";
+              _job.start_time());
+          //  model._output._scoring_history.tableHeader = "Scoring history from GLRM";
 
         } else if(_parms._pca_method == PCAParameters.Method.Power ||
-                _parms._pca_method == PCAParameters.Method.Randomized) {
+            _parms._pca_method == PCAParameters.Method.Randomized) {
           SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
           parms._train = _parms._train;
           parms._valid = _parms._valid;
@@ -365,6 +368,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           parms._max_iterations = _parms._max_iterations;
           parms._seed = _parms._seed;
           parms._impute_missing = _parms._impute_missing;
+          parms._max_runtime_secs = _parms._max_runtime_secs;
 
           // Set method for computing SVD accordingly
           if(_parms._pca_method == PCAParameters.Method.Power) {
@@ -383,9 +387,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
           // Build an SVD model
           SVDModel svd = svdP.trainModelNested(tranRebalanced);
-          if (stop_requested()) {
-            return;
-          }
           svd.remove(); // Remove from DKV
 
           // Recover PCA results from SVD model
@@ -410,7 +411,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           parms._k = _parms._k;
           parms._max_iterations = _parms._max_iterations;
           parms._seed = _parms._seed;
-
+          parms._max_runtime_secs = _parms._max_runtime_secs;
           parms._recover_svd = true;
 
           parms._loss = GlrmLoss.Quadratic;
@@ -425,10 +426,10 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           // Build an SVD model
           // Hack: we have to resort to unsafe type casts because _job is of Job<PCAModel> type, whereas a GLRM
           // model requires a Job<GLRMModel> _job. If anyone knows how to avoid this hack, please fix it!
-          GLRMModel glrm = new GLRM(parms, (Job)_job).trainModelNested(tranRebalanced);
-          if (stop_requested()) {
-            return;
-          }
+          GLRM glrmP = new GLRM(parms, (Job)_job);
+          glrmP.setWideDataset(_wideDataset);  // force to treat dataset as wide even though it is not.
+          GLRMModel glrm = glrmP.trainModelNested(tranRebalanced);
+
           glrm._output._representation_key.get().delete();
           glrm.remove(); // Remove from DKV
 
@@ -454,8 +455,10 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           model._output._validation_metrics = ModelMetrics.getFromDKV(model,_parms.valid());
         }
         model.update(_job);
-
-
+  
+  
+      } catch (Exception e) {
+        throw new RuntimeException(e);
       } finally {
         if (model != null) {
           model.unlock(_job);

@@ -1,7 +1,7 @@
 ``weights_column``
 ------------------
 
-- Available in: GBM, DRF, Deep Learning, GLM
+- Available in: GBM, DRF, Deep Learning, GLM, AutoML, XGBoost, CoxPH
 - Hyperparameter: no
 
 Description
@@ -14,16 +14,23 @@ For scoring, all computed metrics will take the observation weights into account
 **Notes**: 
 
 - Weights can be specified as integers or as non-integers.
-- You do not have to specify a weight when calling ``model.predict()``. New test data will have the weights column with the same column name. 
 - The weights column cannot be the same as the `fold_column <fold_column.html>`__. 
+- If a weights column is specified as both a feature (predictor) and a weight, the column will be used for weights only.
 - Example unit test scripts are available on GitHub:
 
   - https://github.com/h2oai/h2o-3/blob/master/h2o-py/tests/testdir_algos/gbm/pyunit_weights_gbm.py
   - https://github.com/h2oai/h2o-3/blob/master/h2o-py/tests/testdir_algos/gbm/pyunit_weights_gamma_gbm.py
 
+Observation Weights in Deep Learning
+''''''''''''''''''''''''''''''''''''
+
+The observation weights are handled differently in Deep Learning than in the other supported algorithms. For algorithms other than Deep Learning, the weight goes into the split-finding and leaf-node prediction math in a straightforward way. For Deep Learning, it's more difficult. Using the weight as a multiplicative factor in the loss will not work in general, and that would not be the same as replicating the same row. Also, applying the same row over and over isn't a good idea either, so sampling during training should still be active. To address these issues, Deep Learning is implemented with importance sampling using the inverse cumulative distribution function. It also includes a special case that picks a random row from the dataset for every second row it trains, just to keep outliers in the game. Note that observation weights for Deep Learning that are neither 0 nor 1 are difficult to handle properly. In this case, it might be better to explicitly oversample using ``balance_classes=TRUE``.
+
+
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
+- `balance_classes <balance_classes.html>`__
 - `offset_column <offset_column.html>`__
 - `y <y.html>`__
 
@@ -46,7 +53,7 @@ Example
 	cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 
 	# set the predictor names and the response column name
-	predictors <- c("displacement","power","weight","acceleration","year")
+	predictors <- c("displacement","power","acceleration","year")
 	response <- "economy_20mpg"
 
 	# create a new column that specifies the weights
@@ -84,7 +91,7 @@ Example
 	cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 
 	# set the predictor names and the response column name
-	predictors = ["displacement","power","weight","acceleration","year"]
+	predictors = ["displacement","power","acceleration","year"]
 	response = "economy_20mpg"
 
 	# create a new column that specifies the weights

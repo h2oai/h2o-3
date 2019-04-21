@@ -1,6 +1,8 @@
 package hex.genmodel.algos.kmeans;
 
 import com.google.common.io.ByteStreams;
+import hex.genmodel.GenModel;
+import hex.genmodel.IClusteringModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.MojoReaderBackend;
 import hex.genmodel.easy.EasyPredictModelWrapper;
@@ -46,6 +48,31 @@ public class KMeansMojoModelTest {
       double[] preds = new double[1];
       _mojo.score0(_rows[i], preds);
       assertEquals(i, preds[0], 0.0);
+    }
+  }
+
+  @Test
+  public void testPredictExtended() throws Exception {
+    EasyPredictModelWrapper.Config config = new EasyPredictModelWrapper.Config()
+            .setModel(_mojo)
+            .setUseExtendedOutput(true);
+    EasyPredictModelWrapper wrapper = new EasyPredictModelWrapper(config);
+    for (int i = 0; i < 3; i++) {
+      // test easy-predict
+      ClusteringModelPrediction p = (ClusteringModelPrediction) wrapper.predict(_rowData[i]);
+      assertEquals(i, p.cluster);
+      // test score0
+      double[] preds = new double[1];
+      double[] row = _rows[i].clone();
+      _mojo.score0(row, preds); // this also normalizes the row object!
+      assertEquals(i, preds[0], 0.0);
+      // test distances
+      double[] expDists = new double[3];
+      GenModel.KMeans_distances(((KMeansMojoModel) _mojo)._centers, row, ((KMeansMojoModel) _mojo)._domains, expDists);
+      double[] dists = new double[3];
+      ((IClusteringModel) _mojo).distances(_rows[i].clone(), dists);
+      assertArrayEquals(expDists, dists, 1e-10);
+      assertArrayEquals(expDists, p.distances, 1e-10);
     }
   }
 

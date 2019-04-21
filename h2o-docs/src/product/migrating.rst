@@ -1,9 +1,39 @@
 .. _migration:
 
-Migrating to H2O 3
-==================
+Migration Guide
+===============
 
-H2O 3 offers a lot of improvements over H2O 2, including:
+Migrating Between H2O-3 versions
+--------------------------------
+
+H2O-3 does its best to keep backwards compatibility between major versions, but sometimes breaking changes are needed in order to improve code quality and to address issues.
+
+Please refer to the following sections if you encounter any API-related issue when upgrading H2O-3.
+
+**Note**: H2O-3 versions follow the naming convention ``3.major.minor.patch``. 
+
+From 3.22 or Below to 3.24
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Java API
+''''''''
+
+The following classes were moved and/or renamed:
+
+=================================================   ======================================
+  Until 3.22                                          From 3.24
+=================================================   ======================================
+``hex.StackedEnsembleModel``                        ``hex.ensemble.StackedEnsembleModel``
+``hex.StackedEnsembleModel.MetalearnerAlgorithm``   ``hex.ensemble.Metalearner.Algorithm``
+``ai.h2o.automl.AutoML.algo``                       ``ai.h2o.automl.Algo``
+=================================================   ======================================
+
+Some internal methods of ``StackedEnsemble`` and ``StackedEnsembleModel`` are no longer public, but this should not impact anyone.
+
+Migrating to H2O-3
+------------------
+
+H2O-3 offers a lot of improvements over H2O 2, including:
 
 -  Powerful Python APIs
 -  Flow, a brand-new intuitive web UI
@@ -14,35 +44,35 @@ H2O 3 offers a lot of improvements over H2O 2, including:
 
 and much more! Overall, H2O has been retooled for better accuracy and performance and to provide additional functionality. If you're a current user of H2O, we strongly encourage you to upgrade to the latest version to take advantage of the latest features and capabilities.
 
-Please be aware that H2O 3 supersedes all previous versions of H2O as the primary version as of May 15th, 2015. Support for previous versions will be offered for a limited time, but there will no longer be any significant updates to the previous version of H2O.
+Please be aware that H2O-3 supersedes all previous versions of H2O as the primary version as of May 15th, 2015. Support for previous versions will be offered for a limited time, but there will no longer be any significant updates to the previous version of H2O.
 
-The following information and links will inform you about what's new and different and help you prepare to upgrade to H2O 3.
+The following information and links will inform you about what's new and different and help you prepare to upgrade to H2O-3.
 
-Overall, H2O 3 is more stable, elegant, and simplified, with additional capabilities not available in previous versions of H2O.
+Overall, H2O-3 is more stable, elegant, and simplified, with additional capabilities not available in previous versions of H2O.
 
 
 Algorithm Changes
------------------
+~~~~~~~~~~~~~~~~~
 
 Most of the algorithms available in previous versions of H2O have been improved in terms of speed and accuracy, and new algorithms have been and will continue to be added. 
 
 **Note**: The SpeeDRF model has been removed, as it was originally intended as an optimization for small data only. This optimization will be added to the Distributed Random Forest model automatically for small data in a future version of H2O.
 
 Parsing Changes
----------------
+~~~~~~~~~~~~~~~
 
 In H2O Classic, the parser reads all the data and tries to guess the
-column type. In H2O 3, the parser reads a subset and makes a type
+column type. In H2O-3, the parser reads a subset and makes a type
 guess for each column. In Flow, you can view the preliminary parse
 results in the **Edit Column Names and Types** area. To change the
 column type, select an option from the drop-down menu to the right of
-the column. H2O 3 can also automatically identify mixed-type columns;
+the column. H2O-3 can also automatically identify mixed-type columns;
 in H2O Classic, if one column is mixed integers or real numbers using a
 string, the output is blank.
 
 
 Web UI Changes
---------------
+~~~~~~~~~~~~~~
 
 Our web UI has been completely overhauled with a much more intuitive
 interface that is similar to IPython Notebook. Each point-and-click
@@ -59,7 +89,7 @@ which provides an overview of Flow in action.
 
 
 API Users
----------
+~~~~~~~~~
 
 H2O's new Python API allows Pythonistas to use H2O in their favorite
 environment. Using the Python command line or an integrated development
@@ -73,7 +103,7 @@ server, allowing for easier integration by developers.
 
 
 Java Users
-----------
+~~~~~~~~~~
 
 Generated Java REST classes ease REST API use by external programs
 running in a Java Virtual Machine (JVM).
@@ -85,14 +115,14 @@ tool of choice for enterprise developers.
 
 
 R Users
--------
+~~~~~~~
 
 If you use H2O primarily in R, be aware that as a result of the
 improvements to the R package for H2O scripts created using previous
 versions (Nunes 2.8.6.2 or prior) will require minor revisions to work
-with H2O 3.
+with H2O-3.
 
-To assist our R users in upgrading to H2O 3, a "shim" tool has been
+To assist our R users in upgrading to H2O-3, a "shim" tool has been
 developed. The
 `shim <https://github.com/h2oai/h2o-dev/blob/9795c401b7be339be56b1b366ffe816133cccb9d/h2o-r/h2o-package/R/shim.R>`__
 reviews your script, identifies deprecated or revised parameters and
@@ -102,23 +132,23 @@ arguments, and suggests replacements.
 
 You can also review the :ref:`PortingGuide` section, which provides a
 side-by-side comparison of the algorithms in the previous version of H2O
-with H2O 3. It outlines the new, revised, and deprecated parameters
+with H2O-3. It outlines the new, revised, and deprecated parameters
 for each algorithm, as well as the changes to the output.
 
 .. _PortingGuide:
 
 Porting R Scripts
-~~~~~~~~~~~~~~~~~
+'''''''''''''''''
 
 This document outlines how to port R scripts written in previous
 versions of H2O (Nunes 2.8.6.2 or prior, also known as "H2O Classic")
-for compatibility with the new H2O 3 API. When upgrading from H2O to
-H2O 3, most functions are the same. However, there are some
+for compatibility with the new H2O-3 API. When upgrading from H2O to
+H2O-3, most functions are the same. However, there are some
 differences that will need to be resolved when porting any scripts that
-were originally created using H2O to H2O 3.
+were originally created using H2O to H2O-3.
 
 The original R script for H2O is listed first, followed by the updated
-script for H2O 3.
+script for H2O-3.
 
 Some of the parameters have been renamed for consistency. For each
 algorithm, a table that describes the differences is provided.
@@ -132,14 +162,14 @@ suggest replacements. For more information, refer to the repo
 `here <https://github.com/h2oai/h2o-dev/blob/d9693a97da939a2b77c24507c8b40a5992192489/h2o-r/h2o-package/R/shim.R>`__.
 
 Github Users
-------------
+############
 
 All users who pull directly from the H2O classic repo on Github should
 be aware that this repo will be renamed. To retain access to the
 original H2O (2.8.6.2 and prior) repository:
 
 The simple way
-~~~~~~~~~~~~~~
+''''''''''''''
 
 This is the easiest way to change your local repo and is recommended for
 most users.
@@ -157,7 +187,7 @@ where ``{H2O_User@github.com}`` represents the address copied in the
 previous step.
 
 The more complicated way
-~~~~~~~~~~~~~~~~~~~~~~~~
+''''''''''''''''''''''''
 
 This method involves editing the Github config file and should only be
 attempted by users who are confident enough with their knowledge of
@@ -179,14 +209,14 @@ manually update your Github configuration, follow the instructions
 above, replacing ``h2o-2`` with ``h2o-3``.
 
 
-Changes from H2O 2.8 to H2O 3
------------------------------
+Changes from H2O 2.8 to H2O-3
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ``h2o.exec``
-~~~~~~~~~~~~
+''''''''''''
 
 The ``h2o.exec`` command is no longer supported. Any workflows using
-``h2o.exec`` must be revised to remove this command. If the H2O 3
+``h2o.exec`` must be revised to remove this command. If the H2O-3
 workflow contains any parameters or commands from H2O Classic, errors
 will result and the workflow will fail.
 
@@ -197,7 +227,7 @@ same results in H2O. However, the first example makes a single REST call
 and uses a single temp object, while the second makes several REST calls
 and uses several temp objects.
 
-Due to the improved architecture in H2O 3, the need to use
+Due to the improved architecture in H2O-3, the need to use
 ``h2o.exec`` has been eliminated, as the expression can be processed by
 R as an "unwrapped" typical R expression.
 
@@ -215,7 +245,7 @@ A String array is ["f00", "b4r"], *not* "["f00", "b4r"]"
 Only string values are enclosed in double quotation marks (``"``).
 
 ``h2o.performance``
-~~~~~~~~~~~~~~~~~~~
+'''''''''''''''''''
 
 To access any exclusively binomial output, use ``h2o.performance``,
 optionally with the corresponding accessor. The accessor can only use
@@ -229,7 +259,7 @@ specified data frame for scoring. If you do not specify a second
 parameter, the training metrics for the model metrics object are used.
 
 ``xval`` and ``validation`` slots
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+'''''''''''''''''''''''''''''''''
 
 The ``xval`` slot has been removed, as ``nfolds`` is not currently
 supported.
@@ -237,17 +267,17 @@ supported.
 The ``validation`` slot has been merged with the ``model`` slot.
 
 Principal Components Regression (PCR)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+'''''''''''''''''''''''''''''''''''''
 
 Principal Components Regression (PCR) has also been deprecated. To
 obtain PCR values, create a Principal Components Analysis (PCA) model,
 then create a GLM model from the scored data from the PCA model.
 
 Saving and Loading Models
-~~~~~~~~~~~~~~~~~~~~~~~~~
+'''''''''''''''''''''''''
 
 Saving and loading a model from R is supported in version 3.0.0.18 and
-later. H2O 3 uses the same binary serialization method as previous
+later. H2O-3 uses the same binary serialization method as previous
 versions of H2O, but saves the model and its dependencies into a
 directory, with each object as a separate file. The ``save_CV`` option
 for available in previous versions of H2O has been deprecated, as
@@ -266,18 +296,18 @@ following commands are now supported:
 -  `Distributed Random Forest`_
 
 GBM
----
+~~~
 
-N-fold cross-validation and grid search are supported in H2O 3.
+N-fold cross-validation and grid search are supported in H2O-3.
 
 Renamed GBM Parameters
-~~~~~~~~~~~~~~~~~~~~~~
+''''''''''''''''''''''
 
 The following parameters have been renamed, but retain the same
 functions:
 
 +------------------------------+------------------------------+
-| H2O Classic Parameter Name   | H2O 3 Parameter Name         |
+| H2O Classic Parameter Name   | H2O-3 Parameter Name         |
 +==============================+==============================+
 | ``data``                     | ``training_frame``           |
 +------------------------------+------------------------------+
@@ -301,7 +331,7 @@ functions:
 +------------------------------+------------------------------+
 
 Deprecated GBM Parameters
-~~~~~~~~~~~~~~~~~~~~~~~~~
+'''''''''''''''''''''''''
 
 The following parameters have been removed:
 
@@ -315,7 +345,7 @@ The following parameters have been removed:
    run during a grid search is no longer supported.
 
 New GBM Parameters
-~~~~~~~~~~~~~~~~~~
+''''''''''''''''''
 
 The following parameters have been added:
 
@@ -326,10 +356,10 @@ The following parameters have been added:
 -  ``build_tree_one_node``: Run on a single node to use fewer CPUs.
 
 GBM Algorithm Comparison
-~~~~~~~~~~~~~~~~~~~~~~~~
+''''''''''''''''''''''''
 
 +-----------------------------+--------------------------------------+
-| H2O Classic                 | H2O 3                                |
+| H2O Classic                 | H2O-3                                |
 +=============================+======================================+
 | ``h2o.gbm <- function(``    | ``h2o.gbm <- function(``             |
 +-----------------------------+--------------------------------------+
@@ -427,16 +457,16 @@ GBM Algorithm Comparison
 +-----------------------------+--------------------------------------+
 
 Output
-~~~~~~
+''''''
 
 The following table provides the component name in H2O, the
-corresponding component name in H2O 3 (if supported), and the model
+corresponding component name in H2O-3 (if supported), and the model
 type (binomial, multinomial, or all). Many components are now included
 in ``h2o.performance``; for more information, refer to
 `h2o.performance`_.
 
 +-----------------------------+---------------------------------------------------------------------------------------+----------------+
-| H2O Classic                 | H2O 3                                                                                 | Model Type     |
+| H2O Classic                 | H2O-3                                                                                 | Model Type     |
 +=============================+=======================================================================================+================+
 | ``@model$priorDistribution``|                                                                                       | ``all``        |
 +-----------------------------+---------------------------------------------------------------------------------------+----------------+
@@ -478,16 +508,16 @@ in ``h2o.performance``; for more information, refer to
 
 
 GLM
----
+~~~
 
 Renamed GLM Parameters
-~~~~~~~~~~~~~~~~~~~~~~
+''''''''''''''''''''''
 
 The following parameters have been renamed, but retain the same
 functions:
 
 +------------------------------+--------------------------+
-| H2O Classic Parameter Name   | H2O 3   Parameter Name   |
+| H2O Classic Parameter Name   | H2O-3   Parameter Name   |
 +==============================+==========================+
 | ``data``                     | ``training_frame``       |
 +------------------------------+--------------------------+
@@ -503,7 +533,7 @@ functions:
 +------------------------------+--------------------------+
 
 Deprecated GLM Parameters
-~~~~~~~~~~~~~~~~~~~~~~~~~
+'''''''''''''''''''''''''
 
 The following parameters have been removed:
 
@@ -523,7 +553,7 @@ The following parameters have been removed:
    predictors exceeds the specified value. (may be re-added)
 
 New GLM Parameters
-~~~~~~~~~~~~~~~~~~
+''''''''''''''''''
 
 The following parameters have been added:
 
@@ -531,10 +561,10 @@ The following parameters have been added:
 -  ``solver``: Select IRLSM or LBFGS.
 
 GLM Algorithm Comparison
-~~~~~~~~~~~~~~~~~~~~~~~~
+''''''''''''''''''''''''
 
 +-------------------------------------------+-------------------------------------------------+
-| H2O Classic                               | H2O 3                                           |
+| H2O Classic                               | H2O-3                                           |
 +===========================================+=================================================+
 | ``h2o.glm <- function(``)                 | ``h2o.glm(``                                    |
 +-------------------------------------------+-------------------------------------------------+
@@ -616,16 +646,16 @@ GLM Algorithm Comparison
 +-------------------------------------------+-------------------------------------------------+
 
 Output
-~~~~~~
+''''''
 
 The following table provides the component name in H2O, the
-corresponding component name in H2O 3 (if supported), and the model
+corresponding component name in H2O-3 (if supported), and the model
 type (binomial, multinomial, or all). Many components are now included
 in ``h2o.performance``; for more information, refer to
 `h2o.performance`_.
 
 +----------------------------------+------------------------------------------------+----------------+
-| H2O Classic                      | H2O 3                                          | Model Type     |
+| H2O Classic                      | H2O-3                                          | Model Type     |
 +==================================+================================================+================+
 | ``@model$params``                | ``@allparameters``                             | ``all``        |
 +----------------------------------+------------------------------------------------+----------------+
@@ -663,16 +693,16 @@ in ``h2o.performance``; for more information, refer to
 +----------------------------------+------------------------------------------------+----------------+
 
 K-Means
--------
+~~~~~~~
 
 Renamed K-Means Parameters
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+''''''''''''''''''''''''''
 
 The following parameters have been renamed, but retain the same
 functions:
 
 +------------------------------+--------------------------+
-| H2O Classic Parameter Name   | H2O 3 Parameter Name     |
+| H2O Classic Parameter Name   | H2O-3 Parameter Name     |
 +==============================+==========================+
 | ``data``                     | ``training_frame``       |
 +------------------------------+--------------------------+
@@ -688,12 +718,12 @@ functions:
 +------------------------------+--------------------------+
 
 **Note** In H2O, the ``normalize`` parameter was disabled by default.
-The ``standardize`` parameter is enabled by default in H2O 3 to
+The ``standardize`` parameter is enabled by default in H2O-3 to
 provide more accurate results for datasets containing columns with large
 values.
 
 New K-Means Parameters
-~~~~~~~~~~~~~~~~~~~~~~
+''''''''''''''''''''''
 
 The following parameters have been added:
 
@@ -703,10 +733,10 @@ The following parameters have been added:
 -  ``user_points``: Specify starting points for the K-Means algorithm.
 
 K-Means Algorithm Comparison
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+''''''''''''''''''''''''''''
 
 +-------------------------------+-----------------------------------------------------------------+
-| H2O Classic                   | H2O 3                                                           |
+| H2O Classic                   | H2O-3                                                           |
 +===============================+=================================================================+
 | ``h2o.kmeans <- function(``   | ``h2o.kmeans(``                                                 |
 +-------------------------------+-----------------------------------------------------------------+
@@ -732,13 +762,13 @@ K-Means Algorithm Comparison
 +-------------------------------+-----------------------------------------------------------------+
 
 Output
-~~~~~~
+''''''
 
 The following table provides the component name in H2O and the
-corresponding component name in H2O 3 (if supported).
+corresponding component name in H2O-3 (if supported).
 
 +---------------------------+-------------------------------+
-| H2O Classic               | H2O 3                         |
+| H2O Classic               | H2O-3                         |
 +===========================+===============================+
 | ``@model$params``         | ``@allparameters``            |
 +---------------------------+-------------------------------+
@@ -757,20 +787,20 @@ corresponding component name in H2O 3 (if supported).
 
 
 Deep Learning
--------------
+~~~~~~~~~~~~~
 
 **Note**: If the results in the confusion matrix are incorrect, verify
 that ``score_training_samples`` is equal to 0. By default, only the
 first 10,000 rows are included.
 
 Renamed Deep Learning Parameters
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+''''''''''''''''''''''''''''''''
 
 The following parameters have been renamed, but retain the same
 functions:
 
 +---------------------------------------+--------------------------------------+
-| H2O Classic Parameter Name            | H2O 3 Parameter Name                 |
+| H2O Classic Parameter Name            | H2O-3 Parameter Name                 |
 +=======================================+======================================+
 | ``data``                              | ``training_frame``                   |
 +---------------------------------------+--------------------------------------+
@@ -786,7 +816,7 @@ functions:
 +---------------------------------------+--------------------------------------+
 
 Deprecated DL Parameters
-~~~~~~~~~~~~~~~~~~~~~~~~
+''''''''''''''''''''''''
 
 The following parameters have been removed:
 
@@ -798,7 +828,7 @@ The following parameters have been removed:
    removed.
 
 New DL Parameters
-~~~~~~~~~~~~~~~~~
+'''''''''''''''''
 
 The following parameters have been added:
 
@@ -811,10 +841,10 @@ The following options for the ``loss`` parameter have been added:
 -  ``huber``: Can improve results for regression
 
 DL Algorithm Comparison
-~~~~~~~~~~~~~~~~~~~~~~~
+'''''''''''''''''''''''
 
 +-------------------------------------+-----------------------------------------------+
-| H2O Classic                         | H2O 3                                         |
+| H2O Classic                         | H2O-3                                         |
 +=====================================+===============================================+
 | ``h2o.deeplearning <- function(x,`` | ``h2o.deeplearning (x,``                      |
 +-------------------------------------+-----------------------------------------------+
@@ -977,16 +1007,16 @@ DL Algorithm Comparison
 +-------------------------------------+-----------------------------------------------+
 
 Output
-~~~~~~
+''''''
 
 The following table provides the component name in H2O, the
-corresponding component name in H2O 3 (if supported), and the model
+corresponding component name in H2O-3 (if supported), and the model
 type (binomial, multinomial, or all). Many components are now included
 in ``h2o.performance``; for more information, refer to
 `h2o.performance`_.
 
 +------------------------------+----------------------------------------------+----------------+
-| H2O Classic                  | H2O 3                                        | Model Type     |
+| H2O Classic                  | H2O-3                                        | Model Type     |
 +==============================+==============================================+================+
 | ``@model$priorDistribution`` |                                              | ``all``        |
 +------------------------------+----------------------------------------------+----------------+
@@ -1013,24 +1043,24 @@ in ``h2o.performance``; for more information, refer to
 
 
 Distributed Random Forest
--------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Changes to DRF in H2O 3
-~~~~~~~~~~~~~~~~~~~~~~~
+Changes to DRF in H2O-3
+'''''''''''''''''''''''
 
-Distributed Random Forest (DRF) was represented as ``h2o.randomForest(type="BigData", ...)`` in H2O Classic. In H2O Classic, SpeeDRF (``type="fast"``) was not as accurate, especially for complex data with categoricals, and did not address regression problems. DRF (``type="BigData"``) was at least as accurate as SpeeDRF (``type="fast"``) and was the only algorithm that scaled to big data (data too large to fit on a single node). In H2O 3, we improved the performance of DRF so that the data fits on a single node (optimally, for all cases), which will make SpeeDRF obsolete. Ultimately, the goal is provide a single algorithm that provides the "best of both worlds" for all datasets and use cases. Please note that H2O does not currently support the ability to specify the number of trees when using ``h2o.predict`` for a DRF model.
+Distributed Random Forest (DRF) was represented as ``h2o.randomForest(type="BigData", ...)`` in H2O Classic. In H2O Classic, SpeeDRF (``type="fast"``) was not as accurate, especially for complex data with categoricals, and did not address regression problems. DRF (``type="BigData"``) was at least as accurate as SpeeDRF (``type="fast"``) and was the only algorithm that scaled to big data (data too large to fit on a single node). In H2O-3, we improved the performance of DRF so that the data fits on a single node (optimally, for all cases), which will make SpeeDRF obsolete. Ultimately, the goal is provide a single algorithm that provides the "best of both worlds" for all datasets and use cases. Please note that H2O does not currently support the ability to specify the number of trees when using ``h2o.predict`` for a DRF model.
 
-**Note**: H2O 3 only supports DRF. SpeeDRF is no longer supported. The
-functionality of DRF in H2O 3 is similar to DRF functionality in H2O.
+**Note**: H2O-3 only supports DRF. SpeeDRF is no longer supported. The
+functionality of DRF in H2O-3 is similar to DRF functionality in H2O.
 
 Renamed DRF Parameters
-~~~~~~~~~~~~~~~~~~~~~~
+''''''''''''''''''''''
 
 The following parameters have been renamed, but retain the same
 functions:
 
 +------------------------------+------------------------------+
-| H2O Classic Parameter Name   | H2O 3 Parameter Name         |
+| H2O Classic Parameter Name   | H2O-3 Parameter Name         |
 +==============================+==============================+
 | ``data``                     | ``training_frame``           |
 +------------------------------+------------------------------+
@@ -1054,7 +1084,7 @@ functions:
 +------------------------------+------------------------------+
 
 Deprecated DRF Parameters
-~~~~~~~~~~~~~~~~~~~~~~~~~
+'''''''''''''''''''''''''
 
 The following parameters have been removed:
 
@@ -1077,17 +1107,17 @@ The following parameters have been removed:
    supported.
 
 New DRF Parameters
-~~~~~~~~~~~~~~~~~~
+''''''''''''''''''
 
 The following parameter has been added:
 
 -  ``build_tree_one_node``: Run on a single node to use fewer CPUs.
 
 DRF Algorithm Comparison
-~~~~~~~~~~~~~~~~~~~~~~~~
+''''''''''''''''''''''''
 
 +------------------------------------+---------------------------------------+
-| H2O Classic                        | H2O 3                                 |
+| H2O Classic                        | H2O-3                                 |
 +====================================+=======================================+
 | ``h2o.randomForest <- function(x,``| ``h2o.randomForest <- function(``     |
 +------------------------------------+---------------------------------------+
@@ -1171,16 +1201,16 @@ DRF Algorithm Comparison
 +------------------------------------+---------------------------------------+
 
 Output
-~~~~~~
+''''''
 
 The following table provides the component name in H2O, the
-corresponding component name in H2O 3 (if supported), and the model
+corresponding component name in H2O-3 (if supported), and the model
 type (binomial, multinomial, or all). Many components are now included
 in ``h2o.performance``; for more information, refer to
 `h2o.performance`_.
 
 +------------------------------+---------------------------------------------------------------------------------------+----------------+
-| H2O Classic                  | H2O 3                                                                                 | Model Type     |
+| H2O Classic                  | H2O-3                                                                                 | Model Type     |
 +==============================+=======================================================================================+================+
 | ``@model$priorDistribution`` |                                                                                       | ``all``        |
 +------------------------------+---------------------------------------------------------------------------------------+----------------+

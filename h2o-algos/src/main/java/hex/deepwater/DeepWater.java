@@ -69,7 +69,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
 
   @Override public boolean isSupervised() { return !_parms._autoencoder; }
 
-  @Override protected int nModelsInParallel() { return 1; }
+  @Override protected int nModelsInParallel(int folds) { return 1; }
 
   @Override protected DeepWaterDriver trainModelImpl() { return new DeepWaterDriver(); }
 

@@ -3,6 +3,7 @@ package water.fvec;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
+import water.api.FramesHandler;
 import water.api.schemas3.KeyV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.parser.BufferedString;
@@ -11,8 +12,7 @@ import water.util.*;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
-import java.util.HashMap;
+import java.util.*;
 
 /** A collection of named {@link Vec}s, essentially an R-like Distributed Data Frame.
  *
@@ -66,6 +66,43 @@ public class Frame extends Lockable<Frame> {
   private Key<Vec>[] _keys;     // Keys for the vectors
   private transient Vec[] _vecs; // The Vectors (transient to avoid network traffic)
   private transient Vec _col0; // First readable vec; fast access to the VectorGroup's Chunk layout
+
+  /**
+   * Given a temp Frame and a base Frame from which it was created, delete the
+   * Vecs that aren't found in the base Frame and then delete the temp Frame.
+   *
+   * TODO: Really should use Scope but Scope does not.
+   */
+  public static void deleteTempFrameAndItsNonSharedVecs(Frame tempFrame, Frame baseFrame) {
+    Key[] keys = tempFrame.keys();
+    for( int i=0; i<keys.length; i++ )
+      if( baseFrame.find(keys[i]) == -1 ) //only delete vecs that aren't shared
+        keys[i].remove();
+    DKV.remove(tempFrame._key); //delete the frame header
+  }
+
+  /**
+   * Fetch all Frames from the KV store.
+   */
+  public static Frame[] fetchAll() {
+    // Get all the frames.
+    final Key[] frameKeys = KeySnapshot.globalKeysOfClass(Frame.class);
+    List<Frame> frames = new ArrayList<>(frameKeys.length);
+    for( Key key : frameKeys ) {
+      Frame frame = FramesHandler.getFromDKV("(none)", key);
+      // Weed out frames with vecs that are no longer in DKV
+      boolean skip = false;
+      for( Vec vec : frame.vecs() ) {
+        if (vec == null || DKV.get(vec._key) == null) {
+          Log.warn("Leaked frame: Frame "+frame._key+" points to one or more deleted vecs.");
+          skip = true;
+          break;
+        }
+      }
+      if (!skip) frames.add(frame);
+    }
+    return frames.toArray(new Frame[frames.size()]);
+  }
 
   public boolean hasNAs(){
     for(Vec v:bulkRollups())
@@ -279,7 +316,7 @@ public class Frame extends Lockable<Frame> {
    */
   public Key<Vec>[] keys() { return _keys; }
   public Iterable<Key<Vec>> keysList() { return Arrays.asList(_keys); }
-
+  
   /** The internal array of Vecs.  For efficiency Frames contain an array of
    *  Vec Keys - and the Vecs themselves are lazily loaded from the {@link DKV}.
    *  @return the internal array of Vecs */
@@ -431,8 +468,9 @@ public class Frame extends Lockable<Frame> {
   public String[][] domains() {
     Vec[] vecs = vecs();
     String ds[][] = new String[vecs.length][];
-    for( int i=0; i<vecs.length; i++ )
-      ds[i] = vecs[i].domain();
+    for( int i=0; i<vecs.length; i++ ) {
+        ds[i] = vecs[i].domain();
+    }
     return ds;
   }
 
@@ -625,6 +663,31 @@ public class Frame extends Lockable<Frame> {
     Vec v   = vecs [lo]; vecs  [lo] = vecs  [hi]; vecs  [hi] = v;
     Key<Vec> k = _keys[lo]; _keys[lo] = _keys[hi]; _keys[hi] = k;
     String n=_names[lo]; _names[lo] = _names[hi]; _names[hi] = n;
+  }
+
+  /**
+   * Re-order the columns according to the new order specified in newOrder.
+   *
+   * @param newOrder
+   */
+  public void reOrder(int[] newOrder) {
+    assert newOrder.length==_keys.length; // make sure column length match
+    int numCols = _keys.length;
+    Vec tmpvecs[] = vecs().clone();
+    Key<Vec> tmpkeys[] = _keys.clone();
+    String tmpnames[] = _names.clone();
+
+    for (int colIndex = 0; colIndex < numCols; colIndex++) {
+        tmpvecs[colIndex] = _vecs[newOrder[colIndex]];
+        tmpkeys[colIndex] = _keys[newOrder[colIndex]];
+        tmpnames[colIndex] = _names[newOrder[colIndex]];
+    }
+    // copy it back
+    for (int colIndex = 0; colIndex < numCols; colIndex++) {
+      _vecs[colIndex] = tmpvecs[colIndex];
+      _keys[colIndex] = tmpkeys[colIndex];
+      _names[colIndex] = tmpnames[colIndex];
+    }
   }
 
   /** move the provided columns to be first, in-place. For Merge currently since method='hash' was coded like that */
@@ -917,10 +980,16 @@ public class Frame extends Lockable<Frame> {
   // Chunks in a Frame, before filling them.  This can be called in parallel
   // for different Chunk#'s (cidx); each Chunk can be filled in parallel.
   static NewChunk[] createNewChunks(String name, byte[] type, int cidx) {
+    boolean[] sparse = new boolean[type.length];
+    Arrays.fill(sparse, false);
+    return createNewChunks(name, type, cidx, sparse);
+  }
+
+  static NewChunk[] createNewChunks(String name, byte[] type, int cidx, boolean[] sparse) {
     Frame fr = (Frame) Key.make(name).get();
     NewChunk[] nchks = new NewChunk[fr.numCols()];
     for (int i = 0; i < nchks.length; i++) {
-      nchks[i] = new NewChunk(new AppendableVec(fr._keys[i], type[i]), cidx);
+      nchks[i] = new NewChunk(new AppendableVec(fr._keys[i], type[i]), cidx, sparse[i]);
     }
     return nchks;
   }
@@ -941,6 +1010,8 @@ public class Frame extends Lockable<Frame> {
     // Compute elems-per-chunk.
     // Roll-up elem counts, so espc[i] is the starting element# of chunk i.
     int nchunk = espc.length;
+    while( nchunk > 1 && espc[nchunk-1] == 0 )
+      nchunk--;
     long espc2[] = new long[nchunk+1]; // Shorter array
     long x=0;                   // Total row count so far
     for( int i=0; i<nchunk; i++ ) {
@@ -953,6 +1024,9 @@ public class Frame extends Lockable<Frame> {
     Futures fs = new Futures();
     _vecs = new Vec[_keys.length];
     for( int i=0; i<_keys.length; i++ ) {
+      // Nuke the extra chunks
+      for (int j = nchunk; j < espc.length; j++)
+        DKV.remove(Vec.chunkKey(_keys[i], j), fs);
       // Insert Vec header
       Vec vec = _vecs[i] = new Vec( _keys[i],
                                     Vec.ESPC.rowLayout(_keys[i],espc2),
@@ -1137,7 +1211,6 @@ public class Frame extends Lockable<Frame> {
       }
     }
   }
-
 
   // Convert len rows starting at off to a 2-d ascii table
   @Override public String toString( ) {
@@ -1538,7 +1611,48 @@ public class Frame extends Lockable<Frame> {
 
   @Override public Class<KeyV3.FrameKeyV3> makeSchema() { return KeyV3.FrameKeyV3.class; }
 
-  /** Sort rows of a frame, using the set of columns as keys.
+  /** Sort rows of a frame, using the set of columns as keys.  User can specify sorting direction for each sorting
+   * column in a integer array.  For example, if we want to sort columns 0, 1, 2 and want to sort 0 in ascending
+   * direction, 1 and 2 in descending direction for frame fr, the call to make is fr.sort(new int[]{0,1,2},
+   * new int[]{1, -1, -1}.
+   *
    *  @return Copy of frame, sorted */
-  public Frame sort( int[] cols ) { return Merge.sort(this,cols); }
+  public Frame sort( int[] cols ) {
+    return Merge.sort(this,cols);
+  }
+
+  public Frame sort(int[] cols, int[] ascending) {
+    return Merge.sort(this, cols, ascending);
+  }
+
+  /**
+   * A structure for fast lookup in the set of frame's vectors.
+   * Purpose of this class is to avoid multiple O(n) searches in {@link Frame}'s vectors.
+   *
+   * @return An instance of {@link FrameVecRegistry}
+   */
+  public FrameVecRegistry frameVecRegistry() {
+    return new FrameVecRegistry();
+  }
+
+  public class FrameVecRegistry {
+    private LinkedHashMap<String, Vec> vecMap;
+
+    private FrameVecRegistry() {
+      vecMap = new LinkedHashMap<>(_vecs.length);
+      for (int i = 0; i < _vecs.length; i++) {
+        vecMap.put(_names[i], _vecs[i]);
+      }
+    }
+
+    /**
+     * Finds a Vec by column name
+     *
+     * @param colName Column name to search for, case-sensitive
+     * @return An instance of {@link Vec}, if found. Otherwise null.
+     */
+    public Vec findByColName(final String colName) {
+      return vecMap.get(colName);
+    }
+  }
 }

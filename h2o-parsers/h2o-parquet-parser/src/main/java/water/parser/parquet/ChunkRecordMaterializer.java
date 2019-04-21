@@ -3,7 +3,6 @@ package water.parser.parquet;
 import org.apache.parquet.io.api.GroupConverter;
 import org.apache.parquet.io.api.RecordMaterializer;
 import org.apache.parquet.schema.MessageType;
-import water.parser.ParseWriter;
 
 /**
  * Implementation of Parquet's RecordMaterializer for Chunks
@@ -12,16 +11,16 @@ import water.parser.ParseWriter;
  * indirectly using a ParseWriter and function getCurrentRecord returns the index of the record
  * in the current chunk.
  */
-class ChunkRecordMaterializer extends RecordMaterializer<Integer> {
+class ChunkRecordMaterializer extends RecordMaterializer<Long> {
 
   private ChunkConverter _converter;
 
-  ChunkRecordMaterializer(MessageType parquetSchema, byte[] chunkSchema, ParseWriter writer) {
-    _converter = new ChunkConverter(parquetSchema, chunkSchema, writer);
+  ChunkRecordMaterializer(MessageType parquetSchema, byte[] chunkSchema, WriterDelegate writer, boolean[] keepColumns) {
+    _converter = new ChunkConverter(parquetSchema, chunkSchema, writer, keepColumns);
   }
 
   @Override
-  public Integer getCurrentRecord() {
+  public Long getCurrentRecord() {
     return _converter.getCurrentRecordIdx();
   }
 

@@ -94,6 +94,7 @@ public class Scope {
   }
 
   static private void track_impl(Scope scope, Key key) {
+    if (key == null) return;
     // key size is 0 when tracked in the past, but no scope now
     if (scope._keys.size() > 0 && !scope._keys.peek().contains(key))
       scope._keys.peek().add(key);            // Track key

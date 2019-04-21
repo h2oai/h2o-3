@@ -4,6 +4,7 @@ import water.H2O;
 import water.Iced;
 import water.Job;
 import water.Key;
+import water.fvec.Vec;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -57,33 +58,48 @@ public abstract class Parser extends Iced {
   protected static final byte COND_QUOTED_NUMBER_END = 18;
   protected static final byte POSSIBLE_EMPTY_LINE = 19;
   protected static final byte POSSIBLE_CURRENCY = 20;
+  protected static final byte HASHTAG = 35;
+  protected static final byte POSSIBLE_ESCAPED_QUOTE = 36;
 
   protected final byte CHAR_DECIMAL_SEP = '.';
   protected final byte CHAR_SEPARATOR;
 
   protected static final long LARGEST_DIGIT_NUMBER = Long.MAX_VALUE/10;
   protected static boolean isEOL(byte c) { return (c == CHAR_LF) || (c == CHAR_CR); }
+  public boolean[] _keepColumns;
 
   protected final ParseSetup _setup;
   protected final Key<Job> _jobKey;
-  protected Parser( ParseSetup setup, Key<Job> jobKey ) { _setup = setup;  CHAR_SEPARATOR = setup._separator; _jobKey = jobKey;}
+  protected Parser( ParseSetup setup, Key<Job> jobKey ) {
+    _setup = setup;  CHAR_SEPARATOR = setup._separator; _jobKey = jobKey;
+    if (_setup!=null && _setup._number_columns > 0) {
+      _keepColumns = new boolean[_setup._number_columns];
+      for (int colIdx = 0; colIdx < _setup._number_columns; colIdx++)
+        _keepColumns[colIdx] = true;
+      if (_setup._skipped_columns!=null) {
+        for (int colIdx : _setup._skipped_columns)
+          if (colIdx < _setup._number_columns)
+            _keepColumns[colIdx] = false;
+          else
+            throw new IllegalArgumentException("Skipped column index "+colIdx+" is illegal.  It exceeds the actual" +
+                    " number of columns in your file.");
+      }
+    }
+  }
   protected int fileHasHeader(byte[] bits, ParseSetup ps) { return ParseSetup.NO_HEADER; }
 
   // Parse this one Chunk (in parallel with other Chunks)
   protected abstract ParseWriter parseChunk(int cidx, final ParseReader din, final ParseWriter dout);
 
-  ParseWriter streamParse( final InputStream is, final ParseWriter dout) throws IOException {
-    if (!_setup._parse_type.isParallelParseSupported) throw H2O.unimpl();
-    StreamData din = new StreamData(is);
-    int cidx=0;
-    // FIXME leaving _jobKey == null until sampling is done, this mean entire zip files
-    // FIXME are parsed for parseSetup
-    while( is.available() > 0 && (_jobKey == null || _jobKey.get().stop_requested()) )
-      parseChunk(cidx++, din, dout);
-    parseChunk(cidx, din, dout);     // Parse the remaining partial 32K buffer
-    return dout;
+
+  // Parse the Vec sequentially writing out one chunk after another
+  protected StreamParseWriter sequentialParse(Vec vec, StreamParseWriter dout) {
+    throw new UnsupportedOperationException("Sequential Parsing is not supported by " + this.getClass().getName());
   }
 
+  protected ParseWriter streamParse( final InputStream is, final StreamParseWriter dout) throws IOException {
+    return streamParseZip(is,dout,is);
+  }
 
   /**
    *   This method performs guess setup with each file.  If will return true only if the number of columns/separator
@@ -101,9 +117,8 @@ public abstract class Parser extends Iced {
   private boolean checkFileNHeader(final InputStream is, final StreamParseWriter dout, StreamData din, int cidx)
           throws IOException {
     byte[] headerBytes = ZipUtil.unzipForHeader(din.getChunkData(cidx), this._setup._chunk_size);
-    ParseSetup ps = ParseSetup.guessSetup(null, headerBytes, GUESS_INFO, ParseSetup.GUESS_SEP,
-            ParseSetup.GUESS_COL_CNT, this._setup._single_quotes, ParseSetup.GUESS_HEADER,
-            null, null, null, null);
+    ParseSetup ps = ParseSetup.guessSetup(null, headerBytes, new ParseSetup(GUESS_INFO, ParseSetup.GUESS_SEP,
+            this._setup._single_quotes, ParseSetup.GUESS_HEADER, ParseSetup.GUESS_COL_CNT, null, null));
     // check to make sure datasets in file belong to the same dataset
     // just check for number for number of columns/separator here.  Ignore the column type, user can force it
     if ((this._setup._number_columns != ps._number_columns) || (this._setup._separator != ps._separator)) {
@@ -180,11 +195,11 @@ public abstract class Parser extends Iced {
     int cidx = 0;
     StreamData din = new StreamData(is);
     // only check header for 2nd file onward since guess setup is already done on first file.
-    if ((fileIndex > 0) && (!checkFileNHeader(is, dout, din, cidx)))
+    if ((fileIndex > 0) && (!checkFileNHeader(is, dout, din, cidx))) // cidx should be the actual column index
       return new StreamInfo(zidx, nextChunk);  // header is bad, quit now
     int streamAvailable = is.available();
     while (streamAvailable > 0) {
-      parseChunk(cidx++, din, nextChunk);
+      parseChunk(cidx++, din, nextChunk); // cidx here actually goes and get the right column chunk.
       streamAvailable = is.available(); // Can (also!) rollover to the next input chunk
       int xidx = bvs.read(null, 0, 0); // Back-channel read of chunk index
       if (xidx > zidx) {  // Advanced chunk index of underlying ByteVec stream?
@@ -205,7 +220,7 @@ public abstract class Parser extends Iced {
   // ------------------------------------------------------------------------
   // Zipped file; no parallel decompression; decompress into local chunks,
   // parse local chunks; distribute chunks later.
-  ParseWriter streamParseZip( final InputStream is, final StreamParseWriter dout, InputStream bvs ) throws IOException {
+  protected ParseWriter streamParseZip( final InputStream is, final StreamParseWriter dout, InputStream bvs ) throws IOException {
     // All output into a fresh pile of NewChunks, one per column
     if (!_setup._parse_type.isParallelParseSupported) throw H2O.unimpl();
     StreamParseWriter nextChunk = dout;
@@ -227,17 +242,48 @@ public abstract class Parser extends Iced {
     return dout;
   }
 
+  final static class ByteAryData implements ParseReader {
+    private final byte [] _bits;
+    public int _off;
+    final long _globalOffset;
+
+    public ByteAryData(byte [] bits, long globalOffset){
+      _bits = bits;
+      _globalOffset = globalOffset;
+    }
+
+    @Override
+    public byte[] getChunkData(int cidx) {
+      return cidx == 0?_bits:null;
+    }
+
+    @Override
+    public int getChunkDataStart(int cidx) {return -1;}
+
+    @Override
+    public void setChunkDataStart(int cidx, int offset) {
+      if(cidx == 0) _off = offset;
+    }
+
+    @Override
+    public long getGlobalByteOffset() {return _globalOffset;}
+  }
   /** Class implementing DataIns from a Stream (probably a GZIP stream)
    *  Implements a classic double-buffer reader.
    */
   final static class StreamData implements ParseReader {
-    public static int bufSz = 64*1024;
+    final int bufSz;
     final transient InputStream _is;
-    private byte[] _bits0 = new byte[bufSz];
-    private byte[] _bits1 = new byte[bufSz];
+    private byte[] _bits0;
+    private byte[] _bits1;
     private int _cidx0=-1, _cidx1=-1; // Chunk #s
     private int _coff0=-1, _coff1=-1; // Last used byte in a chunk
-    private StreamData(InputStream is){_is = is;}
+    protected StreamData(InputStream is){this(is,64*1024);}
+    protected StreamData(InputStream is, int bufSz){
+      _is = is; this.bufSz = bufSz;
+      _bits0 = new byte[bufSz];
+      _bits1 = new byte[bufSz];
+    }
     long _gOff;
     @Override public byte[] getChunkData(int cidx) {
       if( cidx == _cidx0 ) return _bits0;

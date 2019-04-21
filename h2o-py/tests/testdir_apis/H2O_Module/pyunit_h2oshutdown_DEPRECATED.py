@@ -23,13 +23,10 @@ def h2oshutdown():
         assert_is_type(e, TypeError)
         assert "badparam" in e.args[0], "h2o.shutdown() command is not working."
 
-    try:
-        thread = threading.Thread(target=call_shutdown)
-        thread.daemon =True
-        thread.start()
-        thread.join(1.0)
-    except Exception as e:
-        assert False, "h2o.shutdown() command is not working."
+    thread = threading.Thread(target=call_shutdown)
+    thread.daemon =True
+    thread.start()
+    thread.join(1.0)
 
 def call_shutdown():
     h2o.shutdown(prompt=True)   # call shutdown but do not actually shut anything down.

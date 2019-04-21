@@ -1,0 +1,29 @@
+ARG GPU_SUFFIX=''
+ARG FROM_VERSION
+FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-jdk-8-base${GPU_SUFFIX}:${FROM_VERSION}
+
+RUN \
+  add-apt-repository -y ppa:deadsnakes && \
+  curl -sL https://deb.nodesource.com/setup_10.x | bash - && \
+  apt-get update -q -y && \
+  DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        gconf-service libasound2 libatk1.0-0 libatk-bridge2.0-0 libc6 libcairo2 libcups2 libdbus-1-3 libexpat1 libfontconfig1 libgcc1 libgconf-2-4 libgdk-pixbuf2.0-0 \
+        libglib2.0-0 libgtk-3-0 libnspr4 libpango-1.0-0 libpangocairo-1.0-0 libstdc++6 libx11-6 libx11-xcb1 libx11-xcb-dev libxcb1 libxcomposite1 libxcomposite-dev libxcursor1 libxcursor-dev libxdamage1 libxext6 \
+        libxfixes3 libxi6 libxrandr2 libxrender1 libxss1 libxtst6 ca-certificates fonts-liberation libappindicator1 libnss3 lsb-release xdg-utils \
+        chromium-browser \
+        libkrb5-dev \
+        nodejs \
+        python-virtualenv && \
+    apt-get clean && \
+    rm -rf /var/cache/apt/*
+
+ENV CHROME_BIN=/usr/bin/chromium-browser
+
+RUN \
+    wget -q https://github.com/jgm/pandoc/releases/download/2.1.1/pandoc-2.1.1-linux.tar.gz && \
+    tar xzf pandoc-2.1.1-linux.tar.gz --strip-components 1 -C /usr/local/ && \
+    rm -rf pandoc-2.1.1-linux.tar.gz
+
+COPY scripts/install_python_version /tmp
+RUN \
+    chmod +x /tmp/install_python_version

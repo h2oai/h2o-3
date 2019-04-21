@@ -55,7 +55,7 @@ publishing {
 
           H2OBuildVersion bv = new H2OBuildVersion(rootDir, version);
           def projectVersion = bv.getProjectVersion()
-          version "$projectVersion"
+          version isRelease || !projectVersion.contains("99999") ? "${projectVersion}" : "${projectVersion.replace('99999','1')}-SNAPSHOT"
 
           // Publish all artifacts
           // NOTE: needs to be here to create a POM file with correct dependencies
@@ -144,6 +144,23 @@ publishing {
               credentials {
                   username project["oss-releases.username"]
                   password project["oss-releases.password"]
+              }
+          }
+      }
+
+      def isInternalBuild = Boolean.valueOf(project.findProperty("isInternalBuild") ?: "false")
+      if (isInternalBuild) { // We will setup local repo only for internal builds
+          maven {
+              name "LocalNexusRepo"
+              if (project.ext.isRelease) {
+                url "${localNexusLocation}/releases"
+              } else {
+                url "${localNexusLocation}/snapshots"
+              }
+
+              credentials {
+                  username project.findProperty("local-release-maven.username") ?: "<NA>"
+                  password project.findProperty("local-release-maven.password") ?: "<NA>"
               }
           }
       }

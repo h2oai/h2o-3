@@ -6,6 +6,8 @@ import water.Iced;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 
+import java.util.Map;
+
 /**
  * Generic execution values for the untyped stack.
  */
@@ -19,6 +21,8 @@ abstract public class Val extends Iced {
   final public static int ROW = 6;     // Row of data; limited to a single array of doubles
   final public static int FUN = 7;     // Function
   final public static int MOD = 8;     // Model
+  final public static int MFRM = 9;     // Map of (String, Frame)
+
 
   abstract public int type();
 
@@ -28,6 +32,7 @@ abstract public class Val extends Iced {
   public boolean isStr()   { return false; }
   public boolean isStrs()  { return false; }
   public boolean isFrame() { return false; }
+  public boolean isMapFrame() { return false; }
   public boolean isRow()   { return false; }
   public boolean isFun()   { return false; }
   public boolean isModel() { return false; }
@@ -38,6 +43,7 @@ abstract public class Val extends Iced {
   public String   getStr()   { throw badValue("String"); }
   public String[] getStrs()  { throw badValue("String array"); }
   public Frame    getFrame() { throw badValue("Frame"); }
+  public Map<String, Frame> getMapFrame() { throw badValue("MapFrame"); }
   public double[] getRow()   { throw badValue("Row"); }
   public AstPrimitive getFun() { throw badValue("function"); }
   public Model    getModel() { throw badValue("Model"); }

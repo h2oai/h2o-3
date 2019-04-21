@@ -11,12 +11,9 @@ def h2oimport_sql_select():
     Not a real test, just make sure arguments are not changed.
     """
     command_list = ['connection_url', 'select_query', 'username', 'password', 'optimize']
-    try:
-        allargs = inspect.getargspec(h2o.import_sql_select)
-        for arg_name in command_list:
-            assert arg_name in allargs.args, "argument "+arg_name+" is missing from h2o.import_sql_select() command"
-    except Exception as e:
-        assert False, "h2o.import_sql_select() command is not working."
+    allargs = inspect.getargspec(h2o.import_sql_select)
+    for arg_name in command_list:
+        assert arg_name in allargs.args, "argument "+arg_name+" is missing from h2o.import_sql_select() command"
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(h2oimport_sql_select)

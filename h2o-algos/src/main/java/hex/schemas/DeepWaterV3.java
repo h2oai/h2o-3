@@ -20,6 +20,7 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
         "balance_classes",
         "max_after_balance_size",
         "class_sampling_factors",
+        "keep_cross_validation_models",
         "keep_cross_validation_predictions",
         "keep_cross_validation_fold_assignment",
         "fold_assignment",
@@ -75,6 +76,7 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
         "input_dropout_ratio",
         "hidden_dropout_ratios",
         "problem_type",
+        "export_checkpoints_dir"
     };
 
     /**

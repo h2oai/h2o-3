@@ -1,7 +1,7 @@
 ``min_split_improvement``
 -------------------------
 
-- Available in: GBM, DRF 
+- Available in: GBM, DRF, XGBoost
 - Hyperparameter: yes
 
 Description

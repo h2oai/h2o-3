@@ -19,6 +19,7 @@ from io import StringIO
 from types import FunctionType
 
 import requests
+import math
 
 import h2o
 from h2o.display import H2ODisplay
@@ -38,8 +39,6 @@ from h2o.utils.typechecks import (assert_is_type, assert_satisfies, Enum, I, is_
 __all__ = ("H2OFrame", )
 
 
-
-
 class H2OFrame(object):
     """
     Primary data store for H2O.
@@ -49,12 +48,15 @@ class H2OFrame(object):
     ``H2OFrame`` represents a mere handle to that data.
     """
 
+    # Temp flag: set this to false for now if encountering path conversion/expansion issues when import files to remote server
+    __LOCAL_EXPANSION_ON_SINGLE_IMPORT__ = True
+
     #-------------------------------------------------------------------------------------------------------------------
     # Construction
     #-------------------------------------------------------------------------------------------------------------------
 
     def __init__(self, python_obj=None, destination_frame=None, header=0, separator=",",
-                 column_names=None, column_types=None, na_strings=None):
+                 column_names=None, column_types=None, na_strings=None, skipped_columns=None):
         """
         Create a new H2OFrame object, possibly from some other object.
 
@@ -101,7 +103,7 @@ class H2OFrame(object):
         self._is_frame = True  # Indicate that this is an actual frame, allowing typechecks to be made
         if python_obj is not None:
             self._upload_python_object(python_obj, destination_frame, header, separator,
-                                       column_names, column_types, na_strings)
+                                       column_names, column_types, na_strings, skipped_columns)
 
     @staticmethod
     def _expr(expr, cache=None):
@@ -114,7 +116,7 @@ class H2OFrame(object):
 
 
     def _upload_python_object(self, python_obj, destination_frame=None, header=0, separator=",",
-                              column_names=None, column_types=None, na_strings=None):
+                              column_names=None, column_types=None, na_strings=None, skipped_columns=None):
         assert_is_type(python_obj, list, tuple, dict, numpy_ndarray, pandas_dataframe, scipy_sparse)
         if is_type(python_obj, scipy_sparse):
             self._upload_sparse_matrix(python_obj, destination_frame=destination_frame)
@@ -142,7 +144,7 @@ class H2OFrame(object):
         else:
             csv_writer.writerows(data_to_write)
         tmp_file.close()  # close the streams
-        self._upload_parse(tmp_path, destination_frame, 1, separator, column_names, column_types, na_strings)
+        self._upload_parse(tmp_path, destination_frame, 1, separator, column_names, column_types, na_strings, skipped_columns)
         os.remove(tmp_path)  # delete the tmp file
 
 
@@ -189,17 +191,23 @@ class H2OFrame(object):
 
 
     @staticmethod
-    def get_frame(frame_id):
+    def get_frame(frame_id, rows=10, rows_offset=0, cols=-1, full_cols=-1, cols_offset=0, light=False):
         """
         Retrieve an existing H2OFrame from the H2O cluster using the frame's id.
 
         :param str frame_id: id of the frame to retrieve
+        :param int rows: number of rows to fetch for preview (10 by default)
+        :param int rows_offset: offset to fetch rows from (0 by default)
+        :param int cols: number of columns to fetch (all by default)
+        :param full_cols: number of columns to fetch together with backed data
+        :param int cols_offset: offset to fetch rows from (0 by default)
+        :param bool light: wether to use light frame endpoint or not
         :returns: an existing H2OFrame with the id provided; or None if such frame doesn't exist.
         """
         fr = H2OFrame()
         fr._ex._cache._id = frame_id
         try:
-            fr._ex._cache.fill()
+            fr._ex._cache.fill(rows=rows, rows_offset=rows_offset, cols=cols, full_cols=full_cols, cols_offset=cols_offset, light=light)
         except EnvironmentError:
             return None
         return fr
@@ -208,7 +216,7 @@ class H2OFrame(object):
     def refresh(self):
         """Reload frame information from the backend H2O server."""
         self._ex._cache.flush()
-        self._frame(True)
+        self._frame(fill_cache=True)
 
 
 
@@ -221,7 +229,7 @@ class H2OFrame(object):
         """The list of column names (List[str])."""
         if not self._ex._cache.names_valid():
             self._ex._cache.flush()
-            self._frame(True)
+            self._frame(fill_cache=True)
         return list(self._ex._cache.names)
 
     @names.setter
@@ -234,7 +242,7 @@ class H2OFrame(object):
         """Number of rows in the dataframe (int)."""
         if not self._ex._cache.nrows_valid():
             self._ex._cache.flush()
-            self._frame(True)
+            self._frame(fill_cache=True)
         return self._ex._cache.nrows
 
 
@@ -243,7 +251,7 @@ class H2OFrame(object):
         """Number of columns in the dataframe (int)."""
         if not self._ex._cache.ncols_valid():
             self._ex._cache.flush()
-            self._frame(True)
+            self._frame(fill_cache=True)
         return self._ex._cache.ncols
 
 
@@ -258,7 +266,7 @@ class H2OFrame(object):
         """The dictionary of column name/type pairs."""
         if not self._ex._cache.types_valid():
             self._ex._cache.flush()
-            self._frame(True)
+            self._frame(fill_cache=True)
         return dict(self._ex._cache.types)
 
 
@@ -289,7 +297,7 @@ class H2OFrame(object):
         assert_is_type(col, int, str)
         if not self._ex._cache.types_valid() or not self._ex._cache.names_valid():
             self._ex._cache.flush()
-            self._frame(True)
+            self._frame(fill_cache=True)
         types = self._ex._cache.types
         if is_type(col, str):
             if col in types:
@@ -301,24 +309,27 @@ class H2OFrame(object):
         raise H2OValueError("Column '%r' does not exist in the frame" % col)
 
 
-    def _import_parse(self, path, pattern, destination_frame, header, separator, column_names, column_types, na_strings):
-        if is_type(path, str) and "://" not in path:
+    def _import_parse(self, path, pattern, destination_frame, header, separator, column_names, column_types, na_strings,
+                      skipped_columns=None, custom_non_data_line_markers = None):
+        if H2OFrame.__LOCAL_EXPANSION_ON_SINGLE_IMPORT__ and is_type(path, str) and "://" not in path:  # fixme: delete those 2 lines, cf. PUBDEV-5717
             path = os.path.abspath(path)
         rawkey = h2o.lazy_import(path, pattern)
-        self._parse(rawkey, destination_frame, header, separator, column_names, column_types, na_strings)
+        self._parse(rawkey, destination_frame, header, separator, column_names, column_types, na_strings,
+                    skipped_columns, custom_non_data_line_markers)
         return self
 
 
-    def _upload_parse(self, path, destination_frame, header, sep, column_names, column_types, na_strings):
+    def _upload_parse(self, path, destination_frame, header, sep, column_names, column_types, na_strings, skipped_columns=None):
         ret = h2o.api("POST /3/PostFile", filename=path)
         rawkey = ret["destination_frame"]
-        self._parse(rawkey, destination_frame, header, sep, column_names, column_types, na_strings)
+        self._parse(rawkey, destination_frame, header, sep, column_names, column_types, na_strings, skipped_columns)
         return self
 
 
     def _parse(self, rawkey, destination_frame="", header=None, separator=None, column_names=None, column_types=None,
-               na_strings=None):
-        setup = h2o.parse_setup(rawkey, destination_frame, header, separator, column_names, column_types, na_strings)
+               na_strings=None, skipped_columns=None, custom_non_data_line_markers = None):
+        setup = h2o.parse_setup(rawkey, destination_frame, header, separator, column_names, column_types, na_strings,
+                                skipped_columns, custom_non_data_line_markers)
         return self._parse_raw(setup)
 
 
@@ -334,6 +345,8 @@ class H2OFrame(object):
              "delete_on_done": True,
              "blocking": False,
              "column_types": None,
+             "skipped_columns":None,
+             "custom_non_data_line_markers": setup["custom_non_data_line_markers"]
              }
 
         if setup["column_names"]: p["column_names"] = None
@@ -387,11 +400,10 @@ class H2OFrame(object):
     def __iter__(self):
         return (self[i] for i in range(self.ncol))
 
-
     def __unicode__(self):
         if sys.gettrace() is None:
             if self._ex is None: return "This H2OFrame has been removed."
-            table = self._frame()._ex._cache._tabulate("simple", False)
+            table = self._frame(fill_cache=True)._ex._cache._tabulate("simple", False)
             nrows = "%d %s" % (self.nrow, "row" if self.nrow == 1 else "rows")
             ncols = "%d %s" % (self.ncol, "column" if self.ncol == 1 else "columns")
             return "%s\n\n[%s x %s]" % (table, nrows, ncols)
@@ -405,7 +417,10 @@ class H2OFrame(object):
                 self.show()
         return ""
 
-    def show(self, use_pandas=False):
+    def _has_content(self):
+        return self._ex and (self._ex._children or self._ex._cache._id)
+
+    def show(self, use_pandas=False, rows=10, cols=200):
         """
         Used by the H2OFrame.__repr__ method to print or display a snippet of the data frame.
 
@@ -414,18 +429,27 @@ class H2OFrame(object):
         if self._ex is None:
             print("This H2OFrame has been removed.")
             return
+        if not self._has_content():
+            print("This H2OFrame is empty and not initialized.")
+            return
+        if self.nrows == 0:
+            print("This H2OFrame is empty.")
+            return
         if not self._ex._cache.is_valid(): self._frame()._ex._cache.fill()
         if H2ODisplay._in_ipy():
             import IPython.display
             if use_pandas and can_use_pandas():
-                IPython.display.display(self.head().as_data_frame(True))
+                IPython.display.display(self.head(rows=rows, cols=cols).as_data_frame(fill_cache=True))
             else:
                 IPython.display.display_html(self._ex._cache._tabulate("html", False), raw=True)
         else:
             if use_pandas and can_use_pandas():
-                print(self.head().as_data_frame(True))
+                print(self.head(rows=rows, cols=cols).as_data_frame(True))  # no keyword fill_cache
             else:
                 s = self.__unicode__()
+                stk = traceback.extract_stack()
+                if "IPython" in stk[-3][0]:
+                    s = "\n%s" % s
                 try:
                     print(s)
                 except UnicodeEncodeError:
@@ -437,11 +461,17 @@ class H2OFrame(object):
         Display summary information about the frame.
 
         Summary includes min/mean/max/sigma and other rollup data.
+
         :param bool return_data: Return a dictionary of the summary output
         """
+        if not self._has_content():
+            print("This H2OFrame is empty and not initialized.")
+            return self._ex._cache._data;
         if not self._ex._cache.is_valid(): self._frame()._ex._cache.fill()
         if not return_data:
-            if H2ODisplay._in_ipy():
+            if self.nrows == 0:
+                print("This H2OFrame is empty.")
+            elif H2ODisplay._in_ipy():
                 import IPython.display
                 IPython.display.display_html(self._ex._cache._tabulate("html", True), raw=True)
             else:
@@ -459,23 +489,25 @@ class H2OFrame(object):
 
         :param bool chunk_summary: Retrieve the chunk summary along with the distribution summary
         """
-        res = h2o.api("GET /3/Frames/%s" % self.frame_id, data={"row_count": 10})["frames"][0]
-        self._ex._cache._fill_data(res)
-        print("Rows:{}".format(self.nrow))
-        print("Cols:{}".format(self.ncol))
+        if self._has_content():
+            res = h2o.api("GET /3/Frames/%s" % self.frame_id, data={"row_count": 10})["frames"][0]
+            self._ex._cache._fill_data(res)
 
-        #The chunk & distribution summaries are not cached, so must be pulled if chunk_summary=True.
-        if chunk_summary:
-            res["chunk_summary"].show()
-            res["distribution_summary"].show()
-        print("\n")
+            print("Rows:{}".format(self.nrow))
+            print("Cols:{}".format(self.ncol))
+
+            #The chunk & distribution summaries are not cached, so must be pulled if chunk_summary=True.
+            if chunk_summary:
+                res["chunk_summary"].show()
+                res["distribution_summary"].show()
+            print("\n")
         self.summary()
 
 
-    def _frame(self, fill_cache=False):
+    def _frame(self, rows=10, rows_offset=0, cols=-1, cols_offset=0, fill_cache=False):
         self._ex._eager_frame()
         if fill_cache:
-            self._ex._cache.fill()
+            self._ex._cache.fill(rows=rows, rows_offset=rows_offset, cols=cols, cols_offset=cols_offset)
         return self
 
 
@@ -492,7 +524,8 @@ class H2OFrame(object):
         assert_is_type(cols, int)
         nrows = min(self.nrows, rows)
         ncols = min(self.ncols, cols)
-        return self[:nrows, :ncols]
+        newdt = self[:nrows, :ncols]
+        return newdt._frame(rows=nrows, cols=cols, fill_cache=True)
 
 
     def tail(self, rows=10, cols=200):
@@ -509,7 +542,8 @@ class H2OFrame(object):
         nrows = min(self.nrows, rows)
         ncols = min(self.ncols, cols)
         start_idx = self.nrows - nrows
-        return self[start_idx:start_idx + nrows, :ncols]
+        newdt = self[start_idx:start_idx + nrows, :ncols]
+        return newdt._frame(rows=nrows, cols=cols, fill_cache=True)
 
 
     def logical_negation(self):
@@ -995,7 +1029,33 @@ class H2OFrame(object):
         :returns: A single-column H2OFrame with the desired levels.
         """
         assert_is_type(levels, [str])
-        return H2OFrame._expr(expr=ExprNode("setDomain", self, levels), cache=self._ex._cache)
+        return H2OFrame._expr(expr=ExprNode("setDomain", self, False, levels), cache=self._ex._cache)
+
+
+    def rename(self, columns=None):
+        """
+        Change names of columns in the frame.
+
+        Dict key is an index or name of the column whose name is to be set.
+        Dict value is the new name of the column.
+
+        :param columns: dict-like transformations to apply to the column names
+        """
+        assert_is_type(columns, None, dict)
+        new_names = self.names
+        ncols = self.ncols
+
+        for col, name in columns.items():
+            col_index = None
+            if is_type(col, int) and (-ncols <= col < ncols):
+                col_index = (col + ncols) % ncols  # handle negative indices
+            elif is_type(col, str) and col in self.names:
+                col_index = self.names.index(col)  # lookup the name
+
+            if col_index is not None:
+                new_names[col_index] = name
+
+        return self.set_names(new_names)
 
 
     def set_names(self, names):
@@ -1045,7 +1105,7 @@ class H2OFrame(object):
         if self.names is None:
             self._frame()._ex._cache.fill()
         else:
-            self._ex._cache._names = self.names[:col] + [name] + self.names[col + 1:]
+            self._ex._cache._names = self.names[:col_index] + [name] + self.names[col_index + 1:]
             self._ex._cache._types[name] = self._ex._cache._types.pop(oldname)
         return
 
@@ -1054,8 +1114,8 @@ class H2OFrame(object):
         """
         Convert the frame (containing strings / categoricals) into the ``date`` format.
 
-        :param str format: the format string (e.g. "YYYY-mm-dd")
-        :returns: new H2OFrame with "date" column types
+        :param str format: the format string (e.g. "%Y-%m-%d")
+        :returns: new H2OFrame with "int" column types
         """
         fr = H2OFrame._expr(expr=ExprNode("as.Date", self, format), cache=self._ex._cache)
         if fr._ex._cache.types_valid():
@@ -1105,7 +1165,8 @@ class H2OFrame(object):
 
     def prod(self, na_rm=False):
         """
-        Compute the product of all values in the frame.
+        Compute the product of all values across all rows in a single column H2O frame.  If you apply
+        this command on a multi-column H2O frame, the answer may not be correct.
 
         :param bool na_rm: If True then NAs will be ignored during the computation.
         :returns: product of all values in the frame (a float)
@@ -1114,7 +1175,7 @@ class H2OFrame(object):
 
 
     def any(self):
-        """Return True if any element in the frame is either True or NA."""
+        """Return True if any element in the frame is either True, non-zero or NA."""
         return bool(ExprNode("any", self)._eager_scalar())
 
 
@@ -1124,7 +1185,7 @@ class H2OFrame(object):
 
 
     def all(self):
-        """Return True if every element in the frame is either True or NA."""
+        """Return True if every element in the frame is either True, non-zero or NA."""
         return bool(ExprNode("all", self)._eager_scalar())
 
 
@@ -1155,7 +1216,10 @@ class H2OFrame(object):
         :returns: An H2OFrame of 0s and 1s showing whether each element in the original H2OFrame is contained in item.
         """
         if is_type(item, list, tuple, set):
-            return functools.reduce(H2OFrame.__or__, (self == i for i in item))
+            if self.ncols == 1 and (self.type(0) == 'str' or self.type(0) == 'enum'):
+                return self.match(item)
+            else:
+                return functools.reduce(H2OFrame.__or__, (self == i for i in item))
         else:
             return self == item
 
@@ -1234,7 +1298,7 @@ class H2OFrame(object):
         """
         if can_use_pandas() and use_pandas:
             import pandas
-            return pandas.read_csv(StringIO(self.get_frame_data()), low_memory=False)
+            return pandas.read_csv(StringIO(self.get_frame_data()), low_memory=False, skip_blank_lines=False)
         frame = [row for row in csv.reader(StringIO(self.get_frame_data()))]
         if not header:
             frame.pop(0)
@@ -1348,49 +1412,43 @@ class H2OFrame(object):
         return fr
 
     def _compute_ncol_update(self, item):  # computes new ncol, names, and types
-        try:
-            new_ncols = -1
-            if isinstance(item, list):
-                new_ncols = len(item)
-                if _is_str_list(item):
-                    new_types = {k: self.types[k] for k in item}
-                    new_names = item
-                else:
-                    new_names = [self.names[i] for i in item]
-                    new_types = {name: self.types[name] for name in new_names}
-            elif isinstance(item, slice):
-                assert slice_is_normalized(item)
-                new_names = self.names[item]
-                new_types = {name: self.types[name] for name in new_names}
-            elif is_type(item, str, int):
-                new_ncols = 1
-                if is_type(item, str):
-                    new_names = [item]
-                    new_types = None if item not in self.types else {item: self.types[item]}
-                else:
-                    new_names = [self.names[item]]
-                    new_types = {new_names[0]: self.types[new_names[0]]}
+        new_ncols = -1
+        if isinstance(item, list):
+            new_ncols = len(item)
+            if _is_str_list(item):
+                new_types = {k: self.types[k] for k in item}
+                new_names = item
             else:
-                raise ValueError("Unexpected type: " + str(type(item)))
-            return (new_ncols, new_names, new_types, item)
-        except:
-            return (-1, None, None, item)
+                new_names = [self.names[i] for i in item]
+                new_types = {name: self.types[name] for name in new_names}
+        elif isinstance(item, slice):
+            assert slice_is_normalized(item)
+            new_names = self.names[item]
+            new_types = {name: self.types[name] for name in new_names}
+        elif is_type(item, str, int):
+            new_ncols = 1
+            if is_type(item, str):
+                new_names = [item]
+                new_types = None if item not in self.types else {item: self.types[item]}
+            else:
+                new_names = [self.names[item]]
+                new_types = {new_names[0]: self.types[new_names[0]]}
+        else:
+            raise ValueError("Unexpected type: " + str(type(item)))
+        return (new_ncols, new_names, new_types, item)
+
 
     def _compute_nrow_update(self, item):
-        try:
+        if isinstance(item, list):
+            new_nrows = len(item)
+        elif isinstance(item, slice):
+            assert slice_is_normalized(item)
+            new_nrows = (item.stop - item.start + item.step - 1) // item.step
+        elif isinstance(item, H2OFrame):
             new_nrows = -1
-            if isinstance(item, list):
-                new_nrows = len(item)
-            elif isinstance(item, slice):
-                assert slice_is_normalized(item)
-                new_nrows = (item.stop - item.start + item.step - 1) // item.step
-            elif isinstance(item, H2OFrame):
-                new_nrows = -1
-            else:
-                new_nrows = 1
-            return [new_nrows, item]
-        except:
-            return [-1, item]
+        else:
+            new_nrows = 1
+        return [new_nrows, item]
 
 
     def __setitem__(self, item, value):
@@ -1488,7 +1546,6 @@ class H2OFrame(object):
         if self._ex is expr: return True
         if expr._children is None: return False
         return any(self._is_expr_in_self(ch) for ch in expr._children)
-
 
     def drop(self, index, axis=1):
         """
@@ -1782,20 +1839,46 @@ class H2OFrame(object):
         assert_is_type(by, str, int, [str, int])
         return GroupBy(self, by)
 
-    def sort(self, by):
+    def sort(self, by, ascending=[]):
         """
         Return a new Frame that is sorted by column(s) in ascending order. A fully distributed and parallel sort.
+        However, the original frame can contain String columns but sorting cannot be done on String columns.
+        Default sorting direction is ascending.
+
         :param by: The column to sort by (either a single column name, or a list of column names, or
             a list of column indices)
-        :return: a new sorted Frame
+        :param ascending: Boolean array to denote sorting direction for each sorting column.  True for ascending
+            sort and False for descending sort.
+
+        :return:  a new sorted Frame
         """
         assert_is_type(by, str, int, [str, int])
         if type(by) != list: by = [by]
+        if type(ascending) != list: ascending = [ascending]   # convert to list
+        ascendingI=[1]*len(by)  # intitalize sorting direction to ascending by default
         for c in by:
-            if self.type(c) not in ["enum","time","int"]:
-                raise H2OValueError("Sort by column: " + str(c) + " not of enum, time, or int type")
-        return H2OFrame._expr(expr=ExprNode("sort",self,by))
+            if self.type(c) not in ["enum","time","int","real","string"]:
+                raise H2OValueError("Sort by column: " + str(c) + " not of enum, time, int, real, or string type")
+        if len(ascending)>0:  # user did not specify sort direction, assume all columns ascending
+            assert len(ascending)==len(by), "Sorting direction must be specified for each sorted column."
+            for index in range(len(by)):
+                ascendingI[index]=1 if ascending[index] else -1
+        return H2OFrame._expr(expr=ExprNode("sort",self,by,ascendingI))
 
+    def fillna(self,method="forward",axis=0,maxlen=1):
+        """
+        Return a new Frame that fills NA along a given axis and along a given direction with a maximum fill length
+
+        :param method: ``"forward"`` or ``"backward"``
+        :param axis:  0 for columnar-wise or 1 for row-wise fill
+        :param maxlen: Max number of consecutive NA's to fill
+        
+        :return: 
+        """
+        assert_is_type(axis, 0, 1)
+        assert_is_type(method,str)
+        assert_is_type(maxlen, int)
+        return H2OFrame._expr(expr=ExprNode("h2o.fillna",self,method,axis,maxlen))
 
     def impute(self, column=-1, method="mean", combine_method="interpolate", by=None, group_by_frame=None, values=None):
         """
@@ -1852,7 +1935,13 @@ class H2OFrame(object):
 
     def merge(self, other, all_x=False, all_y=False, by_x=None, by_y=None, method="auto"):
         """
-        Merge two datasets based on common column names.
+        Merge two datasets based on common column names.  We do not support all_x=True and all_y=True.
+        Only one can be True or none is True.  The default merge method is auto and it will default to the
+        radix method.  The radix method will return the correct merge result regardless of duplicated rows
+         in the right frame.  In addition, the radix method can perform merge even if you have string columns
+         in your frames.  If there are duplicated rows in your rite frame, they will not be included if you use
+        the hash method.  The hash method cannot perform merge if you have string columns in your left frame.
+        Hence, we consider the radix method superior to the hash method and is the default method to use.
 
         :param H2OFrame other: The frame to merge to the current one. By default, must have at least one column in common with
             this frame, and all columns in common are used as the merge key.  If you want to use only a subset of the
@@ -1862,6 +1951,7 @@ class H2OFrame(object):
         :param by_x: list of columns in the current frame to use as a merge key.
         :param by_y: list of columns in the ``other`` frame to use as a merge key. Should have the same number of
             columns as in the ``by_x`` list.
+        :param method: string representing the merge method, one of auto(default), radix or hash.
 
         :returns: New H2OFrame with the result of merging the current frame with the ``other`` frame.
         """
@@ -1887,7 +1977,7 @@ class H2OFrame(object):
 
     def relevel(self, y):
         """
-        Reorder levels of an H2O factor.
+        Reorder levels of an H2O factor for one single column of a H2O frame
 
         The levels of a factor are reordered such that the reference level is at level 0, all remaining levels are
         moved down as needed.
@@ -1940,8 +2030,9 @@ class H2OFrame(object):
         :param int axis: Direction of sum computation. If 0 (default), then sum is computed columnwise, and the result
             is a frame with 1 row and number of columns as in the original frame. If 1, then sum is computed rowwise
             and the result is a frame with 1 column (called "sum"), and number of rows equal to the number of rows
-            in the original frame.
-        :returns: either a list of sum of values per-column (old semantic); or an H2OFrame containing sum of values
+            in the original frame.  For row or column sums, the ``return_frame`` parameter must be True.
+        :param bool return_frame: A boolean parameter that indicates whether to return an H2O frame or one single aggregated value. Default is False.
+        :returns: either an aggregated value with sum of values per-column (old semantic); or an H2OFrame containing sum of values
             per-column/per-row in the original frame (new semantic). The new semantic is triggered by either
             providing the ``return_frame=True`` parameter, or having the ``general.allow_breaking_changed`` config
             option turned on.
@@ -2152,7 +2243,7 @@ class H2OFrame(object):
         return H2OFrame._expr(expr=ExprNode("distance", self, y, measure))._frame()
 
 
-    def strdistance(self, y, measure=None):
+    def strdistance(self, y, measure=None, compare_empty=True):
         """
         Compute element-wise string distances between two H2OFrames. Both frames need to have the same
         shape and only contain string/factor columns.
@@ -2167,6 +2258,8 @@ class H2OFrame(object):
             - ``"jw"``:        Jaro, or Jaro-Winker distance
             - ``"soundex"``:   Distance based on soundex encoding
 
+        :param compare_empty if set to FALSE, empty strings will be handled as NaNs
+
         :examples:
           >>>
           >>> x = h2o.H2OFrame.from_python(['Martha', 'Dwayne', 'Dixon'], column_types=['factor'])
@@ -2178,7 +2271,8 @@ class H2OFrame(object):
         """
         assert_is_type(y, H2OFrame)
         assert_is_type(measure, Enum('lv', 'lcs', 'qgram', 'jaccard', 'jw', 'soundex'))
-        return H2OFrame._expr(expr=ExprNode("strDistance", self, y, measure))._frame()
+        assert_is_type(compare_empty, bool)
+        return H2OFrame._expr(expr=ExprNode("strDistance", self, y, measure, compare_empty))._frame()
 
 
     def asfactor(self):
@@ -2263,7 +2357,8 @@ class H2OFrame(object):
 
     def countmatches(self, pattern):
         """
-        For each string in the frame, count the occurrences of the provided pattern.
+        For each string in the frame, count the occurrences of the provided pattern.  If countmathces is applied to
+        a frame, all columns of the frame must be type string, otherwise, the returned frame will contain errors.
 
         The pattern here is a plain string, not a regular expression. We will search for the occurrences of the
         pattern as a substring in element of the frame. This function is applicable to frames containing only
@@ -2318,7 +2413,7 @@ class H2OFrame(object):
         The set argument is a string specifying the set of characters to be removed.
         If omitted, the set argument defaults to removing whitespace.
 
-        :param str set: The set of characters to lstrip from strings in column
+        :param character set: The set of characters to lstrip from strings in column.
         :returns: a new H2OFrame with the same shape as the original frame and having all its values
             trimmed from the left (equivalent of Python's ``str.lstrip()``).
         """
@@ -2338,7 +2433,7 @@ class H2OFrame(object):
         The set argument is a string specifying the set of characters to be removed.
         If omitted, the set argument defaults to removing whitespace.
 
-        :param str set: The set of characters to rstrip from strings in column
+        :param character set: The set of characters to rstrip from strings in column
         :returns: a new H2OFrame with the same shape as the original frame and having all its values
             trimmed from the right (equivalent of Python's ``str.rstrip()``).
         """
@@ -2470,6 +2565,113 @@ class H2OFrame(object):
         if max_cardinality <= 0: raise H2OValueError("max_cardinality must be greater than 0")
         return H2OFrame._expr(expr=ExprNode("isax", self, num_words, max_cardinality, optimize_card))
 
+    def convert_H2OFrame_2_DMatrix(self, predictors, yresp, h2oXGBoostModel):
+        '''
+        This method requires that you import the following toolboxes: xgboost, pandas, numpy and scipy.sparse.
+
+        This method will convert an H2OFrame to a DMatrix that can be used by native XGBoost.  The H2OFrame contains
+        numerical and enum columns alone.  Note that H2O one-hot-encoding introduces a missing(NA)
+        column. There can be NAs in any columns.
+
+        Follow the steps below to compare H2OXGBoost and native XGBoost:
+
+        1. Train the H2OXGBoost model with H2OFrame trainFile and generate a prediction:
+        h2oModelD = H2OXGBoostEstimator(**h2oParamsD) # parameters specified as a dict()
+        h2oModelD.train(x=myX, y=y, training_frame=trainFile) # train with H2OFrame trainFile
+        h2oPredict = h2oPredictD = h2oModelD.predict(trainFile)
+
+        2. Derive the DMatrix from H2OFrame:
+        nativeDMatrix = trainFile.convert_H2OFrame_2_DMatrix(myX, y, h2oModelD)
+
+        3. Derive the parameters for native XGBoost:
+        nativeParams = h2oModelD.convert_H2OXGBoostParams_2_XGBoostParams()
+
+        4. Train your native XGBoost model and generate a prediction:
+        nativeModel = xgb.train(params=nativeParams[0], dtrain=nativeDMatrix, num_boost_round=nativeParams[1])
+        nativePredict = nativeModel.predict(data=nativeDMatrix, ntree_limit=nativeParams[1].
+
+        5. Compare the predictions h2oPredict from H2OXGBoost, nativePredict from native XGBoost.
+
+        :param h2oFrame: H2OFrame to be converted to DMatrix for native XGBoost
+        :param predictors: List of predictor columns, can be column names or indices
+        :param yresp: response column, can be column index or name
+        :param h2oXGBoostModel: H2OXGboost model that are built with the same H2OFrame as input earlier
+        :return: DMatrix that can be an input to a native XGBoost model
+        '''
+        import xgboost as xgb
+        import pandas as pd
+        import numpy as np
+        from scipy.sparse import csr_matrix
+
+        assert isinstance(predictors, list) or isinstance(predictors, tuple)
+        assert h2oXGBoostModel._model_json['algo'] == 'xgboost', \
+            "convert_H2OFrame_2_DMatrix is used for H2OXGBoost model only."
+
+        tempFrame = self[predictors].cbind(self[yresp])
+        colnames = tempFrame.names
+        if type(predictors[0])==type(1): # convert integer indices to column names
+            temp = []
+            for colInd in predictors:
+                temp.append(colnames[colInd])
+            predictors = temp
+
+        if (type(yresp) == type(1)):
+            tempy = colnames[yresp]
+            yresp = tempy # column name of response column
+
+        enumCols = [] # extract enum columns out to process them
+        enumColsIndices = []     # store enum column indices
+        typeDict = self.types
+        for predName in predictors:
+            if str(typeDict[predName])=='enum':
+                enumCols.append(predName)
+                enumColsIndices.append(colnames.index(predName))
+
+        pandaFtrain = tempFrame.as_data_frame(use_pandas=True, header=True)
+        nrows = tempFrame.nrow
+
+        # convert H2OFrame to DMatrix starts here
+        if len(enumCols) > 0:   # enumCols contain all enum column names
+            allDomain = tempFrame.levels() # list all domain levels with column indices
+            domainLen = []
+            for enumIndex in enumColsIndices:
+                if len(allDomain[enumIndex])>0:
+                    domainLen.append(len(allDomain[enumIndex])*-1)
+            incLevel = np.argsort(domainLen) # indices of enum column indices with decreasing domain length
+
+            # need to move enum columns to the front, highest level first
+            c2 = tempFrame[enumCols[incLevel[0]]]
+            tempFrame = tempFrame.drop(enumCols[incLevel[0]])
+            for index in range(1, len(incLevel)):
+                c2 = c2.cbind(tempFrame[enumCols[incLevel[index]]])
+                tempFrame = tempFrame.drop(enumCols[incLevel[index]])
+               
+            enumCols = c2.names
+            tempFrame = c2.cbind(tempFrame)
+            pandaFtrain = tempFrame.as_data_frame(use_pandas=True, header=True) # redo translation from H2O to panda
+        
+            pandaTrainPart = generatePandaEnumCols(pandaFtrain, enumCols[0], nrows, tempFrame[enumCols[0]].categories())
+            pandaFtrain.drop([enumCols[0]], axis=1, inplace=True)
+
+            for colInd in range(1, len(enumCols)):
+                cname=enumCols[colInd]
+                ctemp = generatePandaEnumCols(pandaFtrain, cname,  nrows, tempFrame[enumCols[colInd]].categories())
+                pandaTrainPart=pd.concat([pandaTrainPart, ctemp], axis=1)
+                pandaFtrain.drop([cname], axis=1, inplace=True)
+
+            pandaFtrain = pd.concat([pandaTrainPart, pandaFtrain], axis=1)
+
+        c0= tempFrame[yresp].asnumeric().as_data_frame(use_pandas=True, header=True)
+        pandaFtrain.drop([yresp], axis=1, inplace=True)
+        pandaF = pd.concat([c0, pandaFtrain], axis=1)
+        pandaF.rename(columns={c0.columns[0]:yresp}, inplace=True)
+        newX = list(pandaFtrain.columns.values)
+        data = pandaF.as_matrix(newX)
+        label = pandaF.as_matrix([yresp])
+
+        return xgb.DMatrix(data=csr_matrix(data), label=label) \
+            if h2oXGBoostModel._model_json['output']['sparse'] else xgb.DMatrix(data=data, label=label)
+
     def pivot(self, index, column, value):
         """
         Pivot the frame designated by the three columns: index, column, and value. Index and column should be
@@ -2479,7 +2681,7 @@ class H2OFrame(object):
         :param index: Index is a column that will be the row label
         :param column: The labels for the columns in the pivoted Frame
         :param value: The column of values for the given index and column label
-        :return:
+        :returns:
         """
         assert_is_type(index, str)
         assert_is_type(column, str)
@@ -2496,6 +2698,183 @@ class H2OFrame(object):
         if self.type(index) not in ["enum","time","int"]:
             raise H2OValueError("'index' argument is not type enum, time or int")
         return H2OFrame._expr(expr=ExprNode("pivot",self,index,column,value))
+
+    def rank_within_group_by(self, group_by_cols, sort_cols, ascending=[], new_col_name="New_Rank_column", sort_cols_sorted=False):
+        """
+        This function will add a new column rank where the ranking is produced as follows:
+         1. sorts the H2OFrame by columns sorted in by columns specified in group_by_cols and sort_cols in the directions
+           specified by the ascending for the sort_cols.  The sort directions for the group_by_cols are ascending only.
+         2. A new rank column is added to the frame which will contain a rank assignment performed next.  The user can
+           choose to assign a name to this new column.  The default name is New_Rank_column.
+         3. For each groupby groups, a rank is assigned to the row starting from 1, 2, ... to the end of that group.
+         4. If sort_cols_sorted is TRUE, a final sort on the frame will be performed frame according to the sort_cols and
+            the sort directions in ascending.  If sort_cols_sorted is FALSE (by default), the frame from step 3 will be
+            returned as is with no extra sort.  This may provide a small speedup if desired.
+
+        :param group_by_cols: The columns to group on (either a single column name/index, or a list of column names
+          or column indices
+        :param sort_cols: The columns to sort on (either a single column name/index, or a list of column names or
+          column indices
+        :param ascending: Optional Boolean array to denote sorting direction for each sorting column.  True for
+          ascending, False for descending.  Default is ascending sort.  Sort direction for enums will be ignored.
+        :param new_col_name: Optional String to denote the new column names.  Default to New_Rank_column.
+        :param sort_cols_sorted: Optional Boolean to denote if the returned frame should be sorted according to sort_cols
+          and sort directions specified in ascending.  Default is False.
+
+        :return: a new Frame with new rank (sorted by columns in sort_cols) column within the grouping specified
+          by the group_by_cols.
+
+         The following example is generated by Nidhi Mehta.
+         If the input frame is train:
+
+         ID Group_by_column        num data Column_to_arrange_by       num_1 fdata
+         12               1   2941.552    1                    3  -3177.9077     1
+         12               1   2941.552    1                    5 -13311.8247     1
+         12               2 -22722.174    1                    3  -3177.9077     1
+         12               2 -22722.174    1                    5 -13311.8247     1
+         13               3 -12776.884    1                    5 -18421.6171     0
+         13               3 -12776.884    1                    4  28080.1607     0
+         13               1  -6049.830    1                    5 -18421.6171     0
+         13               1  -6049.830    1                    4  28080.1607     0
+         15               3 -16995.346    1                    1  -9781.6373     0
+         16               1 -10003.593    0                    3 -61284.6900     0
+         16               3  26052.495    1                    3 -61284.6900     0
+         16               3 -22905.288    0                    3 -61284.6900     0
+         17               2 -13465.496    1                    2  12094.4851     1
+         17               2 -13465.496    1                    3 -11772.1338     1
+         17               2 -13465.496    1                    3   -415.1114     0
+         17               2  -3329.619    1                    2  12094.4851     1
+         17               2  -3329.619    1                    3 -11772.1338     1
+         17               2  -3329.619    1                    3   -415.1114     0
+
+         If the following commands are issued:
+         rankedF1 = h2o.rank_within_group_by(train, ["Group_by_column"], ["Column_to_arrange_by"], [TRUE])
+         rankedF1.summary()
+
+         The returned frame rankedF1 will look like this:
+         ID Group_by_column        num fdata Column_to_arrange_by       num_1 fdata.1 New_Rank_column
+         12               1   2941.552     1                    3  -3177.9077       1               1
+         16               1 -10003.593     0                    3 -61284.6900       0               2
+         13               1  -6049.830     0                    4  28080.1607       0               3
+         12               1   2941.552     1                    5 -13311.8247       1               4
+         13               1  -6049.830     0                    5 -18421.6171       0               5
+         17               2 -13465.496     0                    2  12094.4851       1               1
+         17               2  -3329.619     0                    2  12094.4851       1               2
+         12               2 -22722.174     1                    3  -3177.9077       1               3
+         17               2 -13465.496     0                    3 -11772.1338       1               4
+         17               2 -13465.496     0                    3   -415.1114       0               5
+         17               2  -3329.619     0                    3 -11772.1338       1               6
+         17               2  -3329.619     0                    3   -415.1114       0               7
+         12               2 -22722.174     1                    5 -13311.8247       1               8
+         15               3 -16995.346     1                    1  -9781.6373       0               1
+         16               3  26052.495     0                    3 -61284.6900       0               2
+         16               3 -22905.288     1                    3 -61284.6900       0               3
+         13               3 -12776.884     1                    4  28080.1607       0               4
+         13               3 -12776.884     1                    5 -18421.6171       0               5
+
+         If the following commands are issued:
+         rankedF1 = h2o.rank_within_group_by(train, ["Group_by_column"], ["Column_to_arrange_by"], [TRUE], sort_cols_sorted=True)
+         h2o.summary(rankedF1)
+
+         The returned frame will be sorted according to sort_cols and hence look like this instead:
+         ID Group_by_column        num fdata Column_to_arrange_by       num_1 fdata.1 New_Rank_column
+         15               3 -16995.346     1                    1  -9781.6373       0               1
+         17               2 -13465.496     0                    2  12094.4851       1               1
+         17               2  -3329.619     0                    2  12094.4851       1               2
+         12               1   2941.552     1                    3  -3177.9077       1               1
+         12               2 -22722.174     1                    3  -3177.9077       1               3
+         16               1 -10003.593     0                    3 -61284.6900       0               2
+         16               3  26052.495     0                    3 -61284.6900       0               2
+         16               3 -22905.288     1                    3 -61284.6900       0               3
+         17               2 -13465.496     0                    3 -11772.1338       1               4
+         17               2 -13465.496     0                    3   -415.1114       0               5
+         17               2  -3329.619     0                    3 -11772.1338       1               6
+         17               2  -3329.619     0                    3   -415.1114       0               7
+         13               3 -12776.884     1                    4  28080.1607       0               4
+         13               1  -6049.830     0                    4  28080.1607       0               3
+         12               1   2941.552     1                    5 -13311.8247       1               4
+         12               2 -22722.174     1                    5 -13311.8247       1               8
+         13               3 -12776.884     1                    5 -18421.6171       0               5
+         13               1  -6049.830     0                    5 -18421.6171       0               5
+
+        """
+        assert_is_type(group_by_cols, str, int, [str, int])
+        if type(group_by_cols) != list: group_by_cols = [group_by_cols]
+        if type(sort_cols) != list: sort_cols = [sort_cols]
+
+        if type(ascending) != list: ascending = [ascending]   # convert to list
+        ascendingI=[1]*len(sort_cols)  # intitalize sorting direction to ascending by default
+        for c in sort_cols:
+            if self.type(c) not in ["enum","time","int","real"]:
+                raise H2OValueError("Sort by column: " + str(c) + " not of enum, time, int or real type")
+        for c in group_by_cols:
+            if self.type(c) not in ["enum","time","int","real"]:
+                raise H2OValueError("Group by column: " + str(c) + " not of enum, time, int or real type")
+
+        if len(ascending)>0:  # user specify sort direction, assume all columns ascending
+            assert len(ascending)==len(sort_cols), "Sorting direction must be specified for each sorted column."
+            for index in range(len(sort_cols)):
+                ascendingI[index]=1 if ascending[index] else -1
+
+        finalSortedOrder=0
+        if (sort_cols_sorted):
+            finalSortedOrder=1
+        return H2OFrame._expr(expr=ExprNode("rank_within_groupby",self,group_by_cols,sort_cols,ascendingI,new_col_name, finalSortedOrder))
+
+    def topNBottomN(self, column=0, nPercent=10, grabTopN=-1):
+        """
+        Given a column name or one column index, a percent N, this function will return the top or bottom N% of the
+         values of the column of a frame.  The column must be a numerical column.
+    
+        :param column: a string for column name or an integer index
+        :param nPercent: a top or bottom percentage of the column values to return
+        :param grabTopN: -1 to grab bottom N percent and 1 to grab top N percent
+        :returns: a H2OFrame containing two columns.  The first column contains the original row indices where
+            the top/bottom values are extracted from.  The second column contains the values.
+        """
+        assert (nPercent >= 0) and (nPercent<=100.0), "nPercent must be between 0.0 and 100.0"
+        assert round(nPercent*0.01*self.nrows)>0, "Increase nPercent.  Current value will result in top 0 row."
+
+        if isinstance(column, int):
+            if (column < 0) or (column>=self.ncols):
+                raise H2OValueError("Invalid column index H2OFrame")
+            else:
+                colIndex = column
+        else:       # column is a column name
+            col_names = self.names
+            if column not in col_names:
+                raise H2OValueError("Column name not found H2OFrame")
+            else:
+                colIndex = col_names.index(column)
+
+        if not(self[colIndex].isnumeric()):
+            raise H2OValueError("Wrong column type!  Selected column must be numeric.")
+
+        return H2OFrame._expr(expr=ExprNode("topn", self, colIndex, nPercent, grabTopN))
+
+    def topN(self, column=0, nPercent=10):
+        """
+        Given a column name or one column index, a percent N, this function will return the top N% of the values
+        of the column of a frame.  The column must be a numerical column.
+    
+        :param column: a string for column name or an integer index
+        :param nPercent: a top percentage of the column values to return
+        :returns: a H2OFrame containing two columns.  The first column contains the original row indices where
+            the top values are extracted from.  The second column contains the top nPercent values.
+        """
+        return self.topNBottomN(column, nPercent, 1)
+
+    def bottomN(self, column=0, nPercent=10):
+        """
+        Given a column name or one column index, a percent N, this function will return the bottom N% of the values
+        of the column of a frame.  The column must be a numerical column.
+    
+        :param column: a string for column name or an integer index
+        :param nPercent: a bottom percentage of the column values to return
+        :returns: a H2OFrame containing two columns.  The first column contains the original row indices where
+            the bottom values are extracted from.  The second column contains the bottom nPercent values.
+        """
+        return self.topNBottomN(column, nPercent, -1)
 
     def sub(self, pattern, replacement, ignore_case=False):
         """
@@ -2666,6 +3045,10 @@ class H2OFrame(object):
         :returns: an H2OFrame where each element is equal to the corresponding element in the source
             frame minus the previous-row element in the same frame.
         """
+        if self.ncols > 1:
+            raise H2OValueError("Only single-column frames supported")
+        if self.types[self.columns[0]] not in {"real", "int", "bool"}:
+            raise H2OValueError("Numeric column expected")
         fr = H2OFrame._expr(expr=ExprNode("difflag1", self), cache=self._ex._cache)
         return fr
 
@@ -2924,11 +3307,11 @@ class H2OFrame(object):
         :param axis: 0 = apply to each column; 1 = apply to each row
         :returns: a new H2OFrame with the results of applying ``fun`` to the current frame.
         """
-        from .astfun import _bytecode_decompile_lambda
+        from .astfun import lambda_to_expr
         assert_is_type(axis, 0, 1)
         assert_is_type(fun, FunctionType)
         assert_satisfies(fun, fun.__name__ == "<lambda>")
-        res = _bytecode_decompile_lambda(fun.__code__)
+        res = lambda_to_expr(fun)
         return H2OFrame._expr(expr=ExprNode("apply", self, 1 + (axis == 0), *res))
 
 
@@ -3055,3 +3438,41 @@ def _binop(lhs, op, rhs, rtype=None):
     if rtype is not None and res._ex._cache._names is not None:
         res._ex._cache._types = {name: rtype for name in res._ex._cache._names}
     return res
+
+
+
+
+def generatePandaEnumCols(pandaFtrain, cname, nrows, domainL):
+    """
+    For an H2O Enum column, we perform one-hot-encoding here and add one more column, "missing(NA)" to it.
+
+    :param pandaFtrain: panda frame derived from H2OFrame
+    :param cname: column name of enum col
+    :param nrows: number of rows of enum col
+    :return: panda frame with enum col encoded correctly for native XGBoost
+    """
+    import numpy as np
+    import pandas as pd
+    
+    cmissingNames=[cname+".missing(NA)"]
+    tempnp = np.zeros((nrows,1), dtype=np.int)
+    # check for nan and assign it correct value
+    colVals = pandaFtrain[cname]
+    for ind in range(nrows):
+        try:
+            if not(colVals[ind] in domainL):
+                tempnp[ind]=1
+        except ValueError:
+            pass
+    zeroFrame = pd.DataFrame(tempnp)
+    zeroFrame.columns=cmissingNames
+    temp = pd.get_dummies(pandaFtrain[cname], prefix=cname, drop_first=False)
+    tempNames = list(temp)  # get column names
+    colLength = len(tempNames)
+    newNames = ['a']*colLength
+
+    for ind in range(0,colLength):
+        newNames[ind]=cname+"_"+domainL[ind]
+    ftemp = temp[newNames]
+    ctemp = pd.concat([ftemp, zeroFrame], axis=1)
+    return ctemp

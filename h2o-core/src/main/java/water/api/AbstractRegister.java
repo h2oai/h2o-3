@@ -1,12 +1,10 @@
 package water.api;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.ServiceLoader;
 
 public abstract class AbstractRegister implements RestApiExtension {
-
-  @Override
-  public void registerEndPoints(RestApiContext context) {
-  }
 
   @Override
   public void registerSchemas(RestApiContext context) {
@@ -21,4 +19,10 @@ public abstract class AbstractRegister implements RestApiExtension {
   public String getName() {
     return this.getClass().getName();
   }
+
+  @Override
+  public List<String> getRequiredCoreExtensions() {
+    return Collections.emptyList();
+  }
+
 }

@@ -74,6 +74,47 @@ public class ParserTest2 extends TestUtil {
     fr.delete();
   }
 
+  /**
+   * there's no official grammar for CSV, and especially no directive on how to handle blank lines.
+   * but common parsers (e.g. Python CSV parser) ignores them.
+   * Useful to consider anyway, especially for trailing lines
+   */
+  @Test public void testIgnoreBlankLines() {
+    //the data chunks are intentionally cut at some various edge cases (cut before data not currently supported)
+    String [] data = new String[]{
+        "'C1', 'C2', 'C3', "+" 'C4'\n"+         //chunk1&2
+        " \t\n"+
+        "1,       1,","         1,        1\n"+ //chunk3
+        "2,       2,         ","2,        2\n"+ //chunk4
+        "3,       3,         3",",        3\n"+ //chunk5
+        " ,        ,          ,      ","   \n"+ //chunk6
+        "\n"+
+        "  \n",
+        " \n"+                                  //chunk7
+        "\t\n"+
+        "  "+"  \n"+                            //chunk8
+        "\t\t\t\n"+
+        " \t"+"\n",
+    };
+    Key dataKey = ParserTest.makeByteVec(data);
+    ParseSetup ps = new ParseSetup(CSV_INFO, (byte)',', false, ParseSetup.HAS_HEADER, 4,
+        new String[]{"'C1'","'C2'", "'C3'", "'C4'"},
+        ParseSetup.strToColumnTypes(new String[]{"Numeric", "Numeric", "Numeric", "Numeric"}),
+        null, null, null);
+    Frame fr = null;
+    try {
+      fr = ParseDataset.parse(Key.make("blank_lines_test.hex"), new Key[]{dataKey}, true, ps);
+      Assert.assertEquals(4, fr.numRows());
+      Assert.assertTrue(fr.hasNAs());
+      Assert.assertEquals(4, fr.naCount());
+      for (int i = 0; i < 4; i++) { //only last=4th row contains NAs
+        Assert.assertTrue(fr.vec(i).isNA(3));
+      }
+    } finally {
+      if (fr != null) fr.delete();
+    }
+  }
+
   
  @Test public void testSingleQuotes(){
     String[] data  = new String[]{"'Tomass,test,first,line'\n'Tomas''s,test2',test2\nlast,'line''","s, trailing, piece'"};
@@ -81,7 +122,8 @@ public class ParserTest2 extends TestUtil {
                                               ar("'Tomas''s","test2'","test2",null),
                                               ar("last","'line''s","trailing","piece'") };
     Key k = ParserTest.makeByteVec(data);
-    ParseSetup gSetupF = ParseSetup.guessSetup(null, StringUtils.bytesOf(data[0]), CSV_INFO, (byte)',', 4, false/*single quote*/, ParseSetup.NO_HEADER, null, null, null, null);
+
+    ParseSetup gSetupF = ParseSetup.guessSetup(null, StringUtils.bytesOf(data[0]), new ParseSetup(CSV_INFO, (byte)',', false/*single quote*/, 4, ParseSetup.NO_HEADER, null, null));
     gSetupF._column_types = ParseSetup.strToColumnTypes(new String[]{"Enum", "Enum", "Enum", "Enum"});
     Frame frF = ParseDataset.parse(Key.make(), new Key[]{k}, false, gSetupF);
     testParsed(frF,expectFalse);
@@ -89,7 +131,7 @@ public class ParserTest2 extends TestUtil {
     String[][] expectTrue = new String[][] { ar("Tomass,test,first,line", null),
                                              ar("Tomas''stest2","test2"),
                                              ar("last", "lines trailing piece") };
-    ParseSetup gSetupT = ParseSetup.guessSetup(null, StringUtils.bytesOf(data[0]), CSV_INFO, (byte)',', 2, true/*single quote*/, ParseSetup.NO_HEADER, null, null, null, null);
+    ParseSetup gSetupT = ParseSetup.guessSetup(null, StringUtils.bytesOf(data[0]), new ParseSetup(CSV_INFO, (byte)',', true/*single quote*/, 2, ParseSetup.NO_HEADER, null, null));
     gSetupT._column_types = ParseSetup.strToColumnTypes(new String[]{"Enum", "Enum", "Enum", "Enum"});
     Frame frT = ParseDataset.parse(Key.make(), new Key[]{k}, true, gSetupT);
     //testParsed(frT,expectTrue);  // not currently passing
@@ -101,6 +143,26 @@ public class ParserTest2 extends TestUtil {
     Assert.assertEquals(fr.numCols(),11);
     Assert.assertEquals(fr.numRows(), 7);
     fr.delete();
+  }
+
+  @Test public void testDoubleQuotes() {
+    Frame fr = null;
+   try {
+    String[] data  = new String[]{"Tomass,test,\"Feline says \"\"meh\"\".\",line\nTomass,test2,second,line\nTomass,test3,last,line"};
+    Key k = ParserTest.makeByteVec(data);
+    ParseSetup gSetupF = ParseSetup.guessSetup(null, StringUtils.bytesOf(data[0]), new ParseSetup(CSV_INFO, (byte)',', false/*single quote*/, ParseSetup.NO_HEADER, 4, null, null));
+    gSetupF._column_types = ParseSetup.strToColumnTypes(new String[]{"String", "String", "String", "String"});
+    fr = ParseDataset.parse(Key.make(), new Key[]{k}, true, gSetupF);
+     BufferedString str = new BufferedString();
+     Vec[] vecs = fr.vecs();
+     Assert.assertEquals(fr.numCols(),4);
+     Assert.assertEquals(fr.numRows(), 3);
+     Assert.assertEquals("Feline says \"meh\".", vecs[2].atStr(str, 0).toString());
+     fr.delete();
+   }
+   finally {
+     if( fr != null ) fr.delete();
+   }
   }
   
   // Test very sparse data

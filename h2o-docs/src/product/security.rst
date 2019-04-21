@@ -120,7 +120,7 @@ jobs.
 9. The authenticated user can access the same data in H2O that he could
    access via HDFS
 
-What is being Secured Today
+What is Being Secured Today
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 1. Standard file permissions security is provided by the Operating
@@ -143,6 +143,27 @@ What is being Secured Today
 
 3. Internal H2O node-to-H2O node communication can be encrypted.
 
+
+Enforcing System-Level Command-Line Arguments in h2odriver.jar
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+System administrators can create a configuration file with implicit arguments of h2odriver and use it to make sure the H2O cluster is started with the specified security settings. 
+
+1. Create the config file in **/etc/h2o/h2odriver.args**.
+2. Specify the default command-line options that you want to enforce. Note that each argument must be on a separate line. For example:
+
+ ::
+
+   h2o_ssl_jks_internal=keystore.jks
+   h2o_ssl_jks_password=password
+   h2o_ssl_jts_internal=truststore.jks
+   h2o_ssl_jts_password=password
+
+3. Start H2O.
+
+ ::
+
+  hadoop jar h2odriver.jar -mapperXmx 3g -nodes 1
 
 File Security in H2O
 --------------------
@@ -213,7 +234,17 @@ extension libcurl and OpenSSL.
 Python Client
 '''''''''''''
 
-Not yet implemented. Please contact H2O for an update.
+The following code snippet demonstrates connecting to an H2O cluster
+with HTTPS:
+
+::
+
+    h2o.init(ip = "a.b.c.d", port = 54321, https = TRUE, insecure = TRUE)
+
+The underlying HTTPS implementation is provided by RCurl and by
+extension libcurl and OpenSSL.
+
+ **Caution:** Certificate checking has not been implemented yet. The ``insecure`` flag tells the client to ignore certificate checking. This means your client is exposed to a man-in-the-middle attack. We assume for the time being that in a secure corporate network such attacks are of low concern. Currently, the ``insecure`` flag must be set to ``TRUE`` so that in some future version of H2O you will confidently know when certificate checking has actually been implemented.
 
 HTTPS Server Side
 ^^^^^^^^^^^^^^^^^
@@ -322,8 +353,8 @@ standalone H2O using your Keystore:
 
 ----------------
 
-Kerberos Authentication
-~~~~~~~~~~~~~~~~~~~~~~~
+Kerberos Authentication (via HTTP Basic)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Kerberos H2O Client Side
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -449,6 +480,138 @@ Example:
 
 ----------------
 
+Kerberos Authentication (via kinit/SPNEGO)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Kerberos H2O Client Side
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Flow Web UI Client
+''''''''''''''''''
+
+Modern browsers support kerberos authentication out of the box.
+When attempting to reach Flow the server will respond with 401 with negotiate header
+and the browser will use last key acquired via kinit on the client machine.
+
+R Client
+''''''''
+
+Currently SPNEGO authentication is not supported in R client.
+
+Python Client
+'''''''''''''
+
+For Python, connecting to H2O with authentication is similar:
+
+::
+
+    from h2o.auth import SpnegoAuth
+
+    h2o.connect(ip = "a.b.c.d", port = 54321, auth = SpnegoAuth(service_principal = "HTTP/h2o_server@EXAMPLE.COM"))
+
+Connecting to SPNEGO configured H2O server is currently possible only via h2o.connect (h2o.init not supported).
+Read below on what to specify as service_principal.
+
+Kerberos H2O Server Side
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+On the machine running the H2O server a keytab file must be created containing the key for
+the service principal used by this server. The same service principal must be used in the client
+code when connecting to the server.
+
+You must provide configuration files for the SPNEGO login module:
+
+Example **spnego.conf**:
+
+::
+
+    com.sun.security.jgss.initiate {
+        com.sun.security.auth.module.Krb5LoginModule required
+        principal="HTTP/h2o_server@EXAMPLE.COM"
+        keyTab="/srv/h2o.keytab"
+        useKeyTab=true
+        storeKey=true
+        isInitiator=false;
+    };
+
+    com.sun.security.jgss.accept {
+        com.sun.security.auth.module.Krb5LoginModule required
+        principal="HTTP/h2o_server@EXAMPLE.COM"
+        keyTab="/srv/h2o.keytab"
+        useKeyTab=true
+        storeKey=true
+        isInitiator=false;
+    };
+
+Example **spnego.properties**:
+
+::
+
+    targetName=HTTP/h2o_server@EXAMPLE.COM
+
+
+Standalone H2O
+''''''''''''''
+
+The following options are required for SPNEGO authentication:
+
+::
+
+    -spnego_login
+          Use Jetty SPNEGO Login Service
+
+    -user_name <username>
+          Principal for which access is allowed, must be full kerberos name name/path@DOMAIN
+
+    -login_conf <filename>
+          path to spnego.conf file, see example above
+
+    -spnego_properties <filename>
+          path to spnego.properties file, see example above
+
+Example:
+
+::
+
+    java -Djavax.security.auth.useSubjectCredsOnly=false -jar h2o.jar \
+        -spnego_login -user_name pricipal@DOMAIN \
+        -login_conf /path/to/spnego.conf \
+        -spnego_properties /path/to/spnego.properties
+
+
+H2O on Hadoop
+'''''''''''''
+
+The following options are available:
+
+::
+
+
+    -spnego_login
+          Use Jetty SPNEGO Login Service
+
+    -user_name <username>
+          Principal for which access is allowed, must be full kerberos name name/path@DOMAIN
+
+    -login_conf <filename>
+          path to spnego.conf file, see example above
+
+    -spnego_properties <filename>
+          path to spnego.properties file, see example above
+
+
+Example:
+
+::
+
+    hadoop jar h2odriver.jar -n 3 -mapperXmx 10g -output hdfsOutputDirectory \
+        -spnego_login -user_name pricipal@DOMAIN \
+        -login_conf /path/to/spnego.conf \
+        -spnego_properties /path/to/spnego.properties
+
+
+----------------
+
 LDAP Authentication
 ~~~~~~~~~~~~~~~~~~~
 
@@ -478,7 +641,12 @@ with authentication:
 Python Client
 '''''''''''''
 
-Not yet implemented. Please contact H2O for an update.
+The following code snippet demonstrates connecting to an H2O cluster
+with authentication:
+
+::
+
+    h2o.init(ip = "a.b.c.d", port = 54321, username = "myusername", password = "mypassword")
 
 LDAP H2O Server Side
 ^^^^^^^^^^^^^^^^^^^^
@@ -493,7 +661,7 @@ Example **ldap.conf**:
 ::
 
     ldaploginmodule {
-        org.eclipse.jetty.plus.jaas.spi.LdapLoginModule required
+        ai.h2o.org.eclipse.jetty.plus.jaas.spi.LdapLoginModule required
         debug="true"
         useLdaps="false"
         contextFactory="com.sun.jndi.ldap.LdapCtxFactory"
@@ -581,6 +749,38 @@ Example:
     $SPARK_HOME/bin/spark-submit --class water.SparklingWaterDriver --conf spark.ext.h2o.ldap.login=true --conf spark.ext.h2o.login.conf=/path/to/ldap.conf sparkling-water-assembly-0.2.17-SNAPSHOT-all.jar
 
     $SPARK_HOME/bin/spark-submit --class water.SparklingWaterDriver --conf spark.ext.h2o.ldap.login=true --conf spark.ext.h2o.user.name=myLDAPusername --conf spark.ext.h2o.login.conf=/path/to/ldap.conf sparkling-water-assembly-0.2.17-SNAPSHOT-all.jar
+
+
+LDAP Authentication and MapR
+''''''''''''''''''''''''''''
+
+The following information is for users who authentication with LDAP on MapR, which uses a proprietary Hadoop configuration property that specifies the configuration file. Additional information is available here: `http://doc.mapr.com/display/MapR/mapr.login.conf <http://doc.mapr.com/display/MapR/mapr.login.conf>`__.
+
+In order to make LDAP authentication work, add the ldap.conf definition to the MapR configuration file in **/opt/mapr/conf/mapr.login.conf**.  
+
+Debugging Server-side LDAP issues
+'''''''''''''''''''''''''''''''''
+
+To get detailed output from Jetty for LDAP debugging, you need to create the **jetty-logging.properties** file and add it to your classpath.
+
+Example **jetty-logging.properties**:
+
+::
+
+    org.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.StdErrLog
+    org.eclipse.jetty.LEVEL=DEBUG
+
+Standalone H2O example (with **jetty-logging.properties** in the current directory):
+
+::
+
+    java -cp h2o.jar:. water.H2OApp
+
+H2O on Hadoop example (with **jetty-logging.properties** in the current directory):
+
+::
+
+    hadoop jar h2odriver.jar -libjars jetty-logging.properties -n 1 -mapperXmx 5g -output hdfsOutputDirectory
 
 -------------
 
@@ -727,7 +927,12 @@ with authentication:
 Python Client
 '''''''''''''
 
-Not yet implemented. Please contact H2O for an update.
+The following code snippet demonstrates connecting to an H2O cluster
+with authentication:
+
+::
+
+    h2o.init(ip = "a.b.c.d", port = 54321, username = "myusername", password = "mypassword")
 
 Hash File H2O Server Side
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -836,7 +1041,7 @@ The user can also manually generate keystore/truststore and properties file as d
 
 ::
 
-  hadoop jar h2odriver.jar -nodes 4 -mapperXmx 6g -output hdfsOutputDirName -internal_security security.properties
+  hadoop jar h2odriver.jar -nodes 4 -mapperXmx 6g -output hdfsOutputDirName -internal_security_conf security.properties
 
 
 Standalone/AWS
@@ -855,16 +1060,16 @@ In this case, the user has to generate the keystores, truststores, and propertie
     h2o_ssl_jts_internal=truststore.jks
     h2o_ssl_jts_password=password
 
-3. To start an SSL-enabled node, pass the location to the properties file using the ``-internal_security`` flag
+3. To start an SSL-enabled node, pass the location to the properties file using the ``-internal_security_conf`` flag
 
  ::
 
-  java -jar h2o.jar -internal_security security.properties
+  java -jar h2o.jar -internal_security_conf security.properties
 
 Configuration
 ~~~~~~~~~~~~~
 
-To enable this feature, set the ``-internal_security`` parameter when starting an H2O node, and point that to a configuration file (key=value format) that contains the following values:
+To enable this feature, set the ``-internal_security_conf`` parameter when starting an H2O node, and point that to a configuration file (key=value format) that contains the following values:
 
 - ``h2o_ssl_jks_internal`` (required): The path (absolute or relative) to the key-store file used for internal SSL communication
 - ``h2o_ssl_jks_password`` (required): The password for the internal key-store
@@ -875,7 +1080,6 @@ To enable this feature, set the ``-internal_security`` parameter when starting a
 
 This must be set for every node in the cluster. Every node needs to have access to both Java keystore and Java truststore containing appropriate keys and certificates.
 
-This feature should not be used together with the ``-useUDP`` flag, as we currently do not support UDP encryption through DTLS or any other protocol that might result in unencrypted data transfers.
 
 Keystore/Truststore Generation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -904,7 +1108,7 @@ A more secure way would be to:
 
  ::
 
-  keytool -export -keystore h2o-internal.jks -alias signFiles -file node<number>.cer
+  keytool -export -keystore h2o-internal.jks -alias h2o-internal -file node<number>.cer
 
 3. Distribute all of the above certificates to each node, and on each node create a truststore containing all of them (or put all certificates on one node, import to truststore and distribute that truststore to each node):
 
@@ -931,7 +1135,6 @@ Example benchmark on a 5 node cluster (6GB memory per node) working with a 5.8ml
 Caveats and Missing Pieces
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
- - This feature CANNOT be used together with the ``-useUDP`` flag. We currently do not support DTLS or any other encryption for UDP.
  - Should you start a mixed cloud of SSL and nonSSL nodes, the SSL ones will fail to bootstrap, while the nonSSL ones will become unresponsive.
  - H2O does not provide in-memory data encryption. This might spill data to disk in unencrypted form should swaps to disk occur. As a workaround, an encrypted drive is advised.
  - H2O does not support encryption of data saved to disk, should appropriate flags be enabled. Similar to the previous caveat, the user can use an encrypted drive to work around this issue.

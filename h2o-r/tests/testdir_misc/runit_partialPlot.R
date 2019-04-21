@@ -46,12 +46,16 @@ test <- function() {
   partialDependence <- function(object, pred.data, xname, h2o.pp) {
     x.pt <- h2o.pp[,1]
     y.pt <- numeric(length(x.pt))
+    y.sd <- numeric(length(x.pt))
+    y.sem <- numeric(length(x.pt))
     
     for (i in seq(along = x.pt)) {
       x.data <- pred.data
       x.data[, xname] <- x.pt[i]
       pred <- h2o.predict(object = object, newdata = x.data)
-      y.pt[i] <- mean( pred[,ncol(pred)])
+      y.pt[i] <- mean(pred[,ncol(pred)])
+      y.sd[i] <- sd(pred[,ncol(pred)])
+      y.sem[i] <- y.sd[i]/sqrt(nrow(x.data))
       
       # # The logic used in the package "RandomForest"
       # # used for binary classifers to bound the partial dependence between -1 and 1
@@ -67,17 +71,26 @@ test <- function() {
       # }
       
     }
-    return(data.frame(xname = x.pt, mean_response = y.pt))
+    return(data.frame(xname = x.pt, mean_response = y.pt, stddev_response = y.sd, std_error_mean_response = y.sem))
   }
   
   ## Calculate partial dependence using h2o.partialPlot for columns "AGE" and "RACE"
   h2o_race_pp = h2o.partialPlot(object = prostate_drf, data = prostate_hex, cols = "RACE", plot = F)
   h2o_age_pp = h2o.partialPlot(object = prostate_drf, data = prostate_hex, cols = "AGE", plot = F)
-  ## Check that the mean response checks out
   h2o_age_pp_2 = partialDependence(object = prostate_drf, pred.data = prostate_hex, xname = "AGE", h2o.pp = h2o_age_pp)
   h2o_race_pp_2 = partialDependence(object = prostate_drf, pred.data = prostate_hex, xname = "RACE", h2o.pp = h2o_race_pp)
+
+  #Mean response
   checkEqualsNumeric(h2o_age_pp_2[,"mean_response"], h2o_age_pp[,"mean_response"])
   checkEqualsNumeric(h2o_race_pp_2[,"mean_response"], h2o_race_pp[,"mean_response"])
+
+  #Standard Deviation of Response
+  checkEqualsNumeric(h2o_age_pp_2[,"stddev_response"], h2o_age_pp[,"stddev_response"])
+  checkEqualsNumeric(h2o_race_pp_2[,"stddev_response"], h2o_race_pp[,"stddev_response"])
+
+  #Standard Error of Mean Response
+  checkEqualsNumeric(h2o_age_pp_2[,"std_error_mean_response"], h2o_age_pp[,"std_error_mean_response"])
+  checkEqualsNumeric(h2o_race_pp_2[,"std_error_mean_response"], h2o_race_pp[,"std_error_mean_response"])
   
   ## Check spliced/subsetted datasets
   prostate_hex[, "RACE"] = as.factor(prostate_hex[, "RACE"])
@@ -98,10 +111,22 @@ test <- function() {
   check_pp_race_1 = partialDependence(object = prostate_drf, pred.data = prostate_hex_race_1, xname = "RACE", h2o.pp = h2o_pp_race_1)
   check_pp_race_2 = partialDependence(object = prostate_drf, pred.data = prostate_hex_race_2, xname = "RACE", h2o.pp = h2o_pp_race_2)
   
-  ## Check the partial plot from h2o 
+  ## Check the partial plot from h2o
+
+  #Mean response
   checkEqualsNumeric(check_pp_race_0[,"mean_response"], h2o_pp_race_0[,"mean_response"])
   checkEqualsNumeric(check_pp_race_1[,"mean_response"], h2o_pp_race_1[,"mean_response"])
   checkEqualsNumeric(check_pp_race_2[,"mean_response"], h2o_pp_race_2[,"mean_response"])
+
+  #Standard Deviation of Response
+  checkEqualsNumeric(check_pp_race_0[,"stddev_response"], h2o_pp_race_0[,"stddev_response"])
+  checkEqualsNumeric(check_pp_race_1[,"stddev_response"], h2o_pp_race_1[,"stddev_response"])
+  checkEqualsNumeric(check_pp_race_2[,"stddev_response"], h2o_pp_race_2[,"stddev_response"])
+
+  #Standard Error of Mean Response
+  checkEqualsNumeric(check_pp_race_0[,"std_error_mean_response"], h2o_pp_race_0[,"std_error_mean_response"])
+  checkEqualsNumeric(check_pp_race_1[,"std_error_mean_response"], h2o_pp_race_1[,"std_error_mean_response"])
+  checkEqualsNumeric(check_pp_race_2[,"std_error_mean_response"], h2o_pp_race_2[,"std_error_mean_response"])
   
   ## H2O partial plot on the entire dataset
   h2o_pp_race   = h2o.partialPlot(object = prostate_drf, data = prostate_hex, cols = "RACE", plot = F)
@@ -117,6 +142,8 @@ test <- function() {
   iris_pps = h2o.partialPlot(object = iris_gbm, data = iris_hex)
   iris_pps2 = lapply( iris_pps, function(x) partialDependence(object = iris_gbm, pred.data = iris_hex, xname = names(x)[1], h2o.pp = x))
   checkTrue(all(unlist(lapply(1:4, function(i) checkEqualsNumeric(iris_pps2[[i]]$mean_response, iris_pps[[i]]$mean_response)))))
+  checkTrue(all(unlist(lapply(1:4, function(i) checkEqualsNumeric(iris_pps2[[i]]$stddev_response, iris_pps[[i]]$stddev_response)))))
+  checkTrue(all(unlist(lapply(1:4, function(i) checkEqualsNumeric(iris_pps2[[i]]$std_error_mean_response, iris_pps[[i]]$std_error_mean_response)))))
   
   ## Check failure cases
   ## 1) Selection of incorrect columns 

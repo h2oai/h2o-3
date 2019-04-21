@@ -29,12 +29,12 @@ class H2ONaiveBayesEstimator(H2OEstimator):
     def __init__(self, **kwargs):
         super(H2ONaiveBayesEstimator, self).__init__()
         self._parms = {}
-        names_list = {"model_id", "nfolds", "seed", "fold_assignment", "fold_column",
+        names_list = {"model_id", "nfolds", "seed", "fold_assignment", "fold_column", "keep_cross_validation_models",
                       "keep_cross_validation_predictions", "keep_cross_validation_fold_assignment", "training_frame",
                       "validation_frame", "response_column", "ignored_columns", "ignore_const_cols",
                       "score_each_iteration", "balance_classes", "class_sampling_factors", "max_after_balance_size",
                       "max_confusion_matrix_size", "max_hit_ratio_k", "laplace", "min_sdev", "eps_sdev", "min_prob",
-                      "eps_prob", "compute_metrics", "max_runtime_secs"}
+                      "eps_prob", "compute_metrics", "max_runtime_secs", "export_checkpoints_dir"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -49,7 +49,7 @@ class H2ONaiveBayesEstimator(H2OEstimator):
     @property
     def nfolds(self):
         """
-        Number of folds for N-fold cross-validation (0 to disable or >= 2).
+        Number of folds for K-fold cross-validation (0 to disable or >= 2).
 
         Type: ``int``  (default: ``0``).
         """
@@ -108,6 +108,21 @@ class H2ONaiveBayesEstimator(H2OEstimator):
 
 
     @property
+    def keep_cross_validation_models(self):
+        """
+        Whether to keep the cross-validation models.
+
+        Type: ``bool``  (default: ``True``).
+        """
+        return self._parms.get("keep_cross_validation_models")
+
+    @keep_cross_validation_models.setter
+    def keep_cross_validation_models(self, keep_cross_validation_models):
+        assert_is_type(keep_cross_validation_models, None, bool)
+        self._parms["keep_cross_validation_models"] = keep_cross_validation_models
+
+
+    @property
     def keep_cross_validation_predictions(self):
         """
         Whether to keep the predictions of the cross-validation models.
@@ -140,7 +155,7 @@ class H2ONaiveBayesEstimator(H2OEstimator):
     @property
     def training_frame(self):
         """
-        Id of the training data frame (Not required, to allow initial validation of model parameters).
+        Id of the training data frame.
 
         Type: ``H2OFrame``.
         """
@@ -407,5 +422,20 @@ class H2ONaiveBayesEstimator(H2OEstimator):
     def max_runtime_secs(self, max_runtime_secs):
         assert_is_type(max_runtime_secs, None, numeric)
         self._parms["max_runtime_secs"] = max_runtime_secs
+
+
+    @property
+    def export_checkpoints_dir(self):
+        """
+        Automatically export generated models to this directory.
+
+        Type: ``str``.
+        """
+        return self._parms.get("export_checkpoints_dir")
+
+    @export_checkpoints_dir.setter
+    def export_checkpoints_dir(self, export_checkpoints_dir):
+        assert_is_type(export_checkpoints_dir, None, str)
+        self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
 

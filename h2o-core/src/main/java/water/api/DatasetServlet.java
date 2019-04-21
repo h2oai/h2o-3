@@ -1,14 +1,14 @@
 package water.api;
 
 import water.DKV;
-import water.JettyHTTPD;
 import water.fvec.Frame;
+import water.server.ServletUtils;
+import water.util.FileUtils;
+import water.util.Log;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
@@ -18,7 +18,7 @@ public class DatasetServlet extends HttpServlet {
 
   @Override
   protected void doGet(HttpServletRequest request, HttpServletResponse response) {
-    String uri = JettyHTTPD.getDecodedUri(request);
+    String uri = ServletUtils.getDecodedUri(request);
     try {
       boolean use_hex = false;
       String f_name = request.getParameter("frame_id");
@@ -46,13 +46,25 @@ public class DatasetServlet extends HttpServlet {
         suggested_fname = suggested_fname + ".csv";
       f_name = suggested_fname;
       response.addHeader("Content-Disposition", "attachment; filename=" + f_name);
-      JettyHTTPD.setResponseStatus(response, HttpServletResponse.SC_OK);
-      OutputStream os = response.getOutputStream();
-      water.util.FileUtils.copyStream(is, os, 2048);
+      ServletUtils.setResponseStatus(response, HttpServletResponse.SC_OK);
+      OutputStream os = null;
+      try {
+        os = response.getOutputStream();
+        FileUtils.copyStream(is, os, 2048);
+      } finally {
+        if (os != null) {
+          try {
+            os.close();
+          }
+          catch (Exception e) {
+            Log.err(e);
+          }
+        }
+      }
     } catch (Exception e) {
-      JettyHTTPD.sendErrorResponse(response, e, uri);
+      ServletUtils.sendErrorResponse(response, e, uri);
     } finally {
-      JettyHTTPD.logRequest("GET", request, response);
+      ServletUtils.logRequest("GET", request, response);
     }
   }
 

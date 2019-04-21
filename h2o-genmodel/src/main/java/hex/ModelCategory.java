@@ -9,9 +9,12 @@ public enum ModelCategory {
   Unknown,
   Binomial,
   Multinomial,
+  Ordinal,
   Regression,
   Clustering,
   AutoEncoder,
   DimReduction,
-  WordEmbedding
+  WordEmbedding,
+  CoxPH,
+  AnomalyDetection
 }

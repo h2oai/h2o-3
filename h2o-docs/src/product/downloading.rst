@@ -15,8 +15,8 @@ Download and Run
   ::
 
 	cd ~/Downloads
-	unzip h2o-3.10.4.3.zip
-	cd h2o-3.10.4.3
+	unzip h2o-3.22.1.2.zip
+	cd h2o-3.22.1.2
 	java -jar h2o.jar
 
 3. Point your browser to http://localhost:54321.
@@ -38,14 +38,10 @@ Perform the following steps in R to install H2O. Copy and paste these commands o
 
  ::
 
-	if (! ("methods" %in% rownames(installed.packages()))) { install.packages("methods") }
-	if (! ("statmod" %in% rownames(installed.packages()))) { install.packages("statmod") }
-	if (! ("stats" %in% rownames(installed.packages()))) { install.packages("stats") }
-	if (! ("graphics" %in% rownames(installed.packages()))) { install.packages("graphics") }
-	if (! ("RCurl" %in% rownames(installed.packages()))) { install.packages("RCurl") }
-	if (! ("jsonlite" %in% rownames(installed.packages()))) { install.packages("jsonlite") }
-	if (! ("tools" %in% rownames(installed.packages()))) { install.packages("tools") }
-	if (! ("utils" %in% rownames(installed.packages()))) { install.packages("utils") }
+    pkgs <- c("RCurl","jsonlite")
+    for (pkg in pkgs) {
+      if (! (pkg %in% rownames(installed.packages()))) { install.packages(pkg) }
+    }
 
 3. Download and install the H2O package for R.
 
@@ -71,13 +67,16 @@ Install in Python
 
 Run the following commands in a Terminal window to install H2O for Python. 
 
-1. Install dependencies (prepending with `sudo` if needed):
+1. Install dependencies (prepending with ``sudo`` if needed):
 
  ::
 
 	pip install requests
 	pip install tabulate
-	pip install scikit-learn 
+	pip install "colorama>=0.3.8"
+	pip install future
+
+ **Note**: These are the dependencies required to run H2O. A complete list of dependencies is maintained in the following file: `https://github.com/h2oai/h2o-3/blob/master/h2o-py/conda/h2o/meta.yaml <https://github.com/h2oai/h2o-3/blob/master/h2o-py/conda/h2o/meta.yaml>`__.
 
 2. Run the following command to remove any existing H2O module for Python.
 
@@ -109,15 +108,22 @@ Run the following commands in a Terminal window to install H2O for Python.
 Install on Anaconda Cloud
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This section describes how to set up and run H2O in an Anaconda Cloud environment. Conda 2.7 and 3.5 repos are supported as are a number of H2O versions. Refer to `https://anaconda.org/h2oai/h2o/files <https://anaconda.org/h2oai/h2o/files>`__ to view a list of available H2O versions.
+This section describes how to set up and run H2O in an Anaconda Cloud environment. Conda 2.7, 3.5, and 3.6 repos are supported as are a number of H2O versions. Refer to `https://anaconda.org/h2oai/h2o/files <https://anaconda.org/h2oai/h2o/files>`__ to view a list of available H2O versions.
 
-Open a terminal window and run the following command to install H2O on the Anaconda Cloud. 
+Open a terminal window and run the following command to install H2O on the Anaconda Cloud. The H2O version in this command should match the version that you want to download. If you leave the h2o version blank and specify just ``h2o``, then the latest version will be installed.
       
    ::
 
-     user$ conda install -c h2oai h2o=3.10.4.3
+     user$ conda install -c h2oai h2o=3.22.1.2
 
-**Note**: The H2O version in the above command should match the version that you want to download. 
+**Note**: For Python 3.6 users, H2O has ``tabulate>=0.75`` as a dependency; however, there is no ``tabulate`` available in the default channels for Python 3.6. This is available in the conda-forge channel. As a result, Python 3.6 users must add the ``conda-forge`` channel in order to load the latest version of H2O. This can be done by performing the following steps:
+
+ ::
+
+   conda create -n py36 python=3.6 anaconda
+   source activate py36
+   conda config --append channels conda-forge
+   conda install -c h2oai h2o 
 
 After H2O is installed, refer to the `Starting H2O from Anaconda <starting-h2o.html#from-anaconda>`__ section for information on how to start H2O and to view a GBM example run in Jupyter Notebook. 
 
@@ -126,13 +132,13 @@ Install on Hadoop
 
 1. Go to `http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html <http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html>`__. Click on the **Install on Hadoop** tab, and download H2O for your version of Hadoop. This is a zip file that contains everything you need to get started.
 
-2. Unpack the zip file and launch a 6g instance of H2O. The example below describes how to unpack version 3.10.4.3. Replace this version with the version that you downloaded.
+2. Unpack the zip file and launch a 6g instance of H2O. The example below describes how to unpack version 3.22.1.2. Replace this version with the version that you downloaded.
 
  ::
 
-	unzip h2o-3.10.4.3-*.zip
-	cd h2o-3.10.4.3-*
-	hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -output hdfsOutputDirName
+	unzip h2o-3.22.1.2-*.zip
+	cd h2o-3.22.1.2-*
+	hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g
 
 3. Point your browser to H2O. (See "Open H2O Flow in your web browser" in the output below.)
 

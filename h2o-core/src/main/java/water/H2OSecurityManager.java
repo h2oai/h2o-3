@@ -19,9 +19,7 @@ import java.nio.channels.SocketChannel;
  *
  * At this stage we support a simple shared secret, handshake based, authentication, which can be turned
  * on with the h2o_ssl_enabled parameter. Should the communicating nodes not share a common shared secret
- * communication between them will not be possible. While using this parameter the user should *not* enable
- * the useUDP parameter, we do not support UDP encryption at this stage and all UDP datagrams will be
- * sent in an unencrypted form!
+ * communication between them will not be possible.
  *
  * Current state of data encryption:
  *
@@ -31,8 +29,7 @@ import java.nio.channels.SocketChannel;
  *
  *  - inter node communication - all TCP based communication is being authenticated and encrypted using SSL
  *  using JSSE (Java Secure Socket Extension) when then h2o_ssl_enabled parameter is passed. Keystore related
- *  parameter should also be used as per the documentation. Secure UDP communication through DTLS is not supported
- *  at this point in time thus useUDP should not be used for SSL enabled clouds.
+ *  parameter should also be used as per the documentation.
  *
  *  - in-memory data encryption - currently not supported, using an encrypted drive is recommended
  *  at least for the swap partition.

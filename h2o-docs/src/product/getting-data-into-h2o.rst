@@ -1,23 +1,33 @@
-Getting Data into H2O
-=====================
+Getting Data into Your H2O Cluster
+==================================
 
-Getting your data into H2O is the first step toward building and scoring your models. Whether you're importing data, uploading data, or retrieving data from HDFS or S3, be sure that your data is compatible with H2O.
+The first step toward building and scoring your models is getting your data into the H2O cluster/Java process that’s running on your local or remote machine. Whether you're importing data, uploading data, or retrieving data from HDFS or S3, be sure that your data is compatible with H2O.
 
 Supported File Formats
 ----------------------
 
 H2O currently supports the following file types:
 
-- CSV (delimited) files
+- CSV (delimited) files (including GZipped CSV)
 - ORC
 - SVMLight
 - ARFF
-- XLS
-- XLSX
-- Avro (without multifile parsing or column type modification)
+- XLS (BIFF 8 only)
+- XLSX (BIFF 8 only)
+- Avro version 1.8.0 (without multifile parsing or column type modification)
 - Parquet
 
-Note that ORC is available only if H2O is running as a Hadoop job. 
+**Notes**: 
+ 
+ - ORC is available only if H2O is running as a Hadoop job. 
+ - Users can also import Hive files that are saved in ORC format (experimental).
+ - If you encounter issues importing XLS or XLSX files, you may be using an unsupported version. In this case, re-save the file in BIFF 8 format. Also note that XLS and XLSX support will eventually be deprecated. 
+ - When doing a parallel data import into a cluster: 
+
+   - If the data is an unzipped csv file, H2O can do offset reads, so each node in your cluster can be directly reading its part of the csv file in parallel. 
+   - If the data is zipped, H2O will have to read the whole file and unzip it before doing the parallel read.
+
+   So, if you have very large data files reading from HDFS, it is best to use unzipped csv. But if the data is further away than the LAN, then it is best to use zipped csv.
 
 .. _data_sources:
 
@@ -34,6 +44,7 @@ Default Data Sources
 - S3 
 - HDFS
 - JDBC
+- Hive
 
 Local File System
 ~~~~~~~~~~~~~~~~~
@@ -178,10 +189,41 @@ core-site.xml must be configured for at least the following properties (class, p
         </property>
     </configuration>
 
+
+Direct Hive import
+~~~~~~~~~~~~~~~~~~
+
+H2O supports direct ingestion of data managed by Hive in Hadoop. This feature is available only when H2O is running as a Hadoop job. Internally H2O uses metadata in Hive Metastore database to determine the location and format of given Hive table. H2O then imports data directly from HDFS so limitations of supported formats mentioned above apply. Data from hive can pulled into H2O using ``import_hive_table`` function.
+
+Requirements:
+
+- Hive jars and configuration must be present on H2O job classpath - either via adding it to yarn.application.classpath (or similar property for your resource manger of choice) or by adding Hive jars and configuration to libjars
+- user running H2O must have read access to Hive and the files it manages
+
+Limitations
+
+- imported table must be stored in a format supported by H2O (see above)
+- CSV - Hive table property ``skip.header.line.count`` is currently not supported, CSV files with header rows will be imported with header row as data
+- partitioned tables with different storage formats - H2O supports importing partitioned tables which use different storage formats for different partitions, however in some cases (for example large number of small partitions) H2O may run out of memory while importing even though the final data would easily fit into the memory allocated to the H2O cluster
+
+.. example-code::
+   .. code-block:: r
+
+    basic_import <- h2o.import_hive_table("default", "table_name")
+    multi_format_enabled <- h2o.import_hive_table("default", "table_name", allow_multi_format=True)
+    with_partition_filter <- h2o.import_hive_table("default", "table_name", [["2017", "02"]])
+
+   .. code-block:: python
+
+    basic_import = h2o.import_hive_table("default", "table_name")
+    multi_format_enabled = h2o.import_hive_table("default", "table_name", allow_multi_format=True)
+    with_partition_filter = h2o.import_hive_table("default", "table_name", [["2017", "02"]])
+
+
 JDBC Databases
 ~~~~~~~~~~~~~~
 
-Relational databases that include a JDBC (Java database connectivity) driver can be used as the source of data for machine learning in H2O. Currently supported SQL databases are MySQL, PostgreSQL, and MariaDB. Data from these SQL databases can be pulled into H2O using the ``import_sql_table`` and ``import_sql_select`` functions.
+Relational databases that include a JDBC (Java database connectivity) driver can be used as the source of data for machine learning in H2O. Currently supported SQL databases are MySQL, PostgreSQL, MariaDB, Netezza, Amazon Redshift, and Hive. (Refer to :ref:`hive2` for more information.) Data from these SQL databases can be pulled into H2O using the ``import_sql_table`` and ``import_sql_select`` functions.
 
 Refer to the following articles for examples about using JDBC data sources with H2O.
 
@@ -265,5 +307,157 @@ The ``import_sql_select`` function accepts the following parameters:
     password = "abc123"
     my_citibike_data = h2o.import_sql_select(connection_url, select_query, username, password)
 
+.. _hive2:
+
+Using the Hive 2 JDBC Driver
+''''''''''''''''''''''''''''
+
+H2O can ingest data from Hive through the Hive v2 JDBC driver by providing H2O with the JDBC driver for your Hive version. 
+
+**Notes**: 
+
+- H2O can only load data from Hive version 2.2.0 or greater due to a limited implementation of the JDBC interface by Hive in earlier versions.
+
+- This feature is still experimental. In addition, Hive2 support in H2O is not yet suitable for large datasets.
+
+A demo showing how to ingest data from Hive through the Hive v2 JDBC driver is available `here <https://github.com/h2oai/h2o-tutorials/blob/master/tutorials/hive_jdbc_driver/Hive.md>`__. The basic steps are described below. 
+
+**Retrieve the Hive JDBC Client Jar**
+
+- For Hortonworks, Hive JDBC client jars can be found on one of the edge nodes after you have installed HDP: ``/usr/hdp/current/hive-client/lib/hive-jdbc-<version>-standalone.jar``. More information is available here: `https://docs.hortonworks.com/HDPDocuments/HDP2/HDP-2.6.4/bk_data-access/content/hive-jdbc-odbc-drivers.html <https://docs.hortonworks.com/HDPDocuments/HDP2/HDP-2.6.4/bk_data-access/content/hive-jdbc-odbc-drivers.html>`__
+- For Cloudera, install the JDBC package for your operating system, and then add ``/usr/lib/hive/lib/hive-jdbc-<version>-standalone.jar`` to your classpath. More information is available here: `https://www.cloudera.com/documentation/enterprise/5-3-x/topics/cdh_ig_hive_jdbc_install.html <https://www.cloudera.com/documentation/enterprise/5-3-x/topics/cdh_ig_hive_jdbc_install.html>`__
+- You can also retrieve this from Maven for the desire version using ``mvn dependency:get -Dartifact=groupId:artifactId:version``.
+
+**Provide H2O with the JDBC Driver**
+
+Add the Hive JDBC driver to H2O's classpath:
+
+::
+  
+      java -cp hive-jdbc.jar:<path_to_h2o_jar>: water.H2OApp
+
+Start the h2o.jar in the terminal with your downloaded JDBC driver in the classpath: 
+
+.. example-code::
+   .. code-block:: r
+
+    h2o.init(extra_classpath = "hive-jdbc.jar")
+
+   .. code-block:: python
+
+    h2o.init(extra_classpath=["hive-jdbc.jar"])
+
+After the jar file with JDBC driver is added, then data from the Hive databases can be pulled into H2O using the aforementioned ``import_sql_table`` and ``import_sql_select`` functions. 
+
+Connecting to Hive in a Kerberized Hadoop Cluster
+#################################################
+
+When importing data from Kerberized Hive on Hadoop, it is necessary to configure the h2odriver to authenticate with the Hive instance via 
+a delegation token. Since Hadoop does not generate delegation tokens for Hive automatically, it is necessary to provide the h2odriver with additional configurations.
+
+H2O is able to generate Hive delegation tokens in three modes:
+
+- On the driver side, a token can be generated on H2O cluster start.
+- On the mapper side, a token refresh thread is started, periodically re-generating the token.
+- A combination of both of the above.
+
+**Note on libjars:**
+
+In the examples below, we are omitting the ``-libjars`` option of the ``hadoop.jar`` command because it is not necessary for token generation. You may need to add it to be able to import data from Hive via JDBC. 
+
+Generating the Token in the Driver
+##################################
+
+The advantage of this approach is that the Hive delegation token is available immediately on H2O cluster start. 
+
+Requirements:
+
+- The Hive JDBC driver is on h2odriver classpath. (Only used to acquire Hive delegation token.)
+- The ``hiveHost`` argument needs to be set with the address of HiveServer2.
+- The ``hivePrincipal`` argument is set with the value of Hiveserver2 Kerberos principal.
+
+Example command:
+
+::
+
+      export HADOOP_CLASSPATH=/path/to/hive-jdbc-standalone.jar
+      hadoop jar h2odriver.jar \
+          -nodes 1 -mapperXmx 4G \
+          -hiveHost hostname:10000 -hivePrincipal hive/hostname@EXAMPLE.COM
 
 
+Generating the Token in the Mapper and Token Refresh
+####################################################
+
+This approach generates a Hive delegation token after the H2O cluster is fully started up and then periodically refreshes the token. Delegation tokens usually have a limited life span, and for long-running H2O clusters, they need to be refreshed. For this to work, the user's keytab and principal need to available to the H2O Cluster Leader node.
+
+The disadvantage of this approach is that the delegation token is not available immediately on cluster start, and it make take up to a minute for the delegation token to be acquired.
+
+Requirements:
+
+- The Hive JDBC driver is on the h2o mapper classpath (either via libjars or YARN configuration).
+- The ``hiveHost`` argument needs to be set with the address of HiveServer2.
+- The ``hivePrincipal`` argument is set with the value of your HiveServer2 Kerberos principal.
+- The ``principal`` argument is set with the value of the users's Kerberos principal.
+- The ``keytab`` argument set pointing to the file with the user's Kerberos keytab file.
+- The ``refreshTokens`` argument is present.
+
+Example command:
+
+::
+
+      hadoop jar h2odriver.jar [-libjars /path/to/hive-jdbc-standalone.jar] \
+          -nodes 1 -mapperXmx 4G \
+          -hiveHost hostname:10000 -hivePrincipal hive/hostname@EXAMPLE.COM \
+          -pricipal user/host@DOMAIN.COM -keytab path/to/user.keytab \
+          -refreshTokens
+
+**Note on refreshTokens:**
+
+The provided keytab will be copied over to the machine running the H2O Cluster leader node. For this reason, it’s strongly recommended that both YARN and HDFS be secured with encryption.
+
+Generating the Token in the Driver with Refresh in the Mapper
+#############################################################
+
+This approach is a combination of the two previous scenarios. Hive delegation token is first generated by the h2odriver and then periodically refreshed by the H2O Cluster leader node.
+
+This is the best-of-bothpworlds approach. The token is generated first in the driver and is available immediately on cluster start. It is then periodically refreshed and never expires.
+
+Requirements:
+
+- The Hive JDBC driver is on the h2o driver and mapper classpaths.
+- The ``hiveHost`` and ``hivePrincipal`` arguments are set.
+- The ``keytab`` and ``principal`` arguments are set.
+- The ``refreshTokens`` argument is present.
+
+Example command:
+
+::
+
+      export HADOOP_CLASSPATH=/path/to/hive-jdbc-standalone.jar
+      hadoop jar h2odriver.jar [-libjars /path/to/hive-jdbc-standalone.jar] \
+          -nodes 1 -mapperXmx 4G \
+          -hiveHost hostname:10000 -hivePrincipal hive/hostname@EXAMPLE.COM \
+          -pricipal user/host@DOMAIN.COM -keytab path/to/user.keytab \
+          -refreshTokens
+
+
+Using a Delegation Token when Connecting to Hive via JDBC
+#########################################################
+
+When running the actual data-load, specify the JDBC URL with the delegation token parameter:
+
+.. example-code::
+   .. code-block:: r
+
+    my_citibike_data <- h2o.import_sql_table(
+        "jdbc:hive2://hostname:10000/default;auth=delegationToken", 
+        "citibike20k", "", ""
+    )
+
+   .. code-block:: python
+
+    my_citibike_data = h2o.import_sql_table(
+        "jdbc:hive2://hostname:10000/default;auth=delegationToken", 
+        "citibike20k", "", ""
+    )

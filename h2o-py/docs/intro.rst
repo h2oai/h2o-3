@@ -42,17 +42,11 @@ produce a solution faster. The conceptual paradigm MapReduce (AKA "divide and co
 and combine"), along with a good concurrent application structure,
 (c.f. jsr166y and NonBlockingHashMap) enable this type of scaling in H2O.
 
-For application developers and data scientists, the gritty details of thread-safety,
-algorithm parallelism, and node coherence on a network are concealed by simple-to-use REST
-calls that are all documented here. In addition, H2O is an open-source project under the
-Apache v2 licence. All of the source code is on
-`github <https://github.com/h2oai/h2o-dev>`_, there is an active
-`google group mailing list <https://groups.google.com/forum/#!forum/h2ostream>`_,
-and our `JIRA ticketing system <http://jira.0xdata.com>`_
-is also open for public use. Last, but not least, we regularly engage the machine learning
-community all over the nation with a very busy `meetup schedule <http://h2o.ai/events/>`_
-(so if you're not in The Valley, no sweat, we're probably coming to your area soon!),
-and finally, we host our very own `H2O World conference <http://h2o.ai/h2o-world/>`_.
+For application developers and data scientists, the gritty details of thread-safety, algorithm parallelism, and node coherence on a network are concealed by simple-to-use REST calls that are all documented here. In addition, H2O is an open-source project under the Apache v2 licence. All of the source code is on `github <https://github.com/h2oai/h2o-3>`_. 
+
+For questions, there is an active `google group mailing list <https://groups.google.com/forum/#!forum/h2ostream>`_, or questions can be posted on the `H2O community site on Stack Overflow <http://stackoverflow.com/questions/tagged/h2o>`__. Our `JIRA ticketing system <http://jira.0xdata.com>`_ is also open for public use. 
+
+Last, but not least, we regularly engage the machine learning community all over the nation with a very busy `meetup schedule <https://www.h2o.ai/community/>`_ (so if you're not in The Valley, no sweat, we're probably coming to your area soon!), and finally, we host our very own `H2O World conference <http://h2oworld.h2o.ai/>`_.
 
 The rest of this document explains a few of the client-server details and the general
 programming model for interacting with H2O from Python.
@@ -67,7 +61,7 @@ various objects of the H2O ecosystem. Some shared objects are mutable by the cli
 some shared objects are read-only by the client, but are mutable by H2O (e.g. a model
 being constructed will change over time); and actions by the client may have side-effects
 on other clients (multi-tenancy is not a supported model of use, but it is possible for
-multiple clients to attach to a single H2O cloud).
+multiple clients to attach to a single H2O cluster).
 
 Briefly, these objects are:
 
@@ -94,7 +88,7 @@ manipulation of a distributed system.
 H2O Cluster Inspection
 ----------------------
 
-There are many tools for directly interacting with user-visible objects in the H2O cloud.
+There are many tools for directly interacting with user-visible objects in the H2O cluster.
 Every new python session begins by initializing a connection between the python client and
 the H2O cluster:
 
@@ -135,7 +129,7 @@ status:
     --------------------------  ---------------------------
 
 If pip was used to perform a versioned install of the h2o module, then the version field
-would display display something other than `(unknown)`.
+would display something other than `(unknown)`.
 
 Listing Cluster Contents
 ++++++++++++++++++++++++
@@ -214,7 +208,7 @@ The set of operations on an H2OFrame is described in a dedicated chapter, but
 in general, this set of operations closely resembles those that may be
 performed on an R data.frame. This includes all types of slicing (with complex
 conditionals), broadcasting operations, and a slew of math operations for transforming and
-mutating a Frame -- all the while the actual Big Data is sitting in the H2O cloud. The
+mutating a Frame -- all the while the actual Big Data is sitting in the H2O cluster. The
 semantics for modifying a Frame closely resemble R's copy-on-modify semantics, except
 when it comes to mutating a Frame in place. For example, it's possible to assign all
 occurrences of the number `0` in a column to missing (or `NA` in R parlance) as
@@ -250,7 +244,7 @@ all dependent subparts composing `a` are also evaluated.
 
 This module relies on reference counting of python objects to dispose of
 out-of-scope objects. The ExprNode class destroys objects and their big data
-counterparts in the H2O cloud using a remove call:
+counterparts in the H2O cluster using a remove call:
 
   >>> fr = h2o.import_file(path="smalldata/logreg/prostate.csv")   # import prostate data
   >>>

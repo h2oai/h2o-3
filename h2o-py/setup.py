@@ -3,7 +3,6 @@ from setuptools import setup, find_packages
 from codecs import open
 import os
 import shutil
-import h2o
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -11,27 +10,14 @@ here = os.path.abspath(os.path.dirname(__file__))
 with open(os.path.join(here, 'DESCRIPTION.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
+version = "0.0.local"
+# Get the version from the relevant file
+with open(os.path.join(here, 'h2o/version.txt'), encoding='utf-8') as f:
+    version = f.read()
+
+
 packages = find_packages(exclude=["tests*"])
 print("Found packages: %r" % packages)
-
-
-# Copy h2o.jar to the h2o/backend/bin directory
-h2o_jar_src = os.path.join(here, "..", "build", "h2o.jar")
-h2o_jar_dst = os.path.join(here, "h2o", "backend", "bin", "h2o.jar")
-if not os.path.exists(os.path.dirname(h2o_jar_dst)):
-    os.makedirs(os.path.dirname(h2o_jar_dst))
-
-if os.path.exists(h2o_jar_src):
-    shutil.copyfile(h2o_jar_src, h2o_jar_dst)
-elif os.path.exists(h2o_jar_dst):
-    # The h2o.jar already exists in the target directory -- don't do anything (even if it's an old version)
-    pass
-else:
-    raise RuntimeError("Cannot locate %s to bundle with the h2o package (pwd: %s)." % (h2o_jar_src, here))
-
-
-if h2o.__version__ == "SUBST_PROJECT_VERSION":
-    h2o.__version__ = "3.14.15.92653"
 
 setup(
     name='h2o',
@@ -39,7 +25,7 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version=h2o.__version__,
+    version = version,
 
     description='H2O, Fast Scalable Machine Learning, for python ',
     long_description=long_description,
@@ -80,6 +66,7 @@ setup(
         # that you indicate whether you support Python 2, Python 3 or both.
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
     ],
 
     keywords='machine learning, data mining, statistical analysis, modeling, big data, distributed, parallel',
@@ -88,8 +75,19 @@ setup(
     package_data={"h2o": [
         "h2o_data/*.*",     # several small datasets used in demos/examples
         "backend/bin/*.*",  # h2o.jar core Java library
+        "version.txt",      # version file
+        "buildinfo.txt"     # buildinfo file
     ]},
 
     # run-time dependencies
-    install_requires=["requests", "tabulate", "future", "colorama"],
+    install_requires=["requests", "tabulate", "future", "colorama>=0.3.8"],
+
+    # optional dependencies
+    extras_require={
+        "kerberos": [
+            "gssapi",
+            "pykerberos >= 1.1.8, < 2.0.0; sys.platform != 'win32'",
+            "winkerberos >= 0.5.0; sys.platform == 'win32'"
+        ]
+    }
 )

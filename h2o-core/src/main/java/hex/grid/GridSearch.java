@@ -1,8 +1,13 @@
 package hex.grid;
 
-import hex.*;
+import hex.Model;
+import hex.ModelBuilder;
+import hex.ModelParametersBuilderFactory;
+import hex.ScoringInfo;
 import hex.grid.HyperSpaceWalker.BaseWalker;
+import jsr166y.CountedCompleter;
 import water.*;
+import water.exceptions.H2OConcurrentModificationException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.Log;
@@ -10,8 +15,6 @@ import water.util.PojoUtils;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.util.Map;
 
 /**
@@ -135,6 +138,11 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
         gridSearch(grid);
         tryComplete();
       }
+      @Override
+      public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
+        Log.warn("GridSearch job "+_job._description+" completed with exception: "+ex);
+        return true;
+      }
     }, gridWork, it.max_runtime_secs());
   }
 
@@ -171,7 +179,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       // Number of traversed model parameters
       int counter = grid.getModelCount();
       while (it.hasNext(model)) {
-        if(_job.stop_requested() ) return;  // Handle end-user cancel request
+        if (_job.stop_requested()) throw new Job.JobCancelledException();  // Handle end-user cancel request
         double max_runtime_secs = it.max_runtime_secs();
 
         double time_remaining_secs = Double.MAX_VALUE;
@@ -179,7 +187,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           time_remaining_secs = it.time_remaining_secs();
           if (time_remaining_secs < 0) {
             Log.info("Grid max_runtime_secs of " + max_runtime_secs + " secs has expired; stopping early.");
-            return;
+            throw new Job.JobCancelledException();
           }
         }
 
@@ -194,13 +202,12 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           // Do we need to limit the model build time?
           if (max_runtime_secs > 0) {
             Log.info("Grid time is limited to: " + max_runtime_secs + " for grid: " + grid._key + ". Remaining time is: " + time_remaining_secs);
-            double scale = params._nfolds > 0 ? params._nfolds+1 : 1; //remaining time per cv model is less
             if (params._max_runtime_secs == 0) { // unlimited
-              params._max_runtime_secs = time_remaining_secs/scale;
+              params._max_runtime_secs = time_remaining_secs;
               Log.info("Due to the grid time limit, changing model max runtime to: " + params._max_runtime_secs + " secs.");
             } else {
               double was = params._max_runtime_secs;
-              params._max_runtime_secs = Math.min(params._max_runtime_secs, time_remaining_secs/scale);
+              params._max_runtime_secs = Math.min(params._max_runtime_secs, time_remaining_secs);
               Log.info("Due to the grid time limit, changing model max runtime from: " + was + " secs to: " + params._max_runtime_secs + " secs.");
             }
           }
@@ -210,9 +217,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
             scoringInfo.time_stamp_ms = System.currentTimeMillis();
 
             //// build the model!
-            model = buildModel(params, grid, counter++, protoModelKey);
-
-            if (model!=null) {
+            model = buildModel(params, grid, ++counter, protoModelKey);
+            if (model != null) {
               model.fillScoringInfo(scoringInfo);
               grid.setScoringInfos(ScoringInfo.prependScoringInfo(scoringInfo, grid.getScoringInfos()));
               ScoringInfo.sort(grid.getScoringInfos(), _hyperSpaceWalker.search_criteria().stopping_metric()); // Currently AUTO for Cartesian and user-specified for RandomDiscrete
@@ -287,10 +293,37 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     }
 
     // Is there a model with the same params in the DKV?
+    @SuppressWarnings("unchecked")
     final Key<Model>[] modelKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
       @Override
       public boolean filter(KeySnapshot.KeyInfo k) {
-        return Value.isSubclassOf(k._type, Model.class) && ((Model)k._key.get())._parms.checksum() == checksum;
+        if (! Value.isSubclassOf(k._type, Model.class))
+          return false;
+        Model m = ((Model)k._key.get());
+        if ((m == null) || (m._parms == null))
+          return false;
+        try {
+          return m._parms.checksum() == checksum;
+        } catch (H2OConcurrentModificationException e) {
+          // We are inspecting model parameters that doesn't belong to us - they might be modified (or deleted) while
+          // checksum is being calculated: we skip them (see PUBDEV-5286)
+          Log.warn("GridSearch encountered concurrent modification while searching DKV", e);
+          return false;
+        } catch (final RuntimeException e) {
+          Throwable ex = e;
+          boolean concurrentModification = false;
+          while (ex.getCause() != null) {
+            ex = ex.getCause();
+            if (ex instanceof H2OConcurrentModificationException) {
+              concurrentModification = true;
+              break;
+            }
+          }
+          if (! concurrentModification)
+            throw e;
+          Log.warn("GridSearch encountered concurrent modification while searching DKV", e);
+          return false;
+        }
       }
     }).keys();
 
@@ -306,26 +339,10 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     // Build a new model
     // THIS IS BLOCKING call since we do not have enough information about free resources
     // FIXME: we should allow here any launching strategy (not only sequential)
-    Model m = (Model)startBuildModel(result,params, grid).dest().get();
+    assert grid.getModel(params) == null;
+    Model m = ModelBuilder.trainModelNested(_job, result, params, null);
     grid.putModel(checksum, result);
     return m;
-  }
-
-  /**
-   * Triggers model building process but do not block on it.
-   *
-   * @param params parameters for a new model
-   * @param grid   resulting grid object
-   * @return A Future of a model run with these parameters, typically built on demand and not cached
-   * - expected to be an expensive operation.  If the model in question is "in progress", a 2nd
-   * build will NOT be kicked off. This is a non-blocking call.
-   */
-  private ModelBuilder startBuildModel(Key result, MP params, Grid<MP> grid) {
-    if (grid.getModel(params) != null) return null;
-    ModelBuilder mb = ModelBuilder.make(params.algoName(), _job, result);
-    mb._parms = params;
-    mb.trainModelNested(null);
-    return mb;
   }
 
   /**
@@ -365,9 +382,12 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       final MP params,
       final Map<String, Object[]> hyperParams,
       final ModelParametersBuilderFactory<MP> paramsBuilderFactory,
-      final HyperSpaceSearchCriteria search_criteria) {
+      final HyperSpaceSearchCriteria searchCriteria) {
 
-    return startGridSearch(destKey, BaseWalker.WalkerFactory.create(params, hyperParams, paramsBuilderFactory, search_criteria));
+    return startGridSearch(
+        destKey,
+        BaseWalker.WalkerFactory.create(params, hyperParams, paramsBuilderFactory, searchCriteria)
+    );
   }
 
 
@@ -388,15 +408,17 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
    *
    * @see #startGridSearch(Key, Model.Parameters, Map, ModelParametersBuilderFactory, HyperSpaceSearchCriteria)
    */
-  public static <MP extends Model.Parameters> Job<Grid> startGridSearch(final Key<Grid> destKey,
-                                                                        final MP params,
-                                                                        final Map<String, Object[]> hyperParams) {
+  public static <MP extends Model.Parameters> Job<Grid> startGridSearch(
+      final Key<Grid> destKey,
+      final MP params,
+      final Map<String, Object[]> hyperParams
+  ) {
     return startGridSearch(
-            destKey,
-            params,
-            hyperParams,
-            new SimpleParametersBuilderFactory<MP>(),
-            new HyperSpaceSearchCriteria.CartesianSearchCriteria());
+        destKey,
+        params,
+        hyperParams,
+        new SimpleParametersBuilderFactory<MP>(),
+        new HyperSpaceSearchCriteria.CartesianSearchCriteria());
   }
 
   /**
@@ -412,14 +434,15 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
    */
   public static <MP extends Model.Parameters> Job<Grid> startGridSearch(
       final Key<Grid> destKey,
-      final HyperSpaceWalker<MP, ?> hyperSpaceWalker) {
+      final HyperSpaceWalker<MP, ?> hyperSpaceWalker
+    ) {
     // Compute key for destination object representing grid
     MP params = hyperSpaceWalker.getParams();
     Key<Grid> gridKey = destKey != null ? destKey
             : gridKeyName(params.algoName(), params.train());
 
     // Start the search
-    return new GridSearch(gridKey, hyperSpaceWalker).start();
+    return new GridSearch<>(gridKey, hyperSpaceWalker).start();
   }
 
   /**

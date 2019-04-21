@@ -1,0 +1,37 @@
+#! /bin/bash
+
+set -ex
+
+if [ ! -f ${2} ]; then
+    echo "Cannot find ${2}"
+    exit 1
+fi
+source ${2}
+
+echo "Installing Java ${JAVA_INSTALL_VERSION_MAJOR} to ${JAVA_INSTALL_PATH}"
+
+mkdir -p ${JAVA_INSTALL_PATH}
+cd ${JAVA_INSTALL_PATH}
+
+EXTENSION=$(echo ${JDK_FILE} | rev | cut -d'.' -f1 | rev)
+
+if [ "${EXTENSION}" = 'gz' ]; then
+    tar xzf ${JDK_FILE}
+elif [ "${EXTENSION}" = 'zip' ]; then
+    unzip -q ${JDK_FILE}
+else
+    echo "Unsupported extension for ${JDK_FILE}. Supported are .gz, .zip."
+fi
+
+cd jdk*
+mkdir -p /usr/lib/jvm/
+SYMLINK_TARGET="/usr/lib/jvm/java-${JAVA_INSTALL_VERSION_MAJOR}-oracle"
+echo "Symlinking ${SYMLINK_TARGET} -> $(pwd)"
+ln -s -f $(pwd) ${SYMLINK_TARGET}
+
+echo "Creating activation script"
+echo """ #! /bin/bash
+
+rm -f /usr/lib/jvm/java-current-oracle
+ln -sf ${SYMLINK_TARGET} /usr/lib/jvm/java-current-oracle""" > /usr/bin/activate_java_${JAVA_INSTALL_VERSION_MAJOR}
+chmod a+x /usr/bin/activate_java_${JAVA_INSTALL_VERSION_MAJOR}

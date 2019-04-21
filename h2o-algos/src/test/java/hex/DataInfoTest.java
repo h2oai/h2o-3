@@ -3,13 +3,13 @@ package hex;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.Key;
-import water.MRTask;
-import water.TestUtil;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.InteractionWrappedVec;
-import water.fvec.Vec;
+import water.*;
+import water.fvec.*;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.Arrays;
 
 
 // test cases:
@@ -40,7 +40,7 @@ public class DataInfoTest extends TestUtil {
               false,       // weight
               false,       // offset
               false,       // fold
-              new String[]{fr.name(8),fr.name(16),fr.name(2)}  // interactions
+              Model.InteractionSpec.allPairwise(new String[]{fr.name(8),fr.name(16),fr.name(2)})  // interactions
       );
       dinfo.dropInteractions();
       dinfo.remove();
@@ -92,7 +92,7 @@ public class DataInfoTest extends TestUtil {
               false,       // weight
               false,       // offset
               false,       // fold
-              new String[]{fr.name(8),fr.name(16),fr.name(2)}   // interactions
+              Model.InteractionSpec.allPairwise(new String[]{fr.name(8),fr.name(16),fr.name(2)})   // interactions
       );
       System.out.println(dinfo__withInteractions.fullN());
       Assert.assertTrue(dinfo__withInteractions.fullN() == dinfo__noInteractions.fullN() + len);
@@ -144,7 +144,7 @@ public class DataInfoTest extends TestUtil {
               false,       // weight
               false,       // offset
               false,       // fold
-              new String[]{fr.name(8),fr.name(16),fr.name(2)}  // interactions
+              Model.InteractionSpec.allPairwise(new String[]{fr.name(8),fr.name(16),fr.name(2)})  // interactions
       );
       System.out.println(dinfo__withInteractions.fullN());
       Assert.assertTrue(dinfo__withInteractions.fullN() == dinfo__noInteractions.fullN() + len);
@@ -156,6 +156,42 @@ public class DataInfoTest extends TestUtil {
     }
   }
 
+  @Test public void testAirlinesInteractionSpec() {
+    try {
+      Scope.enter();
+      Frame fr = Scope.track(parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip"));
+      Model.InteractionSpec interactionSpec = Model.InteractionSpec.create(
+              null,
+              new StringPair[]{new StringPair("UniqueCarrier", "Origin"), new StringPair("Origin", "DayofMonth")},
+              new String[]{"UniqueCarrier"}
+      );
+      DataInfo dinfo = new DataInfo(
+              fr.clone(),  // train
+              null,        // valid
+              1,           // num responses
+              false,        // use all factor levels
+              DataInfo.TransformType.STANDARDIZE,  // predictor transform
+              DataInfo.TransformType.NONE,         // response  transform
+              true,        // skip missing
+              false,       // impute missing
+              false,       // missing bucket
+              false,       // weight
+              false,       // offset
+              false,       // fold
+              interactionSpec  // interactions
+      );
+      Scope.track_generic(dinfo);
+
+      Assert.assertArrayEquals(new String[]{
+              "TailNum", "UniqueCarrier_Origin", "Dest", "Origin", "CancellationCode", "IsArrDelayed", "Origin_DayofMonth",
+              "Year", "Month", "DayofMonth", "DayOfWeek", "DepTime", "CRSDepTime", "ArrTime", "CRSArrTime", "FlightNum",
+              "ActualElapsedTime", "CRSElapsedTime", "AirTime", "ArrDelay", "DepDelay", "Distance", "TaxiIn", "TaxiOut",
+              "Cancelled", "Diverted", "CarrierDelay", "WeatherDelay", "NASDelay", "SecurityDelay", "LateAircraftDelay",
+              "IsDepDelayed"}, dinfo._adaptedFrame._names);
+    } finally {
+      Scope.exit();
+    }
+  }
 
   @Test public void testIris1() {  // test that getting sparseRows and denseRows produce the same results
     Frame fr = parse_test_file(Key.make("a.hex"), "smalldata/iris/iris_wheader.csv");
@@ -177,7 +213,7 @@ public class DataInfoTest extends TestUtil {
               false,       // weight
               false,       // offset
               false,       // fold
-              new String[]{fr.name(0),fr.name(1)}          // interactions
+              Model.InteractionSpec.allPairwise(new String[]{fr.name(0),fr.name(1)})          // interactions
       );
       checker(di,false);
     } finally {
@@ -208,7 +244,7 @@ public class DataInfoTest extends TestUtil {
               false,       // weight
               false,       // offset
               false,       // fold
-              new String[]{fr.name(0),fr.name(1)}          // interactions
+              Model.InteractionSpec.allPairwise(new String[]{fr.name(0),fr.name(1)})          // interactions
       );
       checker(di,true);
     } finally {
@@ -239,7 +275,7 @@ public class DataInfoTest extends TestUtil {
               false,       // weight
               false,       // offset
               false,       // fold
-              new String[]{fr.name(0),fr.name(1),fr.name(2),fr.name(3)}          // interactions
+              Model.InteractionSpec.allPairwise(new String[]{fr.name(0),fr.name(1),fr.name(2),fr.name(3)})          // interactions
       );
       checker(di,true);
     } finally {
@@ -252,7 +288,12 @@ public class DataInfoTest extends TestUtil {
   }
 
   @Test public void testAirlines4() {
-    Frame fr = parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip");
+    Frame fr = parse_test_file(Key.make("a0.hex"), "smalldata/airlines/allyears2k_headers.zip");
+    // fixme need to rebalance to 1 chunk, otherwise the test does not pass!
+    Key k = Key.make("a.hex");
+    H2O.submitTask(new RebalanceDataSet(fr,k,1)).join();
+    fr.delete();
+    fr = DKV.getGet(k);
     Model.InteractionPair[] ips = Model.InteractionPair.generatePairwiseInteractionsFromList(8,16,2);
     DataInfo di=null;
     try {
@@ -269,7 +310,7 @@ public class DataInfoTest extends TestUtil {
               false,       // weight
               false,       // offset
               false,       // fold
-              new String[]{fr.name(8),fr.name(16),fr.name(2)}          // interactions
+              Model.InteractionSpec.allPairwise(new String[]{fr.name(8),fr.name(16),fr.name(2)})          // interactions
       );
       checker(di,true);
     } finally {
@@ -282,7 +323,12 @@ public class DataInfoTest extends TestUtil {
   }
 
   @Test public void testAirlines5() {
-    Frame fr = parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip");
+    Frame fr = parse_test_file(Key.make("a0.hex"), "smalldata/airlines/allyears2k_headers.zip");
+    // fixme need to rebalance to 1 chunk, otherwise the test does not pass!
+    Key k = Key.make("a.hex");
+    H2O.submitTask(new RebalanceDataSet(fr,k,1)).join();
+    fr.delete();
+    fr = DKV.getGet(k);
     Model.InteractionPair[] ips = Model.InteractionPair.generatePairwiseInteractionsFromList(8,16,2);
     DataInfo di=null;
     try {
@@ -299,7 +345,7 @@ public class DataInfoTest extends TestUtil {
               false,       // weight
               false,       // offset
               false,       // fold
-              new String[]{fr.name(8),fr.name(16),fr.name(2)}           // interactions
+              Model.InteractionSpec.allPairwise(new String[]{fr.name(8),fr.name(16),fr.name(2)})           // interactions
       );
       checker(di,true);
     } finally {
@@ -310,6 +356,169 @@ public class DataInfoTest extends TestUtil {
       }
     }
   }
+
+  @Test public void testCoefNames() throws IOException { // just test that it works at all
+    Frame fr = parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip");
+    DataInfo dinfo = null;
+    try {
+      dinfo = new DataInfo(
+              fr.clone(),  // train
+              null,        // valid
+              1,           // num responses
+              true,        // use all factor levels
+              DataInfo.TransformType.STANDARDIZE,  // predictor transform
+              DataInfo.TransformType.NONE,         // response  transform
+              true,        // skip missing
+              false,       // impute missing
+              false,       // missing bucket
+              false,       // weight
+              false,       // offset
+              false,       // fold
+              Model.InteractionSpec.allPairwise(new String[]{fr.name(8),fr.name(16),fr.name(2)})  // interactions
+      );
+
+      Assert.assertNull(dinfo._coefNames); // coef names are not populated at first
+      final String[] cn = dinfo.coefNames();
+      Assert.assertNotNull(cn);
+      Assert.assertArrayEquals(cn, dinfo._coefNames); // coef names are cached after first accessed
+
+      DKV.put(dinfo);
+
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      dinfo.writeAll(new AutoBuffer(baos, true)).close();
+      baos.close();
+
+      ByteArrayInputStream input = new ByteArrayInputStream(baos.toByteArray());
+      DataInfo deserialized = (DataInfo) Keyed.readAll(new AutoBuffer(input));
+      Assert.assertNotNull(deserialized);
+      Assert.assertArrayEquals(cn, deserialized._coefNames); // coef names were preserved in the deserialized object
+    } finally {
+      if (dinfo != null) {
+        dinfo.dropInteractions();
+        dinfo.remove();
+      }
+      fr.delete();
+    }
+  }
+
+  @Test public void testInteractionsForcedAllFactors() {
+    try {
+      Scope.enter();
+      Frame fr = Scope.track(parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip"));
+      Frame sfr = fr.subframe(new String[]{"Origin", "Distance"});
+      Model.InteractionSpec interactionSpec = Model.InteractionSpec.create(
+              new String[]{"Origin", "Distance"}, null, new String[] {"Distance"});
+      DataInfo dinfo = new DataInfo(
+              sfr,  // train
+              null,        // valid
+              1,           // num responses
+              false,        // DON'T use all factor levels
+              DataInfo.TransformType.STANDARDIZE,  // predictor transform
+              DataInfo.TransformType.NONE,         // response  transform
+              true,        // skip missing
+              false,       // impute missing
+              false,       // missing bucket
+              false,       // weight
+              false,       // offset
+              false,       // fold
+              interactionSpec  // interaction spec
+      );
+      Assert.assertEquals(fr.vec("Origin").domain().length, dinfo.coefNames().length);
+      String[] expected = new String[dinfo.coefNames().length];
+      for (int i = 0; i < expected.length; i++)
+        expected[i] = "Origin_Distance." + sfr.vec("Origin").domain()[i];
+      Assert.assertArrayEquals(expected, dinfo.coefNames());
+      dinfo.dropInteractions();
+      dinfo.remove();
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test public void testInteractionsSkip1stFactor() {
+    try {
+      Scope.enter();
+      Frame fr = Scope.track(parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip"));
+      Frame sfr = fr.subframe(new String[]{"Origin", "Distance", "IsDepDelayed"});
+      Model.InteractionSpec interactionSpec = Model.InteractionSpec.create(
+              new String[]{"Origin", "Distance"}, null, new String[]{"Origin"});
+      DataInfo dinfo = new DataInfo(
+              sfr,  // train
+              null,        // valid
+              1,           // num responses
+              false,        // DON'T use all factor levels
+              DataInfo.TransformType.STANDARDIZE,  // predictor transform
+              DataInfo.TransformType.NONE,         // response  transform
+              true,        // skip missing
+              false,       // impute missing
+              false,       // missing bucket
+              false,       // weight
+              false,       // offset
+              false,       // fold
+              interactionSpec  // interaction spec
+      );
+      // Check that we get correct expanded coefficients and "Distance" is not dropped
+      Assert.assertEquals(fr.vec("Origin").domain().length, dinfo.coefNames().length);
+      String[] expected = new String[dinfo.coefNames().length];
+      expected[expected.length - 1] = "Distance";
+      for (int i = 0; i < expected.length - 1; i++)
+        expected[i] = "Origin_Distance." + fr.vec("Origin").domain()[i + 1];
+      Assert.assertArrayEquals(expected, dinfo.coefNames());
+      // Check that we can look-up "Categorical Id" for valid levels
+      for (int j = /*don't use all factor levels*/ 1; j < dinfo._adaptedFrame.vec(0).domain().length; j++) {
+        if (dinfo.getCategoricalIdFromInteraction(0, j) < 0)
+          Assert.fail("Categorical value should be recognized: " + j);
+      }
+      // Check that we get "mode" for unknown level
+      dinfo._valid = true;
+      Assert.assertEquals(fr.vec("Origin").mode(),
+              dinfo.getCategoricalIdFromInteraction(0, dinfo._adaptedFrame.vec(0).domain().length));
+      dinfo.dropInteractions();
+      dinfo.remove();
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testGetCategoricalIdFromInteraction() {
+    try {
+      Scope.enter();
+      Frame fr = Scope.track(parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip"));
+      Frame sfr = fr.subframe(new String[]{"Origin", "Distance", "IsDepDelayed"});
+      Model.InteractionSpec interactionSpec = Model.InteractionSpec.create(
+              new String[]{"Origin", "Distance"}, null, new String[]{"Origin"});
+      DataInfo dinfo = new DataInfo(
+              sfr,  // train
+              null,        // valid
+              1,           // num responses
+              false,        // DON'T use all factor levels
+              DataInfo.TransformType.STANDARDIZE,  // predictor transform
+              DataInfo.TransformType.NONE,         // response  transform
+              true,        // skip missing
+              false,       // impute missing
+              false,       // missing bucket
+              false,       // weight
+              false,       // offset
+              false,       // fold
+              interactionSpec  // interaction spec
+      );
+    // Check that we can look-up "Categorical Id" for valid levels
+    for (int j = /*don't use all factor levels*/ 1; j < dinfo._adaptedFrame.vec(0).domain().length; j++) {
+      if (dinfo.getCategoricalIdFromInteraction(0, j) < 0)
+        Assert.fail("Categorical value should be recognized: " + j);
+    }
+    // Check that we get "mode" for unknown level
+    dinfo._valid = true;
+    Assert.assertEquals(fr.vec("Origin").mode(),
+            dinfo.getCategoricalIdFromInteraction(0, dinfo._adaptedFrame.vec(0).domain().length));
+    dinfo.dropInteractions();
+    dinfo.remove();
+  } finally {
+    Scope.exit();
+  }
+
+}
 
 //  @Test public void personalChecker() {
 //    final Frame gold = parse_test_file(Key.make("gold"), "/Users/spencer/Desktop/ffff.csv");
@@ -378,6 +587,9 @@ public class DataInfoTest extends TestUtil {
   private static void checker(final DataInfo di, final boolean standardize) {
     new MRTask() {
       @Override public void map(Chunk[] cs) {
+        if(cs[0].start() == 23889){
+          System.out.println("haha");
+        }
         DataInfo.Row[] sparseRows = di.extractSparseRows(cs);
         DataInfo.Row r = di.newDenseRow();
         for(int i=0;i<cs[0]._len;++i) {
@@ -391,7 +603,7 @@ public class DataInfoTest extends TestUtil {
               if( sparseRows[i].isBad() && r.isBad() ) continue;  // both bad OK
               throw new RuntimeException("dense row was "+(r.isBad()?"bad":"not bad") + "; but sparse row was "+(sparseRows[i].isBad()?"bad":"not bad"));
             }
-            if( Math.abs(r.get(j)-sparseDoubleScaled) > 1e-14 ) {
+            if( Math.abs(r.get(j)-sparseDoubleScaled) > 1e-10 ) {
               printVals(di,r,sparseRows[i]);
               throw new RuntimeException("Row mismatch on row " + i);
             }

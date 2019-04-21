@@ -4,8 +4,9 @@ import hex.*;
 
 import static hex.ModelCategory.Binomial;
 import static hex.genmodel.GenModel.createAuxKey;
-import static hex.glm.GLMModel.GLMParameters.Family.binomial;
 
+import hex.genmodel.algos.tree.SharedTreeMojoModel;
+import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.glm.GLMModel;
 import hex.util.LinearAlgebraUtils;
 import water.*;
@@ -17,6 +18,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.parser.BufferedString;
 import water.util.*;
 
 import java.lang.reflect.Field;
@@ -199,9 +201,9 @@ public abstract class SharedTreeModel<
         DKV.put(keys[i]=ct._key,ct,fs);
         _treeStats.updateBy(trees[i]); // Update tree shape stats
 
-        CompressedTree ctAux = new CompressedTree(trees[i]._abAux.buf(),-1,-1,-1,-1,_domains);
+        CompressedTree ctAux = new CompressedTree(trees[i]._abAux.buf(),-1,-1,-1);
         keysAux[i] = ctAux._key = Key.make(createAuxKey(ct._key.toString()));
-        DKV.put(ctAux);
+        DKV.put(ctAux,fs);
       }
       _ntrees++;
       // 1-based for errors; _scored_train[0] is for zero trees, not 1 tree
@@ -219,9 +221,8 @@ public abstract class SharedTreeModel<
     super(selfKey, parms, output);
   }
 
-  public Frame scoreLeafNodeAssignment(Frame frame, Key<Frame> destination_key) {
-    Frame adaptFrm = new Frame(frame);
-    adaptTestForTrain(adaptFrm, true, false);
+
+  protected String[] makeAllTreeColumnNames() {
     int classTrees = 0;
     for (int i = 0; i < _output._treeKeys[0].length; ++i) {
       if (_output._treeKeys[0][i] != null) classTrees++;
@@ -237,54 +238,168 @@ public abstract class SharedTreeModel<
         }
       }
     }
-    Frame res = new MRTask() {
-      @Override public void map(Chunk chks[], NewChunk[] idx ) {
-        double[] input = new double[chks.length];
-        String[] output = new String[outputcols];
-
-        for( int row=0; row<chks[0]._len; row++ ) {
-          for( int i=0; i<chks.length; i++ )
-            input[i] = chks[i].atd(row);
-
-          int col=0;
-          for( int tidx=0; tidx<_output._treeKeys.length; tidx++ ) {
-            Key[] keys = _output._treeKeys[tidx];
-            for (Key key : keys) {
-              if (key != null) {
-                String pred = DKV.get(key).<CompressedTree>get().getDecisionPath(input);
-                output[col++] = pred;
-              }
-            }
-          }
-          assert(col==outputcols);
-          for (int i=0; i<outputcols; ++i)
-            idx[i].addStr(output[i]);
-        }
-      }
-    }.doAll(outputcols, Vec.T_STR, adaptFrm).outputFrame(destination_key, names, null);
-
-    Vec vv;
-    Vec[] nvecs = new Vec[res.vecs().length];
-    for(int c=0;c<res.vecs().length;++c) {
-      vv = res.vec(c);
-      try {
-        nvecs[c] = vv.toCategoricalVec();
-      } catch (Exception e) {
-        VecUtils.deleteVecs(nvecs, c);
-        throw e;
-      }
-    }
-    res.delete();
-    res = new Frame(destination_key, names, nvecs);
-    DKV.put(res);
-    return res;
+    return names;
   }
 
   @Override
-  protected Frame postProcessPredictions(Frame predictFr) {
+  public Frame scoreLeafNodeAssignment(Frame frame, LeafNodeAssignmentType type, Key<Frame> destination_key) {
+    Frame adaptFrm = new Frame(frame);
+    adaptTestForTrain(adaptFrm, true, false);
+
+    final String[] names = makeAllTreeColumnNames();
+    AssignLeafNodeTaskBase task = AssignLeafNodeTaskBase.make(_output, type);
+    return task.execute(adaptFrm, names, destination_key);
+  }
+
+  public static class BufStringDecisionPathTracker implements SharedTreeMojoModel.DecisionPathTracker<BufferedString> {
+    private final byte[] _buf = new byte[64];
+    private final BufferedString _bs = new BufferedString(_buf, 0, 0);
+    private int _pos = 0;
+    @Override
+    public boolean go(int depth, boolean right) {
+      _buf[depth] = right ? (byte) 'R' : (byte) 'L';
+      if (right) _pos = depth;
+      return true;
+    }
+    @Override
+    public BufferedString terminate() {
+      _bs.setLen(_pos);
+      _pos = 0;
+      return _bs;
+    }
+  }
+
+  private static abstract class AssignLeafNodeTaskBase extends MRTask<AssignLeafNodeTaskBase> {
+    final Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _treeKeys;
+    final String _domains[][];
+
+    AssignLeafNodeTaskBase(SharedTreeOutput output) {
+      _treeKeys = output._treeKeys;
+      _domains = output._domains;
+    }
+
+    protected abstract void initMap();
+
+    protected abstract void assignNode(final int tidx, final int cls, final CompressedTree tree, final double[] input,
+                                       final NewChunk out);
+
+    @Override
+    public void map(Chunk chks[], NewChunk[] idx) {
+      double[] input = new double[chks.length];
+
+      initMap();
+      for (int row = 0; row < chks[0]._len; row++) {
+        for (int i = 0; i < chks.length; i++)
+          input[i] = chks[i].atd(row);
+
+        int col = 0;
+        for (int tidx = 0; tidx < _treeKeys.length; tidx++) {
+          Key[] keys = _treeKeys[tidx];
+          for (int cls = 0; cls < keys.length; cls++) {
+            Key key = keys[cls];
+            if (key != null) {
+              CompressedTree tree = DKV.get(key).get();
+              assignNode(tidx, cls, tree, input, idx[col++]);
+            }
+          }
+        }
+        assert (col == idx.length);
+      }
+    }
+
+    protected abstract Frame execute(Frame adaptFrm, String[] names, Key<Frame> destKey);
+
+    private static AssignLeafNodeTaskBase make(SharedTreeOutput modelOutput, LeafNodeAssignmentType type) {
+      switch (type) {
+        case Path:
+          return new AssignTreePathTask(modelOutput);
+        case Node_ID:
+          return new AssignLeafNodeIdTask(modelOutput);
+        default:
+          throw new UnsupportedOperationException("Unknown leaf node assignment type: " + type);
+      }
+    }
+  }
+
+  private static class AssignTreePathTask extends AssignLeafNodeTaskBase {
+    private transient BufStringDecisionPathTracker _tr;
+
+    private AssignTreePathTask(SharedTreeOutput output) {
+      super(output);
+    }
+
+    @Override
+    protected void initMap() {
+      _tr = new BufStringDecisionPathTracker();
+    }
+
+    @Override
+    protected void assignNode(int tidx, int cls, CompressedTree tree, double[] input, NewChunk out) {
+      BufferedString pred = tree.getDecisionPath(input, _domains, _tr);
+      out.addStr(pred);
+    }
+
+    @Override
+    protected Frame execute(Frame adaptFrm, String[] names, Key<Frame> destKey) {
+      Frame res = doAll(names.length, Vec.T_STR, adaptFrm).outputFrame(destKey, names, null);
+      // convert to categorical
+      Vec vv;
+      Vec[] nvecs = new Vec[res.vecs().length];
+      for(int c=0;c<res.vecs().length;++c) {
+        vv = res.vec(c);
+        try {
+          nvecs[c] = vv.toCategoricalVec();
+        } catch (Exception e) {
+          VecUtils.deleteVecs(nvecs, c);
+          throw e;
+        }
+      }
+      res.delete();
+      res = new Frame(destKey, names, nvecs);
+      DKV.put(res);
+      return res;
+    }
+  }
+
+  private static class AssignLeafNodeIdTask extends AssignLeafNodeTaskBase {
+    private final Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _auxTreeKeys;
+    private final int _nclasses;
+    private transient BufStringDecisionPathTracker _tr;
+
+    private AssignLeafNodeIdTask(SharedTreeOutput output) {
+      super(output);
+      _auxTreeKeys = output._treeKeysAux;
+      _nclasses = output.nclasses();
+    }
+
+    @Override
+    protected void initMap() {
+      _tr = new BufStringDecisionPathTracker();
+    }
+
+    @Override
+    protected void assignNode(int tidx, int cls, CompressedTree tree, double[] input, NewChunk out) {
+      CompressedTree auxTree = _auxTreeKeys[tidx][cls].get();
+      assert auxTree != null;
+
+      final double d = SharedTreeMojoModel.scoreTree(tree._bits, input, true, _domains);
+      final int nodeId = SharedTreeMojoModel.getLeafNodeId(d, auxTree._bits);
+
+      out.addNum(nodeId, 0);
+    }
+
+    @Override
+    protected Frame execute(Frame adaptFrm, String[] names, Key<Frame> destKey) {
+      return doAll(names.length, Vec.T_NUM, adaptFrm).outputFrame(destKey, names, null);
+    }
+  }
+
+  @Override
+  protected Frame postProcessPredictions(Frame adaptedFrame, Frame predictFr, Job j) {
     if (_output._calib_model == null)
       return predictFr;
     if (_output.getModelCategory() == Binomial) {
+      Key<Job> jobKey = j != null ? j._key : null;
       Key<Frame> calibInputKey = Key.make();
       Frame calibOutput = null;
       try {
@@ -293,11 +408,12 @@ public abstract class SharedTreeModel<
         assert calibOutput._names.length == 3;
         Vec[] calPredictions = calibOutput.remove(new int[]{1, 2});
         // append calibrated probabilities to the prediction frame
-        predictFr.write_lock();
+        predictFr.write_lock(jobKey);
         for (int i = 0; i < calPredictions.length; i++)
           predictFr.add("cal_" + predictFr.name(1 + i), calPredictions[i]);
-        return predictFr.update();
+        return predictFr.update(jobKey);
       } finally {
+        predictFr.unlock(jobKey);
         DKV.remove(calibInputKey);
         if (calibOutput != null)
           calibOutput.remove();
@@ -306,18 +422,26 @@ public abstract class SharedTreeModel<
       throw H2O.unimpl("Calibration is only supported for binomial models");
   }
 
-  @Override protected double[] score0(double[] data, double[] preds, double weight, double offset) {
-    return score0(data, preds, weight, offset, _output._treeKeys.length);
-  }
-  @Override protected double[] score0(double[/*ncols*/] data, double[/*nclasses+1*/] preds) {
-    return score0(data, preds, 1.0, 0.0);
+  protected double[] score0Incremental(Score.ScoreIncInfo sii, Chunk chks[], double offset, int row_in_chunk, double[] tmp, double[] preds) {
+    return score0(chks, offset, row_in_chunk, tmp, preds); // by default delegate to non-incremental implementation
   }
 
-  protected double[] score0(double[] data, double[] preds, double weight, double offset, int ntrees) {
+  @Override protected double[] score0(double[] data, double[] preds, double offset) {
+    return score0(data, preds, offset, _output._treeKeys.length);
+  }
+  @Override protected double[] score0(double[/*ncols*/] data, double[/*nclasses+1*/] preds) {
+    return score0(data, preds, 0.0);
+  }
+
+  protected double[] score0(double[] data, double[] preds, double offset, int ntrees) {
+    Arrays.fill(preds,0);
+    return score0(data, preds, offset, 0, ntrees);
+  }
+
+  protected double[] score0(double[] data, double[] preds, double offset, int startTree, int ntrees) {
     // Prefetch trees into the local cache if it is necessary
     // Invoke scoring
-    Arrays.fill(preds,0);
-    for( int tidx=0; tidx<ntrees; tidx++ )
+    for( int tidx=startTree; tidx<ntrees; tidx++ )
       score0(data, preds, tidx);
     return preds;
   }
@@ -327,7 +451,7 @@ public abstract class SharedTreeModel<
     Key[] keys = _output._treeKeys[treeIdx];
     for( int c=0; c<keys.length; c++ ) {
       if (keys[c] != null) {
-        double pred = DKV.get(keys[c]).<CompressedTree>get().score(data);
+        double pred = DKV.get(keys[c]).<CompressedTree>get().score(data,_output._domains);
         assert (!Double.isInfinite(pred));
         preds[keys.length == 1 ? 0 : c + 1] += pred;
       }
@@ -405,6 +529,20 @@ public abstract class SharedTreeModel<
   @SuppressWarnings("unchecked")  // `M` is really the type of `this`
   private M self() { return (M)this; }
 
+  /**
+   * Converts a given tree of the ensemble to a user-understandable representation.
+   * @param tidx tree index
+   * @param cls tree class
+   * @return instance of SharedTreeSubgraph
+   */
+  public SharedTreeSubgraph getSharedTreeSubgraph(final int tidx, final int cls) {
+    if (tidx < 0 || tidx >= _output._ntrees) {
+      throw new IllegalArgumentException("Invalid tree index: " + tidx +
+              ". Tree index must be in range [0, " + (_output._ntrees -1) + "].");
+    }
+    final CompressedTree auxCompressedTree = _output._treeKeysAux[tidx][cls].get();
+    return _output._treeKeys[tidx][cls].get().toSharedTreeSubgraph(auxCompressedTree, _output._names, _output._domains);
+  }
 
   //--------------------------------------------------------------------------------------------------------------------
   // Serialization into a POJO
@@ -419,6 +557,10 @@ public abstract class SharedTreeModel<
   protected boolean binomialOpt() { return true; }
 
   @Override protected SBPrintStream toJavaInit(SBPrintStream sb, CodeGeneratorPipeline fileCtx) {
+    if (_parms._categorical_encoding != Parameters.CategoricalEncodingScheme.AUTO &&
+        _parms._categorical_encoding != Parameters.CategoricalEncodingScheme.Enum) {
+      throw new IllegalArgumentException("Only default categorical_encoding scheme is supported for POJO/MOJO");
+    }
     sb.nl();
     sb.ip("public boolean isSupervised() { return true; }").nl();
     sb.ip("public int nfeatures() { return " + _output.nfeatures() + "; }").nl();

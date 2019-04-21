@@ -1,7 +1,7 @@
 Missing Values 
 ^^^^^^^^^^^^^^
 
-**Note** Unlike in GLM, in GBM numerical values are handled the same way as categorical values. Missing values are not imputed with the mean, as is done by default in GLM.
+**Note**: Unlike in GLM, in GBM numerical values are handled the same way as categorical values. Missing values are not imputed with the mean, as is done by default in GLM.
 
 **Brief Overview of Missing Values Handling**
 

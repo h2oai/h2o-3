@@ -1,4 +1,6 @@
-#Gains/Lift Table
+# Gains/Lift Table
+
+>**Note**: This topic is no longer being maintained. Refer to [Interpreting the Gains/Lift Chart](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/flow.rst#interpreting-the-gains-lift-chart) for the most up-to-date documentation.
 
 The Gains/Lift table evaluates the prediction ability of a binary classification model. The accuracy of the classification model for a random sample is evaluated according to the results when the model is and is not used.
 
@@ -22,21 +24,21 @@ The Gains/Lift table also reports for each group the threshold probability value
 During the Gains/Lift calculations, all rows containing missing values (NAs) in either the label (response) or the prediction probability are ignored. 
 
 
-##Requirements:
+## Requirements:
 
 - The training frame dataset must contain actual binary class labels.
 - The prediction column used as the response must contain probabilities.
 - For GLM, the visualization displays only when using `nfolds` (for example, `nfolds=2`).
 - The model type cannot be K-means or PCA.
 
-##Creating a Gains/Lift table
+## Creating a Gains/Lift table
 
-0. Import a binary classification dataset. 
-0. Select the model type (DL, DRF, GBM, GLM, or Naive Bayes)
-0. Select the imported dataset from the drop-down *training_frame* list. 
-0. Select a binomial column from the drop-down *response_column* list. 
-0. Click the **Build Model** button, then click the **View** button after the model is complete. 
-0. Scroll down to view the Gains/Lift chart (as shown in the example screenshot below). 
+1. Import a binary classification dataset. 
+2. Select the model type (DL, DRF, GBM, GLM, or Naive Bayes)
+3. Select the imported dataset from the drop-down *training_frame* list. 
+4. Select a binomial column from the drop-down *response_column* list. 
+5. Click the **Build Model** button, then click the **View** button after the model is complete. 
+6. Scroll down to view the Gains/Lift chart (as shown in the example screenshot below). 
 
   ![Gains/Lift chart](images/GainsLift.png)
 

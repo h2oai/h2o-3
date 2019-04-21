@@ -1,8 +1,10 @@
 package water.api;
 
 import water.H2O;
-import water.JettyHTTPD;
 import water.init.NodePersistentStorage;
+import water.server.ServletUtils;
+import water.util.FileUtils;
+import water.util.Log;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -19,13 +21,13 @@ public class NpsBinServlet extends HttpServlet {
 
   @Override
   protected void doGet(HttpServletRequest request, HttpServletResponse response) {
-    String uri = JettyHTTPD.getDecodedUri(request);
+    String uri = ServletUtils.getDecodedUri(request);
     try {
       Pattern p = Pattern.compile(".*/NodePersistentStorage.bin/([^/]+)/([^/]+)");
       Matcher m = p.matcher(uri);
       boolean b = m.matches();
       if (!b) {
-        JettyHTTPD.setResponseStatus(response, HttpServletResponse.SC_BAD_REQUEST);
+        ServletUtils.setResponseStatus(response, HttpServletResponse.SC_BAD_REQUEST);
         response.getWriter().write("Improperly formatted URI");
         return;
       }
@@ -41,25 +43,37 @@ public class NpsBinServlet extends HttpServlet {
       response.setContentType("application/octet-stream");
       response.setContentLength((int) length.get());
       response.addHeader("Content-Disposition", "attachment; filename=" + keyName + ".flow");
-      JettyHTTPD.setResponseStatus(response, HttpServletResponse.SC_OK);
-      OutputStream os = response.getOutputStream();
-      water.util.FileUtils.copyStream(is, os, 2048);
+      ServletUtils.setResponseStatus(response, HttpServletResponse.SC_OK);
+      OutputStream os = null;
+      try {
+        os = response.getOutputStream();
+        FileUtils.copyStream(is, os, 2048);
+      } finally {
+        if (os != null) {
+          try {
+            os.close();
+          }
+          catch (Exception e) {
+            Log.err(e);
+          }
+        }
+      }
     } catch (Exception e) {
-      JettyHTTPD.sendErrorResponse(response, e, uri);
+      ServletUtils.sendErrorResponse(response, e, uri);
     } finally {
-      JettyHTTPD.logRequest("GET", request, response);
+      ServletUtils.logRequest("GET", request, response);
     }
   }
 
   @Override
   protected void doPost(HttpServletRequest request, HttpServletResponse response) {
-    String uri = JettyHTTPD.getDecodedUri(request);
+    String uri = ServletUtils.getDecodedUri(request);
     try {
       Pattern p = Pattern.compile(".*NodePersistentStorage.bin/([^/]+)/([^/]+)");
       Matcher m = p.matcher(uri);
       boolean b = m.matches();
       if (!b) {
-        JettyHTTPD.setResponseStatus(response, HttpServletResponse.SC_BAD_REQUEST);
+        ServletUtils.setResponseStatus(response, HttpServletResponse.SC_BAD_REQUEST);
         response.getWriter().write("Improperly formatted URI");
         return;
       }
@@ -67,7 +81,7 @@ public class NpsBinServlet extends HttpServlet {
       String categoryName = m.group(1);
       String keyName = m.group(2);
 
-      InputStream is = JettyHTTPD.extractPartInputStream(request, response);
+      InputStream is = ServletUtils.extractPartInputStream(request, response);
       if (is == null) {
         return;
       }
@@ -82,9 +96,9 @@ public class NpsBinServlet extends HttpServlet {
       response.setContentType("application/json");
       response.getWriter().write(responsePayload);
     } catch (Exception e) {
-      JettyHTTPD.sendErrorResponse(response, e, uri);
+      ServletUtils.sendErrorResponse(response, e, uri);
     } finally {
-      JettyHTTPD.logRequest("POST", request, response);
+      ServletUtils.logRequest("POST", request, response);
     }
   }
 }

@@ -1,0 +1,28 @@
+# EditorConfig is awesome: http://EditorConfig.org
+
+# top-most EditorConfig file
+root = true
+
+# newline ending every file; no trailing space
+[*]
+insert_final_newline = true
+trim_trailing_whitespace = false
+
+# Matches multiple files with brace expansion notation
+# Set default charset
+[*.{js,json,py,xml,java,R}]
+charset = utf-8
+
+# 4 space indentation
+[*.{py,R,xml,js}]
+indent_style = space
+indent_size = 4
+
+# 2 space indentation
+[*.{java}]
+indent_style = space
+indent_size = 2
+
+# Tab indentation (no size specified)
+[Makefile]
+indent_style = tab

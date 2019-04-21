@@ -237,6 +237,7 @@ def generate_proxy(classname, endpoints):
     yield "import water.bindings.pojos.*;"
     yield "import retrofit2.*;"
     yield "import retrofit2.http.*;"
+    yield "import java.util.Map;" if classname == "Grid" or classname == "ModelBuilders" else None
     yield ""
     yield "public interface " + classname + " {"
     yield ""

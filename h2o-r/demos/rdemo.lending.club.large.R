@@ -87,10 +87,10 @@ loanStats$emp_length <- as.h2o(as.numeric(as.matrix(loanStats$emp_length)))
 # loanStats$emp_length <- as.numeric(loanStats$emp_length)
 
 print("Map multiple levels into one factor level for verification_status...")
+loanStats$verification_status <- as.character(loanStats$verification_status)
 loanStats$verification_status <- h2o.sub(x = loanStats$verification_status, pattern = "VERIFIED - income source", replacement = "verified")
 loanStats$verification_status <- h2o.sub(x = loanStats$verification_status, pattern = "VERIFIED - income", replacement = "verified")
-loanStats$verification_status <- as.h2o(as.matrix(loanStats$verification_status))
-#h2o.setLevels(x = loanStats$verification_status, levels = c("not verified", "verified", ""))
+loanStats$verification_status <- as.factor(loanStats$verification_status)
 
 ## Check to make sure all the string/enum to numeric conversion completed correctly
 x <- c("int_rate", "revol_util", "credit_length_in_years", "emp_length", "verification_status")

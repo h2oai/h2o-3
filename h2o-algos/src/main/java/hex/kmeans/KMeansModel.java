@@ -4,6 +4,7 @@ import hex.ClusteringModel;
 import hex.ModelMetrics;
 import hex.ModelMetricsClustering;
 import hex.ToEigenVec;
+import hex.genmodel.IClusteringModel;
 import hex.util.LinearAlgebraUtils;
 import water.DKV;
 import water.Job;
@@ -14,6 +15,7 @@ import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.udf.CFuncRef;
 import water.util.ArrayUtils;
 import water.util.JCodeGen;
 import water.util.SBPrintStream;
@@ -74,9 +76,9 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
     return new ModelMetricsClustering.MetricBuilderClustering(_output.nfeatures(),_output._k[_output._k.length-1]);
   }
 
-  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, final Job j, boolean computeMetrics) {
+  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, final Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
     if (!_parms._pred_indicator) {
-      return super.predictScoreImpl(orig, adaptedFr, destination_key, j, computeMetrics);
+      return super.predictScoreImpl(orig, adaptedFr, destination_key, j, computeMetrics, customMetricFunc);
     } else {
       final int len = _output._k[_output._k.length-1];
       String prefix = "cluster_";
@@ -138,9 +140,7 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
   }
 
   @Override
-  protected double[] score0(double[] data, double[] preds, double weight, double offset) {
-    if (weight == 0) return data; //0 distance from itself - validation holdout points don't increase metrics
-    assert(weight == 1);
+  protected double[] score0(double[] data, double[] preds, double offset) {
     return score0(data, preds);
   }
 
@@ -154,6 +154,12 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
   @Override protected double data(Chunk[] chks, int row, int col){
     return Kmeans_preprocessData(chks[col].atd(row),col,_output._normSub,_output._normMul,_output._mode);
   }
+
+  @Override
+  protected Class<?>[] getPojoInterfaces() {
+    return new Class<?>[]{IClusteringModel.class};
+  }
+
   // Override in subclasses to provide some top-level model-specific goodness
   @Override protected void toJavaPredictBody(SBPrintStream body,
                                              CodeGeneratorPipeline classCtx,
@@ -201,6 +207,66 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
           .pj(mname + "_CENTERS", "VALUES")
           .p(",data, DOMAINS);").nl(); // at function level
     }
+  }
+
+  @Override
+  protected SBPrintStream toJavaTransform(SBPrintStream ccsb,
+                                          CodeGeneratorPipeline fileCtx,
+                                          boolean verboseCode) { // ccsb = classContext
+    ccsb.nl();
+    ccsb.ip("// Pass in data in a double[], in a same way as to the score0 function.").nl();
+    ccsb.ip("// Cluster distances will be stored into the distances[] array. Function").nl();
+    ccsb.ip("// will return the closest cluster. This way the caller can avoid to call").nl();
+    ccsb.ip("// score0(..) to retrieve the cluster where the data point belongs.").nl();
+    ccsb.ip("public final int distances( double[] data, double[] distances ) {").nl();
+    toJavaDistancesBody(ccsb.ii(1));
+    ccsb.ip("return cluster;").nl();
+    ccsb.di(1).ip("}").nl();
+
+    ccsb.nl();
+    ccsb.ip("// Returns number of cluster used by this model.").nl();
+    ccsb.ip("public final int getNumClusters() {").nl();
+    toJavaGetNumClustersBody(ccsb.ii(1));
+    ccsb.ip("return nclusters;").nl();
+    ccsb.di(1).ip("}").nl();
+
+    // Output class context
+    CodeGeneratorPipeline classCtx = new CodeGeneratorPipeline(); //new SB().ii(1);
+    classCtx.generate(ccsb.ii(1));
+    ccsb.di(1);
+    return ccsb;
+  }
+
+  private void toJavaDistancesBody(SBPrintStream body) {
+
+    // This is model name
+    final String mname = JCodeGen.toJavaId(_key.toString());
+
+    if(_parms._standardize) {
+      // Distances function body: Standardize data first
+      body.ip("Kmeans_preprocessData(data,")
+              .pj(mname + "_MEANS", "VALUES,")
+              .pj(mname + "_MULTS", "VALUES,")
+              .pj(mname + "_MODES", "VALUES")
+              .p(");").nl();
+      // Distances function body: main work function is a utility in GenModel class.
+      body.ip("int cluster = KMeans_distances(")
+              .pj(mname + "_CENTERS", "VALUES")
+              .p(", data, DOMAINS, distances); ").nl(); // at function level
+    } else {
+      // Distances function body: main work function is a utility in GenModel class.
+      body.ip("int cluster = KMeans_distances(")
+              .pj(mname + "_CENTERS", "VALUES")
+              .p(",data, DOMAINS, distances);").nl(); // at function level
+    }
+  }
+
+  private void toJavaGetNumClustersBody(SBPrintStream body) {
+
+    // This is model name
+    final String mname = JCodeGen.toJavaId(_key.toString());
+
+    body.ip("int nclusters = ").pj(mname + "_CENTERS", "VALUES").p(".length;").nl();
   }
 
   @Override

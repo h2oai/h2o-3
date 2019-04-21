@@ -3,13 +3,14 @@
 #'
 # -------------------------- KMeans Model in H2O -------------------------- #
 #' 
-#' Performs k-means clustering on an H2O dataset.
+#' Performs k-means clustering on an H2O dataset
 #' 
 #' @param x A vector containing the \code{character} names of the predictors in the model.
 #' @param model_id Destination id for this model; auto-generated if not specified.
-#' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
+#' @param training_frame Id of the training data frame.
 #' @param validation_frame Id of the validation data frame.
-#' @param nfolds Number of folds for N-fold cross-validation (0 to disable or >= 2). Defaults to 0.
+#' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
+#' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to TRUE.
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to FALSE.
 #' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to FALSE.
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will
@@ -33,7 +34,8 @@
 #' @param init Initialization mode Must be one of: "Random", "PlusPlus", "Furthest", "User". Defaults to Furthest.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
-#'        "Binary", "Eigen", "LabelEncoder", "SortByResponse". Defaults to AUTO.
+#'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
+#' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @return Returns an object of class \linkS4class{H2OClusteringModel}.
 #' @seealso \code{\link{h2o.cluster_sizes}}, \code{\link{h2o.totss}}, \code{\link{h2o.num_iterations}},
 #'          \code{\link{h2o.betweenss}}, \code{\link{h2o.tot_withinss}}, \code{\link{h2o.withinss}},
@@ -42,15 +44,16 @@
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
-#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' prostate.hex <- h2o.uploadFile(path = prosPath)
-#' h2o.kmeans(training_frame = prostate.hex, k = 10, x = c("AGE", "RACE", "VOL", "GLEASON"))
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.uploadFile(path = prostate_path)
+#' h2o.kmeans(training_frame = prostate, k = 10, x = c("AGE", "RACE", "VOL", "GLEASON"))
 #' }
 #' @export
 h2o.kmeans <- function(training_frame, x,
                        model_id = NULL,
                        validation_frame = NULL,
                        nfolds = 0,
+                       keep_cross_validation_models = TRUE,
                        keep_cross_validation_predictions = FALSE,
                        keep_cross_validation_fold_assignment = FALSE,
                        fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
@@ -65,12 +68,13 @@ h2o.kmeans <- function(training_frame, x,
                        seed = -1,
                        init = c("Random", "PlusPlus", "Furthest", "User"),
                        max_runtime_secs = 0,
-                       categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse")
+                       categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
+                       export_checkpoints_dir = NULL
                        ) 
 {
 
   # Required args: training_frame
-  if( missing(training_frame) ) stop("argument 'training_frame' is missing, with no default")
+  if (missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
   # Training_frame must be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
      tryCatch(training_frame <- h2o.getFrame(training_frame),
@@ -88,14 +92,20 @@ h2o.kmeans <- function(training_frame, x,
   # Parameter list to send to model builder
   parms <- list()
   parms$training_frame <- training_frame
-  if(!missing(x))
+  if(!missing(x)){
     parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore
+    if(!missing(fold_column)){
+      parms$ignored_columns <- setdiff(parms$ignored_columns, fold_column)
+    }
+  }
   if (!missing(model_id))
     parms$model_id <- model_id
   if (!missing(validation_frame))
     parms$validation_frame <- validation_frame
   if (!missing(nfolds))
     parms$nfolds <- nfolds
+  if (!missing(keep_cross_validation_models))
+    parms$keep_cross_validation_models <- keep_cross_validation_models
   if (!missing(keep_cross_validation_predictions))
     parms$keep_cross_validation_predictions <- keep_cross_validation_predictions
   if (!missing(keep_cross_validation_fold_assignment))
@@ -126,6 +136,8 @@ h2o.kmeans <- function(training_frame, x,
     parms$max_runtime_secs <- max_runtime_secs
   if (!missing(categorical_encoding))
     parms$categorical_encoding <- categorical_encoding
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
 
   # Check if user_points is an acceptable set of user-specified starting points
   if( is.data.frame(user_points) || is.matrix(user_points) || is.list(user_points) || is.H2OFrame(user_points) ) {
@@ -156,5 +168,5 @@ h2o.kmeans <- function(training_frame, x,
   }
         
   # Error check and build model
-  .h2o.modelJob('kmeans', parms, h2oRestApiVersion=3) 
+  .h2o.modelJob('kmeans', parms, h2oRestApiVersion = 3) 
 }

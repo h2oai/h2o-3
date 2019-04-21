@@ -35,10 +35,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   public GBM( GBMModel.GBMParameters parms, Key<GBMModel> key) { super(parms, key); init(false); }
   public GBM(boolean startup_once) { super(new GBMModel.GBMParameters(),startup_once); }
 
-  @Override protected int nModelsInParallel() {
-    if (!_parms._parallelize_cross_validation || _parms._max_runtime_secs != 0) return 1; //user demands serial building (or we need to honor the time constraints for all CV models equally)
-    if (_train.byteSize() < 1e6) return _parms._nfolds; //for small data, parallelize over CV models
-    return 2; //GBM always has some serial work, so it's fine to build two models at once
+  @Override protected int nModelsInParallel(int folds) {
+    return nModelsInParallel(folds, 2);
   }
 
   /** Start the GBM training Job on an F/J thread. */
@@ -91,12 +89,22 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       if (hasOffsetCol() && isClassifier() && _parms._distribution == DistributionFamily.multinomial) {
         error("_offset_column", "Offset is not supported for multinomial distribution.");
       }
+      if (_parms._monotone_constraints != null && _parms._monotone_constraints.length > 0 &&
+              !(DistributionFamily.gaussian.equals(_parms._distribution) || DistributionFamily.bernoulli.equals(_parms._distribution))) {
+        error("_monotone_constraints", "Monotone constraints are only supported for Gaussian and Bernoulli distributions, your distribution: " + _parms._distribution + ".");
+      }
     }
 
     switch( _parms._distribution) {
     case bernoulli:
       if( _nclass != 2 /*&& !couldBeBool(_response)*/)
         error("_distribution", H2O.technote(2, "Binomial requires the response to be a 2-class categorical"));
+      break;
+    case quasibinomial:
+      if ( !_response.isNumeric() )
+        error("_distribution", H2O.technote(2, "Quasibinomial requires the response to be numeric."));
+      if ( _nclass != 2)
+        error("_distribution", H2O.technote(2, "Quasibinomial requires the response to be binary."));
       break;
     case modified_huber:
       if( _nclass != 2 /*&& !couldBeBool(_response)*/)
@@ -142,11 +150,25 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       error("_max_abs_leafnode_pred", "max_abs_leafnode_pred must be larger than 0.");
     if (_parms._pred_noise_bandwidth < 0)
       error("_pred_noise_bandwidth", "pred_noise_bandwidth must be >= 0.");
+
+    if ((_train != null) && (_parms._monotone_constraints != null)) {
+      TreeUtils.checkMonotoneConstraints(this, _train, _parms._monotone_constraints);
+    }
   }
 
   // ----------------------
   private class GBMDriver extends Driver {
     private transient FrameMap frameMap;
+
+    @Override
+    protected Frame makeValidWorkspace() {
+      // FIXME: this is not efficient, we need a sparse volatile chunks
+      Vec[] tmp = _valid.anyVec().makeVolatileDoubles(numClassTrees());
+      String[] tmpNames = new String[tmp.length];
+      for (int i = 0; i < tmpNames.length; i++)
+        tmpNames[i] = "__P_" + i;
+      return new Frame(tmpNames, tmp);
+    }
 
     @Override protected boolean doOOBScoring() { return false; }
     @Override protected void initializeModelSpecifics() {
@@ -159,7 +181,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // for Bernoulli, we compute the initial value with Newton-Raphson iteration, otherwise it might be NaN here
       DistributionFamily distr = _parms._distribution;
       _initialPrediction = _nclass > 2 || distr == DistributionFamily.laplace || distr == DistributionFamily.huber || distr == DistributionFamily.quantile ? 0 : getInitialValue();
-      if (distr == DistributionFamily.bernoulli) {
+      if (distr == DistributionFamily.bernoulli || distr == DistributionFamily.quasibinomial) {
         if (hasOffsetCol())
           _initialPrediction = getInitialValueBernoulliOffset(_train);
       } else if (distr == DistributionFamily.laplace || distr == DistributionFamily.huber) {
@@ -328,7 +350,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // ESL2, page 387.  Step 2b ii.
       // One Big Loop till the ktrees are of proper depth.
       // Adds a layer to the trees each pass.
-      growTrees(ktrees, leaves, _rand);
+      Constraints cs = _parms.constraints(_train);
+      growTrees(ktrees, leaves, _rand, cs);
       for (int k = 0; k < _nclass; k++) {
         if (DEV_DEBUG && ktrees[k]!=null) {
           System.out.println("Grew trees. Updated NIDs for class " + k + ":\n" + new Frame(new String[]{"NIDS"},new Vec[]{vec_nids(_train, k)}).toTwoDimTable());
@@ -347,7 +370,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       } else if (_parms._distribution == DistributionFamily.huber) {
         fitBestConstantsHuber(ktrees, leaves[0], huberDelta); //compute the alpha-quantile for each leaf node and store that as prediction
       } else {
-        fitBestConstants(ktrees, leaves, gp);
+        fitBestConstants(ktrees, leaves, gp, cs);
       }
 
       // Apply a correction for strong mispredictions (otherwise deviance can explode)
@@ -356,6 +379,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           _parms._distribution == DistributionFamily.tweedie) {
         assert(_nclass == 1);
         truncatePreds(ktrees[0], leaves[0], _parms._distribution);
+      }
+
+      if ((cs != null) && constraintCheckEnabled()) {
+        checkConstraints(ktrees, leaves, cs);
       }
 
       // ----
@@ -383,12 +410,20 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     }
 
     /**
+     * How may trees are actually calculated for the number of classes the model uses.
+     * @return number of trees
+     */
+    private int numClassTrees() {
+      return _nclass == 2 ? 1 : _nclass; // Boolean Optimization (only one tree needed for 2-class problems)
+    }
+
+    /**
      * Grow k regression trees (k=1 for regression and binomial, k=N for classification with N classes)
      * @param ktrees k trees to grow (must be properly initialized)
      * @param leaves workspace to store the leaf node starting index (k-dimensional - one per tree)
      * @param rand PRNG for reproducibility
      */
-    private void growTrees(DTree[] ktrees, int[] leaves, Random rand) {
+    private void growTrees(DTree[] ktrees, int[] leaves, Random rand, Constraints cs) {
       // Initial set of histograms.  All trees; one leaf per tree (the root
       // leaf); all columns
       DHistogram hcs[][][] = new DHistogram[_nclass][1/*just root leaf*/][_ncols];
@@ -398,13 +433,12 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
       long rseed = rand.nextLong();
       // initialize trees
-      for (int k = 0; k < _nclass; k++) {
+      for (int k = 0; k < numClassTrees(); k++) {
         // Initially setup as-if an empty-split had just happened
         if (_model._output._distribution[k] != 0) {
-          if (k == 1 && _nclass == 2) continue; // Boolean Optimization (only one tree needed for 2-class problems)
-          ktrees[k] = new DTree(_train, _ncols, (char)_nclass, _mtry, _mtry_per_tree, rseed, _parms);
-          DHistogram[] hist = DHistogram.initialHist(_train, _ncols, adj_nbins, hcs[k][0], rseed, _parms, getGlobalQuantilesKeys());
-          new UndecidedNode(ktrees[k], DTree.NO_PARENT, hist); // The "root" node
+          ktrees[k] = new DTree(_train, _ncols, _mtry, _mtry_per_tree, rseed, _parms);
+          DHistogram[] hist = DHistogram.initialHist(_train, _ncols, adj_nbins, hcs[k][0], rseed, _parms, getGlobalQuantilesKeys(), cs);
+          new UndecidedNode(ktrees[k], DTree.NO_PARENT, hist, cs); // The "root" node
         }
       }
 
@@ -537,14 +571,22 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       return _parms._learn_rate * Math.pow(_parms._learn_rate_annealing, (_model._output._ntrees-1));
     }
 
-    private void fitBestConstants(DTree[] ktrees, int[] leafs, GammaPass gp) {
+    private void fitBestConstants(DTree[] ktrees, int[] leafs, GammaPass gp, Constraints cs) {
+      final boolean useSplitPredictions = cs != null && cs.useBounds();
       double m1class = _nclass > 1 && _parms._distribution == DistributionFamily.multinomial ? (double) (_nclass - 1) / _nclass : 1.0; // K-1/K for multinomial
       for (int k = 0; k < _nclass; k++) {
         final DTree tree = ktrees[k];
         if (tree == null) continue;
         if (DEV_DEBUG) for (int i=0;i<ktrees[k]._len-leafs[k];++i) System.out.println(ktrees[k].node(leafs[k]+i).toString());
         for (int i = 0; i < tree._len - leafs[k]; i++) {
-          double gf = effective_learning_rate() * m1class * gp.gamma(k, i);
+          LeafNode leafNode = (LeafNode) ktrees[k].node(leafs[k] + i);
+          final double gamma;
+          if (useSplitPredictions) {
+            gamma = leafNode.getSplitPrediction();
+          } else {
+            gamma = gp.gamma(k, i);
+          }
+          double gf = effective_learning_rate() * m1class * gamma;
           // In the multinomial case, check for very large values (which will get exponentiated later)
           // Note that gss can be *zero* while rss is non-zero - happens when some rows in the same
           // split are perfectly predicted true, and others perfectly predicted false.
@@ -556,11 +598,71 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           else if (Double.isInfinite(gf)) gf=Math.signum(gf)*1e4f;
           if (gf > _parms._max_abs_leafnode_pred) gf = _parms._max_abs_leafnode_pred;
           if (gf < -_parms._max_abs_leafnode_pred) gf = -_parms._max_abs_leafnode_pred;
-          ((LeafNode) tree.node(leafs[k] + i))._pred = (float) gf;
+          leafNode._pred = (float) gf;
         }
       }
     }
 
+    private boolean constraintCheckEnabled() {
+      return Boolean.parseBoolean(getSysProperty("gbm.monotonicity.checkEnabled", "true"));
+    }
+
+    private void checkConstraints(DTree[] ktrees, int[] leafs, Constraints cs) {
+      for (int k = 0; k < _nclass; k++) {
+        final DTree tree = ktrees[k];
+        if (tree == null) continue;
+        float[] mins = new float[tree._len];
+        int[] min_ids = new int[tree._len];
+        float[] maxs = new float[tree._len];
+        int[] max_ids = new int[tree._len];
+        rollupMinMaxPreds(tree, tree.root(), mins, min_ids, maxs, max_ids);
+        for (int i = 0; i < tree._len - leafs.length; i++) {
+          DTree.Node node = tree.node(i);
+          if (! (node instanceof DecidedNode))
+            continue;
+          DecidedNode dn = ((DecidedNode) node);
+          if (dn._split == null)
+            continue;
+          int constraint = cs.getColumnConstraint(dn._split._col);
+          if (constraint > 0) {
+            if (maxs[dn._nids[0]] > mins[dn._nids[1]]) {
+              throw new IllegalStateException("Monotonicity constraint " + constraint + " violated on column '" + _train.name(dn._split._col) + "' (max(left) > min(right)): " + 
+                      maxs[dn._nids[0]] + " > " + mins[dn._nids[1]] + 
+                      "\nNode: " + node + 
+                      "\nLeft Node (max): " + tree.node(max_ids[dn._nids[0]]) + 
+                      "\nRight Node (min): " + tree.node(min_ids[dn._nids[1]]));
+            }
+          } else if (constraint < 0) {
+            if (mins[dn._nids[0]] < maxs[dn._nids[1]]) {
+              throw new IllegalStateException("Monotonicity constraint " + constraint + " violated on column '" + _train.name(dn._split._col) + "' (min(left) < max(right)): " +
+                      mins[dn._nids[0]] + " < " + maxs[dn._nids[1]] + 
+                      "\nNode: " + node +
+                      "\nLeft Node (min): " + tree.node(min_ids[dn._nids[0]]) +
+                      "\nRight Node (max): " + tree.node(max_ids[dn._nids[1]]));
+            }
+          }
+        }
+      }
+    }
+
+    private void rollupMinMaxPreds(DTree tree, DTree.Node node, float[] mins, int min_ids[], float[] maxs, int[] max_ids) {
+      if (node instanceof LeafNode) {
+        mins[node.nid()] = ((LeafNode) node)._pred;
+        min_ids[node.nid()] = node.nid();
+        maxs[node.nid()] = ((LeafNode) node)._pred;
+        max_ids[node.nid()] = node.nid();
+        return;
+      }
+      DecidedNode dn = (DecidedNode) node;
+      rollupMinMaxPreds(tree, tree.node(dn._nids[0]), mins, min_ids, maxs, max_ids);
+      rollupMinMaxPreds(tree, tree.node(dn._nids[1]), mins, min_ids, maxs, max_ids);
+      final int min_id = mins[dn._nids[0]] < mins[dn._nids[1]] ? dn._nids[0] : dn._nids[1];
+      mins[node.nid()] = mins[min_id];
+      min_ids[node.nid()] = min_ids[min_id];
+      final int max_id = maxs[dn._nids[0]] > maxs[dn._nids[1]] ? dn._nids[0] : dn._nids[1];
+      maxs[node.nid()] = maxs[max_id];
+      max_ids[node.nid()] = max_ids[max_id];
+    }
 
     @Override protected GBMModel makeModel(Key<GBMModel> modelKey, GBMModel.GBMParameters parms) {
       return new GBMModel(modelKey, parms, new GBMModel.GBMOutput(GBM.this));
@@ -935,18 +1037,22 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     }
 
     double gamma(int tree, int nid) {
+      return gamma(tree, nid, _num[tree][nid]);
+    }
+
+    double gamma(int tree, int nid, double num) {
       if (_denom[tree][nid] == 0) return 0;
-      double g = _num[tree][nid] / _denom[tree][nid];
+      double g = num / _denom[tree][nid];
       assert (!Double.isInfinite(g) && !Double.isNaN(g));
       if (_dist.distribution == DistributionFamily.poisson ||
-          _dist.distribution == DistributionFamily.gamma ||
-          _dist.distribution == DistributionFamily.tweedie) {
+              _dist.distribution == DistributionFamily.gamma ||
+              _dist.distribution == DistributionFamily.tweedie) {
         return _dist.link(g);
       } else {
         return g;
       }
     }
-
+    
     @Override
     protected boolean modifiesVolatileVecs() {
       return true;
@@ -1106,7 +1212,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   private static double score1static(Chunk[] chks, int treeIdx, double offset, double[] fs, int row, Distribution dist, int nClasses) {
     double f = chks[treeIdx].atd(row) + offset;
     double p = dist.linkInv(f);
-    if (dist.distribution == DistributionFamily.modified_huber || dist.distribution == DistributionFamily.bernoulli) {
+    if (dist.distribution == DistributionFamily.modified_huber || dist.distribution == DistributionFamily.bernoulli || dist.distribution == DistributionFamily.quasibinomial) {
       fs[2] = p;
       fs[1] = 1.0 - p;
       return 1;                 // f2 = 1.0 - f1; so f1+f2 = 1.0

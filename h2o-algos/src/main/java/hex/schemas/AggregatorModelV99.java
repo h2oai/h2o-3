@@ -10,6 +10,9 @@ public class AggregatorModelV99 extends ModelSchemaV3<AggregatorModel, Aggregato
   public static final class AggregatorModelOutputV99 extends ModelOutputSchemaV3<AggregatorModel.AggregatorOutput, AggregatorModelOutputV99> {
     @API(help = "Aggregated Frame of Exemplars")
     public KeyV3.FrameKeyV3 output_frame;
+
+    @API(help ="Aggregated Frame mapping to the rows in the original data")
+    public KeyV3.FrameKeyV3 mapping_frame;
   }
 
   // TODO: I think we can implement the following two in ModelSchemaV3, using reflection on the type parameters.

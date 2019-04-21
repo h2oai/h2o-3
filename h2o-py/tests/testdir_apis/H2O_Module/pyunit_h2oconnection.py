@@ -11,11 +11,8 @@ def h2oconnection():
     Python API test: h2o.connection()
     """
     # call with no arguments
-    try:
-        temp = h2o.connection()
-        assert_is_type(temp, H2OConnection)
-    except Exception as e:
-        assert False, "h2o.connection() command is not working."
+    temp = h2o.connection()
+    assert_is_type(temp, H2OConnection)
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(h2oconnection)

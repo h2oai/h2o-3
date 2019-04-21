@@ -1,7 +1,9 @@
 package hex.glrm;
 
+import hex.CreateFrame;
 import hex.DataInfo;
 import hex.ModelMetrics;
+import hex.SplitFrame;
 import hex.genmodel.algos.glrm.GlrmInitialization;
 import hex.genmodel.algos.glrm.GlrmLoss;
 import hex.genmodel.algos.glrm.GlrmRegularizer;
@@ -28,8 +30,12 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
+
+import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 public class GLRMTest extends TestUtil {
   public final double TOLERANCE = 1e-6;
@@ -388,35 +394,64 @@ public class GLRMTest extends TestUtil {
     }
   }
 
-  @Test public void testMojo() throws InterruptedException, ExecutionException {
-    GLRM glrm;
-    GLRMModel model = null;
-    Frame train = null;
-
+  // Need to test when we are calling predict with the training dataset and calling predict with a new
+  // dataset, the operations here will be differ                                                                                                                                                ent.
+  @Test
+  public void testGLRMPredMojo() {
     try {
       Scope.enter();
-      train = parse_test_file(Key.<Frame>make("birds"), "./smalldata/pca_test/AustraliaCoast.csv");
+      CreateFrame cf = new CreateFrame();
+      Random generator = new Random();
+      int numRows = generator.nextInt(10000) + 50000;
+      int numCols = generator.nextInt(17) + 3;
+      cf.rows = numRows;
+      cf.cols = numCols;
+      cf.binary_fraction = 0;
+      cf.string_fraction = 0;
+      cf.time_fraction = 0;
+      cf.has_response = false;
+      cf.positive_response = true;
+      cf.missing_fraction = 0.1;
+      cf.seed = System.currentTimeMillis();
+      System.out.println("Createframe parameters: rows: " + numRows + " cols:" + numCols + " seed: " + cf.seed);
+
+      Frame trainMultinomial = Scope.track(cf.execImpl().get());
+      double tfrac = 0.2;
+      SplitFrame sf = new SplitFrame(trainMultinomial, new double[]{1 - tfrac, tfrac}, new Key[]{Key.make("train.hex"), Key.make("test.hex")});
+      sf.exec().get();
+      Key[] ksplits = sf._destination_frames;
+      Frame tr = DKV.get(ksplits[0]).get();
+      Frame te = DKV.get(ksplits[1]).get();
+      Scope.track(tr);
+      Scope.track(te);
+
       GLRMParameters parms = new GLRMParameters();
-      parms._train = train._key;
-      parms._k = 4;
+      parms._train = tr._key;
+      parms._k = 3;
       parms._loss = GlrmLoss.Quadratic;
-      parms._init = GlrmInitialization.Random;
-      parms._max_iterations = 2000;
+      parms._init = GlrmInitialization.SVD;
+      parms._max_iterations = 10;
       parms._regularization_x = GlrmRegularizer.Quadratic;
       parms._gamma_x = 0;
       parms._gamma_y = 0;
+      parms._seed = cf.seed;
 
-      glrm = new GLRM(parms);
-      model = glrm.trainModel().get();
-      assert model != null;
-
-      checkLossbyCol(parms, model);
-      boolean res = model.testJavaScoring(train, model._output._representation_key.get(), 1e-6, 1);
-      // Disable for now
-      // Assert.assertTrue(res);
+      GLRM glrm = new GLRM(parms);
+      GLRMModel model = glrm.trainModel().get();
+      Scope.track_generic(model);
+      Frame xfactorTr = DKV.get(model.gen_representation_key(tr)).get();
+      Scope.track(xfactorTr);
+      Frame predTr = model.score(tr);
+      Scope.track(predTr);
+      assertEquals(predTr.numRows(), xfactorTr.numRows()); // make sure x factor is derived from tr
+      Frame predT = model.score(te); // predict on new data and compare with mojo
+      Scope.track(predT);
+      Frame xfactorTe = DKV.get(model.gen_representation_key(te)).get();
+      Scope.track(xfactorTe);
+      assertEquals(predT.numRows(), xfactorTe.numRows()); // make sure x factor is derived from te
+      Assert.assertTrue(model.testJavaScoring(te, predT, 1e-6, 1e-6, 1));
     } finally {
-      if (train != null) train.delete();
-      if (model != null) model.delete();
+      Scope.exit();
     }
   }
 
@@ -575,7 +610,8 @@ public class GLRMTest extends TestUtil {
             TestUtil.checkEigvec(eigvec_std, model._output._eigenvectors, TOLERANCE);
           }
 
-          // compare PCA and GLRM variance metrics here after we know PCA has worked correctly
+          // compare PCA and
+          // variance metrics here after we know PCA has worked correctly
           TestUtil.checkIcedArrays(model._output._importance.getCellValues(),
                   gmodel._output._importance.getCellValues(), TOLERANCE);
 
@@ -586,6 +622,117 @@ public class GLRMTest extends TestUtil {
       }
     } finally {
       if(train != null) train.delete();
+    }
+  }
+
+  /*
+    Test GLRM with wide dataset.  I chose prostate_cat.csv because it contains both enums and
+    numerical data columns.  First, generate the models with normal GLRM operation.  Next, force
+    wideDataset and generate the model again.  Finally, compare the two models and there should
+    be the same.
+   */
+  @Test public void testWideDataSetGLRMCat() throws InterruptedException, ExecutionException {
+    Scope.enter();
+    GLRMModel modelN = null;     // store PCA models generated with original implementation
+    GLRMModel modelW = null;     // store PCA models generated with wideDataSet set to true
+    Frame train = null, scoreN = null, scoreW = null;
+    double tolerance = 1e-6;
+
+    try {
+      train = parse_test_file(Key.make("Prostrate_CAT"), "smalldata/prostate/prostate_cat.csv");
+      train.vec(0).setNA(0);          // set NAs
+      train.vec(3).setNA(10);
+      train.vec(5).setNA(20);
+      Scope.track(train);
+      DKV.put(train);
+
+      GLRMParameters parms = new GLRMParameters();
+      parms._train = train._key;
+      parms._k = 3;
+      parms._transform = DataInfo.TransformType.DEMEAN;
+      parms._seed = 12345;
+      parms._gamma_x = 1;
+      parms._gamma_y = 0.5;
+      if (!Arrays.asList(train.typesStr()).contains("Enum")) {
+        parms._init = GlrmInitialization.SVD;
+      }
+      parms._regularization_x = GlrmRegularizer.Quadratic;
+      parms._regularization_y = GlrmRegularizer.Quadratic;
+      parms._recover_svd = true;
+      GLRM glrmParms = new GLRM(parms);
+      modelN = glrmParms.trainModel().get();
+      scoreN = modelN.score(train);
+      Scope.track(scoreN);
+      Scope.track_generic(modelN);
+
+      GLRM glrmParmsW = new GLRM(parms);
+      glrmParmsW.setWideDataset(true);  // force to treat dataset as wide even though it is not.
+      modelW = glrmParmsW.trainModel().get();
+      scoreW = modelW.score(train);
+      Scope.track(scoreW);
+      Scope.track_generic(modelW);
+
+      // compare eigenvectors and eigenvalues generated by original PCA and wide dataset PCA.
+						TestUtil.checkStddev(modelW._output._std_deviation, modelN._output._std_deviation, tolerance);
+      boolean[] flippedArch = TestUtil.checkEigvec(modelN._output._archetypes_raw._archetypes,
+              modelW._output._archetypes_raw._archetypes, tolerance);    // check archetypes
+						boolean[] flippedEig = TestUtil.checkEigvec(modelW._output._eigenvectors, modelN._output._eigenvectors,
+              tolerance);
+						assertTrue(Arrays.equals(flippedArch, flippedEig)); // should be the same
+      assertTrue(TestUtil.isIdenticalUpToRelTolerance(scoreW, scoreN, tolerance));
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test public void testWideDataSetGLRMDec() throws InterruptedException, ExecutionException {
+    Scope.enter();
+    GLRMModel modelN = null;     // store PCA models generated with original implementation
+    GLRMModel modelW = null;     // store PCA models generated with wideDataSet set to true
+    Frame train = null, scoreN = null, scoreW = null;
+    double tolerance = 1e-6;
+
+    try {
+      train = parse_test_file(Key.make("deacathlon"), "smalldata/pca_test/decathlon.csv");
+      Scope.track(train);
+      DKV.put(train);
+
+      GLRMParameters parms = new GLRMParameters();
+      parms._train = train._key;
+      parms._k = 3;
+      parms._transform = DataInfo.TransformType.NONE;
+      parms._seed = 12345;
+      parms._gamma_x = 1;
+      parms._gamma_y = 0.5;
+      if (!Arrays.asList(train.typesStr()).contains("Enum")) {
+        parms._init = GlrmInitialization.SVD;
+      }
+      parms._regularization_x = GlrmRegularizer.Quadratic;
+      parms._regularization_y = GlrmRegularizer.Quadratic;
+      parms._recover_svd = true;
+      GLRM glrmParms = new GLRM(parms);
+      modelN = glrmParms.trainModel().get();
+      scoreN = modelN.score(train);
+      Scope.track(scoreN);
+      Scope.track_generic(modelN);
+
+      GLRM glrmParmsW = new GLRM(parms);
+      glrmParmsW.setWideDataset(true);  // force to treat dataset as wide even though it is not.
+      modelW = glrmParmsW.trainModel().get();
+      scoreW = modelW.score(train);
+      Scope.track(scoreW);
+      Scope.track_generic(modelW);
+
+      // compare eigenvectors and eigenvalues generated by original PCA and wide dataset PCA.
+      TestUtil.checkStddev(modelW._output._std_deviation, modelN._output._std_deviation, tolerance);
+      boolean[] flippedArch = TestUtil.checkEigvec(modelN._output._archetypes_raw._archetypes,
+              modelW._output._archetypes_raw._archetypes, tolerance);    // check archetypes
+      boolean[] flippedEig = TestUtil.checkEigvec(modelW._output._eigenvectors, modelN._output._eigenvectors,
+              tolerance);
+      assertTrue(Arrays.equals(flippedArch, flippedEig)); // should be the same
+      assertTrue(TestUtil.isIdenticalUpToRelTolerance(scoreW, scoreN, tolerance));
+    } finally {
+      Scope.exit();
     }
   }
 }

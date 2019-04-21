@@ -23,7 +23,7 @@ General Troubleshooting Tips
 -  Confirm that no other sessions of H2O are running. To stop all
    running H2O sessions, enter ``ps -efww | grep h2o`` in your shell
    (OSX or Linux).
--  Confirm ports 54321 and 54322 are available for both TCP and UDP.
+-  Confirm ports 54321 and 54322 are available for TCP.
    Launch Telnet (for Windows users) or Terminal (for OS X users), then
    type ``telnet localhost 54321``, ``telnet localhost 54322``
 -  Confirm your firewall is not preventing the nodes from locating each
@@ -101,21 +101,50 @@ and H2O should launch successfully.
 
 --------------
 
-**I am not launching on Hadoop. How can i increase the amount of time that H2O allows for expected nodes to connect?**
+**I am not launching on Hadoop. How can I increase the amount of time that H2O allows for expected nodes to connect?**
 
 For cluster startup, if you are not launching on Hadoop, then you will not need to specify a timeout. You can add additional nodes to the cloud as long as you haven't submitted any jobs to the cluster. When you do submit a job to the cluster, the cluster will lock and will print a message similar to `"Locking cloud to new members, because <reason>..."`.
 
 --------------
 
+**Occasionally I receive an "out of memory" error. Is there a method based on the trees/depth/cross-validations that is used to determine how much memory is needed to store the model?**
+
+We normally suggest 3-4 times the size of the dataset for the amount of memory required. It's difficult to calculate the exact memory footprint for each case because running with a different solver or with different parameters can change the memory footprint drastically. In GLM for example, there's an internal heuristic for checking the estimated memory needed:
+
+`https://github.com/h2oai/h2o-3/blob/master/h2o-algos/src/main/java/hex/glm/GLM.java#L182 <https://github.com/h2oai/h2o-3/blob/master/h2o-algos/src/main/java/hex/glm/GLM.java#L182>`__
+
+In this particular case, if you use IRLSM or Coordinate Descent, the memory footprint is roughly in bytes:
+
+  (number of predictors expanded)^2 * (# of cores on one machine) * 4 
+
+And if you run cross validation with, for example, two-fold xval, then the memory footprint would be double this number; three-fold would be triple, etc.
+
+For GBM and Random Forest, another heuristic is run by checking how much memory is needed to hold the trees. Additionally, the number of histograms that are calculated per predictor also matters. 
+
+Depending on the user-specified predictors, max_depth per tree, the number of trees, nbins per histogram, and the number of classes (binomial vs multinomial), memory consumption will vary:
+
+- Holding trees: 2^max_depth * nclasses * ntrees * 10 (or the avg bytes/element)
+- Computing histograms: (num_predictors) * nbins * 3 (histogram/leaf) * (2^max_depth) * nclasses * 8
+
+--------------
+
 **What's the best approach to help diagnose a possible memory problem on a cluster?**
 
-We've found that the best way to understand JVM memory consumption is to turn on the following JVM flags:
+We've found that the best way to understand JVM memory consumption is to turn on specific flags. These flags differ depending on your Java version.
+
+For Java version < 10, the following flags are available:
 
 ::
 
    -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCTimeStamps
 
 You can then use the following tool to analyze the output: http://www.tagtraum.com/gcviewer-download.html
+
+Since Java 9, the previously metioned flags have been marked as deprecated and are completely removed in Java version 10 and newer. The following flag may be used instead.
+
+::
+
+   -Xlog:gc=info
 
 --------------
 
@@ -158,3 +187,16 @@ Note that the ``h2o.garbageCollct()`` function works as follows:
 This tells the backend to do a forcible full-GC on each node in the H2O cluster. Doing three of them back-to-back makes it stand out clearly in the gcviewer chart where the bottom-of-inner loop is. You can then correlate what you expect to see with the X (time) axis of the memory utilization graph. 
 
 At this point you want to see if the bottom trough of the usage is growing from iteration to iteration after the triple full-GC bars in the graph. If the trough is not growing from iteration to iteration, then there is no leak; your usage is just really too much, and you need a bigger heap. If the trough is growing, then there is likely some kind of leak. You can try to use ``h2o.ls()`` to learn where the leak is. If ``h2o.ls()`` doesn't help, then you will have to drill much deeper using, for example, YourKit and reviewing the JVM-level heap profiles. 
+
+--------------
+
+**Is there a way to clear everything from H2O (including H2OFrames/Models)?**
+
+You can open Flow and select individual items to delete from H2O, or you can run the following to remove everything from H2O:
+
+::
+
+    import water.api.RemoveAllHandler
+    new RemoveAllHandler().remove(3,new RemoveAllV3())
+
+    

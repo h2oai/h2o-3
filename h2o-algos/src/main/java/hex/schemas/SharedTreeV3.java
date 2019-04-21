@@ -72,16 +72,13 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
     @API(help="Run on one node only; no network overhead but fewer cpus used.  Suitable for small datasets.", level = API.Level.expert, gridable = false)
     public boolean build_tree_one_node;
 
-    @API(help = "Row sample rate per tree (from 0.0 to 1.0)", gridable = true)
-    public double sample_rate;
-
     @API(help = "A list of row sample rates per class (relative fraction for each class, from 0.0 to 1.0), for each tree", level = API.Level.expert, gridable = true)
     public double[] sample_rate_per_class;
 
     @API(help = "Column sample rate per tree (from 0.0 to 1.0)", level = API.Level.secondary, gridable = true)
     public double col_sample_rate_per_tree;
 
-    @API(help = "Relative change of the column sampling rate for every level (from 0.0 to 2.0)", level = API.Level.expert, gridable = true)
+    @API(help = "Relative change of the column sampling rate for every level (must be > 0.0 and <= 2.0)", level = API.Level.expert, gridable = true)
     public double col_sample_rate_change_per_level;
 
     @API(help="Score the model after every so many trees. Disabled if set to 0.", level = API.Level.secondary, gridable = false)
@@ -98,5 +95,9 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
 
     @API(help="Calibration frame for Platt Scaling", level = API.Level.expert, direction = API.Direction.INOUT)
     public FrameKeyV3 calibration_frame;
+
+    @API(help="Check if response column is constant. If enabled, then an exception is thrown if the response column is a constant value." +
+            "If disabled, then model will train regardless of the response column being a constant value or not.", level = API.Level.expert, direction = API.Direction.INOUT)
+    public boolean check_constant_response;
   }
 }

@@ -7,8 +7,6 @@ import water.util.Log;
 import water.util.MathUtils;
 import water.util.MathUtils.Norm;
 
-import java.util.Arrays;
-
 /**
  * Created by tomasnykodym on 3/2/15.
  */

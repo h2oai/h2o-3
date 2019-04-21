@@ -35,26 +35,34 @@ public class ParseTestMultiFileOrc extends TestUtil {
     }
 
     @BeforeClass
-    static public void setup() { TestUtil.stall_till_cloudsize(5); }
+    static public void setup() { TestUtil.stall_till_cloudsize(1); }
 
     @Test
     public void testParseMultiFileOrcs() {
+        for(final boolean disableParallelParse:new boolean[]{false,true}) {
+            final ParseSetupTransformer pst = new ParseSetupTransformer() {
+                @Override
+                public ParseSetup transformSetup(ParseSetup guessedSetup) {
+                    guessedSetup.disableParallelParse = disableParallelParse;
+                    return guessedSetup;
+                }
+            };
+            for (int f_index = 0; f_index < csvDirectories.length; f_index++) {
+                Frame csv_frame = parse_test_folder(csvDirectories[f_index], "\\N", 0, null, pst);
 
-        for (int f_index = 0; f_index < csvDirectories.length; f_index++) {
-            Frame csv_frame = parse_test_folder(csvDirectories[f_index], "\\N", 0, null);
+                byte[] types = csv_frame.types();
 
-            byte[] types = csv_frame.types();
+                for (int index = 0; index < types.length; index++) {
+                    if (types[index] == 0)
+                        types[index] = 4;
+                }
 
-            for (int index = 0; index < types.length; index++) {
-                if (types[index] == 0)
-                    types[index] = 4;
+                Frame orc_frame = parse_test_folder(orcDirectories[f_index], null, 0, types, pst);
+                assertTrue(TestUtil.isIdenticalUpToRelTolerance(csv_frame, orc_frame, 1e-5));
+
+                csv_frame.delete();
+                orc_frame.delete();
             }
-
-            Frame orc_frame = parse_test_folder(orcDirectories[f_index], null, 0, types);
-            assertTrue(TestUtil.isIdenticalUpToRelTolerance(csv_frame, orc_frame, 1e-5));
-
-            csv_frame.delete();
-            orc_frame.delete();
         }
     }
 }

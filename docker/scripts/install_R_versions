@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# Script for installing all R versions specified as comma separated list
+# in ${1} or in ${R_VERSIONS}.
+
+# exit on error
+set -e
+
+VERSIONS_TO_INSTALL=${1}
+if [[ ! -n ${VERSIONS_TO_INSTALL} ]]; then
+  VERSIONS_TO_INSTALL=${R_VERSIONS}
+fi
+if [[ ! -n ${VERSIONS_TO_INSTALL} ]]; then
+  echo "Either R_VERSIONS must be set or provide and argument containing required versions"
+  exit 1
+fi
+
+wget -O /LiblineaR_1.94-2.tar.gz https://s3.amazonaws.com/h2o-r/linux/LiblineaR_1.94-2.tar.gz
+
+IFS=',' read -r -a array <<< ${VERSIONS_TO_INSTALL}
+for r_version in "${array[@]}"; do
+  echo "Installing R ${r_version}"
+  install_R_version ${r_version}
+done
+
+rm /LiblineaR_1.94-2.tar.gz

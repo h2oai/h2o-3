@@ -10,13 +10,17 @@ options(scipen=999)
 #'
 H2O.IP                      <<- "127.0.0.1"
 H2O.PORT                    <<- 54321
+H2O.HTTPS                   <<- FALSE
+USERNAME                    <<- NA_character_
+PASSWORD                    <<- NA_character_
 ON.HADOOP                   <<- FALSE
-HADOOP.NAMENODE             <<- NULL
+HADOOP.NAMENODE             <<- Sys.getenv("NAME_NODE")
 IS.RDEMO                    <<- FALSE
 IS.RUNIT                    <<- FALSE
 IS.RBOOKLET                 <<- FALSE
 IS.RIPYNB                   <<- FALSE
 RESULTS.DIR                 <<- NULL
+REST.LOG                    <<- FALSE
 TEST.NAME                   <<- "RTest"
 SEED                        <<- NULL
 PROJECT.ROOT                <<- "h2o-3"
@@ -41,6 +45,16 @@ function(args) {
         i <- i + 1
         if (i > length(args)) usage()
         HADOOP.NAMENODE <<- args[i]
+      } else if (s == "--https") {
+        H2O.HTTPS <<- TRUE
+      } else if (s == "--username") {
+        i <- i + 1
+        if (i > length(args)) usage()
+        USERNAME <<- args[i]
+      } else if (s == "--password") {
+        i <- i + 1
+        if (i > length(args)) usage()
+        PASSWORD <<- args[i]
       } else if (s == "--onHadoop") {
         ON.HADOOP <<- TRUE
       } else if (s == "--rDemo") {
@@ -59,7 +73,9 @@ function(args) {
         i <- i + 1
         if (i > length(args)) usage()
         TEST.NAME <<- args[i]
-      } else {
+      } else if (s == '--restLog') {
+        REST.LOG <<- TRUE
+      }else {
         unknownArg(s)
       }
       i <- i + 1
@@ -75,26 +91,36 @@ function() {
   print("")
   print("Usage for:  R -f rtest.R --args [...options...]")
   print("")
-  print("    --usecloud        connect to h2o on specified ip and port, where ip and port are specified as follows:")
-  print("                      IP:PORT")
+  print("    --usecloud         connect to h2o on specified ip and port, where ip and port are specified as follows:")
+  print("                       IP:PORT")
   print("")
-  print("    --onHadoop        Indication that tests will be run on h2o multinode hadoop clusters.")
-  print("                      `locate` and `sandbox` runit test utilities use this indication in order to")
-  print("                      behave properly. --hadoopNamenode must be specified if --onHadoop option is used.")
-  print("    --hadoopNamenode  Specifies that the runit tests have access to this hadoop namenode.")
-  print("                      `hadoop.namenode` runit test utility returns this value.")
+  print("    --https            connect to h2o using https instead of http")
   print("")
-  print("    --rDemo           test is R demo")
+  print("    --username         username to use for authentication to the h2o instance")
   print("")
-  print("    --rUnit           test is R unit test")
+  print("    --password         password to use for authentication to the h2o instance")
   print("")
-  print("    --rBooklet        test is R booklet")
+  print("    --onHadoop         Indication that tests will be run on h2o multinode hadoop clusters.")
+  print("                       `locate` and `sandbox` runit test utilities use this indication in order to")
+  print("                       behave properly. --hadoopNamenode must be specified if --onHadoop option is used.")
+  print("    --hadoopNamenode   Specifies that the runit tests have access to this hadoop namenode.")
+  print("                       `hadoop.namenode` runit test utility returns this value.")
+  print("")
+  print("    --rDemo            test is R demo")
+  print("")
+  print("    --rUnit            test is R unit test")
+  print("")
+  print("    --rBooklet         test is R booklet")
   print("")
   print("    --rIPythonNotebook test is R IPython Notebook")
   print("")
-  print("    --resultsDir      the results directory.")
+  print("    --resultsDir       the results directory.")
   print("")
-  print("    --testName        name of the rdemo, runit, or rbooklet.")
+  print("    --testName         name of the rdemo, runit, or rbooklet.")
+  print("")
+  print("    --restLog          If set, enable REST API logging. Logs will be available at <resultsDir>/rest.log.")
+  print("                       Please note, that enablig REST API logging will increase the execution time and that")
+  print("                       the log file might be large (> 2GB).")
   print("")
   q("no",1,FALSE) #exit with nonzero exit code
 }
@@ -148,16 +174,17 @@ function() {
         strict_version_check <- TRUE
     } else if (IS.RUNIT) {
         # source h2o-r/h2o-package/R. overrides h2o package load
-        to_src <- c("classes.R", "connection.R","config.R", "constants.R", "logging.R", "communication.R", "kvstore.R",
-                    "frame.R", "astfun.R","automl.R", "import.R", "parse.R", "export.R", "models.R", "edicts.R", "gbm.R",
-                    "glm.R", "glrm.R", "kmeans.R", "deeplearning.R", "deepwater.R", "randomforest.R", "naivebayes.R", "pca.R",
-                    "svd.R", "locate.R", "grid.R", "word2vec.R", "w2vutils.R", "klime.R", "stackedensemble.R", "predict.R")
+        to_src <- c("aggregator.R", "classes.R", "connection.R","config.R", "constants.R", "logging.R", "communication.R",
+                    "kvstore.R", "frame.R", "targetencoder.R", "astfun.R","automl.R", "import.R", "parse.R", "export.R", "models.R", "edicts.R",
+                    "coxph.R", "coxphutils.R", "gbm.R", "glm.R", "glrm.R", "kmeans.R", "deeplearning.R", "deepwater.R", "randomforest.R", "generic.R",
+                    "naivebayes.R", "pca.R", "svd.R", "locate.R", "grid.R", "word2vec.R", "w2vutils.R", "stackedensemble.R",
+                    "predict.R", "xgboost.R", "isolationforest.R")
         src_path <- paste(h2oRDir,"h2o-package","R",sep=.Platform$file.sep)
         invisible(lapply(to_src,function(x){source(paste(src_path, x, sep = .Platform$file.sep))}))
 
         # source h2o-r/tests/runitUtils
-        to_src <- c("utilsR.R", "pcaR.R", "deeplearningR.R", "glmR.R", "glrmR.R", "gbmR.R", "kmeansR.R",
-                    "naivebayesR.R", "gridR.R", "shared_javapredict.R")
+        to_src <- c("utilsR.R", "pcaR.R", "deeplearningR.R", "glmR.R", "glrmR.R",
+                    "gbmR.R", "kmeansR.R", "naivebayesR.R", "gridR.R", "shared_javapredict.R")
         src_path <- paste(h2oRDir,"tests","runitUtils",sep=.Platform$file.sep)
         invisible(lapply(to_src,function(x){source(paste(src_path, x, sep = .Platform$file.sep))}))
 
@@ -179,11 +206,16 @@ function() {
         stop(paste0("Unrecognized test type. Must be of type rdemo, runit, or rbooklet, but got: ", TEST.NAME)) }
 
     cat(sprintf("[%s] %s\n", Sys.time(), paste0("Connect to h2o on IP: ",H2O.IP,", PORT: ",H2O.PORT)))
-    h2o.init(ip = H2O.IP, port = H2O.PORT, startH2O = FALSE, strict_version_check = strict_version_check)
+    h2o.init(ip = H2O.IP, port = H2O.PORT, startH2O = FALSE,
+             https=H2O.HTTPS, insecure=H2O.HTTPS,
+             username=USERNAME, password=PASSWORD,
+             strict_version_check = strict_version_check
+    )
 
-    if (!is.null(RESULTS.DIR)) {
+    if (!is.null(RESULTS.DIR) && REST.LOG) {
         h2o.startLogging(paste(RESULTS.DIR, "/rest.log", sep = ""))
-        cat(sprintf("[%s] %s\n", Sys.time(),paste0("Started rest logging in: ",RESULTS.DIR,"/rest.log."))) }
+        cat(sprintf("[%s] %s\n", Sys.time(),paste0("Started rest logging in: ",RESULTS.DIR,"/rest.log.")))
+    }
 
     h2o.logAndEcho("------------------------------------------------------------")
     h2o.logAndEcho("")

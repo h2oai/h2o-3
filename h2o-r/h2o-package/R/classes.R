@@ -24,7 +24,7 @@ if (inherits(try(getRefClass("H2OConnectionMutableState"), silent = TRUE), "try-
 #'
 #' The H2OConnectionMutableState class
 #'
-#' This class represents the mutable aspects of a connection to an H2O cloud.
+#' This class represents the mutable aspects of a connection to an H2O cluster.
 #'
 #' @name H2OConnectionMutableState
 #' @slot session_id A \code{character} string specifying the H2O session identifier.
@@ -43,7 +43,7 @@ setRefClass("H2OConnectionMutableState",
 #'
 #' The H2OConnection class.
 #'
-#' This class represents a connection to an H2O cloud.
+#' This class represents a connection to an H2O cluster.
 #'
 #' Because H2O is not a master-slave architecture, there is no restriction on which H2O node
 #' is used to establish the connection between R (the client) and H2O (the server).
@@ -52,9 +52,10 @@ setRefClass("H2OConnectionMutableState",
 #' the `ip` and `port` of the machine running an instance to connect with. The default behavior
 #' is to connect with a local instance of H2O at port 54321, or to boot a new local instance if one
 #' is not found at port 54321.
-#' @slot ip A \code{character} string specifying the IP address of the H2O cloud.
-#' @slot port A \code{numeric} value specifying the port number of the H2O cloud.
-#' @slot proxy A \code{character} specifying the proxy path of the H2O cloud.  
+#' @slot ip A \code{character} string specifying the IP address of the H2O cluster.
+#' @slot port A \code{numeric} value specifying the port number of the H2O cluster.
+#' @slot name A \code{character} value specifying the name of the H2O cluster.
+#' @slot proxy A \code{character} specifying the proxy path of the H2O cluster.
 #' @slot https Set this to TRUE to use https instead of http.
 #' @slot insecure Set this to TRUE to disable SSL certificate checking.
 #' @slot username Username to login with.
@@ -65,7 +66,7 @@ setRefClass("H2OConnectionMutableState",
 #' @aliases H2OConnection
 #' @export
 setClass("H2OConnection",
-         representation(ip="character", port="numeric", proxy="character",
+         representation(ip="character", port="numeric", name="character", proxy="character",
                         https="logical", insecure="logical",
                         username="character", password="character",
                         cookies="character",
@@ -73,6 +74,7 @@ setClass("H2OConnection",
                         mutable="H2OConnectionMutableState"),
          prototype(ip           = NA_character_,
                    port         = NA_integer_,
+                   name         = NA_character_,
                    proxy        = NA_character_,
                    https        = FALSE,
                    insecure     = FALSE,
@@ -90,6 +92,7 @@ setClassUnion("H2OConnectionOrNULL", c("H2OConnection", "NULL"))
 setMethod("show", "H2OConnection", function(object) {
   cat("IP Address:", object@ip,                 "\n")
   cat("Port      :", object@port,               "\n")
+  cat("Name      :", object@name,               "\n")
   cat("Session ID:", object@mutable$session_id, "\n")
   cat("Key Count :", object@mutable$key_count,  "\n")
 })
@@ -99,18 +102,20 @@ setMethod("show", "H2OConnection", function(object) {
 #'
 #' This virtual class represents a model built by H2O.
 #'
-#' This object has slots for the key, which is a character string that points to the model key existing in the H2O cloud,
+#' This object has slots for the key, which is a character string that points to the model key existing in the H2O cluster,
 #' the data used to build the model (an object of class H2OFrame).
 #'
-#' @slot model_id A \code{character} string specifying the key for the model fit in the H2O cloud's key-value store.
+#' @slot model_id A \code{character} string specifying the key for the model fit in the H2O cluster's key-value store.
 #' @slot algorithm A \code{character} string specifying the algorithm that were used to fit the model.
 #' @slot parameters A \code{list} containing the parameter settings that were used to fit the model that differ from the defaults.
 #' @slot allparameters A \code{list} containg all parameters used to fit the model.
+#' @slot have_pojo A \code{logical} indicating whether export to POJO is supported
+#' @slot have_mojo A \code{logical} indicating whether export to MOJO is supported
 #' @slot model A \code{list} containing the characteristics of the model returned by the algorithm.
 #' @aliases H2OModel
 #' @export
 setClass("H2OModel",
-         representation(model_id="character", algorithm="character", parameters="list", allparameters="list", model="list"),
+         representation(model_id="character", algorithm="character", parameters="list", allparameters="list", have_pojo="logical", have_mojo="logical", model="list"),
          prototype(model_id=NA_character_),
          contains="VIRTUAL")
 
@@ -216,6 +221,7 @@ setMethod("summary", "H2OModel", function(object, ...) {
   if( !is.null(tm$logloss)                                         )  cat("\nLogloss: (Extract with `h2o.logloss`)", tm$logloss)
   if( !is.null(tm$mean_per_class_error)                            )  cat("\nMean Per-Class Error:", tm$mean_per_class_error)
   if( !is.null(tm$AUC)                                             )  cat("\nAUC: (Extract with `h2o.auc`)", tm$AUC)
+    if( !is.null(tm$pr_auc)                                             )  cat("\npr_auc: (Extract with `h2o.pr_auc`)", tm$pr_auc)
   if( !is.null(tm$Gini)                                            )  cat("\nGini: (Extract with `h2o.gini`)", tm$Gini)
   if( !is.null(tm$null_deviance)                                   )  cat("\nNull Deviance: (Extract with `h2o.nulldeviance`)", tm$null_deviance)
   if( !is.null(tm$residual_deviance)                               )  cat("\nResidual Deviance: (Extract with `h2o.residual_deviance`)", tm$residual_deviance)
@@ -250,16 +256,19 @@ setClass("H2OBinomialModel",    contains="H2OModel")
 setClass("H2OMultinomialModel", contains="H2OModel")
 #' @rdname H2OModel-class
 #' @export
+setClass("H2OOrdinalModel", contains="H2OModel")
+#' @rdname H2OModel-class
+#' @export
 setClass("H2ORegressionModel",  contains="H2OModel")
 #'
 #' The H2OClusteringModel object.
 #'
 #' This virtual class represents a clustering model built by H2O.
 #'
-#' This object has slots for the key, which is a character string that points to the model key existing in the H2O cloud,
+#' This object has slots for the key, which is a character string that points to the model key existing in the H2O cluster,
 #' the data used to build the model (an object of class H2OFrame).
 #'
-#' @slot model_id A \code{character} string specifying the key for the model fit in the H2O cloud's key-value store.
+#' @slot model_id A \code{character} string specifying the key for the model fit in the H2O cluster's key-value store.
 #' @slot algorithm A \code{character} string specifying the algorithm that was used to fit the model.
 #' @slot parameters A \code{list} containing the parameter settings that were used to fit the model that differ from the defaults.
 #' @slot allparameters A \code{list} containing all parameters used to fit the model.
@@ -282,6 +291,168 @@ setClass("H2ODimReductionModel", contains="H2OModel")
 #' @rdname H2OModel-class
 #' @export
 setClass("H2OWordEmbeddingModel", contains="H2OModel")
+#' @rdname H2OModel-class
+#' @export
+setClass("H2OAnomalyDetectionModel", contains="H2OModel")
+
+#'
+#' The H2OCoxPHModel object.
+#'
+#' Virtual object representing H2O's CoxPH Model.
+#'
+#' @aliases H2OCoxPHModel
+#' @export
+setClass("H2OCoxPHModel", contains="H2OModel")
+
+#' @rdname H2OCoxPHModel-class
+#' @param object an \code{H2OCoxPHModel} object.
+#' @export
+setMethod("show", "H2OCoxPHModel", function(object) {
+  requireNamespace("survival")
+  o <- object
+  model.parts <- .model.parts(o)
+  m <- model.parts$m
+  cat("Model Details:\n")
+  cat("==============\n\n")
+  cat(class(o), ": ", o@algorithm, "\n", sep = "")
+  cat("Model ID: ", o@model_id, "\n")
+
+  # summary
+  get("print.coxph", getNamespace("survival"))(.as.survival.coxph.model(o@model))
+})
+
+#'
+#' The H2OCoxPHModelSummary object.
+#'
+#' Wrapper object for summary information compatible with survival package.
+#'
+#' @slot summary A \code{list} containing the a summary compatible with CoxPH summary used in the survival package.
+#' @aliases H2OCoxPHModelSummary
+#' @export
+setClass("H2OCoxPHModelSummary", representation(summary="list"))
+
+#' @rdname H2OCoxPHModelSummary-class
+#' @param object An \code{H2OCoxPHModelSummary} object.
+#' @export
+setMethod("show", "H2OCoxPHModelSummary", function(object) {
+  requireNamespace("survival")
+  get("print.summary.coxph", getNamespace("survival"))(object@summary)
+})
+
+#'
+#' Summary method for H2OCoxPHModel objects
+#'
+#' @param object an \code{H2OCoxPHModel} object.
+#' @param conf.int a specification of the confidence interval.
+#' @param scale a scale.
+#' @importFrom stats qnorm
+#' @export
+setMethod("summary", "H2OCoxPHModel",
+          function(object, conf.int = 0.95, scale = 1) {
+            res <- .as.survival.coxph.summary(object@model)
+            if (conf.int == 0)
+              res@summary$conf.int <- NULL
+            else {
+              z <- qnorm((1 + conf.int)/2, 0, 1)
+              coef <- scale * res@summary$coefficients[,    "coef",  drop = TRUE]
+              se   <- scale * res@summary$coefficients[, "se(coef)", drop = TRUE]
+              shift <- z * se
+              res@summary$conf.int <-
+                structure(cbind(exp(coef), exp(- coef), exp(coef - shift), exp(coef + shift)),
+                          dimnames =
+                            list(rownames(res@summary$coefficients),
+                                 c("exp(coef)", "exp(-coef)",
+                                   sprintf("lower .%.0f", 100 * conf.int),
+                                   sprintf("upper .%.0f", 100 * conf.int))))
+            }
+            res
+          })
+
+#' @rdname H2OCoxPHModel-class
+#' @param ... additional arguments to pass on.
+#' @export
+coef.H2OCoxPHModel        <- function(object, ...) .as.survival.coxph.model(object@model)$coefficients
+
+#' @rdname H2OCoxPHModelSummary-class
+#' @param ... additional arguments to pass on.
+#' @export
+coef.H2OCoxPHModelSummary <- function(object, ...) object@summary$coefficients
+
+#' @rdname H2OCoxPHModel-class
+#' @param fit an \code{H2OCoxPHModel} object.
+#' @param scale optional numeric specifying the scale parameter of the model.
+#' @param k numeric specifying the weight of the equivalent degrees of freedom.
+extractAIC.H2OCoxPHModel <- function(fit, scale, k = 2, ...) {
+  fun <- get("extractAIC.coxph", getNamespace("stats"))
+  if (missing(scale))
+    fun(.as.survival.coxph.model(fit@model), k = k)
+  else
+    fun(.as.survival.coxph.model(fit@model), scale = scale, k = k)
+}
+
+#' @rdname H2OCoxPHModel-class
+#' @export
+logLik.H2OCoxPHModel <- function(object, ...) {
+  requireNamespace("survival")
+  get("logLik.coxph", getNamespace("survival"))(.as.survival.coxph.model(object@model), ...)
+}
+
+#' @rdname H2OCoxPHModel-class
+#' @param formula an \code{H2OCoxPHModel} object.
+#' @param newdata an optional \code{H2OFrame} or \code{data.frame} with the same
+#' variable names as those that appear in the \code{H2OCoxPHModel} object.
+#' @importFrom stats as.formula
+#' @export survfit.H2OCoxPHModel
+survfit.H2OCoxPHModel <-
+function(formula, newdata, ...)
+{
+  requireNamespace("survival")
+  if (missing(newdata)) {
+    if (!is.null(formula@allparameters$stratify_by) ||
+        !is.null(formula@allparameters$interactions) ||
+        !is.null(formula@allparameters$interaction_pairs)) {
+      stop("Models with strata or interaction terms require newdata argument")
+    }
+    newdata <- as.data.frame(c(as.list(as.data.frame(formula@model$x_mean_cat)),
+                               as.list(as.data.frame(formula@model$x_mean_num)),
+                               as.list(as.data.frame(formula@model$mean_offset))),
+                             col.names = c(formula@model$coefficients_table$names,
+                                           formula@model$offset_names))
+  }
+  if (is.data.frame(newdata))
+    capture.output(newdata <- as.h2o(newdata))
+
+  # Code below has calculation performed in R
+  capture.output(suppressWarnings(pred <- as.data.frame(h2o.predict(formula, newdata))[[1L]]))
+  res <- list(n         = formula@model$n,
+              time      = formula@model$time,
+              n.risk    = formula@model$n_risk,
+              n.event   = formula@model$n_event,
+              n.censor  = formula@model$n_censor,
+              surv      = NULL,
+              type      = ifelse(length(as.formula(formula@model$formula)[[2L]]) == 3L, "right", "counting"),
+              cumhaz    = formula@model$cumhaz_0,
+              std.err   = NULL,
+              upper     = NULL,
+              lower     = NULL,
+              conf.type = NULL,
+              conf.int  = NULL,
+              call      = match.call())
+  if (length(pred) == 1L)
+    res$cumhaz <- res$cumhaz * exp(pred)
+  else
+    res$cumhaz <- outer(res$cumhaz, exp(pred), FUN = "*")
+  res$surv <- exp(- res$cumhaz)
+  oldClass(res) <- c("survfit.H2OCoxPHModel", "survfit.cox", "survfit")
+  res
+}
+
+#' @rdname H2OCoxPHModel-class
+#' @export
+vcov.H2OCoxPHModel <- function(object, ...) {
+  requireNamespace("survival")
+  get("vcov.coxph", getNamespace("survival"))(.as.survival.coxph.model(object@model), ...)
+}
 
 #'
 #' Accessor Methods for H2OModel Object
@@ -389,6 +560,7 @@ setMethod("show", "H2OBinomialMetrics", function(object) {
     cat("LogLoss:  ", object@metrics$logloss, "\n", sep="")
     cat("Mean Per-Class Error:  ", object@metrics$mean_per_class_error, "\n", sep="")
     cat("AUC:  ", object@metrics$AUC, "\n", sep="")
+    cat("pr_auc:  ", object@metrics$pr_auc, "\n", sep="")
     cat("Gini:  ", object@metrics$Gini, "\n", sep="")
     if(exists(object@algorithm) && object@algorithm == "glm") {
 
@@ -433,6 +605,21 @@ setMethod("show", "H2OMultinomialMetrics", function(object) {
     else if( !is.null(object@metrics$frame$name) ) .showMultiMetrics(object, "Test")
     else .showMultiMetrics(object, NULL)
   } else print(NULL)
+})
+#' @rdname H2OModelMetrics-class
+#' @export
+setClass("H2OOrdinalMetrics", contains="H2OModelMetrics")
+#' @rdname H2OModelMetrics-class
+#' @export
+setMethod("show", "H2OOrdinalMetrics", function(object) {
+    if( !is.null(object@metrics) ) {
+        callNextMethod(object)  # call super
+        if( object@on_train ) .showMultiMetrics(object, "Training")
+        else if( object@on_valid ) .showMultiMetrics(object, "Validation")
+        else if( object@on_xval ) .showMultiMetrics(object, "Cross-Validation")
+        else if( !is.null(object@metrics$frame$name) ) .showMultiMetrics(object, "Test")
+        else .showMultiMetrics(object, NULL)
+    } else print(NULL)
 })
 #' @rdname H2OModelMetrics-class
 #' @export
@@ -516,6 +703,14 @@ setMethod("show", "H2ODimReductionMetrics", function(object) {
 #' @export
 setClass("H2OWordEmbeddingMetrics", contains="H2OModelMetrics")
 
+#' @rdname H2OModelMetrics-class
+#' @export
+setClass("H2OCoxPHMetrics", contains="H2OModelMetrics")
+
+#' @rdname H2OModelMetrics-class
+#' @export
+setClass("H2OAnomalyDetectionMetrics", contains="H2OModelMetrics")
+
 #' H2O Future Model
 #'
 #' A class to contain the information for background model jobs.
@@ -531,7 +726,7 @@ setClass("H2OModelFuture", representation(job_key="character", model_id="charact
 #' @slot grid_id the final identifier of grid
 #' @slot model_ids  list of model IDs which are included in the grid object
 #' @slot hyper_names  list of parameter names used for grid search
-#' @slot failed_params  list of model parameters which caused a failure during model building, 
+#' @slot failed_params  list of model parameters which caused a failure during model building,
 #'                      it can contain a null value
 #' @slot failure_details  list of detailed messages which correspond to failed parameters field
 #' @slot failure_stack_traces  list of stack traces corresponding to model failures reported by
@@ -615,6 +810,14 @@ setMethod("summary", "H2OGrid",
 })
 
 #'
+#' The H2OFrame class
+#'
+#' This class represents an H2OFrame object
+#'
+#' @export
+setClass("H2OFrame", contains = "environment")
+
+#'
 #' The H2OAutoML class
 #'
 #' This class represents an H2OAutoML object
@@ -622,4 +825,4 @@ setMethod("summary", "H2OGrid",
 #' @export
 setClass("H2OAutoML", slots = c(project_name = "character",
                                 leader = "H2OModel",
-                                leaderboard = "data.frame"))
+                                leaderboard = "H2OFrame"))

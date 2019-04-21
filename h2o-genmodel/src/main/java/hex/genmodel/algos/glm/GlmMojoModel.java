@@ -13,8 +13,8 @@ public class GlmMojoModel extends GlmMojoModelBase {
   private Function1 _linkFn;
   private boolean _binomial;
 
-  GlmMojoModel(String[] columns, String[][] domains) {
-    super(columns, domains);
+  GlmMojoModel(String[] columns, String[][] domains, String responseColumn) {
+    super(columns, domains, responseColumn);
   }
 
   @Override
@@ -123,7 +123,14 @@ public class GlmMojoModel extends GlmMojoModelBase {
     @Override public double eval(double x) { return GenModel.GLM_logInv(x); }
   }
   private static class GLM_inverseInv implements Function1 {
-    @Override public double eval(double x) { return GenModel.GLM_inverseInv(x); }
+    @Override
+    public double eval(double x) {
+      return GenModel.GLM_inverseInv(x);
+    }
+  }
+
+    private static class GLM_ologitInv implements Function1 {
+      @Override public double eval(double x) { return GenModel.GLM_ologitInv(x); }
   }
   private static class GLM_tweedieInv implements Function1 {
     private final double _tweedie_link_power;

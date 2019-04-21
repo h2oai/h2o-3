@@ -4,25 +4,26 @@
 # -------------------------- Deep Water - Neural Network -------------------------- #
 #' 
 #' Build a Deep Learning model using multiple native GPU backends
-#' Builds a deep neural network on an H2OFrame containing various data sources
 #' 
-#' @param x A vector containing the names or indices of the predictor variables to use in building the model.
-#'        If x is missing,then all columns except y are used.
-#' @param y The name of the response variable in the model.If the data does not contain a header, this is the first column
-#'        index, and increasing from left to right. (The response must be either an integer or a
-#'        categorical variable).
+#' Builds a deep neural network on an H2OFrame containing various data sources.
+#' 
+#' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
+#'        If x is missing, then all columns except y are used.
+#' @param y The name or column index of the response variable in the data. The response must be either a numeric or a
+#'        categorical/factor variable. If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param checkpoint Model checkpoint to resume training with.
 #' @param autoencoder \code{Logical}. Auto-Encoder. Defaults to FALSE.
-#' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
+#' @param training_frame Id of the training data frame.
 #' @param validation_frame Id of the validation data frame.
-#' @param nfolds Number of folds for N-fold cross-validation (0 to disable or >= 2). Defaults to 0.
+#' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
 #' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
 #'        FALSE.
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
 #'        balance_classes. Defaults to 5.0.
 #' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
 #'        be automatically computed to obtain class balance during training. Requires balance_classes.
+#' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to TRUE.
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to FALSE.
 #' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to FALSE.
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will
@@ -32,10 +33,12 @@
 #' @param offset_column Offset column. This will be added to the combination of columns before applying the link function.
 #' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
 #'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
-#'        weights are not allowed.
+#'        weights are not allowed. Note: Weights are per-row observation weights and do not increase the size of the
+#'        data frame. This is typically the number of times a row is repeated, but non-integer values are supported as
+#'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
-#'        "Binary", "Eigen", "LabelEncoder", "SortByResponse". Defaults to AUTO.
+#'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
 #' @param overwrite_with_best_model \code{Logical}. If enabled, override the final model with the best model found during training. Defaults to
 #'        TRUE.
 #' @param epochs How many times the dataset should be iterated (streamed), can be fractional. Defaults to 10.
@@ -63,9 +66,10 @@
 #' @param regression_stop Stopping criterion for regression error (MSE) on training data (-1 to disable). Defaults to 0.
 #' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
 #'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 5.
-#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression) Must be one of:
-#'        "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification",
-#'        "mean_per_class_error". Defaults to AUTO.
+#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression). Note that custom
+#'        and custom_increasing can only be used in GBM and DRF with the Python client. Must be one of: "AUTO",
+#'        "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification",
+#'        "mean_per_class_error", "custom", "custom_increasing". Defaults to AUTO.
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
@@ -98,6 +102,7 @@
 #'        column containing the text in the first column. If set to dataset, Deep Water behaves just like any other H2O
 #'        Model and builds a model on the provided H2OFrame (non-String columns). Must be one of: "auto", "image",
 #'        "dataset". Defaults to auto.
+#' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @export
 h2o.deepwater <- function(x, y, training_frame,
                           model_id = NULL,
@@ -108,6 +113,7 @@ h2o.deepwater <- function(x, y, training_frame,
                           balance_classes = FALSE,
                           max_after_balance_size = 5.0,
                           class_sampling_factors = NULL,
+                          keep_cross_validation_models = TRUE,
                           keep_cross_validation_predictions = FALSE,
                           keep_cross_validation_fold_assignment = FALSE,
                           fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
@@ -115,7 +121,7 @@ h2o.deepwater <- function(x, y, training_frame,
                           offset_column = NULL,
                           weights_column = NULL,
                           score_each_iteration = FALSE,
-                          categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse"),
+                          categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                           overwrite_with_best_model = TRUE,
                           epochs = 10,
                           train_samples_per_iteration = -2,
@@ -135,7 +141,7 @@ h2o.deepwater <- function(x, y, training_frame,
                           classification_stop = 0,
                           regression_stop = 0,
                           stopping_rounds = 5,
-                          stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error"),
+                          stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
                           stopping_tolerance = 0,
                           max_runtime_secs = 0,
                           ignore_const_cols = TRUE,
@@ -158,20 +164,21 @@ h2o.deepwater <- function(x, y, training_frame,
                           hidden = NULL,
                           input_dropout_ratio = 0,
                           hidden_dropout_ratios = NULL,
-                          problem_type = c("auto", "image", "dataset")
+                          problem_type = c("auto", "image", "dataset"),
+                          export_checkpoints_dir = NULL
                           ) 
 {
-  #If x is missing, then assume user wants to use all columns as features.
-  if(missing(x)){
-     if(is.numeric(y)){
-         x <- setdiff(col(training_frame),y)
-     }else{
-         x <- setdiff(colnames(training_frame),y)
+  # If x is missing, then assume user wants to use all columns as features.
+  if (missing(x)) {
+     if (is.numeric(y)) {
+         x <- setdiff(col(training_frame), y)
+     } else {
+         x <- setdiff(colnames(training_frame), y)
      }
   }
 
   # Required args: training_frame
-  if( missing(training_frame) ) stop("argument 'training_frame' is missing, with no default")
+  if (missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
   # Training_frame must be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
      tryCatch(training_frame <- h2o.getFrame(training_frame),
@@ -212,6 +219,8 @@ h2o.deepwater <- function(x, y, training_frame,
     parms$max_after_balance_size <- max_after_balance_size
   if (!missing(class_sampling_factors))
     parms$class_sampling_factors <- class_sampling_factors
+  if (!missing(keep_cross_validation_models))
+    parms$keep_cross_validation_models <- keep_cross_validation_models
   if (!missing(keep_cross_validation_predictions))
     parms$keep_cross_validation_predictions <- keep_cross_validation_predictions
   if (!missing(keep_cross_validation_fold_assignment))
@@ -314,21 +323,29 @@ h2o.deepwater <- function(x, y, training_frame,
     parms$hidden_dropout_ratios <- hidden_dropout_ratios
   if (!missing(problem_type))
     parms$problem_type <- problem_type
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
   # Error check and build model
-  .h2o.modelJob('deepwater', parms, h2oRestApiVersion=3) 
+  .h2o.modelJob('deepwater', parms, h2oRestApiVersion = 3) 
 }
 
-#' Ask the H2O server whether a Deep Water model can be built (depends on availability of native backends)
-#' Returns True if a deep water model can be built, or False otherwise.
-#' @param h2oRestApiVersion (Optional) Specific version of the REST API to use
+#' Determines whether Deep Water is available
 #'
+#' Ask the H2O server whether a Deep Water model can be built. (Depends on availability of native backends.)
+#' Returns TRUE if a Deep Water model can be built, or FALSE otherwise.
+#' @param h2oRestApiVersion (Optional) Specific version of the REST API to use.
+#' @export
 h2o.deepwater.available <- function(h2oRestApiVersion = .h2o.__REST_API_VERSION) {
-visibility = .h2o.__remoteSend(method = "GET", h2oRestApiVersion = h2oRestApiVersion, .h2o.__MODEL_BUILDERS("deepwater"))$model_builders[["deepwater"]][["visibility"]]
+res <- .h2o.__remoteSend(method = "GET",
+h2oRestApiVersion = h2oRestApiVersion,
+page = .h2o.__MODEL_BUILDERS("deepwater"))
+visibility <- res$model_builders[["deepwater"]][["visibility"]]
 if (visibility == "Experimental") {
 print("Cannot build a Deep Water model - no backend found.")
-return(FALSE)
+available <- FALSE
 } else {
-return(TRUE)
+available <- TRUE
 }
+return(available)
 }
 

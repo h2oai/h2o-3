@@ -1,7 +1,7 @@
 ``max_iterations``
 ------------------
 
-- Available in: GLM, PCA, GLRM, K-Means
+- Available in: GLM, PCA, GLRM, K-Means, CoxPH
 - Hyperparameter: yes
 
 Description

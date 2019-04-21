@@ -2,29 +2,46 @@ package water.init;
 
 import water.H2O;
 import water.H2ONode;
-import water.JettyHTTPD;
 import water.util.Log;
 import water.util.NetworkUtils;
 import water.util.StringUtils;
+import water.webserver.H2OHttpViewImpl;
+import water.webserver.iface.H2OHttpConfig;
+import water.webserver.iface.HttpServerLoader;
+import water.webserver.iface.LoginType;
 
-import java.io.*;
-import java.net.*;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.DatagramPacket;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.MulticastSocket;
+import java.net.NetworkInterface;
+import java.net.ServerSocket;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
-import java.nio.channels.DatagramChannel;
 import java.nio.channels.ServerSocketChannel;
 import java.security.GeneralSecurityException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Data structure for holding network info specified by the user on the command line.
  */
 public class NetworkInit {
 
-  public static DatagramChannel _udpSocket;
   public static ServerSocketChannel _tcpSocket;
 
-  // Default NIO Datagram channel
-  public static DatagramChannel CLOUD_DGRAM;
+  public static H2OHttpViewImpl h2oHttpView;
 
   public static InetAddress findInetAddressForSelf() throws Error {
     if (H2O.SELF_ADDRESS != null)
@@ -43,25 +60,31 @@ public class NetworkInit {
     return null;
   }
 
-  // Parse arguments and set cloud name in any case. Strip out "-name NAME"
-  // and "-flatfile <filename>". Ignore the rest. Set multi-cast port as a hash
-  // function of the name. Parse node ip addresses from the filename.
+  /**
+   *  Parse arguments and set cloud name in any case. Strip out "-name NAME"
+   *  and "-flatfile <filename>". Ignore the rest. Set multi-cast port as a hash
+   *  function of the name. Parse node ip addresses from the filename.
+   * @todo this method introduces mutual dependency between classes {@link H2O} and {@link NetworkInit} ! Move it out!
+   */
   public static void initializeNetworkSockets( ) {
     // Assign initial ports
     H2O.API_PORT = H2O.ARGS.port == 0 ? H2O.ARGS.baseport : H2O.ARGS.port;
 
-    // Late instantiation of Jetty object, if needed.
-    if (H2O.getJetty() == null && !H2O.ARGS.disable_web) {
-      H2O.setJetty(new JettyHTTPD());
+    // Late instantiation of web server, if needed.
+    if (H2O.getWebServer() == null && !H2O.ARGS.disable_web) {
+      final H2OHttpConfig config = webServerConfig(H2O.ARGS);
+      h2oHttpView = new H2OHttpViewImpl(config);
+      H2O.setWebServer(HttpServerLoader.INSTANCE.createWebServer(h2oHttpView));
     }
 
     // API socket is only used to find opened port on given ip.
     ServerSocket apiSocket = null;
 
-    // At this point we would like to allocate 2 consecutive ports
+    // At this point we would like to allocate 2 consecutive ports - by default (if `port_offset` is not specified).
+    // If `port_offset` is specified we are trying to allocate a pair (port, port + port_offset).
     //
     while (true) {
-      H2O.H2O_PORT = H2O.API_PORT + 1;
+      H2O.H2O_PORT = H2O.API_PORT + H2O.ARGS.port_offset;
       try {
         // kbn. seems like we need to set SO_REUSEADDR before binding?
         // http://www.javadocexamples.com/java/net/java.net.ServerSocket.html#setReuseAddress:boolean
@@ -79,11 +102,7 @@ public class NetworkInit {
                       : new ServerSocket(H2O.API_PORT, -1, getInetAddress(H2O.ARGS.web_ip));
           apiSocket.setReuseAddress(true);
         }
-        // Bind to the UDP socket
-        _udpSocket = DatagramChannel.open();
-        _udpSocket.socket().setReuseAddress(true);
         InetSocketAddress isa = new InetSocketAddress(H2O.SELF_ADDRESS, H2O.H2O_PORT);
-        _udpSocket.socket().bind(isa);
         // Bind to the TCP socket also
         _tcpSocket = ServerSocketChannel.open();
         _tcpSocket.socket().setReceiveBufferSize(water.AutoBuffer.TCP_BUF_SIZ);
@@ -92,7 +111,7 @@ public class NetworkInit {
         // Warning: There is a ip:port race between socket close and starting Jetty
         if (!H2O.ARGS.disable_web) {
           apiSocket.close();
-          H2O.getJetty().start(H2O.ARGS.web_ip, H2O.API_PORT);
+          H2O.getWebServer().start(H2O.ARGS.web_ip, H2O.API_PORT);
         }
 
         break;
@@ -104,29 +123,28 @@ public class NetworkInit {
         }
         Log.trace("Cannot allocate API port " + H2O.API_PORT + " because of following exception: ", e);
         if( apiSocket != null ) try { apiSocket.close(); } catch( IOException ohwell ) { Log.err(ohwell); }
-        if( _udpSocket != null ) try { _udpSocket.close(); } catch( IOException ie ) { }
         if( _tcpSocket != null ) try { _tcpSocket.close(); } catch( IOException ie ) { }
         apiSocket = null;
-        _udpSocket = null;
         _tcpSocket = null;
         if( H2O.ARGS.port != 0 )
           H2O.die("On " + H2O.SELF_ADDRESS +
               " some of the required ports " + H2O.ARGS.port +
-              ", " + (H2O.ARGS.port+1) +
+              ", " + (H2O.ARGS.port+H2O.ARGS.port_offset) +
               " are not available, change -port PORT and try again.");
       }
       // Try next available port to bound
-      H2O.API_PORT += 2;
+      H2O.API_PORT += (H2O.ARGS.port_offset == 1) ? 2 : 1;
       if (H2O.API_PORT > (1<<16)) {
         Log.err("Cannot find free port for " + H2O.SELF_ADDRESS + " from baseport = " + H2O.ARGS.baseport);
         H2O.exit(-1);
       }
     }
+    Log.notifyAboutNetworkingInitialized();
     boolean isIPv6 = H2O.SELF_ADDRESS instanceof Inet6Address; // Is IPv6 address was assigned to this node
     H2O.SELF = H2ONode.self(H2O.SELF_ADDRESS);
     if (!H2O.ARGS.disable_web) {
       Log.info("Internal communication uses port: ", H2O.H2O_PORT, "\n" +
-          "Listening for HTTP and REST traffic on " + H2O.getURL(H2O.getJetty().getScheme()) + "/");
+          "Listening for HTTP and REST traffic on " + H2O.getURL(h2oHttpView.getScheme()) + "/");
     }
     try {
       Log.debug("Interface MTU: ", (NetworkInterface.getByInetAddress(H2O.SELF_ADDRESS)).getMTU());
@@ -138,7 +156,7 @@ public class NetworkInit {
     AbstractEmbeddedH2OConfig ec = H2O.getEmbeddedH2OConfig();
     if (ec != null) {
       // TODO: replace this call with ec.notifyAboutH2oCommunicationChannel(H2O.SELF_ADDRESS, H2O.H2O_PORT)
-      //       As of right now, the function notifies about the H2O.API_PORT, and then the listener adds +1
+      //       As of right now, the function notifies about the H2O.API_PORT, and then the listener adds `port_offset` (typically +1)
       //       to that in order to determine the H2O_PORT (which what it really cares about). Such
       //       assumption is dangerous: we should be free of using independent API_PORT and H2O_PORT,
       //       including the ability of not using any API_PORT at all...
@@ -158,7 +176,7 @@ public class NetworkInit {
     // Read a flatfile of allowed nodes
     if (embeddedConfigFlatfile != null)
       H2O.setFlatfile(parseFlatFileFromString(embeddedConfigFlatfile));
-    else 
+    else
       H2O.setFlatfile(parseFlatFile(H2O.ARGS.flatfile));
 
     // All the machines has to agree on the same multicast address (i.e., multicast group)
@@ -176,6 +194,60 @@ public class NetworkInit {
       Log.throwErr(e);
     }
     H2O.CLOUD_MULTICAST_PORT = NetworkUtils.getMulticastPort(hash);
+  }
+
+  public static H2OHttpConfig webServerConfig(H2O.OptArgs args) {
+    final H2OHttpConfig config = new H2OHttpConfig();
+    config.jks = args.jks;
+    config.jks_pass = args.jks_pass;
+    config.loginType = parseLoginType(args);
+    configureLoginType(config.loginType, args.login_conf);
+    config.login_conf = args.login_conf;
+    config.spnego_properties = args.spnego_properties;
+    config.form_auth = args.form_auth;
+    config.session_timeout = args.session_timeout;
+    config.user_name = args.user_name;
+    config.context_path = args.context_path;
+    return config;
+  }
+
+  /**
+   * @param args commandline arguments to parse
+   * @return one of login types - never returns null
+   */
+  private static LoginType parseLoginType(H2O.BaseArgs args) {
+    final LoginType loginType;
+    if (args.hash_login) {
+      loginType = LoginType.HASH;
+    } else if (args.ldap_login) {
+      loginType = LoginType.LDAP;
+    } else if (args.kerberos_login) {
+      loginType = LoginType.KERBEROS;
+    } else if (args.spnego_login) {
+      loginType = LoginType.SPNEGO;
+    } else if (args.pam_login) {
+      loginType = LoginType.PAM;
+    } else {
+      return LoginType.NONE;
+    }
+    return loginType;
+  }
+
+  private static void configureLoginType(LoginType loginType, String loginConf) {
+    if (loginType == LoginType.NONE) {
+      return;
+    }
+    if (loginConf == null) {
+      throw new IllegalArgumentException("Must specify -login_conf argument");
+    }
+    if (loginType.needToCheckUserName()) {
+      // LDAP, KERBEROS, PAM
+      Log.info(String.format("Configuring LoginService (with %s)", loginType));
+      System.setProperty("java.security.auth.login.config", loginConf);
+    } else {
+      // HASH only
+      Log.info("Configuring HashLoginService");
+    }
   }
 
   /**
@@ -256,22 +328,15 @@ public class NetworkInit {
       // Hideous O(n) algorithm for broadcast - avoid the memory allocation in
       // this method (since it is heavily used)
 
-      HashSet<H2ONode> nodes = H2O.getFlatfile();
+      Set<H2ONode> nodes = H2O.getFlatfile();
       nodes.addAll(water.Paxos.PROPOSED.values());
       bb.mark();
       for( H2ONode h2o : nodes ) {
-        if(h2o._removed_from_cloud)
+        if(h2o.isRemovedFromCloud()) {
           continue;
-        try {
-          bb.reset();
-          if(H2O.ARGS.useUDP) {
-            CLOUD_DGRAM.send(bb, h2o._key);
-          } else {
-            h2o.sendMessage(bb,priority);
-          }
-        } catch( IOException e ) {
-          Log.warn("Multicast Error to "+h2o, e);
         }
+        bb.reset();
+        h2o.sendMessage(bb, priority);
       }
     }
   }
@@ -305,7 +370,7 @@ public class NetworkInit {
     HashSet<H2ONode> h2os = new HashSet<>();
     List<FlatFileEntry> list = parseFlatFile(f);
     for(FlatFileEntry entry : list)
-      h2os.add(H2ONode.intern(entry.inet, entry.port+1));// use the UDP port here
+      h2os.add(H2ONode.intern(entry.inet, entry.port+H2O.ARGS.port_offset));// use the UDP port here
     return h2os;
   }
 
@@ -314,7 +379,7 @@ public class NetworkInit {
     InputStream is = new ByteArrayInputStream(StringUtils.bytesOf(s));
     List<FlatFileEntry> list = parseFlatFile(is);
     for(FlatFileEntry entry : list)
-      h2os.add(H2ONode.intern(entry.inet, entry.port+1));// use the UDP port here
+      h2os.add(H2ONode.intern(entry.inet, entry.port+H2O.ARGS.port_offset));// use the UDP port here
     return h2os;
   }
 

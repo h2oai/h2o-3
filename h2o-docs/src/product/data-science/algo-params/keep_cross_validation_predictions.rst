@@ -1,7 +1,9 @@
+.. _keep_cross_validation_predictions:
+
 ``keep_cross_validation_predictions``
 -------------------------------------
 
-- Available in: GBM, DRF, Deep Learning, GLM, Naïve-Bayes, K-Means
+- Available in: GBM, DRF, Deep Learning, GLM, Naïve-Bayes, K-Means, XGBoost, AutoML
 - Hyperparameter: no
 
 Description
@@ -15,6 +17,7 @@ Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
 - `keep_cross_validation_fold_assignment <keep_cross_validation_fold_assignment.html>`__
+- `keep_cross_validation_models <keep_cross_validation_models.html>`__
 - `nfolds <nfolds.html>`__
 
 

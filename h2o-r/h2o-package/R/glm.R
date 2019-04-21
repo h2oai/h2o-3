@@ -3,20 +3,22 @@
 #'
 # -------------------------- H2O Generalized Linear Models -------------------------- #
 #' 
+#' Fit a generalized linear model
+#' 
 #' Fits a generalized linear model, specified by a response variable, a set of predictors, and a
 #' description of the error distribution.
 #' 
-#' @param x A vector containing the names or indices of the predictor variables to use in building the model.
-#'        If x is missing,then all columns except y are used.
-#' @param y The name of the response variable in the model.If the data does not contain a header, this is the first column
-#'        index, and increasing from left to right. (The response must be either an integer or a
-#'        categorical variable).
+#' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
+#'        If x is missing, then all columns except y are used.
+#' @param y The name or column index of the response variable in the data. The response must be either a numeric or a
+#'        categorical/factor variable. If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
 #' @param model_id Destination id for this model; auto-generated if not specified.
-#' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
+#' @param training_frame Id of the training data frame.
 #' @param validation_frame Id of the validation data frame.
-#' @param nfolds Number of folds for N-fold cross-validation (0 to disable or >= 2). Defaults to 0.
+#' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
 #'        Defaults to -1 (time-based random number).
+#' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to TRUE.
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to FALSE.
 #' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to FALSE.
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will
@@ -28,22 +30,26 @@
 #' @param offset_column Offset column. This will be added to the combination of columns before applying the link function.
 #' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
 #'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
-#'        weights are not allowed.
+#'        weights are not allowed. Note: Weights are per-row observation weights and do not increase the size of the
+#'        data frame. This is typically the number of times a row is repeated, but non-integer values are supported as
+#'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 #' @param family Family. Use binomial for classification with logistic regression, others are for regression problems. Must be
-#'        one of: "gaussian", "binomial", "quasibinomial", "multinomial", "poisson", "gamma", "tweedie". Defaults to
-#'        gaussian.
+#'        one of: "gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie",
+#'        "negativebinomial". Defaults to gaussian.
 #' @param tweedie_variance_power Tweedie variance power Defaults to 0.
 #' @param tweedie_link_power Tweedie link power Defaults to 1.
+#' @param theta Theta Defaults to 1e-10.
 #' @param solver AUTO will set the solver based on given data and the other parameters. IRLSM is fast on on problems with small
 #'        number of predictors and for lambda-search with L1 penalty, L_BFGS scales better for datasets with many
-#'        columns. Coordinate descent is experimental (beta). Must be one of: "AUTO", "IRLSM", "L_BFGS",
-#'        "COORDINATE_DESCENT_NAIVE", "COORDINATE_DESCENT". Defaults to AUTO.
-#' @param alpha distribution of regularization between L1 and L2. Default value of alpha is 0 when SOLVER = 'L-BFGS', 0.5
-#'        otherwise
-#' @param lambda regularization strength
-#' @param lambda_search \code{Logical}. use lambda search starting at lambda max, given lambda is then interpreted as lambda min
+#'        columns. Must be one of: "AUTO", "IRLSM", "L_BFGS", "COORDINATE_DESCENT_NAIVE", "COORDINATE_DESCENT",
+#'        "GRADIENT_DESCENT_LH", "GRADIENT_DESCENT_SQERR". Defaults to AUTO.
+#' @param alpha Distribution of regularization between the L1 (Lasso) and L2 (Ridge) penalties. A value of 1 for alpha
+#'        represents Lasso regression, a value of 0 produces Ridge regression, and anything in between specifies the
+#'        amount of mixing between the two. Default value of alpha is 0 when SOLVER = 'L-BFGS'; 0.5 otherwise.
+#' @param lambda Regularization strength
+#' @param lambda_search \code{Logical}. Use lambda search starting at lambda max, given lambda is then interpreted as lambda min
 #'        Defaults to FALSE.
-#' @param early_stopping \code{Logical}. stop early when there is no more relative improvement on train or validation (if provided)
+#' @param early_stopping \code{Logical}. Stop early when there is no more relative improvement on train or validation (if provided)
 #'        Defaults to TRUE.
 #' @param nlambdas Number of lambdas to be used in a search. Default indicates: If alpha is zero, with lambda search set to True,
 #'        the value of nlamdas is set to 30 (fewer lambdas are needed for ridge regression) otherwise it is set to 100.
@@ -51,43 +57,48 @@
 #' @param standardize \code{Logical}. Standardize numeric columns to have zero mean and unit variance Defaults to TRUE.
 #' @param missing_values_handling Handling of missing values. Either MeanImputation or Skip. Must be one of: "MeanImputation", "Skip". Defaults
 #'        to MeanImputation.
-#' @param compute_p_values \code{Logical}. request p-values computation, p-values work only with IRLSM solver and no regularization
+#' @param compute_p_values \code{Logical}. Request p-values computation, p-values work only with IRLSM solver and no regularization
 #'        Defaults to FALSE.
-#' @param remove_collinear_columns \code{Logical}. in case of linearly dependent columns remove some of the dependent columns Defaults to FALSE.
-#' @param intercept \code{Logical}. include constant term in the model Defaults to TRUE.
+#' @param remove_collinear_columns \code{Logical}. In case of linearly dependent columns, remove some of the dependent columns Defaults to FALSE.
+#' @param intercept \code{Logical}. Include constant term in the model Defaults to TRUE.
 #' @param non_negative \code{Logical}. Restrict coefficients (not intercept) to be non-negative Defaults to FALSE.
 #' @param max_iterations Maximum number of iterations Defaults to -1.
 #' @param objective_epsilon Converge if  objective value changes less than this. Default indicates: If lambda_search is set to True the
 #'        value of objective_epsilon is set to .0001. If the lambda_search is set to False and lambda is equal to zero,
 #'        the value of objective_epsilon is set to .000001, for any other value of lambda the default value of
 #'        objective_epsilon is set to .0001. Defaults to -1.
-#' @param beta_epsilon converge if  beta changes less (using L-infinity norm) than beta esilon, ONLY applies to IRLSM solver
+#' @param beta_epsilon Converge if  beta changes less (using L-infinity norm) than beta esilon, ONLY applies to IRLSM solver
 #'        Defaults to 0.0001.
 #' @param gradient_epsilon Converge if  objective changes less (using L-infinity norm) than this, ONLY applies to L-BFGS solver. Default
 #'        indicates: If lambda_search is set to False and lambda is equal to zero, the default value of gradient_epsilon
 #'        is equal to .000001, otherwise the default value is .0001. If lambda_search is set to True, the conditional
 #'        values above are 1E-8 and 1E-6 respectively. Defaults to -1.
-#' @param link  Must be one of: "family_default", "identity", "logit", "log", "inverse", "tweedie". Defaults to
-#'        family_default.
-#' @param prior prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
+#' @param link  Must be one of: "family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit", "oprobit",
+#'        "ologlog". Defaults to family_default.
+#' @param prior Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
 #'        of response does not reflect reality. Defaults to -1.
-#' @param lambda_min_ratio Min lambda used in lambda search, specified as a ratio of lambda_max. Default indicates: if the number of
-#'        observations is greater than the number of variables then lambda_min_ratio is set to 0.0001; if the number of
-#'        observations is less than the number of variables then lambda_min_ratio is set to 0.01. Defaults to -1.
-#' @param beta_constraints beta constraints
+#' @param lambda_min_ratio Minimum lambda used in lambda search, specified as a ratio of lambda_max (the smallest lambda that drives all
+#'        coefficients to zero). Default indicates: if the number of observations is greater than the number of
+#'        variables, then lambda_min_ratio is set to 0.0001; if the number of observations is less than the number of
+#'        variables, then lambda_min_ratio is set to 0.01. Defaults to -1.
+#' @param beta_constraints Beta constraints
 #' @param max_active_predictors Maximum number of active predictors during computation. Use as a stopping criterion to prevent expensive model
 #'        building with many predictors. Default indicates: If the IRLSM solver is used, the value of
-#'        max_active_predictors is set to 7000 otherwise it is set to 100000000. Defaults to -1.
+#'        max_active_predictors is set to 5000 otherwise it is set to 100000000. Defaults to -1.
 #' @param interactions A list of predictor column indices to interact. All pairwise combinations will be computed for the list.
+#' @param interaction_pairs A list of pairwise (first order) column interactions.
+#' @param obj_reg Likelihood divider in objective value computation, default is 1/nobs Defaults to -1.
+#' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
 #'        FALSE.
 #' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
 #'        be automatically computed to obtain class balance during training. Requires balance_classes.
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
 #'        balance_classes. Defaults to 5.0.
-#' @param max_hit_ratio_k Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
+#' @param max_hit_ratio_k Maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
 #'        Defaults to 0.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
+#' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
 #' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine
 #'         learning task at hand (if it's binomial classification, then an \code{\linkS4class{H2OBinomialModel}} is
 #'         returned, if it's regression then a \code{\linkS4class{H2ORegressionModel}} is returned). The default print-
@@ -106,27 +117,27 @@
 #' h2o.init()
 #' 
 #' # Run GLM of CAPSULE ~ AGE + RACE + PSA + DCAPS
-#' prostatePath = system.file("extdata", "prostate.csv", package = "h2o")
-#' prostate.hex = h2o.importFile(path = prostatePath, destination_frame = "prostate.hex")
-#' h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), training_frame = prostate.hex,
+#' prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate = h2o.importFile(path = prostate_path)
+#' h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), training_frame = prostate,
 #' family = "binomial", nfolds = 0, alpha = 0.5, lambda_search = FALSE)
 #' 
 #' # Run GLM of VOL ~ CAPSULE + AGE + RACE + PSA + GLEASON
-#' myX = setdiff(colnames(prostate.hex), c("ID", "DPROS", "DCAPS", "VOL"))
-#' h2o.glm(y = "VOL", x = myX, training_frame = prostate.hex, family = "gaussian",
+#' predictors = setdiff(colnames(prostate), c("ID", "DPROS", "DCAPS", "VOL"))
+#' h2o.glm(y = "VOL", x = predictors, training_frame = prostate, family = "gaussian",
 #' nfolds = 0, alpha = 0.1, lambda_search = FALSE)
 #' 
 #' 
 #' # GLM variable importance
 #' # Also see:
 #' #   https://github.com/h2oai/h2o/blob/master/R/tests/testdir_demos/runit_demo_VI_all_algos.R
-#' data.hex = h2o.importFile(
-#' path = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/demos/bank-additional-full.csv",
-#' destination_frame = "data.hex")
-#' myX = 1:20
-#' myY="y"
-#' my.glm = h2o.glm(x=myX, y=myY, training_frame=data.hex, family="binomial", standardize=TRUE,
+#' bank = h2o.importFile(
+#' path = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/demos/bank-additional-full.csv")
+#' predictors = 1:20
+#' target="y"
+#' glm = h2o.glm(x=predictors, y=target, training_frame=bank, family="binomial", standardize=TRUE,
 #' lambda_search=TRUE)
+#' h2o.std_coef_plot(glm, num_of_features = 20)
 #' }
 #' @export
 h2o.glm <- function(x, y, training_frame,
@@ -134,6 +145,7 @@ h2o.glm <- function(x, y, training_frame,
                     validation_frame = NULL,
                     nfolds = 0,
                     seed = -1,
+                    keep_cross_validation_models = TRUE,
                     keep_cross_validation_predictions = FALSE,
                     keep_cross_validation_fold_assignment = FALSE,
                     fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
@@ -142,10 +154,11 @@ h2o.glm <- function(x, y, training_frame,
                     score_each_iteration = FALSE,
                     offset_column = NULL,
                     weights_column = NULL,
-                    family = c("gaussian", "binomial", "quasibinomial", "multinomial", "poisson", "gamma", "tweedie"),
+                    family = c("gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial"),
                     tweedie_variance_power = 0,
                     tweedie_link_power = 1,
-                    solver = c("AUTO", "IRLSM", "L_BFGS", "COORDINATE_DESCENT_NAIVE", "COORDINATE_DESCENT"),
+                    theta = 1e-10,
+                    solver = c("AUTO", "IRLSM", "L_BFGS", "COORDINATE_DESCENT_NAIVE", "COORDINATE_DESCENT", "GRADIENT_DESCENT_LH", "GRADIENT_DESCENT_SQERR"),
                     alpha = NULL,
                     lambda = NULL,
                     lambda_search = FALSE,
@@ -161,25 +174,29 @@ h2o.glm <- function(x, y, training_frame,
                     objective_epsilon = -1,
                     beta_epsilon = 0.0001,
                     gradient_epsilon = -1,
-                    link = c("family_default", "identity", "logit", "log", "inverse", "tweedie"),
+                    link = c("family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit", "oprobit", "ologlog"),
                     prior = -1,
                     lambda_min_ratio = -1,
                     beta_constraints = NULL,
                     max_active_predictors = -1,
                     interactions = NULL,
+                    interaction_pairs = NULL,
+                    obj_reg = -1,
+                    export_checkpoints_dir = NULL,
                     balance_classes = FALSE,
                     class_sampling_factors = NULL,
                     max_after_balance_size = 5.0,
                     max_hit_ratio_k = 0,
-                    max_runtime_secs = 0
+                    max_runtime_secs = 0,
+                    custom_metric_func = NULL
                     ) 
 {
-  #If x is missing, then assume user wants to use all columns as features.
-  if(missing(x)){
-     if(is.numeric(y)){
-         x <- setdiff(col(training_frame),y)
-     }else{
-         x <- setdiff(colnames(training_frame),y)
+  # If x is missing, then assume user wants to use all columns as features.
+  if (missing(x)) {
+     if (is.numeric(y)) {
+         x <- setdiff(col(training_frame), y)
+     } else {
+         x <- setdiff(colnames(training_frame), y)
      }
   }
   # if (!is.null(beta_constraints)) {
@@ -194,7 +211,7 @@ h2o.glm <- function(x, y, training_frame,
   }
 
   # Required args: training_frame
-  if( missing(training_frame) ) stop("argument 'training_frame' is missing, with no default")
+  if (missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
   # Training_frame must be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
      tryCatch(training_frame <- h2o.getFrame(training_frame),
@@ -225,6 +242,8 @@ h2o.glm <- function(x, y, training_frame,
     parms$validation_frame <- validation_frame
   if (!missing(seed))
     parms$seed <- seed
+  if (!missing(keep_cross_validation_models))
+    parms$keep_cross_validation_models <- keep_cross_validation_models
   if (!missing(keep_cross_validation_predictions))
     parms$keep_cross_validation_predictions <- keep_cross_validation_predictions
   if (!missing(keep_cross_validation_fold_assignment))
@@ -247,6 +266,8 @@ h2o.glm <- function(x, y, training_frame,
     parms$tweedie_variance_power <- tweedie_variance_power
   if (!missing(tweedie_link_power))
     parms$tweedie_link_power <- tweedie_link_power
+  if (!missing(theta))
+    parms$theta <- theta
   if (!missing(solver))
     parms$solver <- solver
   if (!missing(alpha))
@@ -285,6 +306,12 @@ h2o.glm <- function(x, y, training_frame,
     parms$lambda_min_ratio <- lambda_min_ratio
   if (!missing(max_active_predictors))
     parms$max_active_predictors <- max_active_predictors
+  if (!missing(interaction_pairs))
+    parms$interaction_pairs <- interaction_pairs
+  if (!missing(obj_reg))
+    parms$obj_reg <- obj_reg
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
   if (!missing(balance_classes))
     parms$balance_classes <- balance_classes
   if (!missing(class_sampling_factors))
@@ -295,6 +322,8 @@ h2o.glm <- function(x, y, training_frame,
     parms$max_hit_ratio_k <- max_hit_ratio_k
   if (!missing(max_runtime_secs))
     parms$max_runtime_secs <- max_runtime_secs
+  if (!missing(custom_metric_func))
+    parms$custom_metric_func <- custom_metric_func
 
   if( !missing(interactions) ) {
     # interactions are column names => as-is
@@ -332,7 +361,9 @@ names(m@model$coefficients) <- m@model$coefficients_table[,1]
 m
 }
 
-#' Extract full regularization path from glm model (assuming it was run with lambda search option)
+#' Extract full regularization path from a GLM model
+#'
+#' Extract the full regularization path from a GLM model (assuming it was run with the lambda search option).
 #'
 #' @param model an \linkS4class{H2OModel} corresponding from a \code{h2o.glm} call.
 #' @export
@@ -403,8 +434,8 @@ h2o.getFrame(res$destination_frame$name)
 #    args <- .verify_dataxy(training_frame, x, y)
 #    parms$ignored_columns <- args$x_ignore
 #    parms$response_column <- args$y
-#    parms$training_frame  = training_frame
-#    parms$beta_constraints = beta_constraints
+#    parms$training_frame  <- training_frame
+#    parms$beta_constraints <- beta_constraints
 #    if(!missing(model_id))
 #      parms$model_id <- model_id
 #    if(!missing(validation_frame))

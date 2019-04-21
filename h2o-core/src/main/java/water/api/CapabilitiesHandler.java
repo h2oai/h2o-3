@@ -1,7 +1,7 @@
 package water.api;
 
 import water.AbstractH2OExtension;
-import water.H2O;
+import water.ExtensionManager;
 import water.api.schemas3.CapabilitiesV3;
 import water.api.schemas3.CapabilityEntryV3;
 
@@ -12,7 +12,7 @@ public class CapabilitiesHandler extends Handler{
 
   private ArrayList<CapabilityEntryV3> getCoreExtensionEntries(){
     ArrayList<CapabilityEntryV3> entries = new ArrayList<>();
-    for(AbstractH2OExtension ext: H2O.getCoreExtensions()){
+    for(AbstractH2OExtension ext: ExtensionManager.getInstance().getCoreExtensions()){
       entries.add(new CapabilityEntryV3(ext.getExtensionName()));
     }
     return entries;
@@ -20,7 +20,7 @@ public class CapabilitiesHandler extends Handler{
 
   private ArrayList<CapabilityEntryV3> getRestAPIExtensionEntries(){
     ArrayList<CapabilityEntryV3> entries = new ArrayList<>();
-    for(RestApiExtension ext: H2O.getRestApiExtensions()){
+    for(RestApiExtension ext: ExtensionManager.getInstance().getRestApiExtensions()){
       entries.add(new CapabilityEntryV3(ext.getName()));
     }
     return entries;

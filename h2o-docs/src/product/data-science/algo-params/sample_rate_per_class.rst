@@ -7,7 +7,7 @@
 Description
 ~~~~~~~~~~~
 
-When building models from imbalanced datasets, this option specifies that each tree in the ensemble should sample from the full training dataset using a per-class-specific sampling rate rather than a global sample factor (as with ``sample_rate``). The range for this option is 0.0 to 1.0. This option can also be specified along with ``sample_rate``. In this case, only the first option that GBM/DRF encounters will be used.
+When building models from imbalanced datasets, this option specifies that each tree in the ensemble should sample (without replacement) from the full training dataset using a per-class-specific sampling rate rather than a global sample factor (as with ``sample_rate``). The range for this option is 0.0 to 1.0. 
 
 **Note:** If ``sample_rate_per_class`` is specified, then ``sample_rate`` will be ignored.
 

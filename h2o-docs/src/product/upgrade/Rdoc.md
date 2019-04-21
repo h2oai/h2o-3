@@ -1,16 +1,18 @@
-#Intro to using H2O-Dev from R with data munging (for PUBDEV-562)  
+# Intro to using H2O-Dev from R with data munging (for PUBDEV-562)
+
+>**Note**: This topic is no longer being maintained. Refer to the [R Booklet](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/RBooklet.pdf) for the most up-to-date documentation.  
 
 We have the reference doc for the H2O R binding, but we regularly get questions from new users asking about which parts of R are supported, in particular regarding data munging.  A 15-20 page intro doc would be really useful.  Perhaps this should be a new booklet in the small yellow book series.
 
 It should give an overview of:
 
-0.  how the big data is kept in the cluster and manipulated from R via references,
+1.  how the big data is kept in the cluster and manipulated from R via references,
 
-1. how to move data back and forth between data in R ,
+2. how to move data back and forth between data in R ,
 
-2. what operations are implemented in the H2O back end, 
+3. what operations are implemented in the H2O back end, 
 
-3. example scripts which include simple data munging (frame manipulation via R expressions and ddply), perhaps based on the CityBike example (sans weather join) and Alex's examples.
+4. example scripts which include simple data munging (frame manipulation via R expressions and ddply), perhaps based on the CityBike example (sans weather join) and Alex's examples.
 
 Per Ray, this doc should also include:
 
@@ -21,7 +23,7 @@ explanation of how it works
 standard data prep
 
 
-#What is H2O?
+# What is H2O?
  
 H2O is fast, scalable, open-source machine learning and deep learning for Smarter Applications. With H2O enterprises like PayPal, Nielsen, Cisco, and others can use all of their data without sampling and get accurate predictions faster. Advanced algorithms, like Deep Learning, Boosting, and Bagging Ensembles are readily available for application designers to build smarter applications through elegant APIs. Some of our earliest customers have built powerful domain-specific predictive engines for Recommendations, Customer Churn, Propensity to Buy, Dynamic Pricing, and Fraud Detection for the Insurance, Healthcare, Telecommunications, AdTech, Retail, and Payment Systems.
 
@@ -31,37 +33,37 @@ H2O implements almost all common machine learning algorithms, such as generalize
 
 H2O is nurturing a grassroots movement of physicists, mathematicians, computer and data scientists to herald the new wave of discovery with data science. Academic researchers and Industrial data scientists collaborate closely with our team to make this possible. Stanford university giants Stephen Boyd, Trevor Hastie, and Rob Tibshirani advise the H2O team to build scalable machine learning algorithms. With hundreds of meetups over the past two years, H2O has become a growing word-of-mouth phenomenon amongst the data community, now implemented by 12,000+ users and deployed in 2000+ corporations using R, Python, Hadoop and Spark.
 
-#Intro
+# Intro
 
 how the big data is kept in the cluster and manipulated from R via references
 what operations are implemented in the H2O back end
 
-#Installation 
+# Installation 
 
-###Installing R or R Studio
+### Installing R or R Studio
 
 To download R:
 
-0. Go to [http://cran.r-project.org/mirrors.html](http://cran.r-project.org/mirrors.html).
-0. Select your closest local mirror.
-0. Select your operating system (Linux, OS X, or Windows).
-0. Depending on your OS, download the appropriate file, along with any required packages.
-0. When the download is complete, unzip the file and install.
+1. Go to [http://cran.r-project.org/mirrors.html](http://cran.r-project.org/mirrors.html).
+2. Select your closest local mirror.
+3. Select your operating system (Linux, OS X, or Windows).
+4. Depending on your OS, download the appropriate file, along with any required packages.
+5. When the download is complete, unzip the file and install.
 
 To download R Studio:
 
-0. Go to [http://www.rstudio.com/products/rstudio/](http://www.rstudio.com/products/rstudio/).
-0. Select your deployment type (desktop or server).
-0. Download the file.
-0. When the download is complete, unzip the file and install.
+1. Go to [http://www.rstudio.com/products/rstudio/](http://www.rstudio.com/products/rstudio/).
+2. Select your deployment type (desktop or server).
+3. Download the file.
+4. When the download is complete, unzip the file and install.
 
 
-#H2O Initialization 
+# H2O Initialization 
 
-0. Go to [h2o.ai/downloads](http://h2o.ai/downloads). 
-0. Under **Download H2O**, select a build. The "bleeding edge" build contains the latest changes, while the "latest stable release" may be more reliable. 
-0. Click the **Install in R** tab above the **Download H2O** button. 
-0. Copy and paste the commands into R or R Studio, one line at a time. 
+1. Go to [h2o.ai/downloads](http://h2o.ai/downloads). 
+2. Under **Download H2O**, select a build. The "bleeding edge" build contains the latest changes, while the "latest stable release" may be more reliable. 
+3. Click the **Install in R** tab above the **Download H2O** button. 
+4. Copy and paste the commands into R or R Studio, one line at a time. 
 
 The lines are reproduced below; however, you should not copy and paste them, as the required version number has been replaced with asterisks (*). Refer to the [Downloads page](http://h2o.ai/downloads) for the latest version number. 
 
@@ -89,7 +91,7 @@ The lines are reproduced below; however, you should not copy and paste them, as 
 
 You can also enter `install.packages("h2o")` in R to load the latest H2O R package from CRAN. 
 
-###Making a Build from Source Code
+### Making a Build from Source Code
 
 The R package is build as part of the standard build process. In the top-level `h2o-3` directory, use `./gradlew build`. 
 
@@ -100,16 +102,16 @@ To build the R component by itself:
 The build output is located a CRAN-like layout in the R directory. 
 
 
-####Installation from the command line
+#### Installation from the command line
 
-0. Navigate to the top-level `h2o-3` directory: `cd ~/h2o-3`. 
-0. Install the H2O package for R: `R CMD INSTALL h2o-r/R/src/contrib/h2o_****.tar.gz`
+1. Navigate to the top-level `h2o-3` directory: `cd ~/h2o-3`. 
+2. Install the H2O package for R: `R CMD INSTALL h2o-r/R/src/contrib/h2o_****.tar.gz`
 
    **Note**: Do not copy and paste the command above. You must replace the asterisks (*) with the current H2O .tar version number. Look in the `h2o-3/h2o-r/R/src/contrib/` directory for the version number. 
 
 ###  Installation from within R
 
-0. Detach any currently loaded H2O package for R.  
+1. Detach any currently loaded H2O package for R.  
 `if ("package:h2o" %in% search()) { detach("package:h2o", unload=TRUE) }`  
 
 	```
@@ -117,7 +119,7 @@ The build output is located a CRAN-like layout in the R directory.
 	(as ‘lib’ is unspecified)
 	```
 
-0. Remove any previously installed H2O package for R.  
+2. Remove any previously installed H2O package for R.  
 `if ("h2o" %in% rownames(installed.packages())) { remove.packages("h2o") }`
 
 
@@ -126,7 +128,7 @@ The build output is located a CRAN-like layout in the R directory.
 	(as ‘lib’ is unspecified)
 	```
 
-0. Install the dependencies for H2O.
+3. Install the dependencies for H2O.
    
    **Note**: This list may change as new capabilities are added to H2O. The commands are reproduced below, but we strongly recommend visiting the H2O download page at [h2o.ai/download](http://h2o.ai/download) for the most up-to-date list of dependencies. 
    
@@ -141,7 +143,7 @@ The build output is located a CRAN-like layout in the R directory.
 	if (! ("utils" %in% rownames(installed.packages()))) { install.packages("utils") }
 	```
 
-0. Install the H2O R package from your build directory.  
+1. Install the H2O R package from your build directory.  
   `install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/master/****/R")))`
 
    **Note**: Do not copy and paste the command above. You must replace the asterisks (*) with the current H2O build number. Refer to the H2O download page at [h2o.ai/download](http://h2o.ai/download) for latest build number. 
@@ -213,14 +215,14 @@ Note:  As started, H2O is limited to the CRAN default of 2 CPUs.
            > localH2O = h2o.init(nthreads = -1)
 ```
 
-##Munging operations in R:
+## Munging operations in R:
 
-###Overview:
+### Overview:
 
 Operating on an `H2OFrame` object triggers the rollup of the expression to be executed, but the expression itself is not evaluated. Instead, an AST is built from the R expression using R's built-in parser, which handles operator precedence. In the case of assignment, the AST is stashed into the variable in the assignment. The AST is bound to an R variable as a promise to evaluate the expression on demand. When evaluation is forced, the AST is walked, converted to JSON, and shipped over to H2O. The result returned by H2O is a key pointing to the newly-created frame. Depending on the methods used, the results may not be an H2OFrame return type. Any extra preprocessing of data returned by H2O is discussed in each instance, as it varies from method to method.
 
 
-###What's implemented?
+### What's implemented?
 Many of R's generic S3 methods can be combined with H2OFrame objects so that  the result is coerced to an object of the appropriate type (typically an H2OFrame object). To view a list of R's generic methods, use `getGenerics()`. A call to `showMethods(classes="H2OFrame")` displays a list of permissible operations with H2OFrame objects. S3 methods are divided into four groups: 
 
 - Math
@@ -236,9 +238,9 @@ With the exception of Complex, H2OFrame methods fall into these categories as we
 - Summary
 
 
-###List:
+### List:
 
-####Ops Group
+#### Ops Group
 
 This group includes:
 
@@ -258,7 +260,7 @@ This group includes:
 |`&`| `∣`|&nbsp;|&nbsp;|
 
 
-####Math Group
+#### Math Group
 
 This group includes:
 
@@ -295,7 +297,7 @@ This group includes:
 
 
 
-####Summary Group
+#### Summary Group
 
 This group includes:
 
@@ -313,7 +315,7 @@ This group includes:
 |`sum`|`all`|
 |`any`|
 
-####Non-Group Generic
+#### Non-Group Generic
 
 This group includes:
 
@@ -356,25 +358,25 @@ This group includes:
 
 
 
-#Data Prep in R
+# Data Prep in R
 standard data prep
 
 
-#Data Manipulation in R
+# Data Manipulation in R
 
 how to move data back and forth between data in R 
 slicing
 creating new columns
 
-#Examples/Demos
+# Examples/Demos
 
-#Support 
+# Support 
 
-Users of the H2O package may submit general inquiries and bug reports to the H2O.ai support address, [support@h2oai.com](mailto:support@h2oai.com). Alternatively, specific bugs or issues may be filed to the H2O JIRA, [https://0xdata.atlassian.net](https://0xdata.atlassian.net).
+Users of the H2O package may submit general inquiries and bug reports using the "h2o" tag on [Stack Overflow](https://stackoverflow.com/questions/tagged/h2o). Alternatively, specific bugs or issues may be filed to the H2O JIRA, [https://0xdata.atlassian.net](https://0xdata.atlassian.net).
 
-#References
+# References
 
-#Appendix
+# Appendix
 (commands)
 
 

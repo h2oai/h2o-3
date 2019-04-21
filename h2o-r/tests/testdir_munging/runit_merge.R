@@ -23,7 +23,7 @@ test.merge <- function() {
 run.merge.tests <- function (g,h) {
   h2o_g <- as.h2o(g)
   h2o_h <- as.h2o(h)
-  h2o_merge <- h2o.merge(h2o_g, h2o_h)
+  h2o_merge <- h2o.merge(h2o_g, h2o_h, method="hash")
   R_merge <- merge(g,h)
   h2o_and_R_equal(h2o_merge, R_merge[names(h2o_merge)])
 }

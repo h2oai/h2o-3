@@ -1,5 +1,8 @@
 from __future__ import print_function
 import sys
+
+from h2o.exceptions import H2OResponseError
+
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils

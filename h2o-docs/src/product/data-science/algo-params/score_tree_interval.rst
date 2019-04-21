@@ -1,7 +1,9 @@
+.. _score_tree_interval:
+
 ``score_tree_interval``
 ------------------------
 
-- Available in: GBM, DRF
+- Available in: GBM, DRF, XGBoost, Isolation Forest
 - Hyperparameter: no
 
 Description

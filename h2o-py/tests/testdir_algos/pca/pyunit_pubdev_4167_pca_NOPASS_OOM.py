@@ -5,7 +5,7 @@ sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
 from random import randint
-from h2o.transforms.decomposition import H2OPCA
+from h2o.estimators.pca import H2OPrincipalComponentAnalysisEstimator as H2OPCA
 
 def pca_pubdev_4167_OOM():
   """

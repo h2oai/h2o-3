@@ -10,6 +10,8 @@ import water.parser.BufferedString;
 import water.rapids.Env;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
+import water.rapids.ast.prims.string.algorithms.H2OJaroWinklerComparator;
+import water.rapids.ast.prims.string.algorithms.LevenshteinDistanceComparator;
 import water.rapids.vals.ValFrame;
 
 import no.priv.garshol.duke.Comparator;
@@ -26,8 +28,8 @@ public class AstStrDistance extends AstPrimitive {
 
   @Override
   public int nargs() {
-    return 1 + 3;
-  } // (strDistance x y measure)
+    return 1 + 4;
+  } // (strDistance x y measure compare_empty)
 
   @Override
   public String str() {
@@ -39,7 +41,7 @@ public class AstStrDistance extends AstPrimitive {
     Frame frX = stk.track(asts[1].exec(env)).getFrame();
     Frame frY = stk.track(asts[2].exec(env)).getFrame();
     String measure = asts[3].exec(env).getStr();
-
+    boolean compareEmpty = asts[4].exec(env).getNum() == 1;
     if ((frX.numCols() != frY.numCols()) || (frX.numRows() != frY.numRows()))
       throw new IllegalArgumentException("strDistance() requires the frames to have the same number of columns and rows.");
     for (int i = 0; i < frX.numCols(); i++)
@@ -56,7 +58,7 @@ public class AstStrDistance extends AstPrimitive {
       vecs[i + outputTypes.length] = frY.vec(i);
     }
 
-    Frame distFr = new StringDistanceComparator(measure).doAll(outputTypes, vecs).outputFrame();
+    Frame distFr = new StringDistanceComparator(measure, compareEmpty).doAll(outputTypes, vecs).outputFrame();
     return new ValFrame(distFr);
   }
 
@@ -66,7 +68,11 @@ public class AstStrDistance extends AstPrimitive {
 
   private static class StringDistanceComparator extends MRTask<StringDistanceComparator> {
     private final String _measure;
-    private StringDistanceComparator(String measure) { _measure = measure; }
+    private final boolean _compareEmpty;
+    private StringDistanceComparator(String measure, boolean compareEmpty) {
+      _measure = measure;
+      _compareEmpty = compareEmpty;
+    }
     @Override
     public void map(Chunk[] cs, NewChunk[] nc) {
       BufferedString tmpStr = new BufferedString();
@@ -84,8 +90,12 @@ public class AstStrDistance extends AstPrimitive {
           else {
             String strX = getString(tmpStr, cX, row, domainX);
             String strY = getString(tmpStr, cY, row, domainY);
-            double dist = cmp.compare(strX, strY);
-            nc[i].addNum(dist);
+            if (!_compareEmpty && (strX.isEmpty() || strY.isEmpty())) {
+              nc[i].addNA();
+            } else {
+              double dist = cmp.compare(strX, strY);
+              nc[i].addNum(dist);
+            }
           }
         }
       }
@@ -105,10 +115,12 @@ public class AstStrDistance extends AstPrimitive {
         return new JaccardIndexComparator();
       case "jw":
       case "JaroWinkler":
-        return new JaroWinkler();
+        // JaroWinkler Comparator contains bug which will be fixed in Duke 1.3 release.
+        // Before that happens, we duplicate the JaroWinkler comparator class with the bug fixed
+        return new H2OJaroWinklerComparator();
       case "lv":
       case "Levenshtein":
-        return new Levenshtein();
+        return new LevenshteinDistanceComparator();
       case "lcs":
       case "LongestCommonSubstring":
         return new LongestCommonSubstring();

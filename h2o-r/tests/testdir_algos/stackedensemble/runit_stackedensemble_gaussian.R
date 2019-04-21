@@ -92,7 +92,6 @@ stackedensemble.gaussian.test <- function() {
                                training_frame = train,
                                validation_frame = test,  #also test that validation_frame is working
                                model_id = "my_ensemble_gaussian", 
-                               selection_strategy = "choose_all",
                                base_models = list(my_gbm@model_id, my_rf@model_id, my_xrf@model_id))
   
   # Check that prediction works
@@ -120,7 +119,6 @@ stackedensemble.gaussian.test <- function() {
                                training_frame = train,
                                validation_frame = test,  #also test that validation_frame is working
                                model_id = "my_ensemble_gaussian", 
-                               selection_strategy = "choose_all",
                                base_models = list(my_gbm@model_id, my_rf@model_id, my_xrf@model_id))
   
   pred <- h2o.predict(stack, newdata = test)

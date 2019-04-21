@@ -40,7 +40,7 @@ public class Session {
   // Ref-counts per Vec.  Always positive; zero is removed from the table;
   // negative is an error.  At the end of any given Rapids expression the
   // counts should match all the Vecs in the FRAMES set.
-  private NonBlockingHashMap<Vec, Integer> REFCNTS = new NonBlockingHashMap<>();
+  private NonBlockingHashMap<Key<Vec>, Integer> REFCNTS = new NonBlockingHashMap<>();
 
   // Frames tracked by this Session and alive to the next Rapids call.  When
   // the whole session ends, these frames can be removed from the DKV.  These
@@ -52,7 +52,7 @@ public class Session {
   // will always copy these Vecs before mutating or deleting.  Total visible
   // refcnts are effectively the normal refcnts plus 1 for being in the GLOBALS
   // set.
-  private NonBlockingHashSet<Vec> GLOBALS = new NonBlockingHashSet<>();
+  private NonBlockingHashSet<Key<Vec>> GLOBALS = new NonBlockingHashSet<>();
 
 
   /**
@@ -109,11 +109,11 @@ public class Session {
     // (disappearing) session.
     if (returning != null && returning.isFrame()) {
       Frame fr = returning.getFrame();
-      Vec[] vecs = fr.vecs();
+      Key<Vec>[] vecs = fr.keys();
       for (int i = 0; i < vecs.length; i++) {
         _addRefCnt(vecs[i], -1); // Returning frame has refcnt +1, lower it now; should go to zero internal refcnts.
         if (GLOBALS.contains(vecs[i])) // Copy if shared with globals
-          fr.replace(i, vecs[i].makeCopy());
+          fr.replace(i, vecs[i].get().makeCopy());
       }
     }
     GLOBALS.clear();            // No longer tracking globals
@@ -130,7 +130,7 @@ public class Session {
       GLOBALS.clear();
       Futures fs = new Futures();
       for (Frame fr : FRAMES.values()) {
-        for (Vec vec : fr.vecs()) {
+        for (Key<Vec> vec : fr.keys()) {
           Integer I = REFCNTS.get(vec);
           int i = (I == null ? 0 : I) - 1;
           if (i > 0) REFCNTS.put(vec, i);
@@ -154,13 +154,13 @@ public class Session {
    * Internal ref cnts (not counting globals - which only ever keep things alive, and have a virtual +1 to refcnts
    * always).
    */
-  private int _getRefCnt(Vec vec) {
+  private int _getRefCnt(Key<Vec> vec) {
     Integer I = REFCNTS.get(vec);
     assert I == null || I > 0;   // No zero or negative counts
     return I == null ? 0 : I;
   }
 
-  private int _putRefCnt(Vec vec, int i) {
+  private int _putRefCnt(Key<Vec> vec, int i) {
     assert i >= 0;              // No negative counts
     if (i > 0) REFCNTS.put(vec, i);
     else REFCNTS.remove(vec);
@@ -170,21 +170,21 @@ public class Session {
   /**
    * Bump internal count, not counting globals
    */
-  private int _addRefCnt(Vec vec, int i) {
+  private int _addRefCnt(Key<Vec> vec, int i) {
     return _putRefCnt(vec, _getRefCnt(vec) + i);
   }
 
   /**
    * External refcnt: internal refcnt plus 1 for being global
    */
-  private int getRefCnt(Vec vec) {
+  private int getRefCnt(Key<Vec> vec) {
     return _getRefCnt(vec) + (GLOBALS.contains(vec) ? 1 : 0);
   }
 
   /**
    * RefCnt +i this Vec; Global Refs can be alive with zero internal counts
    */
-  private int addRefCnt(Vec vec, int i) {
+  private int addRefCnt(Key<Vec> vec, int i) {
     return _addRefCnt(vec, i) + (GLOBALS.contains(vec) ? 1 : 0);
   }
 
@@ -193,7 +193,7 @@ public class Session {
    */
   Frame addRefCnt(Frame fr, int i) {
     if (fr != null)  // Allow and ignore null Frame, easier calling convention
-      for (Vec vec : fr.vecs()) _addRefCnt(vec, i);
+      for (Key<Vec> vec : fr.keys()) _addRefCnt(vec, i);
     return fr;                  // Flow coding
   }
 
@@ -202,7 +202,7 @@ public class Session {
    */
   Frame addGlobals(Frame fr) {
     if (!FRAMES.containsKey(fr._key))
-      Collections.addAll(GLOBALS, fr.vecs());
+      Collections.addAll(GLOBALS, fr.keys());
     return fr;                  // Flow coding
   }
 
@@ -227,7 +227,7 @@ public class Session {
     if (fr == null) return;
     Futures fs = new Futures();
     if (!FRAMES.containsKey(fr._key)) { // In globals and not temps?
-      for (Vec vec : fr.vecs()) {
+      for (Key<Vec> vec : fr.keys()) {
         GLOBALS.remove(vec);         // Not a global anymore
         if (REFCNTS.get(vec) == null) // If not shared with temps
           vec.remove(fs);            // Remove unshared dead global
@@ -245,7 +245,7 @@ public class Session {
    * Passed in a Futures which is returned, and set to non-null if something gets deleted.
    */
   Futures downRefCnt(Frame fr, Futures fs) {
-    for (Vec vec : fr.vecs())    // Refcnt -1 all Vecs
+    for (Key<Vec> vec : fr.keys())    // Refcnt -1 all Vecs
       if (addRefCnt(vec, -1) == 0) {
         if (fs == null) fs = new Futures();
         vec.remove(fs);
@@ -265,7 +265,7 @@ public class Session {
     // may be deleted.
     Frame fr = DKV.getGet(id);
     if (fr != null) {          // Prior frame exists
-      for (Vec vec : fr.vecs()) {
+      for (Key<Vec> vec : fr.keys()) {
         if (GLOBALS.remove(vec) && _getRefCnt(vec) == 0)
           vec.remove(fs);       // Remove unused global vec
       }
@@ -276,7 +276,7 @@ public class Session {
     // operations.
     Vec[] svecs = src.vecs().clone();
     for (int i = 0; i < svecs.length; i++)
-      if (GLOBALS.contains(svecs[i]))
+      if (GLOBALS.contains(svecs[i]._key))
         svecs[i] = svecs[i].makeCopy();
     // Make and install new global Frame
     Frame fr2 = new Frame(id, src._names.clone(), svecs);
@@ -295,7 +295,7 @@ public class Session {
     Vec[] vecs = fr.vecs();
     for (int col : cols) {
       Vec vec = vecs[col];
-      int refcnt = getRefCnt(vec);
+      int refcnt = getRefCnt(vec._key);
       assert refcnt > 0;
       if (refcnt > 1)          // If refcnt is 1, we allow the update to take in-place
         fr.replace(col, (did_copy = vec.makeCopy()));
@@ -316,24 +316,24 @@ public class Session {
 
     // Compute refcnts from tracked frames only.  Since we are between Rapids
     // calls the only tracked Vecs should be those from tracked frames.
-    NonBlockingHashMap<Vec, Integer> refcnts = new NonBlockingHashMap<>(REFCNTS.size());
+    NonBlockingHashMap<Key<Vec>, Integer> refcnts = new NonBlockingHashMap<>(REFCNTS.size());
     for (Frame fr : FRAMES.values())
-      for (Vec vec : fr.vecs()) {
+      for (Key<Vec> vec : fr.keys()) {
         Integer count = refcnts.get(vec);
         refcnts.put(vec, count == null ? 1 : count + 1);
       }
     // Now account for the returning frame (if it is a Frame). Note that it is entirely possible that this frame is
     // already in the FRAMES list, however we need to account for it anyways -- this is how Env works...
     if (returning != null && returning.isFrame())
-      for (Vec vec : returning.getFrame().vecs()) {
+      for (Key<Vec> vec : returning.getFrame().keys()) {
         Integer count = refcnts.get(vec);
         refcnts.put(vec, count == null ? 1 : count + 1);
       }
 
     // Now compare computed refcnts to cached REFCNTS.
     // First check that every Vec in computed refcnt is also in REFCNTS, with equal counts.
-    for (Map.Entry<Vec,Integer> pair : refcnts.entrySet()) {
-      Vec vec = pair.getKey();
+    for (Map.Entry<Key<Vec>,Integer> pair : refcnts.entrySet()) {
+      Key<Vec> vec = pair.getKey();
       Integer count = pair.getValue();
       Integer savedCount = REFCNTS.get(vec);
       if (savedCount == null) throw new IllegalStateException("REFCNTS missing vec " + vec);
@@ -343,7 +343,7 @@ public class Session {
     }
     // Then check that every cached REFCNT is in the computed set as well.
     if (refcnts.size() != REFCNTS.size())
-      for (Map.Entry<Vec,Integer> pair : REFCNTS.entrySet()) {
+      for (Map.Entry<Key<Vec>, Integer> pair : REFCNTS.entrySet()) {
         if (!refcnts.containsKey(pair.getKey()))
           throw new IllegalStateException(
               "REFCNTs contains an extra vec " + pair.getKey() + ", count = " + pair.getValue());

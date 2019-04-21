@@ -1,6 +1,5 @@
 package water.util;
 
-import com.google.common.base.Charsets;
 import water.parser.BufferedString;
 
 import java.io.PrintWriter;
@@ -192,7 +191,7 @@ public class StringUtils {
   }
 
   public static byte[] bytesOf(CharSequence str) {
-    return str.toString().getBytes(Charsets.UTF_8);
+    return str.toString().getBytes(Charset.forName("UTF-8"));
   }
 
   public static byte[] toBytes(Object value) {
@@ -200,6 +199,6 @@ public class StringUtils {
   }
   
   public static String toString(byte[] bytes, int from, int length) {
-    return new String(bytes, from, length, Charsets.UTF_8);
+    return new String(bytes, from, length, Charset.forName("UTF-8"));
   }
 }

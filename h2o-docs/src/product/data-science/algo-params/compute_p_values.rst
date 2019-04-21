@@ -13,7 +13,7 @@ Z-score, standard error, and `p-values <https://en.wikipedia.org/wiki/P-value>`_
 
 - This option is only applicable when regularization is disabled (``lambda=0``) and when ``solver=IRLSM``. 
 - If collinear columns exist in the data, then you must also specify ``remove_collinear_columns=TRUE``. Otherwise, H2O will return an error. 
-- This option cannot be used with ``family=multinomial``
+- This option cannot be used with ``family=multinomial`` or with ``beta_constraints``.
 - GLM auto-standardizes the data by default. This changes the p-value of the constant term (intercept).
 
 Related Parameters

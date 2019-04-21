@@ -39,18 +39,24 @@ class Check:
             r"^\* using session charset",
             r"^\* using option .*",
             r"^\* checking .* \.\.\. OK",
-            r"^\* checking extension type \.\.\. Package",
+
             r"^\* this is package",
             r"^\* checking CRAN incoming feasibility \.\.\.",
             r"^\*\* found \\donttest examples: .*",
             r"^Maintainer:",
             r"^New maintainer:",
-            r"^\s*Tom Kraljevic",
+            r"^\s*The H2O.ai team .*",
+            r"^Version contains large components .*",
             r"^Insufficient package version .*",
             r"^\Days since last update: .*",
             r"^Old maintainer\(s\):",
-            r"^\s*Anqi Fu",
+            r"^\s*Tom Kraljevic .*",
             r"^NOTE: There was 1 note.",
+
+            r"^\* checking DESCRIPTION meta-information \.\.\.",
+            r"^Author field differs from that derived from Authors@R",
+            r"^\s*Author: .*",
+            r"^\s*Authors@R: .*",
 
             r"^\n",
             r"^New submission",
@@ -76,6 +82,7 @@ class Check:
             r"^ OK",
 
             r"^Package has FOSS license, installs .class/.jar but has no 'java' directory.",
+            r"^Size of tarball: .* bytes",
             r"^\* DONE",
 
             r"^The Date field is over a month old.*",

@@ -25,7 +25,7 @@ def test_date_comparisons():
     assert test1pd.sum() == 9, "Incorrect Pandas comparison result:\n%r" % test1pd
     assert test1h2o.sum().flatten() == 9, "Incorrect H2O comparison result:\n%r" % test1h2o
 
-    test2pd = dfpd["date"] > z2
+    test2pd = dfpd["date"] > pd.Timestamp(z2)
     test2h2o = dfh2o["date"] > z2
     assert test2pd.sum() == 7, "Incorrect Pandas comparison result:\n%r" % test2pd
     assert test2h2o.sum().flatten() == 7, "Incorrect H2O comparison result:\n%r" % test2h2o

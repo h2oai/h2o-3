@@ -19,7 +19,6 @@ from h2o.utils.shared_utils import clamp
 from h2o.utils.typechecks import assert_is_type, is_type, numeric
 
 
-
 class ProgressBar(object):
     """
     Component that controls execution of a remote job, and draws a progress bar as it goes along.
@@ -97,6 +96,16 @@ class ProgressBar(object):
         assert_is_type(maxval, numeric)
         assert_is_type(widgets, None, [str, ProgressBarWidget])
         assert_is_type(file_mode, None, bool)
+
+
+        # Fix for PUBDEV-5048. H2O depends on isatty attribute, but some Python Notebooks override stdout and doesn't
+        # specify it. The same holds for the encoding attribute bellow
+        if not hasattr(sys.stdout, "isatty"):
+            sys.stdout.isatty = lambda: False
+
+        if not hasattr(sys.stdout, "encoding"):
+            sys.stdout.encoding = sys.getdefaultencoding()
+
         if title is None: title = "Progress"
         if file_mode is None: file_mode = not sys.stdout.isatty()
 
@@ -122,7 +131,7 @@ class ProgressBar(object):
         self._next_poll_time = None
 
 
-    def execute(self, progress_fn):
+    def execute(self, progress_fn, print_verbose_info=None):
         """
         Start the progress bar, and return only when the progress reaches 100%.
 
@@ -182,6 +191,8 @@ class ProgressBar(object):
                 wait_time = min(next_render_time, self._next_poll_time) - now
                 if wait_time > 0:
                     time.sleep(wait_time)
+                    if print_verbose_info is not None:
+                        print_verbose_info(progress)
         except KeyboardInterrupt:
             # If the user presses Ctrl+C, we interrupt the progress bar.
             status = "cancelled"

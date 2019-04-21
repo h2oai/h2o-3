@@ -9,6 +9,7 @@ import water.Key;
 import water.TypeMap;
 import water.api.schemas3.ModelParametersSchemaV3;
 import water.util.HttpResponseStatus;
+import water.util.Log;
 import water.util.PojoUtils;
 
 import java.util.Properties;
@@ -38,11 +39,21 @@ public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderS
 
     // User specified key, or make a default?
     String model_id = parms.getProperty("model_id");
+    String warningStr = null;
+    if ((model_id != null) && (model_id.contains("/"))) { // found / in model_id, replace with _ and set warning
+      String tempName = model_id;
+      model_id = model_id.replaceAll("/", "_");
+      warningStr = "Bad model_id: slash (/) found and replaced with _.  " + "Original model_id "+tempName +
+              " is now "+model_id+".";
+      Log.warn("model_id", warningStr);
+    }
     Key<Model> key = doTrain ? (model_id==null ? ModelBuilder.defaultKey(algoName) : Key.<Model>make(model_id)) : null;
     // Default Job for just this training
-    Job job = doTrain ? new Job<>(key,ModelBuilder.javaName(algoURLName),algoName) : null;
+    Job job = doTrain ? (warningStr!=null ? new Job<>(key,ModelBuilder.javaName(algoURLName),algoName, warningStr) :
+            new Job<>(key,ModelBuilder.javaName(algoURLName),algoName)) : null;
     // ModelBuilder
     B builder = ModelBuilder.make(algoURLName,job,key);
+
     schema.parameters.fillFromImpl(builder._parms); // Defaults for this builder into schema
     schema.parameters.fillFromParms(parms);         // Overwrite with user parms
     schema.parameters.fillImpl(builder._parms);     // Merged parms back over Model.Parameter object
@@ -50,7 +61,7 @@ public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderS
     schema.fillFromImpl(builder); // Fill in the result Schema with the Job at least, plus any extra trainModel errors
     PojoUtils.copyProperties(schema.parameters, builder._parms, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, null, new String[] { "error_count", "messages" });
     schema.setHttpStatus(HttpResponseStatus.OK.getCode());
-    if( doTrain ) schema.job.fillFromImpl(builder.trainModel());
+    if( doTrain ) schema.job.fillFromImpl(builder.trainModelOnH2ONode());
     return schema;
   }
 

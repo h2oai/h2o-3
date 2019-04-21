@@ -6,30 +6,28 @@ In [59]: from h2o.model.regression import h2o_r2_score
 
 In [60]: from sklearn.metrics.scorer import make_scorer
 
-In [61]: from sklearn.metrics.scorer import make_scorer
-
 # Parameters to test
-In [62]: params = {"standardize__center":    [True, False],
+In [61]: params = {"standardize__center":    [True, False],
    ....:           "standardize__scale":     [True, False],
    ....:           "pca__k":                 [2,3],
    ....:           "gbm__ntrees":            [10,20],
    ....:           "gbm__max_depth":         [1,2,3],
    ....:           "gbm__learn_rate":        [0.1,0.2]}
 
-In [63]: custom_cv = H2OKFold(iris_df, n_folds=5, seed=42)
+In [62]: custom_cv = H2OKFold(iris_df, n_folds=5, seed=42)
 
-In [64]: pipeline = Pipeline([("standardize", H2OScaler()),
-   ....:                      ("pca", H2OPCA(k=2)),
+In [63]: pipeline = Pipeline([("standardize", H2OScaler()),
+   ....:                      ("pca", H2OPrincipalComponentAnalysisEstimator(k=2)),
    ....:                      ("gbm", H2OGradientBoostingEstimator(distribution="gaussian"))])
 
-In [65]: random_search = RandomizedSearchCV(pipeline, params,
+In [64]: random_search = RandomizedSearchCV(pipeline, params,
    ....:                                  n_iter=5,
    ....:                                  scoring=make_scorer(h2o_r2_score),
    ....:                                  cv=custom_cv,
    ....:                                  random_state=42,
    ....:                                  n_jobs=1)
-In [66]: random_search.fit(iris_df[1:], iris_df[0])
-Out[66]:
+In [65]: random_search.fit(iris_df[1:], iris_df[0])
+Out[65]:
 RandomizedSearchCV(cv=<h2o.cross_validation.H2OKFold instance at 0x10ba413d0>,
           error_score='raise',
           estimator=Pipeline(steps=[('standardize', <h2o.transforms.preprocessing.H2OScaler object at 0x10c0f18d0>), ('pca', ), ('gbm', )]),
@@ -38,7 +36,7 @@ RandomizedSearchCV(cv=<h2o.cross_validation.H2OKFold instance at 0x10ba413d0>,
           pre_dispatch='2*n_jobs', random_state=42, refit=True,
           scoring=make_scorer(h2o_r2_score), verbose=0)
 
-In [67]: print random_search.best_estimator_
+In [66]: print random_search.best_estimator_
 Model Details
 =============
 H2OPCA :  Principal Component Analysis

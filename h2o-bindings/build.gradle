@@ -9,12 +9,19 @@ def srcGenBindingsDir = file("src-gen/main") // TODO: this setting is not proper
 configurations {
   srcGenCompile
 }
-
+ext{
+    pythonexe = findProperty("pythonExec") ?: "python"
+    pipexe = findProperty("pipExec") ?: "pip"
+    if (System.env.VIRTUAL_ENV) {
+        pythonexe = "${System.env.VIRTUAL_ENV}/bin/python".toString()
+        pipexe = "${System.env.VIRTUAL_ENV}/bin/pip".toString()
+    }
+}
 dependencies {
-    compile 'com.squareup.retrofit2:retrofit:2.0.1'
-    compile 'com.squareup.retrofit2:converter-gson:2.0.1'  
-    compile 'com.squareup.okhttp3:okhttp:3.3.1'
-    compile 'com.squareup.okio:okio:1.8.0'
+    compile 'com.squareup.retrofit2:retrofit:2.4.0'
+    compile 'com.squareup.retrofit2:converter-gson:2.4.0'
+    compile 'com.squareup.okhttp3:okhttp:3.10.0'
+    compile 'com.squareup.okio:okio:1.14.0'
 
     testCompile project(":h2o-app")
     testCompile project(":h2o-web")
@@ -28,7 +35,6 @@ dependencies {
 // Configure idea import
 idea {
     module {
-        jdkName = 'inherited'
         generatedSourceDirs += srcGenBindingsDir
     }
 }
@@ -56,7 +62,8 @@ test {
 task runGenerateRESTAPIBindingsSrc(type: Exec) {
     workingDir binDir
     // Note: by default the generated sources get written to ./h2o-bindings/src-gen/*
-    commandLine 'python', "gen_all.py"
+    environment "H2O_JARFILE", configurations.srcGenCompile.getSingleFile()
+    commandLine getOsSpecificCommandLine([pythonexe, "gen_all.py"])
 }
 
 task cleanGenerateRESTAPIBindings(type: Delete) {

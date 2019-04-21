@@ -1,13 +1,16 @@
 package hex;
 
 import hex.genmodel.GenModel;
+import hex.genmodel.utils.DistributionFamily;
 import water.MRTask;
 import water.Scope;
 import water.exceptions.H2OIllegalArgumentException;
+import water.fvec.C8DVolatileChunk;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
+import water.util.Log;
 import water.util.MathUtils;
 
 import java.util.Arrays;
@@ -18,8 +21,10 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
   public final double _mean_per_class_error;
   public final GainsLift _gainsLift;
 
-  public ModelMetricsBinomial(Model model, Frame frame, long nobs, double mse, String[] domain, double sigma, AUC2 auc, double logloss, GainsLift gainsLift) {
-    super(model, frame,  nobs, mse, domain, sigma);
+  public ModelMetricsBinomial(Model model, Frame frame, long nobs, double mse, String[] domain,
+                              double sigma, AUC2 auc, double logloss, GainsLift gainsLift,
+                              CustomMetric customMetric) {
+    super(model, frame,  nobs, mse, domain, sigma, customMetric);
     _auc = auc;
     _logloss = logloss;
     _gainsLift = gainsLift;
@@ -38,7 +43,10 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append(super.toString());
-    if (_auc != null) sb.append(" AUC: " + (float)_auc._auc + "\n");
+    if (_auc != null) {
+      sb.append(" AUC: " + (float)_auc._auc + "\n");
+      sb.append(" pr_auc: " + (float)_auc.pr_auc() + "\n");
+    }
     sb.append(" logloss: " + (float)_logloss + "\n");
     sb.append(" mean_per_class_error: " + (float)_mean_per_class_error + "\n");
     sb.append(" default threshold: " + (_auc == null ? 0.5 : (float)_auc.defaultThreshold()) + "\n");
@@ -130,6 +138,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     public MetricBuilderBinomial( String[] domain ) { super(2,domain); _auc = new AUC2.AUCBuilder(AUC2.NBINS); }
 
     public double auc() {return new AUC2(_auc)._auc;}
+    public double pr_auc() { return new AUC2(_auc)._pr_auc;}
 
     // Passed a float[] sized nclasses+1; ds[0] must be a prediction.  ds[1...nclasses-1] must be a class
     // distribution;
@@ -138,20 +147,32 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       if( Float .isNaN(yact[0]) ) return ds; // No errors if   actual   is missing
       if(ArrayUtils.hasNaNs(ds)) return ds;  // No errors if prediction has missing values (can happen for GLM)
       if(w == 0 || Double.isNaN(w)) return ds;
-      final int iact = (int)yact[0];
-      if( iact != 0 && iact != 1 ) return ds; // The actual is effectively a NaN
+      int iact = (int)yact[0];
+      boolean quasibinomial = (m!=null && m._parms._distribution == DistributionFamily.quasibinomial);
+      if (quasibinomial) {
+        if (yact[0] != 0)
+          iact = 1;  // actual response index needed for confusion matrix, AUC, etc.
+        _wY += w * yact[0];
+        _wYY += w * yact[0] * yact[0];
+        // Compute error
+        double err = yact[0] - ds[iact + 1];
+        _sumsqe += w * err * err;           // Squared error
+        // Compute negative loglikelihood loss, according to https://0xdata.atlassian.net/secure/attachment/30135/30135_TMLErare.pdf Appendix C
+        _logloss += - w * (yact[0] * Math.log(Math.max(1e-15, ds[2])) + (1-yact[0]) * Math.log(Math.max(1e-15, ds[1])));
+      } else {
+        if (iact != 0 && iact != 1) return ds; // The actual is effectively a NaN
+        _wY += w * iact;
+        _wYY += w * iact * iact;
+        // Compute error
+        double err = iact + 1 < ds.length ? 1 - ds[iact + 1] : 1;  // Error: distance from predicting ycls as 1.0
+        _sumsqe += w * err * err;           // Squared error
+        // Compute log loss
+        _logloss += w * MathUtils.logloss(err);
+      }
       _count++;
       _wcount += w;
-      _wY += w*iact;
-      _wYY += w*iact*iact;
-      // Compute error
-      double err = iact+1 < ds.length ? 1-ds[iact+1] : 1;  // Error: distance from predicting ycls as 1.0
-      _sumsqe += w*err*err;           // Squared error
       assert !Double.isNaN(_sumsqe);
-
-      // Compute log loss
-      _logloss += w*MathUtils.logloss(err);
-      _auc.perRow(ds[2],iact,w);
+      _auc.perRow(ds[2], iact, w);
       return ds;                // Flow coding
     }
 
@@ -167,37 +188,64 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
      * @param f Frame
      * @param frameWithWeights Frame that contains extra columns such as weights
      * @param preds Optional predictions (can be null), only used to compute Gains/Lift table for binomial problems  @return
-     * @return
+     * @return ModelMetricsBinomial
      */
     @Override public ModelMetrics makeModelMetrics(Model m, Frame f, Frame frameWithWeights, Frame preds) {
-      if (frameWithWeights ==null) frameWithWeights = f;
+      GainsLift gl = null;
+      if (_wcount > 0) {
+        if (preds!=null) {
+          if (frameWithWeights == null) frameWithWeights = f;
+          Vec resp = m==null && frameWithWeights.vec(f.numCols()-1).isCategorical() ? frameWithWeights.vec(f.numCols()-1) //work-around for the case where we don't have a model, assume that the last column is the actual response
+                  : frameWithWeights.vec(m._parms._response_column);
+          if (resp != null) {
+            Vec weight = m==null?null : frameWithWeights.vec(m._parms._weights_column);
+            gl = calculateGainsLift(m, preds, resp, weight);
+          }
+        }
+      }
+      return makeModelMetrics(m, f, gl);
+    }
+
+    private ModelMetrics makeModelMetrics(Model m, Frame f, GainsLift gl) {
       double mse = Double.NaN;
       double logloss = Double.NaN;
       double sigma = Double.NaN;
-      AUC2 auc = null;
-      GainsLift gl = null;
+      final AUC2 auc;
       if (_wcount > 0) {
         sigma = weightedSigma();
         mse = _sumsqe / _wcount;
         logloss = _logloss / _wcount;
         auc = new AUC2(_auc);
-        gl = null;
-        if (preds!=null) {
-          Vec resp = m==null && f.vec(f.numCols()-1).isCategorical() ? f.vec(f.numCols()-1) //work-around for the case where we don't have a model, assume that the last column is the actual response
-                  : f.vec(m._parms._response_column);
-          Vec weight = m==null?null : frameWithWeights.vec(m._parms._weights_column);
-          if (resp != null) {
-            try {
-              gl = new GainsLift(preds.lastVec(), resp, weight);
-              gl.exec(m != null ? m._output._job : null);
-            } catch(Throwable t) {}
-          }
-        }
+      } else {
+        auc = new AUC2();
       }
-      ModelMetricsBinomial mm = new ModelMetricsBinomial(m, f, _count, mse, _domain, sigma, auc,  logloss, gl);
+      ModelMetricsBinomial mm = new ModelMetricsBinomial(m, f, _count, mse, _domain, sigma, auc,  logloss, gl, _customMetric);
       if (m!=null) m.addModelMetrics(mm);
       return mm;
     }
+
+    private GainsLift calculateGainsLift(Model m, Frame preds, Vec resp, Vec weights) {
+      GainsLift gl = null;
+      try {
+        gl = new GainsLift(preds.lastVec(), resp, weights);
+        gl.exec(m != null ? m._output._job : null);
+      } catch(Throwable t) { // TODO: Why do we need to catch Throwable here?
+        Log.debug("Calculating Gains-Lift failed", t);
+      }
+      return gl;
+    }
+
+    @Override
+    public Frame makePredictionCache(Model m, Vec response) {
+      return new Frame(response.makeVolatileDoubles(1));
+    }
+
+    @Override
+    public void cachePrediction(double[] cdist, Chunk[] chks, int row, int cacheChunkIdx, Model m) {
+      assert cdist.length == 3;
+      ((C8DVolatileChunk) chks[cacheChunkIdx]).getValues()[row] = cdist[cdist.length - 1];
+    }
+
     public String toString(){
       if(_wcount == 0) return "empty, no rows";
       return "auc = " + MathUtils.roundToNDigits(auc(),3) + ", logloss = " + _logloss / _wcount;

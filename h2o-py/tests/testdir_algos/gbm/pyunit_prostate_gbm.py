@@ -43,6 +43,8 @@ def prostate_gbm():
   p.describe()
   ln = my_gbm.predict_leaf_node_assignment(train)
   ln.describe()
+  lnids = my_gbm.predict_leaf_node_assignment(train, type="Node_ID")
+  lnids.describe()
 
   my_gbm_metrics = my_gbm.model_performance(train)
   my_gbm_metrics.show()

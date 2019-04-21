@@ -12,22 +12,22 @@
 #' If the test dataset has missing values, then those predictors are omitted in the probability
 #' calculation during prediction.
 #' 
-#' @param x A vector containing the names or indices of the predictor variables to use in building the model.
-#'        If x is missing,then all columns except y are used.
-#' @param y The name of the response variable in the model.If the data does not contain a header, this is the first column
-#'        index, and increasing from left to right. (The response must be either an integer or a
-#'        categorical variable).
+#' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
+#'        If x is missing, then all columns except y are used.
+#' @param y The name or column index of the response variable in the data. The response must be either a numeric or a
+#'        categorical/factor variable. If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
 #' @param model_id Destination id for this model; auto-generated if not specified.
-#' @param nfolds Number of folds for N-fold cross-validation (0 to disable or >= 2). Defaults to 0.
+#' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
 #'        Defaults to -1 (time-based random number).
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will
 #'        stratify the folds based on the response variable, for classification problems. Must be one of: "AUTO",
 #'        "Random", "Modulo", "Stratified". Defaults to AUTO.
 #' @param fold_column Column with cross-validation fold index assignment per observation.
+#' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to TRUE.
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to FALSE.
 #' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to FALSE.
-#' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
+#' @param training_frame Id of the training data frame.
 #' @param validation_frame Id of the validation data frame.
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
@@ -50,6 +50,7 @@
 #' @param eps_prob Cutoff below which probability is replaced with min_prob.
 #' @param compute_metrics \code{Logical}. Compute metrics on training data Defaults to TRUE.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
+#' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @details The naive Bayes classifier assumes independence between predictor variables conditional         on the
 #'          response, and a Gaussian distribution of numeric predictors with mean and standard         deviation
 #'          computed from the training dataset. When building a naive Bayes classifier,         every row in the
@@ -60,9 +61,9 @@
 #' @examples
 #' \donttest{
 #' h2o.init()
-#' votesPath <- system.file("extdata", "housevotes.csv", package="h2o")
-#' votes.hex <- h2o.uploadFile(path = votesPath, header = TRUE)
-#' h2o.naiveBayes(x = 2:17, y = 1, training_frame = votes.hex, laplace = 3)
+#' votes_path <- system.file("extdata", "housevotes.csv", package = "h2o")
+#' votes <- h2o.uploadFile(path = votes_path, header = TRUE)
+#' h2o.naiveBayes(x = 2:17, y = 1, training_frame = votes, laplace = 3)
 #' }
 #' @export
 h2o.naiveBayes <- function(x, y, training_frame,
@@ -71,6 +72,7 @@ h2o.naiveBayes <- function(x, y, training_frame,
                            seed = -1,
                            fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
                            fold_column = NULL,
+                           keep_cross_validation_models = TRUE,
                            keep_cross_validation_predictions = FALSE,
                            keep_cross_validation_fold_assignment = FALSE,
                            validation_frame = NULL,
@@ -88,22 +90,23 @@ h2o.naiveBayes <- function(x, y, training_frame,
                            min_prob = 0.001,
                            eps_prob = 0,
                            compute_metrics = TRUE,
-                           max_runtime_secs = 0
+                           max_runtime_secs = 0,
+                           export_checkpoints_dir = NULL
                            ) 
 {
-  #If x is missing, then assume user wants to use all columns as features.
-  if(missing(x)){
-     if(is.numeric(y)){
-         x <- setdiff(col(training_frame),y)
-     }else{
-         x <- setdiff(colnames(training_frame),y)
+  # If x is missing, then assume user wants to use all columns as features.
+  if (missing(x)) {
+     if (is.numeric(y)) {
+         x <- setdiff(col(training_frame), y)
+     } else {
+         x <- setdiff(colnames(training_frame), y)
      }
   }
  .naivebayes.map <- c("x" = "ignored_columns", "y" = "response_column", 
                           "threshold" = "min_sdev", "eps" = "eps_sdev")
 
   # Required args: training_frame
-  if( missing(training_frame) ) stop("argument 'training_frame' is missing, with no default")
+  if (missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
   # Training_frame must be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
      tryCatch(training_frame <- h2o.getFrame(training_frame),
@@ -136,6 +139,8 @@ h2o.naiveBayes <- function(x, y, training_frame,
     parms$fold_assignment <- fold_assignment
   if (!missing(fold_column))
     parms$fold_column <- fold_column
+  if (!missing(keep_cross_validation_models))
+    parms$keep_cross_validation_models <- keep_cross_validation_models
   if (!missing(keep_cross_validation_predictions))
     parms$keep_cross_validation_predictions <- keep_cross_validation_predictions
   if (!missing(keep_cross_validation_fold_assignment))
@@ -174,6 +179,8 @@ h2o.naiveBayes <- function(x, y, training_frame,
     parms$compute_metrics <- compute_metrics
   if (!missing(max_runtime_secs))
     parms$max_runtime_secs <- max_runtime_secs
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
   # Error check and build model
-  .h2o.modelJob('naivebayes', parms, h2oRestApiVersion=3) 
+  .h2o.modelJob('naivebayes', parms, h2oRestApiVersion = 3) 
 }

@@ -1,12 +1,12 @@
 package water;
 
+import hex.tree.isofor.IsolationForest;
+import hex.tree.isofor.IsolationForestModel;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 
 import hex.Model;
@@ -20,6 +20,8 @@ import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import water.fvec.Frame;
+import water.util.ArrayUtils;
+import water.util.Log;
 
 import static org.junit.Assert.assertArrayEquals;
 
@@ -113,6 +115,24 @@ public class ModelSerializationTest extends TestUtil {
   }
 
   @Test
+  public void testIsolationForestModel() throws IOException {
+    IsolationForestModel model = null, loadedModel = null;
+    try {
+      model = prepareIsoForModel("smalldata/logreg/prostate.csv", ar("ID", "CAPSULE"), 5);
+      CompressedTree[][] trees = getTrees(model);
+      loadedModel = saveAndLoad(model);
+      // And compare
+      assertModelBinaryEquals(model, loadedModel);
+      CompressedTree[][] loadedTrees = getTrees(loadedModel);
+      assertTreeEquals("Trees have to be binary same", trees, loadedTrees);
+    } finally {
+      if (model!=null) model.delete();
+      if (loadedModel!=null) loadedModel.delete();
+    }
+  }
+
+
+  @Test
   public void testGLMModel() throws IOException {
     GLMModel model, loadedModel = null;
     try {
@@ -162,6 +182,20 @@ public class ModelSerializationTest extends TestUtil {
     }
   }
 
+  private IsolationForestModel prepareIsoForModel(String dataset, String[] ignoredColumns, int ntrees) {
+    Frame f = parse_test_file(dataset);
+    try {
+      IsolationForestModel.IsolationForestParameters ifParams = new IsolationForestModel.IsolationForestParameters();
+      ifParams._train = f._key;
+      ifParams._ignored_columns = ignoredColumns;
+      ifParams._ntrees = ntrees;
+      ifParams._score_each_iteration = true;
+      return new IsolationForest(ifParams).trainModel().get();
+    } finally {
+      if (f!=null) f.delete();
+    }
+  }
+
   private GLMModel prepareGLMModel(String dataset, String[] ignoredColumns, String response, GLMModel.GLMParameters.Family family) {
     Frame f = parse_test_file(dataset);
     try {
@@ -198,16 +232,16 @@ public class ModelSerializationTest extends TestUtil {
     return saveAndLoad(model,true);
   }
   // Serialize to and from a file
-  private <M extends Model> M saveAndLoad(M model, boolean deleteModel) throws IOException {
+  private <M extends Model<?, ?, ?>> M saveAndLoad(M model, boolean deleteModel) throws IOException {
     File file = File.createTempFile(model.getClass().getSimpleName(),null);
     try {
-      model.writeAll(new AutoBuffer(new FileOutputStream(file),true)).close();
+      String path = file.getAbsolutePath();
+      model.exportBinaryModel(path, true);
       if( deleteModel ) model.delete();
-      final AutoBuffer ab = new AutoBuffer(new FileInputStream(file));
-      ab.sourceName = file.getAbsolutePath();
-      return (M)Keyed.readAll(ab);
+      return Model.importBinaryModel(path);
     } finally {
-      file.delete();
+      if (! file.delete())
+        Log.err("Temporary file " + file + " was not deleted.");
     }
   }
 

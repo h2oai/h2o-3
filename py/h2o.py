@@ -616,17 +616,18 @@ class H2O(object):
     dict will also contain a "models" list.
     '''
     def frames(self, key=None, timeoutSecs=10, **kwargs):
+
         params_dict = {
             'find_compatible_models': 0,
             'row_offset': 0,
             'row_count': 100
         }
         h2o_test_utils.check_params_update_kwargs(params_dict, kwargs, 'frames', H2O.verbose)
-
         if key:
             result = self.__do_json_request('/3/Frames/' + key, timeout=timeoutSecs, params=params_dict)
         else:
-            result = self.__do_json_request('/3/Frames', timeout=timeoutSecs, params=params_dict)
+            # We just list frames, don't pass any parameters
+            result = self.__do_json_request('/3/Frames', timeout=timeoutSecs)
         return result
 
 

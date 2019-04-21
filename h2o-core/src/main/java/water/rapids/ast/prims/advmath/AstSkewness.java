@@ -30,11 +30,12 @@ public class AstSkewness extends AstPrimitive {
         double[] ds = new double[fr.numCols()];
         Vec[] vecs = fr.vecs();
         for (int i = 0; i < fr.numCols(); i++)
-            ds[i] = (!vecs[i].isNumeric() || vecs[i].length() == 0 || (!narm && vecs[i].naCnt() > 0)) ? Double.NaN : skewness(vecs[i]);
+            ds[i] = skewness(vecs[i], narm);
         return new ValNums(ds);
     }
 
-    public static double skewness(Vec v) {
-        return AstHist.third_moment(v);
+    public static double skewness(Vec v, boolean narm) {
+        return !v.isNumeric() || v.length() == 0 || (!narm && v.naCnt() > 0) ?
+                Double.NaN : AstHist.third_moment(v);
     }
 }

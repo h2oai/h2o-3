@@ -19,30 +19,30 @@ The data are composed of 210 observations, 7 attributes, and an a priori groupin
 If you don't have any data of your own to work with, you can find some example datasets at <a href="http://data.h2o.ai" target="_blank">http://data.h2o.ai</a>.
 
 
-####Importing Data
+#### Importing Data
 Before creating a model, import data into H2O:
 
-0. Click the **Assist Me!** button (the last button in the row of buttons below the menus). 
+1. Click the **Assist Me!** button (the last button in the row of buttons below the menus). 
 
  ![Assist Me button](../images/Flow_AssistMeButton.png)
 
-0. Click the **importFiles** link and enter the file path to the dataset in the **Search** entry field. 
-0. Click the **Add all** link to add the file to the import queue, then click the **Import** button. 
+2. Click the **importFiles** link and enter the file path to the dataset in the **Search** entry field. 
+3. Click the **Add all** link to add the file to the import queue, then click the **Import** button. 
   ![Importing Files](../images/KM_ImportFile.png)
 
 
-####Parsing Data
+#### Parsing Data
 Now, parse the imported data: 
 
-0. Click the **Parse these files...** button. 
+1. Click the **Parse these files...** button. 
 
    >**Note**: The default options typically do not need to be changed unless the data does not parse correctly. 
 
-0. From the drop-down **Parser** list, select the file type of the data set (Auto, XLS, CSV, or SVMLight). 
-0. If the data uses a separator, select it from the drop-down **Separator** list. 
-0. If the data uses a column header as the first row, select the **First row contains column names** radio button. If the first row contains data, select the **First row contains data** radio button. You can also select the **Auto** radio button to have H2O automatically determine if the first row of the dataset contains the column names or data. 
-0. If the data uses apostrophes ( `'` - also known as single quotes), check the **Enable single quotes as a field quotation character** checkbox. 
-0. Review the data in the **Edit Column Names and Types** section, then click the **Parse** button.  
+2. From the drop-down **Parser** list, select the file type of the data set (Auto, XLS, CSV, or SVMLight). 
+3. If the data uses a separator, select it from the drop-down **Separator** list. 
+4. If the data uses a column header as the first row, select the **First row contains column names** radio button. If the first row contains data, select the **First row contains data** radio button. You can also select the **Auto** radio button to have H2O automatically determine if the first row of the dataset contains the column names or data. 
+5. If the data uses apostrophes ( `'` - also known as single quotes), check the **Enable single quotes as a field quotation character** checkbox. 
+6. Review the data in the **Edit Column Names and Types** section, then click the **Parse** button.  
 
   ![Parsing Data](../images/KM_Parse.png)
 
@@ -52,13 +52,13 @@ Now, parse the imported data:
 
 ### Building a Model
 
-0. Once data are parsed, click the **View** button, then click the **Build Model** button. 
-0. Select `K-means` from the drop-down **Select an algorithm** menu, then click the **Build model** button. 
-0. If the parsed seeds_dataset.hex file is not already listed in the **Training_frame** drop-down list, select it. Otherwise, continue to the next step. 
-0. From the **Ignored_columns** section, select the columns to ignore in the *Available* area to move them to the *Selected* area. For this example, select column 8 (the a priori known clusters for this dataset). 
-0. In the **K** field, specify the number of clusters. For this example, enter `3`.  
-0. In the **Max_iterations** field, specify the maximum number of iterations. For this example, enter `100`. 
-0. From the drop-down **Init** menu, select the initialization mode. For this example, select **PlusPlus**. 
+1. Once data are parsed, click the **View** button, then click the **Build Model** button. 
+2. Select `K-means` from the drop-down **Select an algorithm** menu, then click the **Build model** button. 
+3. If the parsed seeds_dataset.hex file is not already listed in the **Training_frame** drop-down list, select it. Otherwise, continue to the next step. 
+4. From the **Ignored_columns** section, select the columns to ignore in the *Available* area to move them to the *Selected* area. For this example, select column 8 (the a priori known clusters for this dataset). 
+5. In the **K** field, specify the number of clusters. For this example, enter `3`.  
+6. In the **Max_iterations** field, specify the maximum number of iterations. For this example, enter `100`. 
+7. From the drop-down **Init** menu, select the initialization mode. For this example, select **PlusPlus**. 
    - Random initialization randomly samples the `k`-specified value of the rows of the training data as cluster centers. 
    - PlusPlus initialization chooses one initial center at random and weights the random selection of subsequent centers so that points furthest from the first center are more likely to be chosen. 
    - Furthest initialization chooses one initial center at random and then chooses the next center to be the point furthest away in terms of Euclidean distance. 
@@ -66,8 +66,8 @@ Now, parse the imported data:
    
      **Note**: The user-specified points dataset must have the same number of columns as the training dataset.  
 
-0. Uncheck the **Standardize** checkbox to disable column standardization. 
-0. Click the **Build Model** button. 
+8. Uncheck the **Standardize** checkbox to disable column standardization. 
+9. Click the **Build Model** button. 
 
   ![K-Means Model Builder cell](../images/Kmeans_BuildModel.png)
 

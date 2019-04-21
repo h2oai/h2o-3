@@ -14,10 +14,18 @@ import itertools
 import os
 import re
 import sys
+import zipfile
+import io
+import string
+import subprocess
+import csv
+import shutil
+import tempfile
 
 from h2o.exceptions import H2OValueError
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import assert_is_type, is_type, numeric
+from h2o.backend.server import H2OLocalServer
 
 _id_ctr = 0
 
@@ -25,6 +33,8 @@ _id_ctr = 0
 # only contain characters allowed within the "segment" part of the URL (see RFC 3986). Additionally, we
 # forbid all characters that are declared as "illegal" in Key.java.
 _id_allowed_characters = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
+
+__all__ = ('mojo_predict_csv', 'mojo_predict_pandas')
 
 
 def _py_tmp_key(append):
@@ -99,7 +109,7 @@ def _gen_header(cols):
 def _check_lists_of_lists(python_obj):
     # check we have a lists of flat lists
     # returns longest length of sublist
-    most_cols = 0
+    most_cols = 1
     for l in python_obj:
         # All items in the list must be a list!
         if not isinstance(l, (tuple, list)):
@@ -133,10 +143,19 @@ def _handle_python_lists(python_obj, check_header):
     return header, python_obj
 
 
+def stringify_dict(d):
+    return stringify_list(["{'key': %s, 'value': %s}" % (_quoted(k), v) for k, v in d.items()])
+
+
 def stringify_list(arr):
-    return "[%s]" % ",".join(stringify_list(item) if isinstance(item, list) else str(item)
+    return "[%s]" % ",".join(stringify_list(item) if isinstance(item, list) else _str(item)
                              for item in arr)
 
+def _str(item):
+    return _str_tuple(item) if isinstance(item, tuple) else str(item)
+
+def _str_tuple(t):
+    return "{%s}" % ",".join(["%s: %s" % (ti[0], str(ti[1])) for ti in zip(list(string.ascii_lowercase), t)])
 
 def _is_list(l):
     return isinstance(l, (tuple, list))
@@ -159,11 +178,11 @@ def _handle_numpy_array(python_obj, header):
 
 
 def _handle_pandas_data_frame(python_obj, header):
-    data = _handle_python_lists(python_obj.as_matrix().tolist(), -1)[1]
+    data = _handle_python_lists(python_obj.values.tolist(), -1)[1]
     return list(python_obj.columns), data
 
 def _handle_python_dicts(python_obj, check_header):
-    header = list(python_obj.keys())
+    header = list(python_obj.keys()) if python_obj else _gen_header(1)
     is_valid = all(re.match(r"^[a-zA-Z_][a-zA-Z0-9_.]*$", col) for col in header)  # is this a valid header?
     if not is_valid:
         raise ValueError(
@@ -353,6 +372,124 @@ is_str_list = _is_str_list
 handle_python_lists = _handle_python_lists
 check_lists_of_lists = _check_lists_of_lists
 
+gen_model_file_name = "h2o-genmodel.jar"
+h2o_predictor_class = "hex.genmodel.tools.PredictCsv"
+
+
+def mojo_predict_pandas(dataframe, mojo_zip_path, genmodel_jar_path=None, classpath=None, java_options=None, verbose=False):
+    """
+    MOJO scoring function to take a Pandas frame and use MOJO model as zip file to score.
+
+    :param dataframe: Pandas frame to score.
+    :param mojo_zip_path: Path to MOJO zip downloaded from H2O.
+    :param genmodel_jar_path: Optional, path to genmodel jar file. If None (default) then the h2o-genmodel.jar in the same
+        folder as the MOJO zip will be used.
+    :param classpath: Optional, specifies custom user defined classpath which will be used when scoring. If None
+        (default) then the default classpath for this MOJO model will be used.
+    :param java_options: Optional, custom user defined options for Java. By default ``-Xmx4g`` is used.
+    :param verbose: Optional, if True, then additional debug information will be printed. False by default.
+    :return: Pandas frame with predictions
+    """
+    tmp_dir = tempfile.mkdtemp()
+    try:
+        if not can_use_pandas():
+            raise RuntimeException('Cannot import pandas')
+        import pandas
+        assert_is_type(dataframe, pandas.DataFrame)
+        input_csv_path = os.path.join(tmp_dir, 'input.csv')
+        prediction_csv_path = os.path.join(tmp_dir, 'prediction.csv')
+        dataframe.to_csv(input_csv_path)
+        mojo_predict_csv(input_csv_path=input_csv_path, mojo_zip_path=mojo_zip_path,
+                         output_csv_path=prediction_csv_path, genmodel_jar_path=genmodel_jar_path,
+                         classpath=classpath, java_options=java_options, verbose=verbose)
+        return pandas.read_csv(prediction_csv_path)
+    finally:
+        shutil.rmtree(tmp_dir)
+
+
+def mojo_predict_csv(input_csv_path, mojo_zip_path, output_csv_path=None, genmodel_jar_path=None, classpath=None, java_options=None, verbose=False):
+    """
+    MOJO scoring function to take a CSV file and use MOJO model as zip file to score.
+
+    :param input_csv_path: Path to input CSV file.
+    :param mojo_zip_path: Path to MOJO zip downloaded from H2O.
+    :param output_csv_path: Optional, name of the output CSV file with computed predictions. If None (default), then
+        predictions will be saved as prediction.csv in the same folder as the MOJO zip.
+    :param genmodel_jar_path: Optional, path to genmodel jar file. If None (default) then the h2o-genmodel.jar in the same
+        folder as the MOJO zip will be used.
+    :param classpath: Optional, specifies custom user defined classpath which will be used when scoring. If None
+        (default) then the default classpath for this MOJO model will be used.
+    :param java_options: Optional, custom user defined options for Java. By default ``-Xmx4g -XX:ReservedCodeCacheSize=256m`` is used.
+    :param verbose: Optional, if True, then additional debug information will be printed. False by default.
+    :return: List of computed predictions
+    """
+    default_java_options = '-Xmx4g -XX:ReservedCodeCacheSize=256m'
+    prediction_output_file = 'prediction.csv'
+
+    # Checking java
+    java = H2OLocalServer._find_java()
+    H2OLocalServer._check_java(java=java, verbose=verbose)
+
+    # Ensure input_csv exists
+    if verbose:
+        print("input_csv:\t%s" % input_csv_path)
+    if not os.path.isfile(input_csv_path):
+        raise RuntimeError("Input csv cannot be found at %s" % input_csv_path)
+
+    # Ensure mojo_zip exists
+    mojo_zip_path = os.path.abspath(mojo_zip_path)
+    if verbose:
+        print("mojo_zip:\t%s" % mojo_zip_path)
+    if not os.path.isfile(mojo_zip_path):
+        raise RuntimeError("MOJO zip cannot be found at %s" % mojo_zip_path)
+
+    parent_dir = os.path.dirname(mojo_zip_path)
+
+    # Set output_csv if necessary
+    if output_csv_path is None:
+        output_csv_path = os.path.join(parent_dir, prediction_output_file)
+
+    # Set path to h2o-genmodel.jar if necessary and check it's valid
+    if genmodel_jar_path is None:
+        genmodel_jar_path = os.path.join(parent_dir, gen_model_file_name)
+    if verbose:
+        print("genmodel_jar:\t%s" % genmodel_jar_path)
+    if not os.path.isfile(genmodel_jar_path):
+        raise RuntimeError("Genmodel jar cannot be found at %s" % genmodel_jar_path)
+
+    if verbose and output_csv_path is not None:
+        print("output_csv:\t%s" % output_csv_path)
+
+    # Set classpath if necessary
+    if classpath is None:
+        classpath = genmodel_jar_path
+    if verbose:
+        print("classpath:\t%s" % classpath)
+
+    # Set java_options if necessary
+    if java_options is None:
+        java_options = default_java_options
+    if verbose:
+        print("java_options:\t%s" % java_options)
+
+    # Construct command to invoke java
+    cmd = [java]
+    for option in java_options.split(' '):
+        cmd += [option]
+    cmd += ["-cp", classpath, h2o_predictor_class, "--mojo", mojo_zip_path, "--input", input_csv_path,
+            '--output', output_csv_path, '--decimal']
+    if verbose:
+        cmd_str = " ".join(cmd)
+        print("java cmd:\t%s" % cmd_str)
+
+    # invoke the command
+    subprocess.check_call(cmd, shell=False)
+
+    # load predictions in form of a dict
+    with open(output_csv_path) as csv_file:
+        result = list(csv.DictReader(csv_file))
+    return result
+
 
 def deprecated(message):
     """The decorator to mark deprecated functions."""
@@ -375,3 +512,31 @@ def deprecated(message):
         return decorator_invisible
 
     return deprecated_decorator
+
+
+class InMemoryZipArch(object):
+    def __init__(self, file_name = None, compression = zipfile.ZIP_DEFLATED):
+        self._data = io.BytesIO()
+        self._arch = zipfile.ZipFile(self._data, "w", compression, False)
+        self._file_name = file_name
+
+    def append(self, filename_in_zip, file_contents):
+        self._arch.writestr(filename_in_zip, file_contents)
+        return self
+
+    def write_to_file(self, filename):
+        # Mark the files as having been created on Windows so that
+        # Unix permissions are not inferred as 0000
+        for zfile in self._arch.filelist:
+            zfile.create_system = 0
+        self._arch.close()
+        with open(filename, 'wb') as f:
+            f.write(self._data.getvalue())
+
+    def __enter__(self):
+            return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self._file_name is None:
+            return
+        self.write_to_file(self._file_name)

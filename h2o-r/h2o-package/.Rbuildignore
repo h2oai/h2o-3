@@ -2,3 +2,11 @@
 ^\.Rproj\.user$
 ^.*\.tar\.gz$
 render-h2o.sh
+^docs/
+^images/
+^internal/
+^man-roxygen/
+^scripts/
+^index.*$
+^pkgdown$
+^vignettes/

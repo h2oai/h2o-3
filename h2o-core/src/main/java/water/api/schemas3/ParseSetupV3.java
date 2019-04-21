@@ -33,6 +33,9 @@ public class ParseSetupV3 extends RequestSchemaV3<ParseSetup, ParseSetupV3> {
   @API(help="Column names", direction=API.Direction.INOUT)
   public String[] column_names = null;
 
+  @API(help="Skipped columns indices", direction=API.Direction.INOUT)
+  public int[] skipped_columns = null;
+
   @API(help="Value types for columns", direction=API.Direction.INOUT)
   public String[] column_types = null;
 
@@ -69,6 +72,12 @@ public class ParseSetupV3 extends RequestSchemaV3<ParseSetup, ParseSetupV3> {
 
   @API(help="Total number of columns we would return with no column pagination", direction=API.Direction.INOUT)
   public int total_filtered_column_count;
+
+  @API(help="Custom characters to be treated as non-data line markers", direction=API.Direction.INOUT)
+  public String custom_non_data_line_markers;
+
+  @API(help="Key-reference to an initialized instance of a Decryption Tool")
+  public KeyV3.DecryptionToolKeyV3 decrypt_tool;
 
   @Override
   public ParseSetup fillImpl(ParseSetup impl) {

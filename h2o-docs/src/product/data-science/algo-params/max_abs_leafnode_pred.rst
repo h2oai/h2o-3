@@ -1,7 +1,7 @@
 ``max_abs_leafnode_pred``
 -------------------------
 
-- Available in: GBM
+- Available in: GBM, XGBoost
 - Hyperparameter: yes
 
 Description

@@ -174,6 +174,8 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   public  final static byte HDFS= 2<<0; // HDFS: backed by Hadoop cluster
   public  final static byte S3  = 3<<0; // Amazon S3
   public  final static byte NFS = 4<<0; // NFS: Standard file system
+  public  final static byte GCS = 5<<0; // Google Cloud Storage
+  public  final static byte HTTP= 6<<0; // HTTP/HTTPS data source (that accepts byte ranges, "Accept-Ranges: bytes")
   public  final static byte TCP = 7<<0; // TCP: For profile purposes, not a storage system
   private final static byte BACKEND_MASK = (8-1);
   final byte backend() { return (byte)(_persist&BACKEND_MASK); }
@@ -181,6 +183,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   private boolean onHDFS(){ return (backend()) == HDFS; }
   private boolean onNFS (){ return (backend()) ==  NFS; }
   private boolean onS3  (){ return (backend()) ==   S3; }
+  private boolean onGCS (){ return (backend()) ==  GCS; }
 
  // Manipulate the on-disk bit
   private final static byte NOTdsk = 0<<3; // latest _mem is persisted or not
@@ -242,7 +245,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   }
 
   String nameOfPersist() { return nameOfPersist(backend()); }
-  /** One of ICE, HDFS, S3, NFS or TCP, according to where this Value is persisted.
+  /** One of ICE, HDFS, S3, GCS, NFS or TCP, according to where this Value is persisted.
    *  @return Short String of the persitance name */
   public static String nameOfPersist(int x) {
     switch( x ) {
@@ -251,13 +254,14 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     case S3  : return "S3";
     case NFS : return "NFS";
     case TCP : return "TCP";
+    case GCS : return "GCS";
     default  : return null;
     }
   }
 
   /** Check if the Value's POJO is a subtype of given type integer.  Does not require the POJO.
    *  @return True if the Value's POJO is a subtype. */
-  public static boolean isSubclassOf(int type, Class clz) { return clz.isAssignableFrom(TypeMap.theFreezable(type).getClass()); }
+  public static boolean isSubclassOf(int type, Class clz) { return type != TypeMap.PRIM_B && clz.isAssignableFrom(TypeMap.theFreezable(type).getClass()); }
 
   /** Check if the Value's POJO is a {@link Key} subtype.  Does not require the POJO.
    *  @return True if the Value's POJO is a {@link Key} subtype. */
@@ -276,7 +280,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   public boolean isLockable() { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof Lockable; }
   /** Check if the Value's POJO is a {@link Vec} subtype.  Does not require the POJO.
    *  @return True if the Value's POJO is a {@link Vec} subtype. */
-  public boolean isVec()      { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof Vec; }
+  public boolean isVec() { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof Vec; }
   /** Check if the Value's POJO is a {@link hex.Model} subtype.  Does not require the POJO.
    *  @return True if the Value's POJO is a {@link hex.Model} subtype. */
   public boolean isModel()    { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof hex.Model; }
@@ -308,7 +312,9 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     _rwlock = new AtomicInteger(1);
     _replicas = null;
   }
-  Value(Key k, byte[] mem ) { this(k, mem.length, mem, TypeMap.PRIM_B, ICE); }
+  // ---
+  public Value(Key k, byte[] mem ) { this(k, mem.length, mem, TypeMap.PRIM_B, ICE); }
+  // ---
   Value(Key k, String s ) { this(k, StringUtils.bytesOf(s)); }
   Value(Key k, Iced pojo ) { this(k,pojo,ICE); }
   Value(Key k, Iced pojo, byte be ) {

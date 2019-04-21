@@ -57,6 +57,10 @@ H2O allows you to convert the models you have built to a
 POJOs allow users to build a model using H2O and then deploy the model to score in real-time.
 
 <p></p>
+
+<b>Note:</b> POJOs are not supported for XGBoost, GLRM, or Stacked Ensembles models.
+
+<p></p>
 <!-- ============================================================ -->
 <!-- ============================================================ -->
 <br>
@@ -154,7 +158,12 @@ public class main {
 <h3>Step 5 (in terminal window 2): Compile and Run</h3>
 <pre>
 $ javac -cp h2o-genmodel.jar -J-Xmx2g -J-XX:MaxPermSize=128m gbm_pojo_test.java main.java
+
+# Linux and OS X users
 $ java -cp .:h2o-genmodel.jar main
+
+# Windows users
+$ java -cp .;h2o-genmodel.jar main
 </pre>
 
 The following output displays:
@@ -189,10 +198,10 @@ corresponding POJO from an R script:
 {@code
 library(h2o)
 h2o.init()
-path = system.file("extdata", "prostate.csv", package = "h2o")
-h2o_df = h2o.importFile(path)
-h2o_df$CAPSULE = as.factor(h2o_df$CAPSULE)
-model = h2o.glm(y = "CAPSULE",
+path <- system.file("extdata", "prostate.csv", package = "h2o")
+h2o_df <- h2o.importFile(path)
+h2o_df$CAPSULE <- as.factor(h2o_df$CAPSULE)
+model <- h2o.glm(y = "CAPSULE",
                 x = c("AGE", "RACE", "PSA", "GLEASON"),
                 training_frame = h2o_df,
                 family = "binomial")
@@ -302,7 +311,11 @@ A MOJO (Model Object, Optimized) is an alternative to H2O's currently available 
 POJOs, H2O allows you to convert models that you build to MOJOs, which can then be deployed
 for scoring in real time.
 <p></p>
-<b>Note</b>: MOJOs are supported for DRF, GBM, GLM, and K-Means algorithms only.
+<b>Notes</b>: 
+<ul>
+<li>MOJOs are supported for AutoML, Deep Learning, DRF, GBM, GLM, GLRM, K-Means, Stacked Ensembles, SVM, Word2vec, and XGBoost algorithms.</li>
+<li>MOJOs are only supported for encodings that are either default or Enum.</li>
+</ul>
 
 <h3><u>Benefit of MOJOs over POJOs</u></h3>
 <p></p>
@@ -313,8 +326,9 @@ generic tree-walker code to navigate the model. The resulting executable is much
 faster than a POJO.
 <p></p>
 At large scale, new models are roughly 20-25 times smaller in disk space, 2-3 times faster
-during "hot" scoring, and 10-40 times faster in "cold" scoring compared to POJOs. These efficiency
-gains are larger the bigger the size of the model.
+during "hot" scoring (after JVM is able to optimize the typical execution paths), and 10-40 times
+faster in "cold" scoring (when JVM doesn't know yet know the execution paths) compared to POJOs.
+These efficiency gains are larger the bigger the size of the model.
 <p></p>
 H2O conducted in-house testing using models with 5000 trees of depth 25. At very small scale
 (50 trees / 5 depth), POJOs were found to perform approximately 10% faster than MOJOs for binomial
@@ -344,17 +358,15 @@ tree built in the model. Note that each tree file is saved as a binary file type
 
 <h5>Build and extract a model using R</h5>
 
-MOJOs are only supported for GBM, DRF, and GLM models.
-
 <ol><li>Open a terminal window and start r.</li>
     <li>Run the following commands to build a simple GBM model.
         <pre>
         library(h2o)
         h2o.init(nthreads=-1)
-        path = system.file("extdata", "prostate.csv", package="h2o")
-        h2o_df = h2o.importFile(path)
-        h2o_df$RACE = as.factor(h2o_df$RACE)
-        model = h2o.gbm(y="CAPSULE",
+        path <- system.file("extdata", "prostate.csv", package="h2o")
+        h2o_df <- h2o.importFile(path)
+        h2o_df$CAPSULE <- as.factor(h2o_df$CAPSULE)
+        model <- h2o.gbm(y="CAPSULE",
                         x=c("AGE", "RACE", "PSA", "GLEASON"),
                         training_frame=h2o_df,
                         distribution="bernoulli",
@@ -363,9 +375,9 @@ MOJOs are only supported for GBM, DRF, and GLM models.
                         learn_rate=0.1)
         </pre>
     </li>
-    <li>Download the MOJO and the resulting h2o-genmodel.jar file to a new **experiment** folder.
-        <pre>modelfile = model.download_mojo(path="~/experiment/", get_genmodel_jar=True)
-		print("Model saved to " + modelfile)
+    <li>Download the MOJO and the resulting h2o-genmodel.jar file to a new <b>experiment</b> folder. Be sure to specify the entire path for the MOJO, not just the relative path.
+        <pre>modelfile <- h2o.download_mojo(model, path="~/experiments/", get_genmodel_jar=TRUE)
+		print("Model saved to " + modelfile) 
 		Model saved to /Users/user/GBM_model_R_1475248925871_74.zip"
         </pre>
     </li>
@@ -391,7 +403,7 @@ MOJOs are only supported for GBM, DRF, and GLM models.
         </pre>
     </li>
     <li>
-        Download the MOJO and the resulting h2o-genmodel.jar file to a new **experiment** folder.
+        Download the MOJO and the resulting h2o-genmodel.jar file to a new <b>experiment</b> folder. Be sure to specify the entire path for the MOJO, not just the relative path.
         <pre>
         modelfile = model.download_mojo(path="~/experiment/", get_genmodel_jar=True)
 		print("Model saved to " + modelfile)
@@ -405,13 +417,13 @@ MOJOs are only supported for GBM, DRF, and GLM models.
 <p></p>
 
 <ol>
-    <li>Open a *new* terminal window and change directories to the **experiment** folder:
+    <li>Open a *new* terminal window and change directories to the <b>experiment</b> folder:
         <pre>
         $ cd experiment
         </pre>
     </li>
 
-    <li>Create your main program in the **experiment** folder by creating a new file
+    <li>Create your main program in the <b>experiment</b> folder by creating a new file
         called main.java (for example, using "vim main.java"). Include the following contents.
         Note that this file references the GBM model created above using R.
         <pre>
@@ -445,12 +457,67 @@ MOJOs are only supported for GBM, DRF, and GLM models.
           }
         }
         </pre>
+
+        GBM and DRF return classProbabilities, but not all MOJOs will return a classProbabilities field. Refer to the ModelPrediction definition for each
+        algorithm to find the correct field(s) to access. This is available in the H2O-3 GitHub repo at:
+        <a href="https://github.com/h2oai/h2o-3/tree/master/h2o-genmodel/src/main/java/hex/genmodel/easy/prediction" target="_blank">
+            https://github.com/h2oai/h2o-3/tree/master/h2o-genmodel/src/main/java/hex/genmodel/easy/prediction</a>.
+
+        <p />
+
+        In addition to classProbabilities, in GBM and DRF you can also choose to generate the leafNodeAssignments field, which will show the decision path through each tree. Note that this may slow down the MOJO as it adds computation. Below is the Java code showing how return the leaf node assignment:
+
+        <pre>
+         import java.io.*;
+         import hex.genmodel.easy.RowData;
+         import hex.genmodel.easy.EasyPredictModelWrapper;
+         import hex.genmodel.easy.prediction.*;
+         import hex.genmodel.MojoModel;
+
+         public class main {
+           public static void main(String[] args) throws Exception {
+             EasyPredictModelWrapper.Config config = new EasyPredictModelWrapper.Config().setModel(MojoModel.load("GBM_model_R_1475248925871_74.zip")).setEnableLeafAssignment(true);
+             EasyPredictModelWrapper model = new EasyPredictModelWrapper(config);
+
+             RowData row = new RowData();
+             row.put("AGE", "68");
+             row.put("RACE", "2");
+             row.put("DCAPS", "2");
+             row.put("VOL", "0");
+             row.put("GLEASON", "6");
+
+             BinomialModelPrediction p = model.predictBinomial(row);
+             System.out.println("Has penetrated the prostatic capsule (1=yes; 0=no): " + p.label);
+             System.out.print("Class probabilities: ");
+             for (int i = 0; i < p.classProbabilities.length; i++) {
+               if (i > 0) {
+             System.out.print(",");
+               }
+               System.out.print(p.classProbabilities[i]);
+             }
+
+             System.out.println("Leaf node assighnments: ");
+             for (int i=0; i < p.leafNodeAssignments; i++) {
+               if (i > 0) {
+               System.out.print.(p.leafNodeAssignments[i]);
+               }
+             }
+             System.out.println("");
+           }
+         }
+        </pre>    
+        <p></p>
     </li>
     <li>
         Compile and run in terminal window 2.
         <pre>
         $ javac -cp h2o-genmodel.jar -J-Xms2g -J-XX:MaxPermSize=128m main.java
+
+        # Linux and OS X users
         $ java -cp .:h2o-genmodel.jar main
+
+        # Windows users
+        $ java -cp .;h2o-genmodel.jar main
         </pre>
     </li>
 </ol>
@@ -474,12 +541,18 @@ Here is example output for a GBM model:
 
 <h3>From R:</h3>
 The following code snippet shows how to download a MOJO from R and run the PrintMojo tool on
-the command line to make a .png file.
+the command line to make a .png file. To better control the look and feel of your tree, we
+provide two options for PrintMojo. ``--decimalplaces`` (or ``-d``) allows you to control the 
+number of decimal points shown for numbers. ``--fontsize`` (or ``-f``) controls the font size. 
+The default font size is 14. When using this option, be careful not to choose a font size that 
+is so large that you cannot see your whole tree. We recommend using a font size no larger than 
+20.
+
 <pre>
 library(h2o)
 h2o.init()
-df = h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
-model = h2o.gbm(model_id = "model",
+df <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+model <- h2o.gbm(model_id = "model",
                 training_frame = df,
                 x = c("Year", "Month", "DayofMonth", "DayOfWeek", "UniqueCarrier"),
                 y = "IsDepDelayed",
@@ -491,9 +564,33 @@ h2o.download_mojo(model, getwd(), FALSE)
 # and run the PrintMojo tool from the command line.
 #
 # (For MacOS: brew install graphviz)
-# java -cp h2o.jar hex.genmodel.tools.PrintMojo --tree 0 -i model.zip -o model.gv
-# dot -Tpng model.gv -o model.png
-# open model.png
+java -cp h2o.jar hex.genmodel.tools.PrintMojo --tree 0 -i model.zip -o model.gv -f 20 -d 3
+dot -Tpng model.gv -o model.png
+open model.png
+</pre>
+
+<h1><u>Using an XGBoost MOJO with Maven</u></h1>
+If you declare a dependency on h2o-genmodel, then you also have to include the h2o-genmodel-ext-xgboost dependency if you are planning to use XGBoost models. For example:
+<p></p>
+<pre>
+<xmp>
+<groupId>ai.h2o</groupId>
+<artifactId>xgboost-mojo-example</artifactId>
+<version>1.0-SNAPSHOT</version>
+
+<dependencies>
+    <dependency>
+        <groupId>ai.h2o</groupId>
+        <artifactId>h2o-genmodel-ext-xgboost</artifactId>
+        <version>3.20.0.3</version>
+    </dependency>
+    <dependency>
+        <groupId>ai.h2o</groupId>
+        <artifactId>h2o-genmodel</artifactId>
+        <version>3.20.0.3</version>
+    </dependency>
+</dependencies>
+</xmp>
 </pre>
 
 </body>

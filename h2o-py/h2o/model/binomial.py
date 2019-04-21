@@ -453,7 +453,7 @@ class H2OBinomialModel(ModelBase):
         :param bool server: if True, then generate the image inline (using matplotlib's "Agg" backend)
         """
         assert_is_type(metric, "AUTO", "logloss", "auc", "classification_error", "rmse")
-        if self._model_json["algo"] in ("deeplearning", "deepwater", "drf", "gbm"):
+        if self._model_json["algo"] in ("deeplearning", "deepwater", "xgboost", "drf", "gbm"):
             if metric == "AUTO":
                 metric = "logloss"
         self._plot(timestep=timestep, metric=metric, server=server)

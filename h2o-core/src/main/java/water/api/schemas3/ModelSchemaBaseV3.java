@@ -1,5 +1,6 @@
 package water.api.schemas3;
 
+import hex.ModelBuilder;
 import water.api.API;
 import water.api.schemas3.KeyV3.ModelKeyV3;
 import water.api.schemas3.KeyV3.FrameKeyV3;
@@ -36,6 +37,12 @@ public class ModelSchemaBaseV3<M extends hex.Model<M,?,?>, S extends ModelSchema
   @API(help="Timestamp for when this model was completed", direction=API.Direction.OUTPUT)
   public long timestamp;
 
+  @API(help="Indicator, whether export to POJO is available", direction=API.Direction.OUTPUT)
+  public boolean have_pojo;
+
+  @API(help="Indicator, whether export to MOJO is available", direction=API.Direction.OUTPUT)
+  public boolean have_mojo;
+
 
   public ModelSchemaBaseV3() {}
 
@@ -46,5 +53,7 @@ public class ModelSchemaBaseV3<M extends hex.Model<M,?,?>, S extends ModelSchema
     this.data_frame = new FrameKeyV3(m._parms._train);
     this.response_column_name = m._parms._response_column;
     this.timestamp = m._output._job == null?-1:m._output._job.isRunning() ? 0 : m._output._job.end_time();
+    this.have_pojo = ModelBuilder.havePojo(m._parms.algoName());
+    this.have_mojo = ModelBuilder.haveMojo(m._parms.algoName());
   }
 }

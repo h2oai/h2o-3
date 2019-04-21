@@ -24,6 +24,8 @@ class FindHandler extends Handler {
       Vec vec = frame.vec(find.column);
       if( vec==null ) throw new H2OColumnNotFoundArgumentException("column", frame, find.column);
       find.key = new FrameV3(new Frame(new String[]{find.column}, new Vec[]{vec}));
+      // need to update frame variable
+      frame = find.key._fr;
     }
 
     // Convert the search string into a column-specific flavor

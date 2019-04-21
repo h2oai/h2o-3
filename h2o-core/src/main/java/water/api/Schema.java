@@ -118,7 +118,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
     this.fillFromImpl(impl);
   }
 
-  protected void init_meta() {
+  public void init_meta() {
     if (_schema_name != null) return;
     _schema_name = this.getClass().getSimpleName();
     _schema_version = extractVersionFromSchemaName(_schema_name);
@@ -342,6 +342,21 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
   }
 
   /**
+   * Fills this Schema from the body content when available.
+   * By default the body is interpreted as JSON object.
+   *
+   * We use PojoUtils.fillFromJson() rather than just using "schema = Gson.fromJson(post_body)"
+   * so that we have defaults: we only overwrite fields that the client has specified.
+   *
+   * @param body the post body (can't be null), converted to JSON by default
+   * @return the filled schema
+   */
+  public S fillFromBody(String body) {
+    PojoUtils.fillFromJson(this, body);
+    return (S) this;
+  }
+
+  /**
    * Safe method to set the field on given schema object
    * @param o  schema object to modify
    * @param f  field to modify
@@ -423,6 +438,9 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
       E[] a = null;
       // Handle simple case with null-array
       if (s.equals("null") || s.length() == 0) return null;
+      // Handling of "auto-parseable" cases
+      if (AutoParseable.class.isAssignableFrom(afclz))
+        return gson.fromJson(s, fclz);
       // Splitted values
       String[] splits; // "".split(",") => {""} so handle the empty case explicitly
       if (s.startsWith("[") && s.endsWith("]") ) { // It looks like an array
@@ -715,4 +733,10 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
     }
     return builder.stringBuffer();
   }
+
+  /**
+   * This "Marker Interface" denotes classes that can directly be parsed by GSON parser (skip H2O's own parser)
+   */
+  public interface AutoParseable { /* nothing here */}
+
 }

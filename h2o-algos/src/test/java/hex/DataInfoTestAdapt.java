@@ -23,7 +23,7 @@ public class DataInfoTestAdapt extends TestUtil {
     DataInfo dinfo=null, scoreInfo=null;
     Frame fr=null, expanded=null;
     Frame[] frSplits=null, expandSplits=null;
-    String[] interactions = new String[]{"class", "sepal_len"};
+    Model.InteractionSpec interactions = Model.InteractionSpec.allPairwise(new String[]{"class", "sepal_len"});
 
     boolean useAll=false;
     boolean standardize=false;  // golden frame is standardized before splitting, while frame we want to check would be standardized post-split (not exactly what we want!)
@@ -45,7 +45,8 @@ public class DataInfoTestAdapt extends TestUtil {
       dinfo = makeInfo(frSplits[0], interactions, useAll, standardize);
       GLMModel.GLMParameters parms = new GLMModel.GLMParameters();
       parms._response_column = "petal_wid";
-      Model.adaptTestForTrain(frSplits[1],null,null,dinfo._adaptedFrame.names(),dinfo._adaptedFrame.domains(),parms,true,false,interactions,null,null, false);
+      Model.InteractionBuilder interactionBldr = interactionBuilder(dinfo);
+      Model.adaptTestForTrain(frSplits[1],null,null,dinfo._adaptedFrame.names(),dinfo._adaptedFrame.domains(),parms,true,false, interactionBldr,null,null, false);
       scoreInfo = dinfo.scoringInfo(dinfo._adaptedFrame._names,frSplits[1]);
       checkFrame(scoreInfo,expandSplits[1]);
     } finally {
@@ -61,7 +62,7 @@ public class DataInfoTestAdapt extends TestUtil {
     DataInfo dinfo=null, scoreInfo=null;
     Frame frA=null, fr=null, expanded=null;
     Frame[] frSplits=null, expandSplits=null;
-    String[] interactions = new String[]{"CRSDepTime", "Origin"};
+    Model.InteractionSpec interactions = Model.InteractionSpec.allPairwise(new String[]{"CRSDepTime", "Origin"});
 
     String[] keepColumns = new String[]{
             "Year",           "Month"     ,     "DayofMonth" ,    "DayOfWeek",
@@ -90,7 +91,8 @@ public class DataInfoTestAdapt extends TestUtil {
       dinfo = makeInfo(frSplits[0], interactions, useAll, standardize,skipMissing);
       GLMModel.GLMParameters parms = new GLMModel.GLMParameters();
       parms._response_column = "IsDepDelayed";
-      Model.adaptTestForTrain(frSplits[1],null,null,dinfo._adaptedFrame.names(),dinfo._adaptedFrame.domains(),parms,true,false,interactions,null,null, false);
+      Model.InteractionBuilder interactionBldr = interactionBuilder(dinfo);
+      Model.adaptTestForTrain(frSplits[1],null,null,dinfo._adaptedFrame.names(),dinfo._adaptedFrame.domains(),parms,true,false,interactionBldr,null,null, false);
 
       scoreInfo = dinfo.scoringInfo(dinfo._adaptedFrame._names,frSplits[1]);
       checkFrame(scoreInfo,expandSplits[1], skipMissing);
@@ -115,19 +117,19 @@ public class DataInfoTestAdapt extends TestUtil {
   }
 
 
-  private void checkSplits(Frame frSplits[], Frame goldSplits[], String[] interactions, boolean useAll, boolean standardize) {
+  private void checkSplits(Frame frSplits[], Frame goldSplits[], Model.InteractionSpec interactions, boolean useAll, boolean standardize) {
     checkSplits(frSplits,goldSplits,interactions,useAll,standardize,false);
   }
 
-  private void checkSplits(Frame frSplits[], Frame goldSplits[], String[] interactions, boolean useAll, boolean standardize, boolean skipMissing) {
+  private void checkSplits(Frame frSplits[], Frame goldSplits[], Model.InteractionSpec interactions, boolean useAll, boolean standardize, boolean skipMissing) {
     for(int i=0;i<frSplits.length;++i)
       checkFrame(makeInfo(frSplits[i],interactions,useAll,standardize,skipMissing),goldSplits[i], skipMissing);
   }
 
-  private static DataInfo makeInfo(Frame fr, String[] interactions, boolean useAll, boolean standardize) {
+  private static DataInfo makeInfo(Frame fr, Model.InteractionSpec interactions, boolean useAll, boolean standardize) {
     return makeInfo(fr,interactions,useAll,standardize,true);
   }
-  private static DataInfo makeInfo(Frame fr, String[] interactions, boolean useAll, boolean standardize, boolean skipMissing) {
+  private static DataInfo makeInfo(Frame fr, Model.InteractionSpec interactions, boolean useAll, boolean standardize, boolean skipMissing) {
     return new DataInfo(
             fr,          // train
             null,        // valid
@@ -196,4 +198,16 @@ public class DataInfoTestAdapt extends TestUtil {
       di.remove();
     }
   }
+
+  private static Model.InteractionBuilder interactionBuilder(final DataInfo dataInfo) {
+    return new Model.InteractionBuilder() {
+      @Override
+      public Frame makeInteractions(Frame f) {
+        Model.InteractionPair[] interactionPairs = dataInfo._interactionSpec.makeInteractionPairs(f);
+        f.add(Model.makeInteractions(f, false, interactionPairs, true, true, false));
+        return f;
+      }
+    };
+  }
+
 }

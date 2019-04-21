@@ -1,6 +1,0 @@
-ext {
-  hadoopVersion = 'mapr4.0'
-  hadoopMavenArtifactVersion = '2.4.1-mapr-1408'
-}
-
-apply from: '../driverjar.gradle'

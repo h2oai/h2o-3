@@ -65,6 +65,14 @@ public class DataInfo extends Keyed<DataInfo> {
     _catNAFill = catNAFill;
   }
 
+  public double normSub(int i) {
+    return _normSub == null?0:_normSub[i];
+  }
+
+  public double normMul(int i) {
+    return _normMul == null?1:_normMul[i];
+  }
+
   public enum TransformType {
     NONE, STANDARDIZE, NORMALIZE, DEMEAN, DESCALE;
 
@@ -114,7 +122,7 @@ public class DataInfo extends Keyed<DataInfo> {
   public boolean _weights;
   public boolean _fold;
   public Model.InteractionPair[] _interactions; // raw set of interactions
-  public String[] _interactionColumns; // the names of the columns to interact
+  public Model.InteractionSpec _interactionSpec; // formal specification of interactions
   public int _interactionVecs[]; // the interaction columns appearing in _adaptedFrame
   public int[] _numOffsets; // offset column indices used by numerical interactions: total number of numerical columns is given by _numOffsets[_nums] - _numOffsets[0]
   public int responseChunkId(int n){return n + _cats + _nums + (_weights?1:0) + (_offset?1:0) + (_fold?1:0);}
@@ -150,7 +158,6 @@ public class DataInfo extends Keyed<DataInfo> {
     this(train,valid,nResponses,useAllFactorLevels,predictor_transform,response_transform,skipMissing,imputeMissing,missingBucket,weight,offset,fold,null);
   }
 
-
   /**
    *
    * The train/valid Frame instances are sorted by categorical (themselves sorted by
@@ -171,11 +178,11 @@ public class DataInfo extends Keyed<DataInfo> {
    *    A. As a list of pairs of column indices.
    *    B. As a list of pairs of column indices with limited enums.
    */
-  public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold, String[] interactions) {
+  public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold, Model.InteractionSpec interactions) {
     super(Key.<DataInfo>make());
-    _valid = valid != null;
     assert predictor_transform != null;
-    assert  response_transform != null;
+    assert response_transform != null;
+    _valid = valid != null;
     _offset = offset;
     _weights = weight;
     _fold = fold;
@@ -186,26 +193,22 @@ public class DataInfo extends Keyed<DataInfo> {
     _response_transform = response_transform;
     _responses = nResponses;
     _useAllFactorLevels = useAllFactorLevels;
-    _interactionColumns=interactions;
-    int[] interactionIDs=null;
-    if( null!=interactions ) {
-      interactionIDs = new int[interactions.length];
-      for(int i=0;i<interactions.length;++i) {
-        interactionIDs[i] = train.find(interactions[i]);
-        if( interactionIDs[i]==-1 ) {
-          interactionIDs=null; break;
-        }
-//          throw new IllegalArgumentException("missing column from the dataset, could not make interaction: " + interactions[i]);
-      }
+    _interactionSpec = interactions;
+    if (interactions != null) {
+      train = interactions.reorderColumns(train);
+      valid = interactions.reorderColumns(valid);
+      _interactions = interactions.makeInteractionPairs(train);
     }
-    _interactions=Model.InteractionPair.generatePairwiseInteractionsFromList(interactionIDs);
 
     // create dummy InteractionWrappedVecs and shove them onto the front
     if( _interactions!=null ) {
       _interactionVecs=new int[_interactions.length];
-      train = Model.makeInteractions(train, false, _interactions, _useAllFactorLevels, _skipMissing,predictor_transform==TransformType.STANDARDIZE).add(train);
-      if( valid!=null )
-        valid = Model.makeInteractions(valid, true, _interactions, _useAllFactorLevels, _skipMissing,predictor_transform==TransformType.STANDARDIZE).add(valid); // FIXME: should be using the training subs/muls!
+      Frame inter = Model.makeInteractions(train, false, _interactions, _useAllFactorLevels, _skipMissing,predictor_transform==TransformType.STANDARDIZE);
+      train = inter.add(_interactionSpec.removeInteractionOnlyColumns(train));
+      if( valid!=null ) {
+        inter = Model.makeInteractions(valid, true, _interactions, _useAllFactorLevels, _skipMissing, predictor_transform == TransformType.STANDARDIZE); // FIXME: should be using the training subs/muls!
+        valid = inter.add(_interactionSpec.removeInteractionOnlyColumns(valid));
+      }
     }
 
     _permutation = new int[train.numCols()];
@@ -260,7 +263,6 @@ public class DataInfo extends Keyed<DataInfo> {
       Vec v = (tvecs2[i] = tvecs[cats[i]]);
       _catMissing[i] = missingBucket; //needed for test time
       if( v instanceof InteractionWrappedVec ) {
-        if( _interactions!=null ) _interactions[interactionIdx].vecIdx=i;
         _interactionVecs[interactionIdx++]=i;  // i (and not cats[i]) because this is the index in _adaptedFrame
         _catOffsets[i + 1] = (len += v.domain().length + (missingBucket ? 1 : 0));
       }
@@ -278,7 +280,6 @@ public class DataInfo extends Keyed<DataInfo> {
       tvecs2[i+ncats] = v;
       isIWV = v instanceof InteractionWrappedVec;
       if( isIWV ) {
-        if( null!=_interactions ) _interactions[interactionIdx].vecIdx=i+ncats;
         _interactionVecs[interactionIdx++]=i+ncats;
       }
       _numOffsets[i+1] = (len+= (isIWV ? ((InteractionWrappedVec) v).expandedLength() : 1));
@@ -315,6 +316,11 @@ public class DataInfo extends Keyed<DataInfo> {
     _intLvls = new int[_interactionVecs==null?0:_interactionVecs.length][];
   }
 
+  public DataInfo disableIntercept() {
+    _intercept = false;
+    return this;
+  }
+
   public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold, boolean intercept) {
     this(train, valid, nResponses, useAllFactorLevels, predictor_transform, response_transform, skipMissing, imputeMissing, missingBucket, weight, offset, fold);
     _intercept = intercept;
@@ -322,12 +328,9 @@ public class DataInfo extends Keyed<DataInfo> {
 
   public DataInfo validDinfo(Frame valid) {
     DataInfo res = new DataInfo(_adaptedFrame,null,1,_useAllFactorLevels,TransformType.NONE,TransformType.NONE,_skipMissing,_imputeMissing,!(_skipMissing || _imputeMissing),_weights,_offset,_fold);
-    res._interactions=_interactions;
-    res._interactionColumns=_interactionColumns;
-    if( _interactionColumns!=null ) {
-      int[] interactions = new int[_interactionColumns.length];
-      for(int i=0;i<interactions.length;++i)
-        interactions[i] = valid.find(_interactionColumns[i]);
+    res._interactions = _interactions;
+    res._interactionSpec = _interactionSpec;
+    if (_interactionSpec != null) {
       valid = Model.makeInteractions(valid, true, _interactions, _useAllFactorLevels, _skipMissing, false).add(valid);
     }
     res._adaptedFrame = new Frame(_adaptedFrame.names(),valid.vecs(_adaptedFrame.names()));
@@ -518,7 +521,7 @@ public class DataInfo extends Keyed<DataInfo> {
       ignoredCols[ignoredCnt++] = k+_cats;
     Frame f = new Frame(_adaptedFrame.names().clone(),_adaptedFrame.vecs().clone());
     if(ignoredCnt > 0) f.remove(Arrays.copyOf(ignoredCols,ignoredCnt));
-    assert catLvls.length < f.numCols():"cats = " + catLvls.length + " numcols = " + f.numCols();
+    assert catLvls.length <= f.numCols():"cats = " + catLvls.length + " numcols = " + f.numCols();
     double [] normSub = null;
     double [] normMul = null;
     int id = Arrays.binarySearch(cols,numStart());
@@ -582,8 +585,8 @@ public class DataInfo extends Keyed<DataInfo> {
           if( isIWV ) {
             InteractionWrappedVec iwv = (InteractionWrappedVec)v;
             for(int offset=0;offset<iwv.expandedLength();++offset) {
-              normMul[idx+offset] = iwv.getMul(offset+(_useAllFactorLevels?0:1));
-              normSub[idx+offset] = iwv.getSub(offset+(_useAllFactorLevels?0:1));
+              normMul[idx+offset] = iwv.getMul(offset+(iwv._useAllFactorLevels?0:1));
+              normSub[idx+offset] = iwv.getSub(offset+(iwv._useAllFactorLevels?0:1));
             }
           } else {
             normMul[idx] = (v.sigma() != 0) ? 1.0 / v.sigma() : 1.0;
@@ -596,9 +599,16 @@ public class DataInfo extends Keyed<DataInfo> {
           normSub[idx] = v.mean();
           break;
         case DEMEAN:
-          if( isIWV ) throw H2O.unimpl();
-          normMul[idx] = 1;
-          normSub[idx] = v.mean();
+          if (isIWV) {
+            InteractionWrappedVec iwv = (InteractionWrappedVec)v;
+            for(int offset=0;offset<iwv.expandedLength();++offset) {
+              normSub[idx+offset] = iwv.getMeans()[offset];
+              normMul[idx+offset] = 1;
+            }
+          } else {
+            normSub[idx] = v.mean();
+            normMul[idx] = 1;
+          }
           break;
         case DESCALE:
           if( isIWV ) throw H2O.unimpl();
@@ -716,7 +726,7 @@ public class DataInfo extends Keyed<DataInfo> {
         InteractionWrappedVec v;
         if( i+_cats >= n || k >=n ) break;
         if (vecs[i+_cats] instanceof InteractionWrappedVec && ((v = (InteractionWrappedVec) vecs[i+_cats]).domain() != null)) { // in this case, get the categoricalOffset
-          for (int j = _useAllFactorLevels?0:1; j < v.domain().length; ++j) {
+          for (int j = v._useAllFactorLevels?0:1; j < v.domain().length; ++j) {
             if (getCategoricalIdFromInteraction(_cats+i, j) < 0)
               continue;
             res[k++] = _adaptedFrame._names[i+_cats] + "." + v.domain()[j];
@@ -926,6 +936,20 @@ public class DataInfo extends Keyed<DataInfo> {
           numVals[i] = (numVals[i] - normSub[j])*normMul[j];
         }
     }
+
+    public void addToArray(double scale, double []res) {
+      for (int i = 0; i < nBins; i++)
+        res[binIds[i]] += scale;
+      int numstart = numStart();
+      if (numIds != null) {
+        for (int i = 0; i < nNums; ++i)
+          res[numIds[i]] += scale * numVals[i];
+      } else for (int i = 0; i < numVals.length; ++i)
+        if (numVals[i] != 0)
+          res[numstart + i] += scale * numVals[i];
+      if (_intercept)
+        res[res.length - 1] += scale;
+    }
   }
 
 
@@ -945,16 +969,23 @@ public class DataInfo extends Keyed<DataInfo> {
     boolean isIWV = isInteractionVec(cid);
     if(val == -1) { // NA
       val = _catNAFill[cid];
-    } else if( !_useAllFactorLevels && !isIWV )  // categorical interaction vecs drop reference level in a special way
-      val -= 1;
+    }
+
+    if (!_useAllFactorLevels && !isIWV) {  // categorical interaction vecs drop reference level in a special way
+      val = val - 1;
+    }
     if(val < 0) return -1; // column si to be skipped
     int [] offs = fullCatOffsets();
     int expandedVal = val + offs[cid];
     if(expandedVal >= offs[cid+1]) {  // previously unseen level
-      assert _valid:"Categorical value out of bounds, got " + val + ", next cat starts at " + fullCatOffsets()[cid+1];
+      assert _valid : "Categorical value out of bounds, got " + val + ", next cat starts at " + fullCatOffsets()[cid + 1];
       if(_skipMissing)
         return -1;
       val = _catNAFill[cid];
+      
+      if (!_useAllFactorLevels && !isIWV) {  // categorical interaction vecs drop reference level in a special way
+        val = val - 1;
+      }
     }
     if (_catMap != null && _catMap[cid] != null) {  // some levels are ignored?
       val = _catMap[cid][val];
@@ -964,16 +995,20 @@ public class DataInfo extends Keyed<DataInfo> {
   }
 
   public final int getCategoricalIdFromInteraction(int cid, int val) {
-    InteractionWrappedVec v;
-    if( (v=(InteractionWrappedVec)_adaptedFrame.vec(cid)).isCategorical() ) return getCategoricalId(cid,val);
-    assert v.domain()!=null : "No domain levels found for interactions! cid: " + cid + " val: " + val;
+    InteractionWrappedVec v = (InteractionWrappedVec) _adaptedFrame.vec(cid);
+    if (v.isCategorical())
+      return getCategoricalId(cid, val);
+    assert v.domain() != null : "No domain levels found for interactions! cid: " + cid + " val: " + val;
     cid -= _cats;
-    if( val >= _numOffsets[cid+1] ) { // previously unseen interaction (aka new domain level)
-      assert _valid:"interaction value out of bounds, got " + val + ", next cat starts at " + _numOffsets[cid+1];
+    if (! v._useAllFactorLevels)
+      val--;
+    assert val >= 0;
+    if (val >= _numOffsets[cid+1]) { // previously unseen interaction (aka new domain level)
+      assert _valid : "interaction value out of bounds, got " + val + ", next cat starts at " + _numOffsets[cid+1];
       val = v.mode();
     }
     if( cid < _intLvls.length && _intLvls[cid]!=null ) {
-      assert _useAllFactorLevels;
+      assert _useAllFactorLevels; // useAllFactorLevels has to be defined on a global level (not just for the interaction)
       val = Arrays.binarySearch(_intLvls[cid],val);
     }
     return val < 0?-1:val+_numOffsets[cid];
@@ -1154,10 +1189,10 @@ public class DataInfo extends Keyed<DataInfo> {
         }
         interactionOffset+=nextNumericIdx(cid);
       } else {
-        for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
+        for (int r = c.nextNZ(-1, _imputeMissing); r < c._len; r = c.nextNZ(r, _imputeMissing)) {
           if (c.atd(r) == 0) continue;
           assert r > oldRow;
-          oldRow = r;Row row = rows[r];
+          oldRow = r; Row row = rows[r];
           if (c.isNA(r) && _skipMissing)
             row.predictors_bad = true;
           if (row.predictors_bad) continue;
@@ -1189,7 +1224,19 @@ public class DataInfo extends Keyed<DataInfo> {
     return rows;
   }
 
-  public DataInfo scoringInfo(String [] names, Frame adaptFrame){
+  public DataInfo scoringInfo(String[] names, Frame adaptFrame) {
+    return scoringInfo(names, adaptFrame, -1, true);
+  }
+
+  /**
+   * Creates a scoringInfo from a DataInfo instance created during model training
+   * @param names column names
+   * @param adaptFrame adapted frame
+   * @param nResponses number of responses (-1 indicates autodetect: 0/1 based on presence of a single response)
+   * @param fixIVW whether to force global useFactorLevels flag to InteractionWrappedVecs (GLM behavior)
+   * @return
+   */
+  public DataInfo scoringInfo(String[] names, Frame adaptFrame, int nResponses, boolean fixIVW) {
     DataInfo res = IcedUtils.deepCopy(this);
     res._normMul = null;
     res._normRespSub = null;
@@ -1201,22 +1248,40 @@ public class DataInfo extends Keyed<DataInfo> {
     res._weights = _weights && adaptFrame.find(names[weightChunkId()]) != -1;
     res._offset = _offset && adaptFrame.find(names[offsetChunkId()]) != -1;
     res._fold = _fold && adaptFrame.find(names[foldChunkId()]) != -1;
-    int resId = adaptFrame.find(names[responseChunkId(0)]);
-    if(resId == -1 || adaptFrame.vec(resId).isBad())
-      res._responses = 0;
-    else // NOTE: DataInfo can have extra columns encoded as response, e.g. helper columns when doing Multinomail IRLSM, don't need those for scoring!.
-      res._responses = 1;
+    if (nResponses != -1) {
+      res._responses = nResponses;
+    } else {
+      int resId = adaptFrame.find(names[responseChunkId(0)]);
+      if (resId == -1 || adaptFrame.vec(resId).isBad())
+        res._responses = 0;
+      else // NOTE: DataInfo can have extra columns encoded as response, e.g. helper columns when doing Multinomail IRLSM, don't need those for scoring!.
+        res._responses = 1;
+    }
     res._valid = true;
     res._interactions=_interactions;
-    res._interactionColumns=_interactionColumns;
+    res._interactionSpec=_interactionSpec;
 
-    // ensure that vecs are in the DKV, may have been swept up in the Scope.exit call
-    for( Vec v: res._adaptedFrame.vecs() )
-      if( v instanceof InteractionWrappedVec) {
-        ((InteractionWrappedVec)v)._useAllFactorLevels=_useAllFactorLevels;
-        ((InteractionWrappedVec)v)._skipMissing=_skipMissing;
-        DKV.put(v);
-      }
+    if (fixIVW) {
+      // ensure that vecs are in the DKV, may have been swept up in the Scope.exit call
+      for (Vec v : res._adaptedFrame.vecs())
+        if (v instanceof InteractionWrappedVec) {
+          ((InteractionWrappedVec) v)._useAllFactorLevels = _useAllFactorLevels;
+          ((InteractionWrappedVec) v)._skipMissing = _skipMissing;
+          DKV.put(v);
+        }
+    }
     return res;
   }
+
+  /**
+   * Creates a DataInfo for scoring on a test Frame from a DataInfo instance created during model training
+   * This is a lightweight version of the method only usable for models that don't use advanced features of DataInfo (eg. interaction terms)
+   * @return DataInfo for scoring
+   */
+  public DataInfo scoringInfo() {
+    DataInfo res = IcedUtils.deepCopy(this);
+    res._valid = true;
+    return res;
+  }
+
 }

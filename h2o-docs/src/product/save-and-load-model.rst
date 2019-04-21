@@ -1,7 +1,11 @@
+.. _save_and_load_model:
+
 Saving and Loading a Model
 ==========================
 
 This section describes how to save and load models using R, Python, and Flow. 
+
+**Note**: When saving an H2O binary model with ``h2o.saveModel`` (R), ``h2o.save_model`` (Python), or in Flow, you will only be able to load and use that saved binary model with the same version of H2O that you used to train your model. H2O binary models are not compatible across H2O versions. If you update your H2O version, then you will need to retrain your model. For production, you can save your model as a :ref:`POJO/MOJO <about-pojo-mojo>`. These artifacts are not tied to a particular version of H2O because they are just plain Java code and do not require an H2O cluster to be running.
 
 In R and Python
 ---------------
@@ -44,14 +48,14 @@ In R and Python, you can save a model locally or to HDFS using the ``h2o.saveMod
 .. example-code::
    .. code-block:: r
 
-	# build the model
-	model <- h2o.glm(model params)
+    # build the model
+    model <- h2o.glm(model params)
 
-	# save the model to HDFS
-	hdfs_name_node <- "node-1"
-	hdfs_tmp_dir <- "/tmp/runit”
-	model_path <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_tmp_dir)
-	h2o.saveModel(model, dir=model_path, name="mymodel")
+    # save the model to HDFS
+    hdfs_name_node <- "node-1"
+    hdfs_tmp_dir <- "/tmp/runit"
+    model_path <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_tmp_dir)
+    h2o.saveModel(model, dir=model_path, name="mymodel")
 
    .. code-block:: python
 
@@ -67,4 +71,4 @@ In R and Python, you can save a model locally or to HDFS using the ``h2o.saveMod
 In Flow
 -------
 
-The steps for saving and loading models in Flow are described in the **Using Flow - H2O's Web UI** section. Specifically, refer to `Exporting and Importing Models <flow.html#exporting-and-importing-models>`__ for information about loading models into Flow. 
+The steps for saving and loading models in Flow are described in the **Using Flow - H2O's Web UI** section. Specifically, refer to :ref:`Exporting and Importing Models <export-import-models-flow>` for information about loading models into Flow. 

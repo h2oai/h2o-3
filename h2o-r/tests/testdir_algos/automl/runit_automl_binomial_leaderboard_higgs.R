@@ -20,13 +20,13 @@ automl.leaderboard.test <- function() {
   aml <- h2o.automl(y = y,
                     training_frame = train,
                     leaderboard_frame = test,
-                    max_runtime_secs = 30)
+                    max_models = 2,
+                    project_name = "runit_automl_binomial_leaderboard")
 
   # Get test set AUC from leaderboard vs h2o.performance() and check that it matches
   auc_aml_leaderboard_test <- as.numeric(aml@leaderboard[1,2])  #metric column in first/top row
   perf_aml_test <- h2o.performance(model = aml@leader, newdata = test)
   auc_aml_test <- h2o.auc(perf_aml_test)
-
 
   # Check that stack perf is better (bigger) than the best (biggest) base learner perf:
   print(sprintf("Leaderboard Test Set AUC:  %s", auc_aml_leaderboard_test))

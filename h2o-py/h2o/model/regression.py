@@ -20,7 +20,7 @@ class H2ORegressionModel(ModelBase):
         :returns: A scoring history plot.
         """
 
-        if self._model_json["algo"] in ("deeplearning", "deepwater", "drf", "gbm"):
+        if self._model_json["algo"] in ("deeplearning", "deepwater", "xgboost", "drf", "gbm"):
             if metric == "AUTO":
                 metric = "rmse"
             elif metric not in ("rmse", "deviance", "mae"):

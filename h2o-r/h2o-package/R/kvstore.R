@@ -33,8 +33,8 @@
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
-#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' prostate.hex <- h2o.uploadFile(path = prosPath)
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.uploadFile(path = prostate_path)
 #' h2o.ls()
 #' }
 #' @export
@@ -54,8 +54,8 @@ h2o.ls <- function() {
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
-#' prosPath <- system.file("extdata", "prostate.csv", package = "h2o")
-#' prostate.hex <- h2o.uploadFile(path = prosPath)
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.uploadFile(path = prostate_path)
 #' h2o.ls()
 #' h2o.removeAll()
 #' h2o.ls()
@@ -128,9 +128,9 @@ h2o.getFrame <- function(id) {
 #' library(h2o)
 #' h2o.init()
 #'
-#' iris.hex <- as.h2o(iris, "iris.hex")
-#' model_id <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.hex)@@model_id
-#' model.retrieved <- h2o.getModel(model_id)
+#' iris_hf <- as.h2o(iris)
+#' model_id <- h2o.gbm(x = 1:4, y = 5, training_frame = iris_hf)@@model_id
+#' model_retrieved <- h2o.getModel(model_id)
 #' }
 #' @export
 h2o.getModel <- function(model_id) {
@@ -138,16 +138,16 @@ h2o.getModel <- function(model_id) {
   model_category <- json$output$model_category
   if (is.null(model_category))
     model_category <- "Unknown"
-  else if (!(model_category %in% c("Unknown", "Binomial", "Multinomial", "Regression", "Clustering", "AutoEncoder", "DimReduction", "WordEmbedding")))
+  else if (!(model_category %in% c("Unknown", "Binomial", "Multinomial", "Ordinal", "Regression", "Clustering", "AutoEncoder", "DimReduction", "WordEmbedding", "CoxPH", "AnomalyDetection")))
     stop(paste0("model_category, \"", model_category,"\", missing in the output"))
   Class <- paste0("H2O", model_category, "Model")
-  model <- json$output[!(names(json$output) %in% c("__meta", "names", "domains", "model_category"))]
+  model <- json$output[!(names(json$output) %in% c("__meta", "model_category"))]
   MetricsClass <- paste0("H2O", model_category, "Metrics")
   # setup the metrics objects inside of model...
   model$training_metrics   <- new(MetricsClass, algorithm=json$algo, on_train=TRUE, on_valid=FALSE, on_xval=FALSE, metrics=model$training_metrics)
   model$validation_metrics <- new(MetricsClass, algorithm=json$algo, on_train=FALSE, on_valid=TRUE, on_xval=FALSE, metrics=model$validation_metrics)
   model$cross_validation_metrics <- new(MetricsClass, algorithm=json$algo, on_train=FALSE, on_valid=FALSE, on_xval=TRUE, metrics=model$cross_validation_metrics)
-  if (model_category %in% c("Binomial", "Multinomial", "Regression")) { # add the missing metrics manually where
+  if (model_category %in% c("Binomial", "Multinomial", "Ordinal", "Regression")) { # add the missing metrics manually where
     model$coefficients <- model$coefficients_table[,2]
     names(model$coefficients) <- model$coefficients_table[,1]
   }
@@ -210,6 +210,8 @@ h2o.getModel <- function(model_id) {
                algorithm     = json$algo,
                parameters    = parameters,
                allparameters = allparams,
+               have_pojo     = json$have_pojo,
+               have_mojo     = json$have_mojo,
                model         = model)
 }
 
@@ -229,7 +231,7 @@ h2o.getModel <- function(model_id) {
 #' library(h2o)
 #' h <- h2o.init()
 #' fr <- as.h2o(iris)
-#' my_model <- h2o.gbm(x=1:4, y=5, training_frame=fr)
+#' my_model <- h2o.gbm(x = 1:4, y = 5, training_frame = fr)
 #'
 #' h2o.download_pojo(my_model)  # print the model to screen
 #' # h2o.download_pojo(my_model, getwd())  # save the POJO and jar file to the current working
@@ -240,7 +242,14 @@ h2o.getModel <- function(model_id) {
 #' }
 #' @export
 h2o.download_pojo <- function(model, path=NULL, getjar=NULL, get_jar=TRUE, jar_name="") {
-
+  
+  if (class(model) == "H2OAutoML") {
+    model <- model@leader
+  }
+  
+  if (!(model@have_pojo)){
+    stop(paste0(model@algrithm, ' does not support export to POJO'))
+  }
   if(!is.null(path) && !(is.character(path))){
     stop("The 'path' variable should be of type character")
   }
@@ -295,8 +304,11 @@ h2o.download_pojo <- function(model, path=NULL, getjar=NULL, get_jar=TRUE, jar_n
 #'
 #' @param model An H2OModel
 #' @param path The path where MOJO file should be saved. Saved to current directory by default.
-#' @param get_genmodel_jar If TRUE, then also download h2o-genmodel.jar and store it in folder ``path``.
+#' @param get_genmodel_jar If TRUE, then also download h2o-genmodel.jar and store it in either in the same folder
+#         as the MOJO or in ``genmodel_path`` if specified.
 #' @param genmodel_name Custom name of genmodel jar.
+#' @param genmodel_path Path to store h2o-genmodel.jar. If left blank and ``get_genmodel_jar`` is TRUE, then the h2o-genmodel.jar
+#         is saved to ``path``.
 #' @return Name of the MOJO file written to the path.
 #'
 #' @examples
@@ -304,12 +316,19 @@ h2o.download_pojo <- function(model, path=NULL, getjar=NULL, get_jar=TRUE, jar_n
 #' library(h2o)
 #' h <- h2o.init()
 #' fr <- as.h2o(iris)
-#' my_model <- h2o.gbm(x=1:4, y=5, training_frame=fr)
+#' my_model <- h2o.gbm(x = 1:4, y = 5, training_frame = fr)
 #' h2o.download_mojo(my_model)  # save to the current working directory
 #' }
 #' @export
-h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmodel_name="") {
-
+h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmodel_name="", genmodel_path="") {
+  
+  if (class(model) == "H2OAutoML") {
+    model <- model@leader
+  }
+  
+  if (!(model@have_mojo)){
+    stop(paste0(model@algorithm, ' does not support export to MOJO'))
+  }
   if(!(is.character(path))){
     stop("The 'path' variable should be of type character")
   }
@@ -317,12 +336,16 @@ h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmo
     stop("The 'get_genmodel_jar' variable should be of type logical/boolean")
   }
 
-  if(!(model@algorithm %in% c("drf","gbm","deepwater","glrm","glm","word2vec"))){
-    stop("MOJOs are currently supported for Distributed Random Forest, Gradient Boosting Method, Deep Water, GLM, GLRM and word2vec models only.")
-  }
-
   if(!(file.exists(path))){
     stop(paste0("'path',",path,", to save MOJO file cannot be found."))
+  }
+
+  if(genmodel_path=="") {
+    genmodel_path <- path
+  }
+
+  if(!(file.exists(genmodel_path))){
+    stop(paste0("'genmodel_path',",genmodel_path,", to save the genmodel.jar file cannot be found."))
   }
 
   #Get model id
@@ -340,9 +363,9 @@ h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmo
     urlSuffix = "h2o-genmodel.jar"
     #Build genmodel.jar file path
     if(genmodel_name==""){
-      jar.path <- file.path(path, "h2o-genmodel.jar")
+      jar.path <- file.path(genmodel_path, "h2o-genmodel.jar")
     }else{
-      jar.path <- file.path(path, genmodel_name)
+      jar.path <- file.path(genmodel_path, genmodel_name)
     }
     #Perform a safe (i.e. error-checked) HTTP GET request to an H2O cluster with genmodel.jar URL
     #and write to jar.path.

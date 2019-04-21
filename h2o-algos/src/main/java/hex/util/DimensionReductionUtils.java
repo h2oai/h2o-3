@@ -74,7 +74,7 @@ public class DimensionReductionUtils {
             if (fieldName.equals("Timestamp")) {
                 colHeaders.add("Timestamp"); colTypes.add("string"); colFormat.add("%s");
                 colHeaders.add("Duration"); colTypes.add("string"); colFormat.add("%s");
-                colHeaders.add("Iteration"); colTypes.add("long"); colFormat.add("%d");
+                colHeaders.add("Iterations"); colTypes.add("long"); colFormat.add("%d");
             } else {
                 otherTableEntries.add(fieldName); colHeaders.add(fieldName); colTypes.add("double"); colFormat.add("%.5f");
             }
@@ -113,9 +113,9 @@ public class DimensionReductionUtils {
      * 
      * @param dinfo
      * @param vEigenIn
-     * @return
+     * @return transformed eigenvectors
      */
-    public static double[][] transformEigenVectors(DataInfo dinfo, double[][] vEigenIn) {
+    public static double[][] getTransformedEigenvectors(DataInfo dinfo, double[][] vEigenIn) {
         Frame tempFrame = new Frame(dinfo._adaptedFrame);
         Frame eigFrame = new water.util.ArrayUtils().frame(vEigenIn);
         tempFrame.add(eigFrame);

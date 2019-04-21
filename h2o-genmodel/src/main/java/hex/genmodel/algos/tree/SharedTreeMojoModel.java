@@ -3,22 +3,24 @@ package hex.genmodel.algos.tree;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.drf.DrfMojoModel;
 import hex.genmodel.algos.gbm.GbmMojoModel;
+import hex.genmodel.descriptor.VariableImportances;
 import hex.genmodel.utils.ByteBufferWrapper;
 import hex.genmodel.utils.GenmodelBitSet;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Common ancestor for {@link DrfMojoModel} and {@link GbmMojoModel}.
  * See also: `hex.tree.SharedTreeModel` and `hex.tree.TreeVisitor` classes.
  */
-public abstract class SharedTreeMojoModel extends MojoModel {
+public abstract class SharedTreeMojoModel extends MojoModel implements SharedTreeGraphConverter{
     private static final int NsdNaVsRest = NaSplitDir.NAvsREST.value();
     private static final int NsdNaLeft = NaSplitDir.NALeft.value();
     private static final int NsdLeft = NaSplitDir.Left.value();
 
-    protected Number _mojo_version;
+    private ScoreTree _scoreTree;
 
     /**
      * {@code _ntree_groups} is the number of trees requested by the user. For
@@ -50,6 +52,53 @@ public abstract class SharedTreeMojoModel extends MojoModel {
      */
     protected double[] _calib_glm_beta;
 
+    protected VariableImportances _variable_importances;
+
+
+    protected void postInit() {
+      if (_mojo_version == 1.0) {
+        _scoreTree = new ScoreTree0(); // First version
+      } else if (_mojo_version == 1.1) {
+        _scoreTree = new ScoreTree1(); // Second version
+      } else
+        _scoreTree = new ScoreTree2(); // Current version
+    }
+
+    public final int getNTreeGroups() {
+      return _ntree_groups;
+    }
+
+    public final int getNTreesPerGroup() {
+      return _ntrees_per_group;
+    }
+
+
+    /**
+     * @deprecated use {@link #scoreTree0(byte[], double[], boolean)} instead.
+     */
+    @Deprecated
+    public static double scoreTree0(byte[] tree, double[] row, int nclasses, boolean computeLeafAssignment) {
+      // note that nclasses is ignored (and in fact, always was)
+      return scoreTree0(tree, row, computeLeafAssignment);
+    }
+
+    /**
+     * @deprecated use {@link #scoreTree1(byte[], double[], boolean)} instead.
+     */
+    @Deprecated
+    public static double scoreTree1(byte[] tree, double[] row, int nclasses, boolean computeLeafAssignment) {
+      // note that nclasses is ignored (and in fact, always was)
+      return scoreTree1(tree, row, computeLeafAssignment);
+    }
+
+    /**
+     * @deprecated use {@link #scoreTree(byte[], double[], boolean, String[][])} instead.
+     */
+    @Deprecated
+    public static double scoreTree(byte[] tree, double[] row, int nclasses, boolean computeLeafAssignment, String[][] domains) {
+      // note that {@link nclasses} is ignored (and in fact, always was)
+      return scoreTree(tree, row, computeLeafAssignment, domains);
+    }
 
   /**
    * Highly efficient (critical path) tree scoring
@@ -61,7 +110,7 @@ public abstract class SharedTreeMojoModel extends MojoModel {
    * Note: this function is also used from the `hex.tree.CompressedTree` class in `h2o-algos` project.
    */
   @SuppressWarnings("ConstantConditions")  // Complains that the code is too complex. Well duh!
-    public static double scoreTree(byte[] tree, double[] row, int nclasses, boolean computeLeafAssignment, String[][] domains) {
+    public static double scoreTree(byte[] tree, double[] row, boolean computeLeafAssignment, String[][] domains) {
         ByteBufferWrapper ab = new ByteBufferWrapper(tree);
         GenmodelBitSet bs = null;
         long bitsRight = 0;
@@ -69,7 +118,14 @@ public abstract class SharedTreeMojoModel extends MojoModel {
         while (true) {
             int nodeType = ab.get1U();
             int colId = ab.get2();
-            if (colId == 65535) return ab.get4f();
+            if (colId == 65535) {
+              if (computeLeafAssignment) {
+                bitsRight |= 1 << level;  // mark the end of the tree
+                return Double.longBitsToDouble(bitsRight);
+              } else {
+                return ab.get4f();
+              }
+            }
             int naSplitDir = ab.get1U();
             boolean naVsRest = naSplitDir == NsdNaVsRest;
             boolean leftward = naSplitDir == NsdNaLeft || naSplitDir == NsdLeft;
@@ -142,7 +198,6 @@ public abstract class SharedTreeMojoModel extends MojoModel {
                     case 1:  ab.skip(ab.get2());  break;
                     case 2:  ab.skip(ab.get3());  break;
                     case 3:  ab.skip(ab.get4());  break;
-                    case 16: ab.skip(nclasses < 256? 1 : 2);  break;  // Small leaf
                     case 48: ab.skip(4);  break;  // skip the prediction
                     default:
                         assert false : "illegal lmask value " + lmask + " in tree " + Arrays.toString(tree);
@@ -167,23 +222,98 @@ public abstract class SharedTreeMojoModel extends MojoModel {
         }
     }
 
-    public static String getDecisionPath(double leafAssignment) {
+    public interface DecisionPathTracker<T> {
+        boolean go(int depth, boolean right);
+        T terminate();
+    }
+
+    public static class StringDecisionPathTracker implements DecisionPathTracker<String> {
+        private final char[] _sb = new char[64];
+        private int _pos = 0;
+        @Override
+        public boolean go(int depth, boolean right) {
+            _sb[depth] = right ? 'R' : 'L';
+            if (right) _pos = depth;
+            return true;
+        }
+        @Override
+        public String terminate() {
+            String path = new String(_sb, 0, _pos);
+            _pos = 0;
+            return path;
+        }
+    }
+
+    public static class LeafDecisionPathTracker implements DecisionPathTracker<LeafDecisionPathTracker> {
+        private final AuxInfoLightReader _auxInfo;
+        private boolean _wentRight = false; // Was the last step _right_?
+
+        // OUT
+        private int _nodeId = 0; // Returned when the tree is empty (consistent with SharedTreeNode of an empty tree)
+
+        private LeafDecisionPathTracker(byte[] auxTree) {
+          _auxInfo = new AuxInfoLightReader(new ByteBufferWrapper(auxTree));
+        }
+
+        @Override
+        public boolean go(int depth, boolean right) {
+          if (!_auxInfo.hasNext()) {
+            assert _wentRight || depth == 0; // this can only happen if previous step was _right_ or the tree has no nodes
+            return false;
+          }
+          _auxInfo.readNext();
+          if (right) {
+            if (_wentRight && _nodeId != _auxInfo._nid)
+              return false;
+            _nodeId = _auxInfo.getRightNodeIdAndSkipNode();
+            _auxInfo.skipNodes(_auxInfo._numLeftChildren);
+            _wentRight = true;
+          } else { // left
+            _wentRight = false;
+            if (_auxInfo._numLeftChildren == 0) {
+              _nodeId = _auxInfo.getLeftNodeIdAndSkipNode();
+              return false;
+            } else {
+              _auxInfo.skipNode(); // proceed to next _left_ node
+            }
+          }
+          return true;
+        }
+
+        @Override
+        public LeafDecisionPathTracker terminate() {
+          return this;
+        }
+
+        final int getLeafNodeId() {
+          return _nodeId;
+        }
+    }
+
+    public static <T> T getDecisionPath(double leafAssignment, DecisionPathTracker<T> tr) {
         long l = Double.doubleToRawLongBits(leafAssignment);
-        StringBuilder sb = new StringBuilder();
-        int pos = 0;
         for (int i = 0; i < 64; ++i) {
             boolean right = ((l>>i) & 0x1L) == 1;
-            sb.append(right? "R" : "L");
-            if (right) pos = i;
+            if (! tr.go(i, right)) break;
         }
-        return sb.substring(0, pos);
+        return tr.terminate();
+    }
+
+    public static String getDecisionPath(double leafAssignment) {
+        return getDecisionPath(leafAssignment, new StringDecisionPathTracker());
+    }
+
+    public static int getLeafNodeId(double leafAssignment, byte[] auxTree) {
+        LeafDecisionPathTracker tr = new LeafDecisionPathTracker(auxTree);
+        return getDecisionPath(leafAssignment, tr).getLeafNodeId();
     }
 
     //------------------------------------------------------------------------------------------------------------------
     // Computing a Tree Graph
     //------------------------------------------------------------------------------------------------------------------
 
-    private void computeTreeGraph(SharedTreeSubgraph sg, SharedTreeNode node, byte[] tree, ByteBufferWrapper ab, HashMap<Integer, AuxInfo> auxMap, int nclasses) {
+    private static void computeTreeGraph(SharedTreeSubgraph sg, SharedTreeNode node, byte[] tree, ByteBufferWrapper ab, HashMap<Integer, AuxInfo> auxMap,
+                                         String names[], String[][] domains) {
         int nodeType = ab.get1U();
         int colId = ab.get2();
         if (colId == 65535) {
@@ -191,7 +321,7 @@ public abstract class SharedTreeMojoModel extends MojoModel {
             node.setPredValue(leafValue);
             return;
         }
-        String colName = getNames()[colId];
+        String colName = names[colId];
         node.setCol(colId, colName);
 
         int naSplitDir = ab.get1U();
@@ -217,7 +347,7 @@ public abstract class SharedTreeMojoModel extends MojoModel {
                     bs.fill2(tree, ab);
                 else
                     bs.fill3(tree, ab);
-                node.setBitset(getDomainValues(colId), bs);
+                node.setBitset(domains[colId], bs);
             }
         }
 
@@ -241,9 +371,6 @@ public abstract class SharedTreeMojoModel extends MojoModel {
                 case 3:
                     ab2.skip(ab2.get4());
                     break;
-                case 16:
-                    ab2.skip(nclasses < 256 ? 1 : 2);
-                    break;  // Small leaf
                 case 48:
                     ab2.skip(4);
                     break;  // skip the prediction
@@ -263,7 +390,7 @@ public abstract class SharedTreeMojoModel extends MojoModel {
                 auxInfo.predR = leafValue;
             }
             else {
-                computeTreeGraph(sg, newNode, tree, ab2, auxMap, nclasses);
+                computeTreeGraph(sg, newNode, tree, ab2, auxMap, names, domains);
             }
         }
 
@@ -286,7 +413,7 @@ public abstract class SharedTreeMojoModel extends MojoModel {
                 auxInfo.predL = leafValue;
             }
             else {
-                computeTreeGraph(sg, newNode, tree, ab2, auxMap, nclasses);
+                computeTreeGraph(sg, newNode, tree, ab2, auxMap, names, domains);
             }
         }
         if (node.getNodeNumber() == 0) {
@@ -321,28 +448,12 @@ public abstract class SharedTreeMojoModel extends MojoModel {
 
         for (; j < _ntree_groups; j++) {
             for (int i = 0; i < _ntrees_per_group; i++) {
-                String className = "";
-                {
-                    String[] domainValues = getDomainValues(getResponseIdx());
-                    if (domainValues != null) {
-                        className = ", Class " + domainValues[i];
-                    }
-                }
                 int itree = treeIndex(j, i);
-
-                SharedTreeSubgraph sg = g.makeSubgraph("Tree " + j + className);
-                SharedTreeNode node = sg.makeRootNode();
-                node.setSquaredError(Float.NaN);
-                node.setPredValue(Float.NaN);
-                byte[] tree = _compressed_trees[itree];
-                ByteBufferWrapper ab = new ByteBufferWrapper(tree);
-                ByteBufferWrapper abAux = new ByteBufferWrapper(_compressed_trees_aux[itree]);
-                HashMap<Integer, AuxInfo> auxMap = new HashMap<>();
-                while (abAux.hasRemaining()) {
-                  AuxInfo auxInfo = new AuxInfo(abAux);
-                  auxMap.put(auxInfo.nid, auxInfo);
-                }
-                computeTreeGraph(sg, node, tree, ab, auxMap, _nclasses);
+                String[] domainValues = isSupervised() ? getDomainValues(getResponseIdx()) : null;
+                String treeName = treeName(j, i, domainValues);
+                SharedTreeSubgraph sg = g.makeSubgraph(treeName);
+                computeTreeGraph(sg, _compressed_trees[itree], _compressed_trees_aux[itree],
+                        getNames(), getDomainValues());
             }
 
             if (treeToPrint >= 0) {
@@ -353,13 +464,113 @@ public abstract class SharedTreeMojoModel extends MojoModel {
         return g;
     }
 
+    public static SharedTreeSubgraph computeTreeGraph(int treeNum, String treeName, byte[] tree, byte[] auxTreeInfo,
+                                                      String names[], String[][] domains) {
+      SharedTreeSubgraph sg = new SharedTreeSubgraph(treeNum, treeName);
+      computeTreeGraph(sg, tree, auxTreeInfo, names, domains);
+      return sg;
+    }
+
+    private static void computeTreeGraph(SharedTreeSubgraph sg, byte[] tree, byte[] auxTreeInfo,
+                                         String names[], String[][] domains) {
+      SharedTreeNode node = sg.makeRootNode();
+      node.setSquaredError(Float.NaN);
+      node.setPredValue(Float.NaN);
+      ByteBufferWrapper ab = new ByteBufferWrapper(tree);
+      ByteBufferWrapper abAux = new ByteBufferWrapper(auxTreeInfo);
+      HashMap<Integer, AuxInfo> auxMap = readAuxInfos(abAux);
+      computeTreeGraph(sg, node, tree, ab, auxMap, names, domains);
+    }
+
+    private static HashMap<Integer, AuxInfo> readAuxInfos(ByteBufferWrapper abAux) {
+      HashMap<Integer, AuxInfo> auxMap = new HashMap<>();
+      Map<Integer, AuxInfo> nodeIdToParent = new HashMap<>();
+      nodeIdToParent.put(0, new AuxInfo());
+      boolean reservedFieldIsParentId = false; // In older H2O versions `reserved` field was used for parent id
+      while (abAux.hasRemaining()) {
+        AuxInfo auxInfo = new AuxInfo(abAux);
+        if (auxMap.size() == 0) {
+          reservedFieldIsParentId = auxInfo.reserved < 0; // `-1` indicates No Parent, reserved >= 0 indicates reserved is not used for parent ids!
+        }
+        AuxInfo parent = nodeIdToParent.get(auxInfo.nid);
+        if (parent == null)
+          throw new IllegalStateException("Parent for nodeId=" + auxInfo.nid + " not found.");
+        assert !reservedFieldIsParentId || parent.nid == auxInfo.reserved : "Corrupted Tree Info: parent nodes do not correspond (pid: " +
+                parent.nid + ", reserved: " + auxInfo.reserved + ")";
+        auxInfo.setPid(parent.nid);
+        nodeIdToParent.put(auxInfo.nidL, auxInfo);
+        nodeIdToParent.put(auxInfo.nidR, auxInfo);
+        auxMap.put(auxInfo.nid, auxInfo);
+      }
+      return auxMap;
+    }
+
+    public static String treeName(int groupIndex, int classIndex, String[] domainValues) {
+      String className = "";
+      {
+        if (domainValues != null) {
+          className = ", Class " + domainValues[classIndex];
+        }
+      }
+      return "Tree " + groupIndex + className;
+    }
+
+    // Please see AuxInfo for details of the serialized format
+    private static class AuxInfoLightReader {
+      private final ByteBufferWrapper _abAux;
+      int _nid;
+      int _numLeftChildren;
+
+      private AuxInfoLightReader(ByteBufferWrapper abAux) {
+        _abAux = abAux;
+      }
+
+      private void readNext() {
+        _nid = _abAux.get4();
+        _numLeftChildren = _abAux.get4();
+      }
+
+      private boolean hasNext() {
+        return _abAux.hasRemaining();
+      }
+
+      private int getLeftNodeIdAndSkipNode() {
+        _abAux.skip(4 * 6);
+        int n = _abAux.get4();
+        _abAux.skip(4);
+        return n;
+      }
+
+      private int getRightNodeIdAndSkipNode() {
+        _abAux.skip(4 * 7);
+        return _abAux.get4();
+      }
+
+      private void skipNode() {
+        _abAux.skip(AuxInfo.SIZE - 8);
+      }
+
+      private void skipNodes(int num) {
+        _abAux.skip(AuxInfo.SIZE * num);
+      }
+
+    }
+
     static class AuxInfo {
+      private static int SIZE = 10 * 4;
+
+      private AuxInfo() {
+        nid = -1;
+        reserved = -1;
+      }
+
+      // Warning: any changes in this structure need to be reflected also in AuxInfoLightReader!!!
       AuxInfo(ByteBufferWrapper abAux) {
         // node ID
         nid = abAux.get4();
 
-        // parent node ID
-        pid = abAux.get4();
+        // ignored - can contain either parent id or number of children (depending on a MOJO version)
+        reserved = abAux.get4();
 
         //sum of observation weights (typically, that's just the count of observations)
         weightL = abAux.get4f();
@@ -378,6 +589,10 @@ public abstract class SharedTreeMojoModel extends MojoModel {
         nidR = abAux.get4();
       }
 
+      final void setPid(int parentId) {
+        pid = parentId;
+      }
+
       @Override public String toString() {
         return  "nid: " + nid + "\n" +
                 "pid: " + pid + "\n" +
@@ -388,15 +603,18 @@ public abstract class SharedTreeMojoModel extends MojoModel {
                 "predL: " + predL + "\n" +
                 "predR: " + predR + "\n" +
                 "sqErrL: " + sqErrL + "\n" +
-                "sqErrR: " + sqErrR + "\n";
+                "sqErrR: " + sqErrR + "\n" +
+                "reserved: " + reserved + "\n";
       }
 
       public int nid, pid, nidL, nidR;
+      private final int reserved;
       public float weightL, weightR, predL, predR, sqErrL, sqErrR;
     }
 
-    void checkConsistency(AuxInfo auxInfo, SharedTreeNode node) {
+    static void checkConsistency(AuxInfo auxInfo, SharedTreeNode node) {
       boolean ok = true;
+      boolean weight_ok = true;
       ok &= (auxInfo.nid == node.getNodeNumber());
       double sum = 0;
       if (node.leftChild!=null) {
@@ -415,14 +633,20 @@ public abstract class SharedTreeMojoModel extends MojoModel {
       }
       if (node.parent!=null) {
         ok &= (auxInfo.pid == node.parent.getNodeNumber());
-        ok &= (Math.abs(node.getWeight() - sum) < 1e-5 * (node.getWeight() + sum));
+        weight_ok = (Math.abs(node.getWeight() - sum) < 1e-5 * (node.getWeight() + sum));
+        ok &= weight_ok;
       }
       if (!ok) {
-        System.out.println("\nTree inconsistency found:");
-        node.print();
-        node.leftChild.print();
-        node.rightChild.print();
-        System.out.println(auxInfo.toString());
+        System.err.println("\nTree inconsistency found:");
+        if (node.depth == 1 && !weight_ok) {
+          System.err.println("Note: this is a known issue for DRF and Isolation Forest models, " +
+                  "please refer to https://0xdata.atlassian.net/browse/PUBDEV-6140");
+        }
+        node.print(System.err, "parent");
+        node.leftChild.print(System.err, "left child");
+        node.rightChild.print(System.err, "right child");
+        System.err.println("Auxiliary tree info:");
+        System.err.println(auxInfo.toString());
       }
     }
 
@@ -430,8 +654,8 @@ public abstract class SharedTreeMojoModel extends MojoModel {
     // Private
     //------------------------------------------------------------------------------------------------------------------
 
-    protected SharedTreeMojoModel(String[] columns, String[][] domains) {
-        super(columns, domains);
+    protected SharedTreeMojoModel(String[] columns, String[][] domains, String responseColumn) {
+        super(columns, domains, responseColumn);
     }
 
     /**
@@ -439,24 +663,119 @@ public abstract class SharedTreeMojoModel extends MojoModel {
      */
     protected void scoreAllTrees(double[] row, double[] preds) {
         java.util.Arrays.fill(preds, 0);
-        for (int i = 0; i < _ntrees_per_group; i++) {
-            int k = _nclasses == 1? 0 : i + 1;
-            for (int j = 0; j < _ntree_groups; j++) {
-                int itree = treeIndex(j, i);
-                // Skip all empty trees
-                if (_compressed_trees[itree] == null) continue;
-                if (_mojo_version.equals(1.0)) { //First version
-                    preds[k] += scoreTree0(_compressed_trees[itree], row, _nclasses, false);
-                } else if (_mojo_version.equals(1.1)) { //Second version
-                    preds[k] += scoreTree1(_compressed_trees[itree], row, _nclasses, false);
-                } else if (_mojo_version.equals(1.2)) { //CURRENT VERSION
-                    preds[k] += scoreTree(_compressed_trees[itree], row, _nclasses, false, _domains);
+        scoreTreeRange(row, 0, _ntree_groups, preds);
+    }
+
+    /**
+     * Transforms tree predictions into the final model predictions.
+     * For classification: converts tree preds into probability distribution and picks predicted class.
+     * For regression: projects tree prediction from link-space into the original space.
+     * @param row input row.
+     * @param offset offset.
+     * @param preds final output, same structure as of {@link SharedTreeMojoModel#score0}.
+     * @return preds array.
+     */
+    public abstract double[] unifyPreds(double[] row, double offset, double[] preds);
+
+  /**
+   * Generates a (per-class) prediction using only a single tree.
+   * @param row input row
+   * @param index index of the tree (0..N-1)
+   * @param preds array of partial predictions.
+   */
+    public final void scoreSingleTree(double[] row, int index, double preds[]) {
+      scoreTreeRange(row, index, index + 1, preds);
+    }
+
+    /**
+     * Generates (partial, per-class) predictions using only trees from a given range.
+     * @param row input row
+     * @param fromIndex low endpoint (inclusive) of the tree range
+     * @param toIndex high endpoint (exclusive) of the tree range
+     * @param preds array of partial predictions.
+     *              To get final predictions pass the result to {@link SharedTreeMojoModel#unifyPreds}.
+     */
+    public final void scoreTreeRange(double[] row, int fromIndex, int toIndex, double[] preds) {
+        final int clOffset = _nclasses == 1 ? 0 : 1;
+        for (int classIndex = 0; classIndex < _ntrees_per_group; classIndex++) {
+            int k = clOffset + classIndex;
+            int itree = treeIndex(fromIndex, classIndex);
+            for (int groupIndex = fromIndex; groupIndex < toIndex; groupIndex++) {
+                if (_compressed_trees[itree] != null) { // Skip all empty trees
+                  preds[k] += _scoreTree.scoreTree(_compressed_trees[itree], row, false, _domains);
                 }
+                itree++;
             }
         }
     }
 
-    protected int treeIndex(int groupIndex, int classIndex) {
+    // note that _ntree_group = _treekeys.length
+    // ntrees_per_group = _treeKeys[0].length
+    public String[] getDecisionPathNames() {
+      int classTrees = 0;
+      for (int i = 0; i < _ntrees_per_group; ++i) {
+        int itree = treeIndex(0, i);
+        if (_compressed_trees[itree] != null) classTrees++;
+      }
+      final int outputcols = _ntree_groups * classTrees;
+      final String[] names = new String[outputcols];
+      for (int c = 0; c < _ntrees_per_group; c++) {
+        for (int tidx = 0; tidx < _ntree_groups; tidx++) {
+          int itree = treeIndex(tidx, c);
+          if (_compressed_trees[itree] != null) {
+            names[itree] = "T" + (tidx + 1) + ".C" + (c + 1);
+          }
+        }
+      }
+      return names;
+    }
+
+    public static class LeafNodeAssignments {
+      public String[] _paths;
+      public int[] _nodeIds;
+    }
+
+    public LeafNodeAssignments getLeafNodeAssignments(final double[] row) {
+      LeafNodeAssignments assignments = new LeafNodeAssignments();
+      assignments._paths = new String[_compressed_trees.length];
+      if (_mojo_version >= 1.3 && _compressed_trees_aux != null) { // enable only for compatible MOJOs
+        assignments._nodeIds = new int[_compressed_trees_aux.length];
+      }
+      traceDecisions(row, assignments._paths, assignments._nodeIds);
+      return assignments;
+    }
+
+    public String[] getDecisionPath(final double[] row) {
+      String[] paths = new String[_compressed_trees.length];
+      traceDecisions(row, paths, null);
+      return paths;
+    }
+
+    private void traceDecisions(final double[] row, String[] paths, int[] nodeIds) {
+      if (_mojo_version < 1.2) {
+        throw new IllegalArgumentException("You can only obtain decision tree path with mojo versions 1.2 or higher");
+      }
+      for (int j = 0; j < _ntree_groups; j++) {
+        for (int i = 0; i < _ntrees_per_group; i++) {
+          int itree = treeIndex(j, i);
+          double d = scoreTree(_compressed_trees[itree], row, true, _domains);
+          if (paths != null)
+            paths[itree] = SharedTreeMojoModel.getDecisionPath(d);
+          if (nodeIds != null) {
+            assert _mojo_version >= 1.3;
+            nodeIds[itree] = SharedTreeMojoModel.getLeafNodeId(d, _compressed_trees_aux[itree]);
+          }
+        }
+      }
+    }
+
+    /**
+     * Locates a tree in the array of compressed trees.
+     * @param groupIndex index of the tree in a class-group of trees
+     * @param classIndex index of the class
+     * @return index of the tree in _compressed_trees.
+     */
+    final int treeIndex(int groupIndex, int classIndex) {
         return classIndex * _ntree_groups + groupIndex;
     }
 
@@ -473,12 +792,11 @@ public abstract class SharedTreeMojoModel extends MojoModel {
    * SET IN STONE FOR MOJO VERSION "1.00" - DO NOT CHANGE
    * @param tree
    * @param row
-   * @param nclasses
    * @param computeLeafAssignment
    * @return
    */
   @SuppressWarnings("ConstantConditions")  // Complains that the code is too complex. Well duh!
-  public static double scoreTree0(byte[] tree, double[] row, int nclasses, boolean computeLeafAssignment) {
+  public static double scoreTree0(byte[] tree, double[] row, boolean computeLeafAssignment) {
     ByteBufferWrapper ab = new ByteBufferWrapper(tree);
     GenmodelBitSet bs = null;  // Lazily set on hitting first group test
     long bitsRight = 0;
@@ -518,7 +836,6 @@ public abstract class SharedTreeMojoModel extends MojoModel {
           case 1:  ab.skip(ab.get2());  break;
           case 2:  ab.skip(ab.get3());  break;
           case 3:  ab.skip(ab.get4());  break;
-          case 16: ab.skip(nclasses < 256? 1 : 2);  break;  // Small leaf
           case 48: ab.skip(4);  break;  // skip the prediction
           default:
             assert false : "illegal lmask value " + lmask + " in tree " + Arrays.toString(tree);
@@ -547,12 +864,11 @@ public abstract class SharedTreeMojoModel extends MojoModel {
    * SET IN STONE FOR MOJO VERSION "1.10" - DO NOT CHANGE
    * @param tree
    * @param row
-   * @param nclasses
    * @param computeLeafAssignment
    * @return
    */
   @SuppressWarnings("ConstantConditions")  // Complains that the code is too complex. Well duh!
-  public static double scoreTree1(byte[] tree, double[] row, int nclasses, boolean computeLeafAssignment) {
+  public static double scoreTree1(byte[] tree, double[] row, boolean computeLeafAssignment) {
     ByteBufferWrapper ab = new ByteBufferWrapper(tree);
     GenmodelBitSet bs = null;
     long bitsRight = 0;
@@ -593,7 +909,6 @@ public abstract class SharedTreeMojoModel extends MojoModel {
           case 1:  ab.skip(ab.get2());  break;
           case 2:  ab.skip(ab.get3());  break;
           case 3:  ab.skip(ab.get4());  break;
-          case 16: ab.skip(nclasses < 256? 1 : 2);  break;  // Small leaf
           case 48: ab.skip(4);  break;  // skip the prediction
           default:
             assert false : "illegal lmask value " + lmask + " in tree " + Arrays.toString(tree);
@@ -630,4 +945,33 @@ public abstract class SharedTreeMojoModel extends MojoModel {
     return true;
   }
 
+    @Override
+    public SharedTreeGraph convert(final int treeNumber, final String treeClass) {
+        return _computeGraph(treeNumber);
+    }
+
+    /**
+     * Returns staged predictions of tree algorithms (prediction probabilities of trees per iteration).
+     * The output structure is for tree Tt and class Cc:
+     * Binomial models: [probability T1.C1, probability T2.C1, ..., Tt.C1] where Tt.C1 correspond to the the probability p0
+     * Multinomial models: [probability T1.C1, probability T1.C2, ..., Tt.Cc]
+     * @param row Input row.
+     * @param predsLength Length of prediction result.
+     * @return array of staged prediction probabilities
+     */
+    public double[] scoreStagedPredictions(double[] row, int predsLength) {
+        int contribOffset = nclasses() == 1 ? 0 : 1;
+        double[] trees_result = new double[_ntree_groups * _ntrees_per_group];
+
+        for (int groupIndex = 0; groupIndex < _ntree_groups; groupIndex++) {
+            double[] tmpPreds = new double[predsLength];
+            scoreTreeRange(row, 0, groupIndex+1, tmpPreds);
+            unifyPreds(row, 0, tmpPreds);
+            for (int classIndex = 0; classIndex < _ntrees_per_group; classIndex++) {
+                int tree_index = groupIndex * _ntrees_per_group + classIndex;
+                trees_result[tree_index] = tmpPreds[contribOffset+classIndex];
+            }
+        }
+        return trees_result;
+    }
 }

@@ -15,6 +15,7 @@ from .model_future import H2OModelFuture
 from .dim_reduction import H2ODimReductionModel
 from .autoencoder import H2OAutoEncoderModel
 from .multinomial import H2OMultinomialModel
+from .ordinal import H2OOrdinalModel
 from .regression import H2ORegressionModel
 from .binomial import H2OBinomialModel
 from .clustering import H2OClusteringModel
@@ -64,6 +65,8 @@ def _resolve_model(future_model, **kwargs):
         model = H2ORegressionModel(future_model.job.dest_key, model_json)
     elif model_type == "Multinomial":
         model = H2OMultinomialModel(future_model.job.dest_key, model_json)
+    elif model_type == "Ordinal":
+        model = H2OOrdinalModel(future_model.job.dest_key, model_json)
     elif model_type == "AutoEncoder":
         model = H2OAutoEncoderModel(future_model.job.dest_key, model_json)
     elif model_type == "DimReduction":

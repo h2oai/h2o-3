@@ -9,11 +9,8 @@ def h2onetwork_test():
     Python API test: h2o.network_test()
     Deprecated, use h2o.cluster().network_test().
     """
-    try:
-        h2o.network_test()    # no return type
-    except Exception as e:
-        assert False, "h2o.network_test() command is not working."
-
+    ret = h2o.network_test()    # no return type
+    assert ret is None
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(h2onetwork_test)

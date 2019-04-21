@@ -13,6 +13,7 @@ import gc
 import math
 import sys
 import time
+import numbers
 
 import tabulate
 
@@ -22,7 +23,7 @@ from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.compatibility import repr2, viewitems, viewvalues
 from h2o.utils.shared_utils import _is_fr, _py_tmp_key
 from h2o.model.model_base import ModelBase
-
+from h2o.expr_optimizer import optimize
 
 class ExprNode(object):
     """
@@ -75,12 +76,18 @@ class ExprNode(object):
     #  2 for _get_ast_str frame, 2 for _get_ast_str local dictionary list, 1 for parent
     MAGIC_REF_COUNT = 5 if sys.gettrace() is None else 7  # M = debug ? 7 : 5
 
-    def __init__(self, op="", *args):
+    # Flag to control application of local expression tree optimizations
+    __ENABLE_EXPR_OPTIMIZATIONS__ = True
+
+    def __init__(self, op="", *args):      
         # assert isinstance(op, str), op
         self._op = op  # Base opcode string
         self._children = tuple(
             a._ex if _is_fr(a) else a for a in args)  # ast children; if not None and _cache._id is not None then tmp
         self._cache = H2OCache()  # ncols, nrows, names, types
+        # try to fuse/simplify expression
+        if self.__ENABLE_EXPR_OPTIMIZATIONS__:
+            self._optimize()
 
     def _eager_frame(self):
         if not self._cache.is_empty(): return
@@ -97,6 +104,10 @@ class ExprNode(object):
         assert self._cache.is_scalar()
         return self._cache._data
 
+    def _eager_map_frame(self):  # returns a scalar (or a list of scalars)
+        self._eval_driver(False)
+        return self._cache
+
     def _eval_driver(self, top):
         exec_str = self._get_ast_str(top)
         res = ExprNode.rapids(exec_str)
@@ -110,7 +121,18 @@ class ExprNode(object):
         if 'key' in res:
             self._cache.nrows = res['num_rows']
             self._cache.ncols = res['num_cols']
+        if 'map_keys' in res:
+            self._cache.map_keys = res['map_keys']
+            self._cache.frames = res['frames']
         return self
+
+    def _optimize(self):
+        while True:
+            opt = optimize(self)
+            if opt is not None:
+                opt(ctx=None)
+            else:
+                break
 
     # Recursively build a rapids execution string.  Any object with more than
     # MAGIC_REF_COUNT referrers will be cached as a temp until the next client GC
@@ -125,7 +147,7 @@ class ExprNode(object):
             return str(self._cache._data) if self._cache.is_scalar() else self._cache._id
         if self._cache._id is not None:
             return self._cache._id  # Data already computed under ID, but not cached
-        # assert isinstance(self._children,tuple)
+        assert isinstance(self._children,tuple)
         exec_str = "({} {})".format(self._op, " ".join([ExprNode._arg_to_expr(ast) for ast in self._children]))
         gc_ref_cnt = len(gc.get_referrers(self))
         if top or gc_ref_cnt >= ExprNode.MAGIC_REF_COUNT:
@@ -154,6 +176,9 @@ class ExprNode(object):
                 return "[%d:%s:%d]" % (start, str((stop - start + step - 1) // step), step)
         if isinstance(arg, ModelBase):
             return arg.model_id
+        # Number representation without Py2 L suffix enforced
+        if isinstance(arg, numbers.Integral):
+            return repr2(arg).strip('L')
         return repr2(arg)
 
     def __del__(self):
@@ -162,6 +187,15 @@ class ExprNode(object):
                 ExprNode.rapids("(rm {})".format(self._cache._id))
         except (AttributeError, H2OConnectionError):
             pass
+
+    def arg(self, idx):
+        return self._children[idx]
+
+    def args(self):
+        return self._children
+
+    def narg(self):
+        return len(self._children)
 
     @staticmethod
     def _collapse_sb(sb):
@@ -294,18 +328,29 @@ class H2OCache(object):
 
     def is_valid(self):
         return (  # self._id is not None and
-                not self.is_empty() and \
+                not self.is_empty() and
                 self.nrows_valid() and
                 self.ncols_valid() and
                 self.names_valid() and
                 self.types_valid())
 
-    def fill(self, rows=10):
+    def fill(self, rows=10, rows_offset=0, cols=-1, full_cols=-1, cols_offset=0, light=False):
         assert self._id is not None
         if self._data is not None:
             if rows <= len(self):
                 return
-        res = h2o.api("GET /3/Frames/%s" % self._id, data={"row_count": rows})["frames"][0]
+        req_params = {
+            "row_count": rows,
+            "row_offset": rows_offset,
+            "column_count" : cols,
+            "full_column_count" : full_cols,
+            "column_offset" : cols_offset
+        }
+        if light:
+            endpoint = "/3/Frames/%s/light"
+        else:
+            endpoint = "/3/Frames/%s"
+        res = h2o.api("GET " + endpoint % self._id, data=req_params)["frames"][0]
         self._l = rows
         self._nrows = res["rows"]
         self._ncols = res["total_column_count"]
@@ -328,14 +373,15 @@ class H2OCache(object):
             else:
                 if c['data'] and (len(c['data']) > 0):  # orc file parse can return frame with zero rows
                     c['data'] = [float('nan') if x == "NaN" else x for x in c['data']]
-            self._data[c.pop('label')] = c  # Label used as the Key
+            if c['data']:
+                self._data[c.pop('label')] = c  # Label used as the Key
         return self
 
     #---- pretty printing ----
 
-    def _tabulate(self, tablefmt="simple", rollups=False):
+    def _tabulate(self, tablefmt="simple", rollups=False, rows=10):
         """Pretty tabulated string of all the cached data, and column names"""
-        if not self.is_valid(): self.fill()
+        if not self.is_valid(): self.fill(rows=rows)
         # Pretty print cached data
         d = collections.OrderedDict()
         # If also printing the rollup stats, build a full row-header

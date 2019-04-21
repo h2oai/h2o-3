@@ -11,7 +11,7 @@ public class LeaderboardV99 extends Schema<Leaderboard, LeaderboardV99> {
    * (e.g., "airlines" and "iris").
    */
   @API(help="Identifier for models that should be grouped together in the leaderboard", direction=API.Direction.INOUT)
-  public final String project = "<default>";
+  public final String project_name = "<default>";
 
   /**
    * List of models for this leaderboard, sorted by metric so that the best is first
@@ -19,6 +19,18 @@ public class LeaderboardV99 extends Schema<Leaderboard, LeaderboardV99> {
    */
   @API(help="List of models for this leaderboard, sorted by metric so that the best is first", direction=API.Direction.OUTPUT)
   public KeyV3.ModelKeyV3[] models;
+
+  /**
+   * Frame for which the metrics have been computed for this leaderboard.
+   */
+  @API(help="Frame for this leaderboard", direction=API.Direction.OUTPUT)
+  public KeyV3.FrameKeyV3[] leaderboard_frame;
+
+  /**
+   * Checksum for the Frame for which the metrics have been computed for this leaderboard.
+   */
+  @API(help="Checksum for the Frame for this leaderboard", direction=API.Direction.OUTPUT)
+  public long leaderboard_frame_checksum;
 
   /**
    * Sort metrics for the models in this leaderboard, in the same order as the models.

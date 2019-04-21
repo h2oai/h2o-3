@@ -20,7 +20,7 @@ troubleshooting tips:
    enter curl http://:54321 (where is the IP address of the second node.
    Then, log in to the second node and enter curl http://:54321 (where
    is the IP address of the first node). Look for output from H2O.
--  Confirm ports 54321 and 54322 are available for both TCP and UDP.
+-  Confirm ports 54321 and 54322 are available for TCP.
 -  Confirm your firewall is not preventing the nodes from locating each
    other.
 -  Confirm the nodes are not using different versions of H2O.
@@ -81,7 +81,7 @@ H2O uses two ports:
 -  The ``REST_API`` port (54321): Specify when launching H2O using
    ``-port``; uses TCP only.
 -  The ``INTERNAL_COMMUNICATION`` port (54322): Implied based on the
-   port specified as the ``REST_API`` port, +1; requires TCP and UDP.
+   port specified as the ``REST_API`` port, +1; requires TCP.
 
 You can start the cluster behind the firewall, but to reach it, you must
 make a tunnel to reach the ``REST_API`` port. To use the cluster, the
@@ -216,10 +216,7 @@ The following information displays for each message:
 -  ``HH:MM:SS:MS`` and ``nanosec``: The local time of the event
 -  ``Who``: The endpoint of the message; can be either a source/receiver
    node or source node and multicast for broadcasted messages
--  ``I/O Type``: The type of communication (either UDP for small
-   messages or TCP for large messages) >\ **Note**: UDP messages are
-   only sent if the UDP option was enabled when launching H2O or for
-   multicast when a flatfile is not used for configuration.
+-  ``I/O Type``: The type of communication (TCP)
 -  ``Event``: The type of H2O message. The most common type is a
    distributed task, which displays as ``exec`` (the requested task) ->
    ``ack`` (results of the processed task) -> ``ackck`` (sender

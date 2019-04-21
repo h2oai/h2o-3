@@ -3,6 +3,7 @@ package hex.tree;
 import java.util.Random;
 
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
+import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import water.*;
 import water.util.IcedBitSet;
 import water.util.SB;
@@ -24,26 +25,38 @@ import water.util.SB;
 //
 
 public class CompressedTree extends Keyed<CompressedTree> {
-  final byte [] _bits;
-  final int _nclass;     // Number of classes being predicted (for an integer prediction tree)
-  final long _seed;
-  final String[][] _domains;
 
-  public CompressedTree(byte[] bits, int nclass, long seed, int tid, int cls, String[][] domains) {
+  private static final String KEY_PREFIX = "tree_";
+
+  final byte [] _bits;
+  final long _seed;
+
+  public CompressedTree(byte[] bits, long seed, int tid, int cls) {
     super(makeTreeKey(tid, cls));
     _bits = bits;
-    _nclass = nclass;
     _seed = seed;
-    _domains = domains;
   }
 
-  public double score(final double row[]) {
-    return SharedTreeMojoModel.scoreTree(_bits, row, _nclass, false, _domains);
+  public double score(final double row[], final String[][] domains) {
+    return SharedTreeMojoModel.scoreTree(_bits, row, false, domains);
   }
 
-  public String getDecisionPath(final double row[]) {
-    double d = SharedTreeMojoModel.scoreTree(_bits, row, _nclass, true, _domains);
+  @Deprecated
+  public String getDecisionPath(final double row[], final String[][] domains) {
+    double d = SharedTreeMojoModel.scoreTree(_bits, row, true, domains);
     return SharedTreeMojoModel.getDecisionPath(d);
+  }
+
+  public <T> T getDecisionPath(final double row[], final String[][] domains, final SharedTreeMojoModel.DecisionPathTracker<T> tr) {
+    double d = SharedTreeMojoModel.scoreTree(_bits, row, true, domains);
+    return SharedTreeMojoModel.getDecisionPath(d, tr);
+  }
+
+  public SharedTreeSubgraph toSharedTreeSubgraph(final CompressedTree auxTreeInfo,
+                                                 final String[] colNames, final String[][] domains) {
+    TreeCoords tc = getTreeCoords();
+    String treeName = SharedTreeMojoModel.treeName(tc._treeId, tc._clazz, domains[domains.length - 1]);
+    return SharedTreeMojoModel.computeTreeGraph(tc._treeId, treeName, _bits, auxTreeInfo._bits, colNames, domains);
   }
 
   public Random rngForChunk(int cidx) {
@@ -86,8 +99,33 @@ public class CompressedTree extends Keyed<CompressedTree> {
     return Key.makeSystem("tree_" + treeId + "_" + clazz + "_" + Key.rand());
   }
 
+  /**
+   * Retrieves tree coordinates in the tree ensemble
+   * @return instance of TreeCoord
+   */
+  TreeCoords getTreeCoords() {
+    return TreeCoords.parseTreeCoords(_key);
+  }
+
   @Override protected long checksum_impl() {
     throw new UnsupportedOperationException();
+  }
+
+  static class TreeCoords {
+    int _treeId;
+    int _clazz;
+
+    private static TreeCoords parseTreeCoords(Key<CompressedTree> ctKey) {
+      String key = ctKey.toString();
+      int prefixIdx = key.indexOf(KEY_PREFIX);
+      if (prefixIdx < 0)
+        throw new IllegalStateException("Unexpected structure of a CompressedTree key=" + key);
+      String[] keyParts = key.substring(prefixIdx + KEY_PREFIX.length()).split("_", 3);
+      TreeCoords tc = new TreeCoords();
+      tc._treeId = Integer.valueOf(keyParts[0]);
+      tc._clazz = Integer.valueOf(keyParts[1]);
+      return tc;
+    }
   }
 
 }

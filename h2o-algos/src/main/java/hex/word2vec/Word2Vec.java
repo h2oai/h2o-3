@@ -92,6 +92,11 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
         model.update(_job); // Early version of model is visible
         double duration = (stop - start) / 1000.0;
         Log.info("Epoch " + i + " took "  + duration + "s; Words trained/s: " + actProcessedWords / duration);
+        model._output._epochs=i;
+
+        if (stop_requested()) { // do at least one iteration to avoid null model being returned and all hell will break loose
+          break;
+        }
       }
       long tstop  = System.currentTimeMillis();
       Log.info("Total time: " + (tstop - tstart) / 1000.0);
