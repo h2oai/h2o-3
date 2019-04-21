@@ -19,7 +19,7 @@ set -e
 # R
 # roxygen2 R pkg
 
-export H2O_VERSION="3.11.0"
+export H2O_VERSION="3.25.0"
 export PROJECT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
 mkdir -p man inst/java
