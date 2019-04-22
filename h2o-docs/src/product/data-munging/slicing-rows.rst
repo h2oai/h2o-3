@@ -118,5 +118,32 @@ The example below assumes that you have a dataframe (df) with a "date" column.
     library(h2o)
     h2o.init()
 
+    # upload the Walmart dataset from local machine
+    df <- h2o.uploadFile("~/Desktop/datasets/walmart_train.csv")
+    df
+          Store Dept         Date Weekly_Sales IsHoliday
+    1     1    1 1.265328e+12     24924.50     FALSE
+    2     1    1 1.265933e+12     46039.49      TRUE
+    3     1    1 1.266538e+12     41595.55     FALSE
+    4     1    1 1.267142e+12     19403.54     FALSE
+    5     1    1 1.267747e+12     21827.90     FALSE
+    6     1    1 1.268352e+12     21043.39     FALSE
+
+    # Delete entries from Dec 24, 2010
+    cut_date_epoch <-  as.numeric(as.POSIXct(as.Date("2010-12-24"))) * 1000
+    df2 <- df[df[, "Date"] <= cut_date_epoch, ]
+    df2
+      Store Dept         Date Weekly_Sales IsHoliday
+    1     1    1 1.265328e+12     24924.50     FALSE
+    2     1    1 1.265933e+12     46039.49      TRUE
+    3     1    1 1.266538e+12     41595.55     FALSE
+    4     1    1 1.267142e+12     19403.54     FALSE
+    5     1    1 1.267747e+12     21827.90     FALSE
+    6     1    1 1.268352e+12     21043.39     FALSE
+
+    [137736 rows x 5 columns] 
+
+
+
 
     
