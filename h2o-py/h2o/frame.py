@@ -2536,7 +2536,12 @@ class H2OFrame(object):
             plt.xlabel(self.names[0])
             plt.ylabel("Frequency")
             plt.title("Histogram of %s" % self.names[0])
-            plt.bar(left=lefts, width=widths, height=counts, bottom=0)
+
+            try:
+                plt.bar(left=lefts, width=widths, height=counts, bottom=0)
+            except TypeError:
+                plt.bar(x=lefts, height=counts, width=widths, bottom=0)
+
             if not server:
                 plt.show()
         else:
