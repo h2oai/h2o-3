@@ -9,7 +9,7 @@ tabulate==0.8.2
 slam==0.6.0
 cython==0.27.3
 twine==1.10.0
-urllib3==1.23
+urllib3==1.24.2
 grip==4.4.0
 wheel==0.30.0
 numpy==1.16.0
