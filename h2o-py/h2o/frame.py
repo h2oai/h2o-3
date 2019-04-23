@@ -15,7 +15,6 @@ import sys
 import tempfile
 import traceback
 import warnings
-import csv23
 from io import StringIO
 from types import FunctionType
 
@@ -1295,11 +1294,12 @@ class H2OFrame(object):
 
         :returns: A python object (a list of lists of strings, each list is a row, if use_pandas=False, otherwise
             a pandas DataFrame) containing this H2OFrame instance's data.
-        """
+        """ 
         if can_use_pandas() and use_pandas:
             import pandas
             return pandas.read_csv(StringIO(self.get_frame_data()), low_memory=False, skip_blank_lines=False)
-        frame = [row for row in csv23.reader(StringIO(self.get_frame_data()))]
+        from h2o.utils.csv.readers import reader
+        frame = [row for row in reader(StringIO(self.get_frame_data()))]
         if not header:
             frame.pop(0)
         return frame
