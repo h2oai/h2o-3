@@ -2537,10 +2537,16 @@ class H2OFrame(object):
             plt.ylabel("Frequency")
             plt.title("Histogram of %s" % self.names[0])
 
-            try:
-                plt.bar(left=lefts, width=widths, height=counts, bottom=0)
-            except TypeError:
-                plt.bar(x=lefts, height=counts, width=widths, bottom=0)
+            # matplotlib deprecated "left" arg in 2.1.0 and removed in 3.0.0
+            version_number = matplotlib.__version__
+            major = version_number.split('.')[0]
+            minor = version_number.split('.')[1]
+            major = int(major)
+            minor = int(minor)
+            if major == 2 and minor >= 1 or major >= 3:
+                plt.bar(x=lefts, width=widths, height=counts, bottom=0)
+            else:
+                plt.bar(left=lefts, height=counts, width=widths, bottom=0)
 
             if not server:
                 plt.show()
