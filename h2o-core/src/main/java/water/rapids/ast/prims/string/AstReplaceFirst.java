@@ -8,6 +8,7 @@ import water.rapids.Val;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
+import water.util.VecUtils;
 
 import java.util.HashSet;
 import java.util.Locale;
@@ -84,10 +85,9 @@ public class AstReplaceFirst extends AstPrimitive {
       return vec.makeCopy(doms);
     } else {
       newDomainSet = null;
-      final Vec copy = vec.makeCopy();
-      copy.remapDomain(doms);
-      return copy;
+      return VecUtils.remapDomain(doms, vec);
     }
+    
   }
 
   private Vec replaceFirstStringCol(Vec vec, String pat, String rep, boolean ic) {

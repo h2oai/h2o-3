@@ -1,5 +1,6 @@
 package water.rapids.ast.prims.string;
 
+import water.Key;
 import water.MRTask;
 import water.fvec.*;
 import water.parser.BufferedString;
@@ -8,6 +9,7 @@ import water.rapids.Val;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
+import water.util.VecUtils;
 
 import java.util.*;
 import java.util.regex.Pattern;
@@ -82,9 +84,7 @@ public class AstReplaceAll extends AstPrimitive {
       return vec.makeCopy(doms);
     } else {
       newDomainSet = null;
-      final Vec copy = vec.makeCopy();
-      copy.remapDomain(doms);
-      return copy;
+      return VecUtils.remapDomain(doms, vec);
     }
   }
 

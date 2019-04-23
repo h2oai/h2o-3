@@ -739,4 +739,90 @@ public class VecUtils {
     }
   }
 
+  /**
+   * Remaps vec's current domain levels to a new set of values. The cardinality of the new set of domain values might be
+   * less than or equal to the cardinality of current domain values. The new domain set is automatically extracted from
+   * the given mapping array.
+   * <p>
+   * Changes are made to this very vector, no copying is done. If you need the original vector to remain unmodified,
+   * please make sure to copy it first.
+   *
+   * @param newDomainValues An array of new domain values. For each old domain value, there must be a new value in
+   *                        this array. The value at each index of newDomainValues array represents the new mapping for
+   *                        this very index. May not be null.
+   * @param originalVec     Vector with values corresponding to the original domain to be remapped. Remains unmodified.
+   * @return A new instance of categorical {@link Vec} with exactly the same length as the original vector supplied.
+   * Its domain values are re-mapped.
+   * @throws UnsupportedOperationException When invoked on non-categorical vector
+   * @throws IllegalArgumentException      Length of newDomainValues must be equal to length of current domain values of
+   *                                       this vector
+   */
+  public static Vec remapDomain(final String[] newDomainValues, final Vec originalVec) throws UnsupportedOperationException, IllegalArgumentException {
+    // Sanity checks
+    Objects.requireNonNull(newDomainValues);
+    if (originalVec.domain() == null)
+      throw new UnsupportedOperationException("Unable to remap domain values on a non-categorical vector.");
+    if (newDomainValues.length != originalVec.domain().length) {
+      throw new IllegalArgumentException(String.format("For each of original domain levels, there must be a new mapping." +
+              "There are %o domain levels, however %o mappings were supplied.", originalVec.domain().length, newDomainValues.length));
+    }
+
+    // Create a map of new domain values pointing to indices in the array of old domain values in this vec
+    final Map<String, Set<Integer>> map = new HashMap<>();
+    for (int i = 0; i < newDomainValues.length; i++) {
+      Set<Integer> indices = map.get(newDomainValues[i]);
+      if (indices == null) {
+        indices = new HashSet<>(1);
+        indices.add(i);
+        map.put(newDomainValues[i], indices);
+      } else {
+        indices.add(i);
+      }
+    }
+
+    // Map from the old domain to the new domain
+    // There might actually be less domain levels after the transformation
+    final int[] indicesMap = MemoryManager.malloc4(originalVec.domain().length);
+    final String[] reducedDomain = new String[map.size()];
+    int reducedDomainIdx = 0;
+    for (String e : map.keySet()) {
+      final Set<Integer> oldDomainIndices = map.get(e);
+      reducedDomain[reducedDomainIdx] = e;
+      for (int idx : oldDomainIndices) {
+        indicesMap[idx] = reducedDomainIdx;
+      }
+      reducedDomainIdx++;
+    }
+
+    final RemapDomainTask remapDomainTask = new RemapDomainTask(indicesMap)
+            .doAll(new byte[]{Vec.T_CAT}, originalVec);
+
+    // Out of the mist of the RemapDomainTask comes a vector with remapped domain values
+    assert remapDomainTask.outputFrame().numCols() == 1;
+    Vec remappedVec = remapDomainTask.outputFrame().vec(0);
+    remappedVec.setDomain(reducedDomain);
+
+    return remappedVec;
+  }
+
+  /**
+   * Maps old categorical values (indices to old array of domain levels) to new categorical values
+   * (indices to a new array with new domain levels). Uses a simple array for mapping,
+   */
+  private static class RemapDomainTask extends MRTask<RemapDomainTask> {
+
+    private final int[] _domainIndicesMap;
+
+    public RemapDomainTask(int[] domainIndicesMap) {
+      _domainIndicesMap = domainIndicesMap;
+    }
+
+    @Override
+    public void map(Chunk c, NewChunk nc) {
+      for (int i = 0; i < c.len(); i++) {
+        nc.addCategorical(_domainIndicesMap[(int) c.at8(i)]);
+      }
+    }
+  }
+
 }
