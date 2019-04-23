@@ -2,6 +2,7 @@ package hex.svm;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.H2O;
 import water.TestUtil;
 import water.fvec.Frame;
 
@@ -20,9 +21,7 @@ public class IncompleteCholeskyFactorizationTest extends TestUtil  {
     Frame expected = null;
     Frame fr = parse_test_file("./smalldata/splice/splice.svm");
     try {
-      Kernel kernel = new GaussianKernel(0.01);
-      icf = IncompleteCholeskyFactorization.icf(fr, "C1", kernel, 3, 1e-6);
-
+      icf = H2O.runOnLeaderNode(new ICFTask(fr))._icf;
       expected = parse_test_file("./smalldata/splice/splice_icf3.csv");
       assertTrue(compareFrames(expected, icf, 1e-6));
     } finally {
@@ -34,4 +33,21 @@ public class IncompleteCholeskyFactorizationTest extends TestUtil  {
     }
   }
 
+  private static class ICFTask extends H2O.RemoteRunnable<ICFTask> {
+    // IN
+    private final Frame _fr;
+    // OUT
+    private Frame _icf;
+
+    ICFTask(Frame fr) {
+      _fr = fr;
+    }
+
+    @Override
+    public void run() {
+      Kernel kernel = new GaussianKernel(0.01);
+      _icf = IncompleteCholeskyFactorization.icf(_fr, "C1", kernel, 3, 1e-6);
+    }
+  }
+  
 }
