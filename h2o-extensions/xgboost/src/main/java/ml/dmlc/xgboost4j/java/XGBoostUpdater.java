@@ -52,20 +52,26 @@ public class XGBoostUpdater extends Thread {
     } catch (InterruptedException e) {
       XGBoostUpdater self = updaters.get(_modelKey);
       if (self != null) {
+        Log.err(e);
         throw new IllegalStateException("Updater thread was interrupted while it was still registered, name=" + self.getName());
       }
     } catch (XGBoostError e) {
+      Log.err(e);
       throw new IllegalStateException("XGBoost training iteration failed", e);
     } finally {
       _in = null; // Will throw NPE if used wrong
       _out = null;
-      _trainMat.dispose();
-      if (_booster != null)
-        _booster.dispose();
       updaters.remove(_modelKey);
       try {
+        _trainMat.dispose();
+        if (_booster != null)
+          _booster.dispose();
+      } catch (Exception e) {
+        Log.warn("Failed to dispose of training matrix/booster", e);
+      }
+      try {
         Rabit.shutdown();
-      } catch (XGBoostError xgBoostError) {
+      } catch (Exception xgBoostError) {
         Log.warn("Rabit shutdown during update failed", xgBoostError);
       }
     }
@@ -160,6 +166,7 @@ public class XGBoostUpdater extends Thread {
   static XGBoostUpdater make(Key<XGBoostModel> modelKey, DMatrix trainMat, BoosterParms boosterParms,
                              Map<String, String> rabitEnv) {
     XGBoostUpdater updater = new XGBoostUpdater(modelKey, trainMat, boosterParms, rabitEnv);
+    updater.setUncaughtExceptionHandler(LoggingExceptionHandler.INSTANCE);
     if (updaters.putIfAbsent(modelKey, updater) != null)
       throw new IllegalStateException("XGBoostUpdater for modelKey=" + modelKey + " already exists!");
     return updater;
@@ -185,4 +192,12 @@ public class XGBoostUpdater extends Thread {
     E call() throws XGBoostError;
   }
 
+  private static class LoggingExceptionHandler implements UncaughtExceptionHandler {
+    private static LoggingExceptionHandler INSTANCE = new LoggingExceptionHandler();
+    @Override
+    public void uncaughtException(Thread t, Throwable e) {
+      Log.err(e);
+    }
+  }
+  
 }
