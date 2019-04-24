@@ -8,8 +8,12 @@ import water.rapids.Val;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
+import water.util.VecUtils;
 
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * Accepts a frame with a single string column, a regex pattern string, a replacement substring,
@@ -65,13 +69,25 @@ public class AstReplaceFirst extends AstPrimitive {
   }
 
   private Vec replaceFirstCategoricalCol(Vec vec, String pattern, String replacement, boolean ignoreCase) {
+    final Pattern compiledPattern = Pattern.compile(pattern); // Compile the pattern once before replacement
     String[] doms = vec.domain().clone();
-    for (int i = 0; i < doms.length; ++i)
+    Set<String> newDomainSet = new HashSet<>(); // The pattern might create multiple domains with the same name
+    for (int i = 0; i < doms.length; ++i) {
       doms[i] = ignoreCase
-          ? doms[i].toLowerCase(Locale.ENGLISH).replaceFirst(pattern, replacement)
-          : doms[i].replaceFirst(pattern, replacement);
+              ? compiledPattern.matcher(doms[i].toLowerCase(Locale.ENGLISH)).replaceFirst(replacement)
+              : compiledPattern.matcher(doms[i]).replaceFirst(replacement);
+      newDomainSet.add(doms[i]);
+    }
 
-    return vec.makeCopy(doms);
+    if (newDomainSet.size() == doms.length) {
+      // Avoid remapping if cardinality is the same
+      newDomainSet = null;
+      return vec.makeCopy(doms);
+    } else {
+      newDomainSet = null;
+      return VecUtils.remapDomain(doms, vec);
+    }
+    
   }
 
   private Vec replaceFirstStringCol(Vec vec, String pat, String rep, boolean ic) {
@@ -89,14 +105,15 @@ public class AstReplaceFirst extends AstPrimitive {
 //          ((CStrChunk) chk).asciiReplaceFirst(newChk);
 //        } else { //UTF requires Java string methods for accuracy
           BufferedString tmpStr = new BufferedString();
+          final Pattern compiledPattern = Pattern.compile(pattern);
           for (int i = 0; i < chk._len; i++) {
             if (chk.isNA(i))
               newChk.addNA();
             else {
               if (ignoreCase)
-                newChk.addStr(chk.atStr(tmpStr, i).toString().toLowerCase(Locale.ENGLISH).replaceFirst(pattern, replacement));
+                newChk.addStr(compiledPattern.matcher(chk.atStr(tmpStr, i).toString().toLowerCase(Locale.ENGLISH)).replaceFirst(replacement));
               else
-                newChk.addStr(chk.atStr(tmpStr, i).toString().replaceFirst(pattern, replacement));
+                newChk.addStr(compiledPattern.matcher(chk.atStr(tmpStr, i).toString()).replaceFirst(replacement));
             }
           }
         }
