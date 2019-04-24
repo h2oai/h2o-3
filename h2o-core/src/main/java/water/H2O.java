@@ -1297,6 +1297,10 @@ final public class H2O {
     return runOnH2ONode(node, runnable);
   }
 
+  public static <T extends RemoteRunnable> T runOnLeaderNode(T runnable) {
+    return runOnH2ONode(H2O.CLOUD.leader(), runnable);
+  }
+
   // package-private for unit tests
   static <T extends RemoteRunnable> T runOnH2ONode(H2ONode node, T runnable) {
     if (node == H2O.SELF) {

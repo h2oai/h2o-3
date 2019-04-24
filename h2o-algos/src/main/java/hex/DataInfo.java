@@ -900,6 +900,29 @@ public class DataInfo extends Keyed<DataInfo> {
         res += vec[vec.length-1];
       return res;
     }
+    public final double innerProduct(DataInfo.Row row) {
+      assert !_intercept;
+      assert numIds == null;
+
+      double res = 0;
+      for (int i = 0; i < nBins; ++i)
+        if (binIds[i] == row.binIds[i])
+          res += 1;
+      for (int i = 0; i < numVals.length; ++i)
+        res += numVals[i] * row.numVals[i];
+
+      return res;
+    }
+    public final double twoNormSq() {
+      assert !_intercept;
+      assert numIds == null;
+
+      double res = nBins;
+      for (double v : numVals)
+        res += v * v;
+
+      return res;
+    }
 
     public double[] expandCats() {
       if(isSparse() || _responses > 0) throw H2O.unimpl();
