@@ -3,6 +3,8 @@ package water.api.schemas3;
 import water.*;
 import water.api.API;
 import water.api.schemas3.KeyV3.JobKeyV3;
+import water.exceptions.H2OIllegalArgumentException;
+import water.util.Log;
 import water.util.PojoUtils;
 
 import java.io.PrintWriter;
@@ -91,8 +93,17 @@ public class JobV3 extends SchemaV3<Job, JobV3> {
     msec = job.msec();
     ready_for_view = job.readyForView();
 
-    Keyed dest_type = (Keyed)TypeMap.theFreezable(job._typeid);
-    dest = job._result == null ? null : KeyV3.make(dest_type.makeSchema(),job._result);
+    Keyed dest_type;
+    Value value = null;
+    if (job._result != null) {
+      value = DKV.get(job._result);
+    }
+    if (value != null) {
+      dest_type = (Keyed) TypeMap.theFreezable(value.type());
+    } else {
+      dest_type = (Keyed) TypeMap.theFreezable(job._typeid);
+    }
+    dest = job._result == null ? null : KeyV3.make(dest_type.makeSchema(), job._result);
     return this;
   }
 
