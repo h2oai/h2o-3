@@ -52,12 +52,14 @@ public class XGBoostUpdater extends Thread {
     } catch (InterruptedException e) {
       XGBoostUpdater self = updaters.get(_modelKey);
       if (self != null) {
+        Log.err("Updater thread was interrupted while it was still registered, name=" + self.getName());
         Log.err(e);
-        throw new IllegalStateException("Updater thread was interrupted while it was still registered, name=" + self.getName());
+      } else {
+        Log.debug("Updater thread interrupted.", e);
       }
     } catch (XGBoostError e) {
+      Log.err("XGBoost training iteration failed");
       Log.err(e);
-      throw new IllegalStateException("XGBoost training iteration failed", e);
     } finally {
       _in = null; // Will throw NPE if used wrong
       _out = null;
@@ -196,6 +198,7 @@ public class XGBoostUpdater extends Thread {
     private static LoggingExceptionHandler INSTANCE = new LoggingExceptionHandler();
     @Override
     public void uncaughtException(Thread t, Throwable e) {
+      Log.err("Uncaught exception in " + t.getName());
       Log.err(e);
     }
   }
