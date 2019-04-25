@@ -27,4 +27,3 @@ mysqlclient
 recommonmark
 sphinx_rtd_theme
 sphinxcontrib-osexample
-csv23
