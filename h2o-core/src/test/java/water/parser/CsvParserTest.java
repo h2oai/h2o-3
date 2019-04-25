@@ -317,26 +317,4 @@ public class CsvParserTest {
     assertEquals(3, outWriter._nlines); // First line is headers, third line is skipped
   }
 
-  @Test
-  public void testParseDoubleUnendedDoubleQuotes(){
-    ParseSetup parseSetup = new ParseSetup();
-    parseSetup._parse_type = DefaultParserProviders.CSV_INFO;
-    parseSetup._check_header = ParseSetup.NO_HEADER;
-    parseSetup._separator = ',';
-    parseSetup._column_types = new byte[]{Vec.T_STR, Vec.T_STR};
-    parseSetup._column_names = new String[]{"C1"};
-    parseSetup._number_columns = 1;
-    parseSetup._single_quotes = false;
-    parseSetup._nonDataLineMarkers = new byte[0];
-    CsvParser csvParser = new CsvParser(parseSetup, null);
-
-    final Parser.ByteAryData byteAryData = new Parser.ByteAryData(StringUtils.bytesOf("\"first\nsecond"), 0);
-    final PreviewParseWriter parseWriter = new PreviewParseWriter(parseSetup._number_columns);
-    final PreviewParseWriter outWriter = (PreviewParseWriter) csvParser.parseChunk(0, byteAryData, parseWriter);
-
-    assertEquals(1, outWriter.lineNum());
-    assertEquals("first\nsecond", outWriter._data[1][0]);
-    assertFalse(outWriter.hasErrors());
-  }
-
 }
