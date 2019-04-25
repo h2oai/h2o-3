@@ -53,6 +53,10 @@ def call(final pipelineContext) {
     [
       stageName: 'Java 11 Smoke', target: 'test-junit-11-smoke-jenkins', javaVersion: 11, timeoutValue: 20,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
+    ],
+    [
+      stageName: 'Java 12 Smoke', target: 'test-junit-12-smoke-jenkins', javaVersion: 12, timeoutValue: 20,
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ]
   ]
 
@@ -192,6 +196,10 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Java 11 JUnit', target: 'test-junit-11-jenkins', pythonVersion: '2.7', javaVersion: 11,
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
+    ],
+    [
+      stageName: 'Java 12 JUnit', target: 'test-junit-12-jenkins', pythonVersion: '2.7', javaVersion: 12,
       timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
     ],
     [
