@@ -756,14 +756,11 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     sharedTreeNode.setInclusiveNa(inclusiveNA);
     sharedTreeNode.setNodeNumber(nodeIndex);
 
-    if (xgBoostNode.getLeftChildIndex() != -1) {
+    if (!xgBoostNode.isLeaf()) {
       constructSubgraph(xgBoostNodes, sharedTreeSubgraph.makeLeftChildNode(sharedTreeNode),
-              xgBoostNode.getLeftChildIndex(), sharedTreeSubgraph, featureProperties, xgBoostNode.default_left());
-    }
-
-    if (xgBoostNode.getRightChildIndex() != -1) {
+          xgBoostNode.getLeftChildIndex(), sharedTreeSubgraph, featureProperties, xgBoostNode.default_left());
       constructSubgraph(xgBoostNodes, sharedTreeSubgraph.makeRightChildNode(sharedTreeNode),
-              xgBoostNode.getRightChildIndex(), sharedTreeSubgraph, featureProperties, !xgBoostNode.default_left());
+          xgBoostNode.getRightChildIndex(), sharedTreeSubgraph, featureProperties, !xgBoostNode.default_left());
     }
   }
 
