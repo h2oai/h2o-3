@@ -25,7 +25,8 @@ public class IncompleteCholeskyFactorizationTest extends TestUtil  {
       expected = parse_test_file("./smalldata/splice/splice_icf3.csv");
       assertTrue(compareFrames(expected, icf, 1e-6));
     } finally {
-      expected.delete();
+      if (expected != null)
+        expected.delete();
       if (fr != null)
         fr.delete();
       if (icf != null)
