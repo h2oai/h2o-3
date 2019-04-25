@@ -6,6 +6,7 @@ import water.TestUtil;
 import water.fvec.Vec;
 import water.util.StringUtils;
 
+import java.io.ByteArrayInputStream;
 import java.util.StringTokenizer;
 
 import static org.junit.Assert.*;
@@ -317,4 +318,31 @@ public class CsvParserTest {
     assertEquals(3, outWriter._nlines); // First line is headers, third line is skipped
   }
 
+  /**
+   * PUBDEV-6408 - CSV - ArrayIndexOutOfBounds when quotes are parsed
+   */
+  @Test
+  public void testParseDoubleUnendedDoubleQuotes(){
+    ParseSetup parseSetup = new ParseSetup();
+    parseSetup._parse_type = DefaultParserProviders.CSV_INFO;
+    parseSetup._check_header = ParseSetup.NO_HEADER;
+    parseSetup._separator = ',';
+    parseSetup._column_types = new byte[]{Vec.T_STR, Vec.T_STR};
+    parseSetup._column_names = new String[]{"C1"};
+    parseSetup._number_columns = 1;
+    parseSetup._single_quotes = false;
+    parseSetup._nonDataLineMarkers = new byte[0];
+    CsvParser csvParser = new CsvParser(parseSetup, null);
+    
+      
+    final Parser.StreamData data = new Parser.StreamData(new ByteArrayInputStream("\"abcde,".getBytes()), 6);
+    data.setChunkDataStart(1, 2);
+    final PreviewParseWriter parseWriter = new PreviewParseWriter(parseSetup._number_columns);
+    final PreviewParseWriter outWriter = (PreviewParseWriter) csvParser.parseChunk(0, data, parseWriter);
+
+    assertEquals(1, outWriter.lineNum());
+    assertEquals("abcde,", outWriter._data[1][0]);
+    assertFalse(outWriter.hasErrors());
+  }
+  
 }
