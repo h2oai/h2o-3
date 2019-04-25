@@ -11,14 +11,14 @@ test.model.generic.mojo.convenience<- function() {
   mojo_original_path <- paste0(tempdir(),"/",mojo_original_name)
   
   # Mojo Import
-  mojo_model <- h2o.importMojo(mojo_original_path)
+  mojo_model <- h2o.import_mojo(mojo_original_path)
   
   predictions  <- h2o.predict(mojo_model, data)
   expect_equal(length(predictions), 4)
   expect_equal(h2o.nrow(predictions), 150)
   
   # MOJO Upload
-  mojo_model <- h2o.uploadMojo(mojo_original_path)
+  mojo_model <- h2o.upload_mojo(mojo_original_path)
   predictions  <- h2o.predict(mojo_model, data)
   expect_equal(length(predictions), 4)
   expect_equal(h2o.nrow(predictions), 150)

@@ -3773,7 +3773,7 @@ h2o.genericModel <- function(model_file_path){
 #' Imports a MOJO under given path, creating a Generic model with it.
 #'
 #' Usage example:
-#' mojo_model <- h2o.importMojo(model_file_path = "/path/to/mojo.zip")
+#' mojo_model <- h2o.import_mojo(model_file_path = "/path/to/mojo.zip")
 #' predictions <- h2o.predict(mojo_model, dataset)
 #'
 #' @param mojo_file_path Filesystem path to the model imported
@@ -3794,13 +3794,13 @@ h2o.genericModel <- function(model_file_path){
 #' mojo_original_path <- paste0(tempdir(),"/",mojo_original_name)
 #'
 #' # Import the MOJO and obtain a Generic model
-#' mojo_model <- h2o.importMojo(mojo_original_path)
+#' mojo_model <- h2o.import_mojo(mojo_original_path)
 #'
 #' # Perform scoring with the generic model
 #' predictions  <- h2o.predict(mojo_model, data)
 #' }
 #' @export
-h2o.importMojo <- function(mojo_file_path){
+h2o.import_mojo <- function(mojo_file_path){
   model_file_key <- h2o.importFile(mojo_file_path, parse = FALSE)
   model <- h2o.generic(model_key = model_file_key)
   print(model)
@@ -3811,7 +3811,7 @@ h2o.importMojo <- function(mojo_file_path){
 #' Imports a MOJO from a local filesystem, creating a Generic model with it.
 #'
 #' Usage example:
-#' mojo_model <- h2o.uploadMojo(model_file_path = "/path/to/local/mojo.zip")
+#' mojo_model <- h2o.upload_mojo(model_file_path = "/path/to/local/mojo.zip")
 #' predictions <- h2o.predict(mojo_model, dataset)
 #'
 #' @param mojo_local_file_path Filesystem path to the model imported
@@ -3832,13 +3832,13 @@ h2o.importMojo <- function(mojo_file_path){
 #' mojo_original_path <- paste0(tempdir(),"/",mojo_original_name)
 #'
 #' # Upload the MOJO from local filesystem and obtain a Generic model
-#' mojo_model <- h2o.uploadMojo(mojo_original_path)
+#' mojo_model <- h2o.upload_mojo(mojo_original_path)
 #'
 #' # Perform scoring with the generic model
 #' predictions  <- h2o.predict(mojo_model, data)
 #' }
 #' @export
-h2o.uploadMojo <- function(mojo_local_file_path){
+h2o.upload_mojo <- function(mojo_local_file_path){
   model_file_key <- h2o.uploadFile(mojo_local_file_path, parse = FALSE)
   model <- h2o.generic(model_key = model_file_key)
   print(model)
