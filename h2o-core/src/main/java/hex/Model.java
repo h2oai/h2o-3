@@ -1414,6 +1414,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         String sdomain[] = actual.domain(); // Scored/test domain; can be null
         if (sdomain != null && mdomain != sdomain && !Arrays.equals(mdomain, sdomain))
           output.replace(0, new CategoricalWrappedVec(actual.group().addVec(), actual._rowLayout, sdomain, predicted._key));
+        _toDelete.putIfAbsent(predicted._key, predicted._key.toString());
       }
     }
     Frame.deleteTempFrameAndItsNonSharedVecs(adaptFr, fr);
