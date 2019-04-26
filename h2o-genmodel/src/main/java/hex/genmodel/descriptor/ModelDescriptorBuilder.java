@@ -5,6 +5,7 @@ import hex.genmodel.ModelDescriptor;
 import hex.genmodel.MojoModel;
 
 import java.io.Serializable;
+import java.util.Arrays;
 
 public class ModelDescriptorBuilder {
     // Mandatory
@@ -110,6 +111,11 @@ public class ModelDescriptorBuilder {
             @Override
             public int nfeatures() {
                 return _nfeatures;
+            }
+
+            @Override
+            public String[] features() {
+                return Arrays.copyOf(columnNames(), nfeatures());
             }
 
             @Override

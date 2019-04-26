@@ -1,6 +1,7 @@
 package hex.tree.gbm;
 
 import hex.*;
+import hex.genmodel.MojoModel;
 import hex.genmodel.algos.gbm.GbmMojoModel;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
@@ -3716,6 +3717,55 @@ public class GBMTest extends TestUtil {
                                                                       // but we still learned something about those rows!
                                                                       // PUBDEV-6356 
     } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testGetFeatureNames() throws Exception {
+    GBMModel gbm = null;
+    try {
+      Scope.enter();
+      final Frame frame = new TestFrameBuilder()
+              .withName("getFeatureNamesTestFrame")
+              .withColNames("Fold", "ColA", "Response", "ColB", "Weight", "Offset", "ColC")
+              .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_STR, Vec.T_NUM, Vec.T_NUM, Vec.T_CAT)
+              .withDataForCol(0, ard(0, 1, 0, 1, 0, 1, 0))
+              .withDataForCol(1, ard(Double.NaN, 1, 2, 3, 4, 5.6, 7))
+              .withDataForCol(2, ard(1, 2, 3, 4, 1, 2, 3))
+              .withDataForCol(3, ar("A", "B", "C", "E", "F", "I", "J"))
+              .withDataForCol(4, ard(0.25, 0.25, 0.5, 0.5, 0.5, 0.75, 0.75))
+              .withDataForCol(5, ard(0.1, 0.1, 0.1, 0.1, 0.2, 0.2, 0.2))
+              .withDataForCol(6, ar("A", "B,", "A", "C", "A", "B", "A"))
+              .build();
+
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = frame._key;
+      parms._response_column = "Response";
+      parms._fold_column = "Fold";
+      parms._weights_column = "Weight";
+      parms._offset_column = "Offset";
+      parms._ntrees = 1;
+      parms._min_rows = 0.1;
+
+      gbm = new GBM(parms).trainModel().get();
+      Scope.track_generic(gbm);
+
+      String[] expectedFeatures = new String[]{"ColA", "ColC"}; // Note: ColB is dropped becuase it is a String column
+      
+      // check model
+      assertArrayEquals(expectedFeatures, gbm._output.features());
+      assertArrayEquals(expectedFeatures, gbm.modelDescriptor().features());
+      
+      // check mojo
+      MojoModel mojo = gbm.toMojo();
+      assertArrayEquals(expectedFeatures, mojo.features());
+      
+    } finally {
+      if (gbm != null) {
+        gbm.deleteCrossValidationModels();
+        gbm.deleteCrossValidationPreds();
+      }
       Scope.exit();
     }
   }

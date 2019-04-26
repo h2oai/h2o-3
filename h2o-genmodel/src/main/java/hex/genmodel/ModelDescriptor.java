@@ -27,6 +27,8 @@ public interface ModelDescriptor {
   boolean isSupervised();
 
   int nfeatures();
+  
+  String[] features();
 
   int nclasses();
 
