@@ -9,7 +9,7 @@ fi
 source ${2}
 
 echo "Installing Java ${JAVA_INSTALL_VERSION_MAJOR} to ${JAVA_INSTALL_PATH}"
-
+rm -rf ${JAVA_INSTALL_PATH}
 mkdir -p ${JAVA_INSTALL_PATH}
 cd ${JAVA_INSTALL_PATH}
 
