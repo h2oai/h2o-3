@@ -107,7 +107,7 @@ public class GenericModelTest extends TestUtil {
             genericModel = generic.trainModel().get();
 
             predictions = genericModel.score(testFrame);
-            assertEquals(2691, predictions.anyVec().length());
+            assertEquals(2691, predictions.numRows());
 
             final boolean equallyScored = genericModel.testJavaScoring(testFrame, predictions, 0);
             assertTrue(equallyScored);
@@ -154,7 +154,7 @@ public class GenericModelTest extends TestUtil {
             genericModel = generic.trainModel().get();
 
             predictions = genericModel.score(testFrame);
-            assertEquals(2691, predictions.anyVec().length());
+            assertEquals(2691, predictions.numRows());
 
             final boolean equallyScored = genericModel.testJavaScoring(testFrame, predictions, 0);
             assertTrue(equallyScored);
@@ -201,7 +201,7 @@ public class GenericModelTest extends TestUtil {
             genericModel = generic.trainModel().get();
 
             predictions = genericModel.score(testFrame);
-            assertEquals(2691, predictions.anyVec().length());
+            assertEquals(2691, predictions.numRows());
 
             final boolean equallyScored = genericModel.testJavaScoring(testFrame, predictions, 0);
             assertTrue(equallyScored);
@@ -248,7 +248,7 @@ public class GenericModelTest extends TestUtil {
             genericModel = generic.trainModel().get();
 
             predictions = genericModel.score(testFrame);
-            assertEquals(2691, predictions.anyVec().length());
+            assertEquals(2691, predictions.numRows());
 
             final boolean equallyScored = genericModel.testJavaScoring(testFrame, predictions, 0);
             assertTrue(equallyScored);
@@ -295,7 +295,7 @@ public class GenericModelTest extends TestUtil {
             genericModel = generic.trainModel().get();
 
             predictions = genericModel.score(testFrame);
-            assertEquals(2691, predictions.anyVec().length());
+            assertEquals(2691, predictions.numRows());
 
             final boolean equallyScored = genericModel.testJavaScoring(testFrame, predictions, 0);
             assertTrue(equallyScored);
@@ -341,7 +341,7 @@ public class GenericModelTest extends TestUtil {
             genericModel = generic.trainModel().get();
 
             predictions = genericModel.score(testFrame);
-            assertEquals(2691, predictions.anyVec().length());
+            assertEquals(2691, predictions.numRows());
 
             final boolean equallyScored = genericModel.testJavaScoring(testFrame, predictions, 0);
             assertTrue(equallyScored);
@@ -389,7 +389,7 @@ public class GenericModelTest extends TestUtil {
             genericModel = generic.trainModel().get();
 
             predictions = genericModel.score(testFrame);
-            assertEquals(2691, predictions.anyVec().length());
+            assertEquals(2691, predictions.numRows());
 
             final boolean equallyScored = genericModel.testJavaScoring(testFrame, predictions, 0);
             assertTrue(equallyScored);
@@ -436,7 +436,7 @@ public class GenericModelTest extends TestUtil {
             genericModel = generic.trainModel().get();
 
             predictions = genericModel.score(testFrame);
-            assertEquals(2691, predictions.anyVec().length());
+            assertEquals(2691, predictions.numRows());
 
             final boolean equallyScored = genericModel.testJavaScoring(testFrame, predictions, 0);
             assertTrue(equallyScored);
@@ -483,7 +483,7 @@ public class GenericModelTest extends TestUtil {
             genericModel = generic.trainModel().get();
 
             predictions = genericModel.score(testFrame);
-            assertEquals(2691, predictions.anyVec().length());
+            assertEquals(2691, predictions.numRows());
 
             final boolean equallyScored = genericModel.testJavaScoring(testFrame, predictions, 0);
             assertTrue(equallyScored);
