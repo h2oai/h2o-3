@@ -59,7 +59,8 @@ public class GetLogsFromNode extends Iced {
       try {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ZipOutputStream zos = new ZipOutputStream(baos);
-        zipDir(Log.LOG_DIR, baos, zos);
+        String archiveRoot = String.format("h2ologs_node%d_%s_%d", H2O.SELF.index(),  H2O.SELF_ADDRESS.getHostAddress(), H2O.API_PORT);
+        zipDir(Log.LOG_DIR, archiveRoot, baos, zos);
         zos.close();
         baos.close();
         _bytes = baos.toByteArray();
@@ -75,42 +76,42 @@ public class GetLogsFromNode extends Iced {
     }
 
     //here is the code for the method
-    private void zipDir(String dir2zip, ByteArrayOutputStream baos, ZipOutputStream zos) throws IOException
+    private void zipDir(String dir2zip, String pathInArchive, ByteArrayOutputStream baos, ZipOutputStream zos) throws IOException
     {
       try
       {
-        //create a new File object based on the directory we have to zip.
-        File zipDir = new File(dir2zip);
+        //convert paths represented as strings into File instances
+        File sourceDir = new File(dir2zip);
+        File destinationDir = new File(pathInArchive);
         //get a listing of the directory content
-        String[] dirList = zipDir.list();
-        byte[] readBuffer = new byte[4096];
+        String[] dirList = sourceDir.list();
+        byte[] readBuffer = new byte[4096]; 
         int bytesIn = 0;
         //loop through dirList, and zip the files
         for(int i=0; i<dirList.length; i++)
         {
-          File f = new File(zipDir, dirList[i]);
-          if(f.isDirectory())
+          File sourceFile = new File(sourceDir, dirList[i]);
+          File destinationFile = new File(destinationDir, dirList[i]);
+          if(sourceFile.isDirectory())
           {
             //if the File object is a directory, call this
-            //function again to add its content recursively
-            String filePath = f.getPath();
-            zipDir(filePath, baos, zos);
+            zipDir(sourceFile.getPath(), destinationFile.getPath(), baos, zos);
             //loop again
             continue;
           }
 
           // In the Sparkling Water case, when running in the local-cluster configuration,
           // there are jar files in the log directory too.  Ignore them.
-          if (f.toString().endsWith(".jar")) {
+          if (sourceFile.toString().endsWith(".jar")) {
             continue;
           }
 
           //if we reached here, the File object f was not a directory
           //create a FileInputStream on top of f
-          FileInputStream fis = new FileInputStream(f);
+          FileInputStream fis = new FileInputStream(sourceFile.getPath());
           // create a new zip entry
-          ZipEntry anEntry = new ZipEntry(f.getPath());
-          anEntry.setTime(f.lastModified());
+          ZipEntry anEntry = new ZipEntry(destinationFile.getPath());
+          anEntry.setTime(sourceFile.lastModified());
           //place the zip entry in the ZipOutputStream object
           zos.putNextEntry(anEntry);
           //now write the content of the file to the ZipOutputStream
