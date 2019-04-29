@@ -1531,6 +1531,33 @@ class {}Wrapper({}, MetricFunc, object):
     return "python:{}={}".format(dest_key, class_name)
 
 
+def import_mojo(mojo_path):
+    
+    """
+    Imports an existing MOJO model as an H2O model.
+    :param mojo_path: Path to the MOJO archive on the H2O's filesystem
+    :return: An H2OGenericEstimator instance embedding given MOJO
+    """
+    if mojo_path == None:
+        raise TypeError("MOJO path may not be None")
+    mojo_estimator = H2OGenericEstimator.from_file(mojo_path)
+    print(mojo_estimator)
+    return mojo_estimator
+
+def upload_mojo(mojo_path):
+    """
+    Uploads an existing MOJO model from local filesystem into H2O and imports it as an H2O Generic Model. 
+    :param mojo_path:  Path to the MOJO archive on the user's local filesystem
+    :return: An H2OGenericEstimator instance embedding given MOJO
+    """
+
+    response = api("POST /3/PostFile", filename=mojo_path)
+    frame_key = response["destination_frame"]
+    mojo_estimator = H2OGenericEstimator(model_key = get_frame(frame_key))
+    mojo_estimator.train()
+    print(mojo_estimator)
+    return mojo_estimator
+
 #-----------------------------------------------------------------------------------------------------------------------
 # Private
 #-----------------------------------------------------------------------------------------------------------------------

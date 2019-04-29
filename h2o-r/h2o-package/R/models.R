@@ -3735,14 +3735,14 @@ get_seed.H2OModel <- function(object) {
 h2o.get_seed <- get_seed.H2OModel
 
 
-#' Imports MOJO under given path, creating a Generic model with it.
+#' Imports a model under given path, creating a Generic model with it.
 #'
 #' Usage example:
 #' generic_model <- h2o.genericModel(model_file_path = "/path/to/mojo.zip")
 #' predictions <- h2o.predict(generic_model, dataset)
 #'
 #' @param model_file_path Filesystem path to the model imported
-#' @return Returns H2O Generic Model based on give embedded model
+#' @return Returns H2O Generic Model based on given embedded model
 #'
 #' @examples
 #' \donttest{
@@ -3768,4 +3768,79 @@ h2o.get_seed <- get_seed.H2OModel
 h2o.genericModel <- function(model_file_path){
   model_file_key <- h2o.importFile(model_file_path, parse = FALSE)
   h2o.generic(model_key = model_file_key)
+}
+
+#' Imports a MOJO under given path, creating a Generic model with it.
+#'
+#' Usage example:
+#' mojo_model <- h2o.import_mojo(model_file_path = "/path/to/mojo.zip")
+#' predictions <- h2o.predict(mojo_model, dataset)
+#'
+#' @param mojo_file_path Filesystem path to the model imported
+#' @return Returns H2O Generic Model embedding given MOJO model
+#'
+#' @examples
+#' \donttest{
+#'
+#' # Import default Iris dataset as H2O frame
+#' data <- as.h2o(iris)
+#'
+#' # Train a very simple GBM model
+#' features <- c("Sepal.Length", "Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width")
+#' original_model <- h2o.gbm(x=features, y = "Species", training_frame = data)
+#'
+#' # Download the trained GBM model as MOJO (temporary directory used in this example)
+#' mojo_original_name <- h2o.download_mojo(model = original_model, path = tempdir())
+#' mojo_original_path <- paste0(tempdir(),"/",mojo_original_name)
+#'
+#' # Import the MOJO and obtain a Generic model
+#' mojo_model <- h2o.import_mojo(mojo_original_path)
+#'
+#' # Perform scoring with the generic model
+#' predictions  <- h2o.predict(mojo_model, data)
+#' }
+#' @export
+h2o.import_mojo <- function(mojo_file_path){
+  model_file_key <- h2o.importFile(mojo_file_path, parse = FALSE)
+  model <- h2o.generic(model_key = model_file_key)
+  print(model)
+  return(model)
+}
+
+
+#' Imports a MOJO from a local filesystem, creating a Generic model with it.
+#'
+#' Usage example:
+#' mojo_model <- h2o.upload_mojo(model_file_path = "/path/to/local/mojo.zip")
+#' predictions <- h2o.predict(mojo_model, dataset)
+#'
+#' @param mojo_local_file_path Filesystem path to the model imported
+#' @return Returns H2O Generic Model embedding given MOJO model
+#'
+#' @examples
+#' \donttest{
+#'
+#' # Import default Iris dataset as H2O frame
+#' data <- as.h2o(iris)
+#'
+#' # Train a very simple GBM model
+#' features <- c("Sepal.Length", "Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width")
+#' original_model <- h2o.gbm(x=features, y = "Species", training_frame = data)
+#'
+#' # Download the trained GBM model as MOJO (temporary directory used in this example)
+#' mojo_original_name <- h2o.download_mojo(model = original_model, path = tempdir())
+#' mojo_original_path <- paste0(tempdir(),"/",mojo_original_name)
+#'
+#' # Upload the MOJO from local filesystem and obtain a Generic model
+#' mojo_model <- h2o.upload_mojo(mojo_original_path)
+#'
+#' # Perform scoring with the generic model
+#' predictions  <- h2o.predict(mojo_model, data)
+#' }
+#' @export
+h2o.upload_mojo <- function(mojo_local_file_path){
+  model_file_key <- h2o.uploadFile(mojo_local_file_path, parse = FALSE)
+  model <- h2o.generic(model_key = model_file_key)
+  print(model)
+  return(model)
 }
