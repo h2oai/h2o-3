@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*- 
 from h2o import H2OFrame
 from tests import pyunit_utils
 

@@ -1283,7 +1283,6 @@ class H2OFrame(object):
             else:
                 print("num {}".format(" ".join(it[0] if it else "nan" for it in h2o.as_list(self[:10, i], False)[1:])))
 
-
     def as_data_frame(self, use_pandas=True, header=True):
         """
         Obtain the dataset as a python-local object.
@@ -1295,11 +1294,12 @@ class H2OFrame(object):
 
         :returns: A python object (a list of lists of strings, each list is a row, if use_pandas=False, otherwise
             a pandas DataFrame) containing this H2OFrame instance's data.
-        """
+        """ 
         if can_use_pandas() and use_pandas:
             import pandas
             return pandas.read_csv(StringIO(self.get_frame_data()), low_memory=False, skip_blank_lines=False)
-        frame = [row for row in csv.reader(StringIO(self.get_frame_data()))]
+        from h2o.utils.csv.readers import reader
+        frame = [row for row in reader(StringIO(self.get_frame_data()))]
         if not header:
             frame.pop(0)
         return frame

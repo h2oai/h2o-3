@@ -704,6 +704,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public int nfeatures() {
       return _names.length - (_hasOffset?1:0)  - (_hasWeights?1:0) - (_hasFold?1:0) - (isSupervised()?1:0);
     }
+    /** Returns features used by the model */
+    public String[] features() {
+      return Arrays.copyOf(_names, nfeatures());
+    }
 
     /** List of all the associated ModelMetrics objects, so we can delete them
      *  when we delete this model. */
@@ -2544,7 +2548,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
   }
 
-  ModelDescriptor modelDescriptor() {
+  public ModelDescriptor modelDescriptor() {
     return new ModelDescriptor() {
       @Override
       public String[][] scoringDomains() { return Model.this.scoringDomains(); }
@@ -2566,6 +2570,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       public boolean isSupervised() { return _output.isSupervised(); }
       @Override
       public int nfeatures() { return _output.nfeatures(); }
+      @Override
+      public String[] features() { return _output.features(); }
       @Override
       public int nclasses() { return _output.nclasses(); }
       @Override

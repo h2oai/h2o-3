@@ -24,6 +24,12 @@ public interface IGenModel {
   int nfeatures();
 
   /**
+   * Returns names of input features.
+   * @return names of input features used for training.
+   */
+  String[] features();
+
+  /**
    * Returns number of output classes for classifiers or 1 for regression models. For unsupervised models returns 0.
    * @return returns number of output classes or 1 for regression models.
    */

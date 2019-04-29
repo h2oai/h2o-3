@@ -160,6 +160,11 @@ public class MojoPipelineWriter extends AbstractMojoWriter {
     }
 
     @Override
+    public String[] features() {
+      return Arrays.copyOf(columnNames(), nfeatures());
+    }
+
+    @Override
     public int nclasses() {
       return _finalModel.nclasses();
     }
