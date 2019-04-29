@@ -4,6 +4,8 @@ import ai.h2o.automl.AutoML;
 import ai.h2o.automl.EventLog;
 import ai.h2o.automl.Leaderboard;
 import water.DKV;
+import water.Iced;
+import water.Key;
 import water.api.API;
 import water.api.schemas3.KeyV3;
 import water.api.schemas3.SchemaV3;
@@ -11,8 +13,17 @@ import water.api.schemas3.TwoDimTableV3;
 
 // TODO: this is about to change from SchemaV3 to RequestSchemaV3:
 public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
+
+  public static class AutoMLKeyV3 extends KeyV3<Iced, AutoMLKeyV3, AutoML> {
+    public AutoMLKeyV3() { }
+
+    public AutoMLKeyV3(Key<AutoML> key) {
+      super(key);
+    }
+  }
+
   @API(help="Optional AutoML run ID; omitting this returns all runs", direction=API.Direction.INPUT)
-  public AutoML.AutoMLKeyV3 automl_id;
+  public AutoMLKeyV3 automl_id;
 
   @API(help="ID of the actual training frame for this AutoML run after any automatic splitting", direction=API.Direction.OUTPUT)
   public KeyV3.FrameKeyV3 training_frame;
@@ -56,7 +67,7 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
     this.project_name = autoML.projectName();
 
     if (null != autoML._key) {
-      this.automl_id = new AutoML.AutoMLKeyV3(autoML._key);
+      this.automl_id = new AutoMLKeyV3(autoML._key);
     }
 
     if (null != autoML.getTrainingFrame()) {
@@ -87,7 +98,7 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
 
     EventLog eventLog = autoML.eventLog();
     if (null == eventLog) {
-      eventLog = new EventLog(autoML);
+      eventLog = new EventLog(autoML._key);
     }
     this.event_log = new EventLogV99().fillFromImpl(eventLog);
     String tableHeader = (autoML._key == null ? "(new)" : autoML._key.toString());

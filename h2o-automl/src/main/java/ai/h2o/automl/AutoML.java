@@ -18,7 +18,6 @@ import hex.tree.drf.DRFModel.DRFParameters;
 import hex.tree.gbm.GBMModel.GBMParameters;
 import hex.tree.xgboost.XGBoostModel.XGBoostParameters;
 import water.*;
-import water.api.schemas3.KeyV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -180,18 +179,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return autoML;
   }
 
-  public static class AutoMLKeyV3 extends KeyV3<Iced, AutoMLKeyV3, AutoML> {
-    public AutoMLKeyV3() { }
-
-    public AutoMLKeyV3(Key<AutoML> key) {
-      super(key);
-    }
-  }
-
-  @Override
-  public Class<AutoMLKeyV3> makeSchema() {
-    return AutoMLKeyV3.class;
-  }
+//  @Override
+//  public Class<AutoMLV99.AutoMLKeyV3> makeSchema() {
+//    return AutoMLV99.AutoMLKeyV3.class;
+//  }
 
   enum JobType {
     Unknown,
@@ -256,7 +247,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     this.runCountdown = Countdown.fromSeconds(buildSpec.build_control.stopping_criteria.max_runtime_secs());
 
     try {
-      eventLog = new EventLog(this);
+      eventLog = new EventLog(this._key);
       eventLog.info(Stage.Workflow, "Project: " + projectName());
       eventLog.info(Stage.Workflow, "AutoML job created: " + EventLogEntry.dateTimeFormat.format(this.startTime))
               .setNamedValue("creation_epoch", this.startTime, EventLogEntry.epochFormat);
@@ -356,7 +347,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
             .setNamedValue("model_count", modelCount);
 
     Log.info(eventLog.toString("Event Log for AutoML Run " + this._key + ":"));
-    for (EventLogEntry event : eventLog.events)
+    for (EventLogEntry event : eventLog._events)
       Log.info(event);
 
     if (0 < this.leaderboard().getModelKeys().length) {

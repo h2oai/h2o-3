@@ -1,6 +1,7 @@
 package ai.h2o.automl;
 
 import water.Iced;
+import water.Key;
 import water.util.TwoDimTable;
 
 import java.io.Serializable;
@@ -110,8 +111,7 @@ public class EventLogEntry<V extends Serializable> extends Iced {
   private final int longestLevel = longest(Level.class); // for formatting
   private final int longestStage = longest(Stage.class); // for formatting
 
-  transient private AutoML _autoML;
-
+  private Key<AutoML> _automlKey;
   private long _timestamp;
   private Level _level;
   private Stage _stage;
@@ -124,7 +124,7 @@ public class EventLogEntry<V extends Serializable> extends Iced {
     return _timestamp;
   }
 
-  public AutoML getAutoML() { return _autoML; }
+  public Key<AutoML> getAutomlKey() { return _automlKey; }
 
   public Level getLevel() {
     return _level;
@@ -150,12 +150,12 @@ public class EventLogEntry<V extends Serializable> extends Iced {
     return _valueFormatter;
   }
 
-  public EventLogEntry(AutoML autoML, Level level, Stage stage, String message) {
-    this._timestamp = System.currentTimeMillis();
-    this._autoML = autoML;
-    this._level = level;
-    this._stage = stage;
-    this._message = message;
+  public EventLogEntry(Key<AutoML> automlKey, Level level, Stage stage, String message) {
+    _timestamp = System.currentTimeMillis();
+    _automlKey = automlKey;
+    _level = level;
+    _stage = stage;
+    _message = message;
   }
 
   public void setNamedValue(String name, V value) {

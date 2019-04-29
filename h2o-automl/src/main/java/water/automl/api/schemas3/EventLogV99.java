@@ -7,7 +7,7 @@ import water.api.Schema;
 
 public class EventLogV99 extends Schema<EventLog, EventLogV99> {
   @API(help="ID of the AutoML run for which the event log was recorded", direction=API.Direction.INOUT)
-  public AutoML.AutoMLKeyV3 automl_id;
+  public AutoMLV99.AutoMLKeyV3 automl_id;
 
   @API(help="List of events produced during the AutoML run", direction=API.Direction.OUTPUT)
   public EventLogEntryV99[] events;
@@ -15,14 +15,14 @@ public class EventLogV99 extends Schema<EventLog, EventLogV99> {
   @Override public EventLogV99 fillFromImpl(EventLog eventLog) {
     super.fillFromImpl(eventLog, new String[] { "automl_id", "events" });
 
-    if (null != eventLog.autoML) {
-      this.automl_id = new AutoML.AutoMLKeyV3(eventLog.autoML._key);
+    if (null != eventLog._automlKey) {
+      this.automl_id = new AutoMLV99.AutoMLKeyV3(eventLog._automlKey);
     }
 
-    if (null != eventLog.events) {
-      this.events = new EventLogEntryV99[eventLog.events.length];
-      for (int i = 0; i < eventLog.events.length; i++)
-        this.events[i] = new EventLogEntryV99().fillFromImpl(eventLog.events[i]);
+    if (null != eventLog._events) {
+      this.events = new EventLogEntryV99[eventLog._events.length];
+      for (int i = 0; i < eventLog._events.length; i++)
+        this.events[i] = new EventLogEntryV99().fillFromImpl(eventLog._events[i]);
     }
 
     return this;

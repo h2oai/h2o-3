@@ -148,16 +148,6 @@ public class Leaderboard extends Keyed<Leaderboard> {
     return newLeaderboard;
   }
 
-  // satisfy typing for job return type...
-  public static class LeaderboardKeyV3 extends KeyV3<Iced, LeaderboardKeyV3, Leaderboard> {
-    public LeaderboardKeyV3() {
-    }
-
-    public LeaderboardKeyV3(Key<Leaderboard> key) {
-      super(key);
-    }
-  }
-
   public static String idForProject(String project_name) { return "AutoML_Leaderboard_" + project_name; }
 
   public String getProject() {
