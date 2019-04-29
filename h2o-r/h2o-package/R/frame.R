@@ -76,6 +76,41 @@ chk.H2OFrame <- function(fr) if( is.H2OFrame(fr) ) fr else stop("must be an H2OF
   reg.finalizer(node, .nodeFinalizer, onexit=TRUE)
   node
 }
+# Compute how many chars to trim at the end of file
+.calcCharsToTrim <- function(last, secondLast){
+    charsToTrim <- 0
+    if (last == "\n") charsToTrim  <- charsToTrim  + 1L
+    if (charsToTrim > 0L) {
+        if (secondLast == "\r") charsToTrim <- charsToTrim + 1L
+    }
+    charsToTrim
+}
+
+
+# Write dataframe to file if the data is too big
+
+.writeBinToTmpFile <- function(data){
+    tmpFile <- tempfile("writebigdata", tempdir(), ".csv")
+    outputFile <- file(tmpFile, "wb")
+    from <- 1
+    n <- length(data)
+    # The chunk size should be optimal to distribute data into similarly sized chunks
+    # to avoid the last chunk has only a small amount of data 
+    chunkSize <- ceiling(n/ceiling(n/.Machine$integer.max))
+    conFlag <- TRUE
+    while(conFlag){
+        to <- from + chunkSize
+        if(to >= n)  {
+            to <- n - .calcCharsToTrim(rawToChar(data[n]), rawToChar(data[n-1]))
+            conFlag <- FALSE
+        }
+        writeBin(data[from:to], outputFile)
+        from <- to + 1
+    }
+    close(outputFile)
+    tmpFile
+}
+
 
 #
 # Overload Assignment!
@@ -3408,14 +3443,12 @@ as.data.frame.H2OFrame <- function(x, ...) {
 
   # Convert all date columns to POSIXct
   dates <- attr(x, "types") %in% "time"
-
-  MAX_INTEGER_LIMIT <- 2147483647
     
   nCol <- attr(x, "ncol")
   nRow <- attr(x, "nrow")
     
-  if(nCol * nRow > MAX_INTEGER_LIMIT){
-    stop("It is not possible convert H2OFrame to data.frame/data.table. The H2OFrame is bigger than vector size limit for R (number columns * number of rows have to be less than 2147483647)")  
+  if(nCol > .Machine$integer.max || nRow > .Machine$integer.max){
+    stop("It is not possible convert H2OFrame to data.frame/data.table. The H2OFrame is bigger than vector size limit for R.")  
   }  
     
   # Versions of R prior to 3.1 should not use hex string.
@@ -3434,47 +3467,22 @@ as.data.frame.H2OFrame <- function(x, ...) {
 
   # Delete last 1 or 2 characters if it's a newline. 
   # Handle \r\n (for windows) or just \n (for not windows).
-  chtt <- 0  
-  calcCharsToTrim <- function(last, secondLast){
-    charsToTrim <- 0
-    if (last == "\n") charsToTrim  <- charsToTrim  + 1L
-    if (charsToTrim > 0L) {
-      if (secondLast == "\r") charsToTrim <- charsToTrim + 1L
-    }
-    charsToTrim
-  }  
+  chtt <- 0
   
-  if(payloadSize < MAX_INTEGER_LIMIT)  {
+  if(payloadSize < .Machine$integer.max)  {
     useCon <- TRUE
     ttt <- rawToChar(payload)
     n <- nchar(ttt)
     if(n >= 2){  
-      chtt <- calcCharsToTrim(substr(ttt, n, n), substr(ttt, n-1, n-1))
+      chtt <- .calcCharsToTrim(substr(ttt, n, n), substr(ttt, n-1, n-1))
     }
     if (chtt > 0) {
       ttt <- substr(ttt, 1, n-chtt)
     }
   } else {
-    # Data are too big to use the rawToChar method - instead, save binary data to a temporary file 
+    # Data are too big to use the rawToChar method - instead, save binary data to a temporary file and read it
     useCon <- FALSE
-    ttt <- tempfile("writebigdata", tempdir(), ".csv")
-    outputFile <- file(ttt, "wb")  
-    from <- 1
-    n <- length(payload)
-    # The chunk size should be optimal to distribute data into similarly sized chunks
-    # to avoid the last chunk has only a small amount of data 
-    chunkSize <- ceiling(n/ceiling(n/MAX_INTEGER_LIMIT)) 
-    conFlag <- TRUE
-    while(conFlag){
-      to <- from + chunkSize
-      if(to >= n)  {
-          to <- n - calcCharsToTrim(rawToChar(payload[n]), rawToChar(payload[n-1]))
-          conFlag <- FALSE
-      }
-      writeBin(payload[from:to], outputFile)
-      from <- to + 1
-    }
-    close(outputFile)
+    ttt <- .writeBinToTmpFile(payload)
   }
   if (verbose) cat(sprintf("fetching from h2o frame to R using '.h2o.doSafeGET' took %.2fs\n", proc.time()[[3]]-pt))
   
@@ -3490,14 +3498,14 @@ as.data.frame.H2OFrame <- function(x, ...) {
       df <- read.csv((tcon <- textConnection(ttt)), blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, ...)
       close(tcon)
     } else {
-      df <- read.csv(ttt, blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, ...)  
+      df <- read.csv(ttt, blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, ...)
     }
     if (sum(dates))
       for (i in which(dates)) class(df[[i]]) = "POSIXct"
     fun <- "read.csv"
   }
+  if (!useCon && file.exists(ttt)) file.remove(ttt)  
   if (verbose) cat(sprintf("reading csv from disk using '%s' took %.2fs\n", fun, proc.time()[[3]]-pt))
-  
   df
 }
 
@@ -3514,7 +3522,16 @@ as.data.frame.H2OFrame <- function(x, ...) {
 #' print(mins)
 #' }
 #' @export
-as.matrix.H2OFrame <- function(x, ...) as.matrix(as.data.frame.H2OFrame(x, ...))
+as.matrix.H2OFrame <- function(x, ...) {
+  .fetch.data(x,1L)   
+  nCol <- attr(x, "ncol")
+  nRow <- attr(x, "nrow")
+
+  if(nCol * nRow > .Machine$integer.max){
+    stop("It is not possible convert H2OFrame to data.frame/data.table. The H2OFrame is bigger than vector size limit for R.")
+  }
+  as.matrix(as.data.frame.H2OFrame(x, ...))
+}
 
 #' Convert an H2OFrame to a vector
 #'
