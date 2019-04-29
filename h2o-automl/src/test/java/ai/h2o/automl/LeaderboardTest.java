@@ -5,6 +5,7 @@ import hex.tree.gbm.GBMModel;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.Key;
 import water.fvec.Frame;
 import water.util.TwoDimTable;
 
@@ -17,10 +18,12 @@ public class LeaderboardTest extends water.TestUtil {
     stall_till_cloudsize(1);
   }
 
+  private static Key<AutoML> dummy = Key.make();
+
   @Test
   public void test_toTwoDimTable_with_empty_models_and_without_sort_metric() {
     Leaderboard lb = null;
-    EventLog ufb = new EventLog(new AutoML());
+    EventLog ufb = new EventLog(dummy);
     try {
       lb = Leaderboard.getOrMakeLeaderboard("dummy_lb_no_sort_metric", ufb, new Frame(), null);
 
@@ -36,7 +39,7 @@ public class LeaderboardTest extends water.TestUtil {
   @Test
   public void test_toTwoDimTable_with_empty_models_and_with_sort_metric() {
     Leaderboard lb = null;
-    EventLog ufb = new EventLog(new AutoML());
+    EventLog ufb = new EventLog(dummy);
     try {
       lb = Leaderboard.getOrMakeLeaderboard("dummy_lb_logloss_sort_metric", ufb, new Frame(), "logloss");
 
@@ -53,7 +56,7 @@ public class LeaderboardTest extends water.TestUtil {
   @Test
   public void test_rank_tsv() {
     Leaderboard lb = null;
-    EventLog ufb = new EventLog(new AutoML());
+    EventLog ufb = new EventLog(dummy);
     GBMModel model = null;
     Frame fr  = null;
     try {

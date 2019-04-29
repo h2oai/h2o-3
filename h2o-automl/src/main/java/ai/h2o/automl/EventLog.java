@@ -18,19 +18,14 @@ import static water.Key.make;
  */
 public class EventLog extends Keyed<EventLog> {
 
-  public EventLogEntry[] events;
-  transient public AutoML autoML; // don't serialize
+  public Key<AutoML> _automlKey;
+  public EventLogEntry[] _events;
 
-  public EventLog(AutoML autoML) {
-    this._key = make(idForRun(autoML._key));
-    this.autoML = autoML;
-
-    EventLog old = DKV.getGet(this._key);
-
-    if (null == old || null == events) {
-      events = new EventLogEntry[0];
-      DKV.put(this);
-    }
+  public EventLog(Key<AutoML> automlKey) {
+    _automlKey = automlKey;
+    _key = make(idForRun(automlKey));
+    _events = new EventLogEntry[0];
+    DKV.put(this);
   }
 
   public static String idForRun(Key<AutoML> runKey) {
@@ -59,24 +54,24 @@ public class EventLog extends Keyed<EventLog> {
 
   /** Add a EventLogEntry, but don't log. */
   public <V extends Serializable> EventLogEntry<V> addEvent(Level level, Stage stage, String message) {
-    EventLogEntry<V> entry = new EventLogEntry<>(autoML, level, stage, message);
+    EventLogEntry<V> entry = new EventLogEntry<>(_automlKey, level, stage, message);
     addEvent(entry);
     return entry;
   }
 
   /** Add a EventLogEntry, but don't log. */
   public void addEvent(EventLogEntry event) {
-    EventLogEntry[] oldEvents = events;
-    events = new EventLogEntry[events.length + 1];
-    System.arraycopy(oldEvents, 0, events, 0, oldEvents.length);
-    events[oldEvents.length] = event;
+    EventLogEntry[] oldEvents = _events;
+    _events = new EventLogEntry[_events.length + 1];
+    System.arraycopy(oldEvents, 0, _events, 0, oldEvents.length);
+    _events[oldEvents.length] = event;
   } // addEvent
 
   /**
    * Delete everything in the DKV that this points to.  We currently need to be able to call this after deleteWithChildren().
    */
   public void delete() {
-    events = new EventLogEntry[0];
+    _events = new EventLogEntry[0];
     remove();
   }
 
@@ -85,10 +80,10 @@ public class EventLog extends Keyed<EventLog> {
   }
 
   public TwoDimTable toTwoDimTable(String tableHeader) {
-    TwoDimTable table = EventLogEntry.makeTwoDimTable(tableHeader, events.length);
+    TwoDimTable table = EventLogEntry.makeTwoDimTable(tableHeader, _events.length);
 
-    for (int i = 0; i < events.length; i++)
-      events[i].addTwoDimTableRow(table, i);
+    for (int i = 0; i < _events.length; i++)
+      _events[i].addTwoDimTableRow(table, i);
     return table;
   }
 
