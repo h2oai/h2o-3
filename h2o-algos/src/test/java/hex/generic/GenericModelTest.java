@@ -58,7 +58,6 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            generic.init(false);
             genericModel = generic.trainModel().get();
 
             predictions = genericModel.score(testFrame);
@@ -105,7 +104,6 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            generic.init(false);
             genericModel = generic.trainModel().get();
 
             predictions = genericModel.score(testFrame);
@@ -153,7 +151,6 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            generic.init(false);
             genericModel = generic.trainModel().get();
 
             predictions = genericModel.score(testFrame);
@@ -201,7 +198,6 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            generic.init(false);
             genericModel = generic.trainModel().get();
 
             predictions = genericModel.score(testFrame);
@@ -249,7 +245,6 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            generic.init(false);
             genericModel = generic.trainModel().get();
 
             predictions = genericModel.score(testFrame);
@@ -297,7 +292,6 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            generic.init(false);
             genericModel = generic.trainModel().get();
 
             predictions = genericModel.score(testFrame);
@@ -344,7 +338,6 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            generic.init(false);
             genericModel = generic.trainModel().get();
 
             predictions = genericModel.score(testFrame);
@@ -393,7 +386,6 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            generic.init(false);
             genericModel = generic.trainModel().get();
 
             predictions = genericModel.score(testFrame);
@@ -441,7 +433,6 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            generic.init(false);
             genericModel = generic.trainModel().get();
 
             predictions = genericModel.score(testFrame);
@@ -489,7 +480,6 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            generic.init(false);
             genericModel = generic.trainModel().get();
 
             predictions = genericModel.score(testFrame);
@@ -541,7 +531,6 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            generic.init(false);
             genericModel = generic.trainModel().get();
             
             // Compare the two MOJOs byte-wise
@@ -591,7 +580,6 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            generic.init(false);
             genericModel = generic.trainModel().get();
 
             // Compare the two MOJOs byte-wise
@@ -641,7 +629,6 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            generic.init(false);
             genericModel = generic.trainModel().get();
 
             // Compare the two MOJOs byte-wise
@@ -690,7 +677,6 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            generic.init(false);
             genericModel = generic.trainModel().get();
 
             // Compare the two MOJOs byte-wise
