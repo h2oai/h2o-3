@@ -27,15 +27,11 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
 
     public Generic(GenericModelParameters genericParameters){
         super(genericParameters);
+        init(false);
     }
 
     public Generic(boolean startup_once) {
         super(new GenericModelParameters(), startup_once);
-    }
-
-    @Override
-    public void init(boolean expensive) {
-        super.init(expensive);
     }
 
     @Override
