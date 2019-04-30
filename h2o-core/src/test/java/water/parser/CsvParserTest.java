@@ -372,7 +372,7 @@ public class CsvParserTest extends TestUtil {
       params.add(new Object[]{1024});
       
       // The rest of chunk sizes is generated randomly to test different chunk boundaries
-      Random random = new RandomUtils.PCGRNG(0, 1);
+      Random random = new RandomUtils.PCGRNG(System.currentTimeMillis(), 1);
       final int upperBound = 1024 * 30 - 512;
       for (int i = 0; i < 6; i++) {
         // Half a kilobyte is the minimal size, 30 kilobytes maximal
