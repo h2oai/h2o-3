@@ -372,7 +372,7 @@ public class CsvParserTest extends TestUtil {
       
       // The rest of chunk sizes is generated randomly to test different chunk boundaries
       Random random = new RandomUtils.PCGRNG(0, 1);
-      final int upperBound = 1024 * 30;
+      final int upperBound = 1024 * 30 - 512;
       for (int i = 0; i < 6; i++) {
         // Half a kilobyte is the minimal size, 30 kilobytes maximal
         params.add(new Object[]{random.nextInt(upperBound) + 512});
@@ -527,6 +527,91 @@ public class CsvParserTest extends TestUtil {
         assertEquals(50001, frame.numRows()); // 50,003 rows in total. Last row is empty, first one is header.
         assertEquals(50, frame.numCols());
         Scope.track(frame);
+      } finally {
+        Scope.exit();
+      }
+    }
+
+  }
+
+
+  @RunWith(Parameterized.class)
+  public static final class CSVParserSyntheticTest extends CsvParserTest {
+
+    @Parameterized.Parameters
+    public static Collection<Object[]> data() {
+
+      final ArrayList<Object[]> params = new ArrayList<>(10);
+      params.add(new Object[]{-1}); // Guessed chunk size
+      params.add(new Object[]{FileVec.DFLT_CHUNK_SIZE});
+      params.add(new Object[]{2096});
+
+      // The rest of chunk sizes is generated randomly to test different chunk boundaries
+      Random random = new RandomUtils.PCGRNG(0, 1); // FIXME: Constant seed
+      final int upperBound = 2048 * 4;
+      for (int i = 0; i < 6; i++) {
+        // 2 kilobytes is the minimal size, 8 kilobytes maximal
+        params.add(new Object[]{random.nextInt(upperBound) + 2048});
+      }
+
+      return params;
+    }
+
+    @Parameterized.Parameter
+    public int chunkSize;
+
+    private ParseSetupTransformer setupTransformer;
+
+    @Before
+    public void setUp() {
+      super.setUp();
+
+      setupTransformer = new ParseSetupTransformer() {
+        @Override
+        public ParseSetup transformSetup(ParseSetup guessedSetup) {
+          if (chunkSize != -1) { // Leave the guessed amount as is in case of -1
+            guessedSetup._chunk_size = chunkSize;
+          }
+          return guessedSetup;
+        }
+      };
+    }
+
+    @Test
+    public void testMultilineQuotes() {
+      try {
+        Scope.enter();
+        final Frame frame = TestUtil.parse_test_file("smalldata/csv-test/quoted_multiline.csv", setupTransformer);
+        assertEquals(44, frame.numRows());
+        assertEquals(24, frame.numCols());
+        Scope.track(frame);
+      } finally {
+        Scope.exit();
+      }
+    }
+    
+    @Test
+    public void testQuotedNoHeader() {
+      try {
+        Scope.enter();
+        final Frame frame = TestUtil.parse_test_file("smalldata/csv-test/quoted_no_header.csv", setupTransformer);
+        assertEquals(6, frame.numRows());
+        assertEquals(6, frame.numCols());
+        
+        // Add a second special test, as the dataset is very small (328 bytes only)
+        final ParseSetupTransformer smallChunkSizeTransformer = new ParseSetupTransformer() {
+          @Override
+          public ParseSetup transformSetup(ParseSetup guessedSetup) {
+            guessedSetup._chunk_size = 128;
+            return guessedSetup;
+          }
+        };
+        final Frame smallChunkSizeResultFrame = TestUtil.parse_test_file("smalldata/csv-test/quoted_no_header.csv", smallChunkSizeTransformer);
+        Scope.track(smallChunkSizeResultFrame);
+        assertEquals(6, smallChunkSizeResultFrame.numRows());
+        assertEquals(6, smallChunkSizeResultFrame.numCols());
+        
+        
       } finally {
         Scope.exit();
       }
