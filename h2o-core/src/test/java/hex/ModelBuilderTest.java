@@ -8,9 +8,9 @@ import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.parser.BufferedString;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import java.util.Arrays;
+
+import static org.junit.Assert.*;
 
 public class ModelBuilderTest extends TestUtil {
 
@@ -126,6 +126,47 @@ public class ModelBuilderTest extends TestUtil {
   }
 
   @Test
+  public void testScoreReorderedDomain() {
+    Frame train = null, test = null, scored = null;
+    Model model = null;
+    try {
+      train = new TestFrameBuilder()
+              .withVecTypes(Vec.T_NUM, Vec.T_CAT)
+              .withDataForCol(0, ar(0, 1))
+              .withDataForCol(1, ar("A", "B"))
+              .build();
+      test = new TestFrameBuilder()
+              .withVecTypes(Vec.T_NUM, Vec.T_CAT)
+              .withDataForCol(0, ar(0, 1))
+              .withDataForCol(1, ar("B", "A"))
+              .build();
+
+      assertFalse(Arrays.equals(train.vec(1).domain(), test.vec(1).domain()));
+
+      DummyModelParameters p = new DummyModelParameters("Dummy 1", Key.make("dummny-1"));
+      p._makeModel = true;
+      p._train = train._key;
+      p._response_column = "col_1";
+      DummyModelBuilder bldr = new DummyModelBuilder(p);
+
+      model = bldr.trainModel().get();
+      scored = model.score(test);
+
+      assertArrayEquals(new String[]{"B", "A"}, scored.vec(0).domain());
+    } finally {
+      if (model != null)
+        model.remove();
+      if (train != null)
+        train.remove();
+      if (test != null)
+      test.remove();
+      if (scored != null)
+        scored.remove();
+    }
+  }
+  
+  
+  @Test
   @SuppressWarnings("unchecked")
   public void bulkBuildModels() throws Exception {
     Job j = new Job(null, null, "BulkBuilding");
@@ -157,10 +198,23 @@ public class ModelBuilderTest extends TestUtil {
     }
   }
 
-  public static class DummyModelOutput extends Model.Output {}
+  public static class DummyModelOutput extends Model.Output {
+    public DummyModelOutput(ModelBuilder b, Frame train) {
+      super(b, train);
+    }
+    @Override
+    public ModelCategory getModelCategory() {
+      return ModelCategory.Binomial;
+    }
+    @Override
+    public boolean isSupervised() {
+      return true;
+    }
+  }
   public static class DummyModelParameters extends Model.Parameters {
     private String _msg;
     private Key _trgt;
+    private boolean _makeModel;
     public DummyModelParameters(String msg, Key trgt) { _msg = msg; _trgt = trgt; }
     @Override public String fullName() { return "dummy"; }
     @Override public String algoName() { return "dummy"; }
@@ -173,10 +227,16 @@ public class ModelBuilderTest extends TestUtil {
     }
     @Override
     public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-      return null;
+      return new ModelMetricsBinomial.MetricBuilderBinomial(domain);
     }
     @Override
     protected double[] score0(double[] data, double[] preds) { return preds; }
+    @Override
+    protected Futures remove_impl(Futures fs) {
+      super.remove_impl(fs);
+      DKV.remove(_parms._trgt);
+      return fs;
+    }
   }
   public static class DummyModelBuilder extends ModelBuilder<DummyModel, DummyModelParameters, DummyModelOutput> {
     public DummyModelBuilder(DummyModelParameters parms) {
@@ -190,6 +250,18 @@ public class ModelBuilderTest extends TestUtil {
         @Override
         public void computeImpl() {
           DKV.put(_parms._trgt, new BufferedString("Computed " + _parms._msg));
+          if (! _parms._makeModel)
+            return;
+          init(true);
+          Model model = null;
+          try {
+            model = new DummyModel(dest(), _parms, new DummyModelOutput(DummyModelBuilder.this, train()));
+            model.delete_and_lock(_job);
+            model.update(_job);
+          } finally {
+            if (model != null)
+              model.unlock(_job);
+          }
         }
       };
     }
@@ -201,7 +273,7 @@ public class ModelBuilderTest extends TestUtil {
 
     @Override
     public boolean isSupervised() {
-      return false;
+      return true;
     }
   }
 

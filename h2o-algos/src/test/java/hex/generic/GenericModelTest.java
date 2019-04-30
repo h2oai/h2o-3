@@ -58,7 +58,6 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            generic.init(false);
             genericModel = generic.trainModel().get();
 
             predictions = genericModel.score(testFrame);
@@ -105,11 +104,10 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            generic.init(false);
             genericModel = generic.trainModel().get();
 
             predictions = genericModel.score(testFrame);
-            assertEquals(2691, predictions.anyVec().length());
+            assertEquals(2691, predictions.numRows());
 
             final boolean equallyScored = genericModel.testJavaScoring(testFrame, predictions, 0);
             assertTrue(equallyScored);
@@ -153,11 +151,10 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            generic.init(false);
             genericModel = generic.trainModel().get();
 
             predictions = genericModel.score(testFrame);
-            assertEquals(2691, predictions.anyVec().length());
+            assertEquals(2691, predictions.numRows());
 
             final boolean equallyScored = genericModel.testJavaScoring(testFrame, predictions, 0);
             assertTrue(equallyScored);
@@ -201,11 +198,10 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            generic.init(false);
             genericModel = generic.trainModel().get();
 
             predictions = genericModel.score(testFrame);
-            assertEquals(2691, predictions.anyVec().length());
+            assertEquals(2691, predictions.numRows());
 
             final boolean equallyScored = genericModel.testJavaScoring(testFrame, predictions, 0);
             assertTrue(equallyScored);
@@ -249,11 +245,10 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            generic.init(false);
             genericModel = generic.trainModel().get();
 
             predictions = genericModel.score(testFrame);
-            assertEquals(2691, predictions.anyVec().length());
+            assertEquals(2691, predictions.numRows());
 
             final boolean equallyScored = genericModel.testJavaScoring(testFrame, predictions, 0);
             assertTrue(equallyScored);
@@ -297,11 +292,10 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            generic.init(false);
             genericModel = generic.trainModel().get();
 
             predictions = genericModel.score(testFrame);
-            assertEquals(2691, predictions.anyVec().length());
+            assertEquals(2691, predictions.numRows());
 
             final boolean equallyScored = genericModel.testJavaScoring(testFrame, predictions, 0);
             assertTrue(equallyScored);
@@ -344,11 +338,10 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            generic.init(false);
             genericModel = generic.trainModel().get();
 
             predictions = genericModel.score(testFrame);
-            assertEquals(2691, predictions.anyVec().length());
+            assertEquals(2691, predictions.numRows());
 
             final boolean equallyScored = genericModel.testJavaScoring(testFrame, predictions, 0);
             assertTrue(equallyScored);
@@ -393,11 +386,10 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            generic.init(false);
             genericModel = generic.trainModel().get();
 
             predictions = genericModel.score(testFrame);
-            assertEquals(2691, predictions.anyVec().length());
+            assertEquals(2691, predictions.numRows());
 
             final boolean equallyScored = genericModel.testJavaScoring(testFrame, predictions, 0);
             assertTrue(equallyScored);
@@ -441,11 +433,10 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            generic.init(false);
             genericModel = generic.trainModel().get();
 
             predictions = genericModel.score(testFrame);
-            assertEquals(2691, predictions.anyVec().length());
+            assertEquals(2691, predictions.numRows());
 
             final boolean equallyScored = genericModel.testJavaScoring(testFrame, predictions, 0);
             assertTrue(equallyScored);
@@ -489,11 +480,10 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            generic.init(false);
             genericModel = generic.trainModel().get();
 
             predictions = genericModel.score(testFrame);
-            assertEquals(2691, predictions.anyVec().length());
+            assertEquals(2691, predictions.numRows());
 
             final boolean equallyScored = genericModel.testJavaScoring(testFrame, predictions, 0);
             assertTrue(equallyScored);
@@ -541,7 +531,6 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            generic.init(false);
             genericModel = generic.trainModel().get();
             
             // Compare the two MOJOs byte-wise
@@ -591,7 +580,6 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            generic.init(false);
             genericModel = generic.trainModel().get();
 
             // Compare the two MOJOs byte-wise
@@ -641,7 +629,6 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            generic.init(false);
             genericModel = generic.trainModel().get();
 
             // Compare the two MOJOs byte-wise
@@ -690,7 +677,6 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            generic.init(false);
             genericModel = generic.trainModel().get();
 
             // Compare the two MOJOs byte-wise
