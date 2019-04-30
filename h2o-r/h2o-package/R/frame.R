@@ -77,6 +77,7 @@ chk.H2OFrame <- function(fr) if( is.H2OFrame(fr) ) fr else stop("must be an H2OF
   node
 }
 # Compute how many chars to trim at the end of file
+# Handle \r\n (for windows) or just \n (for not windows).
 .calcCharsToTrim <- function(last, secondLast){
     charsToTrim <- 0
     if (last == "\n") charsToTrim  <- charsToTrim  + 1L
@@ -3447,6 +3448,7 @@ as.data.frame.H2OFrame <- function(x, ...) {
   nCol <- attr(x, "ncol")
   nRow <- attr(x, "nrow")
     
+  # Due to data.frame limitation of vector size, only smaller data dimension than .Machine$integer.max are allowed
   if(nCol > .Machine$integer.max || nRow > .Machine$integer.max){
     stop("It is not possible convert H2OFrame to data.frame/data.table. The H2OFrame is bigger than vector size limit for R.")  
   }  
@@ -3462,14 +3464,13 @@ as.data.frame.H2OFrame <- function(x, ...) {
   verbose <- getOption("h2o.verbose", FALSE)
     
   if (verbose) pt <- proc.time()[[3]]
-  payload <- .h2o.doSafeGET(urlSuffix = urlSuffix, binary=TRUE)
-  payloadSize <- object.size(payload)
-
-  # Delete last 1 or 2 characters if it's a newline. 
-  # Handle \r\n (for windows) or just \n (for not windows).
-  chtt <- 0
   
-  if(payloadSize < .Machine$integer.max)  {
+  # Get data in binary format for case the data are too big to load in character format  
+  payload <- .h2o.doSafeGET(urlSuffix = urlSuffix, binary=TRUE)
+  
+  if(length(payload) < .Machine$integer.max)  {
+    # Data are small enough to use rawToChar method  
+    chtt <- 0  
     useCon <- TRUE
     ttt <- rawToChar(payload)
     n <- nchar(ttt)
@@ -3480,7 +3481,8 @@ as.data.frame.H2OFrame <- function(x, ...) {
       ttt <- substr(ttt, 1, n-chtt)
     }
   } else {
-    # Data are too big to use the rawToChar method - instead, save binary data to a temporary file and read it
+    # Data are too big to use the rawToChar method.
+    # Instead, save the binary data to a temporary file and then read from it without connection
     useCon <- FALSE
     ttt <- .writeBinToTmpFile(payload)
   }
