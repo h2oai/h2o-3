@@ -19,6 +19,7 @@ import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.addKFoldColu
 
 /*
   Be aware that `smalldata/airlines/target_encoding/airlines_*.csv` files are not present in the repo. Replace with your own splits.
+  Note that this is a benchmark and we ignore tests from it as they should not affect builds
  */
 public class TargetEncodingAirlinesBenchmark extends TestUtil {
 
@@ -27,7 +28,7 @@ public class TargetEncodingAirlinesBenchmark extends TestUtil {
     stall_till_cloudsize(1);
   }
 
-  @Test
+  @Ignore
   public void KFoldHoldoutTypeTest() {
     Scope.enter();
     GBMModel gbm = null;
@@ -132,7 +133,7 @@ public class TargetEncodingAirlinesBenchmark extends TestUtil {
     }
   }
 
-  @Test
+  @Ignore
   public void noneHoldoutTypeTest() {
     Scope.enter();
     GBMModel gbm;
