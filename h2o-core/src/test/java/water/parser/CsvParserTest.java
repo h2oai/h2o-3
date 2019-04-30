@@ -5,19 +5,21 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import water.Scope;
 import water.TestUtil;
+import water.fvec.FileVec;
+import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.RandomUtils;
 import water.util.StringUtils;
 
 import java.io.ByteArrayInputStream;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.StringTokenizer;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
 @Ignore("Base class for CSV tests, no actual tests present")
-public class CsvParserTest {
+public class CsvParserTest extends TestUtil {
 
   @Before
   public void setUp() {
@@ -354,5 +356,182 @@ public class CsvParserTest {
       assertFalse(outWriter.hasErrors());
     }
   }
-  
+
+
+  @RunWith(Parameterized.class)
+  public static final class CsvParserIntegrationTest extends CsvParserTest {
+
+    @Parameterized.Parameters
+    public static Collection<Object[]> data() {
+      
+      final ArrayList<Object[]> params = new ArrayList<>(10);
+      params.add(new Object[]{-1});
+      params.add(new Object[]{FileVec.DFLT_CHUNK_SIZE});
+      params.add(new Object[]{524288});
+      params.add(new Object[]{1024});
+      
+      // The rest of chunk sizes is generated randomly to test different chunk boundaries
+      Random random = new RandomUtils.PCGRNG(0, 1);
+      final int upperBound = 1024 * 30;
+      for (int i = 0; i < 6; i++) {
+        // Half a kilobyte is the minimal size, 30 kilobytes maximal
+        params.add(new Object[]{random.nextInt(upperBound) + 512});
+      }
+      
+      return params;
+    }
+
+    @Parameterized.Parameter
+    public int chunkSize;
+
+    private ParseSetupTransformer setupTransformer;
+
+    @Before
+    public void setUp() {
+      super.setUp();
+
+      setupTransformer = new ParseSetupTransformer() {
+        @Override
+        public ParseSetup transformSetup(ParseSetup guessedSetup) {
+          if(chunkSize != -1) { // Leave the guessed amount as is in case of -1
+            guessedSetup._chunk_size = chunkSize;
+          }
+          return guessedSetup;
+        }
+      };
+    }
+
+
+    @Test
+    public void testAirlinesTrain() {
+      try {
+        Scope.enter();
+        final Frame frame = TestUtil.parse_test_file("./smalldata/testng/airlines_train.csv", setupTransformer);
+        assertEquals(24421, frame.numRows()); // 24,423 rows in total. Last row is empty, first one is header
+        assertEquals(9, frame.numCols());
+        Scope.track(frame);
+      } finally {
+        Scope.exit();
+      }
+    }
+
+    @Test
+    public void testAirQuality() {
+      try {
+        Scope.enter();
+        final Frame frame = TestUtil.parse_test_file("./smalldata/testng/airquality_train1.csv", setupTransformer);
+        assertEquals(77, frame.numRows()); // 79 rows in total. Last row is empty, first one is header
+        assertEquals(6, frame.numCols());
+        Scope.track(frame);
+      } finally {
+        Scope.exit();
+      }
+    }
+
+    @Test
+    public void testCars() {
+      try {
+        Scope.enter();
+        final Frame frame = TestUtil.parse_test_file("./smalldata/testng/cars_train.csv", setupTransformer);
+        assertEquals(331, frame.numRows()); // 333 rows in total. Last row is empty, first one is header
+        assertEquals(8, frame.numCols());
+        Scope.track(frame);
+      } finally {
+        Scope.exit();
+      }
+    }
+
+    @Test
+    public void testHiggs5k() {
+      try {
+        Scope.enter();
+        final Frame frame = TestUtil.parse_test_file("./smalldata/testng/higgs_train_5k.csv", setupTransformer);
+        assertEquals(5000, frame.numRows()); //5002 rows in total. Last row is empty, first one is header
+        assertEquals(29, frame.numCols());
+        Scope.track(frame);
+      } finally {
+        Scope.exit();
+      }
+    }
+
+    @Test
+    public void testHousing() {
+      try {
+        Scope.enter();
+        final Frame frame = TestUtil.parse_test_file("./smalldata/testng/housing_train.csv", setupTransformer);
+        assertEquals(413, frame.numRows()); // 415 rows in total. Last row is empty, first one is header
+        assertEquals(14, frame.numCols());
+        Scope.track(frame);
+      } finally {
+        Scope.exit();
+      }
+    }
+
+    @Test
+    public void testInsurance() {
+      try {
+        Scope.enter();
+        final Frame frame = TestUtil.parse_test_file("./smalldata/testng/insurance_gamma_dense_train.csv", setupTransformer);
+        assertEquals(45, frame.numRows()); // 47 rows in total. Last row is empty, first one is header
+        assertEquals(6, frame.numCols());
+        Scope.track(frame);
+      } finally {
+        Scope.exit();
+      }
+    }
+
+    @Test
+    public void testIris() {
+      try {
+        Scope.enter();
+        final Frame frame = TestUtil.parse_test_file("./smalldata/testng/iris.csv", setupTransformer);
+        assertEquals(150, frame.numRows()); // 152 rows in total. Last row is empty, first one is header
+        assertEquals(5, frame.numCols());
+        Scope.track(frame);
+      } finally {
+        Scope.exit();
+      }
+    }
+    
+    @Test
+    public void testAgaricus() {
+      try {
+        Scope.enter();
+        final Frame frame = TestUtil.parse_test_file("./smalldata/xgboost/demo/data/agaricus.txt.train", setupTransformer);
+        assertEquals(6513, frame.numRows()); // 6514 rows in total. Last row is empty, no header.
+        assertEquals(127, frame.numCols());
+        Scope.track(frame);
+      } finally {
+        Scope.exit();
+      }
+    }
+
+    @Test
+    public void testFeatmap() {
+      try {
+        Scope.enter();
+        final Frame frame = TestUtil.parse_test_file("./smalldata/xgboost/demo/data/featmap.txt", setupTransformer);
+        assertEquals(126, frame.numRows()); // 127 lines in total, no header, last row empty
+        assertEquals(3, frame.numCols());
+        Scope.track(frame);
+      } finally {
+        Scope.exit();
+      }
+    } 
+    
+    @Test
+    public void testDiabetes() {
+      try {
+        Scope.enter();
+        final Frame frame = TestUtil.parse_test_file("smalldata/diabetes/diabetes_train.csv", setupTransformer);
+        assertEquals(50001, frame.numRows()); // 50,003 rows in total. Last row is empty, first one is header.
+        assertEquals(50, frame.numCols());
+        Scope.track(frame);
+      } finally {
+        Scope.exit();
+      }
+    }
+
+  }
+
 }
