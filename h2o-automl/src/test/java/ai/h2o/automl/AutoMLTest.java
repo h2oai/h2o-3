@@ -3,6 +3,7 @@ package ai.h2o.automl;
 import hex.Model;
 import hex.SplitFrame;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
@@ -263,7 +264,8 @@ public class AutoMLTest extends water.TestUtil {
     }
   }
 
-  @Test public void KeepCrossValidationFoldAssignmentDisabledTest() {
+  @Ignore
+  public void KeepCrossValidationFoldAssignmentDisabledTest() {
     AutoML aml = null;
     Frame fr = null;
     Model leader = null;
@@ -290,7 +292,8 @@ public class AutoMLTest extends water.TestUtil {
     }
   }
 
-  @Test public void testWorkPlan() {
+  @Ignore
+  public void testWorkPlan() {
     AutoML aml = null;
     Frame fr=null;
     try {
