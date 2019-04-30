@@ -552,19 +552,10 @@ public class CsvParserTest extends TestUtil {
     @Parameterized.Parameters
     public static Collection<Object[]> data() {
 
-      final ArrayList<Object[]> params = new ArrayList<>(10);
+      final ArrayList<Object[]> params = new ArrayList<>(2);
       params.add(new Object[]{-1}); // Guessed chunk size
       params.add(new Object[]{FileVec.DFLT_CHUNK_SIZE});
-      params.add(new Object[]{2096});
-
-      // The rest of chunk sizes is generated randomly to test different chunk boundaries
-      Random random = new RandomUtils.PCGRNG(0, 1); // FIXME: Constant seed
-      final int upperBound = 2048 * 4;
-      for (int i = 0; i < 6; i++) {
-        // 2 kilobytes is the minimal size, 8 kilobytes maximal
-        params.add(new Object[]{random.nextInt(upperBound) + 2048});
-      }
-
+      
       return params;
     }
 
