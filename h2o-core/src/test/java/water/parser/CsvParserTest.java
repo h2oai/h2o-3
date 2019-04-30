@@ -407,9 +407,9 @@ public class CsvParserTest extends TestUtil {
       try {
         Scope.enter();
         final Frame frame = TestUtil.parse_test_file("./smalldata/testng/airlines_train.csv", setupTransformer);
+        Scope.track(frame);
         assertEquals(24421, frame.numRows()); // 24,423 rows in total. Last row is empty, first one is header
         assertEquals(9, frame.numCols());
-        Scope.track(frame);
       } finally {
         Scope.exit();
       }
@@ -420,9 +420,9 @@ public class CsvParserTest extends TestUtil {
       try {
         Scope.enter();
         final Frame frame = TestUtil.parse_test_file("./smalldata/testng/airquality_train1.csv", setupTransformer);
+        Scope.track(frame);
         assertEquals(77, frame.numRows()); // 79 rows in total. Last row is empty, first one is header
         assertEquals(6, frame.numCols());
-        Scope.track(frame);
       } finally {
         Scope.exit();
       }
@@ -433,9 +433,9 @@ public class CsvParserTest extends TestUtil {
       try {
         Scope.enter();
         final Frame frame = TestUtil.parse_test_file("./smalldata/testng/cars_train.csv", setupTransformer);
+        Scope.track(frame);
         assertEquals(331, frame.numRows()); // 333 rows in total. Last row is empty, first one is header
         assertEquals(8, frame.numCols());
-        Scope.track(frame);
       } finally {
         Scope.exit();
       }
@@ -446,9 +446,9 @@ public class CsvParserTest extends TestUtil {
       try {
         Scope.enter();
         final Frame frame = TestUtil.parse_test_file("./smalldata/testng/higgs_train_5k.csv", setupTransformer);
+        Scope.track(frame);
         assertEquals(5000, frame.numRows()); //5002 rows in total. Last row is empty, first one is header
         assertEquals(29, frame.numCols());
-        Scope.track(frame);
       } finally {
         Scope.exit();
       }
@@ -459,9 +459,9 @@ public class CsvParserTest extends TestUtil {
       try {
         Scope.enter();
         final Frame frame = TestUtil.parse_test_file("./smalldata/testng/housing_train.csv", setupTransformer);
+        Scope.track(frame);
         assertEquals(413, frame.numRows()); // 415 rows in total. Last row is empty, first one is header
         assertEquals(14, frame.numCols());
-        Scope.track(frame);
       } finally {
         Scope.exit();
       }
@@ -472,9 +472,9 @@ public class CsvParserTest extends TestUtil {
       try {
         Scope.enter();
         final Frame frame = TestUtil.parse_test_file("./smalldata/testng/insurance_gamma_dense_train.csv", setupTransformer);
+        Scope.track(frame);
         assertEquals(45, frame.numRows()); // 47 rows in total. Last row is empty, first one is header
         assertEquals(6, frame.numCols());
-        Scope.track(frame);
       } finally {
         Scope.exit();
       }
@@ -485,9 +485,9 @@ public class CsvParserTest extends TestUtil {
       try {
         Scope.enter();
         final Frame frame = TestUtil.parse_test_file("./smalldata/testng/iris.csv", setupTransformer);
+        Scope.track(frame);
         assertEquals(150, frame.numRows()); // 152 rows in total. Last row is empty, first one is header
         assertEquals(5, frame.numCols());
-        Scope.track(frame);
       } finally {
         Scope.exit();
       }
@@ -498,9 +498,9 @@ public class CsvParserTest extends TestUtil {
       try {
         Scope.enter();
         final Frame frame = TestUtil.parse_test_file("./smalldata/xgboost/demo/data/agaricus.txt.train", setupTransformer);
+        Scope.track(frame);
         assertEquals(6513, frame.numRows()); // 6514 rows in total. Last row is empty, no header.
         assertEquals(127, frame.numCols());
-        Scope.track(frame);
       } finally {
         Scope.exit();
       }
@@ -511,9 +511,9 @@ public class CsvParserTest extends TestUtil {
       try {
         Scope.enter();
         final Frame frame = TestUtil.parse_test_file("./smalldata/xgboost/demo/data/featmap.txt", setupTransformer);
+        Scope.track(frame);
         assertEquals(126, frame.numRows()); // 127 lines in total, no header, last row empty
         assertEquals(3, frame.numCols());
-        Scope.track(frame);
       } finally {
         Scope.exit();
       }
@@ -524,9 +524,9 @@ public class CsvParserTest extends TestUtil {
       try {
         Scope.enter();
         final Frame frame = TestUtil.parse_test_file("smalldata/diabetes/diabetes_train.csv", setupTransformer);
+        Scope.track(frame);
         assertEquals(50001, frame.numRows()); // 50,003 rows in total. Last row is empty, first one is header.
         assertEquals(50, frame.numCols());
-        Scope.track(frame);
       } finally {
         Scope.exit();
       }
@@ -582,9 +582,9 @@ public class CsvParserTest extends TestUtil {
       try {
         Scope.enter();
         final Frame frame = TestUtil.parse_test_file("smalldata/csv-test/quoted_multiline.csv", setupTransformer);
+        Scope.track(frame);
         assertEquals(44, frame.numRows());
         assertEquals(24, frame.numCols());
-        Scope.track(frame);
       } finally {
         Scope.exit();
       }
