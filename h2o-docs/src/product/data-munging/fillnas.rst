@@ -45,7 +45,7 @@ Use this function to fill in NA values in a sequential manner up to a specified 
      import h2o
      h2o.init()
 
-     # Create a random data frame with 100000 rows and 3 columns. 
+     # Create a random data frame with 10 rows and 3 columns. 
      # Specify that no more than 20% of the values are NAs.
      df = h2o.create_frame(rows=10, 
                            cols=3, 
