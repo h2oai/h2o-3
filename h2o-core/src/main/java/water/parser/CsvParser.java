@@ -130,26 +130,17 @@ MAIN_LOOP:
 
         case STRING:
           if (c == quotes) {
-            if (quoteCount>1) {
-              str.addChar();
-              quoteCount--;
-            }
-
             state = COND_QUOTE;
             continue MAIN_LOOP;
           }
-          if ((!isEOL(c) || quoteCount == 1) && (c != CHAR_SEPARATOR)) {
+          if ((!isEOL(c) && c != CHAR_SEPARATOR) || quoteCount == 1) {
             if (str.getBuffer() == null && isEOL(c)) str.set(bits, offset, 0);
             str.addChar();
             if ((c & 0x80) == 128) //value beyond std ASCII
               isAllASCII = false;
             break;
           }
-
-          if(quoteCount == 1){
-            str.addChar(); //Anything not enclosed properly by second quotes is considered to be part of the string
-            break;
-          }
+          
           // fallthrough to STRING_END
         // ---------------------------------------------------------------------
         case STRING_END:
@@ -468,11 +459,6 @@ MAIN_LOOP:
             quoteCount++;
             state = POSSIBLE_ESCAPED_QUOTE;
             break;
-          } else {
-            quotes = 0;
-            quoteCount = 0;
-            state = STRING_END;
-            continue MAIN_LOOP;
           }
         // ---------------------------------------------------------------------
         default:
@@ -495,9 +481,13 @@ MAIN_LOOP:
         if( !firstChunk || bits1 == null ) { // No more data available or allowed
           // If we are mid-parse of something, act like we saw a LF to end the
           // current token.
-          if(c == CHAR_LF || c == CHAR_CR) quoteCount++;
           if ((state != EXPECT_COND_LF) && (state != POSSIBLE_EMPTY_LINE)) {
-            c = CHAR_LF;  continue; // MAIN_LOOP;
+            c = CHAR_LF;
+            if(state == STRING) {
+              quoteCount = 0; // In case of a String not properly ended with quotes
+              state = STRING_END;
+            }
+            continue; // MAIN_LOOP;
           }
           break; // MAIN_LOOP;      // Else we are just done
         }
