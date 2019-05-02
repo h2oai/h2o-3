@@ -17,7 +17,7 @@ public class PrimalDualIPMTest extends TestUtil {
 
   @Test
   public void testSolve_splice() {
-    Frame icf = parse_test_file("./smalldata/splice/splice_icf100.csv");
+    Frame icf = parse_test_file("./smalldata/splice/splice_icf100.csv.gz");
     Frame fr = null;
     Frame expected = null;
     Vec response = null;

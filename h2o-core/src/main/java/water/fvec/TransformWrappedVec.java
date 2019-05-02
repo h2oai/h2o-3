@@ -1,9 +1,6 @@
 package water.fvec;
 
-import water.DKV;
-import water.H2O;
-import water.Key;
-import water.MRTask;
+import water.*;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 import water.rapids.Env;
@@ -36,17 +33,22 @@ public class TransformWrappedVec extends WrappedVec {
 
   private final Key<Vec>[] _masterVecKeys;
   private transient Vec[] _masterVecs;
-  private final AstPrimitive _fun;
+  private final TransformFactory<?> _tf;
 
-  public TransformWrappedVec(Key key, int rowLayout, AstPrimitive fun, Key<Vec>... masterVecKeys) {
+  public TransformWrappedVec(Key<Vec> key, int rowLayout, TransformFactory<?> fact, Key<Vec>[] masterVecKeys) {
     super(key, rowLayout, null);
-    _fun=fun;
+    _tf = fact;
     _masterVecKeys = masterVecKeys;
     DKV.put(this);
   }
 
+  @SuppressWarnings("unchecked")
   public TransformWrappedVec(Vec v, AstPrimitive fun) {
-    this(v.group().addVec(), v._rowLayout, fun, v._key);
+    this(v.group().addVec(), v._rowLayout, fun, new Key[]{v._key});
+  }
+
+  public TransformWrappedVec(Key<Vec> key, int rowLayout, AstPrimitive fun, Key<Vec>[] masterVecKeys) {
+    this(key, rowLayout, new AstTransformFactory(fun), masterVecKeys);
   }
 
   public Vec makeVec() {
@@ -59,41 +61,34 @@ public class TransformWrappedVec extends WrappedVec {
     return v;
   }
 
-
-
   @Override public Chunk chunkForChunkIdx(int cidx) {
     Chunk[] cs = new Chunk[_masterVecKeys.length];
     if( _masterVecs==null )
       _masterVecs = new Vec[_masterVecKeys.length];
     for(int i=0; i<cs.length;++i)
       cs[i] = (_masterVecs[i]!=null?_masterVecs[i]:(_masterVecs[i] = _masterVecKeys[i].get())).chunkForChunkIdx(cidx);
-    return new TransformWrappedChunk(_fun, this, cs);
+    return new TransformWrappedChunk(_tf, this, cs);
   }
 
   @Override public Vec doCopy() {
-    Vec v = new TransformWrappedVec(group().addVec(), _rowLayout, _fun, _masterVecKeys);
+    Vec v = new TransformWrappedVec(group().addVec(), _rowLayout, _tf, _masterVecKeys);
     v.setDomain(domain()==null?null:domain().clone());
     return v;
   }
 
   public static class TransformWrappedChunk extends Chunk {
-    public final AstPrimitive _fun;
+    
     public final transient Chunk _c[];
+    public final transient Transform _t;
+    public final TransformFactory<?> _fact;
 
-    private final AstRoot[] _asts;
-    private final Env _env;
 
-    TransformWrappedChunk(AstPrimitive fun, Vec transformWrappedVec, Chunk... c) {
+    TransformWrappedChunk(TransformFactory<?> fact, Vec transformWrappedVec, Chunk... c) {
       // set all the chunk fields
       _c = c; set_len(_c[0]._len);
       _start = _c[0]._start; _vec = transformWrappedVec; _cidx = _c[0]._cidx;
-
-      _fun=fun;
-      _asts = new AstRoot[1+_c.length];
-      _asts[0]=_fun;
-      for(int i=1;i<_asts.length;++i)
-        _asts[i] = new AstNum(0);
-      _env = new Env(null);
+      _fact = fact;
+      _t = fact != null ? fact.create(c.length) : null;
     }
 
     @Override
@@ -108,10 +103,10 @@ public class TransformWrappedVec extends WrappedVec {
 
     // applies the function to a row of doubles
     @Override public double atd_impl(int idx) {
-      if( null==_fun ) return _c[0].atd(idx);  // simple wrapping of 1 vec
-      for(int i=1;i<_asts.length;++i)
-        ((AstNum)_asts[i]).setNum(_c[i-1].atd(idx)); // = new AstNum(_c[i-1].atd(idx));
-      return _fun.apply(_env,_env.stk(),_asts).getNum();   // Make the call per-row
+      if( null==_fact ) return _c[0].atd(idx);  // simple wrapping of 1 vec
+      for(int i = 0; i < _c.length; i++)
+        _t.setInput(i, _c[i].atd(idx));
+      return _t.apply();   // Make the call per-row
     }
 
     @Override public long at8_impl(int idx) { throw H2O.unimpl(); }
@@ -128,4 +123,57 @@ public class TransformWrappedVec extends WrappedVec {
       return extractRows(new NewChunk(this),0,_len).compress();
     }
   }
+
+  public interface Transform {
+    void reset();
+    void setInput(int i, double value);
+    double apply();
+  }
+
+  public interface TransformFactory<T extends Freezable> extends Freezable<T> {
+    Transform create(int n_inputs);
+  }
+
+  private static class AstTransformFactory extends Iced<AstTransformFactory> implements TransformFactory<AstTransformFactory> {
+    private final AstPrimitive _fun;
+
+    AstTransformFactory(AstPrimitive fun) {
+      _fun = fun;
+    }
+
+    @Override
+    public Transform create(int n_inputs) {
+      return new AstTransform(_fun, n_inputs);
+    }
+  }
+
+  private static class AstTransform implements Transform {
+    private final AstPrimitive _fun;
+    private final AstRoot[] _asts;
+    private final Env _env;
+
+    AstTransform(AstPrimitive fun, int n) {
+      _fun = fun;
+      _asts = new AstRoot[1 + n];
+      _asts[0] = _fun;
+      for (int i = 1; i < _asts.length; i++)
+        _asts[i] = new AstNum(0);
+      _env = new Env(null);
+    }
+
+    @Override
+    public void setInput(int i, double value) {
+      ((AstNum) _asts[i + 1]).setNum(value);
+    }
+    @Override
+    public double apply() {
+      return _fun.apply(_env,_env.stk(),_asts).getNum();
+    }
+
+    @Override
+    public void reset() {
+      // no need to do anything
+    }
+  }
+
 }

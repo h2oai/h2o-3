@@ -1,6 +1,7 @@
 package hex.svm;
 
 import water.Iced;
+import water.MemoryManager;
 
 class LLMatrix extends Iced<LLMatrix> {
 
@@ -15,16 +16,72 @@ class LLMatrix extends Iced<LLMatrix> {
     }
   }
 
-  int dim() {
+  private int dim() {
     return _dim;
   }
 
-  double get(int x, int y) {
+  final double get(int x, int y) {
     return _data[y][x-y];
   }
 
-  void set(int x, int y, double value) { 
+  final void set(int x, int y, double value) { 
     _data[y][x-y] = value;
+  }
+
+  final void addUnitMat() {
+    for (double[] col : _data)
+      col[0] += 1;
+  }
+  
+  double[] cholSolve(double[] b) {
+    double[] x = MemoryManager.malloc8d(b.length);
+    cholForwardSub(b, x);
+    cholBackwardSub(x, b);
+    return b;
+  }
+
+  private void cholBackwardSub(double[] b, double[] x) {
+    final int dim = dim();
+    for (int k = dim - 1; k >= 0; k--) {
+      double tmp = b[k];
+      for (int i = k + 1; i < dim; i++) {
+        tmp -= x[i] * get(i, k);
+      }
+      x[k] = tmp / get(k, k);
+    }
+  }
+
+  private void cholForwardSub(double[] b, double[] x) {
+    final int dim = dim();
+    for (int k = 0; k < dim; ++k) {
+      double tmp = b[k];
+      for (int i = 0; i < k; ++i) {
+        tmp -= x[i] * get(k, i);
+      }
+      x[k] = tmp / get(k, k);
+    }
+  }
+
+  LLMatrix cf() {
+    final int dim = dim();
+    LLMatrix m = new LLMatrix(dim);
+    for (int i = 0; i < dim; ++i) {
+      for (int j = i; j < dim; ++j) {
+        double sum = get(j, i);
+        for (int k = i-1; k >= 0; --k) {
+          sum -= m.get(i, k) * m.get(j, k);
+        }
+        if (i == j) {
+          if (sum <= 0) {  // sum should be larger than 0
+            throw new IllegalStateException("Only symmetric positive definite matrix can perform Cholesky factorization.");
+          }
+          m.set(i, i, Math.sqrt(sum));
+        } else {
+          m.set(j, i, sum / m.get(i, i));
+        }
+      }
+    }
+    return m;
   }
 
 }
