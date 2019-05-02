@@ -459,7 +459,7 @@ public class AutoMLTest extends water.TestUtil {
     }
   }
 
-  @Test public void testIncludeAlgos() {
+  @Ignore public void testIncludeAlgos() {
     AutoML aml = null;
     Frame fr=null;
     try {

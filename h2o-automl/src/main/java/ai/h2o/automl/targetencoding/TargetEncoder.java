@@ -192,8 +192,17 @@ public class TargetEncoder {
       String[] newDomain = new String[indexForNACategory + 1];
       System.arraycopy(oldDomain, 0, newDomain, 0, oldDomain.length);
       newDomain[indexForNACategory] = strToImpute;
-      currentVec.setDomain(newDomain);
+      updateDomainGlobally(data, teColumnName, newDomain);
       return data;
+    }
+    
+    private void updateDomainGlobally(Frame fr, String teColumnName, String[] domain) {
+      Lockable lock = fr.write_lock();
+      Vec updatedVec = fr.vec(teColumnName);
+      updatedVec.setDomain(domain);
+      DKV.put(updatedVec);
+      fr.update();
+      lock.unlock();
     }
 
     Frame getOutOfFoldData(Frame encodingMap, String foldColumnName, long currentFoldValue)  {
