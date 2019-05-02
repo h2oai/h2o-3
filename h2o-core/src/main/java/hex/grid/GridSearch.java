@@ -98,6 +98,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       if (! (keyed instanceof Grid))
         throw new H2OIllegalArgumentException("Name conflict: tried to create a Grid using the ID of a non-Grid object that's already in H2O: " + _job._result + "; it is a: " + keyed.getClass());
       grid = (Grid) keyed;
+      // Old failures are no longer needed once new hyperspace search is issued by the user.
+      if ((grid.getFailureCount() > 0)) grid.initFailureFields();
       Frame specTrainFrame = _hyperSpaceWalker.getParams().train();
       Frame oldTrainFrame = grid.getTrainingFrame();
       if (oldTrainFrame != null && !specTrainFrame._key.equals(oldTrainFrame._key) ||

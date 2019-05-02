@@ -67,12 +67,8 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
     super(key);
     _params = params != null ? (MP) params.clone() : null;
     _hyper_names = hyperNames;
-    Class<MP> paramsClass = params != null ? (Class<MP>) params.getClass() : null;
-    _failed_params = paramsClass != null ? (MP[]) Array.newInstance(paramsClass, 0) : null;
-    _failure_details = new String[]{};
-    _failed_raw_params = new String[][]{};
-    _failure_stack_traces = new String[]{};
     _field_naming_strategy = fieldNaming;
+    initFailureFields();
   }
 
   /**
@@ -214,6 +210,20 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
   /* package */ void appendFailedModelParameters(Object[] rawParams, Exception e) {
     assert rawParams != null : "Raw parameters should be always != null !";
     appendFailedModelParameters(null, ArrayUtils.toString(rawParams), e.getMessage(), StringUtils.toString(e));
+  }
+
+  /**
+   * Failed hyperparameters are stored during model training together with complete stacktraces during
+   * the training phase of grid's potential models. This method drops old values and re-initializes local fields
+   * with empty instances.
+   */
+  protected void initFailureFields() {
+    final Class<MP> paramsClass = _params != null ? (Class<MP>) _params.getClass() : null;
+
+    _failed_params = paramsClass != null ? (MP[]) Array.newInstance(paramsClass, 0) : null;
+    _failure_details = new String[]{};
+    _failed_raw_params = new String[][]{};
+    _failure_stack_traces = new String[]{};
   }
 
   /**

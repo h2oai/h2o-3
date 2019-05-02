@@ -7,10 +7,7 @@ import hex.grid.GridSearch;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.DKV;
-import water.Job;
-import water.Key;
-import water.TestUtil;
+import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.test.util.GridTestUtils;
@@ -18,7 +15,7 @@ import water.util.ArrayUtils;
 
 import java.util.*;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static water.util.ArrayUtils.interval;
 
 public class GBMGridTest extends TestUtil {
@@ -326,6 +323,65 @@ public class GBMGridTest extends TestUtil {
       if (fr != null) fr.remove();
       if (grid != null) grid.remove();
       if (gbmRebuilt != null) gbmRebuilt.remove();
+    }
+  }
+
+  @Test
+  public void testFailedParamsCleanup() {
+    try {
+      Scope.enter();
+      final Frame trainingFrame = parse_test_file("smalldata/iris/iris_train.csv");
+      Scope.track(trainingFrame);
+
+      // Setup random hyperparameter search space
+      HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
+        put("_distribution", new DistributionFamily[]{DistributionFamily.multinomial});
+        put("_ntrees", new Integer[]{5});
+        put("_max_depth", new Integer[]{2});
+        put("_min_rows", new Integer[]{5000000}); // Invalid hyperparameter, causes model training to fail
+        put("_learn_rate", new Double[]{.7});
+      }};
+
+      GBMModel.GBMParameters params = new GBMModel.GBMParameters();
+      params._train = trainingFrame._key;
+      params._response_column = "species";
+
+      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms);
+      Scope.track_generic(gs);
+      final Grid errGrid = gs.get();
+      Scope.track_generic(errGrid);
+
+      assertEquals(0, errGrid.getModelCount());
+      assertEquals(1, errGrid.getFailureCount());
+      assertEquals(1, errGrid.getFailedParameters().length);
+      assertEquals(1, errGrid.getFailedRawParameters().length);
+      assertEquals(1, errGrid.getFailureDetails().length);
+      assertEquals(1, errGrid.getFailureStackTraces().length);
+
+      // Check if the error is related to the specified invalid hyperparameter
+      final String expectedErr = "Details: ERRR on field: _min_rows: The dataset size is too small to split for min_rows=5000000.0: must have at least 1.0E7 (weighted) rows";
+      assertTrue(errGrid.getFailureStackTraces()[0].contains(expectedErr));
+
+
+      //Set the parameter to an acceptable value
+      hyperParms.put("_min_rows", new Integer[]{10});
+      gs = GridSearch.startGridSearch(errGrid._key, params, hyperParms); // It is important to target the previously created grid
+      Scope.track_generic(gs);
+      final Grid grid = gs.get();
+      Scope.track_generic(grid);
+
+      // There should be no errors, one resulting model in the grid with previously supplied parameters
+      assertEquals(1, grid.getModelCount());
+      assertTrue(grid.getModels()[0] instanceof GBMModel);
+      assertEquals(10, ((GBMModel) grid.getModels()[0])._parms._min_rows, 0);
+      assertEquals(0, grid.getFailureCount());
+      assertEquals(0, grid.getFailedParameters().length);
+      assertEquals(0, grid.getFailedRawParameters().length);
+      assertEquals(0, grid.getFailureDetails().length);
+      assertEquals(0, grid.getFailureStackTraces().length);
+
+    } finally {
+      Scope.exit();
     }
   }
 }
