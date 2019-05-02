@@ -64,7 +64,6 @@ public class TestFrameBuilder {
    */
   public TestFrameBuilder withName(String frameName) {
     throwIf(frameName.startsWith("$"), "Frame name " + frameName + " may only be used with a Session object.");
-    throwIf(DKV.getGet(frameName) != null , "Frame with name `" + frameName + "` has already been registered.");
     this.frameName = frameName;
     return this;
   }
