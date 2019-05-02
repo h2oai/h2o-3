@@ -3533,7 +3533,7 @@ as.matrix.H2OFrame <- function(x, ...) {
   nRow <- attr(x, "nrow")
 
   if(nCol * nRow > .Machine$integer.max){
-    stop("It is not possible convert H2OFrame to data.frame/data.table. The H2OFrame is bigger than vector size limit for R.")
+    stop("It is not possible to convert H2OFrame to a matrix. The dimensions product of H2OFrame is bigger than the vector size limit for R. You can use as.data.frame to convert H2OFrame if each its dimension is less than the vector size limit.")
   }
   as.matrix(as.data.frame.H2OFrame(x, ...))
 }
