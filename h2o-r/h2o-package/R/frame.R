@@ -76,6 +76,7 @@ chk.H2OFrame <- function(fr) if( is.H2OFrame(fr) ) fr else stop("must be an H2OF
   reg.finalizer(node, .nodeFinalizer, onexit=TRUE)
   node
 }
+
 # Compute how many chars to trim at the end of file
 # Handle \r\n (for windows) or just \n (for not windows).
 .calcCharsToTrim <- function(last, secondLast){
@@ -87,9 +88,7 @@ chk.H2OFrame <- function(fr) if( is.H2OFrame(fr) ) fr else stop("must be an H2OF
     charsToTrim
 }
 
-
 # Write dataframe to file if the data is too big
-
 .writeBinToTmpFile <- function(data){
     tmpFile <- tempfile("writebigdata", tempdir(), ".csv")
     outputFile <- file(tmpFile, "wb")
@@ -3435,7 +3434,7 @@ as.data.frame.H2OFrame <- function(x, ...) {
   # Get column types from H2O to set the dataframe types correctly
   colClasses <- attr(x, "types")
   colClasses <- gsub("numeric", NA, colClasses) # let R guess the appropriate numeric type
-  colClasses <- gsub("int", NA, colClasses) # let R guess the appropriate numeric typepodobne jako mame
+  colClasses <- gsub("int", NA, colClasses) # let R guess the appropriate numeric type
   colClasses <- gsub("real", NA, colClasses) # let R guess the appropriate numeric type
   colClasses <- gsub("enum", "factor", colClasses)
   colClasses <- gsub("uuid", "character", colClasses)
@@ -3466,10 +3465,13 @@ as.data.frame.H2OFrame <- function(x, ...) {
   if (verbose) pt <- proc.time()[[3]]
   
   # Get data in binary format for case the data are too big to load in character format  
-  payload <- .h2o.doSafeGET(urlSuffix = urlSuffix, binary=TRUE)
-  
-  if(length(payload) < .Machine$integer.max)  {
+  payload <- .h2o.doSafeGET(urlSuffix = urlSuffix, binary = TRUE)
+
+  maxPayloadSize <- getOption("h2o.as.data.frame.max.in-memory.payload.size", .Machine$integer.max)
+
+  if(length(payload) < maxPayloadSize)  {
     # Data are small enough to use rawToChar method  
+    if (verbose) cat("save data to disk using 'textConnection'\n")
     chtt <- 0  
     useCon <- TRUE
     ttt <- rawToChar(payload)
@@ -3483,6 +3485,7 @@ as.data.frame.H2OFrame <- function(x, ...) {
   } else {
     # Data are too big to use the rawToChar method.
     # Instead, save the binary data to a temporary file and then read from it without connection
+    if (verbose) cat("save data to disk using 'writeBin'\n")
     useCon <- FALSE
     ttt <- .writeBinToTmpFile(payload)
   }
