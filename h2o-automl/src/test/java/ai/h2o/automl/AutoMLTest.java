@@ -194,7 +194,7 @@ public class AutoMLTest extends water.TestUtil {
   }
 
 
-  @Test public void test_individual_model_max_runtime() {
+  @Ignore public void test_individual_model_max_runtime() {
     AutoML aml=null;
     Frame fr=null;
     try {
@@ -351,7 +351,7 @@ public class AutoMLTest extends water.TestUtil {
     }
   }
 
-  @Test public void  test_training_frame_partition_when_cv_disabled_and_leaderboard_frame_missing() {
+  @Ignore public void  test_training_frame_partition_when_cv_disabled_and_leaderboard_frame_missing() {
     AutoML aml = null;
     Frame fr = null, test = null;
     try {
@@ -455,7 +455,7 @@ public class AutoMLTest extends water.TestUtil {
     }
   }
 
-  @Test public void testIncludeAlgos() {
+  @Ignore public void testIncludeAlgos() {
     AutoML aml = null;
     Frame fr=null;
     try {
