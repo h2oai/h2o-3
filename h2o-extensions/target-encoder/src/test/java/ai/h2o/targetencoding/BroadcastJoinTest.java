@@ -88,6 +88,17 @@ public class BroadcastJoinTest extends TestUtil {
   }
 
   @Test
+  public void serializationTest() {
+    AutoBuffer ab = new AutoBuffer();
+    FrameWithEncodingDataToHashMap task = new FrameWithEncodingDataToHashMap(0, -1, 1, 2);
+    // After adding data to the map we should be able to serialize it
+    task._encodingDataMapPerNode.put(new CompositeLookupKey("a", 42), new EncodingData(33, 55));
+    task.write(ab);
+
+    // Expectation of this test is that no exceptions will be thrown during serialisation
+  }
+
+  @Test
   public void joinWithoutFoldColumnTest() {
 
     Frame rightFr = null;

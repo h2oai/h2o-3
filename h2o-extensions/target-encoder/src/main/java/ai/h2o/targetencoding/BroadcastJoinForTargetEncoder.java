@@ -1,5 +1,6 @@
 package ai.h2o.targetencoding;
 
+import water.Iced;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -9,7 +10,7 @@ import java.util.Objects;
 
 class BroadcastJoinForTargetEncoder {
   
-  static class CompositeLookupKey {
+  static class CompositeLookupKey extends Iced {
     // Note: Consider using indexes of levels instead of strings to save space. It will probably require 
     // to use CategoricalWrappedVec.computeMap() since indexes for levels could differ in both frames for the same level values.
     private String _levelValue;
@@ -45,7 +46,7 @@ class BroadcastJoinForTargetEncoder {
     }
   }
 
-  static class EncodingData {
+  static class EncodingData extends Iced {
     private long _numerator;
     private long _denominator;
     
