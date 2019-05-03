@@ -563,6 +563,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
   }
 
+  private static volatile boolean DEFAULT_GPU_BLACKLISTED = false;
   private static Set<Integer> GPUS = new HashSet<>();
 
   static boolean hasGPU(H2ONode node, int gpu_id) {
@@ -592,8 +593,18 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
   }
 
+  private static boolean hasGPU(int gpu_id) {
+    if (gpu_id == 0 && DEFAULT_GPU_BLACKLISTED) // quick default path & no synchronization - if we already know we don't have the default GPU, let's not to find out again
+      return false;
+    boolean hasGPU = hasGPU_impl(gpu_id);
+    if (gpu_id == 0 && !hasGPU) {
+      DEFAULT_GPU_BLACKLISTED = true; // this can never change back
+    }
+    return hasGPU;
+  }
+
   // helper
-  static synchronized boolean hasGPU(int gpu_id) {
+  private static synchronized boolean hasGPU_impl(int gpu_id) {
     if (! XGBoostExtension.isGpuSupportEnabled()) {
       return false;
     }
