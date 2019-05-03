@@ -150,10 +150,11 @@ public class GridSchemaV99 extends SchemaV3<Grid, GridSchemaV99> {
     grid_id = new KeyV3.GridKeyV3(grid._key);
     model_ids = modelIds;
     hyper_names = grid.getHyperNames();
-    failed_params = toModelParametersSchema(grid.getFailedParameters());
-    failure_details = grid.getFailureDetails();
-    failure_stack_traces = grid.getFailureStackTraces();
-    failed_raw_params = grid.getFailedRawParameters();
+    final Grid.SearchFailure failures = grid.getFailures();
+    failed_params = toModelParametersSchema(failures.getFailedParameters());
+    failure_details = failures.getFailureDetails();
+    failure_stack_traces = failures.getFailureStackTraces();
+    failed_raw_params = failures.getFailedRawParameters();
 
     TwoDimTable t = grid.createSummaryTable(keys, sort_by, decreasing);
     if (t!=null)

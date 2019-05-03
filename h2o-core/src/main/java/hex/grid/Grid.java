@@ -30,24 +30,10 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
   // A cache of double[] hyper-parameters mapping to Models.
   private final IcedHashMap<IcedLong, Key<Model>> _models = new IcedHashMap<>();
 
+  private final IcedHashMap<Key<Model>, SearchFailure> _failures;
+
   // Used "based" model parameters for this grid search.
   private final MP _params;
-
-  // Failed model parameters - represents points in hyper space for which model
-  // generation failed.  If the element is null, then look into
-  private MP[] _failed_params;
-
-  // Detailed messages about a failure for given failed model parameters in
-  // <code>_failed_params</code>.
-  private String[] _failure_details;
-
-  // Collected stack trace for failure.
-  private String[] _failure_stack_traces;
-
-  // Contains "raw" representation of parameters which fail The parameters are
-  // represented in textual form, since simple <code>java.lang.Object</code>
-  // cannot be serialized by H2O serialization.
-  private String[][] _failed_raw_params;
 
   // Names of used hyper parameters for this grid search.
   private final String[] _hyper_names;
@@ -55,6 +41,123 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
   private final FieldNaming _field_naming_strategy;
 
   private ScoringInfo[] _scoring_infos = null;
+
+
+  /**
+   * A special key to identify failures of models that did not become part of the {@link Grid}
+   */
+  private static final Key<Model> NO_MODEL_FAILURES_KEY = Key.makeUserHidden("GridSearchFailureEmptyModelKey");
+
+  /**
+   * A failure occured during hyperspace exploration.
+   */
+  public static final class SearchFailure<MP extends Model.Parameters> extends Iced<SearchFailure> {
+
+    // Failed model parameters - represents points in hyper space for which model
+    // generation failed.  If the element is null, then look into
+    private MP[] _failed_params;
+
+    // Detailed messages about a failure for given failed model parameters in
+    // <code>_failed_params</code>.
+    private String[] _failure_details;
+
+    // Collected stack trace for failure.
+    private String[] _failure_stack_traces;
+
+    // Contains "raw" representation of parameters which fail The parameters are
+    // represented in textual form, since simple <code>java.lang.Object</code>
+    // cannot be serialized by H2O serialization.
+    private String[][] _failed_raw_params;
+
+    private SearchFailure(final Class<MP> paramsClass) {
+      _failed_params = paramsClass != null ? (MP[]) Array.newInstance(paramsClass, 0) : null;
+      _failure_details = new String[]{};
+      _failed_raw_params = new String[][]{};
+      _failure_stack_traces = new String[]{};
+    }
+
+    /**
+     * This method appends a new item to the list of failed model parameters.
+     * <p/>
+     * <p> The failed parameters object represents a point in hyper space which cannot be used for
+     * model building. </p>
+     *
+     * @param params    model parameters which caused model builder failure, can be null
+     * @param rawParams array of "raw" parameter values
+     * @params failureDetails  textual description of model building failure
+     * @params stackTrace  stringify stacktrace
+     */
+    private void appendFailedModelParameters(MP params, String[] rawParams, String failureDetails, String stackTrace) {
+      assert rawParams != null : "API has to always pass rawParams";
+      // Append parameter
+      MP[] a = _failed_params;
+      MP[] na = Arrays.copyOf(a, a.length + 1);
+      na[a.length] = params;
+      _failed_params = na;
+      // Append message
+      String[] m = _failure_details;
+      String[] nm = Arrays.copyOf(m, m.length + 1);
+      nm[m.length] = failureDetails;
+      _failure_details = nm;
+      // Append raw parames
+      String[][] rp = _failed_raw_params;
+      String[][] nrp = Arrays.copyOf(rp, rp.length + 1);
+      nrp[rp.length] = rawParams;
+      _failed_raw_params = nrp;
+      // Append stack trace
+      String[] st = _failure_stack_traces;
+      String[] nst = Arrays.copyOf(st, st.length + 1);
+      nst[st.length] = stackTrace;
+      _failure_stack_traces = nst;
+    }
+
+    public void appendFailedModelParameters(final MP[] params, final String[][] rawParams,
+                                            final String[] failureDetails, final String[] stackTraces) {
+
+      assert rawParams != null : "API has to always pass rawParams";
+
+      _failed_params = ArrayUtils.append(_failed_params, params);
+      _failed_raw_params = ArrayUtils.append(_failed_raw_params, rawParams);
+      _failure_details = ArrayUtils.append(_failure_details, failureDetails);
+      _failure_stack_traces = ArrayUtils.append(_failure_stack_traces, stackTraces);
+    }
+
+    /**
+     * This method appends a new item to the list of failed hyper-parameters.
+     * <p/>
+     * <p> The failed parameters object represents a point in hyper space which cannot be used to
+     * construct a new model parameters.</p>
+     * <p/>
+     * <p> Should be used only from <code>GridSearch</code> job.</p>
+     *
+     * @param rawParams list of "raw" hyper values which caused a failure to prepare model parameters
+     * @params e exception causing a failure
+     */
+    /* package */ void appendFailedModelParameters(Object[] rawParams, Exception e) {
+      assert rawParams != null : "Raw parameters should be always != null !";
+      appendFailedModelParameters(null, ArrayUtils.toString(rawParams), e.getMessage(), StringUtils.toString(e));
+    }
+
+    public Model.Parameters[] getFailedParameters() {
+      return _failed_params;
+    }
+
+    public String[] getFailureDetails() {
+      return _failure_details;
+    }
+
+    public String[] getFailureStackTraces() {
+      return _failure_stack_traces;
+    }
+
+    public String[][] getFailedRawParameters() {
+      return _failed_raw_params;
+    }
+
+    public int getFailureCount() {
+      return _failed_params.length;
+    }
+  }
 
   /**
    * Construct a new grid object to store results of grid search.
@@ -67,8 +170,8 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
     super(key);
     _params = params != null ? (MP) params.clone() : null;
     _hyper_names = hyperNames;
-    _field_naming_strategy = fieldNaming;
-    initFailureFields();
+      _field_naming_strategy = fieldNaming;
+      _failures = new IcedHashMap<>();
   }
 
   /**
@@ -150,33 +253,22 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
    * <p> The failed parameters object represents a point in hyper space which cannot be used for
    * model building. </p>
    *
+   * @param modelKey Model the failures are related to
    * @param params    model parameters which caused model builder failure, can be null
    * @param rawParams array of "raw" parameter values
    * @params failureDetails  textual description of model building failure
    * @params stackTrace  stringify stacktrace
    */
-  private void appendFailedModelParameters(MP params, String[] rawParams, String failureDetails, String stackTrace) {
-    assert rawParams != null : "API has to always pass rawParams";
-    // Append parameter
-    MP[] a = _failed_params;
-    MP[] na = Arrays.copyOf(a, a.length + 1);
-    na[a.length] = params;
-    _failed_params = na;
-    // Append message
-    String[] m = _failure_details;
-    String[] nm = Arrays.copyOf(m, m.length + 1);
-    nm[m.length] = failureDetails;
-    _failure_details = nm;
-    // Append raw parames
-    String[][] rp = _failed_raw_params;
-    String[][] nrp = Arrays.copyOf(rp, rp.length + 1);
-    nrp[rp.length] = rawParams;
-    _failed_raw_params = nrp;
-    // Append stack trace
-    String[] st = _failure_stack_traces;
-    String[] nst = Arrays.copyOf(st, st.length + 1);
-    nst[st.length] = stackTrace;
-    _failure_stack_traces = nst;
+  private void appendFailedModelParameters(final Key<Model> modelKey, final MP params, final String[] rawParams,
+                                           final String failureDetails, final String stackTrace) {
+      
+      final Key<Model> searchedKey = modelKey != null ? modelKey : NO_MODEL_FAILURES_KEY;
+      SearchFailure searchFailure = _failures.get(searchedKey);
+      if ((searchFailure == null)) {
+        searchFailure = new SearchFailure(_params.getClass());
+          _failures.put(searchedKey, searchFailure);
+      }
+      searchFailure.appendFailedModelParameters(params, rawParams, failureDetails, stackTrace);
   }
 
   /**
@@ -190,10 +282,10 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
    * @param params model parameters which caused model builder failure
    * @params e  exception causing a failure
    */
-  void appendFailedModelParameters(MP params, Exception e) {
+  void appendFailedModelParameters(final Key<Model> modelKey, final MP params, final Exception e) {
     assert params != null : "Model parameters should be always != null !";
     String[] rawParams = ArrayUtils.toString(getHyperValues(params));
-    appendFailedModelParameters(params, rawParams, e.getMessage(), StringUtils.toString(e));
+      appendFailedModelParameters(modelKey, params, rawParams, e.getMessage(), StringUtils.toString(e));
   }
 
   /**
@@ -207,23 +299,11 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
    * @param rawParams list of "raw" hyper values which caused a failure to prepare model parameters
    * @params e exception causing a failure
    */
-  /* package */ void appendFailedModelParameters(Object[] rawParams, Exception e) {
+  /* package */ void appendFailedModelParameters(final Key<Model> modelKey, final Object[] rawParams,
+                                                 final Exception e) {
     assert rawParams != null : "Raw parameters should be always != null !";
-    appendFailedModelParameters(null, ArrayUtils.toString(rawParams), e.getMessage(), StringUtils.toString(e));
-  }
-
-  /**
-   * Failed hyperparameters are stored during model training together with complete stacktraces during
-   * the training phase of grid's potential models. This method drops old values and re-initializes local fields
-   * with empty instances.
-   */
-  protected void initFailureFields() {
-    final Class<MP> paramsClass = _params != null ? (Class<MP>) _params.getClass() : null;
-
-    _failed_params = paramsClass != null ? (MP[]) Array.newInstance(paramsClass, 0) : null;
-    _failure_details = new String[]{};
-    _failed_raw_params = new String[][]{};
-    _failure_stack_traces = new String[]{};
+      appendFailedModelParameters(modelKey, null, ArrayUtils.toString(rawParams), e.getMessage(),
+              StringUtils.toString(e));
   }
 
   /**
@@ -259,45 +339,30 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
   }
 
   /**
-   * Returns number of unsuccessful attempts to build a model.
+   * Returns all failures currently listed in this Grid instance, including failures related to models not present in
+   * the grid that failed during the last run.
+   *
+   * @return An instance of {@link SearchFailure} with all failures currently linked to this {@link Grid}.
+   * An empty {@link SearchFailure} instance is returned if there are no failures listed.
    */
-  public int getFailureCount() {
-    return _failed_params.length;
+  public SearchFailure getFailures() {
+    final Collection<SearchFailure> values = _failures.values();
+    // Original failures should be left intact. Also avoid mutability from outer space.
+    final SearchFailure searchFailure = new SearchFailure(_params.getClass());
+
+    for (SearchFailure f : values) {
+      searchFailure.appendFailedModelParameters(f._failed_params, f._failed_raw_params, f._failure_details,
+              f._failure_stack_traces);
+    }
+
+    return searchFailure;
   }
 
   /**
-   * Returns an array of model parameters which caused model build failure.
-   * <p/>
-   * The null-element in the array means, that model parameters cannot be constructed, and the
-   * client should use {@link #getFailedParameters()} to obtain "raw" model parameters.
-   * <p/>
-   * Note: cannot return <code>MP[]</code> because of PUBDEV-1863 See:
-   * https://0xdata.atlassian.net/browse/PUBDEV-1863
+   * Removes failures found while walking the hyperspace related to models not present in Grid.
    */
-  public Model.Parameters[] getFailedParameters() {
-    return _failed_params;
-  }
-
-  /**
-   * Returns detailed messages about model build failures.
-   */
-  public String[] getFailureDetails() {
-    return _failure_details;
-  }
-
-  /**
-   * Returns string representation of model build failures'
-   * stack traces.
-   */
-  public String[] getFailureStackTraces() {
-    return _failure_stack_traces;
-  }
-
-  /**
-   * Returns list of raw model parameters causing model building failure.
-   */
-  public String[][] getFailedRawParameters() {
-    return _failed_raw_params;
+  protected void clearNonRelatedFailures(){
+    _failures.remove(NO_MODEL_FAILURES_KEY);
   }
 
   /**

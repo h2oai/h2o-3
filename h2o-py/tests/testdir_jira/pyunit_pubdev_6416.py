@@ -10,7 +10,6 @@ from unittest import TestCase
 class PUBDEV6416(TestCase):
 
     def pubdev_6416(self):
-        
         # Attempt to add a model to the grid by specifying invalid hyperparameters search range.
         # Should fail and generate error
         data = h2o.import_file(pyunit_utils.locate('smalldata/iris/iris_train.csv'))
@@ -35,13 +34,13 @@ class PUBDEV6416(TestCase):
                            }
 
         gbm = H2OGradientBoostingEstimator(distribution='multinomial',
-                                                ntrees=5,
-                                                learn_rate=0.05,
-                                                score_tree_interval=5,
-                                                seed=1,
-                                                stopping_rounds=5,
-                                                stopping_metric="MSE",
-                                                stopping_tolerance=1e-4)
+                                           ntrees=5,
+                                           learn_rate=0.05,
+                                           score_tree_interval=5,
+                                           seed=1,
+                                           stopping_rounds=5,
+                                           stopping_metric="MSE",
+                                           stopping_tolerance=1e-4)
 
         grid = H2OGridSearch(gbm,
                              hyper_params=hyper_params,
@@ -69,14 +68,14 @@ class PUBDEV6416(TestCase):
             'histogram_type': ["UniformAdaptive"]
         }
         gbm = H2OGradientBoostingEstimator(distribution='multinomial',
-                                                ntrees=5,
-                                                learn_rate=0.05,
-                                                learn_rate_annealing=0.99,
-                                                score_tree_interval=5,
-                                                seed=1,
-                                                stopping_rounds=5,
-                                                stopping_metric="MSE",
-                                                stopping_tolerance=1e-4)
+                                           ntrees=5,
+                                           learn_rate=0.05,
+                                           learn_rate_annealing=0.99,
+                                           score_tree_interval=5,
+                                           seed=1,
+                                           stopping_rounds=5,
+                                           stopping_metric="MSE",
+                                           stopping_tolerance=1e-4)
 
         grid = H2OGridSearch(gbm,
                              hyper_params=hyper_params,

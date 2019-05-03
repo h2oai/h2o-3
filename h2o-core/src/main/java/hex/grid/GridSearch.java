@@ -98,8 +98,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       if (! (keyed instanceof Grid))
         throw new H2OIllegalArgumentException("Name conflict: tried to create a Grid using the ID of a non-Grid object that's already in H2O: " + _job._result + "; it is a: " + keyed.getClass());
       grid = (Grid) keyed;
-      // Old failures are no longer needed once new hyperspace search is issued by the user.
-      if ((grid.getFailureCount() > 0)) grid.initFailureFields();
+      grid.clearNonRelatedFailures();
       Frame specTrainFrame = _hyperSpaceWalker.getParams().train();
       Frame oldTrainFrame = grid.getTrainingFrame();
       if (oldTrainFrame != null && !specTrainFrame._key.equals(oldTrainFrame._key) ||
@@ -232,14 +231,15 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
               e.printStackTrace(pw);
               Log.warn("Grid search: model builder for parameters " + params + " failed! Exception: ", e, sw.toString());
             }
-            grid.appendFailedModelParameters(params, e);
+            
+            grid.appendFailedModelParameters(model != null ? model._key : null, params, e);
           }
         } catch (IllegalArgumentException e) {
           Log.warn("Grid search: construction of model parameters failed! Exception: ", e);
           // Model parameters cannot be constructed for some reason
           it.modelFailed(model);
           Object[] rawParams = it.getCurrentRawParameters();
-          grid.appendFailedModelParameters(rawParams, e);
+          grid.appendFailedModelParameters(model._key, rawParams, e);
         } finally {
           // Update progress by 1 increment
           _job.update(1);

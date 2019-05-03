@@ -12,6 +12,7 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.test.util.GridTestUtils;
 import water.util.ArrayUtils;
+import water.util.IcedHashMap;
 
 import java.util.*;
 
@@ -59,9 +60,10 @@ public class GBMGridTest extends TestUtil {
       // Get the Grid for this modeling class and frame
       Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms);
       grid = (Grid<GBMModel.GBMParameters>) gs.get();
+      final Grid.SearchFailure failures = grid.getFailures();
       // Make sure number of produced models match size of specified hyper space
       Assert.assertEquals("Size of grid (models+failures) should match to size of hyper space",
-                          hyperSpaceSize, grid.getModelCount() + grid.getFailureCount());
+                          hyperSpaceSize, grid.getModelCount() + failures.getFailureCount());
       //
       // Make sure that names of used parameters match
       //
@@ -91,7 +93,7 @@ public class GBMGridTest extends TestUtil {
 
       // Verify model failure
       Map<String, Set<Object>> failedHyperParams = GridTestUtils.initMap(hyperParamNames);;
-      for (Model.Parameters failedParams : grid.getFailedParameters()) {
+      for (Model.Parameters failedParams : failures.getFailedParameters()) {
         GridTestUtils.extractParams(failedHyperParams, failedParams, hyperParamNames);
       }
       hyperParms.put("_learn_rate", illegalLearnRateOpts);
@@ -352,15 +354,17 @@ public class GBMGridTest extends TestUtil {
       Scope.track_generic(errGrid);
 
       assertEquals(0, errGrid.getModelCount());
-      assertEquals(1, errGrid.getFailureCount());
-      assertEquals(1, errGrid.getFailedParameters().length);
-      assertEquals(1, errGrid.getFailedRawParameters().length);
-      assertEquals(1, errGrid.getFailureDetails().length);
-      assertEquals(1, errGrid.getFailureStackTraces().length);
+
+      final Grid.SearchFailure failures = errGrid.getFailures();
+      assertEquals(1, failures.getFailureCount());
+      assertEquals(1, failures.getFailedParameters().length);
+      assertEquals(1, failures.getFailedRawParameters().length);
+      assertEquals(1, failures.getFailureDetails().length);
+      assertEquals(1, failures.getFailureStackTraces().length);
 
       // Check if the error is related to the specified invalid hyperparameter
       final String expectedErr = "Details: ERRR on field: _min_rows: The dataset size is too small to split for min_rows=5000000.0: must have at least 1.0E7 (weighted) rows";
-      assertTrue(errGrid.getFailureStackTraces()[0].contains(expectedErr));
+      assertTrue(failures.getFailureStackTraces()[0].contains(expectedErr));
 
 
       //Set the parameter to an acceptable value
@@ -374,14 +378,27 @@ public class GBMGridTest extends TestUtil {
       assertEquals(1, grid.getModelCount());
       assertTrue(grid.getModels()[0] instanceof GBMModel);
       assertEquals(10, ((GBMModel) grid.getModels()[0])._parms._min_rows, 0);
-      assertEquals(0, grid.getFailureCount());
-      assertEquals(0, grid.getFailedParameters().length);
-      assertEquals(0, grid.getFailedRawParameters().length);
-      assertEquals(0, grid.getFailureDetails().length);
-      assertEquals(0, grid.getFailureStackTraces().length);
+
+      final Grid.SearchFailure secondRunFailures = grid.getFailures();
+      assertEquals(0, secondRunFailures.getFailureCount());
+      assertEquals(0, secondRunFailures.getFailedParameters().length);
+      assertEquals(0, secondRunFailures.getFailedRawParameters().length);
+      assertEquals(0, secondRunFailures.getFailureDetails().length);
+      assertEquals(0, secondRunFailures.getFailureStackTraces().length);
 
     } finally {
       Scope.exit();
     }
+  }
+  
+  @Test
+  public void test(){
+    final IcedHashMap<Key<Model>, String> map = new IcedHashMap<>();
+    final Key<Model> model = Key.<Model>make("model");
+    map.put(Key.<Model>make("model"), "Ahoj");
+    
+    assertEquals(1, map.size());
+    map.put(model, "test");
+    final String s = map.get(model);
   }
 }
