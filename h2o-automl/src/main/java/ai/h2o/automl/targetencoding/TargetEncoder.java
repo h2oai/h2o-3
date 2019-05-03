@@ -269,9 +269,9 @@ public class TargetEncoder {
       }
   
     private void addNumeratorAndDenominatorTo(Frame leftFrame) {
-      Vec emptyNumerator = Vec.makeZero(leftFrame.numRows());
+      Vec emptyNumerator = leftFrame.anyVec().makeCon(0);
       leftFrame.add(NUMERATOR_COL_NAME, emptyNumerator);
-      Vec emptyDenominator = Vec.makeZero(leftFrame.numRows());
+      Vec emptyDenominator = leftFrame.anyVec().makeCon(0);
       leftFrame.add(DENOMINATOR_COL_NAME, emptyDenominator);
     }
 
@@ -299,7 +299,7 @@ public class TargetEncoder {
       double globalMeanForTargetClass = calculatePriorMean(encodingMap); // TODO since target column is the same for all categorical columns we are trying to encode we can compute global mean only once.
       Log.info("Global mean for blending = " + globalMeanForTargetClass);
 
-      Vec zeroVec = Vec.makeZero(fr.numRows());
+      Vec zeroVec = fr.anyVec().makeCon(0);
       fr.add(appendedColumnName, zeroVec);
       int encodingsColumnIdx = fr.find(appendedColumnName);
       new CalcEncodingsWithBlending(numeratorIndex, denominatorIndex, globalMeanForTargetClass, _blendingParams, encodingsColumnIdx).doAll(fr);
@@ -349,7 +349,7 @@ public class TargetEncoder {
 
       double globalMeanForTargetClass = calculatePriorMean(encodingMap); // we can only operate on encodingsMap because `fr` could not have target column at all
 
-      Vec zeroVec = Vec.makeZero(fr.numRows());
+      Vec zeroVec = fr.anyVec().makeCon(0);
       fr.add(appendedColumnName, zeroVec);
       int encodingsColumnIdx = fr.find(appendedColumnName);
       new CalcEncodings(numeratorIndex, denominatorIndex, globalMeanForTargetClass, encodingsColumnIdx).doAll( fr);
@@ -391,7 +391,7 @@ public class TargetEncoder {
     Frame addNoise(Frame fr, String applyToColumnName, double noiseLevel, long seed) {
       int appyToColumnIndex = fr.find(applyToColumnName);
       if (seed == -1) seed = new Random().nextLong();
-      Vec zeroVec = Vec.makeZero(fr.numRows());
+      Vec zeroVec = fr.anyVec().makeCon(0);
       Vec randomVec = zeroVec.makeRand(seed);
       Vec runif = fr.add("runif", randomVec);
       int runifIdx = fr.find("runif");
