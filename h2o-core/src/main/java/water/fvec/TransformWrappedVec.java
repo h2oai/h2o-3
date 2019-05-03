@@ -47,6 +47,19 @@ public class TransformWrappedVec extends WrappedVec {
     this(v.group().addVec(), v._rowLayout, fun, new Key[]{v._key});
   }
 
+  @SuppressWarnings("unchecked")
+  public TransformWrappedVec(Vec[] vecs, TransformFactory<?> fact) {
+    this(vecs[0].group().addVec(), vecs[0]._rowLayout, fact, keys(vecs));
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Key<Vec>[] keys(Vec[] vecs) {
+    Key[] keys = new Key[vecs.length];
+    for (int i = 0; i < vecs.length; i++)
+      keys[i] = vecs[i]._key;
+    return keys;
+  }
+  
   public TransformWrappedVec(Key<Vec> key, int rowLayout, AstPrimitive fun, Key<Vec>[] masterVecKeys) {
     this(key, rowLayout, new AstTransformFactory(fun), masterVecKeys);
   }
@@ -104,6 +117,7 @@ public class TransformWrappedVec extends WrappedVec {
     // applies the function to a row of doubles
     @Override public double atd_impl(int idx) {
       if( null==_fact ) return _c[0].atd(idx);  // simple wrapping of 1 vec
+      _t.reset();
       for(int i = 0; i < _c.length; i++)
         _t.setInput(i, _c[i].atd(idx));
       return _t.apply();   // Make the call per-row
@@ -139,6 +153,10 @@ public class TransformWrappedVec extends WrappedVec {
 
     AstTransformFactory(AstPrimitive fun) {
       _fun = fun;
+    }
+
+    public AstTransformFactory() {
+      this(null);
     }
 
     @Override
