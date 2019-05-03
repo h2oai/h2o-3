@@ -1,5 +1,6 @@
 package hex.svm;
 
+import water.Iced;
 import water.MRTask;
 import water.fvec.*;
 import water.util.ArrayUtils;
@@ -324,20 +325,57 @@ class PrimalDualIPM {
   }
 
   private static void computeDeltaX(Frame icf, Vec d, Vec label, final double dnu, LLMatrix lra, Vec z, Vec dx) {
-    Vec tz = new MRTask() {
-      @Override
-      public void map(Chunk z, Chunk label, NewChunk tz) {
-        for (int i = 0; i < z._len; i++) {
-          tz.addNum(z.atd(i) - dnu * label.atd(i));
-        }
-      }
-    }.doAll(Vec.T_NUM, z, label).outputFrame().anyVec();
+    Vec tz = new TransformWrappedVec(new Vec[]{z, label}, new LinearCombTransformFactory(1.0, -dnu));
     try {
       linearSolveViaICFCol(icf, d, tz, lra, dx);
     } finally {
-      tz.remove(); // TODO: avoid calculating the `tz`
+      tz.remove();
     }
   }
+
+  private static class LinearCombTransformFactory
+          extends Iced<LinearCombTransformFactory>
+          implements TransformWrappedVec.TransformFactory<LinearCombTransformFactory>  {
+
+    private final double[] _coefs;
+
+    LinearCombTransformFactory(double... coefs) {
+      _coefs = coefs;
+    }
+
+    @Override
+    public TransformWrappedVec.Transform create(int n_inputs) {
+      if (n_inputs != _coefs.length) {
+        throw new IllegalArgumentException("Expected " + _coefs.length + " inputs, got: " + n_inputs);
+      }
+      return new LinearCombTransform(_coefs);
+    }
+  }
+
+  private static class LinearCombTransform implements TransformWrappedVec.Transform {
+    private final double[] _coefs;
+    double _sum;
+
+    LinearCombTransform(double[] coefs) {
+      _coefs = coefs;
+    }
+
+    @Override
+    public void reset() {
+      _sum = 0;
+    }
+
+    @Override
+    public void setInput(int i, double value) {
+      _sum += value * _coefs[i];
+    }
+
+    @Override
+    public double apply() {
+      return _sum;
+    }
+  }
+
   
   private static double computeDeltaNu(Frame icf, Vec d, Vec label, Vec z, Vec x, LLMatrix lra) {
     double[] vz = partialLinearSolveViaICFCol(icf, d, z, lra);
