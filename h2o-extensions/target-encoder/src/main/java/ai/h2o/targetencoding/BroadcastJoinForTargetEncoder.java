@@ -4,6 +4,7 @@ import water.Iced;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.util.DistributedException;
 import water.util.IcedHashMap;
 
 import java.util.Objects;
@@ -91,7 +92,9 @@ class BroadcastJoinForTargetEncoder {
         int foldValue = -1;
         if(_foldColumnIdx != -1) {
           long foldValueFromVec = cs[_foldColumnIdx].at8(i);
-          assert foldValueFromVec <= Integer.MAX_VALUE && foldValueFromVec >= 0 : FOLD_VALUE_IS_OUT_OF_RANGE_MSG;
+          if(!(foldValueFromVec <= Integer.MAX_VALUE && foldValueFromVec >= 0 )) {
+            throw new DistributedException(new AssertionError(FOLD_VALUE_IS_OUT_OF_RANGE_MSG + " but was " + foldValueFromVec));
+          }
           foldValue = (int) foldValueFromVec;
         }
         _encodingDataMapPerNode.put(new CompositeLookupKey(factor, foldValue), new EncodingData(numeratorChunk.at8(i), denominatorChunk.at8(i)));

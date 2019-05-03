@@ -20,7 +20,7 @@ public class BroadcastJoinTest extends TestUtil {
 
   @BeforeClass
   public static void setup() {
-    stall_till_cloudsize(1);
+    stall_till_cloudsize(2);
   }
 
   private Frame fr = null;
@@ -51,9 +51,9 @@ public class BroadcastJoinTest extends TestUtil {
               .withDataForCol(3, ar(44, 66, 84))
               .build();
 
-      emptyNumerator = Vec.makeZero(fr.numRows());
+      emptyNumerator = fr.anyVec().makeCon(0);
       fr.add(TargetEncoder.NUMERATOR_COL_NAME, emptyNumerator);
-      emptyDenominator = Vec.makeZero(fr.numRows());
+      emptyDenominator = fr.anyVec().makeCon(0);
       fr.add(TargetEncoder.DENOMINATOR_COL_NAME, emptyDenominator);
       
       Frame joined = BroadcastJoinForTargetEncoder.join(fr, new int[]{0}, 1, rightFr, new int[]{0}, 1);
@@ -126,6 +126,7 @@ public class BroadcastJoinTest extends TestUtil {
   @Test(expected = AssertionError.class)
   public void mergeWillUseRightFramesOrderAndGroupByValues() {
     Scope.enter();
+    Frame res = null;
     try {
       Frame fr = new TestFrameBuilder()
               .withName("leftFrame")
@@ -145,12 +146,13 @@ public class BroadcastJoinTest extends TestUtil {
 
       //Note: we end up with the order from the `right` frame
       int[][] levelMaps = {CategoricalWrappedVec.computeMap(holdoutEncodingMap.vec(0).domain(), fr.vec(0).domain())};
-      Frame res = Merge.merge(holdoutEncodingMap, fr, new int[]{0}, new int[]{0}, false, levelMaps);
+      res = Merge.merge(holdoutEncodingMap, fr, new int[]{0}, new int[]{0}, false, levelMaps);
       printOutFrameAsTable(res, false, res.numRows());
       
       //We expect this assertion to fail
       assertStringVecEquals(cvec("a", "b", "c", "e", "a"), res.vec("ColB"));
     } finally {
+      res.delete();
       Scope.exit();
     }
   }
@@ -167,14 +169,15 @@ public class BroadcastJoinTest extends TestUtil {
             .withDataForCol(1, ar(biggerThanIntMax, 33, 42))
             .withDataForCol(2, ar(44, 66, 84))
             .withDataForCol(3, ar(88, 132, 168))
+            .withChunkLayout(2,1)
             .build();
 
-    new FrameWithEncodingDataToHashMap(0, 1, 2, 3)
+    IcedHashMap<CompositeLookupKey, EncodingData> encodingDataMap = new FrameWithEncodingDataToHashMap(0, 1, 2, 3)
             .doAll(fr)
             .getEncodingDataMap();
   }
 
-  @Property(trials = 200)
+  @Property(trials = 100)
   public void foldValuesThatAreInRangeWouldNotCauseExceptionTest(@InRange(minInt = 0)int randomInt) {
     fr = new TestFrameBuilder()
             .withName("testFrame")
@@ -184,8 +187,9 @@ public class BroadcastJoinTest extends TestUtil {
             .withDataForCol(1, ar(randomInt, 33, 42))
             .withDataForCol(2, ar(44, 66, 84))
             .withDataForCol(3, ar(88, 132, 168))
+            .withChunkLayout(2,1)
             .build();
-
+    
     new FrameWithEncodingDataToHashMap(0, 1, 2, 3)
             .doAll(fr)
             .getEncodingDataMap();
