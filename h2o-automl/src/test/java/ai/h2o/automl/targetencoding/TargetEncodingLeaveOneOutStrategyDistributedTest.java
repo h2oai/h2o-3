@@ -37,13 +37,16 @@ public class TargetEncodingLeaveOneOutStrategyDistributedTest extends TestUtil {
 
     Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, null);
 
+    printOutFrameAsTable(targetEncodingMap.get(teColumnName));
     Frame resultWithEncodings = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, false,0.0, true, 1234);
-//
-//    Vec expected = dvec(0.6, 0.6, 0.5, 1, 0.5);
-//    printOutFrameAsTable(resultWithEncodings);
-//    assertVecEquals(expected, resultWithEncodings.vec("ColA_te"), 1e-5);
-//
-//    expected.remove();
+    printOutFrameAsTable(resultWithEncodings);
+
+
+    Vec expected = dvec(0.6, 0.6, 0.5, 1, 0.5);
+    printOutFrameAsTable(resultWithEncodings);
+    assertVecEquals(expected, resultWithEncodings.vec("ColA_te"), 1e-5);
+
+    expected.remove();
     encodingMapCleanUp(targetEncodingMap);
     resultWithEncodings.delete();
     

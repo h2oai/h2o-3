@@ -305,9 +305,9 @@ public class TargetEncoder extends Iced<TargetEncoder>{
       }
   
     private void addNumeratorAndDenominatorTo(Frame leftFrame) {
-      Vec emptyNumerator = Vec.makeZero(leftFrame.numRows());
+      Vec emptyNumerator = leftFrame.anyVec().makeCon(0);
       leftFrame.add(NUMERATOR_COL_NAME, emptyNumerator);
-      Vec emptyDenominator = Vec.makeZero(leftFrame.numRows());
+      Vec emptyDenominator = leftFrame.anyVec().makeCon(0);
       leftFrame.add(DENOMINATOR_COL_NAME, emptyDenominator);
     }
 
