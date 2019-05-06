@@ -47,7 +47,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yates/3/index.
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6450'>PUBDEV-6450</a>] - It is now possible to retrieve a list of features from a trained model.
 </li>
 </ul>
-                    
+      
 <h4>Docs</h4>
 
 <ul>
@@ -56,10 +56,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yates/3/index.
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6456'>PUBDEV-6456</a>] - Added information about the Target Encoding smoothing parameter. (STILL OPEN)
 </li>
 </ul>
-            
-
-
-
 
 ### Yates (3.24.0.2) - 4/16/2019
 
