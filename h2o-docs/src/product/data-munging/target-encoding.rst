@@ -259,6 +259,11 @@ Fold Column
 
 Specify the name or column index of the fold column in the data. This defaults to NULL (no ``fold_column``).
 
+Smoothing
+'''''''''
+
+The smoothing value is used for blending and to calculate ``lambda``. Smoothing controls the rate of transition between the particular level's posterior probability and the prior probability. For smoothing values approaching infinity, it becomes a hard threshold between the posterior and the prior probability.
+
 Seed
 ''''
 
