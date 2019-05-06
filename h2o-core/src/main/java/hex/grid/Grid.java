@@ -348,7 +348,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
   public SearchFailure getFailures() {
     final Collection<SearchFailure> values = _failures.values();
     // Original failures should be left intact. Also avoid mutability from outer space.
-    final SearchFailure searchFailure = new SearchFailure(_params.getClass());
+    final SearchFailure searchFailure = new SearchFailure(_params != null ? _params.getClass() : null);
 
     for (SearchFailure f : values) {
       searchFailure.appendFailedModelParameters(f._failed_params, f._failed_raw_params, f._failure_details,
