@@ -1066,4 +1066,28 @@ public class TestUtil extends Iced {
     return compareFrames(f1, f2, 0);
   }
   
+  /**
+   * Sets a locale cluster-wide. Consider returning it back to the default value.
+   *
+   * @param locale Locale to set to the whole cluster
+   */
+  public static void setLocale(final Locale locale) {
+    new ChangeLocaleTsk(locale)
+            .doAllNodes();
+  }
+
+  private static class ChangeLocaleTsk extends MRTask<ChangeLocaleTsk> {
+
+    private final Locale _locale;
+
+    public ChangeLocaleTsk(Locale locale) {
+      this._locale = locale;
+    }
+
+    @Override
+    protected void setupLocal() {
+      Locale.setDefault(_locale);
+    }
+  }
+
 }

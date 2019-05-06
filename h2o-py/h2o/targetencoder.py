@@ -28,7 +28,18 @@ class TargetEncoder(object):
          2) Multi-class classification (not supported yet)
          3) Regression (not supported yet)
 
-    Sample usage:
+    :param List[str]-or-List[int] x: List of categorical column names or indices that we want apply target encoding to.
+    :param str-or-int y: the name or column index of the response variable in the data.
+    :param str-or-int fold_column: the name or column index of the fold column in the data.
+    :param boolean blending_avg: (deprecated) whether to perform blended average. Defaults to TRUE.
+    :param boolean blended_avg: whether to perform blended average. Defaults to TRUE.
+    :param double inflection_point: parameter for blending. Used to calculate `lambda`. Determines half of the minimal sample size
+        for which we completely trust the estimate based on the sample in the particular level of categorical variable.
+    :param double smoothing: parameter for blending. Used to calculate `lambda`. Controls the rate of transition between
+        the particular level's posterior probability and the prior probability. For smoothing values approaching infinity it becomes a hard
+        threshold between the posterior and the prior probability.
+
+    :examples:
 
     >>> targetEncoder = TargetEncoder(x=te_columns, y=responseColumnName, blended_avg=True, inflection_point=3, smoothing=1)
     >>> targetEncoder.fit(trainFrame) 
@@ -45,19 +56,6 @@ class TargetEncoder(object):
 
         """
         Creates instance of the TargetEncoder class and setting parameters that will be used in both `train` and `transform` methods.
-
-        :param List[str] or List[int] x: List of categorical column names or indices that we want apply target encoding to.
-
-        :param str or int y: the name or column index of the response variable in the data.
-        :param str or int fold_column: the name or column index of the fold column in the data.
-        :param boolean blending_avg: (deprecated) whether to perform blended average. Defaults to TRUE.
-        :param boolean blended_avg: whether to perform blended average. Defaults to TRUE.
-        :param double inflection_point: parameter for blending. Used to calculate `lambda`. Determines half of the minimal sample size
-            for which we completely trust the estimate based on the sample in the particular level of categorical variable.
-        :param double smoothing: parameter for blending. Used to calculate `lambda`. Controls the rate of transition between
-            the particular level's posterior probability and the prior probability. For smoothing values approaching infinity it becomes a hard
-            threshold between the posterior and the prior probability.
-
         """
 
         if(type(x) == str or type(x) == int):

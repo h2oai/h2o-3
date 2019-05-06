@@ -1616,6 +1616,7 @@ final public class H2O {
     Log.info("OS version: "+System.getProperty("os.name")+" "+System.getProperty("os.version")+" ("+System.getProperty("os.arch")+")");
     long totalMemory = OSUtils.getTotalPhysicalMemory();
     Log.info ("Machine physical memory: " + (totalMemory==-1 ? "NA" : PrettyPrint.bytes(totalMemory)));
+    Log.info("Machine locale: " + Locale.getDefault());
   }
 
   /** Initializes the local node and the local cloud with itself as the only member. */
