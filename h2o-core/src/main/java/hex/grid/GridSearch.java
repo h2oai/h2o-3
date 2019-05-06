@@ -239,7 +239,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           // Model parameters cannot be constructed for some reason
           it.modelFailed(model);
           Object[] rawParams = it.getCurrentRawParameters();
-          grid.appendFailedModelParameters(model._key, rawParams, e);
+          grid.appendFailedModelParameters(model != null ? model._key : null, rawParams, e);
         } finally {
           // Update progress by 1 increment
           _job.update(1);
