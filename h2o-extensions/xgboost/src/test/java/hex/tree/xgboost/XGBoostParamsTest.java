@@ -39,13 +39,13 @@ public class XGBoostParamsTest extends TestUtil {
       parms._train = traningFrame._key;
       parms._response_column = response;
 
-      Locale.setDefault(Locale.FRENCH); // French uses different decimal formatting than English
+      TestUtil.setLocale(Locale.FRENCH); // French uses different decimal formatting than English
       XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
       assertNotNull(model);
       Scope.track_generic(model);
 
     } finally {
-      Locale.setDefault(originalLocale);
+      TestUtil.setLocale(originalLocale);
       Scope.exit();
     }
   }
