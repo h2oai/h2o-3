@@ -1,5 +1,6 @@
 package ai.h2o.automl.targetencoding;
 
+import org.apache.commons.lang.ArrayUtils;
 import water.*;
 import water.fvec.*;
 import water.fvec.task.FillNAWithLongValueTask;
@@ -8,10 +9,12 @@ import water.rapids.Rapids;
 import water.rapids.Val;
 import water.rapids.ast.prims.mungers.AstGroup;
 import water.util.Log;
+import water.util.TwoDimTable;
 
 import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.*;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Status: alpha version
@@ -187,22 +190,44 @@ public class TargetEncoder {
       int columnIndex = data.find(teColumnName);
       Vec currentVec = data.vec(columnIndex);
       int indexForNACategory = currentVec.cardinality(); // Warn: Cardinality returns int but it could be larger than it for big datasets
+      
+      printOutFrameAsTable(data);
+
       new FillNAWithLongValueTask(columnIndex, indexForNACategory).doAll(data);
       String[] oldDomain = currentVec.domain();
       String[] newDomain = new String[indexForNACategory + 1];
       System.arraycopy(oldDomain, 0, newDomain, 0, oldDomain.length);
       newDomain[indexForNACategory] = strToImpute;
       updateDomainGlobally(data, teColumnName, newDomain);
+      
+      printOutFrameAsTable(data);
+      
       return data;
     }
-    
+
     private void updateDomainGlobally(Frame fr, String teColumnName, String[] domain) {
       Lockable lock = fr.write_lock();
       Vec updatedVec = fr.vec(teColumnName);
       updatedVec.setDomain(domain);
+      System.out.println("Updated domain vec in imputeNAs method:" + updatedVec._key + ". New domain: " + ArrayUtils.toString(updatedVec.domain()));
       DKV.put(updatedVec);
-      fr.update();
+      try {
+//        fr.update(null, 15, TimeUnit.SECONDS);
+        fr.update();
+      } catch (Exception ex) {
+        System.out.println("Exception during update happened" + ex.getClass().getName() + " / " + ex.getMessage());
+      }
       lock.unlock();
+    }
+  
+    public static void printOutFrameAsTable(Frame fr) {
+      printOutFrameAsTable(fr, false, fr.numRows());
+    }
+  
+    public static void printOutFrameAsTable(Frame fr, boolean rollups, long limit) {
+      assert limit <= Integer.MAX_VALUE;
+      TwoDimTable twoDimTable = fr.toTwoDimTable(0, (int) limit, rollups);
+      System.out.println(twoDimTable.toString(2, true));
     }
 
     Frame getOutOfFoldData(Frame encodingMap, String foldColumnName, long currentFoldValue)  {

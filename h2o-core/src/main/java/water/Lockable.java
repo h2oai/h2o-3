@@ -3,6 +3,9 @@ package water;
 import water.util.Log;
 
 import java.util.Arrays;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /** Lockable Keys - Keys locked during long running {@link Job}s, to prevent
  *  overwriting in-use keys.  E.g. model-building: expected to read-lock input
@@ -161,6 +164,14 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
   public T update( Key<Job> job_key ) { 
     Log.debug("update write-locked "+_key+" by job "+job_key);
     new Update(job_key).invoke(_key); 
+    return (T)this;             // Flow-coding
+  }
+
+  public T update( Key<Job> job_key , long timeout, TimeUnit unit) throws InterruptedException, TimeoutException, ExecutionException {
+    Log.debug("update write-locked "+_key+" by job "+job_key);
+    Update task = new Update(job_key);
+    task.invoke(_key);
+//    task.get(timeout, unit);
     return (T)this;             // Flow-coding
   }
 

@@ -1,9 +1,12 @@
 package ai.h2o.automl.targetencoding;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.MRTask;
 import water.TestUtil;
+import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
@@ -14,7 +17,7 @@ public class TargetEncodingLeaveOneOutStrategyDistributedTest extends TestUtil {
 
   @BeforeClass
   public static void setup() {
-    stall_till_cloudsize(2);
+    stall_till_cloudsize(1);
   }
 
   private Frame fr = null;
@@ -50,6 +53,34 @@ public class TargetEncodingLeaveOneOutStrategyDistributedTest extends TestUtil {
     encodingMapCleanUp(targetEncodingMap);
     resultWithEncodings.delete();
     
+  }
+
+  @Test
+  public void setDomainUpdateTest() {
+    String teColumnName = "ColA";
+    String targetColumnName = "ColB";
+    fr = new TestFrameBuilder()
+            .withName("testFrame")
+            .withColNames(teColumnName, targetColumnName)
+            .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+            .withDataForCol(0, ar("a", "b", "", "", null)) // null and "" are different categories even though they look the same in printout
+            .withDataForCol(1, ar("2", "6", "6", "2", "6"))
+            .withChunkLayout(2,3) 
+            .build();
+
+    String[] teColumns = {teColumnName};
+    TargetEncoder tec = new TargetEncoder(teColumns);
+    Frame imputed = tec.imputeNAsForColumn(fr, teColumnName, "test_value");
+
+    new MRTask() {
+      @Override
+      public void map(Chunk cs[]) {
+        Chunk num = cs[0];
+        System.out.println("Domain:" + ArrayUtils.toString(num.vec().domain()));
+        if(num.vec().domain().length != 4) throw new IllegalStateException("Domain was not properly propagated throughout the cloud");
+      }
+    }.doAll(imputed);
+
   }
 
   @After
