@@ -16,7 +16,7 @@ Data Manipulation
     :show-inheritance:
 
 :mod:`TargetEncoder`
---------------
+--------------------
 .. autoclass:: h2o.targetencoder.TargetEncoder
     :members:
     :undoc-members:
