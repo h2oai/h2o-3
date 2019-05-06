@@ -7,18 +7,16 @@ import hex.grid.GridSearch;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.DKV;
-import water.Job;
-import water.Key;
-import water.TestUtil;
+import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.test.util.GridTestUtils;
 import water.util.ArrayUtils;
+import water.util.IcedHashMap;
 
 import java.util.*;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static water.util.ArrayUtils.interval;
 
 public class GBMGridTest extends TestUtil {
@@ -62,9 +60,10 @@ public class GBMGridTest extends TestUtil {
       // Get the Grid for this modeling class and frame
       Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms);
       grid = (Grid<GBMModel.GBMParameters>) gs.get();
+      final Grid.SearchFailure failures = grid.getFailures();
       // Make sure number of produced models match size of specified hyper space
       Assert.assertEquals("Size of grid (models+failures) should match to size of hyper space",
-                          hyperSpaceSize, grid.getModelCount() + grid.getFailureCount());
+                          hyperSpaceSize, grid.getModelCount() + failures.getFailureCount());
       //
       // Make sure that names of used parameters match
       //
@@ -94,7 +93,7 @@ public class GBMGridTest extends TestUtil {
 
       // Verify model failure
       Map<String, Set<Object>> failedHyperParams = GridTestUtils.initMap(hyperParamNames);;
-      for (Model.Parameters failedParams : grid.getFailedParameters()) {
+      for (Model.Parameters failedParams : failures.getFailedParameters()) {
         GridTestUtils.extractParams(failedHyperParams, failedParams, hyperParamNames);
       }
       hyperParms.put("_learn_rate", illegalLearnRateOpts);

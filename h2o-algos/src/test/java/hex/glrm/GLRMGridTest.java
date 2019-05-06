@@ -68,9 +68,10 @@ public class GLRMGridTest extends TestUtil {
         Job<Grid> gs = GridSearch.startGridSearch(gridKey, params, hyperParms);
         grid = (Grid<GLRMModel.GLRMParameters>) gs.get();
         modelKeys[i] = grid.getModelKeys();
+        final Grid.SearchFailure failures = grid.getFailures();
         // Make sure number of produced models match size of specified hyper space
         Assert.assertEquals("Size of grid should match to size of hyper space", hyperSpaceSize,
-                            grid.getModelCount() + grid.getFailureCount());
+                grid.getModelCount() + failures.getFailureCount());
         //
         // Make sure that names of used parameters match
         //
@@ -130,8 +131,9 @@ public class GLRMGridTest extends TestUtil {
       final Job<Grid> gs1 = GridSearch.startGridSearch(gridKey, params, hyperParms);
       grid = (Grid<GLRMModel.GLRMParameters>) gs1.get();
       // Make sure number of produced models match size of specified hyper space
+      Grid.SearchFailure failures = grid.getFailures();
       Assert.assertEquals("Size of grid should match to size of hyper space", hyperSpaceSize1,
-                          grid.getModelCount() + grid.getFailureCount());
+              grid.getModelCount() + failures.getFailureCount());
       // Make sure that names of used parameters match
       String[] gridHyperNames1 = grid.getHyperNames();
       Arrays.sort(gridHyperNames1);
@@ -147,9 +149,10 @@ public class GLRMGridTest extends TestUtil {
       final Job<Grid> gs2 = GridSearch.startGridSearch(gridKey, params, hyperParms);
       grid = (Grid<GLRMModel.GLRMParameters>) gs2.get();
       // Make sure number of produced models match size of specified hyper space
+      failures = grid.getFailures();
       Assert.assertEquals("Size of grid should match to size of hyper space",
                           hyperSpaceSize1 + hyperSpaceSize2,
-                          grid.getModelCount() + grid.getFailureCount());
+              grid.getModelCount() + failures.getFailureCount());
       // Make sure that names of used parameters match
       String[] gridHyperNames2 = grid.getHyperNames();
       Arrays.sort(gridHyperNames2);
