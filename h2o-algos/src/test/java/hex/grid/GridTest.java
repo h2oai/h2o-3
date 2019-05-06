@@ -11,7 +11,8 @@ import water.fvec.Frame;
 
 import java.util.HashMap;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class GridTest extends TestUtil {
 
