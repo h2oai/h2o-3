@@ -19,7 +19,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yates/3/index.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6408'>PUBDEV-6408</a>] - Fixed an ArrayIndexOutOfBounds error. that occurred when parsing quotes in CSV files.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6416'>PUBDEV-6416</a>] - Fixed an error with Grid Search that caused the API to print errors not related to model CURRENTLY being added to the grid, but for all previous failures. This occurred even when the model was not added to the grid due to failure. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6416'>PUBDEV-6416</a>] - Fixed an error with Grid Search that caused the API to print errors not related to model CURRENTLY being added to the grid, but for all previous failures. This occurred even when the model was not added to the grid due to failure.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6431'>PUBDEV-6431</a>] - Fixed an exception that occurred when requesting Jobs from h2o.
 </li>
@@ -49,7 +49,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yates/3/index.
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6024'>PUBDEV-6024</a>] - Enhanced the GBM Reproducibility FAQ.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6456'>PUBDEV-6456</a>] - Added information about the Target Encoding smoothing parameter to the User Guide. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6456'>PUBDEV-6456</a>] - Added information about the Target Encoding smoothing parameter to the User Guide. 
 </li>
 </ul>
 
@@ -125,6 +125,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yates/1/index.
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6230'>PUBDEV-6230</a>] - Removed elipses after the H2O server link when launching the Python client.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6231'>PUBDEV-6231</a>] - In Deep Learning, fixed an issue that occurred when running one-hot-encoding on categoricals. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6262'>PUBDEV-6262</a>] - When running GBM in R without specifically setting a seed, users can now extract the seed that was used to build the model and reproduce that model. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6266'>PUBDEV-6266</a>] - In predictions, fixed an issue that resulted in a "Categorical value out of bounds error" when calling a model.
 </li>
