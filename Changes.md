@@ -9,8 +9,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yates/3/index.
 <h4>Bug</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5937'>PUBDEV-5937</a>] - Fixed an issue that caused H2OXGBoostEstimator to always predict the same value. (STILL OPEN)
-</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5969'>PUBDEV-5969</a>] - Updated H2O-3 Plotting Functionality to be Compatible with Matplotlib Version 3.0.0.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6384'>PUBDEV-6384</a>] - Flow now shows the correct long value of a seed.
@@ -31,8 +29,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yates/3/index.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6451'>PUBDEV-6451</a>] - Fixed an issue with retrieving details of a GLM model in Flow due to lack of support for long seeds.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6467'>PUBDEV-6467</a>] - Fixed CoxPH tests that were failing due to an update of Docker images for R unit tests. (STILL OPEN)
-</li>
 </ul>
 
 <h4>Improvement</h4>
@@ -51,9 +47,9 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yates/3/index.
 <h4>Docs</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6024'>PUBDEV-6024</a>] - Enhanced the GBM Reproducibility FAQ. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6024'>PUBDEV-6024</a>] - Enhanced the GBM Reproducibility FAQ.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6456'>PUBDEV-6456</a>] - Added information about the Target Encoding smoothing parameter. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6456'>PUBDEV-6456</a>] - Added information about the Target Encoding smoothing parameter to the User Guide. (STILL OPEN)
 </li>
 </ul>
 
