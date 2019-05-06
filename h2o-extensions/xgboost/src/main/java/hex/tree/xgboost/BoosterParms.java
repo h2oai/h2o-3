@@ -8,6 +8,7 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -41,7 +42,7 @@ public class BoosterParms extends Iced<BoosterParms> {
    */
   private static Map<String, Object> localizeDecimalParams(final Map<String, Object> params) {
     Map<String, Object> localized = new HashMap<>(params.size());
-    final NumberFormat localizedNumberFormatter = DecimalFormat.getNumberInstance();
+    final NumberFormat localizedNumberFormatter = DecimalFormat.getNumberInstance(Locale.ENGLISH);
     for (String key : params.keySet()) {
       final Object value = params.get(key);
       final Object newValue;
