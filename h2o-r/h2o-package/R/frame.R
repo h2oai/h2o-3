@@ -77,6 +77,41 @@ chk.H2OFrame <- function(fr) if( is.H2OFrame(fr) ) fr else stop("must be an H2OF
   node
 }
 
+# Compute how many chars to trim at the end of file
+# Handle \r\n (for windows) or just \n (for not windows).
+.calcCharsToTrim <- function(last, secondLast){
+    charsToTrim <- 0
+    if (last == "\n") charsToTrim  <- charsToTrim  + 1L
+    if (charsToTrim > 0L) {
+        if (secondLast == "\r") charsToTrim <- charsToTrim + 1L
+    }
+    charsToTrim
+}
+
+# Write dataframe to file if the data is too big
+.writeBinToTmpFile <- function(data){
+    tmpFile <- tempfile("writebigdata", tempdir(), ".csv")
+    outputFile <- file(tmpFile, "wb")
+    from <- 1
+    n <- length(data)
+    # The chunk size should be optimal to distribute data into similarly sized chunks
+    # to avoid the last chunk has only a small amount of data 
+    chunkSize <- ceiling(n/ceiling(n/.Machine$integer.max))
+    conFlag <- TRUE
+    while(conFlag){
+        to <- from + chunkSize
+        if(to >= n)  {
+            to <- n - .calcCharsToTrim(rawToChar(data[n]), rawToChar(data[n-1]))
+            conFlag <- FALSE
+        }
+        writeBin(data[from:to], outputFile)
+        from <- to + 1
+    }
+    close(outputFile)
+    tmpFile
+}
+
+
 #
 # Overload Assignment!
 #
@@ -3395,37 +3430,7 @@ as.h2o.Matrix <- function(x, destination_frame="", ...) {
 as.data.frame.H2OFrame <- function(x, ...) {
   # Force loading of the types
   .fetch.data(x,1L)
-  # Versions of R prior to 3.1 should not use hex string.
-  # Versions of R including 3.1 and later should use hex string.
-  use_hex_string <- getRversion() >= "3.1"
-
-  urlSuffix <- paste0('DownloadDataset',
-                      '?frame_id=', URLencode( h2o.getId(x)),
-                      '&hex_string=', as.numeric(use_hex_string))
-  
-  verbose <- getOption("h2o.verbose", FALSE)
-  if (verbose) pt <- proc.time()[[3]]
-  ttt <- .h2o.doSafeGET(urlSuffix = urlSuffix)
-  if (verbose) cat(sprintf("fetching from h2o frame to R using '.h2o.doSafeGET' took %.2fs\n", proc.time()[[3]]-pt))
-  n <- nchar(ttt)
-
-  # Delete last 1 or 2 characters if it's a newline.
-  # Handle \r\n (for windows) or just \n (for not windows).
-  chars_to_trim <- 0L
-  if (n >= 2L) {
-    c <- substr(ttt, n, n)
-    if (c == "\n") chars_to_trim <- chars_to_trim + 1L
-    if (chars_to_trim > 0L) {
-      c <- substr(ttt, n-1L, n-1L)
-      if (c == "\r") chars_to_trim <- chars_to_trim + 1L
-    }
-  }
-
-  if (chars_to_trim > 0L) {
-    ttt2 <- substr(ttt, 1L, n-chars_to_trim)
-    ttt <- ttt2
-  }
-
+    
   # Get column types from H2O to set the dataframe types correctly
   colClasses <- attr(x, "types")
   colClasses <- gsub("numeric", NA, colClasses) # let R guess the appropriate numeric type
@@ -3435,9 +3440,56 @@ as.data.frame.H2OFrame <- function(x, ...) {
   colClasses <- gsub("uuid", "character", colClasses)
   colClasses <- gsub("string", "character", colClasses)
   colClasses <- gsub("time", NA, colClasses) # change to Date after ingestion
-  
+
   # Convert all date columns to POSIXct
   dates <- attr(x, "types") %in% "time"
+    
+  nCol <- attr(x, "ncol")
+  nRow <- attr(x, "nrow")
+    
+  # Due to data.frame limitation of vector size, only smaller data dimension than .Machine$integer.max are allowed
+  if(nCol > .Machine$integer.max || nRow > .Machine$integer.max){
+    stop("It is not possible convert H2OFrame to data.frame/data.table. The H2OFrame is bigger than vector size limit for R.")  
+  }  
+    
+  # Versions of R prior to 3.1 should not use hex string.
+  # Versions of R including 3.1 and later should use hex string.
+  useHexString <- getRversion() >= "3.1"
+
+  urlSuffix <- paste0('DownloadDataset',
+                      '?frame_id=', URLencode( h2o.getId(x)),
+                      '&hex_string=', as.numeric(useHexString))
+  
+  verbose <- getOption("h2o.verbose", FALSE)
+    
+  if (verbose) pt <- proc.time()[[3]]
+  
+  # Get data in binary format for case the data are too big to load in character format  
+  payload <- .h2o.doSafeGET(urlSuffix = urlSuffix, binary = TRUE)
+
+  maxPayloadSize <- getOption("h2o.as.data.frame.max.in-memory.payload.size", .Machine$integer.max)
+
+  if(length(payload) < maxPayloadSize)  {
+    # Data are small enough to use rawToChar method  
+    if (verbose) cat("save data to disk using 'textConnection'\n")
+    chtt <- 0  
+    useCon <- TRUE
+    ttt <- rawToChar(payload)
+    n <- nchar(ttt)
+    if(n >= 2){  
+      chtt <- .calcCharsToTrim(substr(ttt, n, n), substr(ttt, n-1, n-1))
+    }
+    if (chtt > 0) {
+      ttt <- substr(ttt, 1, n-chtt)
+    }
+  } else {
+    # Data are too big to use the rawToChar method.
+    # Instead, save the binary data to a temporary file and then read from it without connection
+    if (verbose) cat("save data to disk using 'writeBin'\n")
+    useCon <- FALSE
+    ttt <- .writeBinToTmpFile(payload)
+  }
+  if (verbose) cat(sprintf("fetching from h2o frame to R using '.h2o.doSafeGET' took %.2fs\n", proc.time()[[3]]-pt))
   
   if (verbose) pt <- proc.time()[[3]]
   if (getOption("h2o.fread", TRUE) && use.package("data.table")) {
@@ -3447,14 +3499,18 @@ as.data.frame.H2OFrame <- function(x, ...) {
     fun <- "fread"
   } else {
     # Substitute NAs for blank cells rather than skipping
-    df <- read.csv((tcon <- textConnection(ttt)), blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, ...)
-    close(tcon)
+    if(useCon){
+      df <- read.csv((tcon <- textConnection(ttt)), blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, ...)
+      close(tcon)
+    } else {
+      df <- read.csv(ttt, blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, ...)
+    }
     if (sum(dates))
       for (i in which(dates)) class(df[[i]]) = "POSIXct"
     fun <- "read.csv"
   }
+  if (!useCon && file.exists(ttt)) file.remove(ttt)  
   if (verbose) cat(sprintf("reading csv from disk using '%s' took %.2fs\n", fun, proc.time()[[3]]-pt))
-  
   df
 }
 
@@ -3471,7 +3527,16 @@ as.data.frame.H2OFrame <- function(x, ...) {
 #' print(mins)
 #' }
 #' @export
-as.matrix.H2OFrame <- function(x, ...) as.matrix(as.data.frame.H2OFrame(x, ...))
+as.matrix.H2OFrame <- function(x, ...) {
+  .fetch.data(x,1L)   
+  nCol <- attr(x, "ncol")
+  nRow <- attr(x, "nrow")
+
+  if(nCol * nRow > .Machine$integer.max){
+    stop("It is not possible to convert H2OFrame to a matrix. The dimensions product of H2OFrame is bigger than the vector size limit for R. You can use as.data.frame to convert H2OFrame if each its dimension is less than the vector size limit.")
+  }
+  as.matrix(as.data.frame.H2OFrame(x, ...))
+}
 
 #' Convert an H2OFrame to a vector
 #'
