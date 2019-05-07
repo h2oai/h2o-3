@@ -1,10 +1,12 @@
 package hex.optimization;
 
-import hex.optimization.OptimizationUtils.*;
+import hex.optimization.OptimizationUtils.GradientInfo;
+import hex.optimization.OptimizationUtils.GradientSolver;
+import hex.optimization.OptimizationUtils.LineSearchSolver;
+import hex.optimization.OptimizationUtils.MoreThuente;
 import water.Iced;
 import water.MemoryManager;
 import water.util.ArrayUtils;
-import water.util.Log;
 import water.util.MathUtils;
 
 import java.util.Arrays;
@@ -190,7 +192,7 @@ public final class L_BFGS extends Iced {
       lineSearch.setInitialStep(Math.max(minStep, lineSearch.step()));
       GradientInfo newGinfo = lineSearch.ginfo();
       _hist.update(pk, newGinfo._gradient, ginfo._gradient);
-      rel_improvement = (ginfo._objVal - newGinfo._objVal)/ginfo._objVal;
+      rel_improvement = (ginfo._objVal - newGinfo._objVal)/Math.abs(ginfo._objVal);
       ginfo = newGinfo;
       if(!pm.progress(lineSearch.getX(), ginfo))break;
     }
