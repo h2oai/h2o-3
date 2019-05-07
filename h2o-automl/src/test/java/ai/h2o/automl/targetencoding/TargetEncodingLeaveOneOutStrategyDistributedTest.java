@@ -17,7 +17,7 @@ public class TargetEncodingLeaveOneOutStrategyDistributedTest extends TestUtil {
 
   @BeforeClass
   public static void setup() {
-    stall_till_cloudsize(1);
+    stall_till_cloudsize(2);
   }
 
   private Frame fr = null;
@@ -71,6 +71,7 @@ public class TargetEncodingLeaveOneOutStrategyDistributedTest extends TestUtil {
     String[] teColumns = {teColumnName};
     TargetEncoder tec = new TargetEncoder(teColumns);
     Frame imputed = tec.imputeNAsForColumn(fr, teColumnName, "test_value");
+    
 
     new MRTask() {
       @Override
