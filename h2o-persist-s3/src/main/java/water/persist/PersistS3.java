@@ -180,8 +180,10 @@ public final class PersistS3 extends Persist {
   }
 
 
-  private static void processListing(ObjectListing listing, ArrayList<String> succ, ArrayList<String> fail, boolean doImport){
+  private static void processListing(ObjectListing listing, final String pattern, ArrayList<String> succ, ArrayList<String> fail, boolean doImport) {
     for( S3ObjectSummary obj : listing.getObjectSummaries() ) {
+      if (obj.getKey().endsWith("/")) continue;
+      if (pattern != null && !obj.getKey().matches(pattern)) continue;
       try {
         if (doImport) {
           Key k = loadKey(listing, obj);
@@ -200,10 +202,10 @@ public final class PersistS3 extends Persist {
     AmazonS3 s3 = getClient();
     String [] parts = decodePath(path);
     ObjectListing currentList = s3.listObjects(parts[0], parts[1]);
-    processListing(currentList, files, fails,true);
+    processListing(currentList, pattern, files, fails, true);
     while(currentList.isTruncated()){
       currentList = s3.listNextBatchOfObjects(currentList);
-      processListing(currentList, files, fails,true);
+      processListing(currentList, pattern, files, fails, true);
     }
     keys.addAll(files);
     // write barrier was here : DKV.write_barrier();
@@ -473,10 +475,10 @@ public final class PersistS3 extends Persist {
       AmazonS3 s3 = getClient();
       ObjectListing currentList = s3.listObjects(_bucket,"");
       ArrayList<String> res = new ArrayList<>();
-      processListing(currentList, res, null, false);
+      processListing(currentList, null, res, null, false);
       while(currentList.isTruncated()){
         currentList = s3.listNextBatchOfObjects(currentList);
-        processListing(currentList, res, null, false);
+        processListing(currentList, null, res, null, false);
       }
       Collections.sort(res);
       return _cache = res.toArray(new String[res.size()]);
@@ -488,8 +490,8 @@ public final class PersistS3 extends Persist {
   }
 
 
-  Cache _bucketCache = new Cache();
-  HashMap<String, KeyCache> _keyCaches = new HashMap<>();
+  static volatile Cache _bucketCache = new Cache();
+  static volatile HashMap<String, KeyCache> _keyCaches = new HashMap<>();
   @Override
   public List<String> calcTypeaheadMatches(String filter, int limit) {
     String [] parts = decodePath(filter);
