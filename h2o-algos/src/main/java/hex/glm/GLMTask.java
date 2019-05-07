@@ -601,11 +601,12 @@ public abstract class GLMTask  {
         double NA = _dinfo._numMeans[cid];
         Chunk c = chks[cid+_dinfo._cats];
         double scale = _dinfo._normMul == null?1:_dinfo._normMul[cid];
+        double offset = _dinfo._normSub == null?0:_dinfo._normSub[cid];
         if(c.isSparseZero()){
           double g = 0;
           int nVals = c.getSparseDoubles(vals,ids,NA);
           for(int i = 0; i < nVals; ++i)
-            g += vals[i]*scale*etas[ids[i]];
+            g += (vals[i]-offset)*scale*etas[ids[i]];
           _gradient[numOff+cid] = g;
         } else if(c.isSparseNA()){
           double off = _dinfo._normSub == null?0:_dinfo._normSub[cid];
@@ -690,8 +691,16 @@ public abstract class GLMTask  {
           double mu = _glmf.linkInv(es[i]);
           l += ws[i] * _glmf.likelihood(ys[i], mu);
           double var = _glmf.variance(mu);
-          if (var < 1e-6) var = 1e-6;
-          es[i] = ws[i] * (mu - ys[i]) / (var * _glmf.linkDeriv(mu));
+          if (var < hex.glm.GLMModel._EPS) var = hex.glm.GLMModel._EPS; // es is the gradient without the predictor term
+          if (_glmf._family.equals(Family.tweedie)) {
+            _glmf._oneOeta = 1.0/(es[i]==0?hex.glm.GLMModel._EPS:es[i]);
+            _glmf._oneOetaSquare = _glmf._oneOeta*_glmf._oneOeta;
+            es[i] = ws[i]*_glmf.linkInvDeriv(mu)*(_glmf._var_power==1?(ys[i]/mu-1):
+                    (_glmf._var_power==2?(ys[i]*Math.pow(mu, -_glmf._var_power)-1/mu):
+                            (ys[i]*Math.pow(mu, -_glmf._var_power)-Math.pow(mu, _glmf._oneMinusVarPower))));
+          } else {
+            es[i] = ws[i] * (mu - ys[i]) / (var * _glmf.linkDeriv(mu));
+          }
         }
       }
       _likelihood = l;
@@ -1599,16 +1608,16 @@ public abstract class GLMTask  {
       }
       wsum+=w;
       wsumu+=r.weight; // just add the user observation weight for the scaling.
-      for(int i = 0; i < r.nBins; ++i)
+      for (int i = 0; i < r.nBins; ++i)
         _xy[r.binIds[i]] += wz;
-      for(int i = 0; i < r.nNums; ++i){
-        int id = r.numIds == null?(i + numStart):r.numIds[i];
+      for (int i = 0; i < r.nNums; ++i) {
+        int id = r.numIds == null ? (i + numStart) : r.numIds[i];
         double val = r.numVals[i];
-        _xy[id] += wz*val;
+        _xy[id] += wz * val;
       }
-      if(_dinfo._intercept)
-        _xy[_xy.length-1] += wz;
-      _gram.addRow(r,w);
+      if (_dinfo._intercept)
+        _xy[_xy.length - 1] += wz;
+      _gram.addRow(r, w);
     }
 
     @Override
@@ -1994,8 +2003,6 @@ public abstract class GLMTask  {
       _likelihood += git._likelihood;
       super.reduce(git);
     }
-
-
   }
 
 
@@ -2036,12 +2043,17 @@ public abstract class GLMTask  {
         w = _glmw.w;
       }
       double eta = r.innerProduct(_betaNew) + _sparseOffsetNew;
-//      double mu = _parms.linkInv(eta);
-      _sumsqe += w*(eta - z)*(eta - z);
+      double mu = _glmf.linkInv(eta);
+      _sumsqe += _glmf._family.equals(Family.tweedie)?
+              r.weight*((r.response(0)-mu)*(r.response(0)-mu))/Math.pow(mu, _glmf._var_power):
+              w*(eta - z)*(eta - z);
+
       _wsum += Math.sqrt(w);
     }
     @Override
-    public void reduce(ComputeSETsk c){_sumsqe += c._sumsqe; _wsum += c._wsum;}
+    public void reduce(ComputeSETsk c){
+      _sumsqe += c._sumsqe; _wsum += c._wsum;
+    }
   }
 
   static class GLMIncrementalGramTask extends MRTask<GLMIncrementalGramTask> {

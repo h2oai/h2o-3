@@ -1083,16 +1083,17 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       for (Vec v : newVecs) v.remove();
       _state.updateState(beta,objold);
     }
+
     private void fitModel() {
       Solver solver = (_parms._solver == Solver.AUTO) ? defaultSolver() : _parms._solver;
       switch (solver) {
         case COORDINATE_DESCENT: // fall through to IRLSM
         case IRLSM:
-          if(_parms._family == Family.multinomial)
+          if (_parms._family == Family.multinomial)
             fitIRLSM_multinomial(solver);
           else if (_parms._family == Family.ordinal)
             fitIRLSM_ordinal_default(solver);
-          else if(_parms._family == Family.gaussian && _parms._link == Link.identity)
+          else if (_parms._family == Family.gaussian && _parms._link == Link.identity)
             fitLSM(solver);
           else
             fitIRLSM(solver);
@@ -1111,37 +1112,39 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         default:
           throw H2O.unimpl();
       }
-      if(_parms._compute_p_values) { // compute p-values
+      if (_parms._compute_p_values) { // compute p-values
         double se = 1;
         boolean seEst = false;
-        double [] beta = _state.beta();
+        double[] beta = _state.beta();
 
-        if(_parms._family != Family.binomial && _parms._family != Family.poisson) {
+        if (_parms._family != Family.binomial && _parms._family != Family.poisson) {
           seEst = true;
           ComputeSETsk ct = new ComputeSETsk(null, _state.activeData(), _job._key, beta, _parms).doAll(_state.activeData()._adaptedFrame);
           se = ct._sumsqe / (_nobs - 1 - _state.activeData().fullN());
         }
-        double [] zvalues = MemoryManager.malloc8d(_state.activeData().fullN()+1);
+        double[] zvalues = MemoryManager.malloc8d(_state.activeData().fullN() + 1);
         Cholesky chol = _chol;
-        if(_parms._standardize){ // compute non-standardized t(X)%*%W%*%X
+        if (_parms._standardize) { // compute non-standardized t(X)%*%W%*%X
           DataInfo activeData = _state.activeData();
-          double [] beta_nostd = activeData.denormalizeBeta(beta);
+          double[] beta_nostd = activeData.denormalizeBeta(beta);
           DataInfo.TransformType transform = activeData._predictor_transform;
           activeData.setPredictorTransform(DataInfo.TransformType.NONE);
-          Gram g = new GLMIterationTask(_job._key,activeData,new GLMWeightsFun(_parms),beta_nostd).doAll(activeData._adaptedFrame)._gram;
+          Gram g = new GLMIterationTask(_job._key, activeData, new GLMWeightsFun(_parms), beta_nostd).doAll(activeData._adaptedFrame)._gram;
           activeData.setPredictorTransform(transform); // just in case, restore the trasnform
           g.mul(_parms._obj_reg);
           chol = g.cholesky(null);
           beta = beta_nostd;
         }
-        double [][] inv = chol.getInv();
-        ArrayUtils.mult(inv,_parms._obj_reg*se);
+        double[][] inv = chol.getInv();
+          ArrayUtils.mult(inv, _parms._obj_reg * se);
         _vcov = inv;
-        for(int i = 0; i < zvalues.length; ++i)
-          zvalues[i] = beta[i]/Math.sqrt(inv[i][i]);
-        _model.setZValues(expandVec(zvalues,_state.activeData()._activeCols,_dinfo.fullN()+1,Double.NaN),se, seEst);
+        for (int i = 0; i < zvalues.length; ++i) {
+          zvalues[i] = beta[i] / Math.sqrt(inv[i][i]);
+        }
+        _model.setZValues(expandVec(zvalues, _state.activeData()._activeCols, _dinfo.fullN() + 1, Double.NaN), se, seEst);
       }
     }
+
 
     private long _lastScore = System.currentTimeMillis();
     private long timeSinceLastScoring(){return System.currentTimeMillis() - _lastScore;}

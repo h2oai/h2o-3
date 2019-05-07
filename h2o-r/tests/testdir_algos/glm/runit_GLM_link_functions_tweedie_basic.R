@@ -5,16 +5,12 @@ source("../../../scripts/h2o-r-test-setup.R")
 # Link functions: tweedie (canonical link)
 ##
 
-
-
-
-
 test_linkFunctions <- function() {
 
   # Use prostate_complete to test tweedie in R glm vs h2o.glm
   # Note that the outcome in this dataset has a bernoulli distribution
   require(statmod)
-
+  browser()
   print("Read in prostate data.")
   hdf <- h2o.uploadFile("../../../../smalldata/prostate/prostate_complete.csv.zip", destination_frame = "hdf")
   df <- as.data.frame(hdf)
@@ -34,7 +30,7 @@ test_linkFunctions <- function() {
                                        link = "tweedie",
                                        alpha = 0.5,
                                        lambda = 0,
-                                       nfolds = 0)
+                                       nfolds = 0, compute_p_values=TRUE)
   model.R.tweedie.tweedie <- glm(formula = formula,
                                  #data = df[,4:10],
                                  data = df[,x],
@@ -50,16 +46,6 @@ test_linkFunctions <- function() {
   if (difference > 0.01) {
     checkTrue(difference <= 0.01, "h2o's model's residualDeviance/nullDeviance is more than 0.01 lower than R's model's")
   }
-
-  
 }
 
 doTest("Comparison of H2O to R with varying link functions for the TWEEDIE family", test_linkFunctions)
-
-
-
-
-
-
-
-
