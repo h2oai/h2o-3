@@ -4,12 +4,12 @@ from h2o.estimators import H2OGradientBoostingEstimator
 from h2o.grid import H2OGridSearch
 from tests import pyunit_utils
 import h2o
-from unittest import TestCase
+import unittest
 
 
-class PUBDEV6416(TestCase):
+class PUBDEV6416(unittest.TestCase):
 
-    def pubdev_6416(self):
+    def test_pubdev_6416(self):
         # Attempt to add a model to the grid by specifying invalid hyperparameters search range.
         # Should fail and generate error
         data = h2o.import_file(pyunit_utils.locate('smalldata/iris/iris_train.csv'))
@@ -92,6 +92,7 @@ class PUBDEV6416(TestCase):
 
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(PUBDEV6416().pubdev_6416)
+    pyunit_utils.standalone_test(unittest.main)
 else:
-    PUBDEV6416().pubdev_6416()
+    suite = unittest.TestLoader().loadTestsFromTestCase(PUBDEV6416)
+    unittest.TextTestRunner().run(suite)
