@@ -155,10 +155,8 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
         DMatrix data = null;
         Booster booster = null;
         try {
-            Map<String, String> rabitEnv = new HashMap<>();
             // Rabit has to be initialized as parts of booster.predict() are using Rabit
             // This might be fixed in future versions of XGBoost
-            Rabit.init(rabitEnv);
 
             data = XGBoostUtils.convertChunksToDMatrix(
                     dataInfo,
@@ -195,11 +193,6 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
             throw new IllegalStateException("Failed to score with XGBoost.", xgBoostError);
         } finally {
             BoosterHelper.dispose(booster, data);
-            try {
-                Rabit.shutdown();
-            } catch (XGBoostError xgBoostError) {
-                throw new IllegalStateException("Failed Rabit shutdown. A hanging RabitTracker task might be present on the driver node.", xgBoostError);
-            }
         }
     }
 

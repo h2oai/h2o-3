@@ -53,24 +53,8 @@ public class BoosterHelper {
   }
 
   public static <X> X doWithLocalRabit(BoosterOp<X> op, Booster booster) throws XGBoostError {
-    boolean shutdownRabit = true;
-    try {
-      Map<String, String> rabitEnv = new HashMap<>();
-      rabitEnv.put("DMLC_TASK_ID", "0");
-      Rabit.init(rabitEnv);
-      shutdownRabit = true;
       X result = op.apply(booster);
-      Rabit.shutdown();
-      shutdownRabit = false;
       return result;
-    } finally {
-      if (shutdownRabit)
-        try {
-          Rabit.shutdown();
-        } catch (XGBoostError e) {
-          e.printStackTrace(); // don't rely on logging support in genmodel
-        }
-    }
   }
 
 }

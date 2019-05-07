@@ -464,8 +464,14 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
               (timeToScore && _parms._score_tree_interval == 0) || // use time-based duty-cycle heuristic only if the user didn't specify _score_tree_interval
               manualInterval) {
         _timeLastScoreStart = now;
+        long ub_start = System.currentTimeMillis();
         boosterProvider.updateBooster(); // retrieve booster, expensive!
+        long ub_end = System.currentTimeMillis();
+        long ds_start = System.currentTimeMillis();
         model.doScoring(_train, _parms.train(), _valid, _parms.valid());
+        long ds_end = System.currentTimeMillis();
+        System.out.println("Timer UB:" + (ub_end - ub_start));
+        System.out.println("Timer DS:" + (ds_end - ds_start));
         _timeLastScoreEnd = System.currentTimeMillis();
         XGBoostOutput out = model._output;
         final Map<String, XGBoostUtils.FeatureScore> varimp;

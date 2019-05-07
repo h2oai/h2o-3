@@ -111,14 +111,22 @@ public class XGBoostUpdater extends Thread {
       if ((_booster == null) && _tid == 0) {
         HashMap<String, DMatrix> watches = new HashMap<>();
         // Create empty Booster
+        long bg_start = System.currentTimeMillis();
         _booster = ml.dmlc.xgboost4j.java.XGBoost.train(_trainMat,
                 _boosterParms.get(),
                 0,
                 watches,
                 null,
                 null);
+        long bg_end = System.currentTimeMillis();
         // Force Booster initialization; we can call any method that does "lazy init"
+        long bs_start = System.currentTimeMillis();
         byte[] boosterBytes = _booster.toByteArray();
+        long bs_end = System.currentTimeMillis();
+
+        System.out.println("Timer BG:" + (bg_end - bg_start));
+        System.out.println("Timer BS:" + (bs_end - bs_start));
+
         Log.info("Initial (0 tree) Booster created, size=" + boosterBytes.length);
       } else {
         // Do one iteration
@@ -137,7 +145,11 @@ public class XGBoostUpdater extends Thread {
   private class SerializeBooster implements BoosterCallable<byte[]> {
     @Override
     public byte[] call() throws XGBoostError {
-      return _booster.toByteArray();
+      long sb_start = System.currentTimeMillis();
+      byte[] result = _booster.toByteArray();
+      long sb_end = System.currentTimeMillis();
+      System.out.println("Timer SB:" + (sb_end - sb_start));
+      return result;
     }
     @Override
     public String toString() {
