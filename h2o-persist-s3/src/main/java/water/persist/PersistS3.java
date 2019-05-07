@@ -180,7 +180,8 @@ public final class PersistS3 extends Persist {
   }
 
 
-  private static void processListing(ObjectListing listing, final String pattern, ArrayList<String> succ, ArrayList<String> fail, boolean doImport) {
+  private static void processListing(ObjectListing listing, String pattern, ArrayList<String> succ, ArrayList<String> fail, boolean doImport) {
+    if( pattern != null && pattern.isEmpty()) pattern = null;
     for( S3ObjectSummary obj : listing.getObjectSummaries() ) {
       if (obj.getKey().endsWith("/")) continue;
       if (pattern != null && !obj.getKey().matches(pattern)) continue;
