@@ -13,21 +13,20 @@ def pubdev_6394():
              ['Ｙ県 Ｃ市'],
              ['Ｙ県 Ｃ市']]
 
-
-    originalFrame = H2OFrame(data, header=True, column_types=['enum'])
+    original_frame = H2OFrame(data, header=True, column_types=['enum'])
     
-    assert originalFrame.type('location') == 'enum'
-    assert originalFrame.categories() == [u'Ｘ県 Ａ市', u'Ｘ県 Ｂ市', u'Ｙ県 Ｃ市']
+    assert original_frame.type('location') == 'enum'
+    assert original_frame.categories() == [u'Ｘ県 Ａ市', u'Ｘ県 Ｂ市', u'Ｙ県 Ｃ市']
     
     # Reduce cardinality of 'location' column to 2 by reducing existing categorical values to ['Ｘ県','Y県']
-    expectedCategories = [u'Ｘ県', u'Ｙ県']
-    transformedFrame = originalFrame['location'].gsub(' .*', '')
-    print(transformedFrame)
+    expected_categories = [u'Ｘ県', u'Ｙ県']
+    transformed_frame = original_frame['location'].gsub(' .*', '')
+    print(transformed_frame)
     
-    assert transformedFrame.ncols == 1
-    assert transformedFrame.nrows == originalFrame.nrows
-    assert transformedFrame.type('C1') == 'enum'
-    assert transformedFrame['C1'].categories() == expectedCategories
+    assert transformed_frame.ncols == 1
+    assert transformed_frame.nrows == original_frame.nrows
+    assert transformed_frame.type('C1') == 'enum'
+    assert transformed_frame['C1'].categories() == expected_categories
     
     # Test gsub without changing the cardinality
 
@@ -38,18 +37,18 @@ def pubdev_6394():
             ['ae'],
             ['af']]
 
-    originalFrame = H2OFrame(data, header=True, column_types=['enum'])
-    assert originalFrame.type('location') == 'enum'
-    assert originalFrame.categories() == ['ab', 'ac', 'ad', 'ae', 'af']
+    original_frame = H2OFrame(data, header=True, column_types=['enum'])
+    assert original_frame.type('location') == 'enum'
+    assert original_frame.categories() == ['ab', 'ac', 'ad', 'ae', 'af']
 
-    expectedCategories = ['b', 'c', 'd', 'e', 'f']
-    transformedFrame = originalFrame['location'].gsub('a', '')
-    print(transformedFrame)
+    expected_categories = ['b', 'c', 'd', 'e', 'f']
+    transformed_frame = original_frame['location'].gsub('a', '')
+    print(transformed_frame)
     
-    assert transformedFrame.ncols == 1
-    assert transformedFrame.nrows == originalFrame.nrows
-    assert transformedFrame.type('C1') == 'enum'
-    assert transformedFrame['C1'].categories() == expectedCategories
+    assert transformed_frame.ncols == 1
+    assert transformed_frame.nrows == original_frame.nrows
+    assert transformed_frame.type('C1') == 'enum'
+    assert transformed_frame['C1'].categories() == expected_categories
 
 
 if __name__ == "__main__":
