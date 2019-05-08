@@ -146,3 +146,8 @@ h2o-*/tests/.lookup.txt
 
 # Ignore leak check output
 leak-check.out
+
+# Ignore h2o-r HTML output
+h2o-r/h2o-package/docs/*.html
+h2o-r/h2o-package/docs/articles/*.html
+h2o-r/h2o-package/docs/reference/*.html
