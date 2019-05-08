@@ -3604,7 +3604,15 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
     )
 
   res$thresholds[is.nan(res$thresholds)] <- NA
+  
+  if(length(res$left_children) < 1) stop("Tree does not contain any nodes.")
 
+  if(res$left_children[1] == -1){ # If the root node has no children
+    res$nas <- c("NA")
+    res$levels <- list(NULL)
+    res$thresholds <- c(as.double(NA))
+  }
+  
   tree <- new(
     "H2OTree",
     left_children = res$left_children,
