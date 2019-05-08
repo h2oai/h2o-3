@@ -32,7 +32,7 @@ public class PersistS3Test extends TestUtil {
   private static final String AWS_ACCESS_KEY_PROPERTY_NAME = "AWS_ACCESS_KEY_ID";
   private static final String AWS_SECRET_KEY_PROPERTY_NAME = "AWS_SECRET_ACCESS_KEY";
   private static final String IRIS_H2O_AWS = "s3://test.0xdata.com/h2o-unit-tests/iris.csv";
-  private static final String IRIS_BUCKET_H2O_AWS = "s3://test.0xdata.com/h2o-unit-tests";
+  private static final String H2O_BUCKET_UNIT_TEST_FOLDER = "s3://test.0xdata.com/h2o-unit-tests";
 
 
   @Rule
@@ -275,9 +275,9 @@ public class PersistS3Test extends TestUtil {
       DKV.put(credentialsKey, s3Credentials);
 
       PersistS3 persistS3 = new PersistS3();
-      final List<String> strings = persistS3.calcTypeaheadMatches(IRIS_BUCKET_H2O_AWS, 10);
+      final List<String> strings = persistS3.calcTypeaheadMatches(H2O_BUCKET_UNIT_TEST_FOLDER, 10);
       assertNotNull(strings);
-      assertEquals(3, strings.size());
+      assertEquals(5, strings.size());
 
 
       expectedException.expect(AmazonS3Exception.class);
@@ -288,7 +288,7 @@ public class PersistS3Test extends TestUtil {
       deprecateBucketContentCaches(persistS3);
       deprecatedBucketCache(persistS3);
       // Also tests cache erasure during client credentials chage. The list of files in the bucket is still in the caches unless erased
-      final List<String> failed = persistS3.calcTypeaheadMatches(IRIS_BUCKET_H2O_AWS, 10);
+      final List<String> failed = persistS3.calcTypeaheadMatches(H2O_BUCKET_UNIT_TEST_FOLDER, 10);
     } finally {
 
       if (credentialsKey != null) DKV.remove(credentialsKey);
