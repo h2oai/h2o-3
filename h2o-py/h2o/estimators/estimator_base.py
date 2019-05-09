@@ -22,13 +22,15 @@ from ..model.clustering import H2OClusteringModel
 from ..model.dim_reduction import H2ODimReductionModel
 from ..model.metrics_base import (H2OBinomialModelMetrics, H2OClusteringModelMetrics, H2ORegressionModelMetrics,
                                   H2OMultinomialModelMetrics, H2OAutoEncoderModelMetrics, H2ODimReductionModelMetrics,
-                                  H2OWordEmbeddingModelMetrics, H2OOrdinalModelMetrics, H2OAnomalyDetectionModelMetrics)
+                                  H2OWordEmbeddingModelMetrics, H2OOrdinalModelMetrics, H2OAnomalyDetectionModelMetrics,
+                                  H2OCoxPHModelMetrics)
 from ..model.model_base import ModelBase
 from ..model.multinomial import H2OMultinomialModel
 from ..model.ordinal import H2OOrdinalModel
 from ..model.regression import H2ORegressionModel
 from ..model.word_embedding import H2OWordEmbeddingModel
 from ..model.anomaly_detection import H2OAnomalyDetectionModel
+from ..model.coxph import H2OCoxPHModel
 
 
 class EstimatorAttributeError(AttributeError):
@@ -125,11 +127,11 @@ class H2OEstimator(ModelBase):
         assert_is_type(verbose, bool)
         assert_is_type(extend_parms_fn, None, FunctionType)
 
-        if self._requires_training_frame() and training_frame is None:
+        training_frame_exists = training_frame is not None
+        if self._requires_training_frame() and not training_frame_exists:
             raise H2OValueError("Training frame required for %s algorithm, but none was given." % self.algo)
 
-        training_frame_exists = training_frame is None
-        if training_frame_exists:
+        if not training_frame_exists:
             self._verify_training_frame_params(offset_column, fold_column, weights_column, validation_frame)
 
         algo = self.algo
@@ -140,7 +142,7 @@ class H2OEstimator(ModelBase):
             del parms["__class__"]
         is_auto_encoder = bool(parms.get("autoencoder"))
         is_supervised = not(is_auto_encoder or algo in {"aggregator", "pca", "svd", "kmeans", "glrm", "word2vec", "isolationforest", "generic"})
-        if not training_frame_exists:
+        if training_frame_exists:
             names = training_frame.names
             ncols = training_frame.ncols
 
@@ -160,7 +162,7 @@ class H2OEstimator(ModelBase):
             # sklearn's pipeline.
             y = None
 
-        if not training_frame_exists:
+        if training_frame_exists:
             assert_is_type(y, str, None)
             ignored_columns_set = set()
             if ignored_columns is None and "ignored_columns" in parms:
@@ -209,7 +211,7 @@ class H2OEstimator(ModelBase):
         if not is_unsupervised and y is None and self.algo not in ["generic"]: raise ValueError("Missing response")
 
         # Step 3
-        if not training_frame_exists:
+        if training_frame_exists:
             parms["training_frame"] = training_frame
             offset = parms["offset_column"]
             folds = parms["fold_column"]
@@ -221,8 +223,8 @@ class H2OEstimator(ModelBase):
         if not isinstance(x, (list, tuple)): x = [x]
         if is_type(x[0], int):
             x = [training_frame.names[i] for i in x]
-        if not training_frame_exists:
-            ignored_columns = list(set(training_frame.names) - set(x + [y, offset, folds, weights]))
+        if training_frame_exists:
+            ignored_columns = list(set(training_frame.names) - set(x + [y, offset, folds, weights] + self._additional_used_columns(parms)))
             parms["ignored_columns"] = None if ignored_columns == [] else [quoted(col) for col in ignored_columns]
         parms["interactions"] = (None if "interactions" not in parms or parms["interactions"] is None else
                                  [quoted(col) for col in parms["interactions"]])
@@ -309,6 +311,7 @@ class H2OEstimator(ModelBase):
         if name == "H2ONaiveBayesEstimator": return "naivebayes"
         if name == "H2ORandomForestEstimator": return "drf"
         if name == "H2OXGBoostEstimator": return "xgboost"
+        if name == "H2OCoxProportionalHazardsEstimator": return "coxph"
         if name in ["H2OPCA", "H2OPrincipalComponentAnalysisEstimator"]: return "pca"
         if name in ["H2OSVD", "H2OSingularValueDecompositionEstimator"]: return "svd"
 
@@ -391,6 +394,12 @@ class H2OEstimator(ModelBase):
         """
         return True
 
+    def _additional_used_columns(self, parms):
+        """
+        Returns list of additional columns not to automatically add to ignored_columns parameter.
+        :return: Empty list as default. Can be overridden by any specific algorithm.
+        """
+        return []
 
     @staticmethod
     def _metrics_class(model_json):
@@ -422,6 +431,9 @@ class H2OEstimator(ModelBase):
         elif model_type == "AnomalyDetection":
             metrics_class = H2OAnomalyDetectionModelMetrics
             model_class = H2OAnomalyDetectionModel
+        elif model_type == "CoxPH":
+            metrics_class = H2OCoxPHModelMetrics
+            model_class = H2OCoxPHModel
         else:
             raise NotImplementedError(model_type)
         return [metrics_class, model_class]

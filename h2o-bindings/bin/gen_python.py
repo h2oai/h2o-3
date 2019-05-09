@@ -286,6 +286,7 @@ def gen_module(schema, algo):
 
 
 def algo_to_classname(algo):
+    if algo == "coxph": return "H2OCoxProportionalHazardsEstimator"
     if algo == "deeplearning": return "H2ODeepLearningEstimator"
     if algo == "deepwater": return "H2ODeepWaterEstimator"
     if algo == "xgboost": return "H2OXGBoostEstimator"
@@ -306,6 +307,9 @@ def extra_imports_for(algo):
         return "import h2o"
 
 def help_preamble_for(algo):
+    if algo == "coxph":
+        return """
+            Trains a Cox Proportional Hazards Model (CoxPH) on an H2O dataset"""
     if algo == "deeplearning":
         return """
             Build a Deep Neural Network model using CPUs
@@ -582,6 +586,18 @@ def class_extra_for(algo):
             parameters = {k: v for k, v in self._parms.items() if k in var_names}
             return H2OPCA(**parameters)
         """
+    elif algo == "coxph":
+        return """
+        def _additional_used_columns(self, parms):
+            \"\"\"
+            :return: Start and stop column if specified.
+            \"\"\"
+            result = []
+            for col in ["start_column", "stop_column"]:
+                if col in parms and parms[col] is not None:
+                    result.append(parms[col])
+            return result
+        """
     elif algo == "generic":
         return """
         def _requires_training_frame(self):
@@ -685,7 +701,7 @@ def main():
                ("estimator_base", "H2OEstimator", "Miscellaneous"),
                ("grid_search", "H2OGridSearch", "Miscellaneous"),
                ("automl", "H2OAutoML", "Miscellaneous")]
-    builders = filter(lambda b: b[0] != 'coxph', bi.model_builders().items()) # CoxPH is not supported in Python yet
+    builders = bi.model_builders().items()
     for name, mb in builders:
         module = name
         if name == "drf": module = "random_forest"
