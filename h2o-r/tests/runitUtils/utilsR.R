@@ -926,7 +926,7 @@ assertCorrectSkipColumns <-
       if (cfullnames[ind] == cskipnames[skipcount]) {
         if ((skipcount %% columns_skipped) == 0) {
           # only tests half of the columns to save time
-          print("testing one column at a time....")
+          print(paste0("testing column ", ind))
           if (allFrameTypes[ind] == "uuid")
             continue
           for (rind in c(1:rowNum)) {
@@ -1002,6 +1002,7 @@ assertCorrectSkipColumns <-
               )
           }
         }
+          print(paste0("Done testing column ", ind))
           skipcount <- skipcount + 1
           if (skipcount > h2o.ncol(f2R))
             break
