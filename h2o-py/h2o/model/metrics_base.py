@@ -750,3 +750,10 @@ class H2OAnomalyDetectionModelMetrics(MetricsBase):
         if MetricsBase._has(self._metric_json, "mean_normalized_score"):
             return self._metric_json["mean_normalized_score"]
         return None
+
+
+class H2OCoxPHModelMetrics(MetricsBase):
+
+    def __init__(self, metric_json, on=None, algo=""):
+        super(H2OCoxPHModelMetrics, self).__init__(metric_json, on, algo)
+

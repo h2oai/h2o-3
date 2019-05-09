@@ -7,6 +7,12 @@ Modeling In H2O
 Supervised
 ++++++++++
 
+:mod:`H2OCoxProportionalHazardsEstimator`
+-----------------------------------------
+.. autoclass:: h2o.estimators.coxph.H2OCoxProportionalHazardsEstimator
+    :show-inheritance:
+    :members:
+
 :mod:`H2ODeepLearningEstimator`
 -------------------------------
 .. autoclass:: h2o.estimators.deeplearning.H2ODeepLearningEstimator
