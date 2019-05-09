@@ -1,16 +1,14 @@
 package water.fvec;
 
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.Futures;
-import water.MRTask;
-import water.Scope;
-import water.TestUtil;
+import water.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static water.fvec.Vec.makeCon;
+import static water.fvec.Vec.makeConN;
 import static water.fvec.Vec.makeSeq;
 
 /** This test tests stability of Vec API. */
@@ -148,4 +146,50 @@ public class VecTest extends TestUtil {
     source.remove(new Futures()).blockForPending();
     con.remove(new Futures()).blockForPending();
   }
+
+  @Test public void testChunkForChunkIdxAfterVecUpdate() {
+    try {
+      Scope.enter();
+      Vec v1 = Scope.track(makeSeq(2 * FileVec.DFLT_CHUNK_SIZE, false));
+      Vec v2 = Scope.track(makeSeq(2 * FileVec.DFLT_CHUNK_SIZE, false));
+      Chunk c0 = v1.chunkForChunkIdx(0);
+      c0._vec = v2; // inject any vec into the cached POJO, this simulates a stale Vec reference
+      Chunk c0c = v1.chunkForChunkIdx(0);
+      assertSame(c0, c0c);
+      // the vec reference was updated in the existing live object
+      assertSame(v1, c0c._vec);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test public void testChunkForChunkIdxMRTask() {
+    Assume.assumeTrue(H2O.getCloudSize() > 0);
+    try {
+      Scope.enter();
+      Vec v = Scope.track(makeConN((long) 1e6, 16));
+      // 1. Run an arbitrary MRTask to populate the POJO Chunk caches
+      new MRTask() {
+        @Override
+        public void map(Chunk c) {
+          if (c.vec().get_type() != Vec.T_NUM)
+            throw new IllegalStateException("Expected a numeric Vec");
+        }
+      }.doAll(v);
+      // 2. Install updated Vec in DKV
+      v._type = Vec.T_TIME;
+      DKV.put(v);
+      // 3. Run another MRTask, we should get updated Vec on all nodes not the stale one
+      new MRTask() {
+        @Override
+        public void map(Chunk c) {
+          if (c.vec().get_type() != Vec.T_TIME)
+            throw new IllegalStateException("Expected a time Vec");
+        }
+      }.doAll(v);
+    } finally {
+      Scope.exit();
+    }
+  }
+  
 }
