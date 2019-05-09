@@ -39,8 +39,8 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                       "checkpoint", "sample_rate", "sample_rate_per_class", "col_sample_rate",
                       "col_sample_rate_change_per_level", "col_sample_rate_per_tree", "min_split_improvement",
                       "histogram_type", "max_abs_leafnode_pred", "pred_noise_bandwidth", "categorical_encoding",
-                      "calibrate_model", "calibration_frame", "custom_metric_func", "export_checkpoints_dir",
-                      "monotone_constraints", "check_constant_response"}
+                      "calibrate_model", "calibration_frame", "custom_metric_func", "custom_distribution_func",
+                      "export_checkpoints_dir", "monotone_constraints", "check_constant_response"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -598,13 +598,13 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Distribution function
 
         One of: ``"auto"``, ``"bernoulli"``, ``"quasibinomial"``, ``"multinomial"``, ``"gaussian"``, ``"poisson"``,
-        ``"gamma"``, ``"tweedie"``, ``"laplace"``, ``"quantile"``, ``"huber"``  (default: ``"auto"``).
+        ``"gamma"``, ``"tweedie"``, ``"laplace"``, ``"quantile"``, ``"huber"``, ``"custom"``  (default: ``"auto"``).
         """
         return self._parms.get("distribution")
 
     @distribution.setter
     def distribution(self, distribution):
-        assert_is_type(distribution, None, Enum("auto", "bernoulli", "quasibinomial", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"))
+        assert_is_type(distribution, None, Enum("auto", "bernoulli", "quasibinomial", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber", "custom"))
         self._parms["distribution"] = distribution
 
 
@@ -864,6 +864,21 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     def custom_metric_func(self, custom_metric_func):
         assert_is_type(custom_metric_func, None, str)
         self._parms["custom_metric_func"] = custom_metric_func
+
+
+    @property
+    def custom_distribution_func(self):
+        """
+        Reference to custom distribution, format: `language:keyName=funcName`
+
+        Type: ``str``.
+        """
+        return self._parms.get("custom_distribution_func")
+
+    @custom_distribution_func.setter
+    def custom_distribution_func(self, custom_distribution_func):
+        assert_is_type(custom_distribution_func, None, str)
+        self._parms["custom_distribution_func"] = custom_distribution_func
 
 
     @property

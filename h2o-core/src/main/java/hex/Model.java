@@ -328,6 +328,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      */
     public String _custom_metric_func = null;
 
+
+    /**
+     * Reference to custom distribution function.
+     */
+    public String _custom_distribution_func = null;
+
     /**
      * Directory where generated models will be exported
      */

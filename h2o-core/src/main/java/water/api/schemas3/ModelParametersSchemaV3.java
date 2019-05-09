@@ -65,7 +65,7 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
   @API(help="Allow parallel training of cross-validation models", direction=API.Direction.INOUT, level = API.Level.expert)
   public boolean parallelize_cross_validation;
 
-  @API(help = "Distribution function", values = { "AUTO", "bernoulli", "quasibinomial", "ordinal", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber" }, level = API.Level.secondary, gridable = true)
+  @API(help = "Distribution function", values = { "AUTO", "bernoulli", "quasibinomial", "ordinal", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber", "custom" }, level = API.Level.secondary, gridable = true)
   public DistributionFamily distribution;
 
   @API(level = API.Level.secondary, direction = API.Direction.INPUT, gridable = true,
@@ -173,6 +173,12 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
    */
   @API(help = "Reference to custom evaluation function, format: `language:keyName=funcName`", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = false)
   public String custom_metric_func;
+
+  /*
+   * Custom distribution
+   */
+  @API(help = "Reference to custom distribution, format: `language:keyName=funcName`", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = false)
+  public String custom_distribution_func;
 
   @API(help = "Automatically export generated models to this directory.", level = API.Level.secondary, direction = API.Direction.INOUT)
   public String export_checkpoints_dir;

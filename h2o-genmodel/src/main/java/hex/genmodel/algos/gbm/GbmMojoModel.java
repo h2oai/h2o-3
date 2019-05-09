@@ -54,8 +54,7 @@ public final class GbmMojoModel extends SharedTreeMojoModel implements SharedTre
         preds[0] = GenModel.getPrediction(preds, _priorClassDistrib, row, _defaultThreshold);
         return preds;
     }
-
-
+    
     /**
      * Calculate inverse link depends on distribution type
      * Be careful if you are changing code here - you have to change it in hex.LinkFunction too

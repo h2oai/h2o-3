@@ -37,8 +37,3 @@ abstract public class CFuncTask<T extends CFunc, S extends CFuncTask<T,S>> exten
 
   // TODO: we should cleanup loader
 }
-
-/**
- * Custom function marker interface.
- */
-interface CFunc {}

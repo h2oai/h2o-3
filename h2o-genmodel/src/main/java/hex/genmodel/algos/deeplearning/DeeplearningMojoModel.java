@@ -124,7 +124,7 @@ public class DeeplearningMojoModel extends MojoModel {
     }
     return preds;
   }
-
+  
 
   /**
    * Calculate inverse link depends on distribution type

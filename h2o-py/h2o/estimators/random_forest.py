@@ -746,13 +746,13 @@ class H2ORandomForestEstimator(H2OEstimator):
         [Deprecated] Distribution function
 
         One of: ``"auto"``, ``"bernoulli"``, ``"multinomial"``, ``"gaussian"``, ``"poisson"``, ``"gamma"``,
-        ``"tweedie"``, ``"laplace"``, ``"quantile"``, ``"huber"``  (default: ``"auto"``).
+        ``"tweedie"``, ``"laplace"``, ``"quantile"``, ``"huber"``, ``"custom"``  (default: ``"auto"``).
         """
         return self._parms.get("distribution")
 
     @distribution.setter
     def distribution(self, distribution):
-        assert_is_type(distribution, None, Enum("auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"))
+        assert_is_type(distribution, None, Enum("auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber", "custom"))
         self._parms["distribution"] = distribution
 
 

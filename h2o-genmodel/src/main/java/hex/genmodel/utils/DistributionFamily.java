@@ -18,5 +18,6 @@ public enum DistributionFamily {
   tweedie,
   huber,
   laplace,
-  quantile;
+  quantile, 
+  custom
 }

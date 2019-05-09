@@ -36,7 +36,7 @@ public abstract class SharedTreeModel<
     if (_output == null) return null;
     TwoDimTable vi = _output._variable_importances;
     if (vi==null) return null;
-    n = Math.min(n, vi.getRowHeaders().length);
+    n = Math.min(n, vi.getRowHeaders().length);   
     String[] res = new String[n];
     System.arraycopy(vi.getRowHeaders(), 0, res, 0, n);
     return res;
