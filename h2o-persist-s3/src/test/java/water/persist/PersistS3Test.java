@@ -11,6 +11,7 @@ import water.*;
 import water.fvec.Chunk;
 import water.fvec.FileVec;
 import water.fvec.Frame;
+import water.parser.ParseDataset;
 import water.util.FileUtils;
 
 import java.lang.reflect.Field;
@@ -290,6 +291,96 @@ public class PersistS3Test extends TestUtil {
       final List<String> failed = persistS3.calcTypeaheadMatches(IRIS_BUCKET_H2O_AWS, 10);
     } finally {
 
+      if (credentialsKey != null) DKV.remove(credentialsKey);
+    }
+  }
+
+  @Test
+  public void testS3ImportFolder() {
+    PersistS3 persistS3 = new PersistS3();
+    final ArrayList<String> keys = new ArrayList<>();
+    final ArrayList<String> fails = new ArrayList<>();
+    final ArrayList<String> deletions = new ArrayList<>();
+    final ArrayList<String> files = new ArrayList<>();
+
+    Key credentialsKey = Key.make(IcedS3Credentials.S3_CREDENTIALS_DKV_KEY);
+
+    try {
+      // This test is only runnable in environment with Amazon credentials properly set {AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY}
+      final String accessKeyId = System.getenv(AWS_ACCESS_KEY_PROPERTY_NAME);
+      final String secretKey = System.getenv(AWS_SECRET_KEY_PROPERTY_NAME);
+
+      assumeTrue(accessKeyId != null);
+      assumeTrue(secretKey != null);
+
+      final IcedS3Credentials s3Credentials = new IcedS3Credentials(accessKeyId, secretKey);
+      DKV.put(credentialsKey, s3Credentials);
+
+      persistS3.importFiles("s3://test.0xdata.com/h2o-unit-tests", null, files, keys, fails, deletions);
+      assertEquals(0, fails.size());
+      assertEquals(0, deletions.size());
+      assertEquals(3, files.size()); // Parse including files in sub folders
+      assertEquals(3, keys.size());
+
+      for (final String k : keys) {
+        final Value value = DKV.get(k);
+        assertNotNull(value);
+        assertTrue(value.isFrame());
+        
+        Frame f = value.get();
+        assertTrue(f.numCols() > 0);
+      }
+
+    } finally {
+      if (credentialsKey != null) DKV.remove(credentialsKey);
+      for (String key : keys) {
+        final Iced iced = DKV.getGet(key);
+        assertTrue(iced instanceof Frame);
+        final Frame frame = (Frame) iced;
+        frame.remove();
+      }
+    }
+  }
+
+
+  @Test
+  public void testS3Filter() {
+    PersistS3 persistS3 = new PersistS3();
+    final ArrayList<String> keys = new ArrayList<>();
+    final ArrayList<String> fails = new ArrayList<>();
+    final ArrayList<String> deletions = new ArrayList<>();
+    final ArrayList<String> files = new ArrayList<>();
+
+    Key credentialsKey = Key.make(IcedS3Credentials.S3_CREDENTIALS_DKV_KEY);
+
+    try {
+      Scope.enter();
+      // This test is only runnable in environment with Amazon credentials properly set {AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY}
+      final String accessKeyId = System.getenv(AWS_ACCESS_KEY_PROPERTY_NAME);
+      final String secretKey = System.getenv(AWS_SECRET_KEY_PROPERTY_NAME);
+
+      assumeTrue(accessKeyId != null);
+      assumeTrue(secretKey != null);
+
+      final IcedS3Credentials s3Credentials = new IcedS3Credentials(accessKeyId, secretKey);
+      DKV.put(credentialsKey, s3Credentials);
+
+      persistS3.importFiles("s3://test.0xdata.com/h2o-unit-tests", ".*iris.*.csv", files, keys, fails, deletions);
+      assertEquals(0, fails.size());
+      assertEquals(0, deletions.size());
+      assertEquals(2, files.size()); // Parse including files in sub folders
+      assertEquals(2, keys.size());
+
+
+      final Frame frame = ParseDataset.parse(Key.make(), DKV.get(keys.get(0))._key, DKV.get(keys.get(1))._key);
+      Scope.track(frame);
+
+      assertEquals(5, frame.numCols());
+      assertEquals(300, frame.numRows()); // Two identical files with different names, each with 150 records
+      
+
+    } finally {
+      Scope.exit();
       if (credentialsKey != null) DKV.remove(credentialsKey);
     }
   }
