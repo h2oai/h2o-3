@@ -59,13 +59,7 @@ public final class XGBoostNativeMojoModel extends XGBoostMojoModel {
     try {
       dmat = new DMatrix(floats,1, floats.length, _sparse ? 0 : Float.NaN);
       final DMatrix row = dmat;
-      BoosterHelper.BoosterOp<float[]> predictOp = new BoosterHelper.BoosterOp<float[]>() {
-        @Override
-        public float[] apply(Booster booster) throws XGBoostError {
-          return booster.predict(row)[0];
-        }
-      };
-      out = BoosterHelper.doWithLocalRabit(predictOp, _booster);
+      out = _booster.predict(row)[0];
     } catch (XGBoostError xgBoostError) {
       throw new IllegalStateException("Failed XGBoost prediction.", xgBoostError);
     } finally {
@@ -94,16 +88,8 @@ public final class XGBoostNativeMojoModel extends XGBoostMojoModel {
       if (featureMapFile != null) {
         Files.write(featureMapFile, Collections.singletonList(_featureMap), Charset.defaultCharset(), StandardOpenOption.WRITE);
       }
-
-      BoosterHelper.BoosterOp<String[]> dumpOp = new BoosterHelper.BoosterOp<String[]>() {
-        @Override
-        public String[] apply(Booster booster) throws XGBoostError {
-          String featureMap = featureMapFile != null ? featureMapFile.toFile().getAbsolutePath() : null;
-          return booster.getModelDump(featureMap, withStats, format);
-        }
-      };
-
-      return BoosterHelper.doWithLocalRabit(dumpOp, _booster);
+      String featureMap = featureMapFile != null ? featureMapFile.toFile().getAbsolutePath() : null;
+      return _booster.getModelDump(featureMap, withStats, format);
     } catch (IOException e) {
       throw new IllegalStateException("Failed to write feature map file", e);
     } catch (XGBoostError e) {

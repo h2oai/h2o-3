@@ -14,7 +14,7 @@ import static water.fvec.Vec.T_NUM;
 
 public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
 
-    enum OutputType { PREDICT, PREDICT_CONTRIB_APPROX}
+    enum OutputType { PREDICT, PREDICT_CONTRIB_APPROX }
     
     private final XGBoostModelInfo _sharedmodel;
     private final XGBoostOutput _output;
@@ -155,11 +155,6 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
         DMatrix data = null;
         Booster booster = null;
         try {
-            Map<String, String> rabitEnv = new HashMap<>();
-            // Rabit has to be initialized as parts of booster.predict() are using Rabit
-            // This might be fixed in future versions of XGBoost
-            Rabit.init(rabitEnv);
-
             data = XGBoostUtils.convertChunksToDMatrix(
                     dataInfo,
                     cs,
@@ -195,11 +190,6 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
             throw new IllegalStateException("Failed to score with XGBoost.", xgBoostError);
         } finally {
             BoosterHelper.dispose(booster, data);
-            try {
-                Rabit.shutdown();
-            } catch (XGBoostError xgBoostError) {
-                throw new IllegalStateException("Failed Rabit shutdown. A hanging RabitTracker task might be present on the driver node.", xgBoostError);
-            }
         }
     }
 

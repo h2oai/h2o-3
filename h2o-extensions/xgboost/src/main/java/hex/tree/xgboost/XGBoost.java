@@ -472,13 +472,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         Booster booster = null;
         try {
           booster = model.model_info().deserializeBooster();
-          varimp = BoosterHelper.doWithLocalRabit(new BoosterHelper.BoosterOp<Map<String, XGBoostUtils.FeatureScore>>() {
-            @Override
-            public Map<String, XGBoostUtils.FeatureScore> apply(Booster booster) throws XGBoostError {
-              final String[] modelDump = booster.getModelDump(featureMapFileAbsolutePath, true);
-              return XGBoostUtils.parseFeatureScores(modelDump);
-            }
-          }, booster);
+          final String[] modelDump = booster.getModelDump(featureMapFileAbsolutePath, true);
+          varimp = XGBoostUtils.parseFeatureScores(modelDump);
         } finally {
           if (booster != null)
             BoosterHelper.dispose(booster);

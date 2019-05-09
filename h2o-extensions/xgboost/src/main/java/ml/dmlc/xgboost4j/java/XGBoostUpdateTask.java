@@ -1,6 +1,5 @@
 package ml.dmlc.xgboost4j.java;
 
-import hex.tree.xgboost.XGBoost;
 import hex.tree.xgboost.XGBoostModel;
 import water.*;
 import water.util.Log;
