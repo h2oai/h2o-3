@@ -3,6 +3,7 @@ package ai.h2o.automl.targetencoding;
 import hex.ModelMetricsBinomial;
 import hex.ScoreKeeper;
 import hex.genmodel.utils.DistributionFamily;
+import hex.splitframe.ShuffleSplitFrame;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import org.junit.*;
@@ -26,7 +27,18 @@ public class TargetEncodingAirlinesBenchmark extends TestUtil {
 
   @BeforeClass
   public static void setup() {
-    stall_till_cloudsize(1);
+    stall_till_cloudsize(3);
+  }
+
+  private Frame[] getSplitsFromAirlinesDataset(String pathToFile, long splitSeed) {
+    Frame fr = parse_test_file(pathToFile);
+
+    double[] ratios = ard(0.7, 0.3);
+    Key<Frame>[] keys = aro(Key.<Frame>make(), Key.<Frame>make());
+    Frame[] splits = null;
+    splits = ShuffleSplitFrame.shuffleSplitFrame(fr, keys, ratios, splitSeed);
+    fr.delete();
+    return splits;
   }
 
   @Test
@@ -35,15 +47,17 @@ public class TargetEncodingAirlinesBenchmark extends TestUtil {
     GBMModel gbm = null;
     Map<String, Frame> encodingMap = null;
     try {
-      Frame airlinesTrainWithTEH = parse_test_file(Key.make("airlines_train"), "smalldata/airlines/target_encoding/airlines_train_with_teh.csv");
-      Frame airlinesValid = parse_test_file(Key.make("airlines_valid"), "smalldata/airlines/target_encoding/airlines_valid.csv");
-      Frame airlinesTestFrame = parse_test_file(Key.make("airlines_test"), "smalldata/airlines/target_encoding/airlines_test.csv");
+      int splitSeed = 2345;
+      Frame[] airlinesTrain = getSplitsFromAirlinesDataset("smalldata/airlines/AirlinesTrain.csv.zip", splitSeed);
+      Frame airlinesTrainWithTEH = airlinesTrain[0];
+      Frame airlinesValid = airlinesTrain[1];
+      Frame airlinesTestFrame = parse_test_file(Key.make("airlines_test"), "smalldata/airlines/AirlinesTest.csv.zip");
       Scope.track(airlinesTrainWithTEH, airlinesValid, airlinesTestFrame);
 
       long startTimeEncoding = System.currentTimeMillis();
 
       String foldColumnName = "fold";
-      addKFoldColumn(airlinesTrainWithTEH, foldColumnName, 5, 1234L);
+      addKFoldColumn(airlinesTrainWithTEH, foldColumnName, 5, splitSeed);
 
       BlendingParams params = new BlendingParams(5, 1);
 
@@ -84,7 +98,8 @@ public class TargetEncodingAirlinesBenchmark extends TestUtil {
       //Frame.export(testEncoded, "airlines_test_kfold_dest_noise_noblend.csv", testEncoded._key.toString(), true, 1);
 
       long finishTimeEncoding = System.currentTimeMillis();
-      System.out.println("Calculation of encodings took: " + (finishTimeEncoding - startTimeEncoding));
+      long timeSpentOnTE = finishTimeEncoding - startTimeEncoding;
+      System.out.println("Calculation of encodings took: " + timeSpentOnTE);
 
       // With target encoded columns
       long startTime = System.currentTimeMillis();
@@ -124,7 +139,10 @@ public class TargetEncodingAirlinesBenchmark extends TestUtil {
       System.out.println("AUC without encoding:" + auc2);
 
       Assert.assertTrue(auc2 < auc);
-    } finally {
+    } catch (Exception ex) {
+      System.out.println(ex);
+    }
+    finally {
       encodingMapCleanUp(encodingMap);
       if (gbm != null) {
         gbm.delete();
@@ -232,8 +250,10 @@ public class TargetEncodingAirlinesBenchmark extends TestUtil {
     GBMModel gbm2 = null;
     Scope.enter();
     try {
-      Frame airlinesTrainWithTEHDefault = parse_test_file(Key.make("airlines_train_d"), "smalldata/airlines/target_encoding/airlines_train_with_teh.csv");
-      Frame airlinesValidDefault = parse_test_file(Key.make("airlines_valid_d"), "smalldata/airlines/target_encoding/airlines_valid.csv");
+      int splitSeed = 2345;
+      Frame[] airlinesTrain = getSplitsFromAirlinesDataset("smalldata/airlines/AirlinesTrain.csv.zip", splitSeed);
+      Frame airlinesTrainWithTEHDefault = airlinesTrain[0];
+      Frame airlinesValidDefault = airlinesTrain[1];
       Frame airlinesTestFrameDefault = parse_test_file(Key.make("airlines_test_d"), "smalldata/airlines/AirlinesTest.csv.zip");
 
       Scope.track(airlinesTrainWithTEHDefault, airlinesValidDefault, airlinesTestFrameDefault);
