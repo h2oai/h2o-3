@@ -221,23 +221,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     return dinfo;
   }
 
-  public static byte[] getRawArray(Booster booster) {
-    if(null == booster) {
-      return null;
-    }
-
-    byte[] rawBooster;
-    try {
-      Map<String, String> localRabitEnv = new HashMap<>();
-      Rabit.init(localRabitEnv);
-      rawBooster = booster.toByteArray();
-      Rabit.shutdown();
-    } catch (XGBoostError xgBoostError) {
-      throw new IllegalStateException("Failed to initialize Rabit or serialize the booster.", xgBoostError);
-    }
-    return rawBooster;
-  }
-
   // ----------------------
   class XGBoostDriver extends Driver {
 
