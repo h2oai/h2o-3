@@ -81,7 +81,7 @@ Here is another example:
 
 ::
 
-    # pathToAirlines <- "hdfs://mr-0xd6.0xdata.loc/datasets/airlines_all.csv"
+    # pathToAirlines <- "http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip"
     # airlines.hex <- h2o.importFile(path = pathToAirlines, destination_frame = "airlines.hex")
 
 In Flow, the easiest way is to let the auto-suggestion feature in the
