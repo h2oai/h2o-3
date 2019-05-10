@@ -81,6 +81,17 @@ public final class DHistogram extends Iced {
   public double wNA()   { return _vals[_vals_dim*_nbin+0]; }
   public double wYNA()  { return _vals[_vals_dim*_nbin+1]; }
   public double wYYNA() { return _vals[_vals_dim*_nbin+2]; }
+
+  /**
+   * Squared Error for NA bucket and prediction value _pred1
+   * @return se
+   */
+  public double seP1NA() { return _vals[_vals_dim*_nbin+3]; }
+  /**
+   * Squared Error for NA bucket and prediction value _pred2
+   * @return se
+   */
+  public double seP2NA() { return _vals[_vals_dim*_nbin+4]; }
   public double denNA() { return _vals[_vals_dim*_nbin+5]; }
 
   final boolean hasPreds() {
