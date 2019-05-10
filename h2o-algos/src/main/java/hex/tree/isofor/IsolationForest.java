@@ -51,12 +51,6 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
 
   @Override public boolean isSupervised() { return false; }
 
-  /** Initialize the ModelBuilder, validating all arguments and preparing the
-   *  training frame.  This call is expected to be overridden in the subclasses
-   *  and each subclass will start with "super.init();".  This call is made
-   *  by the front-end whenever the GUI is clicked, and needs to be fast;
-   *  heavy-weight prep needs to wait for the trainModel() call.
-   */
   @Override public void init(boolean expensive) {
     super.init(expensive);
     // Initialize local variables
@@ -64,8 +58,8 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
       error("_mtries", "mtries must be -1 (converted to sqrt(features)) or -2 (All features) or >= 1 but it is " + _parms._mtries);
     if( _train != null ) {
       int ncols = _train.numCols();
-      if( _parms._mtries != -1 && _parms._mtries != -2 && !(1 <= _parms._mtries && _parms._mtries < ncols /*ncols includes the response*/))
-        error("_mtries","Computed mtries should be -1 or -2 or in interval [1,"+ncols+"[ but it is " + _parms._mtries);
+      if( _parms._mtries != -1 && _parms._mtries != -2 && !(1 <= _parms._mtries && _parms._mtries <= ncols))
+        error("_mtries","Computed mtries should be -1 or -2 or in interval [1," + ncols + "] but it is " + _parms._mtries);
     }
     if (_parms._distribution != DistributionFamily.AUTO && _parms._distribution != DistributionFamily.gaussian) {
       throw new IllegalStateException("Isolation Forest doesn't expect the distribution to be specified by the user");
