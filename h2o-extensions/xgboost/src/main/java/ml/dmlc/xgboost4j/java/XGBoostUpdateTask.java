@@ -26,7 +26,7 @@ public class XGBoostUpdateTask extends AbstractXGBoostTask<XGBoostUpdateTask> {
         final H2ONode boosterNode = getBoosterNode();
         final byte[] boosterBytes;
         if (H2O.SELF.equals(boosterNode)) {
-            boosterBytes = XGBoost.getRawArray(XGBoostUpdater.getUpdater(_modelKey).getBooster());
+            boosterBytes = XGBoostUpdater.getUpdater(_modelKey).getBoosterBytes();
         } else {
             Log.debug("Booster will be retrieved from a remote node, node=" + boosterNode);
             FetchBoosterTask t = new FetchBoosterTask(_modelKey);
