@@ -1,5 +1,6 @@
 package water.persist;
 
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 
@@ -16,11 +17,7 @@ import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import water.Futures;
-import water.H2O;
-import water.Key;
-import water.MemoryManager;
-import water.Value;
+import water.*;
 import water.api.HDFSIOException;
 import water.fvec.HDFSFileVec;
 import water.util.FileUtils;
@@ -79,6 +76,7 @@ public final class PersistHdfs extends Persist {
         Log.debug("Cannot find HADOOP_CONF_DIR or YARN_CONF_DIR - default HDFS properties are NOT loaded!");
       }
     }
+    conf.set("fs.s3a.aws.credentials.provider", "water.persist.H2ODynamicS3ACredentialsProvider");
     CONF = conf;
   }
 
