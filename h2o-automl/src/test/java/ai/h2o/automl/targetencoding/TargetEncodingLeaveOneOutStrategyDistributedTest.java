@@ -52,6 +52,32 @@ public class TargetEncodingLeaveOneOutStrategyDistributedTest extends TestUtil {
     
   }
 
+  @Test
+  public void emptyStringsAndNAsAreTreatedAsDifferentCategoriesTest() {
+    String teColumnName = "ColA";
+    String targetColumnName = "ColB";
+    fr = new TestFrameBuilder()
+            .withName("testFrame")
+            .withColNames(teColumnName, targetColumnName)
+            .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+            .withDataForCol(0, ar("a", "b", "", "", null)) // null and "" are different categories even though they look the same in printout
+            .withDataForCol(1, ar("2", "6", "6", "2", "6"))
+            .withChunkLayout(5) // TODO we need to split layout, otherwise one of the nodes will be empty
+            .build();
+
+    String[] teColumns = {teColumnName};
+    TargetEncoder tec = new TargetEncoder(teColumns);
+
+    Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, null);
+
+    Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, false, 0.0, false, 1234);
+
+    printOutFrameAsTable(resultWithEncoding);
+
+    encodingMapCleanUp(targetEncodingMap);
+    resultWithEncoding.delete();
+  }
+
   @After
   public void afterEach() {
     if (fr != null) fr.delete();

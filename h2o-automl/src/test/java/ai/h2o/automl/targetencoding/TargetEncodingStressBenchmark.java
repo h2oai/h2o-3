@@ -16,7 +16,6 @@ import java.util.Random;
 
 import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
 
-@Ignore("Ignoring benchmarking tests")
 public class TargetEncodingStressBenchmark extends TestUtil {
 
   @BeforeClass
@@ -79,6 +78,11 @@ public class TargetEncodingStressBenchmark extends TestUtil {
       if (encodingMap != null) encodingMapCleanUp(encodingMap);
       Scope.exit();
     }
+  }
+
+  @Test
+  public void failsForSureTest() {
+    Assert.fail();
   }
 
   private void encodingMapCleanUp(Map<String, Frame> encodingMap) {
