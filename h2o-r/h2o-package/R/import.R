@@ -367,27 +367,5 @@ h2o.set_s3_credentials <- function(secretKeyId, secretAccessKey){
   parms$secret_access_key = secretAccessKey
   
   res <- .h2o.__remoteSend("PersistS3", method = "POST", .params = parms, h2oRestApiVersion = 3)
-  print("S3 Credentials successfully set.")
-}
-
-#'
-#' Sets AWS credentials for Hadoop S3A dynamically
-#'
-#' Providing incorrect credentials results in an error during the first related S3A import call.
-#'
-#' @param accessKeyId Amazon S3 Secret Key ID (provided by Amazon, corresponds to fs.s3.awsAccessKeyId)
-#' @param secretAccessKey Amazon S3 Secret Access Key (provided by Amazon, corresponds to fs.s3.awsSecretAccessKey)
-#' 
-#' @export
-h2o.set_s3a_credentials <- function(accessKeyId, secretAccessKey){
-  if(is.null(secretKeyId)) stop("Secret key ID must not be null.")
-  if(is.null(secretAccessKey)) stop("Secret acces key must not be null.")
-  if(!is.character(secretKeyId) || nchar(secretKeyId) == 0) stop("Secret key ID must be a non-empty character string.")
-  if(!is.character(secretAccessKey) || nchar(secretAccessKey) == 0) stop("Secret access key must a non-empty character string.")
-  parms <- list()
-  parms$access_key_id <- secretKeyId
-  parms$secret_access_key = secretAccessKey
-  
-  res <- .h2o.__remoteSend("PersistS3A", method = "POST", .params = parms, h2oRestApiVersion = 3)
-  print("S3A Credentials successfully set.")
+  print("Credentials successfully set.")
 }
