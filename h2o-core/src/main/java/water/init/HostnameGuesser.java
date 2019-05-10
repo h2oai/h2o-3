@@ -25,9 +25,7 @@ public class HostnameGuesser {
     }
 
     ArrayList<CIDRBlock> networkList = calcArrayList(network);
-    if (networkList == null) {
-      throw new HostnameGuessingException("No network found! Exiting.");
-    }
+    assert networkList != null;
 
     // Get a list of all valid IPs on this machine.
     ArrayList<InetAddress> ias = calcPrioritizedInetAddressList();
@@ -233,24 +231,18 @@ public class HostnameGuesser {
     return addr;
   }
 
-  private static ArrayList<CIDRBlock> calcArrayList(String networkOpt) {
+  static ArrayList<CIDRBlock> calcArrayList(String networkOpt) {
     ArrayList<CIDRBlock> networkList = new ArrayList<>();
-
-    if (networkOpt == null) return networkList;
-
-    String[] networks;
-    if (networkOpt.contains(",")) {
-      networks = networkOpt.split(",");
-    } else {
-      networks = new String[1];
-      networks[0] = networkOpt;
+    if (networkOpt == null) {
+      return networkList;
     }
 
+    String[] networks = networkOpt.split(",");
     for (String n : networks) {
       CIDRBlock usn = CIDRBlock.parse(n);
-      if (n == null || !usn.valid()) {
-        Log.err("network invalid: " + n);
-        return null;
+      if (usn == null || !usn.valid()) {
+        Log.err("Network invalid: " + n);
+        throw new HostnameGuessingException("Invalid subnet specification: " + n + " (full '-network' argument: " + networkOpt + ").");
       }
       networkList.add(usn);
     }
