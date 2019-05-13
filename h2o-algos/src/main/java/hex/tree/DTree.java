@@ -925,10 +925,9 @@ public class DTree extends Iced {
     double best_seR=Double.MAX_VALUE;   // squared error for right side of the best split (so far)
     DHistogram.NASplitDir nasplit = DHistogram.NASplitDir.None;
 
-    // squared error of all non-NAs
-    double seNonNA = wYYhi[0] - wYhi[0]* wYhi[0]/ whi[0]; // Squared Error with no split
-    if (seNonNA < 0) seNonNA = 0;
-    double seBefore = seNonNA;
+
+    // SE with no split
+    final double seBefore = (wYYhi[0] + wYYNA) - (wYhi[0] + wYNA) * (wYhi[0] + wYNA) / (whi[0] + wNA);
 
     double nLeft = 0;
     double nRight = 0;
@@ -939,13 +938,13 @@ public class DTree extends Iced {
 
     // if there are any NAs, then try to split them from the non-NAs
     if (wNA>=min_rows) {
-      double seAll = (wYYhi[0] + wYYNA) - (wYhi[0] + wYNA) * (wYhi[0] + wYNA) / (whi[0] + wNA);
       double seNA = wYYNA - wYNA * wYNA / wNA;
       if (seNA < 0) seNA = 0;
+      double seNonNA = wYYhi[0] - wYhi[0]* wYhi[0]/ whi[0];
+      if (seNonNA < 0) seNonNA = 0;
       best_seL = seNonNA;
       best_seR = seNA;
       nasplit = DHistogram.NASplitDir.NAvsREST;
-      seBefore = seAll;
       nLeft = whi[0]; //all non-NAs
       predLeft = wYhi[0];
       nRight = wNA;

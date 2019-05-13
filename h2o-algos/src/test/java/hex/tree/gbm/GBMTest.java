@@ -281,7 +281,8 @@ public class GBMTest extends TestUtil {
       double auc = mm._auc._auc;
       Assert.assertTrue(0.83 <= auc && auc < 0.87); // Sanely good model
       double[][] cm = mm._auc.defaultCM();
-      Assert.assertArrayEquals(ard(ard(349, 44), ard(43, 64)), cm);
+      Assert.assertArrayEquals(ard(ard(352, 41),
+                                   ard(41,  66)), cm);
     } finally {
       parms._train.remove();
       parms._valid.remove();
@@ -1961,7 +1962,7 @@ public class GBMTest extends TestUtil {
 
       // Build a POJO, validate same results
       Assert.assertTrue(gbm.testJavaScoring(pred, res, 1e-15));
-      Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance - 23.05805) < 1e-4);
+      Assert.assertEquals(23.0264, ((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance, 1e-4);
 
     } finally {
       parms._train.remove();
@@ -2765,7 +2766,7 @@ public class GBMTest extends TestUtil {
       // Build a POJO, validate same results
       Assert.assertTrue(gbm.testJavaScoring(pred, res, 1e-15));
       Assert.assertEquals( 1485, ((ModelMetricsRegression)gbm._output._training_metrics)._MSE,50);
-      Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance - 256.88) < 1);
+      Assert.assertEquals( 260.8, ((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance, 1);
 
     } finally {
       parms._train.remove();
