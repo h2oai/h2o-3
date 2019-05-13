@@ -53,7 +53,8 @@ RUN apt-key add archive.key && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y \
         mysql-server libmysql-java libmysqlclient-dev \
         hadoop-conf-pseudo python-pip python-dev python-virtualenv \
-        sudo unzip html2text slapd ldap-utils libkrb5-dev
+        sudo unzip html2text slapd ldap-utils libkrb5-dev \
+        vim
 
 # Add Hive user
 RUN adduser --disabled-password --gecos "" hive
@@ -88,8 +89,11 @@ RUN chmod 700 /usr/sbin/startup.sh && \
     chown -R hive:hive /opt/hive-scripts && \
     chmod +x /usr/sbin/install_hive.sh && \
     chmod 700 /usr/sbin/install_ldap.sh && \
+    chmod +x /usr/sbin/mysql_configure.sh && \
+    chmod 700 /usr/sbin/mysql_configure.sh && \
     sync && \
     /usr/sbin/install_hive.sh && \
+    /usr/sbin/mysql_configure.sh && \
     ln -sf /usr/share/java/mysql-connector-java.jar /usr/lib/hive/lib/mysql-connector-java.jar
 
 # Copy hive configs
