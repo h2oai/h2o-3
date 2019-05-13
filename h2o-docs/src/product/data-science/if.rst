@@ -1,8 +1,6 @@
 Isolation Forest
 ----------------
 
-**Note**: This is a Beta version of Isolation Forest.
-
 Introduction
 ~~~~~~~~~~~~
 
