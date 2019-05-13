@@ -192,8 +192,8 @@ public final class DHistogram extends Iced {
   public DHistogram(String name, final int nbins, int nbins_cats, byte isInt, double min, double maxEx,
                     double minSplitImprovement, SharedTreeModel.SharedTreeParameters.HistogramType histogramType, long seed, Key globalQuantilesKey,
                     Constraints cs) {
-    assert nbins > 1;
-    assert nbins_cats > 1;
+    assert nbins >= 1;
+    assert nbins_cats >= 1;
     assert maxEx > min : "Caller ensures "+maxEx+">"+min+", since if max==min== the column "+name+" is all constants";
     if (cs != null) {
       _pred1 = cs._min;

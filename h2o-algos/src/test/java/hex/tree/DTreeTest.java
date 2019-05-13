@@ -16,7 +16,7 @@ public class DTreeTest {
     double[] ys = new double[]{0,          1,          0,   1  };
     int[] rows  = new int[]   {0,          1,          2,   3  };
 
-    DHistogram hs = new DHistogram("test_hs", 2, 0, (byte) 0, 0, 2, 0.01,
+    DHistogram hs = new DHistogram("test_hs", 2, 2, (byte) 0, 0, 2, 0.01,
             SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive, 123, null, null);
     hs.init();
     hs.updateHisto(ws, null, cs, ys,rows, rows.length, 0);
@@ -24,14 +24,13 @@ public class DTreeTest {
     // 1. min_rows = #NAs
     DTree.Split s1 = DTree.findBestSplitPoint(hs, 0, 20, 0, Double.NaN, Double.NaN, false);
     assertNotNull(s1);
-    final double se = s1._se; 
 
     // 2. min_rows = #NAs + 1
     DTree.Split s2 = DTree.findBestSplitPoint(hs, 0, 21, 0, Double.NaN, Double.NaN, false);
     assertNull(s2); // not enough improvement => no split
 
     // 3. allow negative (!!!) split improvement, min_rows = #NAs + 1
-    DHistogram hsN = new DHistogram("test_hs", 2, 0, (byte) 0, 0, 2, -9,
+    DHistogram hsN = new DHistogram("test_hs", 2, 2, (byte) 0, 0, 2, -9,
             SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive, 123, null, null);
     hsN.init();
     hsN.updateHisto(ws, null, cs, ys,rows, rows.length, 0);
@@ -69,12 +68,12 @@ public class DTreeTest {
   }
 
   private static DHistogram makeHisto(int nbins, double min_pred, double max_pred) {
-    Constraints c = new Constraints(new int[1], DistributionFamily.gaussian, true)
-            .withNewConstraint(0, 0, min_pred)
-            .withNewConstraint(0, 1, max_pred);
+    Constraints c = new Constraints(new int[]{1}, DistributionFamily.gaussian, true)
+            .withNewConstraint(0, 1, min_pred)
+            .withNewConstraint(0, 0, max_pred);
     assertEquals(min_pred, c._min, 0);
     assertEquals(max_pred, c._max, 0);
-    return new DHistogram("test_hs", nbins, 0, (byte) 0, 0, 10, 0.01,
+    return new DHistogram("test_hs", nbins, 2, (byte) 0, 0, 10, 0.01,
             SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive, 123, null, c);
   }
   
