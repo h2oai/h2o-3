@@ -2,10 +2,12 @@ package hex.tree;
 
 import hex.tree.DHistogram.NASplitDir;
 import hex.genmodel.utils.DistributionFamily;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
 
+@Ignore
 public class DTreeTest {
 
   @Test
