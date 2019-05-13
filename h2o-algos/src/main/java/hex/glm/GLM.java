@@ -2072,7 +2072,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         for (int i = 0; i < v.length(); ++i) {
           if (!v.isNA(i) && map[i] != -1) {
             int idx = map == null ? i : map[i];
-            if (idx > _dinfo.numStart() && idx < _dinfo.fullN()) {
+            if (idx >= _dinfo.numStart() && idx < _dinfo.fullN()) {
               _dinfo._normSub[idx - _dinfo.numStart()] = v.at(i);
             } else {
               // categorical or Intercept, will be ignored
@@ -2086,7 +2086,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         for (int i = 0; i < v.length(); ++i) {
           if (!v.isNA(i) && map[i] != -1) {
             int idx = map == null ? i : map[i];
-            if (idx > _dinfo.numStart() && idx < _dinfo.fullN()) {
+            if (idx >= _dinfo.numStart() && idx < _dinfo.fullN()) {
               _dinfo._normMul[idx - _dinfo.numStart()] = 1.0 / v.at(i);
             } else {
               // categorical or Intercept, will be ignored
