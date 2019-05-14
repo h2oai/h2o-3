@@ -246,7 +246,7 @@ def test_that_both_deprecated_and_new_parameters_are_working_together():
         assert "Parameter blending_avg is deprecated; use blended_avg instead" == str(w[-1].message)
 
 
-def test_teColumns_parameter_as_single_column_name():
+def test_teColumns_parameter_as_single_element():
     print("Check fit method can accept non-array single column to encode")
     targetColumnName = "survived"
     foldColumnName = "kfold_column" # it is strange that we can't set name for generated kfold
@@ -262,48 +262,33 @@ def test_teColumns_parameter_as_single_column_name():
     encodingMap = targetEncoder.fit(frame=trainingFrame)
     assert encodingMap.map_keys['string'] == [teColumns]
     assert encodingMap.frames[0]['num_rows'] == 583
+
+
+def pubdev_6474_test_more_than_two_columns_to_encode_case():
+    import pandas as pd
+    import random
+
+    runs = 10
+    seeds = random.sample(range(1, 10000), runs)
+    for current_seed in seeds:
+        df = pd.DataFrame({
+            'x_0': ['a'] * 5 + ['b'] * 5,
+            'x_1': ['c'] * 9 + ['d'] * 1,
+            'x_2': ['e'] * 2 + ['f'] * 8,
+            'x_3': ['h'] * 4 + ['i'] * 6,
+            'x_4': ['g'] * 7 + ['k'] * 3,
+            'x_5': ['l'] * 1 + ['m'] * 9,
+            'y_0': [1, 1, 1, 1, 0, 1, 0, 0, 0, 0]
+        })
+        
+        hf = h2o.H2OFrame(df)
+        hf['cv_fold_te'] = hf.kfold_column(n_folds=2, seed=current_seed)
+        hf['y_0'] = hf['y_0'].asfactor()
     
-    trainingFrame = targetEncoder.transform(trainingFrame, holdout_type="kfold", seed=1234)
-    assert "home.dest_te" in trainingFrame.columns
-
-
-def test_teColumns_parameter_as_single_column_index():
-    print("Check fit method can accept non-array single column to encode")
-    targetColumnName = "survived"
-    foldColumnName = "kfold_column" # it is strange that we can't set name for generated kfold
-
-    teColumns = 13 # stands for "home.dest" column
-    targetEncoder = TargetEncoder(x= teColumns, y= targetColumnName,
-                                  fold_column= foldColumnName, blending_avg= True, inflection_point = 3, smoothing = 1)
-    trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic.csv"), header=1)
-
-    trainingFrame[targetColumnName] = trainingFrame[targetColumnName].asfactor()
-    trainingFrame[foldColumnName] = trainingFrame.kfold_column(n_folds=5, seed=1234)
-
-    encodingMap = targetEncoder.fit(frame=trainingFrame)
-    assert encodingMap.map_keys['string'] == [trainingFrame.columns[teColumns]]
-    trainingFrame = targetEncoder.transform(trainingFrame, holdout_type="kfold", seed=1234)
-    assert "home.dest_te" in trainingFrame.columns
-
-
-def test_that_encoding_maps_are_accessible_as_frames():
-    print("Check that we can access encoding maps as data frames")
-    targetColumnName = "survived"
-    foldColumnName = "kfold_column" # it is strange that we can't set name for generated kfold
-
-    teColumns = "home.dest"
-    targetEncoder = TargetEncoder(x= teColumns, y= targetColumnName,
-                                  fold_column= foldColumnName, blending_avg= True, inflection_point = 3, smoothing = 1)
-    trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic.csv"), header=1)
-
-    trainingFrame[targetColumnName] = trainingFrame[targetColumnName].asfactor()
-    trainingFrame[foldColumnName] = trainingFrame.kfold_column(n_folds=5, seed=1234)
-
-    targetEncoder.fit(frame=trainingFrame)
-
-    encodingMapFramesKeys = targetEncoder.encoding_map_frames()
-
-    assert len([value for value in encodingMapFramesKeys[0].columns if value in teColumns]) > 0
+        full_features = ['x_0','x_1','x_2', 'x_3', 'x_4', 'x_5']
+        target_encoder = TargetEncoder(x=full_features, y='y_0', fold_column = 'cv_fold_te')
+        target_encoder.fit(hf)
+        hf = target_encoder.transform(frame=hf, holdout_type='kfold', seed=current_seed, noise=0.0)
 
 
 testList = [
@@ -317,9 +302,8 @@ testList = [
     test_target_encoding_seed_is_working,
     test_ability_to_pass_column_parameters_as_indexes,
     test_that_both_deprecated_and_new_parameters_are_working_together,
-    test_teColumns_parameter_as_single_column_name,
-    test_teColumns_parameter_as_single_column_index,
-    test_that_encoding_maps_are_accessible_as_frames
+    test_teColumns_parameter_as_single_element,
+    pubdev_6474_test_more_than_two_columns_to_encode_case
 ]
 
 if __name__ == "__main__":
