@@ -3,8 +3,6 @@ package ai.h2o.automl.targetencoding;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.DKV;
-import water.Lockable;
 import water.MRTask;
 import water.TestUtil;
 import water.fvec.Chunk;
@@ -13,6 +11,7 @@ import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 
 import java.util.Arrays;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -70,48 +69,40 @@ public class TargetEncodingDistributedTest extends TestUtil {
     
     res.delete();
   }
-
+  
   @Test
-  public void setDomainTest() {
+  public void emptyStringsAndNAsAreTreatedAsDifferentCategoriesTest() {
     String teColumnName = "ColA";
+    String targetColumnName = "ColB";
     fr = new TestFrameBuilder()
             .withName("testFrame")
-            .withColNames(teColumnName)
-            .withVecTypes(Vec.T_CAT)
-            .withDataForCol(0, ar("a","a","b", "b", "b")) //  here it is 2 `a` and 3 `b` but layout is not perfectly aligned
-            .withChunkLayout(3,2)
+            .withColNames(teColumnName, targetColumnName)
+            .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+            .withDataForCol(0, ar("a", "b", "", "", null)) // null and "" are different categories even though they look the same in printout
+            .withDataForCol(1, ar("2", "6", "6", "2", "6"))
+            .withChunkLayout(3, 2)
             .build();
 
-    final String[] domain = {"a", "b", "imputed_cat"};
+    String[] teColumns = {teColumnName};
+    TargetEncoder tec = new TargetEncoder(teColumns);
 
-    Lockable lock = fr.write_lock();
-    Vec updatedVec = fr.vec(teColumnName);
-    updatedVec.setDomain(domain);
-    DKV.put(updatedVec);
-    fr.update();
-    lock.unlock();
-    
-    assertEquals(3, fr.vec(teColumnName).cardinality());
+    Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, null);
 
-    new MRTask() {
-      @Override
-      public void map(Chunk[] cs) {
-        for (int i = 0; i < cs[0].len(); i++) {
-          long levelValue = cs[0].at8(i);
+    Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, false, 0.0, false, 1234);
 
-          System.out.println("Level value: " + levelValue);
+    printOutFrameAsTable(resultWithEncoding);
 
-          System.out.println("Domain: " + Arrays.toString(cs[0].vec().domain()));
-          System.out.println("Domain length: " + cs[0].vec().domain().length);
-          cs[0].vec().factor(2);
-        }
-      }
-    }.doAll(fr);
+    encodingMapCleanUp(targetEncodingMap);
+    resultWithEncoding.delete();
   }
 
-  // assumption is that domain is being properly distributed over nodes 
-  // and there will be no exception while attempting to access new domain's value in `cs[0].vec().factor(2);`
 
+  private void encodingMapCleanUp(Map<String, Frame> encodingMap) {
+    for (Map.Entry<String, Frame> map : encodingMap.entrySet()) {
+      map.getValue().delete();
+    }
+  }
+  
   @After
   public void afterEach() {
     if (fr != null) fr.delete();

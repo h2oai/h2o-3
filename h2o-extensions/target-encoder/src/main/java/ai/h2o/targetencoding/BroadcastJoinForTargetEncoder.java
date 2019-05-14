@@ -121,7 +121,8 @@ class BroadcastJoinForTargetEncoder {
    * @param rightFoldColumnIdx index of the fold column from `broadcastedFrame` or `-1` if we don't use folds
    * @return
    */
-  static Frame join(Frame leftFrame, int[] leftCatColumnsIdxs, int leftFoldColumnIdx, Frame broadcastedFrame, int[] rightCatColumnsIdxs, int rightFoldColumnIdx) {
+  static Frame join(Frame leftFrame, int[] leftCatColumnsIdxs, int leftFoldColumnIdx, Frame broadcastedFrame,
+                    int[] rightCatColumnsIdxs, int rightFoldColumnIdx) {
     int numeratorIdx = broadcastedFrame.find(TargetEncoder.NUMERATOR_COL_NAME);
     int denominatorIdx = broadcastedFrame.find(TargetEncoder.DENOMINATOR_COL_NAME);
 
@@ -137,7 +138,7 @@ class BroadcastJoinForTargetEncoder {
     IcedHashMap<CompositeLookupKey, EncodingData> _encodingDataMap;
 
     BroadcastJoiner(int[] categoricalColumnsIdxs, int foldColumnIdx, IcedHashMap<CompositeLookupKey, EncodingData> encodingDataMap) {
-      assert categoricalColumnsIdxs.length == 1 : "Only single column target encoding is supported for now";
+      assert categoricalColumnsIdxs.length == 1 : "Only single column target encoding (i.e. one categorical column is used to produce its encodings) is supported for now";
 
       this._categoricalColumnIdx = categoricalColumnsIdxs[0];
       this._foldColumnIdx = foldColumnIdx;
@@ -153,8 +154,14 @@ class BroadcastJoinForTargetEncoder {
       CompositeLookupKey lookupKey = new CompositeLookupKey();
       for (int i = 0; i < num.len(); i++) {
         long levelValue = categoricalChunk.at8(i);
-        String factor = categoricalChunk.vec().factor(levelValue);
-        
+        String factor = null;
+        // This is a temp workaround until https://github.com/h2oai/h2o-3/pull/3480 will be fixed.
+        // We assume that if factor is not present in the domain of the vector then it stands for imputed NA
+        if(levelValue == categoricalChunk.vec().domain().length) 
+          factor = "NA_cat";
+        else
+          factor = categoricalChunk.vec().factor(levelValue);
+
         int foldValue = -1;
         if(_foldColumnIdx != -1) {
           long foldValueFromVec = cs[_foldColumnIdx].at8(i);
