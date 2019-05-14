@@ -1,8 +1,6 @@
 package ai.h2o.automl.targetencoding;
 
-import org.junit.After;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
@@ -21,7 +19,7 @@ public class BroadcastJoinDistributedTest extends TestUtil {
 
   @BeforeClass
   public static void setup() {
-    stall_till_cloudsize(2);
+    stall_till_cloudsize(1);
   }
 
   private Frame fr = null;
@@ -37,8 +35,8 @@ public class BroadcastJoinDistributedTest extends TestUtil {
             .withDataForCol(2, ar(44, 66, 84, 57, 68))
             .withChunkLayout(1, 1, 1, 1, 1)
             .build();
-    
-    assertTrue( CLOUD.size() >= 2 );
+
+    Assume.assumeTrue(CLOUD.size() >= 2);
     IcedHashMap<CompositeLookupKey, EncodingData> encodingDataMap = new FrameWithEncodingDataToHashMap(0, -1, 1, 2)
                     .doAll(fr)
                     .getEncodingDataMap();
@@ -64,6 +62,7 @@ public class BroadcastJoinDistributedTest extends TestUtil {
   @Test
   public void joinWithoutFoldColumnTest() {
 
+    Assume.assumeTrue(CLOUD.size() >= 2);
     Frame rightFr = null;
     Vec emptyNumerator = null;
     Vec emptyDenominator = null;

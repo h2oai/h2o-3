@@ -1,8 +1,6 @@
 package ai.h2o.automl.targetencoding;
 
-import org.junit.After;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
@@ -10,17 +8,22 @@ import water.fvec.Vec;
 
 import java.util.Map;
 
+import static water.H2O.CLOUD;
+
 public class TargetEncodingLeaveOneOutStrategyDistributedTest extends TestUtil {
 
   @BeforeClass
   public static void setup() {
-    stall_till_cloudsize(2);
+    stall_till_cloudsize(1);
   }
 
   private Frame fr = null;
 
   @Test
   public void naValuesWithLOOStrategyTest() {
+
+    Assume.assumeTrue(CLOUD.size() >= 2);
+    
     String teColumnName = "ColA";
     String targetColumnName = "ColB";
     fr = new TestFrameBuilder()

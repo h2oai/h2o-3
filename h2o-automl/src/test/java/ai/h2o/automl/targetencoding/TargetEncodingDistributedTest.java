@@ -1,8 +1,6 @@
 package ai.h2o.automl.targetencoding;
 
-import org.junit.After;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import water.MRTask;
 import water.TestUtil;
 import water.fvec.Chunk;
@@ -15,18 +13,22 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static water.H2O.CLOUD;
 
 public class TargetEncodingDistributedTest extends TestUtil {
 
   @BeforeClass
   public static void setup() {
-    stall_till_cloudsize(2);
+    stall_till_cloudsize(1);
   }
 
   private Frame fr = null;
 
   @Test
   public void imputeNAsForColumnTest() {
+
+    Assume.assumeTrue(CLOUD.size() >= 2);
+    
     String teColumnName = "ColA";
     String targetColumnName = "ColB";
     fr = new TestFrameBuilder()
@@ -72,6 +74,9 @@ public class TargetEncodingDistributedTest extends TestUtil {
   
   @Test
   public void emptyStringsAndNAsAreTreatedAsDifferentCategoriesTest() {
+
+    Assume.assumeTrue(CLOUD.size() >= 2);
+    
     String teColumnName = "ColA";
     String targetColumnName = "ColB";
     fr = new TestFrameBuilder()
