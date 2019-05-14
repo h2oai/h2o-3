@@ -20,7 +20,7 @@ public class BroadcastJoinTest extends TestUtil {
 
   @BeforeClass
   public static void setup() {
-    stall_till_cloudsize(2);
+    stall_till_cloudsize(1);
   }
 
   private Frame fr = null;
