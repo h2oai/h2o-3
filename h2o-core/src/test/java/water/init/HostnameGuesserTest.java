@@ -3,8 +3,11 @@ package water.init;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.Collections;
+
 import static water.TestUtil.ari;
 import static water.init.HostnameGuesser.CIDRBlock;
+import static water.init.HostnameGuesser.calcArrayList;
 import static water.init.NetworkInitTest.toByte;
 import static water.init.NetworkInitTest.toOctects;
 
@@ -74,6 +77,24 @@ public class HostnameGuesserTest {
 
     c1 = CIDRBlock.parse("1.1.257.1/42");
     Assert.assertNull(c1);
+  }
+
+  @Test
+  public void testCalcArrayList() {
+    // correct specification works
+    Assert.assertEquals(1, HostnameGuesser.calcArrayList("10.10.1.32/27").size());
+    Assert.assertEquals(2, HostnameGuesser.calcArrayList("10.10.1.32/27,2001:db8:1234:0:0:0:0:0/48").size());
+    // null translates to empty list
+    Assert.assertEquals(Collections.emptyList(), HostnameGuesser.calcArrayList(null));
+    // any invalid specification halts processing with a descriptive message
+    try {
+      HostnameGuesser.calcArrayList("10.10.1.32/27,1.1.257.1/42,2001:db8:1234:0:0:0:0:0/48");
+      Assert.fail();
+    } catch (HostnameGuesser.HostnameGuessingException e) {
+      Assert.assertEquals(
+              "Invalid subnet specification: 1.1.257.1/42 (full '-network' argument: 10.10.1.32/27,1.1.257.1/42,2001:db8:1234:0:0:0:0:0/48).", 
+              e.getMessage());
+    }
   }
 
 }
