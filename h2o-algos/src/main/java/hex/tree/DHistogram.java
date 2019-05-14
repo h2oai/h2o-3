@@ -81,6 +81,17 @@ public final class DHistogram extends Iced {
   public double wNA()   { return _vals[_vals_dim*_nbin+0]; }
   public double wYNA()  { return _vals[_vals_dim*_nbin+1]; }
   public double wYYNA() { return _vals[_vals_dim*_nbin+2]; }
+
+  /**
+   * Squared Error for NA bucket and prediction value _pred1
+   * @return se
+   */
+  public double seP1NA() { return _vals[_vals_dim*_nbin+3]; }
+  /**
+   * Squared Error for NA bucket and prediction value _pred2
+   * @return se
+   */
+  public double seP2NA() { return _vals[_vals_dim*_nbin+4]; }
   public double denNA() { return _vals[_vals_dim*_nbin+5]; }
 
   final boolean hasPreds() {
@@ -181,8 +192,8 @@ public final class DHistogram extends Iced {
   public DHistogram(String name, final int nbins, int nbins_cats, byte isInt, double min, double maxEx,
                     double minSplitImprovement, SharedTreeModel.SharedTreeParameters.HistogramType histogramType, long seed, Key globalQuantilesKey,
                     Constraints cs) {
-    assert nbins > 1;
-    assert nbins_cats > 1;
+    assert nbins >= 1;
+    assert nbins_cats >= 1;
     assert maxEx > min : "Caller ensures "+maxEx+">"+min+", since if max==min== the column "+name+" is all constants";
     if (cs != null) {
       _pred1 = cs._min;
