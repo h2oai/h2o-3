@@ -2,6 +2,7 @@ package ai.h2o.automl.targetencoding;
 
 import org.junit.After;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.TestUtil;
 import water.fvec.Frame;
@@ -10,6 +11,7 @@ import water.fvec.Vec;
 
 import java.util.Map;
 
+@Ignore
 public class TargetEncodingLeaveOneOutStrategyDistributedTest extends TestUtil {
 
   @BeforeClass
