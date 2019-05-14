@@ -25,7 +25,7 @@ The famous ["titanic"](https://s3.amazonaws.com/h2o-public-test-data/smalldata/g
 Some people tend to use analogy with model training when it comes to the process of creating an encoding map. Half (or more) of the reason for this is that quite often this logic is hidden behind the `.fit()` method. I would say that, while being definitely useful on one hand, this analogy could also lead to confusion on the other hand. Fitting means that we are adjusting something based on something else. We can "fit" parameters of the model to the training data. In the case of target encoding, we are just computing something based on the data that we want to become a source of our encodings. So, strictly speaking, we are not "fitting" anything; we are just calculating an encoding map. Don't worry, I will explain later what exactly an encoding map is.
 
 
-## Getting started
+## Getting Started
 
 Instead of providing detailed parameters descriptions (those who need this, please check the [docs](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-munging/target-encoding.html)), I will try to provide extra information that will help to choose a right setup.
 
@@ -111,7 +111,6 @@ To put it simple, let's say we have only one training instance in our training s
 
 $$\lambda(n) = {\ 1 \over {1 + \exp (-{ \ n-inflection\_point \over smoothing}})}$$
 
-
 There are two hyperparameters available for blending:
 
  - `inflection_point`
@@ -191,11 +190,11 @@ Again, that is why we specify a `kfold` strategy to try to minimise data leakage
 
 One more option to pay attention to is the `noise` parameter. The purpose of `noise` is to provide an extra tool against overfitting. This is sort of a dummy regularization, as it is just __random__ noise.
 
-Similar to `holdout_type` we want to apply non-zero noise only to the data which was used for `encoding_map` generation ( in our case `train`). 
+Similar to `holdout_type`, we want to apply non-zero noise only to the data that was used for `encoding_map` generation (in our case `train`). 
 
-*Note: if dedicated holdout dataset was used for `encoding_map`'s generation then we should use `holdout_type="none", noise=0.0` for all our `train` / `valid` / `test` datasets.* 
+**Note**: If a dedicated holdout dataset was used for generating the `encoding_map`, then we should use `holdout_type="none"` and `noise=0.0` for each of our `train` / `valid` / `test` datasets.
 
-By default noise of 0.01 is being applied but we still want to provide `seed` for reproducibility purposes. It is important to set `noise = 0.0` explicitly for datasets that were not participating in `encoding_map` generation.
+By default, a noise of 0.01 is applied, but we still want to provide a `seed` for reproducibility purposes. It is important to set `noise = 0.0` explicitly for datasets that were not participating in the `encoding_map` generation.
 	
 ## Output Features Names
 
