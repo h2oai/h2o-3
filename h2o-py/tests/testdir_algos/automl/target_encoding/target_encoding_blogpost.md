@@ -191,7 +191,11 @@ Again, that is why we specify a `kfold` strategy to try to minimise data leakage
 
 One more option to pay attention to is the `noise` parameter. The purpose of `noise` is to provide an extra tool against overfitting. This is sort of a dummy regularization, as it is just __random__ noise.
 
-Similar to `holdout_type`, we only need noise for the `train` frame and only when . By default, a noise of 0.01 is being applied, but we still want to provide a `seed` for reproducibility purposes.
+Similar to `holdout_type` we want to apply non-zero noise only to the data which was used for `encoding_map` generation ( in our case `train`). 
+
+*Note: if dedicated holdout dataset was used for `encoding_map`'s generation then we should use `holdout_type="none", noise=0.0` for all our `train` / `valid` / `test` datasets.* 
+
+By default noise of 0.01 is being applied but we still want to provide `seed` for reproducibility purposes. It is important to set `noise = 0.0` explicitly for datasets that were not participating in `encoding_map` generation.
 	
 ## Output Features Names
 
