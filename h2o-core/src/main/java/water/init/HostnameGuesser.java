@@ -25,7 +25,6 @@ public class HostnameGuesser {
     }
 
     ArrayList<CIDRBlock> networkList = calcArrayList(network);
-    assert networkList != null;
 
     // Get a list of all valid IPs on this machine.
     ArrayList<InetAddress> ias = calcPrioritizedInetAddressList();
@@ -231,7 +230,13 @@ public class HostnameGuesser {
     return addr;
   }
 
-  static ArrayList<CIDRBlock> calcArrayList(String networkOpt) {
+  /**
+   * Parses specification of subnets and returns their CIDRBlock representation.
+   * @param networkOpt comma separated list of subnets
+   * @return a list of subnets, possibly empty. Never returns null.
+   * @throws HostnameGuessingException if one of the subnet specification is invalid (it cannot be parsed) 
+   */
+  static ArrayList<CIDRBlock> calcArrayList(String networkOpt) throws HostnameGuessingException {
     ArrayList<CIDRBlock> networkList = new ArrayList<>();
     if (networkOpt == null) {
       return networkList;
