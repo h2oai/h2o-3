@@ -624,6 +624,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           if (dn._split == null)
             continue;
           int constraint = cs.getColumnConstraint(dn._split._col);
+          if (dn._split.naSplitDir() == DHistogram.NASplitDir.NAvsREST) {
+            // NAs are not subject to constraints, we don't have to check the monotonicity on "NA vs REST" type of splits
+            continue;
+          }
           if (constraint > 0) {
             if (maxs[dn._nids[0]] > mins[dn._nids[1]]) {
               throw new IllegalStateException("Monotonicity constraint " + constraint + " violated on column '" + _train.name(dn._split._col) + "' (max(left) > min(right)): " + 
