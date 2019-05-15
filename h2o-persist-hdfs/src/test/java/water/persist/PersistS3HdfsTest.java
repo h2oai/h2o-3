@@ -3,18 +3,14 @@ package water.persist;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.s3.S3FileSystem;
-import org.apache.hadoop.fs.s3a.S3AFileSystem;
-import org.apache.hadoop.security.alias.CredentialProviderFactory;
 import org.jets3t.service.S3Service;
 import org.jets3t.service.model.S3Object;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import water.*;
 import water.fvec.Frame;
-import water.util.Log;
 import water.util.ReflectionUtils;
 
 import java.net.URI;

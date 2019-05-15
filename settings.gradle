@@ -96,5 +96,4 @@ if (System.getProperty("user.name").equals("jenkins")
     }
   }
 }
-include 'h2o-persist-s3-common'
 

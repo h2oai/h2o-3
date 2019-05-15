@@ -1,10 +1,4 @@
-plugins {
-    id 'java'
-}
-
-repositories {
-    mavenCentral()
-}
+description = "H2O Persist S3 Common"
 
 dependencies {
     compileOnly project(":h2o-core")
