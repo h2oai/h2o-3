@@ -93,7 +93,7 @@ RUN chmod 700 /usr/sbin/startup.sh && \
     chmod 700 /usr/sbin/mysql_configure.sh && \
     sync && \
     /usr/sbin/install_hive.sh && \
-    /usr/sbin/mysql_configure.sh && \
+    if [ "${VERSION}" = "6.2" ] ; then echo "Decrease mysql connection timeout." && /usr/sbin/mysql_configure.sh; fi && \
     ln -sf /usr/share/java/mysql-connector-java.jar /usr/lib/hive/lib/mysql-connector-java.jar
 
 # Copy hive configs
