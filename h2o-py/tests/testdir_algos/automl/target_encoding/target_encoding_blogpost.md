@@ -1,7 +1,7 @@
 
 # Target Encoding in Depth
 
-Target encoding (TE), a.k.a. mean encoding, is a way of encoding categorical features into numerical ones. We are not going to discuss here in detail why would anyone want to apply this methodic to their dataset, but briefly, most common reasons are:
+Target encoding (TE), a.k.a. mean encoding, is a way of encoding categorical features into numerical ones. We are not going to discuss here in detail why would anyone want to apply this methodology to their dataset, but briefly, most common reasons are:
 
  - The model does not work with categorical variables, and high cardinality of the variable makes one-hot-encoding (OHE) a not very attractive option. (We will not comment on questions like whether TE is more preferable than OHE or under which conditions it starts to be true. This is an area for research and is outside of this blogpost's scope.)
  - We want to transfer knowledge that is available in a response column.
@@ -33,7 +33,7 @@ First, we need to create an instance of the
 `TargetEncoder` class. 
 
 ```
-targetEncoder = TargetEncoder(x=teColumns, y=responseColumnName, fold_column=foldColumnName, blended_avg=True, inflection_point=3, smoothing=1)
+target_encoder = TargetEncoder(x=te_columns, y=response_column_name, fold_column=fold_column_name, blended_avg=True, inflection_point=3, smoothing=1)
 ```
 
 In the above, `x` and `y` are required parameters. Choosing `y` should be a simple task, but choosing columns that will be encoded requires some considerations. In general, as usual, it depends on your data, and you will have to experiment with different sets of columns. Our recommendation here is to choose some threshold for cardinality and apply TE only for those who happens to be above it.
@@ -44,9 +44,11 @@ In addition, a `fold_column`  should be specified only if we will want to use `k
 Two points to clarify here:
  
  - A fold column for TE does not have to be the same column that is probably being used in cross validation. Research is required to say whether it is beneficial to use different folds for generating an encoding map. Intuitively, it feels like reusing a fold column might increase the chance of overfitting as both the "encoding map" and the "trained model" will be produced based on the same out-of-fold data, and performance of the corresponding CV model will be calculated on the fold that received "leakage" through target encoding. [PICTURE] 
- - Users quite often name the fold column for TE something like `cv_fold_column` - note the `cv_` prefix here - even when they don't use cross validation as a method for measuring the model's performance, and this column was added just for target encoding. This prefix indicates that users believe some cross validation is happening inside. So let's take a look at the "cross validation" term's etymology. This naming matches the fact that we are getting an estimate of the model (validation) by somehow combining estimates from multiple models being trained and tested on intersecting/crossed folds. With Target Encoding, we don't perform any validation at all. We just generate encodings based on out-of-fold data (which are, in fact, overlapping). So from my point of view, it is inaccurate to call this strategy, for example, "cross ~~validation~~ strategy." Instead, the better name would be "kfold" strategy.
+ - Users quite often name the fold column for TE something like `cv_fold_column` - note the `cv_` prefix here - even when they don't use cross validation as a method for measuring the model's performance, and this column was added just for target encoding. This prefix indicates that users believe some cross validation is happening inside. So let's take a look at the "cross validation" term's etymology. This naming matches the fact that we are getting an estimate of the model (validation) by somehow combining estimates from multiple models being trained and tested on intersecting/crossed folds. With Target Encoding, we don't perform any validation at all. We just generate encodings based on out-of-fold data (which are, in fact, overlapping). So from my point of view, it is inaccurate to call this strategy, for example, "cross <s>validation</s> strategy." Instead, the better name would be "kfold" strategy.
  
-Getting back to Target Encoder constructor's parameters, the rest of them are "blending" related. What is important at this moment is that the specified settings will be used for every dataset we are going to apply target encoding to. **Note**: In the R API, this is not the case as we don't have an object to store these parameter. Instead, we decide whether we want to use blending on a per-dataset basis later on.
+Getting back to Target Encoder constructor's parameters, the rest of them are "blending" related. What is important at this moment is that the specified settings will be used for every dataset we are going to apply target encoding to. 
+
+**Note**: In the R API, this is not the case as we don't have an object to store these parameter. Instead, we decide whether we want to use blending on a per-dataset basis later on.
 
 ## Creating an Encoding Map with .fit()
 
@@ -58,10 +60,10 @@ Two approaches could be distinguished:
 Code:
 
 ```
-targetEncoder.fit(frame=train)
+target_encoder.fit(frame=train)
 ```
 
-As a result, a computed encoding map will be stored in the `targetEncoder`.
+As a result, a computed encoding map will be stored in the `target_encoder`.
 
 ## Understanding the Encoding Map Structure
 
@@ -92,7 +94,7 @@ There are three data leakage prevention strategies you can choose from in target
 The strategy should be specified only for an application/transformation step.
 
  ```
- targetEncoder.transform(..., holdout_type="kfold", ...)
+ target_encoder.transform(..., holdout_type="kfold", ...)
  ```
  
 You will want to use any of the first two strategies only in cases where you want to reuse the data from which the encoding map was generated. In all the other scenarios, `none` should be chosen.
@@ -154,13 +156,13 @@ Let's check this statement. Consider two cases:
 
 So this statement holds true only under certain conditions, but it is not true in general (meaning there should not be such an intuition for understanding and choosing `inflection_point`'s value).
 
-One mportant note about `inflection_point` to take away is that it determines when the sign of the exponent changes and the graph flips, as in the figure below. Lambda will be approaching 0 in this case, and `prior probabilities` term will be dominating.
+One important note about `inflection_point` to take away is that it determines when the sign of the exponent changes and the graph flips, as in the figure below. Lambda will be approaching 0 in this case, and `prior probabilities` term will be dominating.
 
 <p align="center">
 <img src="https://drive.google.com/uc?export=view&id=1OMz7oOUvon7Vi06Ds_kgfhsiHmkz1t2I"  height="280" />
 </p>
 
-> Example 1:
+> Example:
  `inflection_point = 5` and `n = 2` 
 $$ {\ 1 \over {1 + \exp ( - {\ (2 -5) }})} = {\ 1 \over {1 + \exp ( + {\ 3 }})} \approx0$$ 
 
@@ -177,9 +179,9 @@ Four plots below show how the labmda function changes when we increase the `smoo
 ## Applying TargetEncoder
 
 ```
-encodedTrain = targetEncoder.transform(frame=train, holdout_type="kfold", seed=1234)
-encodedValid = targetEncoder.transform(frame=valid, holdout_type="none", noise=0.0)
-encodedTest = targetEncoder.transform(frame=test, holdout_type="none", noise=0.0)
+encoded_train = target_encoder.transform(frame=train, holdout_type="kfold", seed=1234)
+encoded_valid = target_encoder.transform(frame=valid, holdout_type="none", noise=0.0)
+encoded_test = target_encoder.transform(frame=test, holdout_type="none", noise=0.0)
 ```
 
 Note that the `train` frame was the same used to generate the encoding map with the `.fit()` method.
