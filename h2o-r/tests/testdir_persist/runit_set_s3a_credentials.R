@@ -11,11 +11,11 @@ test.s3.credentials <- function() {
     expect_false(nchar(accessKeyId) == 0)
     expect_false(nchar(accessKeyId) == 0)
     
-    h2o.set_s3a_credentials(accessKeyId, accesSecretKey)
+    h2o.set_s3_credentials(accessKeyId, accesSecretKey)
     file <- h2o.importFile(path = "s3a://test.0xdata.com/h2o-unit-tests/iris.csv")
     expect_false(is.null(file))
     
-    h2o.set_s3a_credentials("ab", "cd")
+    h2o.set_s3_credentials("ab", "cd")
     tryCatch(
       {
         file <- h2o.importFile(path = "s3a://test.0xdata.com/h2o-unit-tests/iris.csv")

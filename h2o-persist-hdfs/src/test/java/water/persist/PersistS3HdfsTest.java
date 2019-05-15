@@ -3,6 +3,7 @@ package water.persist;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.s3.S3FileSystem;
+import org.apache.hadoop.fs.s3a.S3AFileSystem;
 import org.apache.hadoop.security.alias.CredentialProviderFactory;
 import org.jets3t.service.S3Service;
 import org.jets3t.service.model.S3Object;
@@ -86,15 +87,15 @@ public class PersistS3HdfsTest extends TestUtil  {
       assumeTrue(secretKey != null);
       
       PersistHdfs persistHdfs = (PersistHdfs) H2O.getPM().getPersistForURI(URI.create("hdfs://localhost/"));
-      final PersistS3AHandler persistS3AHandler = new PersistS3AHandler();
-      final PersistS3ACredentialsV3 credentialsV3 = createS3ACredentialsV3(accessKeyId,
+      final PersistS3Handler persistS3AHandler = new PersistS3Handler();
+      final PersistS3CredentialsV3 credentialsV3 = createS3ACredentialsV3(accessKeyId,
               secretKey);
 
-      Value value = DKV.get(IcedS3ACredentials.S3A_CREDENTIALS_DKV_KEY);
+      Value value = DKV.get(IcedS3Credentials.S3_CREDENTIALS_DKV_KEY);
       assertNull(value);
       
-      final PersistS3ACredentialsV3 credentialsV31 = persistS3AHandler.setS3ACredentials(3, credentialsV3);
-      value = DKV.get(IcedS3ACredentials.S3A_CREDENTIALS_DKV_KEY);
+      final PersistS3CredentialsV3 credentialsV31 = persistS3AHandler.setS3Credentials(3, credentialsV3);
+      value = DKV.get(IcedS3Credentials.S3_CREDENTIALS_DKV_KEY);
       assertNotNull(value);
 
       persistHdfs.importFiles(IRIS_H2O_AWS, null, files, keys, fails, deletions);
@@ -103,7 +104,7 @@ public class PersistS3HdfsTest extends TestUtil  {
       
     } finally {
       Scope.exit();
-      DKV.remove(Key.make(IcedS3ACredentials.S3A_CREDENTIALS_DKV_KEY));
+      DKV.remove(Key.make(IcedS3Credentials.S3_CREDENTIALS_DKV_KEY));
       for (String key : keys) {
         final Iced iced = DKV.getGet(key);
         assertTrue(iced instanceof Frame);
@@ -115,13 +116,13 @@ public class PersistS3HdfsTest extends TestUtil  {
 
   }
 
-  private static PersistS3ACredentialsV3 createS3ACredentialsV3(final String accessKeyId,
+  private static PersistS3CredentialsV3 createS3ACredentialsV3(final String accessKeyId,
                                                                 final String secretAccessKey) {
-    final PersistS3ACredentialsV3 persistS3ACredentialsV3 = new PersistS3ACredentialsV3();
-    persistS3ACredentialsV3.access_key_id = accessKeyId;
-    persistS3ACredentialsV3.secret_access_key = secretAccessKey;
+    final PersistS3CredentialsV3 persistS3Credentials = new PersistS3CredentialsV3();
+    persistS3Credentials.secret_key_id = accessKeyId;
+    persistS3Credentials.secret_access_key = secretAccessKey;
 
-    return persistS3ACredentialsV3;
+    return persistS3Credentials;
   }
 
 }
