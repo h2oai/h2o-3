@@ -1,7 +1,7 @@
 
 # Target Encoding in Depth
 
-Target encoding (TE), a.k.a. mean encoding, is a way of encoding categorical features into numerical ones. We are not going to discuss here in detail why would anyone want to apply this methodology to their dataset, but briefly, most common reasons are:
+Target encoding (TE), a.k.a. mean encoding, is a way of encoding categorical features into numerical ones. We are not going to discuss here in detail why we would want to apply this methodology to our dataset, but briefly, the most common reasons are:
 
  - The model does not work with categorical variables, and high cardinality of the variable makes one-hot-encoding (OHE) a not very attractive option. (We will not comment on questions like whether TE is more preferable than OHE or under which conditions it starts to be true. This is an area for research and is outside of this blogpost's scope.)
  - We want to transfer knowledge that is available in a response column.
