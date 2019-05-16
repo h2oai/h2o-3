@@ -1,5 +1,7 @@
 package ai.h2o.automl.targetencoding;
 
+import hex.FeatureTransformer;
+import hex.FeatureTransformerWriter;
 import water.*;
 import water.fvec.*;
 import water.fvec.task.FillNAWithLongValueTask;
@@ -30,7 +32,7 @@ import java.util.*;
  *
  * Usage: see TargetEncodingTitanicBenchmark.java
  */
-public class TargetEncoder {
+public class TargetEncoder extends FeatureTransformer {
 
     private BlendingParams _blendingParams;
     private String[] _columnNamesToEncode;
@@ -740,4 +742,8 @@ public class TargetEncoder {
         return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, null, withBlendedAvg, noiseLevel, true, seed);
     }
 
+  @Override
+  protected FeatureTransformerWriter getWriter() {
+    return super.getWriter();
+  }
 }

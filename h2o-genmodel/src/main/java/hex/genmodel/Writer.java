@@ -3,7 +3,6 @@ package hex.genmodel;
 import hex.genmodel.utils.StringEscapeUtils;
 
 import java.io.IOException;
-import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -11,7 +10,7 @@ import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-public abstract class Writer {
+public abstract class Writer{
 
   private String targetdir;
   private StringBuilder tmpfile;
@@ -19,10 +18,6 @@ public abstract class Writer {
   private ZipOutputStream zos;
   // Local key-value store: these values will be written to the model.ini/[info] section
   protected Map<String, String> lkv;
-
-  //--------------------------------------------------------------------------------------------------------------------
-  // Inheritance interface: ModelMojoWriter subclasses are expected to override these methods to provide custom behavior
-  //--------------------------------------------------------------------------------------------------------------------
 
   public Writer() {
     this.lkv = new LinkedHashMap<>(20);  // Linked so as to preserve the order of entries in the output
@@ -131,6 +126,7 @@ public abstract class Writer {
   public void writeTo(ZipOutputStream zos, String zipDirectory) throws IOException {
     initWriting(zos, zipDirectory);
     addCommonWriterInfo();
+    writeData();
   }
 
   
