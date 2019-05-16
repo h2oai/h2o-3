@@ -1,0 +1,15 @@
+ext {
+    hadoopVersion = 'cdh6.2.0'
+    hadoopMavenArtifactVersion = '3.0.0-cdh6.2.0'
+    orcSupported = true
+    orcHiveExecVersion = "2.1.1-cdh6.2.0"
+}
+
+apply from: '../assemblyjar.gradle'
+
+dependencies {
+    compile (project(":h2o-jetty-9")) {
+        exclude module: "servlet-api"
+        exclude group: "javax.servlet", module: "javax.servlet-api"
+    }
+}
