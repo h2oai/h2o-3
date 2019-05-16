@@ -5,13 +5,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import water.*;
 import water.rapids.ast.AstFunction;
-import water.rapids.ast.AstRoot;
 import water.rapids.Rapids;
 
 public class TransformWrappedVecTest extends TestUtil {
 
   @Rule
-  public ScopeTracker _tracker = new ScopeTracker();
+  public transient ScopeTracker _tracker = new ScopeTracker();
   
   @BeforeClass
   public static void setup() { 
