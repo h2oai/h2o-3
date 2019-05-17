@@ -4,8 +4,10 @@ import org.junit.Ignore;
 import org.junit.rules.ExternalResource;
 import water.fvec.Frame;
 
+import java.io.Serializable;
+
 @Ignore // just a simple class that avoid the classic try-Scope.enter-finally-Scope.exit pattern
-public class ScopeTracker extends ExternalResource {
+public class ScopeTracker extends ExternalResource implements Serializable {
 
   @Override
   protected void before() {
@@ -21,8 +23,10 @@ public class ScopeTracker extends ExternalResource {
     Scope.track(frames);
   }
 
-  public final <E extends Keyed<E>> void track(E keyed) {
+  @SuppressWarnings("unchecked")
+  public final <T extends Keyed> T track(Keyed<T> keyed) {
     Scope.track_generic(keyed);
+    return (T) keyed;
   }
 
 }
