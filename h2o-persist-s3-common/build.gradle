@@ -1,6 +1,0 @@
-description = "H2O Persist S3 Common"
-
-dependencies {
-    compileOnly project(":h2o-core")
-    testCompile group: 'junit', name: 'junit', version: '4.12'
-}
