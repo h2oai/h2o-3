@@ -207,7 +207,7 @@ public class TreeHandler extends Handler {
                 if (nodeLevelsindex != nodeLevels.length - 1) nodeDescriptionBuilder.append(",");
             }
         } else {
-            nodeDescriptionBuilder.append("NA only");
+            nodeDescriptionBuilder.append("Split value is NA.");
         }
 
         nodeDescriptions[pointer] = nodeDescriptionBuilder.toString();
