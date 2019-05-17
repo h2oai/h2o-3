@@ -44,36 +44,24 @@ public class XGBoostUtils {
 
     /**
      * convert an H2O Frame to a sparse DMatrix
-     * @param f H2O Frame
-     * @param onlyLocal if true uses only chunks local to this node
+     * @param di data info
+     * @param f H2O Frame - adapted using a provided data info
      * @param response name of the response column
      * @param weight name of the weight column
-     * @param fold name of the fold assignment column
      * @return DMatrix
      * @throws XGBoostError
      */
     public static DMatrix convertFrameToDMatrix(DataInfo di,
                                                 Frame f,
-                                                boolean onlyLocal,
                                                 String response,
                                                 String weight,
-                                                String fold,
                                                 boolean sparse) throws XGBoostError {
         assert di != null;
-        int[] chunks;
-        Vec vec = f.anyVec();
-        if(!onlyLocal) {
-            // All chunks
-            chunks = new int[f.anyVec().nChunks()];
-            for(int i = 0; i < chunks.length; i++) {
-                chunks[i] = i;
-            }
-        } else {
-            chunks = VecUtils.getLocalChunkIds(f.anyVec());
-        }
-        final Vec weightVector = f.vec(weight);
+        int[] chunks = VecUtils.getLocalChunkIds(f.anyVec());
+        final Vec responseVec = f.vec(response);
+        final Vec weightVec = f.vec(weight);
         final int[] nRowsByChunk = new int[chunks.length];
-        final long nRowsL = sumChunksLength(chunks, vec, weightVector, nRowsByChunk);
+        final long nRowsL = sumChunksLength(chunks, responseVec, weightVec, nRowsByChunk);
         if (nRowsL > Integer.MAX_VALUE) {
             throw new IllegalArgumentException("XGBoost currently doesn't support datasets with more than " +
                     Integer.MAX_VALUE + " per node. " +
@@ -87,25 +75,20 @@ public class XGBoostUtils {
         // but only if we want to handle datasets over 2^31-1 on a single machine. For now I'd leave it as it is.
         float[] resp = malloc4f(nRows);
         float[] weights = null;
-        if (weightVector != null) {
+        if (weightVec != null) {
             weights = malloc4f(nRows);
         }
         if (sparse) {
             Log.debug("Treating matrix as sparse.");
             // truly sparse matrix - no categoricals
             // collect all nonzeros column by column (in parallel), then stitch together into final data structures
-            Vec.Reader w = weight == null ? null : weightVector.new Reader();
-            Vec.Reader[] vecs = new Vec.Reader[f.numCols()];
-            for (int i = 0; i < vecs.length; ++i) {
-                vecs[i] = f.vec(i).new Reader();
-            }
-            trainMat = csr(f, chunks, vecs, w, f.vec(response).new Reader(), di, resp, weights);
+            trainMat = csr(f, chunks, weightVec, responseVec, di, resp, weights);
         } else {
             Log.debug("Treating matrix as dense.");
             BigDenseMatrix data = null;
             try {
                 data = allocateDenseMatrix(nRows, di);
-                long actualRows = denseChunk(data, chunks, nRowsByChunk, f, weightVector, f.vec(response), di, resp, weights);
+                long actualRows = denseChunk(data, chunks, nRowsByChunk, f, weightVec, responseVec, di, resp, weights);
                 assert data.nrow == actualRows;
                 trainMat = new DMatrix(data, Float.NaN);
             } finally {
@@ -360,17 +343,24 @@ public class XGBoostUtils {
      *********************************** DMatrix creation for sparse (CSR) matrices *********************************
      ****************************************************************************************************************/
 
-    private static DMatrix csr(Frame f, int[] chunksIds, Vec.Reader[] vecs, Vec.Reader w, Vec.Reader respReader, // for setupLocal
+    private static DMatrix csr(Frame f, int[] chunksIds, Vec weightsVec, Vec responseVec, // for setupLocal
                                DataInfo di, float[] resp, float[] weights)
         throws XGBoostError {
 
-        SparseMatrixDimensions sparseMatrixDimensions = calculateCSRMatrixDimensions(f, chunksIds, vecs, w, di);
+        Vec.Reader[] vecs = new Vec.Reader[f.numCols()];
+        for (int i = 0; i < vecs.length; ++i) {
+            vecs[i] = f.vec(i).new Reader();
+        }
+        Vec.Reader weightsReader = (weightsVec != null) ? weightsVec.new Reader() : null;
+        Vec.Reader responseReader = responseVec.new Reader();
+
+        SparseMatrixDimensions sparseMatrixDimensions = calculateCSRMatrixDimensions(f, chunksIds, vecs, weightsReader, di);
         SparseMatrix sparseMatrix = allocateCSRMatrix(sparseMatrixDimensions);
 
         int actualRows = initalizeFromChunkIds(
-                f, chunksIds, vecs, w,
+                f, chunksIds, vecs, weightsReader,
                 di, sparseMatrix._rowHeaders, sparseMatrix._sparseData, sparseMatrix._colIndices,
-                respReader, resp, weights);
+                responseReader, resp, weights);
         return toDMatrix(sparseMatrix, sparseMatrixDimensions, actualRows, di);
     }
 
