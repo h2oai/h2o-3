@@ -10,6 +10,7 @@ import water.MrFun;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.VecUtils;
 
@@ -347,6 +348,10 @@ public class XGBoostUtils {
                                DataInfo di, float[] resp, float[] weights)
         throws XGBoostError {
 
+
+        SparseMatrixDimensions sparseMatrixDimensions = calculateCSRMatrixDimensions(f, chunksIds, weightsVec, di);
+        SparseMatrix sparseMatrix = allocateCSRMatrix(sparseMatrixDimensions);
+
         Vec.Reader[] vecs = new Vec.Reader[f.numCols()];
         for (int i = 0; i < vecs.length; ++i) {
             vecs[i] = f.vec(i).new Reader();
@@ -354,13 +359,11 @@ public class XGBoostUtils {
         Vec.Reader weightsReader = (weightsVec != null) ? weightsVec.new Reader() : null;
         Vec.Reader responseReader = responseVec.new Reader();
 
-        SparseMatrixDimensions sparseMatrixDimensions = calculateCSRMatrixDimensions(f, chunksIds, vecs, weightsReader, di);
-        SparseMatrix sparseMatrix = allocateCSRMatrix(sparseMatrixDimensions);
-
         int actualRows = initalizeFromChunkIds(
                 f, chunksIds, vecs, weightsReader,
                 di, sparseMatrix._rowHeaders, sparseMatrix._sparseData, sparseMatrix._colIndices,
                 responseReader, resp, weights);
+
         return toDMatrix(sparseMatrix, sparseMatrixDimensions, actualRows, di);
     }
 
@@ -623,29 +626,74 @@ public class XGBoostUtils {
         return new SparseMatrixDimensions(nonZeroElementsCount, ++rowIndicesCount);
     }
 
-    protected static SparseMatrixDimensions calculateCSRMatrixDimensions(Frame f, int[] chunks, Vec.Reader[] vecs, Vec.Reader w, DataInfo di) {
-        long nonZeroElementsCount = 0;
-        long rowIndicesCount = 0;
+    static SparseMatrixDimensions calculateCSRMatrixDimensions(Frame f, int[] chunkIds, Vec w, DataInfo di) {
+        CalculateCSRMatrixDimensionsMrFun fun = new CalculateCSRMatrixDimensionsMrFun(f, di, w, chunkIds);
+        H2O.submitTask(new LocalMR(fun, chunkIds.length)).join();
+        
+        return new SparseMatrixDimensions(ArrayUtils.sum(fun._nonZeroElementsCounts), ArrayUtils.sum(fun._rowIndicesCounts) + 1);
+    }
 
-        for (Integer chunk : chunks) {
-            for (long i = f.anyVec().espc()[chunk]; i < f.anyVec().espc()[chunk + 1]; i++) {
-                if (w != null && w.at(i) == 0) continue;
-                rowIndicesCount++;
+    private static class CalculateCSRMatrixDimensionsMrFun extends MrFun<CalculateCSRMatrixDimensionsMrFun> {
+        private Frame _f;
+        private DataInfo _di;
+        private Vec _w;
+        private int[] _chunkIds;
 
-                nonZeroElementsCount+= di._cats;
+        // OUT
+        private long[] _rowIndicesCounts;
+        private long[] _nonZeroElementsCounts;
 
-                for (int j = 0; j < di._nums; ++j) {
-                    double val = vecs[di._cats + j].at(i);
-                    if (val != 0) {
-                        nonZeroElementsCount++;
+        CalculateCSRMatrixDimensionsMrFun(Frame f, DataInfo di, Vec w, int[] chunkIds) {
+            _f = f;
+            _di = di;
+            _w = w;
+            _chunkIds = chunkIds;
+            _rowIndicesCounts = new long[chunkIds.length];
+            _nonZeroElementsCounts = new long[chunkIds.length];
+        }
+
+        @Override
+        protected void map(int i) {
+            final int cidx = _chunkIds[i];
+
+            long rowIndicesCount = 0;
+            long nonZeroElementsCount = 0;
+
+            if (_di._nums == 0) {
+                if (_w == null) {
+                    // no weights and only categoricals => sizing is trivial
+                    rowIndicesCount = _f.anyVec().chunkForChunkIdx(cidx)._len;
+                    nonZeroElementsCount = rowIndicesCount * _di._cats;
+                } else {
+                    Chunk ws = _w.chunkForChunkIdx(cidx);
+                    for (int r = 0; r < ws._len; r++)
+                        if (ws.atd(r) != 0) {
+                            rowIndicesCount++;
+                            nonZeroElementsCount += _di._cats; 
+                        }
+                }
+            } else {
+                Chunk[] cs = new Chunk[_di._nums];
+                for (int c = 0; c < cs.length; c++) {
+                    cs[c] = _f.vec(_di._cats + c).chunkForChunkIdx(cidx);
+                }
+                Chunk ws = _w != null ? _w.chunkForChunkIdx(cidx) : null;
+                for (int r = 0; r < cs[0]._len; r++) {
+                    if (ws != null && ws.atd(r) == 0)
+                        continue;
+                    rowIndicesCount++;
+                    nonZeroElementsCount += _di._cats;
+                    for (int j = 0; j < _di._nums; j++) {
+                        if (cs[j].atd(r) != 0) {
+                            nonZeroElementsCount++;
+                        }
                     }
                 }
             }
+            _rowIndicesCounts[i] = rowIndicesCount;
+            _nonZeroElementsCounts[i] = nonZeroElementsCount;
         }
-
-        return new SparseMatrixDimensions(nonZeroElementsCount, ++rowIndicesCount);
     }
-
 
     /**
      * Dimensions of a Sparse Matrix

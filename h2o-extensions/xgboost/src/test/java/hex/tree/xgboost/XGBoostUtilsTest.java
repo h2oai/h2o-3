@@ -196,7 +196,7 @@ public class XGBoostUtilsTest extends TestUtil {
 
         XGBoostUtilsTest.setSparseMatrixMaxDimensions(3);
         // Calculate sparse matrix dimensions
-        final XGBoostUtils.SparseMatrixDimensions sparseMatrixDimensions = XGBoostUtils.calculateCSRMatrixDimensions(frame, chunksIds, vecs, null, di);
+        final XGBoostUtils.SparseMatrixDimensions sparseMatrixDimensions = XGBoostUtils.calculateCSRMatrixDimensions(frame, chunksIds, null, di);
         assertNotNull(sparseMatrixDimensions);
         assertEquals(3, sparseMatrixDimensions._nonZeroElementsCount);
         assertEquals(4, sparseMatrixDimensions._rowHeadersCount); // 3 rows + 1 final index
@@ -257,7 +257,7 @@ public class XGBoostUtilsTest extends TestUtil {
 
         XGBoostUtilsTest.setSparseMatrixMaxDimensions(3);
         // Calculate sparse matrix dimensions
-        final XGBoostUtils.SparseMatrixDimensions sparseMatrixDimensions = XGBoostUtils.calculateCSRMatrixDimensions(frame, chunksIds, vecs, null, di);
+        final XGBoostUtils.SparseMatrixDimensions sparseMatrixDimensions = XGBoostUtils.calculateCSRMatrixDimensions(frame, chunksIds, null, di);
         assertNotNull(sparseMatrixDimensions);
         assertEquals(3, sparseMatrixDimensions._nonZeroElementsCount);
         assertEquals(4, sparseMatrixDimensions._rowHeadersCount); // 3 rows + 1 final index
@@ -322,7 +322,7 @@ public class XGBoostUtilsTest extends TestUtil {
         XGBoostUtilsTest.setSparseMatrixMaxDimensions(1); // 3 arrays in each direction for colIndices and data, 4 for rowHeaders
 
         // Calculate sparse matrix dimensions
-        final XGBoostUtils.SparseMatrixDimensions sparseMatrixDimensions = XGBoostUtils.calculateCSRMatrixDimensions(frame, chunksIds, vecs, null, di);
+        final XGBoostUtils.SparseMatrixDimensions sparseMatrixDimensions = XGBoostUtils.calculateCSRMatrixDimensions(frame, chunksIds, null, di);
         assertNotNull(sparseMatrixDimensions);
         assertEquals(3, sparseMatrixDimensions._nonZeroElementsCount);
         assertEquals(4, sparseMatrixDimensions._rowHeadersCount); // 3 rows + 1 final index
@@ -388,7 +388,7 @@ public class XGBoostUtilsTest extends TestUtil {
         XGBoostUtilsTest.setSparseMatrixMaxDimensions(1);
 
         // Calculate sparse matrix dimensions
-        final XGBoostUtils.SparseMatrixDimensions sparseMatrixDimensions = XGBoostUtils.calculateCSRMatrixDimensions(frame, chunksIds, vecs, null, di);
+        final XGBoostUtils.SparseMatrixDimensions sparseMatrixDimensions = XGBoostUtils.calculateCSRMatrixDimensions(frame, chunksIds, null, di);
         assertNotNull(sparseMatrixDimensions);
         assertEquals(5, sparseMatrixDimensions._nonZeroElementsCount);
         assertEquals(4, sparseMatrixDimensions._rowHeadersCount); // 3 rows + 1 final index
