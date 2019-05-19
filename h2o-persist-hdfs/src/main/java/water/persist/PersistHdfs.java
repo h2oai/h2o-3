@@ -75,7 +75,9 @@ public final class PersistHdfs extends Persist {
         Log.debug("Cannot find HADOOP_CONF_DIR or YARN_CONF_DIR - default HDFS properties are NOT loaded!");
       }
     }
-    conf.set("fs.s3a.aws.credentials.provider", "water.persist.H2ODynamicS3ACredentialsProvider,org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider,org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider,com.amazonaws.auth.EnvironmentVariableCredentialsProvider,com.amazonaws.auth.InstanceProfileCredentialsProvider,org.apache.hadoop.fs.s3a.AnonymousAWSCredentialsProvider");
+    if (conf.get("fs.s3a.aws.credentials.provider") == null) {
+      conf.set("fs.s3a.aws.credentials.provider", "water.persist.H2ODynamicS3ACredentialsProvider,org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider,org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider,com.amazonaws.auth.EnvironmentVariableCredentialsProvider,com.amazonaws.auth.InstanceProfileCredentialsProvider,org.apache.hadoop.fs.s3a.AnonymousAWSCredentialsProvider");
+    }
     CONF = conf;
   }
 
