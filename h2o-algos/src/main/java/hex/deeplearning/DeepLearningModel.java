@@ -176,7 +176,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       }
     }
     assert(get_params() != cp.model_info().get_params()); //make sure we have a clone
-    _dist = new Distribution(get_params());
+    _dist = DistributionFactory.getDistribution(get_params());
     assert(_dist.distribution != DistributionFamily.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
     actual_best_model_key = cp.actual_best_model_key;
     if (actual_best_model_key.get() == null) {
@@ -229,7 +229,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     Log.info("Building the model on " + dinfo.numNums() + " numeric features and " + dinfo.numCats() + " (one-hot encoded) categorical features.");
     model_info = new DeepLearningModelInfo(parms, destKey, dinfo, nClasses, train, valid);
     model_info_key = Key.make(H2O.SELF);
-    _dist = new Distribution(get_params());
+    _dist = DistributionFactory.getDistribution(get_params());
     assert(_dist.distribution != DistributionFamily.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
     actual_best_model_key = Key.make(H2O.SELF);
     if (parms._nfolds != 0) actual_best_model_key = null;

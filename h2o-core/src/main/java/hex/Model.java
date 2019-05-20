@@ -863,7 +863,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     _output = output;  // Output won't be set if we're assert output != null;
     if (_output != null)
       _output.startClock();
-    _dist = isSupervised() && _output.nclasses() == 1 ? new Distribution(_parms) : null;
+    _dist = isSupervised() && _output.nclasses() == 1 ? DistributionFactory.getDistribution(_parms) : null;
     Log.info("Starting model "+ selfKey);
   }
 

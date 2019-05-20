@@ -1,5 +1,6 @@
 package hex.tree.gbm;
 
+import hex.DistributionFactory;
 import hex.genmodel.utils.DistributionFamily;
 import hex.Distribution;
 import hex.ModelCategory;
@@ -249,7 +250,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
       double init = 0; //start with initial value of 0 for convergence
       do {
-        double newInit = new NewtonRaphson(frameMap, new Distribution(_parms), init).doAll(train).value();
+        double newInit = new NewtonRaphson(frameMap, DistributionFactory.getDistribution(_parms), init).doAll(train).value();
         delta = Math.abs(init - newInit);
         init = newInit;
         Log.info("Iteration " + (++count) + ": initial value: " + init);
@@ -329,7 +330,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         // https://statweb.stanford.edu/~jhf/ftp/trebst.pdf
         // compute absolute diff |y-(f+o)| for all rows
         Vec diff = new ComputeAbsDiff(frameMap).doAll(1, (byte)3 /*numeric*/, _train).outputFrame().anyVec();
-        Distribution dist = new Distribution(_parms);
+        Distribution dist = DistributionFactory.getDistribution(_parms);
         // compute weighted alpha-quantile of the absolute residual -> this is the delta for the huber loss
         huberDelta = MathUtils.computeWeightedQuantile(_weights, diff, _parms._huber_alpha);
         dist.setHuberDelta(huberDelta);
@@ -337,7 +338,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         new StoreResiduals(frameMap, dist).doAll(_train, _parms._build_tree_one_node);
       } else {
         // compute predictions and residuals in one shot
-        new ComputePredAndRes(frameMap, _nclass, _model._output._distribution, new Distribution(_parms))
+        new ComputePredAndRes(frameMap, _nclass, _model._output._distribution, DistributionFactory.getDistribution(_parms))
             .doAll(_train, _parms._build_tree_one_node);
       }
       for (int k = 0; k < _nclass; k++) {
@@ -361,7 +362,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // ----
       // ESL2, page 387.  Step 2b iii.  Compute the gammas (leaf node predictions === fit best constant), and store them back
       // into the tree leaves.  Includes learn_rate.
-      GammaPass gp = new GammaPass(frameMap, ktrees, leaves, new Distribution(_parms), _nclass);
+      GammaPass gp = new GammaPass(frameMap, ktrees, leaves, DistributionFactory.getDistribution(_parms), _nclass);
       gp.doAll(_train);
       if (_parms._distribution == DistributionFamily.laplace) {
         fitBestConstantsQuantile(ktrees, leaves[0], 0.5); //special case for Laplace: compute the median for each leaf node and store that as prediction
@@ -1207,7 +1208,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   // fs[] array, and return the sum.  Dividing any fs[] element by the sum
   // turns the results into a probability distribution.
   @Override protected double score1(Chunk[] chks, double weight, double offset, double[/*nclass*/] fs, int row) {
-    return score1static(chks, idx_tree(0), offset, fs, row, new Distribution(_parms), _nclass);
+    return score1static(chks, idx_tree(0), offset, fs, row, DistributionFactory.getDistribution(_parms), _nclass);
   }
 
   // Read the 'tree' columns, do model-specific math and put the results in the
