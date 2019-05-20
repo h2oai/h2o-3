@@ -139,6 +139,8 @@ reference:
       - h2o.hit_ratio_table
       - h2o.hour
       - h2o.ifelse
+      - h2o.import_hive_table
+      - h2o.import_mojo
       - h2o.import_sql_select
       - h2o.import_sql_table
       - h2o.importFile
