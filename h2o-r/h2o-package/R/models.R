@@ -3613,6 +3613,29 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
     res$thresholds <- c(as.double(NA))
   }
   
+  # Protection against NA only arrays being evaluated as logical
+  if(is.logical(res$features)){
+    res$features <- as.character(res$features)
+  }
+  
+  if(is.logical(res$nas)){
+    res$nas <- as.character(res$nas)
+  }
+  
+  if(is.logical(res$thresholds)){
+    res$thresholds <- as.numeric(res$thresholds)
+  }
+  
+  if(is.logical(res$predictions)){
+    res$predictions <- as.numeric(res$predictions)
+  }
+  
+  if(is.logical(res$predictions)){
+    res$predictions <- as.numeric(res$predictions)
+  }
+  
+  
+  # Start of the tree-building process
   tree <- new(
     "H2OTree",
     left_children = res$left_children,
