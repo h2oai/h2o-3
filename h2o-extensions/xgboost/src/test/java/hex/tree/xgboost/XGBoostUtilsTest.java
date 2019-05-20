@@ -156,8 +156,10 @@ public class XGBoostUtilsTest extends TestUtil {
                 .withDataForCol(1, ard(0, 2, 0))
                 .withDataForCol(2, ard(0, 3, 0))
                 .build());
-        final DMatrix response = XGBoostUtils.convertFrameToDMatrix(new DataInfo(frame, null, true, DataInfo.TransformType.NONE, false, false, false),
-                frame, "C3", null, true);
+        final DMatrix response = XGBoostUtils.convertFrameToDMatrix(
+            new DataInfo(frame, null, true, DataInfo.TransformType.NONE, false, false, false),
+            frame, "C3", null, true
+        );
         assertNotNull(response);
         assertEquals(3, response.rowNum());
         assertArrayEquals(arf(0, 3, 0), response.getLabel(), 0f);

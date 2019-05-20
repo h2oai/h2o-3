@@ -1,6 +1,5 @@
 package hex.genmodel.algos.xgboost;
 
-import biz.k11i.xgboost.learner.ObjFunction;
 import org.junit.Test;
 
 import static org.junit.Assert.*;

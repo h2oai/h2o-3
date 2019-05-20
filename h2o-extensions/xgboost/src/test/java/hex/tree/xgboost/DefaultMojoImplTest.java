@@ -1,30 +1,23 @@
 package hex.tree.xgboost;
 
-import hex.ModelMetricsRegression;
-import hex.SplitFrame;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
 import hex.genmodel.algos.xgboost.XGBoostMojoReader;
 import hex.genmodel.algos.xgboost.XGBoostNativeMojoModel;
-import hex.genmodel.utils.DistributionFamily;
-import org.junit.*;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.TemporaryFolder;
-import org.junit.runners.Parameterized;
+import hex.tree.xgboost.XGBoostModel.XGBoostParameters.Booster;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import water.DKV;
-import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.util.Log;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import hex.tree.xgboost.XGBoostModel.XGBoostParameters.Booster;
 
 public class DefaultMojoImplTest extends TestUtil {
 
@@ -35,7 +28,7 @@ public class DefaultMojoImplTest extends TestUtil {
 
   @Before
   public void setupMojoJavaScoring() {
-    System.clearProperty("sys.ai.h2o.xgboost.scoring.java.enable"); // force default behavior
+    System.clearProperty(XGBoostMojoReader.SCORE_JAVA_PROP); // force default behavior
 
     assertNull(XGBoostMojoReader.getJavaScoringConfig()); // check that MOJO scoring config is not present
   }

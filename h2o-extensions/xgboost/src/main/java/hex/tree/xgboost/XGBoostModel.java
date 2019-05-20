@@ -4,17 +4,19 @@ import biz.k11i.xgboost.Predictor;
 import biz.k11i.xgboost.gbm.GBTree;
 import biz.k11i.xgboost.gbm.GradBooster;
 import biz.k11i.xgboost.tree.RegTree;
-import biz.k11i.xgboost.tree.RegTreeImpl;
 import biz.k11i.xgboost.tree.RegTreeNode;
-import biz.k11i.xgboost.tree.TreeSHAPHelper;
 import biz.k11i.xgboost.util.FVec;
 import hex.*;
 import hex.genmodel.GenModel;
-import hex.genmodel.algos.tree.*;
+import hex.genmodel.algos.tree.SharedTreeGraph;
+import hex.genmodel.algos.tree.SharedTreeGraphConverter;
+import hex.genmodel.algos.tree.SharedTreeNode;
+import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.algos.xgboost.XGBoostNativeMojoModel;
 import hex.genmodel.utils.DistributionFamily;
+import hex.tree.xgboost.util.PredictConfiguration;
 import ml.dmlc.xgboost4j.java.*;
 import water.*;
 import water.fvec.Chunk;
@@ -23,14 +25,18 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
-import hex.ModelMetrics;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
-import static hex.tree.xgboost.XGBoost.makeDataInfo;
 import static hex.genmodel.algos.xgboost.XGBoostMojoModel.ObjectiveType;
+import static hex.tree.xgboost.XGBoost.makeDataInfo;
+import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
 
 public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParameters, XGBoostOutput> 
         implements SharedTreeGraphConverter, Model.Contributions {
@@ -190,6 +196,30 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     DKV.put(dinfo);
     setDataInfoToOutput(dinfo);
     model_info = new XGBoostModelInfo(parms, dinfo);
+  }
+
+  // useful for debugging
+  @SuppressWarnings("unused")
+  public void dump(String format) {
+    File fmFile = null;
+    try {
+      Booster b = BoosterHelper.loadModel(new ByteArrayInputStream((this).model_info._boosterBytes));
+      fmFile = File.createTempFile("xgboost-feature-map", ".bin");
+      FileOutputStream os = new FileOutputStream(fmFile);
+      os.write(this.model_info._featureMap.getBytes());
+      os.close();
+      String fmFilePath = fmFile.getAbsolutePath();
+      String[] d = b.getModelDump(fmFilePath, true, format);
+      for (String l : d) {
+        System.out.println(l);
+      }
+    } catch (Exception e) {
+      Log.err(e);
+    } finally {
+      if (fmFile != null) {
+        fmFile.delete();
+      }
+    }
   }
 
   public static BoosterParms createParams(XGBoostParameters p, int nClasses, String[] coefNames) {
@@ -363,7 +393,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   }
 
   private static int getMaxNThread() {
-    return Integer.getInteger(H2O.OptArgs.SYSTEM_PROP_PREFIX + "xgboost.nthread", H2O.ARGS.nthreads);
+    return Integer.getInteger(SYSTEM_PROP_PREFIX + "xgboost.nthread", H2O.ARGS.nthreads);
   }
 
   @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
@@ -436,14 +466,10 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     }
   }
 
-  private boolean useJavaScoring() {
-    return Boolean.getBoolean("sys.ai.h2o.xgboost.predict.java.enable");
-  }
-
   @Override
   protected BigScorePredict setupBigScorePredict(BigScore bs) {
     DataInfo di = model_info().scoringInfo(false); // always for validation scoring info for scoring (we are not in the training phase)
-    return useJavaScoring() ? setupBigScorePredictJava(di) : setupBigScorePredictNative(di);
+    return PredictConfiguration.useJavaScoring() ? setupBigScorePredictJava(di) : setupBigScorePredictNative(di);
   }
 
   private BigScorePredict setupBigScorePredictNative(DataInfo di) {
