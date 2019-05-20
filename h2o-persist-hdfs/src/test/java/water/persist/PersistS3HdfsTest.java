@@ -6,18 +6,19 @@ import org.apache.hadoop.fs.s3.S3FileSystem;
 import org.jets3t.service.S3Service;
 import org.jets3t.service.model.S3Object;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import water.H2O;
-import water.TestUtil;
+import water.*;
+import water.fvec.Frame;
 import water.util.ReflectionUtils;
 
 import java.net.URI;
+import java.util.ArrayList;
 
-import static junit.framework.TestCase.assertFalse;
-import static junit.framework.TestCase.assertNotNull;
+import static junit.framework.TestCase.*;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 
 public class PersistS3HdfsTest extends TestUtil  {
@@ -29,6 +30,10 @@ public class PersistS3HdfsTest extends TestUtil  {
 
   @Rule
   public ExpectedException thrown = ExpectedException.none();
+
+  private static final String IRIS_H2O_AWS = "s3a://test.0xdata.com/h2o-unit-tests/iris.csv";
+  private static final String AWS_ACCESS_KEY_PROPERTY_NAME = "AWS_ACCESS_KEY_ID";
+  private static final String AWS_SECRET_KEY_PROPERTY_NAME = "AWS_SECRET_ACCESS_KEY";
 
   @Test
   public void testPubDev5663() throws Exception { // Demonstrates that S3FileSystem is broken
@@ -60,6 +65,60 @@ public class PersistS3HdfsTest extends TestUtil  {
       o = no;
     }
     return o;
+  }
+
+  @Test
+  public void testS3CredentialsChange() {
+      final ArrayList<String> keys = new ArrayList<>();
+      final ArrayList<String> fails = new ArrayList<>();
+      final ArrayList<String> deletions = new ArrayList<>();
+      final ArrayList<String> files = new ArrayList<>();
+    try {
+      Scope.enter();
+
+      final String accessKeyId = System.getenv(AWS_ACCESS_KEY_PROPERTY_NAME);
+      final String secretKey = System.getenv(AWS_SECRET_KEY_PROPERTY_NAME);
+
+      assumeTrue(accessKeyId != null);
+      assumeTrue(secretKey != null);
+      
+      PersistHdfs persistHdfs = (PersistHdfs) H2O.getPM().getPersistForURI(URI.create("hdfs://localhost/"));
+      final PersistS3Handler persistS3AHandler = new PersistS3Handler();
+      final PersistS3CredentialsV3 credentialsV3 = createS3ACredentialsV3(accessKeyId,
+              secretKey);
+
+      Value value = DKV.get(IcedS3Credentials.S3_CREDENTIALS_DKV_KEY);
+      assertNull(value);
+      
+      final PersistS3CredentialsV3 credentialsV31 = persistS3AHandler.setS3Credentials(3, credentialsV3);
+      value = DKV.get(IcedS3Credentials.S3_CREDENTIALS_DKV_KEY);
+      assertNotNull(value);
+
+      persistHdfs.importFiles(IRIS_H2O_AWS, null, files, keys, fails, deletions);
+      
+      assertEquals(1, keys.size());
+      
+    } finally {
+      Scope.exit();
+      DKV.remove(Key.make(IcedS3Credentials.S3_CREDENTIALS_DKV_KEY));
+      for (String key : keys) {
+        final Iced iced = DKV.getGet(key);
+        assertTrue(iced instanceof Frame);
+        final Frame frame = (Frame) iced;
+        frame.remove();
+      }
+    }
+
+
+  }
+
+  private static PersistS3CredentialsV3 createS3ACredentialsV3(final String accessKeyId,
+                                                                final String secretAccessKey) {
+    final PersistS3CredentialsV3 persistS3Credentials = new PersistS3CredentialsV3();
+    persistS3Credentials.secret_key_id = accessKeyId;
+    persistS3Credentials.secret_access_key = secretAccessKey;
+
+    return persistS3Credentials;
   }
 
 }

@@ -8,8 +8,8 @@ import water.Iced;
 public class IcedS3Credentials extends Iced {
     
     public static final String S3_CREDENTIALS_DKV_KEY = "S3_CREDENTIALS_KEY";
-    String _secretKeyId;
-    String _secretAccessKey;
+    final String _secretKeyId;
+    final String _secretAccessKey;
 
     public IcedS3Credentials(String secretKeyId, String secretAccessKey) {
         this._secretKeyId = secretKeyId;
