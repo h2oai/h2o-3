@@ -69,7 +69,8 @@ public class XGBoostSetupTask extends AbstractXGBoostTask<XGBoostSetupTask> {
               _trainFrame,
               _parms._response_column,
               _parms._weights_column,
-              _sparse);
+              _sparse
+      );
   }
 
   /**
