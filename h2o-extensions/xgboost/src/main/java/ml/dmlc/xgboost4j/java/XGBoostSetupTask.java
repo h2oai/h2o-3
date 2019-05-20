@@ -67,10 +67,8 @@ public class XGBoostSetupTask extends AbstractXGBoostTask<XGBoostSetupTask> {
       return XGBoostUtils.convertFrameToDMatrix(
               _sharedModel.dataInfo(),
               _trainFrame,
-              true,
               _parms._response_column,
               _parms._weights_column,
-              _parms._fold_column,
               _sparse);
   }
 

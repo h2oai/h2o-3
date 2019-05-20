@@ -10,6 +10,7 @@ import water.MrFun;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.VecUtils;
 
@@ -21,12 +22,6 @@ import static water.MemoryManager.malloc4f;
 import static water.MemoryManager.malloc8;
 
 public class XGBoostUtils {
-
-    /**
-     * Arbitrary chosen initial size of array allocated for XGBoost's purpose.
-     * Used in case of sparse matrices.
-     */
-    private static final int ALLOCATED_ARRAY_LEN = 1048576;
 
     public static String makeFeatureMap(Frame f, DataInfo di) {
         // set the names for the (expanded) columns
@@ -50,36 +45,24 @@ public class XGBoostUtils {
 
     /**
      * convert an H2O Frame to a sparse DMatrix
-     * @param f H2O Frame
-     * @param onlyLocal if true uses only chunks local to this node
+     * @param di data info
+     * @param f H2O Frame - adapted using a provided data info
      * @param response name of the response column
      * @param weight name of the weight column
-     * @param fold name of the fold assignment column
      * @return DMatrix
      * @throws XGBoostError
      */
     public static DMatrix convertFrameToDMatrix(DataInfo di,
                                                 Frame f,
-                                                boolean onlyLocal,
                                                 String response,
                                                 String weight,
-                                                String fold,
                                                 boolean sparse) throws XGBoostError {
         assert di != null;
-        int[] chunks;
-        Vec vec = f.anyVec();
-        if(!onlyLocal) {
-            // All chunks
-            chunks = new int[f.anyVec().nChunks()];
-            for(int i = 0; i < chunks.length; i++) {
-                chunks[i] = i;
-            }
-        } else {
-            chunks = VecUtils.getLocalChunkIds(f.anyVec());
-        }
-        final Vec weightVector = f.vec(weight);
+        int[] chunks = VecUtils.getLocalChunkIds(f.anyVec());
+        final Vec responseVec = f.vec(response);
+        final Vec weightVec = f.vec(weight);
         final int[] nRowsByChunk = new int[chunks.length];
-        final long nRowsL = sumChunksLength(chunks, vec, weightVector, nRowsByChunk);
+        final long nRowsL = sumChunksLength(chunks, responseVec, weightVec, nRowsByChunk);
         if (nRowsL > Integer.MAX_VALUE) {
             throw new IllegalArgumentException("XGBoost currently doesn't support datasets with more than " +
                     Integer.MAX_VALUE + " per node. " +
@@ -93,34 +76,20 @@ public class XGBoostUtils {
         // but only if we want to handle datasets over 2^31-1 on a single machine. For now I'd leave it as it is.
         float[] resp = malloc4f(nRows);
         float[] weights = null;
-        if (weightVector != null) {
+        if (weightVec != null) {
             weights = malloc4f(nRows);
         }
         if (sparse) {
             Log.debug("Treating matrix as sparse.");
-            // 1 0 2 0
-            // 4 0 0 3
-            // 3 1 2 0
-            boolean csc = false; //di._cats == 0;
-
             // truly sparse matrix - no categoricals
             // collect all nonzeros column by column (in parallel), then stitch together into final data structures
-            Vec.Reader w = weight == null ? null : weightVector.new Reader();
-            if (csc) {
-                trainMat = csc(f, chunks, w, f.vec(response).new Reader(), nRows, di, resp, weights);
-            } else {
-                Vec.Reader[] vecs = new Vec.Reader[f.numCols()];
-                for (int i = 0; i < vecs.length; ++i) {
-                    vecs[i] = f.vec(i).new Reader();
-                }
-                trainMat = csr(f, chunks, vecs, w, f.vec(response).new Reader(), nRows, di, resp, weights);
-            }
+            trainMat = csr(f, chunks, weightVec, responseVec, di, resp, weights);
         } else {
             Log.debug("Treating matrix as dense.");
             BigDenseMatrix data = null;
             try {
                 data = allocateDenseMatrix(nRows, di);
-                long actualRows = denseChunk(data, chunks, nRowsByChunk, f, weightVector, f.vec(response), di, resp, weights);
+                long actualRows = denseChunk(data, chunks, nRowsByChunk, f, weightVec, responseVec, di, resp, weights);
                 assert data.nrow == actualRows;
                 trainMat = new DMatrix(data, Float.NaN);
             } finally {
@@ -138,22 +107,6 @@ public class XGBoostUtils {
 
         return trainMat;
     }
-
-    // FIXME this and the other method should subtract rows where response is 0
-    private static int getDataRows(Chunk[] chunks, Frame f, int[] chunksIds, int cols) {
-        double totalRows = 0;
-        if(null != chunks) {
-            for (Chunk ch : chunks) {
-                totalRows += ch.len();
-            }
-        } else {
-            for(int chunkId : chunksIds) {
-                totalRows += f.anyVec().chunkLen(chunkId);
-            }
-        }
-        return (int) Math.ceil(totalRows * cols / SPARSE_MATRIX_DIM);
-    }
-
 
     /**
      * Counts a total sum of chunks inside a vector. Only chunks present in chunkIds are considered.
@@ -209,58 +162,6 @@ public class XGBoostUtils {
         return j;
     }
 
-    private static int getNzCount(Frame f, int[] chunks, final Vec.Reader w, int nCols, List<SparseItem>[] col, int nzCount) {
-        for (int i=0;i<nCols;++i) { //TODO: parallelize over columns
-            Vec v = f.vec(i);
-            for (Integer c : chunks) {
-                Chunk ck = v.chunkForChunkIdx(c);
-                int[] nnz = new int[ck.sparseLenZero()];
-                int nnzCount = ck.nonzeros(nnz);
-                nzCount = getNzCount(new ZeroWeight() {
-                    @Override
-                    public boolean zeroWeight(int idx) {
-                        return w != null && w.at(idx) == 0;
-                    }
-                }, col[i], nzCount, ck, nnz, nnzCount, false);
-            }
-        }
-        return nzCount;
-    }
-
-    interface ZeroWeight {
-        boolean zeroWeight(int idx);
-    }
-
-    private static int getNzCount(final Chunk[] chunks, final int weight, int nCols, List<SparseItem>[] col, int nzCount) {
-        for (int i=0;i<nCols;++i) { //TODO: parallelize over columns
-            final Chunk ck = chunks[i];
-            int[] nnz = new int[ck.sparseLenZero()];
-            int nnzCount = ck.nonzeros(nnz);
-            nzCount = getNzCount(new ZeroWeight() {
-                @Override
-                public boolean zeroWeight(int idx) {
-                    return weight != -1 && ck.atd(idx) == 0;
-                }
-            }, col[i], nzCount, ck, nnz, nnzCount, true);
-        }
-        return nzCount;
-    }
-
-    private static int getNzCount(ZeroWeight zw, List<SparseItem> sparseItems, int nzCount, Chunk ck, int[] nnz, int nnzCount, boolean localWeight) {
-        for (int k=0;k<nnzCount;++k) {
-            SparseItem item = new SparseItem();
-            int localIdx = nnz[k];
-            item.pos = (int)ck.start() + localIdx;
-            // both 0 and NA are omitted in the sparse DMatrix
-            if (zw.zeroWeight(localWeight ? localIdx : item.pos)) continue;
-            if (ck.isNA(localIdx)) continue;
-            item.val = ck.atd(localIdx);
-            sparseItems.add(item);
-            nzCount++;
-        }
-        return nzCount;
-    }
-
     /**
      * convert a set of H2O chunks (representing a part of a vector) to a sparse DMatrix
      * @param response name of the response column
@@ -287,18 +188,7 @@ public class XGBoostUtils {
         try {
             if (sparse) {
                 Log.debug("Treating matrix as sparse.");
-                // 1 0 2 0
-                // 4 0 0 3
-                // 3 1 2 0
-                boolean csc = false; //di._cats == 0;
-
-                // truly sparse matrix - no categoricals
-                // collect all nonzeros column by column (in parallel), then stitch together into final data structures
-                if (csc) {
-                    trainMat = csc(chunks, weight, nRows, di, resp, weights);
-                } else {
-                    trainMat = csr(chunks, weight, response, nRows, di, resp, weights);
-                }
+                trainMat = csr(chunks, weight, response, di, resp, weights);
             } else {
                 trainMat = dense(chunks, weight, di, response, resp, weights);
             }
@@ -454,72 +344,60 @@ public class XGBoostUtils {
      *********************************** DMatrix creation for sparse (CSR) matrices *********************************
      ****************************************************************************************************************/
 
-    private static DMatrix csr(Frame f, int[] chunksIds, Vec.Reader[] vecs, Vec.Reader w, Vec.Reader respReader, // for setupLocal
-                               int nRows, DataInfo di, float[] resp, float[] weights)
+    private static DMatrix csr(Frame f, int[] chunksIds, Vec weightsVec, Vec responseVec, // for setupLocal
+                               DataInfo di, float[] resp, float[] weights)
         throws XGBoostError {
-        return csr(null, -1, -1, f, chunksIds, vecs, w, respReader, nRows, di, resp, weights);
+
+
+        SparseMatrixDimensions sparseMatrixDimensions = calculateCSRMatrixDimensions(f, chunksIds, weightsVec, di);
+        SparseMatrix sparseMatrix = allocateCSRMatrix(sparseMatrixDimensions);
+
+        Vec.Reader[] vecs = new Vec.Reader[f.numCols()];
+        for (int i = 0; i < vecs.length; ++i) {
+            vecs[i] = f.vec(i).new Reader();
+        }
+        Vec.Reader weightsReader = (weightsVec != null) ? weightsVec.new Reader() : null;
+        Vec.Reader responseReader = responseVec.new Reader();
+
+        int actualRows = initalizeFromChunkIds(
+                f, chunksIds, vecs, weightsReader,
+                di, sparseMatrix._rowHeaders, sparseMatrix._sparseData, sparseMatrix._colIndices,
+                responseReader, resp, weights);
+
+        return toDMatrix(sparseMatrix, sparseMatrixDimensions, actualRows, di);
     }
 
     private static DMatrix csr(Chunk[] chunks, int weight, int respIdx, // for MR task
-                               int nRows, DataInfo di, float[] resp, float[] weights) throws XGBoostError {
-        return csr(chunks, weight, respIdx, null, null, null, null, null, nRows, di, resp, weights);
+                               DataInfo di, float[] resp, float[] weights) throws XGBoostError {
+
+        SparseMatrixDimensions sparseMatrixDimensions = calculateCSRMatrixDimensions(chunks, di, weight);
+        SparseMatrix sparseMatrix = allocateCSRMatrix(sparseMatrixDimensions);
+
+        int actualRows = initializeFromChunks(
+                chunks, weight,
+                di, sparseMatrix._rowHeaders, sparseMatrix._sparseData, sparseMatrix._colIndices,
+                respIdx, resp, weights);
+        return toDMatrix(sparseMatrix, sparseMatrixDimensions, actualRows, di);
     }
 
-    protected static DMatrix csr(Chunk[] chunks, int weight, int respIdx, // for MR task
-                               Frame f, int[] chunksIds, Vec.Reader[] vecs, Vec.Reader w, Vec.Reader respReader, // for setupLocal
-                               int nRows, DataInfo di, float[] resp, float[] weights)
-        throws XGBoostError {
-        DMatrix trainMat;
-        int actualRows = 0;
-        // CSR:
-//    long[] rowHeaders = new long[] {0,      2,      4,         7}; //offsets
-//    float[] data = new float[]     {1f,2f,  4f,3f,  3f,1f,2f};     //non-zeros across each row
-//    int[] colIndex = new int[]     {0, 2,   0, 3,   0, 1, 2};      //col index for each non-zero
-
-        long[][] rowHeaders;
-        float[][] data;
-        int[][] colIndex;
-        final SparseMatrixDimensions sparseMatrixDimensions;
-        if(null != chunks) {
-            sparseMatrixDimensions = calculateCSRMatrixDimensions(chunks, di, weight);
-            SparseMatrix sparseMatrix = allocateCSRMatrix(sparseMatrixDimensions);
-            data = sparseMatrix._sparseData;
-            rowHeaders = sparseMatrix._rowHeaders;
-            colIndex = sparseMatrix._colIndices;
-
-            actualRows = initializeFromChunks(
-                    chunks, weight,
-                    di, actualRows, rowHeaders, data, colIndex,
-                    respIdx, resp, weights);
-        } else {
-            sparseMatrixDimensions = calculateCSRMatrixDimensions(f, chunksIds, vecs, w, di);
-            SparseMatrix sparseMatrix = allocateCSRMatrix(sparseMatrixDimensions);
-            data = sparseMatrix._sparseData;
-            rowHeaders = sparseMatrix._rowHeaders;
-            colIndex = sparseMatrix._colIndices;
-            actualRows = initalizeFromChunkIds(
-                    f, chunksIds, vecs, w,
-                    di, actualRows, rowHeaders, data, colIndex,
-                    respReader, resp, weights);
-        }
-
-
-
-        trainMat = new DMatrix(rowHeaders, colIndex, data, DMatrix.SparseType.CSR, di.fullN(), actualRows + 1,
-                sparseMatrixDimensions._nonZeroElementsCount);
+    private static DMatrix toDMatrix(SparseMatrix sm, SparseMatrixDimensions smd, int actualRows, DataInfo di) throws XGBoostError {
+        DMatrix trainMat = new DMatrix(sm._rowHeaders, sm._colIndices, sm._sparseData,
+                DMatrix.SparseType.CSR, di.fullN(), actualRows + 1,
+                smd._nonZeroElementsCount);
         assert trainMat.rowNum() == actualRows;
         return trainMat;
     }
-
-    protected static int initalizeFromChunkIds(Frame f, int[] chunks, Vec.Reader[] vecs, Vec.Reader w, DataInfo di, int actualRows,
-                                             long[][] rowHeaders, float[][] data, int[][] colIndex,
-                                             Vec.Reader respVec, float[] resp, float[] weights) {
+    
+    static int initalizeFromChunkIds(Frame f, int[] chunks, Vec.Reader[] vecs, Vec.Reader w, DataInfo di,
+                                     long[][] rowHeaders, float[][] data, int[][] colIndex,
+                                     Vec.Reader respVec, float[] resp, float[] weights) {
         // CSR:
         //    long[] rowHeaders = new long[] {0,      2,      4,         7}; //offsets
         //    float[] data = new float[]     {1f,2f,  4f,3f,  3f,1f,2f};     //non-zeros across each row
         //    int[] colIndex = new int[]     {0, 2,   0, 3,   0, 1, 2};      //col index for each non-zero
 
         // extract predictors
+        int actualRows = 0;
         int nonZeroCount = 0;
         int rowPointer = 0;
         int currentCol = 0;
@@ -595,7 +473,8 @@ public class XGBoostUtils {
         return actualRows;
     }
 
-    private static int initializeFromChunks(Chunk[] chunks, int weight, DataInfo di, int actualRows, long[][] rowHeaders, float[][] data, int[][] colIndex, int respIdx, float[] resp, float[] weights) {
+    private static int initializeFromChunks(Chunk[] chunks, int weight, DataInfo di, long[][] rowHeaders, float[][] data, int[][] colIndex, int respIdx, float[] resp, float[] weights) {
+        int actualRows = 0;
         int nonZeroCount = 0;
         int rowPointer = 0;
         int currentCol = 0;
@@ -670,131 +549,6 @@ public class XGBoostUtils {
     static class SparseItem {
         int pos;
         double val;
-    }
-
-    /****************************************************************************************************************
-     *********************************** DMatrix creation for sparse (CSC) matrices *********************************
-     ****************************************************************************************************************/
-
-    private static DMatrix csc(Chunk[] chunks, int weight,
-                               long nRows, DataInfo di,
-                               float[] resp, float[] weights) throws XGBoostError {
-        return csc(chunks, weight, null, null, null, null, nRows, di, resp, weights);
-    }
-
-    private static DMatrix csc(Frame f, int[] chunksIds, Vec.Reader w, Vec.Reader respReader,
-                               long nRows, DataInfo di,
-                               float[] resp, float[] weights) throws XGBoostError {
-        return csc(null, -1, f, chunksIds, w, respReader, nRows, di, resp, weights);
-    }
-
-    private static DMatrix csc(Chunk[] chunks, int weight, // for MR tasks
-                               Frame f, int[] chunksIds, Vec.Reader w, Vec.Reader respReader, // for setupLocal computation
-                               long nRows, DataInfo di,
-                               float[] resp, float[] weights) throws XGBoostError {
-        DMatrix trainMat;
-
-        // CSC:
-        //    long[] colHeaders = new long[] {0,        3,  4,     6,    7}; //offsets
-        //    float[] data = new float[]     {1f,4f,3f, 1f, 2f,2f, 3f};      //non-zeros down each column
-        //    int[] rowIndex = new int[]     {0,1,2,    2,  0, 2,  1};       //row index for each non-zero
-
-        int nCols = di._nums;
-
-        List<SparseItem>[] col = new List[nCols]; //TODO: use more efficient storage (no GC)
-        // allocate
-        for (int i=0;i<nCols;++i) {
-            col[i] = new ArrayList<>((int)Math.min(nRows, 10000));
-        }
-
-        // collect non-zeros
-        int nzCount = 0;
-        if(null != chunks) {
-            nzCount = getNzCount(chunks, weight, nCols, col, nzCount);
-        } else {
-            nzCount = getNzCount(f, chunksIds, w, nCols, col, nzCount);
-        }
-
-        int currentRow = 0;
-        int currentCol = 0;
-        int nz = 0;
-        long[][] colHeaders = new long[1][nCols + 1];
-        float[][] data = new float[getDataRows(chunks, f, chunksIds, di.fullN())][nzCount];
-        int[][] rowIndex = new int[1][nzCount];
-        int rwRow = 0;
-        // fill data for DMatrix
-        for (int i=0;i<nCols;++i) { //TODO: parallelize over columns
-            List<SparseItem> sparseCol = col[i];
-            colHeaders[0][i] = nz;
-
-            enlargeTables(data, rowIndex, sparseCol.size(), currentRow, currentCol);
-
-            for (int j=0;j<sparseCol.size();++j) {
-                if(currentCol == SPARSE_MATRIX_DIM) {
-                    currentCol = 0;
-                    currentRow++;
-                }
-
-                SparseItem si = sparseCol.get(j);
-                rowIndex[currentRow][currentCol] = si.pos;
-                data[currentRow][currentCol] = (float)si.val;
-                assert(si.val != 0);
-                assert(!Double.isNaN(si.val));
-//                assert(weight == -1 || chunks[weight].atd((int)(si.pos - chunks[weight].start())) != 0);
-                nz++;
-                currentCol++;
-
-                // Do only once
-                if(0 == i) {
-                    rwRow = setResponseAndWeight(w, resp, weights, respReader, rwRow, j);
-                }
-            }
-        }
-        colHeaders[0][nCols] = nz;
-        data[data.length - 1] = Arrays.copyOf(data[data.length - 1], nz % SPARSE_MATRIX_DIM);
-        rowIndex[rowIndex.length - 1] = Arrays.copyOf(rowIndex[rowIndex.length - 1], nz % SPARSE_MATRIX_DIM);
-        int actualRows = countUnique(rowIndex);
-
-        trainMat = new DMatrix(colHeaders, rowIndex, data, DMatrix.SparseType.CSC, actualRows, di.fullN(), nz);
-        assert trainMat.rowNum() == actualRows;
-        assert trainMat.rowNum() == rwRow;
-        return trainMat;
-    }
-
-    private static int countUnique(int[][] array) {
-        if (array.length == 0) {
-            return 0;
-        }
-
-        BitSet values = new BitSet(SPARSE_MATRIX_DIM);
-
-        int count = 1;
-        for (int i = 0; i < array.length; i++) {
-            for (int j = 0; j < array[i].length - 1; j++) {
-                if (!values.get(array[i][j])) {
-                    count++;
-                    values.set(array[i][j]);
-                }
-            }
-        }
-        return count;
-    }
-
-    // Assumes both matrices are getting filled at the same rate and will require the same amount of space
-    private static void enlargeTables(float[][] data, int[][] rowIndex, int cols, int currentRow, int currentCol) {
-        while (data[currentRow].length < currentCol + cols) {
-            if(data[currentRow].length == SPARSE_MATRIX_DIM) {
-                currentCol = 0;
-                cols -= (data[currentRow].length - currentCol);
-                currentRow++;
-                data[currentRow] = malloc4f(ALLOCATED_ARRAY_LEN);
-                rowIndex[currentRow] = malloc4(ALLOCATED_ARRAY_LEN);
-            } else {
-                int newLen = (int) Math.min((long) data[currentRow].length << 1L, (long) SPARSE_MATRIX_DIM);
-                data[currentRow] = Arrays.copyOf(data[currentRow], newLen);
-                rowIndex[currentRow] = Arrays.copyOf(rowIndex[currentRow], newLen);
-            }
-        }
     }
 
     /**
@@ -872,29 +626,74 @@ public class XGBoostUtils {
         return new SparseMatrixDimensions(nonZeroElementsCount, ++rowIndicesCount);
     }
 
-    protected static SparseMatrixDimensions calculateCSRMatrixDimensions(Frame f, int[] chunks, Vec.Reader[] vecs, Vec.Reader w, DataInfo di) {
-        long nonZeroElementsCount = 0;
-        long rowIndicesCount = 0;
+    static SparseMatrixDimensions calculateCSRMatrixDimensions(Frame f, int[] chunkIds, Vec w, DataInfo di) {
+        CalculateCSRMatrixDimensionsMrFun fun = new CalculateCSRMatrixDimensionsMrFun(f, di, w, chunkIds);
+        H2O.submitTask(new LocalMR(fun, chunkIds.length)).join();
+        
+        return new SparseMatrixDimensions(ArrayUtils.sum(fun._nonZeroElementsCounts), ArrayUtils.sum(fun._rowIndicesCounts) + 1);
+    }
 
-        for (Integer chunk : chunks) {
-            for (long i = f.anyVec().espc()[chunk]; i < f.anyVec().espc()[chunk + 1]; i++) {
-                if (w != null && w.at(i) == 0) continue;
-                rowIndicesCount++;
+    private static class CalculateCSRMatrixDimensionsMrFun extends MrFun<CalculateCSRMatrixDimensionsMrFun> {
+        private Frame _f;
+        private DataInfo _di;
+        private Vec _w;
+        private int[] _chunkIds;
 
-                nonZeroElementsCount+= di._cats;
+        // OUT
+        private long[] _rowIndicesCounts;
+        private long[] _nonZeroElementsCounts;
 
-                for (int j = 0; j < di._nums; ++j) {
-                    double val = vecs[di._cats + j].at(i);
-                    if (val != 0) {
-                        nonZeroElementsCount++;
+        CalculateCSRMatrixDimensionsMrFun(Frame f, DataInfo di, Vec w, int[] chunkIds) {
+            _f = f;
+            _di = di;
+            _w = w;
+            _chunkIds = chunkIds;
+            _rowIndicesCounts = new long[chunkIds.length];
+            _nonZeroElementsCounts = new long[chunkIds.length];
+        }
+
+        @Override
+        protected void map(int i) {
+            final int cidx = _chunkIds[i];
+
+            long rowIndicesCount = 0;
+            long nonZeroElementsCount = 0;
+
+            if (_di._nums == 0) {
+                if (_w == null) {
+                    // no weights and only categoricals => sizing is trivial
+                    rowIndicesCount = _f.anyVec().chunkForChunkIdx(cidx)._len;
+                    nonZeroElementsCount = rowIndicesCount * _di._cats;
+                } else {
+                    Chunk ws = _w.chunkForChunkIdx(cidx);
+                    for (int r = 0; r < ws._len; r++)
+                        if (ws.atd(r) != 0) {
+                            rowIndicesCount++;
+                            nonZeroElementsCount += _di._cats; 
+                        }
+                }
+            } else {
+                Chunk[] cs = new Chunk[_di._nums];
+                for (int c = 0; c < cs.length; c++) {
+                    cs[c] = _f.vec(_di._cats + c).chunkForChunkIdx(cidx);
+                }
+                Chunk ws = _w != null ? _w.chunkForChunkIdx(cidx) : null;
+                for (int r = 0; r < cs[0]._len; r++) {
+                    if (ws != null && ws.atd(r) == 0)
+                        continue;
+                    rowIndicesCount++;
+                    nonZeroElementsCount += _di._cats;
+                    for (int j = 0; j < _di._nums; j++) {
+                        if (cs[j].atd(r) != 0) {
+                            nonZeroElementsCount++;
+                        }
                     }
                 }
             }
+            _rowIndicesCounts[i] = rowIndicesCount;
+            _nonZeroElementsCounts[i] = nonZeroElementsCount;
         }
-
-        return new SparseMatrixDimensions(nonZeroElementsCount, ++rowIndicesCount);
     }
-
 
     /**
      * Dimensions of a Sparse Matrix
