@@ -3458,7 +3458,7 @@ setMethod('show', 'H2ONode',
 print.H2ONode <- function(node){
   cat("Node ID", node@id, "\n\n")
   if(class(node) == "H2OLeafNode"){
-    cat("Terminal node. Prediction is")
+    cat("Terminal node. Prediction is", node@prediction)
     return()
   }
 
