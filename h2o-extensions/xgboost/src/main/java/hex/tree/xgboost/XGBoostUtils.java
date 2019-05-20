@@ -666,11 +666,13 @@ public class XGBoostUtils {
                     nonZeroElementsCount = rowIndicesCount * _di._cats;
                 } else {
                     Chunk ws = _w.chunkForChunkIdx(cidx);
+                    int nzWeights = 0;
                     for (int r = 0; r < ws._len; r++)
                         if (ws.atd(r) != 0) {
-                            rowIndicesCount++;
-                            nonZeroElementsCount += _di._cats; 
+                            nzWeights++;
                         }
+                    rowIndicesCount += nzWeights;
+                    nonZeroElementsCount += nzWeights * _di._cats;
                 }
             } else {
                 Chunk[] cs = new Chunk[_di._nums];
