@@ -453,7 +453,7 @@ def import_hive_table(database=None, table=None, partitions=None, allow_multi_fo
 
     :examples:
         >>> my_citibike_data = h2o.import_hive_table("default", "table", [["2017", "01"], ["2017", "02"]])
-    """    
+    """
     assert_is_type(database, str, None)
     assert_is_type(table, str)
     assert_is_type(partitions, [[str]], None)
@@ -508,7 +508,7 @@ def import_sql_table(connection_url, table, username, password, columns=None, op
     return get_frame(j.dest_key)
 
 
-def import_sql_select(connection_url, select_query, username, password, optimize=True, 
+def import_sql_select(connection_url, select_query, username, password, optimize=True,
                       use_temp_table=None, temp_table_name=None, fetch_mode=None):
     """
     Import the SQL table that is the result of the specified SQL query to H2OFrame in memory.
@@ -617,7 +617,7 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     kwargs = {"check_header": header, "source_frames": [quoted(frame_id) for frame_id in raw_frames]}
     if separator:
         kwargs["separator"] = ord(separator)
-    
+
     if custom_non_data_line_markers is not None:
         kwargs["custom_non_data_line_markers"] = custom_non_data_line_markers;
 
@@ -720,7 +720,7 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
             for colidx in skipped_columns:
                 if (colidx < 0): raise ValueError("skipped column index cannot be negative")
                 j["skipped_columns"].append(colidx)
-    
+
 
     # quote column names and column types also when not specified by user
     if j["column_names"]: j["column_names"] = list(map(quoted, j["column_names"]))
@@ -1532,7 +1532,7 @@ class {}Wrapper({}, MetricFunc, object):
 
 
 def import_mojo(mojo_path):
-    
+
     """
     Imports an existing MOJO model as an H2O model.
     :param mojo_path: Path to the MOJO archive on the H2O's filesystem

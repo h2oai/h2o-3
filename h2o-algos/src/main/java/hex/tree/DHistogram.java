@@ -1,6 +1,7 @@
 package hex.tree;
 
 import hex.Distribution;
+import hex.DistributionFactory;
 import sun.misc.Unsafe;
 import water.*;
 import water.fvec.Frame;
@@ -203,7 +204,7 @@ public final class DHistogram extends Iced {
         _dist = null; // intentionally cause NPE if used incorrectly
       } else {
         _vals_dim = 6;
-        _dist = new Distribution(cs._dist);
+        _dist = DistributionFactory.getDistribution(cs._dist);
       }
     } else {
       _pred1 = Double.NaN;
