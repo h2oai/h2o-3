@@ -2,7 +2,9 @@ package hex;
 
 import hex.LogExpUtil;
 
-abstract class LinkFunction {
+import java.io.Serializable;
+
+abstract class LinkFunction implements Serializable {
 
     /**
      * Return x as e^x string - helper function

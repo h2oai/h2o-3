@@ -16,6 +16,7 @@ public class DistributionFactory {
                 return new ModifiedHuberDistribution(family);
             case multinomial:
                 return new MultinomialDistribution(family);
+            case AUTO: 
             case gaussian:
                 return new GaussianDistribution(family);
             case poisson:
@@ -41,6 +42,7 @@ public class DistributionFactory {
                 return new ModifiedHuberDistribution(family);
             case multinomial:
                 return new MultinomialDistribution(family);
+            case AUTO:    
             case gaussian:
                 return new GaussianDistribution(family);
             case poisson:
