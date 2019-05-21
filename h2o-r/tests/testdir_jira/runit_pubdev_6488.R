@@ -4,6 +4,9 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test.tree.fetch <- function() {
+  seed <- sample.int(1e+9, 1)
+  set.seed(seed)
+  cat("Using seed:", seed)
   
   data <- as.h2o(data.frame(
     x1 = c(1, NA, 2),
@@ -12,7 +15,7 @@ test.tree.fetch <- function() {
   ))
   
   # A simple model to test prediction the correctly printed by delegating to print.H2ONode.
-  model <- h2o.xgboost(x= c("x1", "x2"), y = "y", training_frame = data, max_depth = 0, ntrees = 1)
+  model <- h2o.xgboost(x= c("x1", "x2"), y = "y", training_frame = data, max_depth = 0, ntrees = 1, seed = seed)
   tree <- h2o.getModelTree(model, 1)
   expect_false(is.null(tree))
   expect_equal(3, grep("Prediction is 0", capture.output(print(tree@root_node))))
@@ -30,7 +33,7 @@ test.tree.fetch <- function() {
   )
   
   data <- as.h2o(data)
-  model <- h2o.xgboost(x= c("x1", "x2"), y = "response", training_frame = data, ntrees = ntrees)
+  model <- h2o.xgboost(x= c("x1", "x2"), y = "response", training_frame = data, ntrees = ntrees, seed = seed)
   for (i in seq(1,ntrees)) {
     tree <- h2o.getModelTree(model, i)
     expect_false(is.null(tree))
@@ -51,7 +54,7 @@ test.tree.fetch <- function() {
   data <- as.h2o(data)
   data$x1 <- h2o.asfactor(data$x1)
   data$x2 <- h2o.asfactor(data$x2)
-  model <- h2o.xgboost(x= c("x1", "x2"), y = "response", training_frame = data, ntrees = ntrees)
+  model <- h2o.xgboost(x= c("x1", "x2"), y = "response", training_frame = data, ntrees = ntrees, seed = seed)
   for (i in seq(1,ntrees)) {
     tree <- h2o.getModelTree(model, i)
     expect_false(is.null(tree))
@@ -71,7 +74,7 @@ test.tree.fetch <- function() {
   
   data <- as.h2o(data)
   data$response <- h2o.asfactor(data$response)
-  model <- h2o.xgboost(x= c("x1", "x2"), y = "response", training_frame = data, ntrees = ntrees)
+  model <- h2o.xgboost(x= c("x1", "x2"), y = "response", training_frame = data, ntrees = ntrees, seed = seed)
   for (i in seq(1,ntrees)) {
     for(clazz in domain){
     tree <- h2o.getModelTree(model, i,as.character(clazz))
@@ -96,7 +99,7 @@ test.tree.fetch <- function() {
   
   data <- as.h2o(data)
   data$response <- h2o.asfactor(data$response)
-  model <- h2o.xgboost(x= c("x1", "x2"), y = "response", training_frame = data, ntrees = ntrees)
+  model <- h2o.xgboost(x= c("x1", "x2"), y = "response", training_frame = data, ntrees = ntrees, seed = seed)
   for (i in seq(1,ntrees)) {
     for(clazz in states){
       tree <- h2o.getModelTree(model, i,as.character(clazz))
@@ -121,17 +124,13 @@ test.tree.fetch <- function() {
   }
   
   data <- as.h2o(data)
-  model <- h2o.xgboost(x= c("x1", "x2"), y = "response", training_frame = data, ntrees = ntrees, max_depth = 0)
+  model <- h2o.xgboost(x= c("x1", "x2"), y = "response", training_frame = data, ntrees = ntrees, max_depth = 0, seed = seed)
   for (i in seq(1,ntrees)) {
     tree <- h2o.getModelTree(model, i)
     expect_false(is.null(tree))
     
   }
-  
-  
-  
-  
-  
+
 }
 
 doTest("Tree API fetch & parse test", test.tree.fetch)
