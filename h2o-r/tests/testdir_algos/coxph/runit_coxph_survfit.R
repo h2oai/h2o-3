@@ -17,9 +17,13 @@ test.CoxPH.survfit_ovarian <- function() {
   coef.hex.1 <- coef(hex.fit.1)[names(coef.r)] # reorder
   expect_equal(coef.r, coef.hex.1)
 
+  unsupported <- "logse" # logse is not yet supported
+
   surv.r <- unclass(survfit(fit, se.fit = FALSE))
   surv.r$call <- NULL
-  surv.hex.1 <- unclass(survfit(hex.fit.1))[names(surv.r)]
+  surv.r[unsupported] <- NULL
+  surv.hex.1 <- unclass(survfit(hex.fit.1))[setdiff(names(surv.r), unsupported)]
+  surv.hex.1[unsupported] <- NULL
   expect_equal(surv.r, surv.hex.1)
 }
 
