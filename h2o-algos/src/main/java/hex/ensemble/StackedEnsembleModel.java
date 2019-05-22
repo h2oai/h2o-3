@@ -371,13 +371,17 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         // !beenHere: this is the first base_model
         this.modelCategory = aModel._output.getModelCategory();
         this._dist = new Distribution(distributionFamily(aModel));
-        _output._domains = Arrays.copyOf(aModel._output._domains, aModel._output._domains.length);
-
         // TODO: set _parms._train to aModel._parms.train()
 
-        _output.setNames(aModel._output._names, aModel._output._column_types);
-        this.names = new NonBlockingHashSet<>();
-        this.names.addAll(Arrays.asList(aModel._output._names));
+//        _output._origDomains = aModel._output._origDomains == null ? null
+//                : Arrays.copyOf(aModel._output._origDomains, aModel._output._origDomains.length);
+//        _output._origNames = aModel._output._origNames == null ? null
+//                : Arrays.copyOf(aModel._output._origNames, aModel._output._origNames.length);
+
+//        _output._domains = Arrays.copyOf(aModel._output._domains, aModel._output._domains.length);
+//        _output.setNames(aModel._output._names, aModel._output._column_types);
+//        this.names = new NonBlockingHashSet<>();
+//        this.names.addAll(Arrays.asList(aModel._output._names));
 
         responseColumn = aModel._parms._response_column;
 

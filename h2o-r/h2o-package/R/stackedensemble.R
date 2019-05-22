@@ -30,8 +30,6 @@
 #'        classification problems. Must be one of: "AUTO", "Random", "Modulo", "Stratified".
 #' @param metalearner_fold_column Column with cross-validation fold index assignment per observation for cross-validation of the metalearner.
 #' @param metalearner_params Parameters for metalearner algorithm Defaults to NULL.
-#' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
-#'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
 #' @param seed Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number)
 #'        Defaults to -1 (time-based random number).
 #' @param keep_levelone_frame \code{Logical}. Keep level one frame used for metalearner training. Defaults to FALSE.
@@ -52,7 +50,6 @@ h2o.stackedEnsemble <- function(x, y, training_frame,
                                 metalearner_fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
                                 metalearner_fold_column = NULL,
                                 metalearner_params = NULL,
-                                categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                                 seed = -1,
                                 keep_levelone_frame = FALSE,
                                 export_checkpoints_dir = NULL
@@ -125,8 +122,6 @@ h2o.stackedEnsemble <- function(x, y, training_frame,
     parms$metalearner_fold_assignment <- metalearner_fold_assignment
   if (!missing(metalearner_fold_column))
     parms$metalearner_fold_column <- metalearner_fold_column
-  if (!missing(categorical_encoding))
-    parms$categorical_encoding <- categorical_encoding
   if (!missing(seed))
     parms$seed <- seed
   if (!missing(keep_levelone_frame))

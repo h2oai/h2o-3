@@ -1174,10 +1174,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     final String response = parms._response_column;
 
     // whether we need to be careful with categorical encoding - the test frame could be either in original state or in encoded state
-    final boolean checkCategoricals =
-        parms._categorical_encoding == Parameters.CategoricalEncodingScheme.OneHotExplicit ||
-        parms._categorical_encoding == Parameters.CategoricalEncodingScheme.Eigen ||
-        parms._categorical_encoding == Parameters.CategoricalEncodingScheme.Binary;
+    // keep in sync with FrameUtils.categoricalEncoder: as soon as a categorical column has been encoded, we should check here.
+    final boolean checkCategoricals = parms._categorical_encoding == Parameters.CategoricalEncodingScheme.Binary
+            || parms._categorical_encoding ==Parameters.CategoricalEncodingScheme.LabelEncoder
+            || parms._categorical_encoding == Parameters.CategoricalEncodingScheme.Eigen
+//            || parms._categorical_encoding == Parameters.CategoricalEncodingScheme.EnumLimited
+            || parms._categorical_encoding == Parameters.CategoricalEncodingScheme.OneHotExplicit
+            ;
 
     // test frame matches the user-given frame (before categorical encoding, if applicable)
     if( checkCategoricals && origNames != null ) {
@@ -1268,12 +1271,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             vec = evec;
           }
         } else if(vec.isCategorical()) {
-          if (parms._categorical_encoding == Parameters.CategoricalEncodingScheme.LabelEncoder) {
+          try {
             Vec evec = vec.toNumericVec();
             toDelete.put(evec._key, "label encoded vec");
             vec = evec;
-          } else {
-            throw new IllegalArgumentException("Test/Validation dataset has categorical column '" + names[i] + "' which is real-valued in the training data");
+          } catch(Exception e) {
+            throw new IllegalArgumentException("Test/Validation dataset has categorical column '" + names[i] + "' which is real-valued in the training data", e);
           }
         }
         good++;      // Assumed compatible; not checking e.g. Strings vs UUID
