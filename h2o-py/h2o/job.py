@@ -53,7 +53,7 @@ class H2OJob(object):
             hidden = not H2OJob.__PROGRESS_BAR__
             pb = ProgressBar(title=self._job_type + " progress", hidden=hidden)
             if verbose_model_scoring_history:
-                pb.execute(self._refresh_job_status, print_verbose_info=lambda x: self._print_verbose_info() if int(x * 10) % 5 == 0 else " ")
+                pb.execute(self._refresh_job_status, print_verbose_info=self._print_verbose_info)
             else:
                 pb.execute(self._refresh_job_status)
         except StopIteration as e:
@@ -107,7 +107,9 @@ class H2OJob(object):
         if self.status == "CANCELLED": raise StopIteration("cancelled by the server")
         return self.progress
 
-    def _print_verbose_info(self):
+    def _print_verbose_info(self, bar_progress=0):
+        if int(bar_progress * 10) % 5 > 0:
+            return
         try:
             model = h2o.get_model(self.job['dest']['name'])
             print("\nScoring History for Model " + str(model.model_id) + " at " + str(datetime.now()))

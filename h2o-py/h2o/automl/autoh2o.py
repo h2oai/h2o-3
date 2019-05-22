@@ -1,4 +1,6 @@
 # -*- encoding: utf-8 -*-
+import functools as ft
+
 import h2o
 from h2o.estimators import H2OEstimator
 from h2o.exceptions import H2OValueError
@@ -230,6 +232,7 @@ class H2OAutoML(object):
         self._leader_id = None
         self._leaderboard = None
         self._event_log = None
+        self._training_info = None
         self._state_json = None
         if sort_metric == "AUTO":
             self.sort_metric = None
@@ -282,11 +285,15 @@ class H2OAutoML(object):
     def event_log(self):
         return H2OFrame([]) if self._event_log is None else self._event_log
 
+    @property
+    def training_info(self):
+        return dict() if self._training_info is None else self._training_info
+
     #---------------------------------------------------------------------------
     # Training AutoML
     #---------------------------------------------------------------------------
     def train(self, x=None, y=None, training_frame=None, fold_column=None,
-              weights_column=None, validation_frame=None, leaderboard_frame=None, blending_frame=None):
+              weights_column=None, validation_frame=None, leaderboard_frame=None, blending_frame=None, verbosity=None):
         """
         Begins an AutoML task, a background task that automatically builds a number of models
         with various algorithms and tracks their performance in a leaderboard. At any point 
@@ -412,7 +419,14 @@ class H2OAutoML(object):
             return
 
         self._job = H2OJob(resp['job'], "AutoML")
-        self._job.poll()
+        try:
+            setattr(self, '_progress_state', {})
+            self._job._print_verbose_info = ft.partial(self._print_verbose_info, verbosity=verbosity)
+            self._job.poll(verbose_model_scoring_history=verbosity is not None)
+        finally:
+            self._job._print_verbose_info(1)
+            delattr(self, '_progress_state')
+
         self._fetch()
 
     #---------------------------------------------------------------------------
@@ -481,11 +495,35 @@ class H2OAutoML(object):
         self._leader_id = state['leader_id']
         self._leaderboard = state['leaderboard']
         self._event_log = state['event_log']
+        self._training_info = { r[0]: r[1]
+                                for r in self._event_log[self._event_log['name'] != '', ['name', 'value']]
+                                             .as_data_frame(use_pandas=False, header=False)
+                              }
         self._state_json = state['json']
         return self._leader_id is not None
 
     def _get_params(self):
         return H2OAutoML._fetch_state(self.project_name)['json']
+
+    def _print_verbose_info(self, bar_progress=0, verbosity=None):
+        levels = ['Debug', 'Info', 'Warn']
+        if verbosity is None or verbosity.capitalize() not in levels:
+            return
+
+        levels = levels[levels.index(verbosity.capitalize()):]
+        if self._job.progress > self._progress_state.get('last_job_progress', 0):
+            # print("\nbar_progress={}, job_progress={}".format(bar_progress, self._job.progress))
+            events = H2OAutoML._fetch_state(self.project_name, properties=['event_log'])['event_log']
+            events = events[events['level'].isin(levels), :]
+            last_nrows = self._progress_state.get('last_events_nrows', 0)
+            if events.nrows > last_nrows:
+                fr = events[last_nrows:, ['timestamp', 'message']].as_data_frame(use_pandas=False, header=False)
+                print('')
+                for r in fr:
+                    print("{}: {}".format(r[0], r[1]))
+                print('')
+                self._progress_state['last_events_nrows'] = events.nrows
+        self._progress_state['last_job_progress'] = self._job.progress
 
     @staticmethod
     def _fetch_table(table, key=None, progress_bar=True):
