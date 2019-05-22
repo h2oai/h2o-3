@@ -109,27 +109,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
   }
 
   /**
-   * For SE, we need to ensure that the "adapt" logic uses the actual algo parameters, i.e. the metalearner ones.
-   */
-  @Override
-  public String[] adaptTestForTrain(Frame test, boolean expensive, boolean computeMetrics) {
-    return adaptTestForTrain(
-            test,
-            _output._origNames,
-            _output._origDomains,
-            _output._names,
-            _output._domains,
-            _output._metalearner._parms,
-            expensive,
-            computeMetrics,
-            _output.interactionBuilder(),
-            getToEigenVec(),
-            _toDelete,
-            false
-    );
-  }
-
-  /**
    * For StackedEnsemble we call score on all the base_models and then combine the results
    * with the metalearner to create the final predictions frame.
    *

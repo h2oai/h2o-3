@@ -52,8 +52,8 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         self._parms = {}
         names_list = {"model_id", "training_frame", "response_column", "validation_frame", "blending_frame",
                       "base_models", "metalearner_algorithm", "metalearner_nfolds", "metalearner_fold_assignment",
-                      "metalearner_fold_column", "metalearner_params", "seed", "keep_levelone_frame",
-                      "export_checkpoints_dir"}
+                      "metalearner_fold_column", "metalearner_params", "categorical_encoding", "seed",
+                      "keep_levelone_frame", "export_checkpoints_dir"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -239,6 +239,22 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
             self._parms["metalearner_params"] = str(json.dumps(metalearner_params))
         else:
             self._parms["metalearner_params"] = None
+
+
+    @property
+    def categorical_encoding(self):
+        """
+        Encoding scheme for categorical features
+
+        One of: ``"auto"``, ``"enum"``, ``"one_hot_internal"``, ``"one_hot_explicit"``, ``"binary"``, ``"eigen"``,
+        ``"label_encoder"``, ``"sort_by_response"``, ``"enum_limited"``  (default: ``"auto"``).
+        """
+        return self._parms.get("categorical_encoding")
+
+    @categorical_encoding.setter
+    def categorical_encoding(self, categorical_encoding):
+        assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"))
+        self._parms["categorical_encoding"] = categorical_encoding
 
 
     @property
