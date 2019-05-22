@@ -108,6 +108,9 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     public Key<Frame>[] _base_model_predictions_keys; 
   }
 
+  /**
+   * For SE, we need to ensure that the "adapt" logic uses the actual algo parameters, i.e. the metalearner ones.
+   */
   @Override
   public String[] adaptTestForTrain(Frame test, boolean expensive, boolean computeMetrics) {
     return adaptTestForTrain(
