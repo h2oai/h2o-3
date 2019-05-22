@@ -8,6 +8,9 @@ import water.DKV;
 
 public class H2ODynamicS3ACredentialsProvider implements AWSCredentialsProvider {
 
+  public H2ODynamicS3ACredentialsProvider() {
+  }
+
   @Override
   public AWSCredentials getCredentials() {
     final IcedS3Credentials s3Credentials = DKV.getGet(IcedS3Credentials.S3_CREDENTIALS_DKV_KEY);
@@ -21,6 +24,10 @@ public class H2ODynamicS3ACredentialsProvider implements AWSCredentialsProvider 
 
   @Override
   public void refresh() {
+  }
 
+  @Override
+  public String toString() {
+    return getClass().getSimpleName();
   }
 }
