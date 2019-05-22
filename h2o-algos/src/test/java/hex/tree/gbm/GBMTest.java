@@ -3769,5 +3769,54 @@ public class GBMTest extends TestUtil {
       Scope.exit();
     }
   }
-  
+
+  @Test public void testGBM_labelEncoder() {
+    try {
+      Scope.enter();
+      final Frame fr = new TestFrameBuilder()
+              .withName("trainLabelEncoding")
+              .withColNames("ColA", "Response")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM)
+              .withDataForCol(0, ar("B", "B", "A", "A", "A", "B", "A"))
+              .withDataForCol(1, ard(1, 1, 0, 0, 0, 1, 0))
+              .build();
+
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._train = fr._key;
+      parms._distribution = gaussian;
+      parms._response_column = "Response";
+      parms._ntrees = 1;
+      parms._max_depth = 1;
+      parms._learn_rate = 1;
+      parms._min_rows = 1;
+      parms._nbins = 2;
+      parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.LabelEncoder;
+
+      GBM job = new GBM(parms);
+      GBMModel gbm = job.trainModel().get();
+      Scope.track_generic(gbm);
+      
+      Frame trainPreds = gbm.score(fr);
+      Scope.track(trainPreds);
+      assertVecEquals(fr.vec("Response"), trainPreds.vec(0), 1e-4);
+
+      final Frame test = new TestFrameBuilder()
+              .withName("testLabelEncoding")
+              .withColNames("ColA")
+              .withVecTypes(Vec.T_CAT)
+              .withDataForCol(0, ar("A"))
+              .build();
+
+      final Frame testPreds = gbm.score(test);
+      Scope.track(testPreds);
+
+      // correct prediction for A should be 0
+      assertEquals(1.0, testPreds.vec(0).at(0), 1e-4); // OUCH! -> this shouldn't pass
+      
+    } finally {
+      Scope.exit();
+    }
+  }
+
+
 }
