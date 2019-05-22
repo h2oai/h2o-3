@@ -209,7 +209,17 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       AUTO, Random, Modulo, Stratified
     }
     public enum CategoricalEncodingScheme {
-      AUTO(false), OneHotInternal(false), OneHotExplicit(false), Enum(false), Binary(false), Eigen(false), LabelEncoder(false), SortByResponse(true), EnumLimited(false);
+      AUTO(false),
+      OneHotInternal(false),
+      OneHotExplicit(false),
+      Enum(false),
+      Binary(false),
+      Eigen(false),
+      LabelEncoder(false),
+      SortByResponse(true),
+      EnumLimited(false)
+      ;
+
       CategoricalEncodingScheme(boolean needResponse) { _needResponse = needResponse; }
       final boolean _needResponse;
       boolean needsResponse() { return _needResponse; }
@@ -1118,7 +1128,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             _output._origDomains,
             _output._names,
             _output._domains,
-            _parms, expensive, computeMetrics, _output.interactionBuilder(), getToEigenVec(), _toDelete, false);
+            _parms, expensive,
+            computeMetrics,
+            _output.interactionBuilder(),
+            getToEigenVec(),
+            _toDelete,
+            false
+    );
   }
 
   /**
