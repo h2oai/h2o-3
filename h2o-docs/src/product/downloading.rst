@@ -5,8 +5,13 @@ This section describes how to download and install the latest stable version of 
 
 **Note**: To download the nightly bleeding edge release, go to `h2o-release.s3.amazonaws.com/h2o/master/latest.html <https://h2o-release.s3.amazonaws.com/h2o/master/latest.html>`__. Choose the type of installation you want to perform (for example, "Install in Python") by clicking on the tab. 
 
-Download and Run
+Choose your desired method of use below.  Most users will want to use H2O from `R <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/downloading.html#install-in-r>`__ or `Python <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/downloading.html#install-in-python>`__, however there are also instructions for using H2O's web GUI Flow and Hadoop below.
+
+
+Download and Run from the Command Line
 ----------------
+
+If you plan to exclusively use H2O's web GUI, `Flow <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/flow.html>`__, this is the method you should use.  If you plan to use H2O from R or Python, skip to the appropriate sections below.
 
 1. Click the ``Download H2O`` button on the `http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html <http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html>`__ page. This downloads a zip file that contains everything you need to get started.
 
@@ -19,7 +24,7 @@ Download and Run
 	cd h2o-3.22.1.2
 	java -jar h2o.jar
 
-3. Point your browser to http://localhost:54321.
+3. Point your browser to http://localhost:54321 to open up the H2O Flow web GUI.
 
 
 Install in R
@@ -60,7 +65,7 @@ Perform the following steps in R to install H2O. Copy and paste these commands o
 Installing H2O's R Package from CRAN
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can alternatively install H2O’s R package from CRAN at `https://cran.r-project.org/web/packages/h2o/ <https://cran.r-project.org/web/packages/h2o/>`__.
+Alternatively you can install H2O’s R package from `CRAN <https://cran.r-project.org/web/packages/h2o/>`__ or by typing ``install.packages("h2o")`` in R.  Sometimes there can be a delay in publishing the latest stable release to CRAN, so to guarantee you have the latest stable version, use the instructions above to install directly from the H2O website.
 
 Install in Python
 -----------------
@@ -115,6 +120,11 @@ Open a terminal window and run the following command to install H2O on the Anaco
    ::
 
      user$ conda install -c h2oai h2o=3.22.1.2
+
+or:
+   ::
+
+     user$ conda install -c h2oai h2o    
 
 **Note**: For Python 3.6 users, H2O has ``tabulate>=0.75`` as a dependency; however, there is no ``tabulate`` available in the default channels for Python 3.6. This is available in the conda-forge channel. As a result, Python 3.6 users must add the ``conda-forge`` channel in order to load the latest version of H2O. This can be done by performing the following steps:
 
