@@ -18,6 +18,7 @@ import hex.tree.drf.DRFModel.DRFParameters;
 import hex.tree.gbm.GBMModel.GBMParameters;
 import hex.tree.xgboost.XGBoostModel.XGBoostParameters;
 import water.*;
+import water.automl.api.schemas3.AutoMLV99;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -177,10 +178,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return autoML;
   }
 
-//  @Override
-//  public Class<AutoMLV99.AutoMLKeyV3> makeSchema() {
-//    return AutoMLV99.AutoMLKeyV3.class;
-//  }
+  @Override
+  public Class<AutoMLV99.AutoMLKeyV3> makeSchema() {
+    return AutoMLV99.AutoMLKeyV3.class;
+  }
 
   enum JobType {
     Unknown,
