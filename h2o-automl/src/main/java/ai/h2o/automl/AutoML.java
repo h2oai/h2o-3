@@ -121,8 +121,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   }
 
-  private static final String DISTRIBUTED_XGBOOST_ENABLED = H2O.OptArgs.SYSTEM_PROP_PREFIX + "automl.xgboost.multinode.enabled";
-
   private final static boolean verifyImmutability = true; // check that trainingFrame hasn't been messed with
   private final static SimpleDateFormat fullTimestampFormat = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss.S");
   private final static SimpleDateFormat timestampFormatForKeys = new SimpleDateFormat("yyyyMMdd_HHmmss");
@@ -309,10 +307,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       skippedAlgos.removeAll(Arrays.asList(buildSpec.build_models.include_algos));
     }
 
-    if (!ExtensionManager.getInstance().isCoreExtensionEnabled("XGBoost")
-        || (H2O.CLOUD.size() > 1 && !Boolean.parseBoolean(System.getProperty(DISTRIBUTED_XGBOOST_ENABLED, "false")))) {
-      userFeedback.warn(Stage.ModelTraining, "AutoML: XGBoost extension is not available; skipping default XGBoost");
-      skippedAlgos.add(Algo.XGBoost);
+    for (Algo algo : Algo.values()) {
+      if (!skippedAlgos.contains(algo) && !algo.enabled()) {
+        userFeedback.warn(Stage.ModelTraining, "AutoML: "+algo.name()+" is not available; skipping it.");
+        skippedAlgos.add(algo);
+      }
     }
 
     WorkAllocations workAllocations = new WorkAllocations();
