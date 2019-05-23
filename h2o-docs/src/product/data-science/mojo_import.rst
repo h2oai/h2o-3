@@ -1,10 +1,10 @@
-Generic Models
+Mojo import
 --------------
 
 Introduction
 ~~~~~~~~~~~~
 
-A Generic model provides a means to use external, pre-trained models in H2O - mainly for the purpose of scoring. Depending on each external model, metrics and other model information might be obtained as well. Currently, only selected H2O MOJOs are supported. (See the :ref:`mojo_quickstart` section for information about creating MOJOs.)
+The MOJO import functionality provides a means to use external, pre-trained models in H2O - mainly for the purpose of scoring. Depending on each external model, metrics and other model information might be obtained as well. Currently, only selected H2O MOJOs are supported. (See the :ref:`mojo_quickstart` section for information about creating MOJOs.)
 
 Supported MOJOs
 ~~~~~~~~~~~~~~~
@@ -16,10 +16,10 @@ Only a subset of H2O MOJO models is supported in this version.
 -  IRF (Isolation Random Forest)
 -  GLM (Generalized Linear Model)
 
-Importing a Generic Model
+Importing a MOJO
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Importing a Generic model is available from Python, R, and Flow. As the model is generic, there are no hyperparameters and there is no real training phase for Generic models. H2O imports the model and embraces it for the purpose of scoring. Information output about the model may be limited.
+Importing a MOJO is available from Python, R, and Flow. H2O imports the model and embraces it for the purpose of scoring. Information output about the model may be limited.
 
 Importing in R or Python
 ''''''''''''''''''''''''
@@ -33,10 +33,10 @@ Importing in R or Python
 
     path <- "/path/to/model/directory"
     mojo_destination <- h2o.download_mojo(model = original_model, path = path)
-    generic_model <- h2o.genericModel(mojo_destination)
+    imported_model <- h2o.import_mojo(mojo_destination)
 
     new_observations <- h2o.importFile(path = 'new_observations.csv')
-    h2o.predict(generic_model, new_observations)
+    h2o.predict(imported_model, new_observations)
 
    .. code-block:: python
 
@@ -47,23 +47,23 @@ Importing in R or Python
     path = '/path/to/model/directory/model.zip'
     original_model.download_mojo(path)
 
-    generic_model = H2OGenericEstimator.from_file(path)
+    imported_model = h2o.import_mojo(path)
     new_observations = h2o.import_file(path='new_observations.csv')
-    predictions = generic_model.predict(new_observations)
+    predictions = imported_model.predict(new_observations)
 
-Retrieving a Generic Model in Flow
+Importing a MOJO Model in Flow
 ''''''''''''''''''''''''''''''''''
 
-To retrieve a Generic model in Flow:
+To import a MOJO model in Flow:
 
-1. Import or upload the Generic model (most likely a MOJO). To do this, click on **Data** in the top menu and select either **Import Files** or **Upload File**.
-2. Retrieve the Generic model by clicking **Models** in the top menu and selecting **Generic**.
+1. Import or upload the MOJO as a Generic model into H2O. To do this, click on **Data** in the top menu and select either **Import Files** or **Upload File**.
+2. Retrieve the imported MOJO by clicking **Models** in the top menu and selecting **Generic Model**.
 
 Advanced Generic Model Initialization
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-It is also possible to construct a Generic model from already uploaded MOJO bytes. In this case, there is no need to import the MOJO
-every time a Generic model is created.
+It is also possible to import a MOJO from already uploaded MOJO bytes using Generic model. Generic model is the underlying mechanism behind MOJO import. In this case, there is no need to re-upload the MOJO every 
+time a new MOJO imported model is created. The upload may occur only once.
 
 .. example-code::
    .. code-block:: r
