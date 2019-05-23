@@ -165,32 +165,22 @@ public class XGBoostUtils {
     /**
      * convert a set of H2O chunks (representing a part of a vector) to a sparse DMatrix
      * @param response name of the response column
-     * @param weight name of the weight column
-     * @param fold name of the fold assignment column
      * @return DMatrix
      * @throws XGBoostError
      */
     public static DMatrix convertChunksToDMatrix(DataInfo di,
                                                  Chunk[] chunks,
                                                  int response,
-                                                 int weight,
-                                                 int fold,
                                                  boolean sparse) throws XGBoostError {
         int nRows = chunks[0]._len;
-
         DMatrix trainMat;
-
         float[] resp = malloc4f(nRows);
-        float[] weights = null;
-        if(-1 != weight) {
-            weights = malloc4f(nRows);
-        }
         try {
             if (sparse) {
                 Log.debug("Treating matrix as sparse.");
-                trainMat = csr(chunks, weight, response, di, resp, weights);
+                trainMat = csr(chunks, -1, response, di, resp, null);
             } else {
-                trainMat = dense(chunks, weight, di, response, resp, weights);
+                trainMat = dense(chunks, di, response, resp, null);
             }
         } catch (NegativeArraySizeException e) {
             throw new IllegalArgumentException(technote(11,
@@ -200,11 +190,6 @@ public class XGBoostUtils {
         int len = (int) trainMat.rowNum();
         resp = Arrays.copyOf(resp, len);
         trainMat.setLabel(resp);
-        if (weight!=-1){
-            weights = Arrays.copyOf(weights, len);
-            trainMat.setWeight(weights);
-        }
-//    trainMat.setGroup(null); //fold //FIXME - only needed if CV is internally done in XGBoost
         return trainMat;
     }
 
@@ -212,12 +197,12 @@ public class XGBoostUtils {
      ************************************** DMatrix creation for dense matrices *************************************
      ****************************************************************************************************************/
 
-    private static DMatrix dense(Chunk[] chunks, int weight, DataInfo di, int respIdx, float[] resp, float[] weights) throws XGBoostError {
+    private static DMatrix dense(Chunk[] chunks, DataInfo di, int respIdx, float[] resp, float[] weights) throws XGBoostError {
         Log.debug("Treating matrix as dense.");
         BigDenseMatrix data = null;
         try {
             data = allocateDenseMatrix(chunks[0].len(), di);
-            long actualRows = denseChunk(data, chunks, weight, respIdx, di, resp, weights);
+            long actualRows = denseChunk(data, chunks, respIdx, di, resp, weights);
             assert actualRows == data.nrow;
             return new DMatrix(data, Float.NaN);
         } finally {
@@ -306,17 +291,16 @@ public class XGBoostUtils {
 
     }
 
-    private static long denseChunk(BigDenseMatrix data, Chunk[] chunks, int weight, int respIdx, DataInfo di, float[] resp, float[] weights) {
+    private static long denseChunk(BigDenseMatrix data, Chunk[] chunks, int respIdx, DataInfo di, float[] resp, float[] weights) {
         long idx = 0;
         long actualRows = 0;
         int rwRow = 0;
         for (int i = 0; i < chunks[0]._len; i++) {
-            if (weight != -1 && chunks[weight].atd(i) == 0) continue;
 
             idx = writeDenseRow(di, chunks, i, data, idx);
             actualRows++;
 
-            rwRow = setResponseAndWeight(chunks, respIdx, weight, resp, weights, rwRow, i);
+            rwRow = setResponseAndWeight(chunks, respIdx, -1, resp, weights, rwRow, i);
         }
         assert (long) data.nrow * data.ncol == idx;
         return actualRows;
@@ -347,7 +331,6 @@ public class XGBoostUtils {
     private static DMatrix csr(Frame f, int[] chunksIds, Vec weightsVec, Vec responseVec, // for setupLocal
                                DataInfo di, float[] resp, float[] weights)
         throws XGBoostError {
-
 
         SparseMatrixDimensions sparseMatrixDimensions = calculateCSRMatrixDimensions(f, chunksIds, weightsVec, di);
         SparseMatrix sparseMatrix = allocateCSRMatrix(sparseMatrixDimensions);

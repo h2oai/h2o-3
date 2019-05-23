@@ -29,9 +29,7 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
   private OneHotEncoderFactory _1hotFactory;
 
   static {
-    ObjFunction.register("reg:gamma", new RegObjFunction());
-    ObjFunction.register("reg:tweedie", new RegObjFunction());
-    ObjFunction.register("count:poisson", new RegObjFunction());
+    XGBoostJavaObjFunRegistration.register();
   }
 
   public XGBoostJavaMojoModel(byte[] boosterBytes, String[] columns, String[][] domains, String responseColumn) {
@@ -112,22 +110,6 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
   public SharedTreeGraph convert(final int treeNumber, final String treeClass) {
     GradBooster booster = _predictor.getBooster();
     return _computeGraph(booster, treeNumber);
-  }
-
-  private static class RegObjFunction extends ObjFunction {
-    @Override
-    public float[] predTransform(float[] preds) {
-      if (preds.length != 1)
-        throw new IllegalStateException("Regression problem is supposed to have just a single predicted value, got " +
-                preds.length + " instead.");
-      preds[0] = (float) Math.exp(preds[0]);
-      return preds;
-    }
-
-    @Override
-    public float predTransform(float pred) {
-      return (float) Math.exp(pred);
-    }
   }
 
   private class OneHotEncoderFactory {
