@@ -6,10 +6,7 @@ import hex.genmodel.tools.PrintMojo;
 import hex.genmodel.utils.GenmodelBitSet;
 
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Node in a tree.
@@ -288,21 +285,23 @@ public class SharedTreeNode implements INode<double[]>, INodeStat {
     return s.replace("\"", "\\\"");
   }
 
-  private void printDotNode(PrintStream os, boolean detail, PrintMojo.PrintTreeOptions treeOptions) {
+  private void printDotNode(PrintStream os, boolean detail, PrintMojo.PrintTreeOptions treeOptions,
+                            final Map<String, String[]> domainMap) {
     os.print("\"" + getDotName() + "\"");
     os.print(" [");
+    final String[] domain = domainMap.get(colName);
 
     if (leftChild==null && rightChild==null) {
       os.print("fontsize="+treeOptions._fontSize+", label=\"");
       float predv = treeOptions._setDecimalPlace?treeOptions.roundNPlace(predValue):predValue;
       os.print(predv);
-    }
-    else if (isBitset()) {
+    } else if (isBitset() || domain != null) {
       os.print("shape=box, fontsize="+treeOptions._fontSize+", label=\"");
       os.print(escapeQuotes(colName));
     }
     else {
       assert(! Float.isNaN(splitValue));
+
       float splitV = treeOptions._setDecimalPlace?treeOptions.roundNPlace(splitValue):splitValue;
       os.print("shape=box, fontsize="+treeOptions._fontSize+", label=\"");
       os.print(escapeQuotes(colName) + " < " + splitV);
@@ -341,25 +340,25 @@ public class SharedTreeNode implements INode<double[]>, INodeStat {
    * @param levelToPrint level number
    * @param detail include additional node detail information
    */
-  void printDotNodesAtLevel(PrintStream os, int levelToPrint, boolean detail, PrintMojo.PrintTreeOptions treeOptions) {
+  void printDotNodesAtLevel(PrintStream os, int levelToPrint, boolean detail, PrintMojo.PrintTreeOptions treeOptions, final Map<String, String[]> domainMap) {
     if (getDepth() == levelToPrint) {
-      printDotNode(os, detail, treeOptions);
+      printDotNode(os, detail, treeOptions, domainMap);
       return;
     }
 
     assert (getDepth() < levelToPrint);
 
     if (leftChild != null) {
-      leftChild.printDotNodesAtLevel(os, levelToPrint, detail, treeOptions);
+      leftChild.printDotNodesAtLevel(os, levelToPrint, detail, treeOptions, domainMap);
     }
     if (rightChild != null) {
-      rightChild.printDotNodesAtLevel(os, levelToPrint, detail, treeOptions);
+      rightChild.printDotNodesAtLevel(os, levelToPrint, detail, treeOptions, domainMap);
     }
   }
 
   private void printDotEdgesCommon(PrintStream os, int maxLevelsToPrintPerEdge, ArrayList<String> arr,
                                    SharedTreeNode child, float totalWeight, boolean detail,
-                                   PrintMojo.PrintTreeOptions treeOptions) {
+                                   PrintMojo.PrintTreeOptions treeOptions, final String[] domain, final boolean left) {
     if (isBitset()) {
       BitSet childInclusiveLevels = child.getInclusiveLevels();
       int total = childInclusiveLevels.cardinality();
@@ -367,9 +366,21 @@ public class SharedTreeNode implements INode<double[]>, INodeStat {
         for (int i = childInclusiveLevels.nextSetBit(0); i >= 0; i = childInclusiveLevels.nextSetBit(i+1)) {
           arr.add(domainValues[i]);
         }
-      }
-      else {
+      } else {
         arr.add(total + " levels");
+      }
+    } else if (domain != null) {
+      // The categorical split might be represented as a numerical split 
+      assert !Double.isNaN(splitValue);
+      final int split = (int) Math.ceil(splitValue);
+      if (left) {
+        for (int i = 0; i < split; i++) {
+          arr.add(domain[i]);
+        }
+      } else {
+        for (int i = split; i < domain.length; i++) {
+          arr.add(domain[i]);
+        }
       }
     }
 
@@ -399,13 +410,15 @@ public class SharedTreeNode implements INode<double[]>, INodeStat {
    * @param maxLevelsToPrintPerEdge Limit the number of individual categorical level names printed per edge
    * @param totalWeight total weight of all observations (used to determine edge thickness)
    * @param detail include additional edge detail information
+   * @param domainMap
    */
   void printDotEdges(PrintStream os, int maxLevelsToPrintPerEdge, float totalWeight, boolean detail,
-                     PrintMojo.PrintTreeOptions treeOptions) {
+                     PrintMojo.PrintTreeOptions treeOptions, Map<String, String[]> domainMap) {
     assert (leftChild == null) == (rightChild == null);
 
     if (leftChild != null) {
       os.print("\"" + getDotName() + "\"" + " -> " + "\"" + leftChild.getDotName() + "\"" + " [");
+      final String[] domain = domainMap.get(colName);
 
       ArrayList<String> arr = new ArrayList<>();
       if (leftChild.getInclusiveNa()) {
@@ -416,16 +429,17 @@ public class SharedTreeNode implements INode<double[]>, INodeStat {
         arr.add("[Not NA]");
       }
       else {
-        if (! isBitset()) {
+        if (!isBitset() && domain == null) {
           arr.add("<");
         }
       }
 
-      printDotEdgesCommon(os, maxLevelsToPrintPerEdge, arr, leftChild, totalWeight, detail, treeOptions);
+      printDotEdgesCommon(os, maxLevelsToPrintPerEdge, arr, leftChild, totalWeight, detail, treeOptions, domain, true);
     }
 
     if (rightChild != null) {
       os.print("\"" + getDotName() + "\"" + " -> " + "\"" + rightChild.getDotName() + "\"" + " [");
+      final String[] domain = domainMap.get(colName);
 
       ArrayList<String> arr = new ArrayList<>();
       if (rightChild.getInclusiveNa()) {
@@ -433,12 +447,12 @@ public class SharedTreeNode implements INode<double[]>, INodeStat {
       }
 
       if (! naVsRest) {
-        if (! isBitset()) {
+        if (!isBitset() && domain == null) {
           arr.add(">=");
         }
       }
 
-      printDotEdgesCommon(os, maxLevelsToPrintPerEdge, arr, rightChild, totalWeight, detail, treeOptions);
+      printDotEdgesCommon(os, maxLevelsToPrintPerEdge, arr, rightChild, totalWeight, detail, treeOptions, domain, false);
     }
   }
 

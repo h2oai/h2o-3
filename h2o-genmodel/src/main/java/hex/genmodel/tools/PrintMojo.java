@@ -9,6 +9,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Print dot (graphviz) representation of one or more trees in a DRF or GBM model.
@@ -192,15 +194,37 @@ public class PrintMojo {
     if(genModel instanceof SharedTreeGraphConverter){
       SharedTreeGraphConverter treeBackedModel = (SharedTreeGraphConverter) genModel;
       final SharedTreeGraph g = treeBackedModel.convert(treeToPrint, null);
+      final Map<String, String[]> domainMap = constructDomainMap(genModel); // The categorical split might be represented as a numerical split
       if (printRaw) {
         g.print();
       }
-      g.printDot(os, maxLevelsToPrintPerEdge, detail, optionalTitle, pTreeOptions);
+      g.printDot(os, maxLevelsToPrintPerEdge, detail, optionalTitle, pTreeOptions, domainMap);
     }
     else {
       System.out.println("ERROR: Unknown MOJO type");
       System.exit(1);
     }
+  }
+
+  /**
+   * Construct map with names of categorical columns in the {@link GenModel} as keys and
+   * the domains as linked values.
+   *
+   * @param genModel An instance of {@link GenModel} to construct a domain map for
+   * @return An instance of {@link Map} with column name -> domain pairs. Possibly empty.
+   */
+  private static final Map<String, String[]> constructDomainMap(final GenModel genModel) {
+    final Map<String, String[]> domainMap = new HashMap<>();
+
+    for (int i = 0; i < genModel._domains.length; i++) {
+      final String[] domain = genModel._domains[i];
+      if (domain == null) continue; // Non-categorical columns have no domain, skip
+
+      // Index in the domains array corresponds to column name index
+      domainMap.put(genModel._names[i], domain);
+    }
+
+    return domainMap;
   }
 
   public class PrintTreeOptions {

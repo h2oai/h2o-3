@@ -4,6 +4,7 @@ import hex.genmodel.tools.PrintMojo;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -129,8 +130,9 @@ public class SharedTreeSubgraph {
     rootNode.printEdges();
   }
 
-  void printDot(PrintStream os, int maxLevelsToPrintPerEdge, boolean detail, String optionalTitle, PrintMojo.PrintTreeOptions treeOptions) {
-    os.println("");
+  void printDot(PrintStream os, int maxLevelsToPrintPerEdge, boolean detail, String optionalTitle, PrintMojo.PrintTreeOptions treeOptions,
+                final Map<String, String[]> domainMap) {
+    os.println();
     os.println("subgraph " + "cluster_" + subgraphNumber + " {");
     os.println("/* Nodes */");
 
@@ -145,14 +147,14 @@ public class SharedTreeSubgraph {
       os.println("");
       os.println("/* Level " + level + " */");
       os.println("{");
-      rootNode.printDotNodesAtLevel(os, level, detail, treeOptions);
+      rootNode.printDotNodesAtLevel(os, level, detail, treeOptions, domainMap);
       os.println("}");
     }
 
     os.println("");
     os.println("/* Edges */");
     for (SharedTreeNode n : nodesArray) {
-      n.printDotEdges(os, maxLevelsToPrintPerEdge, rootNode.getWeight(), detail, treeOptions);
+      n.printDotEdges(os, maxLevelsToPrintPerEdge, rootNode.getWeight(), detail, treeOptions, domainMap);
     }
     os.println("");
     os.println("fontsize="+40); // fix title label to be 40pts

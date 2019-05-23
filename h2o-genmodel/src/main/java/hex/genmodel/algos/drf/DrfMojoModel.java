@@ -9,7 +9,7 @@ import hex.genmodel.algos.tree.SharedTreeGraphConverter;
 /**
  * "Distributed Random Forest" MojoModel
  */
-public final class DrfMojoModel extends SharedTreeMojoModel implements SharedTreeGraphConverter {
+public final class DrfMojoModel extends SharedTreeMojoModel {
     protected boolean _binomial_double_trees;
 
 

@@ -14,7 +14,7 @@ import static hex.genmodel.utils.DistributionFamily.*;
 /**
  * "Gradient Boosting Machine" MojoModel
  */
-public final class GbmMojoModel extends SharedTreeMojoModel implements SharedTreeGraphConverter, PredictContributionsFactory {
+public final class GbmMojoModel extends SharedTreeMojoModel implements PredictContributionsFactory {
     public DistributionFamily _family;
     public double _init_f;
 
