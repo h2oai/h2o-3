@@ -1,17 +1,7 @@
 package hex.tree.gbm;
 
 import hex.genmodel.utils.DistributionFamily;
-import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Fork;
-import org.openjdk.jmh.annotations.Measurement;
-import org.openjdk.jmh.annotations.Mode;
-import org.openjdk.jmh.annotations.OutputTimeUnit;
-import org.openjdk.jmh.annotations.Param;
-import org.openjdk.jmh.annotations.Scope;
-import org.openjdk.jmh.annotations.Setup;
-import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.Warmup;
+import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.profile.StackProfiler;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
@@ -23,39 +13,45 @@ import water.fvec.Frame;
 import java.util.concurrent.TimeUnit;
 
 import static water.TestUtil.parse_test_file;
+import static water.TestUtil.stall_till_cloudsize;
 
 @State(Scope.Thread)
 @Fork(value = 1, jvmArgsAppend = "-Xmx12g")
-@Warmup(iterations = 5)
-@Measurement(iterations = 10)
+@Warmup(iterations = 1)
+@Measurement(iterations = 1)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 public class GbmDistributionBench {
     
+    private GBMModel.GBMParameters params;
+    private Frame fr;
     private GBM job;
+    
     @Param({"gaussian", "poisson", "laplace", "poisson"})
     private DistributionFamily distribution;
+    
 
     @Setup
     public void setup() {
-        Frame fr = parse_test_file(Key.make("gdata"), "smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
-        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
-        parms._train = fr._key;
-        parms._distribution = distribution;
-        parms._response_column = "age";
-        parms._ntrees = 5;
-        parms._max_depth = 4;
-        parms._min_rows = 1;
-        parms._nbins = 50;
-        parms._learn_rate = .2f;
-        parms._score_each_iteration = true;
-        parms._seed = 42;
-        job = new GBM(parms);
+        water.util.Log.setLogLevel("ERR");
+        stall_till_cloudsize(1);
+        fr = parse_test_file(Key.make("gdata"), "smalldata/logreg/prostate_train.csv");
+        params = new GBMModel.GBMParameters();
+        params._train = fr._key;
+        params._distribution = distribution;
+        params._response_column = "CAPSULE";
+        params._ntrees = 5;
+        params._max_depth = 3;
+        params._nbins = 50;
+        params._learn_rate = .2f;
+        params._score_each_iteration = true;
+        params._seed = 42;
     }
     
     @Benchmark
     public void trainGbmModel(){
-        GBMModel gbm = job.trainModel().get();
+        job = new GBM(params);
+        job.trainModel().get();
     }
 
     public static void main(String[] args) throws RunnerException {
@@ -64,5 +60,10 @@ public class GbmDistributionBench {
                 .addProfiler(StackProfiler.class)
                 .build();
         new Runner(opt).run();
+    }
+
+    @TearDown(Level.Invocation)
+    public void tearDown() {
+        job = null;
     }
 }
