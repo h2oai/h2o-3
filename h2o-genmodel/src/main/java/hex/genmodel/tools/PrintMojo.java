@@ -24,6 +24,7 @@ public class PrintMojo {
   private static String outputFileName = null;
   private static String optionalTitle = null;
   private static PrintTreeOptions pTreeOptions;
+  private static boolean internal;
 
   public static void main(String[] args) {
     // Parse command line arguments
@@ -69,6 +70,10 @@ public class PrintMojo {
     System.out.println("    --decimalplaces | -d    Set decimal places of all numerical values.");
     System.out.println("");
     System.out.println("    --fontsize | -f    Set font sizes of strings.");
+    System.out.println("");
+    System.out.println("    --raw    Print raw graph representation to standard output.");
+    System.out.println("");
+    System.out.println("    --internal    Internal H2O representation of the graph (splits etc.) is used for generating the GRAPHVIZ format.");
     System.out.println("");
     System.out.println("");
     System.out.println("Example:");
@@ -153,6 +158,9 @@ public class PrintMojo {
           case "--raw":
             printRaw = true;
             break;
+          case "--internal":
+            internal = true;
+            break;
 
           case "-o":
           case "--output":
@@ -215,6 +223,7 @@ public class PrintMojo {
    */
   private static final Map<String, String[]> constructDomainMap(final GenModel genModel) {
     final Map<String, String[]> domainMap = new HashMap<>();
+    if(internal) return domainMap;
 
     for (int i = 0; i < genModel._domains.length; i++) {
       final String[] domain = genModel._domains[i];

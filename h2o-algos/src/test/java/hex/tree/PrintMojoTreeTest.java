@@ -119,6 +119,56 @@ public class PrintMojoTreeTest {
     }
   }
 
+  /**
+   * Tests if internal split representation is present in the graph. Labels contain real numbers as split and
+   * edge labels contain lesser than/equals/greater than signs.
+   */
+  @Test
+  public void testMojoCategoricalPrint_internalRepresentationOutput() throws IOException {
+    try {
+      Scope.enter();
+      Frame train = Scope.track(TestUtil.parse_test_file("smalldata/iris/iris.csv"));
+
+      IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
+      p._train = train._key;
+      p._ignored_columns = new String[]{"C1", "C2", "C3", "C4"};
+      p._seed = 0xFEED;
+      p._ntrees = 1;
+
+      IsolationForestModel model = new IsolationForest(p).trainModel().get();
+      final File modelFile = folder.newFile();
+      model.exportMojo(modelFile.getAbsolutePath(), true);
+
+      final File treeOutput = folder.newFile();
+      try {
+        PrintMojo.main(new String[]{"--input", modelFile.getAbsolutePath(), "--output", treeOutput.getAbsolutePath(), "--internal"});
+        fail("Expected PrintMojo to call System.exit()");
+      } catch (PreventedExitException e) {
+      }
+
+      final String treeDotz = FileUtils.readFileToString(treeOutput);
+      assertFalse(treeDotz.isEmpty());
+
+      final Pattern labelPattern = Pattern.compile("label{1}=\\\"(.*?)\\\"");
+      final Pattern labelContentPattern = Pattern.compile(".*[<>=].*"); // Contains < or > or =
+      final Matcher matcher = labelPattern.matcher(treeDotz);
+
+      assertEquals(1, matcher.groupCount());
+      
+      int matches = 0;
+      while (matcher.find()){
+        if(labelContentPattern.matcher(matcher.group(1)).matches()){
+          matches++; // Find labels with '<>=' inside. In non-internal representation, there should be none in a graph with purely categorical splits
+        }
+      }
+      
+      assertTrue(matches > 0);
+
+    } finally {
+      Scope.exit();
+    }
+  }
+
   protected static class PreventedExitException extends SecurityException {
     public final int status;
 
