@@ -104,6 +104,36 @@ h2o.target_encode_transform <- function(frame, x, y, target_encode_map, holdout_
         stop(paste0("`holdout_type` must be one of the following: kfold, loo, none but got "
         , holdout_type))
     }
+    if (holdout_type %in% c("kfold")){
+        if(missing(fold_column)) {
+            stop("If `holdout_type` is set to `kfold` then it is required to provide `fold_column` parameter")
+        }
+        
+        #Checking that encoding map was created with specified fold column
+        frameKeys <- attr(target_encode_map, "frames")
+        emFrameKeys <- lapply(frameKeys, function(x) x$key$name )
+        encodingMapFrame <- h2o.getFrame(emFrameKeys[[1]])
+        if(!fold_column %in% colnames(encodingMapFrame)) {
+            stop("Encoding map was created without `fold_column` being specified.")
+        }
+    }
+    if (holdout_type %in% c("none") && noise != 0){
+        warning("`none` strategy is being applied to the data that were not used for encoding map creation. Consider not to add `noise`.")
+    }
+    
+    # Handling blending parameters
+    if (blended_avg){
+        if(missing(inflection_point) || missing(smoothing)) {
+            stop("`If `blended_avg` is enabled (default behavior) then hyperparameters `inflection_point` and `smoothing` should be provided.")
+        }
+        if(!inflection_point > 0){
+            stop("`inflection_point` shoud be greater than 0")
+        }
+        if(!smoothing > 0){
+            stop("`smoothing` shoud be greater than 0")
+        }
+    }
+
 
     mapKeys <- attr(target_encode_map, "map_keys")
     emKeys <- mapKeys$string
