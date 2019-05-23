@@ -1,7 +1,5 @@
 package water.api;
 
-import water.persist.PersistS3Handler;
-
 /**
  *
  */
@@ -466,9 +464,6 @@ public class RegisterV3Api extends AbstractRegister {
     context.registerEndpoint("list_rest_capabilities",
             "GET /3/Capabilities/API", CapabilitiesHandler.class, "listRest",
             "List of all registered Rest API capabilities");
-
-    context.registerEndpoint("set_s3_credentials", "POST /3/PersistS3", PersistS3Handler.class,
-            "setS3Credentials", "Set Amazon S3 credentials (Secret Key ID, Secret Access Key)");
   }
 
   @Override

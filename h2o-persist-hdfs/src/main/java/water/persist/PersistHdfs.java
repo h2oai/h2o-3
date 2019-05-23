@@ -16,7 +16,11 @@ import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import water.*;
+import water.Futures;
+import water.H2O;
+import water.Key;
+import water.MemoryManager;
+import water.Value;
 import water.api.HDFSIOException;
 import water.fvec.HDFSFileVec;
 import water.util.FileUtils;
@@ -74,9 +78,6 @@ public final class PersistHdfs extends Persist {
       } else {
         Log.debug("Cannot find HADOOP_CONF_DIR or YARN_CONF_DIR - default HDFS properties are NOT loaded!");
       }
-    }
-    if (conf.get("fs.s3a.aws.credentials.provider") == null) {
-      conf.set("fs.s3a.aws.credentials.provider", "water.persist.H2ODynamicS3ACredentialsProvider,org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider,org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider,com.amazonaws.auth.EnvironmentVariableCredentialsProvider,com.amazonaws.auth.InstanceProfileCredentialsProvider,org.apache.hadoop.fs.s3a.AnonymousAWSCredentialsProvider");
     }
     CONF = conf;
   }
