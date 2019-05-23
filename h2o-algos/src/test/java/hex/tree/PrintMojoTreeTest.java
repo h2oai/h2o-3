@@ -82,6 +82,43 @@ public class PrintMojoTreeTest {
     }
   }
 
+  @Test
+  public void testMojoCategoricalPrint_limitedLevels() throws IOException {
+    try {
+      Scope.enter();
+      Frame train = Scope.track(TestUtil.parse_test_file("smalldata/iris/iris.csv"));
+
+      IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
+      p._train = train._key;
+      p._ignored_columns = new String[]{"C1", "C2", "C3", "C4"};
+      p._seed = 0xFEED;
+      p._ntrees = 1;
+
+      IsolationForestModel model = new IsolationForest(p).trainModel().get();
+      final File modelFile = folder.newFile();
+      model.exportMojo(modelFile.getAbsolutePath(), true);
+
+      final File treeOutput = folder.newFile();
+      try {
+        PrintMojo.main(new String[]{"--input", modelFile.getAbsolutePath(), "--output", treeOutput.getAbsolutePath(), "--levels", "1"});
+        fail("Expected PrintMojo to call System.exit()");
+      } catch (PreventedExitException e) {
+      }
+
+      final String treeDotz = FileUtils.readFileToString(treeOutput);
+      assertFalse(treeDotz.isEmpty());
+
+      assertTrue(treeDotz.contains("/* Edges */\n" +
+              "\"SG_0_Node_0\" -> \"SG_0_Node_1\" [fontsize=14, label=\"[NA]\\n2 levels\\n\"]\n" +
+              "\"SG_0_Node_0\" -> \"SG_0_Node_4\" [fontsize=14, label=\"Iris-virginica\\n\"]\n" +
+              "\"SG_0_Node_1\" -> \"SG_0_Node_5\" [fontsize=14, label=\"2 levels\\n\"]\n" +
+              "\"SG_0_Node_1\" -> \"SG_0_Node_6\" [fontsize=14, label=\"[NA]\\nIris-setosa\\n\"]"));
+
+    } finally {
+      Scope.exit();
+    }
+  }
+
   protected static class PreventedExitException extends SecurityException {
     public final int status;
 

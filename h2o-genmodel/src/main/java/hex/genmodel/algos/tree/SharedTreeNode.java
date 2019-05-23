@@ -374,12 +374,21 @@ public class SharedTreeNode implements INode<double[]>, INodeStat {
       assert !Double.isNaN(splitValue);
       final int split = (int) Math.ceil(splitValue);
       if (left) {
-        for (int i = 0; i < split; i++) {
-          arr.add(domain[i]);
+        if (split <= maxLevelsToPrintPerEdge) { // split point as a distance from zero represent number of levels included
+          for (int i = 0; i < split; i++) {
+            arr.add(domain[i]);
+          }
+        } else {
+          arr.add(split + " levels");
         }
       } else {
-        for (int i = split; i < domain.length; i++) {
-          arr.add(domain[i]);
+        final int distance = domain.length - split;
+        if (distance <= maxLevelsToPrintPerEdge) {
+          for (int i = split; i < domain.length; i++) {
+            arr.add(domain[i]);
+          }
+        } else {
+          arr.add(distance + " levels");
         }
       }
     }
