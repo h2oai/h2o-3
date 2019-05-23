@@ -1178,7 +1178,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     final boolean checkCategoricals = parms._categorical_encoding == Parameters.CategoricalEncodingScheme.Binary
             || parms._categorical_encoding ==Parameters.CategoricalEncodingScheme.LabelEncoder
             || parms._categorical_encoding == Parameters.CategoricalEncodingScheme.Eigen
-//            || parms._categorical_encoding == Parameters.CategoricalEncodingScheme.EnumLimited
+            || parms._categorical_encoding == Parameters.CategoricalEncodingScheme.EnumLimited
             || parms._categorical_encoding == Parameters.CategoricalEncodingScheme.OneHotExplicit
             ;
 
@@ -1254,7 +1254,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         if( domains[i] != null ) { // Model expects an categorical
           if (vec.isString())
             vec = VecUtils.stringToCategorical(vec); //turn a String column into a categorical column (we don't delete the original vec here)
-          if( expensive && vec.domain() != domains[i] && !Arrays.equals(vec.domain(),domains[i]) ) { // Result needs to be the same categorical
+          if( expensive && !Arrays.equals(vec.domain(),domains[i]) ) { // Result needs to be the same categorical
             Vec evec;
             try {
               evec = vec.adaptTo(domains[i]); // Convert to categorical or throw IAE
@@ -1271,13 +1271,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             vec = evec;
           }
         } else if(vec.isCategorical()) {
-          try {
-            Vec evec = vec.toNumericVec();
-            toDelete.put(evec._key, "label encoded vec");
-            vec = evec;
-          } catch(Exception e) {
-            throw new IllegalArgumentException("Test/Validation dataset has categorical column '" + names[i] + "' which is real-valued in the training data", e);
-          }
+          throw new IllegalArgumentException("Test/Validation dataset has categorical column '" + names[i] + "' which is real-valued in the training data");
         }
         good++;      // Assumed compatible; not checking e.g. Strings vs UUID
       }
