@@ -1,6 +1,7 @@
 package water.persist;
 
 import water.api.AbstractRegister;
+import water.api.AlgoAbstractRegister;
 import water.api.RestApiContext;
 
 public class RegisterRestApi extends AbstractRegister {
