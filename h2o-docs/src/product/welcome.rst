@@ -883,3 +883,13 @@ After obtaining the IP address, point your browser to the specified ip address a
     # Initialize H2O 
     import h2o
     docker_h2o = h2o.init(ip = "192.168.59.103", port = 54321) 
+
+Hadoop and AWS
+~~~~~~~~~~~
+
+AWS access credentials configuration is provided to H2O by the Hadoop environment itself. There are various Hadoop distributions and each distribution
+supports different means/providers to configure access to AWS. It is considered best practice to follow you Hadoop provider's guide.
+
+
+Since Apache Hadoop 2.8, accessing multiple buckets with distinct credentials by means of the S3A protocol is possible. Please refer to the `Hadoop documentation <https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html>`__ 
+for more information. Users of derived distributions are advised to follow the respective documentation of their distribution and the specific version they use.
