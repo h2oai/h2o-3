@@ -1175,35 +1175,26 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     // whether we need to be careful with categorical encoding - the test frame could be either in original state or in encoded state
     // keep in sync with FrameUtils.categoricalEncoder: as soon as a categorical column has been encoded, we should check here.
-    final boolean checkCategoricals = Arrays.asList(
-            Parameters.CategoricalEncodingScheme.Binary,
-            Parameters.CategoricalEncodingScheme.LabelEncoder,
-            Parameters.CategoricalEncodingScheme.Eigen,
-            Parameters.CategoricalEncodingScheme.EnumLimited,
-            Parameters.CategoricalEncodingScheme.OneHotExplicit
-    ).indexOf(parms._categorical_encoding) >= 0;
-
-    final boolean multiColumnsEncoding = Arrays.asList(
-            Parameters.CategoricalEncodingScheme.Binary,
-            Parameters.CategoricalEncodingScheme.OneHotExplicit
-    ).indexOf(parms._categorical_encoding) >= 0;
+    final boolean checkCategoricals = parms._categorical_encoding == Parameters.CategoricalEncodingScheme.Binary
+            || parms._categorical_encoding ==Parameters.CategoricalEncodingScheme.LabelEncoder
+            || parms._categorical_encoding == Parameters.CategoricalEncodingScheme.Eigen
+            || parms._categorical_encoding == Parameters.CategoricalEncodingScheme.EnumLimited
+            || parms._categorical_encoding == Parameters.CategoricalEncodingScheme.OneHotExplicit
+            ;
 
     // test frame matches the user-given frame (before categorical encoding, if applicable)
     if( checkCategoricals && origNames != null ) {
       boolean match = Arrays.equals(origNames, test.names());
       if (!match) {
+        match = true;
         // In case the test set has extra columns not in the training set - check that all original pre-encoding columns are available in the test set
         // We could be lenient here and fill missing columns with NA, but then it gets difficult to decide whether this frame is pre/post encoding, if a certain fraction of columns mismatch...
-        // Choice is to be more strict if categoricals are encoded into multiple columns.
-        Set<String> missing = new HashSet<>();
-        Set<String> canMiss = new HashSet<>(Arrays.asList(response, weights, fold)); canMiss.remove(null);
         for (String s : origNames) {
-          if (!(canMiss.contains(s) || ArrayUtils.contains(test.names(), s))) {
-            missing.add(s);
-          }
+          // test data could not have respose column, weights, fold column and offset column
+          boolean couldMiss = s.equals(response) || s.equals(weights) || s.equals(fold);
+          match &= couldMiss || ArrayUtils.contains(test.names(), s);
+          if (!match) break;
         }
-        match = multiColumnsEncoding ? missing.isEmpty()                // be strict if encoding encode one categorical to multiple columns
-                : (missing.size() + canMiss.size()) < origNames.length; // be lenient for other encoding methods: we just require that test contains at least some original columns
       }
       // still have work to do below, make sure we set the names/domains to the original user-given values such that we can do the int->enum mapping and cat. encoding below (from scratch)
       if (match) {
