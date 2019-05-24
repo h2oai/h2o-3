@@ -209,7 +209,17 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       AUTO, Random, Modulo, Stratified
     }
     public enum CategoricalEncodingScheme {
-      AUTO(false), OneHotInternal(false), OneHotExplicit(false), Enum(false), Binary(false), Eigen(false), LabelEncoder(false), SortByResponse(true), EnumLimited(false);
+      AUTO(false),
+      OneHotInternal(false),
+      OneHotExplicit(false),
+      Enum(false),
+      Binary(false),
+      Eigen(false),
+      LabelEncoder(false),
+      SortByResponse(true),
+      EnumLimited(false)
+      ;
+
       CategoricalEncodingScheme(boolean needResponse) { _needResponse = needResponse; }
       final boolean _needResponse;
       boolean needsResponse() { return _needResponse; }
@@ -1118,7 +1128,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             _output._origDomains,
             _output._names,
             _output._domains,
-            _parms, expensive, computeMetrics, _output.interactionBuilder(), getToEigenVec(), _toDelete, false);
+            _parms,
+            expensive,
+            computeMetrics,
+            _output.interactionBuilder(),
+            getToEigenVec(),
+            _toDelete,
+            false
+    );
   }
 
   /**
@@ -1157,21 +1174,24 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     final String response = parms._response_column;
 
     // whether we need to be careful with categorical encoding - the test frame could be either in original state or in encoded state
-    final boolean checkCategoricals =
-        parms._categorical_encoding == Parameters.CategoricalEncodingScheme.OneHotExplicit ||
-        parms._categorical_encoding == Parameters.CategoricalEncodingScheme.Eigen ||
-        parms._categorical_encoding == Parameters.CategoricalEncodingScheme.Binary;
+    // keep in sync with FrameUtils.categoricalEncoder: as soon as a categorical column has been encoded, we should check here.
+    final boolean checkCategoricals = parms._categorical_encoding == Parameters.CategoricalEncodingScheme.Binary
+            || parms._categorical_encoding ==Parameters.CategoricalEncodingScheme.LabelEncoder
+            || parms._categorical_encoding == Parameters.CategoricalEncodingScheme.Eigen
+            || parms._categorical_encoding == Parameters.CategoricalEncodingScheme.EnumLimited
+            || parms._categorical_encoding == Parameters.CategoricalEncodingScheme.OneHotExplicit
+            ;
 
     // test frame matches the user-given frame (before categorical encoding, if applicable)
     if( checkCategoricals && origNames != null ) {
-      boolean match = Arrays.equals(origNames, test._names);
+      boolean match = Arrays.equals(origNames, test.names());
       if (!match) {
         match = true;
         // In case the test set has extra columns not in the training set - check that all original pre-encoding columns are available in the test set
         // We could be lenient here and fill missing columns with NA, but then it gets difficult to decide whether this frame is pre/post encoding, if a certain fraction of columns mismatch...
         for (String s : origNames) {
           // test data could not have respose column, weights, fold column and offset column
-          boolean couldMiss = s.equals(response) || s.equals(weights) || s.equals(fold); 
+          boolean couldMiss = s.equals(response) || s.equals(weights) || s.equals(fold);
           match &= couldMiss || ArrayUtils.contains(test.names(), s);
           if (!match) break;
         }
@@ -1234,7 +1254,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         if( domains[i] != null ) { // Model expects an categorical
           if (vec.isString())
             vec = VecUtils.stringToCategorical(vec); //turn a String column into a categorical column (we don't delete the original vec here)
-          if( expensive && vec.domain() != domains[i] && !Arrays.equals(vec.domain(),domains[i]) ) { // Result needs to be the same categorical
+          if( expensive && !Arrays.equals(vec.domain(),domains[i]) ) { // Result needs to be the same categorical
             Vec evec;
             try {
               evec = vec.adaptTo(domains[i]); // Convert to categorical or throw IAE
@@ -1251,13 +1271,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             vec = evec;
           }
         } else if(vec.isCategorical()) {
-          if (parms._categorical_encoding == Parameters.CategoricalEncodingScheme.LabelEncoder) {
-            Vec evec = vec.toNumericVec();
-            toDelete.put(evec._key, "label encoded vec");
-            vec = evec;
-          } else {
-            throw new IllegalArgumentException("Test/Validation dataset has categorical column '" + names[i] + "' which is real-valued in the training data");
-          }
+          throw new IllegalArgumentException("Test/Validation dataset has categorical column '" + names[i] + "' which is real-valued in the training data");
         }
         good++;      // Assumed compatible; not checking e.g. Strings vs UUID
       }
