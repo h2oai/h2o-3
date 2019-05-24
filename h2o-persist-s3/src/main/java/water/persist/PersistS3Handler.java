@@ -3,6 +3,7 @@ package water.persist;
 import water.DKV;
 import water.Key;
 import water.api.Handler;
+import water.parser.BufferedString;
 
 import java.util.Objects;
 
