@@ -64,6 +64,12 @@ class TargetEncoder(object):
             self._blending = kwargs.get('blending_avg')
         else:
             self._blending = blended_avg
+          
+        if not inflection_point > 0:
+            raise ValueError("Parameter `inflection_point` should be greater than 0")
+        
+        if not smoothing > 0:
+            raise ValueError("Parameter `smoothing` should be greater than 0")
 
         self._inflectionPoint = inflection_point
         self._smoothing = smoothing
@@ -101,6 +107,11 @@ class TargetEncoder(object):
         :param int seed: a random seed used to generate draws from the uniform distribution for random noise. Defaults to -1.
         """
         assert_is_type(holdout_type, "kfold", "loo", "none")
+        
+        if holdout_type == "kfold" and self._foldColumnName == '' :
+            raise ValueError("Attempt to use kfold strategy when encoding map was created without fold column being specified.")
+        if holdout_type == "none" and noise != 0 :
+            warnings.warn("Attempt to apply noise with holdout_type=`none` strategy", stacklevel=2)
 
         encodingMapKeys = self._encodingMap.map_keys['string']
         encodingMapFramesKeys = list(map(lambda x: x['key']['name'], self._encodingMap.frames))
