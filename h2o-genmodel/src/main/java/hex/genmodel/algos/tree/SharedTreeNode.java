@@ -177,11 +177,15 @@ public class SharedTreeNode implements INode<double[]>, INodeStat {
     BitSet inheritedInclusiveLevels = findInclusiveLevels(colId);
     BitSet childInclusiveLevels = new BitSet();
 
+    int splitPoint = Float.isNaN(splitValue) ? -1 : (int) Math.ceil(splitValue);
+
     for (int i = 0; i < domainValues.length; i++) {
       // Calculate whether this level should flow into this child node.
       boolean includeThisLevel = false;
       {
-        if (discardAllLevels) {
+        if (splitPoint != -1) {
+          includeThisLevel = splitPoint > i ^ nodeBitsetDoesContain;
+        } else if (discardAllLevels) {
           includeThisLevel = false;
         }
         else if (includeAllLevels) {
