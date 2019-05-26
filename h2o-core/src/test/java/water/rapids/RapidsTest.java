@@ -871,4 +871,17 @@ public class RapidsTest extends TestUtil {
       Scope.exit();
     }
   }
+
+
+  @Test public void testMilesConversion() {
+    Frame fr = parse_test_file(Key.make("cars"), "smalldata/testng/airlines_train.csv");
+    try {
+      Val val = Rapids.exec("(km cars 'Distance')");
+      Assert.assertNotNull(val);
+      val.getFrame().delete();
+    } finally {
+      fr.delete();
+    }
+  }
+  
 }

@@ -87,6 +87,7 @@ public class Env extends Iced {
     CONSTS.put("null", null);
 
     // Standard math functions
+    init(new AstKm());
     init(new AstAbs());
     init(new AstAcos());
     init(new AstAcosh());
