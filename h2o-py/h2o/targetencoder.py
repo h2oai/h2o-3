@@ -33,14 +33,14 @@ class TargetEncoder(object):
     :param boolean blending_avg: (deprecated) whether to perform blended average. Defaults to TRUE.
     :param boolean blended_avg: whether to perform blended average. Defaults to TRUE.
     :param double inflection_point: parameter for blending. Used to calculate `lambda`. Determines half of the minimal sample size
-        for which we completely trust the estimate based on the sample in the particular level of categorical variable.
+        for which we completely trust the estimate based on the sample in the particular level of categorical variable. Default value is 10.
     :param double smoothing: parameter for blending. Used to calculate `lambda`. Controls the rate of transition between
         the particular level's posterior probability and the prior probability. For smoothing values approaching infinity it becomes a hard
-        threshold between the posterior and the prior probability.
+        threshold between the posterior and the prior probability. Default value is 20.
 
     :examples:
 
-    >>> targetEncoder = TargetEncoder(x=te_columns, y=responseColumnName, blended_avg=True, inflection_point=3, smoothing=1)
+    >>> targetEncoder = TargetEncoder(x=te_columns, y=responseColumnName, blended_avg=True, inflection_point=10, smoothing=20)
     >>> targetEncoder.fit(trainFrame) 
     >>> encodedTrain = targetEncoder.transform(frame=trainFrame, holdout_type="kfold", seed=1234, is_train_or_valid=True)
     >>> encodedValid = targetEncoder.transform(frame=validFrame, holdout_type="none", noise=0.0, is_train_or_valid=True)
@@ -51,7 +51,7 @@ class TargetEncoder(object):
     # Construction
     #-------------------------------------------------------------------------------------------------------------------
 
-    def __init__(self, x=None, y=None, fold_column='', blended_avg=True, inflection_point=3, smoothing=1, **kwargs):
+    def __init__(self, x=None, y=None, fold_column='', blended_avg=True, inflection_point=10, smoothing=20, **kwargs):
 
         """
         Creates instance of the TargetEncoder class and setting parameters that will be used in both `train` and `transform` methods.
