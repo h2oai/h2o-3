@@ -1635,6 +1635,25 @@ public class Frame extends Lockable<Frame> {
     return new FrameVecRegistry();
   }
 
+  /**
+   * Returns the original frame with specific column converted to categorical
+   */
+  public Frame toCategoricalCol(int columIdx){
+    write_lock();
+    replace(columIdx, vec(columIdx).toCategoricalVec()).remove();
+    // Update frame in DKV
+    update();
+    unlock();
+    return this;
+  }
+
+  /**
+   * Returns the original frame with specific column converted to categorical
+   */
+  public Frame toCategoricalCol(String column){
+   return toCategoricalCol(find(column));
+  }
+
   public class FrameVecRegistry {
     private LinkedHashMap<String, Vec> vecMap;
 
