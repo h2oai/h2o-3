@@ -250,6 +250,7 @@ The ``import_sql_table`` function accepts the following parameters:
 - ``username``: The username for SQL server
 - ``password``: The password for SQL server
 - ``optimize``: Specifies to optimize the import of SQL table for faster imports. Note that this option is experimental.
+- ``fetch_mode``: Set to DISTRIBUTED to enable distributed import. Set to SINGLE to force a sequential read by a single node from the database.
 
 .. example-code::
    .. code-block:: r
@@ -287,7 +288,9 @@ The ``import_sql_select`` function accepts the following parameters:
 - ``username``: The username for the SQL server
 - ``password``: The password for the SQL server
 - ``optimize``: Specifies to optimize import of SQL table for faster imports. Note that this option is experimental.
-
+- ``use_temp_table``: Specifies whether a temporary table should be created from select_query.
+- ``temp_table_name``: The name of temporary table to be created from select_query.
+- ``fetch_mode``: Set to DISTRIBUTED to enable distributed import. Set to SINGLE to force a sequential read by a single node from the database.
 
 .. example-code::
    .. code-block:: r
