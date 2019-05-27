@@ -164,8 +164,6 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
                     dataInfo,
                     cs,
                     fr.find(parms._response_column),
-                    -1, // not used for preds
-                    fr.find(parms._fold_column),
                     output._sparse);
 
             // No local chunks for this frame

@@ -8,6 +8,8 @@ import java.util.Arrays;
 /**
  */
 public class XGBoostMojoReader extends ModelMojoReader<XGBoostMojoModel> {
+  
+  public static final String SCORE_JAVA_PROP = "sys.ai.h2o.xgboost.scoring.java.enable";
 
   @Override
   public String getModelName() {
@@ -53,7 +55,7 @@ public class XGBoostMojoReader extends ModelMojoReader<XGBoostMojoModel> {
   }
 
   public static Boolean getJavaScoringConfig() {
-    String javaScoringEnabled = System.getProperty("sys.ai.h2o.xgboost.scoring.java.enable");
+    String javaScoringEnabled = System.getProperty(SCORE_JAVA_PROP);
     if (javaScoringEnabled == null) {
       return null;
     }

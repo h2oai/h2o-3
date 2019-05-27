@@ -156,8 +156,10 @@ public class XGBoostUtilsTest extends TestUtil {
                 .withDataForCol(1, ard(0, 2, 0))
                 .withDataForCol(2, ard(0, 3, 0))
                 .build());
-        final DMatrix response = XGBoostUtils.convertFrameToDMatrix(new DataInfo(frame, null, true, DataInfo.TransformType.NONE, false, false, false),
-                frame, true, "C3", null, null, true);
+        final DMatrix response = XGBoostUtils.convertFrameToDMatrix(
+            new DataInfo(frame, null, true, DataInfo.TransformType.NONE, false, false, false),
+            frame, "C3", null, true
+        );
         assertNotNull(response);
         assertEquals(3, response.rowNum());
         assertArrayEquals(arf(0, 3, 0), response.getLabel(), 0f);
@@ -194,11 +196,9 @@ public class XGBoostUtilsTest extends TestUtil {
         }
         final int nrows = (int) vec.length();
 
-        int actualRows = 0;
-
         XGBoostUtilsTest.setSparseMatrixMaxDimensions(3);
         // Calculate sparse matrix dimensions
-        final XGBoostUtils.SparseMatrixDimensions sparseMatrixDimensions = XGBoostUtils.calculateCSRMatrixDimensions(frame, chunksIds, vecs, null, di);
+        final XGBoostUtils.SparseMatrixDimensions sparseMatrixDimensions = XGBoostUtils.calculateCSRMatrixDimensions(frame, chunksIds, null, di);
         assertNotNull(sparseMatrixDimensions);
         assertEquals(3, sparseMatrixDimensions._nonZeroElementsCount);
         assertEquals(4, sparseMatrixDimensions._rowHeadersCount); // 3 rows + 1 final index
@@ -210,8 +210,8 @@ public class XGBoostUtilsTest extends TestUtil {
                 nrows);
 
         // Initialize allocated matrices with actual data
-        actualRows = XGBoostUtils.initalizeFromChunkIds(
-                frame, chunksIds, vecs, null, di, actualRows, sparseMatrix._rowHeaders,
+        int actualRows = XGBoostUtils.initalizeFromChunkIds(
+                frame, chunksIds, vecs, null, di, sparseMatrix._rowHeaders,
                 sparseMatrix._sparseData, sparseMatrix._colIndices,
                 respReader, resp, weights);
 
@@ -257,11 +257,9 @@ public class XGBoostUtilsTest extends TestUtil {
         }
         final int nrows = (int) vec.length();
 
-        int actualRows = 0;
-
         XGBoostUtilsTest.setSparseMatrixMaxDimensions(3);
         // Calculate sparse matrix dimensions
-        final XGBoostUtils.SparseMatrixDimensions sparseMatrixDimensions = XGBoostUtils.calculateCSRMatrixDimensions(frame, chunksIds, vecs, null, di);
+        final XGBoostUtils.SparseMatrixDimensions sparseMatrixDimensions = XGBoostUtils.calculateCSRMatrixDimensions(frame, chunksIds, null, di);
         assertNotNull(sparseMatrixDimensions);
         assertEquals(3, sparseMatrixDimensions._nonZeroElementsCount);
         assertEquals(4, sparseMatrixDimensions._rowHeadersCount); // 3 rows + 1 final index
@@ -273,8 +271,8 @@ public class XGBoostUtilsTest extends TestUtil {
                 nrows);
 
         // Initialize allocated matrices with actual data
-        actualRows = XGBoostUtils.initalizeFromChunkIds(
-                frame, chunksIds, vecs, null, di, actualRows, sparseMatrix._rowHeaders,
+        int actualRows = XGBoostUtils.initalizeFromChunkIds(
+                frame, chunksIds, vecs, null, di, sparseMatrix._rowHeaders,
                 sparseMatrix._sparseData, sparseMatrix._colIndices,
                 respReader, resp, weights);
 
@@ -323,12 +321,10 @@ public class XGBoostUtilsTest extends TestUtil {
         }
         final int nrows = (int) vec.length();
 
-        int actualRows = 0;
-
         XGBoostUtilsTest.setSparseMatrixMaxDimensions(1); // 3 arrays in each direction for colIndices and data, 4 for rowHeaders
 
         // Calculate sparse matrix dimensions
-        final XGBoostUtils.SparseMatrixDimensions sparseMatrixDimensions = XGBoostUtils.calculateCSRMatrixDimensions(frame, chunksIds, vecs, null, di);
+        final XGBoostUtils.SparseMatrixDimensions sparseMatrixDimensions = XGBoostUtils.calculateCSRMatrixDimensions(frame, chunksIds, null, di);
         assertNotNull(sparseMatrixDimensions);
         assertEquals(3, sparseMatrixDimensions._nonZeroElementsCount);
         assertEquals(4, sparseMatrixDimensions._rowHeadersCount); // 3 rows + 1 final index
@@ -340,8 +336,8 @@ public class XGBoostUtilsTest extends TestUtil {
                 nrows);
 
         // Initialize allocated matrices with actual data
-        actualRows = XGBoostUtils.initalizeFromChunkIds(
-                frame, chunksIds, vecs, null, di, actualRows, sparseMatrix._rowHeaders,
+        int actualRows = XGBoostUtils.initalizeFromChunkIds(
+                frame, chunksIds, vecs, null, di, sparseMatrix._rowHeaders,
                 sparseMatrix._sparseData, sparseMatrix._colIndices,
                 respReader, resp, weights);
 
@@ -390,13 +386,11 @@ public class XGBoostUtilsTest extends TestUtil {
         }
         final int nrows = (int) vec.length();
 
-        int actualRows = 0;
-
         // Force the internal representation to utilize both dimensions
         XGBoostUtilsTest.setSparseMatrixMaxDimensions(1);
 
         // Calculate sparse matrix dimensions
-        final XGBoostUtils.SparseMatrixDimensions sparseMatrixDimensions = XGBoostUtils.calculateCSRMatrixDimensions(frame, chunksIds, vecs, null, di);
+        final XGBoostUtils.SparseMatrixDimensions sparseMatrixDimensions = XGBoostUtils.calculateCSRMatrixDimensions(frame, chunksIds, null, di);
         assertNotNull(sparseMatrixDimensions);
         assertEquals(5, sparseMatrixDimensions._nonZeroElementsCount);
         assertEquals(4, sparseMatrixDimensions._rowHeadersCount); // 3 rows + 1 final index
@@ -408,8 +402,8 @@ public class XGBoostUtilsTest extends TestUtil {
                 nrows);
 
         // Initialize allocated matrices with actual data
-        actualRows = XGBoostUtils.initalizeFromChunkIds(
-                frame, chunksIds, vecs, null, di, actualRows, sparseMatrix._rowHeaders,
+        int actualRows = XGBoostUtils.initalizeFromChunkIds(
+                frame, chunksIds, vecs, null, di, sparseMatrix._rowHeaders,
                 sparseMatrix._sparseData, sparseMatrix._colIndices,
                 respReader, resp, weights);
 

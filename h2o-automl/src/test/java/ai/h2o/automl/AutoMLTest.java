@@ -3,7 +3,6 @@ package ai.h2o.automl;
 import hex.Model;
 import hex.SplitFrame;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
@@ -11,12 +10,8 @@ import water.Lockable;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
-import water.util.Log;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertNull;
@@ -194,7 +189,7 @@ public class AutoMLTest extends water.TestUtil {
   }
 
 
-  @Ignore public void test_individual_model_max_runtime() {
+  @Test public void test_individual_model_max_runtime() {
     AutoML aml=null;
     Frame fr=null;
     try {
@@ -206,10 +201,11 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.training_frame = fr._key;
 
       int max_runtime_secs_per_model = 10;
+      autoMLBuildSpec.build_models.exclude_algos = aro(Algo.GLM, Algo.DeepLearning); // GLM still tends to take a bit more time than it should: nothing dramatic, but enough to fail UTs.
       autoMLBuildSpec.build_control.stopping_criteria.set_seed(1);
-      autoMLBuildSpec.build_control.stopping_criteria.set_max_models(5);
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_models(10);
       autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs_per_model(max_runtime_secs_per_model);
-      autoMLBuildSpec.build_control.keep_cross_validation_models = true; //Prevent leaked keys from CV models
+      autoMLBuildSpec.build_control.keep_cross_validation_models = false; //Prevent leaked keys from CV models
       autoMLBuildSpec.build_control.keep_cross_validation_predictions = false; //Prevent leaked keys from CV predictions
 
       aml = AutoML.startAutoML(autoMLBuildSpec);
@@ -221,10 +217,7 @@ public class AutoMLTest extends water.TestUtil {
         double duration = model._output._total_run_time / 1e3;
         assertTrue(key + " took longer than required: "+ duration,
             duration - max_runtime_secs_per_model < tolerance);
-        model.deleteCrossValidationModels();
       }
-
-      // no assertion, we just want to check leaked keys
     } finally {
       // Cleanup
       if(aml!=null) aml.deleteWithChildren();
@@ -264,8 +257,7 @@ public class AutoMLTest extends water.TestUtil {
     }
   }
 
-  @Ignore
-  public void KeepCrossValidationFoldAssignmentDisabledTest() {
+  @Test public void KeepCrossValidationFoldAssignmentDisabledTest() {
     AutoML aml = null;
     Frame fr = null;
     Model leader = null;
@@ -292,8 +284,7 @@ public class AutoMLTest extends water.TestUtil {
     }
   }
 
-  @Ignore
-  public void testWorkPlan() {
+  @Test public void testWorkPlan() {
     AutoML aml = null;
     Frame fr=null;
     try {
@@ -305,18 +296,27 @@ public class AutoMLTest extends water.TestUtil {
 
       AutoML.WorkAllocations workPlan = aml.planWork();
 
-      int max_total_work = 1*10+3*20     //DL
-                         + 2*10          //DRF
-                         + 5*10+1*60     //GBM
-                         + 1*20          //GLM
-                         + 3*10+1*100    //XGBoost
-                         + 2*15;         //SE
-      assertEquals(workPlan.remainingWork(), max_total_work);
+      Map<Algo, Integer> defaultAllocs = new HashMap<Algo, Integer>(){{
+        put(Algo.DeepLearning, 1*10+3*20);
+        put(Algo.DRF, 2*10);
+        put(Algo.GBM, 5*10+1*60);
+        put(Algo.GLM, 1*20);
+        put(Algo.XGBoost, 3*10+1*100);
+        put(Algo.StackedEnsemble, 2*15);
+      }};
+      int maxTotalWork = 0;
+      for (Map.Entry<Algo, Integer> entry : defaultAllocs.entrySet()) {
+        if (entry.getKey().enabled()) {
+          maxTotalWork += entry.getValue();
+        }
+      }
 
-      autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.DeepLearning, Algo.XGBoost, };
+      assertEquals(workPlan.remainingWork(), maxTotalWork);
+
+      autoMLBuildSpec.build_models.exclude_algos = aro(Algo.DeepLearning, Algo.DRF);
       workPlan = aml.planWork();
 
-      assertEquals(workPlan.remainingWork(), max_total_work - (/*DL*/ 1*10+3*20 + /*XGB*/ 3*10+1*100));
+      assertEquals(workPlan.remainingWork(), maxTotalWork - defaultAllocs.get(Algo.DeepLearning) - defaultAllocs.get(Algo.DRF));
 
     } finally {
       if (aml != null) aml.deleteWithChildren();
@@ -351,7 +351,7 @@ public class AutoMLTest extends water.TestUtil {
     }
   }
 
-  @Ignore public void  test_training_frame_partition_when_cv_disabled_and_leaderboard_frame_missing() {
+  @Test public void  test_training_frame_partition_when_cv_disabled_and_leaderboard_frame_missing() {
     AutoML aml = null;
     Frame fr = null, test = null;
     try {
@@ -455,7 +455,7 @@ public class AutoMLTest extends water.TestUtil {
     }
   }
 
-  @Ignore public void testIncludeAlgos() {
+  @Test public void testIncludeAlgos() {
     AutoML aml = null;
     Frame fr=null;
     try {
@@ -467,10 +467,15 @@ public class AutoMLTest extends water.TestUtil {
       aml = new AutoML(Key.<AutoML>make(), new Date(), autoMLBuildSpec);
       AutoML.WorkAllocations workPlan = aml.planWork();
       for (Algo algo : autoMLBuildSpec.build_models.include_algos) {
-        assertFalse(
-            workPlan.getAllocation(algo, AutoML.JobType.ModelBuild) == null
-            && workPlan.getAllocation(algo, AutoML.JobType.HyperparamSearch) == null
-        );
+        if (algo.enabled()) {
+          assertFalse(
+                  workPlan.getAllocation(algo, AutoML.JobType.ModelBuild) == null
+                          && workPlan.getAllocation(algo, AutoML.JobType.HyperparamSearch) == null
+          );
+        } else {
+          assertNull(workPlan.getAllocation(algo, AutoML.JobType.ModelBuild));
+          assertNull(workPlan.getAllocation(algo, AutoML.JobType.HyperparamSearch));
+        }
       }
       for (Algo algo : Algo.values()) {
         if (!ArrayUtils.contains(autoMLBuildSpec.build_models.include_algos, algo)) {

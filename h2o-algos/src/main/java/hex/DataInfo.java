@@ -783,14 +783,9 @@ public class DataInfo extends Keyed<DataInfo> {
     public int       cid;      // categorical id
     public int       nBins;    // number of enum    columns (not expanded)
     public int       nNums;    // number of numeric columns (not expanded)
-    public int       nOutpus;
     public double    offset = 0;
     public double    weight = 1;
-    private C8DChunk [] _outputs;
 
-
-    public void setOutput(int i, double v) {_outputs[i].set8D(cid,v);}
-    public double getOutput(int i) {return _outputs[i].get8D(cid);}
     public final boolean isSparse(){return numIds != null;}
 
 
