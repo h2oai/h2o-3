@@ -194,6 +194,15 @@ public class Vec extends Keyed<Vec> {
   /** Returns cardinality for categorical domain or -1 for other types. */
   public final int cardinality() { return isCategorical() ? _domain.length : -1; }
 
+  /**
+   * @return true iff the domain has been truncated (usually during encoding).
+   * @see CreateInteractions#makeDomain(java.util.Map, String[], String[])
+   */
+  public final boolean isDomainTruncated(int expectedCardinality) {
+    return cardinality() == expectedCardinality + 1
+            && CreateInteractions._other.equals(_domain[_domain.length -1]);
+  }
+
   // Vec internal type
   public static final byte T_BAD  =  0; // No none-NA rows (triple negative! all NAs or zero rows)
   public static final byte T_UUID =  1; // UUID
