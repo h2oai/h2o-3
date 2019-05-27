@@ -1183,29 +1183,24 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             Parameters.CategoricalEncodingScheme.OneHotExplicit
     ).indexOf(parms._categorical_encoding) >= 0;
 
-    final boolean multiColumnsEncoding = Arrays.asList(
-            Parameters.CategoricalEncodingScheme.Binary,
-            Parameters.CategoricalEncodingScheme.OneHotExplicit
-    ).indexOf(parms._categorical_encoding) >= 0;
-
     // test frame matches the user-given frame (before categorical encoding, if applicable)
     if( checkCategoricals && origNames != null ) {
       boolean match = Arrays.equals(origNames, test.names());
       if (!match) {
-        // In case the test set has extra columns not in the training set - check that all original pre-encoding columns are available in the test set
-        // We could be lenient here and fill missing columns with NA, but then it gets difficult to decide whether this frame is pre/post encoding, if a certain fraction of columns mismatch...
-        // Choice is to be more strict if categoricals are encoded into multiple columns.
-        Set<String> missing = new HashSet<>();
-        Set<String> canMiss = new HashSet<>(Arrays.asList(response, weights, fold)); canMiss.remove(null);
-        for (String s : origNames) {
-          if (!(canMiss.contains(s) || ArrayUtils.contains(test.names(), s))) {
-            missing.add(s);
+        // As soon as the test frame contains at least one original pre-encoding predictor,
+        // then we consider the frame as valid for predictions, and we'll later fill missing columns with NA
+        Set<String> required = new HashSet<>(Arrays.asList(origNames));
+        required.removeAll(Arrays.asList(response, weights, fold));
+        for (String name : test.names()) {
+          if (required.contains(name)) {
+            match = true;
+            break;
           }
         }
-        match = multiColumnsEncoding ? missing.isEmpty()                // be strict if encoding encode one categorical to multiple columns
-                : (missing.size() + canMiss.size()) < origNames.length; // be lenient for other encoding methods: we just require that test contains at least some original columns
       }
-      // still have work to do below, make sure we set the names/domains to the original user-given values such that we can do the int->enum mapping and cat. encoding below (from scratch)
+
+      // still have work to do below, make sure we set the names/domains to the original user-given values
+      // such that we can do the int->enum mapping and cat. encoding below (from scratch)
       if (match) {
         names = origNames;
         domains = origDomains;
@@ -1286,8 +1281,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
       vvecs[i] = vec;
     }
+
+    if( good == convNaN )
+      throw new IllegalArgumentException("Test/Validation dataset has no columns in common with the training set");
+
     if( good == names.length || (response != null && test.find(response) == -1 && good == names.length - 1) )  // Only update if got something for all columns
-      test.restructure(names,vvecs,good);
+      test.restructure(names, vvecs, good);
 
     if (expensive && checkCategoricals && !catEncoded) {
       final boolean hasCategoricalPredictors = hasCategoricalPredictors(test, response, weights, offset, fold, names, domains);
@@ -1302,8 +1301,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         return msgs.toArray(new String[msgs.size()]);
       }
     }
-    if( good == convNaN )
-      throw new IllegalArgumentException("Test/Validation dataset has no columns in common with the training set");
 
     return msgs.toArray(new String[msgs.size()]);
   }
