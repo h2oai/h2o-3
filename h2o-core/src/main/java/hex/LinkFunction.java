@@ -1,10 +1,12 @@
 package hex;
 
-import hex.LogExpUtil;
+import water.Iced;
 
-import java.io.Serializable;
-
-abstract class LinkFunction implements Serializable {
+/**
+ * Link function class to calculate link, link inverse and string link inverse functions.
+ * 
+ */
+abstract class LinkFunction extends Iced<LinkFunction> {
 
     /**
      * Return x as e^x string - helper function
@@ -26,6 +28,7 @@ abstract class LinkFunction implements Serializable {
     /**
      * Canonical link inverse
      *
+     * Be careful if you are changing code here - you have to change it in DeeplearningMojoModel and GbmMojoModel too
      * @param f value in link space, to be transformed back to original space
      * @return linkInv(f)
      */

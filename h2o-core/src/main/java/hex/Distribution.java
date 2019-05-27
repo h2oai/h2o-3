@@ -9,11 +9,11 @@ import hex.genmodel.utils.DistributionFamily;
  */
 public abstract class Distribution extends Iced<Distribution> {
     
-    public final double tweediePower; //tweedie power
-    public final double quantileAlpha; //for quantile regression
-    public double huberDelta; //should be updated to huber_alpha quantile of absolute error of predictions via setter
-    public final LinkFunction linkFunction;
-    public final DistributionFamily distribution;
+    public final double tweediePower; // tweedie power
+    public final double quantileAlpha; // for quantile regression
+    public double huberDelta; // should be updated to huber_alpha quantile of absolute error of predictions via setter
+    public final LinkFunction linkFunction; // link function to use mainly for GLM
+    public final DistributionFamily distribution; // distribution name, important for some algos to decide what to do
     
     public Distribution(DistributionFamily family, LinkFunction lf) {
         tweediePower = 1.5;
