@@ -35,6 +35,7 @@ public class XGBoostParamsTest extends TestUtil {
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
       parms._ntrees = 1;
       parms._max_depth = 5;
+      parms._min_rows = 5000000;
       parms._ignored_columns = new String[]{"fYear", "fMonth", "fDayofMonth", "fDayOfWeek", "UniqueCarrier", "Dest"};
       parms._train = traningFrame._key;
       parms._response_column = response;
