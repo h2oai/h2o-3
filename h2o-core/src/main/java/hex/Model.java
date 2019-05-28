@@ -866,53 +866,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   protected String[][] scoringDomains() { return _output._domains; }
 
-  public void addTargetEncodingMap(Map<String, Frame> encodingMap) {
-    IcedHashMap<String, Map<String, TEComponents>> transformedEncodingMap = new IcedHashMap<>();
-    Map<String, Model.FrameToTETable> tasks = new HashMap<>();
-    
-    for (Map.Entry<String, Frame> entry : encodingMap.entrySet()) {
-      
-      Frame encodingsForParticularColumn = entry.getValue();
-      Model.FrameToTETable task = new FrameToTETable().dfork(encodingsForParticularColumn);
-
-      tasks.put(entry.getKey(), task);
-    }
-
-    for (Map.Entry<String, Model.FrameToTETable> taskEntry : tasks.entrySet()) {
-      transformedEncodingMap.put(taskEntry.getKey(), taskEntry.getValue().getResult().table);
-    }
-    _output._target_encoding_map = transformedEncodingMap;
-  }
-
-  static class FrameToTETable extends MRTask<FrameToTETable> {
-    IcedHashMap<String, TEComponents> table = new IcedHashMap<>();
-
-    public FrameToTETable() { }
-
-    @Override
-    public void map(Chunk[] cs) {
-      Chunk categoricalChunk = cs[0];
-      String[] domain = categoricalChunk.vec().domain();
-      int numRowsInChunk = categoricalChunk._len;
-      // Note: we don't store fold column as we need only to be able to give predictions for data which is not encoded yet. 
-      // We need folds only for the case when we applying TE to the frame which we are going to train our model on. 
-      // But this is done once and then we don't need them anymore.
-      for (int i = 0; i < numRowsInChunk; i++) {
-        int[] numeratorAndDenominator = new int[2];
-        numeratorAndDenominator[0] = (int) cs[1].at8(i);
-        numeratorAndDenominator[1] = (int) cs[2].at8(i);
-        int factor = (int) categoricalChunk.at8(i);
-        String factorName = domain[factor];
-        table.put(factorName, new TEComponents(numeratorAndDenominator));
-      }
-    }
-
-    @Override
-    public void reduce(FrameToTETable mrt) {
-      table.putAll(mrt.table);
-    }
-  }
-
   public ModelMetrics addMetrics(ModelMetrics mm) { return addModelMetrics(mm); }
 
   public abstract ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain);
@@ -2646,26 +2599,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       public double[] priorClassDist() { return _output._priorClassDist; }
       @Override
       public double[] modelClassDist() { return _output._modelClassDist; }
-      @Override
-      public Map<String, Map<String, int[]>> targetEncodingMap() {
-        // Note: Having int[] as a type for value is not allowed in Output class ( it must be @Freezable for distribution).
-        // But writing Mojo to the disk does not have such a requirements. 
-        // So had to introduce `TEComponents` class to satisfy check in `IcedHashMapBase.write_impl():59line` 
-        IcedHashMap<String, Map<String, int[]>> transformedEncodingMap = null;
-        if(_output._target_encoding_map != null) {
-          transformedEncodingMap = new IcedHashMap<>();
-          for (Map.Entry<String, Map<String, TEComponents>> entry : _output._target_encoding_map.entrySet()) {
-            String columnName = entry.getKey();
-            Map<String, TEComponents> encodingsForParticularColumn = entry.getValue();
-            Map<String, int[]> encodingsForColumnMap = new HashMap<>();
-            for (Map.Entry<String, TEComponents> kv : encodingsForParticularColumn.entrySet()) {
-              encodingsForColumnMap.put(kv.getKey(), kv.getValue().getNumeratorAndDenominator());
-            }
-            transformedEncodingMap.put(columnName, encodingsForColumnMap);
-          }
-        }
-        return transformedEncodingMap;
-      }
       @Override
       public String uuid() { return String.valueOf(Model.this.checksum()); }
       @Override

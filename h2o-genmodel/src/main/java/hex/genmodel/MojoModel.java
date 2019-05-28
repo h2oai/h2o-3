@@ -22,23 +22,6 @@ public abstract class MojoModel extends GenModel {
   public ModelDescriptor _modelDescriptor = null;
 
   /**
-   * Primary factory method for constructing MojoModel instances.
-   *
-   * @param file Name of the zip file (or folder) with the model's data. This should be the data retrieved via
-   *             the `GET /3/Models/{model_id}/mojo` endpoint.
-   * @return New `MojoModel` object.
-   * @throws IOException if `file` does not exist, or cannot be read, or does not represent a valid model.
-   */
-  public static MojoModel load(String file) throws IOException {
-    File f = new File(file);
-    if (!f.exists())
-      throw new FileNotFoundException("File " + file + " cannot be found.");
-    MojoReaderBackend cr = f.isDirectory()? new FolderMojoReaderBackend(file)
-                                          : new ZipfileMojoReaderBackend(file);
-    return ModelMojoReader.readFrom(cr);
-  }
-
-  /**
    * Advanced way of constructing Mojo models by supplying a custom mojoReader.
    *
    * @param mojoReader a class that implements the {@link MojoReaderBackend} interface.

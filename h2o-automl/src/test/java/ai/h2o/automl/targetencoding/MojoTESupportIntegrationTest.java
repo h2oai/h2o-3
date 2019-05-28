@@ -76,7 +76,7 @@ public class MojoTESupportIntegrationTest extends TestUtil {
       GBM job = new GBM(parms);
       gbm = job.trainModel().get();
       
-      gbm.addTargetEncodingMap(testEncodingMap); // Maybe we should also do this through ModelBuilder
+//      gbm.addTargetEncodingMap(testEncodingMap); // Maybe we should also do this through ModelBuilder
 
       System.out.println("Training Results");
       System.out.println(gbm._output);
@@ -111,7 +111,7 @@ public class MojoTESupportIntegrationTest extends TestUtil {
       BinomialModelPrediction predictionFromLoadedModel = model.predictBinomial(rowToPredictFor);
 
       //Check that specified in the test categorical columns have been encoded in accordance with targetEncodingMap
-      Map<String, Map<String, int[]>> targetEncodingMap = model.getTargetEncodingMap();
+      Map<String, Map<String, int[]>> targetEncodingMap = null;//model.getTargetEncodingMap();
       
       int[] encodingComponentsForHomeDest = targetEncodingMap.get("home.dest").get(homeDestFactorValue);
       double encodingForHomeDest = (double) encodingComponentsForHomeDest[0] / encodingComponentsForHomeDest[1];

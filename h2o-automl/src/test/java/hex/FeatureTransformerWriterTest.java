@@ -4,10 +4,8 @@ import ai.h2o.automl.targetencoding.BlendingParams;
 import ai.h2o.automl.targetencoding.TargetEncoder;
 import ai.h2o.automl.targetencoding.TargetEncoderFrameHelper;
 import hex.genmodel.MojoModel;
-import hex.genmodel.TojoTransformer;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
@@ -60,7 +58,7 @@ public class FeatureTransformerWriterTest extends TestUtil implements ModelStubs
 
       assertTrue(new File(fileName).exists());
       
-      TojoTransformer tt = TojoTransformer.loadTransformer(fileName);
+      MojoModel tt = MojoModel.load(fileName);
 
       Frame encodingMapForHomeDest = teMap.get("home.dest");
       printOutFrameAsTable(encodingMapForHomeDest);
@@ -68,7 +66,7 @@ public class FeatureTransformerWriterTest extends TestUtil implements ModelStubs
       Frame head = encodingMapForHomeDest.deepSlice(new long[]{0,1,2,3,4,5}, null);
       printOutFrameAsTable(head);
 
-      Map<String, int[]> loadedEncodingMapForHomeDest = tt.encodingMap.get("home.dest");
+      Map<String, int[]> loadedEncodingMapForHomeDest = tt.getTargetEncodingMap().get("home.dest");
       
       assertArrayEquals(new int[] {(int)head.vec(1).at8(0), (int)head.vec(2).at8(0)},  loadedEncodingMapForHomeDest.get("?Havana  Cuba"));
       assertArrayEquals(new int[] {(int)head.vec(1).at8(1), (int)head.vec(2).at8(1)},  loadedEncodingMapForHomeDest.get("Aberdeen / Portland  OR"));

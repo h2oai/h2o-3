@@ -1,10 +1,7 @@
 package hex.genmodel.easy;
 
 import hex.ModelCategory;
-import hex.genmodel.GenModel;
-import hex.genmodel.IClusteringModel;
-import hex.genmodel.PredictContributions;
-import hex.genmodel.PredictContributionsFactory;
+import hex.genmodel.*;
 import hex.genmodel.algos.deepwater.DeepwaterMojoModel;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.algos.glrm.GlrmMojoModel;
@@ -64,6 +61,7 @@ import java.util.Map;
 public class EasyPredictModelWrapper implements Serializable {
   // These private members are read-only after the constructor.
   public final GenModel m;
+  public final GenTransformer t;
   private final HashMap<String, Integer> modelColumnNameToIndexMap;
   public final HashMap<Integer, HashMap<String, Integer>> domainMap;
   private final ErrorConsumer errorConsumer;
@@ -105,7 +103,8 @@ public class EasyPredictModelWrapper implements Serializable {
    * Configuration builder for instantiating a Wrapper.
    */
   public static class Config {
-    private GenModel model;
+    private GenModel model;  // model and transformer could be a single member of type GenProducer.
+    private GenTransformer transformer;
     private boolean convertUnknownCategoricalLevelsToNa = false;
     private boolean convertInvalidNumbersToNa = false;
     private boolean useExtendedOutput = false;
@@ -125,11 +124,17 @@ public class EasyPredictModelWrapper implements Serializable {
       model = value;
       return this;
     }
+    
+    public Config setTransformer(GenTransformer value) {
+      transformer = value;
+      return this;
+    }
 
     /**
      * @return model object being wrapped
      */
     public GenModel getModel() { return model; }
+    public GenTransformer getTransformer() { return transformer; }
 
     /**
      * Specify how to handle unknown categorical levels.
@@ -260,6 +265,7 @@ public class EasyPredictModelWrapper implements Serializable {
    */
   public EasyPredictModelWrapper(Config config) {
     m = config.getModel();
+    t = config.getTransformer();
     // Ensure an error consumer is always instantiated to avoid missing null-check errors.
     errorConsumer = config.getErrorConsumer() == null ? new VoidErrorConsumer() : config.getErrorConsumer();
 
@@ -307,11 +313,10 @@ public class EasyPredictModelWrapper implements Serializable {
   /**
    * Create a wrapper for a generated model.
    *
-   * @param model The generated model
+   * @param producer The generated model
    */
-  public EasyPredictModelWrapper(GenModel model) {
-    this(new Config()
-            .setModel(model));
+  public EasyPredictModelWrapper(GenProducer producer) {
+      this(producer instanceof GenModel ? new Config().setModel((GenModel)producer) : new Config().setTransformer((GenTransformer) producer));
   }
 
 
@@ -488,6 +493,26 @@ public class EasyPredictModelWrapper implements Serializable {
     return p;
 
   }
+  
+  public RowData transform(RowData data) throws PredictException{
+    if(t instanceof TETransformer) {
+      TETransformer teTransformer = (TETransformer) t;
+      double[] rawData = nanArray(data.size());
+      rawData = fillRawData(data, rawData);
+      double[] forTransformed = new double[teTransformer.teColumnNamesOrder.length];
+      teTransformer.transform(rawData, forTransformed);
+
+      int indexOfTEColumn = 0;
+      for(String teColumnName: teTransformer.teColumnNamesOrder) {
+        data.put(teColumnName, forTransformed[indexOfTEColumn]);
+        indexOfTEColumn++;
+      }
+      return data;
+    } else {
+      throw new IllegalStateException("Unknown type of transformer");
+    }
+  }
+
 
   /**
    * Make a prediction on a new data point using a Binomial model.
@@ -535,7 +560,7 @@ public class EasyPredictModelWrapper implements Serializable {
    * @throws PredictException
    */
   public BinomialModelPrediction predictBinomial(RowData data, double offset) throws PredictException {
-    transformWithTargetEncoding(data);
+//    transformWithTargetEncoding(data);
 
     double[] preds = preamble(ModelCategory.Binomial, data, offset);
 
@@ -568,20 +593,6 @@ public class EasyPredictModelWrapper implements Serializable {
       p.contributions = predictContributions.calculateContributions(rawData);
     }
     return p;
-  }
-
-  void transformWithTargetEncoding(RowData data) {
-    Map<String, Map<String, int[]>> targetEncodingMap = getTargetEncodingMap();
-    if(targetEncodingMap != null) {
-      for (Map.Entry<String, Map<String, int[]>> columnToEncodingsMap : targetEncodingMap.entrySet()) {
-        String columnName = columnToEncodingsMap.getKey();
-        String originalValue = (String) data.get(columnName);
-        Map<String, int[]> encodings = columnToEncodingsMap.getValue();
-        int[] correspondingNumAndDen = encodings.get(originalValue);
-        double calculatedFrequency = (double) correspondingNumAndDen[0] / correspondingNumAndDen[1];
-        data.put(columnName + "_te", calculatedFrequency);
-      }
-    }
   }
 
   @SuppressWarnings("unused") // not used in this class directly, kept for backwards compatibility
@@ -790,10 +801,6 @@ public class EasyPredictModelWrapper implements Serializable {
     return m.getDomainValues(m.getResponseIdx());
   }
   
-  public Map<String, Map<String, int[]>> getTargetEncodingMap() {
-    return m.getTargetEncodingMap();
-  }
-
   /**
    * Some autoencoder thing, I'm not sure what this does.
    * @return CSV header for autoencoder.
@@ -848,10 +855,10 @@ public class EasyPredictModelWrapper implements Serializable {
 
       BufferedImage img = null;
       String[] domainValues = m.getDomainValues(index);
-      //TODO Target Encoding changes type of the column CAT -> NUM. 
+      /*//TODO Target Encoding changes type of the column CAT -> NUM. 
       // `m._domain` is final so we need to check which columns are in the targetEncodingMap and whether transformations were actually applied
-      boolean encodingWasApplied = getTargetEncodingMap() != null && getTargetEncodingMap().keySet().contains(dataColumnName);
-      if (domainValues == null || encodingWasApplied) { 
+      boolean encodingWasApplied = getTargetEncodingMap() != null && getTargetEncodingMap().keySet().contains(dataColumnName);*/
+      if (domainValues == null /*|| encodingWasApplied*/) { 
         // Column is either numeric or a string (for images or text)
         double value = Double.NaN;
         Object o = data.get(dataColumnName);

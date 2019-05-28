@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * This is a helper class to support Java generated models.
  */
-public abstract class GenModel implements IGenModel, IGeneratedModel, Serializable {
+public abstract class GenModel extends GenProducer implements IGenModel, IGeneratedModel, Serializable {
 
   /** Column names; last is response for supervised models */
   public final String[] _names;
@@ -28,8 +28,6 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
 
   /** Name of the column with offsets (used for certain types of models). */
   public String _offsetColumn;
-
-  public Map<String, Map<String, int[]>> _targetEncodingMap;
 
   public GenModel(String[] names, String[][] domains, String responseColumn) {
     _names = names;
@@ -101,8 +99,6 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     int r = getResponseIdx();
     return r < _names.length ? _names[r] : _responseColumn;
   }
-
-  public Map<String, Map<String, int[]>> getTargetEncodingMap() { return _targetEncodingMap; }
 
   /** Returns the index of the response column inside getDomains(). */
   @Override public int getResponseIdx() {
@@ -224,6 +220,11 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     throw new UnsupportedOperationException("`offset` column is not supported");
   }
 
+  @Override
+  public double[] produce(double[] row, double[] dataToProduce) {
+    return score0(row, dataToProduce);
+  }
+  
   /** Subclasses implement calibration of class probabilities. The input is array of
    *  predictions returned by the scoring function (score0). Supports classification
    *  models that were trained with calibration enabled. Original probabilities

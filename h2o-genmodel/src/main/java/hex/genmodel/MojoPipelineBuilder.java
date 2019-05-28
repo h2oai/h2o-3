@@ -19,9 +19,9 @@ public class MojoPipelineBuilder {
   private String _mainModelAlias;
 
   public MojoPipelineBuilder addModel(String modelAlias, File mojoFile) throws IOException {
-    MojoModel model = MojoModel.load(mojoFile.getAbsolutePath());
+    GenProducer model = GenProducer.load(mojoFile.getAbsolutePath());
     _files.put(modelAlias, mojoFile);
-    _models.put(modelAlias, model);
+    _models.put(modelAlias, (MojoModel) model); // TODO consider support for pipeline of GenProducers
     return this;
   }
 

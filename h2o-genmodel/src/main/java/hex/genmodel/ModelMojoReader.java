@@ -4,6 +4,7 @@ import com.google.gson.*;
 import hex.genmodel.descriptor.JsonModelDescriptorReader;
 import hex.genmodel.descriptor.ModelDescriptorBuilder;
 import hex.genmodel.descriptor.Table;
+import hex.genmodel.transformers.te.TETransformerReader;
 import hex.genmodel.utils.ParseUtils;
 import hex.genmodel.utils.StringEscapeUtils;
 
@@ -19,7 +20,7 @@ import java.util.regex.Pattern;
 /**
  * Helper class to deserialize a model from MOJO format. This is a counterpart to `ModelMojoWriter`.
  */
-public abstract class ModelMojoReader<M extends MojoModel> {
+public abstract class ModelMojoReader<M extends MojoModel> extends Reader{
 
   protected M _model;
 
@@ -52,14 +53,13 @@ public abstract class ModelMojoReader<M extends MojoModel> {
   public static MojoModel readFrom(MojoReaderBackend reader, final boolean readModelDescriptor) throws IOException {
     try {
       Map<String, Object> info = parseModelInfo(reader);
-      if (! info.containsKey("algorithm"))
+      if (!info.containsKey("algorithm"))
         throw new IllegalStateException("Unable to find information about the model's algorithm.");
       String algo = String.valueOf(info.get("algorithm"));
       ModelMojoReader mmr = ModelMojoFactory.INSTANCE.getMojoReader(algo);
       mmr._lkv = info;
       mmr._reader = reader;
-      boolean isTargetEncodingUsed = info.containsKey("target_encoding_is_used") && ((RawValue) info.get("target_encoding_is_used")).parse(false);
-      mmr.readAll(readModelDescriptor, isTargetEncodingUsed);
+      mmr.readAll(readModelDescriptor);
       return mmr._model;
     } finally {
       if (reader instanceof Closeable)
@@ -85,88 +85,12 @@ public abstract class ModelMojoReader<M extends MojoModel> {
   public abstract String mojoVersion();
 
 
-  //--------------------------------------------------------------------------------------------------------------------
-  // Interface for subclasses
-  //--------------------------------------------------------------------------------------------------------------------
-
-  /**
-   * Retrieve value from the model's kv store which was previously put there using `writekv(key, value)`. We will
-   * attempt to cast to your expected type, but this is obviously unsafe. Note that the value is deserialized from
-   * the underlying string representation using {@link ParseUtils#tryParse(String, Object)}, which occasionally may get
-   * the answer wrong.
-   * If the `key` is missing in the local kv store, null will be returned. However when assigning to a primitive type
-   * this would result in an NPE, so beware.
-   */
-  @SuppressWarnings("unchecked")
-  protected <T> T readkv(String key) {
-    return (T) readkv(key, null);
-  }
-
-  /**
-   * Retrieves the value associated with a given key. If value is not set of the key, a given default value is returned
-   * instead. Uses same parsing logic as {@link ModelMojoReader#readkv(String)}. If default value is not null it's type
-   * is used to assist the parser to determine the return type.
-   * @param key name of the key
-   * @param defVal default value
-   * @param <T> return type
-   * @return parsed value
-   */
-  @SuppressWarnings("unchecked")
-  protected <T> T readkv(String key, T defVal) {
-    Object val = _lkv.get(key);
-    if (! (val instanceof RawValue))
-      return val != null ? (T) val : defVal;
-    return ((RawValue) val).parse(defVal);
-  }
-
-  /**
-   * Retrieve binary data previously saved to the mojo file using `writeblob(key, blob)`.
-   */
-  protected byte[] readblob(String name) throws IOException {
-    return getMojoReaderBackend().getBinaryFile(name);
-  }
-
-  protected boolean exists(String name) {
-    return getMojoReaderBackend().exists(name);
-  }
-
-  /**
-   * Retrieve text previously saved using `startWritingTextFile` + `writeln` as an array of lines. Each line is
-   * trimmed to remove the leading and trailing whitespace.
-   */
-  protected Iterable<String> readtext(String name) throws IOException {
-    return readtext(name, false);
-  }
-
-  /**
-   * Retrieve text previously saved using `startWritingTextFile` + `writeln` as an array of lines. Each line is
-   * trimmed to remove the leading and trailing whitespace. Removes escaping of the new line characters in enabled.
-   */
-  protected Iterable<String> readtext(String name, boolean unescapeNewlines) throws IOException {
-    ArrayList<String> res = new ArrayList<>(50);
-    BufferedReader br = getMojoReaderBackend().getTextFile(name);
-    try {
-      String line;
-      while (true) {
-        line = br.readLine();
-        if (line == null) break;
-        if (unescapeNewlines)
-          line = StringEscapeUtils.unescapeNewlines(line);
-        res.add(line.trim());
-      }
-      br.close();
-    } finally {
-      try { br.close(); } catch (IOException e) { /* ignored */ }
-    }
-    return res;
-  }
-
 
   //--------------------------------------------------------------------------------------------------------------------
   // Private
   //--------------------------------------------------------------------------------------------------------------------
 
-  private void readAll(final boolean readModelDescriptor, final boolean readTargetEncoding) throws IOException {
+  private void readAll(final boolean readModelDescriptor) throws IOException {
     String[] columns = (String[]) _lkv.get("[columns]");
     String[][] domains = parseModelDomains(columns.length);
     boolean isSupervised = readkv("supervised");
@@ -187,9 +111,6 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     readModelData();
     if (readModelDescriptor) {
       _model._modelDescriptor = readModelDescriptor();
-    }
-    if (readTargetEncoding) {
-      _model._targetEncodingMap = parseTargetEncodingMap("feature_engineering/target_encoding.ini");
     }
   }
 

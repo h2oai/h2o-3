@@ -150,11 +150,6 @@ public class ModelDescriptorBuilder {
             }
 
             @Override
-            public Map<String, Map<String, int[]>> targetEncodingMap() {
-                return _target_encoding_map;
-            }
-
-            @Override
             public String uuid() {
                 return _uuid;
             }

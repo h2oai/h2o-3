@@ -1,37 +1,39 @@
-package hex.genmodel;
+package hex.genmodel.transformers.te;
+
+import hex.genmodel.MojoReaderBackend;
+import hex.genmodel.TETransformer;
+import hex.genmodel.TransformerMojoReader;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-// TODO It should not represent only TE Transformer, For POC it is ok.
-public class TojoTransformer {
-
-  public Map<String, Map<String, int[]>> encodingMap;
-
-  public TojoTransformer(Map<String, Map<String, int[]>> encodingMap) {
-    this.encodingMap = encodingMap;
+/**
+ */
+public class TETransformerReader extends TransformerMojoReader<TETransformer> {
+  @Override
+  public String getTransformerName() {
+    return "TE transformer";
   }
 
-  public static TojoTransformer loadTransformer(String file) throws IOException {
-    File f = new File(file);
-    if (!f.exists())
-      throw new FileNotFoundException("File " + file + " cannot be found.");
-    MojoReaderBackend cr = f.isDirectory()? new FolderMojoReaderBackend(file)
-            : new ZipfileMojoReaderBackend(file);
-    return parseTargetEncodingTransformer(cr, "feature_engineering/target_encoding.ini");
+  @Override public String mojoVersion() {
+    return "1.00";
   }
 
-  static TojoTransformer parseTargetEncodingTransformer(MojoReaderBackend cr, String pathToSource) throws IOException {
+  @Override
+  public void readTransformerSpecific() throws IOException {
+    _transformer.encodingMap = parseTargetEncodingMap("feature_engineering/target_encoding.ini");
+  
+  }
+
+  private Map<String, Map<String, int[]>> parseTargetEncodingMap(String pathToSource) throws IOException {
     Map<String, Map<String, int[]>> encodingMap = null;
 
-    if(cr.exists(pathToSource)) {
-      BufferedReader source = cr.getTextFile("feature_engineering/target_encoding.ini");
+    if(_reader.exists(pathToSource)) {
+      BufferedReader source = _reader.getTextFile("feature_engineering/target_encoding.ini");
 
       encodingMap = new HashMap<>();
       Map<String, int[]> encodingsForColumn = null;
@@ -70,7 +72,7 @@ public class TojoTransformer {
         } catch (IOException e) { /* ignored */ }
       }
     }
-    return new TojoTransformer(encodingMap);
+    return encodingMap;
   }
 
   static private String matchNewSection(String line) {
