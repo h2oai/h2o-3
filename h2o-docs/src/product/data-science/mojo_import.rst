@@ -1,5 +1,5 @@
-Mojo import
---------------
+Mojo Import
+-----------
 
 Introduction
 ~~~~~~~~~~~~
@@ -19,7 +19,7 @@ Only a subset of H2O MOJO models is supported in this version.
 Importing a MOJO
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Importing a MOJO is available from Python, R, and Flow. H2O imports the model and embraces it for the purpose of scoring. Information output about the model may be limited.
+Importing a MOJO can be done from Python, R, and Flow. H2O imports the model and embraces it for the purpose of scoring. Information output about the model may be limited.
 
 Importing in R or Python
 ''''''''''''''''''''''''
@@ -52,7 +52,7 @@ Importing in R or Python
     predictions = imported_model.predict(new_observations)
 
 Importing a MOJO Model in Flow
-''''''''''''''''''''''''''''''''''
+''''''''''''''''''''''''''''''
 
 To import a MOJO model in Flow:
 

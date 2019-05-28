@@ -49,10 +49,10 @@ Miscellaneous
 
    data-science/word2vec
 
-Generic Models
+MOJO Import
 --------------
 
 .. toctree::
    :maxdepth: 1
 
-   data-science/generic
+   data-science/mojo_import
