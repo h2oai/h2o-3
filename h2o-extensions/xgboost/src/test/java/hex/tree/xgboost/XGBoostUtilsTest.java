@@ -214,8 +214,7 @@ public class XGBoostUtilsTest extends TestUtil {
 
         // Initialize allocated matrices with actual data
         int actualRows = SparseMatrixFactory.initializeFromChunkIds(
-                frame, chunksIds, vecs, null, di, sparseMatrix._rowHeaders,
-                sparseMatrix._sparseData, sparseMatrix._colIndices,
+                frame, chunksIds, vecs, null, di, sparseMatrix, sparseMatrixDimensions, 
                 respReader, resp, weights);
 
         assertEquals(3, actualRows);
@@ -275,9 +274,8 @@ public class XGBoostUtilsTest extends TestUtil {
 
         // Initialize allocated matrices with actual data
         int actualRows = SparseMatrixFactory.initializeFromChunkIds(
-                frame, chunksIds, vecs, null, di, sparseMatrix._rowHeaders,
-                sparseMatrix._sparseData, sparseMatrix._colIndices,
-                respReader, resp, weights);
+            frame, chunksIds, vecs, null, di, sparseMatrix, sparseMatrixDimensions,
+            respReader, resp, weights);
 
         assertEquals(3, actualRows);
 
@@ -340,9 +338,8 @@ public class XGBoostUtilsTest extends TestUtil {
 
         // Initialize allocated matrices with actual data
         int actualRows = SparseMatrixFactory.initializeFromChunkIds(
-                frame, chunksIds, vecs, null, di, sparseMatrix._rowHeaders,
-                sparseMatrix._sparseData, sparseMatrix._colIndices,
-                respReader, resp, weights);
+            frame, chunksIds, vecs, null, di, sparseMatrix, sparseMatrixDimensions,
+            respReader, resp, weights);
 
         assertEquals(3, actualRows);
 
@@ -406,9 +403,8 @@ public class XGBoostUtilsTest extends TestUtil {
 
         // Initialize allocated matrices with actual data
         int actualRows = SparseMatrixFactory.initializeFromChunkIds(
-                frame, chunksIds, vecs, null, di, sparseMatrix._rowHeaders,
-                sparseMatrix._sparseData, sparseMatrix._colIndices,
-                respReader, resp, weights);
+            frame, chunksIds, vecs, null, di, sparseMatrix, sparseMatrixDimensions,
+            respReader, resp, weights);
 
         assertEquals(3, actualRows);
 

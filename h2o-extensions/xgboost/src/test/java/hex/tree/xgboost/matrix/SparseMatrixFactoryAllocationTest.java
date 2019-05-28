@@ -55,7 +55,7 @@ public class SparseMatrixFactoryAllocationTest {
     public void testAllocateCSR() {
         XGBoostUtilsTest.setSparseMatrixMaxDimensions(sparseMatrixDimensions);
         SparseMatrixDimensions dimensions = new SparseMatrixDimensions(
-            new long[] { nonZeroElementsCount }, new long[] { rowIndicesCount-1 }
+            new int[] { nonZeroElementsCount }, new int[] { rowIndicesCount-1 }
         );
 
         final SparseMatrix sparseMatrix = SparseMatrixFactory.allocateCSRMatrix(dimensions);

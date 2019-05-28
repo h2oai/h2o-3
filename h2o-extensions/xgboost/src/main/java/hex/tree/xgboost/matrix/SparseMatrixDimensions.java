@@ -7,11 +7,11 @@ import water.util.ArrayUtils;
  */
 public final class SparseMatrixDimensions {
 
-    public final long[] _rowHeadersCounts;
-    public final long[] _nonZeroElementsCounts;
+    public final int[] _precedingRowCounts;
+    public final long[] _precedingNonZeroElementsCounts;
 
     public final long _nonZeroElementsCount;
-    public final long _rowHeadersCount;
+    public final int _rowHeadersCount;
 
     /**
      * Constructs an instance of {@link SparseMatrixDimensions}
@@ -20,11 +20,20 @@ public final class SparseMatrixDimensions {
      *                              number of column indices.
      * @param rowIndicesCounts      Number of indices of elements rows begin with
      */
-    public SparseMatrixDimensions(long[] nonZeroElementsCounts, long[] rowIndicesCounts) {
-        _nonZeroElementsCounts = nonZeroElementsCounts;
-        _rowHeadersCounts = rowIndicesCounts;
+    public SparseMatrixDimensions(int[] nonZeroElementsCounts, int[] rowIndicesCounts) {
+        int precedingRowCount = 0;
+        long precedingNonZeroCount = 0;
+        _precedingRowCounts = new int[rowIndicesCounts.length];
+        _precedingNonZeroElementsCounts = new long[nonZeroElementsCounts.length];
+        assert rowIndicesCounts.length == nonZeroElementsCounts.length;
+        for (int i = 0; i < nonZeroElementsCounts.length; i++) {
+            _precedingRowCounts[i] = precedingRowCount;
+            _precedingNonZeroElementsCounts[i] = precedingNonZeroCount;
+            precedingRowCount += rowIndicesCounts[i];
+            precedingNonZeroCount += nonZeroElementsCounts[i];
+        }
 
-        _nonZeroElementsCount = ArrayUtils.sum(_nonZeroElementsCounts);
-        _rowHeadersCount = ArrayUtils.sum(_rowHeadersCounts) + 1;
+        _nonZeroElementsCount = ArrayUtils.sum(nonZeroElementsCounts);
+        _rowHeadersCount = ArrayUtils.sum(rowIndicesCounts) + 1;
     }
 }

@@ -1,7 +1,6 @@
 package hex.tree.xgboost;
 
 import hex.DataInfo;
-import hex.tree.xgboost.matrix.MatrixFactoryUtils;
 import hex.tree.xgboost.matrix.SparseMatrixFactory;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
