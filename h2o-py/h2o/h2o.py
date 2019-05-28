@@ -461,6 +461,7 @@ def import_hive_table(database=None, table=None, partitions=None, allow_multi_fo
     j = H2OJob(api("POST /3/ImportHiveTable", data=p), "Import Hive Table").poll()
     return get_frame(j.dest_key)
 
+
 def import_sql_table(connection_url, table, username, password, columns=None, optimize=True, fetch_mode=None):
     """
     Import SQL table to H2OFrame in memory.
@@ -1532,7 +1533,6 @@ class {}Wrapper({}, MetricFunc, object):
 
 
 def import_mojo(mojo_path):
-
     """
     Imports an existing MOJO model as an H2O model.
     :param mojo_path: Path to the MOJO archive on the H2O's filesystem
@@ -1544,13 +1544,13 @@ def import_mojo(mojo_path):
     print(mojo_estimator)
     return mojo_estimator
 
+
 def upload_mojo(mojo_path):
     """
     Uploads an existing MOJO model from local filesystem into H2O and imports it as an H2O Generic Model. 
     :param mojo_path:  Path to the MOJO archive on the user's local filesystem
     :return: An H2OGenericEstimator instance embedding given MOJO
     """
-
     response = api("POST /3/PostFile", filename=mojo_path)
     frame_key = response["destination_frame"]
     mojo_estimator = H2OGenericEstimator(model_key = get_frame(frame_key))
