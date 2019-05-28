@@ -51,7 +51,7 @@
 #' @references M. Udell, C. Horn, R. Zadeh, S. Boyd (2014). {Generalized Low Rank Models}[http://arxiv.org/abs/1410.0342]. Unpublished manuscript, Stanford Electrical Engineering Department
 #'             N. Halko, P.G. Martinsson, J.A. Tropp. {Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions}[http://arxiv.org/abs/0909.4061]. SIAM Rev., Survey and Review section, Vol. 53, num. 2, pp. 217-288, June 2011.
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(h2o)
 #' h2o.init()
 #' australia_path <- system.file("extdata", "australia.csv", package = "h2o")
@@ -238,7 +238,7 @@ h2o.glrm <- function(training_frame, cols = NULL,
 #'         training data;
 #' @seealso \code{\link{h2o.glrm}} for making an H2ODimReductionModel.
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(h2o)
 #' h2o.init()
 #' iris_hf <- as.h2o(iris)
@@ -270,7 +270,7 @@ h2o.getFrame(key)
 #'         down into the original feature space, where each row is one archetype.
 #' @seealso \code{\link{h2o.glrm}} for making an H2ODimReductionModel.
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(h2o)
 #' h2o.init()
 #' iris_hf <- as.h2o(iris)

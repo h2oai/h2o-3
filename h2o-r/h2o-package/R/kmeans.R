@@ -41,7 +41,7 @@
 #'          \code{\link{h2o.betweenss}}, \code{\link{h2o.tot_withinss}}, \code{\link{h2o.withinss}},
 #'          \code{\link{h2o.centersSTD}}, \code{\link{h2o.centers}}
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(h2o)
 #' h2o.init()
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
