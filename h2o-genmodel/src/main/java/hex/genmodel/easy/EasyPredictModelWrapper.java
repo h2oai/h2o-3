@@ -5,6 +5,8 @@ import hex.genmodel.GenModel;
 import hex.genmodel.IClusteringModel;
 import hex.genmodel.PredictContributions;
 import hex.genmodel.PredictContributionsFactory;
+import hex.genmodel.algos.deepwater.DeepwaterMojoModel;
+import hex.genmodel.algos.targetencoder.TargetEncoderMojoModel;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.algos.glrm.GlrmMojoModel;
 import hex.genmodel.algos.deeplearning.DeeplearningMojoModel;
@@ -570,18 +572,13 @@ public class EasyPredictModelWrapper implements Serializable {
     return p;
   }
 
-  void transformWithTargetEncoding(RowData data) {
-    Map<String, Map<String, int[]>> targetEncodingMap = getTargetEncodingMap();
-    if(targetEncodingMap != null) {
-      for (Map.Entry<String, Map<String, int[]>> columnToEncodingsMap : targetEncodingMap.entrySet()) {
-        String columnName = columnToEncodingsMap.getKey();
-        String originalValue = (String) data.get(columnName);
-        Map<String, int[]> encodings = columnToEncodingsMap.getValue();
-        int[] correspondingNumAndDen = encodings.get(originalValue);
-        double calculatedFrequency = (double) correspondingNumAndDen[0] / correspondingNumAndDen[1];
-        data.put(columnName + "_te", calculatedFrequency);
-      }
-    }
+  public void transformWithTargetEncoding(RowData data) throws PredictException{
+    if (! (m instanceof TargetEncoderMojoModel))
+      throw new PredictException("Model is not of the expected type, class = " + m.getClass().getSimpleName());
+
+    TargetEncoderMojoModel targetEncoderMojoModel = (TargetEncoderMojoModel) this.m;
+    
+    targetEncoderMojoModel.transform0(data);
   }
 
   @SuppressWarnings("unused") // not used in this class directly, kept for backwards compatibility
@@ -788,10 +785,6 @@ public class EasyPredictModelWrapper implements Serializable {
    */
   public String[] getResponseDomainValues() {
     return m.getDomainValues(m.getResponseIdx());
-  }
-  
-  public Map<String, Map<String, int[]>> getTargetEncodingMap() {
-    return m.getTargetEncodingMap();
   }
 
   /**

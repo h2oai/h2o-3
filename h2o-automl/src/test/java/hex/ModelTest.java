@@ -1,3 +1,4 @@
+/*
 package hex;
 
 import ai.h2o.automl.targetencoding.BlendingParams;
@@ -19,9 +20,11 @@ import java.util.UUID;
 import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
 import static org.junit.Assert.*;
 
+*/
 /**
  * This test should be moved to h2o-core module or dedicated for TE module once we move all TargetEncoding related classes there as well. 
- */
+ *//*
+
 public class ModelTest extends TestUtil implements ModelStubs {
 
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }
@@ -188,3 +191,4 @@ public class ModelTest extends TestUtil implements ModelStubs {
   }
 
 }
+*/

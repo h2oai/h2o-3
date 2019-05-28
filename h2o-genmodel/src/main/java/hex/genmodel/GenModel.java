@@ -29,8 +29,6 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   /** Name of the column with offsets (used for certain types of models). */
   public String _offsetColumn;
 
-  public Map<String, Map<String, int[]>> _targetEncodingMap;
-
   public GenModel(String[] names, String[][] domains, String responseColumn) {
     _names = names;
     _domains = domains;
@@ -101,8 +99,6 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     int r = getResponseIdx();
     return r < _names.length ? _names[r] : _responseColumn;
   }
-
-  public Map<String, Map<String, int[]>> getTargetEncodingMap() { return _targetEncodingMap; }
 
   /** Returns the index of the response column inside getDomains(). */
   @Override public int getResponseIdx() {

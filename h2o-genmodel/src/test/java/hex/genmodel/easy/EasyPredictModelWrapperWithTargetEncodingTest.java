@@ -1,25 +1,26 @@
 package hex.genmodel.easy;
 
 import hex.ModelCategory;
-import hex.genmodel.GenModel;
+import hex.genmodel.algos.targetencoder.TargetEncoderMojoModel;
+import hex.genmodel.easy.exception.PredictException;
 import org.junit.Test;
 
 import java.util.HashMap;
+import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.*;
 
 public class EasyPredictModelWrapperWithTargetEncodingTest {
 
   @Test
-  public void transformWithTargetEncoding() {
-    MyAutoEncoderModel model = new MyAutoEncoderModel();
-    
-    model._targetEncodingMap = new HashMap<>();
+  public void transformWithTargetEncoding() throws PredictException{
+    MyTEModel model = new MyTEModel();
+
+    Map<String, Map<String, int[]>> targetEncodingMap = model._targetEncodingMap;
     HashMap<String, int[]> encodingsForEmbarkingColumn = new HashMap<>();
     int[] encodingComponents = {3, 7};
     encodingsForEmbarkingColumn.put("S", encodingComponents);
-    model._targetEncodingMap.put("embarked", encodingsForEmbarkingColumn);
+    targetEncodingMap.put("embarked", encodingsForEmbarkingColumn);
     
     EasyPredictModelWrapper modelWrapper = new EasyPredictModelWrapper(model);
 
@@ -34,8 +35,8 @@ public class EasyPredictModelWrapperWithTargetEncodingTest {
   }
 
   @Test
-  public void targetEncodingIsDisabledWhenEncodingMapIsNotProvided() {
-    MyAutoEncoderModel model = new MyAutoEncoderModel();
+  public void targetEncodingIsDisabledWhenEncodingMapIsNotProvided() throws PredictException {
+    MyTEModel model = new MyTEModel();
 
     model._targetEncodingMap = null;
 
@@ -45,13 +46,19 @@ public class EasyPredictModelWrapperWithTargetEncodingTest {
     row.put("embarked", "S");
     row.put("age", 42.0);
 
-    // It is expected that there will be no exceptions and encoding will not take place 
-    modelWrapper.transformWithTargetEncoding(row);
-    assertEquals((String) row.get("embarked"), "S");
+    // It is expected that there will be an exception if encoding map is missing and encoding will not take place 
+    try {
+      modelWrapper.transformWithTargetEncoding(row);
+      fail();
+    } catch (IllegalStateException ex) {
+      assertEquals((String) row.get("embarked"), "S");
+    }
+    
   }
 
 
-  private static class MyAutoEncoderModel extends GenModel {
+  private static class MyTEModel extends TargetEncoderMojoModel {
+    
     @Override
     public ModelCategory getModelCategory() { return null; } 
     @Override
@@ -64,8 +71,9 @@ public class EasyPredictModelWrapperWithTargetEncodingTest {
             null //age
     };
 
-    private MyAutoEncoderModel() {
+    private MyTEModel() {
       super(new String[]{"embarked", "age"}, DOMAINS, null);
+      _targetEncodingMap = new HashMap<>();
     }
   }
 

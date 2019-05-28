@@ -1,13 +1,11 @@
 package hex;
 
-import ai.h2o.automl.targetencoding.BlendingParams;
-import ai.h2o.automl.targetencoding.TargetEncoder;
+import ai.h2o.automl.targetencoding.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
-import ai.h2o.automl.targetencoding.TargetEncoderFrameHelper;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -38,13 +36,14 @@ public class ModelMojoWriterTest extends TestUtil implements ModelStubs {
 
   @Test public void writeModelToZipFile() throws Exception{
     TestModel.TestParam p = new TestModel.TestParam();
-    TestModel.TestOutput o = new TestModel.TestOutput();
+    Map<String, Frame> teMap = getTEMap();
+    p.addTargetEncodingMap(teMap);
+
+    TestModel.TestOutput o = new TestModel.TestOutput(new TargetEncoderBuilder(p));
     o.setNames(trainFrame.names());
     o._domains = trainFrame.domains();
     
     TestModel testModel = new TestModel(Key.make(),p,o);
-    Map<String, Frame> teMap = getTEMap();
-    testModel.addTargetEncodingMap(teMap);
 
     String fileName = "test_mojo_te.zip";
 

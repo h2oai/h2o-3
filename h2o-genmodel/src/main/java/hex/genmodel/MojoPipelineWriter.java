@@ -196,11 +196,6 @@ public class MojoPipelineWriter extends AbstractMojoWriter {
     }
 
     @Override
-    public Map<String, Map<String, int[]>> targetEncodingMap() {
-      return _finalModel._targetEncodingMap;
-    }
-
-    @Override
     public String uuid() {
       return _finalModel._uuid;
     }

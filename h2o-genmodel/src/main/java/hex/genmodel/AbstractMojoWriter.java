@@ -114,7 +114,7 @@ public abstract class AbstractMojoWriter {
     tmpfile.append('\n');
   }
 
-  private void writelnkv(String key, String value) {
+  protected void writelnkv(String key, String value) {
     writelnkv(key, value, false);
   }
 
@@ -149,7 +149,6 @@ public abstract class AbstractMojoWriter {
     writeModelData();
     writeModelInfo();
     writeDomains();
-    writeTargetEncodingMap();
     writeExtraInfo();
   }
 
@@ -185,7 +184,6 @@ public abstract class AbstractMojoWriter {
     writekv("default_threshold", model.defaultThreshold());
     writekv("prior_class_distrib", Arrays.toString(model.priorClassDist()));
     writekv("model_class_distrib", Arrays.toString(model.modelClassDist()));
-    writekv("target_encoding_is_used", model.targetEncodingMap() != null);
     writekv("timestamp", model.timestamp());
     writekv("escape_domain_values", true); // Without escaping, there is no way to represent multiline categoricals as one-line values.
   }
@@ -247,25 +245,6 @@ public abstract class AbstractMojoWriter {
       startWritingTextFile(String.format("domains/d%03d.txt", domIndex++));
       for (String category : domain) {
         writeln(StringEscapeUtils.escapeNewlines(category));
-      }
-      finishWritingTextFile();
-    }
-  }
-  
-  /**
-   * Creates section `target_encoding_map` in model.ini file that store keys for retrieving map for target encoding
-   */
-  private void writeTargetEncodingMap() throws IOException {
-    Map<String, Map<String, int[]>> targetEncodingMap = model.targetEncodingMap();
-    if(targetEncodingMap != null) {
-      startWritingTextFile("feature_engineering/target_encoding.ini");
-      for (Map.Entry<String, Map<String, int[]>> columnEncodingsMap : targetEncodingMap.entrySet()) {
-        writeln("[" + columnEncodingsMap.getKey() + "]");
-        Map<String, int[]> encodings = columnEncodingsMap.getValue();
-        for (Map.Entry<String, int[]> catLevelInfo : encodings.entrySet()) {
-          int[] numAndDenom = catLevelInfo.getValue();
-          writelnkv(catLevelInfo.getKey(), numAndDenom[0] + " " + numAndDenom[1]);
-        }
       }
       finishWritingTextFile();
     }

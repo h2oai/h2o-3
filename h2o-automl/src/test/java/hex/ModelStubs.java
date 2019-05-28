@@ -1,5 +1,7 @@
 package hex;
 
+import ai.h2o.automl.targetencoding.TargetEncoderBuilder;
+import ai.h2o.automl.targetencoding.TargetEncoderModel;
 import hex.Model;
 import hex.ModelMetrics;
 import hex.ModelMojoWriter;
@@ -9,20 +11,24 @@ import water.Key;
 import java.io.IOException;
 
 public interface ModelStubs {
-  public class TestModel extends Model {
-    public TestModel( Key key, Parameters p, Output o ) { super(key,p,o); }
+  public class TestModel extends TargetEncoderModel {
+    public TestModel( Key key, TargetEncoderModel.TargetEncoderParameters p, TargetEncoderModel.TargetEncoderOutput o ) { super(key,p,o); }
     @Override
     public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) { throw H2O.unimpl(); }
     @Override
     protected double[] score0(double[] data, double[] preds) { throw H2O.unimpl(); }
 
-    public static class TestParam extends Parameters {
+    public static class TestParam extends TargetEncoderModel.TargetEncoderParameters {
       public String algoName() { return "A"; }
       public String fullName() { return "A"; }
       public String javaName() { return TestModel.class.getName(); }
       @Override public long progressUnits() { return 0; }
     }
-    public static class TestOutput extends Output { }
+    public static class TestOutput extends TargetEncoderModel.TargetEncoderOutput {
+      public TestOutput(TargetEncoderBuilder b) {
+        super(b);
+      }
+    }
 
     @Override
     public ModelMojoWriter getMojo() {

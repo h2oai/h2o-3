@@ -1,5 +1,6 @@
 package hex.genmodel;
 
+import hex.genmodel.algos.targetencoder.TargetEncoderMojoReader;
 import org.junit.Test;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -12,7 +13,7 @@ import static org.mockito.Mockito.*;
 
 public class ModelMojoReaderTest {
 
-  public static class TestMojoReader extends ModelMojoReader {
+  public static class TestMojoReader extends TargetEncoderMojoReader {
     MojoReaderBackend _mojoReaderBackend;
     
     public TestMojoReader(MojoReaderBackend mojoReaderBackend) {
@@ -21,7 +22,6 @@ public class ModelMojoReaderTest {
 
     @Override public String getModelName() { return null; } 
     @Override protected void readModelData() throws IOException { } 
-    @Override protected MojoModel makeModel(String[] columns, String[][] domains, String responseColumn) { return null; } 
     @Override public String mojoVersion() { return null; }
 
     @Override

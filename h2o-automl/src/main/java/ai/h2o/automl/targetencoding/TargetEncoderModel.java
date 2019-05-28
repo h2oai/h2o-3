@@ -15,12 +15,12 @@ import java.util.Map;
 public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderModel.TargetEncoderParameters, TargetEncoderModel.TargetEncoderOutput> {
 
   private final transient TargetEncoder _targetEncoder;
-  
+
   public TargetEncoderModel(Key<TargetEncoderModel> selfKey, TargetEncoderParameters parms, TargetEncoderOutput output, TargetEncoder tec) {
     super(selfKey, parms, output);
     _targetEncoder = tec;
   }
-  
+
   @Override
   public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     throw H2O.unimpl("No Model Metrics for TargetEncoder.");
