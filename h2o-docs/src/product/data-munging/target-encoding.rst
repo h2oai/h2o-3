@@ -262,7 +262,12 @@ Specify the name or column index of the fold column in the data. This defaults t
 Smoothing
 '''''''''
 
-The smoothing value is used for blending and to calculate ``lambda``. Smoothing controls the rate of transition between the particular level's posterior probability and the prior probability. For smoothing values approaching infinity, it becomes a hard threshold between the posterior and the prior probability.
+The smoothing value is used for blending and to calculate ``lambda``. Smoothing controls the rate of transition between the particular level's posterior probability and the prior probability. For smoothing values approaching infinity, it becomes a hard threshold between the posterior and the prior probability. This value defaults to 20.
+
+Inflection Point
+''''''''''''''''
+
+The inflection point value is used for blending and to calculate ``lambda``. This determines half of the minimal sample size for which we completely trust the estimate based on the sample in the particular level of the categorical variable. This value defaults value to 10.
 
 Seed
 ''''
