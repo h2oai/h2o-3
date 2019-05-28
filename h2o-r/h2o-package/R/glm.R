@@ -113,7 +113,7 @@
 #'          \code{\link{h2o.confusionMatrix}}, \code{\link{h2o.performance}}, \code{\link{h2o.giniCoef}},
 #'          \code{\link{h2o.logloss}}, \code{\link{h2o.varimp}}, \code{\link{h2o.scoreHistory}}
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' h2o.init()
 #' 
 #' # Run GLM of CAPSULE ~ AGE + RACE + PSA + DCAPS
