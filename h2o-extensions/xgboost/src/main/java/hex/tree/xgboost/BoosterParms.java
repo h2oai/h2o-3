@@ -46,10 +46,8 @@ public class BoosterParms extends Iced<BoosterParms> {
     for (String key : params.keySet()) {
       final Object value = params.get(key);
       final Object newValue;
-      if (value instanceof Float) {
-        newValue = FloatingDecimal.toJavaFormatString((Float) value);
-      } else if (value instanceof Double) {
-        newValue = FloatingDecimal.toJavaFormatString((Double) value);
+      if (value instanceof Float || value instanceof Double) {
+        newValue = value.toString();
       } else
         newValue = value;
       localized.put(key, newValue);
