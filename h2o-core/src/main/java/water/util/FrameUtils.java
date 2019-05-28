@@ -804,7 +804,7 @@ public class FrameUtils {
         for (int i = 0; i < frameVecs.length; ++i) {
           Vec src = frameVecs[i];
           if (_skipCols!=null && ArrayUtils.find(_skipCols, _frame._names[i])>=0) continue;
-          if (src.cardinality() > _maxLevels) {
+          if (src.cardinality() > _maxLevels && !(src.isDomainTruncated(_maxLevels))) { //avoid double-encoding by checking it was not previously truncated on first encoding
             Key<Frame> source = Key.make();
             Key<Frame> dest = Key.make();
             Frame train = new Frame(source, new String[]{"enum"}, new Vec[]{src});

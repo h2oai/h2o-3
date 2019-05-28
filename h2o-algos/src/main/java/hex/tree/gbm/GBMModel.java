@@ -171,7 +171,11 @@ public class GBMModel extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, 
 
     Frame adaptFrm = new Frame(frame);
     adaptTestForTrain(adaptFrm, true, false);
+    // remove non-feature columns
     adaptFrm.remove(_parms._response_column);
+    adaptFrm.remove(_parms._fold_column);
+    adaptFrm.remove(_parms._weights_column);
+    adaptFrm.remove(_parms._offset_column);
 
     final String[] outputNames = ArrayUtils.append(adaptFrm.names(), "BiasTerm");
     return new ScoreContributionsTask(this)
