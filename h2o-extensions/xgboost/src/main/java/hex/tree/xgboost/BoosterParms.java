@@ -1,15 +1,11 @@
 package hex.tree.xgboost;
 
-import sun.misc.FloatingDecimal;
 import water.Iced;
 import water.util.IcedHashMapGeneric;
 import water.util.TwoDimTable;
 
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 
 /**
