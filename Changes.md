@@ -38,7 +38,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yates/4/index.
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6523'>PUBDEV-6523</a>] - Predictions now work correctly on a subset of training features when using categorical_encoding. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6532'>PUBDEV-6532</a>] - Fixed an issue that caused XGBoost to format non-integer numbers (doubles, floats) using Locale.ENGLISH to ensure that a decimal point "." was used instead of a comma ",".
-This locale setting grouped large numbers by thousands and split the groups with ",", which was unparseable to XGBoost. (STILL OPEN)
+This locale setting grouped large numbers by thousands and split the groups with ",", which was unparseable to XGBoost.
 </li>
 </ul>
 
