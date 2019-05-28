@@ -1,5 +1,6 @@
 package hex.tree.xgboost;
 
+import sun.misc.FloatingDecimal;
 import water.Iced;
 import water.util.IcedHashMapGeneric;
 import water.util.TwoDimTable;
@@ -42,13 +43,13 @@ public class BoosterParms extends Iced<BoosterParms> {
    */
   private static Map<String, Object> localizeDecimalParams(final Map<String, Object> params) {
     Map<String, Object> localized = new HashMap<>(params.size());
-    final NumberFormat localizedNumberFormatter = DecimalFormat.getNumberInstance(Locale.ENGLISH);
-    localizedNumberFormatter.setGroupingUsed(false);
     for (String key : params.keySet()) {
       final Object value = params.get(key);
       final Object newValue;
-      if (value instanceof Float || value instanceof Double) {
-        newValue = localizedNumberFormatter.format(value);
+      if (value instanceof Float) {
+        newValue = FloatingDecimal.toJavaFormatString((Float) value);
+      } else if (value instanceof Double) {
+        newValue = FloatingDecimal.toJavaFormatString((Double) value);
       } else
         newValue = value;
       localized.put(key, newValue);
