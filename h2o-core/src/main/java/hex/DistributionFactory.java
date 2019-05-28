@@ -2,7 +2,6 @@ package hex;
 
 import hex.genmodel.utils.DistributionFamily;
 import water.H2O;
-import water.util.Log;
 
 public class DistributionFactory {
 
@@ -26,8 +25,7 @@ public class DistributionFactory {
             case laplace:
                 return new LaplaceDistribution(family);
             default:
-                
-                throw H2O.unimpl("family constr, family: "+family);
+                throw H2O.unimpl("Try to get "+family+" which is not supported.");
         }
     }
 
@@ -58,7 +56,7 @@ public class DistributionFactory {
             case quantile:
                 return new QuantileDistribution(params);
             default:
-                throw H2O.unimpl("params constr, family: "+family);
+                throw H2O.unimpl("Try to get "+family+" which is not supported.");
         }
     }
 }
