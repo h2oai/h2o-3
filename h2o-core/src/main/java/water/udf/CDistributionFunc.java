@@ -1,14 +1,13 @@
 package water.udf;
 
-import java.io.Serializable;
-
 /**
  * Custom Distribution Function
  */
-public interface CDistributionFunc extends CFunc, Serializable {
+public interface CDistributionFunc extends CFunc {
 
     /**
      * Canonical link
+     * For regression only - return f by default
      * @param f value in original space, to be transformed to link space
      * @return link(f)
      */
@@ -16,6 +15,7 @@ public interface CDistributionFunc extends CFunc, Serializable {
 
     /**
      * Canonical link inverse
+     * For regression only - return f by default
      * @param f value in link space, to be transformed back to original space
      * @return linkInv(f)
      */
@@ -23,6 +23,7 @@ public interface CDistributionFunc extends CFunc, Serializable {
 
     /**
      * String version of link inverse (for POJO scoring code generation)
+     * For regression only - return f by default
      * @param f value to be transformed by link inverse
      * @return String that turns into compilable expression of linkInv(f)
      */
@@ -48,6 +49,7 @@ public interface CDistributionFunc extends CFunc, Serializable {
 
     /**
      * Contribution to numerator for initial value computation
+     * Return w * (y - o) by default
      * @param w weight
      * @param o offset
      * @param y response
@@ -57,6 +59,7 @@ public interface CDistributionFunc extends CFunc, Serializable {
 
     /**
      * Contribution to denominator for initial value computation
+     * Return w by default
      * @param w weight
      * @param o offset
      * @param y response

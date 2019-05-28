@@ -1,6 +1,8 @@
 package water.udf;
 
-abstract public class CFuncObject<T extends CFunc> {
+import water.Iced;
+
+abstract public class CFuncObject<T extends CFunc> extends Iced<CFuncObject> {
     protected final CFuncRef cFuncRef;
     protected transient T func;
 

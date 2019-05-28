@@ -2,6 +2,9 @@ package hex;
 
 import hex.genmodel.utils.DistributionFamily;
 import water.H2O;
+import water.udf.CDistributionFunc;
+import water.udf.CFuncObject;
+import water.udf.CFuncRef;
 
 public class DistributionFactory {
 
@@ -55,6 +58,8 @@ public class DistributionFactory {
                 return new HuberDistribution(params);
             case quantile:
                 return new QuantileDistribution(params);
+            case custom:
+                return new CustomDistribution(params);
             default:
                 throw H2O.unimpl("Try to get "+family+" which is not supported.");
         }
@@ -447,6 +452,73 @@ class QuantileDistribution extends Distribution {
     @Override
     public double negHalfGradient(double y, double f) {
         return y > f ? 0.5 * quantileAlpha : 0.5 * (quantileAlpha - 1);
+    }
+}
+
+class CustomDistribution extends Distribution {
+    
+    final CustomDistributionWrapper customDistribution;
+    
+    public CustomDistribution(Model.Parameters params){
+        super(params); 
+        customDistribution = new CustomDistributionWrapper(CFuncRef.from(params._custom_distribution_func));
+    }
+
+    @Override
+    public double link(double f) {
+        return customDistribution.getFunc().link(f);
+    }
+
+    @Override
+    public double linkInv(double f) {
+        return customDistribution.getFunc().linkInv(f);
+    }
+
+    @Override
+    public String linkInvString(String f) {
+        return customDistribution.getFunc().linkInvString(f);
+    }
+
+    @Override
+    public double deviance(double w, double y, double f) {
+        return customDistribution.getFunc().deviance(w, y, f);
+    }
+
+    @Override
+    public double negHalfGradient(double y, double f) {
+        return customDistribution.getFunc().negHalfGradient(y, f);
+    }
+
+    @Override
+    public double initFNum(double w, double o, double y) {
+        return customDistribution.getFunc().initFNum(w, o, y);
+    }
+
+    @Override
+    public double initFDenom(double w, double o, double y) {
+        return customDistribution.getFunc().initFDenom(w, o, y);
+    }
+
+    @Override
+    public double gammaNum(double w, double y, double z, double f) {
+        return customDistribution.getFunc().gammaNum(w, y, z, f);
+    }
+
+    @Override
+    public double gammaDenom(double w, double y, double z, double f) {
+        return customDistribution.getFunc().gammaDenom(w, y, z, f);
+    }
+}
+
+class CustomDistributionWrapper extends CFuncObject<CDistributionFunc> {
+
+    CustomDistributionWrapper(CFuncRef ref){
+        super(ref);
+    }
+
+    @Override
+    protected Class<CDistributionFunc> getFuncType() {
+        return CDistributionFunc.class;
     }
 }
 
