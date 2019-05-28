@@ -13,8 +13,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yates/4/index.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5937'>PUBDEV-5937</a>] - Introduced a new xgboost.predict.native.enable property, which ensures that H2OXGBoostEstimator will no longer always predicts the same value.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6299'>PUBDEV-6299</a>] - Fixed an issue that caused XGBoost to produce an assertion error when taining and validation datasets include different categorical levels and categorical_encoding is set to one_hot_explicit. (STILL OPEN)
-</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6440'>PUBDEV-6440</a>] - Users can now parse files from s3 using s3's directory URL with s3 protocol.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6475'>PUBDEV-6475</a>] - Fixed an issue that caused h2o.getModelTree to produce an "invalid object for slot nas" error when XGBoost produced a root-node only decision tree. 
@@ -37,7 +35,10 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yates/4/index.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6521'>PUBDEV-6521</a>] - Models that use Label Encoding no longer predict incorrectly on test data.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6523'>PUBDEV-6523</a>] - Predictions now work correctly on a subset of training features when using categorical_encoding. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6523'>PUBDEV-6523</a>] - Predictions now work correctly on a subset of training features when using categorical_encoding. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6532'>PUBDEV-6532</a>] - Fixed an issue that caused XGBoost to format non-integer numbers (doubles, floats) using Locale.ENGLISH to ensure that a decimal point "." was used instead of a comma ",".
+This locale setting grouped large numbers by thousands and split the groups with ",", which was unparseable to XGBoost. (STILL OPEN)
 </li>
 </ul>
 
@@ -53,19 +54,9 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yates/4/index.
 <h4>Improvement</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6458'>PUBDEV-6458</a>] - Fixed an issue with the way that splits in the MOJO visualizer and Tree API were represented. (STILL OPEN) 
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6519'>PUBDEV-6519</a>] - Added a "toCategoricalCol" helper function for column type conversion.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6508'>PUBDEV-6508</a>] - Improved error messages when running Target Encoding in R. (STILL OPEN)
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6519'>PUBDEV-6519</a>] - Added a "toCategoricalCol" helper function for column type conversion. (STILL OPEN)
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6522'>PUBDEV-6522</a>] - Renamed "Generic Models" to "MOJO Import" in the documentation. (STILL OPEN)
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6525'>PUBDEV-6525</a>] - Defined several default values in the R API for Target Encoding. (STILL OPEN)
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6527'>PUBDEV-6527</a>] - Improved error messages when running Target Encoding in Python. (STILL OPEN)
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6529'>PUBDEV-6529</a>] - Set default values for blending hyperparameters in the Python API for Target Encoding. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6522'>PUBDEV-6522</a>] - Renamed "Generic Models" to "MOJO Import" in the documentation. 
 </li>
 </ul>
                                                                
