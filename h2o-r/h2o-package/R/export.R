@@ -79,7 +79,7 @@ h2o.exportHDFS <- function(object, path, force=FALSE) { h2o.exportFile(object,pa
 #' @param filename A string indicating the name that the CSV file should be
 #'        should be saved to.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #' iris_hf <- as.h2o(iris)

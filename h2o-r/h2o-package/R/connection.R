@@ -395,7 +395,7 @@ h2o.shutdown <- function(prompt = TRUE) {
 #'
 #' @seealso \linkS4class{H2OConnection}, \code{\link{h2o.init}}
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' h2o.init()
 #' h2o.clusterStatus()
 #' }

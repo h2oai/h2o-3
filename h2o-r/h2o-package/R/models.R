@@ -498,7 +498,7 @@ h2o.predict <- function(object, newdata, ...){
 #' @seealso \code{\link{h2o.gbm}} and  \code{\link{h2o.randomForest}} for model
 #'          generation in h2o.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
@@ -587,7 +587,7 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
 #' @seealso \code{\link{h2o.gbm}} and  \code{\link{h2o.randomForest}} for model
 #'          generation in h2o.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
@@ -632,7 +632,7 @@ h2o.staged_predict_proba <- staged_predict_proba.H2OModel
 #' @seealso \code{\link{h2o.gbm}} and  \code{\link{h2o.randomForest}} for model
 #'          generation in h2o.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
@@ -678,7 +678,7 @@ h2o.predict_contributions <- predict_contributions.H2OModel
 #' @param data (DEPRECATED) An H2OFrame. This argument is now called `newdata`.
 #' @return Returns an object of the \linkS4class{H2OModelMetrics} subclass.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
@@ -760,7 +760,7 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
 #' @param distribution Distribution for regression.
 #' @return Returns an object of the \linkS4class{H2OModelMetrics} subclass.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
@@ -819,7 +819,7 @@ h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL)
 #'          various threshold metrics. See \code{\link{h2o.performance}} for
 #'          creating H2OModelMetrics objects.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #'
@@ -885,7 +885,7 @@ h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #'          various threshold metrics. See \code{\link{h2o.performance}} for
 #'          creating H2OModelMetrics objects.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #'
@@ -950,7 +950,7 @@ h2o.pr_auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #'          various threshold metrics. See \code{\link{h2o.performance}} for
 #'          creating H2OModelMetrics objects.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #'
@@ -1014,7 +1014,7 @@ h2o.mean_per_class_error <- function(object, train=FALSE, valid=FALSE, xval=FALS
 #' @param valid Retrieve the validation AIC
 #' @param xval Retrieve the cross-validation AIC
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' h2o.init()
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(path = prostate_path)
@@ -1076,7 +1076,7 @@ h2o.aic <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' @param valid  Retrieve the validation set R2 if a validation set was passed in during model build time.
 #' @param xval Retrieve the cross-validation R2
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #'
 #' h <- h2o.init()
@@ -1137,7 +1137,7 @@ h2o.r2 <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' @param valid Retrieve the validation Mean Residual Deviance
 #' @param xval Retrieve the cross-validation Mean Residual Deviance
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #'
 #' h <- h2o.init()
@@ -1201,7 +1201,7 @@ h2o.mean_residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FA
 #'          threshold metrics. See \code{\link{h2o.performance}} for creating 
 #'          H2OModelMetrics objects.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #'
@@ -1308,7 +1308,7 @@ h2o.coef_norm <- function(object) {
 #'          \code{\link{h2o.metric}} for the various threshold metrics. See
 #'          \code{\link{h2o.performance}} for creating H2OModelMetrics objects.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #'
@@ -1381,7 +1381,7 @@ h2o.mse <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #'          \code{\link{h2o.metric}} for the various threshold metrics. See
 #'          \code{\link{h2o.performance}} for creating H2OModelMetrics objects.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #'
@@ -1448,7 +1448,7 @@ h2o.rmse <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' @param valid  Retrieve the validation set MAE if a validation set was passed in during model build time.
 #' @param xval Retrieve the cross-validation MAE
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #'
 #' h <- h2o.init()
@@ -1509,7 +1509,7 @@ h2o.mae <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' @param valid  Retrieve the validation set rmsle if a validation set was passed in during model build time.
 #' @param xval Retrieve the cross-validation rmsle
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #'
 #' h <- h2o.init()
@@ -1767,7 +1767,7 @@ h2o.hit_ratio_table <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #'          GINI coefficient, and \code{\link{h2o.mse}} for MSE. See
 #'          \code{\link{h2o.performance}} for creating H2OModelMetrics objects.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #'
@@ -2378,7 +2378,7 @@ h2o.null_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #'          \code{\link{h2o.performance}} for creating
 #'          \linkS4class{H2OModelMetrics}.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
@@ -2465,7 +2465,7 @@ setMethod("h2o.gainsLift", "H2OModelMetrics", function(object) {
 #'          \code{\link{h2o.performance}} for creating
 #'          \linkS4class{H2OModelMetrics}.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
@@ -2600,7 +2600,7 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds=
 #'          \code{\link{h2o.glm}}, \code{\link{h2o.randomForest}} for model
 #'          generation in h2o.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' if (requireNamespace("mlbench", quietly=TRUE)) {
 #'     library(h2o)
 #'     h2o.init()
@@ -2734,7 +2734,7 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
 #' @param num_of_features The number of features shown in the plot (default is 10 or all if less than 10).
 #' @seealso \code{\link{h2o.std_coef_plot}} for GLM.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
@@ -2806,7 +2806,7 @@ h2o.varimp_plot <- function(model, num_of_features = NULL){
 #' @seealso \code{\link{h2o.varimp_plot}} for variable importances plot of
 #'          random forest, GBM, deep learning.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #'
@@ -3013,7 +3013,7 @@ h2o.sdev <- function(object) {
 #'        count_table:    X     Y counts
 #'        response_table: X meanY counts
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #' df <- as.h2o(iris)
@@ -3059,7 +3059,7 @@ h2o.tabulate <- function(data, x, y,
 #' @return Returns a ggplot2-based heatmap of co-occurance.
 #' @seealso \code{\link{h2o.tabulate}}
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #' df <- as.h2o(iris)
@@ -3186,7 +3186,7 @@ h2o.cross_validation_predictions <- function(object) {
 #'  If the files already exists, they will be overridden. Files are only saves if plot = TRUE (default).
 #' @return Plot and list of calculated mean response tables for each feature requested.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
@@ -3357,7 +3357,7 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
 #' @seealso \code{\link{h2o.deeplearning}} for making H2O Deep Learning models.
 #' @seealso \code{\link{h2o.deepwater}} for making H2O DeepWater models.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #' prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
@@ -3747,7 +3747,7 @@ print.h2o.stackedEnsemble.summary <- function(x, ...) cat(x, sep = "\n")
 #' @param object a fitted \linkS4class{H2OModel} object.
 #' @return Returns seed to be used during training a model. Could be numeric or string.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
@@ -3776,7 +3776,7 @@ h2o.get_seed <- get_seed.H2OModel
 #' @return Returns H2O Generic Model based on given embedded model
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #'
 #' # Import default Iris dataset as H2O frame
 #' data <- as.h2o(iris)
@@ -3811,7 +3811,7 @@ h2o.genericModel <- function(model_file_path){
 #' @return Returns H2O Generic Model embedding given MOJO model
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #'
 #' # Import default Iris dataset as H2O frame
 #' data <- as.h2o(iris)
@@ -3849,7 +3849,7 @@ h2o.import_mojo <- function(mojo_file_path){
 #' @return Returns H2O Generic Model embedding given MOJO model
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #'
 #' # Import default Iris dataset as H2O frame
 #' data <- as.h2o(iris)
