@@ -101,7 +101,7 @@
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree for GBM, DRF, & XGBoost. Metrics per epoch for Deep Learning). Defaults to FALSE.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(h2o)
 #' h2o.init()
 #' 

@@ -139,7 +139,7 @@
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree for GBM, DRF, & XGBoost. Metrics per epoch for Deep Learning). Defaults to FALSE.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(h2o)
 #' h2o.init()
 #' iris_hf <- as.h2o(iris)
@@ -465,7 +465,7 @@ h2o.deeplearning <- function(x, y, training_frame,
 #'         reconstruction MSE or the per-feature squared error.
 #' @seealso \code{\link{h2o.deeplearning}} for making an H2OAutoEncoderModel.
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(h2o)
 #' h2o.init()
 #' prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
