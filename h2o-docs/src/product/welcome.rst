@@ -738,6 +738,12 @@ Note how the HDFS nodes have been removed from the picture below for explanatory
 
   .. figure:: images/h2o-on-yarn-4.png
 
+Hadoop and AWS
+~~~~~~~~~~~~~~
+
+AWS access credential configuration is provided to H2O by the Hadoop environment itself. There are a number of Hadoop distributions, and each distribution supports different means/providers to configure access to AWS. It is considered best practice to follow you Hadoop provider's guide.
+
+Since Apache Hadoop 2.8, accessing multiple buckets with distinct credentials by means of the S3A protocol is possible. Please refer to the `Hadoop documentation <https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html>`__ for more information. Users of derived distributions are advised to follow the respective documentation of their distribution and the specific version they use.
 
 Docker Users
 ------------
