@@ -28,7 +28,7 @@ h2o.findSynonyms <- function(word2vec, word, count = 20) {
 #'    Each word of a sequences is internally mapped to a vector and vectors belonging to
 #'    the same sentence are averaged and returned in the result.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' h2o.init()
 #'
 #' # Build a dummy word2vec model
@@ -64,7 +64,7 @@ h2o.transform <- function(word2vec, words, aggregate_method = c("NONE", "AVERAGE
 #'
 #' @param word2vec A word2vec model.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' h2o.init()
 #'
 #' # Build a dummy word2vec model

@@ -13,7 +13,7 @@
 #' @return Returns an object with the prediction result
 #' @importFrom jsonlite fromJSON
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.predict_json('~/GBM_model_python_1473313897851_6.zip', '{"C7":1}')
 #' h2o.predict_json('~/GBM_model_python_1473313897851_6.zip', '{"C7":1}', c(".", "lib"))
