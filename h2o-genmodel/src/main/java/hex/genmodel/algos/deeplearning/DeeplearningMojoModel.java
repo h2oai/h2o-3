@@ -99,7 +99,7 @@ public class DeeplearningMojoModel extends MojoModel {
     } else {
       if (_family == DistributionFamily.modified_huber) {
         preds[0] = -1;
-        preds[2] = _family.linkInv(preds[0]);
+        preds[2] = linkInv(_family, preds[0]);
         preds[1] = 1 - preds[2];
       } else if (this.isClassifier()) {
         assert (preds.length == out.length + 1);
@@ -117,12 +117,37 @@ public class DeeplearningMojoModel extends MojoModel {
         else
           preds[0] = out[0];
         // transform prediction to response space
-        preds[0] = _family.linkInv(preds[0]);
+        preds[0] = linkInv(_family, preds[0]);
         if (Double.isNaN(preds[0]))
           throw new RuntimeException("Predicted regression target NaN!");
       }
     }
     return preds;
+  }
+
+
+  /**
+   * Calculate inverse link depends on distribution type
+   * Be careful if you are changing code here - you have to change it in hex.LinkFunction too
+   * @param distribution
+   * @param f raw prediction
+   * @return calculated inverse link value
+   */
+  private double linkInv(DistributionFamily distribution, double f){
+    switch (distribution) {
+      case bernoulli:
+      case quasibinomial:
+      case modified_huber:
+      case ordinal:
+        return 1/(1+Math.min(1e19, Math.exp(-f)));
+      case multinomial:
+      case poisson:
+      case gamma:
+      case tweedie:
+        return Math.min(1e19, Math.exp(f));
+      default:
+        return f;
+    }
   }
 
   @Override

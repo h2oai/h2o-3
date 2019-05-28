@@ -77,7 +77,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
     public MetricBuilderRegression _mb;
     final Distribution _distribution;
     RegressionMetrics(DistributionFamily family) {
-      _distribution = family ==null ? new Distribution(DistributionFamily.gaussian) : new Distribution(family);
+      _distribution = family == null ? DistributionFactory.getDistribution(DistributionFamily.gaussian) : DistributionFactory.getDistribution(family);
     }
     @Override public void map(Chunk[] chks) {
       _mb = new MetricBuilderRegression(_distribution);

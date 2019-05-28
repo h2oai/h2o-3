@@ -1,9 +1,6 @@
 package hex.ensemble;
 
-import hex.Distribution;
-import hex.Model;
-import hex.ModelCategory;
-import hex.ModelMetrics;
+import hex.*;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMModel;
 import hex.tree.drf.DRFModel;
@@ -370,7 +367,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       } else {
         // !beenHere: this is the first base_model
         this.modelCategory = aModel._output.getModelCategory();
-        this._dist = new Distribution(distributionFamily(aModel));
+        this._dist = DistributionFactory.getDistribution(distributionFamily(aModel));
         responseColumn = aModel._parms._response_column;
 
         if (! responseColumn.equals(_parms._response_column))

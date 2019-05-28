@@ -36,7 +36,7 @@ public final class GbmMojoModel extends SharedTreeMojoModel implements SharedTre
     public final double[] unifyPreds(double[] row, double offset, double[] preds) {
         if (_family == bernoulli || _family == quasibinomial || _family == modified_huber) {
             double f = preds[1] + _init_f + offset;
-            preds[2] = _family.linkInv(f);
+            preds[2] = linkInv(_family, f);
             preds[1] = 1.0 - preds[2];
         } else if (_family == multinomial) {
             if (_nclasses == 2) { // 1-tree optimization for binomial
@@ -46,13 +46,38 @@ public final class GbmMojoModel extends SharedTreeMojoModel implements SharedTre
             GenModel.GBM_rescale(preds);
         } else { // Regression
             double f = preds[0] + _init_f + offset;
-            preds[0] = _family.linkInv(f);
+            preds[0] = linkInv(_family, f);
             return preds;
         }
         if (_balanceClasses)
             GenModel.correctProbabilities(preds, _priorClassDistrib, _modelClassDistrib);
         preds[0] = GenModel.getPrediction(preds, _priorClassDistrib, row, _defaultThreshold);
         return preds;
+    }
+
+
+    /**
+     * Calculate inverse link depends on distribution type
+     * Be careful if you are changing code here - you have to change it in hex.LinkFunction too
+     * @param distribution
+     * @param f raw prediction
+     * @return calculated inverse link value
+     */
+    private double linkInv(DistributionFamily distribution, double f){
+        switch (distribution) {
+            case bernoulli:
+            case quasibinomial:
+            case modified_huber:
+            case ordinal:
+                return 1/(1+Math.min(1e19, Math.exp(-f)));
+            case multinomial:
+            case poisson:
+            case gamma:
+            case tweedie:
+                return Math.min(1e19, Math.exp(f));
+            default:
+                return f;
+        }
     }
 
     @Override
