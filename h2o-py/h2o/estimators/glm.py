@@ -602,14 +602,14 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         """
         
 
-        One of: ``"family_default"``, ``"identity"``, ``"logit"``, ``"log"``, ``"inverse"``, ``"tweedie"``,
-        ``"ologit"``, ``"oprobit"``, ``"ologlog"``  (default: ``"family_default"``).
+        One of: ``"family_default"``, ``"identity"``, ``"logit"``, ``"log"``, ``"inverse"``, ``"tweedie"``, ``"ologit"``
+        (default: ``"family_default"``).
         """
         return self._parms.get("link")
 
     @link.setter
     def link(self, link):
-        assert_is_type(link, None, Enum("family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit", "oprobit", "ologlog"))
+        assert_is_type(link, None, Enum("family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"))
         self._parms["link"] = link
 
 
