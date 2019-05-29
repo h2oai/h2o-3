@@ -39,9 +39,13 @@ def test_train_verbosity():
     aml = H2OAutoML(project_name="test_train_verbosity",
                     keep_cross_validation_predictions=True,
                     max_models=2,
+                    stopping_tolerance=0.01,  # triggers a warning event log message
                     seed=1234)
+    print("verbosity off")
     aml.train(y=y, training_frame=train)
+    print("verbosity info")
     aml.train(y=y, training_frame=train, verbosity='info')
+    print("verbosity warn")
     aml.train(y=y, training_frame=train, verbosity='warn')
 
 
