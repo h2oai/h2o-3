@@ -58,7 +58,7 @@
 #' @param custom_non_data_line_markers (Optional) If a line in imported file starts with any character in given string it will NOT be imported. Empty string means all lines are imported, NULL means that default behaviour for given format will be used
 #' @seealso \link{h2o.import_sql_select}, \link{h2o.import_sql_table}, \link{h2o.parseRaw}
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
 #' prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate = h2o.importFile(path = prostate_path)

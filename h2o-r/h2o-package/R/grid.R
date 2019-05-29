@@ -34,7 +34,7 @@
 #'        or  \code{list(strategy = "RandomDiscrete", stopping_metric = "misclassification", stopping_tolerance = 0.00001, stopping_rounds = 5)}.
 #' @importFrom jsonlite toJSON
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' library(jsonlite)
 #' h2o.init()
@@ -173,7 +173,7 @@ h2o.grid <- function(algorithm,
 #' @param sort_by Sort the models in the grid space by a metric. Choices are "logloss", "residual_deviance", "mse", "auc", "accuracy", "precision", "recall", "f1", etc.
 #' @param decreasing Specify whether sort order should be decreasing
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' library(jsonlite)
 #' h2o.init()

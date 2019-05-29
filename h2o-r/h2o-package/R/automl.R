@@ -58,7 +58,7 @@
 #'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.
 #' @return An \linkS4class{H2OAutoML} object.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #' votes_path <- system.file("extdata", "housevotes.csv", package = "h2o")
@@ -322,7 +322,7 @@ predict.H2OAutoML <- function(object, newdata, ...) {
 #' @param project_name A string indicating the project_name of the automl instance to retrieve.
 #' @return Returns an object that is a subclass of \linkS4class{H2OAutoML}.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #' votes_path <- system.file("extdata", "housevotes.csv", package = "h2o")

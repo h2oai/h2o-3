@@ -30,7 +30,7 @@
 #'
 #' @return Returns a list of hex keys in the current H2O instance.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
@@ -51,7 +51,7 @@ h2o.ls <- function() {
 #' @param timeout_secs Timeout in seconds. Default is no timeout.
 #' @seealso \code{\link{h2o.rm}}
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
@@ -124,7 +124,7 @@ h2o.getFrame <- function(id) {
 #' @param model_id A string indicating the unique model_id of the model to retrieve.
 #' @return Returns an object that is a subclass of \linkS4class{H2OModel}.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #'
@@ -227,7 +227,7 @@ h2o.getModel <- function(model_id) {
 #' @return If path is NULL, then pretty print the POJO to the console.
 #'         Otherwise save it to the specified directory and return POJO file name.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h <- h2o.init()
 #' fr <- as.h2o(iris)
@@ -312,7 +312,7 @@ h2o.download_pojo <- function(model, path=NULL, getjar=NULL, get_jar=TRUE, jar_n
 #' @return Name of the MOJO file written to the path.
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h <- h2o.init()
 #' fr <- as.h2o(iris)
