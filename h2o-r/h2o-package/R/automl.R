@@ -282,6 +282,20 @@ predict.H2OAutoML <- function(object, newdata, ...) {
   h2o.getFrame(dest_key)
 }
 
+
+.automl.fetch_table <- function(table, show_progress=TRUE) {
+  # disable the progress bar is show_progress is set to FALSE, e.g. since showing multiple progress bars is confusing to users.
+  # In any case, revert back to user's original progress setting.
+  is_progress <- isTRUE(as.logical(.h2o.is_progress()))
+  if (show_progress) h2o.show_progress() else h2o.no_progress()
+  frame <- tryCatch(
+    as.h2o(table),
+    error = identity,
+    finally = if (is_progress) h2o.show_progress() else h2o.no_progress()
+  )
+  return(frame)
+}
+
 #' Get an R object that is a subclass of \linkS4class{H2OAutoML}
 #'
 #' @param project_name A string indicating the project_name of the automl instance to retrieve.
@@ -304,22 +318,14 @@ h2o.getAutoML <- function(project_name) {
   #project <- automl_job$project  # This is not functional right now, we can get project_name from user input instead
   leaderboard <- as.data.frame(automl_job["leaderboard_table"]$leaderboard_table)
   row.names(leaderboard) <- seq(nrow(leaderboard))
-  
-  # Intentionally mask the progress bar here since showing multiple progress bars is confusing to users.
-  # If any failure happens, revert back to user's original setting for progress and display the error message.
-  is_progress <- isTRUE(as.logical(.h2o.is_progress()))
-  h2o.no_progress()
-  leaderboard <- tryCatch(
-    as.h2o(leaderboard),
-    error = identity,
-    finally = if (is_progress) h2o.show_progress()
-  )
 
+  leaderboard <- .automl.fetch_table(leaderboard, show_progress=FALSE)
   # If the leaderboard is empty, it creates a dummy row so let's remove it
   if (leaderboard$model_id[1,1] == "") {
     leaderboard <- leaderboard[-1,]
     warning("The leaderboard contains zero models: try running AutoML for longer (the default is 1 hour).")
   }
+
   # If leaderboard is not empty, grab the leader model, otherwise create a "dummy" leader
   if (nrow(leaderboard) > 0) {
     leaderboard[,2:length(leaderboard)] <- as.numeric(leaderboard[,2:length(leaderboard)])  # Convert metrics to numeric
@@ -330,13 +336,26 @@ h2o.getAutoML <- function(project_name) {
     leader <- .newH2OModel(Class = Class,
                            model_id = "dummy")
   }
+
+  event_log <- as.data.frame(automl_job["event_log_table"]$event_log_table)
+  event_log <- .automl.fetch_table(event_log, show_progress=FALSE)
+  # row.names(event_log) <- seq(nrow(event_log))
+
+  training_info <- list()
+  for (i in seq(nrow(event_log))) {
+    key <- event_log[i, 'name']
+    if (!is.na(key)) training_info[key] <- event_log[i, 'value']
+  }
+
   project <- automl_job$project
 
   # Make AutoML object
   return(new("H2OAutoML",
              project_name = project,
              leader = leader,
-             leaderboard = leaderboard
+             leaderboard = leaderboard,
+             event_log = event_log,
+             training_info = training_info
   ))
 }
 
