@@ -548,7 +548,7 @@ def help_references_for(algo):
 
 def help_example_for(algo):
     if algo == "aggregator":
-        return """\donttest{
+        return """\dontrun{
             library(h2o)
             h2o.init()
             df <- h2o.createFrame(rows=100, cols=5, categorical_fraction=0.6, integer_fraction=0,
@@ -562,7 +562,7 @@ def help_example_for(algo):
                                  categorical_encoding=encoding)
             }"""
     if algo == "deeplearning":
-        return """\donttest{
+        return """\dontrun{
             library(h2o)
             h2o.init()
             iris_hf <- as.h2o(iris)
@@ -572,7 +572,7 @@ def help_example_for(algo):
             predictions <- h2o.predict(iris_dl, iris_hf)
             }"""
     if algo == "gbm":
-        return """\donttest{
+        return """\dontrun{
         library(h2o)
         h2o.init()
 
@@ -586,7 +586,7 @@ def help_example_for(algo):
                 ntrees = 3, max_depth = 3, min_rows = 2)
         }"""
     if algo == "glm":
-        return """\donttest{
+        return """\dontrun{
         h2o.init()
 
         # Run GLM of CAPSULE ~ AGE + RACE + PSA + DCAPS
@@ -613,7 +613,7 @@ def help_example_for(algo):
         h2o.std_coef_plot(glm, num_of_features = 20)
         }"""
     if algo == "glrm":
-        return """\donttest{
+        return """\dontrun{
             library(h2o)
             h2o.init()
             australia_path <- system.file("extdata", "australia.csv", package = "h2o")
@@ -622,7 +622,7 @@ def help_example_for(algo):
                      gamma_x = 0.5, gamma_y = 0, max_iterations = 1000)
             }"""
     if algo == "kmeans":
-        return """\donttest{
+        return """\dontrun{
         library(h2o)
         h2o.init()
         prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
@@ -630,14 +630,14 @@ def help_example_for(algo):
         h2o.kmeans(training_frame = prostate, k = 10, x = c("AGE", "RACE", "VOL", "GLEASON"))
         }"""
     if algo == "naivebayes":
-        return """\donttest{
+        return """\dontrun{
         h2o.init()
         votes_path <- system.file("extdata", "housevotes.csv", package = "h2o")
         votes <- h2o.uploadFile(path = votes_path, header = TRUE)
         h2o.naiveBayes(x = 2:17, y = 1, training_frame = votes, laplace = 3)
         }"""
     if algo == "pca":
-        return """\donttest{
+        return """\dontrun{
         library(h2o)
         h2o.init()
         australia_path <- system.file("extdata", "australia.csv", package = "h2o")
@@ -645,7 +645,7 @@ def help_example_for(algo):
         h2o.prcomp(training_frame = australia, k = 8, transform = "STANDARDIZE")
         }"""
     if algo == "svd":
-        return """\donttest{
+        return """\dontrun{
         library(h2o)
         h2o.init()
         australia_path <- system.file("extdata", "australia.csv", package = "h2o")
@@ -819,7 +819,7 @@ def help_afterword_for(algo):
             #'
             #' @param model an \linkS4class{H2OClusteringModel} corresponding from a \code{h2o.aggregator} call.
             #' @examples
-            #' \donttest{
+            #' \dontrun{
             #' library(h2o)
             #' h2o.init()
             #' df <- h2o.createFrame(rows=100, cols=5, categorical_fraction=0.6, integer_fraction=0,
@@ -855,7 +855,7 @@ def help_afterword_for(algo):
             #'         reconstruction MSE or the per-feature squared error.
             #' @seealso \code{\link{h2o.deeplearning}} for making an H2OAutoEncoderModel.
             #' @examples
-            #' \donttest{
+            #' \dontrun{
             #' library(h2o)
             #' h2o.init()
             #' prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
@@ -1061,7 +1061,7 @@ def help_afterword_for(algo):
             #'         training data;
             #' @seealso \code{\link{h2o.glrm}} for making an H2ODimReductionModel.
             #' @examples
-            #' \donttest{
+            #' \dontrun{
             #' library(h2o)
             #' h2o.init()
             #' iris_hf <- as.h2o(iris)
@@ -1093,7 +1093,7 @@ def help_afterword_for(algo):
             #'         down into the original feature space, where each row is one archetype.
             #' @seealso \code{\link{h2o.glrm}} for making an H2ODimReductionModel.
             #' @examples
-            #' \donttest{
+            #' \dontrun{
             #' library(h2o)
             #' h2o.init()
             #' iris_hf <- as.h2o(iris)

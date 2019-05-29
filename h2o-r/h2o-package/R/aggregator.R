@@ -22,7 +22,7 @@
 #'        Defaults to 500.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #' df <- h2o.createFrame(rows=100, cols=5, categorical_fraction=0.6, integer_fraction=0,
@@ -93,7 +93,7 @@ h2o.aggregator <- function(training_frame, x,
 #'
 #' @param model an \linkS4class{H2OClusteringModel} corresponding from a \code{h2o.aggregator} call.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #' df <- h2o.createFrame(rows=100, cols=5, categorical_fraction=0.6, integer_fraction=0,
