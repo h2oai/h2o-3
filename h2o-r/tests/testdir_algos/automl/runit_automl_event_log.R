@@ -62,5 +62,5 @@ automl.train_verbosity.test <- function() {
 
 doSuite("AutoML EventLog tests", makeSuite(
     automl.event_log.test,
-    # automl.train_verbosity.test
+    automl.train_verbosity.test
 ))
