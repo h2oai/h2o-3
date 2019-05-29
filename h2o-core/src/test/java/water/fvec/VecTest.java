@@ -5,6 +5,7 @@ import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
+import water.util.ReflectionUtils;
 
 import static org.junit.Assert.*;
 import static water.fvec.Vec.makeCon;
@@ -164,7 +165,7 @@ public class VecTest extends TestUtil {
   }
 
   @Test public void testChunkForChunkIdxMRTask() {
-    Assume.assumeTrue(H2O.getCloudSize() > 0);
+    Assume.assumeTrue(H2O.getCloudSize() > 1);
     try {
       Scope.enter();
       Vec v = Scope.track(makeConN((long) 1e6, 16));
@@ -179,7 +180,9 @@ public class VecTest extends TestUtil {
       // 2. Install updated Vec in DKV
       v._type = Vec.T_TIME;
       DKV.put(v);
-      // 3. Run another MRTask, we should get updated Vec on all nodes not the stale one
+      // 3. Just for fun - show the state of DKV after the update (not needed for the test)
+      printStoreInfo(v._key);
+      // 4. Run another MRTask, we should get updated Vec on all nodes not the stale one
       new MRTask() {
         @Override
         public void map(Chunk c) {
@@ -191,5 +194,55 @@ public class VecTest extends TestUtil {
       Scope.exit();
     }
   }
+
+  private static void printStoreInfo(final Key<Vec> k) {
+    GatherKeyInfoTask info = new GatherKeyInfoTask(k).doAllNodes();
+    for (int i = 0; i < H2O.getCloudSize(); i++) {
+      System.out.print(H2O.CLOUD._memary[i].getIpPortString());
+      System.out.print(" self: ");
+      System.out.print(checkMark(H2O.CLOUD._memary[i] == H2O.SELF));
+      System.out.print(" home: ");
+      System.out.print(checkMark(H2O.CLOUD._memary[i] == k.home_node()));
+      System.out.print(" value: ");
+      System.out.print(checkMark(info._hasVal[i]));
+      System.out.print(" pojo: ");
+      System.out.print(checkMark(info._hasPOJO[i]));
+      System.out.println();
+    }
+  }
+
+  private static String checkMark(boolean c) {
+    return c ? "✓" : " ";  
+  }
   
+  static class GatherKeyInfoTask extends MRTask<GatherKeyInfoTask> {
+    private final Key<Vec> _k;
+    private boolean[] _hasVal;
+    private boolean[] _hasPOJO;
+
+    GatherKeyInfoTask(Key<Vec> k) {
+      _k = k;
+    }
+
+    @Override
+    public void setupLocal() {
+      _hasVal = new boolean[H2O.getCloudSize()];
+      _hasPOJO = new boolean[H2O.getCloudSize()];
+      Value val = H2O.STORE.get(_k);
+      if (val != null) {
+        Vec localVec = ReflectionUtils.getFieldValue(val, "_pojo");
+        _hasVal[H2O.SELF.index()] = true;
+        _hasPOJO[H2O.SELF.index()] = localVec != null;
+      }
+    }
+
+    @Override
+    public void reduce(GatherKeyInfoTask mrt) {
+      for (int i = 0; i < H2O.getCloudSize(); i++) {
+        _hasVal[i] = _hasVal[i] || mrt._hasVal[i];
+        _hasPOJO[i] = _hasPOJO[i] || mrt._hasPOJO[i];
+      }
+    }
+  }
+
 }
