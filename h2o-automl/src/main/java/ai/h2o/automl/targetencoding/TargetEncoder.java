@@ -1,6 +1,5 @@
 package ai.h2o.automl.targetencoding;
 
-import org.apache.commons.lang.ArrayUtils;
 import water.*;
 import water.fvec.*;
 import water.fvec.task.FillNAWithLongValueTask;
@@ -14,7 +13,6 @@ import water.util.TwoDimTable;
 import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.*;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Status: alpha version
@@ -205,19 +203,14 @@ public class TargetEncoder {
       return data;
     }
 
-    private void updateDomainGlobally(Frame fr, String teColumnName, String[] domain) {
-      Lockable lock = fr.write_lock();
-      Vec updatedVec = fr.vec(teColumnName);
-      updatedVec.setDomain(domain);
-      System.out.println("Updated domain vec in imputeNAs method:" + updatedVec._key + ". New domain: " + ArrayUtils.toString(updatedVec.domain()));
-      DKV.put(updatedVec);
-      try {
-//        fr.update(null, 15, TimeUnit.SECONDS);
-        fr.update();
-      } catch (Exception ex) {
-        System.out.println("Exception during update happened" + ex.getClass().getName() + " / " + ex.getMessage());
-      }
-      lock.unlock();
+    private void updateDomainGlobally(Frame fr, String teColumnName, final String[] domain) {
+      final Lockable lockable = fr.write_lock();
+      final Vec updatedVec = fr.vec(teColumnName);
+      
+      new UpdateVecDomainTask(updatedVec._key, domain)
+              .doAllNodes();
+      
+      lockable.unlock();
     }
   
     public static void printOutFrameAsTable(Frame fr) {
