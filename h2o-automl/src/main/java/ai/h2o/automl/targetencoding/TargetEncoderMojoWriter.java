@@ -24,7 +24,7 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
 
   @Override
   protected void writeExtraInfo() throws IOException {
-    
+    // Do nothing
   }
 
   /**

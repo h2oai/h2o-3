@@ -33,7 +33,7 @@ public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoMo
     Map<String, Map<String, int[]>> encodingMap = null;
 
     if(getMojoReaderBackend().exists(pathToSource)) {
-      BufferedReader source = getMojoReaderBackend().getTextFile("feature_engineering/target_encoding.ini");
+      BufferedReader source = getMojoReaderBackend().getTextFile(pathToSource);
 
       encodingMap = new HashMap<>();
       Map<String, int[]> encodingsForColumn = null;

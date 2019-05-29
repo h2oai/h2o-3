@@ -31,7 +31,7 @@ public class MojoTESupportIntegrationTest extends TestUtil {
   @Test
   public void withTargetEncodingsFromGenModelEnd2EndTest() throws IOException, PredictException  {
 
-    String mojoFileName = "gbm_mojo_te.zip";
+    String mojoFileName = "mojo_te.zip";
     Map<String, Frame> testEncodingMap = null;
     Scope.enter();
     try {
