@@ -283,10 +283,21 @@ class H2OAutoML(object):
 
     @property
     def event_log(self):
+        """
+        retrieve the backend event log from an H2OAutoML object
+
+        :return: an H2OFrame with detailed events occurred during the AutoML training.
+        """
         return H2OFrame([]) if self._event_log is None else self._event_log
 
     @property
     def training_info(self):
+        """
+        expose the name/value columns of `event_log` as a simple dictionary, for example `start_epoch`, `stop_epoch`, ...
+        See :func:`event_log` to obtain a description of those key/value pairs.
+
+        :return: a dictionary with event_log['name'] column as keys and event_log['value'] column as values.
+        """
         return dict() if self._training_info is None else self._training_info
 
     #---------------------------------------------------------------------------
@@ -317,6 +328,8 @@ class H2OAutoML(object):
         :param blending_frame: H2OFrame used to train the the metalearning algorithm in Stacked Ensembles (instead of relying on cross-validated predicted values).
             This is optional, but when provided, it is also recommended to disable cross validation 
             by setting `nfolds=0` and to provide a leaderboard frame for scoring purposes.
+        :param verbosity: Verbosity of the backend messages printed during training.
+            Available options are 'debug', 'info' or 'warn'. Defaults to None (disable live log).
 
         :returns: An H2OAutoML object.
 
@@ -420,12 +433,10 @@ class H2OAutoML(object):
 
         self._job = H2OJob(resp['job'], "AutoML")
         try:
-            setattr(self, '_progress_state', {})
-            self._job._print_verbose_info = ft.partial(self._print_verbose_info, verbosity=verbosity)
+            self._job._print_verbose_info = ft.partial(self._print_verbose_info, verbosity=verbosity, state={})
             self._job.poll(verbose_model_scoring_history=verbosity is not None)
         finally:
             self._job._print_verbose_info(1)
-            delattr(self, '_progress_state')
 
         self._fetch()
 
@@ -491,7 +502,7 @@ class H2OAutoML(object):
     # Private
     #-------------------------------------------------------------------------------------------------------------------
     def _fetch(self):
-        state = H2OAutoML._fetch_state(self.project_name, properties=['leader_id', 'leaderboard', 'event_log'])
+        state = H2OAutoML._fetch_state(self.project_name)
         self._leader_id = state['leader_id']
         self._leaderboard = state['leaderboard']
         self._event_log = state['event_log']
@@ -505,25 +516,25 @@ class H2OAutoML(object):
     def _get_params(self):
         return H2OAutoML._fetch_state(self.project_name)['json']
 
-    def _print_verbose_info(self, bar_progress=0, verbosity=None):
+    def _print_verbose_info(self, bar_progress=0, verbosity=None, state=None):
         levels = ['Debug', 'Info', 'Warn']
         if verbosity is None or verbosity.capitalize() not in levels:
             return
 
         levels = levels[levels.index(verbosity.capitalize()):]
-        if self._job.progress > self._progress_state.get('last_job_progress', 0):
+        if self._job.progress > state.get('last_job_progress', 0):
             # print("\nbar_progress={}, job_progress={}".format(bar_progress, self._job.progress))
             events = H2OAutoML._fetch_state(self.project_name, properties=['event_log'])['event_log']
             events = events[events['level'].isin(levels), :]
-            last_nrows = self._progress_state.get('last_events_nrows', 0)
+            last_nrows = state.get('last_events_nrows', 0)
             if events.nrows > last_nrows:
                 fr = events[last_nrows:, ['timestamp', 'message']].as_data_frame(use_pandas=False, header=False)
                 print('')
                 for r in fr:
                     print("{}: {}".format(r[0], r[1]))
                 print('')
-                self._progress_state['last_events_nrows'] = events.nrows
-        self._progress_state['last_job_progress'] = self._job.progress
+                state['last_events_nrows'] = events.nrows
+        state['last_job_progress'] = self._job.progress
 
     @staticmethod
     def _fetch_table(table, key=None, progress_bar=True):
@@ -545,7 +556,7 @@ class H2OAutoML(object):
         leaderboard_list = [key["name"] for key in state_json['leaderboard']['models']]
         leader_id = leaderboard_list[0] if (leaderboard_list is not None and len(leaderboard_list) > 0) else None
 
-        should_fetch = lambda prop: properties is not None and prop in properties
+        should_fetch = lambda prop: properties is None or prop in properties
 
         leader = None
         if should_fetch('leader'):
@@ -578,4 +589,4 @@ def get_automl(project_name):
     :param str project_name:  A string indicating the project_name of the automl instance to retrieve.
     :returns: A dictionary containing the project_name, leader model, and leaderboard.
     """
-    return H2OAutoML._fetch_state(project_name, properties=['leader', 'leaderboard', 'event_log'])
+    return H2OAutoML._fetch_state(project_name)

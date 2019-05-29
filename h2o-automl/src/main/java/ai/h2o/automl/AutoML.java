@@ -875,12 +875,12 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private boolean exceededSearchLimits(WorkAllocations.Work work, String algo_desc, boolean ignoreLimits) {
     String fullName = algo_desc == null ? work.algo.toString() : work.algo+" ("+algo_desc+")";
     if (!ignoreLimits && runCountdown.timedOut()) {
-      eventLog.info(Stage.ModelTraining, "AutoML: out of time; skipping "+fullName+" in "+work.type);
+      eventLog.debug(Stage.ModelTraining, "AutoML: out of time; skipping "+fullName+" in "+work.type);
       return true;
     }
 
     if (!ignoreLimits && remainingModels() <= 0) {
-      eventLog.info(Stage.ModelTraining, "AutoML: hit the max_models limit; skipping "+fullName+" in "+work.type);
+      eventLog.debug(Stage.ModelTraining, "AutoML: hit the max_models limit; skipping "+fullName+" in "+work.type);
       return true;
     }
     return false;

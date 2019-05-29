@@ -168,14 +168,24 @@ NULL
   h2o.getFutureModel(.h2o.startModelJob(algo, params, h2oRestApiVersion))
 }
 
+.h2o.pollModelUpdates <- function(job) {
+  cat(paste0("\nScoring History for Model ",job$dest$name, " at ", Sys.time(),"\n"))
+  print(paste0("Model Build is ", job$progress*100, "% done..."))
+  if(!is.null(job$progress_msg)){
+    print(tail(h2o.getModel(job$dest$name)@model$scoring_history))
+  }else{
+    print("Scoring history is not available yet...") #Catch 404 with scoring history. Can occur when nfolds >=2
+  }
+}
+
 #' Get future model
 #'
 #' @rdname h2o.getFutureModel
 #' @param object H2OModel
 #' @param verbose Print model progress to console. Default is FALSE
 #' @export
-h2o.getFutureModel <- function(object,verbose=FALSE) {
-  .h2o.__waitOnJob(object@job_key,verboseModelScoringHistory=verbose)
+h2o.getFutureModel <- function(object, verbose=FALSE) {
+  .h2o.__waitOnJob(object@job_key, pollUpdates=ifelse(verbose, .h2o.pollModelUpdates, NULL))
   h2o.getModel(object@model_id)
 }
 
