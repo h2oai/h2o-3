@@ -537,7 +537,6 @@ public class EasyPredictModelWrapper implements Serializable {
    * @throws PredictException
    */
   public BinomialModelPrediction predictBinomial(RowData data, double offset) throws PredictException {
-    transformWithTargetEncoding(data);
 
     double[] preds = preamble(ModelCategory.Binomial, data, offset);
 
