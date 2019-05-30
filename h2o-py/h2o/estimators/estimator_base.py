@@ -112,8 +112,8 @@ class H2OEstimator(ModelBase):
     def _train(self, x=None, y=None, training_frame=None, offset_column=None, fold_column=None,
               weights_column=None, validation_frame=None, max_runtime_secs=None, ignored_columns=None,
               model_id=None, verbose=False, extend_parms_fn=None):
-        assert_is_type(training_frame, None, H2OFrame)
-        assert_is_type(validation_frame, None, H2OFrame)
+        assert_is_type(training_frame, None, H2OFrame, str)
+        assert_is_type(validation_frame, None, H2OFrame, str)
         assert_is_type(y, None, int, str)
         assert_is_type(x, None, int, str, [str, int], {str, int})
         assert_is_type(ignored_columns, None, [str, int], {str, int})
