@@ -37,12 +37,14 @@ automl.train_verbosity.test <- function() {
     max_models <- 2
     seed <- 1234
 
+    print("verbosity disabled")
     aml = h2o.automl(project_name="r_test_train_verbosity",
                      y=y,
                      training_frame=train,
                      max_models=max_models,
                      seed=seed)
 
+    print("verbosity level = info")
     aml = h2o.automl(project_name="r_test_train_verbosity_info",
                      y=y,
                      training_frame=train,
@@ -50,6 +52,7 @@ automl.train_verbosity.test <- function() {
                      seed=seed,
                      verbosity='info')
 
+    print("verbosity level = warn")
     aml = h2o.automl(project_name="r_test_train_verbosity_warn",
                      y=y,
                      training_frame=train,
