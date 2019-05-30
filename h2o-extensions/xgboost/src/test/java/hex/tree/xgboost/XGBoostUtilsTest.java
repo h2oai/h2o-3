@@ -629,13 +629,21 @@ public class XGBoostUtilsTest extends TestUtil {
     frame.add("response", vec);
   }
 
-  protected static Matrices createIdentityMatrices(final int dim, final int maxArrLen) throws XGBoostError {
+  protected static Matrices createIdentityMatrices(final int dim, final int maxArrLen, final int chunkLen) throws XGBoostError {
     long[][] rowHeaders = createLayout(dim + 1, maxArrLen).allocateLong();
     int[][] colIndices = createLayout(dim, maxArrLen).allocateInt();
     float[][] values = createLayout(dim, maxArrLen).allocateFloat();
+    
+    assertTrue("Indentity matrix dimension must be divisible by chunkLen without remainder", dim % chunkLen == 0);
+    
+    long[] chunkLayout = new long[dim / chunkLen];
+    for (int i = 0; i < dim / chunkLen; i++) {
+      chunkLayout[i] = chunkLen;
+    }
 
     TestFrameBuilder testFrameBuilder = new TestFrameBuilder()
-            .withUniformVecTypes(dim, Vec.T_NUM);
+            .withUniformVecTypes(dim, Vec.T_NUM)
+            .withChunkLayout(chunkLayout);
 
     long pos = 0;
     for (int m = 0; m < dim; m++) {
@@ -743,15 +751,20 @@ public class XGBoostUtilsTest extends TestUtil {
     @Parameterized.Parameters
     public static Collection<Object[]> data() {
       return Arrays.asList(new Object[][]{
-              {30, 10, MAX_ARR_SIZE},
-              {30, 10, 10},
-              {30, MAX_ARR_SIZE, MAX_ARR_SIZE},
-              {300, 10, MAX_ARR_SIZE},
-              {300, 10, 10},
-              {300, MAX_ARR_SIZE, MAX_ARR_SIZE},
-              {1000, 10, MAX_ARR_SIZE},
-              {1000, 10, 10},
-              {1000, MAX_ARR_SIZE, MAX_ARR_SIZE}
+              {30, 10, MAX_ARR_SIZE, 30},
+              {30, 10, 10, 30},
+              {30, 10, MAX_ARR_SIZE, 10}, // 3 chunks per vec
+              {30, 10, 10, 10}, // 3 chunks per vec
+              {30, MAX_ARR_SIZE, MAX_ARR_SIZE, 30},
+              {300, 10, MAX_ARR_SIZE, 300},
+              {300, 10, 10, 300},
+              {300, 10, 10, 10}, // 30 chunks per vec
+              {300, MAX_ARR_SIZE, MAX_ARR_SIZE, 300},
+              {300, MAX_ARR_SIZE, MAX_ARR_SIZE, 10}, // 30 chunks per vec
+              {1000, 10, MAX_ARR_SIZE, 1000},
+              {1000, 10, MAX_ARR_SIZE, 100}, // 100 chunks per vec
+              {1000, 10, 10, 1000},
+              {1000, MAX_ARR_SIZE, MAX_ARR_SIZE, 1000}
       });
     }
 
@@ -761,22 +774,23 @@ public class XGBoostUtilsTest extends TestUtil {
     public int maxArrayLen; // Maximum length of second dimension of arrays used in XGBoostUtils to represent sparse data
     @Parameterized.Parameter(2)
     public int maxNativeArrayLen; //Maximum length of the second dimension of arrays used to hand over sparse data to "native" XGBoost4J
+    @Parameterized.Parameter(3)
+    public int chunkLen;
 
     @Test
     public void testCSRPredictions_compare_with_native() throws XGBoostError {
 
-      Frame trainingFrame = null;
-      XGBoostModel model = null;
       Booster booster = null;
-      Frame h2oPreds = null;
       try {
+        Scope.enter();
         Map<String, String> rabitEnv = new HashMap<>();
         rabitEnv.put("DMLC_TASK_ID", "0");
         Rabit.init(rabitEnv);
 
         // Prepare data matrices & label
-        final Matrices matrices = createIdentityMatrices(matrixDimension, Integer.MAX_VALUE - 10);
-        trainingFrame = matrices._h2oFrame;
+        final Matrices matrices = createIdentityMatrices(matrixDimension, Integer.MAX_VALUE - 10, chunkLen);
+        Frame trainingFrame = matrices._h2oFrame;
+        Scope.track(trainingFrame);
         final DMatrix train = matrices._dmatrix;
         float[] label = createRandomLabelCol(matrixDimension);
         train.setLabel(label);
@@ -831,20 +845,20 @@ public class XGBoostUtilsTest extends TestUtil {
         parms._backend = XGBoostModel.XGBoostParameters.Backend.cpu;
         parms._tree_method = XGBoostModel.XGBoostParameters.TreeMethod.exact;
         parms._seed = 1;
-        model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+        XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
         assertNotNull(model);
+        Scope.track_generic(model);
 
-        h2oPreds = model.score(trainingFrame);
+        Frame h2oPreds = model.score(trainingFrame);
+        Scope.track(h2oPreds);
 
         comparePreds(predict, h2oPreds.vec("predict"), 1e-6f);
 
 
       } finally {
+        Scope.exit();
         Rabit.shutdown();
-        if (trainingFrame != null) trainingFrame.delete();
-        if (model != null) model.delete();
-        if (booster != null) booster.dispose();
-        if (h2oPreds != null) h2oPreds.delete();
+        booster.dispose();
       }
     }
 
