@@ -115,6 +115,7 @@ public class SparseMatrixFactory {
     private static class InitializeCSRMatrixFromChunkIdsMrFun extends MrFun<CalculateCSRMatrixDimensionsMrFun> {
 
         Frame _f;
+        int[] _chunks;
         Vec.Reader[] _vecs; 
         Vec.Reader _w;
         DataInfo _di;
@@ -135,6 +136,7 @@ public class SparseMatrixFactory {
             _actualRows = new int[chunks.length];
             
             _f = f;
+            _chunks = chunks;
             _vecs = vecs;
             _w = w;
             _di = di;
@@ -146,16 +148,17 @@ public class SparseMatrixFactory {
         }
 
         @Override
-        protected void map(int chunk) {
-            long nonZeroCount = _dims._precedingNonZeroElementsCounts[chunk];
-            int rwRow = _dims._precedingRowCounts[chunk];
-            NestedArrayPointer rowHeaderPointer = new NestedArrayPointer(_dims._precedingRowCounts[chunk]);
+        protected void map(int chunkIdx) {
+            int chunk = _chunks[chunkIdx];
+            long nonZeroCount = _dims._precedingNonZeroElementsCounts[chunkIdx];
+            int rwRow = _dims._precedingRowCounts[chunkIdx];
+            NestedArrayPointer rowHeaderPointer = new NestedArrayPointer(rwRow);
             NestedArrayPointer dataPointer = new NestedArrayPointer(nonZeroCount);
 
             for(long i = _f.anyVec().espc()[chunk]; i < _f.anyVec().espc()[chunk+1]; i++) {
                 if (_w != null && _w.at(i) == 0) continue;
                 rowHeaderPointer.setAndIncrement(_matrix._rowHeaders, nonZeroCount);
-                _actualRows[chunk]++;
+                _actualRows[chunkIdx]++;
                 for (int j = 0; j < _di._cats; ++j) {
                     dataPointer.set(_matrix._sparseData, 1);
                     if (_vecs[j].isNA(i)) {
