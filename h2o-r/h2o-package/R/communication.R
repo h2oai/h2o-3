@@ -924,12 +924,12 @@ h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
       }
     }
   },
-    interrupt = function(x) {
-      url.suf <- paste0(.h2o.__JOBS,"/",job_key,"/cancel")
-      .h2o.doSafePOST(urlSuffix=url.suf)
-      message(paste0("\nJob ",job_key," was cancelled.\n"))
-      return()
-    })
+  interrupt = function(x) {
+    url.suf <- paste0(.h2o.__JOBS,"/",job_key,"/cancel")
+    .h2o.doSafePOST(urlSuffix=url.suf)
+    message(paste0("\nJob ",job_key," was cancelled.\n"))
+    return()
+  })
 }
 
 #------------------------------------ Utilities ------------------------------------#

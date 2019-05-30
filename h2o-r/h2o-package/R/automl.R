@@ -296,19 +296,21 @@ predict.H2OAutoML <- function(object, newdata, ...) {
   if (is.na(idx)) return()
 
   levels <- levels[idx:length(levels)]
-  if (job$progress > ifelse(is.null(state$last_job_progress), 0, state$last_job_progress)) {
-    project_name <- job$dest$name
-    events <- .automl.fetch_state(project_name, properties=c('event_log'))$event_log
-    events <- events[events['level'] %in% levels,]
-    last_nrows <- ifelse(is.null(state$last_events_nrows), 1, state$last_events_nrows)
-    if (h2o.nrow(events) > last_nrows) {
-      for (row in last_nrows:nrow(events)) {
-        cat(paste0("\n", events[row, 'timestamp'], ': ', events[row, 'message']))
+  try({
+      if (job$progress > ifelse(is.null(state$last_job_progress), 0, state$last_job_progress)) {
+        project_name <- job$dest$name
+        events <- .automl.fetch_state(project_name, properties=c('event_log'))$event_log
+        events <- events[events['level'] %in% levels,]
+        last_nrows <- ifelse(is.null(state$last_events_nrows), 0, state$last_events_nrows)
+        if (h2o.nrow(events) > last_nrows) {
+          for (row in (last_nrows+1):nrow(events)) {
+            cat(paste0("\n", events[row, 'timestamp'], ': ', events[row, 'message']))
+          }
+          state$last_events_nrows <- h2o.nrow(events)
+        }
       }
-      state$last_events_nrows <- h2o.nrow(events)
-    }
-  }
-  state$last_job_progress <- job$progress
+      state$last_job_progress <- job$progress
+  })
   return(state)
 }
 

@@ -433,10 +433,9 @@ class H2OAutoML(object):
 
         self._job = H2OJob(resp['job'], "AutoML")
         try:
-            self._job._print_verbose_info = ft.partial(self._print_verbose_info, verbosity=verbosity, state={})
-            self._job.poll(verbose_model_scoring_history=verbosity is not None)
+            self._job.poll(poll_updates=ft.partial(self._poll_training_updates, verbosity=verbosity, state={}))
         finally:
-            self._job._print_verbose_info(1)
+            self._poll_training_updates(self._job, 1)
 
         self._fetch()
 
@@ -516,25 +515,32 @@ class H2OAutoML(object):
     def _get_params(self):
         return H2OAutoML._fetch_state(self.project_name)['json']
 
-    def _print_verbose_info(self, bar_progress=0, verbosity=None, state=None):
+    def _poll_training_updates(self, job, bar_progress=0, verbosity=None, state=None):
+        """
+        the callback function used to print verbose info when polling AutoML job.
+        """
         levels = ['Debug', 'Info', 'Warn']
         if verbosity is None or verbosity.capitalize() not in levels:
             return
 
         levels = levels[levels.index(verbosity.capitalize()):]
-        if self._job.progress > state.get('last_job_progress', 0):
-            # print("\nbar_progress={}, job_progress={}".format(bar_progress, self._job.progress))
-            events = H2OAutoML._fetch_state(self.project_name, properties=['event_log'])['event_log']
-            events = events[events['level'].isin(levels), :]
-            last_nrows = state.get('last_events_nrows', 0)
-            if events.nrows > last_nrows:
-                fr = events[last_nrows:, ['timestamp', 'message']].as_data_frame(use_pandas=False, header=False)
-                print('')
-                for r in fr:
-                    print("{}: {}".format(r[0], r[1]))
-                print('')
-                state['last_events_nrows'] = events.nrows
-        state['last_job_progress'] = self._job.progress
+        try:
+            if job.progress > state.get('last_job_progress', 0):
+                # print("\nbar_progress={}, job_progress={}".format(bar_progress, job.progress))
+                events = H2OAutoML._fetch_state(self.project_name, properties=['event_log'])['event_log']
+                events = events[events['level'].isin(levels), :]
+                last_nrows = state.get('last_events_nrows', 0)
+                if events.nrows > last_nrows:
+                    fr = events[last_nrows:, ['timestamp', 'message']].as_data_frame(use_pandas=False, header=False)
+                    print('')
+                    for r in fr:
+                        print("{}: {}".format(r[0], r[1]))
+                    print('')
+                    state['last_events_nrows'] = events.nrows
+            state['last_job_progress'] = job.progress
+        except Exception as e:
+            print("Failed polling AutoML progress log: {}".format(e))
+
 
     @staticmethod
     def _fetch_table(table, key=None, progress_bar=True):
