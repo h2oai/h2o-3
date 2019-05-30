@@ -3,62 +3,40 @@ from . import locate
 
 
 class CustomDistributionGaussian:
+
     def link(self, f):
-        return f
-    
-    def linkInv(self, f):
-        return f
-    
-    def linkInvString(self, f):    
-        return f
+        return [f, f]
     
     def deviance(self, w, y, f):
         return w * (y - f) * (y - f)
+
+    def init(self, w, o, y):
+        return [w * (y - o), w]
     
-    def negHalfGradient(self, y, f):
+    def gradient(self, y, f):
         return y - f
     
-    def initFNum(self, w, o, y):
-        return w*(y-o)
-    
-    def initFDenom(self, w, o, y):
-        return w
-    
-    def gammaNum(self, w, y, z, f):
-        return w * z
-    
-    def gammaDenom(self, w, y, z, f):
-        return w
+    def gamma(self, w, y, z, f):
+        return [w * z, w]
+
 
 class CustomDistributionGaussianWrong:
+    
     def link(self, f):
-        return f
-
-    def linkInv(self, f):
-        return f
-
-    def linkInvString(self, f):
-        return f
+        return [f,f]
 
     def deviance(self, w, y, f):
         return w * (y - f) * (y - f)
 
-    def negHalfGradient(self, y, f):
+    def init(self, w, o, y):
+        return [w * (y - o), w]
+
+    def gradient(self, y, f):
         return (y - f) * (y - f)
 
-    def initFNum(self, w, o, y):
-        return w*(y-o)
-
-    def initFDenom(self, w, o, y):
-        return w
-
-    def gammaNum(self, w, y, z, f):
-        return w * z
-
-    def gammaDenom(self, w, y, z, f):
-        return w
-
-
+    def gamma(self, w, y, z, f):
+        return [w * z, w]
+    
 
 def dataset_prostate():
     df = h2o.import_file(path=locate("smalldata/prostate/prostate.csv"))

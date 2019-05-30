@@ -457,56 +457,64 @@ class QuantileDistribution extends Distribution {
 
 class CustomDistribution extends Distribution {
     
-    final CustomDistributionWrapper customDistribution;
+    final CDistributionFunc customDistribution;
     
     public CustomDistribution(Model.Parameters params){
         super(params); 
-        customDistribution = new CustomDistributionWrapper(CFuncRef.from(params._custom_distribution_func));
+        customDistribution = new CustomDistributionWrapper(CFuncRef.from(params._custom_distribution_func)).getFunc();
+        assert customDistribution != null;
     }
 
     @Override
     public double link(double f) {
-        return customDistribution.getFunc().link(f);
+        double[] link = customDistribution.link(f);
+        assert link.length == 2;
+        return link[0];
     }
 
     @Override
     public double linkInv(double f) {
-        return customDistribution.getFunc().linkInv(f);
+        double[] link = customDistribution.link(f);
+        assert link.length == 2;
+        return link[1];
     }
 
     @Override
     public String linkInvString(String f) {
-        return customDistribution.getFunc().linkInvString(f);
+        throw H2O.unimpl("Custom Distribution is not supported in POJO.");
     }
 
     @Override
     public double deviance(double w, double y, double f) {
-        return customDistribution.getFunc().deviance(w, y, f);
+        return customDistribution.deviance(w, y, f);
     }
 
     @Override
     public double negHalfGradient(double y, double f) {
-        return customDistribution.getFunc().negHalfGradient(y, f);
+        return customDistribution.gradient(y, f);
     }
 
     @Override
     public double initFNum(double w, double o, double y) {
-        return customDistribution.getFunc().initFNum(w, o, y);
+        double[] init = customDistribution.init(w, o, y);
+        assert init.length == 2;
+        return init[0];
     }
 
     @Override
     public double initFDenom(double w, double o, double y) {
-        return customDistribution.getFunc().initFDenom(w, o, y);
+        double[] init = customDistribution.init(w, o, y);
+        return init[1];
     }
 
     @Override
     public double gammaNum(double w, double y, double z, double f) {
-        return customDistribution.getFunc().gammaNum(w, y, z, f);
+        return customDistribution.gamma(w, y, z, f)[0];
     }
 
     @Override
     public double gammaDenom(double w, double y, double z, double f) {
-        return customDistribution.getFunc().gammaDenom(w, y, z, f);
+        return customDistribution.gamma(w, y, z, f)[1];
     }
 }
 

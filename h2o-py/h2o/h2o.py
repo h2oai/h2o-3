@@ -1573,8 +1573,8 @@ class {}Wrapper({}, DistributionFunc, object):
         class_name = "{}.{}Wrapper".format(module_name, class_name)
     else:
         assert_satisfies(func, inspect.isclass(func), "The parameter `func` should be str or class")
-        for method in ['link', 'linkInv', 'linkInvString', 'deviance', 'negHalfGradient', 'initFNum', 'initFDenom', 'gammaNum', 'gammaDenom']:
-            assert_satisfies(func, method in func.__dict__, "The class `func` needs to define method `{}`".format(method))
+        for method in ['link', 'deviance', 'gradient', 'init', 'gamma']:
+            assert_satisfies(func, method in dir(func), "The class `func` needs to define method `{}`".format(method))
 
         assert_satisfies(class_name, class_name is None,
                          "If class is specified then class_name parameter needs to be None")
