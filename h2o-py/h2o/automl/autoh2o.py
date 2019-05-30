@@ -432,10 +432,11 @@ class H2OAutoML(object):
             return
 
         self._job = H2OJob(resp['job'], "AutoML")
+        poll_updates = ft.partial(self._poll_training_updates, verbosity=verbosity, state={})
         try:
-            self._job.poll(poll_updates=ft.partial(self._poll_training_updates, verbosity=verbosity, state={}))
+            self._job.poll(poll_updates=poll_updates)
         finally:
-            self._poll_training_updates(self._job, 1)
+            poll_updates(self._job, 1)
 
         self._fetch()
 
