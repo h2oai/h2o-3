@@ -28,7 +28,7 @@ public class EventLog extends Keyed<EventLog> {
     DKV.put(this);
   }
 
-  public static String idForRun(Key<AutoML> runKey) {
+  private static String idForRun(Key<AutoML> runKey) {
     if (null == runKey)
       return "AutoML_Events_dummy";
     return "AutoML_Events_" + runKey.toString();
