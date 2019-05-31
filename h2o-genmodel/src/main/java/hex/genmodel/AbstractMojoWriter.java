@@ -8,6 +8,7 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -233,16 +234,21 @@ public abstract class AbstractMojoWriter {
     finishWritingTextFile();
   }
 
+  private static final Pattern QUOTE_PATTERN = Pattern.compile("[\"]{1}"); // Escape quotes
+  private static final String QUOTE_ESCAPING_REPLACEMENT = "\"\"";
   /**
    * Create files containing domain definitions for each categorical column.
    */
-  private void writeDomains() throws IOException {
+  protected void writeDomains() throws IOException {
     int domIndex = 0;
     for (String[] domain : model.scoringDomains()) {
       if (domain == null) continue;
       startWritingTextFile(String.format("domains/d%03d.txt", domIndex++));
       for (String category : domain) {
-        writeln(category.replaceAll("\n", "\\n"));  // replace newlines with "\n" escape sequences
+        StringBuilder stringBuilder = new StringBuilder("\"");
+        stringBuilder.append(QUOTE_PATTERN.matcher(category).replaceAll(QUOTE_ESCAPING_REPLACEMENT));
+        stringBuilder.append("\"");
+        writeln(stringBuilder.toString());  // replace newlines with "\n" escape sequences
       }
       finishWritingTextFile();
     }
