@@ -188,7 +188,7 @@ final public class ExternalFrameReaderClient {
         sentAb.putA1(expectedTypes);
         sentAb.putA4(selectedColumnIndices);
         writeToChannel(sentAb, channel);
-        AutoBuffer receiveAb = new AutoBuffer(channel, null);
+        AutoBuffer receiveAb = new AutoBuffer(channel);
         // once we send H2O all information it needs to prepare for reading, it sends us back number of rows
         this.numRows = receiveAb.getInt();
         return receiveAb;

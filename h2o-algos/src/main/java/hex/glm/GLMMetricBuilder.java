@@ -27,6 +27,7 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
   double residual_deviance;
   double null_devince;
   long _nobs;
+  double _log_likelihood;
   double _aic;// internal AIC used only for poisson family!
   private double _aic2;// internal AIC used only for poisson family!
   final GLMModel.GLMWeightsFun _glmf;
@@ -75,6 +76,8 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
   @Override public double[] perRow(double ds[], float[] yact, double weight, double offset, Model m) {
     if(weight == 0)return ds;
     _metricBuilder.perRow(ds,yact,weight,offset,m);
+    if (_glmf._family.equals(Family.negativebinomial))
+      _log_likelihood += m.likelihood(weight, yact[0], ds[0]);
     if(!ArrayUtils.hasNaNsOrInfs(ds) && !ArrayUtils.hasNaNsOrInfs(yact)) {
       if(_glmf._family == Family.multinomial || _glmf._family == Family.ordinal)
         add2(yact[0], ds, weight, offset);
@@ -154,6 +157,8 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
       _metricBuilder.reduce(v._metricBuilder);
     residual_deviance  += v.residual_deviance;
     null_devince += v.null_devince;
+    if (_glmf._family.equals(Family.negativebinomial))
+      _log_likelihood += v._log_likelihood;
     _nobs += v._nobs;
     _aic2 += v._aic2;
     _wcount += v._wcount;
@@ -187,6 +192,9 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
       case tweedie:
       case multinomial:
         _aic = Double.NaN;
+        break;
+      case negativebinomial:
+        _aic = 2* _log_likelihood;
         break;
       default:
         assert false : "missing implementation for family " + _glmf._family;

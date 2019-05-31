@@ -59,6 +59,11 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     return _names.length;
   }
 
+  /** Returns names of input features. */
+  @Override public String[] features() {
+    return Arrays.copyOf(_names, nfeatures());
+  }
+
   /** Returns number of output classes for classifiers, 1 for regression models, and 0 for unsupervised models. */
   @Override public int nclasses() {
     return 0;

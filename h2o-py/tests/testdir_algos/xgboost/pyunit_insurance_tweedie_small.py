@@ -11,13 +11,11 @@ def xgboost_insurance_tweedie_small():
     test_frame = h2o.import_file(pyunit_utils.locate("smalldata/testng/insurance_validation1.csv"))
     x = ['District', 'Group', 'Age', 'Holders']
     y = 'Claims'
-    offset_column = 'offset'
-
 
     # Model with maximum of 2 trees
     model_2_trees = H2OXGBoostEstimator(training_frame=training_frame, learn_rate=0.7,
                                         booster='gbtree', seed=1, ntrees=2, distribution='tweedie',
-                                        offset_column = offset_column);
+                                        )
     model_2_trees.train(x=x, y=y, training_frame=training_frame)
     prediction_2_trees = model_2_trees.predict(test_frame)
 
@@ -26,7 +24,7 @@ def xgboost_insurance_tweedie_small():
     # Model with 10 trees
     model_10_trees = H2OXGBoostEstimator(training_frame=training_frame, learn_rate=0.7,
                                          booster='gbtree', seed=1, ntrees=10, distribution='tweedie',
-                                         offset_column = offset_column)
+                                         )
     model_10_trees.train(x=x, y=y, training_frame=training_frame)
     prediction_10_trees = model_10_trees.predict(test_frame)
 

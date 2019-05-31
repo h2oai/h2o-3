@@ -8,7 +8,6 @@ import water.rapids.Merge;
 import water.rapids.Rapids;
 import water.rapids.Val;
 import water.rapids.ast.prims.mungers.AstGroup;
-import water.util.FrameUtils;
 import water.util.Log;
 import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.*;
 
@@ -138,29 +137,21 @@ public class TargetEncoder {
       AstGroup.AGG[] aggs = new AstGroup.AGG[2];
 
       AstGroup.NAHandling na = AstGroup.NAHandling.ALL;
-      aggs[0] = new AstGroup.AGG(AstGroup.FCN.sum, targetIndex, na, (int) fr.vec(targetIndex).max() + 1);
-      aggs[1] = new AstGroup.AGG(AstGroup.FCN.nrow, targetIndex, na, (int) fr.vec(targetIndex).max() + 1);
+      aggs[0] = new AstGroup.AGG(AstGroup.FCN.sum, targetIndex, na, -1);
+      aggs[1] = new AstGroup.AGG(AstGroup.FCN.nrow, targetIndex, na, -1);
 
-      Frame result = new AstGroup().performGroupingWithAggregations(fr, groupByColumns, aggs, -1).getFrame();
+      Frame result = new AstGroup().performGroupingWithAggregations(fr, groupByColumns, aggs).getFrame();
       return register(result);
     }
 
-    // This method is mutating data frame
     Frame ensureTargetColumnIsBinaryCategorical(Frame data, String targetColumnName) {
-        int targetIndex = data.find(targetColumnName);
-        if (data.vec(targetIndex).isCategorical()){
-            Vec targetVec = data.vec(targetIndex);
-            if(targetVec.cardinality() == 2) {
-                return data;
-            }
-            else {
-                throw new IllegalStateException("`target` must be a binary vector. We do not support multi-class target case for now");
-            }
-        }
-        else {
+        Vec targetVec = data.vec(targetColumnName);
+        if (!targetVec.isCategorical())
           throw new IllegalStateException("`target` must be a binary categorical vector. We do not support multi-class and continuos target case for now");
-        }
-    };
+        if (targetVec.cardinality() != 2)
+          throw new IllegalStateException("`target` must be a binary vector. We do not support multi-class target case for now");
+        return data;
+    }
 
 
   public Map<String, Frame> prepareEncodingMap(Frame data, String targetColumnName, String foldColumnName) {
@@ -236,10 +227,10 @@ public class TargetEncoder {
       AstGroup.AGG[] aggs = new AstGroup.AGG[2];
 
       AstGroup.NAHandling na = AstGroup.NAHandling.ALL;
-      aggs[0] = new AstGroup.AGG(AstGroup.FCN.sum, numeratorColumnIndex, na, (int) data.vec(numeratorColumnIndex).max() + 1);
-      aggs[1] = new AstGroup.AGG(AstGroup.FCN.sum, denominatorColumnIndex, na, (int) data.vec(denominatorColumnIndex).max() + 1);
+      aggs[0] = new AstGroup.AGG(AstGroup.FCN.sum, numeratorColumnIndex, na, -1);
+      aggs[1] = new AstGroup.AGG(AstGroup.FCN.sum, denominatorColumnIndex, na, -1);
 
-      Frame result = new AstGroup().performGroupingWithAggregations(data, new int[]{teColumnIndex}, aggs, -1).getFrame();
+      Frame result = new AstGroup().performGroupingWithAggregations(data, new int[]{teColumnIndex}, aggs).getFrame();
       return register(result);
     }
 
@@ -409,26 +400,6 @@ public class TargetEncoder {
       }
     }
 
-    //TODO think about what value could be used for substitution ( maybe even taking into account target's value)
-    /*private String getDenominatorIsZeroSubstitutionTerm(Frame fr, String targetColumnName, double globalMeanForTargetClass) {
-      // This should happen only for Leave-One-Out case:
-      // These groups have this singleness in common and we probably want to represent it somehow.
-      // If we choose just global average then we just lose difference between single-row-groups that have different target values.
-      // We can: 1) Group is so small that we even don't want to care about te_column's values.... just use Prior average.
-      //         2) Count single-row-groups and calculate    #of_single_rows_with_target0 / #all_single_rows  ;  (and the same for target1)
-      //TODO Introduce parameter for algorithm that will choose the way of calculating of the value that is being imputed.
-      String denominatorIsZeroSubstitutionTerm;
-
-      if(targetColumnName == null) { // When we calculating encodings for instances without target values.
-        denominatorIsZeroSubstitutionTerm = String.format("%s", globalMeanForTargetClass);
-      } else {
-        int targetColumnIndex = fr.find(targetColumnName);
-        double globalMeanForNonTargetClass = 1 - globalMeanForTargetClass;  // This is probably a bad idea to use frequencies for `0` class when we use frequencies for `1` class elsewhere
-        denominatorIsZeroSubstitutionTerm = String.format("ifelse ( == (cols %s [%d]) 1) %f  %f", fr._key, targetColumnIndex, globalMeanForTargetClass, globalMeanForNonTargetClass);
-      }
-      return denominatorIsZeroSubstitutionTerm;
-    }*/
-
     Frame addNoise(Frame fr, String applyToColumnName, double noiseLevel, long seed) {
       int appyToColumnIndex = fr.find(applyToColumnName);
       if (seed == -1) seed = new Random().nextLong();
@@ -516,7 +487,6 @@ public class TargetEncoder {
      * @param noiseLevel amount of noise to add to the final encodings.
      * @param imputeNAsWithNewCategory set to `true` to impute NAs with new category.
      * @param seed we might want to specify particular values for reproducibility in tests.
-     * @param isTrainOrValidSet `true` if we are applying target encoding to training/validation set and `false` for test set.
      * @return copy of the `data` frame with encodings
      */
     public Frame applyTargetEncoding(Frame data,
@@ -527,8 +497,7 @@ public class TargetEncoder {
                                      boolean withBlendedAvg,
                                      double noiseLevel,
                                      boolean imputeNAsWithNewCategory,
-                                     long seed,
-                                     boolean isTrainOrValidSet) {
+                                     long seed) {
 
         if(noiseLevel < 0 )
             throw new IllegalStateException("`_noiseLevel` must be non-negative");
@@ -539,9 +508,7 @@ public class TargetEncoder {
           dataWithAllEncodings = data.deepCopy(Key.make().toString());
           DKV.put(dataWithAllEncodings);
 
-          if (isTrainOrValidSet) {
-            ensureTargetColumnIsBinaryCategorical(dataWithAllEncodings, targetColumnName);
-          }
+          ensureTargetColumnIsBinaryCategorical(dataWithAllEncodings, targetColumnName);
 
           for (String teColumnName : _columnNamesToEncode) {
 
@@ -559,8 +526,6 @@ public class TargetEncoder {
                 Frame holdoutEncodeMap = null;
                 Frame dataWithMergedAggregationsK = null;
                 try {
-                  assert isTrainOrValidSet : "Following calculations assume we can access target column but we can do this only on training and validation sets.";
-
                   if (foldColumnName == null)
                     throw new IllegalStateException("`foldColumn` must be provided for dataLeakageHandlingStrategy = KFold");
 
@@ -628,7 +593,6 @@ public class TargetEncoder {
                 Frame groupedTargetEncodingMap = null;
                 Frame dataWithMergedAggregationsL = null;
                 try {
-                  assert isTrainOrValidSet : "Following calculations assume we can access target column but we can do this only on training and validation sets.";
                   foldColumnIsInEncodingMapCheck(foldColumnName, encodingMapForCurrentTEColumn);
 
                   groupedTargetEncodingMap = groupingIgnoringFordColumn(foldColumnName, encodingMapForCurrentTEColumn, teColumnName);
@@ -668,7 +632,7 @@ public class TargetEncoder {
                   int teColumnIndexInGroupedEncodingMapNone = groupedTargetEncodingMapForNone.find(teColumnName);
                   dataWithMergedAggregationsN = mergeByTEColumn(dataWithAllEncodings, groupedTargetEncodingMapForNone, teColumnIndex, teColumnIndexInGroupedEncodingMapNone);
 
-                  Frame withEncodingsFrameN = calculateEncoding(dataWithMergedAggregationsN, groupedTargetEncodingMapForNone, isTrainOrValidSet ? targetColumnName : null, newEncodedColumnName, withBlendedAvg);
+                  Frame withEncodingsFrameN = calculateEncoding(dataWithMergedAggregationsN, groupedTargetEncodingMapForNone, targetColumnName, newEncodedColumnName, withBlendedAvg);
 
                   Frame withAddedNoiseEncodingsFrameN = applyNoise(withEncodingsFrameN, newEncodedColumnName, noiseLevel, seed);
                   // In cases when encoding has not seen some levels we will impute NAs with mean computed from training set. Mean is a dataleakage btw.
@@ -746,13 +710,12 @@ public class TargetEncoder {
                                      String foldColumn,
                                      boolean withBlendedAvg,
                                      boolean imputeNAs,
-                                     long seed,
-                                     boolean isTrainOrValidSet) {
+                                     long seed) {
         double defaultNoiseLevel = 0.01;
         int targetIndex = data.find(targetColumnName);
         Vec targetVec = data.vec(targetIndex);
         double   noiseLevel = targetVec.isNumeric()  ?   defaultNoiseLevel * (targetVec.max() - targetVec.min()) : defaultNoiseLevel;
-        return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, foldColumn, withBlendedAvg, noiseLevel, true, seed, isTrainOrValidSet);
+        return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, foldColumn, withBlendedAvg, noiseLevel, true, seed);
     }
 
     public Frame applyTargetEncoding(Frame data,
@@ -761,9 +724,8 @@ public class TargetEncoder {
                                      byte dataLeakageHandlingStrategy,
                                      boolean withBlendedAvg,
                                      boolean imputeNAs,
-                                     long seed,
-                                     boolean isTrainOrValidSet) {
-        return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, null, withBlendedAvg, true, seed, isTrainOrValidSet);
+                                     long seed) {
+        return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, null, withBlendedAvg, true, seed);
     }
 
     public Frame applyTargetEncoding(Frame data,
@@ -773,10 +735,9 @@ public class TargetEncoder {
                                      boolean withBlendedAvg,
                                      double noiseLevel,
                                      boolean imputeNAs,
-                                     long seed,
-                                     boolean isTrainOrValidSet) {
+                                     long seed) {
         assert dataLeakageHandlingStrategy != DataLeakageHandlingStrategy.KFold : "Use another overloaded method for KFold dataLeakageHandlingStrategy.";
-        return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, null, withBlendedAvg, noiseLevel, true, seed, isTrainOrValidSet);
+        return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, null, withBlendedAvg, noiseLevel, true, seed);
     }
 
 }

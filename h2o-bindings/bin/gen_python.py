@@ -21,7 +21,8 @@ class PythonTypeTranslatorForCheck(bi.TypeTranslator):
         self.types["Object"] = "object"
         self.types["VecSpecifier"] = "str"
         self.types["StringPair"] = "tuple"
-        self.make_array = lambda vtype: "[%s]" % vtype
+        self.types["KeyValue"] = "dict"
+        self.make_array = lambda vtype: "dict" if vtype == "dict" else "[%s]" % vtype
         self.make_array2 = lambda vtype: "[[%s]]" % vtype
         self.make_map = lambda ktype, vtype: "{%s: %s}" % (ktype, vtype)
         self.make_key = lambda itype, schema: "H2OFrame" if schema == "Key<Frame>" else "str"
@@ -48,7 +49,8 @@ class PythonTypeTranslatorForDoc(bi.TypeTranslator):
         self.types["Object"] = "object"
         self.types["VecSpecifier"] = "str"
         self.types["StringPair"] = "tuple"
-        self.make_array = lambda vtype: "List[%s]" % vtype
+        self.types["KeyValue"] = "dict"
+        self.make_array = lambda vtype: "dict" if vtype == "dict" else "List[%s]" % vtype
         self.make_array2 = lambda vtype: "List[List[%s]]" % vtype
         self.make_map = lambda ktype, vtype: "Dict[%s, %s]" % (ktype, vtype)
         self.make_key = lambda itype, schema: "H2OFrame" if schema == "Key<Frame>" else "str"
@@ -284,6 +286,7 @@ def gen_module(schema, algo):
 
 
 def algo_to_classname(algo):
+    if algo == "coxph": return "H2OCoxProportionalHazardsEstimator"
     if algo == "deeplearning": return "H2ODeepLearningEstimator"
     if algo == "deepwater": return "H2ODeepWaterEstimator"
     if algo == "xgboost": return "H2OXGBoostEstimator"
@@ -304,6 +307,9 @@ def extra_imports_for(algo):
         return "import h2o"
 
 def help_preamble_for(algo):
+    if algo == "coxph":
+        return """
+            Trains a Cox Proportional Hazards Model (CoxPH) on an H2O dataset"""
     if algo == "deeplearning":
         return """
             Build a Deep Neural Network model using CPUs
@@ -511,6 +517,22 @@ def class_extra_for(algo):
             if "levelone_frame_id" in model and model["levelone_frame_id"] is not None:
                 return model["levelone_frame_id"]
             print("No levelone_frame_id for this model")         
+            
+        def stacking_strategy(self):
+            model = self._model_json["output"]
+            if "stacking_strategy" in model and model["stacking_strategy"] is not None:
+                return model["stacking_strategy"]
+            print("No stacking strategy for this model")  
+        
+        # Override train method to support blending 
+        def train(self, x=None, y=None, training_frame=None, blending_frame=None, **kwargs):
+            assert_is_type(blending_frame, None, H2OFrame)
+            
+            def extend_parms(parms):
+                if blending_frame is not None:
+                    parms['blending_frame'] = blending_frame
+                    
+            super(self.__class__, self)._train(x, y, training_frame, extend_parms_fn=extend_parms, **kwargs)
         """
     elif algo == "word2vec":
         return """
@@ -548,6 +570,60 @@ def class_extra_for(algo):
 
             self.vec_size = self.pre_trained.dim[1] - 1;
         """
+    elif algo == "pca":
+        return """
+        def init_for_pipeline(self):
+            \"\"\"
+            Returns H2OPCA object which implements fit and transform method to be used in sklearn.Pipeline properly.
+            All parameters defined in self.__params, should be input parameters in H2OPCA.__init__ method.
+
+            :returns: H2OPCA object
+            \"\"\"
+            import inspect
+            from h2o.transforms.decomposition import H2OPCA
+            # check which parameters can be passed to H2OPCA init
+            var_names = list(dict(inspect.getmembers(H2OPCA.__init__.__code__))['co_varnames'])
+            parameters = {k: v for k, v in self._parms.items() if k in var_names}
+            return H2OPCA(**parameters)
+        """
+    elif algo == "coxph":
+        return """
+        def _additional_used_columns(self, parms):
+            \"\"\"
+            :return: Start and stop column if specified.
+            \"\"\"
+            result = []
+            for col in ["start_column", "stop_column"]:
+                if col in parms and parms[col] is not None:
+                    result.append(parms[col])
+            return result
+        """
+    elif algo == "generic":
+        return """
+        def _requires_training_frame(self):
+            \"\"\"
+            Determines if Generic model requires a training frame.
+            :return: False.
+            \"\"\"
+            return False
+        
+        @staticmethod
+        def from_file(file=str):
+            \"\"\"
+            Creates new Generic model by loading existing embedded model into library, e.g. from H2O MOJO.
+            The imported model must be supported by H2O.
+            :param file: A string containing path to the file to create the model from
+            :return: H2OGenericEstimator instance representing the generic model
+            \"\"\"
+            from h2o import lazy_import, get_frame
+            model_key = lazy_import(file)
+            model_bytes_frame = get_frame(model_key[0])
+            model = H2OGenericEstimator(model_key = model_bytes_frame)
+            model.train()
+            
+            return model
+        """
+
 
 def module_extra_for(algo):
     if algo == "deeplearning":
@@ -625,7 +701,7 @@ def main():
                ("estimator_base", "H2OEstimator", "Miscellaneous"),
                ("grid_search", "H2OGridSearch", "Miscellaneous"),
                ("automl", "H2OAutoML", "Miscellaneous")]
-    builders = filter(lambda b: b[0] != 'coxph', bi.model_builders().items()) # CoxPH is not supported in Python yet
+    builders = bi.model_builders().items()
     for name, mb in builders:
         module = name
         if name == "drf": module = "random_forest"

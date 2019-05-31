@@ -3,9 +3,12 @@
 set -e
 set -x
 
-JDK_FILE='jdk-8u172-linux-x64.tar.gz'
-wget --no-cookies --no-check-certificate --header "Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com%2F; oraclelicense=accept-securebackup-cookie" \
-"http://download.oracle.com/otn-pub/java/jdk/8u181-b13/96a7b8442fe848ef90c96a2fad6ed6d1/${JDK_FILE}"
+JDK_FILE="jdk-8u201-linux-x64.tar.gz"
+DOWNLOAD_URL="https://download.oracle.com/otn-pub/java/jdk/8u201-b09/42970487e3af4f5aa5bca3f542482c60/"
+wget --no-cookies --no-check-certificate \
+    --header "Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com%2F; oraclelicense=accept-securebackup-cookie" \
+    "${DOWNLOAD_URL}/${JDK_FILE}"
+
 tar zxvf ${JDK_FILE}
 rm ${JDK_FILE}
 

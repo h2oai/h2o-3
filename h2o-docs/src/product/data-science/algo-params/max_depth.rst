@@ -13,6 +13,13 @@ In general, deeper trees can seem to provide better accuracy on a training set b
 
 One way to determine an appropriate value for ``max_depth`` is to run a quick Cartesian grid search. Each model in the grid search will use early stopping to tune the number of trees using the validation set AUC, as before. The examples below are also available in the `GBM Tuning Tutorials <https://github.com/h2oai/h2o-3/tree/master/h2o-docs/src/product/tutorials/gbm>`__  folder on GitHub.
 
+The ``max_depth`` default value varies depending on the algorithm.
+
+- GBM: default is 5.
+- DRF: default is 20.
+- XGBoost: default is 6.
+- Isolation Forest: default is 8.
+
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~

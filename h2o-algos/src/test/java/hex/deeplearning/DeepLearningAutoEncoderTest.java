@@ -1,15 +1,21 @@
 package hex.deeplearning;
 
+import hex.genmodel.algos.deeplearning.DeeplearningMojoModel;
+import hex.genmodel.easy.RowData;
+import hex.genmodel.easy.exception.PredictException;
+import hex.genmodel.easy.prediction.AutoEncoderModelPrediction;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
 import water.fvec.*;
+import water.parser.BufferedString;
 import water.parser.ParseDataset;
-import water.util.FileUtils;
 import water.util.Log;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
+import hex.genmodel.easy.EasyPredictModelWrapper;
 
+import java.io.IOException;
 import java.util.HashSet;
 
 public class DeepLearningAutoEncoderTest extends TestUtil {
@@ -60,6 +66,10 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
         p._elastic_averaging = false;
         DeepLearning dl = new DeepLearning(p);
         DeepLearningModel mymodel = dl.trainModel().get();
+
+        p._standardize = false;
+        DeepLearning dlNoStand = new DeepLearning(p);
+        DeepLearningModel mymodelNoStand = dlNoStand.trainModel().get();
 
         Frame l2_frame_train=null, l2_frame_test=null;
 
@@ -137,7 +147,8 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
 
 
           // print stats and potential outliers
-          sb.append("The following test points are reconstructed with an error greater than ").append(mult).append(" times the mean reconstruction error of the training data:\n");
+          sb.append("The following test points are reconstructed with an error greater than ").append(mult)
+                  .append(" times the mean reconstruction error of the training data:\n");
           HashSet<Long> outliers = new HashSet<>();
           for (long i = 0; i < l2_test.length(); i++) {
             if (l2_test.at(i) > thresh_test) {
@@ -151,12 +162,61 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
           Assert.assertTrue(outliers.contains(new Long(21)));
           Assert.assertTrue(outliers.contains(new Long(22)));
           Assert.assertTrue(outliers.size() == 3);
+
+          // check if reconstruction error is the same from model and mojo model too - test case for PUBDEV-6030
+          // also check if reconstruction error is calculated correctly if the parameter standardize is set to false 
+          // - test case for PUBDEV-6267
+          try {
+            DeeplearningMojoModel mojoModel = (DeeplearningMojoModel) mymodel.toMojo();
+            EasyPredictModelWrapper model = new EasyPredictModelWrapper(mojoModel);
+
+            DeeplearningMojoModel  mojoModelNoStand = (DeeplearningMojoModel) mymodelNoStand.toMojo();
+            EasyPredictModelWrapper modelNoStand = new EasyPredictModelWrapper(mojoModelNoStand);
+            
+            double calcNormMse = 0;
+            double calcNormMseNoStand = 0;
+            for (int r = 0; r < train.numRows(); r++) {
+              RowData tmpRow = new RowData();
+              BufferedString bStr = new BufferedString();
+              for (int c = 0; c < train.numCols(); c++) {
+                if (train.vec(c).isCategorical()) {
+                  tmpRow.put(train.names()[c], train.vec(c).atStr(bStr, r).toString());
+                } else {
+                  tmpRow.put(train.names()[c],  train.vec(c).at(r));
+                }
+              }
+              AutoEncoderModelPrediction tmpPrediction = model.predictAutoEncoder(tmpRow);
+              calcNormMse += tmpPrediction.mse;
+
+              AutoEncoderModelPrediction tmpPredictionNoStand = modelNoStand.predictAutoEncoder(tmpRow);
+              calcNormMseNoStand += tmpPredictionNoStand.mse;
+            }
+            double mojoMeanError = calcNormMse/train.numRows();
+            sb.append("Mojo mean reconstruction error (train): ").append(mojoMeanError).append("\n");
+            sb.append("Mean reconstruction error should be the same from model compare to mojo model " +
+                    "reconstruction error: ");
+            sb.append(mean_l2).append(" == ").append(mojoMeanError).append("\n");
+            Assert.assertEquals( mean_l2, mojoMeanError, 1e-7);
+            
+            double mojoMeanErrorNoStand = calcNormMseNoStand/train.numRows();
+            sb.append("Mojo mean reconstruction error (train): ").append(mojoMeanErrorNoStand).append("\n");
+            sb.append("Mean reconstruction error should be the same from model compare to mojo model " +
+                    "reconstruction error: ");
+            sb.append(mymodelNoStand._output.errors.scored_train._mse).append(" == ").append(mojoMeanErrorNoStand).append("\n");
+            Assert.assertEquals(mymodelNoStand._output.errors.scored_train._mse, mojoMeanErrorNoStand, 1e-7);
+            
+          } catch (IOException error) {
+            Assert.fail("IOException when testing mojo mean reconstruction error: "+error.toString());
+          } catch (PredictException error){
+            Assert.fail("PredictException when testing mojo mean reconstruction error: "+error.toString());
+          }
         } finally {
           Log.info(sb);
           // cleanup
-          if (mymodel!=null) mymodel.delete();
-          if (l2_frame_train!=null) l2_frame_train.delete();
-          if (l2_frame_test!=null) l2_frame_test.delete();
+          if (mymodelNoStand != null) mymodelNoStand.delete();
+          if (mymodel != null) mymodel.delete();
+          if (l2_frame_train != null) l2_frame_train.delete();
+          if (l2_frame_test != null) l2_frame_test.delete();
         }
       }
     } finally {

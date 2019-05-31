@@ -1,7 +1,7 @@
 ARG GPU_SUFFIX=''
 ARG FROM_VERSION
 ARG GRADLE_VERSION
-FROM docker.h2o.ai/opsh2oai/h2o-3/dev-build-hadoop-gradle-${GRADLE_VERSION}${GPU_SUFFIX}:${FROM_VERSION}
+FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-build-hadoop-gradle-${GRADLE_VERSION}${GPU_SUFFIX}:${FROM_VERSION}
 
 # Install s3cmd
 ENV S3_CMD_VERSION '2.0.1'
@@ -23,3 +23,4 @@ RUN \
     conda clean --all --yes
 
 ENV PATH /opt/conda/bin:$PATH
+ENV GRADLE_USER_HOME=/home/jenkins/.gradle

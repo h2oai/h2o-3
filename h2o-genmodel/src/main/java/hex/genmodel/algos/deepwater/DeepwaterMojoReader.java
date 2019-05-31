@@ -108,4 +108,8 @@ public class DeepwaterMojoReader extends ModelMojoReader<DeepwaterMojoModel> {
   protected DeepwaterMojoModel makeModel(String[] columns, String[][] domains, String responseColumn) {
     return new DeepwaterMojoModel(columns, domains, responseColumn);
   }
+
+  @Override public String mojoVersion() {
+    return "1.00";
+  }
 }

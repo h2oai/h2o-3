@@ -59,7 +59,7 @@ Defining a GBM Model
 
 -  `ntrees <algo-params/ntrees.html>`__: Specify the number of trees to build.
 
--  `max_depth <algo-params/max_depth.html>`__: Specify the maximum tree depth.
+-  `max_depth <algo-params/max_depth.html>`__: Specify the maximum tree depth. Higher values will make the model more complex and can lead to overfitting. Setting this value to 0 specifies no limit. This value defaults to 5.
 
 -  `min_rows <algo-params/min_rows.html>`__: Specify the minimum number of observations for a leaf
    (``nodesize`` in R).
@@ -126,7 +126,7 @@ Defining a GBM Model
 
   - ``auto`` or ``AUTO``: Allow the algorithm to decide (default). In GBM, the algorithm will automatically perform ``enum`` encoding.
   - ``enum`` or ``Enum``: 1 column per categorical feature
-  - ``enum_limited`` or ``EnumLimited``: Automatically reduce categorical levels to the most prevalent ones during Aggregator training and only keep the **T** most frequent levels.
+  - ``enum_limited`` or ``EnumLimited``: Automatically reduce categorical levels to the most prevalent ones during Aggregator training and only keep the **T** (1024) most frequent levels.
   - ``one_hot_explicit`` or ``OneHotExplicit``: N+1 new columns for categorical features with N levels
   - ``binary``: No more than 32 columns per categorical feature
   - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
@@ -206,6 +206,8 @@ Defining a GBM Model
     - ``lift_top_group``
     - ``misclassification``
     - ``mean_per_class_error``
+    - ``custom`` (Python client only)
+    - ``custom_increasing`` (Python client only)
 
 -  `stopping_tolerance <algo-params/stopping_tolerance.html>`__: Specify the relative tolerance for the
    metric-based stopping to stop training if the improvement is less
@@ -256,7 +258,16 @@ Defining a GBM Model
 
 -  `calibration_frame <algo-params/calibration_frame.html>`__: Specifies the frame to be used for Platt scaling.
 
+-  `custom_metric_func <algo-params/custom_metric_func.html>`__: Optionally specify a custom evaluation function.
+
+-  **export_checkpoints_dir**: Optionally specify a path to a directory where every generated model will be stored when checkpointing models.
+
+-  **monotone_constraints**: A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint. Note that constraints can only be defined for numerical columns. Also note that this option can only be used when the distribution is either ``gaussian`` or ``bernoulli``. A Python demo is available `here <https://github.com/h2oai/h2o-3/tree/master/h2o-py/demos/H2O_tutorial_gbm_monotonicity.ipynb>`__.
+
+-  `check_constant_response <algo-params/check_constant_response.html>`__: Check if the response column is a constant value. If enabled (default), then an exception is thrown if the response column is a constant value. If disabled, then the model will train regardless of the response column being a constant value or not.
+
 -  **verbose**: Print scoring history to the console. For GBM, metrics are per tree. This value defaults to FALSE.
+
 
 Interpreting a GBM Model
 ~~~~~~~~~~~~~~~~~~~~~~~~

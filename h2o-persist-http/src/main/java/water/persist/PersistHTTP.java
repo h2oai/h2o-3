@@ -1,6 +1,5 @@
 package water.persist;
 
-import com.google.common.io.ByteStreams;
 import org.apache.http.Header;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
@@ -16,9 +15,11 @@ import water.Value;
 import water.fvec.FileVec;
 import water.fvec.HTTPFileVec;
 import water.fvec.Vec;
+import water.util.ByteStreams;
 import water.util.HttpResponseStatus;
 import water.util.Log;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -63,7 +64,7 @@ public class PersistHTTP extends PersistEagerHTTP {
 
     return b;
   }
-
+  
   static long readContentLength(HttpResponse response) {
     long len = response.getEntity().getContentLength();
     if (len >= 0)

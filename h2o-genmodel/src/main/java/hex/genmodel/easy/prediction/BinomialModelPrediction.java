@@ -39,4 +39,24 @@ public class BinomialModelPrediction extends AbstractPrediction {
   public String[] leafNodeAssignments;  // only valid for GBM or DRF, null for all other mojo models
   public int[] leafNodeAssignmentIds;   // ditto, available in MOJO 1.3 and newer
 
+  /**
+   * Staged predictions of tree algorithms (prediction probabilities of trees per iteration).
+   * The output structure is for tree Tt and class Cc:
+   * Binomial models: [probability T1.C1, probability T2.C1, ..., Tt.C1] where Tt.C1 correspond to the the probability p0
+   * Multinomial models: [probability T1.C1, probability T1.C2, ..., Tt.Cc]
+   */
+  public double[] stageProbabilities;
+
+  /**
+   * Per-feature prediction contributions (SHAP values).
+   * Size of the returned array is #features + 1 - there is a feature contribution column for each input feature, 
+   * the last item is the model bias. The sum of the feature contributions and the bias term is equal to the raw 
+   * prediction of the model. Raw prediction of tree-based model is the sum of the predictions of the individual
+   * trees before the inverse link function is applied to get the actual prediction.
+   * This means the sum is not equal to the probabilities returned in classProbabilities.
+   *
+   * (Optional) Available only for supported models (GBM, XGBoost). 
+   */
+  public float[] contributions;
+
 }

@@ -30,7 +30,7 @@ def get_requirements(kind, metayaml_file):
         if kind == "build":
             return yaml["requirements"]["build"]
         if kind == "test":
-            return yaml["requirements"]["run"] + yaml["test"]["requires"]
+            return yaml["requirements"]["run"] + yaml["requirements"]["test"]
 
 
 def parse_yaml(yaml_text):
@@ -109,7 +109,7 @@ def test_module(mod, min_version, installed_modules):
     minv = tuple(int(x) for x in min_version.split("."))
     matching_modules = [d for d in installed_modules if d.key == mod]
     if not matching_modules:
-        return "Python module `%s` is missing: install it with `pip install %s`" % (mod, mod)
+        return "Python module `%s` is missing: install it with `pip install '%s>=%s'`" % (mod, mod, min_version)
 
     v = max(m.version for m in matching_modules)
     for i, vp in enumerate(v.split(".")):
@@ -129,9 +129,9 @@ def test_module(mod, min_version, installed_modules):
                     "`pip install %s --upgrade`" % (mod, v, min_version, mod))
 
 
-def main(metayaml_file):
+def main(kind, metayaml_file):
     installed = get_installed_distributions(skip=())
-    msgs = test_requirements("build", metayaml_file, installed)
+    msgs = test_requirements(kind, metayaml_file, installed)
     if msgs:
         print("\n    ERRORS:\n", file=sys.stderr)
         for msg in msgs:
@@ -146,5 +146,6 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Check that python dependencies are installed")
     parser.add_argument("--metayaml", help="Path to meta.yaml file describing the dependencies", default=metayaml)
+    parser.add_argument("--kind", help="build|test", default="build")
     args = parser.parse_args()
-    main(args.metayaml)
+    main(args.kind, args.metayaml)

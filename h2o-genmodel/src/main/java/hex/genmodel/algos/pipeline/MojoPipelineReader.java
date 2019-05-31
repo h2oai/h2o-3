@@ -120,4 +120,8 @@ public class MojoPipelineReader extends MultiModelMojoReader<MojoPipeline> {
     return idx;
   }
 
+  @Override public String mojoVersion() {
+    return "1.00";
+  }
+
 }

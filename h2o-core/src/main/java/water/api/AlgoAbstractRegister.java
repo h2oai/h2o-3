@@ -23,14 +23,30 @@ public abstract class AlgoAbstractRegister extends AbstractRegister {
     String lbase = base.toLowerCase();
     // This is common model builder handler
 
-    context.registerEndpoint("train_" + lbase, "POST /" + version + "/ModelBuilders/" + lbase, handlerClass, "train",
-            "Train a " + base + " model.");
+    context.registerEndpoint(
+        "train_" + lbase,
+        "POST /" + version + "/ModelBuilders/" + lbase,
+        handlerClass,
+        "train",
+        "Train a " + base + " model."
+    );
 
-    context.registerEndpoint("validate_" + lbase, "POST /"+version+"/ModelBuilders/"+lbase+"/parameters", handlerClass, "validate_parameters",
-            "Validate a set of " + base + " model builder parameters.");
+    context.registerEndpoint(
+        "validate_" + lbase,
+        "POST /" + version + "/ModelBuilders/" + lbase + "/parameters",
+        handlerClass,
+        "validate_parameters",
+        "Validate a set of " + base + " model builder parameters."
+    );
 
     // Grid search is experimental feature
-    context.registerEndpoint("grid_search_" + lbase, "POST /99/Grid/"+lbase, GridSearchHandler.class, "train",
-            "Run grid search for "+base+" model.");
+    context.registerEndpoint(
+        "grid_search_" + lbase,
+        "POST /99/Grid/" + lbase,
+        GridSearchHandler.class,
+        "train",
+        "Run grid search for " + base + " model."
+    );
   }
+
 }

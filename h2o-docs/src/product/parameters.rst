@@ -15,13 +15,16 @@ This Appendix provides detailed descriptions of parameters that can be specified
 
    data-science/algo-params/alpha
    data-science/algo-params/balance_classes
+   data-science/algo-params/base_models
    data-science/algo-params/beta_constraints
    data-science/algo-params/beta_epsilon
    data-science/algo-params/binomial_double_trees
+   data-science/algo-params/blending_frame
    data-science/algo-params/build_tree_one_node
    data-science/algo-params/calibrate_model
    data-science/algo-params/calibration_frame
    data-science/algo-params/categorical_encoding
+   data-science/algo-params/check_constant_response
    data-science/algo-params/checkpoint
    data-science/algo-params/class_sampling_factors
    data-science/algo-params/col_sample_rate
@@ -29,11 +32,13 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/col_sample_rate_per_tree
    data-science/algo-params/compute_metrics
    data-science/algo-params/compute_p_values
+   data-science/algo-params/custom_metric_func
    data-science/algo-params/distribution
    data-science/algo-params/early_stopping
    data-science/algo-params/eps_prob
    data-science/algo-params/eps_sdev
    data-science/algo-params/estimate_k
+   data-science/algo-params/exclude_algos
    data-science/algo-params/family
    data-science/algo-params/fold_assignment
    data-science/algo-params/fold_column
@@ -43,6 +48,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/ignore_const_cols
    data-science/algo-params/ignored_columns
    data-science/algo-params/impute_missing
+   data-science/algo-params/include_algos
    data-science/algo-params/init
    data-science/algo-params/interaction_pairs
    data-science/algo-params/interactions
@@ -64,7 +70,9 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/max_depth
    data-science/algo-params/max_hit_ratio_k
    data-science/algo-params/max_iterations
+   data-science/algo-params/max_models
    data-science/algo-params/max_runtime_secs
+   data-science/algo-params/max_runtime_secs_per_model
    data-science/algo-params/metalearner_algorithm
    data-science/algo-params/metalearner_params
    data-science/algo-params/min_prob
@@ -91,6 +99,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/remove_collinear_columns
    data-science/algo-params/sample_rate
    data-science/algo-params/sample_rate_per_class
+   data-science/algo-params/sample_size
    data-science/algo-params/score_each_iteration
    data-science/algo-params/score_tree_interval
    data-science/algo-params/seed
@@ -102,6 +111,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/stopping_metric
    data-science/algo-params/stopping_rounds
    data-science/algo-params/stopping_tolerance
+   data-science/algo-params/theta
    data-science/algo-params/ties
    data-science/algo-params/training_frame
    data-science/algo-params/transform

@@ -6,17 +6,11 @@ source("../../scripts/h2o-r-test-setup.R")
 # Tests parsing with skipped columns
 test.parseSkippedColumnsNameType <- function() {
   csvWithHeader <-
-    h2o.importFile(locate("smalldata/airlines/allyears2k_headers.zip"))
+    h2o.importFile(locate("smalldata/airlines/allyears2k_headers_8kRows.csv.zip"))
   allColnames <- h2o.names(csvWithHeader)
   allTypeDict <- h2o.getTypes(csvWithHeader)
-  pathHeader <- locate("smalldata/airlines/allyears2k_headers.zip")
 
-  # upload file with  no header but fixed column types.
-  csvWithNoHeader <-
-    h2o.uploadFile(locate("smalldata/airlines/allyears2k.zip"))
-  allNewColnames <- h2o.names(csvWithNoHeader)
-  allNewTypeDict <- h2o.getTypes(csvWithNoHeader)
-  pathNoHeader <- locate("smalldata/airlines/allyears2k.zip")
+  pathNoHeader <- locate("smalldata/airlines/allyears2k_8kRows.csv.zip")
 
   skip_front <- c(1)
   skip_end <- c(h2o.ncol(csvWithHeader))

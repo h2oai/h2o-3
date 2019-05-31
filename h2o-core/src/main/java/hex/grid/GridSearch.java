@@ -1,6 +1,9 @@
 package hex.grid;
 
-import hex.*;
+import hex.Model;
+import hex.ModelBuilder;
+import hex.ModelParametersBuilderFactory;
+import hex.ScoringInfo;
 import hex.grid.HyperSpaceWalker.BaseWalker;
 import jsr166y.CountedCompleter;
 import water.*;
@@ -12,8 +15,6 @@ import water.util.PojoUtils;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.util.Map;
 
 /**
@@ -97,6 +98,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       if (! (keyed instanceof Grid))
         throw new H2OIllegalArgumentException("Name conflict: tried to create a Grid using the ID of a non-Grid object that's already in H2O: " + _job._result + "; it is a: " + keyed.getClass());
       grid = (Grid) keyed;
+      grid.clearNonRelatedFailures();
       Frame specTrainFrame = _hyperSpaceWalker.getParams().train();
       Frame oldTrainFrame = grid.getTrainingFrame();
       if (oldTrainFrame != null && !specTrainFrame._key.equals(oldTrainFrame._key) ||
@@ -201,13 +203,12 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           // Do we need to limit the model build time?
           if (max_runtime_secs > 0) {
             Log.info("Grid time is limited to: " + max_runtime_secs + " for grid: " + grid._key + ". Remaining time is: " + time_remaining_secs);
-            double scale = params._nfolds > 0 ? params._nfolds+1 : 1; //remaining time per cv model is less
             if (params._max_runtime_secs == 0) { // unlimited
-              params._max_runtime_secs = time_remaining_secs/scale;
+              params._max_runtime_secs = time_remaining_secs;
               Log.info("Due to the grid time limit, changing model max runtime to: " + params._max_runtime_secs + " secs.");
             } else {
               double was = params._max_runtime_secs;
-              params._max_runtime_secs = Math.min(params._max_runtime_secs, time_remaining_secs/scale);
+              params._max_runtime_secs = Math.min(params._max_runtime_secs, time_remaining_secs);
               Log.info("Due to the grid time limit, changing model max runtime from: " + was + " secs to: " + params._max_runtime_secs + " secs.");
             }
           }
@@ -218,8 +219,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
 
             //// build the model!
             model = buildModel(params, grid, ++counter, protoModelKey);
-
-            if (model!=null) {
+            if (model != null) {
               model.fillScoringInfo(scoringInfo);
               grid.setScoringInfos(ScoringInfo.prependScoringInfo(scoringInfo, grid.getScoringInfos()));
               ScoringInfo.sort(grid.getScoringInfos(), _hyperSpaceWalker.search_criteria().stopping_metric()); // Currently AUTO for Cartesian and user-specified for RandomDiscrete
@@ -231,14 +231,15 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
               e.printStackTrace(pw);
               Log.warn("Grid search: model builder for parameters " + params + " failed! Exception: ", e, sw.toString());
             }
-            grid.appendFailedModelParameters(params, e);
+            
+            grid.appendFailedModelParameters(model != null ? model._key : null, params, e);
           }
         } catch (IllegalArgumentException e) {
           Log.warn("Grid search: construction of model parameters failed! Exception: ", e);
           // Model parameters cannot be constructed for some reason
           it.modelFailed(model);
           Object[] rawParams = it.getCurrentRawParameters();
-          grid.appendFailedModelParameters(rawParams, e);
+          grid.appendFailedModelParameters(model != null ? model._key : null, rawParams, e);
         } finally {
           // Update progress by 1 increment
           _job.update(1);
@@ -294,6 +295,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     }
 
     // Is there a model with the same params in the DKV?
+    @SuppressWarnings("unchecked")
     final Key<Model>[] modelKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
       @Override
       public boolean filter(KeySnapshot.KeyInfo k) {
@@ -339,26 +341,10 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     // Build a new model
     // THIS IS BLOCKING call since we do not have enough information about free resources
     // FIXME: we should allow here any launching strategy (not only sequential)
-    Model m = (Model)startBuildModel(result,params, grid).dest().get();
+    assert grid.getModel(params) == null;
+    Model m = ModelBuilder.trainModelNested(_job, result, params, null);
     grid.putModel(checksum, result);
     return m;
-  }
-
-  /**
-   * Triggers model building process but do not block on it.
-   *
-   * @param params parameters for a new model
-   * @param grid   resulting grid object
-   * @return A Future of a model run with these parameters, typically built on demand and not cached
-   * - expected to be an expensive operation.  If the model in question is "in progress", a 2nd
-   * build will NOT be kicked off. This is a non-blocking call.
-   */
-  private ModelBuilder startBuildModel(Key result, MP params, Grid<MP> grid) {
-    if (grid.getModel(params) != null) return null;
-    ModelBuilder mb = ModelBuilder.make(params.algoName(), _job, result);
-    mb._parms = params;
-    mb.trainModelNested(null);
-    return mb;
   }
 
   /**
@@ -398,9 +384,12 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       final MP params,
       final Map<String, Object[]> hyperParams,
       final ModelParametersBuilderFactory<MP> paramsBuilderFactory,
-      final HyperSpaceSearchCriteria search_criteria) {
+      final HyperSpaceSearchCriteria searchCriteria) {
 
-    return startGridSearch(destKey, BaseWalker.WalkerFactory.create(params, hyperParams, paramsBuilderFactory, search_criteria));
+    return startGridSearch(
+        destKey,
+        BaseWalker.WalkerFactory.create(params, hyperParams, paramsBuilderFactory, searchCriteria)
+    );
   }
 
 
@@ -421,15 +410,17 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
    *
    * @see #startGridSearch(Key, Model.Parameters, Map, ModelParametersBuilderFactory, HyperSpaceSearchCriteria)
    */
-  public static <MP extends Model.Parameters> Job<Grid> startGridSearch(final Key<Grid> destKey,
-                                                                        final MP params,
-                                                                        final Map<String, Object[]> hyperParams) {
+  public static <MP extends Model.Parameters> Job<Grid> startGridSearch(
+      final Key<Grid> destKey,
+      final MP params,
+      final Map<String, Object[]> hyperParams
+  ) {
     return startGridSearch(
-            destKey,
-            params,
-            hyperParams,
-            new SimpleParametersBuilderFactory<MP>(),
-            new HyperSpaceSearchCriteria.CartesianSearchCriteria());
+        destKey,
+        params,
+        hyperParams,
+        new SimpleParametersBuilderFactory<MP>(),
+        new HyperSpaceSearchCriteria.CartesianSearchCriteria());
   }
 
   /**
@@ -445,14 +436,15 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
    */
   public static <MP extends Model.Parameters> Job<Grid> startGridSearch(
       final Key<Grid> destKey,
-      final HyperSpaceWalker<MP, ?> hyperSpaceWalker) {
+      final HyperSpaceWalker<MP, ?> hyperSpaceWalker
+    ) {
     // Compute key for destination object representing grid
     MP params = hyperSpaceWalker.getParams();
     Key<Grid> gridKey = destKey != null ? destKey
             : gridKeyName(params.algoName(), params.train());
 
     // Start the search
-    return new GridSearch(gridKey, hyperSpaceWalker).start();
+    return new GridSearch<>(gridKey, hyperSpaceWalker).start();
   }
 
   /**

@@ -11,8 +11,6 @@ import java.util.Set;
 
 import static org.junit.Assert.*;
 
-import static org.junit.Assert.assertTrue;
-
 /**
  * Tests for Frame.java
  */
@@ -266,6 +264,49 @@ public class FrameTest extends TestUtil {
       fr.delete();
       assertStringVecEquals(newFrame.vec("ColB"), cvec("c", "d"));
 
+    } finally {
+      Scope.exit();
+    }
+  }
+  
+  
+  @Test
+  public void testToCategoricalColByIdx() {
+    Scope.enter();
+    try {
+      Frame fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA")
+              .withVecTypes(Vec.T_STR)
+              .withDataForCol(0, new String[]{"A", "B", "C"})
+              .build();
+
+      assertFalse(fr.vec(0).isCategorical());
+      fr.toCategoricalCol(0);
+      assertTrue(fr.vec(0).isCategorical());
+
+      fr.delete();
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testToCategoricalColByName() {
+    Scope.enter();
+    try {
+      Frame fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA")
+              .withVecTypes(Vec.T_STR)
+              .withDataForCol(0, new String[]{"A", "B", "C"})
+              .build();
+
+      assertFalse(fr.vec("ColA").isCategorical());
+      fr.toCategoricalCol("ColA");
+      assertTrue(fr.vec("ColA").isCategorical());
+
+      fr.delete();
     } finally {
       Scope.exit();
     }

@@ -3,6 +3,7 @@ package hex.genmodel.algos.tree;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.drf.DrfMojoModel;
 import hex.genmodel.algos.gbm.GbmMojoModel;
+import hex.genmodel.descriptor.VariableImportances;
 import hex.genmodel.utils.ByteBufferWrapper;
 import hex.genmodel.utils.GenmodelBitSet;
 
@@ -19,7 +20,6 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
     private static final int NsdNaLeft = NaSplitDir.NALeft.value();
     private static final int NsdLeft = NaSplitDir.Left.value();
 
-    protected double _mojo_version;
     private ScoreTree _scoreTree;
 
     /**
@@ -51,6 +51,8 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
      * GLM's beta used for calibrating output probabilities using Platt Scaling.
      */
     protected double[] _calib_glm_beta;
+
+    protected VariableImportances _variable_importances;
 
 
     protected void postInit() {
@@ -612,6 +614,7 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
 
     static void checkConsistency(AuxInfo auxInfo, SharedTreeNode node) {
       boolean ok = true;
+      boolean weight_ok = true;
       ok &= (auxInfo.nid == node.getNodeNumber());
       double sum = 0;
       if (node.leftChild!=null) {
@@ -630,14 +633,20 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
       }
       if (node.parent!=null) {
         ok &= (auxInfo.pid == node.parent.getNodeNumber());
-        ok &= (Math.abs(node.getWeight() - sum) < 1e-5 * (node.getWeight() + sum));
+        weight_ok = (Math.abs(node.getWeight() - sum) < 1e-5 * (node.getWeight() + sum));
+        ok &= weight_ok;
       }
       if (!ok) {
-        System.out.println("\nTree inconsistency found:");
-        node.print();
-        node.leftChild.print();
-        node.rightChild.print();
-        System.out.println(auxInfo.toString());
+        System.err.println("\nTree inconsistency found:");
+        if (node.depth == 1 && !weight_ok) {
+          System.err.println("Note: this is a known issue for DRF and Isolation Forest models, " +
+                  "please refer to https://0xdata.atlassian.net/browse/PUBDEV-6140");
+        }
+        node.print(System.err, "parent");
+        node.leftChild.print(System.err, "left child");
+        node.rightChild.print(System.err, "right child");
+        System.err.println("Auxiliary tree info:");
+        System.err.println(auxInfo.toString());
       }
     }
 
@@ -941,4 +950,28 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
         return _computeGraph(treeNumber);
     }
 
+    /**
+     * Returns staged predictions of tree algorithms (prediction probabilities of trees per iteration).
+     * The output structure is for tree Tt and class Cc:
+     * Binomial models: [probability T1.C1, probability T2.C1, ..., Tt.C1] where Tt.C1 correspond to the the probability p0
+     * Multinomial models: [probability T1.C1, probability T1.C2, ..., Tt.Cc]
+     * @param row Input row.
+     * @param predsLength Length of prediction result.
+     * @return array of staged prediction probabilities
+     */
+    public double[] scoreStagedPredictions(double[] row, int predsLength) {
+        int contribOffset = nclasses() == 1 ? 0 : 1;
+        double[] trees_result = new double[_ntree_groups * _ntrees_per_group];
+
+        for (int groupIndex = 0; groupIndex < _ntree_groups; groupIndex++) {
+            double[] tmpPreds = new double[predsLength];
+            scoreTreeRange(row, 0, groupIndex+1, tmpPreds);
+            unifyPreds(row, 0, tmpPreds);
+            for (int classIndex = 0; classIndex < _ntrees_per_group; classIndex++) {
+                int tree_index = groupIndex * _ntrees_per_group + classIndex;
+                trees_result[tree_index] = tmpPreds[contribOffset+classIndex];
+            }
+        }
+        return trees_result;
+    }
 }

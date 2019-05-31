@@ -139,6 +139,8 @@ reference:
       - h2o.hit_ratio_table
       - h2o.hour
       - h2o.ifelse
+      - h2o.import_hive_table
+      - h2o.import_mojo
       - h2o.import_sql_select
       - h2o.import_sql_table
       - h2o.importFile
@@ -151,6 +153,7 @@ reference:
       - h2o.ischaracter
       - h2o.isfactor
       - h2o.isnumeric
+      - h2o.isolationForest
       - h2o.kfold_column
       - h2o.killMinus3
       - h2o.kmeans
@@ -265,6 +268,8 @@ reference:
       - h2o.tanh
       - h2o.target_encode_apply
       - h2o.target_encode_create
+      - h2o.target_encode_fit
+      - h2o.target_encode_transform
       - h2o.toFrame
       - h2o.tokenize
       - h2o.tolower
@@ -311,7 +316,6 @@ reference:
       - is.factor 
       - is.h2o 
       - is.numeric
-      - h2o.isolationForest
       - Logical-or
       - ModelAccessors
       - names.H2OFrame
@@ -319,7 +323,8 @@ reference:
       - plot.H2OModel 
       - plot.H2OTabulate
       - predict.H2OAutoML 
-      - predict.H2OModel 
+      - predict.H2OModel
+      - predict_contributions.H2OModel 
       - predict_leaf_node_assignment.H2OModel
       - print.H2OFrame 
       - print.H2OTable 

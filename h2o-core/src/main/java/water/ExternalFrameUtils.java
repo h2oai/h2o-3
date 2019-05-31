@@ -44,15 +44,16 @@ public class ExternalFrameUtils {
     /**
      * Get connection to a specific h2o node. The caller of this method is usually non-H2O node who wants to read H2O
      * frames or write to H2O frames from non-H2O environment, such as Spark executor.
+     * This node usually does not have H2O running.
      */
-    public static ByteChannel getConnection(String h2oNodeHostname, int h2oNodeApiPort) throws IOException{
+    public static ByteChannel getConnection(String h2oNodeHostname, int h2oNodeApiPort, short nodeTimeStamp) throws IOException{
         SocketChannelFactory socketFactory = SocketChannelFactory.instance(H2OSecurityManager.instance());
-        return H2ONode.openChan(TCPReceiverThread.TCP_EXTERNAL, socketFactory, h2oNodeHostname, h2oNodeApiPort +1);
+        return H2ONode.openChan(TCPReceiverThread.TCP_EXTERNAL, socketFactory, h2oNodeHostname, h2oNodeApiPort +1, nodeTimeStamp);
     }
 
-    public static ByteChannel getConnection(String ipPort) throws IOException{
+    public static ByteChannel getConnection(String ipPort, short nodeTimeStamp) throws IOException{
         String[] split = ipPort.split(":");
-        return getConnection(split[0], Integer.parseInt(split[1]));
+        return getConnection(split[0], Integer.parseInt(split[1]), nodeTimeStamp);
     }
 
     public static byte[] vecTypesFromExpectedTypes(byte[] expectedTypes, int[] vecElemSizes){

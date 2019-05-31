@@ -168,7 +168,7 @@ At this point, determine whether you want to complete this quick start in either
     h2o-3 user$ [sudo] pip install -U requests
     h2o-3 user$ [sudo] pip install -U tabulate
     h2o-3 user$ [sudo] pip install -U future
-    h2o-3 user$ [sudo] pip install -U six
+    h2o-3 user$ [sudo] pip install -U colorama
 
     # Start python
     h2o-3 user$ python
@@ -295,6 +295,17 @@ PySparkling documentation is available for `2.1 <http://docs.h2o.ai/sparkling-wa
 
 PySparkling can be installed by downloading and running the PySparkling shell or using ``pip``. PySparkling can also be installed from the PyPi repository. Follow the instructions on the `Download page <http://h2o.ai/download>`__ for Sparkling Water.
 
+RSparkling
+~~~~~~~~~~
+
+The rsparkling R package is an extension package for sparklyr that creates an R front-end for the Sparkling Water package from H2O. This provides an interface to H2O’s high performance, distributed machine learning algorithms on Spark using R.
+
+This package implements basic functionality (creating an H2OContext, showing the H2O Flow interface, and converting between Spark DataFrames and H2O Frames). The main purpose of this package is to provide a connector between sparklyr and H2O’s machine learning algorithms.
+
+The rsparkling package uses sparklyr for Spark job deployment and initialization of Sparkling Water. After that, users can use the regular H2O R package for modeling. 
+
+Refer to the `Sparkling Water User Guide <http://docs.h2o.ai/#sparkling-water>`__ for more information.
+
 Python Users
 --------------
 
@@ -348,7 +359,7 @@ REST APIs are generated immediately out of the code, allowing users to implement
 Java Users
 --------------
 
-For Java developers, the following resources will help you create your own custom app that uses H2O.
+H2O-3 is supported with Java 7 and later. For Java developers, the following resources will help you create your own custom app that uses H2O.
 
 -  `H2O Core Java Developer Documentation <../h2o-core/javadoc/index.html>`_: The definitive Java API guide
    for the core components of H2O.
@@ -417,11 +428,16 @@ Supported Versions
 -  CDH 5.10
 -  CDH 5.13
 -  CDH 5.14
+-  CDH 6.0
+-  CDH 6.1
+-  CDH 6.2
 -  HDP 2.2
 -  HDP 2.3
 -  HDP 2.4
 -  HDP 2.5
 -  HDP 2.6
+-  HDP 3.0
+-  HDP 3.1
 -  MapR 4.0
 -  MapR 5.0
 -  MapR 5.1
@@ -484,9 +500,9 @@ The following steps show you how to download or build H2O with Hadoop and the pa
 
    -  *nodes* is the number of nodes requested to form the cluster.
 
-   -  *output* is the name of the directory created each time a H2O cloud is created so it is necessary for the name to be unique each time it is launched.
+   -  *output* is the name of the directory created each time a H2O cluster is created so it is necessary for the name to be unique each time it is launched.
 
-4. To monitor your job, direct your web browser to your standard job tracker Web UI. To access H2O's Web UI, direct your web browser to one of the launched instances. If you are unsure where your JVM is launched, review the output from your command after the nodes has clouded up and formed a cluster. Any of the nodes' IP addresses will work as there is no master node.
+4. To monitor your job, direct your web browser to your standard job tracker Web UI. To access H2O's Web UI, direct your web browser to one of the launched instances. If you are unsure where your JVM is launched, review the output from your command after the nodes have clouded up and formed a cluster. Any of the nodes' IP addresses will work as there is no master node.
 
    ::
 
@@ -519,9 +535,9 @@ Hadoop Launch Parameters
 
     **Note**: For Qubole users who include the ``-disown`` flag, if your cluster is dying right after launch, add ``-Dmapred.jobclient.killjob.onexit=false`` as a launch parameter.
 
--  ``-notify <notification file name>``: Specify a file to write when the cluster is up. The file contains the IP and port of the embedded web server for one of the nodes in the cluster. All mappers must start before the H2O cloud is considered "up".
+-  ``-notify <notification file name>``: Specify a file to write when the cluster is up. The file contains the IP and port of the embedded web server for one of the nodes in the cluster. All mappers must start before the H2O cluster is considered "up".
 -  ``-mapperXmx <per mapper Java Xmx heap size>``: Specify the amount of memory to allocate to H2O (at least 6g).
--  ``-extramempercent``: Specify the extra memory for internal JVM use outside of the Java heap. This is a percentage of ``mapperXmx``.
+-  ``-extramempercent``: Specify the extra memory for internal JVM use outside of the Java heap. This is a percentage of ``mapperXmx``. **Recommendation**: Set this to a high value when running XGBoost, for example, 120. 
 -  ``-n | -nodes <number of H2O nodes>``: Specify the number of nodes.
 -  ``-nthreads <maximum number of CPUs>``: Specify the number of CPUs to use. This defaults to using all CPUs on the host, or you can enter a positive integer.
 -  ``-baseport <initialization port for H2O nodes>``: Specify the initialization port for the H2O nodes. The default is ``54321``.
@@ -532,12 +548,12 @@ Hadoop Launch Parameters
 -  ``-proxy``: Enables Proxy mode.
 -  ``-report_hostname``: This flag allows the user to specify the machine hostname instead of the IP address when launching H2O Flow. This option can only be used when H2O on Hadoop is started in Proxy mode (with ``-proxy``).
 
-    **JVM arguments**
+**JVM arguments**
 
--  ``-ea``: Enable assertions to verify boolean expressions for error detection.
--  ``-verbose:gc``: Include heap and garbage collection information in the logs. Deprecated in Java 9, removed in Java 10.
--  ``-XX:+PrintGCDetails``: Include a short message after each garbage collection. Deprecated in Java 9, removed in Java 10.
--  ``-Xlog:gc=info``: Prints garbage collection information into the logs. Introduced in Java 9. Usage enforced since Java 10. A replacement for ``-verbose:gc`` and ``-XX:+PrintGCDetails`` tags which are deprecated in Java 9 and removed in Java 10.
+ -  ``-ea``: Enable assertions to verify boolean expressions for error detection.
+ -  ``-verbose:gc``: Include heap and garbage collection information in the logs. Deprecated in Java 9, removed in Java 10.
+ -  ``-XX:+PrintGCDetails``: Include a short message after each garbage collection. Deprecated in Java 9, removed in Java 10.
+ -  ``-Xlog:gc=info``: Prints garbage collection information into the logs. Introduced in Java 9. Usage enforced since Java 10. A replacement for ``-verbose:gc`` and ``-XX:+PrintGCDetails`` tags which are deprecated in Java 9 and removed in Java 10.
 
 Accessing S3 Data from Hadoop
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -722,6 +738,12 @@ Note how the HDFS nodes have been removed from the picture below for explanatory
 
   .. figure:: images/h2o-on-yarn-4.png
 
+Hadoop and AWS
+~~~~~~~~~~~~~~
+
+AWS access credential configuration is provided to H2O by the Hadoop environment itself. There are a number of Hadoop distributions, and each distribution supports different means/providers to configure access to AWS. It is considered best practice to follow you Hadoop provider's guide.
+
+Since Apache Hadoop 2.8, accessing multiple buckets with distinct credentials by means of the S3A protocol is possible. Please refer to the `Hadoop documentation <https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html>`__ for more information. Users of derived distributions are advised to follow the respective documentation of their distribution and the specific version they use.
 
 Docker Users
 ------------
@@ -855,15 +877,15 @@ You can also view the IP address (``192.168.99.100`` in the example below) by sc
 After obtaining the IP address, point your browser to the specified ip address and port to open Flow. In R and Python, you can access the instance by installing the latest version of the H2O R or Python package and then initializing H2O:
 
 
-  .. example-code::
-     .. code-block:: r
+.. example-code::
+   .. code-block:: r
 
-      # Initialize H2O
-      library(h2o)
-      dockerH2O <- h2o.init(ip = "192.168.59.103", port = 54321)
+    # Initialize H2O
+    library(h2o)
+    dockerH2O <- h2o.init(ip = "192.168.59.103", port = 54321)
 
-     .. code-block:: python
+   .. code-block:: python
 
-      # Initialize H2O 
-      import h2o
-      docker_h2o = h2o.init(ip = "192.168.59.103", port = 54321) 
+    # Initialize H2O 
+    import h2o
+    docker_h2o = h2o.init(ip = "192.168.59.103", port = 54321) 

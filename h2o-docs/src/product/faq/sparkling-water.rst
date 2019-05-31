@@ -1,6 +1,8 @@
 Sparkling Water
 ---------------
 
+**Note**: This topic is deprecated and will be removed in a later release. Refer to the `Sparkling Water User Guide <http://docs.h2o.ai/#sparkling-water>`__ for Sparkling Water FAQs. 
+
 **What is Sparkling Water?**
 
 Sparkling Water allows users to combine the fast, scalable machine
@@ -207,7 +209,7 @@ The "magic" behind ``run-example.sh`` is a regular Spark Submit:
 
 **How do I use Sparkling Water with Databricks?**
 
-Refer to `Using H2O Sparking Water with Databricks <../cloud-integration/databricks.html>`__ for information on how to use Sparkling Water with Databricks.
+Refer to the "Running Sparkling Water on Databricks Azure Cluster" in the `Sparkling Water User Guide <http://docs.h2o.ai/#sparkling-water>`__ for information on how to use Sparkling Water with Databricks. 
 
 --------------
 
@@ -223,8 +225,8 @@ the app needs to initialize ``H2OServices`` via ``H2OContext``:
     import org.apache.spark.h2o._
     val h2oContext = new H2OContext(sc).start()
 
-For more information, refer to the `Sparkling Water development
-documentation <https://github.com/h2oai/sparkling-water/blob/master/DEVEL.md>`__.
+For more information, refer to the Sparkling Water Development
+documentation in the `Sparkling Water User Guide <http://docs.h2o.ai/#sparkling-water>`__.
 
 --------------
 

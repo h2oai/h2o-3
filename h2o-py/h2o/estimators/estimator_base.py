@@ -15,20 +15,22 @@ from h2o.frame import H2OFrame
 from h2o.job import H2OJob
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.shared_utils import quoted
-from h2o.utils.typechecks import assert_is_type, is_type, numeric
+from h2o.utils.typechecks import assert_is_type, is_type, numeric, FunctionType
 from ..model.autoencoder import H2OAutoEncoderModel
 from ..model.binomial import H2OBinomialModel
 from ..model.clustering import H2OClusteringModel
 from ..model.dim_reduction import H2ODimReductionModel
 from ..model.metrics_base import (H2OBinomialModelMetrics, H2OClusteringModelMetrics, H2ORegressionModelMetrics,
                                   H2OMultinomialModelMetrics, H2OAutoEncoderModelMetrics, H2ODimReductionModelMetrics,
-                                  H2OWordEmbeddingModelMetrics, H2OOrdinalModelMetrics, H2OAnomalyDetectionModelMetrics)
+                                  H2OWordEmbeddingModelMetrics, H2OOrdinalModelMetrics, H2OAnomalyDetectionModelMetrics,
+                                  H2OCoxPHModelMetrics)
 from ..model.model_base import ModelBase
 from ..model.multinomial import H2OMultinomialModel
 from ..model.ordinal import H2OOrdinalModel
 from ..model.regression import H2ORegressionModel
 from ..model.word_embedding import H2OWordEmbeddingModel
 from ..model.anomaly_detection import H2OAnomalyDetectionModel
+from ..model.coxph import H2OCoxPHModel
 
 
 class EstimatorAttributeError(AttributeError):
@@ -104,7 +106,14 @@ class H2OEstimator(ModelBase):
         :param float max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
         :param bool verbose: Print scoring history to stdout. Defaults to False.
         """
+        self._train(x=x, y=y, training_frame=training_frame, offset_column=offset_column, fold_column=fold_column,
+                    weights_column=weights_column, validation_frame=validation_frame, max_runtime_secs=max_runtime_secs, 
+                    ignored_columns=ignored_columns, model_id=model_id, verbose=verbose)
 
+
+    def _train(self, x=None, y=None, training_frame=None, offset_column=None, fold_column=None,
+              weights_column=None, validation_frame=None, max_runtime_secs=None, ignored_columns=None,
+              model_id=None, verbose=False, extend_parms_fn=None):
         assert_is_type(training_frame, None, H2OFrame)
         assert_is_type(validation_frame, None, H2OFrame)
         assert_is_type(y, None, int, str)
@@ -116,12 +125,13 @@ class H2OEstimator(ModelBase):
         assert_is_type(max_runtime_secs, None, numeric)
         assert_is_type(model_id, None, str)
         assert_is_type(verbose, bool)
+        assert_is_type(extend_parms_fn, None, FunctionType)
 
-        if self._requires_training_frame() and training_frame is None:
-            raise H2OValueError("Training frame required for %s algorithm, but none was given.", self.algo)
+        training_frame_exists = training_frame is not None
+        if self._requires_training_frame() and not training_frame_exists:
+            raise H2OValueError("Training frame required for %s algorithm, but none was given." % self.algo)
 
-        training_frame_exists = training_frame is None
-        if training_frame_exists:
+        if not training_frame_exists:
             self._verify_training_frame_params(offset_column, fold_column, weights_column, validation_frame)
 
         algo = self.algo
@@ -131,8 +141,8 @@ class H2OEstimator(ModelBase):
         if "__class__" in parms:  # FIXME: hackt for PY3
             del parms["__class__"]
         is_auto_encoder = bool(parms.get("autoencoder"))
-        is_supervised = not(is_auto_encoder or algo in {"aggregator", "pca", "svd", "kmeans", "glrm", "word2vec", "isolationforest"})
-        if not training_frame_exists:
+        is_supervised = not(is_auto_encoder or algo in {"aggregator", "pca", "svd", "kmeans", "glrm", "word2vec", "isolationforest", "generic"})
+        if training_frame_exists:
             names = training_frame.names
             ncols = training_frame.ncols
 
@@ -152,9 +162,11 @@ class H2OEstimator(ModelBase):
             # sklearn's pipeline.
             y = None
 
-        if not training_frame_exists:
+        if training_frame_exists:
             assert_is_type(y, str, None)
             ignored_columns_set = set()
+            if ignored_columns is None and "ignored_columns" in parms:
+                ignored_columns = parms['ignored_columns']
             if ignored_columns is not None:
                 if x is not None:
                     raise H2OValueError("Properties x and ignored_columns cannot be specified simultaneously")
@@ -182,10 +194,9 @@ class H2OEstimator(ModelBase):
                             raise H2OValueError("Column %s not in the training frame" % xi)
                         xset.add(xi)
             x = list(xset)
-
-            parms["offset_column"] = offset_column
-            parms["fold_column"] = fold_column
-            parms["weights_column"] = weights_column
+            self._check_and_save_parm(parms, "offset_column", offset_column)
+            self._check_and_save_parm(parms, "weights_column", weights_column)
+            self._check_and_save_parm(parms, "fold_column", fold_column)
 
         if max_runtime_secs is not None: parms["max_runtime_secs"] = max_runtime_secs
 
@@ -197,10 +208,10 @@ class H2OEstimator(ModelBase):
         is_auto_encoder = "autoencoder" in parms and parms["autoencoder"]
         is_unsupervised = is_auto_encoder or self.algo in {"aggregator", "pca", "svd", "kmeans", "glrm", "word2vec", "isolationforest"}
         if is_auto_encoder and y is not None: raise ValueError("y should not be specified for autoencoder.")
-        if not is_unsupervised and y is None: raise ValueError("Missing response")
+        if not is_unsupervised and y is None and self.algo not in ["generic"]: raise ValueError("Missing response")
 
         # Step 3
-        if not training_frame_exists:
+        if training_frame_exists:
             parms["training_frame"] = training_frame
             offset = parms["offset_column"]
             folds = parms["fold_column"]
@@ -212,14 +223,18 @@ class H2OEstimator(ModelBase):
         if not isinstance(x, (list, tuple)): x = [x]
         if is_type(x[0], int):
             x = [training_frame.names[i] for i in x]
-        if not training_frame_exists:
-            ignored_columns = list(set(training_frame.names) - set(x + [y, offset, folds, weights]))
+        if training_frame_exists:
+            ignored_columns = list(set(training_frame.names) - set(x + [y, offset, folds, weights] + self._additional_used_columns(parms)))
             parms["ignored_columns"] = None if ignored_columns == [] else [quoted(col) for col in ignored_columns]
         parms["interactions"] = (None if "interactions" not in parms or parms["interactions"] is None else
                                  [quoted(col) for col in parms["interactions"]])
         parms["interaction_pairs"] = (None if "interaction_pairs" not in parms or parms["interaction_pairs"] is None else
                                  [tuple(map(quoted, ip)) for ip in parms["interaction_pairs"]])
-
+    
+        # internal hook allowing subclasses to extend train parms 
+        if extend_parms_fn is not None:
+            extend_parms_fn(parms)
+            
         parms = {k: H2OEstimator._keyify_if_h2oframe(parms[k]) for k in parms}
         if ("stopping_metric" in parms.keys()) and ("r2" in parms["stopping_metric"]):
             raise H2OValueError("r2 cannot be used as an early stopping_metric yet.  Check this JIRA https://0xdata.atlassian.net/browse/PUBDEV-5381 for progress.")
@@ -258,6 +273,9 @@ class H2OEstimator(ModelBase):
         m._metrics_class = metrics_class
         m._parms = self._parms
         m._estimator_type = self._estimator_type
+        m._start_time = model_json.get('output', {}).get('start_time', None)
+        m._end_time = model_json.get('output', {}).get('end_time', None)
+        m._run_time = model_json.get('output', {}).get('run_time', None)
 
         if model_id is not None and model_json is not None and metrics_class is not None:
             # build Metric objects out of each metrics
@@ -293,6 +311,7 @@ class H2OEstimator(ModelBase):
         if name == "H2ONaiveBayesEstimator": return "naivebayes"
         if name == "H2ORandomForestEstimator": return "drf"
         if name == "H2OXGBoostEstimator": return "xgboost"
+        if name == "H2OCoxProportionalHazardsEstimator": return "coxph"
         if name in ["H2OPCA", "H2OPrincipalComponentAnalysisEstimator"]: return "pca"
         if name in ["H2OSVD", "H2OSingularValueDecompositionEstimator"]: return "svd"
 
@@ -375,6 +394,12 @@ class H2OEstimator(ModelBase):
         """
         return True
 
+    def _additional_used_columns(self, parms):
+        """
+        Returns list of additional columns not to automatically add to ignored_columns parameter.
+        :return: Empty list as default. Can be overridden by any specific algorithm.
+        """
+        return []
 
     @staticmethod
     def _metrics_class(model_json):
@@ -406,6 +431,9 @@ class H2OEstimator(ModelBase):
         elif model_type == "AnomalyDetection":
             metrics_class = H2OAnomalyDetectionModelMetrics
             model_class = H2OAnomalyDetectionModel
+        elif model_type == "CoxPH":
+            metrics_class = H2OCoxPHModelMetrics
+            model_class = H2OCoxPHModel
         else:
             raise NotImplementedError(model_type)
         return [metrics_class, model_class]
@@ -450,3 +478,16 @@ class H2OEstimator(ModelBase):
         paramsSet = self.full_parameters
 
         return nativeXGBoostParams, paramsSet['ntrees']['actual_value']
+
+    def _check_and_save_parm(self, parms, parameter_name, parameter_value):
+        """
+        If a parameter is not stored in parms dict save it there (even though the value is None).
+        Else check if the parameter has been already set during initialization of estimator. If yes, check the new value is the same or not. If the values are different, set the last passed value to params dict and throw UserWarning.
+        """
+        if parameter_name not in parms:
+            parms[parameter_name] = parameter_value
+        elif parameter_value is not None and parms[parameter_name] != parameter_value:
+            parms[parameter_name] = parameter_value
+            warnings.warn("\n\n\t`%s` parameter has been already set and had a different value in `train` method. The last passed value \"%s\" is used." % (parameter_name, parameter_value), UserWarning, stacklevel=2)
+
+

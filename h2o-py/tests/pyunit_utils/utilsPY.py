@@ -3,10 +3,10 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import range
 from past.builtins import basestring
+from functools import reduce
 from scipy.sparse import csr_matrix
 import sys, os
 import pandas as pd
-from six import string_types
 
 try:        # works with python 2.7 not 3
     from StringIO import StringIO
@@ -44,10 +44,36 @@ import json
 import math
 from random import shuffle
 import scipy.special
-from h2o.utils.typechecks import assert_is_type
+from h2o.utils.typechecks import is_type
 import datetime
 import time # needed to randomly generate time
 import uuid # call uuid.uuid4() to generate unique uuid numbers
+
+
+class Namespace:
+    """
+    simplistic namespace class allowing to create bag/namespace objects that are easily extendable in a functional way
+    """
+    @staticmethod
+    def add(namespace, **kwargs):
+        for k, v in kwargs.items():
+            setattr(namespace, k, v)
+        return namespace
+
+    def __init__(self, **kwargs):
+        Namespace.add(self, **kwargs)
+
+    def extend(self, **kwargs):
+        """
+        :param kwargs: attributes extending the current namespace
+        :return: a new namespace containing same attributes as the original + the extended ones
+        """
+        return Namespace.add(copy.copy(self), **kwargs)
+
+
+def ns(**kwargs):
+    return Namespace(**kwargs)
+
 
 def gen_random_uuid(numberUUID):
     uuidVec = numberUUID*[None]
@@ -492,10 +518,32 @@ def standalone_test(test):
 
     h2o.log_and_echo("------------------------------------------------------------")
     h2o.log_and_echo("")
-    h2o.log_and_echo("STARTING TEST")
+    h2o.log_and_echo("STARTING TEST "+test.__name__)
     h2o.log_and_echo("")
     h2o.log_and_echo("------------------------------------------------------------")
     test()
+
+def run_tests(tests, run_in_isolation=True):
+    #flatten in case of nested tests/test suites
+    all_tests = reduce(lambda l, r: (l.extend(r) if isinstance(r, (list, tuple)) else l.append(r)) or l, tests, [])
+    for test in all_tests:
+        header = "Running {}{}".format(test.__name__, "" if not hasattr(test, 'tag') else " [{}]".format(test.tag))
+        print("\n"+('='*len(header))+"\n"+header)
+        if run_in_isolation:
+            standalone_test(test)
+        else:
+            test()
+            
+def tag_test(test, tag):
+    if tag is not None:
+        test.tag = tag
+    return test
+
+def assert_warn(predicate, message):
+    try:
+        assert predicate, message
+    except AssertionError as e:
+        print("WARN: {}".format(str(e)))
 
 def make_random_grid_space(algo, ncols=None, nrows=None):
     """
@@ -3173,7 +3221,7 @@ def model_run_time_sorted_by_time(model_list):
     return model_runtime_sec_list
 
 
-def model_seed_sorted_by_time(model_list):
+def model_seed_sorted(model_list):
     """
     This function is written to find the seed used by each model in the order of when the model was built.  The
     oldest model metric will be the first element.
@@ -3187,13 +3235,11 @@ def model_seed_sorted_by_time(model_list):
 
 
     for index in range(model_num):
-        model_index = int(model_list[index]._id.split('_')[-1]) - 1  # model names start at 1
-
         for pIndex in range(len(model_list.models[0]._model_json["parameters"])):
             if model_list.models[index]._model_json["parameters"][pIndex]["name"]=="seed":
-                model_seed_list[model_index]=model_list.models[index]._model_json["parameters"][pIndex]["actual_value"]
+                model_seed_list[index]=model_list.models[index]._model_json["parameters"][pIndex]["actual_value"]
                 break
-
+    model_seed_list.sort()
     return model_seed_list
 
 
@@ -3913,6 +3959,25 @@ def genTrainFrame(nrow, ncol, enumCols=0, enumFactors=2, responseLevel=2, miscfr
         trainFrame = trainFrameNumerics.cbind(yresponse)
     return trainFrame
 
+def check_xgb_var_imp(h2o_train, h2o_model, xgb_train, xgb_model, tolerance=1e-6):
+    column_map = dict(zip(h2o_train.names, xgb_train.feature_names))
+
+    h2o_var_imps = h2o_model.varimp()
+    h2o_var_frequencies = h2o_model._model_json["output"]["variable_importances_frequency"].cell_values
+    freq_map = dict(map(lambda t: (t[0], t[1]), h2o_var_frequencies))
+    
+
+    # XGBoost reports average gain of a split
+    xgb_var_imps = xgb_model.get_score(importance_type="gain")
+
+    for h2o_var_imp in h2o_var_imps:
+        frequency = freq_map[h2o_var_imp[0]]
+        xgb_var_imp = xgb_var_imps[column_map[h2o_var_imp[0]]]
+        abs_diff = abs(h2o_var_imp[1]/frequency - xgb_var_imp)
+        norm = max(1, abs(h2o_var_imp[1]/frequency), abs(xgb_var_imp))
+        assert abs_diff/norm < tolerance, "Variable importance of feature {0} is different. H2O: {1}, XGB {2}"\
+            .format(h2o_var_imp[0], h2o_var_imp[1], xgb_var_imp)
+
 def summarizeResult_regression(h2oPredictD, nativePred, h2oTrainTimeD, nativeTrainTime, h2oPredictTimeD, nativeScoreTime, tolerance=1e-6):
     # Result comparison in terms of time
     print("H2OXGBoost train time is {0}ms.  Native XGBoost train time is {1}s.\n  H2OGBoost scoring time is {2}s."
@@ -3982,7 +4047,7 @@ def manual_partial_dependence(model, dataframe, xlist, xname, weightV):
         cons = [xval]*nRows
         if xname in dataframe.names:
             dataframe=dataframe.drop(xname)
-        if not((isinstance(xval, string_types) and xval=='NA') or (isinstance(xval, float) and math.isnan(xval))):
+        if not((is_type(xval, str) and xval=='NA') or (isinstance(xval, float) and math.isnan(xval))):
             dataframe = dataframe.cbind(h2o.H2OFrame(cons))
             dataframe.set_name(nCols, xname)
 
@@ -4164,3 +4229,21 @@ def checkCorrectSkipsFolder(originalFullFrame, csvfile, skipped_columns):
                 compare_frames_local_onecolumn_NA(originalFullFrame[cindex], skippedFrameIF[skipCounter],
                                                                prob=1, tol=1e-10, returnResult=False)
             skipCounter = skipCounter + 1
+
+def assertModelColNamesTypesCorrect(modelNames, modelTypes, frameNames, frameTypesDict):
+    fName = list(frameNames)
+    mName = list(modelNames)
+    assert fName.sort() == mName.sort(), "Expected column names {0}, actual column names {1} and they" \
+                                                    " are different".format(frameNames, modelNames) 
+    for ind in range(len(frameNames)):  
+        if modelTypes[modelNames.index(frameNames[ind])].lower()=="numeric":
+            assert (frameTypesDict[frameNames[ind]].lower()=='real') or \
+                   (frameTypesDict[frameNames[ind]].lower()=='int'), \
+                "Expected training data types for column {0} is {1}.  Actual training data types for column {2} from " \
+                "model output is {3}".format(frameNames[ind], frameTypesDict[frameNames[ind]],
+                                             frameNames[ind], modelTypes[modelNames.index(frameNames[ind])])
+        else:
+            assert modelTypes[modelNames.index(frameNames[ind])].lower()==frameTypesDict[frameNames[ind]].lower(), \
+            "Expected training data types for column {0} is {1}.  Actual training data types for column {2} from " \
+            "model output is {3}".format(frameNames[ind], frameTypesDict[frameNames[ind]],
+                                         frameNames[ind], modelTypes[modelNames.index(frameNames[ind])])

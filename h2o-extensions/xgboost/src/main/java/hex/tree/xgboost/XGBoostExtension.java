@@ -31,7 +31,8 @@ public class XGBoostExtension extends AbstractH2OExtension {
   private boolean isInitCalled = false;
   // XGBoost binary presence on the system
   private boolean isXgboostPresent = false;
-
+  private NativeLibInfo nativeLibInfo = null;
+  
   public static String NAME = "XGBoost";
 
   @Override
@@ -53,6 +54,15 @@ public class XGBoostExtension extends AbstractH2OExtension {
     return isXgboostPresent;
   }
 
+  public void logNativeLibInfo() {
+    Log.info("Found XGBoost backend with library: " + nativeLibInfo.name);
+    if (nativeLibInfo.flags.length == 0) {
+      Log.warn("Your system supports only minimal version of XGBoost (no GPUs, no multithreading)!");
+    } else {
+      Log.info("XGBoost supported backends: " + Arrays.toString(nativeLibInfo.flags));
+    }
+  }
+
   private boolean initXgboost() {
     try {
       INativeLibLoader loader = NativeLibLoader.getLoader();
@@ -63,13 +73,7 @@ public class XGBoostExtension extends AbstractH2OExtension {
       }
       NativeLibraryLoaderChain chainLoader = (NativeLibraryLoaderChain) loader;
       NativeLibrary lib = chainLoader.getLoadedLibrary();
-      Log.info("Found XGBoost backend with library: " + lib.getName());
-      NativeLibrary.CompilationFlags[] flags = lib.getCompilationFlags();
-      if (flags.length == 0) {
-        Log.warn("Your system supports only minimal version of XGBoost (no GPUs, no multithreading)!");
-      } else {
-        Log.info("XGBoost supported backends: " + Arrays.toString(flags));
-      }
+      nativeLibInfo = new NativeLibInfo(lib);
       return true;
     } catch (IOException e) {
       // Ups no lib loaded or load failed
@@ -92,4 +96,14 @@ public class XGBoostExtension extends AbstractH2OExtension {
     }
   }
 
+  private static class NativeLibInfo {
+    String name;
+    NativeLibrary.CompilationFlags[] flags;
+
+    private NativeLibInfo(NativeLibrary nl) {
+      name = nl.getName();
+      flags = nl.getCompilationFlags();
+    }
+  }
+  
 }

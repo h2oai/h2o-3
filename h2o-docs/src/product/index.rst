@@ -43,7 +43,7 @@ Additional Resources:
    starting-h2o
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
 
    getting-data-into-h2o
 
@@ -62,6 +62,11 @@ Additional Resources:
 
    cross-validation
 
+.. toctree::
+   :maxdepth: 2
+
+   variable-importance
+
 .. toctree::   
    :maxdepth: 2
 
@@ -71,6 +76,7 @@ Additional Resources:
    :maxdepth: 2
 
    checkpointing-models
+   performance-and-prediction
 
 .. toctree::
    :maxdepth: 2

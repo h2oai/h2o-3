@@ -27,6 +27,18 @@ class CustomRmseFunc:
         import java.lang.Math as math
         return math.sqrt(l[0] / l[1])
 
+class CustomLoglossFunc:
+    def map(self, pred, act, w, o, model):
+        import water.util.MathUtils as math
+        idx = int(act[0])
+        err = 1 - pred[idx + 1] if idx + 1 < len(pred) else 1
+        return [w * math.logloss(err), w]
+
+    def reduce(self, l, r):
+        return [l[0] + r[0], l[1] + r[1]]
+
+    def metric(self, l):
+        return l[0] / l[1]
 
 class CustomNullFunc:
     def map(self, pred, act, w, o, model):
@@ -48,6 +60,18 @@ class CustomOneFunc:
 
     def metric(self, l):
         return 1
+
+CustomOneFuncStr = '''
+class CustomOneFunc:
+    def map(self, pred, act, w, o, model):
+        return  []
+
+    def reduce(self, l, r):
+        return []
+
+    def metric(self, l):
+        return 1
+'''
 
 def assert_metrics_equal(metric, metric_name1, metric_name2, msg=None):
     metric_name1 = metric_name1 if metric_name1 in metric._metric_json else metric_name1.upper()

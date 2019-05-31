@@ -34,7 +34,7 @@ def random_grid_model_seeds_PUBDEV_4090():
     air_hex = h2o.import_file(path=pyunit_utils.locate("smalldata/airlines/allyears2k_headers.zip"),
                               destination_frame="air.hex")
     myX = ["Year","Month","CRSDepTime","UniqueCarrier","Origin","Dest"]
-    grid_max_runtime_secs = 20
+    grid_max_models = 8
     # create hyperameter and search criteria lists (ranges are inclusive..exclusive))
     hyper_params_tune = {'max_depth' : list(range(1,10+1,1)),
                          'sample_rate': [x/100. for x in range(20,101)],
@@ -49,11 +49,11 @@ def random_grid_model_seeds_PUBDEV_4090():
 
 
     search_criteria_tune1 = {'strategy': "RandomDiscrete",
-                             'max_runtime_secs': grid_max_runtime_secs ,   # limit the runtime
+                             'max_models': grid_max_models ,   # limit the runtime
                              'seed' : 1234,
                              }
     search_criteria_tune2 = {'strategy': "RandomDiscrete",
-                             'max_runtime_secs': grid_max_runtime_secs ,   # limit the runtime
+                             'max_models': grid_max_models ,   # limit the runtime
                              'seed' : 1234,
                              }
 
@@ -66,19 +66,15 @@ def random_grid_model_seeds_PUBDEV_4090():
     air_grid2.train(x=myX, y="IsDepDelayed", training_frame=air_hex, distribution="bernoulli")
 
     # expect both models to render the same metrics as they use the same model seed, search criteria seed
-    model_seeds1 = pyunit_utils.model_seed_sorted_by_time(air_grid1)
-    model_seeds2 = pyunit_utils.model_seed_sorted_by_time(air_grid2)
+    model_seeds1 = pyunit_utils.model_seed_sorted(air_grid1)
+    model_seeds2 = pyunit_utils.model_seed_sorted(air_grid2)
     # check model seeds are set as gridseed+model number where model number = 0, 1, ..., ...
     model_len = min(len(air_grid1), len(air_grid2))
-    correct_model_seeds = list(range(search_criteria_tune1["seed"], search_criteria_tune1["seed"]+model_len))
 
-    expectedSeeds = ','.join(str(x) for x in correct_model_seeds)
     model1Seeds = ','.join(str(x) for x in model_seeds1[0:model_len])
     model2Seeds = ','.join(str(x) for x in model_seeds2[0:model_len])
-    assert model_seeds1[0:model_len]==correct_model_seeds, "Model seeds are not set correctly: expected %s; " \
-                                                           "got %s" % (expectedSeeds, model1Seeds)
-    assert model_seeds2[0:model_len]==correct_model_seeds, "Model seeds are not set correctly: expected %s; " \
-                                                           "got %s" % (expectedSeeds, model2Seeds)
+    assert model1Seeds==model2Seeds, "Model seeds are not equal: gridsearch 1 seeds %s; " \
+                                                           " and gridsearch 2 seeds %s" % (model1Seeds, model2Seeds)
 
     # compare training_rmse from scoring history
     model1seed = air_grid1.models[0].full_parameters['seed']['actual_value']
@@ -93,10 +89,7 @@ def random_grid_model_seeds_PUBDEV_4090():
     print(metric_list1)
     print(metric_list2)
 
-    if (metric_list1 != None) and (metric_list2 != None):
-        len_list = min(len(metric_list1)-1, len(metric_list2)-1)
-        if (len_list > 0):
-            assert pyunit_utils.equal_two_arrays(metric_list1[0:len_list], metric_list2[0:len_list], 1e-5, 1e-6, False), \
+    assert pyunit_utils.equal_two_arrays(metric_list1, metric_list2, 1e-5, 1e-6, False), \
                 "Training_rmse are different between the two grid search models.  Tests are supposed to be repeatable in " \
                 "this case.  Make sure model seeds are actually set correctly in the Java backend."
 

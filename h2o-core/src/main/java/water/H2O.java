@@ -20,10 +20,8 @@ import water.parser.DecryptionTool;
 import water.parser.ParserService;
 import water.persist.PersistManager;
 import water.server.ServletUtils;
-import water.util.Log;
-import water.util.NetworkUtils;
-import water.util.OSUtils;
-import water.util.PrettyPrint;
+import water.util.*;
+import water.webserver.iface.WebServer;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -39,19 +37,8 @@ import java.net.MulticastSocket;
 import java.net.NetworkInterface;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -161,16 +148,22 @@ final public class H2O {
             "          Use Jetty HashLoginService\n" +
             "\n" +
             "    -ldap_login\n" +
-            "          Use Jetty LdapLoginService\n" +
+            "          Use Jetty Ldap login module\n" +
             "\n" +
             "    -kerberos_login\n" +
-            "          Use Kerberos LoginService\n" +
+            "          Use Jetty Kerberos login module\n" +
+            "\n" +
+            "    -spnego_login\n" +
+            "          Use Jetty SPNEGO login service\n" +
             "\n" +
             "    -pam_login\n" +
-            "          Use PAM LoginService\n" +
+            "          Use Jetty PAM login module\n" +
             "\n" +
             "    -login_conf <filename>\n" +
             "          LoginService configuration file\n" +
+            "\n" +
+            "    -spnego_properties <filename>\n" +
+            "          SPNEGO login module configuration file\n" +
             "\n" +
             "    -form_auth\n" +
             "          Enables Form-based authentication for Flow (default is Basic authentication)\n" +
@@ -232,17 +225,23 @@ final public class H2O {
     /** -hash_login enables HashLoginService */
     public boolean hash_login = false;
 
-    /** -ldap_login enables LdapLoginService */
+    /** -ldap_login enables ldaploginmodule */
     public boolean ldap_login = false;
 
-    /** -kerberos_login enables KerberosLoginService */
+    /** -kerberos_login enables krb5loginmodule */
     public boolean kerberos_login = false;
 
-    /** -pam_login enables PAMLoginService */
+    /** -kerberos_login enables SpnegoLoginService */
+    public boolean spnego_login = false;
+
+    /** -pam_login enables pamloginmodule */
     public boolean pam_login = false;
 
     /** -login_conf is login configuration service file on local filesystem */
     public String login_conf = null;
+
+    /** -spnego_properties is SPNEGO configuration file on local filesystem */
+    public String spnego_properties = null;
 
     /** -form_auth enables Form-based authentication */
     public boolean form_auth = false;
@@ -286,8 +285,19 @@ final public class H2O {
 
     /** -context_path=jetty_context_path; the context path for jetty */
     public String context_path = "";
+
+    public KeyValueArg[] extra_headers = new KeyValueArg[0];
   }
 
+  public static class KeyValueArg {
+    public final String _key;
+    public final String _value;
+    private KeyValueArg(String key, String value) {
+      _key = key;
+      _value = value;
+    }
+  } 
+  
   /**
    * A class containing all of the arguments for H2O.
    */
@@ -414,9 +424,6 @@ final public class H2O {
       return hdfs_skip;
     }
 
-    public static int getSysPropInt(String suffix, int defaultValue) {
-      return Integer.getInteger(SYSTEM_PROP_PREFIX + suffix, defaultValue);
-    }
   }
 
   public static void parseFailed(String message) {
@@ -612,12 +619,19 @@ final public class H2O {
       else if (s.matches("kerberos_login")) {
         trgt.kerberos_login = true;
       }
+      else if (s.matches("spnego_login")) {
+        trgt.spnego_login = true;
+      }
       else if (s.matches("pam_login")) {
         trgt.pam_login = true;
       }
       else if (s.matches("login_conf")) {
         i = s.incrementAndCheck(i, args);
         trgt.login_conf = args[i];
+      }
+      else if (s.matches("spnego_properties")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.spnego_properties = args[i];
       }
       else if (s.matches("form_auth")) {
         trgt.form_auth = true;
@@ -651,6 +665,12 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         trgt.features_level = ModelBuilder.BuilderVisibility.valueOfIgnoreCase(args[i]);
         Log.info(String.format("Limiting algorithms available to level: %s", trgt.features_level.name()));
+      } else if (s.matches("add_http_header")) {
+        i = s.incrementAndCheck(i, args);
+        String key = args[i];
+        i = s.incrementAndCheck(i, args);
+        String value = args[i];
+        trgt.extra_headers = ArrayUtils.append(trgt.extra_headers, new KeyValueArg(key, value));
       } else {
         parseFailed("Unknown argument (" + s + ")");
       }
@@ -675,12 +695,13 @@ final public class H2O {
     if (ARGS.hash_login) login_arg_count++;
     if (ARGS.ldap_login) login_arg_count++;
     if (ARGS.kerberos_login) login_arg_count++;
+    if (ARGS.spnego_login) login_arg_count++;
     if (ARGS.pam_login) login_arg_count++;
     if (login_arg_count > 1) {
-      parseFailed("Can only specify one of -hash_login, -ldap_login, -kerberos_login and -pam_login");
+      parseFailed("Can only specify one of -hash_login, -ldap_login, -kerberos_login, -spnego_login and -pam_login");
     }
 
-    if (ARGS.hash_login || ARGS.ldap_login || ARGS.kerberos_login || ARGS.pam_login) {
+    if (ARGS.hash_login || ARGS.ldap_login || ARGS.kerberos_login || ARGS.pam_login || ARGS.spnego_login) {
       if (H2O.ARGS.login_conf == null) {
         parseFailed("Must specify -login_conf argument");
       }
@@ -688,6 +709,15 @@ final public class H2O {
       if (H2O.ARGS.form_auth) {
         parseFailed("No login method was specified. Form-based authentication can only be used in conjunction with of a LoginService.\n" +
                 "Pick a LoginService by specifying '-<method>_login' option.");
+      }
+    }
+
+    if (ARGS.spnego_login) {
+      if (H2O.ARGS.spnego_properties == null) {
+        parseFailed("Must specify -spnego_properties argument");
+      }
+      if (H2O.ARGS.form_auth) {
+        parseFailed("Form-based authentication not supported when SPNEGO login is enabled.");
       }
     }
 
@@ -752,7 +782,7 @@ final public class H2O {
 
 
   public static void closeAll() {
-    try { H2O.getJetty().stop(); } catch( Exception ignore ) { }
+    try { H2O.getWebServer().stop(); } catch( Exception ignore ) { }
     try { NetworkInit._tcpSocket.close(); } catch( IOException ignore ) { }
     PersistManager PM = H2O.getPM();
     if( PM != null ) PM.getIce().cleanUp();
@@ -819,16 +849,7 @@ final public class H2O {
 
   //-------------------------------------------------------------------------------------------------------------------
 
-  public static final AbstractBuildVersion ABV;
-  static {
-    AbstractBuildVersion abv = AbstractBuildVersion.UNKNOWN_VERSION;
-    try {
-      Class klass = Class.forName("water.init.BuildVersion");
-      java.lang.reflect.Constructor constructor = klass.getConstructor();
-      abv = (AbstractBuildVersion) constructor.newInstance();
-    } catch (Exception ignore) { }
-    ABV = abv;
-  }
+  public static final AbstractBuildVersion ABV = AbstractBuildVersion.getBuildVersion();
 
   //-------------------------------------------------------------------------------------------------------------------
 
@@ -1051,6 +1072,20 @@ final public class H2O {
   private static final ExtensionManager extManager = ExtensionManager.getInstance();
 
   /**
+   * Retrieves a value of an H2O system property
+   * @param name property name
+   * @param def default value
+   * @return value of the system property or default value if property was not defined
+   */
+  public static String getSysProperty(String name, String def) {
+    return System.getProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + name, def);
+  }
+
+  public static boolean getSysBoolProperty(String name, boolean def) {
+    return Boolean.parseBoolean(getSysProperty(name, String.valueOf(def)));
+  }
+
+  /**
    * Throw an exception that will cause the request to fail, but the cluster to continue.
    * @see #fail(String, Throwable)
    * @return never returns
@@ -1085,7 +1120,15 @@ final public class H2O {
     Log.fatal("Stacktrace: ");
     Log.fatal(Arrays.toString(Thread.currentThread().getStackTrace()));
 
-    H2O.shutdown(-1);
+    // H2O fail() exists because of coding errors - but what if usage of fail() was itself a coding error?
+    // Property "suppress.shutdown.on.failure" can be used in the case when someone is seeing shutdowns on production
+    // because a developer incorrectly used fail() instead of just throwing a (recoverable) exception
+    boolean suppressShutdown = getSysBoolProperty("suppress.shutdown.on.failure", false);
+    if (! suppressShutdown) {
+      H2O.shutdown(-1);
+    } else {
+      throw new IllegalStateException("Suppressed shutdown for failure: " + msg, cause);
+    }
 
     // unreachable
     return new H2OFailException(msg);
@@ -1240,14 +1283,58 @@ final public class H2O {
     return task;
   }
 
-  public static abstract class H2OFuture<T> implements Future<T> {
-    public final T getResult(){
+  /**
+   * Executes a runnable on a regular H2O Node (= not on a client).
+   * If the current H2O Node is a regular node, the runnable will be executed directly (RemoteRunnable#run will be invoked).
+   * If the current H2O Node is a client node, the runnable will be send to a leader node of the cluster and executed there.
+   * The caller shouldn't make any assumptions on where the code will be run.
+   * @param runnable code to be executed
+   * @param <T> RemoteRunnable
+   * @return executed runnable (will be a different instance if executed remotely).
+   */
+  public static <T extends RemoteRunnable> T runOnH2ONode(T runnable) {
+    H2ONode node = H2O.ARGS.client ? H2O.CLOUD.leader() : H2O.SELF;
+    return runOnH2ONode(node, runnable);
+  }
+
+  public static <T extends RemoteRunnable> T runOnLeaderNode(T runnable) {
+    return runOnH2ONode(H2O.CLOUD.leader(), runnable);
+  }
+
+  // package-private for unit tests
+  static <T extends RemoteRunnable> T runOnH2ONode(H2ONode node, T runnable) {
+    if (node == H2O.SELF) {
+      // run directly
+      runnable.run();
+      return runnable;
+    } else {
+      RunnableWrapperTask<T> task = new RunnableWrapperTask<>(runnable);
       try {
-        return get();
-      } catch (InterruptedException | ExecutionException e) {
-        throw new RuntimeException(e);
+        return new RPC<>(node, task).call().get()._runnable;
+      } catch (DistributedException e) {
+        Log.trace("Exception in calling runnable on a remote node",  e);
+        Throwable cause = e.getCause();
+        throw cause instanceof RuntimeException ? (RuntimeException) cause : e;
       }
     }
+  }
+
+  private static class RunnableWrapperTask<T extends RemoteRunnable> extends DTask<RunnableWrapperTask<T>> {
+    private final T _runnable;
+    private RunnableWrapperTask(T runnable) {
+      _runnable = runnable;
+    }
+    @Override
+    public void compute2() {
+      _runnable.setupOnRemote();
+      _runnable.run();
+      tryComplete();
+    }
+  }
+
+  public abstract static class RemoteRunnable<T extends RemoteRunnable> extends Iced<T> {
+    public void setupOnRemote() {}
+    public abstract void run();
   }
 
   /** Simple wrapper over F/J {@link CountedCompleter} to support priority
@@ -1489,12 +1576,12 @@ final public class H2O {
   // as part of joining the cluster so all nodes have the same value.
   public static final long CLUSTER_ID = System.currentTimeMillis();
 
-  private static JettyHTTPD jetty;
-  public static void setJetty(JettyHTTPD value) {
-    jetty = value;
+  private static WebServer webServer;
+  public static void setWebServer(WebServer value) {
+    webServer = value;
   }
-  public static JettyHTTPD getJetty() {
-    return jetty;
+  public static WebServer getWebServer() {
+    return webServer;
   }
 
   /** If logging has not been setup yet, then Log.info will only print to
@@ -1516,16 +1603,7 @@ final public class H2O {
       Log.warn("");
     }
 
-    for (AbstractH2OExtension e : extManager.getCoreExtensions()) {
-      String n = e.getExtensionName() + " ";
-      AbstractBuildVersion abv = e.getBuildVersion();
-      Log.info(n + "Build git branch: ", abv.branchName());
-      Log.info(n + "Build git hash: ", abv.lastCommitHash());
-      Log.info(n + "Build git describe: ", abv.describe());
-      Log.info(n + "Build project version: ", abv.projectVersion());
-      Log.info(n + "Built by: ", abv.compiledBy());
-      Log.info(n + "Built on: ", abv.compiledOn());
-    }
+    Log.info("Found H2O Core extensions: " + extManager.getCoreExtensions());
     Log.info("Processed H2O arguments: ", Arrays.toString(arguments));
 
     Runtime runtime = Runtime.getRuntime();
@@ -1538,6 +1616,7 @@ final public class H2O {
     Log.info("OS version: "+System.getProperty("os.name")+" "+System.getProperty("os.version")+" ("+System.getProperty("os.arch")+")");
     long totalMemory = OSUtils.getTotalPhysicalMemory();
     Log.info ("Machine physical memory: " + (totalMemory==-1 ? "NA" : PrettyPrint.bytes(totalMemory)));
+    Log.info("Machine locale: " + Locale.getDefault());
   }
 
   /** Initializes the local node and the local cloud with itself as the only member. */
@@ -1560,23 +1639,13 @@ final public class H2O {
       Log.info("If you have trouble connecting, try SSH tunneling from your local machine (e.g., via port 55555):\n" +
               "  1. Open a terminal and run 'ssh -L 55555:localhost:"
               + API_PORT + " " + System.getProperty("user.name") + "@" + SELF_ADDRESS.getHostAddress() + "'\n" +
-              "  2. Point your browser to " + jetty.getScheme() + "://localhost:55555");
+              "  2. Point your browser to " + NetworkInit.h2oHttpView.getScheme() + "://localhost:55555");
     }
 
     // Create the starter Cloud with 1 member
     SELF._heartbeat._jar_md5 = JarHash.JARHASH;
     SELF._heartbeat._client = ARGS.client;
     SELF._heartbeat._cloud_name_hash = ARGS.name.hashCode();
-
-    if(ARGS.client){
-      reportClient(H2O.SELF); // report myself as the client to myself
-      // This is useful for the consistency and used, for example, in LogsHandler where, in case we couldn't find ip of
-      // regular worker node, we try to obtain the logs from the client.
-      //
-      // In case we wouldn't report the client to the client and the request for the logs would come to the client, we would
-      // need to handle that case differently. But since we handle this consistently like this, we do not need to worry about cases if the request
-      // came to the client node or not since we always report the client.
-    }
   }
 
   /** Starts the worker threads, receiver threads, heartbeats and all other
@@ -1631,7 +1700,7 @@ final public class H2O {
    */
   public static void startServingRestApi() {
     if (!H2O.ARGS.disable_web) {
-      jetty.acceptRequests();
+      NetworkInit.h2oHttpView.acceptRequests();
     }
   }
 
@@ -1832,6 +1901,7 @@ final public class H2O {
     if( v != null ) v.removePersist();
   }
   public static void raw_clear() { STORE.clear(); }
+  
   public static boolean containsKey( Key key ) { return STORE.get(key) != null; }
   static Key getk( Key key ) { return STORE.getk(key); }
   public static Set<Key> localKeySet( ) { return STORE.keySet(); }
@@ -1901,9 +1971,11 @@ final public class H2O {
       return false;
     }
 
-    // NOTE for developers: make sure that the following whitelist is logically consistent with whitelist in R code - see function .h2o.check_java_version in connection.R
-    if (JAVA_VERSION.isKnown() && !isUserEnabledJavaVersion() && (JAVA_VERSION.getMajor()<7 || JAVA_VERSION.getMajor()>11)) {
-      System.err.println("Only Java 7, 8, 9, 10 and 11 are supported, system version is " + System.getProperty("java.version"));
+    // Notes: 
+    // - make sure that the following whitelist is logically consistent with whitelist in R code - see function .h2o.check_java_version in connection.R
+    // - upgrade of the javassist library should be considered when adding support for a new java version
+    if (JAVA_VERSION.isKnown() && !isUserEnabledJavaVersion() && (JAVA_VERSION.getMajor()<7 || JAVA_VERSION.getMajor()>12)) {
+      System.err.println("Only Java 7, 8, 9, 10, 11 and 12 are supported, system version is " + System.getProperty("java.version"));
       return true;
     }
     String vmName = System.getProperty("java.vm.name");
@@ -2086,7 +2158,14 @@ final public class H2O {
     Log.info("Registered parsers: " + Arrays.toString(ParserService.INSTANCE.getAllProviderNames(true)));
 
     // Start thread checking client disconnections
-    new ClientDisconnectCheckThread().start();
+    if (Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.clientDisconnectAttack")) {
+      // for development only!
+      Log.warn("Client Random Disconnect attack is enabled - use only for debugging! More warnings to follow ;)");
+      new ClientRandomDisconnectThread().start();
+    } else {
+      // regular mode of operation
+      new ClientDisconnectCheckThread().start();
+    }
 
     long time12 = System.currentTimeMillis();
     Log.debug("Timing within H2O.main():");
@@ -2192,29 +2271,68 @@ final public class H2O {
     return new HashSet<>(STATIC_H2OS);
   }
 
-  public static H2ONode reportClient(H2ONode client) {
-    H2ONode oldClient = CLIENTS_MAP.put(client.getIpPortString(), client);
-    if (oldClient == null) {
-        Log.info("New client discovered: " + client.toDebugString());
-    }
-    return oldClient;
+  /**
+   * Forgets H2O client
+   */
+  static boolean removeClient(H2ONode client){
+    return client.removeClient();
   }
 
-  public static H2ONode removeClient(H2ONode client){
-    client.stopSendThread();
-    return CLIENTS_MAP.remove(client.getIpPortString());
-  }
-
-  public static HashSet<H2ONode> getClients(){
-    return new HashSet<>(CLIENTS_MAP.values());
+  public static H2ONode[] getClients(){
+    return H2ONode.getClients();
   }
 
   public static H2ONode getClientByIPPort(String ipPort){
-    return CLIENTS_MAP.get(ipPort);
+    return H2ONode.getClientByIPPort(ipPort);
   }
 
   public static Key<DecryptionTool> defaultDecryptionTool() {
     return H2O.ARGS.decrypt_tool != null ? Key.<DecryptionTool>make(H2O.ARGS.decrypt_tool) : null;
+  }
+
+  /**
+   * Select last 15 bytes from the jvm boot start time and return it as short. If the timestamp is 0, we increment it by
+   * 1 to be able to distinguish between client and node as -0 is the same as 0.
+   */
+  private static short truncateTimestamp(long jvmStartTime){
+    int bitMask = (1 << 15) - 1;
+    // select the lower 15 bits
+    short timestamp = (short) (jvmStartTime & bitMask);
+    // if the timestamp is 0 return 1 to be able to distinguish between positive and negative values
+    return timestamp == 0 ? 1 : timestamp;
+  }
+
+
+  /**
+   * Calculate node timestamp from Current's node information. We use start of jvm boot time and information whether
+   * we are client or not. We combine these 2 information and create a char(2 bytes) with this info in a single variable.
+   */
+  static short calculateNodeTimestamp() {
+    return calculateNodeTimestamp(TimeLine.JVM_BOOT_MSEC, H2O.ARGS.client);
+  }
+
+  /**
+   * Calculate node timestamp from the provided information. We use start of jvm boot time and information whether
+   * we are client or not.
+   *
+   * The negative timestamp represents a client node, the positive one a regular H2O node
+   *
+   * @param bootTimestamp H2O node boot timestamp
+   * @param amIClient true if this node is client, otherwise false
+   */
+  static short calculateNodeTimestamp(long bootTimestamp, boolean amIClient) {
+    short timestamp = truncateTimestamp(bootTimestamp);
+    //if we are client, return negative timestamp, otherwise positive
+    return amIClient ? (short) -timestamp : timestamp;
+  }
+
+  /**
+   * Decodes whether the node is client or regular node from the timestamp
+   * @param timestamp timestamp
+   * @return true if timestamp is from client node, false otherwise
+   */
+  static boolean decodeIsClient(short timestamp) {
+    return timestamp < 0;
   }
 
 }

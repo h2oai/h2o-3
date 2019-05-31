@@ -81,7 +81,7 @@ class H2OLocalServer(object):
             tempfile.mkdtemp().
         :param port: Port where to start the new server. This could be either an integer, or a string of the form
             "DDDDD+", indicating that the server should start looking for an open port starting from DDDDD and up.
-        :param name: name of the h2o cloud to be started
+        :param name: name of the h2o cluster to be started
         :param extra_classpath List of paths to libraries that should be included on the Java classpath.
         :param verbose: If True, then connection info will be printed to the stdout.
         :param jvm_custom_args Custom, user-defined arguments for the JVM H2O is instantiated in
@@ -186,7 +186,7 @@ class H2OLocalServer(object):
 
     @property
     def name(self):
-        """H2O cloud name."""
+        """H2O cluster name."""
         return self._name
 
     #-------------------------------------------------------------------------------------------------------------------

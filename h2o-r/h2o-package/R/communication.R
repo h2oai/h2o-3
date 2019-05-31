@@ -23,7 +23,7 @@
   FALSE
 }
 
-.h2o.calcBaseURL <- function(conn,h2oRestApiVersion, urlSuffix) {
+.h2o.calcBaseURL <- function(conn, h2oRestApiVersion, urlSuffix) {
   if( missing(conn) ) conn <- h2o.getConnection()
   stopifnot(is(conn, "H2OConnection"))
   stopifnot(is.character(urlSuffix))
@@ -121,7 +121,7 @@
       postBody <- sub('\"\\{', '\\{',postBody)
       postBody <- sub('\\}\"', '\\}',postBody)
     }
-
+    
   .__curlError = FALSE
   .__curlErrorMessage = ""
   httpStatusCode = -1L
@@ -313,7 +313,6 @@
   if (missing(h2oRestApiVersion)) {
     h2oRestApiVersion = .h2o.__REST_API_VERSION
   }
-
   .h2o.doRawREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
                  parms = parms, method = method, fileUploadInfo,autoML=autoML, ...)
 }
@@ -583,7 +582,6 @@ print.H2OTable <- function(x, header=TRUE, ...) {
   }
 
   rawREST <- ""
-
   if( !is.null(timeout) ){
     rawREST <- .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = page, parms = .params, method = method, timeout = timeout)
   }else if(autoML == TRUE){
@@ -591,11 +589,18 @@ print.H2OTable <- function(x, header=TRUE, ...) {
   }else{
     rawREST <- .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = page, parms = .params, method = method)
   }
-
   if( raw ) rawREST
-  else      .h2o.fromJSON(jsonlite::fromJSON(rawREST,simplifyDataFrame=FALSE))
+  else {
+    res <- .h2o.fromJSON(jsonlite::fromJSON(rawREST,simplifyDataFrame=FALSE, bigint_as_char=TRUE))
+    if(getOption("h2o.warning.on.json.string.conversion", FALSE)) {
+      resToCompare <- .h2o.fromJSON(jsonlite::fromJSON(rawREST,simplifyDataFrame=FALSE))
+      if(!isTRUE(all.equal(res, resToCompare))){
+        warning("During parsing the JSON response from H2O API to R bindings a conversion from long to string has occurred.")
+      }
+    }
+    res
+  }
 }
-
 
 #-----------------------------------------------------------------------------------------------------------------------
 #   H2O Server Health & Info
@@ -742,6 +747,40 @@ h2o.clusterInfo <- function() {
   if (res$build_too_old) {
     warning(sprintf("\nYour H2O cluster version is too old (%s)!\nPlease download and install the latest version from http://h2o.ai/download/", res$build_age))
   }
+}
+
+.h2o.translateJobType <- function(type) {
+    if (is.null(type)) {
+      return('Removed')
+    }
+    switch (type,
+      'Key<Frame>' = 'Frame',
+      'Key<Model>' = 'Model',
+      'Key<Grid>' = 'Grid',
+      'Key<PartialDependence>' = 'PartialDependence',
+      'Key<AutoML>' = 'Auto Model',
+      'Key<ScalaCodeResult>' = 'Scala Code Execution',
+      'Key<KeyedVoid>' = 'Void',
+      'Unknown'
+    )
+}
+
+#' Return list of jobs performed by the H2O cluster
+#' @export
+h2o.list_jobs <- function() {
+  myJobUrlSuffix <- paste0(.h2o.__JOBS)
+  rawResponse <- .h2o.doSafeGET(urlSuffix = myJobUrlSuffix)
+  jsonObject <- .h2o.fromJSON(jsonlite::fromJSON(rawResponse, simplifyDataFrame=FALSE))
+  df <- data.frame()
+  for (job in jsonObject$jobs) {
+    df <- rbind(df, data.frame(
+      type=.h2o.translateJobType(job$dest$type),
+      dest=job$dest$name,
+      description=job$description,
+      status=job$status
+    ))
+  }
+  df
 }
 
 #' Check H2O Server Health
@@ -903,7 +942,7 @@ h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
 
 #------------------------------------ Utilities ------------------------------------#
 h2o.getBaseURL <- function(conn) {
-  .h2o.calcBaseURL( conn, urlSuffix = "")
+  .h2o.calcBaseURL(conn, urlSuffix = "")
 }
 
 #' Get h2o version

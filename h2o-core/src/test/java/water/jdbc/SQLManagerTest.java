@@ -1,6 +1,7 @@
 package water.jdbc;
 
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.ProvideSystemProperty;
@@ -8,11 +9,14 @@ import org.junit.contrib.java.lang.system.RestoreSystemProperties;
 import org.junit.rules.ExpectedException;
 import water.H2O;
 
+import java.io.File;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.concurrent.ArrayBlockingQueue;
 
 public class SQLManagerTest {
+
+  private static final File BUILD_DIR = new File("build").getAbsoluteFile();
 
   @Rule
   public final ProvideSystemProperty provideSystemProperty =
@@ -25,12 +29,16 @@ public class SQLManagerTest {
   @Rule
   public final ExpectedException exception = ExpectedException.none();
 
-  @Test
-  public void testCreateConnectionPool() throws ReflectiveOperationException, SQLException {
+  @BeforeClass
+  public static void initDB() throws ClassNotFoundException {
+    System.setProperty("derby.stream.error.file", new File(BUILD_DIR, "SQLManagerTest.derby.log").getAbsolutePath());
     Class.forName("org.apache.derby.jdbc.EmbeddedDriver");
+  }
 
-    SQLManager.ConnectionPoolProvider provider = new SQLManager.ConnectionPoolProvider(
-            "jdbc:derby:myDB;create=true", "me", "mine", 10);
+  @Test
+  public void testCreateConnectionPool() throws SQLException {
+    final String connectionString = String.format("jdbc:derby:memory:SQLManagerTest_%d;create=true", System.currentTimeMillis());
+    final SQLManager.ConnectionPoolProvider provider = new SQLManager.ConnectionPoolProvider(connectionString, "me", "mine", 10);
     ArrayBlockingQueue<Connection> pool = provider.createConnectionPool(1, (short) 100);
 
     Assert.assertNotNull(pool);
@@ -81,7 +89,7 @@ public class SQLManagerTest {
     int maxConnectionsPerNode = SQLManager.ConnectionPoolProvider.getMaxConnectionsPerNode(2, (short) 10, 10);
     int expectedConnectionsPerNode = Integer.valueOf(
         System.getProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + "sql.connections.max")
-    ).intValue() / 2;
+    ) / 2;
     Assert.assertEquals(expectedConnectionsPerNode, maxConnectionsPerNode);
   }
 
@@ -90,13 +98,12 @@ public class SQLManagerTest {
    */
   @Test
   public void testBuildSelectOneRowSql() {
-
     // Oracle
     Assert.assertEquals("SELECT * FROM mytable FETCH NEXT 1 ROWS ONLY",
             SQLManager.buildSelectSingleRowSql("oracle","mytable","*"));
 
     // SQL Server
-    Assert.assertEquals("SELECT * FROM mytable FETCH NEXT 1 ROWS ONLY",
+    Assert.assertEquals("SELECT TOP(1) * FROM mytable",
             SQLManager.buildSelectSingleRowSql("sqlserver", "mytable", "*"));
 
     // Teradata
@@ -110,13 +117,12 @@ public class SQLManagerTest {
 
   @Test
   public void testBuildSelectChunkSql() {
-
     // Oracle
     Assert.assertEquals("SELECT * FROM mytable OFFSET 0 ROWS FETCH NEXT 1310 ROWS ONLY",
             SQLManager.buildSelectChunkSql("oracle", "mytable", 0, 1310, "*", null));
 
     // SQL Server
-    Assert.assertEquals("SELECT * FROM mytable OFFSET 0 ROWS FETCH NEXT 1310 ROWS ONLY",
+    Assert.assertEquals("SELECT * FROM mytable ORDER BY ROW_NUMBER() OVER (ORDER BY (SELECT 0)) OFFSET 0 ROWS FETCH NEXT 1310 ROWS ONLY",
             SQLManager.buildSelectChunkSql("sqlserver", "mytable", 0, 1310, "*", null));
 
     // Teradata

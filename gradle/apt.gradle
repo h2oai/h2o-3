@@ -1,9 +1,0 @@
-//
-// Configure APT preprocessor 
-//
-apply plugin: "net.ltgt.apt"
-
-dependencies {
-    compileOnly group: 'com.google.auto.service', name: 'auto-service', version: '1.0-rc3'
-    apt group: 'com.google.auto.service', name: 'auto-service', version: '1.0-rc3'
-}

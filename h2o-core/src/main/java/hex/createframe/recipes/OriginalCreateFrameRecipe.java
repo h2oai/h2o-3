@@ -44,7 +44,7 @@ public class OriginalCreateFrameRecipe extends CreateFrameRecipe<OriginalCreateF
     check(categorical_fraction == 0 || factors >= 2, "Factors must be larger than 2 for categorical data");
     check(response_factors >= 1, "Response factors must be either 1 (real-valued response), or >=2 (factor levels)");
     check(response_factors <= 1024, "Response factors must be <= 1024");
-    check(factors <= 1000000, "Number of factors must be <= 1,000,000");
+    check(factors <= 10000000, "Number of factors must be <= 10,000,000");
     check(cols > 0 && rows > 0, "Must have number of rows and columns > 0");
     check(real_range >= 0, "Real range must be a nonnegative number");
     check(integer_range >= 0, "Integer range must be a nonnegative number");

@@ -12,8 +12,7 @@ from h2o.utils.backward_compatibility import backwards_compatible
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.compatibility import viewitems
 from h2o.utils.shared_utils import can_use_pandas
-from h2o.utils.typechecks import I, assert_is_type, assert_satisfies, Enum
-from six import string_types
+from h2o.utils.typechecks import I, assert_is_type, assert_satisfies, Enum, is_type
 
 
 class ModelBase(backwards_compatible()):
@@ -34,6 +33,9 @@ class ModelBase(backwards_compatible()):
         self._job = None  # used when _future is True
         self._have_pojo = False
         self._have_mojo = False
+        self._start_time = None
+        self._end_time = None
+        self._run_time = None
 
 
     @property
@@ -108,6 +110,21 @@ class ModelBase(backwards_compatible()):
         """True, if export to MOJO is possible"""
         return self._have_mojo
 
+    @property
+    def start_time(self):
+        """Timestamp (milliseconds since 1970) when the model training was started."""
+        return self._start_time
+
+    @property
+    def end_time(self):
+        """Timestamp (milliseconds since 1970) when the model training was ended."""
+        return self._end_time
+
+    @property
+    def run_time(self):
+        """Model training time in milliseconds"""
+        return self._run_time
+
 
     def __repr__(self):
         # PUBDEV-2278: using <method>? from IPython caused everything to dump
@@ -133,7 +150,6 @@ class ModelBase(backwards_compatible()):
                     data={"leaf_node_assignment": True, "leaf_node_assignment_type": type})
         return h2o.get_frame(j["predictions_frame"]["name"])
 
-
     def staged_predict_proba(self, test_data):
         """
         Predict class probabilities at each stage of an H2O Model (only GBM models).
@@ -152,6 +168,26 @@ class ModelBase(backwards_compatible()):
                     data={"predict_staged_proba": True})
         return h2o.get_frame(j["predictions_frame"]["name"])
 
+    def predict_contributions(self, test_data):
+        """
+        Predict feature contributions - SHAP values on an H2O Model (only GBM and XGBoost models).
+        
+        Returned H2OFrame has shape (#rows, #features + 1) - there is a feature contribution column for each input
+        feature, the last column is the model bias (same value for each row). The sum of the feature contributions
+        and the bias term is equal to the raw prediction of the model. Raw prediction of tree-based model is the sum 
+        of the predictions of the individual trees before before the inverse link function is applied to get the actual
+        prediction. For Gaussian distribution the sum of the contributions is equal to the model prediction. 
+
+        Note: Multinomial classification models are currently not supported.
+
+        :param H2OFrame test_data: Data on which to calculate contributions.
+
+        :returns: A new H2OFrame made of feature contributions.
+        """
+        if not isinstance(test_data, h2o.H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
+        j = h2o.api("POST /3/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
+                    data={"predict_contributions": True})
+        return h2o.get_frame(j["predictions_frame"]["name"])
 
     def predict(self, test_data, custom_metric = None, custom_metric_func = None):
         """
@@ -396,9 +432,24 @@ class ModelBase(backwards_compatible()):
         :returns: A list or Pandas DataFrame.
         """
         model = self._model_json["output"]
-        if "variable_importances" in list(model.keys()) and model["variable_importances"]:
-            vals = model["variable_importances"].cell_values
-            header = model["variable_importances"].col_header
+        if self.algo=='glm' or "variable_importances" in list(model.keys()) and model["variable_importances"]:
+            if self.algo=='glm':
+                tempvals = model["standardized_coefficient_magnitudes"].cell_values
+                maxVal = 0
+                sum=0
+                for item in tempvals:
+                    sum=sum+item[1]
+                    if item[1]>maxVal:
+                        maxVal = item[1]
+                vals = []
+                for item in tempvals:
+                    tempT = (item[0], item[1], item[1]/maxVal, item[1]/sum)
+                    vals.append(tempT)
+                header = ["variable", "relative_importance", "scaled_importance", "percentage"]
+            else:
+                vals = model["variable_importances"].cell_values
+                header = model["variable_importances"].col_header
+                
             if use_pandas and can_use_pandas():
                 import pandas
                 return pandas.DataFrame(vals, columns=header)
@@ -511,10 +562,16 @@ class ModelBase(backwards_compatible()):
 
         These coefficients can be used to evaluate variable importance.
         """
-        tbl = self._model_json["output"]["coefficients_table"]
-        if tbl is None:
-            return None
-        return {name: coef for name, coef in zip(tbl["names"], tbl["standardized_coefficients"])}
+        if self._model_json["output"]["model_category"]=="Multinomial":
+            tbl = self._model_json["output"]["standardized_coefficient_magnitudes"]
+            if tbl is None:
+                return None
+            return {name: coef for name, coef in zip(tbl["names"], tbl["coefficients"])}
+        else:
+            tbl = self._model_json["output"]["coefficients_table"]
+            if tbl is None:
+                return None
+            return {name: coef for name, coef in zip(tbl["names"], tbl["standardized_coefficients"])}
 
 
     def r2(self, train=False, valid=False, xval=False):
@@ -884,7 +941,8 @@ class ModelBase(backwards_compatible()):
 
 
     def partial_plot(self, data, cols, destination_key=None, nbins=20, weight_column=None,
-                     plot=True, plot_stddev = True, figsize=(7, 10), server=False, include_na=False, user_splits=None):
+                     plot=True, plot_stddev = True, figsize=(7, 10), server=False, include_na=False, user_splits=None,
+                     save_to_file=None):
         """
         Create partial dependence plot which gives a graphical depiction of the marginal effect of a variable on the
         response. The effect of a variable is measured in change in the mean response.
@@ -900,6 +958,7 @@ class ModelBase(backwards_compatible()):
         :param server: ?
         :param include_na: A boolean specifying whether missing value should be included in the Feature values.
         :param user_splits: a dictionary containing column names as key and user defined split values as value in a list.
+        :param save_to_file Fully qualified name to an image file the resulting plot should be saved to, e.g. '/home/user/pdpplot.png'. The 'png' postfix might be omitted. If the file already exists, it will be overridden. Plot is only saved if plot = True.
         :returns: Plot and list of calculated mean response tables for each feature requested.
         """
 
@@ -943,7 +1002,7 @@ class ModelBase(backwards_compatible()):
                     data_ncol = data.ncol
                     column_names = data.names
                     for colKey,val in user_splits.items():
-                        if isinstance(colKey, string_types) and colKey in column_names:
+                        if is_type(colKey, str) and colKey in column_names:
                             user_cols.append(colKey)
                         elif isinstance(colKey, int) and colKey < data_ncol:
                             user_cols.append(column_names[colKey])
@@ -1027,6 +1086,8 @@ class ModelBase(backwards_compatible()):
                 axs[i, 0].yaxis.grid()
             if len(col) > 1:
                 fig.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
+            if(save_to_file is not None):
+                plt.savefig(save_to_file)
 
         return pps
 
@@ -1045,13 +1106,6 @@ class ModelBase(backwards_compatible()):
 
         plt = _get_matplotlib_pyplot(server)
         if not plt: return
-
-        # check if the model is a glm
-        if self._model_json["algo"] == "glm":
-            # print statement to used std_coef_plot(), and use std_coef_plt instead
-            print("Variable importance does not apply to GLM. Will use std_coef_plot() instead.")
-            self.std_coef_plot(num_of_features)
-            return
 
         # get the variable importances as a list of tuples, do not use pandas dataframe
         importances = self.varimp(use_pandas=False)
@@ -1117,6 +1171,9 @@ class ModelBase(backwards_compatible()):
         elif self._model_json["algo"] == "deeplearning":
             plt.title("Variable Importance: H2O Deep Learning", fontsize=20)
             if not server: plt.show()
+        elif self._model_json["algo"] == "glm":
+            plt.title("Variable Importance: H2O GLM", fontsize=20)
+            if not server: plt.show()            
         else:
             raise H2OValueError("A variable importances plot is not implemented for this type of model")
 
@@ -1216,7 +1273,7 @@ class ModelBase(backwards_compatible()):
         else:
             color_ids = ("Positive", "Negative")
             markers = [plt.Line2D([0, 0], [0, 0], color=color, marker="s", linestyle="")
-                       for color in set(signage[0:num_of_features])]
+                       for color in ['#1F77B4', '#FF7F0E']] # blue should always be positive, orange negative
             lgnd = plt.legend(markers, color_ids, numpoints=1, loc="best", frameon=False, fontsize=13)
             lgnd.legendHandles[0]._legmarker.set_markersize(10)
             lgnd.legendHandles[1]._legmarker.set_markersize(10)

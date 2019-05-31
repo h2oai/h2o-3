@@ -4,13 +4,12 @@ import hex.SplitFrame;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.DKV;
-import water.Key;
-import water.Scope;
-import water.TestUtil;
+import water.*;
 import water.fvec.Frame;
 import hex.naivebayes.NaiveBayesModel.NaiveBayesParameters;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 public class NaiveBayesTest extends TestUtil {
@@ -28,7 +27,6 @@ public class NaiveBayesTest extends TestUtil {
       parms._compute_metrics = false;
 
       model = new NaiveBayes(parms).trainModel().get();
-
       // Done building model; produce a score column with class assignments
       score = model.score(train);
       Assert.assertTrue(model.testJavaScoring(train,score,1e-6));

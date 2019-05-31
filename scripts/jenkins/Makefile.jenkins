@@ -12,8 +12,8 @@ build-h2o-3:
 	@echo "+--Building--+"
 	./gradlew build -x test $$ADDITIONAL_GRADLE_OPTS
 	@echo "+--Git Diff Check--+"
-	if [[ $$(git diff) ]]; then \
-		echo "Non-zero git diff after running gradlew build:"; \
+	if [[ $$(git diff 2>&1) ]]; then \
+		echo "Non-zero git diff or git error after running gradlew build:"; \
 		git diff; \
 		exit 1; \
 	fi
@@ -24,26 +24,48 @@ warmup-caches:
 	@$(MAKE) -f $(THIS_FILE) build-h2o-3
 	./gradlew cpLibs $$ADDITIONAL_GRADLE_OPTS
 
+compress-huge-logfiles:
+	find * -type f -name 'java*.out.txt' -exec gzip {} \;
+
 test-package-py:
-	cd h2o-py/tests/ && rm -f -r testdir_hdfs
 	zip -q -r test-package-py.zip h2o-py/tests/ h2o-py/demos/ \
+	tests/leakCheckKeywords \
 	h2o-docs/src/booklets/v2_2015/source h2o-py/build/dist/*.whl \
 	h2o-genmodel/build/libs/h2o-genmodel.jar h2o-assemblies/genmodel/build/libs/genmodel.jar scripts/run.py \
-	$(JENKINS_MAKEFILE_PATH) tests/pyunitSmokeTestList tests/pyunitAutoMLList tests/pyunitSingleNodeList h2o-py/scripts/h2o-py-test-setup.py
+	$(JENKINS_MAKEFILE_PATH) tests/pyunit*List h2o-py/scripts/h2o-py-test-setup.py
 
 test-package-r:
-	cd h2o-r/tests/ && rm -f -r testdir_hdfs
 	zip -q -r test-package-r.zip h2o-r h2o-docs/src/booklets/v2_2015/source \
+		tests/leakCheckKeywords \
 		h2o-assemblies/genmodel/build/libs/genmodel.jar scripts/run.py \
 		$(JENKINS_MAKEFILE_PATH) tests/runitSmokeTestList tests/runitAutoMLList \
 		scripts/validate_r_cmd_check_output.R scripts/validate_r_cmd_check_output.py h2o-3-DESCRIPTION
 
+init-lookup:
+	rm -f h2o-{r,py}/tests/.lookup.txt
+
+lookup-automl-tests: init-lookup
+	mkdir -p h2o-{r,py}/tests
+	find h2o-r/tests -name '*automl*.R' -exec basename {} \; >>h2o-r/tests/.lookup.txt
+	find h2o-py/tests -name '*automl*.py' -exec basename {} \; >>h2o-py/tests/.lookup.txt
+
+lookup-hdfs-tests: init-lookup
+	mkdir -p h2o-{r,py}/tests/testdir_hdfs
+	find h2o-r/tests/testdir_hdfs -name '*.R' -exec basename {} \; >>h2o-r/tests/.lookup.txt
+	find h2o-py/tests/testdir_hdfs -name '*.py' -exec basename {} \; >>h2o-py/tests/.lookup.txt
+
+lookup-demos-tests: init-lookup
+	mkdir -p h2o-{r,py}/tests/testdir_demos
+	find h2o-r/tests/testdir_demos -name '*.R' -exec basename {} \; >>h2o-r/tests/.lookup.txt
+	find h2o-py/tests/testdir_demos -name '*.py' -exec basename {} \; >>h2o-py/tests/.lookup.txt
+
 test-py-smoke:
-	cd h2o-py/tests/ && rm -f -r testdir_hdfs
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testlist ../../tests/pyunitSmokeTestList --numclouds 6 --jvm.xmx 3g
 
 test-py-init:
-	export NO_GCE_CHECK=True && cd h2o-py/tests/testdir_jira && python h2o.init_test_HOQE-16.py
+	export NO_GCE_CHECK=True && cd h2o-py/tests/testdir_apis/H2O_Init \
+	 && python h2o.init_test.py \
+	 && python h2o.init_test_HOQE-16.py
 
 test-py-booklets:
 	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --wipeall --norun
@@ -51,24 +73,23 @@ test-py-booklets:
 	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --baseport 52524 --jvm.xmx 5g --test pybooklet.gbm.vignette.py
 	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --baseport 53534 --jvm.xmx 5g --test pybooklet.glm.vignette.py
 
-test-pyunit-small:
-	cd h2o-py/tests/ && rm -f -r testdir_hdfs
-	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 6 --jvm.xmx 3g --excludelist ../../tests/pyunitAutoMLList
+test-pyunit-small: lookup-hdfs-tests lookup-automl-tests
+	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 6 --jvm.xmx 3g --excludelist .lookup.txt
 
 test-pyunit-single-node:
-	cd h2o-py/tests/ && rm -f -r testdir_hdfs
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 1 --numnodes 1 --jvm.xmx 3g --testlist ../../tests/pyunitSingleNodeList
 
-test-pyunit-small-automl:
-	cd h2o-py/tests/ && rm -f -r testdir_hdfs
-	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 6 --jvm.xmx 3g --testlist ../../tests/pyunitAutoMLList
+test-pyunit-xgboost-stress:
+	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 1 --numnodes 5 --jvm.xmx 3g --testlist ../../tests/pyunitXGBoostStressTestList
+
+test-pyunit-small-automl: lookup-automl-tests
+	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 6 --jvm.xmx 3g --testlist .lookup.txt
 
 test-py-demos:
-	export NO_GCE_CHECK=True && cd h2o-py/demos/ && ../../scripts/run.py --wipeall --numclouds 4 --baseport 56789 --jvm.xmx 10g
+	export NO_GCE_CHECK=True && export MPLBACKEND=Agg && cd h2o-py/demos/ && ../../scripts/run.py --wipeall --numclouds 4 --baseport 56789 --jvm.xmx 10g
 
-test-pyunit-medium-large:
-	cd h2o-py/tests/ && rm -f -r testdir_hdfs
-	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 1 --numnodes 5 --jvm.xmx 15g
+test-pyunit-medium-large: lookup-hdfs-tests
+	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 1 --numnodes 5 --jvm.xmx 15g --excludelist .lookup.txt
 
 test-py-single-test:
 	@echo "test=$$SINGLE_TEST_PATH"
@@ -77,37 +98,30 @@ test-py-single-test:
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --test $$SINGLE_TEST_PATH --numnodes $$SINGLE_TEST_NUM_NODES --jvm.xmx $$SINGLE_TEST_XMX
 
 test-r-smoke:
-	cd h2o-r/tests/ && rm -f -r testdir_hdfs
 	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --testlist ../../tests/runitSmokeTestList --numclouds 8 --jvm.xmx 3g
 
 test-r-init:
 	cd h2o-r/tests/testdir_jira && R -f h2o.init_test_HOQE-16.R
 
-test-r-small:
-	cd h2o-r/tests/ && rm -f -r testdir_hdfs
-	cd h2o-r/tests/ && rm -f -r testdir_demos
-	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --geterrs --numclouds 4 --jvm.xmx 4g --excludelist ../../tests/runitAutoMLList
+test-r-small: lookup-automl-tests lookup-hdfs-tests lookup-demos-tests
+	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --geterrs --numclouds 4 --jvm.xmx 4g --excludelist .lookup.txt
 
-test-r-small-client-mode:
-	cd h2o-r/tests/ && rm -f -r testdir_hdfs
-	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --client --testsize s --numclouds 4 --jvm.xmx 4g --excludelist ../../tests/runitAutoMLList
+test-r-small-client-mode: lookup-automl-tests lookup-hdfs-tests
+	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --client --testsize s --numclouds 4 --jvm.xmx 4g --excludelist .lookup.txt
 
-test-r-small-automl:
-	cd h2o-r/tests/ && rm -f -r testdir_hdfs
-	cd h2o-r/tests/ && rm -f -r testdir_demos
-	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --geterrs --numclouds 4 --jvm.xmx 4g --testlist ../../tests/runitAutoMLList
+test-r-small-client-mode-attack: lookup-automl-tests lookup-hdfs-tests
+	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --client --testsize s --numclouds 4 --jvm.opts '-Dsys.ai.h2o.debug.clientDisconnectAttack=true' --jvm.xmx 4g --excludelist .lookup.txt
 
-test-r-small-client-mode-automl:
-	cd h2o-r/tests/ && rm -f -r testdir_hdfs
-	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --client --testsize s --numclouds 4 --jvm.xmx 4g --testlist ../../tests/runitAutoMLList
+test-r-small-automl: lookup-automl-tests
+	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --testsize s --geterrs --numclouds 4 --jvm.xmx 4g --testlist .lookup.txt
 
-test-r-medium-large:
-	cd h2o-r/tests/ && rm -f -r testdir_hdfs
-	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 2 --numnodes 2 --jvm.xmx 20g
+test-r-small-client-mode-automl: lookup-automl-tests
+	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --client --testsize s --numclouds 4 --jvm.xmx 4g --testlist .lookup.txt
+
+test-r-medium-large: lookup-hdfs-tests
+	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 2 --numnodes 2 --jvm.xmx 20g --excludelist .lookup.txt
 
 test-r-datatable:
-	cd h2o-r/tests/ && rm -f -r testdir_hdfs
-	cd h2o-r/tests/ && rm -f -r testdir_demos
 	export NO_GCE_CHECK=True && cd h2o-r/tests/testdir_perf && ../../../scripts/run.py --wipeall --test runit_repeating_merge.R  --numclouds 1 --numnodes 2 --jvm.xmx 20g
 
 test-r-cmd-check:
@@ -158,19 +172,20 @@ pack-r-generated-docs:
 
 test-package-js:
 	zip -q -r test-package-js \
+		tests/leakCheckKeywords \
 		$(JENKINS_MAKEFILE_PATH) tests/ignoreFlowSmokeTestList scripts/run.py \
-		h2o-web/lib/h2o-flow/build/js/headless-test.js
+		h2o-web
 
-test-phantom-js-smoke:
+test-flow-headless-smoke:
 	./scripts/run.py --wipeall --geterrs --test h2o-web/lib/h2o-flow/build/js/headless-test.js --jvm.xmx 4g --pto 14400 --ptt test-small --excludelist tests/ignoreFlowSmokeTestList
 
-test-phantom-js-small:
+test-flow-headless-small:
 	./scripts/run.py --wipeall --geterrs --test h2o-web/lib/h2o-flow/build/js/headless-test.js --jvm.xmx 4g --pto 14400 --ptt test-small
 
-test-phantom-js-medium:
+test-flow-headless-medium:
 	./scripts/run.py --wipeall --geterrs --test h2o-web/lib/h2o-flow/build/js/headless-test.js --jvm.xmx 20g --pto 14400 --ptt test-medium
 
-test-phantom-js:
+test-flow-headless:
 	cd h2o-web && ../scripts/run.py --wipeall --geterrs --test lib/h2o-flow/build/js/headless-test.js --jvm.xmx 4g
 
 test-info:
@@ -187,6 +202,7 @@ test-demos:
 
 test-package-java:
 	zip -q -r test-package-java \
+		tests/leakCheckKeywords \
 		$(JENKINS_MAKEFILE_PATH) \
 		gradlew \
 		gradle.properties \
@@ -197,28 +213,36 @@ test-package-java:
 		h2o-core/src/ \
 		h2o-core/build/resources/ \
 		h2o-core/build/classes/java/ \
-		h2o-core/build/libs/h2o-core.jar \
+		h2o-core/build/libs/h2o-core-*.jar \
 		h2o-genmodel/src/ \
-		h2o-genmodel/build/libs/h2o-genmodel.jar \
+		h2o-genmodel/build/libs/h2o-genmodel-*.jar \
 		h2o-algos/src/ \
-		h2o-algos/build/libs/h2o-algos.jar \
+		h2o-algos/build/libs/h2o-algos-*.jar \
+		h2o-automl/src/ \
+		h2o-automl/build/libs/h2o-automl-*.jar \
 		h2o-parsers/h2o-avro-parser/src/ \
-		h2o-parsers/h2o-avro-parser/build/libs/h2o-avro-parser.jar \
+		h2o-parsers/h2o-avro-parser/build/libs/h2o-avro-parser-*.jar \
 		h2o-parsers/h2o-orc-parser/src/ \
-		h2o-parsers/h2o-orc-parser/build/libs/h2o-orc-parser.jar \
+		h2o-parsers/h2o-orc-parser/build/libs/h2o-orc-parser-*.jar \
 		h2o-parsers/h2o-parquet-parser/src/ \
-		h2o-parsers/h2o-parquet-parser/build/libs/h2o-parquet-parser.jar \
+		h2o-parsers/h2o-parquet-parser/build/libs/h2o-parquet-parser-*.jar \
 		h2o-persist-gcs/src/ \
-		h2o-persist-gcs/build/libs/h2o-persist-gcs.jar \
+		h2o-persist-gcs/build/libs/h2o-persist-gcs-*.jar \
 		h2o-persist-hdfs/src/ \
-		h2o-persist-hdfs/build/libs/h2o-persist-hdfs.jar \
+		h2o-persist-hdfs/build/libs/h2o-persist-hdfs-*.jar \
 		h2o-persist-s3/src/ \
-		h2o-persist-s3/build/libs/h2o-persist-s3.jar \
+		h2o-persist-s3/build/libs/h2o-persist-s3-*.jar \
 		h2o-extensions/xgboost/ \
 		h2o-genmodel-extensions/ \
 		h2o-jaas-pam/build/libs/h2o-jaas-pam-*.jar \
 		h2o-scala/src/ \
 		h2o-scala/build/h2o-scala_2.*/libs/h2o-scala_2.*.jar \
+		h2o-webserver-iface/src/ \
+		h2o-webserver-iface/build/libs/h2o-webserver-iface-*.jar \
+		h2o-jetty-8/src/ \
+		h2o-jetty-8/build/libs/h2o-jetty-8-*.jar \
+		h2o-jetty-9/src/ \
+		h2o-jetty-9/build/libs/h2o-jetty-9-*.jar \
 		scripts/run.py py/ scripts/test-xgb-gpu-smoke.sh \
 		sort_crash.csv tests/doOnlyJunitSmokeTestList \
 		jacoco/*.jar
@@ -238,21 +262,35 @@ test-junit-jenkins:
 	@$(MAKE) -f $(THIS_FILE) test-junit
 
 test-junit:
-	./gradlew test $$ADDITIONAL_GRADLE_OPTS
+	./gradlew test -x :h2o-ext-mojo-pipeline:test -x h2o-automl:test $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-automl-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-automl
+
+test-junit-automl:
+	./gradlew h2o-automl:test $$ADDITIONAL_GRADLE_OPTS
 
 test-junit-10-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-junit-10
 
 test-junit-10:
-	./gradlew test -x h2o-scala_2.11:test -x h2o-scala_2.10:test $$ADDITIONAL_GRADLE_OPTS
+	./gradlew test -x h2o-scala_2.11:test -x h2o-scala_2.10:test -x :h2o-ext-mojo-pipeline:test -x h2o-automl:test  $$ADDITIONAL_GRADLE_OPTS
 
 test-junit-11-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-junit-11
 
 test-junit-11:
-	./gradlew test -x h2o-scala_2.11:test -x h2o-scala_2.10:test $$ADDITIONAL_GRADLE_OPTS
+	./gradlew test -x h2o-scala_2.11:test -x h2o-scala_2.10:test -x :h2o-ext-mojo-pipeline:test -x h2o-automl:test $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-12-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-12
+
+test-junit-12:
+	./gradlew test -x h2o-scala_2.11:test -x h2o-scala_2.10:test -x :h2o-ext-mojo-pipeline:test -x h2o-automl:test $$ADDITIONAL_GRADLE_OPTS
 
 test-junit-smoke-jenkins:
 	$(call sed_test_scripts)
@@ -281,6 +319,13 @@ test-junit-11-smoke:
 test-junit-11-smoke-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-junit-11-smoke
+
+test-junit-12-smoke:
+	DOONLY=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew h2o-core:test h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-12-smoke-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-12-smoke
 
 test-xgb-smoke-minimal-jenkins:
 	$(call sed_test_scripts)
@@ -319,10 +364,48 @@ benchmark:
 
 test-package-hadoop:
 	zip -q -r test-package-hadoop \
-		scripts/jenkins/ldap-conf.txt h2o-hadoop/tests/python/ h2o-hadoop/h2o-*-assembly/build/libs/h2odriver.jar \
+		tests/leakCheckKeywords \
+		scripts/jenkins/config/ \
+		h2o-hadoop-2/tests/python/ h2o-hadoop-2/h2o-*-assembly/build/libs/h2odriver.jar \
+		h2o-hadoop-3/tests/python/ h2o-hadoop-3/h2o-*-assembly/build/libs/h2odriver.jar \
+		h2o-hadoop-common/tests/python/ h2o-hadoop-common/tests/R/ \
+		h2o-hive/tests/python/ h2o-hive/tests/R/
 
-test-hadoop-smoke:
-	cd h2o-hadoop/tests/python && ../../../scripts/run.py --wipeall --usecloud "$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
+ifeq ($(HIVE_VERSION_MAJOR),3)
+test-hadoop-common-smoke-hive:
+	echo "Hive version 3 installed, not running Hive tests."
+else
+test-hadoop-common-smoke-hive:
+	cd h2o-hive/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
+	cd h2o-hive/tests/R && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
+endif
+
+test-hadoop-common-smoke-standalone:
+	cd h2o-hadoop-common/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
+	cd h2o-hadoop-common/tests/R && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
+
+test-hadoop-2-smoke-hdp: test-hadoop-2-smoke-standalone test-hadoop-common-smoke-hive
+
+test-hadoop-2-smoke-standalone: test-hadoop-common-smoke-standalone
+	cd h2o-hadoop-2/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
+
+test-hadoop-3-smoke-hdp: test-hadoop-3-smoke-standalone test-hadoop-common-smoke-hive
+
+test-hadoop-3-smoke-standalone: test-hadoop-common-smoke-standalone
+	cd h2o-hadoop-3/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
+
+test-kerberos-common-standalone:
+	cd h2o-hadoop-common/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --kerb.principal $$KERB_PRINCIPAL
+
+test-kerberos-hadoop-2-standalone: test-kerberos-common-standalone
+	cd h2o-hadoop-2/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --kerb.principal $$KERB_PRINCIPAL
+
+test-kerberos-hadoop-2-hdp: test-hadoop-2-smoke-standalone test-hadoop-common-smoke-hive
+
+test-kerberos-hadoop-3-standalone: test-kerberos-common-standalone
+	cd h2o-hadoop-3/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --kerb.principal $$KERB_PRINCIPAL
+
+test-kerberos-hadoop-3-hdp: test-hadoop-3-smoke-standalone test-hadoop-common-smoke-hive
 
 coverage-junit-algos-jenkins:
 	$(call sed_test_scripts)
@@ -340,3 +423,10 @@ endif
 	cd ../mojoland && ./gradlew clean
 	cd ../mojoland && ./gradlew build
 	cd ../mojoland/mojo-py && python in_mojo_veritas.py
+
+check-leaks:
+	-grep -H -R --include "*.log" --include "*.out" --include "out.*" --exclude leak-check.out -E "`cat tests/leakCheckKeywords | tr '\n' '|' | sed 's/|\s*$$//'`" 2>&1 > leak-check.out
+	@if [ -n "`cat leak-check.out`" ]; then\
+		echo "Credentials leaked! Please check $(PWD)/leak-check.out"; \
+		exit 1; \
+	fi

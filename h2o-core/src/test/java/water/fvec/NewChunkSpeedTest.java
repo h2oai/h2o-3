@@ -1,7 +1,6 @@
 package water.fvec;
 
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import water.MRTask;
 import water.Scope;
@@ -97,7 +96,7 @@ public class NewChunkSpeedTest extends TestUtil {
 
 
   // todo: This should be changed to test after Spencer PR is in.
-  @Ignore
+  @Test
   public void testParseLong(){
     double startTime = System.currentTimeMillis();
     for (int index=0; index<numberLoops; index++)
@@ -108,7 +107,7 @@ public class NewChunkSpeedTest extends TestUtil {
             +PrettyPrint.msecs((long) endTime, false));
   }
 
-  @Ignore
+  @Test
   public void testParseLongConsts(){
     double startTime = System.currentTimeMillis();
     for (int index=0; index<numberLoops; index++)
@@ -117,6 +116,19 @@ public class NewChunkSpeedTest extends TestUtil {
     Log.info("New Chunk test for constant longs:", " time taken for "+numberLoops+" is "
             +PrettyPrint.msecs((long) endTime, false));
   }
+
+  @Test
+  public void testParseLongMAXMINV(){
+    double startTime = System.currentTimeMillis();
+    for (int index=0; index<numberLoops; index++) {
+      testsForLongsMaxMin(Long.MAX_VALUE); // read in Long.MAX_VALUE
+      testsForLongsMaxMin(Long.MIN_VALUE); // read in Long.MIN_VALUE
+    }
+    double endTime = System.currentTimeMillis()-startTime;  // change time to seconds
+    Log.info("New Chunk test for constant longs:", " time taken for "+numberLoops+" is "
+            +PrettyPrint.msecs((long) endTime, false));
+  }
+
 
   @Test
   public void testParseDataFromFiles() {
@@ -142,6 +154,39 @@ public class NewChunkSpeedTest extends TestUtil {
               +PrettyPrint.msecs((long) endTime, false));
     }
   }
+
+  // Added this test to make sure we can read in Long.MAX_VALUE and Long.MIN_VALUE and still get a
+  // C8Chunk back.
+  public void testsForLongsMaxMin(long base) {
+    Scope.enter();
+    final long baseD = base;
+
+    try {
+      Vec tVec = Vec.makeZero(rowNumber);
+      Vec v;
+      v = new MRTask() {
+        @Override
+        public void map(Chunk cs) {
+          for (int r = 0; r < cs._len; r++) {
+            cs.set(r, baseD);
+          }
+        }
+      }.doAll(tVec)._fr.vecs()[0];
+
+      Scope.track(tVec);
+      Scope.track(v);
+
+      assertTrue(v.chunkForChunkIdx(0)  instanceof C0LChunk);
+      for (int rowInd = 0; rowInd < rowNumber; rowInd = rowInd + rowInterval) {
+        assertTrue("rowIndex: " + rowInd + " rowInd+baseD: " + (rowInd + baseD) + " v.at(rowIndex): "
+                        + v.at8(rowInd) + " chk= " + v.elem2ChunkIdx(rowInd),
+                v.at8(rowInd) == baseD);
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
 
   public void testsForLongs(boolean forConstants) {
     Scope.enter();

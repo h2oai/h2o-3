@@ -4,8 +4,6 @@ import water.Iced;
 import water.util.IcedHashMapGeneric;
 import water.util.TwoDimTable;
 
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -41,12 +39,11 @@ public class BoosterParms extends Iced<BoosterParms> {
    */
   private static Map<String, Object> localizeDecimalParams(final Map<String, Object> params) {
     Map<String, Object> localized = new HashMap<>(params.size());
-    final NumberFormat localizedNumberFormatter = DecimalFormat.getNumberInstance();
     for (String key : params.keySet()) {
       final Object value = params.get(key);
       final Object newValue;
       if (value instanceof Float || value instanceof Double) {
-        newValue = localizedNumberFormatter.format(value);
+        newValue = value.toString();
       } else
         newValue = value;
       localized.put(key, newValue);

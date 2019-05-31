@@ -81,4 +81,13 @@ setup(
 
     # run-time dependencies
     install_requires=["requests", "tabulate", "future", "colorama>=0.3.8"],
+
+    # optional dependencies
+    extras_require={
+        "kerberos": [
+            "gssapi",
+            "pykerberos >= 1.1.8, < 2.0.0; sys.platform != 'win32'",
+            "winkerberos >= 0.5.0; sys.platform == 'win32'"
+        ]
+    }
 )

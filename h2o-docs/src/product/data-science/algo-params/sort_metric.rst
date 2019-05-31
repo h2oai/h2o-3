@@ -33,16 +33,15 @@ Example
    .. code-block:: r
    
 
-	library(h2o)
-
+	library(h2o)\
 	h2o.init()
 
 	# Import a sample binary outcome training set into H2O
 	train <- h2o.importFile("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
 
 	# Identify predictors and response
-	y <- "response"
 	x <- setdiff(names(train), y)
+	y <- "response"
 
 	# For binary classification, response should be a factor
 	train[,y] <- as.factor(train[,y])
@@ -78,7 +77,6 @@ Example
 
 	import h2o
 	from h2o.automl import H2OAutoML
-
 	h2o.init()
 
 	# Import a sample binary outcome training set into H2O

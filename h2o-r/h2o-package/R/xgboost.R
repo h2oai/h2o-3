@@ -15,7 +15,7 @@
 #' @param training_frame Id of the training data frame.
 #' @param validation_frame Id of the validation data frame.
 #' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
-#' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to FALSE.
+#' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to TRUE.
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to FALSE.
 #' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to FALSE.
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
@@ -32,8 +32,9 @@
 #'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 #' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
 #'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 0.
-#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression) Must be one of:
-#'        "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification",
+#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression). Note that custom
+#'        and custom_increasing can only be used in GBM and DRF with the Python client. Must be one of: "AUTO",
+#'        "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification",
 #'        "mean_per_class_error", "custom", "custom_increasing". Defaults to AUTO.
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.001.
@@ -46,6 +47,7 @@
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
 #' @param quiet_mode \code{Logical}. Enable quiet mode Defaults to TRUE.
+#' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @param ntrees (same as n_estimators) Number of trees. Defaults to 50.
 #' @param max_depth Maximum tree depth. Defaults to 6.
 #' @param min_rows (same as min_child_weight) Fewest allowed (weighted) observations in a leaf. Defaults to 1.
@@ -60,6 +62,8 @@
 #' @param colsample_bytree (same as col_sample_rate_per_tree) Column sample rate per tree (from 0.0 to 1.0) Defaults to 1.
 #' @param max_abs_leafnode_pred (same as max_delta_step) Maximum absolute value of a leaf node prediction Defaults to 0.0.
 #' @param max_delta_step (same as max_abs_leafnode_pred) Maximum absolute value of a leaf node prediction Defaults to 0.0.
+#' @param monotone_constraints A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a
+#'        decreasing constraint.
 #' @param score_tree_interval Score the model after every so many trees. Disabled if set to 0. Defaults to 0.
 #' @param min_split_improvement (same as gamma) Minimum relative improvement in squared error reduction for a split to happen Defaults to 0.0.
 #' @param gamma (same as min_split_improvement) Minimum relative improvement in squared error reduction for a split to happen
@@ -79,7 +83,7 @@
 #' @param grow_policy Grow policy - depthwise is standard GBM, lossguide is LightGBM Must be one of: "depthwise", "lossguide".
 #'        Defaults to depthwise.
 #' @param booster Booster type Must be one of: "gbtree", "gblinear", "dart". Defaults to gbtree.
-#' @param reg_lambda L2 regularization Defaults to 0.0.
+#' @param reg_lambda L2 regularization Defaults to 1.0.
 #' @param reg_alpha L1 regularization Defaults to 0.0.
 #' @param dmatrix_type Type of DMatrix. For sparse, NAs and 0 are treated equally. Must be one of: "auto", "dense", "sparse".
 #'        Defaults to auto.
@@ -92,7 +96,7 @@ h2o.xgboost <- function(x, y, training_frame,
                         model_id = NULL,
                         validation_frame = NULL,
                         nfolds = 0,
-                        keep_cross_validation_models = FALSE,
+                        keep_cross_validation_models = TRUE,
                         keep_cross_validation_predictions = FALSE,
                         keep_cross_validation_fold_assignment = FALSE,
                         score_each_iteration = FALSE,
@@ -110,6 +114,7 @@ h2o.xgboost <- function(x, y, training_frame,
                         tweedie_power = 1.5,
                         categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                         quiet_mode = TRUE,
+                        export_checkpoints_dir = NULL,
                         ntrees = 50,
                         max_depth = 6,
                         min_rows = 1,
@@ -124,6 +129,7 @@ h2o.xgboost <- function(x, y, training_frame,
                         colsample_bytree = 1,
                         max_abs_leafnode_pred = 0.0,
                         max_delta_step = 0.0,
+                        monotone_constraints = NULL,
                         score_tree_interval = 0,
                         min_split_improvement = 0.0,
                         gamma = 0.0,
@@ -140,7 +146,7 @@ h2o.xgboost <- function(x, y, training_frame,
                         tree_method = c("auto", "exact", "approx", "hist"),
                         grow_policy = c("depthwise", "lossguide"),
                         booster = c("gbtree", "gblinear", "dart"),
-                        reg_lambda = 0.0,
+                        reg_lambda = 1.0,
                         reg_alpha = 0.0,
                         dmatrix_type = c("auto", "dense", "sparse"),
                         backend = c("auto", "gpu", "cpu"),
@@ -225,6 +231,8 @@ h2o.xgboost <- function(x, y, training_frame,
     parms$categorical_encoding <- categorical_encoding
   if (!missing(quiet_mode))
     parms$quiet_mode <- quiet_mode
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
   if (!missing(ntrees))
     parms$ntrees <- ntrees
   if (!missing(max_depth))
@@ -253,6 +261,8 @@ h2o.xgboost <- function(x, y, training_frame,
     parms$max_abs_leafnode_pred <- max_abs_leafnode_pred
   if (!missing(max_delta_step))
     parms$max_delta_step <- max_delta_step
+  if (!missing(monotone_constraints))
+    parms$monotone_constraints <- monotone_constraints
   if (!missing(score_tree_interval))
     parms$score_tree_interval <- score_tree_interval
   if (!missing(min_split_improvement))

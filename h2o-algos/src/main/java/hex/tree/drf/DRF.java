@@ -19,9 +19,7 @@ import static hex.genmodel.GenModel.getPrediction;
 import static hex.tree.drf.TreeMeasuresCollector.asSSE;
 import static hex.tree.drf.TreeMeasuresCollector.asVotes;
 
-/** Gradient Boosted Trees
- *
- *  Based on "Elements of Statistical Learning, Second Edition, page 387"
+/** Distributed Random Forest
  */
 public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel.DRFParameters, hex.tree.drf.DRFModel.DRFOutput> {
   private static final double ONEBOUND=1+1e-12;    // due to fixed precision
@@ -188,7 +186,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
           // inverse of the first (and that the same columns were picked)
           if( k==1 && _nclass==2 && _model.binomialOpt()) continue;
           ktrees[k] = new DTree(_train, _ncols, _mtry, _mtry_per_tree, rseed, _parms);
-          new UndecidedNode(ktrees[k], -1, DHistogram.initialHist(_train, _ncols, adj_nbins, hcs[k][0], rseed, _parms, getGlobalQuantilesKeys())); // The "root" node
+          new UndecidedNode(ktrees[k], -1, DHistogram.initialHist(_train, _ncols, adj_nbins, hcs[k][0], rseed, _parms, getGlobalQuantilesKeys(), null), null); // The "root" node
         }
       }
 

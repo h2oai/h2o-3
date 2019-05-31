@@ -8,6 +8,8 @@ import java.util.Arrays;
 /**
  */
 public class XGBoostMojoReader extends ModelMojoReader<XGBoostMojoModel> {
+  
+  public static final String SCORE_JAVA_PROP = "sys.ai.h2o.xgboost.scoring.java.enable";
 
   @Override
   public String getModelName() {
@@ -35,15 +37,33 @@ public class XGBoostMojoReader extends ModelMojoReader<XGBoostMojoModel> {
     } catch (IOException e) {
       throw new IllegalStateException("MOJO is corrupted: cannot read the serialized Booster", e);
     }
-    if (useJavaScoring()) {
+    Boolean conf = getJavaScoringConfig();
+    if (useJavaScoring(conf)) {
       return new XGBoostJavaMojoModel(boosterBytes, columns, domains, responseColumn);
     } else {
       return new XGBoostNativeMojoModel(boosterBytes, columns, domains, responseColumn);
     }
   }
 
-  public static boolean useJavaScoring() {
-    return Boolean.getBoolean("sys.ai.h2o.xgboost.scoring.java.enable");
+  private boolean useJavaScoring(Boolean conf) {
+    if (conf != null) {
+      // user set the property - respect the decision
+      return conf;
+    }
+    String booster = readkv("booster");
+    return "gbtree".equals(booster); // use java scoring for `gbtree` (well tested); `native` for dart & gblinear
+  }
+
+  public static Boolean getJavaScoringConfig() {
+    String javaScoringEnabled = System.getProperty(SCORE_JAVA_PROP);
+    if (javaScoringEnabled == null) {
+      return null;
+    }
+    return Boolean.valueOf(javaScoringEnabled);
+  }
+
+  @Override public String mojoVersion() {
+    return "1.00";
   }
 
 }

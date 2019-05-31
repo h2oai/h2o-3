@@ -9,7 +9,6 @@ import water.util.PojoUtils;
 
 import java.util.*;
 
-import static java.lang.StrictMath.floor;
 import static java.lang.StrictMath.min;
 
 public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSpaceSearchCriteria> {
@@ -180,18 +179,19 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
        * Factory method to create an instance based on the given HyperSpaceSearchCriteria instance.
        */
       public static <MP extends Model.Parameters, C extends HyperSpaceSearchCriteria>
-        HyperSpaceWalker create(MP params,
-                                              Map<String, Object[]> hyperParams,
-                                            ModelParametersBuilderFactory<MP> paramsBuilderFactory,
-                                            C search_criteria) {
+        HyperSpaceWalker<MP, ? extends HyperSpaceSearchCriteria> create(MP params,
+                                                                        Map<String, Object[]> hyperParams,
+                                                                        ModelParametersBuilderFactory<MP> paramsBuilderFactory,
+                                                                        C search_criteria) {
         HyperSpaceSearchCriteria.Strategy strategy = search_criteria.strategy();
 
-        if (strategy == HyperSpaceSearchCriteria.Strategy.Cartesian)
+        if (strategy == HyperSpaceSearchCriteria.Strategy.Cartesian) {
           return new HyperSpaceWalker.CartesianWalker<>(params, hyperParams, paramsBuilderFactory, (HyperSpaceSearchCriteria.CartesianSearchCriteria) search_criteria);
-        else if (strategy == HyperSpaceSearchCriteria.Strategy.RandomDiscrete )
+        } else if (strategy == HyperSpaceSearchCriteria.Strategy.RandomDiscrete ) {
           return new HyperSpaceWalker.RandomDiscreteValueWalker<>(params, hyperParams, paramsBuilderFactory, (HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria) search_criteria);
-        else
+        } else {
           throw new H2OIllegalArgumentException("strategy", "GridSearch", strategy);
+        }
       }
     }
 
@@ -517,9 +517,9 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
               double timeleft = this.time_remaining_secs();
               if (timeleft > 0)  {
                 if (params._max_runtime_secs > 0) {
-                  params._max_runtime_secs = (long) floor(min(params._max_runtime_secs, timeleft));
+                  params._max_runtime_secs = min(params._max_runtime_secs, timeleft);
                 } else {
-                  params._max_runtime_secs = (long) floor(timeleft);
+                  params._max_runtime_secs = timeleft;
                 }
               }
             }

@@ -16,13 +16,14 @@ properties([
     ])
 ])
 
-IMAGE_NAME_PREFIX = 'docker.h2o.ai/opsh2oai/h2o-3'
+IMAGE_NAME_PREFIX = 'harbor.h2o.ai/opsh2oai/h2o-3'
 GPU_SUFFIX = params.useGpu ? '-gpu' : ''
 
 UBUNTU_BASE_IMAGE = 'ubuntu:16.04'
 GPU_BASE_IMAGE = 'nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04'
 
-JDK_VERSIONS = ['7', '8', '10', '11']
+JDK_VERSIONS = ['8', '10', '11', '12']
+OPENJDK_VERSIONS = ['7']
 PYTHON_VERSIONS = ['2.7', '3.5', '3.6']
 R_VERSION = ['3.4.1', '3.3.3']
 
@@ -43,7 +44,7 @@ ansiColor('xterm') {
                 currentBuild.displayName = "v${currentVersion} #${currentBuild.number}"
 
                 if (!params.forceBuild) {
-                    if (pipelineContext.getUtils().dockerImageExistsInRegistry(this, 'docker.h2o.ai', 'opsh2oai/h2o-3/dev-base', "${currentVersion}")) {
+                    if (pipelineContext.getUtils().dockerImageExistsInRegistry(this, 'harbor.h2o.ai', 'opsh2oai/h2o-3/dev-base', "${currentVersion}")) {
                         error "Image already exists. Use forceBuild if you wish to overwrite."
                     }
                 } else {
@@ -52,8 +53,8 @@ ansiColor('xterm') {
 
                 dir('docker') {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'AWS S3 Credentials', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-                        docker.image('docker.h2o.ai/s3cmd').inside("-e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}") {
-                            sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-7/x64-linux/jdk1.7.0_80.zip"
+                        docker.image('harbor.h2o.ai/opsh2oai/s3cmd').inside("-e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}") {
+                            sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-8/x64-linux/jdk1.8.0_171.zip"
                             sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-10/x64-linux/jdk-10.0.2_linux-x64_bin.tar.gz"
                         }
                     }
@@ -76,6 +77,9 @@ ansiColor('xterm') {
         JDK_VERSIONS.each {version ->
             componentImages += "dev-jdk-${version}"
         }
+        OPENJDK_VERSIONS.each {version ->
+            componentImages += "dev-openjdk-${version}"
+        }
         buildInParallel(pipelineContext, componentImages)
 
         buildInParallel(pipelineContext, ["dev-build-base"])
@@ -93,10 +97,16 @@ ansiColor('xterm') {
             JDK_VERSIONS.each {jdkVersion ->
                 componentJdkImages += "dev-python-${version}-jdk-${jdkVersion}"
             }
+            OPENJDK_VERSIONS.each {jdkVersion ->
+                componentJdkImages += "dev-python-${version}-openjdk-${jdkVersion}"
+            }
         }
         R_VERSION.each {version ->
             JDK_VERSIONS.each {jdkVersion ->
                 componentJdkImages += "dev-r-${version}-jdk-${jdkVersion}"
+            }
+            OPENJDK_VERSIONS.each {jdkVersion ->
+                componentJdkImages += "dev-r-${version}-openjdk-${jdkVersion}"
             }
         }
         buildInParallel(pipelineContext, componentJdkImages)
@@ -137,7 +147,7 @@ def pullPreviousVersionIfRequired(final pipelineContext, final String image) {
     if (previousVersion <= 0) {
         previousVersion = 1
     }
-    if (pipelineContext.getUtils().dockerImageExistsInRegistry(this, 'docker.h2o.ai', "opsh2oai/h2o-3/${image}", "${previousVersion}")) {
+    if (pipelineContext.getUtils().dockerImageExistsInRegistry(this, 'harbor.h2o.ai', "opsh2oai/h2o-3/${image}", "${previousVersion}")) {
         retryWithDelay(3 /* retries */, 120 /* delay in sec */) {
             sh "docker pull ${IMAGE_NAME_PREFIX}/${image}:${previousVersion}"
         }

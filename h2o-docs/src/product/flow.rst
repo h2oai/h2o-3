@@ -683,9 +683,9 @@ The available options vary depending on the selected model. If an option is only
    -  *Randomized*: Uses randomized subspace iteration method
    -  *GLRM*: Fits a generalized low-rank model with L2 loss function and no regularization and solves for the SVD using local matrix algebra
 
--  **family**: (GLM) Select the model type (Gaussian, Binomial, Multinomial, Poisson, Gamma, Tweedie, or Ordinal).
+-  **family**: (GLM) Select the model type (Gaussian, Binomial, Multinomial, Poisson, Gamma, Tweedie, Negativebinomial, or Ordinal).
 
--  **solver**: (GLM) Select the solver to use (AUTO, IRLSM, L_BFGS, COORDINATE_DESCENT_NAIVE, or COORDINATE_DESCENT). IRLSM is fast on on problems with a small number of predictors and for lambda-search with L1 penalty, while `L_BFGS <http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf>`__ scales better for datasets with many columns. COORDINATE_DESCENT is IRLSM with the covariance updates version of cyclical coordinate descent in the innermost loop. COORDINATE_DESCENT_NAIVE is IRLSM with the naive updates version of cyclical coordinate descent in the innermost loop. 
+-  **solver**: (GLM) Select the solver to use (AUTO, IRLSM, L_BFGS, COORDINATE_DESCENT_NAIVE, or COORDINATE_DESCENT). IRLSM is fast on on problems with a small number of predictors and for lambda-search with L1 penalty, while `L_BFGS <http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf>`__ scales better for datasets with many columns. COORDINATE_DESCENT is IRLSM with the covariance updates version of cyclical coordinate descent in the innermost loop. COORDINATE_DESCENT_NAIVE is IRLSM with the naive updates version of cyclical coordinate descent in the innermost loop. COORDINATE_DESCENT_NAIVE and COORDINATE_DESCENT are currently experimental.
 
 -  **link**: (GLM) Select a link function (Identity, Family_Default, Logit, Log, Inverse, Tweedie, Ologit, Oprobit, or Ologlog).
 
@@ -717,7 +717,9 @@ The available options vary depending on the selected model. If an option is only
 
 -  **distribution**: (GBM, DL) Select the distribution type from the drop-down list. The options are auto, bernoulli, multinomial, gaussian, poisson, gamma, or tweedie.
 
--  **sample_rate**: (GBM, DRF, XGBoost) Specify the row sampling rate (x-axis). The range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" (`Friedman, 1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
+-  **sample_rate**: (GBM, DRF, XGBoost, IF) Specify the row sampling rate (x-axis). The range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" (`Friedman, 1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
+
+-  **sample_size**: (IF) The number of randomly sampled observations used to train each Isolation Forest tree. Only one of ``sample_size`` or ``sample_rate`` should be defined. If ``sample_rate`` is defined, ``sample_size`` will be ignored. This value defaults to 256.
 
 -  **col_sample_rate**: (GBM, DRF, XGBoost) Specify the column sampling rate (y-axis). The range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" (`Friedman, 1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
 
@@ -742,6 +744,8 @@ The available options vary depending on the selected model. If an option is only
 -  **tweedie_variance_power**: (GLM) (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie variance power.
 
 -  **tweedie_link_power**: (GLM) (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie link power.
+
+-  **theta** (GLM) (Only applicable if *Negativebinomial* is selected for **Family**) Specify the theta value for negative binomial regression
 
 -  **activation**: (DL) Select the activation function (Tanh, TanhWithDropout, Rectifier, RectifierWithDropout, Maxout, MaxoutWithDropout). The default option is Rectifier.
 
@@ -810,9 +814,7 @@ The available options vary depending on the selected model. If an option is only
 
     **Note**: ``balance_classes`` balances over just the target, not over all classes in the training frame.
 
--  **max_confusion_matrix_size**: (DRF, DL, Naïve Bayes, GBM, GLM) Specify the maximum size (in number of classes) for confusion matrices to be  printed in the Logs. 
-
-    **Note**: This option is deprecated.
+-  **max_confusion_matrix_size**: (DRF, DL, Naïve Bayes, GBM, GLM) Specify the maximum size (in number of classes) for confusion matrices to be  printed in the Logs.
 
 -  **max_hit_ratio_k**: (DRF, DL, Naïve Bayes, GBM, GLM) Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multinomial only. To disable, enter 0.
 
@@ -829,6 +831,8 @@ The available options vary depending on the selected model. If an option is only
     - lift_top_group
     - misclassification
     - mean_per_class_error
+    - custom
+    - custom_increasing
 
 -  **stopping_rounds**: (GBM, DRF, DL, XGBoost, AutoML) Stops training when the option selected for **stopping_metric** doesn’t improve for the specified number of training rounds, based on a simple moving average. To disable this feature, specify 0. The metric is computed on the validation data (if provided); otherwise, training data is used.
 
@@ -907,6 +911,8 @@ The available options vary depending on the selected model. If an option is only
 
 -  **col_sample_rate_per_tree**: (XGBoost) Specify the column subsampling rate per tree.
 
+-  **monotone_constraints**: (XGBoost, GBM) A mapping representing `monotonic constraints <https://xiaoxiaowang87.github.io/monotonicity_constraint/>`__. Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint. Note that constraints can only be defined for numerical columns. Also note that in GBM, this option can only be used when the distribution is either ``gaussian`` or ``bernoulli``. 
+
 -  **score_tree_interval**: (XGBoost) Score the model after every so many trees.
 
 -  **min_split_improvement**: (XGBoost) Specify the minimum relative improvement in squared error reduction in order for a split to happen.
@@ -938,14 +944,18 @@ The available options vary depending on the selected model. If an option is only
 
 -  **lre_min**: (CoxPH) A positive number to use as the minimum log-relative error (LRE) of subsequent log partial likelihood calculations to determine algorithmic convergence. The role this parameter plays in the stopping criteria of the model fitting algorithm is explained in the :ref:`coxph_algorithm` section below. This value defaults to 9.
 
+-  **export_checkpoints_dir**: (DL, DRF, GBM) Optionally specify a path to a directory where every generated model will be stored when checkpointing models.
+
+-  **custom_metric_func**: (GBM, DRF, GLM) Optionally specify a custom evaluation function.
+
 
 **Expert Options**
 
--  **keep_cross_validation_models**: (GBM, DRF, Deep Learning, GLM, Naïve-Bayes, K-Means, XGBoost, AutoML) To keep the cross-validation models, check this checkbox.
+-  **keep_cross_validation_models**: (GLM, GBM, DL, DRF, K-Means, XGBoost, AutoML) Specify whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to FALSE.
 
--  **keep_cross_validation_predictions**: (GBM, DRF, Deep Learning, GLM, Naïve-Bayes, K-Means, XGBoost, AutoML) To keep the cross-validation predictions, check this checkbox.
+-  **keep_cross_validation_predictions**: (GLM, GBM, DL, DRF, K-Means, XGBoost, AutoML) To keep the cross-validation predictions, check this checkbox. In AutoML, this needs to be set to TRUE if running the same AutoML object for repeated runs because CV predictions are required to build additional Stacked Ensemble models in AutoML. This option defaults to FALSE.
 
--  **keep_cross_validation_fold_assignment**: (GBM, DRF, Deep Learning, GLM, Naïve-Bayes, K-Means, XGBoost, AutoML) Enable this option to preserve the cross-validation fold assignment.
+-  **keep_cross_validation_fold_assignment**: (GBM, DRF, DL, GLM, Naïve-Bayes, K-Means, XGBoost, AutoML) Enable this option to preserve the cross-validation fold assignment.
 
 -  **class_sampling_factors**: (DRF, GBM, DL, Naive-Bayes, AutoML) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. This option is only applicable for classification problems and when **balance_classes** is enabled.
 
@@ -1061,7 +1071,9 @@ The available options vary depending on the selected model. If an option is only
 
 -  **interactions**: (GLM, CoxPH) Specify a list of predictor column indices to interact. All pairwise combinations will be computed for this list. 
 
--  **interaction_pairs** (GLM, CoxPH) When defining interactions, use this to specify a list of pairwise column interactions (interactions between two variables). Note that this is different than ``interactions``, which will compute all pairwise combinations of specified columns.
+-  **interaction_pairs**: (GLM, CoxPH) When defining interactions, use this to specify a list of pairwise column interactions (interactions between two variables). Note that this is different than ``interactions``, which will compute all pairwise combinations of specified columns.
+
+-  **check_constant_response**: (GBM, DRF) Check if the response column is a constant value. If enabled (default), then an exception is thrown if the response column is a constant value. If disabled, then the model will train regardless of the response column being a constant value or not.
 
 --------------
 
@@ -1254,7 +1266,7 @@ Interpreting Model Results
 .. figure:: images/Flow_ScoringHistory.png
    :alt: Scoring History example
 
-**Variable importances**: (GBM, DL) Represents the statistical significance of each variable in the data in terms of its affect on the model. Variables are listed in order of most to least importance. The percentage values represent the percentage of importance across all variables, scaled to 100%. The method of computing each variable's importance depends on the algorithm. To view the scaled importance value of a variable, use your mouse to hover over the bar representing the variable.
+**Variable importances**: (GBM, DRF, DL) Represents the statistical significance of each variable in the data in terms of its affect on the model. Variables are listed in order of most to least importance. The percentage values represent the percentage of importance across all variables, scaled to 100%. The method of computing each variable's importance depends on the algorithm. To view the scaled importance value of a variable, use your mouse to hover over the bar representing the variable. Refer to the :ref:`variable-importance` section for more information.
 
 .. figure:: images/Flow_VariableImportances.png
    :alt: Variable Importances example
@@ -1321,6 +1333,8 @@ Viewing Partial Dependence Plots
     :alt: Partial Dependence Summary
 
 --------------
+
+.. _predictions_flow:
 
 Predictions
 -----------

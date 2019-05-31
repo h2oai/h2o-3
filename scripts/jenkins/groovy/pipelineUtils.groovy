@@ -23,24 +23,38 @@ class PipelineUtils {
         stashFiles(context, stashName, includedFiles, false)
     }
 
-    void stashXGBoostWheels(final context, final String xgbVersion) {
+    void stashXGBoostWheels(final context, final pipelineContext) {
+        def xgbVersion = pipelineContext.getBuildConfig().getCurrentXGBVersion()
         context.echo "Preparing to stash whls for XGBoost ${xgbVersion}"
-        try {
-            context.echo "Trying to pull from Jenkins archives"
-            context.copyArtifacts(
-                    projectName: 'h2o-3-xgboost4j-release-pipeline/h2o3',
-                    selector: context.specific(xgbVersion.split('\\.').last()),
-                    filter: 'linux-ompv4/ci-build/*.whl',
-                    flatten: true,
-                    fingerprintArtifacts: true,
-                    target: 'h2o-3/xgb-whls'
-            )
-        } catch (ignore) {
-            context.echo "Pull from Jenkins archives failed, loading from S3"
-            context.sh """
-                mkdir -p h2o-3/xgb-whls
-                s3cmd get s3://h2o-release/xgboost/h2o3/${xgbVersion}/*.whl h2o-3/xgb-whls/
-            """
+        def insideDocker = context.load('h2o-3/scripts/jenkins/groovy/insideDocker.groovy')
+        if (xgbVersion.toLowerCase().contains("-snapshot")) {
+            def xgbBranch = xgbVersion.replaceAll(/^(\d+\.?)+-/,"").replaceAll("-SNAPSHOT", "")
+            insideDocker([], pipelineContext.getBuildConfig().S3CMD_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 30, 'MINUTES') {
+                context.sh """
+                    mkdir -p h2o-3/xgb-whls
+                    s3cmd get s3://test.0xdata.com/h2o-release/xgboost/${xgbBranch}/${xgbVersion}/*.whl h2o-3/xgb-whls/
+                """
+            }
+        } else {
+            try {
+                context.echo "Trying to pull from Jenkins archives"
+                context.copyArtifacts(
+                        projectName: 'h2o-3-xgboost4j-release-pipeline/h2o3',
+                        selector: context.specific(xgbVersion.split('\\.').last()),
+                        filter: 'linux-ompv4/ci-build/*.whl',
+                        flatten: true,
+                        fingerprintArtifacts: true,
+                        target: 'h2o-3/xgb-whls'
+                )
+            } catch (ignore) {
+                context.echo "Pull from Jenkins archives failed, loading from S3"
+                insideDocker([], pipelineContext.getBuildConfig().S3CMD_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 30, 'MINUTES') {
+                    context.sh """
+                        mkdir -p h2o-3/xgb-whls
+                        s3cmd get s3://h2o-release/xgboost/h2o3/${xgbVersion}/*.whl h2o-3/xgb-whls/
+                    """
+                }
+            }
         }
         final String whlsPath = 'h2o-3/xgb-whls/*.whl'
         context.echo "********* Stash XGBoost wheels *********"
@@ -79,10 +93,9 @@ class PipelineUtils {
                     def distributionName = dockerizedDist
                     def distributionVersion = distributionStr.replaceFirst(dockerizedDist, '')
                     distributionsToBuild += [
-                            name: distributionName,
-                            version: distributionVersion
+                        name: distributionName,
+                        version: distributionVersion
                     ]
-                    context.echo "Supported dist found: dist: ${distributionName}, ver: ${distributionVersion}"
                 }
             }
         }
@@ -91,7 +104,7 @@ class PipelineUtils {
     }
 
     def readCurrentXGBVersion(final context, final h2o3Root) {
-        final def xgbVersion = context.sh(script: "cd ${h2o3Root} && cat h2o-genmodel-extensions/xgboost/build.gradle | grep ai.h2o:xgboost4j: | egrep -o '([0-9]+\\.+)+[0-9]+'", returnStdout: true).trim()
+        final def xgbVersion = context.sh(script: "cd ${h2o3Root} && cat h2o-genmodel-extensions/xgboost/build.gradle | grep ai.h2o:xgboost4j: | egrep -o '([0-9]+\\.+)+[-_a-zA-Z0-9]+'", returnStdout: true).trim()
         context.echo "XGBoost Version: ${xgbVersion}"
         if (xgbVersion == null || xgbVersion == '') {
             context.error("XGBoost version cannot be read")
@@ -110,22 +123,11 @@ class PipelineUtils {
 
     boolean dockerImageExistsInRegistry(final context, final String registry, final String imageName, final String version) {
         context.withCredentials([context.usernamePassword(credentialsId: "${registry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
-            final String response = "curl -k -u ${context.REGISTRY_USERNAME}:${context.REGISTRY_PASSWORD} https://${registry}/v2/${imageName}/tags/list".execute().text
-
+            context.echo "URL: http://${registry}/api/repositories/${imageName}/tags"
+            final String response = "curl -k -u ${context.REGISTRY_USERNAME}:${context.REGISTRY_PASSWORD} http://${registry}/api/repositories/${imageName}/tags".execute().text
             final def jsonResponse = new groovy.json.JsonSlurper().parseText(response)
-            if (jsonResponse.errors) {
-                for (Map error in jsonResponse.errors) {
-                    if (error.code == "NAME_UNKNOWN") {
-                        return false
-                    }
-                }
-                if (jsonResponse.tags == null) {
-                    context.echo "response: ${response}"
-                    context.error "Docker registry check failed."
-                }
-            }
-
-            return jsonResponse.tags.contains(version)
+            def matched = jsonResponse.findAll { it.name == version }
+            return matched.size() > 0
         }
     }
 
@@ -173,7 +175,7 @@ class PipelineUtils {
             unstashFiles(context, buildConfig.getStashNameForTestPackage(component))
             unstashFiles(context, buildConfig.H2O_JAR_STASH_NAME)
         }
-        context.sh "cd ${stageDir}/h2o-3 && unzip -q -o test-package-${component}.zip && rm test-package-${component}.zip"
+        context.sh "cd ${stageDir}/h2o-3 && unzip -q -o test-package-${component}.zip && rm -v test-package-${component}.zip"
     }
 
     void archiveStageFiles(final context, final String h2o3dir, final List<String> archiveFiles, final List<String> excludeFiles) {

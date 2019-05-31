@@ -99,7 +99,7 @@ public class DeeplearningMojoModel extends MojoModel {
     } else {
       if (_family == DistributionFamily.modified_huber) {
         preds[0] = -1;
-        preds[2] = _family.linkInv(preds[0]);
+        preds[2] = linkInv(_family, preds[0]);
         preds[1] = 1 - preds[2];
       } else if (this.isClassifier()) {
         assert (preds.length == out.length + 1);
@@ -117,12 +117,37 @@ public class DeeplearningMojoModel extends MojoModel {
         else
           preds[0] = out[0];
         // transform prediction to response space
-        preds[0] = _family.linkInv(preds[0]);
+        preds[0] = linkInv(_family, preds[0]);
         if (Double.isNaN(preds[0]))
           throw new RuntimeException("Predicted regression target NaN!");
       }
     }
     return preds;
+  }
+
+
+  /**
+   * Calculate inverse link depends on distribution type
+   * Be careful if you are changing code here - you have to change it in hex.LinkFunction too
+   * @param distribution
+   * @param f raw prediction
+   * @return calculated inverse link value
+   */
+  private double linkInv(DistributionFamily distribution, double f){
+    switch (distribution) {
+      case bernoulli:
+      case quasibinomial:
+      case modified_huber:
+      case ordinal:
+        return 1/(1+Math.min(1e19, Math.exp(-f)));
+      case multinomial:
+      case poisson:
+      case gamma:
+      case tweedie:
+        return Math.min(1e19, Math.exp(f));
+      default:
+        return f;
+    }
   }
 
   @Override
@@ -132,6 +157,24 @@ public class DeeplearningMojoModel extends MojoModel {
 
   public int getPredsSize(ModelCategory mc) {
     return (mc == ModelCategory.AutoEncoder)? _units[0]: (isClassifier()?nclasses()+1 :2);
+  }
+
+  /**
+   * Calculates average reconstruction error (MSE).
+   * Uses a normalization defined for the numerical features of the trained model.
+   * @return average reconstruction error = ||original - reconstructed||^2 / length(original)
+   */
+  public double calculateReconstructionErrorPerRowData(double [] original, double [] reconstructed){
+    assert (original != null && original.length > 0) && (reconstructed != null && reconstructed.length > 0);
+    assert original.length == reconstructed.length;
+    int numStartIndex = original.length - this._nums;
+    double norm;
+    double l2 = 0;
+    for (int i = 0; i < original.length; i++) {
+      norm = (this._normmul != null && this._normmul.length > 0 && this._nums > 0 && i >= numStartIndex) ? this._normmul[i-numStartIndex] : 1;
+      l2 += Math.pow((reconstructed[i] - original[i]) * norm, 2);
+    }
+    return  l2 / original.length;
   }
 
   // class to store weight or bias for one neuron layer

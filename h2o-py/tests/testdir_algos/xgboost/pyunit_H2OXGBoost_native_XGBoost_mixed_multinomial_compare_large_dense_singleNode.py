@@ -32,7 +32,6 @@ def comparison_test_dense():
                        'seed': h2oParamsD["seed"],
                        'booster': 'gbtree',
                        'objective': 'multi:softprob',
-                       'lambda': 0.0,
                        'eta': h2oParamsD["learn_rate"],
                        'grow_policy': 'depthwise',
                        'alpha': 0.0,

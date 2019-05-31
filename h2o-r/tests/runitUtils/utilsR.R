@@ -278,8 +278,8 @@ withWarnings <- function(expr) {
 cleanSummary <- function(mysum, alphabetical = FALSE) {
   # Returns string without leading or trailing whitespace
   trim <- function(x) { gsub("^\\s+|\\s+$", "", x) }
-  
-  lapply(1:ncol(mysum), { 
+
+  lapply(1:ncol(mysum), {
     function(i) {
       nams <- sapply(mysum[,i], function(x) { trim(unlist(strsplit(x, ":"))[1]) })
       vals <- sapply(mysum[,i], function(x) {
@@ -305,7 +305,7 @@ cleanSummary <- function(mysum, alphabetical = FALSE) {
 checkSummary <- function(object, expected, tolerance = 1e-6) {
   sumR <- cleanSummary(expected, alphabetical = TRUE)
   sumH2O <- cleanSummary(object, alphabetical = TRUE)
-  
+
   expect_equal(length(sumH2O), length(sumR))
   lapply(1:length(sumR), function(i) {
     vecR <- sumR[[i]]; vecH2O <- sumH2O[[i]]
@@ -320,7 +320,7 @@ genDummyCols <- function(df, use_all_factor_levels = TRUE) {
   NUM <- function(x) { x[,sapply(x, is.numeric)] }
   FAC <- function(x) { x[,sapply(x, is.factor)]  }
   FAC_LEVS <- function(x) { sapply(x, function(z) { length(levels(z)) })}
-  
+
   df_fac <- data.frame(FAC(df))
   if(ncol(df_fac) == 0) {
     DF <- data.frame(NUM(df))
@@ -328,7 +328,7 @@ genDummyCols <- function(df, use_all_factor_levels = TRUE) {
   } else {
     if(!"ade4" %in% rownames(installed.packages())) install.packages("ade4")
     require(ade4)
-    
+
     df_fac_acm <- acm.disjonctif(df_fac)
     if (!use_all_factor_levels) {
       fac_offs <- cumsum(c(1, FAC_LEVS(df_fac)))
@@ -336,21 +336,21 @@ genDummyCols <- function(df, use_all_factor_levels = TRUE) {
       df_fac_acm <- data.frame(df_fac_acm[,-fac_offs])
     }
     DF <- data.frame(df_fac_acm, NUM(df))
-    fac_nams <- mapply(function(x, cname) { 
+    fac_nams <- mapply(function(x, cname) {
       levs <- levels(x)
       if(!use_all_factor_levels) levs <- levs[-1]
-      paste(cname, levs, sep = ".") }, 
+      paste(cname, levs, sep = ".") },
       df_fac, colnames(df)[which(sapply(df, is.factor))])
     fac_nams <- as.vector(unlist(fac_nams))
     fac_range <- 1:ncol(df_fac_acm)
     names(DF)[fac_range] <- fac_nams
-    
+
     if(ncol(NUM(df)) > 0) {
       num_range <- (ncol(df_fac_acm)+1):ncol(DF)
       names(DF)[num_range] <- colnames(df)[which(sapply(df, is.numeric))]
     }
   }
-  
+
   return(DF)
 }
 
@@ -361,7 +361,7 @@ alignData <- function(df, center = FALSE, scale = FALSE, ignore_const_cols = TRU
     df.clone[,is_num] <- scale(df.clone[,is_num], center = center, scale = scale)
     df.clone <- df.clone[, c(which(!is_num), which(is_num))]   # Move categorical column to front
   }
-  
+
   if(ignore_const_cols) {
     is_const <- sapply(df.clone, function(z) { var(z, na.rm = TRUE) == 0 })
     if(any(is_const))
@@ -374,6 +374,39 @@ doTest<-
 function(testDesc, test) {
     tryCatch(test_that(testDesc, withWarnings(test())), warning = function(w) WARN(w), error =function(e) FAIL(e))
     PASS()
+}
+
+doSuite<-
+function(suiteDesc, suite, run_in_isolation=TRUE, time_monitor=FALSE) {
+    suiteTest <- function() {
+        warnings <- c()
+        errors <- c()
+        call_func <- do.call
+        if(time_monitor)
+            call_func <- function(...) print(system.time(do.call(...)))
+        lapply(suite$tests, function(test_name) {
+          cat("\n")
+          cat("Running", test_name, "\n")
+          if(run_in_isolation) h2o.removeAll()
+          tryCatch(
+              test_that(test_name, withWarnings(call_func(test_name, list(), envir=suite$envir))),
+              warning = function(w) warnings <<- c(warnings, w),
+              error = function(e) errors <<- c(errors, e$message)
+          )  
+          # do.call(test_name, list(), envir=envir)
+        })
+        if(length(warnings) > 0)
+            warning(paste("\n", warnings, "\n"))
+        if(length(errors) > 0)
+            stop(paste("Failing tests:\n", errors, "\n"), call. = FALSE)
+    }
+    doTest(suiteDesc, suiteTest)
+}
+
+makeSuite<-
+function(..., envir=parent.frame()) {
+    tests <- all.vars(substitute(c(...)))
+    list(tests=tests, envir=envir)
 }
 
 setupSeed<-
@@ -405,20 +438,20 @@ h2o_and_R_equal <- function(h2o_obj, r_obj, tolerance = 1e-6) {
   df_h2o_obj <- as.data.frame(h2o_obj)
   df_r_obj <- as.data.frame(r_obj)
   expect_equal(length(df_h2o_obj), length(df_r_obj))
-  
-  #Check NAs are in same places 
+
+  #Check NAs are in same places
   df_h2o_nas <- is.na(df_h2o_obj)
   df_r_nas <- is.na(df_r_obj)
   expect_true(all(df_h2o_nas == df_r_nas))
-  
+
   #Check non-NAs are same vals
   df_h2o_obj_free <- df_h2o_obj[!df_h2o_nas]
   df_r_na_free <- df_r_obj[!df_r_nas]
-  
+
   expect_equal(length(df_h2o_obj_free), length(df_r_na_free))
   if (length(df_r_na_free) > 0)
     expect_true(all(abs(df_h2o_obj_free - df_r_na_free) < tolerance))
-  
+
 }
 
 #----------------------------------------------------------------------
@@ -585,17 +618,17 @@ runGLMMetricStop <- function(predictor_names, response_name, train_data, family,
 
     if (stop_now) {
       if (length(metric_list) < num_models_built) {
-        
+
         Log.info("number of models built by gridsearch: ")
         print(num_models_built)
         Log.info("number of models built proposed by stopping metrics: ")
         print(length(metric_list))
-        
+
         return(FALSE)
       } else {
         return(TRUE)
       }
-    } 
+    }
   }
 
   if (length(metric_list) == possible_model_number) {
@@ -620,20 +653,20 @@ evaluate_early_stopping <- function(metric_list, stop_round, tolerance, is_decre
 
   metric_len = length(metric_list)
   metric_list = sort(metric_list, decreasing=!(is_decreasing))
-  
+
   start_len = 2*stop_round
-  
+
   bestInLastK = mean(metric_list[1:stop_round])
   lastBeforeK = mean(metric_list[(stop_round+1):start_len])
 
   if (!(sign(bestInLastK)) == sign(lastBeforeK))
     return(FALSE)
-  
+
   ratio = bestInLastK/lastBeforeK
-  
+
   if (is.nan(ratio))
     return(FALSE)
-  
+
   if (is_decreasing)
     return(!(ratio < (1-tolerance)))
   else
@@ -741,7 +774,7 @@ random_dataset <-
       # assume all else as multinomial
       response_num = round(runif(1, 3, 10))
     }
-    
+
     # generate all the fractions
     fractions <-
       c(runif(1, 0, 1),
@@ -764,7 +797,7 @@ random_dataset <-
         response_factors = response_num,
         missing_fraction = runif(1, 0, 0.05)
       )
-    
+
     return(random_frame)
   }
 
@@ -835,10 +868,10 @@ random_NN <- function(actFunc, max_layers, max_node_number) {
   hiddenDropouts <- c()
   for (ind in 1:no_hidden_layers) {
     hidden <- c(hidden, round(runif(1, 1, max_node_number)))
-    
+
     if (grepl('Dropout', actFunc, fixed = TRUE)) {
       hiddenDropouts <- c(hiddenDropouts, runif(1, 0, 0.1))
-      
+
     }
   }
   return(list("hidden" = hidden, "hiddenDropouts" = hiddenDropouts))
@@ -869,9 +902,12 @@ compareFrames <- function(frame1, frame2, prob=0.5, tolerance=1e-6) {
 }
 
 assertCorrectSkipColumns <-
-  function(inputFileName, f1R,
+  function(inputFileName,
+           f1R,
            skip_columns,
-           use_import, allFrameTypes) {
+           use_import,
+           allFrameTypes,
+           columns_skipped=1) {
     if (use_import) {
       wholeFrame <<-
         h2o.importFile(inputFileName, skipped_columns = skip_columns)
@@ -880,7 +916,7 @@ assertCorrectSkipColumns <-
         h2o.uploadFile(inputFileName, skipped_columns = skip_columns)
     }
 
-    expect_true(h2o.nrow(wholeFrame)==nrow(f1R))
+    expect_true(h2o.nrow(wholeFrame) == nrow(f1R))
     cfullnames <- names(f1R)
     f2R <- as.data.frame(wholeFrame)
     cskipnames <- names(f2R)
@@ -888,23 +924,89 @@ assertCorrectSkipColumns <-
     rowNum <- h2o.nrow(f1R)
     for (ind in c(1:length(cfullnames))) {
       if (cfullnames[ind] == cskipnames[skipcount]) {
-        if (allFrameTypes[ind]=="uuid")
-          continue
-        for (rind in c(1:rowNum)) {
-          if (is.na(f1R[rind, ind]))
-            expect_true(is.na(f2R[rind, skipcount]), info=paste0("expected NA but received: ", f2R[rind, skipcount], " in row: ", rind, " with column name: ", cfullnames[ind], " and skipped column name ", cskipnames[skipcount], sep=" "))
-          else if (is.numeric(f1R[rind, ind])) {
-            if (allFrameTypes[ind]=='time')
-              expect_true(abs(f1R[rind, ind]-f2R[rind, skipcount])<10, info=paste0("expected: ", f1R[rind, ind], " but received: ", f2R[rind, skipcount], " in row: ", rind, " with column name: ", cfullnames[ind], " and skipped column name ", cskipnames[skipcount], sep=" "))
-
-            else
-              expect_true(abs(f1R[rind, ind]-f2R[rind, skipcount])<1e-10, info=paste0("expected: ", f1R[rind, ind], " but received: ", f2R[rind, skipcount], " in row: ", rind, " with column name: ", cfullnames[ind], " and skipped column name ", cskipnames[skipcount], sep=" "))
-          } else
-            expect_true(f1R[rind, ind] == f2R[rind, skipcount], info=paste0("expected: ", f1R[rind, ind], " but received: ", f2R[rind, skipcount], " in row: ", rind, " with column name: ", cfullnames[ind], " and skipped column name ", cskipnames[skipcount], sep=" "))
+        if ((skipcount %% columns_skipped) == 0) {
+          # only tests half of the columns to save time
+          print(paste0("testing column ", ind))
+          if (allFrameTypes[ind] == "uuid")
+            continue
+          for (rind in c(1:rowNum)) {
+            if (is.na(f1R[rind, ind]))
+              expect_true(
+                is.na(f2R[rind, skipcount]),
+                info = paste0(
+                  "expected NA but received: ",
+                  f2R[rind, skipcount],
+                  " in row: ",
+                  rind,
+                  " with column name: ",
+                  cfullnames[ind],
+                  " and skipped column name ",
+                  cskipnames[skipcount],
+                  sep = " "
+                )
+              )
+            else if (is.numeric(f1R[rind, ind]) || is.factor(f1R[rind, ind])) {
+              if (allFrameTypes[ind] == 'time')
+                expect_true(
+                  abs(f1R[rind, ind] - f2R[rind, skipcount]) < 10,
+                  info = paste0(
+                    "expected: ",
+                    f1R[rind, ind],
+                    " but received: ",
+                    f2R[rind, skipcount],
+                    " in row: ",
+                    rind,
+                    " with column name: ",
+                    cfullnames[ind],
+                    " and skipped column name ",
+                    cskipnames[skipcount],
+                    sep = " "
+                  )
+                )
+              else {
+                  temp1 <- as.numeric(f1R[rind, ind])
+                  temp2 <- as.numeric(f2R[rind, skipcount])
+                expect_true(
+                  abs(temp1 - temp2) < 1e-10,
+                  info = paste0(
+                    "expected: ",
+                    f1R[rind, ind],
+                    " but received: ",
+                    f2R[rind, skipcount],
+                    " in row: ",
+                    rind,
+                    " with column name: ",
+                    cfullnames[ind],
+                    " and skipped column name ",
+                    cskipnames[skipcount],
+                    sep = " "
+                  )
+                )
+              }
+            } else
+              expect_true(
+                f1R[rind, ind] == f2R[rind, skipcount],
+                info = paste0(
+                  "expected: ",
+                  f1R[rind, ind],
+                  " but received: ",
+                  f2R[rind, skipcount],
+                  " in row: ",
+                  rind,
+                  " with column name: ",
+                  cfullnames[ind],
+                  " and skipped column name ",
+                  cskipnames[skipcount],
+                  sep = " "
+                )
+              )
+          }
         }
-        skipcount <- skipcount + 1
-        if (skipcount > h2o.ncol(f2R))
-          break
+          print(paste0("Done testing column ", ind))
+          skipcount <- skipcount + 1
+          if (skipcount > h2o.ncol(f2R))
+            break
+
       }
     }
     print("Test completed!")
@@ -1045,11 +1147,11 @@ mojoH2Opredict<-function(model, tmpdir_name, filename, get_leaf_node_assignment=
     cmd<-paste(cmd, "--leafNodeAssignment")
     predictions1 = h2o.predict_leaf_node_assignment(model, newTest)
   }
-  
+
   if (glrmReconstruct) {
     cmd <- paste(cmd, "--glrmReconstruct", sep=" ")
   }
-  
+
   safeSystem(cmd)  # perform mojo prediction
   predictions2 = h2o.importFile(paste(tmpdir_name, "out_mojo.csv", sep =
   '/'), header=T)
@@ -1075,7 +1177,7 @@ manual_partial_dependency <- function(model, dataframe, xlist, xname, weight_vec
   temp <- (xnames != xname)
   xnames_list <- xnames[temp]
   rowIndex <- 1
-  
+
   for (xval in xlist) {
     sumEle <- 0.0
     sumEleSq <- 0.0
@@ -1095,7 +1197,7 @@ manual_partial_dependency <- function(model, dataframe, xlist, xname, weight_vec
     for (rIndex in c(1:predRow)) {
       val <- predF[rIndex, target_index]
       weight <- weight_vector[rIndex, 1]
-      
+
       if ((abs(weight) > 0) && !is.nan(val)) {
         tempV <- val*weight
         sumEle <- sumEle+tempV
@@ -1118,7 +1220,7 @@ assert_twoDTable_array_equal <- function(table1, arraymean, arraystd, arraystder
   checkEqualsNumeric(table1[, "mean_response"], arraymean)
   checkEqualsNumeric(table1[, "stddev_response"], arraystd)
   checkEqualsNumeric(table1[, "std_error_mean_response"], arraystderr)
-  
+
 }
 assert_twoDTable_equal <- function(table1, table2) {
   checkEqualsNumeric(table1[, "mean_response"], table2[, "mean_response"][1:length(table1[, "mean_response"])])
@@ -1148,25 +1250,20 @@ assertCorrectSkipColumnsNamesTypes <- function(originalFile, parsePath, skippedC
 
     if (mode == 0)  {
         # use both name and type
-        f1 <<-
-        h2o.importFile(parsePath, col.names = colnames, col.types = coltypes, skipped_columns=skippedColumns)
-        f2 <<-
-        h2o.uploadFile(parsePath, col.names = colnames, col.types = coltypes, skipped_columns=skippedColumns)
+        f1 <- h2o.importFile(parsePath, col.names = colnames, col.types = coltypes, skipped_columns=skippedColumns)
     } else if (mode == 1) {
-        f1 <<- h2o.importFile(parsePath, col.names = colnames, skipped_columns=skippedColumns)
-        f2 <<- h2o.uploadFile(parsePath, col.names = colnames, skipped_columns=skippedColumns)
+        f1 <- h2o.uploadFile(parsePath, col.names = colnames, skipped_columns=skippedColumns)
     } else {
-        f1 <<- h2o.importFile(parsePath, col.types = coltypes, skipped_columns=skippedColumns)
-        f2 <<- h2o.uploadFile(parsePath, col.types = coltypes, skipped_columns=skippedColumns)
+        f1 <- h2o.importFile(parsePath, col.types = coltypes, skipped_columns=skippedColumns)
     }
 
     expect_true(h2o.nrow(originalFile) == h2o.nrow(f1))
-    expect_true(h2o.nrow(f2) == h2o.nrow(f1))
+  #  expect_true(h2o.nrow(f2) == h2o.nrow(f1))
     cfullnames <- names(originalFile)
     originalR <- as.data.frame(originalFile)
     f1R <- as.data.frame(f1)
-    f2R <- as.data.frame(f2)
-    cskipnames <- names(f2R)
+  #  f2R <- as.data.frame(f2)
+    cskipnames <- names(f1R)
     skipcount <- 1
     rowNum <- h2o.nrow(f1)
     for (ind in c(1:length(cfullnames))) {
@@ -1176,10 +1273,10 @@ assertCorrectSkipColumnsNamesTypes <- function(originalFile, parsePath, skippedC
             for (rind in c(1:rowNum)) {
                 if (is.na(originalR[rind, ind])) {
                     expect_true(
-                    is.na(f2R[rind, skipcount]),
+                    is.na(f1R[rind, skipcount]),
                     info = paste0(
                     "expected NA but received: ",
-                    f2R[rind, skipcount],
+                    f1R[rind, skipcount],
                     " in row: ",
                     rind,
                     " with column name: ",
@@ -1189,20 +1286,7 @@ assertCorrectSkipColumnsNamesTypes <- function(originalFile, parsePath, skippedC
                     sep = " "
                     )
                     )
-                    expect_true(
-                    is.na(f2R[rind, skipcount]),
-                    info = paste0(
-                    "expected NA but received: ",
-                    f2R[rind, skipcount],
-                    " in row: ",
-                    rind,
-                    " with column name: ",
-                    cfullnames[ind],
-                    " and skipped column name ",
-                    cskipnames[skipcount],
-                    sep = " "
-                    )
-                    )
+
                 } else if (is.numeric(originalR[rind, ind])) {
                     if (allFrameTypes[ind] == 'time') {
                         expect_true(
@@ -1221,22 +1305,7 @@ assertCorrectSkipColumnsNamesTypes <- function(originalFile, parsePath, skippedC
                         sep = " "
                         )
                         )
-                        expect_true(
-                        abs(originalR[rind, ind] - f2R[rind, skipcount]) < 10,
-                        info = paste0(
-                        "expected: ",
-                        originalR[rind, ind],
-                        " but received: ",
-                        f2R[rind, skipcount],
-                        " in row: ",
-                        rind,
-                        " with column name: ",
-                        cfullnames[ind],
-                        " and skipped column name ",
-                        cskipnames[skipcount],
-                        sep = " "
-                        )
-                        )
+
                     } else {
                         expect_true(
                         abs(originalR[rind, ind] - f1R[rind, skipcount]) < 1e-10,
@@ -1245,22 +1314,6 @@ assertCorrectSkipColumnsNamesTypes <- function(originalFile, parsePath, skippedC
                         originalR[rind, ind],
                         " but received: ",
                         f1R[rind, skipcount],
-                        " in row: ",
-                        rind,
-                        " with column name: ",
-                        cfullnames[ind],
-                        " and skipped column name ",
-                        cskipnames[skipcount],
-                        sep = " "
-                        )
-                        )
-                        expect_true(
-                        abs(originalR[rind, ind] - f2R[rind, skipcount]) < 1e-10,
-                        info = paste0(
-                        "expected: ",
-                        originalR[rind, ind],
-                        " but received: ",
-                        f2R[rind, skipcount],
                         " in row: ",
                         rind,
                         " with column name: ",
@@ -1289,23 +1342,6 @@ assertCorrectSkipColumnsNamesTypes <- function(originalFile, parsePath, skippedC
                     sep = " "
                     )
                     )
-                    expect_true(
-                    originalR[rind, ind] == f2R[rind, skipcount],
-                    info = paste0(
-                    "expected: ",
-                    originalR[rind, ind],
-                    " but received: ",
-                    f2R[rind, skipcount],
-                    " in row: ",
-                    rind,
-                    " with column name: ",
-                    cfullnames[ind],
-                    " and skipped column name ",
-                    cskipnames[skipcount],
-                    sep = " "
-                    )
-                    )
-
                 }
             }
 

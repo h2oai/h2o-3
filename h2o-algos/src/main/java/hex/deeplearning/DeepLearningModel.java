@@ -176,7 +176,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       }
     }
     assert(get_params() != cp.model_info().get_params()); //make sure we have a clone
-    _dist = new Distribution(get_params());
+    _dist = DistributionFactory.getDistribution(get_params());
     assert(_dist.distribution != DistributionFamily.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
     actual_best_model_key = cp.actual_best_model_key;
     if (actual_best_model_key.get() == null) {
@@ -204,7 +204,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     makeWeightsBiases(destKey);
     _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(scoringInfo, (null != get_params()._valid), false, _output.getModelCategory(), _output.isAutoencoder());
     _output._variable_importances = calcVarImp(last_scored().variable_importances);
-    _output.setNames(dataInfo._adaptedFrame.names());
+    _output.setNames(dataInfo._adaptedFrame.names(), dataInfo._adaptedFrame.typesStr());
     _output._domains = dataInfo._adaptedFrame.domains();
     assert(Arrays.equals(_key._kb, destKey._kb));
   }
@@ -222,14 +222,14 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     super(destKey, parms, output);
     final DataInfo dinfo = makeDataInfo(train, valid, _parms, nClasses);
     DKV.put(dinfo);
-    _output.setNames(dinfo._adaptedFrame.names());
+    _output.setNames(dinfo._adaptedFrame.names(), dinfo._adaptedFrame.typesStr());
     _output._domains = dinfo._adaptedFrame.domains();
     _output._origNames = parms._train.get().names();
     _output._origDomains = parms._train.get().domains();
     Log.info("Building the model on " + dinfo.numNums() + " numeric features and " + dinfo.numCats() + " (one-hot encoded) categorical features.");
     model_info = new DeepLearningModelInfo(parms, destKey, dinfo, nClasses, train, valid);
     model_info_key = Key.make(H2O.SELF);
-    _dist = new Distribution(get_params());
+    _dist = DistributionFactory.getDistribution(get_params());
     assert(_dist.distribution != DistributionFamily.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
     actual_best_model_key = Key.make(H2O.SELF);
     if (parms._nfolds != 0) actual_best_model_key = null;
@@ -1141,8 +1141,13 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       bodySb.i(2).p("int c = (int) data[i];").nl();
       if (model_info().data_info()._useAllFactorLevels)
         bodySb.i(2).p("CATS[ncats] = c + CATOFFSETS[i];").nl();
-      else
-        bodySb.i(2).p("if (c != 0) CATS[ncats] = c + CATOFFSETS[i] - 1;").nl();
+      else {
+        bodySb.i(2).p("if (c != 0) {").nl();
+        bodySb.i(3).p("CATS[ncats] = c + CATOFFSETS[i] - 1;").nl();
+        bodySb.i(2).p("} else {").nl();
+        bodySb.i(3).p("CATS[ncats] = -1;").nl();
+        bodySb.i(2).p("}").nl();
+      }
       bodySb.i(1).p("} else {").nl();  // set CAT level when encountering NAN
       bodySb.i(2).p("CATS[ncats] = CATOFFSETS[i+1]-1;").nl();
       bodySb.i(1).p("}").nl();
@@ -1162,7 +1167,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     }
     bodySb.i().p("java.util.Arrays.fill(ACTIVATION[0],0);").nl();
     if (cats > 0) {
-      bodySb.i().p("for (i=0; i<ncats; ++i) ACTIVATION[0][CATS[i]] = 1;").nl();
+      bodySb.i().p("for (i=0; i<ncats; ++i) {").nl();
+      bodySb.i(1).p("if(CATS[i] >= 0) ACTIVATION[0][CATS[i]] = 1;").nl();
+      bodySb.i(0).p("}").nl();
     }
     if (nums > 0) {
       bodySb.i().p("for (i=0; i<NUMS.length; ++i) {").nl();

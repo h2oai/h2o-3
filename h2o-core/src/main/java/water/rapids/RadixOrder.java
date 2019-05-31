@@ -4,6 +4,7 @@ import water.H2O;
 import water.Key;
 import water.MRTask;
 import water.RPC;
+import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
@@ -48,7 +49,7 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
     // it when aligning two keys in Merge()
     int keySize = ArrayUtils.sum(_bytesUsed);
     // 256MB is the DKV limit.  / 2 because we fit o and x together in one OXBatch.
-    int batchSize = 256*1024*1024 / Math.max(keySize, 8) / 2 ;
+    int batchSize = 1048576 ; // larger, requires more memory with less remote row fetch and vice versa for smaller
     // The Math.max ensures that batches of o and x are aligned, even for wide
     // keys.  To save % and / in deep iteration; e.g. in insert().
     System.out.println("Time to use rollup stats to determine biggestBit: " + ((t1=System.nanoTime()) - t0) / 1e9); t0=t1;
@@ -147,8 +148,12 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
         double colMin = col.min();
         double colMax = col.max();
         if (col.isInt()) {
-          _base[i] = BigInteger.valueOf(Math.min((long)colMin, (long)colMax*(_ascending[i])));
-          max = BigInteger.valueOf(Math.max((long)colMax, (long)colMin*(_ascending[i])));
+          GetLongStatsTask glst = GetLongStatsTask.getLongStats(col);
+          long colMini = glst._colMin;
+          long colMaxi = glst._colMax;
+
+          _base[i] = BigInteger.valueOf(Math.min(colMini, colMaxi*(_ascending[i])));
+          max = BigInteger.valueOf(Math.max(colMaxi, colMini*(_ascending[i])));
         } else{
           _base[i] = MathUtils.convertDouble2BigInteger(Math.min(col.min(), colMax*(_ascending[i])));
           max = MathUtils.convertDouble2BigInteger(Math.max(col.max(), colMin*(_ascending[i])));
@@ -170,6 +175,28 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
 
       _bytesUsed[i] = Math.min(8, (_shift[i]+15) / 8);  // should not go over 8 bytes
       //assert (biggestBit-1)/8 + 1 == _bytesUsed[i];
+    }
+  }
+
+  // TODO: push these into Rollups?
+  private static class GetLongStatsTask extends MRTask<GetLongStatsTask> {
+    long _colMin=Long.MAX_VALUE;
+    long _colMax=Long.MIN_VALUE;
+    static GetLongStatsTask getLongStats(Vec col) {
+      return new GetLongStatsTask().doAll(col);
+    }
+    @Override public void map(Chunk c) {
+      for(int i=0; i<c._len; ++i) {
+        if( !c.isNA(i) ) {
+          long l = c.at8(i);
+          _colMin = Math.min(_colMin, l);
+          _colMax = Math.max(_colMax, l);
+        }
+      }
+    }
+    @Override public void reduce(GetLongStatsTask that) {
+      _colMin = Math.min(_colMin, that._colMin);
+      _colMax = Math.max(_colMax, that._colMax);
     }
   }
 

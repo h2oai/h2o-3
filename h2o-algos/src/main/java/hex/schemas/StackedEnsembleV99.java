@@ -1,20 +1,25 @@
 package hex.schemas;
 
+import com.google.gson.reflect.TypeToken;
+import hex.ensemble.Metalearner;
 import hex.ensemble.StackedEnsemble;
-import hex.StackedEnsembleModel;
+import hex.ensemble.StackedEnsembleModel;
 import hex.tree.gbm.GBMModel;
 import hex.tree.drf.DRFModel;
 import hex.deeplearning.DeepLearningModel;
 import hex.glm.GLMModel;
 import hex.Model;
 
+import water.DKV;
+import water.Key;
+import water.Value;
 import water.api.API;
 import water.api.schemas3.KeyV3;
 import water.api.schemas3.ModelParametersSchemaV3;
 import water.api.schemas3.FrameV3;
 
-import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
+import water.fvec.Frame;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -30,20 +35,22 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
       "training_frame",
       "response_column",
       "validation_frame",
+      "blending_frame",
       "base_models",
       "metalearner_algorithm",
       "metalearner_nfolds",
       "metalearner_fold_assignment",
       "metalearner_fold_column",
-      "keep_levelone_frame",
       "metalearner_params",
-      "seed"
+      "seed",
+      "keep_levelone_frame",
+      "export_checkpoints_dir"
     };
 
 
     // Base models
-    @API(level = API.Level.critical,
-            help = "List of models (or model ids) to ensemble/stack together. Models must have been cross-validated using nfolds > 1, and folds must be identical across models.", required = true)
+    @API(level = API.Level.critical, direction = API.Direction.INOUT,
+            help = "List of models (or model ids) to ensemble/stack together. If not using blending frame, then models must have been cross-validated using nfolds > 1, and folds must be identical across models.", required = true)
     public KeyV3.ModelKeyV3 base_models[];
 
     
@@ -53,7 +60,7 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
             help = "Type of algorithm to use as the metalearner. " +
                     "Options include 'AUTO' (GLM with non negative weights; if validation_frame is present, a lambda search is performed), 'glm' (GLM with default parameters), 'gbm' (GBM with default parameters), " +
                     "'drf' (Random Forest with default parameters), or 'deeplearning' (Deep Learning with default parameters).")
-    public StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm metalearner_algorithm;
+    public Metalearner.Algorithm metalearner_algorithm;
 
     // For ensemble metalearner cross-validation
     @API(level = API.Level.critical, direction = API.Direction.INOUT, 
@@ -81,14 +88,33 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
 
     @API(help = "Parameters for metalearner algorithm", direction = API.Direction.INOUT)
     public String metalearner_params;
+    
+    @API(help="Frame used to compute the predictions that serve as the training frame for the metalearner (triggers blending mode if provided)", direction = API.Direction.INOUT)
+    public KeyV3.FrameKeyV3 blending_frame;
 
     @API(help = "Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number)", gridable = true)
     public long seed;
 
+    @Override
+    public StackedEnsembleParametersV99 fillFromImpl(StackedEnsembleModel.StackedEnsembleParameters impl) {
+      super.fillFromImpl(impl);
+      
+      if (impl._blending!= null) {
+        Value v = DKV.get(impl._blending);
+        if (v != null) {
+          blending_frame = new KeyV3.FrameKeyV3(((Frame) v.get())._key);
+        }
+      }
+      return this;
+    }
+
     public StackedEnsembleModel.StackedEnsembleParameters fillImpl(StackedEnsembleModel.StackedEnsembleParameters impl) {
       super.fillImpl(impl);
+      impl._blending = (this.blending_frame == null) ? null : Key.<Frame>make(this.blending_frame.name);
+      
       if (metalearner_params != null && !metalearner_params.isEmpty()) {
         Properties p = new Properties();
+        
         HashMap<String, String[]> map = new Gson().fromJson(metalearner_params, new TypeToken<HashMap<String, String[]>>() {
         }.getType());
         for (Map.Entry<String, String[]> param : map.entrySet()) {
@@ -99,55 +125,37 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
             p.setProperty(param.getKey(), Arrays.toString(paramVal));
           }
         }
+        
+        ModelParametersSchemaV3 paramsSchema;
+        Model.Parameters params;
         switch (metalearner_algorithm) {
           case AUTO:
-            GLMV3.GLMParametersV3 paramsAuto = new GLMV3.GLMParametersV3();
-            paramsAuto.init_meta();
-            paramsAuto.fillFromImpl(new GLMModel.GLMParameters());
-            paramsAuto.fillFromParms(p, true);
-            GLMModel.GLMParameters autoParams = paramsAuto.createAndFillImpl();
-            impl._metalearner_parameters = autoParams;
-            super.fillImpl(impl);
+          case glm:
+            paramsSchema = new GLMV3.GLMParametersV3();
+            params = new GLMModel.GLMParameters();
             break;
           case gbm:
-            GBMV3.GBMParametersV3 paramsGBM = new GBMV3.GBMParametersV3();
-            paramsGBM.init_meta();
-            paramsGBM.fillFromImpl(new GBMModel.GBMParameters());
-            paramsGBM.fillFromParms(p, true);
-            GBMModel.GBMParameters gbmParams = paramsGBM.createAndFillImpl();
-            impl._metalearner_parameters = gbmParams;
-            super.fillImpl(impl);
+            paramsSchema = new GBMV3.GBMParametersV3();
+            params = new GBMModel.GBMParameters();
             break;
           case drf:
-            DRFV3.DRFParametersV3 paramsDRF = new DRFV3.DRFParametersV3();
-            paramsDRF.init_meta();
-            paramsDRF.fillFromImpl(new DRFModel.DRFParameters());
-            paramsDRF.fillFromParms(p, true);
-            DRFModel.DRFParameters drfParams = paramsDRF.createAndFillImpl();
-            impl._metalearner_parameters = drfParams;
-            super.fillImpl(impl);
-            break;
-          case glm:
-            GLMV3.GLMParametersV3 paramsGLM = new GLMV3.GLMParametersV3();
-            paramsGLM.init_meta();
-            paramsGLM.fillFromImpl(new GLMModel.GLMParameters());
-            paramsGLM.fillFromParms(p, true);
-            GLMModel.GLMParameters glmParams = paramsGLM.createAndFillImpl();
-            impl._metalearner_parameters = glmParams;
-            super.fillImpl(impl);
+            paramsSchema = new DRFV3.DRFParametersV3();
+            params = new DRFModel.DRFParameters();
             break;
           case deeplearning:
-            DeepLearningV3.DeepLearningParametersV3 paramsDL = new DeepLearningV3.DeepLearningParametersV3();
-            paramsDL.init_meta();
-            paramsDL.fillFromImpl(new DeepLearningModel.DeepLearningParameters());
-            paramsDL.fillFromParms(p, true);
-            DeepLearningModel.DeepLearningParameters dlParams = paramsDL.createAndFillImpl();
-            impl._metalearner_parameters = dlParams;
-            super.fillImpl(impl);
+            paramsSchema = new DeepLearningV3.DeepLearningParametersV3();
+            params = new DeepLearningModel.DeepLearningParameters();
             break;
           default:
             throw new UnsupportedOperationException("Unknown meta-learner algo: " + metalearner_algorithm);
         }
+        
+        paramsSchema.init_meta();
+        impl._metalearner_parameters = (Model.Parameters) paramsSchema
+            .fillFromImpl(params)
+            .fillFromParms(p, true)
+            .createAndFillImpl();
+        super.fillImpl(impl);
       }
       return impl;
     }

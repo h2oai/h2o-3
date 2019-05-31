@@ -1,5 +1,6 @@
 package water;
 
+import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -44,7 +45,17 @@ public class ClientJarMD5IgnoreTest extends TestUtil {
 
     byte[] received_hash= (byte[])client_wrong_md5.get(0)[0];
     assertArrayEquals(fake_hash, received_hash);
+  }
 
+  @After
+  public void waitForClientsDisconnect(){
+    try {
+      Thread.sleep(H2O.ARGS.clientDisconnectTimeout *2); // sleep double the time the timeout for client disconnect is reached
+      // to be somehow sure the client is gone
+
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
   }
 
 }

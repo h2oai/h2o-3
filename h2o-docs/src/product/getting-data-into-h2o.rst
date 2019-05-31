@@ -190,6 +190,36 @@ core-site.xml must be configured for at least the following properties (class, p
     </configuration>
 
 
+Direct Hive import
+~~~~~~~~~~~~~~~~~~
+
+H2O supports direct ingestion of data managed by Hive in Hadoop. This feature is available only when H2O is running as a Hadoop job. Internally H2O uses metadata in Hive Metastore database to determine the location and format of given Hive table. H2O then imports data directly from HDFS so limitations of supported formats mentioned above apply. Data from hive can pulled into H2O using ``import_hive_table`` function.
+
+Requirements:
+
+- Hive jars and configuration must be present on H2O job classpath - either via adding it to yarn.application.classpath (or similar property for your resource manger of choice) or by adding Hive jars and configuration to libjars
+- user running H2O must have read access to Hive and the files it manages
+
+Limitations
+
+- imported table must be stored in a format supported by H2O (see above)
+- CSV - Hive table property ``skip.header.line.count`` is currently not supported, CSV files with header rows will be imported with header row as data
+- partitioned tables with different storage formats - H2O supports importing partitioned tables which use different storage formats for different partitions, however in some cases (for example large number of small partitions) H2O may run out of memory while importing even though the final data would easily fit into the memory allocated to the H2O cluster
+
+.. example-code::
+   .. code-block:: r
+
+    basic_import <- h2o.import_hive_table("default", "table_name")
+    multi_format_enabled <- h2o.import_hive_table("default", "table_name", allow_multi_format=True)
+    with_partition_filter <- h2o.import_hive_table("default", "table_name", [["2017", "02"]])
+
+   .. code-block:: python
+
+    basic_import = h2o.import_hive_table("default", "table_name")
+    multi_format_enabled = h2o.import_hive_table("default", "table_name", allow_multi_format=True)
+    with_partition_filter = h2o.import_hive_table("default", "table_name", [["2017", "02"]])
+
+
 JDBC Databases
 ~~~~~~~~~~~~~~
 
@@ -220,6 +250,7 @@ The ``import_sql_table`` function accepts the following parameters:
 - ``username``: The username for SQL server
 - ``password``: The password for SQL server
 - ``optimize``: Specifies to optimize the import of SQL table for faster imports. Note that this option is experimental.
+- ``fetch_mode``: Set to DISTRIBUTED to enable distributed import. Set to SINGLE to force a sequential read by a single node from the database.
 
 .. example-code::
    .. code-block:: r
@@ -257,7 +288,9 @@ The ``import_sql_select`` function accepts the following parameters:
 - ``username``: The username for the SQL server
 - ``password``: The password for the SQL server
 - ``optimize``: Specifies to optimize import of SQL table for faster imports. Note that this option is experimental.
-
+- ``use_temp_table``: Specifies whether a temporary table should be created by ``select_query``.
+- ``temp_table_name``: The name of the temporary table to be created by ``select_query``.
+- ``fetch_mode``: Set to DISTRIBUTED to enable distributed import. Set to SINGLE to force a sequential read by a single node from the database.
 
 .. example-code::
    .. code-block:: r
@@ -318,3 +351,116 @@ Start the h2o.jar in the terminal with your downloaded JDBC driver in the classp
     h2o.init(extra_classpath=["hive-jdbc.jar"])
 
 After the jar file with JDBC driver is added, then data from the Hive databases can be pulled into H2O using the aforementioned ``import_sql_table`` and ``import_sql_select`` functions. 
+
+Connecting to Hive in a Kerberized Hadoop Cluster
+#################################################
+
+When importing data from Kerberized Hive on Hadoop, it is necessary to configure the h2odriver to authenticate with the Hive instance via 
+a delegation token. Since Hadoop does not generate delegation tokens for Hive automatically, it is necessary to provide the h2odriver with additional configurations.
+
+H2O is able to generate Hive delegation tokens in three modes:
+
+- On the driver side, a token can be generated on H2O cluster start.
+- On the mapper side, a token refresh thread is started, periodically re-generating the token.
+- A combination of both of the above.
+
+**Note on libjars:**
+
+In the examples below, we are omitting the ``-libjars`` option of the ``hadoop.jar`` command because it is not necessary for token generation. You may need to add it to be able to import data from Hive via JDBC. 
+
+Generating the Token in the Driver
+##################################
+
+The advantage of this approach is that the Hive delegation token is available immediately on H2O cluster start. 
+
+Requirements:
+
+- The Hive JDBC driver is on h2odriver classpath. (Only used to acquire Hive delegation token.)
+- The ``hiveHost`` argument needs to be set with the address of HiveServer2.
+- The ``hivePrincipal`` argument is set with the value of Hiveserver2 Kerberos principal.
+
+Example command:
+
+::
+
+      export HADOOP_CLASSPATH=/path/to/hive-jdbc-standalone.jar
+      hadoop jar h2odriver.jar \
+          -nodes 1 -mapperXmx 4G \
+          -hiveHost hostname:10000 -hivePrincipal hive/hostname@EXAMPLE.COM
+
+
+Generating the Token in the Mapper and Token Refresh
+####################################################
+
+This approach generates a Hive delegation token after the H2O cluster is fully started up and then periodically refreshes the token. Delegation tokens usually have a limited life span, and for long-running H2O clusters, they need to be refreshed. For this to work, the user's keytab and principal need to available to the H2O Cluster Leader node.
+
+The disadvantage of this approach is that the delegation token is not available immediately on cluster start, and it make take up to a minute for the delegation token to be acquired.
+
+Requirements:
+
+- The Hive JDBC driver is on the h2o mapper classpath (either via libjars or YARN configuration).
+- The ``hiveHost`` argument needs to be set with the address of HiveServer2.
+- The ``hivePrincipal`` argument is set with the value of your HiveServer2 Kerberos principal.
+- The ``principal`` argument is set with the value of the users's Kerberos principal.
+- The ``keytab`` argument set pointing to the file with the user's Kerberos keytab file.
+- The ``refreshTokens`` argument is present.
+
+Example command:
+
+::
+
+      hadoop jar h2odriver.jar [-libjars /path/to/hive-jdbc-standalone.jar] \
+          -nodes 1 -mapperXmx 4G \
+          -hiveHost hostname:10000 -hivePrincipal hive/hostname@EXAMPLE.COM \
+          -pricipal user/host@DOMAIN.COM -keytab path/to/user.keytab \
+          -refreshTokens
+
+**Note on refreshTokens:**
+
+The provided keytab will be copied over to the machine running the H2O Cluster leader node. For this reason, it’s strongly recommended that both YARN and HDFS be secured with encryption.
+
+Generating the Token in the Driver with Refresh in the Mapper
+#############################################################
+
+This approach is a combination of the two previous scenarios. Hive delegation token is first generated by the h2odriver and then periodically refreshed by the H2O Cluster leader node.
+
+This is the best-of-bothpworlds approach. The token is generated first in the driver and is available immediately on cluster start. It is then periodically refreshed and never expires.
+
+Requirements:
+
+- The Hive JDBC driver is on the h2o driver and mapper classpaths.
+- The ``hiveHost`` and ``hivePrincipal`` arguments are set.
+- The ``keytab`` and ``principal`` arguments are set.
+- The ``refreshTokens`` argument is present.
+
+Example command:
+
+::
+
+      export HADOOP_CLASSPATH=/path/to/hive-jdbc-standalone.jar
+      hadoop jar h2odriver.jar [-libjars /path/to/hive-jdbc-standalone.jar] \
+          -nodes 1 -mapperXmx 4G \
+          -hiveHost hostname:10000 -hivePrincipal hive/hostname@EXAMPLE.COM \
+          -pricipal user/host@DOMAIN.COM -keytab path/to/user.keytab \
+          -refreshTokens
+
+
+Using a Delegation Token when Connecting to Hive via JDBC
+#########################################################
+
+When running the actual data-load, specify the JDBC URL with the delegation token parameter:
+
+.. example-code::
+   .. code-block:: r
+
+    my_citibike_data <- h2o.import_sql_table(
+        "jdbc:hive2://hostname:10000/default;auth=delegationToken", 
+        "citibike20k", "", ""
+    )
+
+   .. code-block:: python
+
+    my_citibike_data = h2o.import_sql_table(
+        "jdbc:hive2://hostname:10000/default;auth=delegationToken", 
+        "citibike20k", "", ""
+    )

@@ -45,7 +45,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     _counts = ((RadixCount.Long2DArray) DKV.getGet(k))._val;   // get the sparse spine for this node, created and DKV-put above
     DKV.remove(k);
     // First cumulate MSB count histograms across the chunks in this node
-    long MSBhist[] = new long[256];
+    long MSBhist[] = MemoryManager.malloc8(256);
     int nc = _fr.anyVec().nChunks();
     assert nc == _counts.length;
     for (int c = 0; c < nc; c++) {
@@ -77,13 +77,14 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
       _x[msb] = new byte[nbatch][];
       int b;
       for (b = 0; b < nbatch-1; b++) {
-        _o[msb][b] = new long[_batchSize];          // TODO?: use MemoryManager.malloc8()
-        _x[msb][b] = new byte[_batchSize * _keySize];
+        _o[msb][b] = MemoryManager.malloc8(_batchSize);          // TODO?: use MemoryManager.malloc8()
+        _x[msb][b] = MemoryManager.malloc1(_batchSize * _keySize);
       }
-      _o[msb][b] = new long[lastSize];
-      _x[msb][b] = new byte[lastSize * _keySize];
+      _o[msb][b] = MemoryManager.malloc8(lastSize);
+      _x[msb][b] = MemoryManager.malloc1(lastSize * _keySize);
     }
     System.out.println("done in " + (System.nanoTime() - t0) / 1e9);
+
 
     // TO DO: otherwise, expand width. Once too wide (and interestingly large
     // width may not be a problem since small buckets won't impact cache),
@@ -125,7 +126,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     // although, it will be most cache efficient (holding one page of each
     // column's _mem, plus a page of this_x, all contiguous.  At the cost of
     // more instructions.
-    boolean[] isIntCols = new boolean[chk.length];
+    boolean[] isIntCols = MemoryManager.mallocZ(chk.length);
     for (int c=0; c < chk.length; c++){
       isIntCols[c] = chk[c].vec().isCategorical() || chk[c].vec().isInt();
     }
@@ -286,7 +287,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
           numChunks++;
       // make dense.  And by construction (i.e. cumulative counts) these chunks
       // contributed in order
-      int msbNodeChunkCounts[] = new int[numChunks];
+      int msbNodeChunkCounts[] = MemoryManager.malloc4(numChunks);
       int j=0;
       long lastCount = 0; // _counts are cumulative at this stage so need to diff
       for( long[] cnts : _counts ) {

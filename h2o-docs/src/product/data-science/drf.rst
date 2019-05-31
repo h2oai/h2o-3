@@ -109,7 +109,7 @@ Defining a DRF Model
 
 -  `ntrees <algo-params/ntrees.html>`__: Specify the number of trees.
 
--  `max_depth <algo-params/max_depth.html>`__: Specify the maximum tree depth.
+-  `max_depth <algo-params/max_depth.html>`__: Specify the maximum tree depth. Higher values will make the model more complex and can lead to overfitting. Setting this value to 0 specifies no limit. This value defaults to 20. 
 
 -  `min_rows <algo-params/min_rows.html>`__: Specify the minimum number of observations for a leaf
    (``nodesize`` in R).
@@ -159,7 +159,9 @@ Defining a DRF Model
     - ``lift_top_group``
     - ``misclassification``
     - ``mean_per_class_error``
-
+    - ``custom`` (Python client only)
+    - ``custom_increasing`` (Python client only)
+    
 -  `stopping_tolerance <algo-params/stopping_tolerance.html>`__: Specify the relative tolerance for the
    metric-based stopping to stop training if the improvement is less
    than this value.
@@ -223,7 +225,7 @@ Defining a DRF Model
 
   - ``auto`` or ``AUTO``: Allow the algorithm to decide (default). In DRF, the algorithm will automatically perform ``enum`` encoding.
   - ``enum`` or ``Enum``: 1 column per categorical feature
-  - ``enum_limited`` or ``EnumLimited``: Automatically reduce categorical levels to the most prevalent ones during Aggregator training and only keep the **T** most frequent levels.
+  - ``enum_limited`` or ``EnumLimited``: Automatically reduce categorical levels to the most prevalent ones during Aggregator training and only keep the **T** (1024) most frequent levels.
   - ``one_hot_explicit`` or ``OneHotExplicit``: N+1 new columns for categorical features with N levels
   - ``binary`` or ``Binary``: No more than 32 columns per categorical feature
   - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
@@ -235,6 +237,13 @@ Defining a DRF Model
 -  `calibration_frame <algo-params/calibration_frame.html>`__: Specifies the frame to be used for Platt scaling.
 
 -  **verbose**: Print scoring history to the console. For DRF, metrics are per tree. This value defaults to FALSE.
+
+-  `custom_metric_func <algo-params/custom_metric_func.html>`__: Optionally specify a custom evaluation function.
+
+-  **export_checkpoints_dir**: Optionally specify a path to a directory where every generated model will be stored when checkpointing models.
+
+-  `check_constant_response <algo-params/check_constant_response.html>`__: Check if the response column is a constant value. If enabled (default), then an exception is thrown if the response column is a constant value. If disabled, then the model will train regardless of the response column being a constant value or not.
+
 
 Interpreting a DRF Model
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -289,7 +298,7 @@ FAQ
 -  **What happens when you try to predict on a categorical level not
    seen during training?**
 
-  Unseen categorical levels are turned into NAs, and thus follow the same behavior as an NA. If there are no NAs in the training data, then unseen categorical levels in the test data follow the majority direction (the direction with the most observations). If there are NAs in the training data, then unseen categorical levels in the test data follow the direction that is optimal for the NAs of the training data.
+  DRF converts a new categorical level to a NA value in the test set, and then splits left on the NA value during scoring. The algorithm splits left on NA values because, during training, NA values are grouped with the outliers in the left-most bin.
 
 -  **Does it matter if the data is sorted?**
 
@@ -330,11 +339,11 @@ FAQ
 
  ``nbins`` and ``nbins_top_level`` are both for numerics (real and integer). ``nbins_top_level`` is the number of bins DRF uses at the top of each tree. It then divides by 2 at each ensuing level to find a new number. ``nbins`` controls when DRF stops dividing by 2.
 
--  **How is variable importance calculated for DRF?**
+- **How is variable importance calculated for DRF?**
 
- Variable importance is determined by calculating the relative influence of each variable: whether that variable was selected during splitting in the tree building process and how much the squared error (over all trees) improved as a result.
+  When calculating variable importances, H2O-3 looks at the squared error before and after the split using a particular variable. The difference is the improvement. H2O uses the improvement in squared error for each feature that was split on (rather than the accuracy). Each features improvement is then summed up at the end to get its total feature importance (and then scaled between 0-1).
 
--  **How is column sampling implemented for DRF?**
+- **How is column sampling implemented for DRF?**
 
   For an example model using:
 
@@ -350,7 +359,7 @@ FAQ
 
   ``mtries`` is configured independently of ``col_sample_rate_per_tree``, but it can be limited by it. For example, if ``col_sample_rate_per_tree=0.01``, then there’s only one column left for each split, regardless of how large the value for ``mtries`` is.
 
--  **Why does performance appear slower in DRF than in GBM?**
+- **Why does performance appear slower in DRF than in GBM?**
 
   With DRF, depth and size of trees can result in speed tradeoffs.
 

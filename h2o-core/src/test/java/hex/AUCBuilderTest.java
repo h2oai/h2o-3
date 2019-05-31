@@ -4,6 +4,8 @@ import org.junit.Test;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.Arrays;
+import java.util.Random;
 import java.util.zip.GZIPInputStream;
 
 import static org.junit.Assert.*;
@@ -58,4 +60,141 @@ public class AUCBuilderTest {
     System.out.println("Total time with speedup: " + t + "ms; orginal time: " + t_old + "ms.");
   }
 
+  @Test
+  public void testBinningQuality() {
+    int N = 10;
+    // rmse of the histogram when data are generated form interval [0, 1]
+    double uniformRMSE = testHisto(
+            new RandArrayGen(42) {
+              @Override 
+              void fillRandomVals(double[] values) { 
+                for (int i = 0; i < values.length; i++) { 
+                  values[i] = _r.nextDouble(); 
+                }
+              }
+            }, N);
+    // rmse of the histogram when the first half of the input is generated from [0, 0.5] and second half from [0.5, 1]
+    // first half builds the bins to accommodate for [0, 0.5] and this structure needs to be adapted for the second half
+    double splitUniformRMSE = testHisto(
+            new RandArrayGen(42) {
+              @Override 
+              void fillRandomVals(double[] values) {
+                for (int i = 0; i < values.length / 2; i++) { 
+                  values[i] = _r.nextDouble() / 2; 
+                }
+                for (int i = values.length / 2; i < values.length; i++) { 
+                  values[i] = 0.5 + (_r.nextDouble() / 2); 
+                } 
+              }
+            }, N);
+    // shows that quality of the histogram can be affected by ordering of the data
+    assertEquals(splitUniformRMSE, 5*uniformRMSE, 1);
+  }
+
+  private double testHisto(RandArrayGen rag, int n) {
+    double sum = 0;
+    for (int i = 0; i < n; i++) {
+      sum += testHisto(rag);
+    }
+    return sum / n;
+  }
+  
+  private double testHisto(RandArrayGen rag) {
+    AUC2.AUCBuilder ab = new AUC2.AUCBuilder(11);
+    double[] values = new double[1000];
+    rag.fillRandomVals(values);
+    for (double v : values) {
+      ab.perRow(v, 1, 1);
+    }
+    return histoRMSE(ab, values);
+  }
+  
+  private double histoRMSE(AUC2.AUCBuilder ab, double[] values) {
+    double[] ths = Arrays.copyOf(ab._ths, ab._nBins);
+    int[] actual = new int[ths.length];
+    for (int i = 0; i < ths.length; i++) {
+      actual[i] = (int) ab._tps[i];
+    }
+
+    int[] expected = new int[ths.length];
+    for (double v : values) {
+      int idx = Arrays.binarySearch(ths, v);
+      if (idx >= 0) {
+        expected[idx]++;
+      } else {
+        idx = -idx - 1;
+        if (idx == expected.length)
+          idx = expected.length - 1;
+        else if (idx > 0) {
+          double dist_left = v - ths[idx-1];
+          double dist_rght = ths[idx] - v;
+          if (dist_left < dist_rght) {
+            idx--;
+          }
+        }
+        expected[idx]++;
+      }
+    }
+
+    double tse = 0;
+    for (int i = 0; i < actual.length; i++) {
+      tse += Math.pow(actual[i] - expected[i], 2);
+    }
+    System.out.println("Actual  : " + Arrays.toString(actual));
+    System.out.println("Expected: " + Arrays.toString(expected));
+    double rmse = Math.sqrt(tse) / actual.length;
+    System.out.println("RMSE    : " + rmse);
+    return rmse;
+  }
+
+  private static abstract class RandArrayGen {
+    Random _r;
+
+    private RandArrayGen(long seed) {
+      _r = new Random(seed);
+    }
+
+    abstract void fillRandomVals(double[] values);
+  }
+
+  @Test
+  public void testPubDev6399ReduceDoesntUsePreviousKnownSSX() {
+    AUC2.AUCBuilder abL = new AUC2.AUCBuilder(10);
+    for (int i = 0; i < abL._nBins; i++) {
+      abL.perRow(i, 1, 1);
+    }
+    abL.perRow(5.5, 1, 1); // insert something in the middle and cause a bin merge
+    assertEquals(0, abL._ssx); // bin with smallest error is known but shouldn't be used!
+    
+    AUC2.AUCBuilder abR = new AUC2.AUCBuilder(10);
+    abR.perRow(9, 1, 1); // single element, should be appended at the end when merging and then de-duped
+
+    double[] expected = Arrays.copyOf(abL._ths, abL._n);
+
+    // reduce!
+    abL.reduce(abR);
+
+    double[] ths = Arrays.copyOf(abL._ths, abL._n);
+    assertArrayEquals(expected, ths, 0);
+  }
+
+  @Test
+  public void testLargeWeights() {
+    AUC2.AUCBuilder ab = new AUC2.AUCBuilder(2);
+
+    double w = Double.MAX_VALUE;
+    ab.perRow(0, 1, w);
+    ab.perRow(0.3, 1, w);
+    ab.perRow(0.7, 1, w);
+    ab.perRow(1, 1, w);
+
+    assertArrayEquals(new double[]{0.0, 0.85}, Arrays.copyOf(ab._ths, 2), 0);
+  }
+
+  @Test
+  public void testCombineCenters() {
+    double sqrtDMax = Math.sqrt(Double.MAX_VALUE); 
+    assertEquals(sqrtDMax, AUC2.AUCBuilder.combine_centers(sqrtDMax, sqrtDMax, sqrtDMax, sqrtDMax), 0);
+  }
+  
 }

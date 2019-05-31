@@ -10,12 +10,13 @@ This test is used to check arguments passed into H2OAutoML along with different 
 """
 max_models = 2
 
-def import_dataset():
-    df = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
+
+def import_dataset(seed=0, larger=False):
+    df = h2o.import_file(path=pyunit_utils.locate("smalldata/prostate/{}".format("prostate_complete.csv.zip" if larger else "prostate.csv")))
     target = "CAPSULE"
     df[target] = df[target].asfactor()
     #Split frames
-    fr = df.split_frame(ratios=[.8,.1])
+    fr = df.split_frame(ratios=[.8,.1], seed=seed)
     #Set up train, validation, and test sets
     return dict(train=fr[0], valid=fr[1], test=fr[2], target=target, target_idx=1)
 
@@ -28,6 +29,13 @@ def import_dataset():
     # print("Check leaderboard to ensure that it only has a header")
     # print(aml.leaderboard)
     # assert aml.leaderboard.nrows == 0, "with all algos excluded, leaderboard is not empty"
+
+def get_partitioned_model_names(leaderboard):
+    model_names = [leaderboard[i, 0] for i in range(0, (leaderboard.nrows))]
+    se_model_names = [m for m in model_names if m.startswith('StackedEnsemble')]
+    non_se_model_names = [m for m in model_names if m not in se_model_names]
+    return model_names, non_se_model_names, se_model_names
+
 
 def test_early_stopping_args():
     print("Check arguments to H2OAutoML class")
@@ -119,6 +127,45 @@ def test_no_x_y_as_idx_train_and_validation_and_test_sets():
     print(aml.leaderboard)
 
 
+def test_exclude_algos():
+    print("AutoML doesn't train models for algos listed in exclude_algos")
+    ds = import_dataset()
+    aml = H2OAutoML(project_name="py_exclude_algos",
+                    exclude_algos=['DRF', 'GLM'],
+                    max_models=max_models,
+                    seed=1)
+    aml.train(y=ds['target'], training_frame=ds['train'], validation_frame=ds['valid'])
+    _, non_se, se = get_partitioned_model_names(aml.leaderboard)
+    assert not any(['DRF' in name or 'GLM' in name for name in non_se])
+    assert len(se) == 2
+
+
+def test_include_algos():
+    print("AutoML trains only models for algos listed in include_algos")
+    ds = import_dataset()
+    aml = H2OAutoML(project_name="py_include_algos",
+                    include_algos=['GBM'],
+                    max_models=max_models,
+                    seed=1)
+    aml.train(y=ds['target'], training_frame=ds['train'], validation_frame=ds['valid'])
+    _, non_se, se = get_partitioned_model_names(aml.leaderboard)
+    assert all(['GBM' in name for name in non_se])
+    assert len(se) == 0, "No StackedEnsemble should have been trained if not explicitly included to the existing include_algos"
+
+
+def test_include_exclude_algos():
+    print("include_algos and exclude_algos parameters are mutually exclusive")
+    try:
+        H2OAutoML(project_name="py_include_exclude_algos",
+                  exclude_algos=['DRF', 'XGBoost'],
+                  include_algos=['GBM'],
+                  max_models=max_models,
+                  seed=1)
+        assert False, "Should have thrown AssertionError"
+    except AssertionError as e:
+        assert "Use either include_algos or exclude_algos" in str(e)
+
+
 def test_predict_on_train_set():
     print("Check predict, leader, and leaderboard")
     print("AutoML run with x not provided and train set only")
@@ -132,17 +179,12 @@ def test_predict_on_train_set():
     
 
 def test_nfolds_param():
-    # TO DO: Clean up amodel creation below, should grep to get the DRF like we do in the runit
     print("Check nfolds is passed through to base models")
     ds = import_dataset()
     aml = H2OAutoML(project_name="py_aml_nfolds3", nfolds=3, max_models=3, seed=1)
     aml.train(y=ds['target'], training_frame=ds['train'])
-    # grab the last model in the leaderboard, hoping that it's not an SE model
-    amodel = h2o.get_model(aml.leaderboard[aml.leaderboard.nrows-1,0])
-    # if you get a stacked ensemble, take the second to last
-    # right now, if the last is SE, then second to last must be non-SE, but when we add multiple SEs, this will need to be updated
-    if type(amodel) == h2o.estimators.stackedensemble.H2OStackedEnsembleEstimator:
-      amodel = h2o.get_model(aml.leaderboard[aml.leaderboard.nrows-2,0])
+    _, non_se, _ = get_partitioned_model_names(aml.leaderboard)
+    amodel = h2o.get_model(non_se[0])
     assert amodel.params['nfolds']['actual'] == 3
 
 
@@ -151,25 +193,24 @@ def test_nfolds_eq_0():
     ds = import_dataset()
     aml = H2OAutoML(project_name="py_aml_nfolds0", nfolds=0, max_models=3, seed=1)
     aml.train(y=ds['target'], training_frame=ds['train'])
-    # grab the last model in the leaderboard (which should not be an SE model) and verify that nfolds = 0
-    # we assume that if one model correctly used nfolds = 0, then they all do, but we could add an extra check for this
-    amodel = h2o.get_model(aml.leaderboard[aml.leaderboard.nrows-1,0])
-    assert type(amodel) is not h2o.estimators.stackedensemble.H2OStackedEnsembleEstimator
+    _, non_se, _ = get_partitioned_model_names(aml.leaderboard)
+    amodel = h2o.get_model(non_se[0])
     assert amodel.params['nfolds']['actual'] == 0
 
 
 def test_balance_classes():
     print("Check balance_classes & related args work properly")
     ds = import_dataset()
-    aml = H2OAutoML(project_name="py_aml_balance_classes_etc", max_models=3,
-                    balance_classes=True, class_sampling_factors=[0.2, 1.4], max_after_balance_size=3.0, seed=1)
+    aml = H2OAutoML(project_name="py_aml_balance_classes_etc",
+                    exclude_algos=['XGBoost'],  # XGB doesn't support balance_classes
+                    max_models=3,
+                    balance_classes=True,
+                    class_sampling_factors=[0.2, 1.4],
+                    max_after_balance_size=3.0,
+                    seed=1)
     aml.train(y=ds['target'], training_frame=ds['train'])
-    # grab the last model in the leaderboard, hoping that it's not an SE model
-    amodel = h2o.get_model(aml.leaderboard[aml.leaderboard.nrows-1,0])
-    # if you get a stacked ensemble, take the second to last
-    # right now, if the last is SE, then second to last must be non-SE, but when we add multiple SEs, this will need to be updated
-    if type(amodel) == h2o.estimators.stackedensemble.H2OStackedEnsembleEstimator:
-      amodel = h2o.get_model(aml.leaderboard[aml.leaderboard.nrows-2,0])
+    _, non_se, _ = get_partitioned_model_names(aml.leaderboard)
+    amodel = h2o.get_model(non_se[0])
     assert amodel.params['balance_classes']['actual'] == True
     assert amodel.params['max_after_balance_size']['actual'] == 3.0
     assert amodel.params['class_sampling_factors']['actual'] == [0.2, 1.4]
@@ -178,10 +219,11 @@ def test_balance_classes():
 def test_nfolds_default_and_fold_assignements_skipped_by_default():
     print("Check that fold assignments were skipped by default and nfolds > 1")
     ds = import_dataset()
-    aml = H2OAutoML(project_name="py_aml_keep_cross_validation_fold_assignment0",
+    aml = H2OAutoML(project_name="py_aml_keep_cross_validation_fold_assignment_0",
                     nfolds=3, max_models=3, seed=1)
     aml.train(y=ds['target'], training_frame=ds['train'])
-    amodel = h2o.get_model(aml.leaderboard[aml.leaderboard.nrows-1,0])
+    _, non_se, _ = get_partitioned_model_names(aml.leaderboard)
+    amodel = h2o.get_model(non_se[0])
     assert amodel.params['keep_cross_validation_fold_assignment']['actual'] == False
     assert amodel._model_json["output"]["cross_validation_fold_assignment_frame_id"] == None
 
@@ -189,11 +231,12 @@ def test_nfolds_default_and_fold_assignements_skipped_by_default():
 def test_keep_cross_validation_fold_assignment_enabled_with_nfolds_neq_0():
     print("Check that fold assignments were kept when `keep_cross_validation_fold_assignment` = True and nfolds > 1")
     ds = import_dataset()
-    aml = H2OAutoML(project_name="py_aml_keep_cross_validation_fold_assignment1",
+    aml = H2OAutoML(project_name="py_aml_keep_cross_validation_fold_assignment_1",
                     nfolds=3, max_models=3, seed=1,
                     keep_cross_validation_fold_assignment=True)
     aml.train(y=ds['target'], training_frame=ds['train'])
-    amodel = h2o.get_model(aml.leaderboard[aml.leaderboard.nrows-1,0])
+    _, non_se, _ = get_partitioned_model_names(aml.leaderboard)
+    amodel = h2o.get_model(non_se[0])
     assert amodel.params['keep_cross_validation_fold_assignment']['actual'] == True
     assert amodel._model_json["output"]["cross_validation_fold_assignment_frame_id"] != None
 
@@ -201,11 +244,12 @@ def test_keep_cross_validation_fold_assignment_enabled_with_nfolds_neq_0():
 def test_keep_cross_validation_fold_assignment_enabled_with_nfolds_eq_0():
     print("Check that fold assignments were skipped when `keep_cross_validation_fold_assignment` = True and nfolds = 0")
     ds = import_dataset()
-    aml = H2OAutoML(project_name="py_aml_keep_cross_validation_fold_assignment2",
+    aml = H2OAutoML(project_name="py_aml_keep_cross_validation_fold_assignment_2",
                     nfolds=0, max_models=3, seed=1,
                     keep_cross_validation_fold_assignment=True)
     aml.train(y=ds['target'], training_frame=ds['train'])
-    amodel = h2o.get_model(aml.leaderboard[aml.leaderboard.nrows-1,0])
+    _, non_se, _ = get_partitioned_model_names(aml.leaderboard)
+    amodel = h2o.get_model(non_se[0])
     assert amodel.params['keep_cross_validation_fold_assignment']['actual'] == False
     assert amodel._model_json["output"]["cross_validation_fold_assignment_frame_id"] == None
 
@@ -213,7 +257,7 @@ def test_keep_cross_validation_fold_assignment_enabled_with_nfolds_eq_0():
 def test_automl_stops_after_max_runtime_secs():
     print("Check that automl gets interrupted after `max_runtime_secs`")
     max_runtime_secs = 30
-    cancel_tolerance_secs = 5+3   # should work for most cases given current mechanism, +3 due to SE which currently ignore max_runtime_secs
+    cancel_tolerance_secs = 5+5   # should work for most cases given current mechanism, +5 due to SE which currently ignore max_runtime_secs
     ds = import_dataset()
     aml = H2OAutoML(project_name="py_aml_max_runtime_secs", seed=1, max_runtime_secs=max_runtime_secs)
     start = time.time()
@@ -222,9 +266,27 @@ def test_automl_stops_after_max_runtime_secs():
     assert abs(end-start - max_runtime_secs) < cancel_tolerance_secs, end-start
 
 
+def test_no_model_takes_more_than_max_runtime_secs_per_model():
+    print("Check that individual model get interrupted after `max_runtime_secs_per_model`")
+    ds = import_dataset(seed=1, larger=True)
+    max_runtime_secs = 30
+    models_count = {}
+    for max_runtime_secs_per_model in [0, 3, max_runtime_secs]:
+        aml = H2OAutoML(project_name="py_aml_max_runtime_secs_per_model_{}".format(max_runtime_secs_per_model), seed=1,
+                        max_runtime_secs_per_model=max_runtime_secs_per_model,
+                        max_runtime_secs=max_runtime_secs)
+        aml.train(y=ds['target'], training_frame=ds['train'])
+        models_count[max_runtime_secs_per_model] = len(aml.leaderboard)
+        # print(aml.leaderboard)
+    # there may be one model difference as reproducibility is not perfectly guaranteed in time-bound runs
+    assert abs(models_count[0] - models_count[max_runtime_secs]) <= 1
+    assert abs(models_count[0] - models_count[3]) > 1
+    # TODO: add assertions about single model timing once 'automl event_log' is available on client side
+
+
 def test_stacked_ensembles_are_trained_after_timeout():
     print("Check that Stacked Ensembles are still trained after timeout")
-    max_runtime_secs = 10
+    max_runtime_secs = 20
     ds = import_dataset()
     aml = H2OAutoML(project_name="py_aml_SE_after_timeout", seed=1, max_runtime_secs=max_runtime_secs, exclude_algos=['DeepLearning'])
     start = time.time()
@@ -232,8 +294,8 @@ def test_stacked_ensembles_are_trained_after_timeout():
     end = time.time()
     assert end-start - max_runtime_secs > 0
 
-    stacked_ensembles = [m for m in [aml.leaderboard[i, 0] for i in range(0, (aml.leaderboard.nrows))] if m.startswith('StackedEnsemble')]
-    assert len(stacked_ensembles) == 2, "StackedEnsemble should still be trained after timeout"
+    _, _, se = get_partitioned_model_names(aml.leaderboard)
+    assert len(se) == 2, "StackedEnsemble should still be trained after timeout"
 
 
 def test_automl_stops_after_max_models():
@@ -243,8 +305,8 @@ def test_automl_stops_after_max_models():
     aml = H2OAutoML(project_name="py_aml_max_models", seed=1, max_models=max_models)
     aml.train(y=ds['target'], training_frame=ds['train'])
 
-    base_models = [m for m in [aml.leaderboard[i, 0] for i in range(0, (aml.leaderboard.nrows))] if not m.startswith('StackedEnsemble')]
-    assert len(base_models) == max_models, "obtained {} base models when {} are expected".format(len(base_models), max_models)
+    _, non_se, _ = get_partitioned_model_names(aml.leaderboard)
+    assert len(non_se) == max_models, "obtained {} base models when {} are expected".format(len(non_se), max_models)
 
 
 def test_stacked_ensembles_are_trained_after_max_models():
@@ -254,22 +316,38 @@ def test_stacked_ensembles_are_trained_after_max_models():
     aml = H2OAutoML(project_name="py_aml_SE_after_max_models", seed=1, max_models=max_models)
     aml.train(y=ds['target'], training_frame=ds['train'])
 
-    stacked_ensembles = [m for m in [aml.leaderboard[i, 0] for i in range(0, (aml.leaderboard.nrows))] if m.startswith('StackedEnsemble')]
-    assert len(stacked_ensembles) == 2, "StackedEnsemble should still be trained after max models have been reached"
+    _, _, se = get_partitioned_model_names(aml.leaderboard)
+    assert len(se) == 2, "StackedEnsemble should still be trained after max models have been reached"
 
+
+def test_stacked_ensembles_are_trained_with_blending_frame_even_if_nfolds_eq_0():
+    print("Check that we can disable cross-validation when passing a blending frame and that Stacked Ensembles are trained using this frame.")
+    max_models = 5
+    ds = import_dataset()
+    aml = H2OAutoML(project_name="py_aml_blending_frame", seed=1, max_models=max_models, nfolds=0)
+    aml.train(y=ds['target'], training_frame=ds['train'], blending_frame=ds['valid'], leaderboard_frame=ds['test'])
+
+    _, _, se = get_partitioned_model_names(aml.leaderboard)
+    assert len(se) == 2, "In blending mode, StackedEnsemble should still be trained in spite of nfolds=0."
+    for m in se:
+        model = h2o.get_model(m)
+        assert model.params['blending_frame']['actual']['name'] == ds['valid'].frame_id
+        assert model._model_json['output']['stacking_strategy'] == 'blending'
 
 
     # TO DO  PUBDEV-5676
     # Add a test that checks fold_column like in runit
 
-
-tests = [
+pyunit_utils.run_tests([
     test_early_stopping_args,
     test_no_x_train_set_only,
     test_no_x_train_and_validation_sets,
     test_no_x_train_and_test_sets,
     test_no_x_train_and_validation_and_test_sets,
     test_no_x_y_as_idx_train_and_validation_and_test_sets,
+    test_exclude_algos,
+    test_include_algos,
+    test_include_exclude_algos,
     test_predict_on_train_set,
     test_nfolds_param,
     test_nfolds_eq_0,
@@ -278,12 +356,9 @@ tests = [
     test_keep_cross_validation_fold_assignment_enabled_with_nfolds_neq_0,
     test_keep_cross_validation_fold_assignment_enabled_with_nfolds_eq_0,
     test_automl_stops_after_max_runtime_secs,
+    test_no_model_takes_more_than_max_runtime_secs_per_model,
     test_stacked_ensembles_are_trained_after_timeout,
     test_automl_stops_after_max_models,
     test_stacked_ensembles_are_trained_after_max_models,
-]
-
-if __name__ == "__main__":
-    for test in tests: pyunit_utils.standalone_test(test)
-else:
-    for test in tests: test()
+    test_stacked_ensembles_are_trained_with_blending_frame_even_if_nfolds_eq_0,
+])

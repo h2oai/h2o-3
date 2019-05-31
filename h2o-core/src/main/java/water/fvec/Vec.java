@@ -194,6 +194,15 @@ public class Vec extends Keyed<Vec> {
   /** Returns cardinality for categorical domain or -1 for other types. */
   public final int cardinality() { return isCategorical() ? _domain.length : -1; }
 
+  /**
+   * @return true iff the domain has been truncated (usually during encoding).
+   * @see CreateInteractions#makeDomain(java.util.Map, String[], String[])
+   */
+  public final boolean isDomainTruncated(int expectedCardinality) {
+    return cardinality() == expectedCardinality + 1
+            && CreateInteractions._other.equals(_domain[_domain.length -1]);
+  }
+
   // Vec internal type
   public static final byte T_BAD  =  0; // No none-NA rows (triple negative! all NAs or zero rows)
   public static final byte T_UUID =  1; // UUID
@@ -606,6 +615,7 @@ public class Vec extends Keyed<Vec> {
    *  and initialized to the given constant value.  */
   public Vec makeCon(final double d) { return makeCon(d, group(), _rowLayout, T_NUM); }
   public Vec makeCon(final double d, byte type) { return makeCon(d, group(), _rowLayout, type); }
+  public Vec makeCon(final byte type) { return makeCon(0, null, group(), _rowLayout, type); }
 
   private static Vec makeCon( final double d, VectorGroup group, int rowLayout, byte type ) {
     if( (long)d==d ) return makeCon((long)d, null, group, rowLayout, type);
@@ -1090,13 +1100,10 @@ public class Vec extends Keyed<Vec> {
     long cstart = c._start;             // Read once, since racily filled in
     Vec v = c._vec;
     int tcidx = c._cidx;
-    if( cstart == start && v != null && tcidx == cidx)
-      return c;                       // Already filled-in
-    if(!(cstart == -1 || v == null || tcidx == -1))
-      throw new RuntimeException("Was not filled in (everybody racily writes the same start value:  cstart = " + cstart + " v == null? " + (v == null) + " cidx = " + tcidx + ", chunk = " + c.getClass().getName());
-    assert cstart == -1 || v == null || tcidx == -1:" cstart = " + cstart + " v == null? " + (v == null) + " cidx = " + tcidx + ", chunk = " + c.getClass().getName(); // Was not filled in (everybody racily writes the same start value)
-    c._vec = this;             // Fields not filled in by unpacking from Value
-    c._start = start;          // Fields not filled in by unpacking from Value
+    if( cstart == start && v == this && tcidx == cidx)
+      return c;                         // Already filled-in
+    c._vec = this;                      // Fields not filled in by unpacking from Value
+    c._start = start;
     c._cidx = cidx;
     return c;
   }

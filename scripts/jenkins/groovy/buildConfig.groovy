@@ -1,4 +1,4 @@
-def call(final context, final String mode, final String commitMessage, final List<String> changes,
+def call(final context, final String mode, final String commitMessage, final changes,
          final boolean ignoreChanges, final List<String> distributionsToBuild, final List<String> gradleOpts,
          final String xgbVersion, final String gradleVersion) {
   def buildConfig = new BuildConfig()
@@ -8,18 +8,18 @@ def call(final context, final String mode, final String commitMessage, final Lis
 
 class BuildConfig {
 
-  public static final String DOCKER_REGISTRY = 'docker.h2o.ai'
+  public static final String DOCKER_REGISTRY = 'harbor.h2o.ai'
 
   private static final String DEFAULT_IMAGE_NAME_PREFIX = 'dev-build-gradle'
   private static final String DEFAULT_HADOOP_IMAGE_NAME_PREFIX = 'dev-build-hadoop-gradle'
   private static final String DEFAULT_RELEASE_IMAGE_NAME_PREFIX = 'dev-release-gradle'
 
-  public static final int DEFAULT_IMAGE_VERSION_TAG = 5
-  public static final String AWSCLI_IMAGE = DOCKER_REGISTRY + '/awscli'
-  public static final String S3CMD_IMAGE = DOCKER_REGISTRY + '/s3cmd'
+  public static final int DEFAULT_IMAGE_VERSION_TAG = 13
+  public static final String AWSCLI_IMAGE = DOCKER_REGISTRY + '/opsh2oai/awscli'
+  public static final String S3CMD_IMAGE = DOCKER_REGISTRY + '/opsh2oai/s3cmd'
 
   private static final String HADOOP_IMAGE_NAME_PREFIX = 'h2o-3-hadoop'
-  private static final String HADOOP_IMAGE_VERSION_TAG = '51'
+  private static final String HADOOP_IMAGE_VERSION_TAG = '63'
 
   private static final String XGB_IMAGE_VERSION_TAG = 'latest'
   public static final String XGB_TARGET_MINIMAL = 'minimal'
@@ -74,13 +74,13 @@ class BuildConfig {
   private String xgbVersion
   private String gradleVersion
 
-  void initialize(final context, final String mode, final String commitMessage, final List<String> changes,
+  void initialize(final context, final String mode, final String commitMessage, final changes,
                   final boolean ignoreChanges, final List<String> distributionsToBuild, final List<String> gradleOpts,
                   final String xgbVersion, final String gradleVersion) {
     this.mode = mode
     this.nodeLabel = nodeLabel
     this.commitMessage = commitMessage
-    this.buildHadoop = mode == 'MODE_HADOOP'
+    this.buildHadoop = (mode == 'MODE_HADOOP' || mode == 'MODE_KERBEROS')
     this.additionalGradleOpts = gradleOpts
     this.xgbVersion = xgbVersion
     this.gradleVersion = gradleVersion
@@ -97,30 +97,30 @@ class BuildConfig {
     supportedXGBEnvironments = [
       'centos6.5': [
         [name: 'CentOS 6.5 Minimal', dockerfile: 'xgb/centos/Dockerfile-centos-minimal', fromImage: 'gpmidi/centos-6.5', targetName: XGB_TARGET_MINIMAL, nodeLabel: getDefaultNodeLabel(), runAfterMerge: true],
-        [name: 'CentOS 6.5 OMP', dockerfile: 'xgb/centos/Dockerfile-centos-omp', fromImage: 'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-minimal:centos6.5', targetName: XGB_TARGET_OMP, nodeLabel: getDefaultNodeLabel(), runAfterMerge: true],
+        [name: 'CentOS 6.5 OMP', dockerfile: 'xgb/centos/Dockerfile-centos-omp', fromImage: 'harbor.h2o.ai/opsh2oai/h2o-3-xgb-runtime-minimal:centos6.5', targetName: XGB_TARGET_OMP, nodeLabel: getDefaultNodeLabel(), runAfterMerge: true],
       ],
       'centos6.8': [
         [name: 'CentOS 6.8 Minimal', dockerfile: 'xgb/centos/Dockerfile-centos-minimal', fromImage: 'centos:6.8', targetName: XGB_TARGET_MINIMAL, nodeLabel: getDefaultNodeLabel()],
-        [name: 'CentOS 6.8 OMP', dockerfile: 'xgb/centos/Dockerfile-centos-omp', fromImage: 'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-minimal:centos6.8', targetName: XGB_TARGET_OMP, nodeLabel: getDefaultNodeLabel()],
+        [name: 'CentOS 6.8 OMP', dockerfile: 'xgb/centos/Dockerfile-centos-omp', fromImage: 'harbor.h2o.ai/opsh2oai/h2o-3-xgb-runtime-minimal:centos6.8', targetName: XGB_TARGET_OMP, nodeLabel: getDefaultNodeLabel()],
       ],
       'centos6.9': [
         [name: 'CentOS 6.9 GPU', dockerfile: 'xgb/centos/Dockerfile-centos-gpu', fromImage: 'nvidia/cuda:8.0-devel-centos6', targetName: XGB_TARGET_GPU, nodeLabel: getDefaultNodeLabel(), runAfterMerge: true],
       ],
       'centos7.3': [
         [name: 'CentOS 7.3 Minimal', dockerfile: 'xgb/centos/Dockerfile-centos-minimal', fromImage: 'centos:7.3.1611', targetName: XGB_TARGET_MINIMAL, nodeLabel: getDefaultNodeLabel()],
-        [name: 'CentOS 7.3 OMP', dockerfile: 'xgb/centos/Dockerfile-centos-omp', fromImage: 'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-minimal:centos7.3', targetName: XGB_TARGET_OMP, nodeLabel: getDefaultNodeLabel()],
+        [name: 'CentOS 7.3 OMP', dockerfile: 'xgb/centos/Dockerfile-centos-omp', fromImage: 'harbor.h2o.ai/opsh2oai/h2o-3-xgb-runtime-minimal:centos7.3', targetName: XGB_TARGET_OMP, nodeLabel: getDefaultNodeLabel()],
       ],
       'centos7.4': [
         [name: 'CentOS 7.4 GPU', dockerfile: 'xgb/centos/Dockerfile-centos-gpu', fromImage: 'nvidia/cuda:8.0-devel-centos7', targetName: XGB_TARGET_GPU, nodeLabel: getDefaultNodeLabel()],
       ],
       'ubuntu14': [
         [name: 'Ubuntu 14.04 Minimal', dockerfile: 'xgb/ubuntu/Dockerfile-ubuntu-minimal', fromImage: 'ubuntu:14.04', targetName: XGB_TARGET_MINIMAL, nodeLabel: getDefaultNodeLabel(), runAfterMerge: true],
-        [name: 'Ubuntu 14.04 OMP', dockerfile: 'xgb/ubuntu/Dockerfile-ubuntu-omp', fromImage: 'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-minimal:ubuntu14', targetName: XGB_TARGET_OMP, nodeLabel: getDefaultNodeLabel(), runAfterMerge: true],
+        [name: 'Ubuntu 14.04 OMP', dockerfile: 'xgb/ubuntu/Dockerfile-ubuntu-omp', fromImage: 'harbor.h2o.ai/opsh2oai/h2o-3-xgb-runtime-minimal:ubuntu14', targetName: XGB_TARGET_OMP, nodeLabel: getDefaultNodeLabel(), runAfterMerge: true],
         [name: 'Ubuntu 14.04 GPU', dockerfile: 'xgb/ubuntu/Dockerfile-ubuntu-gpu', fromImage: 'nvidia/cuda:8.0-devel-ubuntu14.04', targetName: XGB_TARGET_GPU, nodeLabel: getGPUNodeLabel(), runAfterMerge: true],
       ],
       'ubuntu16': [
         [name: 'Ubuntu 16.04 Minimal', dockerfile: 'xgb/ubuntu/Dockerfile-ubuntu-minimal', fromImage: 'ubuntu:16.04', targetName: XGB_TARGET_MINIMAL, nodeLabel: getDefaultNodeLabel()],
-        [name: 'Ubuntu 16.04 OMP', dockerfile: 'xgb/ubuntu/Dockerfile-ubuntu-omp', fromImage: 'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-minimal:ubuntu16', targetName: XGB_TARGET_OMP, nodeLabel: getDefaultNodeLabel()],
+        [name: 'Ubuntu 16.04 OMP', dockerfile: 'xgb/ubuntu/Dockerfile-ubuntu-omp', fromImage: 'harbor.h2o.ai/opsh2oai/h2o-3-xgb-runtime-minimal:ubuntu16', targetName: XGB_TARGET_OMP, nodeLabel: getDefaultNodeLabel()],
         [name: 'Ubuntu 16.04 GPU', dockerfile: 'xgb/ubuntu/Dockerfile-ubuntu-gpu', fromImage: 'nvidia/cuda:8.0-devel-ubuntu16.04', targetName: XGB_TARGET_GPU, nodeLabel: getGPUNodeLabel()],
       ]
     ]
@@ -218,7 +218,7 @@ class BuildConfig {
   }
 
   String getXGBImageForEnvironment(final String osName, final xgbEnv) {
-    return "docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-${xgbEnv.targetName}:${osName}"
+    return "harbor.h2o.ai/opsh2oai/h2o-3-xgb-runtime-${xgbEnv.targetName}:${osName}"
   }
 
   String getStageImage(final stageConfig) {
@@ -290,7 +290,7 @@ class BuildConfig {
     return gradleVersion
   }
 
-  private void detectChanges(List<String> changes) {
+  private void detectChanges(changes) {
     markAllComponentsForSkip()
 
     changesMap[COMPONENT_ANY] = true

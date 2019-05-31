@@ -1437,7 +1437,7 @@ public class ArrayUtils {
     if(s == null)return ary;
     int cnt = 0;
     int idx = find(ary,s);
-    while(idx > 0) {
+    while(idx >= 0) {
       ++cnt;
       idx = find(ary,s,++idx);
     }
@@ -1840,4 +1840,30 @@ public class ArrayUtils {
     Arrays.fill(ary, c);
     return ary;
   }
+
+  public static double[] toDouble(float[] floats) {
+    if (floats == null)
+      return null;
+    double[] ary = new double[floats.length];
+    for (int i = 0; i < floats.length; i++)
+      ary[i] = floats[i];
+    return ary;
+  }
+
+  public static double[] toDouble(int[] ints) {
+    if (ints == null)
+      return null;
+    double[] ary = new double[ints.length];
+    for (int i = 0; i < ints.length; i++)
+      ary[i] = ints[i];
+    return ary;
+  }
+
+  public static boolean isInstance(Object object, Class[] comparedClasses) {
+    for (Class c : comparedClasses) {
+      if (c.isInstance(object)) return true;
+    }
+    return false;
+  }
+
 }

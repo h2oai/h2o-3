@@ -95,9 +95,9 @@ SSL=""
 # Launch 3 helper JVMs.  All output redir'd at the OS level to sandbox files.
 CLUSTER_NAME=junit_cluster_$$
 CLUSTER_BASEPORT=44000
-$JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.1 2>&1 & PID_1=$!
-$JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.2 2>&1 & PID_2=$!
-$JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.3 2>&1 & PID_3=$!
+$JVM water.H2O -name $CLUSTER_NAME -ip 127.0.0.1 -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.1 2>&1 & PID_1=$!
+$JVM water.H2O -name $CLUSTER_NAME -ip 127.0.0.1 -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.2 2>&1 & PID_2=$!
+$JVM water.H2O -name $CLUSTER_NAME -ip 127.0.0.1 -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.3 2>&1 & PID_3=$!
 
 INTERFACE=${TSHARK_INTERFACE:-"eth0"}
 
@@ -118,9 +118,9 @@ cleanup
 SSL_CONFIG="src/test/resources/ssl.properties"
 SSL="-internal_security_conf "$SSL_CONFIG
 CLUSTER_NAME=$CLUSTER_NAME"_2"
-$JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.1 2>&1 & PID_1=$!
-$JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.2 2>&1 & PID_2=$!
-$JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.3 2>&1 & PID_3=$!
+$JVM water.H2O -name $CLUSTER_NAME -ip 127.0.0.1 -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.1 2>&1 & PID_1=$!
+$JVM water.H2O -name $CLUSTER_NAME -ip 127.0.0.1 -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.2 2>&1 & PID_2=$!
+$JVM water.H2O -name $CLUSTER_NAME -ip 127.0.0.1 -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.3 2>&1 & PID_3=$!
 
 echo Running SSL test...
 

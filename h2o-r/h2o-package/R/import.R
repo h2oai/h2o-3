@@ -8,7 +8,7 @@
 #'
 #' Import Files into H2O
 #'
-#' Imports files into an H2O cloud. The default behavior is to pass-through to the parse phase
+#' Imports files into an H2O cluster. The default behavior is to pass-through to the parse phase
 #' automatically.
 #'
 #' \code{h2o.importFile} is a parallelized reader and pulls information from the server from a location specified
@@ -55,38 +55,41 @@
 #' @param decrypt_tool (Optional) Specify a Decryption Tool (key-reference
 #'        acquired by calling \link{h2o.decryptionSetup}.
 #' @param skipped_columns a list of column indices to be skipped during parsing.
+#' @param custom_non_data_line_markers (Optional) If a line in imported file starts with any character in given string it will NOT be imported. Empty string means all lines are imported, NULL means that default behaviour for given format will be used
 #' @seealso \link{h2o.import_sql_select}, \link{h2o.import_sql_table}, \link{h2o.parseRaw}
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
-#' prosPath = system.file("extdata", "prostate.csv", package = "h2o")
-#' prostate.hex = h2o.importFile(path = prosPath, destination_frame = "prostate.hex")
-#' class(prostate.hex)
-#' summary(prostate.hex)
+#' prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate = h2o.importFile(path = prostate_path)
+#' class(prostate)
+#' summary(prostate)
 #'
 #' #Import files with a certain regex pattern by utilizing h2o.importFolder()
 #' #In this example we import all .csv files in the directory prostate_folder
-#' prosPath = system.file("extdata", "prostate_folder", package = "h2o")
-#' prostate_pattern.hex = h2o.importFolder(path = prosPath, pattern = ".*.csv",
-#'                         destination_frame = "prostate.hex")
-#' class(prostate_pattern.hex)
-#' summary(prostate_pattern.hex)
+#' prostate_path = system.file("extdata", "prostate_folder", package = "h2o")
+#' prostate_pattern = h2o.importFolder(path = prostate_path, pattern = ".*.csv")
+#' class(prostate_pattern)
+#' summary(prostate_pattern)
 #' }
 
 
 #' @name h2o.importFile
 #' @export
 h2o.importFile <- function(path, destination_frame = "", parse = TRUE, header=NA, sep = "", col.names=NULL,
-                           col.types=NULL, na.strings=NULL, decrypt_tool=NULL, skipped_columns=NULL) {
+                           col.types=NULL, na.strings=NULL, decrypt_tool=NULL, skipped_columns=NULL,
+                           custom_non_data_line_markers=NULL) {
   h2o.importFolder(path, pattern = "", destination_frame=destination_frame, parse, header, sep, col.names, col.types,
-                   na.strings=na.strings, decrypt_tool=decrypt_tool, skipped_columns=skipped_columns)
+                   na.strings=na.strings, decrypt_tool=decrypt_tool, skipped_columns=skipped_columns,
+                   custom_non_data_line_markers=custom_non_data_line_markers)
 }
 
 
 #' @rdname h2o.importFile
 #' @export
 h2o.importFolder <- function(path, pattern = "", destination_frame = "", parse = TRUE, header = NA, sep = "",
-                             col.names = NULL, col.types=NULL, na.strings=NULL, decrypt_tool=NULL, skipped_columns=NULL) {
+                             col.names = NULL, col.types=NULL, na.strings=NULL, decrypt_tool=NULL, skipped_columns=NULL,
+                             custom_non_data_line_markers=NULL) {
   if(!is.character(path) || is.na(path) || !nzchar(path)) stop("`path` must be a non-empty character string")
   if(!is.character(pattern) || length(pattern) != 1L || is.na(pattern)) stop("`pattern` must be a character string")
   .key.validate(destination_frame)
@@ -112,7 +115,7 @@ h2o.importFolder <- function(path, pattern = "", destination_frame = "", parse =
   } else {
     res <- .h2o.__remoteSend(.h2o.__IMPORT, path=path,pattern=pattern)
   }
-
+  
   if(length(res$fails) > 0L) {
     for(i in seq_len(length(res$fails)))
       cat(res$fails[[i]], "failed to import")
@@ -122,7 +125,8 @@ h2o.importFolder <- function(path, pattern = "", destination_frame = "", parse =
 if(parse) {
     srcKey <- res$destination_frames
     return( h2o.parseRaw(data=.newH2OFrame(op="ImportFolder",id=srcKey,-1,-1),pattern=pattern, destination_frame=destination_frame,
-            header=header, sep=sep, col.names=col.names, col.types=col.types, na.strings=na.strings, decrypt_tool=decrypt_tool, skipped_columns=skipped_columns) )
+            header=header, sep=sep, col.names=col.names, col.types=col.types, na.strings=na.strings, decrypt_tool=decrypt_tool,
+             skipped_columns=skipped_columns, custom_non_data_line_markers=custom_non_data_line_markers) )
 }
   myData <- lapply(res$destination_frames, function(x) .newH2OFrame( op="ImportFolder", id=x,-1,-1))  # do not gc, H2O handles these nfs:// vecs
   if(length(res$destination_frames) == 1L)
@@ -187,13 +191,12 @@ h2o.uploadFile <- function(path, destination_frame = "",
 #'
 #' Import SQL Table into H2O
 #'
-#' Imports SQL table into an H2O cloud. Assumes that the SQL table is not being updated and is stable.
+#' Imports SQL table into an H2O cluster. Assumes that the SQL table is not being updated and is stable.
 #' Runs multiple SELECT SQL queries concurrently for parallel ingestion.
 #' Be sure to start the h2o.jar in the terminal with your downloaded JDBC driver in the classpath:
 #'    `java -cp <path_to_h2o_jar>:<path_to_jdbc_driver_jar> water.H2OApp`
 #' Also see h2o.import_sql_select.
-#' Currently supported SQL databases are MySQL, PostgreSQL, and MariaDB. Support for Oracle 12g and Microsoft SQL Server 
-#  is forthcoming.
+#' Currently supported SQL databases are MySQL, PostgreSQL, MariaDB, Hive, Oracle and Microsoft SQL Server.
 #'
 #' For example, 
 #'    my_sql_conn_url <- "jdbc:mysql://172.16.2.178:3306/ingestSQL?&useSSL=false"
@@ -240,8 +243,7 @@ h2o.import_sql_table <- function(connection_url, table, username, password, colu
 #' Be sure to start the h2o.jar in the terminal with your downloaded JDBC driver in the classpath:
 #'    `java -cp <path_to_h2o_jar>:<path_to_jdbc_driver_jar> water.H2OApp`
 #' Also see h2o.import_sql_table.
-#' Currently supported SQL databases are MySQL, PostgreSQL, and MariaDB. Support for Oracle 12g and Microsoft SQL Server 
-#  is forthcoming.   
+#' Currently supported SQL databases are MySQL, PostgreSQL, MariaDB, Hive, Oracle and Microsoft SQL Server.
 #'
 #' For example, 
 #'    my_sql_conn_url <- "jdbc:mysql://172.16.2.178:3306/ingestSQL?&useSSL=false"
@@ -255,17 +257,23 @@ h2o.import_sql_table <- function(connection_url, table, username, password, colu
 #' @param select_query SQL query starting with `SELECT` that returns rows from one or more database tables.
 #' @param username Username for SQL server
 #' @param password Password for SQL server
+#' @param use_temp_table Whether a temporary table should be created from select_query
+#' @param temp_table_name Name of temporary table to be created from select_query
 #' @param optimize (Optional) Optimize import of SQL table for faster imports. Experimental. Default is true. 
 #' @param fetch_mode (Optional) Set to DISTRIBUTED to enable distributed import. Set to SINGLE to force a sequential read
 #'        from the database
 #'        Can be used for databases that do not support OFFSET-like clauses in SQL statements.
 #' @export
-h2o.import_sql_select<- function(connection_url, select_query, username, password, optimize = NULL, fetch_mode = NULL) {
+h2o.import_sql_select<- function(connection_url, select_query, username, password, 
+                        use_temp_table = NULL, temp_table_name = NULL,
+                        optimize = NULL, fetch_mode = NULL) {
   parms <- list()
   parms$connection_url <- connection_url
   parms$select_query <- select_query
   parms$username <- username
   parms$password <- password
+  if (!is.null(use_temp_table)) parms$use_temp_table <- use_temp_table
+  if (!is.null(temp_table_name)) parms$temp_table_name <- temp_table_name
   if (!is.null(fetch_mode)) parms$fetch_mode <- fetch_mode
   res <- .h2o.__remoteSend('ImportSQLTable', method = "POST", .params = parms, h2oRestApiVersion = 99)
   job_key <- res$key$name
@@ -274,6 +282,40 @@ h2o.import_sql_select<- function(connection_url, select_query, username, passwor
   h2o.getFrame(dest_key)
 }
 
+#'
+#' Import Hive Table into H2O
+#'
+#' Import Hive table to H2OFrame in memory.
+#' Make sure to start H2O with Hive on classpath. Uses hive-site.xml on classpath to connect to Hive.
+#'
+#' For example, 
+#'     my_citibike_data = h2o.import_hive_table("default", "citibike20k", partitions = list(c("2017", "01"), c("2017", "02")))
+#'
+#' @param database Name of Hive database (default database will be used by default)
+#' @param table name of Hive table to import
+#' @param partitions a list of lists of strings - partition key column values of partitions you want to import.
+#' @param allow_multi_format enable import of partitioned tables with different storage formats used. WARNING:
+#'        this may fail on out-of-memory for tables with a large number of small partitions.
+#' @export
+h2o.import_hive_table <- function(database, table, partitions = NULL, allow_multi_format = FALSE) {
+  parms <- list()
+  parms$database <- database
+  parms$table <- table
+  if (!is.null(partitions)) {
+      parts <- c()
+      for (p in partitions) {
+        parts <- c(parts, paste0("[", paste0(p, collapse = ","), "]"))
+      }
+      parms$partitions <- paste0("[", paste0(parts, collapse = ","), "]")
+
+  }
+  parms$allow_multi_format <- allow_multi_format
+  res <- .h2o.__remoteSend('ImportHiveTable', method = "POST", .params = parms, h2oRestApiVersion = 3)
+  job_key <- res$key$name
+  dest_key <- res$dest$name
+  .h2o.__waitOnJob(job_key)
+  h2o.getFrame(dest_key)
+}
 
 #'
 #' Load H2O Model from HDFS or Local Disk
@@ -282,20 +324,19 @@ h2o.import_sql_select<- function(connection_url, select_query, username, passwor
 #' can now be loaded using this method.)
 #'
 #' @param path The path of the H2O Model to be imported.
-#'        and port of the server running H2O.
 #' @return Returns a \linkS4class{H2OModel} object of the class corresponding to the type of model
-#'         built.
+#'         loaded.
 #' @seealso \code{\link{h2o.saveModel}, \linkS4class{H2OModel}}
 #' @examples
 #' \dontrun{
 #' # library(h2o)
 #' # h2o.init()
-#' # prosPath = system.file("extdata", "prostate.csv", package = "h2o")
-#' # prostate.hex = h2o.importFile(path = prosPath, destination_frame = "prostate.hex")
-#' # prostate.glm = h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
-#' #   training_frame = prostate.hex, family = "binomial", alpha = 0.5)
-#' # glmmodel.path = h2o.saveModel(prostate.glm, dir = "/Users/UserName/Desktop")
-#' # glmmodel.load = h2o.loadModel(glmmodel.path)
+#' # prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
+#' # prostate = h2o.importFile(path = prostate_path)
+#' # prostate_glm = h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
+#' #   training_frame = prostate, family = "binomial", alpha = 0.5)
+#' # glmmodel_path = h2o.saveModel(prostate_glm, dir = "/Users/UserName/Desktop")
+#' # glmmodel_load = h2o.loadModel(glmmodel_path)
 #' }
 #' @export
 h2o.loadModel <- function(path) {
@@ -305,4 +346,26 @@ h2o.loadModel <- function(path) {
   res <- .h2o.__remoteSend(.h2o.__LOAD_MODEL, h2oRestApiVersion = 99, dir = path, method = "POST")$models[[1L]]
   res
   h2o.getModel(res$model_id$name)
+}
+
+#'
+#' Creates a new Amazon S3 client internally with specified credentials.
+#'
+#' There are no validations done to the credentials. Incorrect credentials are thus revealed with first S3 import call.
+#'
+#' @param secretKeyId Amazon S3 Secret Key ID (provided by Amazon)
+#' @param secretAccessKey Amazon S3 Secret Access Key (provided by Amazon)
+#' 
+#' @export
+h2o.set_s3_credentials <- function(secretKeyId, secretAccessKey){
+  if(is.null(secretKeyId)) stop("Secret key ID must not be null.")
+  if(is.null(secretAccessKey)) stop("Secret acces key must not be null.")
+  if(!is.character(secretKeyId) || nchar(secretKeyId) == 0) stop("Secret key ID must be a non-empty character string.")
+  if(!is.character(secretAccessKey) || nchar(secretAccessKey) == 0) stop("Secret access key must a non-empty character string.")
+  parms <- list()
+  parms$secret_key_id <- secretKeyId
+  parms$secret_access_key = secretAccessKey
+  
+  res <- .h2o.__remoteSend("PersistS3", method = "POST", .params = parms, h2oRestApiVersion = 3)
+  print("Credentials successfully set.")
 }

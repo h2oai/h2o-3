@@ -105,7 +105,7 @@ Defining an XGBoost Model
   - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
   - ``label_encoder`` or ``LabelEncoder``: Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.) 
   - ``sort_by_response`` or ``SortByResponse``: Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.). This is useful, for example, when you have more levels than ``nbins_cats``, and where the top level splits now have a chance at separating the data with a split. 
-  - ``enum_limited`` or ``EnumLimited``: Automatically reduce categorical levels to the most prevalent ones during training and only keep the **T** most frequent levels.
+  - ``enum_limited`` or ``EnumLimited``: Automatically reduce categorical levels to the most prevalent ones during training and only keep the **T** (1024) most frequent levels.
 
   **Note**: This value defaults to ``label_encoder``. Similarly, if ``auto`` is specified, then the algorithm performs ``label_encoder`` encoding. 
 
@@ -126,6 +126,8 @@ Defining an XGBoost Model
 -  `col_sample_rate_per_tree <algo-params/col_sample_rate_per_tree.html>`__ (alias: ``colsample_bytree``: Specify the column subsampling rate per tree. (Note that this method is sample without replacement.) This value defaults to 1.0 and can be a value from 0.0 to 1.0. Note that it is multiplicative with ``col_sample_rate``, so setting both parameters to 0.8, for example, results in 64% of columns being considered at any given node to split.
 
 -  `max_abs_leafnode_pred <algo-params/max_abs_leafnode_pred.html>`__ (alias: ``max_delta_step``): Specifies the maximum delta step allowed in each tree’s weight estimation. This value defaults to 0. Setting this value to 0 specifies no constraint. Setting this value to be greater than 0 can help making the update step more conservative and reduce overfitting by limiting the absolute value of a leafe node prediction. This option also helps in logistic regression when a class is extremely imbalanced. 
+
+- **monotone_constraints**: A mapping representing `monotonic constraints <https://xiaoxiaowang87.github.io/monotonicity_constraint/>`__. Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint. Note that constraints can only be defined for numerical columns.
 
 -  `score_tree_interval <algo-params/score_tree_interval.html>`__: Score the model after every so many trees. This value is set to 0 (disabled) by default.
 
@@ -166,7 +168,7 @@ Defining an XGBoost Model
 
 -  **skip_drop**: When ``booster="dart"``, specify a float value from 0 to 1 for the skip drop. This determines the probability of skipping the dropout procedure during a boosting iteration. If a dropout is skipped, new trees are added in the same manner as "gbtree". Note that non-zero ``skip_drop`` has higher priority than ``rate_drop`` or ``one_drop``. This value defaults to 0.0.
 
--  **reg_lambda**: Specify a value for L2 regularization. This defaults to 0.
+-  **reg_lambda**: Specify a value for L2 regularization. This defaults to 1.
 
 -  **reg_alpha**: Specify a value for L1 regularization. This defaults to 0.
 
@@ -295,18 +297,19 @@ FAQs
 
   By default, XGBoost will create N+1 new cols for categorical features with N levels (i.e., ``categorical_encoding="one_hot_internal"``). 
 
--  **Why does my H2O cloud on Hadoop became unresponsive when running XGBoost even when I supplied 4 times the datasize memory?**
+-  **Why does my H2O cluster on Hadoop became unresponsive when running XGBoost even when I supplied 4 times the datasize memory?**
 
-  XGBoost uses memory outside the Java heap, and when that memory is not available, Hadoop kills the h2o job and the h2o cluster becomes unresponsive. Please set ``-extramempercent`` argument to a much higher value when starting H2O. This argument configures the extra memory for internal JVM use outside of the Java heap and is a percentage of mapperXmx. For example:
+  XGBoost uses memory outside the Java heap, and when that memory is not available, Hadoop kills the h2o job and the h2o cluster becomes unresponsive. Please set ``-extramempercent`` argument to a much higher value (120% recommended) when starting H2O. This argument configures the extra memory for internal JVM use outside of the Java heap and is a percentage of mapperXmx. For example:
 
   ::
 
-    hadoop jar h2odriver.jar -nodes 1 -mapperXmx 20g -extramempercent 100
+    hadoop jar h2odriver.jar -nodes 1 -mapperXmx 20g -extramempercent 120
 
 References
 ~~~~~~~~~~
 
 - Chen, Tianqi and Guestrin, Carlos Guestrin. "XGBoost: A Scalable Tree Boosting System." Version 3 (2016) `http://arxiv.org/abs/1603.02754 <http://arxiv.org/abs/1603.02754>`__
 
-
 - Mitchell R, Frank E. (2017) Accelerating the XGBoost algorithm using GPU computing. PeerJ Preprints 5:e2911v1 `https://doi.org/10.7287/peerj.preprints.2911v1 <https://doi.org/10.7287/peerj.preprints.2911v1>`__
+
+

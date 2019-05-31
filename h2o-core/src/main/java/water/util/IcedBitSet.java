@@ -1,6 +1,5 @@
 package water.util;
 
-import hex.genmodel.GenModel;
 import water.AutoBuffer;
 import water.Iced;
 
@@ -27,7 +26,9 @@ public class IcedBitSet extends Iced {
   public IcedBitSet(int nbits) { this(nbits, 0); }
   public IcedBitSet(int nbits, int bitoff) {
     // For small bitsets, just use a no-offset fixed-length format
-    if( bitoff+nbits <= 32 ) {  bitoff = 0;  nbits = 32;  }
+    if( bitoff+nbits <= 32 ) {
+      bitoff = 0;  nbits = 32;
+    }
     int nbytes = bytes(nbits);
     fill(nbits <= 0 ? null : new byte[nbytes], 0, nbits, bitoff);
   }
@@ -39,7 +40,7 @@ public class IcedBitSet extends Iced {
     if( byteoff < 0 ) throw new IndexOutOfBoundsException("byteoff < 0: "+ byteoff);
     if( bitoff  < 0 ) throw new IndexOutOfBoundsException("bitoff < 0: " + bitoff );
     assert(v.length >= bytes(nbits));
-    assert v==null || byteoff+bytes(nbits) <= v.length;
+    assert byteoff+bytes(nbits) <= v.length;
     _val = v;
     _nbits = nbits;
     _bitoff = bitoff;
@@ -59,23 +60,26 @@ public class IcedBitSet extends Iced {
 
   /**
    * Activate the bit specified by the integer (must be from 0 ... _nbits-1)
-   * @param idx
+   * @param idx -
    */
   public void set(int idx) {
     idx -= _bitoff;
     assert (idx >= 0 && idx < _nbits): "Must have "+_bitoff+" <= idx <= " + (_bitoff+_nbits-1) + ": " + idx;
     _val[_byteoff+(idx >> 3)] |= ((byte)1 << (idx & 7));
   }
+
   public void clear(int idx) {
     idx -= _bitoff;
-    assert (idx >= 0 && idx < _nbits) : "Must have 0 <= idx <= " + Integer.toString(_nbits-1) + ": " + idx;
+    assert (idx >= 0 && idx < _nbits) : "Must have 0 <= idx <= " + (_nbits - 1) + ": " + idx;
     _val[_byteoff + (idx >> 3)] &= ~((byte)1 << (idx & 7));
   }
+
   public int cardinality() {
     int nbits = 0;
     int bytes = numBytes();
-    for(int i = 0; i < bytes; i++)
+    for(int i = 0; i < bytes; i++) {
       nbits += Integer.bitCount(0xFF&_val[_byteoff + i]);
+    }
     return nbits;
   }
 
@@ -114,36 +118,63 @@ public class IcedBitSet extends Iced {
     ab.skip(bytes(nbits));            // Skip inline bitset
   }
 
-  @Override public String toString() { return toString(new SB()).toString(); }
+  @Override
+  public String toString() {
+    return toString(new SB()).toString();
+  }
+
   public SB toString(SB sb) {
     sb.p("{");
-    if( _bitoff>0 ) sb.p("...").p(_bitoff).p(" 0-bits... ");
+    if (_bitoff > 0) {
+      sb.p("...").p(_bitoff).p(" 0-bits... ");
+    }
 
-    int bytes = bytes(_nbits);
+    int limit = _nbits;
+    final int bytes = bytes(_nbits);
     for(int i = 0; i < bytes; i++) {
-      if( i>0 && _bitoff + 8*i < size()) sb.p(' ');
-      for( int j=0; j<8; j++ ) {
-        if (_bitoff + 8*i + j >= size()) break;
-        sb.p((_val[_byteoff + i] >> j) & 1);
+      if (i > 0){
+        sb.p(' ');
       }
+      sb.p(byteToBinaryString(_val[_byteoff + i], limit));
+      limit -= 8;
     }
     return sb.p("}");
   }
+
+  /**
+   * Converts a byte into its binary representation (with at most 8 digits).
+   * @param b  the byte to be converted
+   * @param limit  the maximal length of returned string - it will never exceed 8 anyway
+   * @return binary representation, lowest bit (weight 1) goes first
+   */
+  static String byteToBinaryString(byte b, int limit) {
+    final StringBuilder sb = new StringBuilder();
+    if (limit > 8) {
+      limit = 8;
+    }
+    for (int i = 0; i < limit; i++) {
+      sb.append((char)('0' + (b&1)));
+      b>>=1;
+    }
+    return sb.toString();
+  }
+
   public String toStrArray() {
-    StringBuilder sb = new StringBuilder();
+    final StringBuilder sb = new StringBuilder();
     sb.append("{").append(_val[_byteoff]);
-    int bytes = bytes(_nbits);
-    for(int i = 1; i < bytes; i++)
+    final int bytes = bytes(_nbits);
+    for(int i = 1; i < bytes; i++) {
       sb.append(", ").append(_val[_byteoff+i]);
+    }
     sb.append("}");
     return sb.toString();
   }
 
-  public SB toJava( SB sb, String varname, int col) {
-    return sb.p("!GenModel.bitSetContains(").p(varname).p(", ").p(_nbits).p(", ").p(_bitoff).p(", data[").p(col).p("])");
+  public void toJava( SB sb, String varname, int col) {
+    sb.p("!GenModel.bitSetContains(").p(varname).p(", ").p(_nbits).p(", ").p(_bitoff).p(", data[").p(col).p("])");
   }
 
-  public SB toJavaRangeCheck(SB sb, int col) {
-    return sb.p("GenModel.bitSetIsInRange(").p(_nbits).p(", ").p(_bitoff).p(", data[").p(col).p("])");
+  public void toJavaRangeCheck(SB sb, int col) {
+    sb.p("GenModel.bitSetIsInRange(").p(_nbits).p(", ").p(_bitoff).p(", data[").p(col).p("])");
   }
 }

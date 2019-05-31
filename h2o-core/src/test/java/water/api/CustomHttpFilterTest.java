@@ -7,8 +7,8 @@ import org.apache.log4j.spi.LoggingEvent;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.H2O;
-import water.JettyHTTPD;
 import water.TestUtil;
+import water.init.NetworkInit;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -46,9 +46,10 @@ public class CustomHttpFilterTest extends TestUtil {
 
     // let's filter out all GETs
     RequestServer.setFilters(RequestServer.defaultFilter(), new RequestServer.HttpLogFilter() {
-      @Override public boolean filter(RequestUri uri, Properties header, Properties parms) {
+      @Override public RequestServer.LogFilterLevel filter(RequestUri uri, Properties header, Properties parms) {
         String[] path = uri.getPath();
-        return path[1].equals("GET");
+        if (path[1].equals("GET")) return RequestServer.LogFilterLevel.DO_NOT_LOG;
+        else return RequestServer.LogFilterLevel.LOG;
       }
     });
 
@@ -95,12 +96,13 @@ public class CustomHttpFilterTest extends TestUtil {
     when(request.getParameterMap()).thenReturn(new HashMap<String, String[]>());
 
     when(response.getOutputStream()).thenReturn(new ServletOutputStream() {
+
       @Override public void write(int b) throws IOException {
       }
     });
 
     // start the request lifecycle
-    H2O.getJetty().getServer().getChildHandlersByClass(JettyHTTPD.GateHandler.class)[0].handle("/", null, request, response);
+    NetworkInit.h2oHttpView.gateHandler(request, response);
     new RequestServer().doGet(request, response);
 
   }

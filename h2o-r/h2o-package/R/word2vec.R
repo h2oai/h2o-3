@@ -18,6 +18,7 @@
 #' @param epochs Number of training iterations to run Defaults to 5.
 #' @param pre_trained Id of a data frame that contains a pre-trained (external) word2vec model
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
+#' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @export
 h2o.word2vec <- function(training_frame = NULL,
                          model_id = NULL,
@@ -30,7 +31,8 @@ h2o.word2vec <- function(training_frame = NULL,
                          init_learning_rate = 0.025,
                          epochs = 5,
                          pre_trained = NULL,
-                         max_runtime_secs = 0
+                         max_runtime_secs = 0,
+                         export_checkpoints_dir = NULL
                          ) 
 {
 
@@ -74,6 +76,8 @@ h2o.word2vec <- function(training_frame = NULL,
     parms$pre_trained <- pre_trained
   if (!missing(max_runtime_secs))
     parms$max_runtime_secs <- max_runtime_secs
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
   # Error check and build model
   .h2o.modelJob('word2vec', parms, h2oRestApiVersion = 3) 
 }

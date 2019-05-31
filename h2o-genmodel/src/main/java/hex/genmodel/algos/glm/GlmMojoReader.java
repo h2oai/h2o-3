@@ -46,4 +46,8 @@ public class GlmMojoReader extends ModelMojoReader<GlmMojoModelBase> {
       return new GlmMojoModel(columns, domains, responseColumn);
   }
 
+  @Override public String mojoVersion() {
+    return "1.00";
+  }
+
 }

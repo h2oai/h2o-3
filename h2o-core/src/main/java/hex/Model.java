@@ -5,6 +5,8 @@ import hex.genmodel.algos.glrm.GlrmMojoModel;
 import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.algos.tree.SharedTreeNode;
+import hex.genmodel.descriptor.Table;
+import hex.genmodel.descriptor.VariableImportances;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
@@ -28,10 +30,7 @@ import water.util.*;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Random;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -92,6 +91,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   public interface StagedPredictions {
     Frame scoreStagedPredictions(Frame frame, Key<Frame> destination_key);
+  }
+
+  public interface Contributions {
+    Frame scoreContributions(Frame frame, Key<Frame> destination_key);
   }
 
   public interface ExemplarMembers {
@@ -192,7 +195,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public Key<Frame> _train;               // User-Key of the Frame the Model is trained on
     public Key<Frame> _valid;               // User-Key of the Frame the Model is validated on, if any
     public int _nfolds = 0;
-    public boolean _keep_cross_validation_models = false;
+    public boolean _keep_cross_validation_models = true;
     public boolean _keep_cross_validation_predictions = false;
     public boolean _keep_cross_validation_fold_assignment = false;
     public boolean _parallelize_cross_validation = true;
@@ -206,7 +209,17 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       AUTO, Random, Modulo, Stratified
     }
     public enum CategoricalEncodingScheme {
-      AUTO(false), OneHotInternal(false), OneHotExplicit(false), Enum(false), Binary(false), Eigen(false), LabelEncoder(false), SortByResponse(true), EnumLimited(false);
+      AUTO(false),
+      OneHotInternal(false),
+      OneHotExplicit(false),
+      Enum(false),
+      Binary(false),
+      Eigen(false),
+      LabelEncoder(false),
+      SortByResponse(true),
+      EnumLimited(false)
+      ;
+
       CategoricalEncodingScheme(boolean needResponse) { _needResponse = needResponse; }
       final boolean _needResponse;
       boolean needsResponse() { return _needResponse; }
@@ -236,6 +249,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public String _weights_column;
     public String _offset_column;
     public String _fold_column;
+    
+    // Check for constant response
+    public boolean _check_constant_response = true;
 
     public boolean _is_cv_model; //internal helper
 
@@ -311,6 +327,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      * Reference to custom metric function.
      */
     public String _custom_metric_func = null;
+
+    /**
+     * Directory where generated models will be exported
+     */
+    public String _export_checkpoints_dir;
 
     // Public no-arg constructor for reflective creation
     public Parameters() { _ignore_const_cols = defaultDropConsCols(); }
@@ -611,11 +632,24 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     /** Columns used in the model and are used to match up with scoring data
      *  columns.  The last name is the response column name (if any). */
     public String _names[];
-    
+    public String _column_types[];
+
+    /**
+     * @deprecated as of March 6, 2019, replaced by (@link #setNames(String[] names, String[] columnTypes))
+     * 
+     */
+    @Deprecated
     public void setNames(String[] names) {
       _names = names;
+      _column_types = new String[names.length];
+      Arrays.fill(_column_types, "NA");
     }
-    
+
+    public void setNames(String[] names, String[] columntypes) {
+      _names = names;
+      _column_types = columntypes;
+    }
+
     public String _origNames[]; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
 
     /** Categorical/factor mappings, per column.  Null for non-categorical cols.
@@ -636,8 +670,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public long _start_time;
     public long _end_time;
     public long _run_time;
+    public long _total_run_time; // includes building of cv models
     protected void startClock() { _start_time = System.currentTimeMillis(); }
-    protected void stopClock()  { _end_time   = System.currentTimeMillis(); _run_time = _end_time - _start_time; }
+    protected void stopClock()  {
+      _end_time   = System.currentTimeMillis();
+      _total_run_time = _run_time = _end_time - _start_time;
+    }
 
     public Output(){this(false,false,false);}
     public Output(boolean hasWeights, boolean hasOffset, boolean hasFold) {
@@ -660,7 +698,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       if (b.error_count() > 0)
         throw new IllegalArgumentException(b.validationErrors());
       // Capture the data "shape" the model is valid on
-      setNames(train != null ? train.names() : new String[0]);
+      setNames(train != null ? train.names() : new String[0], train!=null?train.typesStr():new String[0]);
       _domains = train != null ? train.domains() : new String[0][];
       _origNames = b._origNames;
       _origDomains = b._origDomains;
@@ -675,6 +713,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     /** Returns number of input features (OK for most supervised methods, need to override for unsupervised!) */
     public int nfeatures() {
       return _names.length - (_hasOffset?1:0)  - (_hasWeights?1:0) - (_hasFold?1:0) - (isSupervised()?1:0);
+    }
+    /** Returns features used by the model */
+    public String[] features() {
+      return Arrays.copyOf(_names, nfeatures());
     }
 
     /** List of all the associated ModelMetrics objects, so we can delete them
@@ -725,9 +767,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     public boolean isSupervised() { return _isSupervised; }
     /** The name of the response column (which is always the last column). */
-    protected final boolean _hasOffset; // weights and offset are kept at designated position in the names array
-    protected final boolean _hasWeights;// only need to know if we have them
-    protected final boolean _hasFold;// only need to know if we have them
+    protected boolean _hasOffset; // weights and offset are kept at designated position in the names array
+    protected boolean _hasWeights;// only need to know if we have them
+    protected boolean _hasFold;// only need to know if we have them
     public boolean hasOffset  () { return _hasOffset;}
     public boolean hasWeights () { return _hasWeights;}
     public boolean hasFold () { return _hasFold;}
@@ -831,7 +873,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     _output = output;  // Output won't be set if we're assert output != null;
     if (_output != null)
       _output.startClock();
-    _dist = isSupervised() && _output.nclasses() == 1 ? new Distribution(_parms) : null;
+    _dist = isSupervised() && _output.nclasses() == 1 ? DistributionFactory.getDistribution(_parms) : null;
+    Log.info("Starting model "+ selfKey);
   }
 
   /**
@@ -843,6 +886,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    */
   public double deviance(double w, double y, double f) {
     return _dist.deviance(w, y, f);
+  }
+
+  public double likelihood(double w, double y, double f) {
+    return 0.0; // place holder.  This function is overridden in GLM.
   }
 
   public ScoringInfo[] scoring_history() { return scoringInfo; }
@@ -1081,7 +1128,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             _output._origDomains,
             _output._names,
             _output._domains,
-            _parms, expensive, computeMetrics, _output.interactionBuilder(), getToEigenVec(), _toDelete, false);
+            _parms,
+            expensive,
+            computeMetrics,
+            _output.interactionBuilder(),
+            getToEigenVec(),
+            _toDelete,
+            false
+    );
   }
 
   /**
@@ -1096,9 +1150,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @param interactionBldr Column names to create pairwise interactions with
    * @param catEncoded Whether the categorical columns of the test frame were already transformed via categorical_encoding
    */
-  public static String[] adaptTestForTrain(Frame test, String[] origNames, String[][] origDomains, String[] names, String[][] domains,
-                                           Parameters parms, boolean expensive, boolean computeMetrics, InteractionBuilder interactionBldr, ToEigenVec tev,
-                                           IcedHashMap<Key, String> toDelete, boolean catEncoded) throws IllegalArgumentException {
+  public static String[] adaptTestForTrain(final Frame test, final String[] origNames, final String[][] origDomains,
+                                           String[] names, String[][] domains, final Parameters parms,
+                                           final boolean expensive, final boolean computeMetrics,
+                                           final InteractionBuilder interactionBldr, final ToEigenVec tev,
+                                           final IcedHashMap<Key, String> toDelete, final boolean catEncoded)
+          throws IllegalArgumentException {
     String[] msg = new String[0];
     if (test == null) return msg;
     if (catEncoded && origNames==null) return msg;
@@ -1117,24 +1174,33 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     final String response = parms._response_column;
 
     // whether we need to be careful with categorical encoding - the test frame could be either in original state or in encoded state
-    final boolean checkCategoricals =
-        parms._categorical_encoding == Parameters.CategoricalEncodingScheme.OneHotExplicit ||
-        parms._categorical_encoding == Parameters.CategoricalEncodingScheme.Eigen ||
-        parms._categorical_encoding == Parameters.CategoricalEncodingScheme.Binary;
+    // keep in sync with FrameUtils.categoricalEncoder: as soon as a categorical column has been encoded, we should check here.
+    final boolean checkCategoricals = Arrays.asList(
+            Parameters.CategoricalEncodingScheme.Binary,
+            Parameters.CategoricalEncodingScheme.LabelEncoder,
+            Parameters.CategoricalEncodingScheme.Eigen,
+            Parameters.CategoricalEncodingScheme.EnumLimited,
+            Parameters.CategoricalEncodingScheme.OneHotExplicit
+    ).indexOf(parms._categorical_encoding) >= 0;
 
     // test frame matches the user-given frame (before categorical encoding, if applicable)
     if( checkCategoricals && origNames != null ) {
-      boolean match = Arrays.equals(origNames, test._names);
+      boolean match = Arrays.equals(origNames, test.names());
       if (!match) {
-        match = true;
-        // In case the test set has extra columns not in the training set - check that all original pre-encoding columns are available in the test set
-        // We could be lenient here and fill missing columns with NA, but then it gets difficult to decide whether this frame is pre/post encoding, if a certain fraction of columns mismatch...
-        for (String s : origNames) {
-          match &= ArrayUtils.contains(test.names(), s);
-          if (!match) break;
+        // As soon as the test frame contains at least one original pre-encoding predictor,
+        // then we consider the frame as valid for predictions, and we'll later fill missing columns with NA
+        Set<String> required = new HashSet<>(Arrays.asList(origNames));
+        required.removeAll(Arrays.asList(response, weights, fold));
+        for (String name : test.names()) {
+          if (required.contains(name)) {
+            match = true;
+            break;
+          }
         }
       }
-      // still have work to do below, make sure we set the names/domains to the original user-given values such that we can do the int->enum mapping and cat. encoding below (from scratch)
+
+      // still have work to do below, make sure we set the names/domains to the original user-given values
+      // such that we can do the int->enum mapping and cat. encoding below (from scratch)
       if (match) {
         names = origNames;
         domains = origDomains;
@@ -1152,8 +1218,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     Vec vvecs[] = new Vec[names.length];
     int good = 0;               // Any matching column names, at all?
     int convNaN = 0;  // count of columns that were replaced with NA
-    for( int i=0; i<names.length; i++ ) {
-      Vec vec = test.vec(names[i]); // Search in the given validation set
+    final Frame.FrameVecRegistry frameVecRegistry = test.frameVecRegistry();
+    for (int i = 0; i < names.length; i++) {
+      Vec vec = frameVecRegistry.findByColName(names[i]); // Search in the given validation set
       boolean isResponse = response != null && names[i].equals(response);
       boolean isWeights = weights != null && names[i].equals(weights);
       boolean isOffset = offset != null && names[i].equals(offset);
@@ -1173,7 +1240,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         } else if (expensive) {   // generate warning even for response columns.  Other tests depended on this.
           final double defval;
           if (isWeights) defval = 1; // note: even though computeMetrics is false we should still have sensible weights (GLM skips rows with NA weights)
-          else if (isFold) defval = 0;
+          else if (isFold && domains[i] == null) defval = 0;
           else {
             defval = parms.missingColumnsType();
             convNaN++;
@@ -1181,17 +1248,17 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           vec = test.anyVec().makeCon(defval);
           toDelete.put(vec._key, "adapted missing vectors");
           String str = "Test/Validation dataset is missing column '" + names[i] + "': substituting in a column of " + defval;
-          if (isResponse || isWeights)
+          if (isResponse || isWeights || isFold)
             Log.info(str); // we are doing a "pure" predict (computeMetrics is false), don't complain to the user
           else
             msgs.add(str);
         }
       }
-      if( vec != null ) {          // I have a column with a matching name
-        if( domains[i] != null ) { // Model expects an categorical
+      if( vec != null) {          // I have a column with a matching name
+        if( domains[i] != null) { // Model expects an categorical
           if (vec.isString())
             vec = VecUtils.stringToCategorical(vec); //turn a String column into a categorical column (we don't delete the original vec here)
-          if( expensive && vec.domain() != domains[i] && !Arrays.equals(vec.domain(),domains[i]) ) { // Result needs to be the same categorical
+          if( expensive && !Arrays.equals(vec.domain(),domains[i]) ) { // Result needs to be the same categorical
             Vec evec;
             try {
               evec = vec.adaptTo(domains[i]); // Convert to categorical or throw IAE
@@ -1208,54 +1275,68 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             vec = evec;
           }
         } else if(vec.isCategorical()) {
-          if (parms._categorical_encoding == Parameters.CategoricalEncodingScheme.LabelEncoder) {
-            Vec evec = vec.toNumericVec();
-            toDelete.put(evec._key, "label encoded vec");
-            vec = evec;
-          } else {
-            throw new IllegalArgumentException("Test/Validation dataset has categorical column '" + names[i] + "' which is real-valued in the training data");
-          }
+          throw new IllegalArgumentException("Test/Validation dataset has categorical column '" + names[i] + "' which is real-valued in the training data");
         }
         good++;      // Assumed compatible; not checking e.g. Strings vs UUID
       }
       vvecs[i] = vec;
     }
-    if( good == names.length || (response != null && test.find(response) == -1 && good == names.length - 1) )  // Only update if got something for all columns
-      test.restructure(names,vvecs,good);
 
-    boolean haveCategoricalPredictors = false;
-    if (expensive && checkCategoricals && !catEncoded) {
-      for (int i=0; i<test.numCols(); ++i) {
-        if (test.names()[i].equals(response)) continue;
-        if (test.names()[i].equals(weights)) continue;
-        if (test.names()[i].equals(offset)) continue;
-        if (test.names()[i].equals(fold)) continue;
-        // either the column of the test set is categorical (could be a numeric col that's already turned into a factor)
-        if (test.vec(i).cardinality() > 0) {
-          haveCategoricalPredictors = true;
-          break;
-        }
-        // or a equally named column of the training set is categorical, but the test column isn't (e.g., numeric column provided to be converted to a factor)
-        int whichCol = ArrayUtils.find(names, test.name(i));
-        if (whichCol >= 0 && domains[whichCol] != null) {
-          haveCategoricalPredictors = true;
-          break;
-        }
-      }
-    }
-    // check if we first need to expand categoricals before calling this method again
-    if (expensive && !catEncoded && haveCategoricalPredictors) {
-      Frame updated = categoricalEncoder(test, new String[]{weights, offset, fold, response}, parms._categorical_encoding, tev, parms._max_categorical_levels);
-      toDelete.put(updated._key, "categorically encoded frame");
-      test.restructure(updated.names(), updated.vecs()); //updated in place
-      String[] msg2 = adaptTestForTrain(test, origNames, origDomains, backupNames, backupDomains, parms, expensive, computeMetrics, interactionBldr, tev, toDelete, true /*catEncoded*/);
-      msgs.addAll(Arrays.asList(msg2));
-      return msgs.toArray(new String[msgs.size()]);
-    }
     if( good == convNaN )
       throw new IllegalArgumentException("Test/Validation dataset has no columns in common with the training set");
 
+    if( good == names.length || (response != null && test.find(response) == -1 && good == names.length - 1) )  // Only update if got something for all columns
+      test.restructure(names, vvecs, good);
+
+    if (expensive && checkCategoricals && !catEncoded) {
+      final boolean hasCategoricalPredictors = hasCategoricalPredictors(test, response, weights, offset, fold, names, domains);
+
+      // check if we first need to expand categoricals before calling this method again
+      if (hasCategoricalPredictors) {
+        Frame updated = categoricalEncoder(test, new String[]{weights, offset, fold, response}, parms._categorical_encoding, tev, parms._max_categorical_levels);
+        toDelete.put(updated._key, "categorically encoded frame");
+        test.restructure(updated.names(), updated.vecs()); //updated in place
+        String[] msg2 = adaptTestForTrain(test, origNames, origDomains, backupNames, backupDomains, parms, expensive, computeMetrics, interactionBldr, tev, toDelete, true /*catEncoded*/);
+        msgs.addAll(Arrays.asList(msg2));
+        return msgs.toArray(new String[msgs.size()]);
+      }
+    }
+
     return msgs.toArray(new String[msgs.size()]);
+  }
+
+  private static boolean hasCategoricalPredictors(final Frame frame, final String responseName,
+                                           final String wieghtsName, final String offsetName,
+                                           final String foldName, final String[] names,
+                                           final String[][] domains) {
+
+    boolean haveCategoricalPredictors = false;
+    final Map<String, Integer> namesIndicesMap = new HashMap<>(names.length);
+
+    for (int i = 0; i < names.length; i++) {
+      namesIndicesMap.put(names[i], i);
+    }
+
+    for (int i = 0; i < frame.numCols(); ++i) {
+      if (frame.names()[i].equals(responseName)) continue;
+      if (frame.names()[i].equals(wieghtsName)) continue;
+      if (frame.names()[i].equals(offsetName)) continue;
+      if (frame.names()[i].equals(foldName)) continue;
+      // either the column of the test set is categorical (could be a numeric col that's already turned into a factor)
+      if (frame.vec(i).get_type() == Vec.T_CAT) {
+        haveCategoricalPredictors = true;
+        break;
+      }
+      // or a equally named column of the training set is categorical, but the test column isn't (e.g., numeric column provided to be converted to a factor)
+      final int whichCol = namesIndicesMap.get(frame.name(i));
+      if (whichCol >= 0 && domains[whichCol] != null) {
+        haveCategoricalPredictors = true;
+        break;
+      }
+    }
+
+    return haveCategoricalPredictors;
+
   }
 
 
@@ -1356,7 +1437,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       if( actual != null ) {  // Predict does not have an actual, scoring does
         String sdomain[] = actual.domain(); // Scored/test domain; can be null
         if (sdomain != null && mdomain != sdomain && !Arrays.equals(mdomain, sdomain))
-          output.replace(0, new CategoricalWrappedVec(actual.group().addVec(), actual._rowLayout, sdomain, predicted._key));
+          CategoricalWrappedVec.updateDomain(output.vec(0), sdomain);
       }
     }
     Frame.deleteTempFrameAndItsNonSharedVecs(adaptFr, fr);
@@ -1482,7 +1563,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                                    j,
                                    customMetricFunc).doAll(names.length, Vec.T_NUM, adaptFrm);
 
-    if (computeMetrics)
+    if (computeMetrics && bs._mb != null) //metric builder can be null if training was interrupted/cancelled
       bs._mb.makeModelMetrics(this, fr, adaptFrm, bs.outputFrame());
     Frame predictFr = bs.outputFrame(Key.<Frame>make(destination_key), names, domains);
     return postProcessPredictions(adaptFrm, predictFr, j);
@@ -1490,7 +1571,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   /**
    * Post-process prediction frame.
-   * 
+   *
    * @param adaptFrm
    * @param predictFr
    * @return
@@ -1531,7 +1612,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     /** Output parameter: Metric builder */
     public ModelMetrics.MetricBuilder _mb;
-    
+
     public BigScore(String[] domain, int ncols, double[] mean, boolean testHasWeights,
                     boolean computeMetrics, boolean makePreds, Job j, CFuncRef customMetricFunc) {
       super(customMetricFunc);
@@ -1615,7 +1696,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       super.reduce(bs);
       if (_mb != null) _mb.reduce(bs._mb);
     }
-    
+
     @Override protected void postGlobal() {
       super.postGlobal();
       if(_mb != null) {
@@ -1691,7 +1772,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
   // Version where the user has just ponied-up an array of data to be scored.
   // Data must be in proper order.  Handy for JUnit tests.
-  public double score(double[] data){ return ArrayUtils.maxIndex(score0(data, new double[_output.nclasses()]));  }
+  public double score(double[] data){
+    double[] pred = score0(data, new double[_output.nclasses()]);
+    return _output.nclasses() == 1 ? pred[0] /* regression */ : ArrayUtils.maxIndex(pred) /*classification?*/; 
+  }
 
   @Override protected Futures remove_impl( Futures fs ) {
     if (_output._model_metrics != null)
@@ -2023,7 +2107,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           return true;
         } catch (Exception e) {
           e.printStackTrace();
-          throw H2O.fail("Internal POJO compilation failed",e);
+          throw new IllegalStateException("Internal POJO compilation failed",e);
         }
 
         // Check that POJO has the expected interfaces
@@ -2073,7 +2157,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             features = MemoryManager.malloc8d(genmodel._names.length);
           } catch (IOException e1) {
             e1.printStackTrace();
-            throw H2O.fail("Internal MOJO loading failed", e1);
+            throw new IllegalStateException("Internal MOJO loading failed", e1);
           } finally {
             boolean deleted = new File(filename).delete();
             if (!deleted) Log.warn("Failed to delete the file");
@@ -2103,6 +2187,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                   config.setModel(genmodel)
                           .setConvertUnknownCategoricalLevelsToNa(true)
                           .setEnableLeafAssignment(genmodel instanceof SharedTreeMojoModel)
+                          .setEnableStagedProbabilities(genmodel instanceof SharedTreeMojoModel)
           );
         } catch (IOException e) {
           throw new RuntimeException(e);
@@ -2417,7 +2502,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       is.close();
       return model;
     } finally {
-      FileUtils.close(is);
+      FileUtils.closeSilently(is);
     }
   }
 
@@ -2426,7 +2511,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @param location target path, it can be on local filesystem, HDFS, S3...
    * @param force If true, overwrite already existing file
    * @return URI representation of the target location
-   * @throws IOException when writing fails
+   * @throws water.api.FSIOException when writing fails
    */
   public URI exportBinaryModel(String location, boolean force) throws IOException {
     OutputStream os = null;
@@ -2438,7 +2523,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       os.close();
       return targetUri;
     } finally {
-      FileUtils.close(os);
+      FileUtils.closeSilently(os);
     }
   }
 
@@ -2460,7 +2545,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       os.close();
       return targetUri;
     } finally {
-      FileUtils.close(os);
+      FileUtils.closeSilently(os);
     }
   }
 
@@ -2483,7 +2568,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
   }
 
-  ModelDescriptor modelDescriptor() {
+  public ModelDescriptor modelDescriptor() {
     return new ModelDescriptor() {
       @Override
       public String[][] scoringDomains() { return Model.this.scoringDomains(); }
@@ -2494,11 +2579,19 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       @Override
       public String algoFullName() { return _parms.fullName(); }
       @Override
+      public String offsetColumn() { return _output.offsetName(); }
+      @Override
+      public String weightsColumn() { return _output.offsetName(); }
+      @Override
+      public String foldColumn() { return _output.foldName(); }
+      @Override
       public ModelCategory getModelCategory() { return _output.getModelCategory(); }
       @Override
       public boolean isSupervised() { return _output.isSupervised(); }
       @Override
       public int nfeatures() { return _output.nfeatures(); }
+      @Override
+      public String[] features() { return _output.features(); }
       @Override
       public int nclasses() { return _output.nclasses(); }
       @Override
@@ -2515,6 +2608,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       public String uuid() { return String.valueOf(Model.this.checksum()); }
       @Override
       public String timestamp() { return new DateTime().toString(); }
+      @Override
+      public VariableImportances variableImportances() { return null; }
+      @Override
+      public Table modelSummary() { return null; }
     };
   }
 

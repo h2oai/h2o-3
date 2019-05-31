@@ -12,10 +12,7 @@ import water.util.*;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 /** A collection of named {@link Vec}s, essentially an R-like Distributed Data Frame.
  *
@@ -319,7 +316,7 @@ public class Frame extends Lockable<Frame> {
    */
   public Key<Vec>[] keys() { return _keys; }
   public Iterable<Key<Vec>> keysList() { return Arrays.asList(_keys); }
-
+  
   /** The internal array of Vecs.  For efficiency Frames contain an array of
    *  Vec Keys - and the Vecs themselves are lazily loaded from the {@link DKV}.
    *  @return the internal array of Vecs */
@@ -983,10 +980,16 @@ public class Frame extends Lockable<Frame> {
   // Chunks in a Frame, before filling them.  This can be called in parallel
   // for different Chunk#'s (cidx); each Chunk can be filled in parallel.
   static NewChunk[] createNewChunks(String name, byte[] type, int cidx) {
+    boolean[] sparse = new boolean[type.length];
+    Arrays.fill(sparse, false);
+    return createNewChunks(name, type, cidx, sparse);
+  }
+
+  static NewChunk[] createNewChunks(String name, byte[] type, int cidx, boolean[] sparse) {
     Frame fr = (Frame) Key.make(name).get();
     NewChunk[] nchks = new NewChunk[fr.numCols()];
     for (int i = 0; i < nchks.length; i++) {
-      nchks[i] = new NewChunk(new AppendableVec(fr._keys[i], type[i]), cidx);
+      nchks[i] = new NewChunk(new AppendableVec(fr._keys[i], type[i]), cidx, sparse[i]);
     }
     return nchks;
   }
@@ -1609,9 +1612,9 @@ public class Frame extends Lockable<Frame> {
   @Override public Class<KeyV3.FrameKeyV3> makeSchema() { return KeyV3.FrameKeyV3.class; }
 
   /** Sort rows of a frame, using the set of columns as keys.  User can specify sorting direction for each sorting
-   * column in a boolean array.  For example, if we want to sort columns 0, 1, 2 and want to sort 0 in ascending
-   * direction, 1 and 2 in descending direction for frame fr, the call to make is fr.sort(new int[2]{0,1,2},
-   * new boolean[2]{true, false, false}.
+   * column in a integer array.  For example, if we want to sort columns 0, 1, 2 and want to sort 0 in ascending
+   * direction, 1 and 2 in descending direction for frame fr, the call to make is fr.sort(new int[]{0,1,2},
+   * new int[]{1, -1, -1}.
    *
    *  @return Copy of frame, sorted */
   public Frame sort( int[] cols ) {
@@ -1620,5 +1623,55 @@ public class Frame extends Lockable<Frame> {
 
   public Frame sort(int[] cols, int[] ascending) {
     return Merge.sort(this, cols, ascending);
+  }
+
+  /**
+   * A structure for fast lookup in the set of frame's vectors.
+   * Purpose of this class is to avoid multiple O(n) searches in {@link Frame}'s vectors.
+   *
+   * @return An instance of {@link FrameVecRegistry}
+   */
+  public FrameVecRegistry frameVecRegistry() {
+    return new FrameVecRegistry();
+  }
+
+  /**
+   * Returns the original frame with specific column converted to categorical
+   */
+  public Frame toCategoricalCol(int columIdx){
+    write_lock();
+    replace(columIdx, vec(columIdx).toCategoricalVec()).remove();
+    // Update frame in DKV
+    update();
+    unlock();
+    return this;
+  }
+
+  /**
+   * Returns the original frame with specific column converted to categorical
+   */
+  public Frame toCategoricalCol(String column){
+   return toCategoricalCol(find(column));
+  }
+
+  public class FrameVecRegistry {
+    private LinkedHashMap<String, Vec> vecMap;
+
+    private FrameVecRegistry() {
+      vecMap = new LinkedHashMap<>(_vecs.length);
+      for (int i = 0; i < _vecs.length; i++) {
+        vecMap.put(_names[i], _vecs[i]);
+      }
+    }
+
+    /**
+     * Finds a Vec by column name
+     *
+     * @param colName Column name to search for, case-sensitive
+     * @return An instance of {@link Vec}, if found. Otherwise null.
+     */
+    public Vec findByColName(final String colName) {
+      return vecMap.get(colName);
+    }
   }
 }

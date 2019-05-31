@@ -31,7 +31,7 @@ from h2o.schemas.error import H2OErrorV3, H2OModelBuilderErrorV3
 from h2o.two_dim_table import H2OTwoDimTable
 from h2o.utils.backward_compatibility import backwards_compatible, CallableString
 from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.shared_utils import stringify_list, print2
+from h2o.utils.shared_utils import stringify_list, stringify_dict, print2
 from h2o.utils.typechecks import (assert_is_type, assert_matches, assert_satisfies, is_type, numeric)
 from h2o.model.metrics_base import (H2ORegressionModelMetrics, H2OClusteringModelMetrics, H2OBinomialModelMetrics,
                                     H2OMultinomialModelMetrics, H2OOrdinalModelMetrics, H2OAutoEncoderModelMetrics)
@@ -233,7 +233,7 @@ class H2OConnection(backwards_compatible()):
         :param url: full url of the server to connect to.
         :param ip: target server's IP address or hostname (default "localhost").
         :param port: H2O server's port (default 54321).
-        :param name: H2O cloud name.
+        :param name: H2O cluster name.
         :param https: if True then connect using https instead of http (default False).
         :param verify_ssl_certificates: if False then SSL certificate checking will be disabled (default True). This
             setting should rarely be disabled, as it makes your connection vulnerable to man-in-the-middle attacks. When
@@ -450,7 +450,7 @@ class H2OConnection(backwards_compatible()):
         Return the session id of the current connection.
 
         The session id is issued (through an API request) the first time it is requested, but no sooner. This is
-        because generating a session id puts it into the DKV on the server, which effectively locks the cloud. Once
+        because generating a session id puts it into the DKV on the server, which effectively locks the cluster. Once
         issued, the session id will stay the same until the connection is closed.
         """
         if self._session_id is None:
@@ -460,7 +460,7 @@ class H2OConnection(backwards_compatible()):
 
     @property
     def cluster(self):
-        """H2OCluster object describing the underlying cloud."""
+        """H2OCluster object describing the underlying cluster."""
         return self._cluster
 
     @property
@@ -550,15 +550,15 @@ class H2OConnection(backwards_compatible()):
 
     def _test_connection(self, max_retries=5, messages=None):
         """
-        Test that the H2O cluster can be reached, and retrieve basic cloud status info.
+        Test that the H2O cluster can be reached, and retrieve basic cluster status info.
 
-        :param max_retries: Number of times to try to connect to the cloud (with 0.2s intervals).
+        :param max_retries: Number of times to try to connect to the cluster (with 0.2s intervals).
 
-        :returns: Cloud information (an H2OCluster object)
+        :returns: Cluster information (an H2OCluster object)
         :raises H2OConnectionError, H2OServerError:
         """
         if messages is None:
-            messages = ("Connecting to H2O server at {url}..", "successful.", "failed.")
+            messages = ("Connecting to H2O server at {url} ..", "successful.", "failed.")
         self._print(messages[0].format(url=self._base_url), end="")
         cld = None
         errors = []
@@ -617,8 +617,11 @@ class H2OConnection(backwards_compatible()):
             if value is None: continue  # don't send args set to None so backend defaults take precedence
             if isinstance(value, list):
                 value = stringify_list(value)
-            elif isinstance(value, dict) and "__meta" in value and value["__meta"]["schema_name"].endswith("KeyV3"):
-                value = value["name"]
+            elif isinstance(value, dict):
+                if "__meta" in value and value["__meta"]["schema_name"].endswith("KeyV3"):
+                    value = value["name"]
+                else:
+                    value = stringify_dict(value)
             else:
                 value = str(value)
             res[key] = value

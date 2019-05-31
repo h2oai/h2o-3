@@ -1,4 +1,4 @@
-#! /usr/bin/groovy
+#!/usr/bin/groovy
 
 final String NODE_LABEL = 'docker && !mr-0xc8'
 final String DOCKER_STASH = 'h2o-3-hadoop-docker-stash'
@@ -13,7 +13,7 @@ properties(
         parameters(
             [
                 string(defaultValue: 'master', description: 'Branch to checkout', name: 'gitBranch'),
-                string(name: 'dockerRegistry', defaultValue: 'docker.h2o.ai'),
+                string(name: 'dockerRegistry', defaultValue: 'harbor.h2o.ai'),
                 booleanParam(name: 'force', defaultValue: false, description: 'If false and image with version specified by BuildConfig exists in repository, then the build fails.')
             ]
         )
@@ -65,6 +65,7 @@ parallel(pipelineContext.getBuildConfig().getSupportedHadoopDistributions().coll
                     try {
                         pipelineContext.getBuildSummary().addStageSummary(this, buildStageName, '')
                         pipelineContext.getBuildSummary().setStageDetails(this, buildStageName, env.NODE_NAME, env.WORKSPACE)
+                        cleanWs()
 
                         final String imageName = "${IMAGE_NAME_PREFIX}-${distribution.name}-${distribution.version}"
                         final boolean conflict = pipelineContext.getUtils()
@@ -86,13 +87,17 @@ parallel(pipelineContext.getBuildConfig().getSupportedHadoopDistributions().coll
                                         -t ${REGISTRY_PREFIX}/${imageName}:${version} \
                                         -f hadoop/${distribution.name}/Dockerfile \
                                         --build-arg PATH_PREFIX=hadoop/${distribution.name} \
-                                        --build-arg VERSION=${distribution.version} .
+                                        --build-arg H2O_BRANCH=${params.gitBranch} \
+                                        --build-arg VERSION=${distribution.version} \
+                                        .
 
                                     docker build \
                                         -t ${REGISTRY_PREFIX}/${imageName}-krb:${version} \
                                         -f hadoop/${distribution.name}/Dockerfile.kerberos \
                                         --build-arg FROM_IMAGE=${REGISTRY_PREFIX}/${imageName}:${version} \
-                                        --build-arg PATH_PREFIX=hadoop/${distribution.name} .
+                                        --build-arg H2O_BRANCH=${params.gitBranch} \
+                                        --build-arg PATH_PREFIX=hadoop/${distribution.name} \
+                                        .
                                 """
                             }
                         }

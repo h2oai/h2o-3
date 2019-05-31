@@ -35,8 +35,8 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
   }
 
   public static class IsolationForestOutput extends SharedTreeModel.SharedTreeOutput {
-    public long _max_path_length;
-    public long _min_path_length;
+    public int _max_path_length;
+    public int _min_path_length;
 
     public IsolationForestOutput(IsolationForest b) { super(b); }
 
@@ -50,7 +50,7 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
 
   @Override
   public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-    return new ModelMetricsAnomaly.MetricBuilderAnomaly();
+    return new ModelMetricsAnomaly.MetricBuilderAnomaly("Isolation Forest Metrics");
   }
 
   @Override

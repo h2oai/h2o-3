@@ -25,10 +25,10 @@ H2O supports a number of standard statistical models, such as GLM, K-means, and 
 
 Note that no actual data is stored in the R workspace; and no actual work is carried out by R. R only saves the named objects, which uniquely identify the data set, model, etc on the server. When the user makes a request, R queries the server via the REST API, which returns a JSON file with the relevant information that R then displays in the console.
 
-If you are using an older version of H2O, use the following porting guide to update your scripts: \href{https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/upgrade/H2ODevPortingRScripts.md}{Porting Scripts}
+If you are using an older version of H2O, use the following porting guide to update your scripts: \href{https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/upgrade/H2ODevPortingRScripts.md}{Porting Scripts}
 }
 \author{
-Maintainer: The H2O.ai team <tomk@0xdata.com>
+Maintainer: Erin LeDell <erin@h2o.ai>
 }
 \references{
 \itemize{

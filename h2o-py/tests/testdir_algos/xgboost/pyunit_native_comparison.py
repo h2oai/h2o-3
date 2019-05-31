@@ -21,7 +21,7 @@ def arlines_test():
     dtrain = xgb.DMatrix(data=data, label=label)
     watchlist = [(dtrain, 'train')]
     param = {'eta': 0.7, 'silent': 1, 'objective': 'binary:logistic', 'booster': 'gbtree',
-             'max_depth': 2, 'seed': 1, 'lambda': 0, 'max_delta_step': 0, 'alpha': 0, 'nround': 5}
+             'max_depth': 2, 'seed': 1, 'max_delta_step': 0, 'alpha': 0, 'nround': 5}
     bst = xgb.train(params=param, dtrain=dtrain, num_boost_round=2, evals = watchlist)
     native_prediction = bst.predict(data=dtrain)
     print(native_prediction)

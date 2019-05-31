@@ -4,11 +4,15 @@ package water;
 import water.api.RequestServer;
 import water.api.RestApiExtension;
 import water.api.SchemaServer;
-import water.server.RequestAuthExtension;
 import water.util.Log;
 import water.util.StringUtils;
+import water.webserver.iface.RequestAuthExtension;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.ServiceLoader;
 
 public class ExtensionManager {
 
@@ -69,12 +73,16 @@ public class ExtensionManager {
     return sb;
   }
 
+  public AbstractH2OExtension getCoreExtension(String extensionName) {
+    return coreExtensions.get(extensionName);
+  }
+  
   public Collection<AbstractH2OExtension> getCoreExtensions() {
     return coreExtensions.values();
   }
 
-  public boolean isCoreExtensionsEnabled(String extensionName){
-    AbstractH2OExtension ext = coreExtensions.get(extensionName);
+  public boolean isCoreExtensionsEnabled(String extensionName) {
+    AbstractH2OExtension ext = getCoreExtension(extensionName);
     return ext != null && ext.isEnabled();
   }
 

@@ -185,7 +185,7 @@ public final class ParseDataset {
 
   // Setup a private background parse job
   private ParseDataset(Key<Frame> dest) {
-    _job = new Job(dest,Frame.class.getName(), "Parse");
+    _job = new Job<>(dest, Frame.class.getName(), "Parse");
   }
 
   // -------------------------------
@@ -256,10 +256,10 @@ public final class ParseDataset {
     MultiFileParseTask mfpt = pds._mfpt = new MultiFileParseTask(vg,setup,job._key,fkeys,deleteOnDone);
     mfpt.doAll(fkeys);
     Log.trace("Done ingesting files.");
+    
     if( job.stop_requested() ) return pds;
 
-    final AppendableVec [] avs = mfpt.vecs(); // with skipped_columns excluded
-    Frame fr = null;
+    final AppendableVec[] avs = mfpt.vecs();
     // Calculate categorical domain
     // Filter down to columns with some categoricals
     int n = 0;
@@ -268,10 +268,12 @@ public final class ParseDataset {
 
     String[] parse_column_names;
     byte[] parse_column_types;
-    if (setup._column_names == null)
-      setup._column_names = getColumnNames(setup._column_types.length, null);
+    int colNumbers = setup._column_types==null?setup._number_columns:setup._column_types.length;;
+    if (setup._column_names == null) {
+      setup._column_names = getColumnNames(colNumbers, null);
+    }
 
-    boolean typesSameParseColumns = setup._column_types.length==parseCols;
+    boolean typesSameParseColumns = colNumbers==parseCols;
     boolean namesSameparseColumns = setup._column_names.length==parseCols;
 
     if (sameParseColumns) {
@@ -298,6 +300,8 @@ public final class ParseDataset {
         ecols2[n++] = i;
     }
     final int[] ecols = Arrays.copyOf(ecols2, n); // skipped columns are excluded already
+    Frame fr;
+    ParseFinalizer finalizer = ParseFinalizer.get(setup);
     // If we have any, go gather unified categorical domains
     if( n > 0 ) {
       if (!setup.getParseType().isDomainProvided) { // Domains are not provided via setup we need to collect them
@@ -329,8 +333,9 @@ public final class ParseDataset {
 
       job.update(0, "Compressing data.");
 
-      fr = new Frame(job._result, setup._column_names, AppendableVec.closeAll(avs));
+      fr = finalizer.finalize(job, AppendableVec.closeAll(avs), setup, mfpt._fileChunkOffsets);
       fr.update(job);
+
       Log.trace("Done compressing data.");
       if (!setup.getParseType().isDomainProvided) {
         // Update categoricals to the globally agreed numbering
@@ -357,7 +362,7 @@ public final class ParseDataset {
       }
     } else {                    // No categoricals case
       job.update(0,"Compressing data.");
-      fr = new Frame(job._result, setup._column_names,AppendableVec.closeAll(avs));
+      fr = finalizer.finalize(job, AppendableVec.closeAll(avs), setup, mfpt._fileChunkOffsets);
       Log.trace("Done closing all Vecs.");
     }
     // Check for job cancellation
@@ -645,7 +650,8 @@ public final class ParseDataset {
     private ParseWriter.ParseErr[] _errors = new ParseWriter.ParseErr[0];
 
     MultiFileParseTask(VectorGroup vg,  ParseSetup setup, Key<Job> jobKey, Key[] fkeys, boolean deleteOnDone ) {
-      _vg = vg; _parseSetup = setup;
+      _vg = vg; 
+      _parseSetup = setup;
       _vecIdStart = _vg.reserveKeys(_reservedKeys = _parseSetup._parse_type.equals(SVMLight_INFO) ? 100000000 : setup._number_columns);
       _deleteOnDone = deleteOnDone;
       _jobKey = jobKey;

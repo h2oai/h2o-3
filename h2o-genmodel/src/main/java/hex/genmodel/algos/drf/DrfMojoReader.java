@@ -24,4 +24,8 @@ public class DrfMojoReader extends SharedTreeMojoReader<DrfMojoModel> {
   protected DrfMojoModel makeModel(String[] columns, String[][] domains, String responseColumn) {
     return new DrfMojoModel(columns, domains, responseColumn);
   }
+
+  @Override public String mojoVersion() {
+    return "1.30";
+  }
 }

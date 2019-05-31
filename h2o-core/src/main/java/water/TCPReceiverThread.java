@@ -58,6 +58,7 @@ public class TCPReceiverThread extends Thread {
     boolean saw_error = false;
 
     while( true ) {
+      ByteChannel wrappedSocket = null;
       try {
         // Cleanup from any prior socket failures.  Rare unless we're really sick.
         if( errsock != null ) { // One time attempt a socket close
@@ -76,48 +77,52 @@ public class TCPReceiverThread extends Thread {
         }
         // Block for TCP connection and setup to read from it.
         SocketChannel sock = SOCK.accept();
-        ByteBuffer bb = ByteBuffer.allocate(4).order(ByteOrder.nativeOrder());
-        ByteChannel wrappedSocket = socketChannelFactory.serverChannel(sock);
+        InetAddress inetAddress = sock.socket().getInetAddress();
+        ByteBuffer bb = ByteBuffer.allocate(6).order(ByteOrder.nativeOrder());
+        wrappedSocket = socketChannelFactory.serverChannel(sock);
         bb.limit(bb.capacity());
         bb.position(0);
         while(bb.hasRemaining()) { // read first 8 bytes
           wrappedSocket.read(bb);
         }
         bb.flip();
-        int chanType = bb.get(); // 1 - small , 2 - big
-        int port = bb.getChar();
+        int chanType = bb.get(); // 1 - small, 2 - big, 3 - external
+        short timestamp = bb.getShort(); // read timestamp
+                                         // Note: timestamp was not part of the original protocol, was added in 3.22.0.1, #a33de44)
+        int port = bb.getChar(); // read port
         int sentinel = (0xFF) & bb.get();
         if(sentinel != 0xef) {
-          if(H2O.SELF.getSecurityManager().securityEnabled) {
-            throw new IOException("Missing EOM sentinel when opening new SSL tcp channel.");
-          } else {
-            throw H2O.fail("missing eom sentinel when opening new tcp channel");
-          }
+          ListenerService.getInstance().report("protocol-failure", "handshake");
+          String channelType = H2O.SELF.getSecurityManager().securityEnabled ? "SSL TCP" : "TCP";
+          throw new IOException("Communication protocol failure (source: '" + inetAddress + "'): " +
+                          "Missing EOM sentinel when opening new " + channelType + " channel.");
         }
         // todo compare against current cloud, refuse the con if no match
 
 
         // Do H2O.Intern in corresponding case branch, we can't do H2O.intern here since it wouldn't work
         // with ExternalFrameHandling ( we don't send the same information there as with the other communication)
-        InetAddress inetAddress = sock.socket().getInetAddress();
         // Pass off the TCP connection to a separate reader thread
         switch( chanType ) {
         case TCP_SMALL:
-          H2ONode h2o = H2ONode.intern(inetAddress, port);
-          new UDP_TCP_ReaderThread(h2o, wrappedSocket).start();
+          new UDP_TCP_ReaderThread(H2ONode.intern(inetAddress, port, timestamp), wrappedSocket).start();
           break;
         case TCP_BIG:
-          new TCPReaderThread(wrappedSocket, new AutoBuffer(wrappedSocket, inetAddress), inetAddress).start();
+          new TCPReaderThread(wrappedSocket, new AutoBuffer(wrappedSocket, inetAddress, timestamp), inetAddress, timestamp).start();
           break;
         case TCP_EXTERNAL:
-          new ExternalFrameHandlerThread(wrappedSocket, new AutoBuffer(wrappedSocket, null)).start();
+          new ExternalFrameHandlerThread(wrappedSocket, new AutoBuffer(wrappedSocket)).start();
           break;
         default:
-          throw H2O.fail("unexpected channel type " + chanType + ", only know 1 - Small, 2 - Big and 3 - ExternalFrameHandling");
+          ListenerService.getInstance().report("protocol-failure", "channel-type", chanType);
+          throw new IOException("Communication protocol failure: Unexpected channel type " + chanType + ", only know 1 - Small, 2 - Big and 3 - ExternalFrameHandling");
         }
       } catch( java.nio.channels.AsynchronousCloseException ex ) {
         break;                  // Socket closed for shutdown
       } catch( Exception e ) {
+        if (wrappedSocket != null) {
+          try { wrappedSocket.close(); } catch (Exception e2) { Log.trace(e2); }
+        }
         e.printStackTrace();
         // On any error from anybody, close all sockets & re-open
         Log.err("IO error on TCP port "+H2O.H2O_PORT+": ",e);
@@ -131,13 +136,15 @@ public class TCPReceiverThread extends Thread {
   static class TCPReaderThread extends Thread {
     public ByteChannel _sock;
     public AutoBuffer _ab;
-    private final InetAddress address;
+    private final InetAddress _address;
+    private final short _timestamp;
 
-    public TCPReaderThread(ByteChannel sock, AutoBuffer ab, InetAddress address) {
+    public TCPReaderThread(ByteChannel sock, AutoBuffer ab, InetAddress address, short timestamp) {
       super("TCP-"+ab._h2o+"-"+(ab._h2o._tcp_readers++));
       _sock = sock;
       _ab = ab;
-      this.address = address;
+      _address = address;
+      _timestamp = timestamp;
       setPriority(MAX_PRIORITY-1);
     }
 
@@ -169,7 +176,7 @@ public class TCPReceiverThread extends Thread {
         // Reuse open sockets for the next task
         try {
           if( !_sock.isOpen() ) break;
-          _ab = new AutoBuffer(_sock, address);
+          _ab = new AutoBuffer(_sock, _address, _timestamp);
         } catch( Exception e ) {
           // Exceptions here are *normal*, this is an idle TCP connection and
           // either the OS can time it out, or the cloud might shutdown.  We
@@ -292,7 +299,7 @@ public class TCPReceiverThread extends Thread {
     // Check cloud membership; stale ex-members are "fail-stop" - we mostly
     // ignore packets from them (except paxos packets).
     boolean is_member = cloud.contains(ab._h2o);
-    boolean is_client = ab._h2o._heartbeat._client;
+    boolean is_client = ab._h2o.isClient();
 
     // Some non-Paxos packet from a non-member.  Probably should record & complain.
     // Filter unknown-packet-reports.  In bad situations of poisoned Paxos

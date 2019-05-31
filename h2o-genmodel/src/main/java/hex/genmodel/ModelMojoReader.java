@@ -1,5 +1,9 @@
 package hex.genmodel;
 
+import com.google.gson.*;
+import hex.genmodel.descriptor.JsonModelDescriptorReader;
+import hex.genmodel.descriptor.ModelDescriptorBuilder;
+import hex.genmodel.descriptor.Table;
 import hex.genmodel.utils.ParseUtils;
 import hex.genmodel.utils.StringEscapeUtils;
 
@@ -9,7 +13,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-
 
 /**
  * Helper class to deserialize a model from MOJO format. This is a counterpart to `ModelMojoWriter`.
@@ -22,7 +25,29 @@ public abstract class ModelMojoReader<M extends MojoModel> {
   private Map<String, Object> _lkv;
 
 
+  /**
+   * De-serializes a {@link MojoModel}, creating an instance of {@link MojoModel} useful for scoring
+   * and model evaluation.
+   *
+   * @param reader An instance of {@link MojoReaderBackend} to read from existing MOJO. After the model is de-serialized,
+   *               the {@link MojoReaderBackend} instance is automatically closed if it implements {@link Closeable}.
+   * @return De-serialized {@link MojoModel}
+   * @throws IOException Whenever there is an error reading the {@link MojoModel}'s data.
+   */
   public static MojoModel readFrom(MojoReaderBackend reader) throws IOException {
+    return readFrom(reader, false);
+  }
+
+  /**
+   * De-serializes a {@link MojoModel}, creating an instance of {@link MojoModel} useful for scoring
+   * and model evaluation.
+   *
+   * @param reader      An instance of {@link MojoReaderBackend} to read from existing MOJO
+   * @param readModelDescriptor If true, 
+   * @return De-serialized {@link MojoModel}
+   * @throws IOException Whenever there is an error reading the {@link MojoModel}'s data.
+   */
+  public static MojoModel readFrom(MojoReaderBackend reader, final boolean readModelDescriptor) throws IOException {
     try {
       Map<String, Object> info = parseModelInfo(reader);
       if (! info.containsKey("algorithm"))
@@ -31,7 +56,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
       ModelMojoReader mmr = ModelMojoFactory.INSTANCE.getMojoReader(algo);
       mmr._lkv = info;
       mmr._reader = reader;
-      mmr.readAll();
+      mmr.readAll(readModelDescriptor);
       return mmr._model;
     } finally {
       if (reader instanceof Closeable)
@@ -48,6 +73,13 @@ public abstract class ModelMojoReader<M extends MojoModel> {
   protected abstract void readModelData() throws IOException;
 
   protected abstract M makeModel(String[] columns, String[][] domains, String responseColumn);
+
+  /**
+   * Maximal version of the mojo file current model reader supports. Follows the <code>major.minor</code>
+   * format, where <code>minor</code> is a 2-digit number. For example "1.00",
+   * "2.05", "2.13". See README in mojoland repository for more details.
+   */
+  public abstract String mojoVersion();
 
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -131,7 +163,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
   // Private
   //--------------------------------------------------------------------------------------------------------------------
 
-  private void readAll() throws IOException {
+  private void readAll(final boolean readModelDescriptor) throws IOException {
     String[] columns = (String[]) _lkv.get("[columns]");
     String[][] domains = parseModelDomains(columns.length);
     boolean isSupervised = readkv("supervised");
@@ -147,7 +179,27 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     _model._priorClassDistrib = readkv("prior_class_distrib");
     _model._modelClassDistrib = readkv("model_class_distrib");
     _model._offsetColumn = readkv("offset_column");
+    _model._mojo_version = ((Number) readkv("mojo_version")).doubleValue();
+    checkMaxSupportedMojoVersion();
     readModelData();
+    if (readModelDescriptor) {
+      _model._modelDescriptor = readModelDescriptor();
+    }
+  }
+
+  private ModelDescriptor readModelDescriptor() {
+    final JsonObject modelJson = JsonModelDescriptorReader.parseModelJson(_reader);
+    ModelDescriptorBuilder modelDescriptorBuilder = new ModelDescriptorBuilder(_model);
+
+    final Table model_summary_table = JsonModelDescriptorReader.extractTableFromJson(modelJson, "output.model_summary");
+    modelDescriptorBuilder.modelSummary(model_summary_table);
+
+    readModelSpecificDescription(modelDescriptorBuilder, modelJson);
+    return modelDescriptorBuilder.build();
+  }
+
+  protected void readModelSpecificDescription(final ModelDescriptorBuilder modelDescriptorBuilder, final JsonObject modelJson) {
+    // Default behavior is empty on purpose
   }
 
   private static Map<String, Object> parseModelInfo(MojoReaderBackend reader) throws IOException {
@@ -240,4 +292,9 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     public String toString() { return _val; }
   }
 
+  private void checkMaxSupportedMojoVersion() throws IOException {
+    if(_model._mojo_version > Double.parseDouble(mojoVersion())){
+      throw new IOException(String.format("MOJO version incompatibility - the model MOJO version (%.2f) is higher than the current h2o version (%s) supports. Please, use the older version of h2o to load MOJO model.", _model._mojo_version, mojoVersion()));
+    }
+  }
 }

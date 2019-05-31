@@ -6,7 +6,12 @@ import org.junit.Test;
 import water.*;
 import water.fvec.*;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Arrays;
+
+import static org.junit.Assert.assertEquals;
 
 
 // test cases:
@@ -354,6 +359,50 @@ public class DataInfoTest extends TestUtil {
     }
   }
 
+  @Test public void testCoefNames() throws IOException { // just test that it works at all
+    Frame fr = parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip");
+    DataInfo dinfo = null;
+    try {
+      dinfo = new DataInfo(
+              fr.clone(),  // train
+              null,        // valid
+              1,           // num responses
+              true,        // use all factor levels
+              DataInfo.TransformType.STANDARDIZE,  // predictor transform
+              DataInfo.TransformType.NONE,         // response  transform
+              true,        // skip missing
+              false,       // impute missing
+              false,       // missing bucket
+              false,       // weight
+              false,       // offset
+              false,       // fold
+              Model.InteractionSpec.allPairwise(new String[]{fr.name(8),fr.name(16),fr.name(2)})  // interactions
+      );
+
+      Assert.assertNull(dinfo._coefNames); // coef names are not populated at first
+      final String[] cn = dinfo.coefNames();
+      Assert.assertNotNull(cn);
+      Assert.assertArrayEquals(cn, dinfo._coefNames); // coef names are cached after first accessed
+
+      DKV.put(dinfo);
+
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      dinfo.writeAll(new AutoBuffer(baos, true)).close();
+      baos.close();
+
+      ByteArrayInputStream input = new ByteArrayInputStream(baos.toByteArray());
+      DataInfo deserialized = (DataInfo) Keyed.readAll(new AutoBuffer(input));
+      Assert.assertNotNull(deserialized);
+      Assert.assertArrayEquals(cn, deserialized._coefNames); // coef names were preserved in the deserialized object
+    } finally {
+      if (dinfo != null) {
+        dinfo.dropInteractions();
+        dinfo.remove();
+      }
+      fr.delete();
+    }
+  }
+
   @Test public void testInteractionsForcedAllFactors() {
     try {
       Scope.enter();
@@ -376,7 +425,7 @@ public class DataInfoTest extends TestUtil {
               false,       // fold
               interactionSpec  // interaction spec
       );
-      Assert.assertEquals(fr.vec("Origin").domain().length, dinfo.coefNames().length);
+      assertEquals(fr.vec("Origin").domain().length, dinfo.coefNames().length);
       String[] expected = new String[dinfo.coefNames().length];
       for (int i = 0; i < expected.length; i++)
         expected[i] = "Origin_Distance." + sfr.vec("Origin").domain()[i];
@@ -411,7 +460,7 @@ public class DataInfoTest extends TestUtil {
               interactionSpec  // interaction spec
       );
       // Check that we get correct expanded coefficients and "Distance" is not dropped
-      Assert.assertEquals(fr.vec("Origin").domain().length, dinfo.coefNames().length);
+      assertEquals(fr.vec("Origin").domain().length, dinfo.coefNames().length);
       String[] expected = new String[dinfo.coefNames().length];
       expected[expected.length - 1] = "Distance";
       for (int i = 0; i < expected.length - 1; i++)
@@ -424,7 +473,7 @@ public class DataInfoTest extends TestUtil {
       }
       // Check that we get "mode" for unknown level
       dinfo._valid = true;
-      Assert.assertEquals(fr.vec("Origin").mode(),
+      assertEquals(fr.vec("Origin").mode(),
               dinfo.getCategoricalIdFromInteraction(0, dinfo._adaptedFrame.vec(0).domain().length));
       dinfo.dropInteractions();
       dinfo.remove();
@@ -463,7 +512,7 @@ public class DataInfoTest extends TestUtil {
     }
     // Check that we get "mode" for unknown level
     dinfo._valid = true;
-    Assert.assertEquals(fr.vec("Origin").mode(),
+    assertEquals(fr.vec("Origin").mode(),
             dinfo.getCategoricalIdFromInteraction(0, dinfo._adaptedFrame.vec(0).domain().length));
     dinfo.dropInteractions();
     dinfo.remove();
@@ -473,6 +522,50 @@ public class DataInfoTest extends TestUtil {
 
 }
 
+  private static DataInfo.Row[] makeRowsOpsTestData() { // few rows to test row operations (inner product, ...)
+    Frame f = TestFrameCatalog.oneChunkFewRows();
+    DataInfo di = new DataInfo(f, null, 1, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false, false, false, null)
+            .disableIntercept();
+
+    Chunk[] chks = new Chunk[f.numCols()];
+    for (int i = 0; i < chks.length; i++)
+      chks[i] = di._adaptedFrame.vec(i).chunkForChunkIdx(0);
+
+    return new DataInfo.Row[] {
+            di.extractDenseRow(chks, 0, di.newDenseRow()),
+            di.extractDenseRow(chks, 1, di.newDenseRow()),
+            di.extractDenseRow(chks, 2, di.newDenseRow())
+    };
+  }
+
+  @Test
+  public void testInnerProduct() {
+    Scope.enter();
+    try {
+      DataInfo.Row[] rs = makeRowsOpsTestData();
+
+      assertEquals(3.44, rs[0].innerProduct(rs[0]), 0);
+      assertEquals(4.08, rs[0].innerProduct(rs[1]), 0);
+      assertEquals(6.72, rs[0].innerProduct(rs[2]), 0);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testTwoNormSq() {
+    Scope.enter();
+    try {
+      DataInfo.Row[] rs = makeRowsOpsTestData();
+
+      assertEquals(3.44, rs[0].twoNormSq(), 0);
+      assertEquals(rs[1].innerProduct(rs[1]), rs[1].twoNormSq(), 0);
+      assertEquals(rs[2].innerProduct(rs[2]), rs[2].twoNormSq(), 0);
+    } finally {
+      Scope.exit();
+    }
+  }
+  
 //  @Test public void personalChecker() {
 //    final Frame gold = parse_test_file(Key.make("gold"), "/Users/spencer/Desktop/ffff.csv");
 //    Frame fr = parse_test_file(Key.make("a.hex"), "/Users/spencer/Desktop/iris.csv");

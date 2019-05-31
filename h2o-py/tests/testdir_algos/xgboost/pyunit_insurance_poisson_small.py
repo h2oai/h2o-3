@@ -16,6 +16,12 @@ def xgboost_insurance_poisson_small():
     model_2_trees = H2OXGBoostEstimator(training_frame=training_frame, learn_rate=0.1, max_depth=1,
                                         booster='gbtree', seed=1, ntrees=2, distribution='poisson');
     model_2_trees.train(x=x, y=y, training_frame=training_frame)
+
+    # check and make sure training frame column names and types info are returned correctly in model output
+    pyunit_utils.assertModelColNamesTypesCorrect(model_2_trees._model_json["output"]["names"],
+                                                 model_2_trees._model_json["output"]["column_types"],
+                                                 ['District', 'Group', 'Age', 'Holders', 'Claims'],training_frame.types)
+
     prediction_2_trees = model_2_trees.predict(test_frame)
 
     assert prediction_2_trees.nrows == test_frame.nrows

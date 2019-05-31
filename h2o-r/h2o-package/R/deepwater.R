@@ -23,7 +23,7 @@
 #'        balance_classes. Defaults to 5.0.
 #' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
 #'        be automatically computed to obtain class balance during training. Requires balance_classes.
-#' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to FALSE.
+#' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to TRUE.
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to FALSE.
 #' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to FALSE.
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will
@@ -66,8 +66,9 @@
 #' @param regression_stop Stopping criterion for regression error (MSE) on training data (-1 to disable). Defaults to 0.
 #' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
 #'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 5.
-#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression) Must be one of:
-#'        "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification",
+#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression). Note that custom
+#'        and custom_increasing can only be used in GBM and DRF with the Python client. Must be one of: "AUTO",
+#'        "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification",
 #'        "mean_per_class_error", "custom", "custom_increasing". Defaults to AUTO.
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.
@@ -101,6 +102,7 @@
 #'        column containing the text in the first column. If set to dataset, Deep Water behaves just like any other H2O
 #'        Model and builds a model on the provided H2OFrame (non-String columns). Must be one of: "auto", "image",
 #'        "dataset". Defaults to auto.
+#' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @export
 h2o.deepwater <- function(x, y, training_frame,
                           model_id = NULL,
@@ -111,7 +113,7 @@ h2o.deepwater <- function(x, y, training_frame,
                           balance_classes = FALSE,
                           max_after_balance_size = 5.0,
                           class_sampling_factors = NULL,
-                          keep_cross_validation_models = FALSE,
+                          keep_cross_validation_models = TRUE,
                           keep_cross_validation_predictions = FALSE,
                           keep_cross_validation_fold_assignment = FALSE,
                           fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
@@ -162,7 +164,8 @@ h2o.deepwater <- function(x, y, training_frame,
                           hidden = NULL,
                           input_dropout_ratio = 0,
                           hidden_dropout_ratios = NULL,
-                          problem_type = c("auto", "image", "dataset")
+                          problem_type = c("auto", "image", "dataset"),
+                          export_checkpoints_dir = NULL
                           ) 
 {
   # If x is missing, then assume user wants to use all columns as features.
@@ -320,6 +323,8 @@ h2o.deepwater <- function(x, y, training_frame,
     parms$hidden_dropout_ratios <- hidden_dropout_ratios
   if (!missing(problem_type))
     parms$problem_type <- problem_type
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
   # Error check and build model
   .h2o.modelJob('deepwater', parms, h2oRestApiVersion = 3) 
 }

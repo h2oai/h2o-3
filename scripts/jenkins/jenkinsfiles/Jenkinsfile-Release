@@ -20,7 +20,7 @@ try {
                 env.PYTHON_VERSION = '3.5'
                 env.R_VERSION = '3.4.1'
 
-                sh 'printenv'
+                sh 'printenv | sort'
 
                 final String CHECKOUT_STAGE_NAME = 'Checkout'
                 stage(CHECKOUT_STAGE_NAME) {
@@ -190,7 +190,7 @@ try {
                                 # Publish the output to S3.
                                 aws s3 sync target/ ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/ --acl public-read
                             """
-                            if (!params.TEST_RELEASE) {
+                            if (params.UPDATE_LATEST) {
                                 sh """
                                     cd ${env.BUILD_NUMBER_DIR}
                                     aws s3 sync target/R/ ${env.S3_ROOT}/latest_stable_R/ --acl public-read
@@ -539,7 +539,7 @@ private setReleaseJobProperties(final pipelineContext) {
             env.DO_RELEASE = true
         }
     }
-    sh 'env'
+    sh "printenv | sort"
 }
 
 private printReleaseConfiguration(final pipelineContext) {

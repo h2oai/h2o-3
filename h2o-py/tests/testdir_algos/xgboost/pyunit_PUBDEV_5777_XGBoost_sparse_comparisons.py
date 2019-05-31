@@ -84,9 +84,16 @@ def comparison_test():
 
         trainFile = pyunit_utils.genTrainFrame(nrows, numCols, enumCols=enumCols, enumFactors=factorL,
                                                responseLevel=responseL, miscfrac=0.01,randseed=dataSeed)
+
         myX = trainFile.names
         y='response'
         myX.remove(y)
+        newNames = []
+        for ind in range(0, len(myX)):
+            myX[ind] = myX[ind]+"_"+str(ind) # avoid duplicated column names
+            newNames.append(myX[ind])
+        newNames.append(y)
+        trainFile.set_names(newNames)
 
         h2oModelD = H2OXGBoostEstimator(**h2oParamsD)
         # gather, print and save performance numbers for h2o model

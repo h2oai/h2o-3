@@ -1,12 +1,24 @@
 def call(final pipelineContext, final Closure body) {
   final List<String> FILES_TO_EXCLUDE = [
-    '**/rest.log', '**/*prediction*.csv', '**/java*_*.out.txt'
+          '**/rest.log', 
+          '**/*prediction*.csv', 
+          '**/java*_*.out.txt'
   ]
 
-  final List<String> FILES_TO_ARCHIVE = [
-    '**/*.log', '**/out.*',
-    '**/results/*.txt', '**/results/failed/*.txt',
-    '**/results/*.code', '**/results/failed/*.code',
+  final List<String> FILES_TO_ARCHIVE_ON_FAILURE = [
+          '**/leak-check.out',
+          '**/*.log',
+          '**/out.*',
+          '**/results/*.txt',
+          '**/results/failed/*.txt',
+          '**/results/*.code',
+          '**/results/failed/*.code',
+          '**/results/failed/*.code',
+          '**/java*_*.out.txt.gz',
+  ]
+
+  final List<String> FILES_TO_ARCHIVE_ON_SUCCESS = [
+          '**/summary.txt'
   ]
 
   def config = [:]
@@ -49,7 +61,7 @@ def call(final pipelineContext, final Closure body) {
 
       echo "Running Make"
       export ${makeVars.join(' ')}
-      make -f ${config.makefilePath} ${config.target}
+      make -f ${config.makefilePath} ${config.target} check-leaks
     """
   }
 
@@ -76,8 +88,12 @@ def call(final pipelineContext, final Closure body) {
       sh replaceCmd
       pipelineContext.getUtils().archiveJUnitResults(this, config.h2o3dir)
     }
-    if (config.archiveFiles && !success) {
-      pipelineContext.getUtils().archiveStageFiles(this, config.h2o3dir, FILES_TO_ARCHIVE, FILES_TO_EXCLUDE)
+    if (config.archiveFiles) {
+      execMake("make -f ${config.makefilePath} compress-huge-logfiles", config.h2o3dir)
+      pipelineContext.getUtils().archiveStageFiles(this,
+              config.h2o3dir,
+              success ? FILES_TO_ARCHIVE_ON_SUCCESS : FILES_TO_ARCHIVE_ON_FAILURE,
+              FILES_TO_EXCLUDE)
     }
     if (config.archiveAdditionalFiles) {
       echo "###### Archiving additional files: ######"
@@ -89,21 +105,21 @@ def call(final pipelineContext, final Closure body) {
 
 private void execMake(final String buildAction, final String h2o3dir) {
   sh """
-    export JAVA_HOME=/usr/lib/jvm/java-${env.JAVA_VERSION}-oracle
+    export JAVA_HOME=`find /usr/lib/jvm -name '*java*${env.JAVA_VERSION}*' -type l`
     export PATH=\${JAVA_HOME}/bin:\${PATH}
 
     cd ${h2o3dir}
     echo "Linking small and bigdata"
-    rm -f smalldata
-    ln -s -f /home/0xdiag/smalldata
-    rm -f bigdata
-    ln -s -f /home/0xdiag/bigdata
+    rm -fv smalldata
+    ln -s -f -v /home/0xdiag/smalldata
+    rm -fv bigdata
+    ln -s -f -v /home/0xdiag/bigdata
 
     # The Gradle fails if there is a special character, in these variables
     unset CHANGE_AUTHOR_DISPLAY_NAME
     unset CHANGE_TITLE
 
-    printenv
+    printenv | sort
     ${buildAction}
   """
 }

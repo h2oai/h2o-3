@@ -2,7 +2,7 @@ def call(final String h2o3Root, final String mode, final scmEnv, final boolean i
     return call(h2o3Root, mode, scmEnv, ignoreChanges, null)
 }
 
-def call(final String h2o3Root, final String mode, final scmEnv, final boolean ignoreChanges, final List<String> gradleOpts) {
+def call(final String h2o3Root, final String mode, final scmEnv, boolean ignoreChanges, final List<String> gradleOpts) {
     final String BUILD_SUMMARY_SCRIPT_NAME = 'buildSummary.groovy'
     final String BUILD_CONFIG_SCRIPT_NAME = 'buildConfig.groovy'
     final String PIPELINE_UTILS_SCRIPT_NAME = 'pipelineUtils.groovy'
@@ -23,9 +23,15 @@ def call(final String h2o3Root, final String mode, final scmEnv, final boolean i
     def final buildinfoPath = "${h2o3Root}/h2o-dist/buildinfo.json"
 
     def final pipelineUtils = pipelineUtilsFactory()
-
+    def changes = null
+    if (!ignoreChanges) {
+        changes = getChanges(h2o3Root)
+        if (changes == null) {
+            ignoreChanges = true
+        }
+    }
     return new PipelineContext(
-            buildConfigFactory(this, mode, env.COMMIT_MESSAGE, getChanges(h2o3Root), ignoreChanges,
+            buildConfigFactory(this, mode, env.COMMIT_MESSAGE, changes, ignoreChanges,
                     pipelineUtils.readSupportedHadoopDistributions(this, buildinfoPath), gradleOpts,
                     pipelineUtils.readCurrentXGBVersion(this, h2o3Root),
                     pipelineUtils.readCurrentGradleVersion(this, h2o3Root)
@@ -42,8 +48,14 @@ private List<String> getChanges(final String h2o3Root) {
         cd ${h2o3Root}
         git fetch --no-tags --progress https://github.com/h2oai/h2o-3 +refs/heads/master:refs/remotes/origin/master
     """
-    final String mergeBaseSHA = sh(script: "cd ${h2o3Root} && git merge-base HEAD origin/master", returnStdout: true).trim()
-    return sh(script: "cd ${h2o3Root} && git diff --name-only ${mergeBaseSHA}", returnStdout: true).trim().tokenize('\n')
+    def result
+    try {
+        final String mergeBaseSHA = sh(script: "cd ${h2o3Root} && git merge-base HEAD origin/master", returnStdout: true).trim()
+        result = sh(script: "cd ${h2o3Root} && git diff --name-only ${mergeBaseSHA}", returnStdout: true).trim().tokenize('\n')
+    } catch (Exception ignore) {
+        result = null
+    }
+    return result
 }
 
 class PipelineContext{

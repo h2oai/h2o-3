@@ -2,13 +2,18 @@ package water.fvec;
 
 import org.junit.*;
 
-import water.Scope;
-import water.TestUtil;
+import water.*;
 import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.RandomUtils;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public class CategoricalWrappedVecTest extends TestUtil {
   @BeforeClass static public void setup() {  stall_till_cloudsize(1); }
@@ -41,6 +46,19 @@ public class CategoricalWrappedVecTest extends TestUtil {
       if( v1!=null ) v1.delete();
       if( v2!=null ) v2.delete();
       Scope.exit();
+    }
+  }
+
+  @Test public void testAdaptBadVec() {
+    List<Keyed> removables = new ArrayList<>();
+    try {
+      Vec bad = Vec.makeCons(Double.NaN, 10, 1)[0]; removables.add(bad);
+      Assert.assertTrue(bad.isBad());
+      Vec adapted = bad.adaptTo(new String[]{"dummy"}); removables.add(adapted);
+      Assert.assertTrue(adapted instanceof CategoricalWrappedVec);
+      Assert.assertTrue(adapted.isBad());
+    } finally {
+      for (Keyed k: removables) { k.remove(); }
     }
   }
 
@@ -86,4 +104,25 @@ public class CategoricalWrappedVecTest extends TestUtil {
     int[] mapping = CategoricalWrappedVec.computeMap(colDomain, modelDomain);
     Assert.assertArrayEquals("Mapping differs",  expectedMapping, mapping);
   }
+
+  @Test
+  public void testUpdateDomain() {
+    try {
+      Scope.enter();
+      Frame f = new TestFrameBuilder().withVecTypes(Vec.T_CAT)
+              .withDataForCol(0, ar("a", "c", "c"))
+              .build();
+      Vec vec = f.anyVec();
+      String[] toDomain = new String[]{"a", "b", "c"}; 
+      CategoricalWrappedVec.updateDomain(vec, toDomain);
+      assertArrayEquals(toDomain, vec.domain());
+      assertEquals(0, vec.at8(0));
+      assertEquals(2, vec.at8(1));
+      assertEquals(2, vec.at8(2));
+    } finally {
+      Scope.exit();
+    }
+  }
+
+
 }

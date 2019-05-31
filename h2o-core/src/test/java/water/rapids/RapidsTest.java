@@ -4,18 +4,14 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
-import water.fvec.Frame;
-import water.fvec.NFSFileVec;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstNumList;
 import water.rapids.ast.params.AstStr;
 import water.rapids.vals.ValFrame;
-import water.util.ArrayUtils;
-import water.util.FileUtils;
-import water.util.Log;
+import water.util.*;
 
 import java.io.File;
 import java.util.Arrays;
@@ -564,7 +560,7 @@ public class RapidsTest extends TestUtil {
       ParseSetup ps = ParseSetup.guessSetup(new Key[]{nfs._key}, false, 1);
       ps.getColumnTypes()[1] = Vec.T_CAT;
       ParseDataset.parse(Key.make( "census.hex"), new Key[]{nfs._key}, true, ps);
-      
+
       exec_str("(assign census.hex (colnames= census.hex\t[0 1 2 3 4 5 6 7 8] \n" +
                "['Community.Area.Number' 'COMMUNITY.AREA.NAME' \"PERCENT.OF.HOUSING.CROWDED\" \r\n" +
                " \"PERCENT.HOUSEHOLDS.BELOW.POVERTY\" \"PERCENT.AGED.16..UNEMPLOYED\" " +
@@ -698,6 +694,40 @@ public class RapidsTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testAstDistance_euclidean() {
+    Frame a = null;
+    Frame b = null;
+    Frame distanceFrame = null;
+    try {
+
+      a = Scope.track(new TestFrameBuilder()
+              .withName("a")
+              .withColNames("C1")
+              .withVecTypes(Vec.T_NUM)
+              .withDataForCol(0, ard(2, 2))
+              .build());
+      b = Scope.track(new TestFrameBuilder()
+              .withName("b")
+              .withColNames("C1")
+              .withVecTypes(Vec.T_NUM)
+              .withDataForCol(0, ard(2, 4))
+              .build());
+
+      Val val = Rapids.exec("(distance a b 'l2')");
+      assertNotNull(val);
+      distanceFrame = val.getFrame();
+      assertEquals(0, distanceFrame.vec(0).at(0), 0D);
+      assertEquals(0, distanceFrame.vec(0).at(1), 0D);
+      assertEquals(2, distanceFrame.vec(1).at(0), 0D);
+      assertEquals(2, distanceFrame.vec(1).at(1), 0D);
+    } finally {
+      if (a != null) a.remove();
+      if (b != null) b.remove();
+      if (distanceFrame != null) distanceFrame.remove();
+    }
+  }
+
   private static void astNumList_ok(String expr, double[] expected) {
     AstRoot res = Rapids.parse(expr);
     assertTrue(res instanceof AstNumList);
@@ -716,5 +746,129 @@ public class RapidsTest extends TestUtil {
       Rapids.parse(expr);
       fail("Expression " + expr + " expected to fail, however it did not.");
     } catch (IllegalASTException ignored) {}
+  }
+
+  @Test
+  public void testAstReplaceFirst() {
+    try {
+      Scope.enter();
+
+      final Frame frame = new TestFrameBuilder().
+              withVecTypes(Vec.T_CAT)
+              .withColNames("location")
+              .withDataForCol(0, ar("ab", "ac", "ad"))
+              .withName("fr")
+              .build();
+      Scope.track(frame);
+
+      final Frame transformedFrame = Rapids.exec("(replacefirst (cols_py fr 'location') 'a' '' 0)").getFrame();
+      assertNotNull(transformedFrame);
+
+      assertEquals(frame.numRows(), transformedFrame.numRows());
+      assertEquals(frame.numCols(), transformedFrame.numCols());
+      final Vec vec = transformedFrame.vec(0);
+      assertEquals("b", vec.stringAt(0));
+      assertEquals("c", vec.stringAt(1));
+      assertEquals("d", vec.stringAt(2));
+
+
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testAstReplaceFirst_cardinalityChange() {
+    try {
+      Scope.enter();
+
+      final Frame frame = new TestFrameBuilder().
+              withVecTypes(Vec.T_CAT)
+              .withColNames("location")
+              .withDataForCol(0, ar("Ｘ県 Ａ市", "Ｘ県 Ｂ市", "Ｘ県 Ｂ市", "Ｙ県 Ｃ市", "Ｙ県 Ｃ市"))
+              .withName("fr")
+              .build();
+      Scope.track(frame);
+
+      final Frame transformedFrame = Rapids.exec("(replacefirst (cols_py fr 'location') ' .*' '' 0)").getFrame();
+      assertNotNull(transformedFrame);
+
+      assertEquals(frame.numRows(), transformedFrame.numRows());
+      assertEquals(frame.numCols(), transformedFrame.numCols());
+      final Vec vec = transformedFrame.vec(0);
+      assertEquals("Ｘ県", vec.stringAt(0));
+      assertEquals("Ｘ県", vec.stringAt(1));
+      assertEquals("Ｘ県", vec.stringAt(2));
+      assertEquals("Ｙ県", vec.stringAt(3));
+      assertEquals("Ｙ県", vec.stringAt(4));
+      
+      assertEquals(2, vec.cardinality());
+      assertArrayEquals(new String[]{"Ｘ県", "Ｙ県"}, vec.domain());
+
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testAstReplaceAll() {
+    try {
+      Scope.enter();
+
+      final Frame frame = new TestFrameBuilder().
+              withVecTypes(Vec.T_CAT)
+              .withColNames("location")
+              .withDataForCol(0, ar("ab", "ac", "ad"))
+              .withName("fr")
+              .build();
+      Scope.track(frame);
+
+      final Frame transformedFrame = Rapids.exec("(replaceall (cols_py fr 'location') 'a' '' 0)").getFrame();
+      assertNotNull(transformedFrame);
+
+      assertEquals(frame.numRows(), transformedFrame.numRows());
+      assertEquals(frame.numCols(), transformedFrame.numCols());
+      final Vec vec = transformedFrame.vec(0);
+      assertEquals("b", vec.stringAt(0));
+      assertEquals("c", vec.stringAt(1));
+      assertEquals("d", vec.stringAt(2));
+
+
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testAstReplaceAll_cardinalityChange() {
+    try {
+      Scope.enter();
+
+      final Frame frame = new TestFrameBuilder().
+              withVecTypes(Vec.T_CAT)
+              .withColNames("location")
+              .withDataForCol(0, ar("Ｘ県 Ａ市", "Ｘ県 Ｂ市", "Ｘ県 Ｂ市", "Ｙ県 Ｃ市", "Ｙ県 Ｃ市"))
+              .withName("fr")
+              .build();
+      Scope.track(frame);
+
+      final Frame transformedFrame = Rapids.exec("(replaceall (cols_py fr 'location') ' .*' '' 0)").getFrame();
+      assertNotNull(transformedFrame);
+
+      assertEquals(frame.numRows(), transformedFrame.numRows());
+      assertEquals(frame.numCols(), transformedFrame.numCols());
+      final Vec vec = transformedFrame.vec(0);
+      assertEquals("Ｘ県", vec.stringAt(0));
+      assertEquals("Ｘ県", vec.stringAt(1));
+      assertEquals("Ｘ県", vec.stringAt(2));
+      assertEquals("Ｙ県", vec.stringAt(3));
+      assertEquals("Ｙ県", vec.stringAt(4));
+
+      assertEquals(2, vec.cardinality());
+      assertArrayEquals(new String[]{"Ｘ県", "Ｙ県"}, vec.domain());
+
+    } finally {
+      Scope.exit();
+    }
   }
 }

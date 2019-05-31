@@ -1,0 +1,15 @@
+ext {
+  hadoopVersion = 'hdp2.6'
+  hadoopMavenArtifactVersion = '2.7.3.2.6.1.0-129'
+  orcSupported = true
+  orcHiveExecVersion = "1.2.1000.2.6.1.0-129"
+}
+
+apply from: '../assemblyjar.gradle'
+
+dependencies {
+  compile (project(":h2o-jetty-8")) {
+    exclude module: "servlet-api"
+    exclude group: "javax.servlet", module: "javax.servlet-api"
+  }
+}

@@ -6,10 +6,7 @@ import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.IcedHashMap;
-import water.util.Log;
-import water.util.PojoUtils;
-import water.util.TwoDimTable;
+import water.util.*;
 
 import java.lang.reflect.Method;
 import java.util.*;
@@ -100,9 +97,13 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     sb.append(" Description: " + (_description == null ? "N/A" : _description) + "\n");
     sb.append(" model id: " + _modelKey + "\n");
     sb.append(" frame id: " + _frameKey + "\n");
-    sb.append(" MSE: " + (float)_MSE + "\n");
-    sb.append(" RMSE: " + (float)rmse() + "\n");
-    return sb.toString();
+    return appendToStringMetrics(sb).toString();
+  }
+
+  protected StringBuilder appendToStringMetrics(StringBuilder sb) {
+    sb.append(" MSE: ").append((float)_MSE).append("\n");
+    sb.append(" RMSE: ").append((float)rmse()).append("\n");
+    return sb;
   }
 
   public final Model model() { return _model==null ? (_model=DKV.getGet(_modelKey)) : _model; }
@@ -114,19 +115,19 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   public float[] hr() { return null; }
   public AUC2 auc_obj() { return null; }
 
-  static public double getMetricFromModel(Key<Model> key, String criterion) {
-    Model model = DKV.getGet(key);
-    if (null == model) throw new H2OIllegalArgumentException("Cannot find model " + key);
-    ModelMetrics mm =
-            model._output._cross_validation_metrics != null ?
-                    model._output._cross_validation_metrics :
-                    model._output._validation_metrics != null ?
-                            model._output._validation_metrics :
-                            model._output._training_metrics;
-    return getMetricFromModelMetric(mm, criterion);
+  public static ModelMetrics defaultModelMetrics(Model model) {
+    return model._output._cross_validation_metrics != null ? model._output._cross_validation_metrics
+        : model._output._validation_metrics != null ? model._output._validation_metrics
+        : model._output._training_metrics;
   }
 
-  static public double getMetricFromModelMetric(ModelMetrics mm, String criterion) {
+  public static double getMetricFromModel(Key<Model> key, String criterion) {
+    Model model = DKV.getGet(key);
+    if (null == model) throw new H2OIllegalArgumentException("Cannot find model " + key);
+    return getMetricFromModelMetric(defaultModelMetrics(model), criterion);
+  }
+
+  public static double getMetricFromModelMetric(ModelMetrics mm, String criterion) {
     if (null == criterion || criterion.equals("")) {
       throw new H2OIllegalArgumentException("Need a valid criterion, but got '" + criterion + "'.");
     }
@@ -237,12 +238,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     Set<String> res = new HashSet<>();
     Model model = DKV.getGet(key);
     if (null == model) throw new H2OIllegalArgumentException("Cannot find model " + key);
-    ModelMetrics m =
-            model._output._cross_validation_metrics != null ?
-                    model._output._cross_validation_metrics :
-                    model._output._validation_metrics != null ?
-                            model._output._validation_metrics :
-                            model._output._training_metrics;
+    ModelMetrics m = defaultModelMetrics(model);
     ConfusionMatrix cm = m.cm();
     Set<String> excluded = new HashSet<>();
     excluded.add("makeSchema");
@@ -317,17 +313,10 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
 
   public static TwoDimTable calcVarImp(VarImp vi) {
     if (vi == null) return null;
-    double[] dbl_rel_imp = new double[vi._varimp.length];
-    for (int i=0; i<dbl_rel_imp.length; ++i) {
-      dbl_rel_imp[i] = vi._varimp[i];
-    }
-    return calcVarImp(dbl_rel_imp, vi._names);
+    return calcVarImp(vi._varimp, vi._names);
   }
   public static TwoDimTable calcVarImp(final float[] rel_imp, String[] coef_names) {
-    double[] dbl_rel_imp = new double[rel_imp.length];
-    for (int i=0; i<dbl_rel_imp.length; ++i) {
-      dbl_rel_imp[i] = rel_imp[i];
-    }
+    double[] dbl_rel_imp = ArrayUtils.toDouble(rel_imp);
     return calcVarImp(dbl_rel_imp, coef_names);
   }
   public static TwoDimTable calcVarImp(final double[] rel_imp, String[] coef_names) {

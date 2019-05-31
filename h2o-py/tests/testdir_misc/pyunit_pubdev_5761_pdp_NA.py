@@ -5,7 +5,7 @@ import math
 from tests import pyunit_utils
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
 import random
-from six import string_types
+from h2o.utils.typechecks import is_type
 
 
 '''
@@ -90,7 +90,7 @@ def manual_partial_dependence(model, datafile, xlist, xname, weightV):
         cons = [xval]*nRows
         if xname in dataframe.names:
             dataframe=dataframe.drop(xname)
-        if not((isinstance(xval, string_types) and xval=='NA') or (isinstance(xval, float) and math.isnan(xval))):
+        if not((is_type(xval, str) and xval=='NA') or (isinstance(xval, float) and math.isnan(xval))):
             dataframe = dataframe.cbind(h2o.H2OFrame(cons))
             dataframe.set_name(nCols, xname)
 

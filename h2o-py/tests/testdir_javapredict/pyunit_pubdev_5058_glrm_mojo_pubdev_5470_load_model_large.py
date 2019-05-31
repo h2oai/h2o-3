@@ -10,15 +10,16 @@ import re
 def glrm_mojo():
     h2o.remove_all()
     NTESTROWS = 200    # number of test dataset rows
-    df = pyunit_utils.random_dataset("regression")       # generate random dataset
+    df = pyunit_utils.random_dataset("regression", seed=1234)       # generate random dataset
     train = df[NTESTROWS:, :]
     test = df[:NTESTROWS, :]
     x = df.names
 
     transform_types = ["NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE"]
     transformN = transform_types[randint(0, len(transform_types)-1)]
+
     # build a GLRM model with random dataset generated earlier
-    glrmModel = H2OGeneralizedLowRankEstimator(k=3, transform=transformN, max_iterations=10)
+    glrmModel = H2OGeneralizedLowRankEstimator(k=3, transform=transformN, max_iterations=10, seed=1234)
     glrmModel.train(x=x, training_frame=train)
     glrmTrainFactor = h2o.get_frame(glrmModel._model_json['output']['representation_name'])
 

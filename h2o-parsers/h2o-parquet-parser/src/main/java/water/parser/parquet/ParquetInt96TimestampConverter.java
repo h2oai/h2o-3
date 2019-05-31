@@ -14,8 +14,6 @@
  */
 package water.parser.parquet;
 
-import com.google.common.primitives.Ints;
-import com.google.common.primitives.Longs;
 import org.apache.parquet.io.api.Binary;
 
 import java.util.concurrent.TimeUnit;
@@ -50,8 +48,8 @@ final class ParquetInt96TimestampConverter {
     byte[] bytes = timestampBinary.getBytes();
 
     // little endian encoding - bytes are red in inverted order
-    long timeOfDayNanos = Longs.fromBytes(bytes[7], bytes[6], bytes[5], bytes[4], bytes[3], bytes[2], bytes[1], bytes[0]);
-    int julianDay = Ints.fromBytes(bytes[11], bytes[10], bytes[9], bytes[8]);
+    long timeOfDayNanos = TypeUtils.longFromBytes(bytes[7], bytes[6], bytes[5], bytes[4], bytes[3], bytes[2], bytes[1], bytes[0]);
+    int julianDay = TypeUtils.intFromBytes(bytes[11], bytes[10], bytes[9], bytes[8]);
 
     return julianDayToMillis(julianDay) + (timeOfDayNanos / NANOS_PER_MILLISECOND);
   }
@@ -63,4 +61,7 @@ final class ParquetInt96TimestampConverter {
   private static long julianDayToMillis(int julianDay) {
     return (julianDay - JULIAN_EPOCH_OFFSET_DAYS) * MILLIS_IN_DAY;
   }
+
+
+
 }

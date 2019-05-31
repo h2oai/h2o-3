@@ -431,9 +431,8 @@ Download and update h2o-3 source codes:
 
 ##### Step 1. Install Node.js
 
-    curl -sL https://deb.nodesource.com/setup_0.12 | sudo bash -
+    curl -sL https://deb.nodesource.com/setup_10.x | sudo bash -
     sudo apt-get install -y nodejs
-
 
 ##### Steps 2-4. Follow steps 2-4 for Ubuntu 14.04 (above)
 
@@ -786,6 +785,7 @@ Terone Ward
 Leland Wilkinson
 Wendy Wong
 Nikhil Shekhar
+Pavel Pscheidl
 ```
 
 <a name="Advisors"></a>

@@ -3,9 +3,12 @@ package hex.genmodel.easy;
 import hex.ModelCategory;
 import hex.genmodel.GenModel;
 import hex.genmodel.IClusteringModel;
+import hex.genmodel.PredictContributions;
+import hex.genmodel.PredictContributionsFactory;
 import hex.genmodel.algos.deepwater.DeepwaterMojoModel;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.algos.glrm.GlrmMojoModel;
+import hex.genmodel.algos.deeplearning.DeeplearningMojoModel;
 import hex.genmodel.algos.word2vec.WordEmbeddingModel;
 import hex.genmodel.easy.error.VoidErrorConsumer;
 import hex.genmodel.easy.exception.PredictException;
@@ -41,10 +44,17 @@ import java.util.Map;
  * with the data quality.
  * An alternate behavior is to automatically convert unknown categorical levels to N/A.  To do this, use
  * setConvertUnknownCategoricalLevelsToNa(true) instead.
- * 
+ *
  * Detection of unknown categoricals may be observed by registering an implementation of {@link ErrorConsumer}
  * in the process of {@link Config} creation.
  * 
+ * Advanced scoring features are disabled by default for performance reasons. Configuration flags
+ * allow the user to output also
+ *  - leaf node assignment,
+ *  - GLRM reconstructed matrix,
+ *  - staged probabilities,
+ *  - prediction contributions (SHAP values).
+ *
  * Deprecation note: Total number of unknown categorical variables is newly accessible by registering {@link hex.genmodel.easy.error.CountingErrorConsumer}.
  *
  *
@@ -63,7 +73,11 @@ public class EasyPredictModelWrapper implements Serializable {
   private final boolean useExtendedOutput;
   private final boolean enableLeafAssignment;
   private final boolean enableGLRMReconstruct;  // if set true, will return the GLRM resconstructed value, A_hat=X*Y instead of just X
+  private final boolean enableStagedProbabilities; // if set true, staged probabilities from tree agos are returned
+  private final boolean enableContributions; // if set to true, will return prediction contributions (SHAP values) - for GBM & XGBoost
 
+  private final PredictContributions predictContributions;
+  
   /**
    * Observer interface with methods corresponding to errors during the prediction.
    */
@@ -98,6 +112,8 @@ public class EasyPredictModelWrapper implements Serializable {
     private ErrorConsumer errorConsumer;
     private boolean enableLeafAssignment = false;  // default to false
     private boolean enableGLRMReconstrut = false;
+    private boolean enableStagedProbabilities = false;
+    private boolean enableContributions = false;
 
     /**
      * Specify model object to wrap.
@@ -147,7 +163,32 @@ public class EasyPredictModelWrapper implements Serializable {
       return this;
     }
 
+    public Config setEnableStagedProbabilities (boolean val) throws IOException {
+        if (val && (model==null))
+            throw new IOException("enableStagedProbabilities cannot be set with null model.  Call setModel() first.");
+        if (val && !(model instanceof SharedTreeMojoModel))
+            throw new IOException("enableStagedProbabilities can be set to true only with SharedTreeMojoModel," +
+                    " i.e. with GBM or DRF.");
+
+        enableStagedProbabilities  = val;
+        return this;
+    }
+
     public boolean getEnableGLRMReconstrut() { return enableGLRMReconstrut; }
+
+    public Config setEnableContributions(boolean val) throws IOException {
+      if (val && (model==null))
+        throw new IOException("setEnableContributions cannot be set with null model.  Call setModel() first.");
+      if (val && !(model instanceof PredictContributionsFactory))
+        throw new IOException("setEnableContributions can be set to true only with GBM or XGBoost models.");
+      if (val && (ModelCategory.Multinomial.equals(model.getModelCategory()))) {
+        throw new IOException("setEnableContributions is not yet supported for multinomial classification models.");
+      }
+      enableContributions = val;
+      return this;
+    }
+
+    public boolean getEnableContributions() { return enableContributions; }
 
     /**
      * @return Setting for unknown categorical levels handling
@@ -189,6 +230,8 @@ public class EasyPredictModelWrapper implements Serializable {
     }
 
     public boolean getEnableLeafAssignment() { return enableLeafAssignment;}
+
+    public boolean getEnableStagedProbabilities() { return enableStagedProbabilities;}
 
     /**
      * @return An instance of ErrorConsumer used to build the {@link EasyPredictModelWrapper}. Null if there is no instance.
@@ -233,7 +276,18 @@ public class EasyPredictModelWrapper implements Serializable {
     useExtendedOutput = config.getUseExtendedOutput();
     enableLeafAssignment = config.getEnableLeafAssignment();
     enableGLRMReconstruct = config.getEnableGLRMReconstrut();
+    enableStagedProbabilities = config.getEnableStagedProbabilities();
+    enableContributions = config.getEnableContributions();
 
+    if (enableContributions) {
+      if (!(m instanceof PredictContributionsFactory)) {
+        throw new IllegalStateException("Model " + m.getClass().getName() + " cannot be used to predict contributions.");
+      }
+      predictContributions = ((PredictContributionsFactory) m).makeContributionsPredictor();
+    } else {
+      predictContributions = null;
+    }
+    
     // Create map of input variable domain information.
     // This contains the categorical string to numeric mapping.
     domainMap = new HashMap<>();
@@ -326,7 +380,10 @@ public class EasyPredictModelWrapper implements Serializable {
     p.original = expandRawData(rawData, output.length);
     p.reconstructed = output;
     p.reconstructedRowData = reconstructedToRowData(output);
-
+    if (m instanceof DeeplearningMojoModel){
+      DeeplearningMojoModel mojoModel = ((DeeplearningMojoModel)m);
+      p.mse =  mojoModel.calculateReconstructionErrorPerRowData(p.original, p.reconstructed);
+    }
     return p;
   }
 
@@ -450,7 +507,11 @@ public class EasyPredictModelWrapper implements Serializable {
       p.leafNodeAssignments = assignments._paths;
       p.leafNodeAssignmentIds = assignments._nodeIds;
     }
-
+    if (enableStagedProbabilities) {
+        double[] rawData = nanArray(m.nfeatures());
+        rawData = fillRawData(data, rawData);
+        p.stageProbabilities = ((SharedTreeMojoModel) m).scoreStagedPredictions(rawData, preds.length);
+    }
     return p;
   }
 
@@ -493,6 +554,16 @@ public class EasyPredictModelWrapper implements Serializable {
     if (m.calibrateClassProbabilities(preds)) {
       p.calibratedClassProbabilities = new double[m.getNumResponseClasses()];
       System.arraycopy(preds, 1, p.calibratedClassProbabilities, 0, p.calibratedClassProbabilities.length);
+    }
+    if (enableStagedProbabilities) {
+        double[] rawData = nanArray(m.nfeatures());
+        rawData = fillRawData(data, rawData);
+        p.stageProbabilities = ((SharedTreeMojoModel) m).scoreStagedPredictions(rawData, preds.length);
+    }
+    if (enableContributions) {
+      double[] rawData = nanArray(m.nfeatures());
+      rawData = fillRawData(data, rawData);
+      p.contributions = predictContributions.calculateContributions(rawData);
     }
     return p;
   }
@@ -543,7 +614,11 @@ public class EasyPredictModelWrapper implements Serializable {
     String[] domainValues = m.getDomainValues(m.getResponseIdx());
     p.label = domainValues[p.labelIndex];
     System.arraycopy(preds, 1, p.classProbabilities, 0, p.classProbabilities.length);
-
+    if (enableStagedProbabilities) {
+        double[] rawData = nanArray(m.nfeatures());
+        rawData = fillRawData(data, rawData);
+        p.stageProbabilities = ((SharedTreeMojoModel) m).scoreStagedPredictions(rawData, preds.length);
+    }
     return p;
   }
 
@@ -663,7 +738,16 @@ public class EasyPredictModelWrapper implements Serializable {
       p.leafNodeAssignmentIds = assignments._nodeIds;
     }
     p.value = preds[0];
-
+    if (enableStagedProbabilities) {
+        double[] rawData = nanArray(m.nfeatures());
+        rawData = fillRawData(data, rawData);
+        p.stageProbabilities = ((SharedTreeMojoModel) m).scoreStagedPredictions(rawData, preds.length);
+    }
+    if (enableContributions) {
+      double[] rawData = nanArray(m.nfeatures());
+      rawData = fillRawData(data, rawData);
+      p.contributions = predictContributions.calculateContributions(rawData);
+    }
     return p;
   }
 
@@ -808,7 +892,7 @@ public class EasyPredictModelWrapper implements Serializable {
         if (Double.isNaN(value)) {
           // If this point is reached, the original value remains NaN.
           errorConsumer.dataTransformError(dataColumnName, o, "Given non-categorical value is unparseable, treating as NaN.");
-        } 
+        }
         rawData[index] = value;
       }
       else {

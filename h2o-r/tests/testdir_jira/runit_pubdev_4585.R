@@ -1,6 +1,3 @@
-library(h2o)
-h2o.init()
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../scripts/h2o-r-test-setup.R")
 
@@ -42,20 +39,13 @@ test.pubdev_4585 <- function() {
     mfile <- h2o.saveModel(xgb, path = tempdir())
     rm("xgb", "train", "test")
 
-
-    print("about to start up / connect to a different instance")
-    h2o.init(ip="localhost", port=54319)
-
-    h2o.ls()
-    print("YO! connected to a new instance!")
+    h2o.removeAll()
 
     # Load xgb into the new instance
     xgb <- h2o.loadModel(path = mfile)
-    xgb
 
     test <- h2o.importFile(normalizePath(locate("smalldata/higgs/higgs_test_5k.csv")))
     test[,y] <- as.factor(test[,y])
-
 
     h2o.performance(xgb, newdata = test)
 
@@ -63,9 +53,6 @@ test.pubdev_4585 <- function() {
     print("pred_reloaded[1,3]: ")
     print(pred_reloaded[1,3])
     expect_true(abs(pred_orig_1_3 - pred_reloaded[1,3]) < 1e-5)
-
-    # we don't want old instances lying around on the machine, especially with old code versions
-    h2o.shutdown(prompt = FALSE)
 }
 
 doTest("PUBDEV-4585: XGBoost binary save/load", test.pubdev_4585)

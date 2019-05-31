@@ -13,17 +13,22 @@ import java.util.Arrays;
 
 import static water.parser.DefaultParserProviders.CSV_INFO;
 
-class CsvParser extends Parser {
+public class CsvParser extends Parser {
   private static final byte GUESS_SEP = ParseSetup.GUESS_SEP;
   private static final int NO_HEADER = ParseSetup.NO_HEADER;
   private static final int GUESS_HEADER = ParseSetup.GUESS_HEADER;
   private static final int HAS_HEADER = ParseSetup.HAS_HEADER;
-  private static final byte[] NON_DATA_LINE_MARKERS = {'#'};
+  private static final byte[] NON_DATA_LINE_MARKERS_DEFAULT = {'#'};
 
-  CsvParser( ParseSetup ps, Key jobKey ) { super(ps, jobKey); }
+  private final byte[] _nonDataLineMarkers; 
 
-  protected byte[] nonDataLineMarkers() {
-    return NON_DATA_LINE_MARKERS;
+  CsvParser( ParseSetup ps, Key jobKey ) {
+    this(ps, NON_DATA_LINE_MARKERS_DEFAULT, jobKey);
+  }
+
+  CsvParser(ParseSetup ps, byte[] defaultNonDataLineMarkers, Key jobKey) {
+    super(ps, jobKey);
+    _nonDataLineMarkers = ps._nonDataLineMarkers != null ? ps._nonDataLineMarkers : defaultNonDataLineMarkers;
   }
 
   // Parse this one Chunk (in parallel with other Chunks)
@@ -62,9 +67,8 @@ class CsvParser extends Parser {
     int colIdx = 0; // count each actual column in the dataset including the skipped columns
     byte c = bits[offset];
     // skip comments for the first chunk (or if not a chunk)
-    byte[] nonDataLineMarkers = nonDataLineMarkers();
     if( cidx == 0 ) {
-      while (ArrayUtils.contains(nonDataLineMarkers, c) || isEOL(c)) {
+      while (ArrayUtils.contains(_nonDataLineMarkers, c) || isEOL(c)) {
         while ((offset < bits.length) && (bits[offset] != CHAR_CR) && (bits[offset  ] != CHAR_LF)) {
 //          System.out.print(String.format("%c",bits[offset]));
           ++offset;
@@ -126,26 +130,17 @@ MAIN_LOOP:
 
         case STRING:
           if (c == quotes) {
-            if (quoteCount>1) {
-              str.addChar();
-              quoteCount--;
-            }
-
             state = COND_QUOTE;
             continue MAIN_LOOP;
           }
-          if ((!isEOL(c) || quoteCount == 1) && (c != CHAR_SEPARATOR)) {
+          if ((!isEOL(c) && c != CHAR_SEPARATOR) || quoteCount == 1) {
             if (str.getBuffer() == null && isEOL(c)) str.set(bits, offset, 0);
             str.addChar();
             if ((c & 0x80) == 128) //value beyond std ASCII
               isAllASCII = false;
             break;
           }
-
-          if(quoteCount == 1){
-            str.addChar(); //Anything not enclosed properly by second quotes is considered to be part of the string
-            break;
-          }
+          
           // fallthrough to STRING_END
         // ---------------------------------------------------------------------
         case STRING_END:
@@ -231,7 +226,7 @@ MAIN_LOOP:
               state = EXPECT_COND_LF;
             break;
           }
-          if (ArrayUtils.contains(nonDataLineMarkers, c)) {
+          if (ArrayUtils.contains(_nonDataLineMarkers, c)) {
             state = SKIP_LINE;
             break;
           }
@@ -464,11 +459,6 @@ MAIN_LOOP:
             quoteCount++;
             state = POSSIBLE_ESCAPED_QUOTE;
             break;
-          } else {
-            quotes = 0;
-            quoteCount = 0;
-            state = STRING_END;
-            continue MAIN_LOOP;
           }
         // ---------------------------------------------------------------------
         default:
@@ -491,9 +481,13 @@ MAIN_LOOP:
         if( !firstChunk || bits1 == null ) { // No more data available or allowed
           // If we are mid-parse of something, act like we saw a LF to end the
           // current token.
-          if(c == CHAR_LF || c == CHAR_CR) quoteCount++;
           if ((state != EXPECT_COND_LF) && (state != POSSIBLE_EMPTY_LINE)) {
-            c = CHAR_LF;  continue; // MAIN_LOOP;
+            c = CHAR_LF;
+            if(state == STRING) {
+              quoteCount = 0; // In case of a String not properly ended with quotes
+              state = STRING_END;
+            }
+            continue; // MAIN_LOOP;
           }
           break; // MAIN_LOOP;      // Else we are just done
         }
@@ -524,7 +518,7 @@ MAIN_LOOP:
 
   @Override protected int fileHasHeader(byte[] bits, ParseSetup ps) {
     boolean hasHdr = true;
-    String[] lines = getFirstLines(bits, ps._single_quotes, nonDataLineMarkers());
+    String[] lines = getFirstLines(bits, ps._single_quotes, _nonDataLineMarkers);
     if (lines != null && lines.length > 0) {
       String[] firstLine = determineTokens(lines[0], _setup._separator, _setup._single_quotes);
       if (_setup._column_names != null) {
@@ -546,7 +540,7 @@ MAIN_LOOP:
    *  last one as it is used if all other fails because multiple spaces can be
    *  used as a single separator.
    */
-  static final byte HIVE_SEP = 0x1; // '^A',  Hive table column separator
+  public static final byte HIVE_SEP = 0x1; // '^A',  Hive table column separator
   private static byte[] separators = new byte[] { HIVE_SEP, ',', ';', '|', '\t',  ' '/*space is last in this list, because we allow multiple spaces*/ };
 
   /** Dermines the number of separators in given line.  Correctly handles quoted tokens. */
@@ -682,11 +676,14 @@ MAIN_LOOP:
    *  singleQuotes is honored in all cases (and not guessed).
    *
    */
-  static ParseSetup guessSetup(byte[] bits, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames, byte[] columnTypes, String[][] naStrings) {
+  static ParseSetup guessSetup(byte[] bits, byte sep, int ncols, boolean singleQuotes, int checkHeader,
+                               String[] columnNames, byte[] columnTypes, String[][] naStrings, byte[] nonDataLineMarkers) {
+    if (nonDataLineMarkers == null)
+      nonDataLineMarkers = NON_DATA_LINE_MARKERS_DEFAULT;
     int lastNewline = bits.length-1;
     while(lastNewline > 0 && !CsvParser.isEOL(bits[lastNewline]))lastNewline--;
     if(lastNewline > 0) bits = Arrays.copyOf(bits,lastNewline+1);
-    String[] lines = getFirstLines(bits, singleQuotes, NON_DATA_LINE_MARKERS);
+    String[] lines = getFirstLines(bits, singleQuotes, nonDataLineMarkers);
     if(lines.length==0 )
       throw new ParseDataset.H2OParseException("No data!");
 
@@ -715,7 +712,8 @@ MAIN_LOOP:
             }
           }
           //FIXME should set warning message and let fall through
-          return new ParseSetup(CSV_INFO, GUESS_SEP, singleQuotes, checkHeader, 1, null, ctypes, domains, naStrings, data, new ParseWriter.ParseErr[0],FileVec.DFLT_CHUNK_SIZE);
+          return new ParseSetup(CSV_INFO, GUESS_SEP, singleQuotes, checkHeader, 1, null, ctypes, domains, naStrings, data, new ParseWriter.ParseErr[0],FileVec.DFLT_CHUNK_SIZE,
+                  nonDataLineMarkers);
         }
       }
       data[0] = determineTokens(lines[0], sep, singleQuotes);
@@ -774,7 +772,8 @@ MAIN_LOOP:
     }
 
     // Assemble the setup understood so far
-    ParseSetup resSetup = new ParseSetup(CSV_INFO, sep, singleQuotes, checkHeader, ncols, labels, null, null /*domains*/, naStrings, data);
+    ParseSetup resSetup = new ParseSetup(CSV_INFO, sep, singleQuotes, checkHeader, ncols, labels, null, null /*domains*/, naStrings, data,
+            nonDataLineMarkers);
 
     // now guess the types
     if (columnTypes == null || ncols != columnTypes.length) {

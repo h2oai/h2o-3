@@ -51,12 +51,6 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
 
   @Override public boolean isSupervised() { return false; }
 
-  /** Initialize the ModelBuilder, validating all arguments and preparing the
-   *  training frame.  This call is expected to be overridden in the subclasses
-   *  and each subclass will start with "super.init();".  This call is made
-   *  by the front-end whenever the GUI is clicked, and needs to be fast;
-   *  heavy-weight prep needs to wait for the trainModel() call.
-   */
   @Override public void init(boolean expensive) {
     super.init(expensive);
     // Initialize local variables
@@ -64,8 +58,8 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
       error("_mtries", "mtries must be -1 (converted to sqrt(features)) or -2 (All features) or >= 1 but it is " + _parms._mtries);
     if( _train != null ) {
       int ncols = _train.numCols();
-      if( _parms._mtries != -1 && _parms._mtries != -2 && !(1 <= _parms._mtries && _parms._mtries < ncols /*ncols includes the response*/))
-        error("_mtries","Computed mtries should be -1 or -2 or in interval [1,"+ncols+"[ but it is " + _parms._mtries);
+      if( _parms._mtries != -1 && _parms._mtries != -2 && !(1 <= _parms._mtries && _parms._mtries <= ncols))
+        error("_mtries","Computed mtries should be -1 or -2 or in interval [1," + ncols + "] but it is " + _parms._mtries);
     }
     if (_parms._distribution != DistributionFamily.AUTO && _parms._distribution != DistributionFamily.gaussian) {
       throw new IllegalStateException("Isolation Forest doesn't expect the distribution to be specified by the user");
@@ -77,7 +71,7 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
   protected void validateRowSampleRate() {
     if (_parms._sample_rate == -1) {
       if (_parms._sample_size <= 0) {
-        error("_sample_size", "Sample size needs to be a positive integer number but it is" + _parms._sample_size);
+        error("_sample_size", "Sample size needs to be a positive integer number but it is " + _parms._sample_size);
       } else if (_train != null && _train.numRows() > 0) {
         _parms._sample_rate = _parms._sample_size /  (double) _train.numRows();
       }
@@ -98,25 +92,25 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
   }
 
   @Override
-  protected DTree.DecidedNode makeDecided(DTree.UndecidedNode udn, DHistogram hs[]) {
-    return new IFDecidedNode(udn, hs);
+  protected DTree.DecidedNode makeDecided(DTree.UndecidedNode udn, DHistogram hs[], Constraints cs) {
+    return new IFDecidedNode(udn, hs, cs);
   }
 
   private class IFDecidedNode extends DTree.DecidedNode {
 
-    private IFDecidedNode(DTree.UndecidedNode n, DHistogram[] hs) {
-      super(n, hs);
+    private IFDecidedNode(DTree.UndecidedNode n, DHistogram[] hs, Constraints cs) {
+      super(n, hs, cs);
     }
 
     @Override
-    public DTree.Split bestCol(DTree.UndecidedNode u, DHistogram hs[]) {
+    public DTree.Split bestCol(DTree.UndecidedNode u, DHistogram hs[], Constraints cs) {
       if( hs == null ) return null;
       final int maxCols = u._scoreCols == null /* all cols */ ? hs.length : u._scoreCols.length;
       List<FindSplits> findSplits = new ArrayList<>();
       for (int i=0; i<maxCols; i++) {
         int col = u._scoreCols == null ? i : u._scoreCols[i];
         if( hs[col]==null || hs[col].nbins() <= 1 ) continue;
-        findSplits.add(new FindSplits(hs, col, u));
+        findSplits.add(new FindSplits(hs, cs, col, u));
       }
       Collections.shuffle(findSplits, _rand);
       for (FindSplits fs : findSplits) {
@@ -131,7 +125,7 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
 
   // ----------------------
   private class IsolationForestDriver extends Driver {
-    @Override protected boolean doOOBScoring() { return false; }
+    @Override protected boolean doOOBScoring() { return true; }
 
     @Override protected void initializeModelSpecifics() {
       _mtry_per_tree = Math.max(1, (int)(_parms._col_sample_rate_per_tree * _ncols));
@@ -189,7 +183,7 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
 
       // Initially setup as-if an empty-split had just happened
       final DTree tree = ktrees[0];
-      new UndecidedNode(tree, -1, DHistogram.initialHist(_train, _ncols, adj_nbins, hcs[0][0], rseed, _parms, getGlobalQuantilesKeys())); // The "root" node
+      new UndecidedNode(tree, -1, DHistogram.initialHist(_train, _ncols, adj_nbins, hcs[0][0], rseed, _parms, getGlobalQuantilesKeys(), null), null); // The "root" node
 
       // ----
       // One Big Loop till the ktrees are of proper depth.
@@ -234,28 +228,26 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
     // Collect and write predictions into leafs.
     private class CalculatePaths extends MRTask<CalculatePaths> {
       private final DTree _tree;
-      private final int _ntrees;
       // OUT
-      private long _minPathLength = Long.MAX_VALUE;
-      private long _maxPathLength = 0;
-      private CalculatePaths(DTree tree) { _tree = tree; _ntrees = _model._output._ntrees; }
+      private int _minPathLength = Integer.MAX_VALUE;
+      private int _maxPathLength = 0;
+      private CalculatePaths(DTree tree) { _tree = tree; }
       @Override public void map(Chunk[] chks) {
         final Chunk tree = chk_tree(chks, 0);
         final Chunk nids = chk_nids(chks, 0); // Node-ids  for this tree/class
         final Chunk oobt = chk_oobt(chks);
         for (int row = 0; row < nids._len; row++) {
-          final boolean wasOOBRow = ScoreBuildHistogram.isOOBRow((int) chk_nids(chks,0).at8(row));
+          final int rawNid = (int) chk_nids(chks,0).at8(row);
+          final boolean wasOOBRow = ScoreBuildHistogram.isOOBRow(rawNid);
+          final int nid = wasOOBRow ? ScoreBuildHistogram.oob2Nid(rawNid) : rawNid;
+          final int depth = getNodeDepth(chks, row, nid);
           if (wasOOBRow) {
             double oobcnt = oobt.atd(row) + 1;
-            int nid = ScoreBuildHistogram.oob2Nid((int) nids.at8(row));
-            int depth = getNodeDepth(chks, row, nid);
-            long len = tree.at8(row) + depth;
-            long total_len = (long) (len * _ntrees / oobcnt);
-            tree.set(row, len);
-            _maxPathLength = total_len > _maxPathLength ? total_len : _maxPathLength;
-            _minPathLength = total_len < _minPathLength ? total_len : _minPathLength;
             oobt.set(row, oobcnt);
           }
+          final int total_len = PathTracker.encodeNewPathLength(tree, row, depth, wasOOBRow);
+          _maxPathLength = total_len > _maxPathLength ? total_len : _maxPathLength;
+          _minPathLength = total_len < _minPathLength ? total_len : _minPathLength;
           // reset NIds
           nids.set(row, 0);
         }
@@ -287,16 +279,12 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
 
   }
 
-  @Override protected double score1( Chunk chks[], double weight, double offset, double fs[/*nclass*/], int row ) {
+  
+  @Override protected double score1(Chunk chks[], double weight, double offset, double fs[/*2*/], int row) {
     assert weight == 1;
-    double len = chk_tree(chks, 0).atd(row);
-    if (len < 0) {
-      fs[0] = -1;
-      fs[1] = 0;
-      return fs[0];
-    }
-    fs[0] = _model.normalizePathLength(len); // score
+    int len = PathTracker.decodeOOBPathLength(chk_tree(chks, 0), row);
     fs[1] = len / chk_oobt(chks).atd(row); // average tree path length
+    fs[0] = _model.normalizePathLength(fs[1] * _model._output._ntrees); // score
     return fs[0];
   }
 

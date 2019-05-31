@@ -1,14 +1,15 @@
 package water;
 
+import jsr166y.ForkJoinPool;
+import jsr166y.ForkJoinPool.ManagedBlocker;
+import water.util.Log;
+import water.util.PrettyPrint;
+
+import javax.management.Notification;
+import javax.management.NotificationEmitter;
 import java.lang.management.*;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
-import javax.management.Notification;
-import javax.management.NotificationEmitter;
-import jsr166y.ForkJoinPool.ManagedBlocker;
-import jsr166y.ForkJoinPool;
-import water.util.Log;
-import water.util.PrettyPrint;
 
 /**
  * Manages memory assigned to key/value pairs. All byte arrays used in

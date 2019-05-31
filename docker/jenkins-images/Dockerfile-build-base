@@ -1,8 +1,9 @@
 ARG GPU_SUFFIX=''
 ARG FROM_VERSION
-FROM docker.h2o.ai/opsh2oai/h2o-3/dev-r-3.4.1${GPU_SUFFIX}:${FROM_VERSION}
+FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.4.1${GPU_SUFFIX}:${FROM_VERSION}
 
 RUN \
+    curl -sL https://deb.nodesource.com/setup_10.x | bash - && \
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y \
         texlive \
@@ -12,9 +13,9 @@ RUN \
         texlive-bibtex-extra \
         texlive-formats-extra \
         texlive-generic-extra \
-        nodejs-legacy \
-        npm \
-        python-virtualenv && \
+        python-virtualenv \
+        nodejs \
+        libkrb5-dev && \
     apt-get clean && \
     apt-get autoremove -y && \
     rm -rf /var/cache/apt/*

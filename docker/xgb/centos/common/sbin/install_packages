@@ -3,17 +3,30 @@
 set -e
 set -x
 
+yum install -y http://opensource.wandisco.com/centos/6/git/x86_64/wandisco-git-release-6-1.noarch.rpm
+rpm --rebuilddb
+yum update -y nss
+rpm --rebuilddb
+yum update -y curl
+rpm --rebuilddb
+yum update -y libcurl
+rpm --rebuilddb
 yum install -y wget
 rpm --rebuilddb
-yum -y install gcc
+yum -y install gcc gcc-c++
 rpm --rebuilddb
 yum install -y shadow-utils.x86_64
 rpm --rebuilddb
-yum -y install https://centos$(rpm -q --queryformat '%{VERSION}' centos-release).iuscommunity.org/ius-release.rpm
+wget --no-check-certificate https://centos$(rpm -q --queryformat '%{VERSION}' centos-release).iuscommunity.org/ius-release.rpm
+yum -y install ius-release.rpm
+rm ius-release.rpm
+sed -i '/\[ius.*\]/a sslverify=0' /etc/yum.repos.d/ius.repo
 rpm --rebuilddb
 yum -y install python35u-devel
 rpm --rebuilddb
 yum -y install python-pip
+rpm --rebuilddb
+yum -y install python-virtualenv
 rpm --rebuilddb
 yum -y install git
 rpm --rebuilddb

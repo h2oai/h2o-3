@@ -4,8 +4,8 @@ import ai.h2o.automl.UserFeedbackEvent.Stage;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ScoreKeeper.StoppingMetric;
-import hex.StackedEnsembleModel;
-import hex.StackedEnsembleModel.StackedEnsembleParameters;
+import hex.ensemble.StackedEnsembleModel;
+import hex.ensemble.StackedEnsembleModel.StackedEnsembleParameters;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMModel.GLMParameters;
@@ -25,13 +25,15 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.nbhm.NonBlockingHashMap;
 import water.util.ArrayUtils;
+import water.util.Countdown;
 import water.util.IcedHashMapGeneric;
 import water.util.Log;
 
-import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria.AUTO_STOPPING_TOLERANCE;
 
 
 /**
@@ -43,8 +45,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * will be the top performing models in the AutoML Leaderboard.
  */
 public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
-
-
 
   static class WorkAllocations extends Iced<WorkAllocations> {
 
@@ -77,12 +77,12 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
 
     private boolean canAllocate = true;
-    private final LinkedList<Work> allocations = new LinkedList<>();
+    private Work[] allocations = new Work[0];
 
     WorkAllocations allocate(Algo algo, int count, JobType type, int workShare) {
-      if (!canAllocate) throw new IllegalStateException("can't allocate new work");
+      if (!canAllocate) throw new IllegalStateException("Can't allocate new work.");
 
-      allocations.add(new Work(algo, count, type, workShare));
+      allocations = ArrayUtils.append(allocations, new Work(algo, count, type, workShare));
       return this;
     }
 
@@ -91,10 +91,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
 
     void remove(Algo algo) {
-      final Iterator<Work> iter = allocations.iterator();
-      while (iter.hasNext()) {
-        if (algo.equals(iter.next().algo)) iter.remove();
+      List<Work> filtered = new ArrayList<>(allocations.length);
+      for (Work alloc : allocations) {
+        if (!algo.equals(alloc.algo)) {
+          filtered.add(alloc);
+        }
       }
+      allocations = filtered.toArray(new Work[0]);
     }
 
     Work getAllocation(Algo algo, JobType workType) {
@@ -104,7 +107,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       return null;
     }
 
-    private int sum(List<Work> workItems) {
+    private int sum(Work[] workItems) {
       int tot = 0;
       for (Work item : workItems) {
         tot += (item.count * item.share);
@@ -116,39 +119,82 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       return sum(allocations);
     }
 
-    int remainingWork(JobType type) {
-      List<Work> selected = new ArrayList<>(allocations.size());
-      for (Work item : allocations) {
-        if (item.type == type) selected.add(item);
-      }
-      return sum(selected);
-    }
-
   }
-
-  private static final String DISTRIBUTED_XGBOOST_ENABLED = H2O.OptArgs.SYSTEM_PROP_PREFIX + "automl.xgboost.multinode.enabled";
 
   private final static boolean verifyImmutability = true; // check that trainingFrame hasn't been messed with
   private final static SimpleDateFormat fullTimestampFormat = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss.S");
   private final static SimpleDateFormat timestampFormatForKeys = new SimpleDateFormat("yyyyMMdd_HHmmss");
 
   /**
-   * For external use only.
-   * Keeping this mapping for existing users consuming the Java API directly.
-   * Putting here only algos that were available in H2O 3.20.x,
-   *  users that need to exclude new algos should switch to {@link Algo}.
-   * @deprecated will be removed in H2O 3.24.x, please use {@link Algo} instead.
+   * Instantiate an AutoML object and start it running.  Progress can be tracked via its job().
+   *
+   * @param buildSpec
+   * @return
    */
-  @Deprecated
-  public interface algo extends Serializable {
-    @Deprecated public static final Algo GLM = Algo.GLM;
-    @Deprecated public static final Algo DRF = Algo.DRF;
-    @Deprecated public static final Algo GBM = Algo.GBM;
-    @Deprecated public static final Algo DeepLearning = Algo.DeepLearning;
-    @Deprecated public static final Algo StackedEnsemble = Algo.StackedEnsemble;
+  public static AutoML startAutoML(AutoMLBuildSpec buildSpec) {
+    Date startTime = new Date();  // this is the one and only startTime for this run
+
+    synchronized (AutoML.class) {
+      // protect against two runs whose startTime is the same second
+      if (lastStartTime != null) {
+        while (lastStartTime.getYear() == startTime.getYear() &&
+            lastStartTime.getMonth() == startTime.getMonth() &&
+            lastStartTime.getDate() == startTime.getDate() &&
+            lastStartTime.getHours() == startTime.getHours() &&
+            lastStartTime.getMinutes() == startTime.getMinutes() &&
+            lastStartTime.getSeconds() == startTime.getSeconds())
+          startTime = new Date();
+      }
+      lastStartTime = startTime;
+    }
+
+    String keyString = buildSpec.build_control.project_name;
+    AutoML aml = AutoML.makeAutoML(Key.<AutoML>make(keyString), startTime, buildSpec);
+
+    DKV.put(aml);
+    startAutoML(aml);
+    return aml;
   }
 
-  private enum JobType {
+  /**
+   * Takes in an AutoML instance and starts running it. Progress can be tracked via its job().
+   * @param aml
+   * @return
+   */
+  public static void startAutoML(AutoML aml) {
+    // Currently AutoML can only run one job at a time
+    if (aml.job == null || !aml.job.isRunning()) {
+      H2OJob j = new H2OJob(aml, aml._key, aml.runCountdown.remainingTime());
+      aml.job = j._job;
+      j.start(aml.workAllocations.remainingWork());
+      DKV.put(aml);
+    }
+  }
+
+  public static AutoML makeAutoML(Key<AutoML> key, Date startTime, AutoMLBuildSpec buildSpec) {
+
+    AutoML autoML = new AutoML(key, startTime, buildSpec);
+
+    if (null == autoML.trainingFrame)
+      throw new H2OIllegalArgumentException("No training data has been specified, either as a path or a key.");
+
+    return autoML;
+  }
+
+  public static class AutoMLKeyV3 extends KeyV3<Iced, AutoMLKeyV3, AutoML> {
+    public AutoMLKeyV3() { }
+
+    public AutoMLKeyV3(Key<AutoML> key) {
+      super(key);
+    }
+  }
+
+  @Override
+  public Class<AutoMLKeyV3> makeSchema() {
+    return AutoMLKeyV3.class;
+  }
+
+  enum JobType {
     Unknown,
     ModelBuild,
     HyperparamSearch
@@ -156,8 +202,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   private AutoMLBuildSpec buildSpec;     // all parameters for doing this AutoML build
   private Frame origTrainingFrame;       // untouched original training frame
-  private boolean didValidationSplit = false;
-  private boolean didLeaderboardSplit = false;
 
   public AutoMLBuildSpec getBuildSpec() {
     return buildSpec;
@@ -165,38 +209,30 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   public Frame getTrainingFrame() { return trainingFrame; }
   public Frame getValidationFrame() { return validationFrame; }
+  public Frame getBlendingFrame() { return blendingFrame; }
   public Frame getLeaderboardFrame() { return leaderboardFrame; }
 
   public Vec getResponseColumn() { return responseColumn; }
   public Vec getFoldColumn() { return foldColumn; }
   public Vec getWeightsColumn() { return weightsColumn; }
 
-//  Disabling metadata collection for now as there is no use for it...
-//  public FrameMetadata getFrameMetadata() {
-////    return frameMetadata;
-////  }
-
   private Frame trainingFrame;    // required training frame: can add and remove Vecs, but not mutate Vec data in place
   private Frame validationFrame;  // optional validation frame; the training_frame is split automagically if it's not specified
+  private Frame blendingFrame;
   private Frame leaderboardFrame; // optional test frame used for leaderboard scoring; if not specified, leaderboard will use xval metrics
 
   private Vec responseColumn;
   private Vec foldColumn;
   private Vec weightsColumn;
 
-//  Disabling metadata collection for now as there is no use for it...
-//  private FrameMetadata frameMetadata;           // metadata for trainingFrame
-
   private Key<Grid> gridKeys[] = new Key[0];  // Grid key for the GridSearches
-//  private boolean isClassification;
 
   private Date startTime;
   private static Date lastStartTime; // protect against two runs with the same second in the timestamp; be careful about races
-  private long stopTimeMs;
-  private Job job;                  // the Job object for the build of this AutoML.  TODO: can we have > 1?
+  private Countdown runCountdown;
+  private Job job;                  // the Job object for the build of this AutoML.
 
   private transient List<Job> jobs; // subjobs
-  private transient List<Frame> tempFrames;
 
   private AtomicInteger modelCount = new AtomicInteger();  // prepare for concurrency
   private Leaderboard leaderboard;
@@ -209,60 +245,76 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   private WorkAllocations workAllocations;
 
-  private Algo[] skipAlgosList = new Algo[]{};
-
   public AutoML() {
     super(null);
   }
-  // https://0xdata.atlassian.net/browse/STEAM-52  --more interesting user options
+
   public AutoML(Key<AutoML> key, Date startTime, AutoMLBuildSpec buildSpec) {
     super(key);
-
     this.startTime = startTime;
-    userFeedback = new UserFeedback(this); // Don't use until we set this.project_name
-
     this.buildSpec = buildSpec;
+    this.jobs = new ArrayList<>();
+    this.runCountdown = Countdown.fromSeconds(buildSpec.build_control.stopping_criteria.max_runtime_secs());
 
-    userFeedback.info(Stage.Workflow, "AutoML job created: " + fullTimestampFormat.format(this.startTime));
+    try {
+      userFeedback = new UserFeedback(this);
+      userFeedback.info(Stage.Workflow, "Project: " + projectName());
+      userFeedback.info(Stage.Workflow, "AutoML job created: " + fullTimestampFormat.format(this.startTime));
 
-    handleDatafileParameters(buildSpec);
+      workAllocations = planWork();
 
-    if (null != buildSpec.input_spec.fold_column && 5 != buildSpec.build_control.nfolds)
-      throw new H2OIllegalArgumentException("Cannot specify fold_column and a non-default nfolds value at the same time.");
-    if (null != buildSpec.input_spec.fold_column)
-      userFeedback.warn(Stage.Workflow, "Custom fold column, " + buildSpec.input_spec.fold_column + ", will be used. nfolds value will be ignored.");
+      if (null != buildSpec.input_spec.fold_column) {
+        userFeedback.warn(Stage.Workflow, "Custom fold column, " + buildSpec.input_spec.fold_column + ", will be used. nfolds value will be ignored.");
+        buildSpec.build_control.nfolds = 0; //reset nfolds to Model default
+      }
 
-    userFeedback.info(Stage.Workflow, "Build control seed: " +
-            buildSpec.build_control.stopping_criteria.seed() +
-            (buildSpec.build_control.stopping_criteria.seed() == -1 ? " (random)" : ""));
+      userFeedback.info(Stage.Workflow, "Build control seed: " + buildSpec.build_control.stopping_criteria.seed() +
+          (buildSpec.build_control.stopping_criteria.seed() == -1 ? " (random)" : ""));
 
-    // By default, stopping tolerance is adaptive to the training frame
-    if (this.buildSpec.build_control.stopping_criteria._stopping_tolerance == -1) {
+      handleDatafileParameters(buildSpec);
+
+    if (this.buildSpec.build_control.stopping_criteria.stopping_tolerance() == AUTO_STOPPING_TOLERANCE) {
       this.buildSpec.build_control.stopping_criteria.set_default_stopping_tolerance_for_frame(this.trainingFrame);
       userFeedback.info(Stage.Workflow, "Setting stopping tolerance adaptively based on the training frame: " +
-              this.buildSpec.build_control.stopping_criteria._stopping_tolerance);
+              this.buildSpec.build_control.stopping_criteria.stopping_tolerance());
     } else {
-      userFeedback.info(Stage.Workflow, "Stopping tolerance set by the user: " + this.buildSpec.build_control.stopping_criteria._stopping_tolerance);
-
-      double default_tolerance = RandomDiscreteValueSearchCriteria.default_stopping_tolerance_for_frame(this.trainingFrame);
-      if (this.buildSpec.build_control.stopping_criteria._stopping_tolerance < 0.7 * default_tolerance){
+      userFeedback.info(Stage.Workflow, "Stopping tolerance set by the user: " + this.buildSpec.build_control.stopping_criteria.stopping_tolerance());
+      double default_tolerance = AutoMLBuildSpec.AutoMLStoppingCriteria.default_stopping_tolerance_for_frame(this.trainingFrame);
+      if (this.buildSpec.build_control.stopping_criteria.stopping_tolerance() < 0.7 * default_tolerance){
         userFeedback.warn(Stage.Workflow, "Stopping tolerance set by the user is < 70% of the recommended default of " + default_tolerance + ", so models may take a long time to converge or may not converge at all.");
       }
     }
 
-    userFeedback.info(Stage.Workflow, "Project: " + projectName());
-
-    String sort_metric = buildSpec.input_spec.sort_metric == null ? null : buildSpec.input_spec.sort_metric.toLowerCase();
-    // TODO: does this need to be updated?  I think its okay to pass a null leaderboardFrame
-    leaderboard = Leaderboard.getOrMakeLeaderboard(projectName(), userFeedback, this.leaderboardFrame, sort_metric);
-
-    this.jobs = new ArrayList<>();
-    this.tempFrames = new ArrayList<>();
+      String sort_metric = buildSpec.input_spec.sort_metric == null ? null : buildSpec.input_spec.sort_metric.toLowerCase();
+      leaderboard = Leaderboard.getOrMakeLeaderboard(projectName(), userFeedback, this.leaderboardFrame, sort_metric);
+    } catch (Exception e) {
+      deleteWithChildren(); //cleanup potentially leaked keys
+      throw e;
+    }
   }
 
 
   WorkAllocations planWork() {
-    workAllocations = new WorkAllocations();
+    if (buildSpec.build_models.exclude_algos != null && buildSpec.build_models.include_algos != null) {
+      throw new  H2OIllegalArgumentException("Parameters `exclude_algos` and `include_algos` are mutually exclusive: please use only one of them if necessary.");
+    }
+
+    Set<Algo> skippedAlgos = new HashSet<>();
+    if (buildSpec.build_models.exclude_algos != null) {
+      skippedAlgos.addAll(Arrays.asList(buildSpec.build_models.exclude_algos));
+    } else if (buildSpec.build_models.include_algos != null) {
+      skippedAlgos.addAll(Arrays.asList(Algo.values()));
+      skippedAlgos.removeAll(Arrays.asList(buildSpec.build_models.include_algos));
+    }
+
+    for (Algo algo : Algo.values()) {
+      if (!skippedAlgos.contains(algo) && !algo.enabled()) {
+        userFeedback.warn(Stage.ModelTraining, "AutoML: "+algo.name()+" is not available; skipping it.");
+        skippedAlgos.add(algo);
+      }
+    }
+
+    WorkAllocations workAllocations = new WorkAllocations();
     workAllocations.allocate(Algo.DeepLearning, 1, JobType.ModelBuild, 10)
             .allocate(Algo.DeepLearning, 3, JobType.HyperparamSearch, 20)
             .allocate(Algo.DRF, 2, JobType.ModelBuild, 10)
@@ -274,161 +326,189 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
             .allocate(Algo.StackedEnsemble, 2, JobType.ModelBuild, 15)
             .end();
 
-    if (buildSpec.build_models.exclude_algos != null) {
-      for (Algo algo : (Algo[]) buildSpec.build_models.exclude_algos) {
-        skipAlgosList = ArrayUtils.append(skipAlgosList, algo);
-      }
-    }
-    if (!ExtensionManager.getInstance().isCoreExtensionEnabled("XGBoost")
-        || (H2O.CLOUD.size() > 1 && !Boolean.parseBoolean(System.getProperty(DISTRIBUTED_XGBOOST_ENABLED, "false")))) {
-      userFeedback.warn(Stage.ModelTraining, "AutoML: XGBoost extension is not available; skipping default XGBoost");
-      skipAlgosList = ArrayUtils.append(skipAlgosList, Algo.XGBoost);
-    }
-
-    // This is useful during debugging.
-//    skipAlgosList = ArrayUtils.append(skipAlgosList, Algo.GLM, Algo.DRF, Algo.GBM, Algo.DeepLearning, Algo.StackedEnsemble);
-
-    // Inform the user about skipped algos.
-    // Note: to make the keys short we use "DL" for the "DeepLearning" searches:
-    for (Algo skippedAlgo : skipAlgosList) {
-      userFeedback.info(Stage.ModelTraining, "Disabling Algo: " + skippedAlgo + " as requested by the user.");
+    for (Algo skippedAlgo : skippedAlgos) {
+      userFeedback.info(Stage.ModelTraining, "Disabling Algo: "+skippedAlgo+" as requested by the user.");
       workAllocations.remove(skippedAlgo);
     }
 
     return workAllocations;
   }
 
+  @Override
+  public void run() {
+    runCountdown.start();
+    userFeedback.info(Stage.Workflow, "AutoML build started: " + fullTimestampFormat.format(runCountdown.start_time()));
+    learn();
+    stop();
+  }
+
+  @Override
+  public void stop() {
+    if (null == jobs) return; // already stopped
+    for (Job j : jobs) j.stop();
+    for (Job j : jobs) j.get(); // Hold until they all completely stop.
+    jobs = null;
+
+    runCountdown.stop();
+    userFeedback.info(Stage.Workflow, "AutoML build stopped: " + fullTimestampFormat.format(runCountdown.stop_time()));
+    userFeedback.info(Stage.Workflow, "AutoML build done: built " + modelCount + " models");
+
+    Log.info(userFeedback.toString("User Feedback for AutoML Run " + this._key + ":"));
+    for (UserFeedbackEvent event : userFeedback.feedbackEvents)
+      Log.info(event);
+
+    if (0 < this.leaderboard().getModelKeys().length) {
+      Log.info(leaderboard().toTwoDimTable("Leaderboard for project " + projectName(), true).toString());
+    }
+
+    possiblyVerifyImmutability();
+    if (!buildSpec.build_control.keep_cross_validation_predictions) {
+      cleanUpModelsCVPreds();
+    }
+  }
+
+  private void learn() {
+    defaultXGBoosts(false);
+    defaultSearchGLM(null);
+    defaultRandomForest();
+//    defaultXGBoosts(true);
+    defaultGBMs();
+    defaultDeepLearning();
+    defaultExtremelyRandomTrees();
+    defaultSearchXGBoost(null, false);
+//    defaultSearchXGBoost(null, true);
+    defaultSearchGBM(null);
+    defaultSearchDL();
+    defaultStackedEnsembles();
+  }
+
   /**
-   * If the user hasn't specified validation data, split it off for them.
-   *                                                                  <p>
-   * For nfolds > 1, the user can specify:                            <p>
-   * 1. training only                                                 <p>
-   * 2. training + leaderboard                                        <p>
-   * 3. training + validation                                         <p>
-   * 4. training + validation + leaderboard                           <p>
-   *                                                                  <p>
-   * In the top two cases we auto-split:                              <p>
-   * training -> training:validation  80:20                           <p>
-   *                                                                  <p>
-   * For nfolds = 0, we have different rules:                         <p>
-   * 5. training only                                                 <p>
-   * 6. training + leaderboard                                        <p>
-   * 7. training + validation                                         <p>
-   * 8. training + validation + leaderboard                           <p>
-   *                                                                  <p>
-   * TODO: should the size of the splits adapt to origTrainingFrame.numRows()?
+   * Holds until AutoML's job is completed, if a job exists.
    */
-  private void optionallySplitDatasets() {
-     // TODO: Maybe clean this up a bit -- use else if instead of nested if/else
-    // If using cross-validation (via nfolds or fold_column), we can use CV metrics for the Leaderboard
-    // therefore we don't need to auto-gen a leaderboard frame
-    if (this.buildSpec.build_control.nfolds > 1 || null != this.buildSpec.input_spec.fold_column) {
-      if (null == this.validationFrame) {
-        // case 1 and 2: missing validation frame -- need to create validation frame
-        Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(origTrainingFrame,
-                new Key[] { Key.make("automl_training_" + origTrainingFrame._key),
-                        Key.make("automl_validation_" + origTrainingFrame._key)},
-                new double[] { 0.9, 0.1 },
-                buildSpec.build_control.stopping_criteria.seed());
+  public void get() {
+    if (job != null) job.get();
+  }
+
+  public Job job() {
+    if (null == this.job) return null;
+    return DKV.getGet(this.job._key);
+  }
+
+  public Leaderboard leaderboard() { return (leaderboard == null ? null : leaderboard._key.get()); }
+
+  public Model leader() { return (leaderboard() == null ? null : leaderboard().getLeader()); }
+
+  public UserFeedback userFeedback() { return userFeedback == null ? null : userFeedback._key.get(); }
+
+  public String projectName() {
+    return buildSpec == null ? null : buildSpec.project();
+  }
+
+  public long timeRemainingMs() {
+    return runCountdown.remainingTime();
+  }
+
+  public int remainingModels() {
+    if (buildSpec.build_control.stopping_criteria.max_models() == 0)
+      return Integer.MAX_VALUE;
+    return buildSpec.build_control.stopping_criteria.max_models() - modelCount.get();
+  }
+
+  @Override
+  public boolean keepRunning() {
+    return !runCountdown.timedOut() && remainingModels() > 0;
+  }
+
+  private boolean isCVEnabled() {
+    return this.buildSpec.build_control.nfolds != 0 || this.buildSpec.input_spec.fold_column != null;
+  }
+
+
+  //*****************  Data Preparation Section  *****************//
+
+  private void optionallySplitTrainingDataset() {
+    // If no cross-validation and validation or leaderboard frame are missing,
+    // then we need to create one out of the original training set.
+    if (!isCVEnabled()) {
+      double[] splitRatios = null;
+      if (null == this.validationFrame && null == this.leaderboardFrame) {
+        splitRatios = new double[]{ 0.8, 0.1, 0.1 };
+        userFeedback.info(Stage.DataImport,
+            "Since cross-validation is disabled, and none of validation frame and leaderboard frame were provided, " +
+                "automatically split the training data into training, validation and leaderboard frames in the ratio 80/10/10");
+      } else if (null == this.validationFrame) {
+        splitRatios = new double[]{ 0.9, 0.1, 0 };
+        userFeedback.info(Stage.DataImport,
+            "Since cross-validation is disabled, and no validation frame was provided, " +
+                "automatically split the training data into training and validation frames in the ratio 90/10");
+      } else if (null == this.leaderboardFrame) {
+        splitRatios = new double[]{ 0.9, 0, 0.1 };
+        userFeedback.info(Stage.DataImport,
+            "Since cross-validation is disabled, and no leaderboard frame was provided, " +
+                "automatically split the training data into training and leaderboard frames in the ratio 90/10");
+      }
+      if (splitRatios != null) {
+        Key[] keys = new Key[] {
+            Key.make("automl_training_"+origTrainingFrame._key),
+            Key.make("automl_validation_"+origTrainingFrame._key),
+            Key.make("automl_leaderboard_"+origTrainingFrame._key),
+        };
+        Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(
+            origTrainingFrame,
+            keys,
+            splitRatios,
+            buildSpec.build_control.stopping_criteria.seed()
+        );
         this.trainingFrame = splits[0];
-        this.validationFrame = splits[1];
-        this.didValidationSplit = true;
-        this.didLeaderboardSplit = false;
-        userFeedback.info(Stage.DataImport, "Automatically split the training data into training and validation frames in the ratio 80/20");
-      } else {
-        // case 3 and 4: nothing to do here
-        userFeedback.info(Stage.DataImport, "Training and validation were both specified; no auto-splitting.");
-      }
-      if (null == this.leaderboardFrame) {
-        // Extra logging for null leaderboard_frame (case 1 and 3)
-        userFeedback.info(Stage.DataImport, "Leaderboard frame not provided by the user; leaderboard will use cross-validation metrics instead.");
-      }
-    } else {
-      // If not using cross-validation, then we must auto-gen a leaderboard frame (and validation frame if missing)
-      if (null == this.leaderboardFrame) {
-        if (null == this.validationFrame) {
-          // case 5: no CV, missing validation and leaderboard frames -- need to create them both from train
-          Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(origTrainingFrame,
-                  new Key[] { Key.make("automl_training_" + origTrainingFrame._key),
-                          Key.make("automl_validation_" + origTrainingFrame._key),
-                          Key.make("automl_leaderboard_" + origTrainingFrame._key)},
-                  new double[] { 0.8, 0.1, 0.1 },
-                  buildSpec.build_control.stopping_criteria.seed());
-          this.trainingFrame = splits[0];
+
+        if (this.validationFrame == null && splits[1].numRows() > 0) {
           this.validationFrame = splits[1];
-          this.leaderboardFrame = splits[2];
-          this.didValidationSplit = true;
-          this.didLeaderboardSplit = true;
-          userFeedback.info(Stage.DataImport, "Automatically split the training data into training, validation and leaderboard frames in the ratio 80/10/10");
         } else {
-          // case 7: no CV, missing leaderboard frame but validation exists -- need to create leaderboard frame from valid
-          Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(validationFrame,
-                  new Key[] { Key.make("automl_validation_" + origTrainingFrame._key),
-                          Key.make("automl_leaderboard_" + origTrainingFrame._key)},
-                  new double[] { 0.5, 0.5 },
-                  buildSpec.build_control.stopping_criteria.seed());
-          this.validationFrame = splits[0];
-          this.leaderboardFrame = splits[1];
-          this.didValidationSplit = true;
-          this.didLeaderboardSplit = true;
-          userFeedback.info(Stage.DataImport, "Automatically split the validation data into validation and leaderboard frames in the ratio 50/50");
+          splits[1].delete();
         }
-      } else {
-        // leaderboard frame is there, so if missing valid, then we just need to do a 90/10 split, else do nothing
-        if (null == this.validationFrame) {
-          // case 6: no CV, missing validation -- need to create it from train
-          Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(origTrainingFrame,
-                  new Key[] { Key.make("automl_training_" + origTrainingFrame._key),
-                          Key.make("automl_validation_" + origTrainingFrame._key)},
-                  new double[] { 0.9, 0.1 },
-                  buildSpec.build_control.stopping_criteria.seed());
-          this.trainingFrame = splits[0];
-          this.validationFrame = splits[1];
-          this.didValidationSplit = true;
-          this.didLeaderboardSplit = false;
-          userFeedback.info(Stage.DataImport, "Automatically split the training data into training and validation frames in the ratio 80/20");
+
+        if (this.leaderboardFrame == null && splits[2].numRows() > 0) {
+          this.leaderboardFrame = splits[2];
         } else {
-          // case 8: all frames are there, no need to do anything
-          userFeedback.info(Stage.DataImport, "Training, validation and leaderboard datasets were all specified; not auto-splitting.");
+          splits[2].delete();
         }
       }
     }
   }
-
   private void handleDatafileParameters(AutoMLBuildSpec buildSpec) {
     this.origTrainingFrame = DKV.getGet(buildSpec.input_spec.training_frame);
     this.validationFrame = DKV.getGet(buildSpec.input_spec.validation_frame);
+    this.blendingFrame = DKV.getGet(buildSpec.input_spec.blending_frame);
     this.leaderboardFrame = DKV.getGet(buildSpec.input_spec.leaderboard_frame);
 
-    if (this.origTrainingFrame.find(buildSpec.input_spec.response_column) == -1) {
-      throw new H2OIllegalArgumentException("Response column '" + buildSpec.input_spec.response_column + "' is not in " +
-              "the training frame.");
-    }
-
-    if(this.validationFrame != null && this.validationFrame.find(buildSpec.input_spec.response_column) == -1) {
-      throw new H2OIllegalArgumentException("Response column '" + buildSpec.input_spec.response_column + "' is not in " +
-              "the validation frame.");
-    }
-
-    if(this.leaderboardFrame != null && this.leaderboardFrame.find(buildSpec.input_spec.response_column) == -1) {
-      throw new H2OIllegalArgumentException("Response column '" + buildSpec.input_spec.response_column + "' is not in " +
-              "the leaderboard frame.");
+    Map<String, Frame> compatible_frames = new LinkedHashMap(){{
+      put("training", origTrainingFrame);
+      put("validation", validationFrame);
+      put("blending", blendingFrame);
+      put("leaderboard", leaderboardFrame);
+    }};
+    for (Map.Entry<String, Frame> entry : compatible_frames.entrySet()) {
+      Frame frame = entry.getValue();
+      if (frame != null && frame.find(buildSpec.input_spec.response_column) == -1) {
+        throw new H2OIllegalArgumentException("Response column '"+buildSpec.input_spec.response_column+"' is not in the "+entry.getKey()+" frame.");
+      }
     }
 
     if (buildSpec.input_spec.fold_column != null && this.origTrainingFrame.find(buildSpec.input_spec.fold_column) == -1) {
-      throw new H2OIllegalArgumentException("Fold column '" + buildSpec.input_spec.fold_column + "' is not in " +
-              "the training frame.");
+      throw new H2OIllegalArgumentException("Fold column '"+buildSpec.input_spec.fold_column+"' is not in the training frame.");
     }
     if (buildSpec.input_spec.weights_column != null && this.origTrainingFrame.find(buildSpec.input_spec.weights_column) == -1) {
-      throw new H2OIllegalArgumentException("Weights column '" + buildSpec.input_spec.weights_column + "' is not in " +
-              "the training frame.");
+      throw new H2OIllegalArgumentException("Weights column '"+buildSpec.input_spec.weights_column+"' is not in the training frame.");
     }
 
-    optionallySplitDatasets();
+    optionallySplitTrainingDataset();
 
     if (null == this.trainingFrame) {
-      // we didn't need to split off the validation_frame or leaderboard_frame ourselves
+      // when nfolds>0, let trainingFrame be the original frame
+      // but cloning to keep an internal ref just in case the original ref gets deleted from client side
+      // (can occur in some corner cases with Python GC for example if frame get's out of scope during an AutoML rerun)
       this.trainingFrame = new Frame(origTrainingFrame);
+      this.trainingFrame._key = Key.make("automl_training_" + origTrainingFrame._key);
       DKV.put(this.trainingFrame);
     }
 
@@ -436,17 +516,24 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     this.foldColumn = trainingFrame.vec(buildSpec.input_spec.fold_column);
     this.weightsColumn = trainingFrame.vec(buildSpec.input_spec.weights_column);
 
-    this.userFeedback.info(Stage.DataImport, "training frame: " + this.trainingFrame.toString().replace("\n", " ") + " checksum: " + this.trainingFrame.checksum());
-    this.userFeedback.info(Stage.DataImport, "validation frame: " + this.validationFrame.toString().replace("\n", " ") + " checksum: " + this.validationFrame.checksum());
+    this.userFeedback.info(Stage.DataImport,
+        "training frame: "+this.trainingFrame.toString().replace("\n", " ")+" checksum: "+this.trainingFrame.checksum());
+    if (null != this.validationFrame) {
+      this.userFeedback.info(Stage.DataImport,
+          "validation frame: "+this.validationFrame.toString().replace("\n", " ")+" checksum: "+this.validationFrame.checksum());
+    } else {
+      this.userFeedback.info(Stage.DataImport, "validation frame: NULL");
+    }
     if (null != this.leaderboardFrame) {
-      this.userFeedback.info(Stage.DataImport, "leaderboard frame: " + this.leaderboardFrame.toString().replace("\n", " ") + " checksum: " + this.leaderboardFrame.checksum());
+      this.userFeedback.info(Stage.DataImport,
+          "leaderboard frame: "+this.leaderboardFrame.toString().replace("\n", " ")+" checksum: "+this.leaderboardFrame.checksum());
     } else {
       this.userFeedback.info(Stage.DataImport, "leaderboard frame: NULL");
     }
 
-    this.userFeedback.info(Stage.DataImport, "response column: " + buildSpec.input_spec.response_column);
-    this.userFeedback.info(Stage.DataImport, "fold column: " + this.foldColumn);
-    this.userFeedback.info(Stage.DataImport, "weights column: " + this.weightsColumn);
+    this.userFeedback.info(Stage.DataImport, "response column: "+buildSpec.input_spec.response_column);
+    this.userFeedback.info(Stage.DataImport, "fold column: "+this.foldColumn);
+    this.userFeedback.info(Stage.DataImport, "weights column: "+this.weightsColumn);
 
     if (verifyImmutability) {
       // check that we haven't messed up the original Frame
@@ -461,61 +548,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
 
-  public static AutoML makeAutoML(Key<AutoML> key, Date startTime, AutoMLBuildSpec buildSpec) {
+  //*****************  Jobs Build / Configure / Run / Poll section (model agnostic, kind of...) *****************//
 
-    AutoML autoML = new AutoML(key, startTime, buildSpec);
-
-    if (null == autoML.trainingFrame)
-      throw new H2OIllegalArgumentException("No training data has been specified, either as a path or a key.");
-
-    return autoML;
-  }
-
-  // used to launch the AutoML asynchronously
-  @Override
-  public void run() {
-    stopTimeMs = System.currentTimeMillis() + Math.round(1000 * buildSpec.build_control.stopping_criteria.max_runtime_secs());
-    learn();
-  }
-
-  @Override
-  public void stop() {
-    for (Frame f : tempFrames) f.delete();
-    tempFrames = null;
-
-    if (null == jobs) return; // already stopped
-    for (Job j : jobs) j.stop();
-    for (Job j : jobs) j.get(); // Hold until they all completely stop.
-    jobs = null;
-
-    // TODO: add a failsafe, if we haven't marked off as much work as we originally intended?
-    // If we don't, we end up with an exceptional completion.
-  }
-
-  public long getStopTimeMs() {
-    return stopTimeMs;
-  }
-
-  public long timeRemainingMs() {
-    if (getStopTimeMs() < 0) return Long.MAX_VALUE;
-    long remaining = getStopTimeMs() - System.currentTimeMillis();
-    return Math.max(0, remaining);
-  }
-
-  public int remainingModels() {
-    if (buildSpec.build_control.stopping_criteria.max_models() == 0)
-      return Integer.MAX_VALUE;
-    return buildSpec.build_control.stopping_criteria.max_models() - modelCount.get();
-  }
-
-  private boolean timingOut() {
-    return timeRemainingMs() <= 0;
-  }
-
-  @Override
-  public boolean keepRunning() {
-    return timeRemainingMs() > 0 && remainingModels() > 0;
-  }
 
   private void pollAndUpdateProgress(Stage stage, String name, WorkAllocations.Work work, Job parentJob, Job subJob) {
     pollAndUpdateProgress(stage, name, work, parentJob, subJob, false);
@@ -533,39 +567,37 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     jobs.add(subJob);
 
     long lastWorkedSoFar = 0;
-    long cumulative = 0;
-    int gridLastCount = 0;
+    long lastTotalGridModelsBuilt = 0;
 
     while (subJob.isRunning()) {
       if (null != parentJob) {
         if (parentJob.stop_requested()) {
-          userFeedback.info(Stage.ModelTraining, "AutoML job cancelled; skipping " + name);
+          userFeedback.info(stage, "AutoML job cancelled; skipping " + name);
           subJob.stop();
         }
-        if (!ignoreTimeout && timingOut()) {
-          userFeedback.info(Stage.ModelTraining, "AutoML: out of time; skipping " + name);
+        if (!ignoreTimeout && runCountdown.timedOut()) {
+          userFeedback.info(stage, "AutoML: out of time; skipping " + name);
           subJob.stop();
         }
       }
       long workedSoFar = Math.round(subJob.progress() * work.share);
-      cumulative += workedSoFar;
 
       if (null != parentJob) {
         parentJob.update(Math.round(workedSoFar - lastWorkedSoFar), name);
       }
 
       if (JobType.HyperparamSearch == work.type) {
-        Grid grid = (Grid)subJob._result.get();
-        int gridCount = grid.getModelCount();
-        if (gridCount > gridLastCount) {
-          userFeedback.info(Stage.ModelTraining, "Built: " + gridCount + " models for search: " + name);
+        Grid<?> grid = (Grid)subJob._result.get();
+        int totalGridModelsBuilt = grid.getModelCount();
+        if (totalGridModelsBuilt > lastTotalGridModelsBuilt) {
+          userFeedback.info(stage, "Built: " + totalGridModelsBuilt + " models for search: " + name);
           this.addModels(grid.getModelKeys());
-          gridLastCount = gridCount;
+          lastTotalGridModelsBuilt = totalGridModelsBuilt;
         }
       }
 
       try {
-        Thread.currentThread().sleep(1000);
+        Thread.sleep(1000);
       }
       catch (InterruptedException e) {
         // keep going
@@ -576,23 +608,23 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // pick up any stragglers:
     if (JobType.HyperparamSearch == work.type) {
       if (subJob.isCrashed()) {
-        userFeedback.info(stage, name + " failed: " + subJob.ex().toString());
+        userFeedback.warn(stage, name + " failed: " + subJob.ex().toString());
       } else if (subJob.get() == null) {
-        userFeedback.info(stage, name + " cancelled");
+        userFeedback.warn(stage, name + " cancelled");
       } else {
-        Grid grid = (Grid) subJob.get();
-        int gridCount = grid.getModelCount();
-        if (gridCount > gridLastCount) {
-          userFeedback.info(Stage.ModelTraining, "Built: " + gridCount + " models for search: " + name);
+        Grid<?> grid = (Grid) subJob.get();
+        int totalGridModelsBuilt = grid.getModelCount();
+        if (totalGridModelsBuilt > lastTotalGridModelsBuilt) {
+          userFeedback.info(stage, "Built: " + totalGridModelsBuilt + " models for search: " + name);
           this.addModels(grid.getModelKeys());
         }
         userFeedback.info(stage, name + " complete");
       }
     } else if (JobType.ModelBuild == work.type) {
       if (subJob.isCrashed()) {
-        userFeedback.info(stage, name + " failed: " + subJob.ex().toString());
+        userFeedback.warn(stage, name + " failed: " + subJob.ex().toString());
       } else if (subJob.get() == null) {
-        userFeedback.info(stage, name + " cancelled");
+        userFeedback.warn(stage, name + " cancelled");
       } else {
         userFeedback.info(stage, name + " complete");
         this.addModel((Model) subJob.get());
@@ -604,13 +636,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       parentJob.update(work.share - lastWorkedSoFar);
     }
     work.consume();
-
     jobs.remove(subJob);
   }
 
   // These are per (possibly concurrent) AutoML run.
-  // All created keys for a run use the unique AutoML
-  // run timestamp, so we can't have name collisions.
+  // All created keys for a run use the unique AutoML run timestamp, so we can't have name collisions.
   private int individualModelsTrained = 0;
   private NonBlockingHashMap<String, Integer> algoInstanceCounters = new NonBlockingHashMap<>();
   private NonBlockingHashMap<String, Integer> gridInstanceCounters = new NonBlockingHashMap<>();
@@ -663,9 +693,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (ignoreLimits)
       builder._parms._max_runtime_secs = 0;
     else if (builder._parms._max_runtime_secs == 0)
-      builder._parms._max_runtime_secs = Math.round(timeRemainingMs() / 1000.0);
+      builder._parms._max_runtime_secs = timeRemainingMs() / 1e3;
     else
-      builder._parms._max_runtime_secs = Math.min(builder._parms._max_runtime_secs, Math.round(timeRemainingMs() / 1000.0));
+      builder._parms._max_runtime_secs = Math.min(builder._parms._max_runtime_secs, timeRemainingMs() / 1e3);
 
     setStoppingCriteria(parms, defaults);
 
@@ -707,16 +737,17 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
    * @param searchParms hyperparameter search space
    * @return the started hyperparameter search job
    */
-  Job<Grid> hyperparameterSearch(Key<Grid> gridKey, WorkAllocations.Work work, Model.Parameters baseParms, Map<String, Object[]> searchParms) {
+  Job<Grid> hyperparameterSearch(
+      Key<Grid> gridKey, WorkAllocations.Work work, Model.Parameters baseParms, Map<String, Object[]> searchParms
+  ) {
     if (exceededSearchLimits(work)) return null;
 
     Algo algo = work.algo;
     setCommonModelBuilderParams(baseParms);
 
-    RandomDiscreteValueSearchCriteria searchCriteria = (RandomDiscreteValueSearchCriteria)buildSpec.build_control.stopping_criteria.clone();
+    RandomDiscreteValueSearchCriteria searchCriteria = (RandomDiscreteValueSearchCriteria) buildSpec.build_control.stopping_criteria.getSearchCriteria().clone();
     float remainingWorkRatio = (float) work.share / workAllocations.remainingWork();
-//    float remainingWorkRatio = (float) work.workShare / workAllocations.remainingWork(work.jobType);
-    long maxAssignedTime = (long) Math.round(remainingWorkRatio * timeRemainingMs() / 1000);
+    double maxAssignedTime = remainingWorkRatio * timeRemainingMs() / 1e3;
     int maxAssignedModels = (int) Math.ceil(remainingWorkRatio * remainingModels());
 
     if (searchCriteria.max_runtime_secs() == 0)
@@ -731,7 +762,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     userFeedback.info(Stage.ModelTraining, "AutoML: starting " + algo + " hyperparameter search");
 
-    // If the caller hasn't set ModelBuilder stopping criteria, set it from our global criteria.
     Model.Parameters defaults;
     try {
       defaults = baseParms.getClass().newInstance();
@@ -751,13 +781,37 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (null == gridKey) gridKey = gridKey(algo.name());
     addGridKey(gridKey);
     Log.debug("Hyperparameter search: " + algo.name() + ", time remaining (ms): " + timeRemainingMs());
-    return GridSearch.startGridSearch(gridKey,
-            baseParms,
-            searchParms,
-            new GridSearch.SimpleParametersBuilderFactory(),
-            searchCriteria);
+    return GridSearch.startGridSearch(
+        gridKey,
+        baseParms,
+        searchParms,
+        new GridSearch.SimpleParametersBuilderFactory<>(),
+        searchCriteria
+    );
   }
 
+  Job<StackedEnsembleModel> stack(String modelName, Key<Model>[] modelKeyArrays, boolean use_cache) {
+    WorkAllocations.Work work = workAllocations.getAllocation(Algo.StackedEnsemble, JobType.ModelBuild);
+    if (work == null) return null;
+
+    // Set up Stacked Ensemble
+    StackedEnsembleParameters stackedEnsembleParameters = new StackedEnsembleParameters();
+    stackedEnsembleParameters._base_models = modelKeyArrays;
+    stackedEnsembleParameters._valid = (getValidationFrame() == null ? null : getValidationFrame()._key);
+    stackedEnsembleParameters._blending = (getBlendingFrame() == null ? null : getBlendingFrame()._key);
+    stackedEnsembleParameters._keep_levelone_frame = true; //TODO Why is this true? Can be optionally turned off
+    stackedEnsembleParameters._keep_base_model_predictions = use_cache; //avoids recomputing some base predictions for each SE
+    // Add cross-validation args
+    stackedEnsembleParameters._metalearner_fold_column = buildSpec.input_spec.fold_column;
+    stackedEnsembleParameters._metalearner_nfolds = buildSpec.build_control.nfolds;
+
+    stackedEnsembleParameters.initMetalearnerParams();
+    stackedEnsembleParameters._metalearner_parameters._keep_cross_validation_models = buildSpec.build_control.keep_cross_validation_models;
+    stackedEnsembleParameters._metalearner_parameters._keep_cross_validation_predictions = buildSpec.build_control.keep_cross_validation_predictions;
+
+    Key modelKey = modelKey(modelName, false);
+    return trainModel(modelKey, work, stackedEnsembleParameters, true);
+  }
 
   private void setCommonModelBuilderParams(Model.Parameters params) {
     params._train = trainingFrame._key;
@@ -766,10 +820,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     params._response_column = buildSpec.input_spec.response_column;
     params._ignored_columns = buildSpec.input_spec.ignored_columns;
     params._seed = buildSpec.build_control.stopping_criteria.seed();
+    params._max_runtime_secs = buildSpec.build_control.stopping_criteria.max_runtime_secs_per_model();
 
     // currently required, for the base_models, for stacking:
     if (! (params instanceof StackedEnsembleParameters)) {
-      params._keep_cross_validation_predictions = true;
+      params._keep_cross_validation_predictions = getBlendingFrame() == null ? true : buildSpec.build_control.keep_cross_validation_predictions;
 
       // TODO: StackedEnsemble doesn't support weights yet in score0
       params._fold_column = buildSpec.input_spec.fold_column;
@@ -779,11 +834,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
         params._nfolds = buildSpec.build_control.nfolds;
         if (buildSpec.build_control.nfolds > 1) {
           // TODO: below allow the user to specify this (vs Modulo)
-          // TODO: also, the docs currently say that we use Random folds... not Modulo
           params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
         }
       }
-      if (buildSpec.build_control.balance_classes == true) {
+      if (buildSpec.build_control.balance_classes) {
         params._balance_classes = buildSpec.build_control.balance_classes;
         params._class_sampling_factors = buildSpec.build_control.class_sampling_factors;
         params._max_after_balance_size = buildSpec.build_control.max_after_balance_size;
@@ -793,6 +847,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     params._keep_cross_validation_models = buildSpec.build_control.keep_cross_validation_models;
     params._keep_cross_validation_fold_assignment = buildSpec.build_control.nfolds != 0 && buildSpec.build_control.keep_cross_validation_fold_assignment;
+    params._export_checkpoints_dir = buildSpec.build_control.export_checkpoints_dir;
   }
 
   private void setStoppingCriteria(Model.Parameters parms, Model.Parameters defaults) {
@@ -826,7 +881,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   private boolean exceededSearchLimits(WorkAllocations.Work work, String algo_desc, boolean ignoreLimits) {
     String fullName = algo_desc == null ? work.algo.toString() : work.algo+" ("+algo_desc+")";
-    if (!ignoreLimits && timingOut()) {
+    if (!ignoreLimits && runCountdown.timedOut()) {
       userFeedback.info(Stage.ModelTraining, "AutoML: out of time; skipping "+fullName+" in "+work.type);
       return true;
     }
@@ -837,6 +892,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
     return false;
   }
+
+
+  //*****************  Default Models Section *****************//
+
 
   void defaultXGBoosts(boolean emulateLightGBM) {
     Algo algo = Algo.XGBoost;
@@ -867,25 +926,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     xgBoostParameters._learn_rate = 0.05;
 //    xgBoostParameters._min_split_improvement = 0.01f;
 
-    //XGB 1
-    xgBoostParameters._max_depth = 5;
-    xgBoostParameters._min_rows = 3;
-    xgBoostParameters._sample_rate = 0.8;
-    xgBoostParameters._col_sample_rate = 0.8;
-    xgBoostParameters._col_sample_rate_per_tree = 0.8;
-
-    if (emulateLightGBM) {
-      xgBoostParameters._max_leaves = 1 << xgBoostParameters._max_depth;
-      xgBoostParameters._max_depth = xgBoostParameters._max_depth * 2;
-//      xgBoostParameters._min_data_in_leaf = (float) xgBoostParameters._min_rows;
-      xgBoostParameters._min_sum_hessian_in_leaf = (float) xgBoostParameters._min_rows;
-    }
-
-    key = modelKey(algo.name());
-    xgBoostJob = trainModel(key, work, xgBoostParameters);
-    pollAndUpdateProgress(Stage.ModelTraining,  key.toString(), work, this.job(), xgBoostJob);
-
-    //XGB 2
+    //XGB 1 (medium depth)
     xgBoostParameters._max_depth = 10;
     xgBoostParameters._min_rows = 5;
     xgBoostParameters._sample_rate = 0.6;
@@ -903,10 +944,28 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     xgBoostJob = trainModel(key, work, xgBoostParameters);
     pollAndUpdateProgress(Stage.ModelTraining,  key.toString(), work, this.job(), xgBoostJob);
 
-    //XGB 3
+    //XGB 2 (deep)
     xgBoostParameters._max_depth = 20;
     xgBoostParameters._min_rows = 10;
     xgBoostParameters._sample_rate = 0.6;
+    xgBoostParameters._col_sample_rate = 0.8;
+    xgBoostParameters._col_sample_rate_per_tree = 0.8;
+
+    if (emulateLightGBM) {
+      xgBoostParameters._max_leaves = 1 << xgBoostParameters._max_depth;
+      xgBoostParameters._max_depth = xgBoostParameters._max_depth * 2;
+//      xgBoostParameters._min_data_in_leaf = (float) xgBoostParameters._min_rows;
+      xgBoostParameters._min_sum_hessian_in_leaf = (float) xgBoostParameters._min_rows;
+    }
+
+    key = modelKey(algo.name());
+    xgBoostJob = trainModel(key, work, xgBoostParameters);
+    pollAndUpdateProgress(Stage.ModelTraining,  key.toString(), work, this.job(), xgBoostJob);
+
+    //XGB 3 (shallow)
+    xgBoostParameters._max_depth = 5;
+    xgBoostParameters._min_rows = 3;
+    xgBoostParameters._sample_rate = 0.8;
     xgBoostParameters._col_sample_rate = 0.8;
     xgBoostParameters._col_sample_rate_per_tree = 0.8;
 
@@ -1100,7 +1159,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // NOTE: removed MissingValuesHandling.Skip for now because it's crashing.  See https://0xdata.atlassian.net/browse/PUBDEV-4974
     searchParams.put("_missing_values_handling", new DeepLearningParameters.MissingValuesHandling[] {DeepLearningParameters.MissingValuesHandling.MeanImputation /* , DeepLearningModel.DeepLearningParameters.MissingValuesHandling.Skip */});
 
-    Job<Grid>glmJob = hyperparameterSearch(gridKey, work, glmParameters, searchParams);
+    Job<Grid> glmJob = hyperparameterSearch(gridKey, work, glmParameters, searchParams);
     pollAndUpdateProgress(Stage.ModelTraining, "GLM hyperparameter search", work, this.job(), glmJob);
   }
 
@@ -1124,8 +1183,15 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     searchParams.put("_col_sample_rate_per_tree", new Double[]{ 0.4, 0.7, 1.0});
     searchParams.put("_min_split_improvement", new Double[]{1e-4, 1e-5});
 
-    Job<Grid>gbmJob = hyperparameterSearch(gridKey, work, gbmParameters, searchParams);
+    Job<Grid> gbmJob = hyperparameterSearch(gridKey, work, gbmParameters, searchParams);
     pollAndUpdateProgress(Stage.ModelTraining, "GBM hyperparameter search", work, this.job(), gbmJob);
+  }
+
+  void defaultSearchDL() {
+    Key<Grid> dlGridKey = gridKey(Algo.DeepLearning.name());
+    defaultSearchDL1(dlGridKey);
+    defaultSearchDL2(dlGridKey);
+    defaultSearchDL3(dlGridKey);
   }
 
   void defaultSearchDL1(Key<Grid> gridKey) {
@@ -1200,127 +1266,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     pollAndUpdateProgress(Stage.ModelTraining, "DeepLearning hyperparameter search 3", work, this.job(), dlJob);
   }
 
-  Job<StackedEnsembleModel> stack(String modelName, Key<Model>[]... modelKeyArrays) {
-    WorkAllocations.Work work = workAllocations.getAllocation(Algo.StackedEnsemble, JobType.ModelBuild);
-    if (work == null) return null;
-
-    List<Key<Model>> allModelKeys = new ArrayList<>();
-    for (Key<Model>[] modelKeyArray : modelKeyArrays)
-      allModelKeys.addAll(Arrays.asList(modelKeyArray));
-    // Set up Stacked Ensemble
-    StackedEnsembleParameters stackedEnsembleParameters = new StackedEnsembleParameters();
-    stackedEnsembleParameters._base_models = allModelKeys.toArray(new Key[0]);
-    stackedEnsembleParameters._valid = (getValidationFrame() == null ? null : getValidationFrame()._key);
-    stackedEnsembleParameters._keep_levelone_frame = true; //TODO Why is this true? Can be optionally turned off
-    // Add cross-validation args
-    if (buildSpec.input_spec.fold_column != null) {
-      stackedEnsembleParameters._metalearner_fold_column = buildSpec.input_spec.fold_column;
-      stackedEnsembleParameters._metalearner_nfolds = 0;  //if fold_column is used, set nfolds to 0 (default)
-    } else {
-      stackedEnsembleParameters._metalearner_nfolds = buildSpec.build_control.nfolds;
-    }
-    stackedEnsembleParameters.initMetalearnerParams();
-    stackedEnsembleParameters._metalearner_parameters._keep_cross_validation_models = buildSpec.build_control.keep_cross_validation_models;
-    stackedEnsembleParameters._metalearner_parameters._keep_cross_validation_predictions = buildSpec.build_control.keep_cross_validation_predictions;
-
-    Key modelKey = modelKey(modelName, false);
-    Job ensembleJob = trainModel(modelKey, work, stackedEnsembleParameters, true);
-    return ensembleJob;
-  }
-
-  public void learn() {
-    userFeedback.info(Stage.Workflow, "AutoML build started: " + fullTimestampFormat.format(new Date()));
-
-    ///////////////////////////////////////////////////////////
-    // gather initial frame metadata and guess the problem type
-    ///////////////////////////////////////////////////////////
-//    Disabling metadata collection for now as there is no use for it...
-//    // TODO: Nishant says sometimes frameMetadata is null, so maybe we need to wait for it?
-//    // null FrameMetadata arises when delete() is called without waiting for start() to finish.
-//    frameMetadata = new FrameMetadata(userFeedback, trainingFrame,
-//            trainingFrame.find(buildSpec.input_spec.response_column),
-//            trainingFrame._key.toString()).computeFrameMetaPass1();
-//
-//    HashMap<String, Object> frameMeta = FrameMetadata.makeEmptyFrameMeta();
-//    frameMetadata.fillSimpleMeta(frameMeta);
-//    giveDatasetFeedback(trainingFrame, userFeedback, frameMeta);
-//
-//    job.update(20, "Computed dataset metadata");
-
-//    isClassification = frameMetadata.isClassification();
-
-
-    ///////////////////////////////////////////////////////////
-    // build a fast RF with default settings...
-    ///////////////////////////////////////////////////////////
-    defaultRandomForest();
-
-    ///////////////////////////////////////////////////////////
-    // ... and another with "XRT" / extratrees settings
-    ///////////////////////////////////////////////////////////
-    defaultExtremelyRandomTrees();
-
-    ///////////////////////////////////////////////////////////
-    // build GLMs with the default search parameters
-    ///////////////////////////////////////////////////////////
-    defaultSearchGLM(null);
-
-    ///////////////////////////////////////////////////////////
-    // build default XGBoosts
-    ///////////////////////////////////////////////////////////
-
-//    defaultXGBoosts(true);
-
-    defaultXGBoosts(false);
-
-    ///////////////////////////////////////////////////////////
-    // build five GBMs with Arno's default settings, using 1-grid
-    // Cartesian searches into the same grid object as the search
-    // below.
-    ///////////////////////////////////////////////////////////
-    defaultGBMs();
-
-    ///////////////////////////////////////////////////////////
-    // build a fast DL model with almost default settings...
-    ///////////////////////////////////////////////////////////
-    defaultDeepLearning();
-
-
-    ///////////////////////////////////////////////////////////
-    // so some XGBoost hyperparameter search
-    ///////////////////////////////////////////////////////////
-
-//    defaultSearchXGBoost(null, true);
-
-    defaultSearchXGBoost(null, false);
-
-    ///////////////////////////////////////////////////////////
-    // build GBMs with the default search parameters
-    ///////////////////////////////////////////////////////////
-    defaultSearchGBM(null);
-
-    //
-    // Build DL models
-    //
-    Key<Grid> dlGridKey = gridKey(Algo.DeepLearning.name());
-    ///////////////////////////////////////////////////////////
-    // build DL models with default search parameter set 1
-    ///////////////////////////////////////////////////////////
-    defaultSearchDL1(dlGridKey);
-
-    ///////////////////////////////////////////////////////////
-    // build DL models with default search parameter set 2
-    ///////////////////////////////////////////////////////////
-    defaultSearchDL2(dlGridKey);
-
-    ///////////////////////////////////////////////////////////
-    // build DL models with default search parameter set 3
-    ///////////////////////////////////////////////////////////
-    defaultSearchDL3(dlGridKey);
-
-    ///////////////////////////////////////////////////////////
-    // (optionally) build StackedEnsemble
-    ///////////////////////////////////////////////////////////
+  void defaultStackedEnsembles() {
     Model[] allModels = leaderboard().getModels();
 
     WorkAllocations.Work seWork = workAllocations.getAllocation(Algo.StackedEnsemble, JobType.ModelBuild);
@@ -1333,14 +1279,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     } else if (allModels.length == 1) {
       this.job.update(seWork.consumeAll(), "One model built; StackedEnsemble builds skipped");
       userFeedback.info(Stage.ModelTraining, "StackedEnsemble builds skipped since there is only one model built");
-    } else if (buildSpec.build_control.nfolds == 0) {
-        this.job.update(seWork.consumeAll(), "Cross-validation disabled by the user; StackedEnsemble build skipped");
-        userFeedback.info(Stage.ModelTraining,"Cross-validation disabled by the user; StackedEnsemble build skipped");
+    } else if (!isCVEnabled() && getBlendingFrame() == null) {
+      this.job.update(seWork.consumeAll(), "Cross-validation disabled by the user and no blending frame provided; StackedEnsemble build skipped");
+      userFeedback.info(Stage.ModelTraining,"Cross-validation disabled by the user and no blending frame provided; StackedEnsemble build skipped");
     } else {
-      ///////////////////////////////////////////////////////////
-      // stack all models
-      ///////////////////////////////////////////////////////////
-
       // Also stack models from other AutoML runs, by using the Leaderboard! (but don't stack stacks)
       int nonEnsembleCount = 0;
       for (Model aModel : allModels)
@@ -1353,13 +1295,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
         if (!(aModel instanceof StackedEnsembleModel))
           notEnsembles[notEnsembleIndex++] = aModel._key;
 
-      Job<StackedEnsembleModel> ensembleJob = stack("StackedEnsemble_AllModels", notEnsembles);
-      pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build using all AutoML models", seWork, this.job(), ensembleJob, true);
-
       // Set aside List<Model> for best models per model type. Meaning best GLM, GBM, DRF, XRT, and DL (5 models).
       // This will give another ensemble that is smaller than the original which takes all models into consideration.
-      List<Model> bestModelsOfEachType = new ArrayList();
-      Set<String> typesOfGatheredModels = new HashSet();
+      List<Model> bestModelsOfEachType = new ArrayList<>();
+      Set<String> typesOfGatheredModels = new HashSet<>();
 
       for (Model aModel : allModels) {
         String type = getModelType(aModel);
@@ -1372,113 +1311,25 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       for (int i = 0; i < bestModelsOfEachType.size(); i++)
         bestModelKeys[i] = bestModelsOfEachType.get(i)._key;
 
-      Job<StackedEnsembleModel> bestEnsembleJob = stack("StackedEnsemble_BestOfFamily", bestModelKeys);
+      Job<StackedEnsembleModel> bestEnsembleJob = stack("StackedEnsemble_BestOfFamily", bestModelKeys, true);
       pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build using top model from each algorithm type", seWork, this.job(), bestEnsembleJob, true);
-    }
-    userFeedback.info(Stage.Workflow, "AutoML: build done; built " + modelCount + " models");
-    Log.info(userFeedback.toString("User Feedback for AutoML Run " + this._key + ":"));
-    for (UserFeedbackEvent event : userFeedback.feedbackEvents)
-      Log.info(event);
 
-    if (0 < this.leaderboard().getModelKeys().length) {
-
-      //TODO Below should really be a parameter, but needs more thought...
-      // We should not spend time computing train/valid leaderboards until we are ready to expose them to the user
-      // Commenting this section out for now
-      /*
-      // Use a throwaway AutoML instance so the "New leader" message doesn't pollute our feedback
-      AutoML dummyAutoML = new AutoML();
-      UserFeedback dummyUF = new UserFeedback(dummyAutoML);
-      dummyAutoML.userFeedback = dummyUF;
-
-      Leaderboard trainingLeaderboard = Leaderboard.getOrMakeLeaderboard(projectName() + "_training", dummyUF, this.trainingFrame);
-      trainingLeaderboard.addModels(this.leaderboard().getModelKeys());
-      Log.info(trainingLeaderboard.toTwoDimTable("TRAINING FRAME Leaderboard for project " + projectName(), true).toString());
-      Log.info();
-
-      // Use a throwawayUserFeedback instance so the "New leader" message doesn't pollute our feedback
-      Leaderboard validationLeaderboard = Leaderboard.getOrMakeLeaderboard(projectName() + "_validation", dummyUF, this.validationFrame);
-      validationLeaderboard.addModels(this.leaderboard().getModelKeys());
-      Log.info(validationLeaderboard.toTwoDimTable("VALIDATION FRAME Leaderboard for project " + projectName(), true).toString());
-      Log.info();
-      */
-
-      Log.info(leaderboard().toTwoDimTable("Leaderboard for project " + projectName(), true).toString());
-    }
-
-    possiblyVerifyImmutability();
-
-    if (!buildSpec.build_control.keep_cross_validation_predictions) {
-      cleanUpModelsCVPreds();
-    }
-
-    // gather more data? build more models? start applying transforms? what next ...?
-    stop();
-  } // end of learn()
-
-  /**
-   * Instantiate an AutoML object and start it running.  Progress can be tracked via its job().
-   *
-   * @param buildSpec
-   * @return
-   */
-  public static AutoML startAutoML(AutoMLBuildSpec buildSpec) {
-    Date startTime = new Date();  // this is the one and only startTime for this run
-
-    synchronized (AutoML.class) {
-      // protect against two runs whose startTime is the same second
-      if (lastStartTime != null) {
-        while (lastStartTime.getYear() == startTime.getYear() &&
-                lastStartTime.getMonth() == startTime.getMonth() &&
-                lastStartTime.getDate() == startTime.getDate() &&
-                lastStartTime.getHours() == startTime.getHours() &&
-                lastStartTime.getMinutes() == startTime.getMinutes() &&
-                lastStartTime.getSeconds() == startTime.getSeconds())
-          startTime = new Date();
-      }
-      lastStartTime = startTime;
-    }
-
-    String keyString = buildSpec.build_control.project_name;
-    AutoML aml = AutoML.makeAutoML(Key.<AutoML>make(keyString), startTime, buildSpec);
-
-    DKV.put(aml);
-    startAutoML(aml);
-    return aml;
-  }
-
-  /**
-   * Takes in an AutoML instance and starts running it. Progress can be tracked via its job().
-   * @param aml
-   * @return
-     */
-  public static void startAutoML(AutoML aml) {
-    // Currently AutoML can only run one job at a time
-    if (aml.job == null || !aml.job.isRunning()) {
-      H2OJob j = new H2OJob(aml, aml._key, aml.timeRemainingMs());
-      aml.job = j._job;
-      aml.planWork();
-      j.start(aml.workAllocations.remainingWork());
-      DKV.put(aml);
+      Job<StackedEnsembleModel> ensembleJob = stack("StackedEnsemble_AllModels", notEnsembles, false);
+      pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build using all AutoML models", seWork, this.job(), ensembleJob, true);
     }
   }
 
-  /**
-   * Holds until AutoML's job is completed, if a job exists.
-   */
-  public void get() {
-    if (job != null) job.get();
-  }
-
+  //*****************  Clean Up + other utility functions *****************//
 
   /**
    * Delete the AutoML-related objects, but leave the grids and models that it built.
    */
   @Override
   protected Futures remove_impl(Futures fs) {
-    Frame.deleteTempFrameAndItsNonSharedVecs(trainingFrame, origTrainingFrame);
-    leaderboard.remove(fs);
-    userFeedback.remove(fs);
+    if (trainingFrame != null && origTrainingFrame != null)
+      Frame.deleteTempFrameAndItsNonSharedVecs(trainingFrame, origTrainingFrame);
+    if (leaderboard != null) leaderboard.remove(fs);
+    if (userFeedback != null) userFeedback.remove(fs);
     return super.remove_impl(fs);
   }
 
@@ -1486,13 +1337,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
    * Same as delete() but also deletes all Objects made from this instance.
    */
   void deleteWithChildren() {
-    leaderboard.deleteWithChildren();
+    if (leaderboard != null) leaderboard.deleteWithChildren();
 
-    for (Key<Grid> gridKey : gridKeys)
-      gridKey.remove();
+    if (gridKeys != null)
+      for (Key<Grid> gridKey : gridKeys) gridKey.remove();
 
     // If the Frame was made here (e.g. buildspec contained a path, then it will be deleted
-    if (buildSpec.input_spec.training_frame == null) {
+    if (buildSpec.input_spec.training_frame == null && origTrainingFrame != null) {
       origTrainingFrame.delete();
     }
     if (buildSpec.input_spec.validation_frame == null && validationFrame != null) {
@@ -1504,37 +1355,12 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     delete();
   }
 
-  public Job job() {
-    if (null == this.job) return null;
-    return DKV.getGet(this.job._key);
-  }
-
-  public Leaderboard leaderboard() { return (leaderboard == null ? null : leaderboard._key.get()); }
-  public Model leader() { return (leaderboard() == null ? null : leaderboard().getLeader()); }
-
-  public UserFeedback userFeedback() { return userFeedback == null ? null : userFeedback._key.get(); }
-
-  public String projectName() {
-    return buildSpec == null ? null : buildSpec.project();
-  }
-
-  // If we have multiple AutoML engines running on the same
-  // project they will be updating the Leaderboard concurrently,
-  // so always use leaderboard() instead of the raw field, to get
-  // it from the DKV.
-  //
-  // Also, the leaderboard will reject duplicate models, so use
-  // the difference in Leaderboard length here:
+  // If we have multiple AutoML engines running on the same project they will be updating the Leaderboard concurrently,
+  // so always use leaderboard() instead of the raw field, to get it from the DKV.
+  // Also, the leaderboard will reject duplicate models, so use the difference in Leaderboard length here.
   private void addModels(final Key<Model>[] newModels) {
     int before = leaderboard().getModelCount();
     leaderboard().addModels(newModels);
-    int after = leaderboard().getModelCount();
-    modelCount.addAndGet(after - before);
-  }
-
-  private void addModel(final Key<Model> newModel) {
-    int before = leaderboard().getModelCount();
-    leaderboard().addModel(newModel);
     int after = leaderboard().getModelCount();
     modelCount.addAndGet(after - before);
   }
@@ -1565,20 +1391,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
         }
         return StoppingMetric.AUTO;
     }
-  }
-
-  // satisfy typing for job return type...
-  public static class AutoMLKeyV3 extends KeyV3<Iced, AutoMLKeyV3, AutoML> {
-    public AutoMLKeyV3() { }
-
-    public AutoMLKeyV3(Key<AutoML> key) {
-      super(key);
-    }
-  }
-
-  @Override
-  public Class<AutoMLKeyV3> makeSchema() {
-    return AutoMLKeyV3.class;
   }
 
   private class AutoMLDoneException extends H2OAbstractRuntimeException {
@@ -1665,5 +1477,4 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
         model.deleteCrossValidationPreds();
     }
   }
-
 }

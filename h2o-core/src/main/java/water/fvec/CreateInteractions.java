@@ -27,7 +27,7 @@ public class CreateInteractions extends H2O.H2OCountedCompleter {
   final private Interaction _ci;
 
   static final private int _missing = Integer.MIN_VALUE; //marker for missing factor level
-  static final private String _other = "other"; // name for lost factor levels
+  static final String _other = "other"; // name for lost factor levels
 
   private Frame _target;
   final private Key<Job> _job;

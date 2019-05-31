@@ -18,7 +18,7 @@
 #' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
 #'        Defaults to -1 (time-based random number).
-#' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to FALSE.
+#' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to TRUE.
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to FALSE.
 #' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to FALSE.
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will
@@ -34,15 +34,15 @@
 #'        data frame. This is typically the number of times a row is repeated, but non-integer values are supported as
 #'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 #' @param family Family. Use binomial for classification with logistic regression, others are for regression problems. Must be
-#'        one of: "gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie".
-#'        Defaults to gaussian.
+#'        one of: "gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie",
+#'        "negativebinomial". Defaults to gaussian.
 #' @param tweedie_variance_power Tweedie variance power Defaults to 0.
 #' @param tweedie_link_power Tweedie link power Defaults to 1.
+#' @param theta Theta Defaults to 1e-10.
 #' @param solver AUTO will set the solver based on given data and the other parameters. IRLSM is fast on on problems with small
 #'        number of predictors and for lambda-search with L1 penalty, L_BFGS scales better for datasets with many
-#'        columns. Must be one of: "AUTO", "IRLSM", "L_BFGS",
-#'        "COORDINATE_DESCENT_NAIVE", "COORDINATE_DESCENT", "GRADIENT_DESCENT_LH", "GRADIENT_DESCENT_SQERR". Defaults to
-#'        AUTO.
+#'        columns. Must be one of: "AUTO", "IRLSM", "L_BFGS", "COORDINATE_DESCENT_NAIVE", "COORDINATE_DESCENT",
+#'        "GRADIENT_DESCENT_LH", "GRADIENT_DESCENT_SQERR". Defaults to AUTO.
 #' @param alpha Distribution of regularization between the L1 (Lasso) and L2 (Ridge) penalties. A value of 1 for alpha
 #'        represents Lasso regression, a value of 0 produces Ridge regression, and anything in between specifies the
 #'        amount of mixing between the two. Default value of alpha is 0 when SOLVER = 'L-BFGS'; 0.5 otherwise.
@@ -73,8 +73,8 @@
 #'        indicates: If lambda_search is set to False and lambda is equal to zero, the default value of gradient_epsilon
 #'        is equal to .000001, otherwise the default value is .0001. If lambda_search is set to True, the conditional
 #'        values above are 1E-8 and 1E-6 respectively. Defaults to -1.
-#' @param link  Must be one of: "family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit", "oprobit",
-#'        "ologlog". Defaults to family_default.
+#' @param link  Must be one of: "family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit". Defaults to
+#'        family_default.
 #' @param prior Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
 #'        of response does not reflect reality. Defaults to -1.
 #' @param lambda_min_ratio Minimum lambda used in lambda search, specified as a ratio of lambda_max (the smallest lambda that drives all
@@ -88,6 +88,7 @@
 #' @param interactions A list of predictor column indices to interact. All pairwise combinations will be computed for the list.
 #' @param interaction_pairs A list of pairwise (first order) column interactions.
 #' @param obj_reg Likelihood divider in objective value computation, default is 1/nobs Defaults to -1.
+#' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
 #'        FALSE.
 #' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
@@ -112,31 +113,31 @@
 #'          \code{\link{h2o.confusionMatrix}}, \code{\link{h2o.performance}}, \code{\link{h2o.giniCoef}},
 #'          \code{\link{h2o.logloss}}, \code{\link{h2o.varimp}}, \code{\link{h2o.scoreHistory}}
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' h2o.init()
 #' 
 #' # Run GLM of CAPSULE ~ AGE + RACE + PSA + DCAPS
-#' prostatePath = system.file("extdata", "prostate.csv", package = "h2o")
-#' prostate.hex = h2o.importFile(path = prostatePath, destination_frame = "prostate.hex")
-#' h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), training_frame = prostate.hex,
+#' prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate = h2o.importFile(path = prostate_path)
+#' h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), training_frame = prostate,
 #' family = "binomial", nfolds = 0, alpha = 0.5, lambda_search = FALSE)
 #' 
 #' # Run GLM of VOL ~ CAPSULE + AGE + RACE + PSA + GLEASON
-#' myX = setdiff(colnames(prostate.hex), c("ID", "DPROS", "DCAPS", "VOL"))
-#' h2o.glm(y = "VOL", x = myX, training_frame = prostate.hex, family = "gaussian",
+#' predictors = setdiff(colnames(prostate), c("ID", "DPROS", "DCAPS", "VOL"))
+#' h2o.glm(y = "VOL", x = predictors, training_frame = prostate, family = "gaussian",
 #' nfolds = 0, alpha = 0.1, lambda_search = FALSE)
 #' 
 #' 
 #' # GLM variable importance
 #' # Also see:
 #' #   https://github.com/h2oai/h2o/blob/master/R/tests/testdir_demos/runit_demo_VI_all_algos.R
-#' data.hex = h2o.importFile(
-#' path = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/demos/bank-additional-full.csv",
-#' destination_frame = "data.hex")
-#' myX = 1:20
-#' myY="y"
-#' my.glm = h2o.glm(x=myX, y=myY, training_frame=data.hex, family="binomial", standardize=TRUE,
+#' bank = h2o.importFile(
+#' path = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/demos/bank-additional-full.csv")
+#' predictors = 1:20
+#' target="y"
+#' glm = h2o.glm(x=predictors, y=target, training_frame=bank, family="binomial", standardize=TRUE,
 #' lambda_search=TRUE)
+#' h2o.std_coef_plot(glm, num_of_features = 20)
 #' }
 #' @export
 h2o.glm <- function(x, y, training_frame,
@@ -144,7 +145,7 @@ h2o.glm <- function(x, y, training_frame,
                     validation_frame = NULL,
                     nfolds = 0,
                     seed = -1,
-                    keep_cross_validation_models = FALSE,
+                    keep_cross_validation_models = TRUE,
                     keep_cross_validation_predictions = FALSE,
                     keep_cross_validation_fold_assignment = FALSE,
                     fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
@@ -153,9 +154,10 @@ h2o.glm <- function(x, y, training_frame,
                     score_each_iteration = FALSE,
                     offset_column = NULL,
                     weights_column = NULL,
-                    family = c("gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie"),
+                    family = c("gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial"),
                     tweedie_variance_power = 0,
                     tweedie_link_power = 1,
+                    theta = 1e-10,
                     solver = c("AUTO", "IRLSM", "L_BFGS", "COORDINATE_DESCENT_NAIVE", "COORDINATE_DESCENT", "GRADIENT_DESCENT_LH", "GRADIENT_DESCENT_SQERR"),
                     alpha = NULL,
                     lambda = NULL,
@@ -172,7 +174,7 @@ h2o.glm <- function(x, y, training_frame,
                     objective_epsilon = -1,
                     beta_epsilon = 0.0001,
                     gradient_epsilon = -1,
-                    link = c("family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit", "oprobit", "ologlog"),
+                    link = c("family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"),
                     prior = -1,
                     lambda_min_ratio = -1,
                     beta_constraints = NULL,
@@ -180,6 +182,7 @@ h2o.glm <- function(x, y, training_frame,
                     interactions = NULL,
                     interaction_pairs = NULL,
                     obj_reg = -1,
+                    export_checkpoints_dir = NULL,
                     balance_classes = FALSE,
                     class_sampling_factors = NULL,
                     max_after_balance_size = 5.0,
@@ -263,6 +266,8 @@ h2o.glm <- function(x, y, training_frame,
     parms$tweedie_variance_power <- tweedie_variance_power
   if (!missing(tweedie_link_power))
     parms$tweedie_link_power <- tweedie_link_power
+  if (!missing(theta))
+    parms$theta <- theta
   if (!missing(solver))
     parms$solver <- solver
   if (!missing(alpha))
@@ -305,6 +310,8 @@ h2o.glm <- function(x, y, training_frame,
     parms$interaction_pairs <- interaction_pairs
   if (!missing(obj_reg))
     parms$obj_reg <- obj_reg
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
   if (!missing(balance_classes))
     parms$balance_classes <- balance_classes
   if (!missing(class_sampling_factors))

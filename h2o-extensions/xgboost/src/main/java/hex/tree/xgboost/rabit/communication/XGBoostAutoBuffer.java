@@ -16,7 +16,7 @@ public class XGBoostAutoBuffer {
     private static final Charset UTF_8 = Charset.forName("UTF-8");
 
     public XGBoostAutoBuffer(SocketChannel channel) throws IOException {
-        this.ab = new AutoBuffer(channel, null);
+        this.ab = new AutoBuffer(channel);
     }
 
     public XGBoostAutoBuffer() {

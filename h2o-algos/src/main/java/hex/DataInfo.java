@@ -521,7 +521,7 @@ public class DataInfo extends Keyed<DataInfo> {
       ignoredCols[ignoredCnt++] = k+_cats;
     Frame f = new Frame(_adaptedFrame.names().clone(),_adaptedFrame.vecs().clone());
     if(ignoredCnt > 0) f.remove(Arrays.copyOf(ignoredCols,ignoredCnt));
-    assert catLvls.length < f.numCols():"cats = " + catLvls.length + " numcols = " + f.numCols();
+    assert catLvls.length <= f.numCols():"cats = " + catLvls.length + " numcols = " + f.numCols();
     double [] normSub = null;
     double [] normMul = null;
     int id = Arrays.binarySearch(cols,numStart());
@@ -783,14 +783,9 @@ public class DataInfo extends Keyed<DataInfo> {
     public int       cid;      // categorical id
     public int       nBins;    // number of enum    columns (not expanded)
     public int       nNums;    // number of numeric columns (not expanded)
-    public int       nOutpus;
     public double    offset = 0;
     public double    weight = 1;
-    private C8DChunk [] _outputs;
 
-
-    public void setOutput(int i, double v) {_outputs[i].set8D(cid,v);}
-    public double getOutput(int i) {return _outputs[i].get8D(cid);}
     public final boolean isSparse(){return numIds != null;}
 
 
@@ -898,6 +893,29 @@ public class DataInfo extends Keyed<DataInfo> {
       }
       if(_intercept && !icptFirst)
         res += vec[vec.length-1];
+      return res;
+    }
+    public final double innerProduct(DataInfo.Row row) {
+      assert !_intercept;
+      assert numIds == null;
+
+      double res = 0;
+      for (int i = 0; i < nBins; ++i)
+        if (binIds[i] == row.binIds[i])
+          res += 1;
+      for (int i = 0; i < numVals.length; ++i)
+        res += numVals[i] * row.numVals[i];
+
+      return res;
+    }
+    public final double twoNormSq() {
+      assert !_intercept;
+      assert numIds == null;
+
+      double res = nBins;
+      for (double v : numVals)
+        res += v * v;
+
       return res;
     }
 
@@ -1272,4 +1290,16 @@ public class DataInfo extends Keyed<DataInfo> {
     }
     return res;
   }
+
+  /**
+   * Creates a DataInfo for scoring on a test Frame from a DataInfo instance created during model training
+   * This is a lightweight version of the method only usable for models that don't use advanced features of DataInfo (eg. interaction terms)
+   * @return DataInfo for scoring
+   */
+  public DataInfo scoringInfo() {
+    DataInfo res = IcedUtils.deepCopy(this);
+    res._valid = true;
+    return res;
+  }
+
 }

@@ -1,27 +1,31 @@
 package water.persist;
 
-import java.io.*;
-import java.net.SocketTimeoutException;
-import java.net.URI;
-import java.util.*;
-
-import water.*;
-import water.fvec.FileVec;
-import water.fvec.S3FileVec;
-import water.fvec.Vec;
-import water.util.Log;
-import water.util.RIStream;
-import com.amazonaws.*;
+import com.amazonaws.AmazonClientException;
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.ClientConfiguration;
+import com.amazonaws.Protocol;
 import com.amazonaws.auth.*;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
-import com.amazonaws.regions.*;
-import com.amazonaws.regions.Region;
+import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.S3ClientOptions;
 import com.amazonaws.services.s3.model.*;
+import water.*;
+import water.fvec.FileVec;
+import water.fvec.S3FileVec;
+import water.fvec.Vec;
+import water.util.ByteStreams;
+import water.util.Log;
+import water.util.RIStream;
 
-import com.google.common.io.ByteStreams;
+import java.io.EOFException;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.SocketTimeoutException;
+import java.net.URI;
+import java.util.*;
 
 import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
 
@@ -36,11 +40,12 @@ public final class PersistS3 extends Persist {
   private static volatile AmazonS3 _s3;
 
   public static AmazonS3 getClient() {
-    if( _s3 == null ) {
-      synchronized( _lock ) {
+    if (_s3 == null) {
+      synchronized (_lock) {
         if( _s3 == null ) {
           try {
             H2OAWSCredentialsProviderChain c = new H2OAWSCredentialsProviderChain();
+            c.setReuseLastProvider(false);
             ClientConfiguration cc = s3ClientCfg();
             _s3 = configureClient(new AmazonS3Client(c, cc));
           } catch( Throwable e ) {
@@ -61,11 +66,45 @@ public final class PersistS3 extends Persist {
    */
   public static class H2OAWSCredentialsProviderChain extends AWSCredentialsProviderChain {
     public H2OAWSCredentialsProviderChain() {
-      super(new H2OArgCredentialsProvider(),
-          new InstanceProfileCredentialsProvider(),
-          new EnvironmentVariableCredentialsProvider(),
-          new SystemPropertiesCredentialsProvider(),
-          new ProfileCredentialsProvider());
+      super(constructProviderChain());
+
+    }
+
+    private static List<AWSCredentialsProvider> constructProviderChain() {
+      final List<AWSCredentialsProvider> providers = new ArrayList<>();
+
+      providers.add(new H2ODynamicCredentialsProvider());
+      providers.add(new H2OArgCredentialsProvider());
+      providers.add(new InstanceProfileCredentialsProvider());
+      providers.add(new EnvironmentVariableCredentialsProvider());
+      providers.add(new SystemPropertiesCredentialsProvider());
+      providers.add(new ProfileCredentialsProvider());
+
+      return providers;
+
+    }
+  }
+  
+
+  /**
+   * Holds basic credentials (Secret key ID + Secret access key) pair.
+   */
+  private static final class H2ODynamicCredentialsProvider implements AWSCredentialsProvider {
+
+    @Override
+    public AWSCredentials getCredentials() {
+      final IcedS3Credentials s3Credentials = DKV.getGet(IcedS3Credentials.S3_CREDENTIALS_DKV_KEY);
+
+      if (s3Credentials != null && s3Credentials._secretKeyId != null && s3Credentials._secretAccessKey != null) {
+        return new BasicAWSCredentials(s3Credentials._secretKeyId, s3Credentials._secretAccessKey);
+      } else {
+        throw new AmazonClientException("No Amazon S3 credentials set directly.");
+      }
+    }
+
+    @Override
+    public void refresh() {
+      // No actions taken on refresh
     }
   }
 
@@ -141,8 +180,11 @@ public final class PersistS3 extends Persist {
   }
 
 
-  private static void processListing(ObjectListing listing, ArrayList<String> succ, ArrayList<String> fail, boolean doImport){
+  private static void processListing(ObjectListing listing, String pattern, ArrayList<String> succ, ArrayList<String> fail, boolean doImport) {
+    if( pattern != null && pattern.isEmpty()) pattern = null;
     for( S3ObjectSummary obj : listing.getObjectSummaries() ) {
+      if (obj.getKey().endsWith("/")) continue;
+      if (pattern != null && !obj.getKey().matches(pattern)) continue;
       try {
         if (doImport) {
           Key k = loadKey(listing, obj);
@@ -161,10 +203,10 @@ public final class PersistS3 extends Persist {
     AmazonS3 s3 = getClient();
     String [] parts = decodePath(path);
     ObjectListing currentList = s3.listObjects(parts[0], parts[1]);
-    processListing(currentList, files, fails,true);
+    processListing(currentList, pattern, files, fails, true);
     while(currentList.isTruncated()){
       currentList = s3.listNextBatchOfObjects(currentList);
-      processListing(currentList, files, fails,true);
+      processListing(currentList, pattern, files, fails, true);
     }
     keys.addAll(files);
     // write barrier was here : DKV.write_barrier();
@@ -387,7 +429,7 @@ public final class PersistS3 extends Persist {
   @Override
   public void cleanUp() { throw H2O.unimpl(); /** user-mode swapping not implemented */}
 
-  private static class Cache {
+  static class Cache {
     long _lastUpdated = 0;
     long _timeoutMillis = 5*60*1000;
     String [] _cache = new String[0];
@@ -434,10 +476,10 @@ public final class PersistS3 extends Persist {
       AmazonS3 s3 = getClient();
       ObjectListing currentList = s3.listObjects(_bucket,"");
       ArrayList<String> res = new ArrayList<>();
-      processListing(currentList, res, null, false);
+      processListing(currentList, null, res, null, false);
       while(currentList.isTruncated()){
         currentList = s3.listNextBatchOfObjects(currentList);
-        processListing(currentList, res, null, false);
+        processListing(currentList, null, res, null, false);
       }
       Collections.sort(res);
       return _cache = res.toArray(new String[res.size()]);
@@ -449,9 +491,8 @@ public final class PersistS3 extends Persist {
   }
 
 
-
-  Cache _bucketCache = new Cache();
-  HashMap<String,KeyCache> _keyCaches = new HashMap<>();
+  static volatile Cache _bucketCache = new Cache();
+  static volatile HashMap<String, KeyCache> _keyCaches = new HashMap<>();
   @Override
   public List<String> calcTypeaheadMatches(String filter, int limit) {
     String [] parts = decodePath(filter);

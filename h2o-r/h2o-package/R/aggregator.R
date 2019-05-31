@@ -20,8 +20,9 @@
 #' @param save_mapping_frame \code{Logical}. Whether to export the mapping of the aggregated frame Defaults to FALSE.
 #' @param num_iteration_without_new_exemplar The number of iterations to run before aggregator exits if the number of exemplars collected didn't change
 #'        Defaults to 500.
+#' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #' df <- h2o.createFrame(rows=100, cols=5, categorical_fraction=0.6, integer_fraction=0,
@@ -43,7 +44,8 @@ h2o.aggregator <- function(training_frame, x,
                            transform = c("NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE"),
                            categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                            save_mapping_frame = FALSE,
-                           num_iteration_without_new_exemplar = 500
+                           num_iteration_without_new_exemplar = 500,
+                           export_checkpoints_dir = NULL
                            ) 
 {
 
@@ -76,6 +78,8 @@ h2o.aggregator <- function(training_frame, x,
     parms$save_mapping_frame <- save_mapping_frame
   if (!missing(num_iteration_without_new_exemplar))
     parms$num_iteration_without_new_exemplar <- num_iteration_without_new_exemplar
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
 
   m <- .h2o.modelJob('aggregator', parms, h2oRestApiVersion=99)
   m@model$aggregated_frame_id <- m@model$output_frame$name
@@ -89,7 +93,7 @@ h2o.aggregator <- function(training_frame, x,
 #'
 #' @param model an \linkS4class{H2OClusteringModel} corresponding from a \code{h2o.aggregator} call.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #' df <- h2o.createFrame(rows=100, cols=5, categorical_fraction=0.6, integer_fraction=0,

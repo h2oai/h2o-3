@@ -1,15 +1,18 @@
 pip==9.0.3
 colorama==0.3.9
 future==0.16.0
-requests==2.18.4
+requests==2.20.0
+winkerberos >= 0.5.0; sys.platform == 'win32'
+pykerberos >= 1.1.8, < 2.0.0; sys.platform != 'win32'
+gssapi==1.5.1
 tabulate==0.8.2
 slam==0.6.0
 cython==0.27.3
 twine==1.10.0
-urllib3==1.22
+urllib3==1.24.2
 grip==4.4.0
 wheel==0.30.0
-numpy==1.13.3
+numpy==1.16.0
 scipy==1.0.0
 pandas==0.22.0
 statsmodels==0.8.0
@@ -25,3 +28,4 @@ mysqlclient==1.3.12
 recommonmark==0.4.0
 sphinx_rtd_theme==0.2.4
 git+https://github.com/svx/sphinxcontrib-osexample#egg=1cc4afcc6089083256aa642d9faa12352ef45d68
+shap==0.28.3

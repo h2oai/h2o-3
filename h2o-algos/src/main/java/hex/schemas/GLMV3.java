@@ -17,7 +17,7 @@ import water.api.schemas3.StringPairV3;
 public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
 
   public static final class GLMParametersV3 extends ModelParametersSchemaV3<GLMParameters, GLMParametersV3> {
-    static public String[] fields = new String[]{
+     public static final String[] fields = new String[] {
             "model_id",
             "training_frame",
             "validation_frame",
@@ -37,6 +37,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "family",
             "tweedie_variance_power",
             "tweedie_link_power",
+            "theta", // equals to 1/r and should be > 0 and <=1, used by negative binomial
             "solver",
             "alpha",
             "lambda",
@@ -61,6 +62,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "interactions",
             "interaction_pairs",
             "obj_reg",
+            "export_checkpoints_dir",
             // dead unused args forced here by backwards compatibility, remove in V4
             "balance_classes",
             "class_sampling_factors",
@@ -75,7 +77,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     public long seed;
 
     // Input fields
-    @API(help = "Family. Use binomial for classification with logistic regression, others are for regression problems.", values = {"gaussian", "binomial","quasibinomial","ordinal", "multinomial", "poisson", "gamma", "tweedie"}, level = Level.critical)
+    @API(help = "Family. Use binomial for classification with logistic regression, others are for regression problems.", values = {"gaussian", "binomial","quasibinomial","ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial"}, level = Level.critical)
     // took tweedie out since it's not reliable
     public GLMParameters.Family family;
 
@@ -84,6 +86,9 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
 
     @API(help = "Tweedie link power", level = Level.critical, gridable = true)
     public double tweedie_link_power;
+
+    @API(help = "Theta", level = Level.critical, gridable = true)
+    public double theta; // used by negtaive binomial distribution family
 
     @API(help = "AUTO will set the solver based on given data and the other parameters. IRLSM is fast on on problems with small number of predictors and for lambda-search with L1 penalty, L_BFGS scales better for datasets with many columns.", values = {"AUTO", "IRLSM", "L_BFGS","COORDINATE_DESCENT_NAIVE", "COORDINATE_DESCENT", "GRADIENT_DESCENT_LH", "GRADIENT_DESCENT_SQERR"}, level = Level.critical)
     public Solver solver;
@@ -137,7 +142,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     public double obj_reg;
 
     @API(help = "", level = Level.secondary, values = {"family_default", "identity", "logit", "log", "inverse",
-            "tweedie", "ologit", "oprobit", "ologlog"})
+            "tweedie", "ologit"}) //"oprobit", "ologlog": will be supported.
     public GLMParameters.Link link;
 
     @API(help="Include constant term in the model", level = Level.expert)

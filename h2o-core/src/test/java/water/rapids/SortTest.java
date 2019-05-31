@@ -1,5 +1,6 @@
 package water.rapids;
 
+import hex.CreateFrame;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
@@ -229,6 +230,43 @@ public class SortTest extends TestUtil {
   }
 
 
+  @Test public void testSortOverflows2() throws IOException {
+    Scope.enter();
+    Frame fr, sorted1, sorted2;
+    final long ts=1485333188427000000L;
+    try {
+
+      Vec dz = Vec.makeZero(1000);
+      Vec z = dz.makeZero(); // make a vec consisting of C0LChunks
+      Vec v = new MRTask() {
+        @Override public void map(Chunk[] cs) {
+          for (Chunk c : cs)
+            for (int r = 0; r < c._len; r++)
+              c.set(r, r + ts + c.start());
+        }
+      }.doAll(z)._fr.vecs()[0];
+      Scope.track(dz);
+      Scope.track(z);
+      Scope.track(v);
+      Vec rand = dz.makeRand(12345678);
+
+      fr = new Frame(v, rand);
+      sorted1 = fr.sort(new int[]{1});
+      sorted2 = sorted1.sort(new int[]{0});
+
+      for(long i=0; i < fr.numRows(); i++) {
+        assertTrue(fr.vec(0).at8(i) == sorted2.vec(0).at8(i));
+      }
+
+      Scope.track(fr);
+      Scope.track(sorted1);
+      Scope.track(sorted2);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+
   @Test public void testSortIntegersFloats() throws IOException {
     // test small integers sort
     testSortOneColumn("smalldata/synthetic/smallIntFloats.csv.zip", 0, false, false);
@@ -309,6 +347,37 @@ public class SortTest extends TestUtil {
     }
   }
 
+  /***
+   * This simple test just want to test and make sure that processing the final frames by a batch does
+   * not leak memories.  The accuracy of the sort is tested elsewhere.
+   */
+  @Test public void testSortOOM() throws IOException {
+    Scope.enter();
+    Frame fr, sortedInt;
+    try {
+      CreateFrame cf = new CreateFrame();
+      cf.rows=9000000;
+      cf.cols = 2;
+      cf.categorical_fraction = 0;
+      cf.integer_fraction = 1;
+      cf.binary_fraction = 0;
+      cf.time_fraction = 0;
+      cf.string_fraction = 0;
+      cf.binary_ones_fraction = 0;
+      cf.integer_range = 1;
+      cf.has_response = false;
+      cf.seed = 1234;
+      fr = cf.execImpl().get();
+      sortedInt = fr.sort(new int[]{0}, new int[]{-1});
+      Scope.track(fr);
+      Scope.track(sortedInt);
+      
+      assert fr.numRows()==sortedInt.numRows();
+    } finally {
+      Scope.exit();
+    }
+  }
+  
   private static void testSort(Frame frSorted, Frame originalF, int colIndex) throws IOException {
     Scope.enter();
     Vec vec = frSorted.vec(colIndex);

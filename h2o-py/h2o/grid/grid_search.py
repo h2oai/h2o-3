@@ -171,8 +171,9 @@ class H2OGridSearch(backwards_compatible()):
         algo_params = locals()
         parms = self._parms.copy()
         parms.update({k: v for k, v in algo_params.items() if k not in ["self", "params", "algo_params", "parms"]})
-        parms["search_criteria"] = self.search_criteria
-        parms["hyper_parameters"] = self.hyper_params  # unique to grid search
+        # dictionaries have special handling in grid search, avoid the implicit conversion
+        parms["search_criteria"] = None if self.search_criteria is None else str(self.search_criteria)
+        parms["hyper_parameters"] = None if self.hyper_params  is None else str(self.hyper_params) # unique to grid search
         parms.update({k: v for k, v in list(self.model._parms.items()) if v is not None})  # unique to grid search
         parms.update(params)
         if '__class__' in parms:  # FIXME: hackt for PY3
@@ -220,6 +221,9 @@ class H2OGridSearch(backwards_compatible()):
         is_unsupervised = is_auto_encoder or algo == "pca" or algo == "svd" or algo == "kmeans" or algo == "glrm"
         if is_auto_encoder and y is not None: raise ValueError("y should not be specified for autoencoder.")
         if not is_unsupervised and y is None: raise ValueError("Missing response")
+        if not is_unsupervised:
+            y = y if y in training_frame.names else training_frame.names[y]
+            self.model._estimator_type = "classifier" if training_frame.types[y] == "enum" else "regressor"
         self._model_build(x, y, training_frame, validation_frame, algo_params)
 
 
@@ -270,6 +274,8 @@ class H2OGridSearch(backwards_compatible()):
                 error_index += 1
 
         self.models = [h2o.get_model(key['name']) for key in grid_json['model_ids']]
+        for model in self.models:
+            model._estimator_type = self.model._estimator_type
 
         # get first model returned in list of models from grid search to get model class (binomial, multinomial, etc)
         # sometimes no model is returned due to bad parameter values provided by the user.

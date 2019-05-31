@@ -53,13 +53,16 @@ def stackedensemble_gaussian():
 
     stack = H2OStackedEnsembleEstimator(base_models=[my_gbm.model_id, my_rf.model_id, my_glm.model_id])
     stack.train(model_id="my_ensemble", x=myX, y="runoffnew", training_frame=australia_hex)
+    
+    # check that model contains the correct names and types in model._model_json._output fields
+    pyunit_utils.assertModelColNamesTypesCorrect(stack._model_json["output"]["names"],  
+                                                 stack._model_json["output"]["column_types"], australia_hex.names,
+                                                 australia_hex.types)
+    
     # test ignore_columns parameter checking
     # stack.train(model_id="my_ensemble", y="runoffnew", training_frame=australia_hex, ignored_columns=["premax"])
     predictions = stack.predict(australia_hex)  # training data
     print("Predictions for australia ensemble are in: " + predictions.frame_id)
-
-
-
 
     # 
     # ecology.csv: Gaussian

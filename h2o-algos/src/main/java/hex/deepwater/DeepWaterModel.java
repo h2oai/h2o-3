@@ -105,7 +105,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
 
   static DataInfo makeDataInfo(Frame train, Frame valid, DeepWaterParameters parms) {
     double x = 0.782347234;
-    boolean identityLink = new Distribution(parms).link(x) == x;
+    boolean identityLink = DistributionFactory.getDistribution(parms).link(x) == x;
     return new DataInfo(
         train,
         valid,
@@ -137,7 +137,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     assert(model_info._network != null);
     assert(model_info._modelparams != null);
     model_info.javaToNative();
-    _dist = new Distribution(get_params());
+    _dist = DistributionFactory.getDistribution(get_params());
     assert(_dist.distribution != DistributionFamily.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
     actual_best_model_key = cp.actual_best_model_key;
     if (actual_best_model_key.get() == null) {
@@ -232,7 +232,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     }
 
     // now, parms is get_params();
-    _dist = new Distribution(get_params());
+    _dist = DistributionFactory.getDistribution(get_params());
     assert(_dist.distribution != DistributionFamily.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
     actual_best_model_key = Key.make(H2O.SELF);
     if (get_params()._nfolds != 0) actual_best_model_key = null;

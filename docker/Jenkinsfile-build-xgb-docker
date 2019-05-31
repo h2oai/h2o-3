@@ -10,8 +10,8 @@ properties(
     [
         parameters(
             [
-                string(defaultValue: 'mr/ita/214-xgb-smoke-tests', description: 'Branch to checkout', name: 'gitBranch'),
-                string(name: 'dockerRegistry', defaultValue: 'docker.h2o.ai'),
+                string(defaultValue: 'master', description: 'Branch to checkout', name: 'gitBranch'),
+                string(name: 'dockerRegistry', defaultValue: 'harbor.h2o.ai'),
             ]
         )
     ]

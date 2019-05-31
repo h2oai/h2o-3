@@ -109,7 +109,8 @@ Grid Search Example in R
     # so we get an honest estimate of top model performance
     best_gbm_perf1 <- h2o.performance(model = best_gbm1, 
                                       newdata = test)
-    h2o.auc(best_gbm_perf1)  # 0.7781932
+    h2o.auc(best_gbm_perf1)
+    # 0.7781779
 
     # Look at the hyperparamters for the best model
     print(best_gbm1@model[["model_summary"]])
@@ -153,7 +154,8 @@ Random Grid Search Example in R
     # so we get an honest estimate of top model performance
     best_gbm_perf2 <- h2o.performance(model = best_gbm2, 
                                       newdata = test)
-    h2o.auc(best_gbm_perf2)  # 0.7811332
+    h2o.auc(best_gbm_perf2)
+    # 0.7810757
 
     # Look at the hyperparamters for the best model
     print(best_gbm2@model[["model_summary"]])
@@ -251,7 +253,8 @@ Grid Search Example in Python
     # so we get an honest estimate of top model performance
     best_gbm_perf1 = best_gbm1.model_performance(test)
 
-    best_gbm_perf1.auc()  # 0.7781932261061573
+    best_gbm_perf1.auc()
+    # 0.7781778619721595
 
 
 
@@ -264,7 +267,7 @@ Random Grid Search Example in Python
 
     # GBM hyperparameters
     gbm_params2 = {'learn_rate': [i * 0.01 for i in range(1, 11)],  
-                    'max_depth': range(2, 11),
+                    'max_depth': list(range(2, 11)),
                     'sample_rate': [i * 0.1 for i in range(5, 11)], 
                     'col_sample_rate': [i * 0.1 for i in range(1, 11)]}
 
@@ -293,7 +296,8 @@ Random Grid Search Example in Python
     # so we get an honest estimate of top model performance
     best_gbm_perf2 = best_gbm2.model_performance(test)
 
-    best_gbm_perf2.auc()  #0.7811331652127048
+    best_gbm_perf2.auc()
+    # 0.7810757307013204
 
 
 
@@ -619,6 +623,7 @@ GLM Hyperparameters
 -  ``lambda``
 -  ``missing_values_handling``
 -  ``standardize``
+-  ``theta``
 
 GLRM Hyperparameters
 ~~~~~~~~~~~~~~~~~~~~

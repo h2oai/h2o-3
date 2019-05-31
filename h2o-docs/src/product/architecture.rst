@@ -48,7 +48,7 @@ All REST API clients communicate with H2O over a socket connection.
 JVM Components
 ~~~~~~~~~~~~~~
 
-An H2O cloud consists of one or more nodes. Each node is a single JVM
+An H2O cluster consists of one or more nodes. Each node is a single JVM
 process. Each JVM process is split into three layers: language,
 algorithms, and core infrastructure.
 
@@ -135,7 +135,7 @@ The following diagram shows the different software layers involved when
 a user runs an R program that starts a GLM on H2O.
 
 The left side shows the steps that run the the R process and the right
-side shows the steps that run in the H2O cloud. The top layer is the
+side shows the steps that run in the H2O cluster. The top layer is the
 TCP/IP network code that enables the two processes to communicate with
 each other.
 

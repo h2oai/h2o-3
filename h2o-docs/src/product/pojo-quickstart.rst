@@ -1,9 +1,14 @@
+.. _pojo_quickstart:
+
 POJO Quick Start
 ----------------
 
 This section describes how to build and implement a POJO to use predictive scoring. Java developers should refer to the `Javadoc <http://docs.h2o.ai/h2o/latest-stable/h2o-genmodel/javadoc/index.html>`__ for more information, including packages.
 
-**Notes**: POJOs are not supported for source files larger than 1G. For more information, refer to the POJO FAQ section below. POJOs are also not supported for XGBoost, GLRM, or Stacked Ensembles models. 
+**Notes**: 
+
+- POJOs are not supported for source files larger than 1G. For more information, refer to the POJO FAQ section below. POJOs are also not supported for XGBoost, GLRM, or Stacked Ensembles models. 
+- POJO predict cannot parse columns enclosed in double quotes (for example, ""2"").  
 
 What is a POJO?
 ~~~~~~~~~~~~~~~
@@ -119,15 +124,18 @@ Extracting Models from H2O
 
 Generated models can be extracted from H2O in the following ways:
 
--  **From the H2O Flow Web UI:**
+From the H2O Flow Web UI
+''''''''''''''''''''''''
 
-   When viewing a model, click the **Download POJO** button at the top of the model cell, as shown in the example in the Quick start section. You can also preview the POJO inside Flow, but it will only show the first thousand lines or so in the web browser, truncating large models.
+When viewing a model, click the **Download POJO** button at the top of the model cell, as shown in the example in the Quick start section. You can also preview the POJO inside Flow, but it will only show the first thousand lines or so in the web browser, truncating large models.
 
--  **From R:**
+From R or Python
+''''''''''''''''
 
-   The following code snippet shows an example of H2O building a model and downloading its corresponding POJO from an R script.
+The following code snippets show an example of H2O building a model and downloading its corresponding POJO from an R script and a Python script.
 
-   ::
+.. example-code::
+   .. code-block:: r
 
 	    library(h2o)
 	    h2o.init()
@@ -140,11 +148,7 @@ Generated models can be extracted from H2O in the following ways:
 	                    family = "binomial")
 	    h2o.download_pojo(model)
 
--  **From Python:**
-
-   The following code snippet shows an example of building a model and downloading its corresponding POJO from a Python script.
-
-	::
+   .. code-block:: python
 
 	    import h2o
 	    h2o.init()

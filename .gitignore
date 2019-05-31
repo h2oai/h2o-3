@@ -107,7 +107,6 @@ native
 
 # Ignore Jupyter Notebook project files
 *.ipynb_checkpoints/
-*.ipynb
 
 h2o-docs/src/booklets/source/DeepLearningBooklet.top
 
@@ -142,3 +141,13 @@ h2o-docs/src/booklets/source/PythonBooklet.tui
 *.gz(busy)
 
 h2o-web/package-lock.json
+
+h2o-*/tests/.lookup.txt
+
+# Ignore leak check output
+leak-check.out
+
+# Ignore h2o-r HTML output
+h2o-r/h2o-package/docs/*.html
+h2o-r/h2o-package/docs/articles/*.html
+h2o-r/h2o-package/docs/reference/*.html

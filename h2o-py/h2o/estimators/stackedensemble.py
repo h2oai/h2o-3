@@ -50,9 +50,10 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     def __init__(self, **kwargs):
         super(H2OStackedEnsembleEstimator, self).__init__()
         self._parms = {}
-        names_list = {"model_id", "training_frame", "response_column", "validation_frame", "base_models",
-                      "metalearner_algorithm", "metalearner_nfolds", "metalearner_fold_assignment",
-                      "metalearner_fold_column", "keep_levelone_frame", "metalearner_params", "seed"}
+        names_list = {"model_id", "training_frame", "response_column", "validation_frame", "blending_frame",
+                      "base_models", "metalearner_algorithm", "metalearner_nfolds", "metalearner_fold_assignment",
+                      "metalearner_fold_column", "metalearner_params", "seed", "keep_levelone_frame",
+                      "export_checkpoints_dir"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -111,10 +112,26 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
 
 
     @property
+    def blending_frame(self):
+        """
+        Frame used to compute the predictions that serve as the training frame for the metalearner (triggers blending
+        mode if provided)
+
+        Type: ``H2OFrame``.
+        """
+        return self._parms.get("blending_frame")
+
+    @blending_frame.setter
+    def blending_frame(self, blending_frame):
+        assert_is_type(blending_frame, None, H2OFrame)
+        self._parms["blending_frame"] = blending_frame
+
+
+    @property
     def base_models(self):
         """
-        List of models (or model ids) to ensemble/stack together. Models must have been cross-validated using nfolds >
-        1, and folds must be identical across models.
+        List of models (or model ids) to ensemble/stack together. If not using blending frame, then models must have
+        been cross-validated using nfolds > 1, and folds must be identical across models.
 
         Type: ``List[str]``  (default: ``[]``).
         """
@@ -196,21 +213,6 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
 
 
     @property
-    def keep_levelone_frame(self):
-        """
-        Keep level one frame used for metalearner training.
-
-        Type: ``bool``  (default: ``False``).
-        """
-        return self._parms.get("keep_levelone_frame")
-
-    @keep_levelone_frame.setter
-    def keep_levelone_frame(self, keep_levelone_frame):
-        assert_is_type(keep_levelone_frame, None, bool)
-        self._parms["keep_levelone_frame"] = keep_levelone_frame
-
-
-    @property
     def metalearner_params(self):
         """
         Parameters for metalearner algorithm
@@ -254,6 +256,36 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         self._parms["seed"] = seed
 
 
+    @property
+    def keep_levelone_frame(self):
+        """
+        Keep level one frame used for metalearner training.
+
+        Type: ``bool``  (default: ``False``).
+        """
+        return self._parms.get("keep_levelone_frame")
+
+    @keep_levelone_frame.setter
+    def keep_levelone_frame(self, keep_levelone_frame):
+        assert_is_type(keep_levelone_frame, None, bool)
+        self._parms["keep_levelone_frame"] = keep_levelone_frame
+
+
+    @property
+    def export_checkpoints_dir(self):
+        """
+        Automatically export generated models to this directory.
+
+        Type: ``str``.
+        """
+        return self._parms.get("export_checkpoints_dir")
+
+    @export_checkpoints_dir.setter
+    def export_checkpoints_dir(self, export_checkpoints_dir):
+        assert_is_type(export_checkpoints_dir, None, str)
+        self._parms["export_checkpoints_dir"] = export_checkpoints_dir
+
+
 
     # Print the metalearner of an H2OStackedEnsembleEstimator.
     def metalearner(self):
@@ -267,4 +299,20 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         model = self._model_json["output"]
         if "levelone_frame_id" in model and model["levelone_frame_id"] is not None:
             return model["levelone_frame_id"]
-        print("No levelone_frame_id for this model")
+        print("No levelone_frame_id for this model")         
+
+    def stacking_strategy(self):
+        model = self._model_json["output"]
+        if "stacking_strategy" in model and model["stacking_strategy"] is not None:
+            return model["stacking_strategy"]
+        print("No stacking strategy for this model")  
+
+    # Override train method to support blending 
+    def train(self, x=None, y=None, training_frame=None, blending_frame=None, **kwargs):
+        assert_is_type(blending_frame, None, H2OFrame)
+
+        def extend_parms(parms):
+            if blending_frame is not None:
+                parms['blending_frame'] = blending_frame
+
+        super(self.__class__, self)._train(x, y, training_frame, extend_parms_fn=extend_parms, **kwargs)

@@ -3,16 +3,11 @@ package hex.ensemble;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelCategory;
-import hex.StackedEnsembleModel;
-import hex.StackedEnsembleModel.StackedEnsembleParameters;
 import hex.deeplearning.DeepLearning;
+import hex.ensemble.StackedEnsembleModel.StackedEnsembleParameters;
 import hex.deeplearning.DeepLearningModel;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
-import hex.schemas.DRFV3;
-import hex.schemas.DeepLearningV3;
-import hex.schemas.GBMV3;
-import hex.schemas.GLMV3;
 import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBM;
@@ -25,366 +20,230 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.Log;
 
-class Metalearner {
+public abstract class Metalearner<B extends ModelBuilder<M, P, ?>, M extends Model<M, P, ?>, P extends Model.Parameters> {
 
-    private Frame _levelOneTrainingFrame;
-    private Frame _levelOneValidationFrame;
-    private Model.Parameters _metalearner_parameters;
-    private StackedEnsembleModel _model;
-    private Job _job;
-    private Key<Model> _metalearnerKey;
-    private Job _metalearnerJob;
-    private StackedEnsembleParameters _parms;
-    private boolean _hasMetalearnerParams;
-    private long _metalearnerSeed;
+  public enum Algorithm {
+    AUTO,
+    deeplearning,
+    drf,
+    gbm,
+    glm,
+  }
 
-    Metalearner(Frame levelOneTrainingFrame, Frame levelOneValidationFrame, Model.Parameters metalearner_parameters,
-                       StackedEnsembleModel model, Job StackedEnsembleJob, Key<Model> metalearnerKey, Job metalearnerJob,
-                       StackedEnsembleParameters parms, boolean hasMetalearnerParams, long metalearnerSeed){
-
-        _levelOneTrainingFrame = levelOneTrainingFrame;
-        _levelOneValidationFrame = levelOneValidationFrame;
-        _metalearner_parameters = metalearner_parameters;
-        _model = model;
-        _job = StackedEnsembleJob;
-        _metalearnerKey = metalearnerKey;
-        _metalearnerJob = metalearnerJob;
-        _parms = parms;
-        _hasMetalearnerParams = hasMetalearnerParams;
-        _metalearnerSeed = metalearnerSeed;
-
+  static Algorithm getActualMetalearnerAlgo(Algorithm algo) {
+    switch (algo) {
+      case AUTO:
+        return Algorithm.glm;
+      case gbm:
+      case glm:
+      case drf:
+      case deeplearning:
+        return algo;
+      default:
+        return null;
     }
+  }
 
-    void computeAutoMetalearner(){
-        //GLM Metalearner
-        GLM metaGLMBuilder = ModelBuilder.make("GLM", _metalearnerJob, _metalearnerKey);
-
-        //Metalearner parameters
-        if (_hasMetalearnerParams) {
-            GLMModel.GLMParameters glmParams = (GLMModel.GLMParameters) _metalearner_parameters;
-            metaGLMBuilder._parms = glmParams;
-        }
-
-        metaGLMBuilder._parms._seed = _metalearnerSeed;
-        metaGLMBuilder._parms._non_negative = true;
-        //metaGLMBuilder._parms._alpha = new double[] {0.0, 0.25, 0.5, 0.75, 1.0};
-        metaGLMBuilder._parms._train = _levelOneTrainingFrame._key;
-        metaGLMBuilder._parms._valid = (_levelOneValidationFrame == null ? null : _levelOneValidationFrame._key);
-        metaGLMBuilder._parms._response_column = _model.responseColumn;
-        if (_model._parms._metalearner_fold_column == null) {
-            metaGLMBuilder._parms._nfolds = _model._parms._metalearner_nfolds;  //cross-validation of the metalearner
-            if (_model._parms._metalearner_nfolds > 1) {
-                if (_model._parms._metalearner_fold_assignment == null) {
-                    metaGLMBuilder._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
-                } else {
-                    metaGLMBuilder._parms._fold_assignment = _model._parms._metalearner_fold_assignment;  //cross-validation of the metalearner
-                }
-            }
-        } else {
-            metaGLMBuilder._parms._fold_column = _model._parms._metalearner_fold_column;  //cross-validation of the metalearner
-        }
-
-        // Enable lambda search if a validation frame is passed in to get a better GLM fit.
-        // Since we are also using non_negative to true, we should also set early_stopping = false.
-        if (metaGLMBuilder._parms._valid != null) {
-            metaGLMBuilder._parms._lambda_search = true;
-            metaGLMBuilder._parms._early_stopping = false;
-        }
-        if (_model.modelCategory == ModelCategory.Regression) {
-            metaGLMBuilder._parms._family = GLMModel.GLMParameters.Family.gaussian;
-        } else if (_model.modelCategory == ModelCategory.Binomial) {
-            metaGLMBuilder._parms._family = GLMModel.GLMParameters.Family.binomial;
-        } else if (_model.modelCategory == ModelCategory.Multinomial) {
-            metaGLMBuilder._parms._family = GLMModel.GLMParameters.Family.multinomial;
-        } else {
-            throw new H2OIllegalArgumentException("Family " + _model.modelCategory + "  is not supported.");
-        }
-
-        metaGLMBuilder.init(false);
-
-        Job<GLMModel> j = metaGLMBuilder.trainModel();
-
-        while (j.isRunning()) {
-            try {
-                _job.update(j._work, "training metalearner(" + _model._parms._metalearner_algorithm + ")");
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-            }
-        }
-
-        Log.info("Finished training metalearner model(" + _model._parms._metalearner_algorithm + ").");
-
-        _model._output._metalearner = metaGLMBuilder.get();
-        _model.doScoreOrCopyMetrics(_job);
-        if (_parms._keep_levelone_frame) {
-            _model._output._levelone_frame_id = _levelOneTrainingFrame; //Keep Level One Training Frame in Stacked Ensemble model object
-        } else {
-            DKV.remove(_levelOneTrainingFrame._key); //Remove Level One Training Frame from DKV
-        }
-        if (null != _levelOneValidationFrame) {
-            DKV.remove(_levelOneValidationFrame._key); //Remove Level One Validation Frame from DKV
-        }
-        _model.update(_job);
-        _model.unlock(_job);
+  static Model.Parameters createParameters(Algorithm algo) {
+    switch (algo) {
+      case deeplearning:
+        return new DeepLearningModel.DeepLearningParameters();
+      case drf:
+        return  new DRFModel.DRFParameters();
+      case gbm:
+        return new GBMModel.GBMParameters();
+      case glm:
+      case AUTO:
+      default:
+        return new GLMModel.GLMParameters();
     }
+  }
 
-    void computeGBMMetalearner(){
-        //GBM Metalearner
-        GBM metaGBMBuilder;
-        metaGBMBuilder = ModelBuilder.make("GBM", _metalearnerJob, _metalearnerKey);
-        GBMV3.GBMParametersV3 params = new GBMV3.GBMParametersV3();
-        params.init_meta();
-        params.fillFromImpl(metaGBMBuilder._parms); // Defaults for this builder into schema
-
-        //Metalearner parameters
-        if (_hasMetalearnerParams) {
-            GBMModel.GBMParameters gbmParams = (GBMModel.GBMParameters) _metalearner_parameters;
-            metaGBMBuilder._parms = gbmParams;
-        }
-
-        if(metaGBMBuilder._parms._seed == -1){ //Seed is not set in metalearner_parameters
-            metaGBMBuilder._parms._seed = _metalearnerSeed;
-        }
-        metaGBMBuilder._parms._seed = _metalearnerSeed;
-        metaGBMBuilder._parms._train = _levelOneTrainingFrame._key;
-        metaGBMBuilder._parms._valid = (_levelOneValidationFrame == null ? null : _levelOneValidationFrame._key);
-        metaGBMBuilder._parms._response_column = _model.responseColumn;
-        metaGBMBuilder._parms._nfolds = _model._parms._metalearner_nfolds;  //cross-validation of the metalearner
-        if (_model._parms._metalearner_fold_column == null) {
-            metaGBMBuilder._parms._nfolds = _model._parms._metalearner_nfolds;  //cross-validation of the metalearner
-            if (_model._parms._metalearner_nfolds > 1) {
-                if (_model._parms._metalearner_fold_assignment == null) {
-                    metaGBMBuilder._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
-                } else {
-                    metaGBMBuilder._parms._fold_assignment = _model._parms._metalearner_fold_assignment;  //cross-validation of the metalearner
-                }
-            }
-        } else {
-            metaGBMBuilder._parms._fold_column = _model._parms._metalearner_fold_column;  //cross-validation of the metalearner
-        }
-
-        metaGBMBuilder.init(false);
-
-        Job<GBMModel> j = metaGBMBuilder.trainModel();
-
-        while (j.isRunning()) {
-            try {
-                _job.update(j._work, "training metalearner(" + _model._parms._metalearner_algorithm + ")");
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-            }
-        }
-
-        Log.info("Finished training metalearner model(" + _model._parms._metalearner_algorithm + ").");
-
-        _model._output._metalearner = metaGBMBuilder.get();
-        _model.doScoreOrCopyMetrics(_job);
-        if (_parms._keep_levelone_frame) {
-            _model._output._levelone_frame_id = _levelOneTrainingFrame; //Keep Level One Training Frame in Stacked Ensemble model object
-        } else {
-            DKV.remove(_levelOneTrainingFrame._key); //Remove Level One Training Frame from DKV
-        }
-        if (null != _levelOneValidationFrame) {
-            DKV.remove(_levelOneValidationFrame._key); //Remove Level One Validation Frame from DKV
-        }
-        _model.update(_job);
-        _model.unlock(_job);
-
+  static Metalearner createInstance(Algorithm algo) {
+    switch (algo) {
+      case deeplearning:
+        return new DLMetalearner();
+      case drf:
+        return new DRFMetalearner();
+      case gbm:
+        return new GBMMetalearner();
+      case glm:
+        return new GLMMetalearner();
+      case AUTO:
+      default:
+        return new AUTOMetalearner();
     }
+  }
 
-    void computeDRFMetalearner(){
-        //DRF Metalearner
-        DRF metaDRFBuilder;
-        metaDRFBuilder = ModelBuilder.make("DRF", _metalearnerJob, _metalearnerKey);
-        DRFV3.DRFParametersV3 params = new DRFV3.DRFParametersV3();
-        params.init_meta();
-        params.fillFromImpl(metaDRFBuilder._parms); // Defaults for this builder into schema
+  protected Frame _levelOneTrainingFrame;
+  protected Frame _levelOneValidationFrame;
+  protected StackedEnsembleModel _model;
+  protected StackedEnsembleParameters _parms;
+  protected Job _job;
+  protected Key<Model> _metalearnerKey;
+  protected Job _metalearnerJob;
+  protected P _metalearner_parameters;
+  protected boolean _hasMetalearnerParams;
+  protected long _metalearnerSeed;
 
-        //Metalearner parameters
-        if (_hasMetalearnerParams) {
-            DRFModel.DRFParameters drfParams = (DRFModel.DRFParameters) _metalearner_parameters;
-            metaDRFBuilder._parms = drfParams;
+  void init(Frame levelOneTrainingFrame,
+            Frame levelOneValidationFrame,
+            P metalearner_parameters,
+            StackedEnsembleModel model,
+            Job StackedEnsembleJob,
+            Key<Model> metalearnerKey,
+            Job metalearnerJob,
+            StackedEnsembleParameters parms,
+            boolean hasMetalearnerParams,
+            long metalearnerSeed) {
+
+    _levelOneTrainingFrame = levelOneTrainingFrame;
+    _levelOneValidationFrame = levelOneValidationFrame;
+    _metalearner_parameters = metalearner_parameters;
+    _model = model;
+    _job = StackedEnsembleJob;
+    _metalearnerKey = metalearnerKey;
+    _metalearnerJob = metalearnerJob;
+    _parms = parms;
+    _hasMetalearnerParams = hasMetalearnerParams;
+    _metalearnerSeed = metalearnerSeed;
+
+  }
+
+  void compute() {
+    try {
+      B builder = createBuilder();
+
+      if (_hasMetalearnerParams) {
+        builder._parms = _metalearner_parameters;
+      }
+      setCommonParams(builder._parms);
+      setCrossValidationParams(builder._parms);
+      setCustomParams(builder._parms);
+
+      builder.init(false);
+      Job<M> j = builder.trainModel();
+      while (j.isRunning()) {
+        try {
+          _job.update(j.getWork(), "training metalearner(" + _model._parms._metalearner_algorithm + ")");
+          Thread.sleep(100);
+        } catch (InterruptedException ignored) {
         }
+      }
+      Log.info("Finished training metalearner model(" + _model._parms._metalearner_algorithm + ").");
 
-        if(metaDRFBuilder._parms._seed == -1) {//Seed is not set in metalearner_parameters
-            metaDRFBuilder._parms._seed = _metalearnerSeed;
-        }
-        metaDRFBuilder._parms._train = _levelOneTrainingFrame._key;
-        metaDRFBuilder._parms._valid = (_levelOneValidationFrame == null ? null : _levelOneValidationFrame._key);
-        metaDRFBuilder._parms._response_column = _model.responseColumn;
-        metaDRFBuilder._parms._nfolds = _model._parms._metalearner_nfolds;  //cross-validation of the metalearner
-        if (_model._parms._metalearner_fold_column == null) {
-            metaDRFBuilder._parms._nfolds = _model._parms._metalearner_nfolds;  //cross-validation of the metalearner
-            if (_model._parms._metalearner_nfolds > 1) {
-                if (_model._parms._metalearner_fold_assignment == null) {
-                    metaDRFBuilder._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
-                } else {
-                    metaDRFBuilder._parms._fold_assignment = _model._parms._metalearner_fold_assignment;  //cross-validation of the metalearner
-                }
-            }
-        } else {
-            metaDRFBuilder._parms._fold_column = _model._parms._metalearner_fold_column;  //cross-validation of the metalearner
-        }
+      _model._output._metalearner = builder.get();
+      _model.doScoreOrCopyMetrics(_job);
 
-        metaDRFBuilder.init(false);
-
-        Job<DRFModel> j = metaDRFBuilder.trainModel();
-
-        while (j.isRunning()) {
-            try {
-                _job.update(j._work, "training metalearner(" + _model._parms._metalearner_algorithm + ")");
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-            }
-        }
-
-        Log.info("Finished training metalearner model(" + _model._parms._metalearner_algorithm + ").");
-
-        _model._output._metalearner = metaDRFBuilder.get();
-        _model.doScoreOrCopyMetrics(_job);
-        if (_parms._keep_levelone_frame) {
-            _model._output._levelone_frame_id = _levelOneTrainingFrame; //Keep Level One Training Frame in Stacked Ensemble model object
-        } else {
-            DKV.remove(_levelOneTrainingFrame._key); //Remove Level One Training Frame from DKV
-        }
-        if (null != _levelOneValidationFrame) {
-            DKV.remove(_levelOneValidationFrame._key); //Remove Level One Validation Frame from DKV
-        }
-        _model.update(_job);
-        _model.unlock(_job);
+      if (_parms._keep_levelone_frame) {
+        _model._output._levelone_frame_id = _levelOneTrainingFrame; //Keep Level One Training Frame in Stacked Ensemble model object
+      }
+    } finally {
+      cleanup();
+      _model.update(_job);
+      _model.unlock(_job);
     }
+  }
 
-    void computeGLMMetalearner(){
-        //GLM Metalearner
-        GLM metaGLMBuilder;
-        metaGLMBuilder = ModelBuilder.make("GLM", _metalearnerJob, _metalearnerKey);
-        GLMV3.GLMParametersV3 params = new GLMV3.GLMParametersV3();
-        params.init_meta();
-        params.fillFromImpl(metaGLMBuilder._parms); // Defaults for this builder into schema
+  abstract B createBuilder();
 
-        //Metalearner parameters
-        if (_hasMetalearnerParams) {
-            GLMModel.GLMParameters glmParams = (GLMModel.GLMParameters) _metalearner_parameters;
-            metaGLMBuilder._parms = glmParams;
-        }
-
-        if(metaGLMBuilder._parms._seed == -1) {//Seed is not set in metalearner_parameters
-            metaGLMBuilder._parms._seed = _metalearnerSeed;
-        }
-        metaGLMBuilder._parms._train = _levelOneTrainingFrame._key;
-        metaGLMBuilder._parms._valid = (_levelOneValidationFrame == null ? null : _levelOneValidationFrame._key);
-        metaGLMBuilder._parms._response_column = _model.responseColumn;
-        metaGLMBuilder._parms._nfolds = _model._parms._metalearner_nfolds;  //cross-validation of the metalearner
-        if (_model._parms._metalearner_fold_column == null) {
-            metaGLMBuilder._parms._nfolds = _model._parms._metalearner_nfolds;  //cross-validation of the metalearner
-            if (_model._parms._metalearner_nfolds > 1) {
-                if (_model._parms._metalearner_fold_assignment == null) {
-                    metaGLMBuilder._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
-                } else {
-                    metaGLMBuilder._parms._fold_assignment = _model._parms._metalearner_fold_assignment;  //cross-validation of the metalearner
-                }
-            }
-        } else {
-            metaGLMBuilder._parms._fold_column = _model._parms._metalearner_fold_column;  //cross-validation of the metalearner
-        }
-
-        if (_model.modelCategory == ModelCategory.Regression) {
-            metaGLMBuilder._parms._family = GLMModel.GLMParameters.Family.gaussian;
-        } else if (_model.modelCategory == ModelCategory.Binomial) {
-            metaGLMBuilder._parms._family = GLMModel.GLMParameters.Family.binomial;
-        } else if (_model.modelCategory == ModelCategory.Multinomial) {
-            metaGLMBuilder._parms._family = GLMModel.GLMParameters.Family.multinomial;
-        } else {
-            throw new H2OIllegalArgumentException("Family " + _model.modelCategory + "  is not supported.");
-        }
-        metaGLMBuilder.init(false);
-
-        Job<GLMModel> j = metaGLMBuilder.trainModel();
-
-        while (j.isRunning()) {
-            try {
-                _job.update(j._work, "training metalearner(" + _model._parms._metalearner_algorithm + ")");
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-            }
-        }
-
-        Log.info("Finished training metalearner model(" + _model._parms._metalearner_algorithm + ").");
-
-        _model._output._metalearner = metaGLMBuilder.get();
-        _model.doScoreOrCopyMetrics(_job);
-        if (_parms._keep_levelone_frame) {
-            _model._output._levelone_frame_id = _levelOneTrainingFrame; //Keep Level One Training Frame in Stacked Ensemble model object
-        } else {
-            DKV.remove(_levelOneTrainingFrame._key); //Remove Level One Training Frame from DKV
-        }
-        if (null != _levelOneValidationFrame) {
-            DKV.remove(_levelOneValidationFrame._key); //Remove Level One Validation Frame from DKV
-        }
-        _model.update(_job);
-        _model.unlock(_job);
-
+  protected void setCommonParams(P parms) {
+    if (parms._seed == -1) { //use _metalearnerSeed only as legacy fallback if not set on metalearner_parameters 
+      parms._seed = _metalearnerSeed;
     }
+    parms._train = _levelOneTrainingFrame._key;
+    parms._valid = (_levelOneValidationFrame == null ? null : _levelOneValidationFrame._key);
+    parms._response_column = _model.responseColumn;
+  }
 
-    void computeDeepLearningMetalearner(){
-        //DeepLearning Metalearner
-        DeepLearning metaDeepLearningBuilder;
-        metaDeepLearningBuilder = ModelBuilder.make("DeepLearning", _metalearnerJob, _metalearnerKey);
-        DeepLearningV3.DeepLearningParametersV3 params = new DeepLearningV3.DeepLearningParametersV3();
-        params.init_meta();
-        params.fillFromImpl(metaDeepLearningBuilder._parms); // Defaults for this builder into schema
-
-        //Metalearner parameters
-        if (_hasMetalearnerParams) {
-            DeepLearningModel.DeepLearningParameters dlParams = (DeepLearningModel.DeepLearningParameters) _metalearner_parameters;
-            metaDeepLearningBuilder._parms = dlParams;
-        }
-
-        if(metaDeepLearningBuilder._parms._seed == -1) {//Seed is not set in metalearner_parameters
-            metaDeepLearningBuilder._parms._seed = _metalearnerSeed;
-        }
-        metaDeepLearningBuilder._parms._train = _levelOneTrainingFrame._key;
-        metaDeepLearningBuilder._parms._valid = (_levelOneValidationFrame == null ? null : _levelOneValidationFrame._key);
-        metaDeepLearningBuilder._parms._response_column = _model.responseColumn;
-        metaDeepLearningBuilder._parms._nfolds = _model._parms._metalearner_nfolds;  //cross-validation of the metalearner
-        if (_model._parms._metalearner_fold_column == null) {
-            metaDeepLearningBuilder._parms._nfolds = _model._parms._metalearner_nfolds;  //cross-validation of the metalearner
-            if (_model._parms._metalearner_nfolds > 1) {
-                if (_model._parms._metalearner_fold_assignment == null) {
-                    metaDeepLearningBuilder._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
-                } else {
-                    metaDeepLearningBuilder._parms._fold_assignment = _model._parms._metalearner_fold_assignment;  //cross-validation of the metalearner
-                }
-            }
+  protected void setCrossValidationParams(P parms) {
+    if (_model._parms._metalearner_fold_column == null) {
+      parms._nfolds = _model._parms._metalearner_nfolds;
+      if (_model._parms._metalearner_nfolds > 1) {
+        if (_model._parms._metalearner_fold_assignment == null) {
+          parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
         } else {
-            metaDeepLearningBuilder._parms._fold_column = _model._parms._metalearner_fold_column;  //cross-validation of the metalearner
+          parms._fold_assignment = _model._parms._metalearner_fold_assignment;
         }
-
-        metaDeepLearningBuilder.init(false);
-
-        Job<DeepLearningModel> j = metaDeepLearningBuilder.trainModel();
-
-        while (j.isRunning()) {
-            try {
-                _job.update(j._work, "training metalearner(" + _model._parms._metalearner_algorithm + ")");
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-            }
-        }
-
-        Log.info("Finished training metalearner model(" + _model._parms._metalearner_algorithm + ").");
-
-        _model._output._metalearner = metaDeepLearningBuilder.get();
-        _model.doScoreOrCopyMetrics(_job);
-        if (_parms._keep_levelone_frame) {
-            _model._output._levelone_frame_id = _levelOneTrainingFrame; //Keep Level One Training Frame in Stacked Ensemble model object
-        } else {
-            DKV.remove(_levelOneTrainingFrame._key); //Remove Level One Training Frame from DKV
-        }
-        if (null != _levelOneValidationFrame) {
-            DKV.remove(_levelOneValidationFrame._key); //Remove Level One Validation Frame from DKV
-        }
-        _model.update(_job);
-        _model.unlock(_job);
+      }
+    } else {
+      parms._fold_column = _model._parms._metalearner_fold_column;
     }
+  }
+
+  protected void setCustomParams(P parms) { }
+
+  protected void cleanup() {
+    if (!_parms._keep_base_model_predictions) {
+      _model.deleteBaseModelPredictions();
+    }
+    if (!_parms._keep_levelone_frame) {
+      DKV.remove(_levelOneTrainingFrame._key); //Remove Level One Training Frame from DKV
+    }
+    if (null != _levelOneValidationFrame) {
+      DKV.remove(_levelOneValidationFrame._key); //Remove Level One Validation Frame from DKV
+    }
+  }
 }
+
+class GBMMetalearner extends Metalearner<GBM, GBMModel, GBMModel.GBMParameters> {
+  @Override
+  GBM createBuilder() {
+    return ModelBuilder.make("GBM", _metalearnerJob, _metalearnerKey);
+  }
+}
+
+class GLMMetalearner extends Metalearner<GLM, GLMModel, GLMModel.GLMParameters> {
+  @Override
+  GLM createBuilder() {
+    return ModelBuilder.make("GLM", _metalearnerJob, _metalearnerKey);
+  }
+
+  @Override
+  protected void setCustomParams(GLMModel.GLMParameters parms) {
+    if (_model.modelCategory == ModelCategory.Regression) {
+      parms._family = GLMModel.GLMParameters.Family.gaussian;
+    } else if (_model.modelCategory == ModelCategory.Binomial) {
+      parms._family = GLMModel.GLMParameters.Family.binomial;
+    } else if (_model.modelCategory == ModelCategory.Multinomial) {
+      parms._family = GLMModel.GLMParameters.Family.multinomial;
+    } else {
+      throw new H2OIllegalArgumentException("Family " + _model.modelCategory + "  is not supported.");
+    }
+  }
+}
+
+class DRFMetalearner extends Metalearner<DRF, DRFModel, DRFModel.DRFParameters> {
+  @Override
+  DRF createBuilder() {
+    return ModelBuilder.make("DRF", _metalearnerJob, _metalearnerKey);
+  }
+}
+
+class DLMetalearner extends Metalearner<DeepLearning, DeepLearningModel, DeepLearningModel.DeepLearningParameters> {
+  @Override
+  DeepLearning createBuilder() {
+    return ModelBuilder.make("DeepLearning", _metalearnerJob, _metalearnerKey);
+  }
+}
+
+class AUTOMetalearner extends GLMMetalearner {
+
+  @Override
+  protected void setCustomParams(GLMModel.GLMParameters parms) {
+    //add GLM custom params
+    super.setCustomParams(parms);
+    
+    //specific to AUTO mode
+    parms._non_negative = true;
+    //parms._alpha = new double[] {0.0, 0.25, 0.5, 0.75, 1.0};
+
+    // Enable lambda search if a validation frame is passed in to get a better GLM fit.
+    // Since we are also using non_negative to true, we should also set early_stopping = false.
+    if (parms._valid != null) {
+      parms._lambda_search = true;
+      parms._early_stopping = false;
+    }
+  }
+}
+

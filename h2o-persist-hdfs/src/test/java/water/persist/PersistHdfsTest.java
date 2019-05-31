@@ -1,8 +1,5 @@
 package water.persist;
 
-import org.jets3t.service.S3Service;
-import org.jets3t.service.impl.rest.httpclient.RestS3Service;
-import org.jets3t.service.security.AWSCredentials;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -15,9 +12,7 @@ import water.util.FileUtils;
 
 import java.net.URI;
 
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertFalse;
-import static junit.framework.TestCase.assertTrue;
+import static junit.framework.TestCase.*;
 
 @RunWith(Parameterized.class)
 public class PersistHdfsTest extends TestUtil {
@@ -31,7 +26,7 @@ public class PersistHdfsTest extends TestUtil {
   public String scheme;
 
   @BeforeClass
-  public static void setup() { stall_till_cloudsize(5); }
+  public static void setup() { stall_till_cloudsize(1); }
 
   @Test
   public void testImport() throws Exception {
@@ -61,6 +56,14 @@ public class PersistHdfsTest extends TestUtil {
 
     String invalid = scheme + "://h2o-public-test-data/smalldata/does.not.exist";
     assertFalse(hdfsPersist.exists(invalid));
+  }
+
+  @Test
+  public void testGetParent() {
+    Persist hdfsPersist = H2O.getPM().getPersistForURI(URI.create("hdfs://localhost/"));
+
+    String directory = "hdfs://h2o-public-test-data/smalldata/airlines";
+    assertEquals("hdfs://h2o-public-test-data/smalldata", hdfsPersist.getParent(directory));
   }
 
 }
