@@ -90,11 +90,9 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
     Leaderboard leaderboard = autoML.leaderboard();
     if (null == leaderboard) {
       leaderboard = new Leaderboard(autoML.projectName(), autoML.eventLog(), autoML.getLeaderboardFrame(), this.sort_metric);
-      DKV.put(leaderboard);
-    } else {
-      this.leaderboard = new LeaderboardV99().fillFromImpl(leaderboard);
-      this.leaderboard_table = new TwoDimTableV3().fillFromImpl(leaderboard.toTwoDimTable());
     }
+    this.leaderboard = new LeaderboardV99().fillFromImpl(leaderboard);
+    this.leaderboard_table = new TwoDimTableV3().fillFromImpl(leaderboard.toTwoDimTable());
 
     EventLog eventLog = autoML.eventLog();
     if (null == eventLog) {

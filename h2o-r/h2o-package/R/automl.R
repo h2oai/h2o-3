@@ -314,13 +314,13 @@ predict.H2OAutoML <- function(object, newdata, ...) {
   return(state)
 }
 
-.automl.fetch_table <- function(table, show_progress=TRUE) {
+.automl.fetch_table <- function(table, destination_frame=NULL, show_progress=TRUE) {
   # disable the progress bar is show_progress is set to FALSE, e.g. since showing multiple progress bars is confusing to users.
   # In any case, revert back to user's original progress setting.
   is_progress <- isTRUE(as.logical(.h2o.is_progress()))
   if (show_progress) h2o.show_progress() else h2o.no_progress()
   frame <- tryCatch(
-    as.h2o(table),
+    as.h2o(table, destination_frame=destination_frame),
     error = identity,
     finally = if (is_progress) h2o.show_progress() else h2o.no_progress()
   )
@@ -338,7 +338,7 @@ predict.H2OAutoML <- function(object, newdata, ...) {
   should_fetch <- function(prop) is.null(properties) | prop %in% properties
 
   if (should_fetch('leaderboard')) {
-    leaderboard <- .automl.fetch_table(leaderboard, show_progress=FALSE)
+    leaderboard <- .automl.fetch_table(leaderboard, destination_frame=.key.make('leaderboard'), show_progress=FALSE)
     # If the leaderboard is empty, it creates a dummy row so let's remove it
     if (leaderboard$model_id[1,1] == "") {
       leaderboard <- leaderboard[-1,]
@@ -358,7 +358,7 @@ predict.H2OAutoML <- function(object, newdata, ...) {
 
   if (should_fetch('event_log')) {
     event_log <- as.data.frame(automl_job["event_log_table"]$event_log_table)
-    event_log <- .automl.fetch_table(event_log, show_progress=FALSE)
+    event_log <- .automl.fetch_table(event_log, destination_frame=.key.make('eventlog'), show_progress=FALSE)
     # row.names(event_log) <- seq(nrow(event_log))
   } else {
     event_log <- NULL
