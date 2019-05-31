@@ -10,10 +10,7 @@ import water.util.IcedHashMap;
 import water.util.Log;
 import water.util.TwoDimTable;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static water.DKV.getGet;
 import static water.Key.make;
@@ -361,7 +358,8 @@ public class Leaderboard extends Keyed<Leaderboard> {
    * @return list of keys of models sorted by the default metric for the model category, fetched from the DKV
    */
   Key<Model>[] getModelKeys() {
-    return ((Leaderboard)DKV.getGet(this._key)).models;
+    Leaderboard uptodate = DKV.getGet(this._key);
+    return uptodate == null ? new Key[0] : uptodate.models;
   }
 
   /**
