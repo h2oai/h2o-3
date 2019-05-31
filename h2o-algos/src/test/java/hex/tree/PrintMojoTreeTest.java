@@ -109,10 +109,9 @@ public class PrintMojoTreeTest {
       final String treeDotz = FileUtils.readFileToString(treeOutput);
       assertFalse(treeDotz.isEmpty());
 
-      assertTrue(treeDotz.contains("/* Edges */\n" +
-              "\"SG_0_Node_0\" -> \"SG_0_Node_1\" [fontsize=14, label=\"[NA]\\n2 levels\\n\"]\n" +
+      assertTrue(treeDotz.contains("\"SG_0_Node_0\" -> \"SG_0_Node_1\" [fontsize=14, label=\"[NA]\\n2 levels\\n\"]\n" +
               "\"SG_0_Node_0\" -> \"SG_0_Node_4\" [fontsize=14, label=\"Iris-virginica\\n\"]\n" +
-              "\"SG_0_Node_1\" -> \"SG_0_Node_5\" [fontsize=14, label=\"2 levels\\n\"]\n" +
+              "\"SG_0_Node_1\" -> \"SG_0_Node_5\" [fontsize=14, label=\"Iris-versicolor\\n\"]\n" +
               "\"SG_0_Node_1\" -> \"SG_0_Node_6\" [fontsize=14, label=\"[NA]\\nIris-setosa\\n\"]"));
 
     } finally {
@@ -149,6 +148,7 @@ public class PrintMojoTreeTest {
 
       final String treeDotz = FileUtils.readFileToString(treeOutput);
       assertFalse(treeDotz.isEmpty());
+      System.out.println(treeDotz);
 
       final Pattern labelPattern = Pattern.compile("label{1}=\\\"(.*?)\\\"");
       final Pattern labelContentPattern = Pattern.compile(".*[<>=].*"); // Contains < or > or =

@@ -9,6 +9,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Print dot (graphviz) representation of one or more trees in a DRF or GBM model.
@@ -22,6 +24,7 @@ public class PrintMojo {
   private static String outputFileName = null;
   private static String optionalTitle = null;
   private static PrintTreeOptions pTreeOptions;
+  private static boolean internal;
 
   public static void main(String[] args) {
     // Parse command line arguments
@@ -67,6 +70,10 @@ public class PrintMojo {
     System.out.println("    --decimalplaces | -d    Set decimal places of all numerical values.");
     System.out.println("");
     System.out.println("    --fontsize | -f    Set font sizes of strings.");
+    System.out.println("");
+    System.out.println("    --raw    Print raw graph representation to standard output.");
+    System.out.println("");
+    System.out.println("    --internal    Internal H2O representation of the graph (splits etc.) is used for generating the GRAPHVIZ format.");
     System.out.println("");
     System.out.println("");
     System.out.println("Example:");
@@ -151,6 +158,9 @@ public class PrintMojo {
           case "--raw":
             printRaw = true;
             break;
+          case "--internal":
+            internal = true;
+            break;
 
           case "-o":
           case "--output":
@@ -165,7 +175,7 @@ public class PrintMojo {
             break;
         }
       }
-      pTreeOptions = new PrintTreeOptions(setDecimalPlaces, nPlaces, fontSize);
+      pTreeOptions = new PrintTreeOptions(setDecimalPlaces, nPlaces, fontSize, internal);
     } catch (Exception e) {
       e.printStackTrace();
       usage();
@@ -207,11 +217,13 @@ public class PrintMojo {
     public boolean _setDecimalPlace = false;
     public int _nPlaces = -1;
     public int _fontSize = 14;  // default
+    public boolean _internal;
 
-    public PrintTreeOptions(boolean setdecimalplaces, int nplaces, int fontsize) {
+    public PrintTreeOptions(boolean setdecimalplaces, int nplaces, int fontsize, boolean internal) {
       _setDecimalPlace = setdecimalplaces;
       _nPlaces = _setDecimalPlace?nplaces:_nPlaces;
       _fontSize = fontsize;
+      _internal = internal;
     }
 
     public float roundNPlace(float value) {
