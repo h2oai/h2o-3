@@ -39,6 +39,7 @@ public class HeartBeat extends Iced<HeartBeat> {
 
   // Sum of KV + POJO + FREE == MEM_MAX (heap set at JVM launch)
   private long _kv_mem;          // Memory used by K/V as of last FullGC
+  private long _kv_total;    // M
   private long _pojo_mem;        // POJO used as of last FullGC
   private long _free_mem;        // Free memory as of last FullGC
   private long _swap_mem;        // Swapped K/V as of last FullGC
@@ -46,10 +47,12 @@ public class HeartBeat extends Iced<HeartBeat> {
   void set_pojo_mem (long n) { _pojo_mem = n; }
   void set_free_mem (long n) { _free_mem = n; }
   void set_swap_mem (long n) { _swap_mem = n; }
+  void set_kv_total(long n) { _kv_total = n; }
   public long get_kv_mem  () { return _kv_mem; }
   public long get_pojo_mem() { return _pojo_mem; }
   public long get_free_mem() { return _free_mem; }
   public long get_swap_mem() { return _swap_mem; }
+  public long get_kv_total() { return _kv_total; }
 
   public int _keys;       // Number of LOCAL keys in this node, cached or homed
 

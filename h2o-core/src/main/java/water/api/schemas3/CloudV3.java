@@ -134,6 +134,8 @@ public class CloudV3 extends RequestSchemaV3<Iced, CloudV3> {
 
     @API(help="Data on Node memory", direction=API.Direction.OUTPUT)
     public long mem_value_size;
+    @API(help="Data on Node (memory or disk)", direction=API.Direction.OUTPUT)
+    public long total_value_size;
     @API(help="Temp (non Data) memory", direction=API.Direction.OUTPUT)
     public long pojo_mem;
     @API(help="Free heap", direction=API.Direction.OUTPUT)
@@ -186,6 +188,7 @@ public class CloudV3 extends RequestSchemaV3<Iced, CloudV3> {
 
       // Memory being used
       mem_value_size = hb.get_kv_mem();
+      total_value_size = hb.get_kv_total();
       pojo_mem = hb.get_pojo_mem();
       free_mem = hb.get_free_mem();
       swap_mem = hb.get_swap_mem();

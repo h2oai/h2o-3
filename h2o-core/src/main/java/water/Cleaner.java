@@ -226,6 +226,7 @@ class Cleaner extends Thread {
     // built nor blocking for one being in-progress.
     static long cached() { return H._cached; }
     static long swapped(){ return H._swapped;}
+    static long total() { return H._total; }
 
     final long[] _hs = new long[128];
     long _oldest; // Time of the oldest K/V discovered this pass

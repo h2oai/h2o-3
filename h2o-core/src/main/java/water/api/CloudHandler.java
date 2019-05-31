@@ -41,7 +41,7 @@ class CloudHandler extends Handler {
     H2ONode[] members = H2O.CLOUD.members();
     cloud.bad_nodes = 0;
     cloud.cloud_healthy = true;
-    if (null != members) {
+    if (members != null) {
       cloud.nodes = new CloudV3.NodeV3[members.length];
       for (int i = 0; i < members.length; i++) {
         cloud.nodes[i] = new CloudV3.NodeV3(members[i], cloud.skip_ticks);

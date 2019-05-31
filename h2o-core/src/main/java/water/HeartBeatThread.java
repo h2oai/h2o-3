@@ -75,6 +75,7 @@ public class HeartBeatThread extends Thread {
       hb.set_pojo_mem(pojo_mem);
       hb.set_free_mem(free_mem);
       hb.set_swap_mem(Cleaner.Histo.swapped());
+      hb.set_kv_total(Cleaner.Histo.total());
       hb._keys = H2O.STORE.size();
 
       try {
