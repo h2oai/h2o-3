@@ -465,6 +465,10 @@ h2o.getFutureModel <- function(object, verbose=FALSE) {
 #'          generation in h2o.
 #' @export
 predict.H2OModel <- function(object, newdata, ...) {
+  h2o.predict.H2OModel(object, newdata, ...)
+}
+
+h2o.predict.H2OModel <- function(object, newdata, ...) {
   if (missing(newdata)) {
     stop("predictions with a missing `newdata` argument is not implemented yet")
   }
@@ -481,7 +485,7 @@ predict.H2OModel <- function(object, newdata, ...) {
 #' @rdname predict.H2OModel
 #' @export
 h2o.predict <- function(object, newdata, ...){
-  UseMethod("predict", object)
+  UseMethod("h2o.predict", object)
 }
 #' Predict the Leaf Node Assignment on an H2O Model
 #'
