@@ -13,10 +13,16 @@ public class CleanNewKeysTask extends KeysMRTask<CleanNewKeysTask> {
         final Set<Key> initKeys = LocalTestRuntime.initKeys;
         final Set<Key> actualKeys = H2O.localKeySet();
         for (Key actualKey : actualKeys){
-            final Value keyValue = Value.STORE_get(actualKey);
-            if(initKeys.contains(actualKey) || isIgnorableKeyLeak(actualKey, keyValue)) continue;
-            H2O.STORE.remove(actualKey);
-            actualKey.remove();
+
+            final Value value = Value.STORE_get(actualKey);
+            if (initKeys.contains(actualKey) || isIgnorableKeyLeak(actualKey, value)) continue;
+            if (!(value.get() instanceof Keyed)) {
+                // Keyed objects might override remove_impl to excerscise their own removal strategy
+                // Non-keyed objects should just be removed from the DKV
+                DKV.remove(actualKey);
+            } else {
+                actualKey.remove();
+            }
         }
         
     }
