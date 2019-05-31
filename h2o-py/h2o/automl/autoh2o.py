@@ -513,9 +513,6 @@ class H2OAutoML(object):
         self._state_json = state['json']
         return self._leader_id is not None
 
-    def _get_params(self):
-        return H2OAutoML._fetch_state(self.project_name)['json']
-
     def _poll_training_updates(self, job, bar_progress=0, verbosity=None, state=None):
         """
         the callback function used to print verbose info when polling AutoML job.
