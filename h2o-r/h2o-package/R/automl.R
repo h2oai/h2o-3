@@ -275,6 +275,10 @@ h2o.automl <- function(x, y, training_frame,
 #'         default predictions.
 #' @export
 predict.H2OAutoML <- function(object, newdata, ...) {
+  h2o.predict.H2OAutoML(object, newdata, ...)
+}
+
+h2o.predict.H2OAutoML <- function(object, newdata, ...) {
   if (missing(newdata)) {
     stop("predictions with a missing `newdata` argument is not implemented yet")
   }
