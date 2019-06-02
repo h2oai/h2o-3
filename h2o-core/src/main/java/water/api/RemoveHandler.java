@@ -1,9 +1,7 @@
 package water.api;
 
-import water.DKV;
-import water.H2O;
-import water.Keyed;
-import water.Lockable;
+import water.*;
+import water.api.schemas3.DKVCleanV3;
 import water.api.schemas3.RemoveV3;
 
 public class RemoveHandler extends Handler {
@@ -16,5 +14,24 @@ public class RemoveHandler extends Handler {
     }
     H2O.updateNotIdle();
     return u;
+  }
+
+  @SuppressWarnings("unused") // called through reflection by RequestServer
+  public DKVCleanV3 retainKeys(final int version, final DKVCleanV3 removeAllV3) {
+
+    final Key[] retainedKeys;
+    if (removeAllV3.retained_keys == null) {
+      retainedKeys = new Key[0];
+    } else {
+      retainedKeys = new Key[removeAllV3.retained_keys.length];
+      for (int i = 0; i < retainedKeys.length; i++) {
+        retainedKeys[i] = removeAllV3.retained_keys[i].key();
+      }
+    }
+
+    new DKV.ClearDKVTask(retainedKeys)
+            .doAllNodes();
+
+    return removeAllV3;
   }
 }

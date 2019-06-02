@@ -1558,6 +1558,20 @@ def upload_mojo(mojo_path):
     print(mojo_estimator)
     return mojo_estimator
 
+
+def retain(retained = None):
+    """
+    
+    :param retained: 
+    :return: 
+    """
+
+    params = {"retained_keys": retained}
+    response = api(endpoint="POST /3/DKV/retainKeys", data=params)
+    
+    return response
+
+
 #-----------------------------------------------------------------------------------------------------------------------
 # Private
 #-----------------------------------------------------------------------------------------------------------------------
