@@ -17,6 +17,7 @@ def retain_keys_test():
     gbm.train(x = ["Origin", "Dest"], y = "IsDepDelayed", training_frame=airlines)
     
     h2o.retain([airlines.frame_id])
+    h2o.ls()
     try:
         h2o.get_model(gbm.model_id)
         assert False

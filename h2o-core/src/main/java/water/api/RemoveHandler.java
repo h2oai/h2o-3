@@ -25,6 +25,7 @@ public class RemoveHandler extends Handler {
     } else {
       retainedKeys = new Key[removeAllV3.retained_keys.length];
       for (int i = 0; i < retainedKeys.length; i++) {
+        if (removeAllV3.retained_keys[i] == null) continue; // Protection against null keys from the client - ignored
         retainedKeys[i] = removeAllV3.retained_keys[i].key();
       }
     }

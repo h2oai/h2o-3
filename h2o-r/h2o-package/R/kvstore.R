@@ -73,6 +73,52 @@ h2o.removeAll <- function(timeout_secs=0) {
     })
 }
 
+#'
+#' Remove entries from the DKV, only retaining the ones specified. Only Frames and Models can be retained.
+#'
+#'
+#' @param retained_elements Frames and models to retain
+#' @seealso \code{\link{h2o.rm}}
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.uploadFile(path = prostate_path)
+#' h2o.ls()
+#' h2o.retain(c(prostate))
+#' h2o.ls()
+#' }
+#' @export
+h2o.retain <- function(retained_elements) {
+  retained_keys <- list()
+  for (element in retained_elements) {
+    if (is(element, "H2OModel")) {
+      retained_keys <- append(retained_keys, element@model_id)
+    } else if (is.H2OFrame(element)) {
+      retained_keys <- append(retained_keys, h2o.getId(element))
+    }
+  }
+  
+  parms <- list()
+  parms$retained_keys <- paste0("[", paste(retained_keys, collapse=','), "]")
+  
+  tryCatch(
+    invisible(
+      .h2o.__remoteSend(
+        paste0(.h2o.__DKV, "/retainKeys"),
+        h2oRestApiVersion = 3,
+        .params = parms,
+        method = "POST"
+      )
+    ),
+    error = function(e) {
+      print("Timeout on POST /DKV/retainKeys from R")
+      stop(e)
+    }
+  )
+}
+
 #
 #' Delete Objects In H2O
 #'

@@ -228,6 +228,7 @@ reference:
       - h2o.rep_len
       - h2o.residual_deviance 
       - h2o.residual_dof
+      - h2o.retain
       - h2o.rm 
       - h2o.rmse
       - h2o.rmsle
