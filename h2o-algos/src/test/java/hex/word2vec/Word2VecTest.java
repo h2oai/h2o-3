@@ -1,6 +1,7 @@
 package hex.word2vec;
 
 import org.junit.*;
+import org.junit.rules.ExpectedException;
 import water.DKV;
 import water.Key;
 import water.Scope;
@@ -21,6 +22,9 @@ import static org.junit.Assert.*;
 
 public class Word2VecTest extends TestUtil {
 
+  @Rule
+  public ExpectedException ee = ExpectedException.none();
+  
   @BeforeClass()
   public static void setup() { stall_till_cloudsize(1); }
 
@@ -89,16 +93,33 @@ public class Word2VecTest extends TestUtil {
             .build();
     Scope.track(pretrained);
     try {
-      Word2VecModel.Word2VecParameters p = new Word2VecModel.Word2VecParameters();
-      p._vec_size = 2;
-      p._pre_trained = pretrained._key;
-
-      Word2VecModel w2vm = (Word2VecModel) Scope.track_generic(new Word2Vec(p).trainModel().get());
+      Word2VecModel w2vm = Word2Vec.fromPretrainedModel(pretrained).get();
+      Scope.track_generic(w2vm);
 
       for (int i = 0; i < words.length; i++) {
         float[] wordVector = w2vm.transform(words[i]);
         assertArrayEquals("wordvec " + i, new float[]{(float) v1[i], (float) v2[i]}, wordVector, 0.0001f);
       }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testImportPretrained_invalid() {
+    try {
+      Scope.enter();
+      Frame pretrained = new TestFrameBuilder()
+              .withName("w2v-pretrained")
+              .withColNames("Word", "V1", "V2", "V3")
+              .withVecTypes(Vec.T_STR, Vec.T_TIME, Vec.T_NUM, Vec.T_CAT)
+              .withDataForCol(0, ar("a"))
+              .withDataForCol(1, ar(System.currentTimeMillis()))
+              .withDataForCol(2, ard(Math.PI))
+              .withDataForCol(3, ar("C1"))
+              .build();
+      ee.expectMessage("All components of word2vec mapping are expected to be numeric. Invalid columns: V1 (type Time), V3 (type Enum)");
+      Word2Vec.fromPretrainedModel(pretrained);
     } finally {
       Scope.exit();
     }

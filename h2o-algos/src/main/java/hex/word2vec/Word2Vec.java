@@ -3,8 +3,14 @@ package hex.word2vec;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.word2vec.Word2VecModel.*;
+import water.Job;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.Log;
+import water.util.StringUtils;
+
+import java.util.LinkedList;
+import java.util.List;
 
 public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecParameters,Word2VecModel.Word2VecOutput> {
   public enum WordModel { SkipGram }
@@ -111,4 +117,30 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
       model.buildModelOutput(result._words, result._syn0);
     }
   }
+
+  public static Job<Word2VecModel> fromPretrainedModel(Frame model) {
+    if (model == null || model.numCols() < 2) {
+      throw new IllegalArgumentException("Frame representing an external word2vec needs to have at least 2 columns.");
+    }
+    if (model.vec(0).get_type() != Vec.T_STR) {
+      throw new IllegalArgumentException("First column is expected to contain the dictionary words and be represented as String, " +
+              "instead got " + model.vec(0).get_type_str());
+    }
+    List<String> colErrors = new LinkedList<>();
+    for (int i = 1; i < model.numCols(); i++) {
+      if (model.vec(i).get_type() != Vec.T_NUM) {
+        colErrors.add(model.name(i) + " (type " + model.vec(i).get_type_str() + ")");
+      }
+    }
+    if (! colErrors.isEmpty()) {
+      throw new IllegalArgumentException("All components of word2vec mapping are expected to be numeric. Invalid columns: " +
+              StringUtils.join(", ", colErrors));
+    }
+
+    Word2VecModel.Word2VecParameters p = new Word2VecModel.Word2VecParameters();
+    p._vec_size = model.numCols() - 1;
+    p._pre_trained = model._key;
+    return new Word2Vec(p).trainModel();
+  }
+
 }
