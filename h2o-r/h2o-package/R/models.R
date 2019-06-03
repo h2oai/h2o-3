@@ -3185,6 +3185,7 @@ h2o.cross_validation_predictions <- function(object) {
 #'  Plots for each feature are saved separately in PNG format, each file receives a suffix equal to the corresponding feature name, e.g. `/home/user/pdp_AGE.png`.
 #'  If the files already exists, they will be overridden. Files are only saves if plot = TRUE (default).
 #' @return Plot and list of calculated mean response tables for each feature requested.
+#' @param row_index Row for which partial dependence will be calculated instead of the whole input frame.
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -3204,7 +3205,7 @@ h2o.cross_validation_predictions <- function(object) {
 #' @export
 
 h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot = TRUE, plot_stddev = TRUE,
-                            weight_column=-1, include_na=FALSE, user_splits=NULL, save_to=NULL) {
+                            weight_column=-1, include_na=FALSE, user_splits=NULL, save_to=NULL, row_index=-1) {
   if(!is(object, "H2OModel")) stop("object must be an H2Omodel")
   if( is(object, "H2OMultinomialModel")) stop("object must be a regression model or binary classfier")
   if( is(object, "H2OOrdinalModel")) stop("object must be a regression model or binary classfier")
@@ -3227,7 +3228,11 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
     else
       weight_column <- match(weight_column, h2o.names(data))-1
   }
-
+  
+  if (!is.numeric(row_index)) {
+    stop("row_index should be numeric.")
+  }
+  
   parms = list()
   parms$cols <- paste0("[", paste (args$x, collapse = ','), "]")
   parms$model_id  <- attr(object, "model_id")
@@ -3235,6 +3240,7 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
   parms$nbins <- nbins
   parms$weight_column_index <- weight_column
   parms$add_missing_na <- include_na
+  parms$row_index = row_index
 
   if (length(user_splits) == 0) {
     parms$user_cols <- NULL
