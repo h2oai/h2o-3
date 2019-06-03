@@ -11,6 +11,7 @@ import org.junit.Test;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.util.IcedHashMap;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -110,6 +111,107 @@ public class TEMojoIntegrationTest extends TestUtil {
       Scope.exit();
     }
   }
+
+  @Test
+  public void check_that_encoding_map_was_stored_and_loaded_properly_and_blending_was_applied_correctly() throws IOException, PredictException  {
+
+    String mojoFileName = "mojo_te.zip";
+    Map<String, Frame> testEncodingMap = null;
+    Scope.enter();
+    try {
+      fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+
+      String responseColumnName = "survived";
+
+      asFactor(fr, responseColumnName);
+
+      // Preparing Target encoding 
+      BlendingParams params = new BlendingParams(3, 1);
+      String[] teColumns = {"home.dest", "embarked"};
+
+      TargetEncoder tec = new TargetEncoder(teColumns, params);
+
+      testEncodingMap = tec.prepareEncodingMap(fr, responseColumnName, null);
+
+      TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
+      targetEncoderParameters.addTargetEncodingMap(testEncodingMap);
+      
+      // Enable blending
+      targetEncoderParameters._withBlending = true;
+      targetEncoderParameters._blendingParams = new BlendingParams(5, 1);
+      
+      
+      targetEncoderParameters.setTrain(fr._key);
+      targetEncoderParameters._response_column = responseColumnName;
+
+      TargetEncoderBuilder job = new TargetEncoderBuilder(targetEncoderParameters);
+
+      TargetEncoderModel targetEncoderModel = job.trainModel().get();
+      Scope.track_generic(targetEncoderModel);
+
+      FileOutputStream modelOutput = new FileOutputStream(mojoFileName);
+      targetEncoderModel.getMojo().writeTo(modelOutput);
+      modelOutput.close();
+      System.out.println("Model has been written down to a file as a mojo: " + mojoFileName);
+
+      // Let's load model that we just have written and use it for prediction.
+      EasyPredictModelWrapper teModelWrapper = null;
+
+      TargetEncoderMojoModel loadedMojoModel = (TargetEncoderMojoModel) MojoModel.load(mojoFileName);
+
+      assertEquals(targetEncoderParameters._withBlending, loadedMojoModel._withBlending);
+      assertEquals(targetEncoderParameters._blendingParams.getK(), loadedMojoModel._inflectionPoint, 1e-5);
+      assertEquals(targetEncoderParameters._blendingParams.getF(), loadedMojoModel._smoothing, 1e-5);
+
+      teModelWrapper = new EasyPredictModelWrapper(loadedMojoModel); // TODO why we store GenModel even though we pass MojoModel?
+
+      // RowData that is not encoded yet
+      RowData rowToPredictFor = new RowData();
+      String homeDestFactorValue = "Montreal  PQ / Chesterville  ON";
+      String embarkedFactorValue = "S";
+
+      rowToPredictFor.put("home.dest", homeDestFactorValue);
+      rowToPredictFor.put("sex", "female");
+      rowToPredictFor.put("age", "2.0");
+      rowToPredictFor.put("fare", "151.55");
+      rowToPredictFor.put("cabin", "C22 C26");
+      rowToPredictFor.put("embarked", embarkedFactorValue);
+      rowToPredictFor.put("sibsp", "1");
+      rowToPredictFor.put("parch", "2");
+      rowToPredictFor.put("pclass", "1");
+
+      teModelWrapper.transformWithTargetEncoding(rowToPredictFor);
+
+      // Check that specified in the test categorical columns have been encoded in accordance with `testEncodingMap`
+      // We reusing static helper methods from TargetEncoderMojoModel as it is not the point of current test to check them.
+      // We want to check here that proper blending params were being used during `.transformWithTargetEncoding()` transformation
+      IcedHashMap<String, Map<String, TargetEncoderModel.TEComponents>> encodingMapConvertedFromFrame = TargetEncoderFrameHelper.convertEncodingMapFromFrameToMap(testEncodingMap);
+      Map<String, Map<String, int[]>> encodingMapMojoRepr = TargetEncoderFrameHelper.convertEncodingMapToMojoFormat(encodingMapConvertedFromFrame);
+
+      Map<String, int[]> homeDestEncodingMap = encodingMapMojoRepr.get("home.dest");
+
+      // Will be checking that encoding map has been written and loaded correctly through the computation of the mean
+      double expectedPriorMean = TargetEncoderMojoModel.computePriorMean(homeDestEncodingMap); 
+
+      int[] encodingComponentsForHomeDest = homeDestEncodingMap.get(homeDestFactorValue);
+      double posteriorMean = (double) encodingComponentsForHomeDest[0] / encodingComponentsForHomeDest[1];
+
+      double expectedLambda = TargetEncoderMojoModel.computeLambda(encodingComponentsForHomeDest[1], targetEncoderParameters._blendingParams.getK(), targetEncoderParameters._blendingParams.getF());
+      
+      double expectedBlendedEncoding = TargetEncoderMojoModel.computeBlendedEncoding(expectedLambda, posteriorMean, expectedPriorMean);
+
+      assertEquals(expectedBlendedEncoding, (double) rowToPredictFor.get("home.dest_te"), 1e-5);
+
+    } finally {
+      if(testEncodingMap != null)
+        TargetEncoderFrameHelper.encodingMapCleanUp(testEncodingMap);
+
+      File mojoFile = new File(mojoFileName);
+      if(mojoFile.exists()) mojoFile.delete();
+      Scope.exit();
+    }
+  }
+  
 
   @After
   public void afterEach() {

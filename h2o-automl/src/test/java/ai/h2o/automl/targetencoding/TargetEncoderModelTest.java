@@ -118,7 +118,7 @@ public class TargetEncoderModelTest extends TestUtil implements ModelStubs {
       for (Map.Entry<String, Frame> entry : encodingMap.entrySet()) {
         String key = entry.getKey();
         Frame encodingsForParticularColumn = entry.getValue();
-        IcedHashMap<String, TargetEncoderModel.TEComponents> table = new TargetEncoderModel.FrameToTETable().doAll(encodingsForParticularColumn).getResult().table;
+        IcedHashMap<String, TargetEncoderModel.TEComponents> table = new TargetEncoderFrameHelper.FrameToTETable().doAll(encodingsForParticularColumn).getResult().table;
 
         transformedEncodingMap.put(key, table);
       }
@@ -129,18 +129,18 @@ public class TargetEncoderModelTest extends TestUtil implements ModelStubs {
     //DFork
     long startTimeDFork = System.currentTimeMillis();
     for (int i = 0; i < numberOfIterations; i++) {
-      Map<String, TargetEncoderModel.FrameToTETable> tasks = new HashMap<>();
+      Map<String, TargetEncoderFrameHelper.FrameToTETable> tasks = new HashMap<>();
 
       for (Map.Entry<String, Frame> entry : encodingMap.entrySet()) {
         Frame encodingsForParticularColumn = entry.getValue();
-        TargetEncoderModel.FrameToTETable task = new TargetEncoderModel.FrameToTETable().dfork(encodingsForParticularColumn);
+        TargetEncoderFrameHelper.FrameToTETable task = new TargetEncoderFrameHelper.FrameToTETable().dfork(encodingsForParticularColumn);
 
         tasks.put(entry.getKey(), task);
       }
 
       IcedHashMap<String, Map<String, TargetEncoderModel.TEComponents>> transformedEncodingMap = new IcedHashMap<>();
 
-      for (Map.Entry<String, TargetEncoderModel.FrameToTETable> taskEntry : tasks.entrySet()) {
+      for (Map.Entry<String, TargetEncoderFrameHelper.FrameToTETable> taskEntry : tasks.entrySet()) {
         transformedEncodingMap.put(taskEntry.getKey(), taskEntry.getValue().getResult().table);
       }
     }

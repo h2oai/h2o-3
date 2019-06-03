@@ -108,6 +108,72 @@ public class TargetEncoderFrameHelper {
     frame.add(name, AstKFold.kfoldColumn(foldVec, nfolds, seed == -1 ? new Random().nextLong() : seed));
     return frame;
   }
+  
+  static IcedHashMap<String, Map<String, TargetEncoderModel.TEComponents>> convertEncodingMapFromFrameToMap(Map<String, Frame> encodingMap) {
+    IcedHashMap<String, Map<String, TargetEncoderModel.TEComponents>> transformedEncodingMap = new IcedHashMap<>();
+    Map<String, FrameToTETable> tasks = new HashMap<>();
+
+    for (Map.Entry<String, Frame> entry : encodingMap.entrySet()) {
+
+      Frame encodingsForParticularColumn = entry.getValue();
+      FrameToTETable task = new FrameToTETable().dfork(encodingsForParticularColumn);
+
+      tasks.put(entry.getKey(), task);
+    }
+
+    for (Map.Entry<String, FrameToTETable> taskEntry : tasks.entrySet()) {
+      transformedEncodingMap.put(taskEntry.getKey(), taskEntry.getValue().getResult().table);
+    }
+    return transformedEncodingMap;
+  }
+
+  // TODO we probably don't need intermediate representation with TEComponents. Refactor
+  public static Map<String, Map<String, int[]>> convertEncodingMapToMojoFormat(IcedHashMap<String, Map<String, TargetEncoderModel.TEComponents>> em) {
+
+    IcedHashMap<String, Map<String, int[]>> transformedEncodingMap = null;
+
+    transformedEncodingMap = new IcedHashMap<>();
+    for (Map.Entry<String, Map<String, TargetEncoderModel.TEComponents>> entry : em.entrySet()) {
+      String columnName = entry.getKey();
+      Map<String, TargetEncoderModel.TEComponents> encodingsForParticularColumn = entry.getValue();
+      Map<String, int[]> encodingsForColumnMap = new HashMap<>();
+      for (Map.Entry<String, TargetEncoderModel.TEComponents> kv : encodingsForParticularColumn.entrySet()) {
+        encodingsForColumnMap.put(kv.getKey(), kv.getValue().getNumeratorAndDenominator());
+      }
+      transformedEncodingMap.put(columnName, encodingsForColumnMap);
+    }
+    return transformedEncodingMap;
+  }
+
+
+  static class FrameToTETable extends MRTask<FrameToTETable> {
+    IcedHashMap<String, TargetEncoderModel.TEComponents> table = new IcedHashMap<>();
+
+    public FrameToTETable() { }
+
+    @Override
+    public void map(Chunk[] cs) {
+      Chunk categoricalChunk = cs[0];
+      String[] domain = categoricalChunk.vec().domain();
+      int numRowsInChunk = categoricalChunk._len;
+      // Note: we don't store fold column as we need only to be able to give predictions for data which is not encoded yet. 
+      // We need folds only for the case when we applying TE to the frame which we are going to train our model on. 
+      // But this is done once and then we don't need them anymore.
+      for (int i = 0; i < numRowsInChunk; i++) {
+        int[] numeratorAndDenominator = new int[2];
+        numeratorAndDenominator[0] = (int) cs[1].at8(i);
+        numeratorAndDenominator[1] = (int) cs[2].at8(i);
+        int factor = (int) categoricalChunk.at8(i);
+        String factorName = domain[factor];
+        table.put(factorName, new TargetEncoderModel.TEComponents(numeratorAndDenominator));
+      }
+    }
+
+    @Override
+    public void reduce(FrameToTETable mrt) {
+      table.putAll(mrt.table);
+    }
+  }
 
   /**
    * @return Frame that is registered in DKV

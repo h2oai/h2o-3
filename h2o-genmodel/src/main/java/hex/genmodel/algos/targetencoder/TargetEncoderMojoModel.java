@@ -31,10 +31,10 @@ public class TargetEncoderMojoModel extends MojoModel implements FeatureTransfor
         
         int[] correspondingNumAndDen = encodings.get(originalValue);
 
-        double numberOfRowsInCurrentCategory = correspondingNumAndDen[1];
-        double lambda = 1.0 / (1 + Math.exp((_inflectionPoint - numberOfRowsInCurrentCategory) / _smoothing));
+        int numberOfRowsInCurrentCategory = correspondingNumAndDen[1];
+        double lambda = computeLambda(numberOfRowsInCurrentCategory, _inflectionPoint, _smoothing);
         double posteriorMean = (double) correspondingNumAndDen[0] / correspondingNumAndDen[1];
-        double blendedValue = lambda * posteriorMean + (1 - lambda) * _priorMean;
+        double blendedValue = computeBlendedEncoding(lambda, posteriorMean, _priorMean);
         
         data.put(columnName + "_te", blendedValue);
       }
@@ -44,10 +44,19 @@ public class TargetEncoderMojoModel extends MojoModel implements FeatureTransfor
     return data;
   }
 
+  public static double computeLambda(int nrows, double inflectionPoint, double smoothing) {
+    return 1.0 / (1 + Math.exp((inflectionPoint - nrows) / smoothing));
+  }
+  
+  public static double computeBlendedEncoding(double lambda, double posteriorMean, double priorMean) {
+    return lambda * posteriorMean + (1 - lambda) * priorMean;
+  }
+  
+  
   /**
    * Computes prior mean i.e. unconditional mean of the response. Should be the same for all columns
    */
-  double computePriorMean(Map<String, int[]> encodingMap) {
+  public static double computePriorMean(Map<String, int[]> encodingMap) {
     int sumOfNumerators = 0;
     int sumOfDenominators = 0;
     Iterator<int[]> iterator = encodingMap.values().iterator();
