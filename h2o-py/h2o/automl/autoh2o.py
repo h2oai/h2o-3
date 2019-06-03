@@ -569,12 +569,12 @@ class H2OAutoML(object):
         leaderboard = None
         if should_fetch('leaderboard'):
             leaderboard = H2OAutoML._fetch_table(state_json['leaderboard_table'], key=project_name+"_leaderboard", progress_bar=False)
-            leaderboard = h2o.assign(leaderboard[1:], project_name+"_lbpy")  # removing index and assign proper id to ensure persistence on backend
+            leaderboard = h2o.assign(leaderboard[1:], project_name+"_leaderboard")  # removing index and reassign id to ensure persistence on backend
 
         event_log = None
         if should_fetch('event_log'):
             event_log = H2OAutoML._fetch_table(state_json['event_log_table'], key=project_name+"_eventlog", progress_bar=False)
-            event_log = h2o.assign(event_log[1:], project_name+"_elpy")  # removing index and assign proper id to ensure persistence on backend
+            event_log = h2o.assign(event_log[1:], project_name+"_eventlog")  # removing index and reassign id to ensure persistence on backend
 
         return dict(
             project_name=project_name,
