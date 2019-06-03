@@ -22,6 +22,6 @@ def test_get_automl():
     assert aml.project_name == get_aml["project_name"]
     assert aml.leader.model_id == get_aml["leader"].model_id
     assert aml.leaderboard.get_frame_data() == get_aml["leaderboard"].get_frame_data()
-    assert aml.event_log.dim == get_aml["event_log"].dim
+    assert aml.event_log.get_frame_data() == get_aml["event_log"].get_frame_data()
 
 pyunit_utils.run_tests([test_get_automl])

@@ -99,8 +99,7 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
       eventLog = new EventLog(autoML._key);
     }
     this.event_log = new EventLogV99().fillFromImpl(eventLog);
-    String tableHeader = (autoML._key == null ? "(new)" : autoML._key.toString());
-    this.event_log_table = new TwoDimTableV3().fillFromImpl(eventLog.toTwoDimTable(tableHeader));
+    this.event_log_table = new TwoDimTableV3().fillFromImpl(eventLog.toTwoDimTable());
 
     return this;
   }

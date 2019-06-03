@@ -1,6 +1,5 @@
 package water.automl.api.schemas3;
 
-import ai.h2o.automl.AutoML;
 import ai.h2o.automl.EventLog;
 import water.api.API;
 import water.api.Schema;
