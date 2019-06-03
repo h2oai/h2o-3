@@ -117,7 +117,7 @@ Defining a GLM Model
 
 -  `gradient_epsilon <algo-params/gradient_epsilon.html>`__: (For L-BFGS only) Specify a threshold for convergence. If the objective value (using the L-infinity norm) is less than this threshold, the model is converged.
 
--  `link <algo-params/link.html>`__: Specify a link function (Identity, Family_Default, Logit, Log, Inverse, Tweedie, Ologit, Oprobit, and Ologlog).
+-  `link <algo-params/link.html>`__: Specify a link function (Identity, Family_Default, Logit, Log, Inverse, Tweedie, or Ologit).
 
    -  If the family is **Gaussian**, then **Identity**, **Log**, and **Inverse** are supported.
    -  If the family is **Binomial**, then **Logit** is supported.
@@ -126,7 +126,7 @@ Defining a GLM Model
    -  If the family is **Tweedie**, then only **Tweedie** is supported.
    -  If the family is **Multinomial**, then only **Family_Default** is supported. (This defaults to ``multinomial``.)
    -  If the family is **Quasibinomial**, then only **Logit** is supported.
-   -  If the family is **Ordinal**, then only **Ologit**, **Oprobit**, and **Ologlog** are supported. (Note that only Ologit is available for Ordinal regression.)
+   -  If the family is **Ordinal**, then only **Ologit** is supported
    -  If the family is **Negative Binomial**, then only **Log** and **Identity** are supported.
 
 -  `prior <algo-params/prior.html>`__: Specify prior probability for p(y==1). Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. This value defaults to -1 and must be a value in the range (0,1).
@@ -459,35 +459,34 @@ Links
 
 As indicated previously, a link function :math:`g`: :math:`E(y) = \mu = {g^-1}(\eta)` relates the expected value of the response :math:`\mu` to the linear component :math:`\eta`. The link function can be any monotonic differentiable function. This relaxes the constraints on the additivity of the covariates, and it allows the response to belong to a restricted range of values depending on the chosen transformation :math:`g`.
 
-H2O's GLM supports the following link functions: Family_Default, Identity, Logit, Log, Inverse, Tweedie, Ologit, Oprobit, and Ologlog. 
+H2O's GLM supports the following link functions: Family_Default, Identity, Logit, Log, Inverse, Tweedie, and Ologit. 
 
 The following table describes the allowed Family/Link combinations.
 
-+-------------------+-------------------------------------------------------------+--------+---------+---------+
-| **Family**        | **Link Function**                                                                        |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
-|                   | Family_Default | Identity | Logit | Log | Inverse | Tweedie | Ologit | Oprobit | Ologlog |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
-| Binomial          | X              |          | X     |     |         |         |        |         |         |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
-| Quasibinomial     | X              |          | X     |     |         |         |        |         |         |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
-| Multinomial       | X              |          |       |     |         |         |        |         |         |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
-| Ordinal           | X              |          |       |     |         |         | X      | X*      | X*      |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
-| Gaussian          | X              | X        |       | X   | X       |         |        |         |         |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
-| Poisson           | X              | X        |       | X   |         |         |        |         |         |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
-| Gamma             | X              | X        |       | X   | X       |         |        |         |         |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
-| Tweedie           | X              |          |       |     |         | X       |        |         |         |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
-| Negative Binomial | X              | X        |       | X   |         |         |        |         |         |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
++-------------------+-------------------------------------------------------------+--------+
+| **Family**        | **Link Function**                                                    |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+
+|                   | Family_Default | Identity | Logit | Log | Inverse | Tweedie | Ologit |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Binomial          | X              |          | X     |     |         |         |        |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Quasibinomial     | X              |          | X     |     |         |         |        |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Multinomial       | X              |          |       |     |         |         |        |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Ordinal           | X              |          |       |     |         |         | X      |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Gaussian          | X              | X        |       | X   | X       |         |        |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Poisson           | X              | X        |       | X   |         |         |        |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Gamma             | X              | X        |       | X   | X       |         |        |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Tweedie           | X              |          |       |     |         | X       |        |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Negative Binomial | X              | X        |       | X   |         |         |        |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+
 
-\* Supported with ordinal classification only; not available for ordinal regression.
 
 Regularization
 ~~~~~~~~~~~~~~
