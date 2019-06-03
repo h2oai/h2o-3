@@ -116,6 +116,8 @@ public class MojoIntegrationTest {
   /**
    * Custom Mojo writer with categorical levels serialized "the old way" - one categorical per row.
    * This approach made it impossible to represent multi-level categoricals.
+   * 
+   * No need to override `writekv("multiline_categoricals", true);` to false, as the DFA should be able to recognize a line not beginning with a quote.
    */
   private static final class OldDomainSerializationGBMMojoWriter extends GbmMojoWriter {
 

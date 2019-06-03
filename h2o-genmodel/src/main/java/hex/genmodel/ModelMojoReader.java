@@ -116,6 +116,10 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     return ((RawValue) val).parse(defVal);
   }
 
+  protected boolean existsInKV(final String key) {
+    return _lkv.containsKey(key);
+  }
+
   /**
    * Retrieve binary data previously saved to the mojo file using `writeblob(key, blob)`.
    */
@@ -275,6 +279,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
    * @throws IOException
    */
   private String[][] parseModelDomains(int n_columns) throws IOException {
+    final boolean multilineCategoricals = existsInKV("multiline_categoricals") && (boolean) readkv("multiline_categoricals"); // The key might not exist in older MOJOs
     String[][] domains = new String[n_columns][];
     // noinspection unchecked
     Map<Integer, String> domass = (Map<Integer, String>) _lkv.get("[domains]");
@@ -303,7 +308,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
             switch (state) {
               case NEW_CATEGORICAL:
                 if (c == -1) break parsingLoop;
-                if (c == QUOTES) { // Quotes at the beginning imply quoted categorical.
+                if (c == QUOTES && multilineCategoricals) { // Quotes at the beginning imply quoted categorical.
                   state = States.QUOTED_CATEGORICAL;
                   quoteCount++;
                   break states;
