@@ -120,11 +120,11 @@ public class EventLogEntry<V extends Serializable> extends Iced {
   private V _value;
   private Format _valueFormatter;
 
+  public Key<AutoML> getAutomlKey() { return _automlKey; }
+
   public long getTimestamp() {
     return _timestamp;
   }
-
-  public Key<AutoML> getAutomlKey() { return _automlKey; }
 
   public Level getLevel() {
     return _level;
@@ -151,8 +151,8 @@ public class EventLogEntry<V extends Serializable> extends Iced {
   }
 
   public EventLogEntry(Key<AutoML> automlKey, Level level, Stage stage, String message) {
-    _timestamp = System.currentTimeMillis();
     _automlKey = automlKey;
+    _timestamp = System.currentTimeMillis();
     _level = level;
     _stage = stage;
     _message = message;
@@ -168,7 +168,7 @@ public class EventLogEntry<V extends Serializable> extends Iced {
     _valueFormatter = formatter;
   }
 
-  public void addTwoDimTableRow(TwoDimTable table, int row) {
+  void addTwoDimTableRow(TwoDimTable table, int row) {
     int col = 0;
     table.set(row, col++, timeFormat.format(new Date(_timestamp)));
     table.set(row, col++, _level);

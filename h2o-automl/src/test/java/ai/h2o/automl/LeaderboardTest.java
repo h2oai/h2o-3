@@ -25,7 +25,7 @@ public class LeaderboardTest extends water.TestUtil {
     Leaderboard lb = null;
     EventLog ufb = new EventLog(dummy);
     try {
-      lb = Leaderboard.getOrMakeLeaderboard("dummy_lb_no_sort_metric", ufb, new Frame(), null);
+      lb = Leaderboard.getOrMake("dummy_lb_no_sort_metric", ufb, new Frame(), null);
 
       TwoDimTable table = lb.toTwoDimTable();
       Assert.assertNotNull("empty leaderboard should also produce a TwoDimTable", table);
@@ -41,7 +41,7 @@ public class LeaderboardTest extends water.TestUtil {
     Leaderboard lb = null;
     EventLog ufb = new EventLog(dummy);
     try {
-      lb = Leaderboard.getOrMakeLeaderboard("dummy_lb_logloss_sort_metric", ufb, new Frame(), "logloss");
+      lb = Leaderboard.getOrMake("dummy_lb_logloss_sort_metric", ufb, new Frame(), "logloss");
 
       TwoDimTable table = lb.toTwoDimTable();
       Assert.assertNotNull("empty leaderboard should also produce a TwoDimTable", table);
@@ -69,7 +69,7 @@ public class LeaderboardTest extends water.TestUtil {
       GBM job = new GBM(parms);
       model = job.trainModel().get();
       
-      lb = Leaderboard.getOrMakeLeaderboard("dummy_rank_tsv", ufb, null, "mae");
+      lb = Leaderboard.getOrMake("dummy_rank_tsv", ufb, null, "mae");
       lb.addModel(model);
       Assert.assertEquals("Error\n[0.19959320678410908, 0.44675855535636816, 0.19959320678410908, 0.3448260574357465, 0.31468498072970547]\n", lb.rankTsv()); 
     } finally {

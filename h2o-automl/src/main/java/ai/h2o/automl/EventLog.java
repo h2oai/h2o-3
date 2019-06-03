@@ -10,7 +10,6 @@ import water.util.TwoDimTable;
 
 import java.io.Serializable;
 
-import static water.Key.make;
 
 /**
  * EventLog instances store significant events occurring during an AutoML run.
@@ -23,9 +22,23 @@ public class EventLog extends Keyed<EventLog> {
 
   public EventLog(Key<AutoML> automlKey) {
     _automlKey = automlKey;
-    _key = make(idForRun(automlKey));
+    _key = Key.make(idForRun(automlKey));
     _events = new EventLogEntry[0];
-    DKV.put(this);
+  }
+
+  static EventLog getOrMake(Key<AutoML> runKey) {
+    EventLog eventLog = DKV.getGet(Key.make(idForRun(runKey)));
+    if (null == eventLog) {
+      eventLog = new EventLog(runKey);
+    }
+    DKV.put(eventLog);
+    return eventLog;
+  }
+
+  static EventLog make(Key<AutoML> runKey) {
+    EventLog eventLog = new EventLog(runKey);
+    DKV.put(eventLog);
+    return eventLog;
   }
 
   private static String idForRun(Key<AutoML> runKey) {
@@ -76,7 +89,8 @@ public class EventLog extends Keyed<EventLog> {
   }
 
   public TwoDimTable toTwoDimTable() {
-    return toTwoDimTable("AutoML Event Log");
+    String name = _automlKey == null ? "(new)" : _automlKey.toString();
+    return toTwoDimTable("Event Log for AutoML:" + name);
   }
 
   public TwoDimTable toTwoDimTable(String tableHeader) {
