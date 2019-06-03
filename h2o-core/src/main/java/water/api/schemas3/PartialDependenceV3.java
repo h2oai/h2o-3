@@ -17,6 +17,10 @@ public class PartialDependenceV3 extends SchemaV3<PartialDependence, PartialDepe
   public KeyV3.FrameKeyV3 frame_id;
 
   @SuppressWarnings("unused")
+  @API(help="Row Index", direction=API.Direction.INOUT)
+  public String[] row_index;
+  
+  @SuppressWarnings("unused")
   @API(help="Column(s)", direction=API.Direction.INOUT)
   public String[] cols;
 
