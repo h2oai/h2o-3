@@ -1,16 +1,15 @@
 package hex;
 
-import ai.h2o.automl.targetencoding.TargetEncoderBuilder;
 import ai.h2o.automl.targetencoding.TargetEncoderModel;
-import hex.Model;
-import hex.ModelMetrics;
-import hex.ModelMojoWriter;
+import org.junit.Ignore;
 import water.H2O;
 import water.Key;
 
 import java.io.IOException;
 
+@Ignore
 public interface ModelStubs {
+  
   public class TestModel extends TargetEncoderModel {
     public TestModel( Key key, TargetEncoderModel.TargetEncoderParameters p, TargetEncoderModel.TargetEncoderOutput o ) { super(key,p,o); }
     @Override
@@ -23,11 +22,6 @@ public interface ModelStubs {
       public String fullName() { return "A"; }
       public String javaName() { return TestModel.class.getName(); }
       @Override public long progressUnits() { return 0; }
-    }
-    public static class TestOutput extends TargetEncoderModel.TargetEncoderOutput {
-      public TestOutput(TargetEncoderBuilder b) {
-        super(b);
-      }
     }
 
     @Override

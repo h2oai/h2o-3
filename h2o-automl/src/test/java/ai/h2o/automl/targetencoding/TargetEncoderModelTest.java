@@ -3,7 +3,7 @@ package ai.h2o.automl.targetencoding;
 import hex.ModelStubs;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.Key;
+import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.util.IcedHashMap;
@@ -51,41 +51,54 @@ public class TargetEncoderModelTest extends TestUtil implements ModelStubs {
 
   @Test
   public void addTargetEncodingMap() {
-    TestModel.TestParam p = new TestModel.TestParam();
-    Map<String, Frame> teMap = getTEMapForTitanicDataset(false);
-    p.addTargetEncodingMap(teMap);
+    Scope.enter();
+    try {
+      TestModel.TestParam p = new TestModel.TestParam();
+      Map<String, Frame> teMap = getTEMapForTitanicDataset(false);
+      p.addTargetEncodingMap(teMap);
 
-    TestModel.TestOutput o = new TestModel.TestOutput(new TargetEncoderBuilder(p));
+      TargetEncoderBuilder job = new TargetEncoderBuilder(p);
 
-    TestModel testModel = new TestModel(Key.make(),p,o);
+      TargetEncoderModel targetEncoderModel = job.trainModel().get();
+      Scope.track_generic(targetEncoderModel);
 
-    checkEncodings(testModel._output._target_encoding_map);
-    TargetEncoderFrameHelper.encodingMapCleanUp(teMap);
+      checkEncodings(targetEncoderModel._output._target_encoding_map);
+      TargetEncoderFrameHelper.encodingMapCleanUp(teMap);
+    } finally {
+      Scope.exit();
+    }
   }
 
- @Test public void getMojoFoldCase() {
-   TestModel.TestParam p = new TestModel.TestParam();
-   Map<String, Frame> teMap = getTEMapForTitanicDataset(true);
-   
-   // Note:  following block should be used by user if the want to add  encoding map to model and to mojo. 
-   // Following iteration over encoding maps and regrouping without folds could be hidden inside `model.addTargetEncodingMap()` 
-   // but we need TargetEncoder in h2o-core package then so that we can reuse its functionality.
-   // We need to move Target encoding to the module that `h2o-core` will be depending on. That way we can hide grouping logic into `addTargetEncoding` method.
-   for(Map.Entry<String, Frame> entry : teMap.entrySet()) {
-     Frame grouped = TargetEncoder.groupingIgnoringFoldColumn(foldColumnNameForTE, entry.getValue(), entry.getKey());
-     entry.getValue().delete();
-     teMap.put(entry.getKey(), grouped);
-   }
-   p.addTargetEncodingMap(teMap);
+  @Test
+  public void getMojoFoldCase() {
+    Scope.enter();
+    Map<String, Frame> teMap = null;
+    try {
+      TestModel.TestParam p = new TestModel.TestParam();
+      teMap = getTEMapForTitanicDataset(true);
 
-   TestModel.TestOutput o = new TestModel.TestOutput(new TargetEncoderBuilder(p));
+      // Following iteration over encoding maps and regrouping without folds could be hidden inside `model.addTargetEncodingMap()` 
+      // but we need TargetEncoder in h2o-core package  so that we can reuse functionality.
+      // We need to move Target encoding to the module that `h2o-core` will be depending on. That way we can hide grouping logic into `addTargetEncoding` method.
+      for (Map.Entry<String, Frame> entry : teMap.entrySet()) {
+        Frame grouped = TargetEncoder.groupingIgnoringFoldColumn(foldColumnNameForTE, entry.getValue(), entry.getKey());
+        entry.getValue().delete();
+        teMap.put(entry.getKey(), grouped);
+      }
+      p.addTargetEncodingMap(teMap);
 
-   TestModel testModel = new TestModel(Key.make(),p,o);
+      TargetEncoderBuilder job = new TargetEncoderBuilder(p);
 
-    Map<String, Map<String, int[]>> targetEncodingMap = testModel._output._target_encoding_map;
+      TargetEncoderModel targetEncoderModel = job.trainModel().get();
+      Scope.track_generic(targetEncoderModel);
 
-    checkEncodingsInts(targetEncodingMap);
-    TargetEncoderFrameHelper.encodingMapCleanUp(teMap);
+      Map<String, Map<String, int[]>> targetEncodingMap = targetEncoderModel._output._target_encoding_map;
+
+      checkEncodingsInts(targetEncodingMap);
+    } finally {
+      TargetEncoderFrameHelper.encodingMapCleanUp(teMap);
+      Scope.exit();
+    }
   }
   
   // Checking that dfork is faster

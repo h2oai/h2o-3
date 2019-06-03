@@ -19,7 +19,7 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
-public class MojoTESupportIntegrationTest extends TestUtil {
+public class TEMojoIntegrationTest extends TestUtil {
 
   @BeforeClass
   public static void setup() {
@@ -29,7 +29,7 @@ public class MojoTESupportIntegrationTest extends TestUtil {
   private Frame fr = null;
 
   @Test
-  public void withTargetEncodingsFromGenModelEnd2EndTest() throws IOException, PredictException  {
+  public void withoutBlending() throws IOException, PredictException  {
 
     String mojoFileName = "mojo_te.zip";
     Map<String, Frame> testEncodingMap = null;
@@ -51,6 +51,7 @@ public class MojoTESupportIntegrationTest extends TestUtil {
       
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
       targetEncoderParameters.addTargetEncodingMap(testEncodingMap);
+      targetEncoderParameters._withBlending = false;
       targetEncoderParameters.setTrain(fr._key);
       targetEncoderParameters._response_column = responseColumnName;
 
@@ -62,14 +63,14 @@ public class MojoTESupportIntegrationTest extends TestUtil {
       FileOutputStream modelOutput = new FileOutputStream(mojoFileName);
       targetEncoderModel.getMojo().writeTo(modelOutput);
       modelOutput.close();
-      System.out.println("Model written out as a mojo to file " + mojoFileName);
+      System.out.println("Model has been written down to a file as a mojo: " + mojoFileName);
 
       // Let's load model that we just have written and use it for prediction.
-      EasyPredictModelWrapper modelWrapper = null;
+      EasyPredictModelWrapper teModelWrapper = null;
 
       TargetEncoderMojoModel loadedMojoModel = (TargetEncoderMojoModel) MojoModel.load(mojoFileName);
       
-      modelWrapper = new EasyPredictModelWrapper(loadedMojoModel); // TODO why we store GenModel even though we pass MojoModel?
+      teModelWrapper = new EasyPredictModelWrapper(loadedMojoModel); // TODO why we store GenModel even though we pass MojoModel?
 
       // RowData that is not encoded yet
       RowData rowToPredictFor = new RowData();
@@ -86,7 +87,7 @@ public class MojoTESupportIntegrationTest extends TestUtil {
       rowToPredictFor.put("parch", "2");
       rowToPredictFor.put("pclass", "1");
 
-      modelWrapper.transformWithTargetEncoding(rowToPredictFor);
+      teModelWrapper.transformWithTargetEncoding(rowToPredictFor);
 
       //Check that specified in the test categorical columns have been encoded in accordance with targetEncodingMap
       Map<String, Map<String, int[]>> targetEncodingMap = loadedMojoModel._targetEncodingMap;

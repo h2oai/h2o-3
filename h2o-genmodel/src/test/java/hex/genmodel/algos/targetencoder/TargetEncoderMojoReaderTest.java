@@ -1,27 +1,30 @@
-package hex.genmodel;
+package hex.genmodel.algos.targetencoder;
 
-import hex.genmodel.algos.targetencoder.TargetEncoderMojoReader;
+import hex.genmodel.MojoReaderBackend;
 import org.junit.Test;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.Map;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-public class ModelMojoReaderTest {
-
+public class TargetEncoderMojoReaderTest {
+  
   public static class TestMojoReader extends TargetEncoderMojoReader {
     MojoReaderBackend _mojoReaderBackend;
-    
+
     public TestMojoReader(MojoReaderBackend mojoReaderBackend) {
       _mojoReaderBackend = mojoReaderBackend;
     }
 
-    @Override public String getModelName() { return null; } 
-    @Override protected void readModelData() throws IOException { } 
+    @Override public String getModelName() { return null; }
+    @Override protected void readModelData() throws IOException { }
     @Override public String mojoVersion() { return null; }
 
     @Override
@@ -29,10 +32,10 @@ public class ModelMojoReaderTest {
       return _mojoReaderBackend;
     }
   }
-  
+
   @Test
   public void parseTargetEncodingMap() throws Exception {
-    
+
     String test = new StringBuilder()
             .append("[embarked]\n")
             .append("C = 2 4\n")
@@ -49,10 +52,10 @@ public class ModelMojoReaderTest {
 
     when(mojoReaderBackendMock.exists(anyString())).thenReturn(true);
     when(mojoReaderBackendMock.getTextFile(anyString())).thenReturn(encodingsBR);
-    
+
     TestMojoReader testMojoReader = new TestMojoReader(mojoReaderBackendMock);
 
-    Map<String, Map<String, int[]>> parsedEncodings = testMojoReader.parseTargetEncodingMap("pathToFileWithEncodings");
+    Map<String, Map<String, int[]>> parsedEncodings = testMojoReader.parseEncodingMap("pathToFileWithEncodings");
     assertArrayEquals(parsedEncodings.get("embarked").get("C"), new int[]{2, 4});
     assertArrayEquals(parsedEncodings.get("sex").get("Male"), new int[]{3, 42});
 

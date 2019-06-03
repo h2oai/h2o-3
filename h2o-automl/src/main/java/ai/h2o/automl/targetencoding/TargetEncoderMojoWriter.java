@@ -19,6 +19,7 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
 
   @Override
   protected void writeModelData() throws IOException {
+    writeTargetEncodingInfo();
     writeTargetEncodingMap();
   }
 
@@ -28,12 +29,24 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
   }
 
   /**
+   * Writes target encoding's extra info
+   */
+  private void writeTargetEncodingInfo() throws IOException {
+    TargetEncoderModel.TargetEncoderParameters teParams = ((TargetEncoderModel) model)._output._teParams;
+    writekv("with_blending", teParams._withBlending);
+    if(teParams._withBlending) {
+      writekv("inflection_point", teParams._blendingParams.getK());
+      writekv("smoothing", teParams._blendingParams.getF());
+    }
+  }
+
+  /**
    * Writes encoding map into the file line by line
    */
   private void writeTargetEncodingMap() throws IOException {
     Map<String, Map<String, int[]>> targetEncodingMap = ((TargetEncoderModel) model)._output._target_encoding_map;
     if(targetEncodingMap != null) {
-      startWritingTextFile("feature_engineering/target_encoding.ini");
+      startWritingTextFile("feature_engineering/target_encoding/encoding_map.ini");
       for (Map.Entry<String, Map<String, int[]>> columnEncodingsMap : targetEncodingMap.entrySet()) {
         writeln("[" + columnEncodingsMap.getKey() + "]");
         Map<String, int[]> encodings = columnEncodingsMap.getValue();

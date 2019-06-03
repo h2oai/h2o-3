@@ -1,13 +1,10 @@
 package hex.genmodel.algos.targetencoder;
 
 import hex.genmodel.ModelMojoReader;
-import hex.genmodel.algos.word2vec.Word2VecMojoModel;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -21,15 +18,20 @@ public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoMo
 
   @Override
   protected void readModelData() throws IOException {
-    _model._targetEncodingMap = parseTargetEncodingMap("feature_engineering/target_encoding.ini");
+    _model._withBlending = readkv("with_blending");
+    if(_model._withBlending) {
+      _model._inflectionPoint = readkv("inflection_point");
+      _model._smoothing = readkv("smoothing");
+    }
+    _model._targetEncodingMap = parseEncodingMap("feature_engineering/target_encoding/encoding_map.ini");
   }
 
   @Override
   protected TargetEncoderMojoModel makeModel(String[] columns, String[][] domains, String responseColumn) {
     return new TargetEncoderMojoModel(columns, domains, responseColumn);
   }
-
-  public Map<String, Map<String, int[]>> parseTargetEncodingMap(String pathToSource) throws IOException {
+  
+  public Map<String, Map<String, int[]>> parseEncodingMap(String pathToSource) throws IOException {
     Map<String, Map<String, int[]>> encodingMap = null;
 
     if(getMojoReaderBackend().exists(pathToSource)) {
