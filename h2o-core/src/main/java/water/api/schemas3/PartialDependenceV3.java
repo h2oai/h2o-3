@@ -18,7 +18,7 @@ public class PartialDependenceV3 extends SchemaV3<PartialDependence, PartialDepe
 
   @SuppressWarnings("unused")
   @API(help="Row Index", direction=API.Direction.INOUT)
-  public String[] row_index;
+  public long row_index;
   
   @SuppressWarnings("unused")
   @API(help="Column(s)", direction=API.Direction.INOUT)
