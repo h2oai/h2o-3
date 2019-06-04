@@ -5,7 +5,7 @@ test.h2o.retain <- function() {
   
   data <- h2o.importFile(path = locate("smalldata/iris/iris_wheader.csv"))
   
-  h2o.retain(retained_elements = c(data))
+  h2o.removeAll(retained_elements = c(data))
   
   expect_false(is.null(h2o.getFrame(h2o.getId(data))))
   
@@ -16,11 +16,11 @@ test.h2o.retain <- function() {
       training_frame = data
     )
   
-  h2o.retain(retained_elements = c(data, model))
+  h2o.removeAll(retained_elements = c(data, model))
   expect_false(is.null(h2o.getFrame(h2o.getId(data))))
   expect_false(is.null(h2o.getModel(model@model_id)))
   
-  h2o.retain(c())
+  h2o.removeAll()
   
 }
 
