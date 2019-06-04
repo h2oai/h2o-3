@@ -112,8 +112,10 @@ class H2OEstimator(ModelBase):
     def _train(self, x=None, y=None, training_frame=None, offset_column=None, fold_column=None,
               weights_column=None, validation_frame=None, max_runtime_secs=None, ignored_columns=None,
               model_id=None, verbose=False, extend_parms_fn=None):
-        assert_is_type(training_frame, None, H2OFrame, str)
-        assert_is_type(validation_frame, None, H2OFrame, str)
+        has_default_training_frame = self._parms.get("training_frame") is not None
+        training_frame = H2OFrame._validate(training_frame, 'training_frame',
+                                            required=self._requires_training_frame() and not has_default_training_frame)
+        validation_frame = H2OFrame._validate(validation_frame, 'validation_frame')
         assert_is_type(y, None, int, str)
         assert_is_type(x, None, int, str, [str, int], {str, int})
         assert_is_type(ignored_columns, None, [str, int], {str, int})
@@ -125,11 +127,8 @@ class H2OEstimator(ModelBase):
         assert_is_type(verbose, bool)
         assert_is_type(extend_parms_fn, None, FunctionType)
 
-        if self._requires_training_frame() and training_frame is None:
-            raise H2OValueError("Training frame required for %s algorithm, but none was given." % self.algo)
-
-        training_frame_exists = training_frame is None
-        if training_frame_exists:
+        override_default_training_frame = training_frame is not None
+        if not override_default_training_frame:
             self._verify_training_frame_params(offset_column, fold_column, weights_column, validation_frame)
 
         algo = self.algo
@@ -140,7 +139,7 @@ class H2OEstimator(ModelBase):
             del parms["__class__"]
         is_auto_encoder = bool(parms.get("autoencoder"))
         is_supervised = not(is_auto_encoder or algo in {"aggregator", "pca", "svd", "kmeans", "glrm", "word2vec", "isolationforest", "generic"})
-        if not training_frame_exists:
+        if override_default_training_frame:
             names = training_frame.names
             ncols = training_frame.ncols
 
@@ -160,7 +159,7 @@ class H2OEstimator(ModelBase):
             # sklearn's pipeline.
             y = None
 
-        if not training_frame_exists:
+        if override_default_training_frame:
             assert_is_type(y, str, None)
             ignored_columns_set = set()
             if ignored_columns is None and "ignored_columns" in parms:
@@ -209,19 +208,20 @@ class H2OEstimator(ModelBase):
         if not is_unsupervised and y is None and self.algo not in ["generic"]: raise ValueError("Missing response")
 
         # Step 3
-        if not training_frame_exists:
+        if override_default_training_frame:
             parms["training_frame"] = training_frame
             offset = parms["offset_column"]
             folds = parms["fold_column"]
             weights = parms["weights_column"]
 
-        if validation_frame is not None: parms["validation_frame"] = validation_frame
+        if validation_frame is not None:
+            parms["validation_frame"] = validation_frame
         if is_type(y, int): y = training_frame.names[y]
         if y is not None: parms["response_column"] = y
         if not isinstance(x, (list, tuple)): x = [x]
         if is_type(x[0], int):
             x = [training_frame.names[i] for i in x]
-        if not training_frame_exists:
+        if override_default_training_frame:
             ignored_columns = list(set(training_frame.names) - set(x + [y, offset, folds, weights]))
             parms["ignored_columns"] = None if ignored_columns == [] else [quoted(col) for col in ignored_columns]
         parms["interactions"] = (None if "interactions" not in parms or parms["interactions"] is None else

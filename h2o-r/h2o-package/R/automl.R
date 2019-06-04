@@ -106,54 +106,19 @@ h2o.automl <- function(x, y, training_frame,
   })
 
   # Required args: training_frame & response column (y)
-  if (missing(training_frame)) stop("argument 'training_frame' is missing")
   if (missing(y)) stop("The response column (y) is not set; please set it to the name of the column that you are trying to predict in your data.")
+  training_frame <- .validate.H2OFrame(training_frame)
 
-  # Training frame must be a key or an H2OFrame object
-  if (!is.H2OFrame(training_frame)) {
-    tryCatch(training_frame <- h2o.getFrame(training_frame),
-             error = function(err) {
-               stop("argument 'training_frame' must be a valid H2OFrame or key")
-             })
-  }
+  # ensure all passed frames are a H2OFrame or a valid key
+  validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
+  leaderboard_frame <- .validate.H2OFrame(leaderboard_frame, required=FALSE)
+  blending_frame <- .validate.H2OFrame(blending_frame, required=FALSE)
+
   training_frame_id <- h2o.getId(training_frame)
+  validation_frame_id <- if (is.null(validation_frame)) NULL else h2o.getId(validation_frame)
+  leaderboard_frame_id <- if (is.null(leaderboard_frame)) NULL else h2o.getId(leaderboard_frame)
+  blending_frame_id <- if (is.null(blending_frame)) NULL else h2o.getId(blending_frame)
 
-  # Validation frame must be a key or an H2OFrame object
-  validation_frame_id <- NULL
-  if (!is.null(validation_frame)) {
-    if (!is.H2OFrame(validation_frame)) {
-      tryCatch(validation_frame <- h2o.getFrame(validation_frame),
-               error = function(err) {
-                 stop("argument 'validation_frame' must be a valid H2OFrame or key")
-               })
-    }
-    validation_frame_id <- h2o.getId(validation_frame)
-  }
-
-  # Leaderboard/test frame must be a key or an H2OFrame object
-  leaderboard_frame_id <- NULL
-  if (!is.null(leaderboard_frame)) {
-    if (!is.H2OFrame(leaderboard_frame)) {
-      tryCatch(leaderboard_frame <- h2o.getFrame(leaderboard_frame),
-               error = function(err) {
-                 stop("argument 'leaderboard_frame' must be a valid H2OFrame or key")
-               })
-    }
-    leaderboard_frame_id <- h2o.getId(leaderboard_frame)
-  }
-
-  # Blending frame must be a key or an H2OFrame object
-  blending_frame_id <- NULL
-  if (!is.null(blending_frame)) {
-      if (!is.H2OFrame(blending_frame)) {
-          tryCatch(blending_frame <- h2o.getFrame(blending_frame),
-          error = function(err) {
-              stop("argument 'blending_frame' must be a valid H2OFrame or key")
-          })
-      }
-      blending_frame_id <- h2o.getId(blending_frame)
-  }
-    
   # Input/data parameters to send to the AutoML backend
   input_spec <- list()
   input_spec$response_column <- ifelse(is.numeric(y),names(training_frame[y]),y)
