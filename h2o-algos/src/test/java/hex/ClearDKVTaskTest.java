@@ -8,6 +8,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
 import water.fvec.Frame;
+import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 
 import java.util.ArrayList;
@@ -98,6 +99,31 @@ public class ClearDKVTaskTest extends TestUtil {
         }
     }
 
+    @Test
+    public void testRetainSharedVecs() {
+        try {
+            Scope.enter();
+            Frame f1 = new TestFrameBuilder()
+                    .withVecTypes(Vec.T_NUM, Vec.T_NUM)
+                    .withDataForCol(0, ar(0, 1))
+                    .withDataForCol(1, ar(2, 3))
+                    .build();
+            Frame f2 = new Frame(Key.<Frame>make());
+            f2.add("vec_shared_with_f1", f1.vec(1));
+            DKV.put(f2);
+            Scope.track(f2);
+
+            // delete everything except for Frame `f1`
+            new DKV.ClearDKVTask(new Key[]{f1._key})
+                    .doAllNodes();
+
+            // Frame `f1` shouldn't lose any data 
+            assertNotNull(f1.vec(1).chunkForChunkIdx(0));
+        } finally {
+            Scope.exit();
+        }
+    }
+    
     private static void testRetainFrame(Frame trainingFrame) {
         new DKV.ClearDKVTask(new Key[]{trainingFrame._key}).doAllNodes();
         assertTrue(H2O.STORE.containsKey(trainingFrame._key));
