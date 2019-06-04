@@ -21,7 +21,6 @@ class BuildConfig {
   private static final String HADOOP_IMAGE_NAME_PREFIX = 'h2o-3-hadoop'
   private static final String HADOOP_IMAGE_VERSION_TAG = '63'
 
-  private static final String XGB_IMAGE_VERSION_TAG = 'latest'
   public static final String XGB_TARGET_MINIMAL = 'minimal'
   public static final String XGB_TARGET_OMP = 'omp'
   public static final String XGB_TARGET_GPU = 'gpu'
@@ -211,10 +210,6 @@ class BuildConfig {
 
   String getHadoopImageVersion() {
     return HADOOP_IMAGE_VERSION_TAG
-  }
-
-  String getXGBImageVersion() {
-    return XGB_IMAGE_VERSION_TAG
   }
 
   Map getSupportedXGBEnvironments() {
