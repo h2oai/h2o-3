@@ -420,12 +420,8 @@ public class RegisterV3Api extends AbstractRegister {
             "Remove an arbitrary key from the H2O distributed K/V store.");
 
     context.registerEndpoint("deleteAllKeys",
-            "DELETE /3/DKV", RemoveAllHandler.class, "remove",
+            "POST /3/DKV", RemoveAllHandler.class, "remove",
             "Remove all keys from the H2O distributed K/V store.");
-
-    context.registerEndpoint("retainKeys",
-            "POST /3/DKV/retainKeys", RemoveHandler.class, "retainKeys",
-            "Clear DKV with the option to retain some Frames and Models");
 
     context.registerEndpoint("logAndEcho",
             "POST /3/LogAndEcho", LogAndEchoHandler.class, "echo",

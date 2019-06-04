@@ -7,7 +7,7 @@ def retain_keys_test():
     gbm = H2OGradientBoostingEstimator(ntrees = 1)
     gbm.train(x = ["Origin", "Dest"], y = "IsDepDelayed", training_frame=airlines)
     
-    h2o.retain([airlines.frame_id, gbm.model_id])
+    h2o.remove_all([airlines.frame_id, gbm.model_id])
     
     assert h2o.get_frame(airlines.frame_id) is not None
     assert h2o.get_model(gbm.model_id) is not None
@@ -16,7 +16,7 @@ def retain_keys_test():
     gbm = H2OGradientBoostingEstimator(ntrees = 1)
     gbm.train(x = ["Origin", "Dest"], y = "IsDepDelayed", training_frame=airlines)
     
-    h2o.retain([airlines.frame_id])
+    h2o.remove_all([airlines.frame_id])
     h2o.ls()
     try:
         h2o.get_model(gbm.model_id)

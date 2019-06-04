@@ -932,9 +932,14 @@ def remove(x):
                 api("DELETE /3/DKV/%s" % xi)
 
 
-def remove_all():
-    """Remove all objects from H2O."""
-    api("DELETE /3/DKV")
+def remove_all(retained=None):
+    """
+    Removes all objects from H2O with possibility to specify models and frames to retain.
+    :param retained: Keys of models and frames to retain 
+    """
+
+    params = {"retained_keys": retained}
+    api(endpoint="POST /3/DKV", data=params)
 
 
 def rapids(expr):
@@ -1557,19 +1562,6 @@ def upload_mojo(mojo_path):
     mojo_estimator.train()
     print(mojo_estimator)
     return mojo_estimator
-
-
-def retain(retained = None):
-    """
-    
-    :param retained: 
-    :return: 
-    """
-
-    params = {"retained_keys": retained}
-    response = api(endpoint="POST /3/DKV/retainKeys", data=params)
-    
-    return response
 
 
 #-----------------------------------------------------------------------------------------------------------------------

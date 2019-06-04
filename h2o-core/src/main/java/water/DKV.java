@@ -1,5 +1,7 @@
 package water;
 
+import water.util.Log;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -249,7 +251,11 @@ public abstract class DKV {
       Futures removalFutures = new Futures();
       for (final Value value : storeKeys) {
         if (retainedKeys.contains(value._key)) {
-          continue;
+          if (value.isFrame() || value.isModel()) {
+            continue;
+          } else {
+            Log.info(String.format("Given key %s is of type %d. Not retaining.", value._key.toString(), value.type()));
+          }
         }
         if(value.isNull()) continue;
         if (!value.isModel() && !value.isFrame()) continue;
