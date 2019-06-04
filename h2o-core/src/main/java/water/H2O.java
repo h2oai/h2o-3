@@ -144,6 +144,9 @@ final public class H2O {
             "    -jks_pass <password>\n" +
             "          (Default is '" + DEFAULT_JKS_PASS + "')\n" +
             "\n" +
+            "    -jks_alias <alias>\n" +
+            "          (Optional, use if the keystore has multiple certificates and you want to use a specific one.)\n" +
+            "\n" +
             "    -hash_login\n" +
             "          Use Jetty HashLoginService\n" +
             "\n" +
@@ -222,6 +225,8 @@ final public class H2O {
     /** -jks_pass is Java KeyStore password; default is 'h2oh2o' */
     public String jks_pass = DEFAULT_JKS_PASS;
 
+    public String jks_alias = null;
+    
     /** -hash_login enables HashLoginService */
     public boolean hash_login = false;
 
@@ -609,6 +614,10 @@ final public class H2O {
       else if (s.matches("jks_pass")) {
         i = s.incrementAndCheck(i, args);
         trgt.jks_pass = args[i];
+      }
+      else if (s.matches("jks_alias")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.jks_alias = args[i];
       }
       else if (s.matches("hash_login")) {
         trgt.hash_login = true;
