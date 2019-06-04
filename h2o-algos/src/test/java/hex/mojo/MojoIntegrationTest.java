@@ -51,9 +51,7 @@ public class MojoIntegrationTest {
       final GBMModel gbmModel = gbm.trainModel().get();
       assertNotNull(gbmModel);
 
-      final ByteArrayOutputStream originalModelMojo = new ByteArrayOutputStream();
       final File originalModelMojoFile = File.createTempFile("mojo", "zip");
-      gbmModel.getMojo().writeTo(originalModelMojo);
       gbmModel.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
 
       MojoModel mojoModel = MojoModel.load(originalModelMojoFile.getAbsolutePath());
@@ -94,9 +92,7 @@ public class MojoIntegrationTest {
       final GBMModel gbmModel = gbm.trainModel().get();
       assertNotNull(gbmModel);
 
-      final ByteArrayOutputStream originalModelMojo = new ByteArrayOutputStream();
       final File originalModelMojoFile = File.createTempFile("mojo", "zip");
-      gbmModel.getMojo().writeTo(originalModelMojo);
       new OldDomainSerializationGBMMojoWriter(gbmModel).writeTo(new FileOutputStream(originalModelMojoFile));
 
 
