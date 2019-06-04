@@ -246,10 +246,7 @@ public abstract class AbstractMojoWriter {
       if (domain == null) continue;
       startWritingTextFile(String.format("domains/d%03d.txt", domIndex++));
       for (String category : domain) {
-        StringBuilder stringBuilder = new StringBuilder("\"");
-        stringBuilder.append(QUOTE_PATTERN.matcher(category).replaceAll(QUOTE_ESCAPING_REPLACEMENT));
-        stringBuilder.append("\"");
-        writeln(stringBuilder.toString());  // replace newlines with "\n" escape sequences
+        writeln(StringEscapeUtils.escapeNewlines(category));
       }
       finishWritingTextFile();
     }

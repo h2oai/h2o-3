@@ -255,29 +255,6 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     return info;
   }
 
-  private static final char CR = '\r';
-  private static final char LF = '\n';
-  private static final char QUOTES = '"';
-
-  /**
-   * States of Model Domains parser DFA
-   */
-  private enum States {
-    CATEGORICAL_END, // For unquoted categorical levels, one of {\r,\n} is reached. For quoted, the terminal quote is reached. 
-    QUOTES_DETECTED, // Quotes parsed
-    CHECK_ESC_QUOTES, // After quotes are parsed, check if those were escaping quotes or ending quotes
-    QUOTED_CATEGORICAL, // A categorical level enclosed in QUOTES
-    UNQUOTED_CATEGORICAL, // Old MOJO versions used to save categorical levels not enclosed in quotes - for backwards compatibility
-    NEW_CATEGORICAL // Decide quoted/unquoted categorical level
-  }
-
-  /**
-   * Parses domain levels from inside the MOJO for each categorical column
-   *
-   * @param n_columns Number of categorical columns
-   * @return A two-dimensional array of {@link String}, each level representing domain for the respective column
-   * @throws IOException
-   */
   private String[][] parseModelDomains(int n_columns) throws IOException {
     final boolean multilineCategoricals = existsInKV("multiline_categoricals") && (boolean) readkv("multiline_categoricals"); // The key might not exist in older MOJOs
     String[][] domains = new String[n_columns][];
@@ -292,93 +269,26 @@ public abstract class ModelMojoReader<M extends MojoModel> {
       String domfile = info[1];
       String[] domain = new String[n_elements];
 
-
       try (BufferedReader br = _reader.getTextFile("domains/" + domfile)) {
-        States state = States.NEW_CATEGORICAL;
-        StringBuilder stringBuilder = new StringBuilder();
-        int quoteCount = 0;
-        int domainIdx = 0;
-        int c;
-        parsingLoop:
+        String line;
+        int id = 0;  // domain elements counter
         while (true) {
-          c = br.read();
-
-          states:
-          while (true) {
-            switch (state) {
-              case NEW_CATEGORICAL:
-                if (c == -1) break parsingLoop;
-                if (c == QUOTES && multilineCategoricals) { // Quotes at the beginning imply quoted categorical.
-                  state = States.QUOTED_CATEGORICAL;
-                  quoteCount++;
-                  break states;
-                } else if (c == CR || c == LF) {
-                  state = States.CATEGORICAL_END;
-                  continue states;
-                } else {
-                  state = States.UNQUOTED_CATEGORICAL;
-                  continue states;
-                }
-                
-              case CATEGORICAL_END:
-                quoteCount = 0;
-                domain[domainIdx++] = stringBuilder.toString();
-                stringBuilder = new StringBuilder();
-                state = States.NEW_CATEGORICAL;
-                break states;
-                
-              case QUOTES_DETECTED:
-                quoteCount++;
-                state = States.CHECK_ESC_QUOTES;
-                break states;
-                
-              case CHECK_ESC_QUOTES:
-                if (c == QUOTES) {
-                  quoteCount--;
-                  state = States.QUOTED_CATEGORICAL;
-                  stringBuilder.append(QUOTES);
-                  break states;
-                } else if (quoteCount == 2) {
-                  state = States.CATEGORICAL_END;
-                  continue states;
-                }
-
-                state = States.QUOTED_CATEGORICAL;
-                continue states;
-                
-              case UNQUOTED_CATEGORICAL:
-                if (c == CR || c == LF || c == -1) {
-                  state = States.CATEGORICAL_END;
-                  continue states;
-                }
-                stringBuilder.append((char) c);
-                break states;
-                
-              case QUOTED_CATEGORICAL:
-                if (c == QUOTES) {
-                  state = States.QUOTES_DETECTED;
-                  continue states;
-                }
-                if ((c == CR || c == LF) && quoteCount == 0) {
-                  state = States.CATEGORICAL_END;
-                  continue states;
-                }
-                stringBuilder.append((char) c);
-                break states;
-            }
+          final String str = br.readLine();
+          if (str == null) break;
+          if (multilineCategoricals) {
+            line = StringEscapeUtils.unescapeNewlines(str);
+          } else {
+            line = str;
           }
-
+          domain[id++] = line;
         }
-        
-        domains[col_index] = domain;
-        if (domain.length != n_elements)
+        if (id != n_elements)
           throw new IOException("Not enough elements in the domain file");
-        
       }
+      domains[col_index] = domain;
     }
     return domains;
   }
-
 
   private static class RawValue {
     private final String _val;

@@ -31,8 +31,8 @@ public class MojoIntegrationTest {
     try {
       Scope.enter();
 
-      final Frame trainingFrame = new TestFrameBuilder().withDataForCol(0, new String[]{"L1\n \"\"L1", "L2\n\r", "\nL3\n", "L4\r", "\\"})
-              .withDataForCol(1, new String[]{"\"R1", "R2", "R3", "", "   "})
+      final Frame trainingFrame = new TestFrameBuilder().withDataForCol(0, new String[]{"L1\n \"\"L1", "L2\n\r", "\nL3\n", "L4\r", "\\", "L6\f", "\rL7\b"})
+              .withDataForCol(1, new String[]{"\"R1", "R2", "R3", "", "   ", "R6\t", "R7\b"})
               .withUniformVecTypes(2, Vec.T_CAT)
               .build();
 

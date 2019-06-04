@@ -24,6 +24,10 @@ public class StringEscapeUtils {
           out.write('\\');
           out.write('n');
           break;
+        case '\r':
+          out.write('\\');
+          out.write('r');
+          break;
         default:
           out.write(c);
       }
@@ -46,6 +50,9 @@ public class StringEscapeUtils {
         switch (c) {
           case 'n':
             out.write('\n');
+            break;
+          case 'r':
+            out.write('\r');
             break;
           case '\\':
             out.write('\\');
