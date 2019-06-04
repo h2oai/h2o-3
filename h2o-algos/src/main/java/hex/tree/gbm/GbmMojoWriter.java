@@ -1,6 +1,8 @@
 package hex.tree.gbm;
 
+import hex.genmodel.utils.DistributionFamily;
 import hex.tree.SharedTreeMojoWriter;
+import water.H2O;
 
 import java.io.IOException;
 
@@ -22,6 +24,9 @@ public class GbmMojoWriter extends SharedTreeMojoWriter<GBMModel, GBMModel.GBMPa
 
   @Override
   protected void writeModelData() throws IOException {
+    if (model._parms._distribution == DistributionFamily.custom) {
+      H2O.unimpl("MOJO is not currently supported for custom distribution models.");
+    }
     super.writeModelData();
     writekv("distribution", model._parms._distribution);
     writekv("init_f", model._output._init_f);

@@ -6,6 +6,10 @@ import water.udf.CDistributionFunc;
 import water.udf.CFuncObject;
 import water.udf.CFuncRef;
 
+/**
+ * Factory to get distribution based on Model.Parameters or DistributionFamily.
+ * 
+ */
 public class DistributionFactory {
 
     public static Distribution getDistribution(DistributionFamily family) {
@@ -140,7 +144,6 @@ class BernoulliDistribution extends Distribution {
         return w * ff * (1 - ff);
     }
 }
-
 
 class QuasibinomialDistribution extends Distribution {
 
@@ -277,7 +280,6 @@ class MultinomialDistribution extends Distribution {
     }
 }
 
-
 class PoissonDistribution extends Distribution {
 
     public PoissonDistribution(DistributionFamily family){
@@ -315,7 +317,6 @@ class PoissonDistribution extends Distribution {
         return w * (y - z); // y - z == LogExpUtil.exp(f)
     }
 }
-
 
 class GammaDistribution extends Distribution {
 
@@ -455,33 +456,33 @@ class QuantileDistribution extends Distribution {
     }
 }
 
+/**
+ * Custom distribution class to customized loss and prediction calculation.
+ * Currently supported only for GBM algorithm.
+ */
 class CustomDistribution extends Distribution {
     
     final CDistributionFunc customDistribution;
     
     public CustomDistribution(Model.Parameters params){
-        super(params); 
+        super(params);
         customDistribution = new CustomDistributionWrapper(CFuncRef.from(params._custom_distribution_func)).getFunc();
         assert customDistribution != null;
     }
 
     @Override
     public double link(double f) {
-        double[] link = customDistribution.link(f);
-        assert link.length == 2;
-        return link[0];
+        return customDistribution.link(f);
     }
 
     @Override
     public double linkInv(double f) {
-        double[] link = customDistribution.link(f);
-        assert link.length == 2;
-        return link[1];
+        return customDistribution.inversion(f);
     }
 
     @Override
     public String linkInvString(String f) {
-        throw H2O.unimpl("Custom Distribution is not supported in POJO.");
+        throw H2O.unimpl("POJO is not currently supported for custom distribution models.");
     }
 
     @Override
@@ -504,6 +505,7 @@ class CustomDistribution extends Distribution {
     @Override
     public double initFDenom(double w, double o, double y) {
         double[] init = customDistribution.init(w, o, y);
+        assert init.length == 2;
         return init[1];
     }
 
@@ -518,6 +520,9 @@ class CustomDistribution extends Distribution {
     }
 }
 
+/**
+ * Custom distribution wrapper to get user custom functions to H2O Java code.
+ */
 class CustomDistributionWrapper extends CFuncObject<CDistributionFunc> {
 
     CustomDistributionWrapper(CFuncRef ref){
@@ -530,6 +535,9 @@ class CustomDistributionWrapper extends CFuncObject<CDistributionFunc> {
     }
 }
 
+/**
+ * Util class to calculate log and exp function for distribution and link function identically 
+ */
 class LogExpUtil {
     static public double MIN_LOG = -19;
     static public double MAX = 1e19;

@@ -5,7 +5,10 @@ from . import locate
 class CustomDistributionGaussian:
 
     def link(self, f):
-        return [f, f]
+        return f
+    
+    def inversion(self, f):
+        return f
     
     def deviance(self, w, y, f):
         return w * (y - f) * (y - f)
@@ -21,9 +24,12 @@ class CustomDistributionGaussian:
 
 
 class CustomDistributionGaussianWrong:
-    
+
     def link(self, f):
-        return [f,f]
+        return f
+
+    def inversion(self, f):
+        return f
 
     def deviance(self, w, y, f):
         return w * (y - f) * (y - f)

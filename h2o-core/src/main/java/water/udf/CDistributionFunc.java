@@ -1,53 +1,68 @@
 package water.udf;
 
 /**
- * Custom Distribution Function
+ * Custom Distribution Function Interface to customize loss and prediction calculation in GBM algorithm
+ * 
+ * The function has six parts:
+ * - link: link function transforms the probability of response variable to a continuous scale that is unbounded
+ * - inversion: inversion of link function
+ * - deviance: deviance of given distribution function at given predicted value. 
+ * - init: computes numerator and denominator of the initial value.
+ * - gradient: computes (Negative half) Gradient of deviance function at predicted value for actual response
+ * - gamma: computes numerator and denominator of terminal node estimate - gamma 
  */
 public interface CDistributionFunc extends CFunc {
 
     /**
-     * Canonical link, Canonical link inverse
+     * Canonical link.
      * @param f value in original space, to be transformed to link space
-     * @return [link, link inverse]
+     * @return link
      */
-    public double[] link(double f);
+    double link(double f);
+
+    /** 
+     * Canonical link inverse.
+     * @param f value in link space, to be transformed to original space
+     * @return link inverse
+     */
+    double inversion(double f);
     
     /**
-     * Deviance of given distribution function at predicted value f
+     * Deviance of given distribution function at predicted value f.
+     * Important for calculation of regression metrics.
      * @param w observation weight
      * @param y (actual) response
      * @param f (predicted) response in original response space (including offset)
      * @return deviance
      */
-    public double deviance(double w, double y, double f);
+    double deviance(double w, double y, double f);
 
     /**
-     * Contribution for initial value computation
+     * Contribution for initial value computation (numerator and denominator).
      * @param w weight
      * @param o offset
      * @param y response
      * @return [weighted contribution to numerator,  weighted contribution to denominator]
      */
-    public double[] init(double w, double o, double y);
-
-
+    double[] init(double w, double o, double y);
+    
     /**
-     * (Negative half) Gradient of deviance function at predicted value f, for actual response y
-     * This assumes that the deviance(w,y,f) is w*deviance(y,f), so the gradient is w * d/df deviance(y,f)
+     * (Negative half) Gradient of deviance function at predicted value f, for actual response y.
+     * Important for customized loss function.
      * @param y (actual) response
      * @param f (predicted) response in link space (including offset)
-     * @return -1/2 * d/df deviance(w=1,y,f)
+     * @return gradient
      */
-    public double gradient(double y, double f);
-    
+    double gradient(double y, double f);
 
     /**
-     * Contribution for GBM's leaf node prediction
+     * Contribution for GBM's leaf node prediction (numerator and denominator).
+     * Important for customized loss function.
      * @param w weight
      * @param y response
      * @param z residual
      * @param f predicted value (including offset)
      * @return [weighted contribution to numerator, weighted contribution to denominator]
      */
-    public double[] gamma(double w, double y, double z, double f);
+    double[] gamma(double w, double y, double z, double f);
 }

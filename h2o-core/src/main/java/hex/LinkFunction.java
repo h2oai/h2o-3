@@ -96,3 +96,5 @@ class LogitFunction extends LinkFunction {
         return "1./(1. + " + expString("-("+f+")") + ")";
     }
 }
+
+

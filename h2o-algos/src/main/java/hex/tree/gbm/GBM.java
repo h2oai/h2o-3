@@ -87,8 +87,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if (_nclass >= 3) _parms._distribution = DistributionFamily.multinomial;
       }
       checkDistributions();
-      if (hasOffsetCol() && isClassifier() && _parms._distribution == DistributionFamily.multinomial) {
-        error("_offset_column", "Offset is not supported for multinomial distribution.");
+      if (hasOffsetCol() && isClassifier() && (_parms._distribution == DistributionFamily.multinomial || _parms._distribution == DistributionFamily.custom)) {
+        error("_offset_column", "Offset is not supported for "+_parms._distribution+" distribution.");
       }
       if (_parms._monotone_constraints != null && _parms._monotone_constraints.length > 0 &&
               !(DistributionFamily.gaussian.equals(_parms._distribution) || DistributionFamily.bernoulli.equals(_parms._distribution))) {
@@ -1218,11 +1218,13 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   private static double score1static(Chunk[] chks, int treeIdx, double offset, double[] fs, int row, Distribution dist, int nClasses) {
     double f = chks[treeIdx].atd(row) + offset;
     double p = dist.linkInv(f);
-    if (dist.distribution == DistributionFamily.modified_huber || dist.distribution == DistributionFamily.bernoulli || dist.distribution == DistributionFamily.quasibinomial) {
+    if (dist.distribution == DistributionFamily.modified_huber || dist.distribution == DistributionFamily.bernoulli || dist.distribution == DistributionFamily.quasibinomial || 
+            (dist.distribution == DistributionFamily.custom && nClasses == 2)) {
       fs[2] = p;
       fs[1] = 1.0 - p;
       return 1;                 // f2 = 1.0 - f1; so f1+f2 = 1.0
-    } else if (dist.distribution == DistributionFamily.multinomial) {
+    } else if (dist.distribution == DistributionFamily.multinomial || 
+            (dist.distribution == DistributionFamily.custom && nClasses > 2)) {
       if (nClasses == 2) {
         // This optimization assumes the 2nd tree of a 2-class system is the
         // inverse of the first.  Fill in the missing tree

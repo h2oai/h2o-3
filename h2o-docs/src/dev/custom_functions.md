@@ -63,6 +63,31 @@ distributed invocation:
   - `metric` : the method computes the final metric value from given array of doubles. The method
   is called in the context of `water.MRtask#postGlobal` and corresponds to `hex.MetricBuilder#postGlobal` call.
 
+### Custom distributions
+
+The custom distribution is a function which implements `water.udf.CDistributionFunc` interface.
+The interface follows the design of `hex.Distribution` and contains six methods to support
+distributed invocation:
+  - `link` : the method returns link function transformation of the probability of response variable to a continuous scale that is unbounded.
+  The method is designed to be called where `hex.Distribution#link` method is used.
+  It can return `response` by default (Identity Link Function).
+  - `inversion` : inversion of link function.
+  The method is designed to be called where `hex.Distribution#linkInv` method is used.
+  It can return `response` by default (Identity Link Function).
+  - `deviance` : the method returns deviance of given distribution function at given predicted value. 
+  It can combines observation weight, actual response and predicted response in original response space (including offset).
+  This method is important only for regression models to calculate the deviance metric. In other cases, the user can return NaN value.
+  The method is designed to be called where `hex.Distribution#deviance` method is used.
+  - `init` : the method combines weight, actual response and offset to compute numerator and denominator of the initial value.
+  It can return `[ weight * (response - offset), weight]` by default.
+  The method is designed to be called where `hex.Distribution#initFNum` and `hex.Distribution#initFDenom` methods are used.
+  - `gradient` : the method computes (Negative half) Gradient of deviance function at predicted value for actual response
+   in one GBM learning step (The Elements of Statistical Learning II, page 387, Steps 2a, 2b). 
+   The method is designed to be called where `hex.Distribution#negHalfGradient` method is used.
+  - `gamma` : the method combines weight, actual response, residual and predicted response to compute numerator 
+  and denominator of terminal node estimate - gamma (The Elements of Statistical Learning II:, page 387.  Step 2b iii.).
+  The method is designed to be called where `hex.Distribution#gammaNum` and `hex.Distribution#gammaDenom` methods are used.
+  
 ### Other design alternatives
   - Translation into Rapids
     - Advantages:
@@ -106,7 +131,7 @@ class CustomRmseFunc:
 
 > Note: please mention, that code above is also referencing a java class `java.lang.Math`
 
-#### Publishing custom metric function in cluster
+##### Publishing custom metric function in cluster
 The client local custom function represented as a class can be uploaded into running
 H2O cluster by calling method `h2o.upload_custom_metric(klazz, func_name, func_file)`:
   - `klazz` represent custom function as described above
@@ -131,7 +156,7 @@ returns a function reference which has the following value:
 python:rmse=mm_rmse.CustomRmseFuncWrapper
 ```
 
-#### Using custom model metric functions
+##### Using custom model metric functions
 An algorithm model builder interface can expose parameter `custom_metric_func`
 which accepts a reference to uploaded custom metric function:
 
@@ -146,3 +171,76 @@ model.train(y="AGE", x=ftrain.names, training_frame=ftrain, validation_frame=fva
 
 The computed custom model metric is part of model metric object and available
 via methods `custom_metric_name()` and `custom_metric_value()`.
+
+#### Custom Distribution Function
+
+The custom distribution function is defined in Python as a class which provides
+six methods following the semantics of Java API above:
+  - `link`
+  - `inversion`
+  - `deviance`
+  - `init`
+  - `gradient`
+  - `gamma`
+  
+For example, custom Gaussian distribution:
+
+```python
+class CustomDistributionGaussian:
+
+    def link(self, f):
+        return f
+        
+    def inversion(self, f):
+        return f
+    
+    def deviance(self, w, y, f):
+        return w * (y - f) * (y - f)
+
+    def init(self, w, o, y):
+        return [w * (y - o), w]
+    
+    def gradient(self, y, f):
+        return y - f
+    
+    def gamma(self, w, y, z, f):
+        return [w * z, w]
+```
+
+##### Publishing custom distribution function in cluster
+The client local custom function represented as a class can be uploaded into running
+H2O cluster by calling method `h2o.upload_custom_distribution(klazz, func_name, func_file)`:
+  - `klazz` represent custom function as described above
+  - `func_name` assigns a name with uploaded custom functions, the name corresponds to name of key in K/V
+  - `func_file` name of file to store function in uploaded jar. The source code of given class is saved into a file,
+  the file is zipped, and uploaded as zip-archive, and saved into K/V store.
+
+The call returns a reference to uploaded custom distribution function. The internal form of reference
+is constructed based on passed parameters and follows the following structure: `<language>:<func_name>:<func_file>.<klazz-name>Wrapper`.
+
+> Note: The parameters `func_name` and `func_file` need to be unique for each uploaded custom distribution!
+
+For example:
+```python
+custom_dist_func = h2o.upload_custom_distribution(CustomDistributionGaussian, func_name="gaussian", func_file="dist_gaussian.py")
+```
+
+returns a function reference which has the following value:
+
+```
+> print(custom_dist_func)
+python:gaussian=dist_gaussian.CustomDistributionGaussianWrapper
+```
+
+##### Using custom distribution functions
+An algorithm model builder interface can expose parameter `custom_distribution_func`
+which accepts a reference to uploaded custom distribution function:
+
+```python
+model = H2OGradientBoostingEstimator(ntrees=3, max_depth=5,
+                  score_each_iteration=True,
+                  custom_distribution_func=custom_dist_func)
+model.train(y="AGE", x=ftrain.names, training_frame=ftrain, validation_frame=fvalid)
+```
+
+> Note: Currently, only GBM expose the parameter.
