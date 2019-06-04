@@ -3774,6 +3774,21 @@ def random_dataset_numeric_only(nrow, ncol, integerR=100, misFrac=0.01, randSeed
                           seed=randSeed, **fractions)
     return df
 
+# generate random dataset of ncolumns of integer and reals, copied from Pasha
+def random_dataset_real_only(nrow, ncol, realR=100, misFrac=0.01, randSeed=None):
+    """Create and return a random dataset."""
+    fractions = dict()
+    fractions["real_fraction"] = 1  # Right now we are dropping string columns, so no point in having them.
+    fractions["categorical_fraction"] = 0
+    fractions["integer_fraction"] = 0
+    fractions["time_fraction"] = 0
+    fractions["string_fraction"] = 0  # Right now we are dropping string columns, so no point in having them.
+    fractions["binary_fraction"] = 0
+
+    df = h2o.create_frame(rows=nrow, cols=ncol, missing_fraction=misFrac, has_response=False, integer_range=realR,
+                          seed=randSeed, **fractions)
+    return df
+
 def getMojoName(modelID):
     regex = re.compile("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]")
     return regex.sub("_", modelID)
