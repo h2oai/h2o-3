@@ -380,14 +380,14 @@ class H2OConnection(backwards_compatible()):
         data = self._prepare_data_payload(data)
         files = self._prepare_file_payload(filename)
         params = None
-        if method == "GET" and data:
+        if (method == "GET" or method == "DELETE") and data:
             params = data
             data = None
 
         stream = False
         if save_to is not None:
             assert_is_type(save_to, str)
-            stream = True
+            stream = True   
 
         if self._cookies is not None and isinstance(self._cookies, list):
             self._cookies = ";".join(self._cookies)

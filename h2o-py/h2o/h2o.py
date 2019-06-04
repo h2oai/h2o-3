@@ -939,7 +939,7 @@ def remove_all(retained=None):
     """
 
     params = {"retained_keys": retained}
-    api(endpoint="POST /3/DKV", data=params)
+    api(endpoint="DELETE /3/DKV", data=params)
 
 
 def rapids(expr):
