@@ -47,8 +47,10 @@ h2o.ls <- function() {
 #' Remove All Objects on the H2O Cluster
 #'
 #' Removes the data from the h2o cluster, but does not remove the local references.
+#' Retains frames and vectors specified in retained_elements argument.
 #'
 #' @param timeout_secs Timeout in seconds. Default is no timeout.
+#' @param retained_elements Frames and vectors to be retained. Other keys provided are ignored.
 #' @seealso \code{\link{h2o.rm}}
 #' @examples
 #' \dontrun{
