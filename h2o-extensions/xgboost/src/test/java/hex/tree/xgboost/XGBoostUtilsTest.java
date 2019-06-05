@@ -4,6 +4,7 @@ import hex.DataInfo;
 import hex.tree.xgboost.matrix.SparseMatrix;
 import hex.tree.xgboost.matrix.SparseMatrixDimensions;
 import hex.tree.xgboost.matrix.SparseMatrixFactory;
+import hex.tree.xgboost.util.FeatureScore;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.Rabit;
@@ -54,11 +55,11 @@ public class XGBoostUtilsTest extends TestUtil {
       String[] modelDump = readLines(getClass().getResource("xgbdump.txt"));
       String[] expectedVarImps = readLines(getClass().getResource("xgbvarimps.txt"));
 
-      Map<String, XGBoostUtils.FeatureScore> scores = XGBoostUtils.parseFeatureScores(modelDump);
+      Map<String, FeatureScore> scores = XGBoostUtils.parseFeatureScores(modelDump);
       double totalGain = 0;
       double totalCover = 0;
       double totalFrequency = 0;
-      for (XGBoostUtils.FeatureScore score : scores.values()) {
+      for (FeatureScore score : scores.values()) {
         totalGain += score._gain;
         totalCover += score._cover;
         totalFrequency += score._frequency;
@@ -67,7 +68,7 @@ public class XGBoostUtilsTest extends TestUtil {
       NumberFormat nf = NumberFormat.getInstance(Locale.US);
       for (String varImp : expectedVarImps) {
         String[] vals = varImp.split(" ");
-        XGBoostUtils.FeatureScore score = scores.get(vals[0]);
+        FeatureScore score = scores.get(vals[0]);
         assertNotNull("Score " + vals[0] + " should ve calculated", score);
         float expectedGain = nf.parse(vals[1]).floatValue();
         assertEquals("Gain of " + vals[0], expectedGain, score._gain / totalGain, 1e-6);

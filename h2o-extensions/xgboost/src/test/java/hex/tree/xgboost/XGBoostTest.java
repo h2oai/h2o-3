@@ -12,6 +12,7 @@ import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.BinomialModelPrediction;
 import hex.genmodel.utils.DistributionFamily;
+import hex.tree.xgboost.util.FeatureScore;
 import ml.dmlc.xgboost4j.java.*;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoost;
@@ -325,7 +326,7 @@ public class XGBoostTest extends TestUtil {
     Booster booster = XGBoost.train(trainMat, params, 10, watches, null, null);
 
     final Map<String, Integer> expected = booster.getFeatureScore((String) null);
-    final Map<String, XGBoostUtils.FeatureScore> actual = getExtFeatureScore(booster);
+    final Map<String, FeatureScore> actual = getExtFeatureScore(booster);
 
     assertEquals(expected.keySet(), actual.keySet());
     for (String feature : expected.keySet()) {
@@ -336,8 +337,8 @@ public class XGBoostTest extends TestUtil {
     Booster booster2 = XGBoost.train(trainMat, params, 2, watches, null, null);
 
     // Check that gain(booster2) >= gain(booster1)
-    final Map<String, XGBoostUtils.FeatureScore> fs1 = getExtFeatureScore(booster1);
-    final Map<String, XGBoostUtils.FeatureScore> fs2 = getExtFeatureScore(booster2);
+    final Map<String, FeatureScore> fs1 = getExtFeatureScore(booster1);
+    final Map<String, FeatureScore> fs2 = getExtFeatureScore(booster2);
 
     for (String feature : fs2.keySet()) {
       assertTrue(fs2.get(feature)._gain > 0);
@@ -347,7 +348,7 @@ public class XGBoostTest extends TestUtil {
     Rabit.shutdown();
   }
 
-  private Map<String, XGBoostUtils.FeatureScore> getExtFeatureScore(Booster booster) throws XGBoostError {
+  private Map<String, FeatureScore> getExtFeatureScore(Booster booster) throws XGBoostError {
     String[] modelDump = booster.getModelDump((String) null, true);
     return XGBoostUtils.parseFeatureScores(modelDump);
   }
