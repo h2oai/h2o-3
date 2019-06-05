@@ -54,7 +54,7 @@ public class RemoveAllHandler extends Handler {
     } else {
       retainedKeys = new Key[retained_keys.length];
       for (int i = 0; i < retainedKeys.length; i++) {
-        if (retained_keys[i] == null) continue; // Protection against null keys from the client - ignored
+        if (retained_keys[i] == null) throw new IllegalArgumentException("An attempt to retain a 'null' key detected. Cleaning operation aborted.");
         retainedKeys[i] = retained_keys[i].key();
       }
     }
