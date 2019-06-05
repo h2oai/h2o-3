@@ -1,5 +1,7 @@
 package ai.h2o.automl.targetencoding;
 
+import hex.genmodel.algos.targetencoder.EncodingMap;
+import hex.genmodel.algos.targetencoder.EncodingMaps;
 import water.DKV;
 import water.Key;
 import water.MRTask;
@@ -109,8 +111,8 @@ public class TargetEncoderFrameHelper {
     return frame;
   }
   
-  static IcedHashMap<String, Map<String, int[]>> convertEncodingMapFromFrameToMap(Map<String, Frame> encodingMap) {
-    IcedHashMap<String, Map<String, int[]>> transformedEncodingMap = new IcedHashMap<>();
+  static EncodingMaps convertEncodingMapFromFrameToMap(Map<String, Frame> encodingMap) {
+    EncodingMaps transformedEncodingMap = new EncodingMaps();
     Map<String, FrameToTETable> tasks = new HashMap<>();
 
     for (Map.Entry<String, Frame> entry : encodingMap.entrySet()) {
@@ -122,7 +124,7 @@ public class TargetEncoderFrameHelper {
     }
 
     for (Map.Entry<String, FrameToTETable> taskEntry : tasks.entrySet()) {
-      transformedEncodingMap.put(taskEntry.getKey(), taskEntry.getValue().getResult().table);
+      transformedEncodingMap.put(taskEntry.getKey(), new EncodingMap(taskEntry.getValue().getResult().table));
     }
     return transformedEncodingMap;
   }

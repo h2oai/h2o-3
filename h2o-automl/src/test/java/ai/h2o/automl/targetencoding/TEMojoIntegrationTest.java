@@ -1,6 +1,8 @@
 package ai.h2o.automl.targetencoding;
 
 import hex.genmodel.MojoModel;
+import hex.genmodel.algos.targetencoder.EncodingMap;
+import hex.genmodel.algos.targetencoder.EncodingMaps;
 import hex.genmodel.algos.targetencoder.TargetEncoderMojoModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
@@ -92,7 +94,7 @@ public class TEMojoIntegrationTest extends TestUtil {
       teModelWrapper.transformWithTargetEncoding(rowToPredictFor);
 
       //Check that specified in the test categorical columns have been encoded in accordance with targetEncodingMap
-      Map<String, Map<String, int[]>> targetEncodingMap = loadedMojoModel._targetEncodingMap;
+      EncodingMaps targetEncodingMap = loadedMojoModel._targetEncodingMap;
       
       int[] encodingComponentsForHomeDest = targetEncodingMap.get("home.dest").get(homeDestFactorValue);
       double encodingForHomeDest = (double) encodingComponentsForHomeDest[0] / encodingComponentsForHomeDest[1];
@@ -185,9 +187,9 @@ public class TEMojoIntegrationTest extends TestUtil {
       // Check that specified in the test categorical columns have been encoded in accordance with encoding map
       // We reusing static helper methods from TargetEncoderMojoModel as it is not the point of current test to check them.
       // We want to check here that proper blending params were being used during `.transformWithTargetEncoding()` transformation
-      IcedHashMap<String, Map<String, int[]>> encodingMapConvertedFromFrame = TargetEncoderFrameHelper.convertEncodingMapFromFrameToMap(testEncodingMap);
+      EncodingMaps encodingMapConvertedFromFrame = TargetEncoderFrameHelper.convertEncodingMapFromFrameToMap(testEncodingMap);
 
-      Map<String, int[]> homeDestEncodingMap = encodingMapConvertedFromFrame.get("home.dest");
+      EncodingMap homeDestEncodingMap = encodingMapConvertedFromFrame.get("home.dest");
 
       // Will be checking that encoding map has been written and loaded correctly through the computation of the mean
       double expectedPriorMean = TargetEncoderMojoModel.computePriorMean(homeDestEncodingMap); 

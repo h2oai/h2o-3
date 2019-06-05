@@ -7,7 +7,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.Map;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -55,7 +54,7 @@ public class TargetEncoderMojoReaderTest {
 
     TestMojoReader testMojoReader = new TestMojoReader(mojoReaderBackendMock);
 
-    Map<String, Map<String, int[]>> parsedEncodings = testMojoReader.parseEncodingMap("pathToFileWithEncodings");
+    EncodingMaps parsedEncodings = testMojoReader.parseEncodingMap("pathToFileWithEncodings");
     assertArrayEquals(parsedEncodings.get("embarked").get("C"), new int[]{2, 4});
     assertArrayEquals(parsedEncodings.get("sex").get("Male"), new int[]{3, 42});
 

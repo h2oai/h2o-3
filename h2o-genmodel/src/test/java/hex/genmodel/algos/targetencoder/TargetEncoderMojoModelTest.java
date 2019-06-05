@@ -3,8 +3,6 @@ package hex.genmodel.algos.targetencoder;
 import hex.genmodel.easy.RowData;
 import org.junit.Test;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Random;
 
 import static org.junit.Assert.*;
@@ -13,7 +11,7 @@ public class TargetEncoderMojoModelTest {
 
   @Test
   public void computePriorMean(){
-    Map<String, int[]> encodingMap = new HashMap<>();
+    EncodingMap encodingMap = new EncodingMap();
 
     int[] aTEComponents = {2, 5};
     encodingMap.put("A", aTEComponents);
@@ -62,8 +60,8 @@ public class TargetEncoderMojoModelTest {
   @Test
   public void transformWithBlending() {
     TargetEncoderMojoModel targetEncoderMojoModel = new TargetEncoderMojoModel(null, null, null);
-    HashMap<String, Map<String, int[]>> encodingMap = new HashMap<>();
-    Map<String, int[]> encodingMapForCat1 = new HashMap<>();
+    EncodingMaps encodingMap = new EncodingMaps();
+    EncodingMap encodingMapForCat1 = new EncodingMap();
     encodingMapForCat1.put("A", new int[]{2,5});
     encodingMapForCat1.put("B", new int[]{3,6});
     encodingMapForCat1.put("C", new int[]{4,7});
@@ -96,8 +94,8 @@ public class TargetEncoderMojoModelTest {
   @Test
   public void transformWithoutBlending() {
     TargetEncoderMojoModel targetEncoderMojoModel = new TargetEncoderMojoModel(null, null, null);
-    HashMap<String, Map<String, int[]>> encodingMap = new HashMap<>();
-    Map<String, int[]> encodingMapForCat1 = new HashMap<>();
+    EncodingMaps encodingMap = new EncodingMaps();
+    EncodingMap encodingMapForCat1 = new EncodingMap();
     encodingMapForCat1.put("A", new int[]{2,5});
     encodingMapForCat1.put("B", new int[]{3,7});
 

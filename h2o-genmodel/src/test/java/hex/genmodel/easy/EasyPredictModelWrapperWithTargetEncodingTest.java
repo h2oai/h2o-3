@@ -1,6 +1,8 @@
 package hex.genmodel.easy;
 
 import hex.ModelCategory;
+import hex.genmodel.algos.targetencoder.EncodingMap;
+import hex.genmodel.algos.targetencoder.EncodingMaps;
 import hex.genmodel.algos.targetencoder.TargetEncoderMojoModel;
 import hex.genmodel.easy.exception.PredictException;
 import org.junit.Test;
@@ -16,8 +18,8 @@ public class EasyPredictModelWrapperWithTargetEncodingTest {
   public void transformWithTargetEncoding() throws PredictException{
     MyTEModel model = new MyTEModel();
 
-    Map<String, Map<String, int[]>> targetEncodingMap = model._targetEncodingMap;
-    HashMap<String, int[]> encodingsForEmbarkingColumn = new HashMap<>();
+    EncodingMaps targetEncodingMap = model._targetEncodingMap;
+    EncodingMap encodingsForEmbarkingColumn = new EncodingMap();
     int[] encodingComponents = {3, 7};
     encodingsForEmbarkingColumn.put("S", encodingComponents);
     targetEncodingMap.put("embarked", encodingsForEmbarkingColumn);
@@ -73,7 +75,7 @@ public class EasyPredictModelWrapperWithTargetEncodingTest {
 
     private MyTEModel() {
       super(new String[]{"embarked", "age"}, DOMAINS, null);
-      _targetEncodingMap = new HashMap<>();
+      _targetEncodingMap = new EncodingMaps();
     }
   }
 

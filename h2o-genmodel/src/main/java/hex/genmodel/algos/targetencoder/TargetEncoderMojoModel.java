@@ -12,7 +12,7 @@ public class TargetEncoderMojoModel extends MojoModel implements FeatureTransfor
     super(columns, domains, responseName);
   }
 
-  public Map<String, Map<String, int[]>> _targetEncodingMap;
+  public EncodingMaps _targetEncodingMap;
   public boolean _withBlending;
   public double _inflectionPoint;
   public double _smoothing;
@@ -22,14 +22,14 @@ public class TargetEncoderMojoModel extends MojoModel implements FeatureTransfor
   public RowData transform0(RowData data) {
     
     if(_targetEncodingMap != null) {
-      for (Map.Entry<String, Map<String, int[]>> columnToEncodingsMap : _targetEncodingMap.entrySet()) {
+      for (Map.Entry<String, EncodingMap> columnToEncodingsMap : _targetEncodingMap.entrySet()) {
         String columnName = columnToEncodingsMap.getKey();
         String originalValue = (String) data.get(columnName);
-        Map<String, int[]> encodings = columnToEncodingsMap.getValue();
+        EncodingMap encodings = columnToEncodingsMap.getValue();
 
         _priorMean = _priorMean == -1 ? computePriorMean(encodings) : _priorMean;
         
-        int[] correspondingNumAndDen = encodings.get(originalValue);
+        int[] correspondingNumAndDen = encodings._encodingMap.get(originalValue);
 
         int numberOfRowsInCurrentCategory = correspondingNumAndDen[1];
         double lambda = computeLambda(numberOfRowsInCurrentCategory, _inflectionPoint, _smoothing);
@@ -56,10 +56,10 @@ public class TargetEncoderMojoModel extends MojoModel implements FeatureTransfor
   /**
    * Computes prior mean i.e. unconditional mean of the response. Should be the same for all columns
    */
-  public static double computePriorMean(Map<String, int[]> encodingMap) {
+  public static double computePriorMean(EncodingMap encodingMap) {
     int sumOfNumerators = 0;
     int sumOfDenominators = 0;
-    Iterator<int[]> iterator = encodingMap.values().iterator();
+    Iterator<int[]> iterator = encodingMap._encodingMap.values().iterator();
     while( iterator.hasNext()) {
       int[] next = iterator.next();
       sumOfNumerators += next[0];

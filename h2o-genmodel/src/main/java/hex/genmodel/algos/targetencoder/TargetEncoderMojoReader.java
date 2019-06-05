@@ -31,13 +31,13 @@ public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoMo
     return new TargetEncoderMojoModel(columns, domains, responseColumn);
   }
   
-  public Map<String, Map<String, int[]>> parseEncodingMap(String pathToSource) throws IOException {
-    Map<String, Map<String, int[]>> encodingMap = null;
+  public EncodingMaps parseEncodingMap(String pathToSource) throws IOException {
+    Map<String, EncodingMap> encodingMaps = null;
 
     if(getMojoReaderBackend().exists(pathToSource)) {
       BufferedReader source = getMojoReaderBackend().getTextFile(pathToSource);
 
-      encodingMap = new HashMap<>();
+      encodingMaps = new HashMap<>();
       Map<String, int[]> encodingsForColumn = null;
       String sectionName = null;
       try {
@@ -46,7 +46,7 @@ public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoMo
         while (true) {
           line = source.readLine();
           if (line == null) { // EOF
-            encodingMap.put(sectionName, encodingsForColumn);
+            encodingMaps.put(sectionName, new EncodingMap(encodingsForColumn));
             break;
           }
           line = line.trim();
@@ -56,7 +56,7 @@ public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoMo
           } else {
             String matchResult = matchNewSection(line);
             if (matchResult != null) {
-              encodingMap.put(sectionName, encodingsForColumn);
+              encodingMaps.put(sectionName, new EncodingMap(encodingsForColumn));
               encodingsForColumn = new HashMap<>();
               sectionName = matchResult;
               continue;
@@ -74,7 +74,7 @@ public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoMo
         } catch (IOException e) { /* ignored */ }
       }
     }
-    return encodingMap;
+    return new EncodingMaps(encodingMaps);
   }
 
 

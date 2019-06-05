@@ -2,8 +2,9 @@ package ai.h2o.automl.targetencoding;
 
 import hex.Model;
 import hex.ModelMojoWriter;
+import hex.genmodel.algos.targetencoder.EncodingMap;
+import hex.genmodel.algos.targetencoder.EncodingMaps;
 import water.fvec.Frame;
-import water.util.IcedHashMap;
 
 import java.io.IOException;
 import java.util.Map;
@@ -50,13 +51,13 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
     // We need to convert map only here. Everywhere else encoding map with Frames is fine.
     
     Map<String, Frame> targetEncodingMapOnFrames = ((TargetEncoderModel) model)._output._target_encoding_map;
-    IcedHashMap<String, Map<String, int[]>> convertedEncodingMap = TargetEncoderFrameHelper.convertEncodingMapFromFrameToMap(targetEncodingMapOnFrames);
+    EncodingMaps convertedEncodingMap = TargetEncoderFrameHelper.convertEncodingMapFromFrameToMap(targetEncodingMapOnFrames);
 
     if(convertedEncodingMap != null) {
       startWritingTextFile("feature_engineering/target_encoding/encoding_map.ini");
-      for (Map.Entry<String, Map<String, int[]>> columnEncodingsMap : convertedEncodingMap.entrySet()) {
+      for (Map.Entry<String, EncodingMap> columnEncodingsMap : convertedEncodingMap.entrySet()) {
         writeln("[" + columnEncodingsMap.getKey() + "]");
-        Map<String, int[]> encodings = columnEncodingsMap.getValue();
+        EncodingMap encodings = columnEncodingsMap.getValue();
         for (Map.Entry<String, int[]> catLevelInfo : encodings.entrySet()) {
           int[] numAndDenom = catLevelInfo.getValue();
           writelnkv(catLevelInfo.getKey(), numAndDenom[0] + " " + numAndDenom[1]);
