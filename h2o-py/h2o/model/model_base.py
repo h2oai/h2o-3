@@ -942,7 +942,7 @@ class ModelBase(backwards_compatible()):
 
     def partial_plot(self, data, cols, destination_key=None, nbins=20, weight_column=None,
                      plot=True, plot_stddev = True, figsize=(7, 10), server=False, include_na=False, user_splits=None,
-                     save_to_file=None):
+                     save_to_file=None, row_index=None):
         """
         Create partial dependence plot which gives a graphical depiction of the marginal effect of a variable on the
         response. The effect of a variable is measured in change in the mean response.
@@ -959,6 +959,7 @@ class ModelBase(backwards_compatible()):
         :param include_na: A boolean specifying whether missing value should be included in the Feature values.
         :param user_splits: a dictionary containing column names as key and user defined split values as value in a list.
         :param save_to_file Fully qualified name to an image file the resulting plot should be saved to, e.g. '/home/user/pdpplot.png'. The 'png' postfix might be omitted. If the file already exists, it will be overridden. Plot is only saved if plot = True.
+        :param row_index Row for which partial dependence will be calculated instead of the whole input frame.
         :returns: Plot and list of calculated mean response tables for each feature requested.
         """
 
@@ -979,7 +980,13 @@ class ModelBase(backwards_compatible()):
             if weight_column not in data.names:
                 raise H2OValueError("Column %s does not exist in the data frame" % weight_column)
             weight_column = data.names.index(weight_column)
-
+        
+        if row_index:
+            if not isinstance(row_index, int):
+                raise H2OValueError("Row index should be of type int.")
+        else:
+            row_index = -1
+        
         kwargs = {}
         kwargs["cols"] = cols
         kwargs["model_id"] = self.model_id
@@ -988,6 +995,7 @@ class ModelBase(backwards_compatible()):
         kwargs["destination_key"] = destination_key
         kwargs["weight_column_index"] = weight_column
         kwargs["add_missing_na"] = include_na
+        kwargs["row_index"] = row_index
 
         # extract user defined split points from dict user_splits into an integer array of column indices
         # and a double array of user define values for the corresponding columns

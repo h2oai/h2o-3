@@ -121,6 +121,48 @@ public class PartialDependenceTest extends TestUtil {
     }
   }
 
+  /**
+   * This test will repeat the test in prostateBinary but with a row index passed in.
+   */
+  @Test public void prostateBinaryRow() {
+    Frame fr=null;
+    GBMModel model=null;
+    PartialDependence partialDependence = null;
+    try {
+      // Frame
+      fr = parse_test_file("smalldata/prostate/prostate.csv");
+      for (String s : new String[]{"RACE","GLEASON","DPROS","DCAPS","CAPSULE"}) {
+        Vec v = fr.remove(s);
+        fr.add(s, v.toCategoricalVec());
+        v.remove();
+      }
+      DKV.put(fr);
+
+      // Model
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = fr._key;
+      parms._ignored_columns = new String[]{"ID"};
+      parms._response_column = "CAPSULE";
+      model = new GBM(parms).trainModel().get();
+
+      // PartialDependence
+      partialDependence = new PartialDependence(Key.<PartialDependence>make());
+//      partialDependence._cols = model._output._names;
+      partialDependence._row_index = 1;
+      partialDependence._nbins = 10;
+      partialDependence._model_id = (Key) model._key;
+      partialDependence._frame_id = fr._key;
+
+      partialDependence.execImpl().get();
+      for (TwoDimTable t : partialDependence._partial_dependence_data)
+        Log.info(t);
+
+    } finally {
+      if (fr!=null) fr.remove();
+      if (model!=null) model.remove();
+      if (partialDependence !=null) partialDependence.remove();
+    }
+  }
 
   @Test public void prostateBinaryPickCols() {
     Frame fr=null;

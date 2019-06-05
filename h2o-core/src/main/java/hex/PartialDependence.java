@@ -5,6 +5,7 @@ import water.*;
 import water.api.schemas3.KeyV3;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.rapids.Rapids;
 import water.util.FrameUtils.CalculateWeightMeanSTD;
 import water.util.Log;
 import water.util.TwoDimTable;
@@ -16,8 +17,9 @@ public class PartialDependence extends Lockable<PartialDependence> {
   transient final public Job _job;
   public Key<Model> _model_id;
   public Key<Frame> _frame_id;
+  public long _row_index = -1; // row index, -1 implies no specific row to use in PDP calculation
   public String[] _cols;
-  public int _weight_column_index =-1;  // weight column index, -1 implies no weight
+  public int _weight_column_index = -1;  // weight column index, -1 implies no weight
   public boolean _add_missing_na = false; // set to be false for default
   public int _nbins = 20;
   public TwoDimTable[] _partial_dependence_data; //OUTPUT
@@ -161,7 +163,12 @@ public class PartialDependence extends Lockable<PartialDependence> {
           H2O.H2OCountedCompleter pdp = new H2O.H2OCountedCompleter() {
             @Override
             public void compute2() {
-              Frame fr = _frame_id.get();
+              Frame fr;
+              if (_row_index > 0) {
+                fr = Rapids.exec("(rows " + _frame_id + "  " + _row_index + ")").getFrame();
+              } else {
+                fr = _frame_id.get();
+              }
               Frame test = new Frame(fr.names(), fr.vecs());
               Vec orig = test.remove(col);
               Vec cons = orig.makeCon(value);
@@ -203,6 +210,9 @@ public class PartialDependence extends Lockable<PartialDependence> {
                 if (preds != null) preds.remove();
               }
               cons.remove();
+              if (_row_index > 0) {
+                fr.remove();
+              }
               tryComplete();
             }
           };
@@ -211,7 +221,8 @@ public class PartialDependence extends Lockable<PartialDependence> {
         fs.blockForPending();
 
         _partial_dependence_data[i] = new TwoDimTable("PartialDependence",
-                ("Partial Dependence Plot of model " + _model_id + " on column '" + _cols[i] + "'"),
+                _row_index < 0 ? ("Partial Dependence Plot of model " + _model_id + " on column '" + _cols[i] + "'") :
+                        ("Partial Dependence Plot of model " + _model_id + " on column '" + _cols[i] + "' for row " + _row_index),
                 new String[colVals.length],
                 new String[]{_cols[i], "mean_response", "stddev_response", "std_error_mean_response"},
                 new String[]{cat ? "string" : "double", "double", "double", "double"},
