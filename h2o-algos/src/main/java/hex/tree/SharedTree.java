@@ -211,17 +211,17 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         // Create a New Model or continuing from a checkpoint
         if (_parms.hasCheckpoint()) {
           // Get the model to continue
-          _model = DKV.get(_parms._checkpoint).<M>get().deepClone(_result);
+          M model = DKV.get(_parms._checkpoint).<M>get().deepClone(_result);
           // Override original parameters by new parameters
-          _model._parms = _parms;
+          model._parms = _parms;
           // We create a new model
-          _model.delete_and_lock(_job);
+          _model = model.delete_and_lock(_job);
         } else {                   // New Model
           // Compute the zero-tree error - guessing only the class distribution.
           // MSE is stddev squared when guessing for regression.
           // For classification, guess the largest class.
-          _model = makeModel(dest(), _parms);
-          _model.delete_and_lock(_job); // and clear & write-lock it (smashing any prior)
+          M model = makeModel(dest(), _parms);
+          _model = model.delete_and_lock(_job); // and clear & write-lock it (smashing any prior)
           _model._output._init_f = _initialPrediction;
         }
 
