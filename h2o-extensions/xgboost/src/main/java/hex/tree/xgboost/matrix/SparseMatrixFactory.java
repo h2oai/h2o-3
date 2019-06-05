@@ -161,6 +161,8 @@ public class SparseMatrixFactory {
                 featChunks[i] = _vecs[i].chunkForChunkIdx(chunk);
             }
             
+            Vec.Reader weightReader = _w != null ? _w.new Reader() : null;
+            Vec.Reader respReader = _respVec.new Reader();
             for(int i = 0; i < respChunk._len; i++) {
                 if (weightChunk != null && weightChunk.atd(i) == 0) continue;
                 rowHeaderPointer.setAndIncrement(_matrix._rowHeaders, nonZeroCount);
@@ -184,7 +186,7 @@ public class SparseMatrixFactory {
                         nonZeroCount++;
                     }
                 }
-                rwRow = setResponseAndWeight(_w != null ? _w.new Reader() : null, _resp, _weights, _respVec.new Reader(), rwRow, i + respChunk.start());
+                rwRow = setResponseAndWeight(weightReader, _resp, _weights, respReader, rwRow, i + respChunk.start());
             }
             rowHeaderPointer.set(_matrix._rowHeaders, nonZeroCount);
         }
