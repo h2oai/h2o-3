@@ -192,12 +192,7 @@ public class XGBoostUtilsTest extends TestUtil {
         final int[] chunksIds = VecUtils.getLocalChunkIds(frame.anyVec());
         float[] resp = new float[(int) vec.length()];
         float[] weights = null;
-        final Vec.Reader respReader = frame.vec(response).new Reader();
         final DataInfo di = new DataInfo(frame, null, true, DataInfo.TransformType.NONE, false, false, false);
-        Vec.Reader[] vecs = new Vec.Reader[frame.numCols()];
-        for (int i = 0; i < vecs.length; ++i) {
-          vecs[i] = frame.vec(i).new Reader();
-        }
         final int nrows = (int) vec.length();
 
         XGBoostUtilsTest.setSparseMatrixMaxDimensions(3);
@@ -215,8 +210,8 @@ public class XGBoostUtilsTest extends TestUtil {
 
         // Initialize allocated matrices with actual data
         int actualRows = SparseMatrixFactory.initializeFromChunkIds(
-                frame, chunksIds, vecs, null, di, sparseMatrix, sparseMatrixDimensions, 
-                respReader, resp, weights);
+                frame, chunksIds, frame.vecs(), null, di, sparseMatrix, sparseMatrixDimensions, 
+                frame.vec(response), resp, weights);
 
         assertEquals(3, actualRows);
 
@@ -252,12 +247,7 @@ public class XGBoostUtilsTest extends TestUtil {
         final int[] chunksIds = VecUtils.getLocalChunkIds(frame.anyVec());
         float[] resp = new float[(int) vec.length()];
         float[] weights = null;
-        final Vec.Reader respReader = frame.vec(response).new Reader();
         final DataInfo di = new DataInfo(frame, null, true, DataInfo.TransformType.NONE, false, false, false);
-        Vec.Reader[] vecs = new Vec.Reader[frame.numCols()];
-        for (int i = 0; i < vecs.length; ++i) {
-          vecs[i] = frame.vec(i).new Reader();
-        }
         final int nrows = (int) vec.length();
 
         XGBoostUtilsTest.setSparseMatrixMaxDimensions(3);
@@ -275,8 +265,8 @@ public class XGBoostUtilsTest extends TestUtil {
 
         // Initialize allocated matrices with actual data
         int actualRows = SparseMatrixFactory.initializeFromChunkIds(
-            frame, chunksIds, vecs, null, di, sparseMatrix, sparseMatrixDimensions,
-            respReader, resp, weights);
+            frame, chunksIds, frame.vecs(), null, di, sparseMatrix, sparseMatrixDimensions,
+                frame.vec(response), resp, weights);
 
         assertEquals(3, actualRows);
 
@@ -315,12 +305,7 @@ public class XGBoostUtilsTest extends TestUtil {
         final int[] chunksIds = VecUtils.getLocalChunkIds(frame.anyVec());
         float[] resp = new float[(int) vec.length()];
         float[] weights = null;
-        final Vec.Reader respReader = frame.vec(response).new Reader();
         final DataInfo di = new DataInfo(frame, null, true, DataInfo.TransformType.NONE, false, false, false);
-        Vec.Reader[] vecs = new Vec.Reader[frame.numCols()];
-        for (int i = 0; i < vecs.length; ++i) {
-          vecs[i] = frame.vec(i).new Reader();
-        }
         final int nrows = (int) vec.length();
 
         XGBoostUtilsTest.setSparseMatrixMaxDimensions(1); // 3 arrays in each direction for colIndices and data, 4 for rowHeaders
@@ -339,8 +324,8 @@ public class XGBoostUtilsTest extends TestUtil {
 
         // Initialize allocated matrices with actual data
         int actualRows = SparseMatrixFactory.initializeFromChunkIds(
-            frame, chunksIds, vecs, null, di, sparseMatrix, sparseMatrixDimensions,
-            respReader, resp, weights);
+            frame, chunksIds, frame.vecs(), null, di, sparseMatrix, sparseMatrixDimensions,
+            frame.vec(response), resp, weights);
 
         assertEquals(3, actualRows);
 
@@ -379,12 +364,7 @@ public class XGBoostUtilsTest extends TestUtil {
         final int[] chunksIds = VecUtils.getLocalChunkIds(frame.anyVec());
         float[] resp = new float[(int) vec.length()];
         float[] weights = null;
-        final Vec.Reader respReader = frame.vec(response).new Reader();
         final DataInfo di = new DataInfo(frame, null, true, DataInfo.TransformType.NONE, false, false, false);
-        Vec.Reader[] vecs = new Vec.Reader[frame.numCols()];
-        for (int i = 0; i < vecs.length; ++i) {
-          vecs[i] = frame.vec(i).new Reader();
-        }
         final int nrows = (int) vec.length();
 
         // Force the internal representation to utilize both dimensions
@@ -404,8 +384,8 @@ public class XGBoostUtilsTest extends TestUtil {
 
         // Initialize allocated matrices with actual data
         int actualRows = SparseMatrixFactory.initializeFromChunkIds(
-            frame, chunksIds, vecs, null, di, sparseMatrix, sparseMatrixDimensions,
-            respReader, resp, weights);
+            frame, chunksIds, frame.vecs(), null, di, sparseMatrix, sparseMatrixDimensions,
+            frame.vec(response), resp, weights);
 
         assertEquals(3, actualRows);
 
