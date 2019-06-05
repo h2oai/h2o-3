@@ -269,7 +269,6 @@ public abstract class ModelMojoReader<M extends MojoModel> {
         String line;
         int id = 0;  // domain elements counter
         while ((line = br.readLine()) != null) {
-          if (line == null) break;
           if (escapeDomainValues) {
             line = StringEscapeUtils.unescapeNewlines(line);
           }

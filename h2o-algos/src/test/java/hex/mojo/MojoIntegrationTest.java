@@ -11,7 +11,6 @@ import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
