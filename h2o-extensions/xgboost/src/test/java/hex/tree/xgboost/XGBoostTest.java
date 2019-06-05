@@ -1077,6 +1077,7 @@ public class XGBoostTest extends TestUtil {
       parms._max_depth = 3;
       parms._train = tfr._key;
       parms._response_column = response;
+      parms._seed = 0xCAFEBABE;
 
       model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
       Log.info(model);
@@ -1170,6 +1171,7 @@ public class XGBoostTest extends TestUtil {
       parms._max_depth = 3;
       parms._train = tfr._key;
       parms._response_column = response;
+      parms._seed = 0xCAFEBABE;
 
       // emulate LightGBM
       parms._tree_method = XGBoostModel.XGBoostParameters.TreeMethod.hist;
