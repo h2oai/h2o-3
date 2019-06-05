@@ -462,22 +462,22 @@ class QuantileDistribution extends Distribution {
  */
 class CustomDistribution extends Distribution {
     
-    final CDistributionFunc customDistribution;
+    final CustomDistributionWrapper customDistribution;
     
     public CustomDistribution(Model.Parameters params){
         super(params);
-        customDistribution = new CustomDistributionWrapper(CFuncRef.from(params._custom_distribution_func)).getFunc();
+        customDistribution = new CustomDistributionWrapper(CFuncRef.from(params._custom_distribution_func));
         assert customDistribution != null;
     }
 
     @Override
     public double link(double f) {
-        return customDistribution.link(f);
+        return customDistribution.getFunc().link(f);
     }
 
     @Override
     public double linkInv(double f) {
-        return customDistribution.inversion(f);
+        return customDistribution.getFunc().inversion(f);
     }
 
     @Override
@@ -487,36 +487,40 @@ class CustomDistribution extends Distribution {
 
     @Override
     public double deviance(double w, double y, double f) {
-        return customDistribution.deviance(w, y, f);
+        return customDistribution.getFunc().deviance(w, y, f);
     }
 
     @Override
     public double negHalfGradient(double y, double f) {
-        return customDistribution.gradient(y, f);
+        return customDistribution.getFunc().gradient(y, f);
     }
 
     @Override
     public double initFNum(double w, double o, double y) {
-        double[] init = customDistribution.init(w, o, y);
+        double[] init = customDistribution.getFunc().init(w, o, y);
         assert init.length == 2;
         return init[0];
     }
 
     @Override
     public double initFDenom(double w, double o, double y) {
-        double[] init = customDistribution.init(w, o, y);
+        double[] init = customDistribution.getFunc().init(w, o, y);
         assert init.length == 2;
         return init[1];
     }
 
     @Override
     public double gammaNum(double w, double y, double z, double f) {
-        return customDistribution.gamma(w, y, z, f)[0];
+        double[] gamma = customDistribution.getFunc().gamma(w, y, z, f);
+        assert gamma.length == 2;
+        return gamma[0];
     }
 
     @Override
     public double gammaDenom(double w, double y, double z, double f) {
-        return customDistribution.gamma(w, y, z, f)[1];
+        double[] gamma = customDistribution.getFunc().gamma(w, y, z, f);
+        assert gamma.length == 2;
+        return gamma[1];
     }
 }
 
@@ -538,9 +542,9 @@ class CustomDistributionWrapper extends CFuncObject<CDistributionFunc> {
 /**
  * Util class to calculate log and exp function for distribution and link function identically 
  */
-class LogExpUtil {
-    static public double MIN_LOG = -19;
-    static public double MAX = 1e19;
+final class LogExpUtil {
+    final static public double MIN_LOG = -19;
+    final static public double MAX = 1e19;
 
     /**
      * Sanitized exponential function - helper function.
