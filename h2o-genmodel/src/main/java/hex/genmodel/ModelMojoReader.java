@@ -268,14 +268,10 @@ public abstract class ModelMojoReader<M extends MojoModel> {
       try (BufferedReader br = _reader.getTextFile("domains/" + domfile)) {
         String line;
         int id = 0;  // domain elements counter
-        while (true) {
-          final String str = br.readLine();
-          if (str == null) break;
+        while ((line = br.readLine()) != null) {
+          if (line == null) break;
           if (escapeDomainValues) {
-            line = StringEscapeUtils.unescapeNewlines(str);
-          } else {
-            // Older MOJOs did not escape new line in categoricals. Support for backwards compatibility.
-            line = str;
+            line = StringEscapeUtils.unescapeNewlines(line);
           }
           domain[id++] = line;
         }
