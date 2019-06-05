@@ -185,7 +185,7 @@ public abstract class AbstractMojoWriter {
     writekv("prior_class_distrib", Arrays.toString(model.priorClassDist()));
     writekv("model_class_distrib", Arrays.toString(model.modelClassDist()));
     writekv("timestamp", model.timestamp());
-    writekv("multiline_categoricals", true);
+    writekv("escape_domain_values", true); // Without escaping, there is no way to represent multiline categoricals as one-line values.
   }
 
   /**
@@ -235,8 +235,6 @@ public abstract class AbstractMojoWriter {
     finishWritingTextFile();
   }
 
-  private static final Pattern QUOTE_PATTERN = Pattern.compile("[\"]{1}"); // Escape quotes
-  private static final String QUOTE_ESCAPING_REPLACEMENT = "\"\"";
   /**
    * Create files containing domain definitions for each categorical column.
    */

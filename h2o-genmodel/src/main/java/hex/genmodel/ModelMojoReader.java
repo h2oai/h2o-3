@@ -115,11 +115,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
       return val != null ? (T) val : defVal;
     return ((RawValue) val).parse(defVal);
   }
-
-  protected boolean existsInKV(final String key) {
-    return _lkv.containsKey(key);
-  }
-
+  
   /**
    * Retrieve binary data previously saved to the mojo file using `writeblob(key, blob)`.
    */
@@ -256,7 +252,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
   }
 
   private String[][] parseModelDomains(int n_columns) throws IOException {
-    final boolean multilineCategoricals = existsInKV("multiline_categoricals") && (boolean) readkv("multiline_categoricals"); // The key might not exist in older MOJOs
+    final boolean escapeDomainValues = Boolean.TRUE.equals(readkv("escape_domain_values")); // The key might not exist in older MOJOs
     String[][] domains = new String[n_columns][];
     // noinspection unchecked
     Map<Integer, String> domass = (Map<Integer, String>) _lkv.get("[domains]");
@@ -275,9 +271,10 @@ public abstract class ModelMojoReader<M extends MojoModel> {
         while (true) {
           final String str = br.readLine();
           if (str == null) break;
-          if (multilineCategoricals) {
+          if (escapeDomainValues) {
             line = StringEscapeUtils.unescapeNewlines(str);
           } else {
+            // Older MOJOs did not escape new line in categoricals. Support for backwards compatibility.
             line = str;
           }
           domain[id++] = line;
