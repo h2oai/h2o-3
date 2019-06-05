@@ -71,9 +71,9 @@ public class PrintMojo {
     System.out.println("");
     System.out.println("    --fontsize | -f    Set font sizes of strings.");
     System.out.println("");
-    System.out.println("    --raw    Print raw graph representation to standard output.");
+    System.out.println("    --raw    Print raw, human-readable graph representation to standard output. Together with graphviz representation.");
     System.out.println("");
-    System.out.println("    --internal    Internal H2O representation of the graph (splits etc.) is used for generating the GRAPHVIZ format.");
+    System.out.println("    --internal    Internal H2O representation of the decision tree (splits etc.) is used for generating the GRAPHVIZ format.");
     System.out.println("");
     System.out.println("");
     System.out.println("Example:");
