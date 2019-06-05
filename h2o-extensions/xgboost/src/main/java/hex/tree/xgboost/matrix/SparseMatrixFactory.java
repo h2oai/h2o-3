@@ -184,7 +184,7 @@ public class SparseMatrixFactory {
                         nonZeroCount++;
                     }
                 }
-                rwRow = setResponseAndWeight(_w != null ? _w.new Reader() : null, _resp, _weights, _respVec.new Reader(), rwRow, i);
+                rwRow = setResponseAndWeight(_w != null ? _w.new Reader() : null, _resp, _weights, _respVec.new Reader(), rwRow, i + respChunk.start());
             }
             rowHeaderPointer.set(_matrix._rowHeaders, nonZeroCount);
         }
