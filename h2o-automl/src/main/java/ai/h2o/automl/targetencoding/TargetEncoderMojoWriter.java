@@ -50,13 +50,11 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
     // We need to convert map only here. Everywhere else encoding map with Frames is fine.
     
     Map<String, Frame> targetEncodingMapOnFrames = ((TargetEncoderModel) model)._output._target_encoding_map;
-    IcedHashMap<String, Map<String, TargetEncoderModel.TEComponents>> convertedEncodingMap = TargetEncoderFrameHelper.convertEncodingMapFromFrameToMap(targetEncodingMapOnFrames);
+    IcedHashMap<String, Map<String, int[]>> convertedEncodingMap = TargetEncoderFrameHelper.convertEncodingMapFromFrameToMap(targetEncodingMapOnFrames);
 
-    Map<String, Map<String, int[]>> encodingMapToBeWritten = TargetEncoderFrameHelper.convertEncodingMapToMojoFormat(convertedEncodingMap);
-    
-    if(encodingMapToBeWritten != null) {
+    if(convertedEncodingMap != null) {
       startWritingTextFile("feature_engineering/target_encoding/encoding_map.ini");
-      for (Map.Entry<String, Map<String, int[]>> columnEncodingsMap : encodingMapToBeWritten.entrySet()) {
+      for (Map.Entry<String, Map<String, int[]>> columnEncodingsMap : convertedEncodingMap.entrySet()) {
         writeln("[" + columnEncodingsMap.getKey() + "]");
         Map<String, int[]> encodings = columnEncodingsMap.getValue();
         for (Map.Entry<String, int[]> catLevelInfo : encodings.entrySet()) {

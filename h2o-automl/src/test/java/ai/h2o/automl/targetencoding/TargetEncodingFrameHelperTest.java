@@ -260,11 +260,11 @@ public class TargetEncodingFrameHelperTest extends TestUtil {
     long startTimeDoAll = System.currentTimeMillis();
     for (int i = 0; i < numberOfIterations; i++) {
 
-      IcedHashMap<String, Map<String, TargetEncoderModel.TEComponents>> transformedEncodingMap = new IcedHashMap<>();
+      IcedHashMap<String, Map<String, int[]>> transformedEncodingMap = new IcedHashMap<>();
       for (Map.Entry<String, Frame> entry : encodingMap.entrySet()) {
         String key = entry.getKey();
         Frame encodingsForParticularColumn = entry.getValue();
-        IcedHashMap<String, TargetEncoderModel.TEComponents> table = new TargetEncoderFrameHelper.FrameToTETable().doAll(encodingsForParticularColumn).getResult().table;
+        IcedHashMap<String, int[]> table = new TargetEncoderFrameHelper.FrameToTETable().doAll(encodingsForParticularColumn).getResult().table;
 
         transformedEncodingMap.put(key, table);
       }
@@ -284,7 +284,7 @@ public class TargetEncodingFrameHelperTest extends TestUtil {
         tasks.put(entry.getKey(), task);
       }
 
-      IcedHashMap<String, Map<String, TargetEncoderModel.TEComponents>> transformedEncodingMap = new IcedHashMap<>();
+      IcedHashMap<String, Map<String, int[]>> transformedEncodingMap = new IcedHashMap<>();
 
       for (Map.Entry<String, TargetEncoderFrameHelper.FrameToTETable> taskEntry : tasks.entrySet()) {
         transformedEncodingMap.put(taskEntry.getKey(), taskEntry.getValue().getResult().table);

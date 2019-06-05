@@ -109,8 +109,8 @@ public class TargetEncoderFrameHelper {
     return frame;
   }
   
-  static IcedHashMap<String, Map<String, TargetEncoderModel.TEComponents>> convertEncodingMapFromFrameToMap(Map<String, Frame> encodingMap) {
-    IcedHashMap<String, Map<String, TargetEncoderModel.TEComponents>> transformedEncodingMap = new IcedHashMap<>();
+  static IcedHashMap<String, Map<String, int[]>> convertEncodingMapFromFrameToMap(Map<String, Frame> encodingMap) {
+    IcedHashMap<String, Map<String, int[]>> transformedEncodingMap = new IcedHashMap<>();
     Map<String, FrameToTETable> tasks = new HashMap<>();
 
     for (Map.Entry<String, Frame> entry : encodingMap.entrySet()) {
@@ -127,27 +127,8 @@ public class TargetEncoderFrameHelper {
     return transformedEncodingMap;
   }
 
-  // TODO we probably don't need intermediate representation with TEComponents. Refactor
-  public static Map<String, Map<String, int[]>> convertEncodingMapToMojoFormat(IcedHashMap<String, Map<String, TargetEncoderModel.TEComponents>> em) {
-
-    IcedHashMap<String, Map<String, int[]>> transformedEncodingMap = null;
-
-    transformedEncodingMap = new IcedHashMap<>();
-    for (Map.Entry<String, Map<String, TargetEncoderModel.TEComponents>> entry : em.entrySet()) {
-      String columnName = entry.getKey();
-      Map<String, TargetEncoderModel.TEComponents> encodingsForParticularColumn = entry.getValue();
-      Map<String, int[]> encodingsForColumnMap = new HashMap<>();
-      for (Map.Entry<String, TargetEncoderModel.TEComponents> kv : encodingsForParticularColumn.entrySet()) {
-        encodingsForColumnMap.put(kv.getKey(), kv.getValue().getNumeratorAndDenominator());
-      }
-      transformedEncodingMap.put(columnName, encodingsForColumnMap);
-    }
-    return transformedEncodingMap;
-  }
-
-
   static class FrameToTETable extends MRTask<FrameToTETable> {
-    IcedHashMap<String, TargetEncoderModel.TEComponents> table = new IcedHashMap<>();
+    IcedHashMap<String, int[]> table = new IcedHashMap<>();
 
     public FrameToTETable() { }
 
@@ -165,7 +146,7 @@ public class TargetEncoderFrameHelper {
         numeratorAndDenominator[1] = (int) cs[2].at8(i);
         int factor = (int) categoricalChunk.at8(i);
         String factorName = domain[factor];
-        table.put(factorName, new TargetEncoderModel.TEComponents(numeratorAndDenominator));
+        table.put(factorName, numeratorAndDenominator);
       }
     }
 

@@ -185,10 +185,9 @@ public class TEMojoIntegrationTest extends TestUtil {
       // Check that specified in the test categorical columns have been encoded in accordance with encoding map
       // We reusing static helper methods from TargetEncoderMojoModel as it is not the point of current test to check them.
       // We want to check here that proper blending params were being used during `.transformWithTargetEncoding()` transformation
-      IcedHashMap<String, Map<String, TargetEncoderModel.TEComponents>> encodingMapConvertedFromFrame = TargetEncoderFrameHelper.convertEncodingMapFromFrameToMap(testEncodingMap);
-      Map<String, Map<String, int[]>> encodingMapMojoRepr = TargetEncoderFrameHelper.convertEncodingMapToMojoFormat(encodingMapConvertedFromFrame);
+      IcedHashMap<String, Map<String, int[]>> encodingMapConvertedFromFrame = TargetEncoderFrameHelper.convertEncodingMapFromFrameToMap(testEncodingMap);
 
-      Map<String, int[]> homeDestEncodingMap = encodingMapMojoRepr.get("home.dest");
+      Map<String, int[]> homeDestEncodingMap = encodingMapConvertedFromFrame.get("home.dest");
 
       // Will be checking that encoding map has been written and loaded correctly through the computation of the mean
       double expectedPriorMean = TargetEncoderMojoModel.computePriorMean(homeDestEncodingMap); 
