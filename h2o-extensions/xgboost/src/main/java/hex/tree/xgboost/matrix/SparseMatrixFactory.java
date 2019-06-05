@@ -15,12 +15,16 @@ import static hex.tree.xgboost.matrix.MatrixFactoryUtils.setResponseAndWeight;
 import static water.MemoryManager.*;
 import static water.MemoryManager.malloc4;
 
+/*
+- truly sparse matrix - no categoricals
+- collect all nonzeros column by column (in parallel), then stitch together into final data structures
+ */
 public class SparseMatrixFactory {
 
     public static DMatrix csr(
         Frame f, int[] chunksIds, Vec weightsVec, Vec responseVec, // for setupLocal
-        DataInfo di, float[] resp, float[] weights)
-        throws XGBoostError {
+        DataInfo di, float[] resp, float[] weights
+    ) throws XGBoostError {
 
         SparseMatrixDimensions sparseMatrixDimensions = calculateCSRMatrixDimensions(f, chunksIds, weightsVec, di);
         SparseMatrix sparseMatrix = allocateCSRMatrix(sparseMatrixDimensions);
@@ -40,8 +44,10 @@ public class SparseMatrixFactory {
         return toDMatrix(sparseMatrix, sparseMatrixDimensions, actualRows, di);
     }
 
-    public static DMatrix csr(Chunk[] chunks, int weight, int respIdx, // for MR task
-        DataInfo di, float[] resp, float[] weights) throws XGBoostError {
+    public static DMatrix csr(
+        Chunk[] chunks, int weight, int respIdx, // for MR task
+        DataInfo di, float[] resp, float[] weights
+    ) throws XGBoostError {
 
         SparseMatrixDimensions sparseMatrixDimensions = calculateCSRMatrixDimensions(chunks, di, weight);
         SparseMatrix sparseMatrix = allocateCSRMatrix(sparseMatrixDimensions);
