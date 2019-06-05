@@ -58,8 +58,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
       ModelMojoReader mmr = ModelMojoFactory.INSTANCE.getMojoReader(algo);
       mmr._lkv = info;
       mmr._reader = reader;
-      boolean isTargetEncodingUsed = info.containsKey("target_encoding_is_used") && ((RawValue) info.get("target_encoding_is_used")).parse(false);
-      mmr.readAll(readModelDescriptor, isTargetEncodingUsed);
+      mmr.readAll(readModelDescriptor);
       return mmr._model;
     } finally {
       if (reader instanceof Closeable)
@@ -166,7 +165,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
   // Private
   //--------------------------------------------------------------------------------------------------------------------
 
-  private void readAll(final boolean readModelDescriptor, final boolean readTargetEncoding) throws IOException {
+  private void readAll(final boolean readModelDescriptor) throws IOException {
     String[] columns = (String[]) _lkv.get("[columns]");
     String[][] domains = parseModelDomains(columns.length);
     boolean isSupervised = readkv("supervised");

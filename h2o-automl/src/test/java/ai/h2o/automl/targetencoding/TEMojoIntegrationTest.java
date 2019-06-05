@@ -34,6 +34,7 @@ public class TEMojoIntegrationTest extends TestUtil {
 
     String mojoFileName = "mojo_te.zip";
     Map<String, Frame> testEncodingMap = null;
+    TargetEncoderModel targetEncoderModel = null;
     Scope.enter();
     try {
       fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
@@ -51,14 +52,14 @@ public class TEMojoIntegrationTest extends TestUtil {
       testEncodingMap = tec.prepareEncodingMap(fr, responseColumnName, null);
       
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
-      targetEncoderParameters.addTargetEncodingMap(testEncodingMap);
       targetEncoderParameters._withBlending = false;
+      targetEncoderParameters._columnNamesToEncode = teColumns;
       targetEncoderParameters.setTrain(fr._key);
       targetEncoderParameters._response_column = responseColumnName;
 
       TargetEncoderBuilder job = new TargetEncoderBuilder(targetEncoderParameters);
 
-      TargetEncoderModel targetEncoderModel = job.trainModel().get();
+      targetEncoderModel = job.trainModel().get();
       Scope.track_generic(targetEncoderModel);
       
       FileOutputStream modelOutput = new FileOutputStream(mojoFileName);
@@ -105,6 +106,9 @@ public class TEMojoIntegrationTest extends TestUtil {
     } finally {
       if(testEncodingMap != null) 
         TargetEncoderFrameHelper.encodingMapCleanUp(testEncodingMap);
+      if(targetEncoderModel._output._target_encoding_map != null)
+        TargetEncoderFrameHelper.encodingMapCleanUp(targetEncoderModel._output._target_encoding_map);
+      
 
       File mojoFile = new File(mojoFileName);
       if(mojoFile.exists()) mojoFile.delete();
@@ -125,17 +129,12 @@ public class TEMojoIntegrationTest extends TestUtil {
 
       asFactor(fr, responseColumnName);
 
-      // Preparing Target encoding 
-      BlendingParams params = new BlendingParams(3, 1);
       String[] teColumns = {"home.dest", "embarked"};
 
-      TargetEncoder tec = new TargetEncoder(teColumns, params);
-
-      testEncodingMap = tec.prepareEncodingMap(fr, responseColumnName, null);
-
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
-      targetEncoderParameters.addTargetEncodingMap(testEncodingMap);
       
+      targetEncoderParameters._columnNamesToEncode = teColumns;
+
       // Enable blending
       targetEncoderParameters._withBlending = true;
       targetEncoderParameters._blendingParams = new BlendingParams(5, 1);
@@ -147,6 +146,7 @@ public class TEMojoIntegrationTest extends TestUtil {
       TargetEncoderBuilder job = new TargetEncoderBuilder(targetEncoderParameters);
 
       TargetEncoderModel targetEncoderModel = job.trainModel().get();
+      testEncodingMap = targetEncoderModel._output._target_encoding_map;
       Scope.track_generic(targetEncoderModel);
 
       FileOutputStream modelOutput = new FileOutputStream(mojoFileName);
@@ -182,7 +182,7 @@ public class TEMojoIntegrationTest extends TestUtil {
 
       teModelWrapper.transformWithTargetEncoding(rowToPredictFor);
 
-      // Check that specified in the test categorical columns have been encoded in accordance with `testEncodingMap`
+      // Check that specified in the test categorical columns have been encoded in accordance with encoding map
       // We reusing static helper methods from TargetEncoderMojoModel as it is not the point of current test to check them.
       // We want to check here that proper blending params were being used during `.transformWithTargetEncoding()` transformation
       IcedHashMap<String, Map<String, TargetEncoderModel.TEComponents>> encodingMapConvertedFromFrame = TargetEncoderFrameHelper.convertEncodingMapFromFrameToMap(testEncodingMap);

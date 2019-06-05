@@ -9,13 +9,9 @@ import water.fvec.Frame;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.util.Map;
 
 import static org.junit.Assert.*;
 
-/**
- * This test should be moved to h2o-core module once we move all TargetEncoding related classes there as well. 
- */
 public class TargetEncoderMojoWriterTest extends TestUtil implements ModelStubs {
 
   @BeforeClass
@@ -23,25 +19,20 @@ public class TargetEncoderMojoWriterTest extends TestUtil implements ModelStubs 
 
   Frame trainFrame = parse_test_file("./smalldata/gbm_test/titanic.csv");
 
-  private Map<String, Frame> getTEMap() {
-
-    String responseColumnName = "survived";
-    asFactor(trainFrame, responseColumnName);
-
-    BlendingParams params = new BlendingParams(3, 1);
-    String[] teColumns = {"home.dest", "embarked"};
-    TargetEncoder targetEncoder = new TargetEncoder(teColumns, params);
-    Map<String, Frame> testEncodingMap = targetEncoder.prepareEncodingMap(trainFrame, responseColumnName, null);
-    return testEncodingMap;
-  }
-
   @Test
   public void writeModelToZipFile() throws Exception{
     Scope.enter();
     try {
       TestModel.TestParam p = new TestModel.TestParam();
-      Map<String, Frame> teMap = getTEMap();
-      p.addTargetEncodingMap(teMap);
+      String[] teColumns = {"home.dest", "embarked"};
+      String responseColumnName = "survived";
+
+      asFactor(trainFrame, responseColumnName);
+
+      p._withBlending = false;
+      p._columnNamesToEncode = teColumns;
+      p.setTrain(trainFrame._key);
+      p._response_column = responseColumnName;
 
       TargetEncoderBuilder job = new TargetEncoderBuilder(p);
 
@@ -63,7 +54,7 @@ public class TargetEncoderMojoWriterTest extends TestUtil implements ModelStubs 
           file.delete();
         }
         trainFrame.delete();
-        TargetEncoderFrameHelper.encodingMapCleanUp(teMap);
+        TargetEncoderFrameHelper.encodingMapCleanUp(targetEncoderModel._output._target_encoding_map);
       }
     } finally {
       Scope.exit();

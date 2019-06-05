@@ -5,6 +5,7 @@ import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 import static org.junit.Assert.*;
 
@@ -12,8 +13,6 @@ public class TargetEncoderMojoModelTest {
 
   @Test
   public void computePriorMean(){
-    TargetEncoderMojoModel targetEncoderMojoModel = new TargetEncoderMojoModel(null, null, null);
-
     Map<String, int[]> encodingMap = new HashMap<>();
 
     int[] aTEComponents = {2, 5};
@@ -23,10 +22,41 @@ public class TargetEncoderMojoModelTest {
     int[] cTEComponents = {4, 7};
     encodingMap.put("C", cTEComponents);
 
-    double priorMean = targetEncoderMojoModel.computePriorMean(encodingMap);
+    double priorMean = TargetEncoderMojoModel.computePriorMean(encodingMap);
     
     double expectedPriorMean = ((double) aTEComponents[0] + bTEComponents[0] + cTEComponents[0] ) / (aTEComponents[1] + bTEComponents[1] + cTEComponents[1]);
     assertEquals(expectedPriorMean, priorMean, 1e-5);
+  }
+  
+  @Test
+  public void computeLambda(){
+    double lambda1 = TargetEncoderMojoModel.computeLambda(5, 5, 1);
+    assertEquals(0.5, lambda1, 1e-5);
+
+    double lambda2 = TargetEncoderMojoModel.computeLambda(1, 15, 1);
+    assertEquals(0, lambda2, 1e-5);
+    
+    double lambda3 = TargetEncoderMojoModel.computeLambda(20, 5, 1);
+    assertEquals(1, lambda3, 1e-5);
+  }
+  
+  @Test
+  public void computeBlendedEncoding(){
+    Random rg = new Random();
+    double labmda = rg.nextDouble();
+    double posterior = rg.nextDouble();
+    double prior = rg.nextDouble();
+    double blendedValue = TargetEncoderMojoModel.computeBlendedEncoding(labmda, posterior, prior);
+    assertTrue(blendedValue >= 0 && blendedValue <=1);
+
+    double blendedValue2 = TargetEncoderMojoModel.computeBlendedEncoding(0.5, 1, 0);
+    assertEquals(0.5, blendedValue2, 1e-5);
+    double blendedValue3 = TargetEncoderMojoModel.computeBlendedEncoding(0.5, 1, 1);
+    assertEquals(1, blendedValue3, 1e-5);
+    double blendedValue4 = TargetEncoderMojoModel.computeBlendedEncoding(0.5, 0, 0);
+    assertEquals(0, blendedValue4, 1e-5);
+    double blendedValue5 = TargetEncoderMojoModel.computeBlendedEncoding(0.1, 0.8, 0.6);
+    assertEquals(0.08 + 0.9*0.6, blendedValue5, 1e-5);
   }
   
   @Test

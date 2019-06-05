@@ -54,6 +54,7 @@ public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, Targe
   
   @Override
   protected Driver trainModelImpl() {
+    // We can use Model.Parameters to configure Target Encoder
     return new TargetEncoderDriver();
   }
   

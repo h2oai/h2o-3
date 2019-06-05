@@ -11,7 +11,7 @@ import java.io.IOException;
 public interface ModelStubs {
   
   public class TestModel extends TargetEncoderModel {
-    public TestModel( Key key, TargetEncoderModel.TargetEncoderParameters p, TargetEncoderModel.TargetEncoderOutput o ) { super(key,p,o); }
+    public TestModel( Key key, TargetEncoderModel.TargetEncoderParameters p, TargetEncoderModel.TargetEncoderOutput o ) { super(key,p,o, null); }
     @Override
     public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) { throw H2O.unimpl(); }
     @Override

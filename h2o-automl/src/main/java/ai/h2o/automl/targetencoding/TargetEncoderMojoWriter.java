@@ -2,6 +2,8 @@ package ai.h2o.automl.targetencoding;
 
 import hex.Model;
 import hex.ModelMojoWriter;
+import water.fvec.Frame;
+import water.util.IcedHashMap;
 
 import java.io.IOException;
 import java.util.Map;
@@ -44,10 +46,17 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
    * Writes encoding map into the file line by line
    */
   private void writeTargetEncodingMap() throws IOException {
-    Map<String, Map<String, int[]>> targetEncodingMap = ((TargetEncoderModel) model)._output._target_encoding_map;
-    if(targetEncodingMap != null) {
+    
+    // We need to convert map only here. Everywhere else encoding map with Frames is fine.
+    
+    Map<String, Frame> targetEncodingMapOnFrames = ((TargetEncoderModel) model)._output._target_encoding_map;
+    IcedHashMap<String, Map<String, TargetEncoderModel.TEComponents>> convertedEncodingMap = TargetEncoderFrameHelper.convertEncodingMapFromFrameToMap(targetEncodingMapOnFrames);
+
+    Map<String, Map<String, int[]>> encodingMapToBeWritten = TargetEncoderFrameHelper.convertEncodingMapToMojoFormat(convertedEncodingMap);
+    
+    if(encodingMapToBeWritten != null) {
       startWritingTextFile("feature_engineering/target_encoding/encoding_map.ini");
-      for (Map.Entry<String, Map<String, int[]>> columnEncodingsMap : targetEncodingMap.entrySet()) {
+      for (Map.Entry<String, Map<String, int[]>> columnEncodingsMap : encodingMapToBeWritten.entrySet()) {
         writeln("[" + columnEncodingsMap.getKey() + "]");
         Map<String, int[]> encodings = columnEncodingsMap.getValue();
         for (Map.Entry<String, int[]> catLevelInfo : encodings.entrySet()) {
