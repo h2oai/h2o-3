@@ -1,5 +1,6 @@
 package hex.glm;
 
+import hex.DataInfo;
 import hex.GLMMetrics;
 import hex.ModelMetricsRegressionGLM;
 import hex.deeplearning.DeepLearningModel;
@@ -12,6 +13,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
+import water.Scope;
 import water.TestUtil;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
@@ -19,11 +21,15 @@ import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
+import water.util.ArrayUtils;
+
+import water.util.Log;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 import static org.junit.Assert.*;
 import static water.util.FileUtils.getFile;
@@ -452,31 +458,33 @@ public class GLMBasicTestRegression extends TestUtil {
   };
   @Test
   public void testPValuesTweedie() {
-//    Call:
-//    glm(formula = Infections ~ ., family = tweedie(var.power = 1.5),
-//      data = D)
-//
-//    Deviance Residuals:
-//    Min       1Q   Median       3Q      Max
-//    -2.6355  -2.0931  -1.8183   0.5046   4.9458
-//
-//    Coefficients:
-//    Estimate Std. Error t value Pr(>|t|)
-//    (Intercept)       1.05665    0.11120   9.502  < 2e-16 ***
-//    SwimmerOccas     -0.25891    0.08455  -3.062  0.00241 **
-//    LocationNonBeach -0.22185    0.08393  -2.643  0.00867 **
-//    Age20-24          0.15325    0.10041   1.526  0.12808
-//    Age25-29          0.07624    0.10099   0.755  0.45096
-//    SexMale           0.03908    0.08619   0.453  0.65058
-//      ---
-//      Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-//
-//    (Dispersion parameter for Tweedie family taken to be 2.896306)
-//
-//    Null deviance: 967.05  on 286  degrees of freedom
-//    Residual deviance: 908.86  on 281  degrees of freedom
-//    AIC: NA
-//
+/*    Call:
+    glm(formula = Infections ~ ., family = tweedie(var.power = 1.5,
+            link.power = -0.5), data = fR)
+
+    Deviance Residuals:
+    Min       1Q   Median       3Q      Max
+    -2.6355  -2.0931  -1.8183   0.5046   4.9458
+
+    Coefficients:
+    Estimate Std. Error t value             Pr(>|t|)
+    (Intercept)       1.05665    0.11120   9.502 < 0.0000000000000002 ***
+    SwimmerOccas     -0.25891    0.08455  -3.062              0.00241 **
+    LocationNonBeach -0.22185    0.08393  -2.643              0.00867 **
+    Age20-24          0.15325    0.10041   1.526              0.12808
+    Age25-29          0.07624    0.10099   0.755              0.45096
+    SexMale           0.03908    0.08619   0.453              0.65058
+            ---
+            Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+    (Dispersion parameter for Tweedie family taken to be 2.896306)
+
+    Null deviance: 967.05  on 286  degrees of freedom
+    Residual deviance: 908.86  on 281  degrees of freedom
+    AIC: NA
+
+    Number of Fisher Scoring iterations: 7*/
+
 //    Number of Fisher Scoring iterations: 7
     double [] sderr_exp = new double[]{ 0.11120211,       0.08454967,       0.08393315,       0.10041150,       0.10099231,      0.08618960};
     double [] zvals_exp = new double[]{ 9.5021062,       -3.0622693,       -2.6431794,       1.5262357,        0.7548661,        0.4534433};
@@ -921,6 +929,463 @@ public class GLMBasicTestRegression extends TestUtil {
     }
 
   }
+
+  /**
+   * Test to verify that the dispersion parameter estimation for Tweedie families are calculated correctly.
+   */
+  @Test
+  public void testDispersionEstimat() {
+      Scope.enter();
+    Frame fr, f1, f2, f3, pred;
+    // get new coefficients, 7 classes and 53 predictor+intercept
+    Random rand = new Random();
+    rand.setSeed(12345);
+    int nclass = 4;
+    double threshold = 1e-10;
+    int numRows = 1000;
+    GLMModel model = null;
+
+    try {
+      long seed = 1234;
+      f1 = TestUtil.generate_enum_only(2, numRows, nclass, 0, seed);
+      Scope.track(f1);
+      f2 = TestUtil.generate_real_only(4, numRows, 0, seed);
+      Scope.track(f2);
+      f3 = TestUtil.generate_int_only(1, numRows, 10, 0, seed);
+      Scope.track(f3);
+      fr = f1.add(f2).add(f3);  // complete frame generation
+      Scope.track(fr);
+        GLMParameters params = new GLMParameters(Family.tweedie);
+        params._response_column = fr._names[fr.numCols() - 1];
+        params._ignored_columns = new String[]{};
+        params._train = fr._key;
+        params._lambda = new double[]{0};
+        params._alpha = new double[]{0};
+        params._standardize = true;
+        params._tweedie_link_power = 1;
+        params._tweedie_variance_power = 0;
+        params._compute_p_values = true;
+
+        model = new GLM(params).trainModel().get();
+        Scope.track_generic(model);
+        pred = model.score(fr);
+        Scope.track(pred);
+        
+        double dispersionEstimate = manualDispersionEst(fr, pred,989);
+        assertEquals(dispersionEstimate, model._output.dispersion(), threshold);
+        Log.info("testDispersionEstimat", " Completed Successfully!");
+                
+      } finally {
+
+        Scope.exit();
+      }
+  }
+  
+  public double manualDispersionEst(Frame fr, Frame pred, int nMod) {
+    double dispersionP = 0;
+    int respInd = fr.numCols()-1;
+    int rowCount = (int) fr.numRows();
+    for (int ind=0; ind < rowCount; ind++) {
+      double temp = fr.vec(respInd).at(ind)-pred.vec(0).at(ind);
+      dispersionP += temp*temp;
+    }
+    return dispersionP/nMod;
+  }
+
+  @Test
+  public void testTweedieGradient(){
+    Scope.enter();
+    Frame fr, f1, f2, f3;
+    // get new coefficients, 7 classes and 53 predictor+intercept
+    Random rand = new Random();
+    rand.setSeed(12345);
+    int nclass = 4;
+    double threshold = 1e-10;
+    int numRows = 1000;
+
+    try {
+      long seed = 1234;
+      f1 = TestUtil.generate_enum_only(2, numRows, nclass, 0, seed);
+      Scope.track(f1);
+      f2 = TestUtil.generate_real_only(4, numRows, 0, seed);
+      Scope.track(f2);
+      f3 = TestUtil.generate_int_only(1, numRows, 10, 0, seed);
+      Scope.track(f3);
+      fr = f1.add(f2).add(f3);  // complete frame generation
+      Scope.track(fr);
+      // test different var_power, link_power settings
+      testTweedieVarLinkPower(1,0,fr, threshold);
+      testTweedieVarLinkPower(1,1,fr, threshold);
+      testTweedieVarLinkPower(2,0,fr, threshold);
+      testTweedieVarLinkPower(2,3,fr, threshold);
+      testTweedieVarLinkPower(3,0,fr, threshold);
+      testTweedieVarLinkPower(3,1,fr, threshold);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  public void testTweedieVarLinkPower(double var_power, double link_power, Frame fr, double threshold) {
+    Scope.enter();
+    Random rand = new Random();
+    rand.setSeed(12345);
+    DataInfo dinfo = null;
+    try {
+      GLMParameters params = new GLMParameters(Family.tweedie);
+      params._response_column = fr._names[fr.numCols() - 1];
+      params._ignored_columns = new String[]{};
+      params._train = fr._key;
+      params._lambda = new double[]{0.5};
+      params._alpha = new double[]{0.5};
+      params._standardize = true;
+      params._tweedie_link_power = link_power;
+      params._tweedie_variance_power = var_power;
+      GLMModel.GLMWeightsFun glmw = new GLMModel.GLMWeightsFun(params);
+
+      dinfo = new DataInfo(fr, null, 1, true, DataInfo.TransformType.STANDARDIZE,
+              DataInfo.TransformType.NONE, true, false, false, false,
+              false, false);
+      int ncoeffPClass = dinfo.fullN() + 1;
+      double[] beta = new double[ncoeffPClass];
+      for (int ind = 0; ind < beta.length; ind++) {
+        beta[ind] = rand.nextDouble();
+      }
+      double l2pen = (1.0 - params._alpha[0]) * params._lambda[0];
+      GLMTask.GLMGradientTask gmt = new GLMTask.GLMGenericGradientTask(null, dinfo, params, l2pen, beta).doAll(dinfo._adaptedFrame);
+      // calculate gradient and likelihood manually
+      double[] manualGrad = new double[beta.length];
+      double manualLLH = manualLikelihoodGradient(beta, manualGrad, -1, l2pen, dinfo,
+              ncoeffPClass, params, glmw);
+      // check likelihood calculation;
+      
+      if (Double.isNaN(manualLLH))
+        assertTrue(Double.isNaN(gmt._likelihood));
+      else
+        assertEquals(manualLLH, gmt._likelihood, threshold*Math.min(Math.abs(gmt._likelihood), Math.abs(manualLLH)));
+      // check gradient
+      TestUtil.checkArrays(gmt._gradient, manualGrad, threshold);
+    } finally {
+      if (dinfo != null)
+        dinfo.remove();
+      Scope.exit();
+    }
+  }
+
+
+  public double manualLikelihoodGradient(double[] initialBeta, double[] gradient, double reg, double l2pen,
+                                         DataInfo dinfo, int ncoeffPClass, GLMParameters params,
+                                         GLMModel.GLMWeightsFun glmw) {
+    double likelihood = 0;
+    int numRows = (int) dinfo._adaptedFrame.numRows();
+    int respInd = dinfo._adaptedFrame.numCols() - 1;
+    double etas;
+
+    // calculate the etas for each class
+    for (int rowInd = 0; rowInd < numRows; rowInd++) {
+      etas = getInnerProduct(rowInd, initialBeta, dinfo);
+      double xmu = glmw.linkInv(etas);
+      xmu = xmu==0?hex.glm.GLMModel._EPS:xmu;
+      glmw._oneOeta = 1.0/etas;
+      glmw._oneOetaSquare = glmw._oneOeta*glmw._oneOeta;
+      int yresp = (int) dinfo._adaptedFrame.vec(respInd).at(rowInd);
+      // calculate the gradient multiplier
+      double multiplier = calGradMultiplier(yresp, xmu, glmw, etas);
+      // apply the multiplier and update the gradient accordingly
+      updateGradient(gradient, ncoeffPClass, dinfo, rowInd, multiplier);
+      
+      if (params._tweedie_variance_power == 1) {
+        likelihood -= yresp*Math.log(xmu)-Math.pow(xmu, 2-params._tweedie_variance_power)/(2-params._tweedie_variance_power);
+      } else if (params._tweedie_variance_power == 2) {
+        likelihood -= yresp*Math.pow(xmu, 1-params._tweedie_variance_power)/(1-params._tweedie_variance_power)-Math.log(xmu);
+      } else {
+        likelihood -= yresp*Math.pow(xmu, 1-params._tweedie_variance_power)/(1-params._tweedie_variance_power)-
+                Math.pow(xmu, 2-params._tweedie_variance_power)/(2-params._tweedie_variance_power);
+      }
+    }
+    for (int ind=0; ind < gradient.length; ind++)
+      gradient[ind] *= reg;
+    
+    // apply learning rate and regularization constant
+    if (l2pen > 0) {
+      for (int predInd = 0; predInd < dinfo.fullN(); predInd++) {  // loop through all coefficients for predictors only
+        gradient[predInd] += l2pen * initialBeta[predInd];
+      }
+    }
+    
+
+    return likelihood;
+  }
+  
+  public double calGradMultiplier(double yresp, double xmu, GLMModel.GLMWeightsFun glmw, double eta) {
+    if (glmw._var_power==1) {
+      if (glmw._link_power == 0) {
+        return (xmu-yresp);
+      } else {
+        return (xmu-yresp)/(glmw._link_power*eta);
+      }
+    } else if (glmw._var_power==2) {
+      if (glmw._link_power == 0) {
+        return (1-yresp/xmu);
+      } else {
+        return (1-yresp/xmu)/(glmw._link_power*eta);
+      }
+    } else {
+      if (glmw._link_power == 0) {
+        return Math.pow(xmu, 2-glmw._var_power)-yresp*Math.pow(xmu, 1-glmw._var_power);
+      } else {
+        return (Math.pow(xmu, 2-glmw._var_power)-yresp*Math.pow(xmu, 1-glmw._var_power))/(glmw._link_power*eta);
+      }
+    }
+  }
+
+  public void updateGradient(double[] gradient, int ncoeffPclass, DataInfo dinfo, int rowInd,
+                             double multiplier) {
+      for (int cid = 0; cid < dinfo._cats; cid++) {
+        int id = dinfo.getCategoricalId(cid, dinfo._adaptedFrame.vec(cid).at(rowInd));
+        gradient[id] += multiplier;
+      }
+      int numOff = dinfo.numStart();
+      int cidOff = dinfo._cats;
+      for (int cid = 0; cid < dinfo._nums; cid++) {
+        double scale = dinfo._normMul != null ? dinfo._normMul[cid] : 1;
+        double off = dinfo._normSub != null ? dinfo._normSub[cid] : 0;
+        gradient[numOff + cid] += multiplier *
+                (dinfo._adaptedFrame.vec(cid + cidOff).at(rowInd)-off)*scale;
+      }
+      // fix the intercept term
+      gradient[ ncoeffPclass - 1] += multiplier;
+  }
+
+  public double getInnerProduct(int rowInd, double[] coeffs, DataInfo dinfo) {
+    double innerP = coeffs[coeffs.length-1];  // add the intercept term;
+
+    for (int predInd = 0; predInd < dinfo._cats; predInd++) { // categorical columns
+      int id = dinfo.getCategoricalId(predInd, (int) dinfo._adaptedFrame.vec(predInd).at(rowInd));
+      innerP += coeffs[id];
+    }
+
+    int numOff = dinfo.numStart();
+    int cidOff = dinfo._cats;
+    for (int cid=0; cid < dinfo._nums; cid++) {
+      double scale = dinfo._normMul!=null?dinfo._normMul[cid]:1;
+      double off = dinfo._normSub != null?dinfo._normSub[cid]:0;
+      innerP += coeffs[cid+numOff]*(dinfo._adaptedFrame.vec(cid+cidOff).at(rowInd)-off)*scale;
+    }
+
+    return innerP;
+  }
+
+  /**
+   * Verify Tweedie Hessian, z and XY calculations with various var_power and link_power settings.
+   */
+  @Test
+  public void testTweedieHessian(){
+    Scope.enter();
+    Frame fr, f1, f2, f3;
+    // get new coefficients, 7 classes and 53 predictor+intercept
+    Random rand = new Random();
+    rand.setSeed(12345);
+    int nclass = 4;
+    double threshold = 1e-10;
+    int numRows = 1000;
+
+    try {
+      long seed = 1234;
+      f1 = TestUtil.generate_enum_only(2, numRows, nclass, 0, seed);
+      Scope.track(f1);
+      f2 = TestUtil.generate_real_only(4, numRows, 0, seed);
+      Scope.track(f2);
+      f3 = TestUtil.generate_int_only(1, numRows, 10, 0, seed);
+      Scope.track(f3);
+      fr = f1.add(f2).add(f3);  // complete frame generation
+      Scope.track(fr);
+      checkHessianXYTweedie(fr, rand, threshold, 1, 0);
+      checkHessianXYTweedie(fr, rand, threshold, 1, 1);
+      checkHessianXYTweedie(fr, rand, threshold, 2, 0);
+      checkHessianXYTweedie(fr, rand, threshold, 2, 3);
+      checkHessianXYTweedie(fr, rand, threshold, 3, 0);
+      checkHessianXYTweedie(fr, rand, threshold, 3, 1);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+
+  public void checkHessianXYTweedie(Frame fr, Random rand, double threshold, double var_power, double link_power) {
+    Scope.enter();
+    DataInfo dinfo=null;
+    try {
+      GLMParameters params = new GLMParameters(Family.tweedie);
+      params._response_column = fr._names[fr.numCols()-1];
+      params._ignored_columns = new String[]{};
+      params._train = fr._key;
+      params._lambda = new double[]{0.5};
+      params._alpha = new double[]{0.5};
+      params._tweedie_link_power = link_power;
+      params._tweedie_variance_power = var_power;
+
+      GLMModel.GLMWeightsFun glmw = new GLMModel.GLMWeightsFun(params);
+      dinfo = new DataInfo(fr, null, 1, true, DataInfo.TransformType.STANDARDIZE,
+              DataInfo.TransformType.NONE, true, false, false, false,
+              false, false);
+      int ncoeffPClass = dinfo.fullN()+1;
+      double[] beta = new double[ncoeffPClass];
+      for (int ind = 0; ind < beta.length; ind++) {
+        beta[ind] = rand.nextDouble();
+      }
+      // calculate Hessian, xy and likelihood manually
+      double[][] hessian = new double[beta.length][beta.length];
+      double[] xy = new double[beta.length];
+      GLMTask.GLMIterationTask gmt = new GLMTask.GLMIterationTask(null, dinfo, glmw, beta,
+              -1).doAll(dinfo._adaptedFrame);
+      double manualLLH = manualHessianXYLLH(beta, hessian, xy, dinfo, ncoeffPClass, fr.numCols()-1,
+              glmw, params);
+      
+      // check likelihood calculation;
+      assertEquals(manualLLH, gmt._likelihood, threshold*Math.max(Math.abs(manualLLH), Math.abs(gmt._likelihood)));
+      // check hessian
+      double[][] glmHessian = gmt.getGram().getXX();
+      checkDoubleArrays(glmHessian, hessian, threshold);
+      // check xy
+      TestUtil.checkArrays(xy, gmt._xy, threshold);
+    } finally {
+      if (dinfo!=null)
+        dinfo.remove();
+      Scope.exit();
+    }
+  }
+
+  public double manualHessianXYLLH(double[] initialBetas, double[][] hessian, double[] xy, DataInfo dinfo,
+                                   int ncoeffPClass, int respInd, GLMModel.GLMWeightsFun glmw, GLMParameters params) {
+    double likelihood = 0;
+    int numRows = (int) dinfo._adaptedFrame.numRows();
+    double etas;
+    double w; // reuse for each row
+    double grad;
+    double[][] xtx = new double[ncoeffPClass][ncoeffPClass];
+
+    // calculate the etas for each class
+    for (int rowInd = 0; rowInd < numRows; rowInd++) { // work through each row
+      etas = getInnerProduct(rowInd, initialBetas, dinfo);
+      int yresp = (int) dinfo._adaptedFrame.vec(respInd).at(rowInd);
+      double xmu = glmw.linkInv(etas);
+      glmw._oneOeta = 1/etas;
+      glmw._oneOetaSquare = glmw._oneOeta*glmw._oneOeta;
+      double xmu2OneMP = Math.pow(xmu, 1-params._tweedie_variance_power);
+      double xmu2TwoMP = Math.pow(xmu, 2-params._tweedie_variance_power);
+      double oneOqetasquare = 1/(params._tweedie_link_power*etas*etas);
+      double oneMp = 1-params._tweedie_variance_power;
+      double twoMp = 2-params._tweedie_variance_power;
+      double oneOqM1 = 1/params._tweedie_link_power-1;
+      // calculate w, grad in order to calculate the Hessian and xy
+      if (params._tweedie_variance_power==1) {
+        likelihood -= yresp*Math.log(xmu)-xmu2TwoMP/twoMp;
+        if (params._tweedie_link_power==0) {
+          w = xmu;
+          grad = yresp-xmu;
+        } else {
+          w = (yresp-(yresp-xmu)*oneOqM1)*oneOqetasquare;
+          grad = (yresp-xmu)/(params._tweedie_link_power*etas);
+        }
+      } else if (params._tweedie_variance_power==2) {
+        likelihood -= yresp*xmu2OneMP/oneMp-Math.log(xmu);
+        if (params._tweedie_link_power==0) {
+          w = yresp/xmu;
+          grad = yresp/xmu-1;
+        } else {
+          w = (yresp/(xmu*params._tweedie_link_power)+yresp/xmu-1)*oneOqetasquare;
+          grad = (yresp/xmu-1)/(params._tweedie_link_power*etas);
+        }        
+      } else {
+        likelihood -= yresp*xmu2OneMP/oneMp-xmu2TwoMP/twoMp;
+        if (params._tweedie_link_power==0) {
+          w = params._tweedie_variance_power*yresp*xmu2OneMP+oneMp*xmu2TwoMP-(yresp*xmu2OneMP-xmu2TwoMP);
+          grad = yresp*xmu2OneMP-xmu2TwoMP;
+        } else {
+          w = ((params._tweedie_variance_power*yresp*xmu2OneMP+oneMp*xmu2TwoMP)/params._tweedie_link_power-
+                  (yresp*xmu2OneMP-xmu2TwoMP)*oneOqM1)*oneOqetasquare;
+          grad = (yresp*xmu2OneMP-xmu2TwoMP)/(params._tweedie_link_power*etas);
+        }
+      }
+      // Add predictors to hessian to generate transpose(X)*W*X
+      addX2W(xtx, hessian, w, dinfo, rowInd, ncoeffPClass); // checked out okay
+      // add predictors to wz to form XY
+      addX2XY(xy, dinfo, rowInd, ncoeffPClass, w, grad,etas); // checked out okay
+    }
+    return likelihood;
+  }
+
+
+  public void addX2W(double[][] xtx, double[][] hessian, double w, DataInfo dinfo, int rowInd, int coeffPClass) {
+    int numOff = dinfo._cats; // start of numerical columns
+    int interceptInd = coeffPClass - 1;
+    // generate XTX first
+    ArrayUtils.mult(xtx, 0.0); // generate xtx
+    for (int predInd = 0; predInd < dinfo._cats; predInd++) {
+      int rid = dinfo.getCategoricalId(predInd, (int) dinfo._adaptedFrame.vec(predInd).at(rowInd));
+      for (int predInd2 = 0; predInd2 <= predInd; predInd2++) { // cat x cat
+        int cid = dinfo.getCategoricalId(predInd2, (int) dinfo._adaptedFrame.vec(predInd2).at(rowInd));
+        xtx[rid][cid] = 1;
+      }
+      // intercept x cat
+      xtx[interceptInd][rid] = 1;
+    }
+    for (int predInd = 0; predInd < dinfo._nums; predInd++) {
+      int rid = predInd + numOff;
+      double scale = dinfo._normMul != null ? dinfo._normMul[predInd] : 1;
+      double off = dinfo._normSub != null ? dinfo._normSub[predInd] : 0;
+      double d = (dinfo._adaptedFrame.vec(rid).at(rowInd) - off) * scale;
+      for (int predInd2 = 0; predInd2 < dinfo._cats; predInd2++) {   // num x cat
+        int cid = dinfo.getCategoricalId(predInd2, (int) dinfo._adaptedFrame.vec(predInd2).at(rowInd));
+        xtx[dinfo._numOffsets[predInd]][cid] = d;
+      }
+    }
+    for (int predInd = 0; predInd < dinfo._nums; predInd++) { // num x num
+      int rid = predInd + numOff;
+      double scale = dinfo._normMul != null ? dinfo._normMul[predInd] : 1;
+      double off = dinfo._normSub != null ? dinfo._normSub[predInd] : 0;
+      double d = (dinfo._adaptedFrame.vec(rid).at(rowInd) - off) * scale;
+      // intercept x num
+      xtx[interceptInd][dinfo._numOffsets[predInd]] = d;
+      for (int predInd2 = 0; predInd2 <= predInd; predInd2++) {
+        scale = dinfo._normMul != null ? dinfo._normMul[predInd2] : 1;
+        off = dinfo._normSub != null ? dinfo._normSub[predInd2] : 0;
+        int cid = predInd2 + numOff;
+        xtx[dinfo._numOffsets[predInd]][dinfo._numOffsets[predInd2]] = d * (dinfo._adaptedFrame.vec(cid).at(rowInd) - off) * scale;
+      }
+    }
+    xtx[interceptInd][interceptInd] = 1;
+    // copy the lower triangle to the uppder triangle of xtx
+    for (int rInd = 0; rInd < coeffPClass; rInd++) {
+      for (int cInd = rInd + 1; cInd < coeffPClass; cInd++) {
+        xtx[rInd][cInd] = xtx[cInd][rInd];
+      }
+    }
+    // xtx generation checkout out with my manual calculation
+    for (int rpredInd = 0; rpredInd < coeffPClass; rpredInd++) {
+      for (int cpredInd = 0; cpredInd < coeffPClass; cpredInd++) {
+        if (Math.abs(xtx[rpredInd][cpredInd]) > 0)
+          hessian[rpredInd][cpredInd] += w * xtx[rpredInd][cpredInd];
+      }
+    }
+  }
+
+  public void addX2XY(double[] xy, DataInfo dinfo, int rowInd, int coeffPClass, double w, double grad, double etas) {
+    double wz = w*etas + grad;  // same calculation order as GLM
+    for (int predInd = 0; predInd < dinfo._cats; predInd++) { // cat
+      int cid = dinfo.getCategoricalId(predInd, (int) dinfo._adaptedFrame.vec(predInd).at(rowInd));
+      xy[cid] += wz;
+    }
+    for (int predInd = 0; predInd < dinfo._nums; predInd++) { // num
+      double scale = dinfo._normMul != null ? dinfo._normMul[predInd] : 1;
+      double off = dinfo._normSub != null ? dinfo._normSub[predInd] : 0;
+      int cid = predInd + dinfo._cats;
+      double d = (dinfo._adaptedFrame.vec(cid).at(rowInd) - off) * scale;
+      xy[dinfo._numOffsets[predInd]] += wz * d;
+    }
+    xy[coeffPClass - 1] += wz;
+  }
+  
   private static String removeDot(String s) {
     int id = s.indexOf(".");
     if(id ==-1) return s;

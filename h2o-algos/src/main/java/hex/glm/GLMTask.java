@@ -489,11 +489,12 @@ public abstract class GLMTask  {
         double NA = _dinfo._numMeans[cid];
         Chunk c = chks[cid+_dinfo._cats];
         double scale = _dinfo._normMul == null?1:_dinfo._normMul[cid];
+        double offset = _dinfo._normSub == null?0:_dinfo._normSub[cid];
         if(c.isSparseZero()){
           double g = 0;
           int nVals = c.getSparseDoubles(vals,ids,NA);
           for(int i = 0; i < nVals; ++i)
-            g += vals[i]*scale*etas[ids[i]];
+            g += (vals[i]-offset)*scale*etas[ids[i]];
           _gradient[numOff+cid] = g;
         } else if(c.isSparseNA()){
           double off = _dinfo._normSub == null?0:_dinfo._normSub[cid];
@@ -576,10 +577,19 @@ public abstract class GLMTask  {
           es[i] = 0;
         } else {
           double mu = _glmf.linkInv(es[i]);
+          mu = mu==0?hex.glm.GLMModel._EPS:mu;
           l += ws[i] * _glmf.likelihood(ys[i], mu);
           double var = _glmf.variance(mu);
-          if (var < 1e-6) var = 1e-6;
-          es[i] = ws[i] * (mu - ys[i]) / (var * _glmf.linkDeriv(mu));
+          if (var < hex.glm.GLMModel._EPS) var = hex.glm.GLMModel._EPS; // es is the gradient without the predictor term
+          if (_glmf._family.equals(Family.tweedie)) {
+            _glmf._oneOeta = 1.0/(es[i]==0?hex.glm.GLMModel._EPS:es[i]);
+            _glmf._oneOetaSquare = _glmf._oneOeta*_glmf._oneOeta;
+            es[i] = ws[i]*_glmf.linkInvDeriv(mu)*(_glmf._var_power==1?(1-ys[i]/mu):
+                    (_glmf._var_power==2?(1/mu-ys[i]*Math.pow(mu, -_glmf._var_power)):
+                            (Math.pow(mu, _glmf._oneMinusVarPower)-ys[i]*Math.pow(mu, -_glmf._var_power))));
+          } else {
+            es[i] = ws[i] * (mu - ys[i]) / (var * _glmf.linkDeriv(mu));
+          }
         }
       }
       _likelihood = l;
@@ -1422,6 +1432,7 @@ public abstract class GLMTask  {
     long _nobs;
     public double _likelihood;
     private transient GLMWeights _w;
+    private transient GLMWeightsFun _glmfTweedie; // only needed for Tweedie
     //    final double _lambda;
     double wsum, wsumu;
     double _sumsqe;
@@ -1454,6 +1465,10 @@ public abstract class GLMTask  {
       if(_sparse)
         _sparseOffset = GLM.sparseOffset(_beta,_dinfo);
       _w = new GLMWeights();
+      if (_glmf._family.equals(Family.tweedie)) {
+        _glmfTweedie = new GLMModel.GLMWeightsFun(_glmf._family, _glmf._link, _glmf._var_power, _glmf._link_power,
+                _glmf._theta);
+      }
     }
     
     public Gram getGram() {
@@ -1477,9 +1492,15 @@ public abstract class GLMTask  {
         wz = r.weight * (eta * d + (y-mu));
         w  = r.weight * d;
       } else if(_beta != null) {
-        _glmf.computeWeights(y, r.innerProduct(_beta) + _sparseOffset, r.offset, r.weight, _w);
+        if (_glmf._family.equals(Family.tweedie))
+          _glmfTweedie.computeWeights(y, r.innerProduct(_beta) + _sparseOffset, r.offset, r.weight, _w);
+        else
+          _glmf.computeWeights(y, r.innerProduct(_beta) + _sparseOffset, r.offset, r.weight, _w);
         w = _w.w; // hessian without the xij xik part
-        wz = w*_w.z;
+        if (_glmf._family.equals(Family.tweedie))  // already multiplied with w for w.z
+          wz = _w.z;
+        else
+          wz = w*_w.z;
         _likelihood += _w.l;
       } else {
         w = r.weight;
@@ -1923,9 +1944,12 @@ public abstract class GLMTask  {
         z = _glmw.z;
         w = _glmw.w;
       }
-      double eta = r.innerProduct(_betaNew) + _sparseOffsetNew;
-//      double mu = _parms.linkInv(eta);
-      _sumsqe += w*(eta - z)*(eta - z);
+      double eta = _glmf._family.equals(Family.tweedie)?r.innerProduct(_betaNew) + _sparseOffsetNew+r.offset:r.innerProduct(_betaNew) + _sparseOffsetNew;
+      double xmu = _glmf._family.equals(Family.tweedie)?_glmf.linkInv(eta):0;
+      _sumsqe += _glmf._family.equals(Family.tweedie)?
+              ((r.response(0)-xmu)*(r.response(0)-xmu))*r.weight/Math.pow(xmu, _glmf._var_power):
+              w*(eta - z)*(eta - z);
+
       _wsum += Math.sqrt(w);
     }
     @Override

@@ -211,7 +211,7 @@ public class AutoMLTest extends water.TestUtil {
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
 
-      int tolerance = (autoMLBuildSpec.build_control.nfolds + 1) * 2; //generously adding 2s tolerance for each model
+      int tolerance = (autoMLBuildSpec.build_control.nfolds + 1) * max_runtime_secs_per_model / 3; //generously adding 33% tolerance for each cv model + final model
       for (Key<Model> key : aml.leaderboard().getModelKeys()) {
         Model model = key.get();
         double duration = model._output._total_run_time / 1e3;
