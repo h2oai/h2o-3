@@ -143,14 +143,14 @@ def gen_module(schema, algo, module):
     if algo == "word2vec":
         yield "  # training_frame is required if pre_trained frame is not specified"
         yield "  if (missing(pre_trained) && missing(training_frame)) stop(\"argument \'training_frame\' is missing, with no default\")"
-        yield "  training_frame <- .validate.H2OFrame(training_frame, required=FALSE)"
-        yield "  pre_trained <- .validate.H2OFrame(pre_trained, required=FALSE)"
-    elif algo not in ["generic"]:
         yield "  training_frame <- .validate.H2OFrame(training_frame)"
+        yield "  pre_trained <- .validate.H2OFrame(pre_trained)"
+    elif algo not in ["generic"]:
+        yield "  training_frame <- .validate.H2OFrame(training_frame, required=TRUE)"
     if algo not in ["word2vec", "aggregator", "coxph", "isolationforest", "generic"]:
-        yield "  validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)"
+        yield "  validation_frame <- .validate.H2OFrame(validation_frame)"
     if algo in ["stackedensemble"]:
-        yield "  blending_frame <- .validate.H2OFrame(blending_frame, required=FALSE)"
+        yield "  blending_frame <- .validate.H2OFrame(blending_frame)"
         yield "  # Validate other required args"
     if algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
         yield "  # If x is missing, then assume user wants to use all columns as features."

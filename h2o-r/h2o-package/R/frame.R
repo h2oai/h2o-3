@@ -53,7 +53,7 @@ chk.H2OFrame <- function(fr) if( is.H2OFrame(fr) ) fr else stop("must be an H2OF
   }
 }
 
-.validate.H2OFrame <- function(fr, message=NULL, required=TRUE) {
+.validate.H2OFrame <- function(fr, message=NULL, required=FALSE) {
   if (missing(fr) || is.null(fr)) if (required) stop(if(is.null(message)) paste0("argument '", deparse(substitute(fr)), "' is NULL or missing") else message, call.=FALSE) else return()
   if (is.H2OFrame(fr)) fr else tryCatch(
     h2o.getFrame(fr),

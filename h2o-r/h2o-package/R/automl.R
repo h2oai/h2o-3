@@ -107,12 +107,12 @@ h2o.automl <- function(x, y, training_frame,
 
   # Required args: training_frame & response column (y)
   if (missing(y)) stop("The response column (y) is not set; please set it to the name of the column that you are trying to predict in your data.")
-  training_frame <- .validate.H2OFrame(training_frame)
+  training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
 
   # ensure all passed frames are a H2OFrame or a valid key
-  validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
-  leaderboard_frame <- .validate.H2OFrame(leaderboard_frame, required=FALSE)
-  blending_frame <- .validate.H2OFrame(blending_frame, required=FALSE)
+  validation_frame <- .validate.H2OFrame(validation_frame)
+  leaderboard_frame <- .validate.H2OFrame(leaderboard_frame)
+  blending_frame <- .validate.H2OFrame(blending_frame)
 
   training_frame_id <- h2o.getId(training_frame)
   validation_frame_id <- if (is.null(validation_frame)) NULL else h2o.getId(validation_frame)
