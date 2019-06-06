@@ -54,10 +54,11 @@ chk.H2OFrame <- function(fr) if( is.H2OFrame(fr) ) fr else stop("must be an H2OF
 }
 
 .validate.H2OFrame <- function(fr, message=NULL, required=FALSE) {
-  if (missing(fr) || is.null(fr)) if (required) stop(if(is.null(message)) paste0("argument '", deparse(substitute(fr)), "' is NULL or missing") else message, call.=FALSE) else return()
+  arg_name <- deparse(substitute(fr))
+  if (missing(fr) || is.null(fr)) if (required) stop(if(is.null(message)) paste0("argument '", arg_name, "' is NULL or missing") else message, call.=FALSE) else return()
   if (is.H2OFrame(fr)) fr else tryCatch(
     h2o.getFrame(fr),
-    error = function(err) stop(if(is.null(message)) paste0("argument '", deparse(substitute(fr)), " ' must be a valid H2OFrame or key") else message, call.=FALSE)
+    error = function(err) stop(if(is.null(message)) paste0("argument '", arg_name, "' must be a valid H2OFrame or key") else message, call.=FALSE)
   )
 }
 

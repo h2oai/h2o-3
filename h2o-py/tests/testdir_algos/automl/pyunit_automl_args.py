@@ -335,6 +335,35 @@ def test_stacked_ensembles_are_trained_with_blending_frame_even_if_nfolds_eq_0()
         assert model._model_json['output']['stacking_strategy'] == 'blending'
 
 
+def test_frames_can_be_passed_as_key():
+    print("Check that all AutoML frames can be passed as keys.")
+    ds = import_dataset()
+    aml = H2OAutoML(project_name="py_aml_frames_as_keys", seed=1, max_models=3, nfolds=0)
+
+    kw_args = [
+        dict(training_frame='dummy'),
+        dict(training_frame=ds['train'], validation_frame='dummy'),
+        dict(training_frame=ds['train'], blending_frame='dummy'),
+        dict(training_frame=ds['train'], leaderboard_frame='dummy'),
+    ]
+    for kwargs in kw_args:
+        try:
+            aml.train(y=ds['target'], **kwargs)
+            raise AssertionError("should have thrown due to wrong frame key")
+        except ValueError as e:
+            attr = 'training_frame' if len(kwargs) == 1 else next(k for k in kwargs.keys() if k != 'training_frame')
+            assert "'{}' must be a valid H2OFrame or key".format(attr) in str(e)
+
+    aml.train(y=ds['target'],
+              training_frame=ds['train'].frame_id,
+              validation_frame=ds['valid'].frame_id,
+              blending_frame=ds['valid'].frame_id,
+              leaderboard_frame=ds['test'].frame_id)
+
+    assert len(aml.leaderboard) > 0
+
+
+
     # TO DO  PUBDEV-5676
     # Add a test that checks fold_column like in runit
 
@@ -361,4 +390,5 @@ pyunit_utils.run_tests([
     test_automl_stops_after_max_models,
     test_stacked_ensembles_are_trained_after_max_models,
     test_stacked_ensembles_are_trained_with_blending_frame_even_if_nfolds_eq_0,
+    test_frames_can_be_passed_as_key,
 ])
