@@ -283,6 +283,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     boolean beenHere = false;
     boolean blending_mode = _parms._blending != null;
     boolean cv_required_on_base_model = !blending_mode;
+    boolean require_consistent_training_frames = !blending_mode && !_parms._is_cv_model;
     
     //following variables are collected from the 1st base model (should be identical across base models), i.e. when beenHere=false
     int basemodel_nfolds = -1;
@@ -291,7 +292,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     long seed = -1;
     //end 1st model collected fields
     
-    trainingFrameRows = _parms.train().numRows();
+    trainingFrameRows = require_consistent_training_frames ? _parms.train().numRows() : 0;
 
     for (Key<Model> k : _parms._base_models) {
       aModel = DKV.getGet(k);
@@ -312,7 +313,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
         // NOTE: if we loosen this restriction and fold_column is set add a check below.
         Frame aTrainingFrame = aModel._parms.train();
-        if (trainingFrameRows != aTrainingFrame.numRows() && !this._parms._is_cv_model)
+        if (require_consistent_training_frames && trainingFrameRows != aTrainingFrame.numRows())
           throw new H2OIllegalArgumentException("Base models are inconsistent: they use different size (number of rows) training frames." +
               " Found: "+trainingFrameRows+" (StackedEnsemble) and "+aTrainingFrame.numRows()+" (model "+k+").");
 
@@ -320,11 +321,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
           throw new H2OIllegalArgumentException("Base models are inconsistent: they use different response columns." +
               " Found: "+responseColumn+"(StackedEnsemble) and "+aModel._parms._response_column+" (model "+k+").");
         
-//        if (blending_mode && _parms._blending.equals(aModel._parms._train)) {
-//          throw new H2OIllegalArgumentException("Base model `"+k+"` was trained with the StackedEnsemble blending frame.");
-//        }
-
-        // TODO: we currently require xval; loosen this iff we add a separate holdout dataset for the ensemble
         if (cv_required_on_base_model) {
           if (aModel._parms._fold_assignment != basemodel_fold_assignment) {
             if ((aModel._parms._fold_assignment == AUTO && basemodel_fold_assignment == Random) ||
