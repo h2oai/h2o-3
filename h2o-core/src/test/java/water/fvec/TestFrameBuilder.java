@@ -420,7 +420,7 @@ public class TestFrameBuilder {
           final double[] data = numericData.get(colIdx);
           numRows = data.length;
           for (int i = 0; i < data.length; i++) {
-            throwIf(!Double.isNaN(data[i]), "All elements in a bad column must be NAs or zeros");
+            throwIf(!Double.isNaN(data[i]), "All elements in a bad column must be NAs.");
           }
           break;
         default:
