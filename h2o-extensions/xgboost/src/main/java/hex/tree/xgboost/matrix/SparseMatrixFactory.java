@@ -22,15 +22,15 @@ import static water.MemoryManager.malloc4;
 public class SparseMatrixFactory {
 
     public static DMatrix csr(
-        Frame f, int[] chunksIds, Vec weightsVec, Vec responseVec, // for setupLocal
+        Frame frame, int[] chunksIds, Vec weightsVec, Vec responseVec, // for setupLocal
         DataInfo di, float[] resp, float[] weights
     ) throws XGBoostError {
 
-        SparseMatrixDimensions sparseMatrixDimensions = calculateCSRMatrixDimensions(f, chunksIds, weightsVec, di);
+        SparseMatrixDimensions sparseMatrixDimensions = calculateCSRMatrixDimensions(frame, chunksIds, weightsVec, di);
         SparseMatrix sparseMatrix = allocateCSRMatrix(sparseMatrixDimensions);
 
         int actualRows = initializeFromChunkIds(
-            f, chunksIds, weightsVec,
+            frame, chunksIds, weightsVec,
             di, sparseMatrix, sparseMatrixDimensions,
             responseVec, resp, weights);
 
@@ -99,12 +99,12 @@ public class SparseMatrixFactory {
     }
 
     public static int initializeFromChunkIds(
-        Frame f, int[] chunks, Vec w, DataInfo di,
+        Frame frame, int[] chunks, Vec w, DataInfo di,
         SparseMatrix matrix, SparseMatrixDimensions dimensions,
         Vec respVec, float[] resp, float[] weights
     ) {
         InitializeCSRMatrixFromChunkIdsMrFun fun = new InitializeCSRMatrixFromChunkIdsMrFun(
-            f, chunks, w, di, matrix, dimensions, respVec, resp, weights
+            frame, chunks, w, di, matrix, dimensions, respVec, resp, weights
         );
         H2O.submitTask(new LocalMR(fun, chunks.length)).join();
 
@@ -113,9 +113,9 @@ public class SparseMatrixFactory {
 
     private static class InitializeCSRMatrixFromChunkIdsMrFun extends MrFun<CalculateCSRMatrixDimensionsMrFun> {
 
-        Frame _f;
+        Frame _frame;
         int[] _chunks;
-        Vec _w;
+        Vec _weightVec;
         DataInfo _di;
         SparseMatrix _matrix;
         SparseMatrixDimensions _dims;
@@ -127,15 +127,15 @@ public class SparseMatrixFactory {
         int[] _actualRows;
         
         InitializeCSRMatrixFromChunkIdsMrFun(
-            Frame f, int[] chunks, Vec w, DataInfo di,
+            Frame frame, int[] chunks, Vec weightVec, DataInfo di,
             SparseMatrix matrix, SparseMatrixDimensions dimensions,
             Vec respVec, float[] resp, float[] weights
         ) {
             _actualRows = new int[chunks.length];
             
-            _f = f;
+            _frame = frame;
             _chunks = chunks;
-            _w = w;
+            _weightVec = weightVec;
             _di = di;
             _matrix = matrix;
             _dims = dimensions;
@@ -152,11 +152,11 @@ public class SparseMatrixFactory {
             NestedArrayPointer rowHeaderPointer = new NestedArrayPointer(rwRow);
             NestedArrayPointer dataPointer = new NestedArrayPointer(nonZeroCount);
 
-            Chunk weightChunk = _w != null ? _w.chunkForChunkIdx(chunk) : null;
+            Chunk weightChunk = _weightVec != null ? _weightVec.chunkForChunkIdx(chunk) : null;
             Chunk respChunk = _respVec.chunkForChunkIdx(chunk);
-            Chunk[] featChunks = new Chunk[_f.vecs().length];
+            Chunk[] featChunks = new Chunk[_frame.vecs().length];
             for (int i = 0; i < featChunks.length; i++) {
-                featChunks[i] = _f.vecs()[i].chunkForChunkIdx(chunk);
+                featChunks[i] = _frame.vecs()[i].chunkForChunkIdx(chunk);
             }
             for(int i = 0; i < respChunk._len; i++) {
                 if (weightChunk != null && weightChunk.atd(i) == 0) continue;
