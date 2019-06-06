@@ -60,16 +60,6 @@ def train_stacked_ensemble(dataset, base_models, **kwargs):
 
 def test_suite_stackedensemble_training_frame(blending=False):
 
-    def test_training_frame_as_key():
-        ds = prepare_data(blending)
-        ds.extend(train=ds.train.frame_id)
-        if blending: ds.extend(blend=ds.blend.frame_id)
-        datasets = pu.ns(gbm=ds, drf=ds)
-        bm = train_base_models(datasets)
-        se = train_stacked_ensemble(ds, bm)
-        assert se.auc() > 0
-
-
     def test_base_models_can_use_different_x():
         """
         test that passing in base models that use different subsets of 
@@ -116,7 +106,6 @@ def test_suite_stackedensemble_training_frame(blending=False):
             # raise e
     
     return [pu.tag_test(test, 'blending' if blending else None) for test in [
-        test_training_frame_as_key,
         test_base_models_can_use_different_x,
         test_base_models_can_use_different_compatible_training_frames,
         test_se_fails_when_base_models_use_incompatible_training_frames

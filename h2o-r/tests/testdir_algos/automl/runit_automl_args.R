@@ -478,16 +478,10 @@ automl.args.test <- function() {
           },
           error=function(err) {
             dummy = names(fr[match("dummy", fr)])
-            print(fr[match("dummy", fr)])
-            print(dummy)
             expect_equal(conditionMessage(err), paste0("argument '",dummy,"' must be a valid H2OFrame or key"))
-            NA
           }
         )
       }
-
-# attr = 'training_frame' if len(kwargs) == 1 else next(k for k in kwargs.keys() if k != 'training_frame')
-# assert "'{}' must be a valid H2OFrame or key".format(attr) in str(e)
 
       aml <- h2o.automl(x=ds$x, y=ds$y,
                         training_frame=h2o.getId(ds$train),
@@ -503,33 +497,33 @@ automl.args.test <- function() {
 
 
     makeSuite(
-        # test_without_y,
-        # test_without_x,
-        # test_y_as_index_x_as_name,
-        # test_exclude_algos,
-        # test_include_algos,
-        # test_include_exclude_algos,
-        # test_single_training_frame,
-        # test_training_with_validation_frame,
-        # test_training_with_leaderboard_frame,
-        # test_training_with_validation_and_leaderboard_frame,
-        # test_early_stopping,
-        # test_leaderboard_growth,
-        # test_fold_column,
-        # test_weights_column,
-        # test_fold_column_with_weights_column,
-        # test_nfolds_set_to_base_model,
-        # test_nfolds_eq_0,
-        # test_stacked_ensembles_trained,
-        # test_stacked_ensembles_trained_with_blending_frame_and_nfolds_eq_0,
-        # test_balance_classes,
-        # test_keep_cv_models_and_keep_cv_predictions,
-        # test_keep_cv_fold_assignment_defaults_with_nfolds_gt_0,
-        # test_keep_cv_fold_assignment_TRUE_with_nfolds_gt_0,
-        # test_keep_cv_fold_assignment_TRUE_with_nfolds_eq_0,
-        # test_max_runtime_secs,
-        # test_max_runtime_secs_per_model,
-        # test_max_models,
+        test_without_y,
+        test_without_x,
+        test_y_as_index_x_as_name,
+        test_exclude_algos,
+        test_include_algos,
+        test_include_exclude_algos,
+        test_single_training_frame,
+        test_training_with_validation_frame,
+        test_training_with_leaderboard_frame,
+        test_training_with_validation_and_leaderboard_frame,
+        test_early_stopping,
+        test_leaderboard_growth,
+        test_fold_column,
+        test_weights_column,
+        test_fold_column_with_weights_column,
+        test_nfolds_set_to_base_model,
+        test_nfolds_eq_0,
+        test_stacked_ensembles_trained,
+        test_stacked_ensembles_trained_with_blending_frame_and_nfolds_eq_0,
+        test_balance_classes,
+        test_keep_cv_models_and_keep_cv_predictions,
+        test_keep_cv_fold_assignment_defaults_with_nfolds_gt_0,
+        test_keep_cv_fold_assignment_TRUE_with_nfolds_gt_0,
+        test_keep_cv_fold_assignment_TRUE_with_nfolds_eq_0,
+        test_max_runtime_secs,
+        test_max_runtime_secs_per_model,
+        test_max_models,
         test_frames_can_be_passed_as_keys
     )
 }

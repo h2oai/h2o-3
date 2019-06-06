@@ -86,12 +86,6 @@ stackedensemble.base_model_training_frame.test <- function() {
                                 training_frame = train,
                                 base_models = list(my_gbm@model_id, my_rf@model_id))
 
-  # Train a stacked ensemble passing training frame as a key
-  stack4 <- h2o.stackedEnsemble(y = y,
-                                training_frame = h2o.getId(train),
-                                base_models = list(my_gbm@model_id, my_rf@model_id))
-
-  expect_equal(h2o.auc(stack3), h2o.auc(stack4))
 
   # Create a new training frame that's a different size
   train3 <- train2[1:2000,]
@@ -110,7 +104,7 @@ stackedensemble.base_model_training_frame.test <- function() {
                       training_frame = train,
                       base_models = list(my_gbm@model_id, my_rf@model_id)))
   
-  
+
 }
 
 doTest("Stacked Ensemble base_models training_frame Test", stackedensemble.base_model_training_frame.test)
