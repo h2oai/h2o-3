@@ -243,7 +243,6 @@ public class TestFrameBuilderTest extends TestUtil {
               .withDataForCol(0, ard(Float.NaN, Float.NaN, Float.NaN)) // All NaN column
               .withName("fr")
               .build();
-      Scope.track(frame);
       
       assertNotNull(frame);
       assertEquals(1, frame.numCols());
