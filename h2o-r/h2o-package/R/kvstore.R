@@ -47,8 +47,10 @@ h2o.ls <- function() {
 #' Remove All Objects on the H2O Cluster
 #'
 #' Removes the data from the h2o cluster, but does not remove the local references.
+#' Retains frames and vectors specified in retained_elements argument.
 #'
 #' @param timeout_secs Timeout in seconds. Default is no timeout.
+#' @param retained_elements Frames and vectors to be retained. Other keys provided are ignored.
 #' @seealso \code{\link{h2o.rm}}
 #' @examples
 #' \dontrun{
@@ -61,10 +63,24 @@ h2o.ls <- function() {
 #' h2o.ls()
 #' }
 #' @export
-h2o.removeAll <- function(timeout_secs=0) {
+h2o.removeAll <- function(timeout_secs=0, retained_elements = c()) {
   gc()
   tryCatch(
-    invisible(.h2o.__remoteSend(.h2o.__DKV, method = "DELETE", timeout=timeout_secs)),
+    {
+    retained_keys <- list()
+    
+    for (element in retained_elements) {
+      if (is(element, "H2OModel")) {
+        retained_keys <- append(retained_keys, element@model_id)
+      } else if (is.H2OFrame(element)) {
+        retained_keys <- append(retained_keys, h2o.getId(element))
+      }
+    }
+    
+    parms <- list()
+    parms$retained_keys <- paste0("[", paste(retained_keys, collapse=','), "]")
+    
+    invisible(.h2o.__remoteSend(.h2o.__DKV, method = "DELETE", timeout=timeout_secs, .params = parms))},
     error = function(e) {
       print("Timeout on DELETE /DKV from R")
       print("Attempt thread dump...")
