@@ -67,8 +67,8 @@ h2o.prcomp <- function(training_frame, x,
                        ) 
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
-  training_frame <- .validate.H2OFrame(training_frame)
-  validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
+  training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
+  validation_frame <- .validate.H2OFrame(validation_frame)
 
   # Handle other args
   # Parameter list to send to model builder

@@ -50,7 +50,7 @@ h2o.coxph <- function(x, event_column, training_frame,
                       ) 
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
-  training_frame <- .validate.H2OFrame(training_frame)
+  training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
   # If x is missing, then assume user wants to use all columns as features.
   if (missing(x)) {
      if (is.numeric(event_column)) {

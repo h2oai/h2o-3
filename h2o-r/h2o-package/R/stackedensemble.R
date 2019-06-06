@@ -56,9 +56,9 @@ h2o.stackedEnsemble <- function(x, y, training_frame,
                                 ) 
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
-  training_frame <- .validate.H2OFrame(training_frame)
-  validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
-  blending_frame <- .validate.H2OFrame(blending_frame, required=FALSE)
+  training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
+  validation_frame <- .validate.H2OFrame(validation_frame)
+  blending_frame <- .validate.H2OFrame(blending_frame)
   # Validate other required args
   # If x is missing, then assume user wants to use all columns as features.
   if (missing(x)) {

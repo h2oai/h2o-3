@@ -38,8 +38,8 @@ h2o.word2vec <- function(training_frame = NULL,
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   # training_frame is required if pre_trained frame is not specified
   if (missing(pre_trained) && missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
-  training_frame <- .validate.H2OFrame(training_frame, required=FALSE)
-  pre_trained <- .validate.H2OFrame(pre_trained, required=FALSE)
+  training_frame <- .validate.H2OFrame(training_frame)
+  pre_trained <- .validate.H2OFrame(pre_trained)
 
   # Handle other args
   # Parameter list to send to model builder
