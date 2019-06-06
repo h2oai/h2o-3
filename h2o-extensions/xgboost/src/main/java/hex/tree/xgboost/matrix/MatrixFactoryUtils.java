@@ -7,7 +7,7 @@ public class MatrixFactoryUtils {
 
     public static int setResponseAndWeight(Chunk[] chunks, int respIdx, int weightIdx, float[] resp, float[] weights, int j, int i) {
         if (weightIdx != -1) {
-            if(chunks[weightIdx].atd(i) == 0) {
+            if (chunks[weightIdx].atd(i) == 0) {
                 return j;
             }
             weights[j] = (float) chunks[weightIdx].atd(i);
@@ -16,14 +16,14 @@ public class MatrixFactoryUtils {
         return j;
     }
 
-    public static int setResponseAndWeight(Vec.Reader w, float[] resp, float[] weights, Vec.Reader respVec, int j, long i) {
-        if (w != null) {
-            if(w.at(i) == 0) {
+    public static int setResponseAndWeight(Chunk weightChunk, Chunk respChunk, float[] resp, float[] weights, int j, int i) {
+        if (weightChunk != null) {
+            if(weightChunk.atd(i) == 0) {
                 return j;
             }
-            weights[j] = (float) w.at(i);
+            weights[j] = (float) weightChunk.atd(i);
         }
-        resp[j++] = (float) respVec.at(i);
+        resp[j++] = (float) respChunk.atd(i);
         return j;
     }
 
