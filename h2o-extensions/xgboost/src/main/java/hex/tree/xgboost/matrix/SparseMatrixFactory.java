@@ -30,7 +30,7 @@ public class SparseMatrixFactory {
         SparseMatrix sparseMatrix = allocateCSRMatrix(sparseMatrixDimensions);
 
         int actualRows = initializeFromChunkIds(
-            f, chunksIds, f.vecs(), weightsVec,
+            f, chunksIds, weightsVec,
             di, sparseMatrix, sparseMatrixDimensions,
             responseVec, resp, weights);
 
@@ -99,12 +99,12 @@ public class SparseMatrixFactory {
     }
 
     public static int initializeFromChunkIds(
-        Frame f, int[] chunks, Vec[] vecs, Vec w, DataInfo di,
+        Frame f, int[] chunks, Vec w, DataInfo di,
         SparseMatrix matrix, SparseMatrixDimensions dimensions,
         Vec respVec, float[] resp, float[] weights
     ) {
         InitializeCSRMatrixFromChunkIdsMrFun fun = new InitializeCSRMatrixFromChunkIdsMrFun(
-            f, chunks, vecs, w, di, matrix, dimensions, respVec, resp, weights
+            f, chunks, w, di, matrix, dimensions, respVec, resp, weights
         );
         H2O.submitTask(new LocalMR(fun, chunks.length)).join();
 
@@ -115,7 +115,6 @@ public class SparseMatrixFactory {
 
         Frame _f;
         int[] _chunks;
-        Vec[] _vecs; 
         Vec _w;
         DataInfo _di;
         SparseMatrix _matrix;
@@ -128,7 +127,7 @@ public class SparseMatrixFactory {
         int[] _actualRows;
         
         InitializeCSRMatrixFromChunkIdsMrFun(
-            Frame f, int[] chunks, Vec[] vecs, Vec w, DataInfo di,
+            Frame f, int[] chunks, Vec w, DataInfo di,
             SparseMatrix matrix, SparseMatrixDimensions dimensions,
             Vec respVec, float[] resp, float[] weights
         ) {
@@ -136,7 +135,6 @@ public class SparseMatrixFactory {
             
             _f = f;
             _chunks = chunks;
-            _vecs = vecs;
             _w = w;
             _di = di;
             _matrix = matrix;
@@ -156,13 +154,10 @@ public class SparseMatrixFactory {
 
             Chunk weightChunk = _w != null ? _w.chunkForChunkIdx(chunk) : null;
             Chunk respChunk = _respVec.chunkForChunkIdx(chunk);
-            Chunk[] featChunks = new Chunk[_vecs.length];
+            Chunk[] featChunks = new Chunk[_f.vecs().length];
             for (int i = 0; i < featChunks.length; i++) {
-                featChunks[i] = _vecs[i].chunkForChunkIdx(chunk);
+                featChunks[i] = _f.vecs()[i].chunkForChunkIdx(chunk);
             }
-            
-            Vec.Reader weightReader = _w != null ? _w.new Reader() : null;
-            Vec.Reader respReader = _respVec.new Reader();
             for(int i = 0; i < respChunk._len; i++) {
                 if (weightChunk != null && weightChunk.atd(i) == 0) continue;
                 rowHeaderPointer.setAndIncrement(_matrix._rowHeaders, nonZeroCount);
@@ -186,7 +181,7 @@ public class SparseMatrixFactory {
                         nonZeroCount++;
                     }
                 }
-                rwRow = setResponseAndWeight(weightReader, _resp, _weights, respReader, rwRow, i + respChunk.start());
+                rwRow = setResponseAndWeight(weightChunk, respChunk, _resp, _weights, rwRow, i);
             }
             rowHeaderPointer.set(_matrix._rowHeaders, nonZeroCount);
         }
