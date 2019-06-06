@@ -44,21 +44,21 @@ public class XGBoostUtils {
     /**
      * convert an H2O Frame to a sparse DMatrix
      * @param di data info
-     * @param f H2O Frame - adapted using a provided data info
+     * @param frame H2O Frame - adapted using a provided data info
      * @param response name of the response column
      * @param weight name of the weight column
      * @return DMatrix
      * @throws XGBoostError
      */
     public static DMatrix convertFrameToDMatrix(DataInfo di,
-                                                Frame f,
+                                                Frame frame,
                                                 String response,
                                                 String weight,
                                                 boolean sparse) throws XGBoostError {
         assert di != null;
-        int[] chunks = VecUtils.getLocalChunkIds(f.anyVec());
-        final Vec responseVec = f.vec(response);
-        final Vec weightVec = f.vec(weight);
+        int[] chunks = VecUtils.getLocalChunkIds(frame.anyVec());
+        final Vec responseVec = frame.vec(response);
+        final Vec weightVec = frame.vec(weight);
         final int[] nRowsByChunk = new int[chunks.length];
         final long nRowsL = sumChunksLength(chunks, responseVec, weightVec, nRowsByChunk);
         if (nRowsL > Integer.MAX_VALUE) {
@@ -79,10 +79,10 @@ public class XGBoostUtils {
         }
         if (sparse) {
             Log.debug("Treating matrix as sparse.");
-            trainMat = SparseMatrixFactory.csr(f, chunks, weightVec, responseVec, di, resp, weights);
+            trainMat = SparseMatrixFactory.csr(frame, chunks, weightVec, responseVec, di, resp, weights);
         } else {
             Log.debug("Treating matrix as dense.");
-            trainMat = DenseMatrixFactory.dense(f, chunks, nRows, nRowsByChunk, weightVec, responseVec, di, resp, weights);
+            trainMat = DenseMatrixFactory.dense(frame, chunks, nRows, nRowsByChunk, weightVec, responseVec, di, resp, weights);
         }
 
         assert trainMat.rowNum() == nRows;
