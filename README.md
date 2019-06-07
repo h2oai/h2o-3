@@ -716,6 +716,16 @@ Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _G
 
 H2O has been built by a great many number of contributors over the years both within H2O.ai (the company) and the greater open source community.  You can begin to contribute to H2O by answering [Stack Overflow](http://stackoverflow.com/questions/tagged/h2o) questions or [filing bug reports](https://0xdata.atlassian.net/projects/PUBDEV/issues).  Please join us!  
 
+<a name="Roadmap"></a>
+## 11. Roadmap
+
+* SVM
+* Customized Loss Function in GBM
+* CoxPH in Python
+* Isolation Forest – early stopping + variable importance
+* XGBoost Upgrade and performance improvements
+* MOJO Import improvements
+
 ### Team & Committers
 
 ```
