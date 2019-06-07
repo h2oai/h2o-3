@@ -727,6 +727,7 @@ Next major H2O release (3.26) is planned for the end of June/beginning of July a
 * XGBoost Upgrade and performance improvements
 * CoxPH in Python
 * MOJO Import improvements
+* MOJO for Target Encoding
 
 ### Team & Committers
 
