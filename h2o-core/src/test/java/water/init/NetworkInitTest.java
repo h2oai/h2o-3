@@ -6,8 +6,11 @@ import org.junit.Test;
 import java.util.Arrays;
 
 import water.AutoBuffer;
+import water.H2O;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
+import water.webserver.iface.H2OHttpConfig;
+import water.webserver.iface.LoginType;
 
 import static water.TestUtil.ar;
 import static water.TestUtil.ari;
@@ -58,4 +61,34 @@ public class NetworkInitTest {
     }
     return r;
   }
+
+  @Test
+  public void testWebServerConfig() {
+    H2O.OptArgs args = new H2O.OptArgs();
+    args.jks = "/path/to/file.jks";
+    args.jks_pass = "h2opass";
+    args.jks_alias = "h2oalias";
+    args.spnego_properties = "h2oprops";
+    args.form_auth = true;
+    args.session_timeout = 100;
+    args.user_name = "testuser";
+    args.context_path = "testcontext";
+
+    H2OHttpConfig cfg = NetworkInit.webServerConfig(args);
+
+    H2OHttpConfig expected = new H2OHttpConfig();
+    expected.jks = "/path/to/file.jks";
+    expected.jks_pass = "h2opass";
+    expected.jks_alias = "h2oalias";
+    expected.spnego_properties = "h2oprops";
+    expected.form_auth = true;
+    expected.session_timeout = 100;
+    expected.user_name = "testuser";
+    expected.context_path = "testcontext";
+    expected.loginType = LoginType.NONE;
+    
+    Assert.assertEquals(expected, cfg);
+  }
+
+
 }

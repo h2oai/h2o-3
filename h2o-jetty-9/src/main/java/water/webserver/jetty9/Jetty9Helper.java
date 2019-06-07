@@ -52,6 +52,9 @@ class Jetty9Helper {
         if (isSecured) {
             final SslContextFactory sslContextFactory = new SslContextFactory(config.jks);
             sslContextFactory.setKeyStorePassword(config.jks_pass);
+            if (config.jks_alias != null) {
+                sslContextFactory.setCertAlias(config.jks_alias);
+            }
             connector = new ServerConnector(jettyServer, AbstractConnectionFactory.getFactories(sslContextFactory, httpConnectionFactory));
         } else {
             connector = new ServerConnector(jettyServer, httpConnectionFactory);
