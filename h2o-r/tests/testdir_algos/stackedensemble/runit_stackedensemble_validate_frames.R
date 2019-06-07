@@ -15,7 +15,7 @@ source("../../../scripts/h2o-r-test-setup.R")
   test <- ss[[2]]
 
   x <- setdiff(names(train), y)
-  return(if (as_keys) list(x=x, y=y, train=h2o.getId(train), valid=h2o.getId(valid), test=h2o.getId(test))
+  return(if (as_keys) list(x=x, y=y, train=h2o.getId(train), valid=h2o.getId(valid), blend=h2o.getId(test))
           else list(x=x, y=y, train=train, valid=valid, blend=test))
 }
 

@@ -112,7 +112,7 @@ class H2OEstimator(ModelBase):
     def _train(self, x=None, y=None, training_frame=None, offset_column=None, fold_column=None,
               weights_column=None, validation_frame=None, max_runtime_secs=None, ignored_columns=None,
               model_id=None, verbose=False, extend_parms_fn=None):
-        has_default_training_frame = self.training_frame is not None
+        has_default_training_frame = hasattr(self, 'training_frame') and self.training_frame is not None
         training_frame = H2OFrame._validate(training_frame, 'training_frame',
                                             required=self._requires_training_frame() and not has_default_training_frame)
         validation_frame = H2OFrame._validate(validation_frame, 'validation_frame')
@@ -130,7 +130,7 @@ class H2OEstimator(ModelBase):
         override_default_training_frame = training_frame is not None
         if not override_default_training_frame:
             self._verify_training_frame_params(offset_column, fold_column, weights_column, validation_frame)
-            training_frame = self.training_frame
+            training_frame = self.training_frame if has_default_training_frame else None
 
         algo = self.algo
         if verbose and algo not in ["drf", "gbm", "deeplearning", "xgboost"]:
@@ -141,8 +141,9 @@ class H2OEstimator(ModelBase):
         is_auto_encoder = bool(parms.get("autoencoder"))
         is_supervised = not(is_auto_encoder or algo in {"aggregator", "pca", "svd", "kmeans", "glrm", "word2vec", "isolationforest", "generic"})
 
-        names = training_frame.names
-        ncols = training_frame.ncols
+        names = training_frame.names if training_frame is not None else []
+        ncols = training_frame.ncols if training_frame is not None else 0
+        types = training_frame.types if training_frame is not None else {}
 
         if is_supervised:
             if y is None: y = "response"
@@ -153,7 +154,7 @@ class H2OEstimator(ModelBase):
             else:
                 if y not in names:
                     raise H2OValueError("Column %s does not exist in the training frame" % y)
-            self._estimator_type = "classifier" if training_frame.types[y] == "enum" else "regressor"
+            self._estimator_type = "classifier" if types[y] == "enum" else "regressor"
         else:
             # If `y` is provided for an unsupervised model we'll simply ignore
             # it. This way an unsupervised model can be used as a step in
