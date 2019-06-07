@@ -719,11 +719,13 @@ H2O has been built by a great many number of contributors over the years both wi
 <a name="Roadmap"></a>
 ## 11. Roadmap
 
+Next major H2O release (3.26) is planned for the end of June/beginning of July and will add these major features:
+
 * SVM
 * Customized Loss Function in GBM
-* CoxPH in Python
 * Isolation Forest – early stopping + variable importance
 * XGBoost Upgrade and performance improvements
+* CoxPH in Python
 * MOJO Import improvements
 
 ### Team & Committers
