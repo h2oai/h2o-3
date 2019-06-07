@@ -575,7 +575,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
     private void fitBestConstants(DTree[] ktrees, int[] leafs, GammaPass gp, Constraints cs) {
       final boolean useSplitPredictions = cs != null && cs.useBounds();
-      double m1class = _nclass > 1 && _parms._distribution == DistributionFamily.multinomial ? (double) (_nclass - 1) / _nclass : 1.0; // K-1/K for multinomial
+      double m1class = (_nclass > 1 && _parms._distribution == DistributionFamily.multinomial) || 
+              (_nclass > 2 && _parms._distribution == DistributionFamily.custom) ? (double) (_nclass - 1) / _nclass : 1.0; // K-1/K for multinomial
       for (int k = 0; k < _nclass; k++) {
         final DTree tree = ktrees[k];
         if (tree == null) continue;
@@ -592,7 +593,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           // In the multinomial case, check for very large values (which will get exponentiated later)
           // Note that gss can be *zero* while rss is non-zero - happens when some rows in the same
           // split are perfectly predicted true, and others perfectly predicted false.
-          if (_parms._distribution == DistributionFamily.multinomial) {
+          if (_parms._distribution == DistributionFamily.multinomial || (_parms._distribution == DistributionFamily.custom && _nclass > 2)) {
             if (gf > 1e4) gf = 1e4f; // Cap prediction, will already overflow during Math.exp(gf)
             else if (gf < -1e4) gf = -1e4f;
           }
@@ -801,7 +802,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         double f = preds.atd(row) + offset.atd(row);
         double y = ys.atd(row);
 //          Log.info(f + " vs " + y); //expect that the model predicts very negative values for 0 and very positive values for 1
-        if (dist.distribution == DistributionFamily.multinomial && fs != null) {
+        if ((dist.distribution == DistributionFamily.multinomial && fs != null) || (dist.distribution == DistributionFamily.custom && nclass > 2)) {
           double sum = score1static(chks, fm.tree0Index, 0.0 /*not used for multiclass*/, fs, row, dist, nclass);
           if (Double.isInfinite(sum)) {  // Overflow (happens for constant responses)
             for (int k = 0; k < nclass; k++) {

@@ -109,35 +109,23 @@ class GaussianDistribution extends Distribution {
 
 class BernoulliDistribution extends Distribution {
 
-    public BernoulliDistribution(DistributionFamily family){
-        super(family, new LogitFunction());
-    }
+    public BernoulliDistribution(DistributionFamily family){ super(family, new LogitFunction()); }
 
     @Override
-    public double deviance(double w, double y, double f) {
-        return -2 * w * (y * LogExpUtil.log(f) + (1 - y) * LogExpUtil.log(1 - f));
-    }
+    public double deviance(double w, double y, double f) { return -2 * w * (y * LogExpUtil.log(f) + (1 - y) * LogExpUtil.log(1 - f)); }
 
     @Override
-    public double negHalfGradient(double y, double f) {
-        return y - linkInv(f);
-    }
+    public double negHalfGradient(double y, double f) { return y - linkInv(f); }
 
     @Override
-    public double initFNum(double w, double o, double y) {
-        return w * (y - o);
-    }
+    public double initFNum(double w, double o, double y) { return w * (y - o); }
 
     @Override
-    public double initFDenom(double w, double o, double y) {
-        return w;
-    }
+    public double initFDenom(double w, double o, double y) { return w; }
 
     @Override
-    public double gammaNum(double w, double y, double z, double f) {
-        return w * z;
-    }
-
+    public double gammaNum(double w, double y, double z, double f) { return w * z; }
+    
     @Override
     public double gammaDenom(double w, double y, double z, double f) {
         double ff = y - z;
@@ -254,9 +242,7 @@ class ModifiedHuberDistribution extends Distribution {
 
 class MultinomialDistribution extends Distribution {
 
-    public MultinomialDistribution(DistributionFamily family){
-        super(family, new LogFunction());
-    }
+    public MultinomialDistribution(DistributionFamily family){ super(family, new LogFunction()); }
 
     @Override
     public double initFNum(double w, double o, double y) {
@@ -313,9 +299,7 @@ class PoissonDistribution extends Distribution {
     }
 
     @Override
-    public double gammaDenom(double w, double y, double z, double f) {
-        return w * (y - z); // y - z == LogExpUtil.exp(f)
-    }
+    public double gammaDenom(double w, double y, double z, double f) { return w * (y - z); } // y - z == LogExpUtil.exp(f) 
 }
 
 class GammaDistribution extends Distribution {
@@ -346,14 +330,10 @@ class GammaDistribution extends Distribution {
     }
 
     @Override
-    public double gammaNum(double w, double y, double z, double f) {
-        return w * (z + 1); // z + 1 == y * LogExpUtil.exp(-f)
-    }
+    public double gammaNum(double w, double y, double z, double f) { return w * (z + 1); } // z + 1 == y * LogExpUtil.exp(-f) 
 
     @Override
-    public double gammaDenom(double w, double y, double z, double f) {
-        return w;
-    }
+    public double gammaDenom(double w, double y, double z, double f) { return w; }
 }
 
 class TweedieDistribution extends Distribution {
@@ -386,14 +366,10 @@ class TweedieDistribution extends Distribution {
     }
 
     @Override
-    public double gammaNum(double w, double y, double z, double f) {
-        return w * y * LogExpUtil.exp(f * (1 - tweediePower));
-    }
+    public double gammaNum(double w, double y, double z, double f) { return w * y * LogExpUtil.exp(f * (1 - tweediePower)); }
 
     @Override
-    public double gammaDenom(double w, double y, double z, double f) {
-        return w * LogExpUtil.exp(f * (2 - tweediePower));
-    }
+    public double gammaDenom(double w, double y, double z, double f) { return w * LogExpUtil.exp(f * (2 - tweediePower)); }
 }
 
 class HuberDistribution extends Distribution {
@@ -446,14 +422,10 @@ class QuantileDistribution extends Distribution {
     }
 
     @Override
-    public double deviance(double w, double y, double f) {
-        return y > f ? w * quantileAlpha * (y - f) : w * (1 - quantileAlpha) * (f - y);
-    }
+    public double deviance(double w, double y, double f) { return y > f ? w * quantileAlpha * (y - f) : w * (1 - quantileAlpha) * (f - y); }
 
     @Override
-    public double negHalfGradient(double y, double f) {
-        return y > f ? 0.5 * quantileAlpha : 0.5 * (quantileAlpha - 1);
-    }
+    public double negHalfGradient(double y, double f) { return y > f ? 0.5 * quantileAlpha : 0.5 * (quantileAlpha - 1); }
 }
 
 /**
@@ -471,29 +443,19 @@ class CustomDistribution extends Distribution {
     }
 
     @Override
-    public double link(double f) {
-        return customDistribution.getFunc().link(f);
-    }
+    public double link(double f) { return customDistribution.getFunc().link(f); }
 
     @Override
-    public double linkInv(double f) {
-        return customDistribution.getFunc().inversion(f);
-    }
+    public double linkInv(double f) { return customDistribution.getFunc().inversion(f); }
 
     @Override
-    public String linkInvString(String f) {
-        throw H2O.unimpl("POJO is not currently supported for custom distribution models.");
-    }
+    public String linkInvString(String f) { throw H2O.unimpl("POJO is not currently supported for custom distribution models."); }
 
     @Override
-    public double deviance(double w, double y, double f) {
-        return customDistribution.getFunc().deviance(w, y, f);
-    }
+    public double deviance(double w, double y, double f) { return customDistribution.getFunc().deviance(w, y, f); }
 
     @Override
-    public double negHalfGradient(double y, double f) {
-        return customDistribution.getFunc().gradient(y, f);
-    }
+    public double negHalfGradient(double y, double f) { return customDistribution.getFunc().gradient(y, f); }
 
     @Override
     public double initFNum(double w, double o, double y) {
@@ -552,9 +514,7 @@ final class LogExpUtil {
      * @param x value to be transform
      * @return result of exp function
      */
-    public static double exp(double x) {
-        return Math.min(MAX, Math.exp(x));
-    }
+    public static double exp(double x) { return Math.min(MAX, Math.exp(x)); }
 
     /**
      * Sanitized log function - helper function

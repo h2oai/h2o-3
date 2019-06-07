@@ -44,7 +44,7 @@ class CustomDistributionGaussianWrong:
         return [w * z, w]
 
 
-class CustomDistributionBinomial:
+class CustomDistributionBernoulli:
 
     def link(self, f):
         def log(x):
@@ -61,7 +61,6 @@ class CustomDistributionBinomial:
         def exp(x):
             import java.lang.Math as Math
             return Math.min(1e19, Math.exp(x))
-    
         return 1 / (1 + exp(-f))
 
     def deviance(self, w, y, f):
@@ -73,7 +72,6 @@ class CustomDistributionBinomial:
                 return min_log
             else:
                 return Math.max(min_log, Math.log(x))
-            
         return -2 * w * (y * log(f) + (1 - y) * log(1 - f))
 
     def init(self, w, o, y):
@@ -85,6 +83,27 @@ class CustomDistributionBinomial:
     def gamma(self, w, y, z, f):
         ff = y - z
         return [w * z, w * ff * (1 - ff)]
+    
+
+class CustomNullDistribution:
+
+    def link(self, f):
+        return 0
+
+    def inversion(self, f):
+        return 0
+
+    def deviance(self, w, y, f):
+        return 0
+
+    def init(self, w, o, y):
+        return [0, 0]
+
+    def gradient(self, y, f):
+        return 0
+
+    def gamma(self, w, y, z, f):
+        return 0
 
 
 class CustomDistributionMultinomial:
@@ -98,14 +117,12 @@ class CustomDistributionMultinomial:
                 return min_log
             else:
                 return Math.max(min_log, Math.log(x))
-            
         return log(f)
 
     def inversion(self, f):
         def exp(x):
             import java.lang.Math as Math
             return Math.min(1e19, Math.exp(x))
-        
         return exp(f)
 
     def deviance(self, w, y, f):
@@ -157,7 +174,8 @@ def regression_model_distribution(ModelType, custom_distribution_func):
     model.train(y="AGE", x=ftrain.names, training_frame=ftrain, validation_frame=fvalid)
     return model, ftest
 
-def binomial_model_default(ModelType):
+
+def bernoulli_model_default(ModelType):
     (ftrain, fvalid, ftest) = dataset_prostate()
     model = ModelType(model_id="binomial",
                       ntrees=3,
@@ -168,7 +186,7 @@ def binomial_model_default(ModelType):
     return model, ftest
 
 
-def binomial_model_distribution(ModelType, custom_distribution_func):
+def bernoulli_model_distribution(ModelType, custom_distribution_func):
     (ftrain, fvalid, ftest) = dataset_prostate()
     model = ModelType(model_id="binomial_custom",
                       ntrees=3,

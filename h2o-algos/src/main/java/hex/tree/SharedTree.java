@@ -1011,7 +1011,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
    * @return initial value
    */
   protected double getInitialValue() {
-    return new InitialValue(_parms).doAll(
+    return new InitialValue(_parms, _nclass).doAll(
             _response,
             hasWeightCol() ? _weights : _response.makeCon(1),
             hasOffsetCol() ? _offset : _response.makeCon(0)
@@ -1020,15 +1020,18 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   // Helper MRTask to compute the initial value
   private static class InitialValue extends MRTask<InitialValue> {
-    public  InitialValue(Model.Parameters parms) { 
+    public  InitialValue(Model.Parameters parms, int nclass) { 
       _dist = DistributionFactory.getDistribution(parms);
+      _nclass = nclass;
     }
     final private Distribution _dist;
+    final private int _nclass;
     private double _num;
     private double _denom;
+    
 
     public  double initialValue() {
-      if (_dist.distribution == DistributionFamily.multinomial)
+      if (_dist.distribution == DistributionFamily.multinomial || (_dist.distribution == DistributionFamily.custom && _nclass > 2))
         return -0.5*DistributionFactory.getDistribution(DistributionFamily.bernoulli).link(_num/_denom);
       else return _dist.link(_num / _denom);
     }

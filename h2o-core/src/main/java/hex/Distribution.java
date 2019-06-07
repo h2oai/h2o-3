@@ -3,7 +3,6 @@ package hex;
 import water.H2O;
 import water.Iced;
 import hex.genmodel.utils.DistributionFamily;
-import water.udf.*;
 
 /**
  * Distribution functions to be used by ML Algos
@@ -75,9 +74,7 @@ public abstract class Distribution extends Iced<Distribution> {
      * @param f value in link space, to be transformed back to original space
      * @return linkInv(f)
      */
-    public double linkInv(double f) {
-        return linkFunction.linkInv(f);
-    }
+    public double linkInv(double f) { return linkFunction.linkInv(f); }
 
     /**
      * String version of link inverse (for POJO scoring code generation)
@@ -109,9 +106,7 @@ public abstract class Distribution extends Iced<Distribution> {
      * @param f (predicted) response in link space (including offset)
      * @return -1/2 * d/df deviance(w=1,y,f)
      */
-    public double negHalfGradient(double y, double f) {
-        throw H2O.unimpl();
-    }
+    public double negHalfGradient(double y, double f) { throw H2O.unimpl(); }
     
     /**
      * Contribution to numerator for initial value computation
