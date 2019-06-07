@@ -1,9 +1,6 @@
 package water.api;
 
-import water.DKV;
-import water.H2O;
-import water.Keyed;
-import water.Lockable;
+import water.*;
 import water.api.schemas3.RemoveV3;
 
 public class RemoveHandler extends Handler {

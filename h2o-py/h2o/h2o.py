@@ -372,7 +372,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     cannot see the file, then an exception will be thrown by the H2O cluster. Does a parallel/distributed
     multi-threaded pull of the data. The main difference between this method and :func:`upload_file` is that
     the latter works with local files, whereas this method imports remote files (i.e. files local to the server).
-    If you running H2O server on your own maching, then both methods behave the same.
+    If you running H2O server on your own machine, then both methods behave the same.
 
     :param path: path(s) specifying the location of the data to import or a path to a directory of files to import
     :param destination_frame: The unique hex key assigned to the imported file. If none is given, a key will be
@@ -933,9 +933,14 @@ def remove(x):
                 api("DELETE /3/DKV/%s" % xi)
 
 
-def remove_all():
-    """Remove all objects from H2O."""
-    api("DELETE /3/DKV")
+def remove_all(retained=None):
+    """
+    Removes all objects from H2O with possibility to specify models and frames to retain.
+    :param retained: Keys of models and frames to retain 
+    """
+
+    params = {"retained_keys": retained}
+    api(endpoint="DELETE /3/DKV", data=params)
 
 
 def rapids(expr):
@@ -1557,6 +1562,7 @@ def upload_mojo(mojo_path):
     mojo_estimator.train()
     print(mojo_estimator)
     return mojo_estimator
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Private
