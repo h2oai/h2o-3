@@ -29,7 +29,8 @@ public class TargetEncodingStressBenchmark extends TestUtil {
     Scope.enter();
     long seed = new Random().nextLong();
     try {
-      int size = 5000000;
+      int size = 10000000;
+      int sizePerChunk = size / 5;
       String[] arr = new String[size];
       for (int a = 0; a < size; a++) {
         arr[a] = Integer.toString(new Random().nextInt(size / 2));
@@ -40,7 +41,7 @@ public class TargetEncodingStressBenchmark extends TestUtil {
               .withVecTypes(Vec.T_STR, Vec.T_NUM)
               .withDataForCol(0, arr)
               .withRandomIntDataForCol(1, size, 0, 2, seed)
-              .withChunkLayout(1000000, 1000000, 1000000, 1000000, 1000000)
+              .withChunkLayout(sizePerChunk, sizePerChunk, sizePerChunk, sizePerChunk, sizePerChunk)
               .build();
 
       asFactor(fr, "ColA");
@@ -63,15 +64,18 @@ public class TargetEncodingStressBenchmark extends TestUtil {
       boolean withBlendedAvg = true;
       boolean withImputationForNAsInOriginalColumns = true;
 
+      long startTime = System.currentTimeMillis();
       encodingMap = tec.prepareEncodingMap(fr, responseColumnName, foldColumnName, true);
 
       Frame trainEncoded;
 
       trainEncoded = tec.applyTargetEncoding(fr, responseColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, withBlendedAvg, withImputationForNAsInOriginalColumns, seed);
 
+      long totalTime = System.currentTimeMillis() - startTime;
       printOutFrameAsTable(trainEncoded, false, 100);
       Scope.track(trainEncoded);
 
+      System.out.println("Time spent for preparing EN and applying it: " + totalTime);
     } catch (Exception ex) {
       Assert.fail(ex.getMessage());
     } finally {

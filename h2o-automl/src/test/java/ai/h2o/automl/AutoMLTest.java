@@ -23,14 +23,14 @@ import static org.junit.Assert.*;
 
 public class AutoMLTest extends water.TestUtil {
 
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(2); }
 
   @Test public void test_basic_automl_behaviour_using_cv() {
     AutoML aml=null;
     Frame fr=null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
+      fr = parse_test_file("smalldata/logreg/prostate_train.csv");
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "CAPSULE";
 
@@ -63,7 +63,7 @@ public class AutoMLTest extends water.TestUtil {
     Frame fr=null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
+      fr = parse_test_file("smalldata/logreg/prostate_train.csv");
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "CAPSULE";
 
@@ -91,8 +91,8 @@ public class AutoMLTest extends water.TestUtil {
     List<Lockable> deletables = new ArrayList<>();
     try {
       final int seed = 62832;
-      final Frame fr = parse_test_file("./smalldata/logreg/prostate_train.csv"); deletables.add(fr);
-      final Frame test = parse_test_file("./smalldata/logreg/prostate_test.csv"); deletables.add(test);
+      final Frame fr = parse_test_file("smalldata/logreg/prostate_train.csv"); deletables.add(fr);
+      final Frame test = parse_test_file("smalldata/logreg/prostate_test.csv"); deletables.add(test);
       
       String target = "CAPSULE";
       int tidx = fr.find(target);
@@ -146,7 +146,7 @@ public class AutoMLTest extends water.TestUtil {
     Frame fr=null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
+      fr = parse_test_file("smalldata/logreg/prostate_train.csv");
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "CAPSULE";
 
@@ -170,7 +170,7 @@ public class AutoMLTest extends water.TestUtil {
     Frame fr=null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
+      fr = parse_test_file("smalldata/logreg/prostate_train.csv");
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "CAPSULE";
       autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.DeepLearning, Algo.DRF, Algo.GLM};
@@ -198,9 +198,9 @@ public class AutoMLTest extends water.TestUtil {
     Frame fr=null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-//      fr = parse_test_file("./smalldata/prostate/prostate_complete.csv"); //using slightly larger dataset to make this test useful
+//      fr = parse_test_file("smalldata/prostate/prostate_complete.csv"); //using slightly larger dataset to make this test useful
 //      autoMLBuildSpec.input_spec.response_column = "CAPSULE";
-      fr = parse_test_file("./smalldata/diabetes/diabetes_text_train.csv"); //using slightly larger dataset to make this test useful
+      fr = parse_test_file("smalldata/diabetes/diabetes_text_train.csv"); //using slightly larger dataset to make this test useful
       autoMLBuildSpec.input_spec.response_column = "diabetesMed";
       autoMLBuildSpec.input_spec.training_frame = fr._key;
 
@@ -235,7 +235,7 @@ public class AutoMLTest extends water.TestUtil {
     Model leader = null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
+      fr = parse_test_file("smalldata/logreg/prostate_train.csv");
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "CAPSULE";
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
@@ -267,7 +267,7 @@ public class AutoMLTest extends water.TestUtil {
     Model leader = null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/airlines/AirlinesTrain.csv");
+      fr = parse_test_file("smalldata/airlines/AirlinesTrain.csv");
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
@@ -293,7 +293,7 @@ public class AutoMLTest extends water.TestUtil {
     Frame fr=null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      fr = parse_test_file("smalldata/airlines/allyears2k_headers.zip");
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       aml = new AutoML(Key.<AutoML>make(), new Date(), autoMLBuildSpec);
@@ -333,8 +333,8 @@ public class AutoMLTest extends water.TestUtil {
     Frame fr = null, test = null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
-      test = parse_test_file("./smalldata/logreg/prostate_test.csv");
+      fr = parse_test_file("smalldata/logreg/prostate_train.csv");
+      test = fr;//parse_test_file("smalldata/logreg/prostate_test.csv");
       autoMLBuildSpec.input_spec.response_column = "CAPSULE";
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.validation_frame = null;
@@ -360,8 +360,8 @@ public class AutoMLTest extends water.TestUtil {
     Frame fr = null, test = null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
-      test = parse_test_file("./smalldata/logreg/prostate_test.csv");
+      fr = parse_test_file("smalldata/logreg/prostate_train.csv");
+      test = parse_test_file("smalldata/logreg/prostate_test.csv");
       autoMLBuildSpec.input_spec.response_column = "CAPSULE";
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.validation_frame = test._key;
@@ -387,7 +387,7 @@ public class AutoMLTest extends water.TestUtil {
     Frame fr = null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
+      fr = parse_test_file("smalldata/logreg/prostate_train.csv");
       autoMLBuildSpec.input_spec.response_column = "CAPSULE";
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.validation_frame = null;
@@ -412,7 +412,7 @@ public class AutoMLTest extends water.TestUtil {
     Frame fr = null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
+      fr = parse_test_file("smalldata/logreg/prostate_train.csv");
       autoMLBuildSpec.input_spec.response_column = "CAPSULE";
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.validation_frame = null;
@@ -435,7 +435,7 @@ public class AutoMLTest extends water.TestUtil {
     Frame fr=null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      fr = parse_test_file("smalldata/airlines/allyears2k_headers.zip");
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.DeepLearning, Algo.XGBoost, };
@@ -464,7 +464,7 @@ public class AutoMLTest extends water.TestUtil {
     Frame fr=null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      fr = parse_test_file("smalldata/airlines/allyears2k_headers.zip");
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_models.include_algos = new Algo[] {Algo.DeepLearning, Algo.XGBoost, };
@@ -498,7 +498,7 @@ public class AutoMLTest extends water.TestUtil {
     Frame fr=null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      fr = parse_test_file("smalldata/airlines/allyears2k_headers.zip");
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.GBM, Algo.GLM, };

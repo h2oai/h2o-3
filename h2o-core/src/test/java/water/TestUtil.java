@@ -85,6 +85,7 @@ public class TestUtil extends Iced {
     x = Math.max(MINCLOUDSIZE, x);
     if( !_stall_called_before ) {
       H2O.main(args);
+      H2O.registerResourceRoot(new File("/Users/deil/Development/h2o-3_second/h2o-automl"));
       H2O.registerResourceRoot(new File(System.getProperty("user.dir") + File.separator + "h2o-web/src/main/resources/www"));
       H2O.registerResourceRoot(new File(System.getProperty("user.dir") + File.separator + "h2o-core/src/main/resources/www"));
       ExtensionManager.getInstance().registerRestApiExtensions();
