@@ -7,6 +7,7 @@ from datetime import datetime
 import h2o
 import uuid
 from pandas.util.testing import assert_frame_equal
+import boto3
 
 def s3_import_export():
     local_frame = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
@@ -18,6 +19,11 @@ def s3_import_export():
         h2o.export_file(local_frame, s3_path)
         s3_frame = h2o.import_file(s3_path)
         assert_frame_equal(local_frame.as_data_frame(), s3_frame.as_data_frame())
+        
+        #Delete the file afterwards
+        s3 = boto3.resource('s3')
+        s3.Object(bucket_name='test.0xdata.com', key="h2o-hadoop-tests/test-export/" + scheme + "/exported." + \
+                                                     timestamp + "." + unique_suffix + ".csv.zip").delete()
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(s3_import_export)

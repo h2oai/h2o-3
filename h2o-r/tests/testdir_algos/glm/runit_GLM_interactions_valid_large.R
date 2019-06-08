@@ -47,7 +47,7 @@ test.glm.interactions_pubdev5277 <- function() {
     expect_true(abs(0.346 - m1@model$coefficients["UniqueCarrier_Origin.AA_ABQ"]) < 0.01)
     print("Comparing coefficients of m2 and 7.456")
     print(abs(7.456 - m2@model$coefficients["UniqueCarrier_Origin.AA_ABQ"]))
-    expect_true(abs(7.456 - m2@model$coefficients["UniqueCarrier_Origin.AA_ABQ"]) < 0.01)
+    expect_true(abs(7.456 - m2@model$coefficients["UniqueCarrier_Origin.AA_ABQ"]) < 0.1)
 }
 
 doTest("Demonstrates that 2 GLM runs with implicit interactions and explicit interactions differ", test.glm.interactions_pubdev5277)
