@@ -808,6 +808,47 @@ public class Frame extends Lockable<Frame> {
     return fs;
   }
 
+  @Override
+  protected Futures retain_impl(Futures fs, Set<Key> retainedKeys) {
+    final Key[] delCandidateKeys = _keys;
+    if( delCandidateKeys.length==0 ) return fs;
+
+    // Get the nChunks without calling anyVec - which loads all Vecs eagerly,
+    // only to delete them.  Supports Frames with some Vecs already deleted, as
+    // a Scope cleanup action might delete Vecs out of order.
+    Vec v = _col0;
+    if (v == null) {
+      Vec[] vecs = _vecs;       // Read once, in case racily being cleared
+      if (vecs != null)
+        for (Vec vec : vecs)
+          if ((v = vec) != null) // Stop on finding the 1st Vec
+            break;
+    }
+    if (v == null)             // Ok, now do DKV gets
+      for (Key<Vec> _key1 : _keys)
+        if ((v = _key1.get()) != null)
+          break;                // Stop on finding the 1st Vec
+    if (v == null)
+      return fs;
+
+    _vecs = new Vec[0];
+    setNames(new String[0]);
+    _keys = makeVecKeys(0);
+    
+    final List<Key> deletedKeys= new ArrayList<>();
+    for (int i = 0; i < delCandidateKeys.length; i++) {
+      if(!retainedKeys.contains(delCandidateKeys[i])){
+        deletedKeys.add(delCandidateKeys[i]);
+      }
+      
+    }
+    
+    // Bulk dumb local remove - no JMM, no ordering, no safety.
+    Vec.bulk_remove(deletedKeys.toArray(new Key[]{}), v.nChunks());
+
+    return fs;
+  }
+
   /** Write out K/V pairs, in this case Vecs. */
   @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
     for( Key k : _keys )

@@ -1,11 +1,11 @@
 package water;
 
+import hex.Model;
+import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.Log;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /** A Distributed Key/Value Store.
  *  <p>
@@ -247,23 +247,78 @@ public abstract class DKV {
     protected void setupLocal() {
       final Set<Key> retainedKeys = new HashSet<>(_retainedKeys.length);
       retainedKeys.addAll(Arrays.asList(_retainedKeys));
+      extractNestedKeys(retainedKeys);
       final Collection<Value> storeKeys = H2O.STORE.values();
       Futures removalFutures = new Futures();
       for (final Value value : storeKeys) {
         if (retainedKeys.contains(value._key)) {
-          if (value.isFrame() || value.isModel()) {
-            continue;
-          } else {
-            Log.info(String.format("Given key %s is of type %d. Not retaining.", value._key.toString(), value.type()));
-          }
+          continue;
         }
         if(value.isNull()) continue;
         if (!value.isModel() && !value.isFrame()) continue;
 
         // It is important to trigger the removal strategy on the Keyed object itself
-        ((Keyed) value.get()).remove(removalFutures);
+        ((Keyed) value.get()).retain(removalFutures, retainedKeys);
       }
       removalFutures.blockForPending();
+    }
+  }
+
+  /**
+   * Iterates through the keys provided by the user, dropping any keys that are not a Model key or a Frame key.
+   * Afterwards, extracts 
+   *
+   * @param retainedKeys A {@link Set} of retained keys to insert the extracted {@link Frame} and {@link Model} keys to.
+   *                     Should contain user-specified keys to retain in order to extract anything.
+   */
+  private static void extractNestedKeys(final Set<Key> retainedKeys) {
+
+    final Iterator<Key> keysIterator = retainedKeys.iterator(); // Traverse keys provided by the user only.
+    while (keysIterator.hasNext()) {
+      final Key key = keysIterator.next();
+      final Value value = Value.STORE_get(key);
+
+      if (!value.isFrame() && !value.isModel()) {
+        retainedKeys.remove(key); // Remove keys which are not leading to a frame nor a model.
+        Log.info(String.format("Given key %s is of type %d. Not retaining.", value._key.toString(), value.type()));
+      }
+
+      if (value.isFrame()) {
+        extractFrameKeys(retainedKeys, (Frame) value.get());
+      } else if (value.isModel()) {
+        extractModelKeys(retainedKeys, (Model) value.get());
+      }
+
+    }
+  }
+
+  /**
+   * Extracts keys a {@link Frame} points to.
+   *
+   * @param retainedkeys A set of retained keys to insert the extracted {@link Frame} keys to.
+   * @param frame        An instance of {@link Frame} to extract the keys from.
+   */
+  private static void extractFrameKeys(final Set<Key> retainedkeys, final Frame frame) {
+    Objects.requireNonNull(frame);
+    final Key<Vec>[] frameKeys = frame.keys();
+    for (Key k : frameKeys) {
+      retainedkeys.add(k);
+    }
+  }
+
+  /**
+   * Exctracts keys a {@link Model} points to.
+   *
+   * @param retainedKeys A set of retained keys to insert the extracted {@link Model} keys to.
+   * @param model        An instance of {@link Model} to extract the keys from
+   */
+  private static void extractModelKeys(final Set<Key> retainedKeys, final Model model) {
+    Objects.requireNonNull(model);
+    if(model._parms._train != null) {
+      retainedKeys.add(model._parms._train);
+    }
+    if(model._parms._valid != null) {
+      retainedKeys.add(model._parms._valid);
     }
   }
 }

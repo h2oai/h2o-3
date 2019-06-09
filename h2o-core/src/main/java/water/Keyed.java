@@ -3,6 +3,8 @@ package water;
 import water.api.schemas3.KeyV3;
 import water.fvec.*;
 
+import java.util.Set;
+
 /** Iced, with a Key.  Support for DKV removal. */
 public abstract class Keyed<T extends Keyed> extends Iced<T> {
   /** Key mapping a Value which holds this object; may be null  */
@@ -14,9 +16,40 @@ public abstract class Keyed<T extends Keyed> extends Iced<T> {
   /** Remove this Keyed object, and all subparts; blocking. */
   public final void remove( ) { remove(new Futures()).blockForPending(); }
   /** Remove this Keyed object, and all subparts.  */
+
+  /**
+   * Removes this {@link Keyed} object and all directly linked {@link Keyed} objects and POJOs, while retaining
+   * the keys defined by the retainedKeys parameter. Aimed to be used for removal of {@link Keyed} objects pointing
+   * to shared resources (Frames, Vectors etc.) internally.
+   *
+   * @param futures      An instance of {@link Futures} for synchronization
+   * @param retainedKeys A {@link Set} of keys to retain. The set may be immutable, as it shall not be modified.
+   * @return An instance of {@link Futures} for synchronization
+   */
+  public final Futures retain(final Futures futures, final Set<Key> retainedKeys) {
+    if (_key != null) DKV.remove(_key);
+    return retain_impl(futures, retainedKeys);
+  }
+  
   public final Futures remove( Futures fs ) {
     if( _key != null ) DKV.remove(_key,fs);
     return remove_impl(fs);
+  }
+
+  /**
+   * Removes itself from DKV, while removing any internal objects as well (both {@link Keyed} and ordinary POJOs).
+   * Will not remove {@link Keyed} objects defined in the {@link Set} of keys to retain. Each {@link Keyed} class
+   * has its own removal strategy, thus this method shall be overridden by each class which wants to support this behavior.)
+   * <p>
+   * By default, everything is cleaned.
+   *
+   * @param futures      An instance of {@link Futures} for synchronization
+   * @param retainedKeys A {@link Set} of keys to retain. The set may be immutable, as it shall not be modified.
+   * @return An instance of {@link Futures} for synchronization
+   */
+  protected Futures retain_impl(final Futures futures, final Set<Key> retainedKeys) {
+    // Remove all by default
+    return remove_impl(futures);
   }
 
   /** Override to remove subparts, but not self, of composite Keyed objects.  
