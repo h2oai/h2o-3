@@ -12,7 +12,7 @@ import boto3
 def s3_import_export():
     local_frame = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
     for scheme in ["s3a"]:  # s3n is deprecated since HDP3/CDH6
-        timestamp = datetime.today().utcnow().strftime("%Y%m%d-%H%M%S")
+        timestamp = datetime.today().utcnow().strftime("%Y%m%d-%H%M%S.%f")
         unique_suffix = str(uuid.uuid4())
         s3_path = scheme + "://test.0xdata.com/h2o-hadoop-tests/test-export/" + scheme + "/exported." + \
                   timestamp + "." + unique_suffix + ".csv.zip"
