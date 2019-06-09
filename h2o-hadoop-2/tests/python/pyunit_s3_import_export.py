@@ -17,11 +17,21 @@ def s3_import_export():
         s3_path = scheme + "://test.0xdata.com/h2o-hadoop-tests/test-export/" + scheme + "/exported." + \
                   timestamp + "." + unique_suffix + ".csv.zip"
         h2o.export_file(local_frame, s3_path)
+
+        s3 = boto3.resource('s3')
+        client = boto3.client('s3')
+        # S3 might have a delay in indexing the file (usually milliseconds or hundreds of milliseconds)
+        # Wait for the file to be available, if not available in the biginning, try every 2 seconds, up to 10 times
+        client.get_waiter('object_exists').wait(Bucket='test.0xdata.com',
+                                                Key="h2o-hadoop-tests/test-export/" + scheme + "/exported." + \
+                                                    timestamp + "." + unique_suffix + ".csv.zip",
+                                                WaiterConfig={
+                                                    'Delay': 2,
+                                                    'MaxAttempts': 10
+                                                })
         s3_frame = h2o.import_file(s3_path)
         assert_frame_equal(local_frame.as_data_frame(), s3_frame.as_data_frame())
         
-        #Delete the file afterwards
-        s3 = boto3.resource('s3')
         s3.Object(bucket_name='test.0xdata.com', key="h2o-hadoop-tests/test-export/" + scheme + "/exported." + \
                                                      timestamp + "." + unique_suffix + ".csv.zip").delete()
 
