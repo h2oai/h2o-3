@@ -13,9 +13,9 @@ def h2oremove_all():
     by just checking the argument list which should be empty.
     """
     # call with no arguments
-    signature = inspect.signature(h2o.remove_all)
-    assert len(signature.parameters)==1, "h2o.remove_all() should have one optional argument!"
-    assert signature.parameters.get("retained") is not None
+    signature = inspect.getargspec(h2o.remove_all)
+    assert len(signature.args) == 1, "h2o.remove_all() should have one optional argument!"
+    assert signature.args[0] == "retained"
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(h2oremove_all)
