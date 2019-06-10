@@ -82,9 +82,7 @@ class LogFunction extends LinkFunction {
 class LogitFunction extends LinkFunction {
 
     @Override
-    public double link(double f) {
-        return LogExpUtil.log(f / (1 - f));
-    }
+    public double link(double f) { return LogExpUtil.log(f / (1 - f)); }
 
     @Override
     public double linkInv(double f) {
@@ -96,5 +94,3 @@ class LogitFunction extends LinkFunction {
         return "1./(1. + " + expString("-("+f+")") + ")";
     }
 }
-
-

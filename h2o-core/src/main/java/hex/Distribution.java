@@ -144,7 +144,7 @@ public abstract class Distribution extends Iced<Distribution> {
     public double gammaNum(double w, double y, double z, double f) {
         throw H2O.unimpl();
     }
-    
+
     /**
      * Contribution to denominator for GBM's leaf node prediction
      *
@@ -157,4 +157,4 @@ public abstract class Distribution extends Iced<Distribution> {
     public double gammaDenom(double w, double y, double z, double f) {
         throw H2O.unimpl();
     }
-  }
+}

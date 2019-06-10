@@ -1,0 +1,48 @@
+package water.udf;
+
+import org.junit.Ignore;
+
+@Ignore("Support for tests, but no actual tests here")
+public class TestBernoulliCustomDistribution implements CDistributionFunc {
+
+    public double MIN_LOG = -19;
+    public double MAX = 1e19;
+    
+    public double exp(double x) { return Math.min(MAX, Math.exp(x)); }
+    
+    public double log(double x) {
+        x = Math.max(0, x);
+        return x == 0 ? MIN_LOG : Math.max(MIN_LOG, Math.log(x));
+    }
+    
+    @Override
+    public double link(double f) {
+        return log(f / (1 - f));
+    }
+
+    @Override
+    public double inversion(double f) {
+        return 1 / (1 + exp(-f));
+    }
+
+    @Override
+    public double deviance(double w, double y, double f) {
+        return -2 * w * (y * log(f) + (1 - y) * log(1 - f));
+    }
+
+    @Override
+    public double[] init(double w, double o, double y) {
+        return new double[]{w * (y - o), w};
+    }
+
+    @Override
+    public double gradient(double y, double f) {
+        return y - inversion(f);
+    }
+
+    @Override
+    public double[] gamma(double w, double y, double z, double f) {
+        double ff = y - z;
+        return new double[]{w * z, w * ff * (1 - ff)};
+    }
+}

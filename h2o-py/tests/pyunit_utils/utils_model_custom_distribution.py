@@ -85,27 +85,6 @@ class CustomDistributionBernoulli:
         return [w * z, w * ff * (1 - ff)]
     
 
-class CustomNullDistribution:
-
-    def link(self, f):
-        return 0
-
-    def inversion(self, f):
-        return 0
-
-    def deviance(self, w, y, f):
-        return 0
-
-    def init(self, w, o, y):
-        return [0, 0]
-
-    def gradient(self, y, f):
-        return 0
-
-    def gamma(self, w, y, z, f):
-        return 0
-
-
 class CustomDistributionMultinomial:
 
     def link(self, f):
@@ -139,6 +118,27 @@ class CustomDistributionMultinomial:
         absz = math.abs(z)
         return [w * z, w * (absz * (1 - absz))]
     
+
+class CustomDistributionNull:
+
+    def link(self, f):
+        return 0
+
+    def inversion(self, f):
+        return 0
+
+    def deviance(self, w, y, f):
+        return 0
+
+    def init(self, w, o, y):
+        return [0, 0]
+
+    def gradient(self, y, f):
+        return 0
+
+    def gamma(self, w, y, z, f):
+        return 0
+
 
 def dataset_prostate():
     df = h2o.import_file(path=locate("smalldata/prostate/prostate.csv"))
