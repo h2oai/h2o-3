@@ -278,17 +278,17 @@ public abstract class DKV {
       final Key key = keysIterator.next();
       final Value value = Value.STORE_get(key);
 
-      if (!value.isFrame() && !value.isModel()) {
+      if (value == null) {
+        retainedKeys.remove(key);
+        Log.info(String.format("Given key %s points to a NULL value. Not retaining.", key.toString()));
+      } else if (!value.isFrame() && !value.isModel()) {
         retainedKeys.remove(key); // Remove keys which are not leading to a frame nor a model.
-        Log.info(String.format("Given key %s is of type %d. Not retaining.", value._key.toString(), value.type()));
-      }
-
-      if (value.isFrame()) {
+        Log.info(String.format("Given key %s is of type %d. Not retaining.", key.toString(), value.type()));
+      } else if (value.isFrame()) {
         extractFrameKeys(retainedKeys, (Frame) value.get());
       } else if (value.isModel()) {
         extractModelKeys(retainedKeys, (Model) value.get());
       }
-
     }
   }
 
