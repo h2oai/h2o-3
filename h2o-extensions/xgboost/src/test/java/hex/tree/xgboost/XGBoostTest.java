@@ -55,10 +55,10 @@ public class XGBoostTest extends TestUtil {
   public String confJavaPredict;
 
   @Rule
-  public ExpectedException thrown = ExpectedException.none();
+  public transient ExpectedException thrown = ExpectedException.none();
 
   @Rule
-  public TemporaryFolder tmp = new TemporaryFolder();
+  public transient TemporaryFolder tmp = new TemporaryFolder();
   
   @Before
   public void setupMojoJavaScoring() {
@@ -1569,20 +1569,7 @@ public class XGBoostTest extends TestUtil {
       assertEquals("BiasTerm", contributions.names()[contributions.names().length - 1]);
       
       // basic sanity check - contributions should sum-up to predictions
-      Frame predsFromContributions = new MRTask() {
-        @Override
-        public void map(Chunk[] cs, NewChunk nc) {
-          for (int i = 0; i < cs[0]._len; i++) {
-            float sum = 0;
-            for (Chunk c : cs)
-              sum += c.atd(i);
-            nc.addNum(sigmoid(sum));
-          }
-        }
-        private float sigmoid(float x) {
-          return (1f / (1f + (float) Math.exp(-x)));
-        }
-      }.doAll(Vec.T_NUM, contributions).outputFrame();
+      Frame predsFromContributions = new CalcContribsTask().doAll(Vec.T_NUM, contributions).outputFrame();
       Frame expectedPreds = model.score(tfr);
       Scope.track(expectedPreds);
       assertVecEquals(expectedPreds.vec(2), predsFromContributions.vec(0), 1e-6);
@@ -1600,24 +1587,47 @@ public class XGBoostTest extends TestUtil {
       
       // finally check the contributions
       assertEquals(expectedContribs.length, contributions.numRows());
-      new MRTask() {
-        @Override
-        public void map(Chunk[] cs) {
-          for (int i = 0; i < cs[0]._len; i++) {
-            for (int j = 0; j < cs.length; j++) {
-              float contrib = (float) cs[j].atd(i);
-              int row = (int) cs[0].start() + i;
-              assertEquals("Contribution in row=" + row + " on position=" + j + " should match.", 
-                      expectedContribs[row][j], contrib, 1e-6);
-            }
-          }
-        }
-      }.doAll(contributions).outputFrame();
+      new CheckContribsTask(expectedContribs).doAll(contributions).outputFrame();
     } finally {
       Scope.exit();
     }
   }
 
+  private static class CalcContribsTask extends MRTask<CalcContribsTask> {
+    @Override
+    public void map(Chunk[] cs, NewChunk nc) {
+      for (int i = 0; i < cs[0]._len; i++) {
+        float sum = 0;
+        for (Chunk c : cs)
+          sum += c.atd(i);
+        nc.addNum(sigmoid(sum));
+      }
+    }
+    private float sigmoid(float x) {
+      return (1f / (1f + (float) Math.exp(-x)));
+    }
+  }
+  
+  private static class CheckContribsTask extends MRTask<CheckContribsTask> {
+    private final float[][] _expectedContribs;
+
+    private CheckContribsTask(float[][] expectedContribs) {
+      _expectedContribs = expectedContribs;
+    }
+
+    @Override
+    public void map(Chunk[] cs) {
+      for (int i = 0; i < cs[0]._len; i++) {
+        for (int j = 0; j < cs.length; j++) {
+          float contrib = (float) cs[j].atd(i);
+          int row = (int) cs[0].start() + i;
+          assertEquals("Contribution in row=" + row + " on position=" + j + " should match.",
+                  _expectedContribs[row][j], contrib, 1e-6);
+        }
+      }
+    }
+  }
+  
   @Test
   public void testScoringWithUnseenCategoricals() {
     try {
