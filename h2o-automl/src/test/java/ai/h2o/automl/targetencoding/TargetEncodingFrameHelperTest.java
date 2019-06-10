@@ -1,6 +1,7 @@
 package ai.h2o.automl.targetencoding;
 
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
@@ -247,26 +248,25 @@ public class TargetEncodingFrameHelperTest extends TestUtil {
     }
   }
 
-  // Checking that dfork is faster
+  // Checking that dfork is faster. This is a proof that dfork in particular scenario is faster.
+  @Ignore()
   @Test public void conversion_of_frame_into_table_doAll_vs_dfork_performance_test() {
     Map<String, Frame> encodingMap = getTEMapForTitanicDataset(false);
 
     for (int i = 0; i < 10; i++) { // Number of columns with encoding maps will be 2+10
       encodingMap.put(UUID.randomUUID().toString(), encodingMap.get("home.dest"));
     }
-    int numberOfIterations = 20;
+    int numberOfIterations = 50;
 
     //doAll
     long startTimeDoAll = System.currentTimeMillis();
     for (int i = 0; i < numberOfIterations; i++) {
 
-      IcedHashMap<String, Map<String, int[]>> transformedEncodingMap = new IcedHashMap<>();
       for (Map.Entry<String, Frame> entry : encodingMap.entrySet()) {
         String key = entry.getKey();
         Frame encodingsForParticularColumn = entry.getValue();
-        IcedHashMap<String, int[]> table = new TargetEncoderFrameHelper.FrameToTETable().doAll(encodingsForParticularColumn).getResult().table;
+        IcedHashMap<String, TEComponents> table = new FrameToTETableTask().doAll(encodingsForParticularColumn).getResult()._table;
 
-        transformedEncodingMap.put(key, table);
       }
     }
     long totalTimeDoAll = System.currentTimeMillis() - startTimeDoAll;
@@ -275,19 +275,17 @@ public class TargetEncodingFrameHelperTest extends TestUtil {
     //DFork
     long startTimeDFork = System.currentTimeMillis();
     for (int i = 0; i < numberOfIterations; i++) {
-      Map<String, TargetEncoderFrameHelper.FrameToTETable> tasks = new HashMap<>();
+      Map<String, FrameToTETableTask> tasks = new HashMap<>();
 
       for (Map.Entry<String, Frame> entry : encodingMap.entrySet()) {
         Frame encodingsForParticularColumn = entry.getValue();
-        TargetEncoderFrameHelper.FrameToTETable task = new TargetEncoderFrameHelper.FrameToTETable().dfork(encodingsForParticularColumn);
+        FrameToTETableTask task = new FrameToTETableTask().dfork(encodingsForParticularColumn);
 
         tasks.put(entry.getKey(), task);
       }
 
-      IcedHashMap<String, Map<String, int[]>> transformedEncodingMap = new IcedHashMap<>();
-
-      for (Map.Entry<String, TargetEncoderFrameHelper.FrameToTETable> taskEntry : tasks.entrySet()) {
-        transformedEncodingMap.put(taskEntry.getKey(), taskEntry.getValue().getResult().table);
+      for (Map.Entry<String, FrameToTETableTask> taskEntry : tasks.entrySet()) {
+        IcedHashMap<String, TEComponents> table = taskEntry.getValue().getResult()._table;
       }
     }
     long totalTimeDFork = System.currentTimeMillis() - startTimeDFork;

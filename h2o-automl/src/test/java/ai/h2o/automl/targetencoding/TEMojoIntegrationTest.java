@@ -10,10 +10,10 @@ import hex.genmodel.easy.exception.PredictException;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.Job;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.util.IcedHashMap;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -26,16 +26,15 @@ public class TEMojoIntegrationTest extends TestUtil {
 
   @BeforeClass
   public static void setup() {
-    stall_till_cloudsize(1);
+    stall_till_cloudsize(2);
   }
 
   private Frame fr = null;
 
   @Test
-  public void withoutBlending() throws IOException, PredictException  {
+  public void withoutBlending() throws PredictException, IOException{
 
     String mojoFileName = "mojo_te.zip";
-    Map<String, Frame> testEncodingMap = null;
     TargetEncoderModel targetEncoderModel = null;
     Scope.enter();
     try {
@@ -45,23 +44,20 @@ public class TEMojoIntegrationTest extends TestUtil {
       
       asFactor(fr, responseColumnName);
 
-      // Preparing Target encoding 
-      BlendingParams params = new BlendingParams(3, 1);
       String[] teColumns = {"home.dest", "embarked"};
-
-      TargetEncoder tec = new TargetEncoder(teColumns, params);
-
-      testEncodingMap = tec.prepareEncodingMap(fr, responseColumnName, null);
       
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
       targetEncoderParameters._withBlending = false;
       targetEncoderParameters._columnNamesToEncode = teColumns;
       targetEncoderParameters.setTrain(fr._key);
+      // targetEncoderParameters._ignore_const_cols = true;
       targetEncoderParameters._response_column = responseColumnName;
 
       TargetEncoderBuilder job = new TargetEncoderBuilder(targetEncoderParameters);
 
-      targetEncoderModel = job.trainModel().get();
+      Job<TargetEncoderModel> targetEncoderModelJob = job.trainModel();
+      
+      targetEncoderModel = targetEncoderModelJob.get();
       Scope.track_generic(targetEncoderModel);
       
       FileOutputStream modelOutput = new FileOutputStream(mojoFileName);
@@ -105,9 +101,10 @@ public class TEMojoIntegrationTest extends TestUtil {
       assertEquals((double) rowToPredictFor.get("home.dest_te"), encodingForHomeDest, 1e-5);
       assertEquals((double) rowToPredictFor.get("embarked_te"), encodingForHomeEmbarked, 1e-5);
 
-    } finally {
-      if(testEncodingMap != null) 
-        TargetEncoderFrameHelper.encodingMapCleanUp(testEncodingMap);
+    } catch (Exception ex) {
+      throw ex;
+    }
+    finally {
       if(targetEncoderModel._output._target_encoding_map != null)
         TargetEncoderFrameHelper.encodingMapCleanUp(targetEncoderModel._output._target_encoding_map);
       
@@ -116,6 +113,12 @@ public class TEMojoIntegrationTest extends TestUtil {
       if(mojoFile.exists()) mojoFile.delete();
       Scope.exit();
     }
+  }
+
+  @Test
+  public void kfold_scenario() {
+    
+    //TODO test kfold scenario as in FrameToTETableTask we do not account for extra columns in frame
   }
 
   @Test

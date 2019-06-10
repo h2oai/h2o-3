@@ -112,50 +112,39 @@ public class TargetEncoderFrameHelper {
   }
   
   static EncodingMaps convertEncodingMapFromFrameToMap(Map<String, Frame> encodingMap) {
-    EncodingMaps transformedEncodingMap = new EncodingMaps();
-    Map<String, FrameToTETable> tasks = new HashMap<>();
+    EncodingMaps convertedEncodingMap = new EncodingMaps();
+    Map<String, FrameToTETableTask> tasks = new HashMap<>();
 
     for (Map.Entry<String, Frame> entry : encodingMap.entrySet()) {
 
       Frame encodingsForParticularColumn = entry.getValue();
-      FrameToTETable task = new FrameToTETable().dfork(encodingsForParticularColumn);
-
+      FrameToTETableTask task = new FrameToTETableTask().doAll(encodingsForParticularColumn);
       tasks.put(entry.getKey(), task);
     }
 
-    for (Map.Entry<String, FrameToTETable> taskEntry : tasks.entrySet()) {
-      transformedEncodingMap.put(taskEntry.getKey(), new EncodingMap(taskEntry.getValue().getResult().table));
+    for (Map.Entry<String, FrameToTETableTask> taskEntry : tasks.entrySet()) {
+      IcedHashMap<String, TEComponents> table = taskEntry.getValue().getResult()._table;
+      convertEncodingMapToGenModelFormat(convertedEncodingMap, taskEntry.getKey(), table);
     }
-    return transformedEncodingMap;
+    
+    return convertedEncodingMap;
   }
 
-  static class FrameToTETable extends MRTask<FrameToTETable> {
-    IcedHashMap<String, int[]> table = new IcedHashMap<>();
-
-    public FrameToTETable() { }
-
-    @Override
-    public void map(Chunk[] cs) {
-      Chunk categoricalChunk = cs[0];
-      String[] domain = categoricalChunk.vec().domain();
-      int numRowsInChunk = categoricalChunk._len;
-      // Note: we don't store fold column as we need only to be able to give predictions for data which is not encoded yet. 
-      // We need folds only for the case when we applying TE to the frame which we are going to train our model on. 
-      // But this is done once and then we don't need them anymore.
-      for (int i = 0; i < numRowsInChunk; i++) {
-        int[] numeratorAndDenominator = new int[2];
-        numeratorAndDenominator[0] = (int) cs[1].at8(i);
-        numeratorAndDenominator[1] = (int) cs[2].at8(i);
-        int factor = (int) categoricalChunk.at8(i);
-        String factorName = domain[factor];
-        table.put(factorName, numeratorAndDenominator);
-      }
+  /**
+   * Note: We can't use the same class for {numerator, denominator} in both `h2o-genmodel` and `h2o-automl` as we need it to be extended 
+   * from Iced in `h2o-automl` to make it serializable to distribute MRTasks and we can't use this Iced class from `h2o-genmodel` module 
+   * as there is no dependency between modules in this direction 
+   * 
+   * @param convertedEncodingMap the Map we will put our converted encodings into
+   * @param encodingMap encoding map for `teColumn`
+   */
+  private static void convertEncodingMapToGenModelFormat(EncodingMaps convertedEncodingMap, String teColumn, IcedHashMap<String, TEComponents> encodingMap) {
+    Map<String, int[]> tableGenModelFormat = new HashMap<>();
+    for(Map.Entry<String, TEComponents> entry : encodingMap.entrySet()) {
+      TEComponents value = entry.getValue();
+      tableGenModelFormat.put(entry.getKey(), new int[] {value.getNumerator(), value.getDenominator()});
     }
-
-    @Override
-    public void reduce(FrameToTETable mrt) {
-      table.putAll(mrt.table);
-    }
+    convertedEncodingMap.put(teColumn, new EncodingMap(tableGenModelFormat));
   }
 
   /**

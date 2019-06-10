@@ -27,7 +27,7 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
   }
 
   @Override
-  protected void writeExtraInfo() throws IOException {
+  protected void writeExtraInfo() {
     // Do nothing
   }
 
@@ -49,7 +49,6 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
   private void writeTargetEncodingMap() throws IOException {
     
     // We need to convert map only here. Everywhere else encoding map with Frames is fine.
-    
     Map<String, Frame> targetEncodingMapOnFrames = ((TargetEncoderModel) model)._output._target_encoding_map;
     EncodingMaps convertedEncodingMap = TargetEncoderFrameHelper.convertEncodingMapFromFrameToMap(targetEncodingMapOnFrames);
 
