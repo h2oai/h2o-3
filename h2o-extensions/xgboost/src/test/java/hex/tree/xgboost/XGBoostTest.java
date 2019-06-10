@@ -807,6 +807,7 @@ public class XGBoostTest extends TestUtil {
 
   @Test
   public void testBinomialTrainingWeights() {
+    Assume.assumeTrue(H2O.getCloudSize() == 1); // FIXME: PUBDEV-6565
     XGBoostModel model = null;
     XGBoostModel noWeightsModel = null;
     Scope.enter();
@@ -857,6 +858,7 @@ public class XGBoostTest extends TestUtil {
 
   @Test
   public void testRegressionTrainingWeights() {
+    Assume.assumeTrue(H2O.getCloudSize() == 1); // FIXME: PUBDEV-6565
     XGBoostModel model = null;
     XGBoostModel noWeightsModel = null;
     Scope.enter();
@@ -907,6 +909,7 @@ public class XGBoostTest extends TestUtil {
 
   @Test
   public void testMultinomialTrainingWeights() {
+    Assume.assumeTrue(H2O.getCloudSize() == 1); // FIXME: PUBDEV-6565
     XGBoostModel model = null;
     XGBoostModel noWeightsModel = null;
     Scope.enter();
@@ -1460,6 +1463,7 @@ public class XGBoostTest extends TestUtil {
 
   @Test
   public void testMonotoneConstraints() {
+    Assume.assumeTrue(H2O.getCloudSize() == 1); // FIXME: PUBDEV-6565
     Scope.enter();
     try {
       final String response = "power (hp)";
