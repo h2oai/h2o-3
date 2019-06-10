@@ -132,6 +132,8 @@ def gen_module(schema, algo):
             enum_values.remove(u'quasibinomial')
         if (pname==u'distribution') and (not(algo==u'glm')):    # ordinal only in glm
             enum_values.remove(u'ordinal')
+        if (pname==u'distribution') and (not(algo==u'gbm')):    # custom only in gbm
+            enum_values.remove(u'custom')
         if pname in reserved_words: pname += "_"
         param_names.append(pname)
         param["pname"] = pname

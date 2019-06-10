@@ -518,7 +518,7 @@ class H2ODeepWaterEstimator(H2OEstimator):
         Distribution function
 
         One of: ``"auto"``, ``"bernoulli"``, ``"multinomial"``, ``"gaussian"``, ``"poisson"``, ``"gamma"``,
-        ``"tweedie"``, ``"laplace"``, ``"quantile"``, ``"huber"`` (default: ``"auto"``).
+        ``"tweedie"``, ``"laplace"``, ``"quantile"``, ``"huber"``  (default: ``"auto"``).
         """
         return self._parms.get("distribution")
 
