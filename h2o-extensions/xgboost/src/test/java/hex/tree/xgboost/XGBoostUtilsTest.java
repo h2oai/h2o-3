@@ -210,7 +210,7 @@ public class XGBoostUtilsTest extends TestUtil {
 
         // Initialize allocated matrices with actual data
         int actualRows = SparseMatrixFactory.initializeFromChunkIds(
-                frame, chunksIds, frame.vecs(), null, di, sparseMatrix, sparseMatrixDimensions, 
+                frame, chunksIds, null, di, sparseMatrix, sparseMatrixDimensions, 
                 frame.vec(response), resp, weights);
 
         assertEquals(3, actualRows);
@@ -265,7 +265,7 @@ public class XGBoostUtilsTest extends TestUtil {
 
         // Initialize allocated matrices with actual data
         int actualRows = SparseMatrixFactory.initializeFromChunkIds(
-            frame, chunksIds, frame.vecs(), null, di, sparseMatrix, sparseMatrixDimensions,
+            frame, chunksIds, null, di, sparseMatrix, sparseMatrixDimensions,
                 frame.vec(response), resp, weights);
 
         assertEquals(3, actualRows);
@@ -324,7 +324,7 @@ public class XGBoostUtilsTest extends TestUtil {
 
         // Initialize allocated matrices with actual data
         int actualRows = SparseMatrixFactory.initializeFromChunkIds(
-            frame, chunksIds, frame.vecs(), null, di, sparseMatrix, sparseMatrixDimensions,
+            frame, chunksIds, null, di, sparseMatrix, sparseMatrixDimensions,
             frame.vec(response), resp, weights);
 
         assertEquals(3, actualRows);
@@ -384,7 +384,7 @@ public class XGBoostUtilsTest extends TestUtil {
 
         // Initialize allocated matrices with actual data
         int actualRows = SparseMatrixFactory.initializeFromChunkIds(
-            frame, chunksIds, frame.vecs(), null, di, sparseMatrix, sparseMatrixDimensions,
+            frame, chunksIds, null, di, sparseMatrix, sparseMatrixDimensions,
             frame.vec(response), resp, weights);
 
         assertEquals(3, actualRows);
