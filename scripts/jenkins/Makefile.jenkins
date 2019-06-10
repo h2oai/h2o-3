@@ -340,11 +340,11 @@ test-xgb-smoke-gpu-jenkins:
 	@$(MAKE) -f $(THIS_FILE) test-xgb-smoke-gpu
 
 test-xgb-smoke-minimal:
-	./gradlew h2o-ext-xgboost:test $$ADDITIONAL_GRADLE_OPTS
+	./gradlew h2o-ext-xgboost:test -x :h2o-ext-xgboost:testMultiNode $$ADDITIONAL_GRADLE_OPTS
 	$(call check_xgb_backend,'xgboost4j_minimal')
 
 test-xgb-smoke-omp:
-	./gradlew h2o-ext-xgboost:test $$ADDITIONAL_GRADLE_OPTS
+	./gradlew h2o-ext-xgboost:test -x :h2o-ext-xgboost:testMultiNode $$ADDITIONAL_GRADLE_OPTS
 	$(call check_xgb_backend,'xgboost4j_\(omp\|gpu\)')
 
 test-xgb-smoke-gpu:

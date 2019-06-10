@@ -1,4 +1,4 @@
-#! /bin/bash
+michalk_xgb-enable#! /bin/bash
 
 set -e
 
@@ -21,7 +21,7 @@ function finish {
     set -e
 }
 
-./gradlew h2o-ext-xgboost:test &
+./gradlew h2o-ext-xgboost:test -x h2o-ext-xgboost:testMultiNode &
 gradlewPID=$!
 i=1
 checkPassed=
