@@ -79,7 +79,7 @@ public class PredictCsvTest {
       }
       
       predictCsvOutput = new String(outputBytes.toByteArray());
-      assertEquals("There were 5 missing columns found in the input data set: {C1,C2,C3,C4,C5}\n" +
+      assertEquals("There were 4 missing columns found in the input data set: {C1,C2,C3,C4}\n" +
               "Detected 5 unused columns in the input data set: {petal_wid,sepal_len,species,petal_len,sepal_wid}\n", predictCsvOutput);
       
 

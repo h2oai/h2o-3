@@ -404,7 +404,7 @@ public class PredictCsv {
     List<String> missingColumns = new ArrayList<>();
     for (String columnName : modelColumnNames) {
 
-      if (!parsedColumnNames.contains(columnName)) {
+      if (!parsedColumnNames.contains(columnName) && !columnName.equals(model.m._responseColumn)) {
         missingColumns.add(columnName);
       } else {
         parsedColumnNames.remove(missingColumns);
