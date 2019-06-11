@@ -955,6 +955,16 @@ public class DataInfo extends Keyed<DataInfo> {
         }
     }
 
+    public Row deepClone() {
+      Row cloned = (Row) clone();
+      cloned.numVals = numVals.clone();
+      if (numIds != null)
+        cloned.numIds = numIds.clone();
+      cloned.response = response.clone();
+      cloned.binIds = binIds.clone();
+      return cloned;
+    }
+    
     public void addToArray(double scale, double []res) {
       for (int i = 0; i < nBins; i++)
         res[binIds[i]] += scale;

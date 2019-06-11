@@ -10,20 +10,27 @@ import water.util.Log;
 
 /**
  * Implementation of ICF based on https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/34638.pdf
- * Takes implementation clues from the reference PSVM implementation: https://code.google.com/archive/p/psvm/source/default/source
+ *
+ * This implementation is based on and takes clues from the reference PSVM implementation in C++: 
+ *    https://code.google.com/archive/p/psvm/source/default/source
+ *    original code: Copyright 2007 Google Inc., Apache License, Version 2.0   
  */
 public class IncompleteCholeskyFactorization {
 
+  public static Frame icf(DataInfo di, Kernel kernel, int n, double threshold) {
+    return icf(di._adaptedFrame, di, kernel, n, threshold);
+  }
+  
   public static Frame icf(Frame frame, String response, Kernel kernel, int n, double threshold) {
     Frame adapted = new Frame(frame);
     try {
       adapted.add(response, adapted.remove(response)); // make response to the last column
       adapted.add("two_norm_sq", adapted.anyVec().makeZero()); // (L2 norm)^2; initialized 0 - will be calculated later - treated as second response for the lack of a better place
-      
+
       DataInfo di = new DataInfo(adapted, null, 2, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false, false, false, null)
               .disableIntercept();
 
-      return icf(di._adaptedFrame, di, kernel, n, threshold);
+      return icf(di, kernel, n, threshold);
     } finally {
       Vec tns = adapted.vec("two_norm_sq");
       if (tns != null) {
@@ -47,7 +54,8 @@ public class IncompleteCholeskyFactorization {
       for (int i = 0; i < n; i++) {
         FindPivot fp = new FindPivot(frame, di).doAll(workspace);
         if (fp._trace < threshold) {
-          Log.info("ICF finished in iteration " + i + ". Trace = " + fp._trace + " (threshold = " + threshold + ").");
+          Log.info("ICF finished before full rank was reached in iteration " + i + 
+                  ". Trace value = " + fp._trace + " (convergence threshold = " + threshold + ").");
           break;
         }
 

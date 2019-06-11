@@ -6,8 +6,6 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
-import static org.junit.Assert.*;
-
 public class PrimalDualIPMTest extends TestUtil {
 
   @BeforeClass
@@ -29,7 +27,7 @@ public class PrimalDualIPMTest extends TestUtil {
       response = icf.anyVec().align(fr.vec("C1")); // make sure the response has the same layout as the ICF Frame
       
       // run PD-IPM with default params
-      result = PrimalDualIPM.solve(icf, response, new PrimalDualIPM.Params());
+      result = PrimalDualIPM.solve(icf, response, new PrimalDualIPM.Parms(1, 1));
       
       assertVecEquals(expected.vec(0), result, 1e-6);
     } finally {
