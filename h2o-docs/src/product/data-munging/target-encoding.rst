@@ -252,7 +252,7 @@ The ``blended_avg`` parameter defines whether the target average should be weigh
 Noise
 '''''
 
-If random noise should be added to the target average, the ``noise`` parameter can be used to specify the amount of noise to be added. This value defaults to 0.01 \* range of y of random noise
+If random noise should be added to the target average, the ``noise`` parameter can be used to specify the amount of noise to be added. This value defaults to 0.01 \* range of y of random noise.
 
 Fold Column
 '''''''''''
