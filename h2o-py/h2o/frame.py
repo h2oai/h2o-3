@@ -212,6 +212,18 @@ class H2OFrame(object):
             return None
         return fr
 
+    @staticmethod
+    def _validate(param, name, required=False, message=None):
+        message = message or "'{}' must be a valid H2OFrame!".format(name)
+        if param is None:
+            if required:
+                raise ValueError(message)
+            else:
+                return
+        else:
+            assert_is_type(param, H2OFrame, message=message)
+            return param
+
 
     def refresh(self):
         """Reload frame information from the backend H2O server."""
