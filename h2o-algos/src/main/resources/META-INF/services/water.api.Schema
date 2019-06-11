@@ -66,6 +66,10 @@ hex.schemas.SVDModelV99
 hex.schemas.SVDModelV99$SVDModelOutputV99
 hex.schemas.SVDV99
 hex.schemas.SVDV99$SVDParametersV99
+hex.schemas.SVMModelV3
+hex.schemas.SVMModelV3$SVMModelOutputV3
+hex.schemas.SVMV3
+hex.schemas.SVMV3$SVMParametersV3
 hex.schemas.SharedTreeModelV3
 hex.schemas.SharedTreeModelV3$SharedTreeModelOutputV3
 hex.schemas.SharedTreeV3

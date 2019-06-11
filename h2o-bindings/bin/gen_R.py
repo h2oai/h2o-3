@@ -1158,6 +1158,8 @@ def main():
     bi.init("R", "../../../h2o-r/h2o-package/R", clear_dir=False)
 
     for name, mb in bi.model_builders().items():
+        if name in ["svm"]:
+            continue 
         module = name
         file_name = name
         if name == "drf":

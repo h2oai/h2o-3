@@ -28,7 +28,8 @@ public class RegisterAlgos extends AlgoAbstractRegister {
             new hex.word2vec    .Word2Vec    (true),
             new hex.ensemble    .StackedEnsemble(true),
             new hex.coxph       .CoxPH       (true),
-            new Generic(true)
+            new hex.generic     .Generic     (true),
+            new hex.svm         .SVM         (true)        
     };
 
     // "Word2Vec", "Example", "Grep"
