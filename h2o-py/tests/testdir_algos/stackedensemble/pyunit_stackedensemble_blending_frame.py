@@ -86,7 +86,7 @@ def test_training_frame_is_still_required_in_blending_mode():
         train_stacked_ensemble(ds.extend(train=None), base_models)
         assert False, "StackedEnsemble training without training_frame should have raised an exception"
     except Exception as e:
-        assert "'training_frame' must be a valid H2OFrame or key" in str(e), "Wrong error message {}".format(str(e))
+        assert "'training_frame' must be a valid H2OFrame" in str(e), "Wrong error message {}".format(str(e))
 
 
 pu.run_tests([

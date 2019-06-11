@@ -1,5 +1,8 @@
 from __future__ import print_function
 import sys, os, time
+
+from h2o.exceptions import H2OTypeError
+
 sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
 from tests import pyunit_utils
@@ -335,33 +338,24 @@ def test_stacked_ensembles_are_trained_with_blending_frame_even_if_nfolds_eq_0()
         assert model._model_json['output']['stacking_strategy'] == 'blending'
 
 
-def test_frames_can_be_passed_as_key():
+def test_frames_cannot_be_passed_as_key():
     print("Check that all AutoML frames can be passed as keys.")
     ds = import_dataset()
     aml = H2OAutoML(project_name="py_aml_frames_as_keys", seed=1, max_models=3, nfolds=0)
 
     kw_args = [
-        dict(training_frame='dummy'),
-        dict(training_frame=ds['train'], validation_frame='dummy'),
-        dict(training_frame=ds['train'], blending_frame='dummy'),
-        dict(training_frame=ds['train'], leaderboard_frame='dummy'),
+        dict(training_frame=ds['train'].frame_id),
+        dict(training_frame=ds['train'], validation_frame=ds['valid'].frame_id),
+        dict(training_frame=ds['train'], blending_frame=ds['valid'].frame_id),
+        dict(training_frame=ds['train'], leaderboard_frame=ds['test'].frame_id),
     ]
     for kwargs in kw_args:
         try:
             aml.train(y=ds['target'], **kwargs)
-            raise AssertionError("should have thrown due to wrong frame key")
-        except ValueError as e:
-            attr = next(k for k, v in kwargs.items() if isinstance(v, str) and v == 'dummy')
-            assert "'{}' must be a valid H2OFrame or key".format(attr) in str(e)
-
-    aml.train(y=ds['target'],
-              training_frame=ds['train'].frame_id,
-              validation_frame=ds['valid'].frame_id,
-              blending_frame=ds['valid'].frame_id,
-              leaderboard_frame=ds['test'].frame_id)
-
-    assert len(aml.leaderboard) > 0
-
+            assert False, "should have thrown due to wrong frame key"
+        except H2OTypeError as e:
+            attr = next(k for k, v in kwargs.items() if v is not ds['train'])
+            assert "'{}' must be a valid H2OFrame".format(attr) in str(e)
 
 
     # TO DO  PUBDEV-5676
