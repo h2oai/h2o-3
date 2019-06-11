@@ -278,7 +278,7 @@ class H2OAutoML(object):
     #---------------------------------------------------------------------------
     # Training AutoML
     #---------------------------------------------------------------------------
-    def train(self, x = None, y = None, training_frame = None, fold_column = None,
+    def train(self, x = None, y = None, training_frame = None, fold_column = None, 
               weights_column = None, validation_frame = None, leaderboard_frame = None, blending_frame = None):
         """
         Begins an AutoML task, a background task that automatically builds a number of models
