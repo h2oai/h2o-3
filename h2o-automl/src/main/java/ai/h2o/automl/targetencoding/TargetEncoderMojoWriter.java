@@ -48,8 +48,12 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
    */
   private void writeTargetEncodingMap() throws IOException {
     
-    // We need to convert map only here. Everywhere else encoding map with Frames is fine.
-    Map<String, Frame> targetEncodingMapOnFrames = ((TargetEncoderModel) model)._output._target_encoding_map;
+    // We need to convert map only here - before writing to MOJO. Everywhere else having encoding map with Frames is fine.
+    TargetEncoderModel.TargetEncoderOutput targetEncoderOutput = ((TargetEncoderModel) model)._output;
+    Map<String, Frame> targetEncodingMapOnFrames = targetEncoderOutput._target_encoding_map;
+
+    ifNeededRegroupEncodingMapsByFoldColumn(targetEncoderOutput, targetEncodingMapOnFrames);
+
     EncodingMaps convertedEncodingMap = TargetEncoderFrameHelper.convertEncodingMapFromFrameToMap(targetEncodingMapOnFrames);
 
     if(convertedEncodingMap != null) {
@@ -63,6 +67,24 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
         }
       }
       finishWritingTextFile();
+    }
+  }
+
+  /**
+   * For transforming(making predictions) non-training data we don't need te folds in our encoding maps*/
+  private void ifNeededRegroupEncodingMapsByFoldColumn(TargetEncoderModel.TargetEncoderOutput targetEncoderOutput, Map<String, Frame> targetEncodingMapOnFrames) {
+    String teFoldColumnName = targetEncoderOutput._teParams._teFoldColumnName;
+    if(teFoldColumnName != null) {
+      try {
+        for (Map.Entry<String, Frame> encodingMapEntry : targetEncodingMapOnFrames.entrySet()) {
+          String key = encodingMapEntry.getKey();
+          Frame originalFrameWithFolds = encodingMapEntry.getValue();
+          targetEncodingMapOnFrames.put(key, TargetEncoder.groupingIgnoringFoldColumn(teFoldColumnName, originalFrameWithFolds, key));
+          originalFrameWithFolds.delete();
+        }
+      } catch (Exception ex) {
+        throw new IllegalStateException("Failed to group encoding maps by fold column");
+      }
     }
   }
 }

@@ -20,13 +20,14 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Map;
 
+import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
 import static org.junit.Assert.assertEquals;
 
 public class TEMojoIntegrationTest extends TestUtil {
 
   @BeforeClass
   public static void setup() {
-    stall_till_cloudsize(2);
+    stall_till_cloudsize(1);
   }
 
   private Frame fr = null;
@@ -70,7 +71,7 @@ public class TEMojoIntegrationTest extends TestUtil {
 
       TargetEncoderMojoModel loadedMojoModel = (TargetEncoderMojoModel) MojoModel.load(mojoFileName);
       
-      teModelWrapper = new EasyPredictModelWrapper(loadedMojoModel); // TODO why we store GenModel even though we pass MojoModel?
+      teModelWrapper = new EasyPredictModelWrapper(loadedMojoModel); 
 
       // RowData that is not encoded yet
       RowData rowToPredictFor = new RowData();
@@ -116,9 +117,92 @@ public class TEMojoIntegrationTest extends TestUtil {
   }
 
   @Test
-  public void kfold_scenario() {
+  public void without_blending_kfold_scenario() throws PredictException, IOException {
     
     //TODO test kfold scenario as in FrameToTETableTask we do not account for extra columns in frame
+
+    String mojoFileName = "mojo_te.zip";
+    TargetEncoderModel targetEncoderModel = null;
+    Scope.enter();
+    try {
+      fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+
+      String responseColumnName = "survived";
+      asFactor(fr, responseColumnName);
+      String foldColumnName = "fold_column";
+
+      addKFoldColumn(fr, foldColumnName, 5, 1234L);
+
+      String[] teColumns = {"home.dest", "embarked"};
+
+      TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
+      targetEncoderParameters._withBlending = false;
+      targetEncoderParameters._columnNamesToEncode = teColumns;
+      targetEncoderParameters.setTrain(fr._key);
+
+      targetEncoderParameters._teFoldColumnName = foldColumnName;
+      targetEncoderParameters._response_column = responseColumnName;
+
+      TargetEncoderBuilder job = new TargetEncoderBuilder(targetEncoderParameters);
+
+      Job<TargetEncoderModel> targetEncoderModelJob = job.trainModel();
+
+      targetEncoderModel = targetEncoderModelJob.get();
+      Scope.track_generic(targetEncoderModel);
+
+      FileOutputStream modelOutput = new FileOutputStream(mojoFileName);
+      targetEncoderModel.getMojo().writeTo(modelOutput);
+      modelOutput.close();
+      System.out.println("Model has been written down to a file as a mojo: " + mojoFileName);
+
+      // Let's load model that we just have written and use it for prediction.
+      EasyPredictModelWrapper teModelWrapper = null;
+
+      TargetEncoderMojoModel loadedMojoModel = (TargetEncoderMojoModel) MojoModel.load(mojoFileName);
+
+      teModelWrapper = new EasyPredictModelWrapper(loadedMojoModel); 
+
+      // RowData that is not encoded yet
+      RowData rowToPredictFor = new RowData();
+      String homeDestFactorValue = "Montreal  PQ / Chesterville  ON";
+      String embarkedFactorValue = "S";
+
+      rowToPredictFor.put("home.dest", homeDestFactorValue);
+      rowToPredictFor.put("sex", "female");
+      rowToPredictFor.put("age", "2.0");
+      rowToPredictFor.put("fare", "151.55");
+      rowToPredictFor.put("cabin", "C22 C26");
+      rowToPredictFor.put("embarked", embarkedFactorValue);
+      rowToPredictFor.put("sibsp", "1");
+      rowToPredictFor.put("parch", "2");
+      rowToPredictFor.put("pclass", "1");
+
+      teModelWrapper.transformWithTargetEncoding(rowToPredictFor);
+
+      //Check that specified in the test categorical columns have been encoded in accordance with targetEncodingMap
+      EncodingMaps targetEncodingMap = loadedMojoModel._targetEncodingMap;
+
+      int[] encodingComponentsForHomeDest = targetEncodingMap.get("home.dest").get(homeDestFactorValue);
+      double encodingForHomeDest = (double) encodingComponentsForHomeDest[0] / encodingComponentsForHomeDest[1];
+
+      int[] encodingComponentsForEmbarked = targetEncodingMap.get("embarked").get(embarkedFactorValue);
+      double encodingForHomeEmbarked = (double) encodingComponentsForEmbarked[0] / encodingComponentsForEmbarked[1];
+
+      assertEquals((double) rowToPredictFor.get("home.dest_te"), encodingForHomeDest, 1e-5);
+      assertEquals((double) rowToPredictFor.get("embarked_te"), encodingForHomeEmbarked, 1e-5);
+
+    } catch (Exception ex) {
+      throw ex;
+    }
+    finally {
+      if(targetEncoderModel._output._target_encoding_map != null)
+        TargetEncoderFrameHelper.encodingMapCleanUp(targetEncoderModel._output._target_encoding_map);
+
+
+      File mojoFile = new File(mojoFileName);
+      if(mojoFile.exists()) mojoFile.delete();
+      Scope.exit();
+    }
   }
 
   @Test
