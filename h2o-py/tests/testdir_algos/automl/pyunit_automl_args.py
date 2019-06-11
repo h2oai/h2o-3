@@ -351,7 +351,7 @@ def test_frames_can_be_passed_as_key():
             aml.train(y=ds['target'], **kwargs)
             raise AssertionError("should have thrown due to wrong frame key")
         except ValueError as e:
-            attr = next(k for k, v in kwargs.items() if v == 'dummy')
+            attr = next(k for k, v in kwargs.items() if isinstance(v, str) and v == 'dummy')
             assert "'{}' must be a valid H2OFrame or key".format(attr) in str(e)
 
     aml.train(y=ds['target'],
