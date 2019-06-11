@@ -136,6 +136,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       if (isClassifier()) error("_distribution", H2O.technote(2, "Quantile requires the response to be numeric."));
       break;
     case custom:
+      if(_parms._custom_distribution_func == null) error("_distribution", H2O.technote(2, "Custom requires custom function loaded."));
+      break;
     case AUTO:
       break;
     default:

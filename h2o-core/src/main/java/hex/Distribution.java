@@ -64,9 +64,7 @@ public abstract class Distribution extends Iced<Distribution> {
      * @param f value in original space, to be transformed to link space
      * @return link(f)
      */
-    public double link(double f) {
-        return linkFunction.link(f);
-    }
+    public double link(double f) { return linkFunction.link(f); }
 
     /**
      * Canonical link inverse

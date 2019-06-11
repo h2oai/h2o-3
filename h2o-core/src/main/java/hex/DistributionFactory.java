@@ -440,6 +440,7 @@ class CustomDistribution extends Distribution {
         super(params);
         customDistribution = new CustomDistributionWrapper(CFuncRef.from(params._custom_distribution_func));
         assert customDistribution != null;
+        assert customDistribution.getFunc() != null;
     }
 
     @Override
