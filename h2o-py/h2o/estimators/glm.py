@@ -66,7 +66,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @training_frame.setter
     def training_frame(self, training_frame):
-        self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
+        assert_is_type(training_frame, None, H2OFrame)
+        self._parms["training_frame"] = training_frame
 
 
     @property
@@ -80,7 +81,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @validation_frame.setter
     def validation_frame(self, validation_frame):
-        self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
+        assert_is_type(validation_frame, None, H2OFrame)
+        self._parms["validation_frame"] = validation_frame
 
 
     @property
@@ -656,7 +658,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @beta_constraints.setter
     def beta_constraints(self, beta_constraints):
-        self._parms["beta_constraints"] = H2OFrame._validate(beta_constraints, 'beta_constraints')
+        assert_is_type(beta_constraints, None, H2OFrame)
+        self._parms["beta_constraints"] = beta_constraints
 
 
     @property

@@ -52,7 +52,8 @@ class H2OWord2vecEstimator(H2OEstimator):
 
     @training_frame.setter
     def training_frame(self, training_frame):
-        self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
+        assert_is_type(training_frame, None, H2OFrame)
+        self._parms["training_frame"] = training_frame
 
 
     @property
@@ -187,7 +188,8 @@ class H2OWord2vecEstimator(H2OEstimator):
 
     @pre_trained.setter
     def pre_trained(self, pre_trained):
-        self._parms["pre_trained"] = H2OFrame._validate(pre_trained, 'pre_trained')
+        assert_is_type(pre_trained, None, H2OFrame)
+        self._parms["pre_trained"] = pre_trained
 
 
     @property

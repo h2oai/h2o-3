@@ -54,7 +54,8 @@ class H2OIsolationForestEstimator(H2OEstimator):
 
     @training_frame.setter
     def training_frame(self, training_frame):
-        self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
+        assert_is_type(training_frame, None, H2OFrame)
+        self._parms["training_frame"] = training_frame
 
 
     @property

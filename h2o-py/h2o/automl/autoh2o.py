@@ -1,6 +1,5 @@
 # -*- encoding: utf-8 -*-
 import h2o
-from h2o.estimators import H2OEstimator
 from h2o.exceptions import H2OValueError
 from h2o.job import H2OJob
 from h2o.frame import H2OFrame
@@ -279,8 +278,8 @@ class H2OAutoML(object):
     #---------------------------------------------------------------------------
     # Training AutoML
     #---------------------------------------------------------------------------
-    def train(self, x=None, y=None, training_frame=None, fold_column=None,
-              weights_column=None, validation_frame=None, leaderboard_frame=None, blending_frame=None):
+    def train(self, x = None, y = None, training_frame = None, fold_column = None,
+              weights_column = None, validation_frame = None, leaderboard_frame = None, blending_frame = None):
         """
         Begins an AutoML task, a background task that automatically builds a number of models
         with various algorithms and tracks their performance in a leaderboard. At any point 
@@ -313,7 +312,6 @@ class H2OAutoML(object):
         >>> # Launch an AutoML run
         >>> aml.train(y=y, training_frame=train)
         """
-        training_frame = H2OFrame._validate(training_frame, 'training_frame', required=True)
         ncols = training_frame.ncols
         names = training_frame.names
 
@@ -338,7 +336,11 @@ class H2OAutoML(object):
                 'response_column': y,
             }
 
-        input_spec['training_frame'] = training_frame.frame_id
+        if training_frame is None:
+            raise ValueError('The training frame is not set!')
+        else:
+            assert_is_type(training_frame, H2OFrame)
+            input_spec['training_frame'] = training_frame.frame_id
 
         if fold_column is not None:
             assert_is_type(fold_column,int,str)
@@ -349,15 +351,15 @@ class H2OAutoML(object):
             input_spec['weights_column'] = weights_column
 
         if validation_frame is not None:
-            validation_frame = H2OFrame._validate(validation_frame, 'validation_frame')
+            assert_is_type(validation_frame, H2OFrame)
             input_spec['validation_frame'] = validation_frame.frame_id
 
         if leaderboard_frame is not None:
-            leaderboard_frame = H2OFrame._validate(leaderboard_frame, 'leaderboard_frame')
+            assert_is_type(leaderboard_frame, H2OFrame)
             input_spec['leaderboard_frame'] = leaderboard_frame.frame_id
 
         if blending_frame is not None:
-            blending_frame = H2OFrame._validate(blending_frame, 'blending_frame')
+            assert_is_type(blending_frame, H2OFrame)
             input_spec['blending_frame'] = blending_frame.frame_id
 
         if self.sort_metric is not None:
@@ -429,12 +431,9 @@ class H2OAutoML(object):
         >>> aml.predict(test)
 
         """
-        leader = self.leader
-        if leader is None:
-            self._fetch()
-            leader = self.leader
-        if leader is not None:
-            return leader.predict(test_data)
+        if self._fetch():
+            self._model = h2o.get_model(self._leader_id)
+            return self._model.predict(test_data)
         print("No model built yet...")
 
     #---------------------------------------------------------------------------

@@ -59,7 +59,7 @@ def train_stacked_ensemble(dataset, base_models, **kwargs):
 
 
 def test_suite_stackedensemble_training_frame(blending=False):
-
+    
     def test_base_models_can_use_different_x():
         """
         test that passing in base models that use different subsets of 
