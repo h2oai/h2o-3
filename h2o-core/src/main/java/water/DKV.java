@@ -255,10 +255,14 @@ public abstract class DKV {
           continue;
         }
         if(value.isNull()) continue;
-        if (!value.isModel() && !value.isFrame()) continue;
 
-        // It is important to trigger the removal strategy on the Keyed object itself
-        ((Keyed) value.get()).retain(removalFutures, retainedKeys);
+
+        if (value.isFrame()) {
+          ((Frame) value.get()).retain(removalFutures, retainedKeys);
+        } else if (value.isModel()) {
+          ((Model)value.get()).remove();
+        }
+         
       }
       removalFutures.blockForPending();
     }

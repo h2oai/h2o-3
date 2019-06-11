@@ -71,14 +71,14 @@ public class Frame extends Lockable<Frame> {
    * Given a temp Frame and a base Frame from which it was created, delete the
    * Vecs that aren't found in the base Frame and then delete the temp Frame.
    *
-   * TODO: Really should use Scope but Scope does not.
    */
   public static void deleteTempFrameAndItsNonSharedVecs(Frame tempFrame, Frame baseFrame) {
-    Key[] keys = tempFrame.keys();
-    for( int i=0; i<keys.length; i++ )
-      if( baseFrame.find(keys[i]) == -1 ) //only delete vecs that aren't shared
-        keys[i].remove();
-    DKV.remove(tempFrame._key); //delete the frame header
+    Set<Key> baseFramekeys = new HashSet<>(baseFrame._keys.length);
+    for (int i = 0; i < baseFrame._keys.length; i++) {
+      baseFramekeys.add(baseFrame._keys[i]);
+    }
+    
+    tempFrame.retain(new Futures(), baseFramekeys);
   }
 
   /**
@@ -808,10 +808,22 @@ public class Frame extends Lockable<Frame> {
     return fs;
   }
 
-  @Override
-  protected Futures retain_impl(Futures fs, Set<Key> retainedKeys) {
+  /**
+   * Removes this {@link Frame} object and all directly linked {@link Keyed} objects and POJOs, while retaining
+   * the keys defined by the retainedKeys parameter. Aimed to be used for removal of {@link Frame} objects pointing
+   * to shared resources (Vectors, Chuinks etc.) internally.
+   * <p>
+   * WARNING: UNSTABLE API, might be removed/replaced at any time.
+   *
+   * @param futures      An instance of {@link Futures} for synchronization
+   * @param retainedKeys A {@link Set} of keys to retain. The set may be immutable, as it shall not be modified.
+   * @return An instance of {@link Futures} for synchronization
+   */
+  public final Futures retain(final Futures futures, final Set<Key> retainedKeys) {
+    if (_key != null) DKV.remove(_key);
+
     final Key[] delCandidateKeys = _keys;
-    if( delCandidateKeys.length==0 ) return fs;
+    if (delCandidateKeys.length == 0) return futures;
 
     // Get the nChunks without calling anyVec - which loads all Vecs eagerly,
     // only to delete them.  Supports Frames with some Vecs already deleted, as
@@ -829,24 +841,23 @@ public class Frame extends Lockable<Frame> {
         if ((v = _key1.get()) != null)
           break;                // Stop on finding the 1st Vec
     if (v == null)
-      return fs;
+      return futures;
 
     _vecs = new Vec[0];
     setNames(new String[0]);
     _keys = makeVecKeys(0);
-    
+
     final List<Key> deletedKeys= new ArrayList<>();
     for (int i = 0; i < delCandidateKeys.length; i++) {
       if(!retainedKeys.contains(delCandidateKeys[i])){
         deletedKeys.add(delCandidateKeys[i]);
       }
-      
     }
-    
+
     // Bulk dumb local remove - no JMM, no ordering, no safety.
     Vec.bulk_remove(deletedKeys.toArray(new Key[]{}), v.nChunks());
 
-    return fs;
+    return futures;
   }
 
   /** Write out K/V pairs, in this case Vecs. */
