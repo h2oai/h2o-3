@@ -122,23 +122,32 @@ task licenseReport(dependsOn: project.tasks.getByName('downloadLicenses')) {
     doLast {
         def jsonLicensesFile = file("${buildDir}/reports/license/dependency-license.json")
         def csvLicensesFile = file("${buildDir}/reports/license/dependency-license.csv")
+        def uniqueLicenseFile = file("${buildDir}/reports/license/unique-licenses.txt")
         def licenses = new groovy.json.JsonSlurper().parseText(jsonLicensesFile.text)
+        def uniqueLicenses = [] as Set
         csvLicensesFile.withWriter('UTF-8') { w ->
-            boolean xgboostDefined = false
-            w.write('"Dependency","File","License Name","License URL"\n')
+            w.writeLine '"Dependency","File","License Name","License URL"'
             licenses.dependencies.each { dep ->
-                dep.licenses.each {
+                def depLicenses = dep.licenses.collectEntries {
                     boolean licenseValid = it.name != "No license found"
-                    if (! licenseValid) {
+                    if (licenseValid) {
+                        [(it.name): it.url]
+                    } else {
                         if (dep.name == "asm:asm-parent:3.1") {
                             // FIXME: manual override, this doesn't work for some reason!
-                            w.write("${dep.name},${dep.file},\"BSD License\",http://www.opensource.org/licenses/bsd-license.php\n")
+                            ["BSD License": "http://www.opensource.org/licenses/bsd-license.php"]
                         } else
                             throw new StopExecutionException("License not found for dependency ${dep.name}. Please define dependency manually.")
                     }
-                    w.write("${dep.name},${dep.file},\"${it.name}\",${it.url}\n")
                 }
+                depLicenses.each { name, url ->
+                    w.writeLine "${dep.name},${dep.file},\"${name}\",${url}"
+                }
+                uniqueLicenses += (depLicenses.keySet() as List).sort().join("; ")
             }
+        }
+        uniqueLicenseFile.withWriter{ w ->
+            (uniqueLicenses as List).sort().each { w.writeLine it }
         }
     }
 }
