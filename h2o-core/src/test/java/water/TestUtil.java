@@ -670,11 +670,22 @@ public class TestUtil extends Iced {
   public static <T> T[] aro(T ...a) { return a ;}
 
   // ==== Comparing Results ====
+  
+  public static void assertFrameEquals(Frame expected, Frame actual, double delta) {
+    assertEquals("Frames have different number of vecs. ", expected.vecs().length, actual.vecs().length);
+    for (int i = 0; i < expected.vecs().length; i++) {
+      assertVecEquals(i + "/" + expected._names[i] + " ", expected.vec(i), actual.vec(i), delta);
+    }
+  }
 
   public static void assertVecEquals(Vec expecteds, Vec actuals, double delta) {
+    assertVecEquals("", expecteds, actuals, delta);
+  }
+
+  public static void assertVecEquals(String messagePrefix, Vec expecteds, Vec actuals, double delta) {
     assertEquals(expecteds.length(), actuals.length());
     for(int i = 0; i < expecteds.length(); i++) {
-      final String message = i + ": " + expecteds.at(i) + " != " + actuals.at(i) + ", chunkIds = " + expecteds.elem2ChunkIdx(i) + ", " + actuals.elem2ChunkIdx(i) + ", row in chunks = " + (i - expecteds.chunkForRow(i).start()) + ", " + (i - actuals.chunkForRow(i).start());
+      final String message = messagePrefix + i + ": " + expecteds.at(i) + " != " + actuals.at(i) + ", chunkIds = " + expecteds.elem2ChunkIdx(i) + ", " + actuals.elem2ChunkIdx(i) + ", row in chunks = " + (i - expecteds.chunkForRow(i).start()) + ", " + (i - actuals.chunkForRow(i).start());
       assertEquals(message, expecteds.at(i), actuals.at(i), delta);
     }
   }

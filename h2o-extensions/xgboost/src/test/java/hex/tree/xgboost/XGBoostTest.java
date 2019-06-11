@@ -65,7 +65,7 @@ public class XGBoostTest extends TestUtil {
     System.setProperty("sys.ai.h2o.xgboost.scoring.java.enable", confMojoJavaScoring); // mojo scoring
     System.setProperty("sys.ai.h2o.xgboost.predict.java.enable", confJavaPredict); // in-h2o predict
 
-    assertEquals(Boolean.valueOf(confMojoJavaScoring), XGBoostMojoReader.getJavaScoringConfig()); // check that MOJO scoring config was applied
+    assertEquals(Boolean.valueOf(confMojoJavaScoring), XGBoostMojoReader.useJavaScoring(true, null)); // check that MOJO scoring config was applied
   }
 
   public static final class FrameMetadata {
@@ -1396,8 +1396,8 @@ public class XGBoostTest extends TestUtil {
   }
 
   @Test
-  public void testMojoBoosterDump() throws IOException {
-    Assume.assumeFalse(XGBoostMojoReader.getJavaScoringConfig());
+  public void testMojoBoosterDump() throws IOException { 
+    assertEquals(Boolean.valueOf(confMojoJavaScoring), XGBoostMojoReader.useJavaScoring(true, null));
     Scope.enter();
     try {
       Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));

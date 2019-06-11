@@ -1,6 +1,8 @@
 package hex.tree.xgboost;
 
 import hex.genmodel.MojoModel;
+import hex.genmodel.MojoReaderBackend;
+import hex.genmodel.MojoReaderBackendFactory;
 import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
 import hex.genmodel.algos.xgboost.XGBoostMojoReader;
 import hex.genmodel.algos.xgboost.XGBoostNativeMojoModel;
@@ -14,10 +16,13 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.util.Log;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class DefaultMojoImplTest extends TestUtil {
 
@@ -29,8 +34,7 @@ public class DefaultMojoImplTest extends TestUtil {
   @Before
   public void setupMojoJavaScoring() {
     System.clearProperty(XGBoostMojoReader.SCORE_JAVA_PROP); // force default behavior
-
-    assertNull(XGBoostMojoReader.getJavaScoringConfig()); // check that MOJO scoring config is not present
+    assertTrue(XGBoostMojoReader.useJavaScoring(true, null)); // check default value for MOJO scoring impl
   }
 
   @Test
@@ -51,7 +55,7 @@ public class DefaultMojoImplTest extends TestUtil {
     try {
       XGBoostModel model = trainModel(Booster.dart);
       MojoModel mojo = model.toMojo();
-      assertEquals(XGBoostNativeMojoModel.class.getName(), mojo.getClass().getName());
+      assertEquals(XGBoostJavaMojoModel.class.getName(), mojo.getClass().getName());
     } finally {
       Scope.exit();
     }
@@ -63,11 +67,30 @@ public class DefaultMojoImplTest extends TestUtil {
     try {
       XGBoostModel model = trainModel(Booster.gblinear);
       MojoModel mojo = model.toMojo();
-      assertEquals(XGBoostNativeMojoModel.class.getName(), mojo.getClass().getName());
+      assertEquals(XGBoostJavaMojoModel.class.getName(), mojo.getClass().getName());
     } finally {
       Scope.exit();
     }
   }
+
+  @Test
+  public void testOldDARTMojoUsesNativeScoring() throws IOException {
+    Scope.enter();
+    try {
+      XGBoostModel model = trainModel(Booster.dart);
+
+      try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+        new OldSerializationXGBMojoWriter(model).writeTo(os);
+        MojoReaderBackend mojoReaderBackend = MojoReaderBackendFactory.createReaderBackend(
+            new ByteArrayInputStream(os.toByteArray()), MojoReaderBackendFactory.CachingStrategy.MEMORY);
+        MojoModel mojo = MojoModel.load(mojoReaderBackend);
+        assertEquals(XGBoostNativeMojoModel.class.getName(), mojo.getClass().getName());
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
 
   private static XGBoostModel trainModel(Booster booster) {
     Frame tfr = parse_test_file("./smalldata/prostate/prostate.csv");
@@ -89,6 +112,29 @@ public class DefaultMojoImplTest extends TestUtil {
     Scope.track_generic(model);
     Log.info(model);
     return model;
+  }
+
+  /**
+   * Old mojo writer that does not include use_java_scoring_by_default
+   */
+  private static final class OldSerializationXGBMojoWriter extends XGBoostMojoWriter {
+
+    public OldSerializationXGBMojoWriter(XGBoostModel model) {
+      super(model);
+    }
+
+    @Override
+    protected void writeModelData() throws IOException {
+      writeblob("boosterBytes", this.model.model_info()._boosterBytes);
+      writekv("nums", model._output._nums);
+      writekv("cats", model._output._cats);
+      writekv("cat_offsets", model._output._catOffsets);
+      writekv("use_all_factor_levels", model._output._useAllFactorLevels);
+      writekv("sparse", model._output._sparse);
+      writekv("booster", model._parms._booster.toString());
+      writeblob("feature_map", model.model_info().getFeatureMap().getBytes(Charset.forName("UTF-8")));
+    }
+
   }
 
 }
