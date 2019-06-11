@@ -26,6 +26,7 @@ import water.nbhm.NonBlockingHashMap;
 import water.util.ArrayUtils;
 import water.util.Countdown;
 import water.util.Log;
+import water.util.PrettyPrint;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -346,6 +347,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
             .setNamedValue("stop_epoch", runCountdown.stop_time(), EventLogEntry.epochFormat);
     eventLog().info(Stage.Workflow, "AutoML build done: built " + modelCount + " models")
             .setNamedValue("model_count", modelCount);
+    eventLog().info(Stage.Workflow, "AutoML duration: "+ PrettyPrint.msecs(runCountdown.duration(), true))
+            .setNamedValue("duration_secs", Math.round(runCountdown.duration() / 1000.));
 
     Log.info(eventLog().toString("Event Log for AutoML Run " + this._key + ":"));
     for (EventLogEntry event : eventLog()._events)
@@ -557,7 +560,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       }
       return;
     }
-    eventLog().info(stage, name + " started");
+    eventLog().debug(stage, name + " started");
     jobs.add(subJob);
 
     long lastWorkedSoFar = 0;
@@ -566,11 +569,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     while (subJob.isRunning()) {
       if (null != parentJob) {
         if (parentJob.stop_requested()) {
-          eventLog().info(stage, "AutoML job cancelled; skipping " + name);
+          eventLog().debug(stage, "AutoML job cancelled; skipping " + name);
           subJob.stop();
         }
         if (!ignoreTimeout && runCountdown.timedOut()) {
-          eventLog().info(stage, "AutoML: out of time; skipping " + name);
+          eventLog().debug(stage, "AutoML: out of time; skipping " + name);
           subJob.stop();
         }
       }
@@ -584,7 +587,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
         Grid<?> grid = (Grid)subJob._result.get();
         int totalGridModelsBuilt = grid.getModelCount();
         if (totalGridModelsBuilt > lastTotalGridModelsBuilt) {
-          eventLog().info(stage, "Built: " + totalGridModelsBuilt + " models for search: " + name);
+          eventLog().debug(stage, "Built: " + totalGridModelsBuilt + " models for search: " + name);
           this.addModels(grid.getModelKeys());
           lastTotalGridModelsBuilt = totalGridModelsBuilt;
         }
@@ -604,23 +607,23 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       if (subJob.isCrashed()) {
         eventLog().warn(stage, name + " failed: " + subJob.ex().toString());
       } else if (subJob.get() == null) {
-        eventLog().warn(stage, name + " cancelled");
+        eventLog().info(stage, name + " cancelled");
       } else {
         Grid<?> grid = (Grid) subJob.get();
         int totalGridModelsBuilt = grid.getModelCount();
         if (totalGridModelsBuilt > lastTotalGridModelsBuilt) {
-          eventLog().info(stage, "Built: " + totalGridModelsBuilt + " models for search: " + name);
+          eventLog().debug(stage, "Built: " + totalGridModelsBuilt + " models for search: " + name);
           this.addModels(grid.getModelKeys());
         }
-        eventLog().info(stage, name + " complete");
+        eventLog().debug(stage, name + " complete");
       }
     } else if (JobType.ModelBuild == work.type) {
       if (subJob.isCrashed()) {
         eventLog().warn(stage, name + " failed: " + subJob.ex().toString());
       } else if (subJob.get() == null) {
-        eventLog().warn(stage, name + " cancelled");
+        eventLog().info(stage, name + " cancelled");
       } else {
-        eventLog().info(stage, name + " complete");
+        eventLog().debug(stage, name + " complete");
         this.addModel((Model) subJob.get());
       }
     }

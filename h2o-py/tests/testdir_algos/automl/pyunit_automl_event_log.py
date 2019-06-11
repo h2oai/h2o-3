@@ -43,6 +43,8 @@ def test_train_verbosity():
                     seed=1234)
     print("verbosity off")
     aml.train(y=y, training_frame=train)
+    print("verbosity debug")
+    aml.train(y=y, training_frame=train, verbosity='debug')
     print("verbosity info")
     aml.train(y=y, training_frame=train, verbosity='info')
     print("verbosity warn")
