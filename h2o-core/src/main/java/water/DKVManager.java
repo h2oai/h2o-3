@@ -42,7 +42,7 @@ public class DKVManager {
       if (value == null || value.isNull()) {
         continue; // Ignore missing values
       } else if (!value.isFrame() && !value.isModel()) {
-        Log.info(String.format("Given key %s is of type %d. Not retaining.", key.toString(), value.type()));
+        throw new IllegalArgumentException(String.format("Given key %s is of type %d. Please provide only Model and Frame keys.", key.toString(), value.type()));
       } else if (value.isFrame()) {
         extractFrameKeys(retainedKeys, (Frame) value.get());
       } else if (value.isModel()) {
@@ -85,7 +85,7 @@ public class DKVManager {
 
   private static class ClearDKVTask extends MRTask<ClearDKVTask> {
 
-    private final Key[] _retainedKeys; // Only model and frame keys
+    private final Key[] _retainedKeys; // Original model & frame keys provided by the user, accompanied with extracted internal keys
 
     /**
      *
