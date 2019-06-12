@@ -130,10 +130,7 @@ public class DKVManagerTest extends TestUtil {
             Scope.exit();
         }
     }
-
-    /**
-     * @author Michal Kurka
-     */
+    
     @Test
     public void testRetain_badKey() {
       try {

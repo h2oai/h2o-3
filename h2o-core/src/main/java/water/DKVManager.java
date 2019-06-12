@@ -3,7 +3,6 @@ package water;
 import hex.Model;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.Log;
 
 import java.util.*;
 
@@ -12,6 +11,8 @@ public class DKVManager {
   /**
    * Clears keys in all H2O nodes, except for the ones marked as retained.
    * Only Model and Frame keys are retained. If a key of any other type is provided, it will be removed as well.
+   * 
+   * Model's training and validation frames are retained automatically with the specified model. However, cross validation models are NOT retained.
    *
    * @param retainedKeys Keys of {@link Frame}s and {@link Model}s to be retained.
    */
