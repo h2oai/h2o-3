@@ -14,7 +14,7 @@ grip==4.4.0
 wheel==0.30.0
 numpy==1.16.0
 scipy==1.0.0
-pandas==0.22.0
+pandas==0.24.2
 statsmodels==0.8.0
 patsy==0.5.0
 sklearn
