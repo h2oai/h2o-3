@@ -285,7 +285,6 @@ public class DKVManagerTest extends TestUtil {
     try {
       frame = TestUtil.parse_test_file("./smalldata/testng/airlines_train.csv");
       DKVManager.retain(new Key[]{frame._key});
-      assertTrue(H2O.STORE.containsKey(frame._key));
       assertNotNull(DKV.get(frame._key));
 
       for (Vec vec : frame.vecs()) {
@@ -317,20 +316,19 @@ public class DKVManagerTest extends TestUtil {
 
     private static void testRetainFrame(Frame trainingFrame) {
       DKVManager.retain(new Key[]{trainingFrame._key});
-      assertTrue(H2O.STORE.containsKey(trainingFrame._key));
-        assertNotNull(DKV.get(trainingFrame._key));
+      assertNotNull(DKV.get(trainingFrame._key));
 
         for (Vec vec : trainingFrame.vecs()) {
-            assertTrue(H2O.STORE.containsKey(vec._key));
+            assertNotNull(DKV.get(vec._key));
 
             for (int i = 0; i < vec.nChunks(); i++) {
-                assertTrue(H2O.STORE.containsValue(vec.chunkIdx(i)));
+              assertNotNull(vec.chunkIdx(i));
             }
         }
     }
     
     private static void testRetainModel(Model model, Frame trainingFrame){
-        assertNotNull(DKV.get(model._key));
+      assertNotNull(DKV.get(model._key));
       DKVManager.retain(new Key[]{model._key});
       assertNotNull(DKV.get(model._key));
         
