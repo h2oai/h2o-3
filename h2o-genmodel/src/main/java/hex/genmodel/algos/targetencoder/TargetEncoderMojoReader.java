@@ -77,7 +77,6 @@ public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoMo
     return new EncodingMaps(encodingMaps);
   }
 
-
   private String matchNewSection(String line) {
     Pattern pattern = Pattern.compile("\\[(.*?)\\]");
     Matcher matcher = pattern.matcher(line);

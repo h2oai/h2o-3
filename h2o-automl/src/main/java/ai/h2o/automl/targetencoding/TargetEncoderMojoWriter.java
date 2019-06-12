@@ -48,7 +48,7 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
    */
   private void writeTargetEncodingMap() throws IOException {
     
-    // We need to convert map only here - before writing to MOJO. Everywhere else having encoding map with Frames is fine.
+    // We need to convert map only here - before writing to MOJO. Everywhere else having encoding maps based on Frames is fine.
     TargetEncoderModel.TargetEncoderOutput targetEncoderOutput = ((TargetEncoderModel) model)._output;
     Map<String, Frame> targetEncodingMapOnFrames = targetEncoderOutput._target_encoding_map;
 
@@ -71,7 +71,7 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
   }
 
   /**
-   * For transforming(making predictions) non-training data we don't need te folds in our encoding maps*/
+   * For transforming(making predictions) non-training data we don't need `te folds` in our encoding maps */
   private void ifNeededRegroupEncodingMapsByFoldColumn(TargetEncoderModel.TargetEncoderOutput targetEncoderOutput, Map<String, Frame> targetEncodingMapOnFrames) {
     String teFoldColumnName = targetEncoderOutput._teParams._teFoldColumnName;
     if(teFoldColumnName != null) {

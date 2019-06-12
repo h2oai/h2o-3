@@ -577,7 +577,7 @@ public class EasyPredictModelWrapper implements Serializable {
 
     TargetEncoderMojoModel targetEncoderMojoModel = (TargetEncoderMojoModel) this.m;
     
-    targetEncoderMojoModel.transform0(data);
+    targetEncoderMojoModel.transform(data);
   }
 
   @SuppressWarnings("unused") // not used in this class directly, kept for backwards compatibility

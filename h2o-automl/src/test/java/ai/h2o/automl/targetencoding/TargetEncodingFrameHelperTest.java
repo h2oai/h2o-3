@@ -222,8 +222,6 @@ public class TargetEncodingFrameHelperTest extends TestUtil {
     }
   }
 
-  
-
   private Map<String, Frame> getTEMapForTitanicDataset(boolean withFoldColumn) {
     String foldColumnNameForTE = "te_fold_column";
 
@@ -248,7 +246,7 @@ public class TargetEncodingFrameHelperTest extends TestUtil {
     }
   }
 
-  // Checking that dfork is faster. This is a proof that dfork in particular scenario is faster.
+  // Checking that dfork is faster. This is a proof that dfork in this particular scenario is faster.
   @Ignore()
   @Test public void conversion_of_frame_into_table_doAll_vs_dfork_performance_test() {
     Map<String, Frame> encodingMap = getTEMapForTitanicDataset(false);

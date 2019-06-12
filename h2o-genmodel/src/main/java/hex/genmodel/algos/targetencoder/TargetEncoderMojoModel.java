@@ -16,10 +16,12 @@ public class TargetEncoderMojoModel extends MojoModel implements FeatureTransfor
   public boolean _withBlending;
   public double _inflectionPoint;
   public double _smoothing;
-  private double _priorMean = -1; // Could be passed from the model training phase so that we don't have to recompute it here. At least we should compute it once per mojoModel
+
+  // Could be passed from the model training phase so that we don't have to recompute it here. Or maybe it is fine as it should be computed only once per mojoModel
+  private double _priorMean = -1; 
 
   @Override
-  public RowData transform0(RowData data) {
+  public RowData transform(RowData data) {
     
     if(_targetEncodingMap != null) {
       for (Map.Entry<String, EncodingMap> columnToEncodingsMap : _targetEncodingMap.entrySet()) {
@@ -51,7 +53,6 @@ public class TargetEncoderMojoModel extends MojoModel implements FeatureTransfor
   public static double computeBlendedEncoding(double lambda, double posteriorMean, double priorMean) {
     return lambda * posteriorMean + (1 - lambda) * priorMean;
   }
-  
   
   /**
    * Computes prior mean i.e. unconditional mean of the response. Should be the same for all columns

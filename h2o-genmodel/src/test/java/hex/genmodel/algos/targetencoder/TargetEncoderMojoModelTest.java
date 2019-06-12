@@ -78,7 +78,7 @@ public class TargetEncoderMojoModelTest {
     rowToPredictFor.put(predictorName, "A");
     
     // Case when number of training examples equal to inflection point. Encoding should be between prior and posterior
-    targetEncoderMojoModel.transform0(rowToPredictFor);
+    targetEncoderMojoModel.transform(rowToPredictFor);
     assertEquals(0.45, (double) rowToPredictFor.get(predictorName + "_te"), 1e-5);
 
     // Case when number of training examples is higher than inflection point. Encoding should be closer to prior
@@ -86,7 +86,7 @@ public class TargetEncoderMojoModelTest {
     RowData rowToPredictFor2 = new RowData();
     rowToPredictFor2.put(predictorName, "B");
 
-    targetEncoderMojoModel.transform0(rowToPredictFor2);
+    targetEncoderMojoModel.transform(rowToPredictFor2);
     assertEquals(0.5, (double) rowToPredictFor2.get(predictorName + "_te"), 1e-5);
 
   }
@@ -108,13 +108,13 @@ public class TargetEncoderMojoModelTest {
     RowData rowToPredictFor = new RowData();
     rowToPredictFor.put(predictorName, "A");
 
-    targetEncoderMojoModel.transform0(rowToPredictFor);
+    targetEncoderMojoModel.transform(rowToPredictFor);
     assertEquals(0.4, (double) rowToPredictFor.get(predictorName + "_te"), 1e-5);
     
     RowData rowToPredictFor2 = new RowData();
     rowToPredictFor2.put(predictorName, "B");
 
-    targetEncoderMojoModel.transform0(rowToPredictFor2);
+    targetEncoderMojoModel.transform(rowToPredictFor2);
     assertEquals(0.42857, (double) rowToPredictFor2.get(predictorName + "_te"), 1e-5);
   }
 }
