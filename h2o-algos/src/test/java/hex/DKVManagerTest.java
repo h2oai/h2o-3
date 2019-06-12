@@ -5,7 +5,9 @@ import hex.naivebayes.NaiveBayesModel;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import water.*;
 import water.fvec.*;
 
@@ -21,6 +23,9 @@ public class DKVManagerTest extends TestUtil {
     public static void setup() {
         stall_till_cloudsize(1);
     }
+    
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none(); 
 
     @Test
     public void testNaiveBayesModel() {
@@ -124,6 +129,28 @@ public class DKVManagerTest extends TestUtil {
         } finally {
             Scope.exit();
         }
+    }
+
+    /**
+     * @author Michal Kurka
+     */
+    @Test
+    public void testRetain_badKey() {
+      try {
+        Scope.enter();
+        Frame f1 = new TestFrameBuilder()
+                .withVecTypes(Vec.T_NUM, Vec.T_NUM)
+                .withDataForCol(0, ar(0, 1))
+                .withDataForCol(1, ar(2, 3))
+                .build();
+        
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage("Please provide only Model and Frame keys.");
+        // delete everything except for Frame `f1`
+        DKVManager.retain(new Key[]{f1.vec(0)._key});
+      } finally {
+        Scope.exit();
+      }
     }
 
     /**
