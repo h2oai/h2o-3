@@ -165,6 +165,57 @@ public class ClearDKVTaskTest extends TestUtil {
         
     }
 
+
+  @Test
+  public void testRetainModels_sharedVecs() {
+    try {
+      Scope.enter();
+      Frame trainingFrame = parse_test_file("./smalldata/iris/iris_wheader.csv");
+      Scope.track(trainingFrame);
+
+      Frame sharedFrame = new Frame(Key.<Frame>make("sharedFrame"));
+      sharedFrame.add("borrowedCol", trainingFrame.vec(0));
+      DKV.put(sharedFrame);
+      Scope.track(sharedFrame);
+
+
+      // A little integration test
+      NaiveBayesModel.NaiveBayesParameters parms = new NaiveBayesModel.NaiveBayesParameters();
+      parms._train = trainingFrame._key;
+      parms._valid = trainingFrame._key;
+      parms._laplace = 0;
+      parms._response_column = trainingFrame._names[4];
+      parms._compute_metrics = false;
+
+      final Model model = new NaiveBayes(parms).trainModel().get();
+      Scope.track_generic(model);
+
+      new DKV.ClearDKVTask(new Key[]{model._key})
+              .doAllNodes();
+
+      // The very frame with shared vecs should not exist
+      final Value sharedFrameVal = DKV.get(sharedFrame._key);
+      assertNull(sharedFrameVal);
+
+      // Training frame of the model should be retained as well
+      final Value trainVal = DKV.get(trainingFrame._key);
+      assertNotNull(trainVal);
+      assertTrue(trainVal.isFrame());
+      assertFalse(trainVal.isDeleted());
+      assertNotNull(trainVal.get()); // The training frame should be there
+
+      // No shared vecs were deleted from the training frame as the sharedFrame was deleted.
+      for (Key k : trainingFrame.keys()) {
+        assertNotNull(DKV.get(k));
+      }
+
+
+    } finally {
+      Scope.exit();
+    }
+
+  }
+
     /**
      * Traind a model from a frame. Retain the frame only and let the model be deleted. The frame should remain in DKV.
      */

@@ -256,11 +256,10 @@ public abstract class DKV {
         }
         if(value.isNull()) continue;
 
-
         if (value.isFrame()) {
           ((Frame) value.get()).retain(removalFutures, retainedKeys);
         } else if (value.isModel()) {
-          ((Model)value.get()).remove();
+          ((Model)value.get()).remove(removalFutures);
         }
          
       }
@@ -320,9 +319,11 @@ public abstract class DKV {
     Objects.requireNonNull(model);
     if(model._parms._train != null) {
       retainedKeys.add(model._parms._train);
+      extractFrameKeys(retainedKeys, model._parms._train.get());
     }
     if(model._parms._valid != null) {
       retainedKeys.add(model._parms._valid);
+      extractFrameKeys(retainedKeys, model._parms._valid.get());
     }
   }
 }
