@@ -482,11 +482,13 @@ For classification problems, predicted probabilities and labels are compared aga
 Predicting Leaf Node Assignment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For tree-based models, including GBM, DRF, XGBoost, and Isolation Forest, the ``h2o.predict_leaf_node_assignment()`` function predicts the leaf assignment on an H2O model. 
+For tree-based models, including GBM, DRF, and Isolation Forest, the ``h2o.predict_leaf_node_assignment()`` function predicts the leaf assignment on an H2O model. 
 
 This function predicts against a test frame. For every row in the test frame, this function returns the leaf placements of the row in all the trees in the model. An optional Type can also be specified to define the placements. Placements can be represented either by paths to the leaf nodes from the tree root (``Path`` - default) or by H2O's internal identifiers (``Node_ID``). The order of the rows in the results is the same as the order in which the data was loaded.
 
 This function returns an H2OFrame object with categorical leaf assignment identifiers for each tree in the model.
+
+**Note**: This option is not currently supported for XGBoost.
 
 Predict Contributions
 ~~~~~~~~~~~~~~~~~~~~~

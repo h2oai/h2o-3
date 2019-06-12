@@ -402,3 +402,10 @@ On Spark
 --------
 
 Refer to the `Getting Started with Sparkling Water <welcome.html#getting-started-with-sparkling-water>`__ section for information on how to launch H2O on Spark. 
+
+Best Practices
+--------------
+
+- Use ``h2o.importFile`` instead of ``h2o.uploadFile`` if possible.
+- Set the correct cluster size for your given dataset size. The rule of thumb is to use at least 4 times the size of your data. For example, if the dataset is 10GB, you should allocate at least 40GB of memory.
+
