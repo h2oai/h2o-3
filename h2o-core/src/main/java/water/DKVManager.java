@@ -102,7 +102,6 @@ public class DKVManager {
 
       final Collection<Value> storeKeys = H2O.STORE.values();
       Futures removalFutures = new Futures();
-      System.out.println(Arrays.toString(retainedKeys.toArray()));
       for (final Value value : storeKeys) {
         if (retainedKeys.contains(value._key)) {
           continue;
