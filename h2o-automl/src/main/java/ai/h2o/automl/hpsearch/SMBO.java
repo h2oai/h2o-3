@@ -100,7 +100,7 @@ public abstract class SMBO {
     }
   }
   
-  Frame getBestRowByColumn(Frame fr, String columnName, boolean theBiggerTheBetter) {
+  Frame getBestRowByColumn(Frame fr, String columnName, boolean theBiggerTheBetter) { // TODO theBiggerTheBetter is not being used
     int columnIdx = fr.find(columnName);
     Frame sorted = fr.sort(new int[] {columnIdx}, new int[] {-1});
     

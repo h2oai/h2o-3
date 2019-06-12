@@ -86,8 +86,13 @@ public abstract class TEParamsSelectionStrategy extends Iced {
 
     //This approach is not very efficient as over time we will start to hit cache more often and selecting unseen combination will become harder.
     private int[] nextIndices() throws GridSearchCompleted {
+      if(_visitedPermutationHashes.size() == _spaceSize) {
+        Log.info("Whole search space has been discovered (" + _visitedPermutationHashes.size() + " grid entries). Stopping search.");
+        throw new GridSearchCompleted();
+      }
       int[] chosenIndices =  new int[_dimensionNames.length];
 
+      
       int hashOfIndices = 0;
       do {
         for (int i = 0; i < _dimensionNames.length; i++) {
@@ -100,10 +105,7 @@ public abstract class TEParamsSelectionStrategy extends Iced {
       } while (_visitedPermutationHashes.contains(hashOfIndices) && _visitedPermutationHashes.size() != _spaceSize /*&& skipIndices(chosenIndices)*/);
       _visitedPermutationHashes.add(hashOfIndices);
 
-      if(_visitedPermutationHashes.size() == _spaceSize) {
-        Log.info("Whole search space has been discovered (" + _visitedPermutationHashes.size() + " grid entries). Stopping search.");
-        throw new GridSearchCompleted();
-      }
+      
       return chosenIndices;
     }
     

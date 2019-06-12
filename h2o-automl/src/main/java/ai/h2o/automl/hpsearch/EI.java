@@ -43,12 +43,12 @@ public class EI extends AcquisitionFunction {
 
   /**
    * 
-   * @param medians per line predictions of mean marginalised over all predictors 
+   * @param means per line predictions of mean marginalised over all predictors 
    * @param variances per line sds of predictions marginalised over all predictors
    * @return weighted(exploitation/extrapolation) evaluation of the unseen entries from the hyperparameters space
    */
-  public Vec compute(Vec medians, Vec variances) {
-    Vec mediansCopy = medians.makeCopy();
+  public Vec compute(Vec means, Vec variances) {
+    Vec mediansCopy = means.makeCopy();
     Vec variancesCopy = variances.makeCopy();
     Frame zComponents = null;
     Frame pdfComponents = null;
