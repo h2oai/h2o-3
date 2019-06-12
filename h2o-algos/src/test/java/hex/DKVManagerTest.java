@@ -15,7 +15,7 @@ import java.util.List;
 import static hex.genmodel.utils.DistributionFamily.AUTO;
 import static org.junit.Assert.*;
 
-public class ClearDKVTaskTest extends TestUtil {
+public class DKVManagerTest extends TestUtil {
 
     @BeforeClass()
     public static void setup() {
@@ -27,7 +27,7 @@ public class ClearDKVTaskTest extends TestUtil {
         NaiveBayesModel model = null;
         Frame trainingFrame = null, preds = null;
         try {
-            trainingFrame = parse_test_file("./smalldata/iris/iris_wheader.csv");
+            trainingFrame = parse_test_file("/home/pavel/wrk/h2o-3/smalldata/iris/iris_wheader.csv");
             List<Key> retainedKeys = new ArrayList<>();
             retainedKeys.add(trainingFrame._key);
             // Test the training frame has not been deleted
@@ -63,7 +63,7 @@ public class ClearDKVTaskTest extends TestUtil {
         GBMModel model = null;
         Frame trainingFrame = null, preds = null;
         try {
-            trainingFrame = parse_test_file("./smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
+            trainingFrame = parse_test_file("/home/pavel/wrk/h2o-3/smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
 
             // Test the training frame has not been deleted
             testRetainFrame(trainingFrame);
@@ -115,12 +115,12 @@ public class ClearDKVTaskTest extends TestUtil {
             Scope.track(f2);
 
             // delete everything except for Frame `f1`
-            new DKV.ClearDKVTask(new Key[]{f1._key})
-                    .doAllNodes();
+          DKVManager.retain(new Key[]{f1._key});
 
             // Frame `f1` shouldn't lose any data 
-            assertNotNull(f1.vec(1).chunkForChunkIdx(0));
-            assertNull(DKV.get(f2._key));
+          assertNotNull(f1._key.get());
+          assertNotNull(f1.vec(1).chunkForChunkIdx(0));
+          assertNull(f2._key.get());
         } finally {
             Scope.exit();
         }
@@ -134,7 +134,7 @@ public class ClearDKVTaskTest extends TestUtil {
     public void testRetainModels_sharedFrames() {
         try {
             Scope.enter();
-            Frame trainingFrame = parse_test_file("./smalldata/iris/iris_wheader.csv");
+            Frame trainingFrame = parse_test_file("/home/pavel/wrk/h2o-3/smalldata/iris/iris_wheader.csv");
             Scope.track(trainingFrame);
 
             // A little integration test
@@ -148,8 +148,7 @@ public class ClearDKVTaskTest extends TestUtil {
             final Model model = new NaiveBayes(parms).trainModel().get();
             Scope.track_generic(model);
 
-            new DKV.ClearDKVTask(new Key[]{model._key})
-                    .doAllNodes();
+          DKVManager.retain(new Key[]{model._key});
 
             // Training frame of the model should be retained as well
             final Value value = DKV.get(trainingFrame._key);
@@ -166,11 +165,15 @@ public class ClearDKVTaskTest extends TestUtil {
     }
 
 
+  /**
+   * If a model has been trained using a Frame with shared vecs and the model is retained, the training frame should stay
+   * intact.
+   */
   @Test
   public void testRetainModels_sharedVecs() {
     try {
       Scope.enter();
-      Frame trainingFrame = parse_test_file("./smalldata/iris/iris_wheader.csv");
+      Frame trainingFrame = parse_test_file("/home/pavel/wrk/h2o-3/smalldata/iris/iris_wheader.csv");
       Scope.track(trainingFrame);
 
       Frame sharedFrame = new Frame(Key.<Frame>make("sharedFrame"));
@@ -178,8 +181,6 @@ public class ClearDKVTaskTest extends TestUtil {
       DKV.put(sharedFrame);
       Scope.track(sharedFrame);
 
-
-      // A little integration test
       NaiveBayesModel.NaiveBayesParameters parms = new NaiveBayesModel.NaiveBayesParameters();
       parms._train = trainingFrame._key;
       parms._valid = trainingFrame._key;
@@ -190,8 +191,7 @@ public class ClearDKVTaskTest extends TestUtil {
       final Model model = new NaiveBayes(parms).trainModel().get();
       Scope.track_generic(model);
 
-      new DKV.ClearDKVTask(new Key[]{model._key})
-              .doAllNodes();
+      DKVManager.retain(new Key[]{model._key});
 
       // The very frame with shared vecs should not exist
       final Value sharedFrameVal = DKV.get(sharedFrame._key);
@@ -217,17 +217,16 @@ public class ClearDKVTaskTest extends TestUtil {
   }
 
     /**
-     * Traind a model from a frame. Retain the frame only and let the model be deleted. The frame should remain in DKV.
+     * Train a model from a frame. Retain the frame only and let the model be deleted. The frame should remain in DKV.
      */
     @Test
     public void testdeleteModel_retainFrame() {
         try {
             Scope.enter();
-            Frame trainingFrame = parse_test_file("./smalldata/iris/iris_wheader.csv");
+            Frame trainingFrame = parse_test_file("/home/pavel/wrk/h2o-3/smalldata/iris/iris_wheader.csv");
             Scope.track(trainingFrame);
 
-            // A little integration test
-            NaiveBayesModel.NaiveBayesParameters parms = new NaiveBayesModel.NaiveBayesParameters();
+          NaiveBayesModel.NaiveBayesParameters parms = new NaiveBayesModel.NaiveBayesParameters();
             parms._train = trainingFrame._key;
             parms._laplace = 0;
             parms._response_column = trainingFrame._names[4];
@@ -236,10 +235,9 @@ public class ClearDKVTaskTest extends TestUtil {
             final Model model = new NaiveBayes(parms).trainModel().get();
             Scope.track_generic(model);
 
-            new DKV.ClearDKVTask(new Key[]{trainingFrame._key})
-                    .doAllNodes();
+          DKVManager.retain(new Key[]{trainingFrame._key});
 
-            // Training frame of the model should be retained as well
+          // Training frame of the model should be retained as well
             final Value value = DKV.get(trainingFrame._key);
             assertNotNull(value);
             assertTrue(value.isFrame());
@@ -255,9 +253,47 @@ public class ClearDKVTaskTest extends TestUtil {
 
     }
 
+  // Retaining models & integration test with models is in h2o-algos subproject.
+  @Test
+  public void testRetainFrame() {
+    Frame frame = null;
+
+    try {
+      frame = TestUtil.parse_test_file("./smalldata/testng/airlines_train.csv");
+      DKVManager.retain(new Key[]{frame._key});
+      assertTrue(H2O.STORE.containsKey(frame._key));
+      assertNotNull(DKV.get(frame._key));
+
+      for (Vec vec : frame.vecs()) {
+        assertNotNull(vec._key);
+
+        for (int i = 0; i < vec.nChunks(); i++) {
+          assertNotNull(DKV.get(vec.chunkKey(i)));
+        }
+      }
+
+    } finally {
+      if (frame != null) frame.delete();
+    }
+  }
+
+  @Test
+  public void testRetainNothing() throws InterruptedException {
+    Frame frame = null;
+
+    try {
+      frame = TestUtil.parse_test_file("smalldata/testng/airlines_train.csv");
+      DKVManager.retain(new Key[]{});
+      assertNull(DKV.get(frame._key));
+
+    } finally {
+      if (frame != null) frame.delete();
+    }
+  }
+
     private static void testRetainFrame(Frame trainingFrame) {
-        new DKV.ClearDKVTask(new Key[]{trainingFrame._key}).doAllNodes();
-        assertTrue(H2O.STORE.containsKey(trainingFrame._key));
+      DKVManager.retain(new Key[]{trainingFrame._key});
+      assertTrue(H2O.STORE.containsKey(trainingFrame._key));
         assertNotNull(DKV.get(trainingFrame._key));
 
         for (Vec vec : trainingFrame.vecs()) {
@@ -271,13 +307,13 @@ public class ClearDKVTaskTest extends TestUtil {
     
     private static void testRetainModel(Model model, Frame trainingFrame){
         assertNotNull(DKV.get(model._key));
-        new DKV.ClearDKVTask(new Key[]{model._key}).doAllNodes();
-        assertNotNull(DKV.get(model._key));
+      DKVManager.retain(new Key[]{model._key});
+      assertNotNull(DKV.get(model._key));
         
     }
     
     private static void testModelDeletion(final Model model){
-        new DKV.ClearDKVTask(new Key[]{}).doAllNodes();
-        assertNull(DKV.get(model._key));
+      DKVManager.retain(new Key[]{});
+      assertNull(DKV.get(model._key));
     }
 }
