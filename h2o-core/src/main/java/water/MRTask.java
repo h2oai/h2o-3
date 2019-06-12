@@ -240,7 +240,6 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     }
     return new Frame(key,names,vecs);
   }
-  public void map(){}
 
   /** Override with your map implementation.  This overload is given a single
    *  <strong>local</strong> input Chunk.  It is meant for map/reduce jobs that use a
@@ -599,7 +598,6 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
           _hi > _lo && _keys[_lo].home() ) {
         assert(_keys == null || !H2O.ARGS.client) : "Client node should not process any keys in MRTask!";
         if(_profile!=null) _profile._userstart = System.currentTimeMillis();
-        if(_keys == null) map();
         if( _keys != null ) map(_keys[_lo]);
         _res = self();        // Save results since called map() at least once!
         if(_profile!=null) _profile._closestart = System.currentTimeMillis();

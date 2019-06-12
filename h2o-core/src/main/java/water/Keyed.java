@@ -3,8 +3,6 @@ package water;
 import water.api.schemas3.KeyV3;
 import water.fvec.*;
 
-import java.util.Set;
-
 /** Iced, with a Key.  Support for DKV removal. */
 public abstract class Keyed<T extends Keyed> extends Iced<T> {
   /** Key mapping a Value which holds this object; may be null  */
@@ -16,8 +14,6 @@ public abstract class Keyed<T extends Keyed> extends Iced<T> {
   /** Remove this Keyed object, and all subparts; blocking. */
   public final void remove( ) { remove(new Futures()).blockForPending(); }
   /** Remove this Keyed object, and all subparts.  */
-
-  
   public final Futures remove( Futures fs ) {
     if( _key != null ) DKV.remove(_key,fs);
     return remove_impl(fs);
