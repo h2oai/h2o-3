@@ -40,7 +40,7 @@ public class DKVManager {
       final Value value = DKV.get(key);
 
       if (value == null || value.isNull()) {
-        continue; // The key might not have value cached locally. Do not delete.
+        continue; // Ignore missing values
       } else if (!value.isFrame() && !value.isModel()) {
         Log.info(String.format("Given key %s is of type %d. Not retaining.", key.toString(), value.type()));
       } else if (value.isFrame()) {
