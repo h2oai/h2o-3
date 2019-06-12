@@ -71,14 +71,14 @@ public class Frame extends Lockable<Frame> {
    * Given a temp Frame and a base Frame from which it was created, delete the
    * Vecs that aren't found in the base Frame and then delete the temp Frame.
    *
+   * TODO: Really should use Scope but Scope does not.
    */
   public static void deleteTempFrameAndItsNonSharedVecs(Frame tempFrame, Frame baseFrame) {
-    Set<Key> baseFramekeys = new HashSet<>(baseFrame._keys.length);
-    for (int i = 0; i < baseFrame._keys.length; i++) {
-      baseFramekeys.add(baseFrame._keys[i]);
-    }
-    
-    tempFrame.retain(new Futures(), baseFramekeys);
+    Key[] keys = tempFrame.keys();
+    for( int i=0; i<keys.length; i++ )
+      if( baseFrame.find(keys[i]) == -1 ) //only delete vecs that aren't shared
+        keys[i].remove();
+    DKV.remove(tempFrame._key); //delete the frame header
   }
 
   /**
