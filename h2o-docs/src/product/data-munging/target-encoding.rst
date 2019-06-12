@@ -226,6 +226,8 @@ The following options are available when performing target encoding, with some o
 -  ``blended_avg``
 -  ``noise``
 -  ``fold_column``
+-  ``smoothing``
+-  ``inflection_point``
 -  ``seed``
 
 Holdout Type
