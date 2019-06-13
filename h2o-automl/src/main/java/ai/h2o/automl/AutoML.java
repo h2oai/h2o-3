@@ -1042,6 +1042,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     DRFParameters drfParameters = new DRFParameters();
     setCommonModelBuilderParams(drfParameters);
+    drfParameters._score_tree_interval = 5;
     drfParameters._stopping_tolerance = this.buildSpec.build_control.stopping_criteria.stopping_tolerance();
 
     Job randomForestJob = trainModel(null, work, drfParameters);
@@ -1056,6 +1057,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     DRFParameters drfParameters = new DRFParameters();
     setCommonModelBuilderParams(drfParameters);
+    drfParameters._score_tree_interval = 5;
     drfParameters._histogram_type = SharedTreeParameters.HistogramType.Random;
     drfParameters._stopping_tolerance = this.buildSpec.build_control.stopping_criteria.stopping_tolerance();
 

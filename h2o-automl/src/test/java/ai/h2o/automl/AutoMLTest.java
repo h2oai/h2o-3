@@ -510,4 +510,37 @@ public class AutoMLTest extends water.TestUtil {
       if (fr != null) fr.remove();
     }
   }
+
+
+  @Test public void testTestAlgosHaveDefaultParametersEnforcingReproducibility() {
+    AutoML aml=null;
+    Frame fr=null;
+    try {
+      int maxModels = 20;
+      AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+      fr = parse_test_file("./smalldata/logreg/prostate.csv");
+      autoMLBuildSpec.input_spec.training_frame = fr._key;
+      autoMLBuildSpec.input_spec.response_column = "CAPSULE";
+
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_models(maxModels);
+      autoMLBuildSpec.build_control.nfolds = 0;
+
+      aml = AutoML.startAutoML(autoMLBuildSpec);
+      aml.get();
+      assertEquals(maxModels, aml.leaderboard().getModelCount());
+
+      Key[] modelKeys = aml.leaderboard().getModelKeys();
+      int count_se = 0, count_non_se = 0;
+      Map<Algo, List<Key>> modelsByAlgo = new HashMap<>();
+      for (Algo algo : Algo.values()) modelsByAlgo.put(algo, new ArrayList<Key>());
+      for (Key k : modelKeys) if (k.toString().startsWith("StackedEnsemble")) count_se++; else count_non_se++;
+
+      assertEquals("wrong amount of standard models", 3, count_non_se);
+      assertEquals("no Stacked Ensemble expected if cross-validation is disabled", 0, count_se);
+    } finally {
+      // Cleanup
+      if(aml!=null) aml.deleteWithChildren();
+      if(fr != null) fr.delete();
+    }
+  }
 }
