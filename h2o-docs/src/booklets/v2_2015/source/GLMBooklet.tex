@@ -16,6 +16,7 @@
 %\input{common/conf_listings_colorized.tex}  % Work in progress....  Use this for online/pdf version
 
 \usepackage{url}
+\usepackage{float}
 \def\UrlBreaks{\do\/\do-\do_}
 
 \begin{document}
@@ -521,34 +522,34 @@ The Tweedie distribution is parametrized by variance power $p$. It is defined fo
 \waterExampleInPython
 \lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_tweedie_example.py}
 
-The model likelood to maximize has the form:
+The model likelihood to maximize has the form:
 
-\begin{figure}
+\begin{figure}[H]
 \centering
-\includegraphics{../../../product/images/model_log_likelihood_tweedie.png}
+\includegraphics[scale=0.5]{../../../product/images/model_log_likelihood_tweedie.png}
 \end{figure}
 
 where the function $a(y_i,\phi)$ is evaluated using an infinite series expansion and does not have an analytical solution. However, because $\phi$ is an unknown constant, $\sum_{i=1}^N\text{log}(a(y_i,\phi))$ is a constant and will be ignored. Hence, the final objective function to minimize with the penalty term is:
 
-\begin{figure}
+\begin{figure}[H]
 \centering
-\includegraphics{../../../product/images/minimize_penalty.png}
+\includegraphics[scale=0.5]{../../../product/images/minimize_penalty.png}
 \end{figure}
 
 The link function in the GLM representation of the Tweedie distribution defaults to:
 
-\begin{figure}
+\begin{figure}[H]
 \centering
-\includegraphics{../../../product/images/link_function_tweedie.png}
+\includegraphics[scale=0.5]{../../../product/images/link_function_tweedie.png}
 \end{figure}
 
 And $q = 1 - p$. The link power $q$ can be set to other values as well.
 
 The corresponding deviance is equal to:
 
-\begin{figure}
+\begin{figure}[H]
 \centering
-\includegraphics{../../../product/images/tweedie_deviance.png}
+\includegraphics[scale=0.5]{../../../product/images/tweedie_deviance.png}
 \end{figure}
    
 \subsubsection{Negative Binomial Models}
