@@ -703,6 +703,8 @@ def main():
                ("automl", "H2OAutoML", "Miscellaneous")]
     builders = bi.model_builders().items()
     for name, mb in builders:
+        if name in ["svm"]:
+            continue
         module = name
         if name == "drf": module = "random_forest"
         if name == "naivebayes": module = "naive_bayes"

@@ -6,9 +6,16 @@ import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.Log;
 
+/**
+ * Implementation of Primal-Dual Interior Point Method based on https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/34638.pdf
+ *
+ * This implementation is based on and takes clues from the reference PSVM implementation in C++: 
+ *    https://code.google.com/archive/p/psvm/source/default/source
+ *    original code: Copyright 2007 Google Inc., Apache License, Version 2.0   
+ */
 class PrimalDualIPM {
 
-  static Vec solve(Frame rbicf, Vec label, Params params) {
+  static Vec solve(Frame rbicf, Vec label, Parms params) {
     checkLabel(label);
 
     Frame volatileWorkspace = makeVolatileWorkspace(label,
@@ -20,7 +27,7 @@ class PrimalDualIPM {
     }
   }
 
-  private static Vec solve(Frame rbicf, Vec label, Params params, Frame volatileWorkspace) {
+  private static Vec solve(Frame rbicf, Vec label, Parms params, Frame volatileWorkspace) {
     Frame workspace = new Frame(new String[]{"label"}, new Vec[]{label});
     workspace.add("x", label.makeZero());
     workspace.add(volatileWorkspace);
@@ -42,11 +49,11 @@ class PrimalDualIPM {
     for (int iter = 0; iter < params._max_iter; iter++) {
       final double eta = new SurrogateGapTask(params).doAll(workspace)._sum;
       final double t = (params._mu_factor * num_constraints) / eta;
-      Log.debug("sgap: " + eta + " t: " + t);
+      Log.debug("Surrogate gap: " + eta + " t: " + t);
 
       computePartialZ(rbicf, x, params._tradeoff, z);
       CheckConvergenceTask cct = new CheckConvergenceTask(params, nu).doAll(workspace);
-      converged = cct._resp <= params._feasible_threshold && cct._resd <= params._feasible_threshold && eta <= params._sgap_bound;
+      converged = cct._resp <= params._feasible_threshold && cct._resd <= params._feasible_threshold && eta <= params._sgap_threshold;
       if (converged) {
         break;
       }
@@ -87,9 +94,9 @@ class PrimalDualIPM {
     final double _c_pos;
     final double _c_neg;
 
-    PDIPMTask(Params params) {
-      _c_pos = params._weight_positive * params._hyper_parm;
-      _c_neg = params._weight_negative * params._hyper_parm;
+    PDIPMTask(Parms params) {
+      _c_pos = params._c_pos;
+      _c_neg = params._c_neg;
     }
 
     @Override
@@ -142,7 +149,7 @@ class PrimalDualIPM {
     private double _ap;
     private double _ad;
     
-    LineSearchTask(Params params) {
+    LineSearchTask(Parms params) {
       super(params);
     }
 
@@ -199,7 +206,7 @@ class PrimalDualIPM {
     private final double _epsilon_x;
     private final double _t;
 
-    UpdateVarsTask(Params params, double t) {
+    UpdateVarsTask(Parms params, double t) {
       super(params);
       _epsilon_x = params._x_epsilon;
       _t = t;
@@ -233,7 +240,7 @@ class PrimalDualIPM {
     double _resd;
     double _resp;
 
-    CheckConvergenceTask(Params params, double nu) {
+    CheckConvergenceTask(Parms params, double nu) {
       super(params);
       _nu = nu;
     }
@@ -286,7 +293,7 @@ class PrimalDualIPM {
     // OUT
     private double _sum;
 
-    SurrogateGapTask(Params params) {
+    SurrogateGapTask(Parms params) {
       super(params);
     }
     
@@ -310,7 +317,7 @@ class PrimalDualIPM {
   }
   
   static class InitTask extends PDIPMTask<InitTask> {
-    InitTask(Params params) {
+    InitTask(Parms params) {
       super(params);
     }
 
@@ -338,6 +345,10 @@ class PrimalDualIPM {
           implements TransformWrappedVec.TransformFactory<LinearCombTransformFactory>  {
 
     private final double[] _coefs;
+
+    public LinearCombTransformFactory() { // to avoid the "Externalizable" warning
+      _coefs = new double[0];
+    }
 
     LinearCombTransformFactory(double... coefs) {
       _coefs = coefs;
@@ -483,16 +494,26 @@ class PrimalDualIPM {
     }
   }
 
-  static class Params {
-    int _max_iter = 30;
-    double _weight_positive = 1.0;
-    double _weight_negative = 1.0;
-    double _hyper_parm = 1.0;
+  static class Parms {
+    
+    Parms() {
+      super();
+    }
+    
+    Parms(double c_pos, double c_neg) {
+      _c_pos = c_pos;
+      _c_neg = c_neg;
+    }
+    
+    int _max_iter = 200;
     double _mu_factor = 10.0;
     double _tradeoff = 0;
     double _feasible_threshold = 1.0e-3;
-    double _sgap_bound = 1.0e-3;
+    double _sgap_threshold = 1.0e-3;
     double _x_epsilon = 1.0e-9;
+
+    double _c_neg = Double.NaN;
+    double _c_pos = Double.NaN;
   }
 
   private static Frame makeVolatileWorkspace(Vec blueprintVec, String... names) {

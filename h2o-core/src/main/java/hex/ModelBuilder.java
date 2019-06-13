@@ -1211,10 +1211,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           hide("_quantile_alpha", "Quantile (alpha) is only used for Quantile regression.");
         }
         if (expensive) checkDistributions();
-        _nclass = _response.isCategorical() ? _response.cardinality() : 1;
-        if (_parms._distribution == DistributionFamily.quasibinomial) {
-          _nclass = 2;
-        }
+        _nclass = init_getNClass();
         if (_parms._check_constant_response && _response.isConst()) {
           error("_response", "Response cannot be constant.");
         }
@@ -1512,6 +1509,14 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   protected String getSysProperty(String name, String def) {
     return System.getProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + name, def);
+  }
+
+  protected int init_getNClass() {
+    int nclass = _response.isCategorical() ? _response.cardinality() : 1;
+    if (_parms._distribution == DistributionFamily.quasibinomial) {
+      nclass = 2;
+    }
+    return nclass;
   }
 
   public void checkDistributions() {
