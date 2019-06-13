@@ -59,8 +59,7 @@ public class RemoveAllHandler extends Handler {
       }
     }
 
-    new DKV.ClearDKVTask(retainedKeys)
-            .doAllNodes();
+    DKVManager.retain(retainedKeys);
 
   }
 }

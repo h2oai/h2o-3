@@ -126,42 +126,4 @@ public class DKVTest extends TestUtil {
     }
   }
 
-  // Retaining models & integration test with models is in h2o-algos subproject.
-  @Test
-  public void testRetainFrame() {
-    Frame frame = null;
-
-    try {
-      frame = TestUtil.parse_test_file("./smalldata/testng/airlines_train.csv");
-      new DKV.ClearDKVTask(new Key[]{frame._key}).doAllNodes();
-      assertTrue(H2O.STORE.containsKey(frame._key));
-      assertNotNull(DKV.get(frame._key));
-
-      for (Vec vec : frame.vecs()) {
-        assertNotNull(vec._key);
-
-        for (int i = 0; i < vec.nChunks(); i++) {
-          assertNotNull(DKV.get(vec.chunkKey(i)));
-        }
-      }
-      
-    } finally {
-      if (frame != null) frame.delete();
-    }
-  }
-
-  @Test
-  public void testRetainNothing() throws InterruptedException {
-    Frame frame = null;
-
-    try {
-      frame = TestUtil.parse_test_file("smalldata/testng/airlines_train.csv");
-      new DKV.ClearDKVTask(new Key[]{}).doAllNodes();
-      assertNull(DKV.get(frame._key));
-
-    } finally {
-      if (frame != null) frame.delete();
-    }
-  }
-
 }

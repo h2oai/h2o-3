@@ -808,6 +808,58 @@ public class Frame extends Lockable<Frame> {
     return fs;
   }
 
+  /**
+   * Removes this {@link Frame} object and all directly linked {@link Keyed} objects and POJOs, while retaining
+   * the keys defined by the retainedKeys parameter. Aimed to be used for removal of {@link Frame} objects pointing
+   * to shared resources (Vectors, Chuinks etc.) internally.
+   * <p>
+   * WARNING: UNSTABLE API, might be removed/replaced at any time.
+   *
+   * @param futures      An instance of {@link Futures} for synchronization
+   * @param retainedKeys A {@link Set} of keys to retain. The set may be immutable, as it shall not be modified.
+   * @return An instance of {@link Futures} for synchronization
+   */
+  public final Futures retain(final Futures futures, final Set<Key> retainedKeys) {
+    if (_key != null) DKV.remove(_key);
+
+    final Key[] delCandidateKeys = _keys;
+    if (delCandidateKeys.length == 0) return futures;
+
+    // Get the nChunks without calling anyVec - which loads all Vecs eagerly,
+    // only to delete them.  Supports Frames with some Vecs already deleted, as
+    // a Scope cleanup action might delete Vecs out of order.
+    Vec v = _col0;
+    if (v == null) {
+      Vec[] vecs = _vecs;       // Read once, in case racily being cleared
+      if (vecs != null)
+        for (Vec vec : vecs)
+          if ((v = vec) != null) // Stop on finding the 1st Vec
+            break;
+    }
+    if (v == null)             // Ok, now do DKV gets
+      for (Key<Vec> _key1 : _keys)
+        if ((v = _key1.get()) != null)
+          break;                // Stop on finding the 1st Vec
+    if (v == null)
+      return futures;
+
+    _vecs = new Vec[0];
+    setNames(new String[0]);
+    _keys = makeVecKeys(0);
+
+    final List<Key> deletedKeys= new ArrayList<>();
+    for (int i = 0; i < delCandidateKeys.length; i++) {
+      if(!retainedKeys.contains(delCandidateKeys[i])){
+        deletedKeys.add(delCandidateKeys[i]);
+      }
+    }
+
+    // Bulk dumb local remove - no JMM, no ordering, no safety.
+    Vec.bulk_remove(deletedKeys.toArray(new Key[]{}), v.nChunks());
+
+    return futures;
+  }
+
   /** Write out K/V pairs, in this case Vecs. */
   @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
     for( Key k : _keys )
