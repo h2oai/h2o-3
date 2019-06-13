@@ -50,5 +50,10 @@ task testMultiNode(type: Exec) {
     if (project.hasProperty("jacocoCoverage")) {
         args << 'jacoco'
     }
+    logger.quiet('CommandLine arguments:')
+    logger.quiet('ROOT_DIR:' + rootDir.toPath().toString())
+    logger.quiet('PROJECT_NAME:' + project.name)
+    logger.quiet('BUILD_DIR:' + project.buildDir.toString())
+    logger.quiet('JVM_CLASSPATH:' + sourceSets.test.runtimeClasspath.asPath)
     commandLine args
 }
