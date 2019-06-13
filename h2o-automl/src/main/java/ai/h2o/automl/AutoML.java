@@ -684,7 +684,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     builder._parms = parms;
 
     setCommonModelBuilderParams(builder._parms);
+    setStoppingCriteria(builder._parms, defaults, true);
 
+    // override model's max_runtime_secs to ensure that the total max_runtime doesn't exceed expectations
     if (ignoreLimits)
       builder._parms._max_runtime_secs = 0;
     else if (builder._parms._max_runtime_secs == 0)
@@ -692,18 +694,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     else
       builder._parms._max_runtime_secs = Math.min(builder._parms._max_runtime_secs, timeRemainingMs() / 1e3);
 
-    setStoppingCriteria(parms, defaults);
-
-    // If we have set a seed for the search and not for the individual model params
-    // then use a sequence starting with the same seed given for the model build.
-    // Don't use the same exact seed so that, e.g., if we build two GBMs they don't
-    // do the same row and column sampling.
-    if (builder._parms._seed == defaults._seed && buildSpec.build_control.stopping_criteria.seed() != -1)
-      builder._parms._seed = buildSpec.build_control.stopping_criteria.seed() + individualModelsTrained++;
-
     builder.init(false);          // validate parameters
-
-    // TODO: handle error_count and messages
 
     Log.debug("Training model: " + algoName + ", time remaining (ms): " + timeRemainingMs());
     try {
@@ -738,7 +729,17 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (exceededSearchLimits(work)) return null;
 
     Algo algo = work.algo;
+
+    Model.Parameters defaults;
+    try {
+      defaults = baseParms.getClass().newInstance();
+    } catch (Exception e) {
+      eventLog().warn(Stage.ModelTraining, "Internal error doing hyperparameter search");
+      throw new H2OIllegalArgumentException("Hyperparameter search can't create a new instance of Model.Parameters subclass: " + baseParms.getClass());
+    }
+
     setCommonModelBuilderParams(baseParms);
+    setStoppingCriteria(baseParms, defaults, false);
 
     RandomDiscreteValueSearchCriteria searchCriteria = (RandomDiscreteValueSearchCriteria) buildSpec.build_control.stopping_criteria.getSearchCriteria().clone();
     float remainingWorkRatio = (float) work.share / workAllocations.remainingWork();
@@ -755,27 +756,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     else
       searchCriteria.set_max_models(Math.min(searchCriteria.max_models(), maxAssignedModels));
 
-    eventLog().info(Stage.ModelTraining, "AutoML: starting " + algo + " hyperparameter search");
+    eventLog().info(Stage.ModelTraining, "AutoML: starting "+algo+" hyperparameter search");
 
-    Model.Parameters defaults;
-    try {
-      defaults = baseParms.getClass().newInstance();
-    } catch (Exception e) {
-      eventLog().warn(Stage.ModelTraining, "Internal error doing hyperparameter search");
-      throw new H2OIllegalArgumentException("Hyperparameter search can't create a new instance of Model.Parameters subclass: " + baseParms.getClass());
-    }
-
-    setStoppingCriteria(baseParms, defaults);
-
-    // NOTE:
-    // RandomDiscrete Hyperparameter Search matches the logic used in #trainModel():
-    // If we have set a seed for the search and not for the individual model params
-    // then use a sequence starting with the same seed given for the model build.
-    // Don't use the same exact seed so that, e.g., if we build two GBMs they don't
-    // do the same row and column sampling.
     if (null == gridKey) gridKey = gridKey(algo.name());
     addGridKey(gridKey);
-    Log.debug("Hyperparameter search: " + algo.name() + ", time remaining (ms): " + timeRemainingMs());
+    Log.debug("Hyperparameter search: "+algo.name()+", time remaining (ms): "+timeRemainingMs());
     return GridSearch.startGridSearch(
         gridKey,
         baseParms,
@@ -814,8 +799,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       params._valid = validationFrame._key;
     params._response_column = buildSpec.input_spec.response_column;
     params._ignored_columns = buildSpec.input_spec.ignored_columns;
-    params._seed = buildSpec.build_control.stopping_criteria.seed();
-    params._max_runtime_secs = buildSpec.build_control.stopping_criteria.max_runtime_secs_per_model();
 
     // currently required, for the base_models, for stacking:
     if (! (params instanceof StackedEnsembleParameters)) {
@@ -845,14 +828,25 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     params._export_checkpoints_dir = buildSpec.build_control.export_checkpoints_dir;
   }
 
-  private void setStoppingCriteria(Model.Parameters parms, Model.Parameters defaults) {
+  private void setStoppingCriteria(Model.Parameters parms, Model.Parameters defaults, boolean isIndividualModel) {
     // If the caller hasn't set ModelBuilder stopping criteria, set it from our global criteria.
+
+    parms._max_runtime_secs = buildSpec.build_control.stopping_criteria.max_runtime_secs_per_model();
 
     //FIXME: Do we really need to compare with defaults before setting the buildSpec value instead?
     // This can create subtle bugs: e.g. if dev wanted to enforce a stopping criteria for a specific algo/model,
     // he wouldn't be able to enforce the default value, that would always be overridden by buildSpec.
     // We should instead provide hooks and ensure that properties are always set in the following order:
     //  1. defaults, 2. user defined, 3. internal logic/algo specific based on the previous state (esp. handling of AUTO properties).
+
+    // If we have set a seed for the search and not for the individual model params
+    // then use a sequence starting with the same seed given for the model build.
+    // Don't use the same exact seed so that, e.g., if we build two GBMs they don't
+    // do the same row and column sampling.
+    // Leave it as is for Grids as HyperSpaceWalker has its own increment logic.
+    if (isIndividualModel && parms._seed == defaults._seed && buildSpec.build_control.stopping_criteria.seed() != -1)
+      parms._seed = buildSpec.build_control.stopping_criteria.seed() + individualModelsTrained++;
+
     if (parms._stopping_metric == defaults._stopping_metric)
       parms._stopping_metric = buildSpec.build_control.stopping_criteria.stopping_metric();
 
@@ -897,31 +891,31 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     WorkAllocations.Work work = workAllocations.getAllocation(algo, JobType.ModelBuild);
     if (work == null) return;
 
-    XGBoostParameters xgBoostParameters = new XGBoostParameters();
-    setCommonModelBuilderParams(xgBoostParameters);
+    XGBoostParameters commonXGBoostParameters = new XGBoostParameters();
 
     Job xgBoostJob;
     Key<Model> key;
 
     if (emulateLightGBM) {
-      xgBoostParameters._tree_method = XGBoostParameters.TreeMethod.hist;
-      xgBoostParameters._grow_policy = XGBoostParameters.GrowPolicy.lossguide;
+      commonXGBoostParameters._tree_method = XGBoostParameters.TreeMethod.hist;
+      commonXGBoostParameters._grow_policy = XGBoostParameters.GrowPolicy.lossguide;
     }
 
     // setDistribution: no way to identify gaussian, poisson, laplace? using descriptive statistics?
-    xgBoostParameters._distribution = getResponseColumn().isBinary() && !(getResponseColumn().isNumeric()) ? DistributionFamily.bernoulli
+    commonXGBoostParameters._distribution = getResponseColumn().isBinary() && !(getResponseColumn().isNumeric()) ? DistributionFamily.bernoulli
                     : getResponseColumn().isCategorical() ? DistributionFamily.multinomial
                     : DistributionFamily.AUTO;
 
-    xgBoostParameters._score_tree_interval = 5;
-    xgBoostParameters._stopping_rounds = 5;
-//    xgBoostParameters._stopping_tolerance = Math.min(1e-2, RandomDiscreteValueSearchCriteria.default_stopping_tolerance_for_frame(this.trainingFrame));
+    commonXGBoostParameters._score_tree_interval = 5;
+    commonXGBoostParameters._stopping_rounds = 5;
+//    commonXGBoostParameters._stopping_tolerance = Math.min(1e-2, RandomDiscreteValueSearchCriteria.default_stopping_tolerance_for_frame(this.trainingFrame));
 
-    xgBoostParameters._ntrees = 10000;
-    xgBoostParameters._learn_rate = 0.05;
-//    xgBoostParameters._min_split_improvement = 0.01f;
+    commonXGBoostParameters._ntrees = 10000;
+    commonXGBoostParameters._learn_rate = 0.05;
+//    commonXGBoostParameters._min_split_improvement = 0.01f;
 
     //XGB 1 (medium depth)
+    XGBoostParameters xgBoostParameters = (XGBoostParameters) commonXGBoostParameters.clone();
     xgBoostParameters._max_depth = 10;
     xgBoostParameters._min_rows = 5;
     xgBoostParameters._sample_rate = 0.6;
@@ -940,6 +934,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     pollAndUpdateProgress(Stage.ModelTraining,  key.toString(), work, this.job(), xgBoostJob);
 
     //XGB 2 (deep)
+    xgBoostParameters = (XGBoostParameters) commonXGBoostParameters.clone();
     xgBoostParameters._max_depth = 20;
     xgBoostParameters._min_rows = 10;
     xgBoostParameters._sample_rate = 0.6;
@@ -958,6 +953,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     pollAndUpdateProgress(Stage.ModelTraining,  key.toString(), work, this.job(), xgBoostJob);
 
     //XGB 3 (shallow)
+    xgBoostParameters = (XGBoostParameters) commonXGBoostParameters.clone();
     xgBoostParameters._max_depth = 5;
     xgBoostParameters._min_rows = 3;
     xgBoostParameters._sample_rate = 0.8;
@@ -983,8 +979,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (work == null) return;
 
     XGBoostParameters xgBoostParameters = new XGBoostParameters();
-    setCommonModelBuilderParams(xgBoostParameters);
-
 
     if (emulateLightGBM) {
        xgBoostParameters._tree_method = XGBoostParameters.TreeMethod.hist;
@@ -1041,9 +1035,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (work == null) return;
 
     DRFParameters drfParameters = new DRFParameters();
-    setCommonModelBuilderParams(drfParameters);
     drfParameters._score_tree_interval = 5;
-    drfParameters._stopping_tolerance = this.buildSpec.build_control.stopping_criteria.stopping_tolerance();
 
     Job randomForestJob = trainModel(null, work, drfParameters);
     pollAndUpdateProgress(Stage.ModelTraining, "Default Random Forest build", work, this.job(), randomForestJob);
@@ -1056,10 +1048,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (work == null) return;
 
     DRFParameters drfParameters = new DRFParameters();
-    setCommonModelBuilderParams(drfParameters);
     drfParameters._score_tree_interval = 5;
-    drfParameters._histogram_type = SharedTreeParameters.HistogramType.Random;
-    drfParameters._stopping_tolerance = this.buildSpec.build_control.stopping_criteria.stopping_tolerance();
 
     Job randomForestJob = trainModel(modelKey("XRT"), work, drfParameters);
     pollAndUpdateProgress(Stage.ModelTraining, "Extremely Randomized Trees (XRT) Random Forest build", work, this.job(), randomForestJob);
@@ -1076,17 +1065,17 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     Job gbmJob;
 
-    GBMParameters gbmParameters = new GBMParameters();
-    setCommonModelBuilderParams(gbmParameters);
-    gbmParameters._score_tree_interval = 5;
-    gbmParameters._histogram_type = SharedTreeParameters.HistogramType.AUTO;
+    GBMParameters commonGBMParameters = new GBMParameters();
+    commonGBMParameters._score_tree_interval = 5;
+    commonGBMParameters._histogram_type = SharedTreeParameters.HistogramType.AUTO;
 
-    gbmParameters._ntrees = 1000;
-    gbmParameters._sample_rate = 0.8;
-    gbmParameters._col_sample_rate = 0.8;
-    gbmParameters._col_sample_rate_per_tree = 0.8;
+    commonGBMParameters._ntrees = 1000;
+    commonGBMParameters._sample_rate = 0.8;
+    commonGBMParameters._col_sample_rate = 0.8;
+    commonGBMParameters._col_sample_rate_per_tree = 0.8;
 
     // Default 1:
+    GBMParameters gbmParameters = (GBMParameters) commonGBMParameters.clone();
     gbmParameters._max_depth = 6;
     gbmParameters._min_rows = 1;
 
@@ -1094,6 +1083,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     pollAndUpdateProgress(Stage.ModelTraining, "GBM 1", work, this.job(), gbmJob);
 
     // Default 2:
+    gbmParameters = (GBMParameters) commonGBMParameters.clone();
     gbmParameters._max_depth = 7;
     gbmParameters._min_rows = 10;
 
@@ -1101,6 +1091,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     pollAndUpdateProgress(Stage.ModelTraining, "GBM 2", work, this.job(), gbmJob);
 
     // Default 3:
+    gbmParameters = (GBMParameters) commonGBMParameters.clone();
     gbmParameters._max_depth = 8;
     gbmParameters._min_rows = 10;
 
@@ -1108,6 +1099,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     pollAndUpdateProgress(Stage.ModelTraining, "GBM 3", work, this.job(), gbmJob);
 
     // Default 4:
+    gbmParameters = (GBMParameters) commonGBMParameters.clone();
     gbmParameters._max_depth = 10;
     gbmParameters._min_rows = 10;
 
@@ -1115,6 +1107,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     pollAndUpdateProgress(Stage.ModelTraining, "GBM 4", work, this.job(), gbmJob);
 
     // Default 5:
+    gbmParameters = (GBMParameters) commonGBMParameters.clone();
     gbmParameters._max_depth = 15;
     gbmParameters._min_rows = 100;
 
@@ -1129,7 +1122,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (work == null) return;
 
     DeepLearningParameters deepLearningParameters = new DeepLearningParameters();
-    setCommonModelBuilderParams(deepLearningParameters);
     deepLearningParameters._stopping_tolerance = this.buildSpec.build_control.stopping_criteria.stopping_tolerance();
     deepLearningParameters._hidden = new int[]{ 10, 10, 10 };
 
@@ -1144,7 +1136,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (work == null) return;
 
     GLMParameters glmParameters = new GLMParameters();
-    setCommonModelBuilderParams(glmParameters);
     glmParameters._lambda_search = true;
     glmParameters._family =
             getResponseColumn().isBinary() && !(getResponseColumn().isNumeric()) ? GLMParameters.Family.binomial
@@ -1154,7 +1145,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     Map<String, Object[]> searchParams = new HashMap<>();
     glmParameters._alpha = new double[] {0.0, 0.2, 0.4, 0.6, 0.8, 1.0};  // Note: standard GLM parameter is an array; don't use searchParams!
     // NOTE: removed MissingValuesHandling.Skip for now because it's crashing.  See https://0xdata.atlassian.net/browse/PUBDEV-4974
-    searchParams.put("_missing_values_handling", new DeepLearningParameters.MissingValuesHandling[] {DeepLearningParameters.MissingValuesHandling.MeanImputation /* , DeepLearningModel.DeepLearningParameters.MissingValuesHandling.Skip */});
+    searchParams.put("_missing_values_handling", new DeepLearningParameters.MissingValuesHandling[] {
+            DeepLearningParameters.MissingValuesHandling.MeanImputation,
+            DeepLearningParameters.MissingValuesHandling.Skip
+    });
 
     Job<Grid> glmJob = hyperparameterSearch(gridKey, work, glmParameters, searchParams);
     pollAndUpdateProgress(Stage.ModelTraining, "GLM hyperparameter search", work, this.job(), glmJob);
@@ -1166,7 +1160,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (work == null) return;
 
     GBMParameters gbmParameters = new GBMParameters();
-    setCommonModelBuilderParams(gbmParameters);
     gbmParameters._score_tree_interval = 5;
     gbmParameters._histogram_type = SharedTreeParameters.HistogramType.AUTO;
 
@@ -1186,6 +1179,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   void defaultSearchDL() {
     Key<Grid> dlGridKey = gridKey(Algo.DeepLearning.name());
+//    Key<Grid> dlGridKey = null; //use this to name grids differently
     defaultSearchDL1(dlGridKey);
     defaultSearchDL2(dlGridKey);
     defaultSearchDL3(dlGridKey);
@@ -1197,7 +1191,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (work == null) return;
 
     DeepLearningParameters dlParameters = new DeepLearningParameters();
-    setCommonModelBuilderParams(dlParameters);
     dlParameters._epochs = 10000; // early stopping takes care of epochs - no need to tune!
     dlParameters._adaptive_rate = true;
     dlParameters._activation = DeepLearningParameters.Activation.RectifierWithDropout;
@@ -1221,7 +1214,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (work == null) return;
 
     DeepLearningParameters dlParameters = new DeepLearningParameters();
-    setCommonModelBuilderParams(dlParameters);
     dlParameters._epochs = 10000; // early stopping takes care of epochs - no need to tune!
     dlParameters._adaptive_rate = true;
     dlParameters._activation = DeepLearningParameters.Activation.RectifierWithDropout;
@@ -1245,7 +1237,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (work == null) return;
 
     DeepLearningParameters dlParameters = new DeepLearningParameters();
-    setCommonModelBuilderParams(dlParameters);
     dlParameters._epochs = 10000; // early stopping takes care of epochs - no need to tune!
     dlParameters._adaptive_rate = true;
     dlParameters._activation = DeepLearningParameters.Activation.RectifierWithDropout;

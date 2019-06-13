@@ -2,6 +2,10 @@ package ai.h2o.automl;
 
 import hex.Model;
 import hex.SplitFrame;
+import hex.tree.SharedTreeModel;
+import hex.tree.SharedTreeModel.SharedTreeParameters;
+import hex.tree.xgboost.XGBoostModel;
+import hex.tree.xgboost.XGBoostModel.XGBoostParameters;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.DKV;
@@ -517,26 +521,71 @@ public class AutoMLTest extends water.TestUtil {
     Frame fr=null;
     try {
       int maxModels = 20;
+      int seed = 0;
+      int nfolds = 0;  //this test currently fails if CV is enabled due to PUBDEV-6385 (the final model gets its `stopping_rounds` param reset to 0)
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
       fr = parse_test_file("./smalldata/logreg/prostate.csv");
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "CAPSULE";
 
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(maxModels);
-      autoMLBuildSpec.build_control.nfolds = 0;
+      autoMLBuildSpec.build_control.nfolds = nfolds;
+      autoMLBuildSpec.build_control.stopping_criteria.set_seed(seed);
 
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
-      assertEquals(maxModels, aml.leaderboard().getModelCount());
+      assertEquals(maxModels+(nfolds > 0 ? 2 : 0), aml.leaderboard().getModelCount());
 
       Key[] modelKeys = aml.leaderboard().getModelKeys();
-      int count_se = 0, count_non_se = 0;
-      Map<Algo, List<Key>> modelsByAlgo = new HashMap<>();
-      for (Algo algo : Algo.values()) modelsByAlgo.put(algo, new ArrayList<Key>());
-      for (Key k : modelKeys) if (k.toString().startsWith("StackedEnsemble")) count_se++; else count_non_se++;
+      Map<Algo, List<Key<Model>>> keysByAlgo = new HashMap<>();
+      for (Algo algo : Algo.values()) keysByAlgo.put(algo, new ArrayList<Key<Model>>());
+      for (Key k : modelKeys) {
+        if (k.toString().startsWith("XRT")) {
+          keysByAlgo.get(Algo.DRF).add(k);
+        } else for (Algo algo: Algo.values()) {
+          if (k.toString().startsWith(algo.name())) {
+            keysByAlgo.get(algo).add(k);
+            break;
+          }
+        }
+      }
 
-      assertEquals("wrong amount of standard models", 3, count_non_se);
-      assertEquals("no Stacked Ensemble expected if cross-validation is disabled", 0, count_se);
+      // verify that all keys were categorized
+      int count = 0; for (List<Key<Model>> keys : keysByAlgo.values()) count += keys.size();
+      assertEquals(aml.leaderboard().getModelCount(), count);
+
+      // check parameters constraints that should be set for all models
+      for (Algo algo: Algo.values()) {
+        Set<Long> collectedSeeds = new HashSet<>(); // according to AutoML logic, no model for same algo should have the same seed.
+        List<Key<Model>> keys = keysByAlgo.get(algo);
+        for (Key<Model> key : keys) {
+          Model.Parameters parameters = key.get()._parms;
+          assertTrue(parameters._seed != -1);
+          assertTrue(key+":"+parameters._seed, Math.abs(parameters._seed - seed) < maxModels);
+          collectedSeeds.add(parameters._seed);
+          assertTrue(key+" has `stopping_rounds` param set to "+parameters._stopping_rounds,
+                  parameters._stopping_rounds == 3 || algo == Algo.XGBoost);  // currently only enforced to different value for XGB (AutoML hardcoded)
+        }
+        assertTrue(collectedSeeds.size() > 1 || keys.size() < 2);  // we should have built enough models to guarantee this
+      }
+
+      //check model specific constraints
+      for (Algo algo : Arrays.asList(Algo.XGBoost)) {
+        List<Key<Model>> keys = keysByAlgo.get(algo);
+        for (Key<Model> key : keys) {
+          XGBoostParameters parameters = (XGBoostParameters)key.get()._parms;
+          assertEquals(5, parameters._score_tree_interval);
+          assertEquals(5, parameters._stopping_rounds); //should probably not be left enforced/hardcoded for XGB?
+        }
+      }
+
+      for (Algo algo : Arrays.asList(Algo.DRF, Algo.GBM)) {
+        List<Key<Model>> keys = keysByAlgo.get(algo);
+        for (Key<Model> key : keys) {
+          SharedTreeParameters parameters = (SharedTreeParameters)key.get()._parms;
+          assertEquals(5, parameters._score_tree_interval);
+        }
+      }
     } finally {
       // Cleanup
       if(aml!=null) aml.deleteWithChildren();
