@@ -35,6 +35,7 @@ public class DKVManager {
   private static void extractNestedKeys(final Set<Key> retainedKeys) {
 
     final Iterator<Key> keysIterator = retainedKeys.iterator(); // Traverse keys provided by the user only.
+    final Set<Key> newKeys = new HashSet<>(); // Avoid concurrent modification of retainedKeys set + avoid introducing locking & internally synchronized set structures 
     while (keysIterator.hasNext()) {
       final Key key = keysIterator.next();
 
@@ -45,11 +46,12 @@ public class DKVManager {
       } else if (!value.isFrame() && !value.isModel()) {
         throw new IllegalArgumentException(String.format("Given key %s is of type %d. Please provide only Model and Frame keys.", key.toString(), value.type()));
       } else if (value.isFrame()) {
-        extractFrameKeys(retainedKeys, (Frame) value.get());
+        extractFrameKeys(newKeys, (Frame) value.get());
       } else if (value.isModel()) {
-        extractModelKeys(retainedKeys, (Model) value.get());
+        extractModelKeys(newKeys, (Model) value.get());
       }
     }
+    retainedKeys.addAll(newKeys); // Add the newly found keys to the original retainedKeys set after the iteration to avoid concurrent modification
   }
 
   /**
