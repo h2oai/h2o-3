@@ -180,7 +180,7 @@ dev-python-3.7-openjdk-7:
 		--build-arg INSTALL_JAVA_VERSION=1.7.0 \
 		.
 ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
-	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.6-openjdk-7$(GPU_SUFFIX):$(VERSION)
+	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.7-openjdk-7$(GPU_SUFFIX):$(VERSION)
 endif
 
 ifneq ($(CI), 1)
@@ -195,7 +195,7 @@ dev-python-3.7-jdk-%:
 		--build-arg INSTALL_JAVA_VERSION=$* \
 		.
 ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
-	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.6-jdk-$*$(GPU_SUFFIX):$(VERSION)
+	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.7-jdk-$*$(GPU_SUFFIX):$(VERSION)
 endif
 
 ifneq ($(CI), 1)
