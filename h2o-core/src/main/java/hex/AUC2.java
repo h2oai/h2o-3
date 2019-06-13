@@ -139,9 +139,14 @@ public class AUC2 extends Iced {
   AUC2( int nBins, Vec probs, Vec actls ) { this(new AUC_Impl(nBins).doAll(probs,actls)._bldr); }
 
   public AUC2( AUCBuilder bldr ) {
+    this(bldr, true);
+  }
+  
+  private AUC2( AUCBuilder bldr, boolean trueProbabilities ) {
     // Copy result arrays into base object, shrinking to match actual bins
     _nBins = bldr._n;
     assert _nBins >= 1 : "Must have >= 1 bins for AUC calculation, but got " + _nBins;
+    assert trueProbabilities || bldr._ths[_nBins - 1] == 1 : "Bins need to contain pred = 1 when 0-1 probabilities are used"; 
     _ths = Arrays.copyOf(bldr._ths,_nBins);
     _tps = Arrays.copyOf(bldr._tps,_nBins);
     _fps = Arrays.copyOf(bldr._fps,_nBins);
@@ -160,10 +165,50 @@ public class AUC2 extends Iced {
       n += _fps[i]; _fps[i] = n;
     }
     _p = p;  _n = n;
-    _auc = compute_auc();
-    _pr_auc = pr_auc();
-    _gini = 2*_auc-1;
-    _max_idx = DEFAULT_CM.max_criterion_idx(this);
+    if (trueProbabilities) {
+      _auc = compute_auc();
+      _pr_auc = pr_auc();
+      _gini = 2 * _auc - 1;
+      _max_idx = DEFAULT_CM.max_criterion_idx(this);
+    } else {
+      _auc = Double.NaN;
+      _pr_auc = Double.NaN;
+      _gini = Double.NaN;
+      _max_idx = 0;
+    }
+  }
+
+  private AUC2( AUC2 auc, int idx) {
+    _nBins = 1;
+    _ths = new double[]{auc._ths[idx]};
+    _tps = new double[]{auc._tps[idx]};
+    _fps = new double[]{auc._fps[idx]};
+    _p = auc._p;
+    _n = auc._n;
+    _auc = auc._auc;
+    _pr_auc = auc._pr_auc;
+    _gini = auc._gini;
+    _max_idx = auc._max_idx >= 0 ? 0 : -1;
+  }
+
+  /**
+   * Subsets the AUC values to a single bin corresponding to the threshold that maximizes the default criterion.
+   * @return AUC2 instance if there is threshold that maximizes the default criterion, null otherwise
+   */
+  AUC2 restrictToMaxCriterion() {
+    return _max_idx >= 0 ? new AUC2(this, _max_idx) : null;
+  }
+
+  /**
+   * Creates an instance of AUC2 for classifiers that do not return probabilities, only 0-1.
+   * AUC, PR_AUC, and Gini index will be undefined in this case.
+   * @param bldr AUCBuilder
+   * @return instance of AUC2 restricted to a single bin, can be used to create a confusion matrix for the classifier
+   *         and allows to ThresholdCriterion to calculate metrics. 
+   */
+  public static AUC2 make01AUC(AUCBuilder bldr) {
+    bldr.perRow(1, 0, 0); // trick: add a dummy prediction with 0 weight to make sure we always have class 1
+    return new AUC2(bldr, false).restrictToMaxCriterion();
   }
 
   // empty AUC, helps avoid NPE in edge cases
@@ -175,6 +220,14 @@ public class AUC2 extends Iced {
     _max_idx = -1;
   }
 
+  /**
+   * Creates a dummy AUC2 instance with no metrics, meant to prevent possible NPEs
+   * @return a valid AUC2 instance
+   */
+  public static AUC2 emptyAUC() {
+    return new AUC2();
+  }
+  
   private boolean isEmpty() {
     return _nBins == 0;
   }

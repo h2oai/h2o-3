@@ -132,8 +132,7 @@ public class SVMModel extends Model<SVMModel, SVMModel.SVMParameters, SVMModel.S
   }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-    // FIXME: need to replace with custom SVM metric builder, we cannot let AUCBuilder to figure out threshold - we are not predicting probabilities
-    return new ModelMetricsBinomial.MetricBuilderBinomial(domain);
+    return new MetricBuilderSVM(domain);
   }
 
   @Override

@@ -1,6 +1,7 @@
 package hex;
 
 import org.junit.Test;
+import water.util.Log;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -195,6 +196,71 @@ public class AUCBuilderTest {
   public void testCombineCenters() {
     double sqrtDMax = Math.sqrt(Double.MAX_VALUE); 
     assertEquals(sqrtDMax, AUC2.AUCBuilder.combine_centers(sqrtDMax, sqrtDMax, sqrtDMax, sqrtDMax), 0);
+  }
+
+  @Test
+  public void testCMfor01() {
+    String[] domain = new String[]{"0", "1"};
+    
+    AUC2.AUCBuilder abFull = new AUC2.AUCBuilder(2);
+    abFull.perRow(0, 0, 1);
+    abFull.perRow(0, 1, 2);
+    abFull.perRow(1, 0, 3);
+    abFull.perRow(1, 1, 4);
+    AUC2 auc = AUC2.make01AUC(abFull);
+    double[][] cmData = auc.defaultCM();
+    Log.debug(new ConfusionMatrix(cmData, domain).toASCII());
+    assertArrayEquals(new double[]{1, 3}, cmData[0], 0);
+    assertArrayEquals(new double[]{2, 4}, cmData[1], 0);
+
+    // check CM when classifier predicts only one class
+    checkCMOneObs(0, 0);
+    checkCMOneObs(0, 1);
+    checkCMOneObs(1, 0);
+    checkCMOneObs(1, 1);
+  }
+
+  private static void checkCMOneObs(int pred, int act) {
+    AUC2.AUCBuilder ab = new AUC2.AUCBuilder(2);
+    ab.perRow(pred, act, 1);
+    double[][] cmData = AUC2.make01AUC(ab).defaultCM();
+    Log.debug("pred = " + pred + "; act = " + act);
+    Log.debug(new ConfusionMatrix(cmData, new String[]{"0", "1"}).toASCII());
+    assertEquals(1, cmData[act][pred], 0);
+  }
+
+  @Test
+  public void testRestrictToMaxCriterion() {
+    AUC2.AUCBuilder ab = new AUC2.AUCBuilder(10);
+
+    ab.perRow(0.0, 1, 1);
+    ab.perRow(0.2, 0, 1);
+    ab.perRow(0.4, 0, 1);
+    ab.perRow(0.6, 1, 1);
+    ab.perRow(0.8, 1, 1);
+    ab.perRow(1.0, 1, 1);
+    
+    AUC2 auc = new AUC2(ab);
+    // sanity check
+    assertEquals(2, auc._max_idx);
+    assertEquals(0.6, auc.defaultThreshold(), 0);
+    assertEquals(0.17, auc.defaultErr(), 0.01);
+    
+    AUC2 auc1Bin = auc.restrictToMaxCriterion();
+
+    // sanity check of 1-bin AUC2
+    assertEquals(0, auc1Bin._max_idx);
+    assertEquals(0.6, auc1Bin.defaultThreshold(), 0);
+    assertEquals(0.17, auc1Bin.defaultErr(), 0.01);
+
+    // check we propagated everything
+    assertEquals(auc._auc, auc1Bin._auc, 0);
+    assertEquals(auc._pr_auc, auc1Bin._pr_auc, 0);
+    assertEquals(auc._gini, auc1Bin._gini, 0);
+    for (AUC2.ThresholdCriterion tc : AUC2.ThresholdCriterion.values()) {
+      double expected = tc.exec(auc, auc._max_idx);
+      assertEquals("Value of metric " + tc + " expected to be the same", expected, tc.exec(auc1Bin, 0), 0);
+    }
   }
   
 }
