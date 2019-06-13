@@ -66,6 +66,28 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
     return true;
   }
 
+  @Override
+  public void init(boolean expensive) {
+    super.init(expensive);
+    
+    if (_parms._metalearner_fold_column != null && _parms._train != null) {
+      final Frame trainingFrame = _parms._train.get();
+      if(trainingFrame.vec(_parms._metalearner_fold_column) == null) {
+        throw new IllegalArgumentException(String.format("Specified fold column '%s' not found in the training data frame: '%s'. Available column names are: %s",
+                _parms._metalearner_fold_column, trainingFrame._key, Arrays.toString(trainingFrame.names())));
+      }
+    }
+
+    if (_parms._metalearner_fold_column != null && _parms._valid != null) {
+      final Frame validationFrame = _parms._valid.get();
+      if(validationFrame.vec(_parms._metalearner_fold_column) == null) {
+        throw new IllegalArgumentException(String.format("Specified fold column '%s' not found in the validation data frame: '%s'. Available column names are: %s",
+                _parms._metalearner_fold_column, validationFrame._key, Arrays.toString(validationFrame.names())));
+      }
+    }
+    
+  }
+
   static void addModelPredictionsToLevelOneFrame(Model aModel, Frame aModelsPredictions, Frame levelOneFrame) {
     if (aModel._output.isBinomialClassifier()) {
       // GLM uses a different column name than the other algos
@@ -121,10 +143,6 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       // Add metalearner_fold_column to level one frame if it exists
       if (_model._parms._metalearner_fold_column != null) {
         Vec foldColumn = actuals.vec(_model._parms._metalearner_fold_column);
-        if (foldColumn == null) {
-          throw new IllegalArgumentException(String.format("Specified fold column '%s' not found in the data frame: '%s'. Available column names are: %s",
-                  _model._parms._metalearner_fold_column, actuals._key, Arrays.toString(actuals.names())));
-        }
         levelOneFrame.add(_model._parms._metalearner_fold_column, foldColumn);
       }
       // Add response column to level one frame
@@ -264,10 +282,9 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
           throw new H2OIllegalArgumentException("Invalid `metalearner_algorithm`. Passed in " + metalearnerAlgoSpec +
                   " but must be one of " + Arrays.toString(Metalearner.Algorithm.values()));
         }
-      } catch (Throwable t){
+      } finally{
         // If there is an exception during model training or validation, remove the model before exiting
         _model.remove();
-        throw t;
       }
     } // computeImpl
   }
