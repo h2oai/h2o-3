@@ -383,7 +383,7 @@ The corresponding deviance is equal to:
 Tweedie Models
 ^^^^^^^^^^^^^^
 
-Tweedie distributions are a family of distributions that include gamma, normal, Poisson, and their combinations. Tweedie distributions are especially useful for modeling positive continuous variables with exact zeros. The variance of the Tweedie distribution is proportional to the :math:`p\text-{th}` power of the mean :math:`var(y_i) = \phi\mu{^p_i}`, wher :math:`\phi` is the dispersion parameter and :math:`p` is the variance power. 
+Tweedie distributions are a family of distributions that include gamma, normal, Poisson, and their combinations. Tweedie distributions are especially useful for modeling positive continuous variables with exact zeros. The variance of the Tweedie distribution is proportional to the :math:`p\text-{th}` power of the mean :math:`var(y_i) = \phi\mu{^p_i}`, where :math:`\phi` is the dispersion parameter and :math:`p` is the variance power. 
 
 The Tweedie distribution is parametrized by variance power :math:`p` while :math:`\phi` is an unknown constant. It is defined for all :math:`p` values except in the (0,1) interval and has the following distributions as special cases:
 
