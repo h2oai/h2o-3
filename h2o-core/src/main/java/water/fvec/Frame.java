@@ -1485,10 +1485,11 @@ public class Frame extends Lockable<Frame> {
   }
 
   public static Job export(Frame fr, String path, String frameName, boolean overwrite, int nParts) {
-    return export(fr, path, frameName, overwrite, nParts, null);
+    return export(fr, path, frameName, overwrite, nParts, null, new CSVStreamParams());
   }
 
-  public static Job export(Frame fr, String path, String frameName, boolean overwrite, int nParts, String compression) {
+  public static Job export(Frame fr, String path, String frameName, boolean overwrite, int nParts, 
+                           String compression, CSVStreamParams csvParms) {
     boolean forceSingle = nParts == 1;
     // Validate input
     if (forceSingle) {
@@ -1506,7 +1507,8 @@ public class Frame extends Lockable<Frame> {
     }
     CompressionFactory compressionFactory = compression != null ? CompressionFactory.make(compression) : null;
     Job job =  new Job<>(fr._key, "water.fvec.Frame", "Export dataset");
-    FrameUtils.ExportTaskDriver t = new FrameUtils.ExportTaskDriver(fr, path, frameName, overwrite, job, nParts, compressionFactory);
+    FrameUtils.ExportTaskDriver t = new FrameUtils.ExportTaskDriver(
+            fr, path, frameName, overwrite, job, nParts, compressionFactory, csvParms);
     return job.start(t, fr.anyVec().nChunks());
   }
 
@@ -1517,12 +1519,35 @@ public class Frame extends Lockable<Frame> {
    *  returning 0 instead of -1.
    *
    *  @return An InputStream containing this Frame as a CSV */
-  public InputStream toCSV(boolean headers, boolean hex_string) {
-    return new CSVStream(this, headers, hex_string);
+  public InputStream toCSV(CSVStreamParams parms) {
+    return new CSVStream(this, parms);
+  }
+
+  public static class CSVStreamParams extends Iced<CSVStreamParams> {
+    public static final char DEFAULT_SEPARATOR = ','; 
+
+    boolean _headers = true;
+    boolean _hex_string = false;
+    char _separator = DEFAULT_SEPARATOR;
+
+    public CSVStreamParams setHeaders(boolean headers) {
+      _headers = headers;
+      return this;
+    }
+
+    public CSVStreamParams setHexString(boolean hex_string) {
+      _hex_string = hex_string;
+      return this;
+    }
+
+    public CSVStreamParams setSeparator(byte separator) {
+      _separator = (char) separator;
+      return this;
+    }
   }
 
   public static class CSVStream extends InputStream {
-    private final boolean _hex_string;
+    private final CSVStreamParams _parms;
     byte[] _line;
     int _position;
     int _chkRow;
@@ -1530,8 +1555,8 @@ public class Frame extends Lockable<Frame> {
     int _lastChkIdx;
     public volatile int _curChkIdx; // used only for progress reporting
 
-    public CSVStream(Frame fr, boolean headers, boolean hex_string) {
-      this(firstChunks(fr), headers ? fr.names() : null, fr.anyVec().nChunks(), hex_string);
+    public CSVStream(Frame fr, CSVStreamParams parms) {
+      this(firstChunks(fr), parms._headers ? fr.names() : null, fr.anyVec().nChunks(), parms);
     }
 
     private static Chunk[] firstChunks(Frame fr) {
@@ -1546,15 +1571,15 @@ public class Frame extends Lockable<Frame> {
       return chks;
     }
 
-    public CSVStream(Chunk[] chks, String[] names, int nChunks, boolean hex_string) {
+    public CSVStream(Chunk[] chks, String[] names, int nChunks, CSVStreamParams parms) {
       if (chks == null) nChunks = 0;
       _lastChkIdx = (chks != null) ? chks[0].cidx() + nChunks - 1 : -1;
-      _hex_string = hex_string;
+      _parms = parms;
       StringBuilder sb = new StringBuilder();
       if (names != null) {
         sb.append('"').append(names[0]).append('"');
         for(int i = 1; i < names.length; i++)
-          sb.append(',').append('"').append(names[i]).append('"');
+          sb.append(_parms._separator).append('"').append(names[i]).append('"');
         sb.append('\n');
       }
       _line = StringUtils.bytesOf(sb);
@@ -1573,7 +1598,7 @@ public class Frame extends Lockable<Frame> {
       BufferedString tmpStr = new BufferedString();
       for (int i = 0; i < _curChks.length; i++ ) {
         Vec v = _curChks[i]._vec;
-        if(i > 0) sb.append(',');
+        if(i > 0) sb.append(_parms._separator);
         if(!_curChks[i].isNA(_chkRow)) {
           if( v.isCategorical() ) sb.append('"').append(v.factor(_curChks[i].at8(_chkRow))).append('"');
           else if( v.isUUID() ) sb.append(PrettyPrint.UUID(_curChks[i].at16l(_chkRow), _curChks[i].at16h(_chkRow)));
@@ -1590,7 +1615,7 @@ public class Frame extends Lockable<Frame> {
             //   https://bugs.r-project.org/bugzilla/show_bug.cgi?id=15751
             //   https://stat.ethz.ch/pipermail/r-devel/2014-April/068778.html
             //   http://stackoverflow.com/questions/23072988/preserve-old-pre-3-1-0-type-convert-behavior
-            String s = _hex_string ? Double.toHexString(d) : Double.toString(d);
+            String s = _parms._hex_string ? Double.toHexString(d) : Double.toString(d);
             sb.append(s);
           }
         }

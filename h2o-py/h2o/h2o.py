@@ -1106,7 +1106,7 @@ def load_model(path):
     return get_model(res["models"][0]["model_id"]["name"])
 
 
-def export_file(frame, path, force=False, compression=None, parts=1):
+def export_file(frame, path, force=False, sep=",", compression=None, parts=1):
     """
     Export a given H2OFrame to a path on the machine this python session is currently connected to.
 
@@ -1123,10 +1123,12 @@ def export_file(frame, path, force=False, compression=None, parts=1):
     """
     assert_is_type(frame, H2OFrame)
     assert_is_type(path, str)
+    assert_is_type(sep, I(str, lambda s: len(s) == 1))
     assert_is_type(force, bool)
     assert_is_type(parts, int)
     assert_is_type(compression, str, None)
-    H2OJob(api("POST /3/Frames/%s/export" % (frame.frame_id), data={"path": path, "num_parts": parts, "force": force, "compression": compression}),
+    H2OJob(api("POST /3/Frames/%s/export" % (frame.frame_id), 
+               data={"path": path, "num_parts": parts, "force": force, "compression": compression, "separator": ord(sep)}),
            "Export File").poll()
 
 

@@ -43,6 +43,9 @@ public class FramesV3 extends RequestSchemaV3<Frames, FramesV3> {
   @API(help="Compression method (default none; gzip, bzip2 and snappy available depending on runtime environment)")
   public String compression;
 
+  @API(help="Field separator (default ',')")
+  public byte separator = Frame.CSVStreamParams.DEFAULT_SEPARATOR;
+
   @API(help="Job for export file",direction=API.Direction.OUTPUT)
   public JobV3 job;
 
