@@ -283,8 +283,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
                   " but must be one of " + Arrays.toString(Metalearner.Algorithm.values()));
         }
       } finally{
-        // If there is an exception during model training or validation, remove the model before exiting
-        _model.remove();
+        _model.unlock(_job);
       }
     } // computeImpl
   }
