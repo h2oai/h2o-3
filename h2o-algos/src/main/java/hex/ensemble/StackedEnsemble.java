@@ -242,54 +242,51 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
     init(true);
     if (error_count() > 0)
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(StackedEnsemble.this);
-      try {
-        _model = new StackedEnsembleModel(dest(), _parms, new StackedEnsembleModel.StackedEnsembleOutput(StackedEnsemble.this));
-        _model._output._stacking_strategy = strategy();
-        _model.delete_and_lock(_job); // and clear & write-lock it (smashing any prior)
 
-        _model.checkAndInheritModelProperties();
+      _model = new StackedEnsembleModel(dest(), _parms, new StackedEnsembleModel.StackedEnsembleOutput(StackedEnsemble.this));
+      _model._output._stacking_strategy = strategy();
+      _model.delete_and_lock(_job); // and clear & write-lock it (smashing any prior)
 
-        String levelOneTrainKey = "levelone_training_" + _model._key.toString();
-        Frame levelOneTrainingFrame = prepareLevelOneFrame(levelOneTrainKey, _model._parms._base_models, getActualTrainingFrame(), true);
-        Frame levelOneValidationFrame = null;
-        if (_model._parms.valid() != null) {
-          String levelOneValidKey = "levelone_validation_" + _model._key.toString();
-          levelOneValidationFrame = prepareLevelOneFrame(levelOneValidKey, _model._parms._base_models, _model._parms.valid(), false);
-        }
+      _model.checkAndInheritModelProperties();
 
-        Metalearner.Algorithm metalearnerAlgoSpec = _model._parms._metalearner_algorithm;
-        Metalearner.Algorithm metalearnerAlgoImpl = Metalearner.getActualMetalearnerAlgo(metalearnerAlgoSpec);
+      String levelOneTrainKey = "levelone_training_" + _model._key.toString();
+      Frame levelOneTrainingFrame = prepareLevelOneFrame(levelOneTrainKey, _model._parms._base_models, getActualTrainingFrame(), true);
+      Frame levelOneValidationFrame = null;
+      if (_model._parms.valid() != null) {
+        String levelOneValidKey = "levelone_validation_" + _model._key.toString();
+        levelOneValidationFrame = prepareLevelOneFrame(levelOneValidKey, _model._parms._base_models, _model._parms.valid(), false);
+      }
 
-        // Compute metalearner
-        if (metalearnerAlgoImpl != null) {
-          Key<Model> metalearnerKey = Key.<Model>make("metalearner_" + metalearnerAlgoSpec + "_" + _model._key);
+      Metalearner.Algorithm metalearnerAlgoSpec = _model._parms._metalearner_algorithm;
+      Metalearner.Algorithm metalearnerAlgoImpl = Metalearner.getActualMetalearnerAlgo(metalearnerAlgoSpec);
 
-          Job metalearnerJob = new Job<>(metalearnerKey, ModelBuilder.javaName(metalearnerAlgoImpl.toString()),
-                  "StackingEnsemble metalearner (" + metalearnerAlgoSpec + ")");
-          //Check if metalearner_params are passed in
-          boolean hasMetaLearnerParams = _model._parms._metalearner_parameters != null;
-          long metalearnerSeed = _model._parms._seed;
+      // Compute metalearner
+      if(metalearnerAlgoImpl != null) {
+        Key<Model> metalearnerKey = Key.<Model>make("metalearner_" + metalearnerAlgoSpec + "_" + _model._key);
 
-          Metalearner metalearner = Metalearner.createInstance(metalearnerAlgoSpec);
-          metalearner.init(
-                  levelOneTrainingFrame,
-                  levelOneValidationFrame,
-                  _model._parms._metalearner_parameters,
-                  _model,
-                  _job,
-                  metalearnerKey,
-                  metalearnerJob,
-                  _parms,
-                  hasMetaLearnerParams,
-                  metalearnerSeed
-          );
-          metalearner.compute();
-        } else {
-          throw new H2OIllegalArgumentException("Invalid `metalearner_algorithm`. Passed in " + metalearnerAlgoSpec +
-                  " but must be one of " + Arrays.toString(Metalearner.Algorithm.values()));
-        }
-      } finally{
-        _model.unlock(_job);
+        Job metalearnerJob = new Job<>(metalearnerKey, ModelBuilder.javaName(metalearnerAlgoImpl.toString()),
+                "StackingEnsemble metalearner (" + metalearnerAlgoSpec + ")");
+        //Check if metalearner_params are passed in
+        boolean hasMetaLearnerParams = _model._parms._metalearner_parameters != null;
+        long metalearnerSeed = _model._parms._seed;
+
+        Metalearner metalearner = Metalearner.createInstance(metalearnerAlgoSpec);
+        metalearner.init(
+          levelOneTrainingFrame,
+          levelOneValidationFrame,
+          _model._parms._metalearner_parameters,
+          _model,
+          _job,
+          metalearnerKey,
+          metalearnerJob,
+          _parms,
+          hasMetaLearnerParams,
+          metalearnerSeed
+        );
+        metalearner.compute();
+      } else {
+        throw new H2OIllegalArgumentException("Invalid `metalearner_algorithm`. Passed in " + metalearnerAlgoSpec +
+            " but must be one of " + Arrays.toString(Metalearner.Algorithm.values()));
       }
     } // computeImpl
   }
