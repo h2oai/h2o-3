@@ -188,7 +188,7 @@ public class ServletUtils {
     response.setHeader("X-h2o-context-path", sanatizeContextPath(H2O.ARGS.context_path));
     // Security headers
     response.setHeader("X-Frame-Options", "deny");
-    response.setHeader("X-XSS-Protection", "X-XSS-Protection: 1; mode=block");
+    response.setHeader("X-XSS-Protection", "1; mode=block");
     response.setHeader("X-Content-Type-Options", "nosniff");
     response.setHeader("Content-Security-Policy", "default-src 'self' 'unsafe-eval' 'unsafe-inline'; img-src 'self' data:");
     // Note: ^^^ unsafe-eval/-inline are essential for Flow to work
