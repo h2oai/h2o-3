@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.zip.GZIPOutputStream;
 
 public class FrameUtils {
 
@@ -334,6 +335,7 @@ public class FrameUtils {
   }
 
   public static class ExportTaskDriver extends H2O.H2OCountedCompleter<ExportTaskDriver> {
+    private static int BUFFER_SIZE = 4 * 1024 * 1024;
     private static long DEFAULT_TARGET_PART_SIZE = 134217728L; // 128MB, default HDFS block size
     private static int AUTO_PARTS_MAX = 128; // maximum number of parts if automatic determination is enabled
     final Frame _frame;
@@ -342,14 +344,17 @@ public class FrameUtils {
     final boolean _overwrite;
     final Job _j;
     int _nParts;
+    final CompressionFactory _compressor;
 
-    public ExportTaskDriver(Frame frame, String path, String frameName, boolean overwrite, Job j, int nParts) {
+    public ExportTaskDriver(Frame frame, String path, String frameName, boolean overwrite, Job j, int nParts,
+                            CompressionFactory compressor) {
       _frame = frame;
       _path = path;
       _frameName = frameName;
       _overwrite = overwrite;
       _j = j;
       _nParts = nParts;
+      _compressor = compressor;
     }
 
     @Override
@@ -458,7 +463,10 @@ public class FrameUtils {
       long written = -1;
       try {
         os = H2O.getPM().create(path, _overwrite);
-        written = copyCSVStream(is, os, firstChkIdx, 4 * 1024 * 1024);
+        if (_compressor != null) {
+          os = _compressor.wrapOutputStream(os);
+        }
+        written = copyCSVStream(is, os, firstChkIdx, BUFFER_SIZE);
       } catch (IOException e) {
         throw new RuntimeException(e);
       } finally {

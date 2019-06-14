@@ -18,6 +18,8 @@
 #'        also filename if exporting to a single file. May be prefaced with
 #'        hdfs:// or s3n://. Each row of data appears as line of the file.
 #' @param force logical, indicates how to deal with files that already exist.
+#' @param compression how to compress the exported dataset
+#         (default none; gzip, bzip2 and snappy available)
 #' @param parts integer, number of part files to export to. Default is to
 #'        write to a single file. Large data can be exported to multiple
 #'        'part' files, where each part file contains subset of the data.
@@ -40,7 +42,7 @@
 #' # h2o.exportFile(iris_hf, path = "s3n://path/in/s3/iris.csv")
 #' }
 #' @export
-h2o.exportFile <- function(data, path, force = FALSE, parts = 1) {
+h2o.exportFile <- function(data, path, force = FALSE, compression = NULL, parts = 1) {
   if (!is.H2OFrame(data))
     stop("`data` must be an H2OFrame object")
 
@@ -53,7 +55,12 @@ h2o.exportFile <- function(data, path, force = FALSE, parts = 1) {
   if(!is.numeric(parts) || length(parts) != 1L || is.na(parts) || (! all.equal(parts, as.integer(parts))))
     stop("`parts` must be -1, 1 or any other positive integer number")
 
-  res <- .h2o.__remoteSend(.h2o.__EXPORT_FILES(data), method="POST", path=path, num_parts=parts, force=force)
+    
+  params <- list(path=path, num_parts=parts, force=force)
+  if (! is.null(compression)) {
+    params$compression <- compression
+  }
+  res <- .h2o.__remoteSend(.h2o.__EXPORT_FILES(data), method="POST", .params = params)
   .h2o.__waitOnJob(res$job$key$name)
 }
 

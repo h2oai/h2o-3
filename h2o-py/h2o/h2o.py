@@ -1106,13 +1106,14 @@ def load_model(path):
     return get_model(res["models"][0]["model_id"]["name"])
 
 
-def export_file(frame, path, force=False, parts=1):
+def export_file(frame, path, force=False, compression=None, parts=1):
     """
     Export a given H2OFrame to a path on the machine this python session is currently connected to.
 
     :param frame: the Frame to save to disk.
     :param path: the path to the save point on disk.
     :param force: if True, overwrite any preexisting file with the same path
+    :param compression: how to compress the exported dataset (default none; gzip, bzip2 and snappy available)
     :param parts: enables export to multiple 'part' files instead of just a single file.
         Convenient for large datasets that take too long to store in a single file.
         Use parts=-1 to instruct H2O to determine the optimal number of part files or
@@ -1124,7 +1125,8 @@ def export_file(frame, path, force=False, parts=1):
     assert_is_type(path, str)
     assert_is_type(force, bool)
     assert_is_type(parts, int)
-    H2OJob(api("POST /3/Frames/%s/export" % (frame.frame_id), data={"path": path, "num_parts": parts, "force": force}),
+    assert_is_type(compression, str, None)
+    H2OJob(api("POST /3/Frames/%s/export" % (frame.frame_id), data={"path": path, "num_parts": parts, "force": force, "compression": compression}),
            "Export File").poll()
 
 
