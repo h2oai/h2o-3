@@ -4,7 +4,6 @@ from tests import pyunit_utils
 from h2o.targetencoder import TargetEncoder
 import random
 
-
 def split_data(frame = None, seed = None):
   splits = frame.split_frame(ratios=[.8,.1], seed=seed)
   targetColumnName = "survived"
@@ -38,7 +37,6 @@ def titanic_without_te(frame = None, seeds = None):
       sum_of_aucs += auc
       print("AUC without te: " + str(current_seed) + " = " + str(auc))
     return sum_of_aucs / len(seeds)
-
 
 def titanic_with_te_kfoldstrategy(frame = None, seeds = None):
     sum_of_aucs = 0
