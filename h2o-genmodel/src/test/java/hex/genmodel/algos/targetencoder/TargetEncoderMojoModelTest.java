@@ -117,4 +117,24 @@ public class TargetEncoderMojoModelTest {
     targetEncoderMojoModel.transform(rowToPredictFor2);
     assertEquals(0.42857, (double) rowToPredictFor2.get(predictorName + "_te"), 1e-5);
   }
+  
+  @Test
+  public void transformUnknownCategories() {
+    TargetEncoderMojoModel targetEncoderMojoModel = new TargetEncoderMojoModel(null, null, null);
+    EncodingMaps encodingMap = new EncodingMaps();
+    EncodingMap encodingMapForCat1 = new EncodingMap();
+    encodingMapForCat1.put("A", new int[]{2,5});
+    encodingMapForCat1.put("B", new int[]{3,7});
+
+    String predictorName = "categ_var1";
+    encodingMap.put(predictorName, encodingMapForCat1);
+
+    targetEncoderMojoModel._targetEncodingMap = encodingMap;
+
+    RowData rowToPredictFor = new RowData();
+    rowToPredictFor.put(predictorName, "C"); // "C" is unknown category
+
+    targetEncoderMojoModel.transform(rowToPredictFor);
+    assertEquals((2.0 + 3) / (5 + 7), (double) rowToPredictFor.get(predictorName + "_te"), 1e-5);
+  }
 }

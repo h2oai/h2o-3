@@ -32,13 +32,18 @@ public class TargetEncoderMojoModel extends MojoModel implements FeatureTransfor
         _priorMean = _priorMean == -1 ? computePriorMean(encodings) : _priorMean;
         
         int[] correspondingNumAndDen = encodings._encodingMap.get(originalValue);
-
-        int numberOfRowsInCurrentCategory = correspondingNumAndDen[1];
-        double lambda = computeLambda(numberOfRowsInCurrentCategory, _inflectionPoint, _smoothing);
-        double posteriorMean = (double) correspondingNumAndDen[0] / correspondingNumAndDen[1];
-        double blendedValue = computeBlendedEncoding(lambda, posteriorMean, _priorMean);
         
-        data.put(columnName + "_te", blendedValue);
+        if(correspondingNumAndDen == null) {
+          data.put(columnName + "_te", _priorMean);
+        }
+        else {
+          int numberOfRowsInCurrentCategory = correspondingNumAndDen[1];
+          double lambda = computeLambda(numberOfRowsInCurrentCategory, _inflectionPoint, _smoothing);
+          double posteriorMean = (double) correspondingNumAndDen[0] / correspondingNumAndDen[1];
+          double blendedValue = computeBlendedEncoding(lambda, posteriorMean, _priorMean);
+
+          data.put(columnName + "_te", blendedValue);
+        }
       }
     } else {
       throw new IllegalStateException("Encoding map is missing.");
