@@ -1,8 +1,6 @@
 package hex.svm;
 
-import hex.ModelMetrics;
-import hex.ModelMetricsBinomial;
-import hex.ModelMetricsSupervised;
+import hex.*;
 import hex.splitframe.ShuffleSplitFrame;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -59,6 +57,8 @@ public class SVMTest extends TestUtil {
       System.out.println(predicted.toTwoDimTable().toString());
 
       assertVecEquals(expected.vec("predict"), predicted.vec("predict"), 0);
+
+      checkCM(model, fr, fr.vec("C1"), predicted.vec(0));
     } finally {
       Scope.exit();
     }
@@ -114,6 +114,8 @@ public class SVMTest extends TestUtil {
 
       ModelMetricsBinomial mmbTest = (ModelMetricsBinomial) ModelMetrics.getFromDKV(model, test);
       assertNotNull(mmbTest);
+
+      checkCM(model, test, test.vec(parms._response_column), predsTest.vec(0));
     } finally {
       Scope.exit();
     }
@@ -233,6 +235,9 @@ public class SVMTest extends TestUtil {
 
       // test frame has a constant (+1) response
       assertEquals(1.0, testPreds.vec(0).nzCnt() / (double) testPreds.numRows(), 0.15); // this essentially means >= 0.85
+
+      // check confusion matrix
+      checkCM(model, test, test.vec(parms._response_column), testPreds.vec(0));
     } finally {
       Scope.exit();
     }
@@ -241,6 +246,28 @@ public class SVMTest extends TestUtil {
   private static Frame[] splitFrameTrainValid(Frame fr, double ratio, long seed) {
     return ShuffleSplitFrame.shuffleSplitFrame(fr, new Key[]{Key.<Frame>make(fr._key + "_train"),Key.<Frame>make(fr._key + "_valid")}, new double[]{ratio, 1-ratio}, seed);
   }
-
-
+  
+  private static void checkCM(SVMModel model, Frame frame, Vec actuals, Vec predicted) {
+    String[] domain = model._output._domains[model._output.responseIdx()];
+    Scope.enter();
+    try {
+      if (! actuals.isCategorical()) {
+        actuals = Scope.track(actuals.toCategoricalVec());
+        if ("1".equals(actuals.domain()[actuals.domain().length - 1])) {
+          actuals.domain()[actuals.domain().length - 1] = "+1";
+        }
+        actuals = Scope.track(actuals.adaptTo(domain));
+      }
+      if (! predicted.isCategorical()) {
+        predicted = Scope.track(predicted.toCategoricalVec());
+      }
+      ConfusionMatrix expectedCM = ConfusionMatrixTest.buildCM(actuals, predicted);
+      ConfusionMatrix actualCM = ModelMetricsBinomial.getFromDKV(model, frame).cm();
+      System.out.println(actualCM.table().toString());
+      ConfusionMatrixTest.assertCMEqual(domain, expectedCM._cm, actualCM);
+    } finally {
+      Scope.exit();
+    }
+  }
+  
 }
