@@ -444,23 +444,15 @@ class CustomDistribution extends Distribution {
         assert customDistribution != null;
         assert customDistribution.getFunc() != null;
     }
-    
-    private void resetWrapper(){
-        if (customDistribution == null || customDistribution.getFunc() == null){
-            customDistribution = new CustomDistributionWrapper(CFuncRef.from(customDistributionFunc));
-        }
+
+    @Override
+    public double link(double f) {
+        return customDistribution.getFunc().link(f);
     }
 
     @Override
-    public double link(double f) { 
-        resetWrapper();
-        return customDistribution.getFunc().link(f); 
-    }
-
-    @Override
-    public double linkInv(double f) { 
-        resetWrapper();
-        return customDistribution.getFunc().inversion(f); 
+    public double linkInv(double f) {
+        return customDistribution.getFunc().inversion(f);
     }
 
     @Override
@@ -470,19 +462,16 @@ class CustomDistribution extends Distribution {
 
     @Override
     public double deviance(double w, double y, double f) {
-        resetWrapper();
-        return customDistribution.getFunc().deviance(w, y, f); 
+        return customDistribution.getFunc().deviance(w, y, f);
     }
 
     @Override
     public double negHalfGradient(double y, double f) {
-        resetWrapper();
-        return customDistribution.getFunc().gradient(y, f); 
+        return customDistribution.getFunc().gradient(y, f);
     }
 
     @Override
     public double initFNum(double w, double o, double y) {
-        resetWrapper();
         double[] init = customDistribution.getFunc().init(w, o, y);
         assert init.length == 2;
         return init[0];
@@ -490,7 +479,6 @@ class CustomDistribution extends Distribution {
 
     @Override
     public double initFDenom(double w, double o, double y) {
-        resetWrapper();
         double[] init = customDistribution.getFunc().init(w, o, y);
         assert init.length == 2;
         return init[1];
@@ -498,7 +486,6 @@ class CustomDistribution extends Distribution {
 
     @Override
     public double gammaNum(double w, double y, double z, double f) {
-        resetWrapper();
         double[] gamma = customDistribution.getFunc().gamma(w, y, z, f);
         assert gamma.length == 2;
         return gamma[0];
@@ -506,7 +493,6 @@ class CustomDistribution extends Distribution {
 
     @Override
     public double gammaDenom(double w, double y, double z, double f) {
-        resetWrapper();
         double[] gamma = customDistribution.getFunc().gamma(w, y, z, f);
         assert gamma.length == 2;
         return gamma[1];

@@ -8,7 +8,10 @@ abstract public class CFuncObject<T extends CFunc> extends Iced<CFuncObject> {
 
     public CFuncObject(CFuncRef cFuncRef) {
         this.cFuncRef = cFuncRef;
-        if (cFuncRef != null) {
+    }
+
+    protected void setupLocal() {
+        if (cFuncRef != null && func == null) {
             ClassLoader localCl = getFuncClassLoader();
             CFuncLoader loader = CFuncLoaderService.INSTANCE.getByLang(cFuncRef.language);
             if (loader != null) {
@@ -26,8 +29,9 @@ abstract public class CFuncObject<T extends CFunc> extends Iced<CFuncObject> {
     }
 
     abstract protected Class<T> getFuncType();
-
+    
     public T getFunc() {
+        if (func == null) setupLocal();
         return func;
     }
 }
