@@ -1433,6 +1433,10 @@ public class Frame extends Lockable<Frame> {
   }
 
   public static Job export(Frame fr, String path, String frameName, boolean overwrite, int nParts) {
+    return export(fr, path, frameName, overwrite, nParts, null);
+  }
+
+  public static Job export(Frame fr, String path, String frameName, boolean overwrite, int nParts, String compression) {
     boolean forceSingle = nParts == 1;
     // Validate input
     if (forceSingle) {
@@ -1448,8 +1452,9 @@ public class Frame extends Lockable<Frame> {
                 " to store part files! The target needs to be either an existing empty directory or not exist yet.");
       }
     }
+    CompressionFactory compressionFactory = compression != null ? CompressionFactory.make(compression) : null;
     Job job =  new Job<>(fr._key, "water.fvec.Frame", "Export dataset");
-    FrameUtils.ExportTaskDriver t = new FrameUtils.ExportTaskDriver(fr, path, frameName, overwrite, job, nParts);
+    FrameUtils.ExportTaskDriver t = new FrameUtils.ExportTaskDriver(fr, path, frameName, overwrite, job, nParts, compressionFactory);
     return job.start(t, fr.anyVec().nChunks());
   }
 
