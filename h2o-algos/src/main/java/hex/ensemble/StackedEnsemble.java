@@ -16,6 +16,7 @@ import water.fvec.Vec;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Objects;
 
 import water.util.ArrayUtils;
 import water.util.Log;
@@ -69,23 +70,28 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
   @Override
   public void init(boolean expensive) {
     super.init(expensive);
-    
-    if (_parms._metalearner_fold_column != null && _parms._train != null) {
-      final Frame trainingFrame = _parms._train.get();
-      if(trainingFrame.vec(_parms._metalearner_fold_column) == null) {
-        throw new IllegalArgumentException(String.format("Specified fold column '%s' not found in the training data frame: '%s'. Available column names are: %s",
-                _parms._metalearner_fold_column, trainingFrame._key, Arrays.toString(trainingFrame.names())));
-      }
-    }
 
-    if (_parms._metalearner_fold_column != null && _parms._valid != null) {
-      final Frame validationFrame = _parms._valid.get();
-      if(validationFrame.vec(_parms._metalearner_fold_column) == null) {
-        throw new IllegalArgumentException(String.format("Specified fold column '%s' not found in the validation data frame: '%s'. Available column names are: %s",
-                _parms._metalearner_fold_column, validationFrame._key, Arrays.toString(validationFrame.names())));
+    checkFoldColumnPresent(_parms._metalearner_fold_column, _parms._train != null ? _parms._train.get() : null,
+            _parms._valid != null ? _parms._valid.get() : null,
+            _parms._blending != null ? _parms._blending.get() : null);
+  }
+
+  /**
+   * Checks for presence of a fold column in given {@link Frame}s. Null fold column means no checks are done.
+   *
+   * @param foldColumnName Name of the fold column. Null means no fold column has been specified
+   * @param frames         A list of frames to check the presence of fold column in
+   */
+  private static void checkFoldColumnPresent(final String foldColumnName, final Frame... frames) {
+    if (foldColumnName == null) return; // Unspecified fold column implies no checks are needs on provided frames 
+
+    for (Frame frame : frames) {
+      if (frame == null) continue; // No frame provided, no checks required
+      if (frame.vec(foldColumnName) == null) {
+        throw new IllegalArgumentException(String.format("Specified fold column '%s' not found in the data frame: '%s'. Available column names are: %s",
+                foldColumnName, frame._key, Arrays.toString(frame.names())));
       }
     }
-    
   }
 
   static void addModelPredictionsToLevelOneFrame(Model aModel, Frame aModelsPredictions, Frame levelOneFrame) {
