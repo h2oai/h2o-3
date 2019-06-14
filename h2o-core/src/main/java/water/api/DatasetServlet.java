@@ -31,8 +31,7 @@ public class DatasetServlet extends HttpServlet {
       }
 
       Frame dataset = DKV.getGet(f_name);
-      // TODO: Find a way to determing the hex_string parameter. It should not always be false
-      InputStream is = dataset.toCSV(true, use_hex);
+      InputStream is = dataset.toCSV(new Frame.CSVStreamParams().setHexString(use_hex));
       response.setContentType("application/octet-stream");
       // Clean up the file name
       int x = f_name.length() - 1;

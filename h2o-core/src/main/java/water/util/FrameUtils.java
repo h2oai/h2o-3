@@ -345,9 +345,10 @@ public class FrameUtils {
     final Job _j;
     int _nParts;
     final CompressionFactory _compressor;
+    final Frame.CSVStreamParams _csv_parms;
 
     public ExportTaskDriver(Frame frame, String path, String frameName, boolean overwrite, Job j, int nParts,
-                            CompressionFactory compressor) {
+                            CompressionFactory compressor, Frame.CSVStreamParams csvParms) {
       _frame = frame;
       _path = path;
       _frameName = frameName;
@@ -355,6 +356,7 @@ public class FrameUtils {
       _j = j;
       _nParts = nParts;
       _compressor = compressor;
+      _csv_parms = csvParms;
     }
 
     @Override
@@ -363,17 +365,17 @@ public class FrameUtils {
       if (_nParts == 1) {
         // Single file export, the file should be created by the node that was asked to export the data
         // (this is for non-distributed filesystems, we want the file to go to the local filesystem of the node)
-        Frame.CSVStream is = new Frame.CSVStream(_frame, true, false);
+        Frame.CSVStream is = new Frame.CSVStream(_frame, _csv_parms);
         exportCSVStream(is, _path, 0);
         tryComplete();
       } else {
         // Multi-part export
         if (_nParts < 0) {
-          _nParts = calculateNParts();
+          _nParts = calculateNParts(_csv_parms);
           assert _nParts > 0;
         }
         int nChunksPerPart = ((_frame.anyVec().nChunks() - 1) / _nParts) + 1;
-        new PartExportTask(this, _frame._names, nChunksPerPart).dfork(_frame);
+        new PartExportTask(this, _frame._names, nChunksPerPart, _csv_parms).dfork(_frame);
       }
     }
 
@@ -388,8 +390,8 @@ public class FrameUtils {
       return super.onExceptionalCompletion(t, caller);
     }
 
-    private int calculateNParts() {
-      EstimateSizeTask estSize = new EstimateSizeTask().dfork(_frame).getResult();
+    private int calculateNParts(Frame.CSVStreamParams parms) {
+      EstimateSizeTask estSize = new EstimateSizeTask(parms).dfork(_frame).getResult();
       Log.debug("Estimator result: ", estSize);
       // the goal is to not to create too small part files (and too many files), ideal part file size is one HDFS block
       int nParts = Math.max((int) (estSize._size / DEFAULT_TARGET_PART_SIZE), H2O.CLOUD.size() + 1);
@@ -407,14 +409,20 @@ public class FrameUtils {
      * The total estimated size is the total of the estimated chunk sizes.
      */
     class EstimateSizeTask extends MRTask<EstimateSizeTask> {
+      // IN
+      private final Frame.CSVStreamParams _parms;
       // OUT
       int _nNonEmpty;
       long _size;
 
+      public EstimateSizeTask(Frame.CSVStreamParams parms) {
+        _parms = parms;
+      }
+
       @Override
       public void map(Chunk[] cs) {
         if (cs[0]._len == 0) return;
-        Frame.CSVStream is = new Frame.CSVStream(cs, null, 1, false);
+        Frame.CSVStream is = new Frame.CSVStream(cs, null, 1, _parms);
         try {
           _nNonEmpty++;
           _size += is.getCurrentRowSize() * cs[0]._len;
@@ -486,11 +494,13 @@ public class FrameUtils {
     class PartExportTask extends MRTask<PartExportTask> {
       final String[] _colNames;
       final int _length;
+      final Frame.CSVStreamParams _csv_parms;
 
-      PartExportTask(H2O.H2OCountedCompleter<?> completer, String[] colNames, int length) {
+      PartExportTask(H2O.H2OCountedCompleter<?> completer, String[] colNames, int length, Frame.CSVStreamParams csvParms) {
         super(completer);
         _colNames = colNames;
         _length = length;
+        _csv_parms = csvParms;
       }
 
       @Override
@@ -501,7 +511,7 @@ public class FrameUtils {
         }
         int partIdx = anyChunk.cidx() / _length;
         String partPath = _path + "/part-m-" + String.valueOf(100000 + partIdx).substring(1);
-        Frame.CSVStream is = new Frame.CSVStream(cs, _colNames, _length, false);
+        Frame.CSVStream is = new Frame.CSVStream(cs, _colNames, _length, _csv_parms);
         exportCSVStream(is, partPath, anyChunk.cidx());
       }
 
