@@ -70,9 +70,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
   public void init(boolean expensive) {
     super.init(expensive);
 
-    checkFoldColumnPresent(_parms._metalearner_fold_column, _parms._train != null ? _parms._train.get() : null,
-            _parms._valid != null ? _parms._valid.get() : null,
-            _parms._blending != null ? _parms._blending.get() : null);
+    checkFoldColumnPresent(_parms._metalearner_fold_column, train(), valid(), _parms.blending());
   }
 
   /**
@@ -87,8 +85,8 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
     for (Frame frame : frames) {
       if (frame == null) continue; // No frame provided, no checks required
       if (frame.vec(foldColumnName) == null) {
-        throw new IllegalArgumentException(String.format("Specified fold column '%s' not found in the data frame: '%s'. Available column names are: %s",
-                foldColumnName, frame._key, Arrays.toString(frame.names())));
+        throw new IllegalArgumentException(String.format("Specified fold column '%s' not found in one of the supplied data frames. Available column names are: %s",
+                foldColumnName, Arrays.toString(frame.names())));
       }
     }
   }

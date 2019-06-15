@@ -919,8 +919,7 @@ public class StackedEnsembleTest extends TestUtil {
       seParams._metalearner_fold_column = "class";
 
       expectedException.expect(IllegalArgumentException.class);
-      expectedException.expectMessage("Specified fold column 'class' not found in the data frame: '"
-              + partialFrame._key.toString() + "'. Available column names are: [sepal_len, sepal_wid, petal_len, petal_wid]");
+      expectedException.expectMessage("Specified fold column 'class' not found in one of the supplied data frames. Available column names are: [sepal_len, sepal_wid, petal_wid, petal_len]");
       final StackedEnsemble stackedEnsemble = new StackedEnsemble(seParams);
       fail("Expected the Stack Ensemble Model never to be initialized successfully.");
 
@@ -949,6 +948,7 @@ public class StackedEnsembleTest extends TestUtil {
 
       GBMModel.GBMParameters parameters = new GBMModel.GBMParameters();
       parameters._train = trainingFrame._key;
+      parameters._valid = trainingFrame._key;
       parameters._fold_column = "class";
       parameters._seed = 0xFEED;
       parameters._response_column = "petal_len";
@@ -961,6 +961,7 @@ public class StackedEnsembleTest extends TestUtil {
 
 
       final StackedEnsembleParameters seParams = new StackedEnsembleParameters();
+      seParams._train = trainingFrame._key;
       seParams._valid = partialFrame._key;
       seParams._response_column = "petal_len";
       seParams._metalearner_algorithm = Algorithm.AUTO;
@@ -969,8 +970,7 @@ public class StackedEnsembleTest extends TestUtil {
       seParams._metalearner_fold_column = "class";
 
       expectedException.expect(IllegalArgumentException.class);
-      expectedException.expectMessage("Specified fold column 'class' not found in the data frame: '"
-              + partialFrame._key.toString() + "'. Available column names are: [sepal_len, sepal_wid, petal_len, petal_wid]");
+      expectedException.expectMessage("Specified fold column 'class' not found in one of the supplied data frames. Available column names are: [sepal_len, sepal_wid, petal_len, petal_wid]");
       final StackedEnsemble stackedEnsemble = new StackedEnsemble(seParams);
       fail("Expected the Stack Ensemble Model never to be initialized successfully.");
 
@@ -1011,6 +1011,7 @@ public class StackedEnsembleTest extends TestUtil {
 
 
       final StackedEnsembleParameters seParams = new StackedEnsembleParameters();
+      seParams._train = trainingFrame._key;
       seParams._blending = partialFrame._key;
       seParams._response_column = "petal_len";
       seParams._metalearner_algorithm = Algorithm.AUTO;
@@ -1019,8 +1020,7 @@ public class StackedEnsembleTest extends TestUtil {
       seParams._metalearner_fold_column = "class";
 
       expectedException.expect(IllegalArgumentException.class);
-      expectedException.expectMessage("Specified fold column 'class' not found in the data frame: '"
-              + partialFrame._key.toString() + "'. Available column names are: [sepal_len, sepal_wid, petal_len, petal_wid]");
+      expectedException.expectMessage("Specified fold column 'class' not found in one of the supplied data frames. Available column names are: [sepal_len, sepal_wid, petal_len, petal_wid]");
       final StackedEnsemble stackedEnsemble = new StackedEnsemble(seParams);
       fail("Expected the Stack Ensemble Model never to be initialized successfully.");
 
@@ -1072,8 +1072,7 @@ public class StackedEnsembleTest extends TestUtil {
       seParams._metalearner_fold_column = "class";
 
       expectedException.expect(IllegalArgumentException.class);
-      expectedException.expectMessage("Specified fold column 'class' not found in the data frame: '"
-              + seTrain._key.toString() + "'. Available column names are: [sepal_len, sepal_wid, petal_len, petal_wid]");
+      expectedException.expectMessage("Specified fold column 'class' not found in one of the supplied data frames. Available column names are: [sepal_len, sepal_wid, petal_wid, petal_len]");
 
       new StackedEnsemble(seParams);
       fail("Expected the Stack Ensemble Model never to be initialized successfully.");
