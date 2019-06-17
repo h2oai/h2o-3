@@ -62,7 +62,7 @@ public class SVMModel extends Model<SVMModel, SVMModel.SVMParameters, SVMModel.S
     public long _seed = -1;
 
     // SVM
-    public double _hyper_parm = 1.0; // "C"
+    public double _hyper_param = 1.0; // "C"
     public double _positive_weight = 1.0;
     public double _negative_weight = 1.0;
     public double _sv_threshold = 1.0e-4;
@@ -100,17 +100,17 @@ public class SVMModel extends Model<SVMModel, SVMModel.SVMParameters, SVMModel.S
       p._feasible_threshold = _feasible_threshold;
       p._sgap_threshold = _surrogate_gap_threshold;
       p._x_epsilon = _zero_threshold;
-      p._c_pos = _hyper_parm * _positive_weight;
-      p._c_neg = _hyper_parm * _negative_weight;
+      p._c_pos = _hyper_param * _positive_weight;
+      p._c_neg = _hyper_param * _negative_weight;
       return p;
     }
 
     double c_pos() {
-      return _hyper_parm * _positive_weight;
+      return _hyper_param * _positive_weight;
     }
 
     double c_neg() {
-      return _hyper_parm * _negative_weight;
+      return _hyper_param * _negative_weight;
     }
   }
 

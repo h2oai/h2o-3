@@ -95,7 +95,7 @@ public class SVMTest extends TestUtil {
       parms._train = train._key;
       parms._response_column = "CAPSULE";
       parms._gamma = 0.1;
-      parms._hyper_parm = 2;
+      parms._hyper_param = 2;
 
       SVM svm = new SVM(parms);
 
@@ -160,7 +160,7 @@ public class SVMTest extends TestUtil {
       parms._response_column = "CAPSULE";
       parms._ignored_columns = new String[]{"ID"};
       parms._gamma = 0.4;
-      parms._hyper_parm = 2;
+      parms._hyper_param = 2;
       
       SVM svm = new SVM(parms);
 
@@ -219,7 +219,7 @@ public class SVMTest extends TestUtil {
       parms._train = fr._key;
       parms._response_column = "C1";
       parms._gamma = 0.125;
-      parms._hyper_parm = 1;
+      parms._hyper_param = 1;
 
       SVM svm = new SVM(parms);
 
