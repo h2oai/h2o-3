@@ -22,7 +22,7 @@ public class SVMModel extends Model<SVMModel, SVMModel.SVMParameters, SVMModel.S
   }
 
   ModelMetricsSupervised makeModelMetrics(Frame origFr, Frame adaptFr, String description) {
-    Log.debug("Making metrics: " + description);
+    Log.info("Making metrics: " + description);
     ModelMetrics.MetricBuilder mb = scoreMetrics(adaptFr);
     ModelMetricsSupervised mm = (ModelMetricsSupervised) mb.makeModelMetrics(this, origFr, adaptFr, null);
     mm._description = description;

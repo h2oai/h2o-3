@@ -119,6 +119,11 @@ public class SVM extends ModelBuilder<SVMModel, SVMModel.SVMParameters, SVMModel
         Scope.track_generic(di);
         DKV.put(di);
 
+        if (_parms._gamma == -1) {
+          _parms._gamma = 1.0d / di.fullN();
+          Log.info("Set gamma = " + _parms._gamma);
+        }
+        
         final Vec response = di._adaptedFrame.vec(_parms._response_column);
 
         SVMModel.SVMModelOutput output = new SVMModel.SVMModelOutput(SVM.this, prototypeFrame(di), response().domain());
@@ -135,6 +140,7 @@ public class SVM extends ModelBuilder<SVMModel, SVMModel.SVMParameters, SVMModel
         _job.update(0, "Running IPM");
         Vec alpha = PrimalDualIPM.solve(icf, response, _parms.ipmParms());
         icf.remove();
+        Log.info("IPM finished");
 
         Vec svs = new RegulateAlphaTask(_parms.c_pos(), _parms.c_neg(), _parms._sv_threshold)
                 .doAll(Vec.T_NUM, alpha, response)
@@ -175,14 +181,18 @@ public class SVM extends ModelBuilder<SVMModel, SVMModel.SVMParameters, SVMModel
           model._output._compressed_svs = new byte[0];
         }
 
+        Log.info("Total #support vectors: " + model._output._svs_count + " (size in memory " + estimatedSize + "B)");
+        
         model.update(_job);
 
         if (! tooBig) {
+          _job.update(0,"Scoring training frame");
           Frame scoringTrain = new Frame(train());
           model.adaptTestForTrain(scoringTrain, true, true);
           model._output._training_metrics = model.makeModelMetrics(train(), scoringTrain, "Training metrics");
           
           if (valid() != null) {
+            _job.update(0,"Scoring validation frame");
             Frame scoringValid = new Frame(valid());
             model.adaptTestForTrain(scoringValid, true, true);
             model._output._validation_metrics = model.makeModelMetrics(valid(), scoringValid, "Validation metrics");
