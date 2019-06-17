@@ -300,6 +300,7 @@ def algo_to_classname(algo):
     if algo == "pca": return "H2OPrincipalComponentAnalysisEstimator"
     if algo == "stackedensemble": return "H2OStackedEnsembleEstimator"
     if algo == "isolationforest": return "H2OIsolationForestEstimator"
+    if algo == "svm": return "H2OSupportVectorMachinesEstimator"
     return "H2O" + algo.capitalize() + "Estimator"
 
 def extra_imports_for(algo):
@@ -703,8 +704,6 @@ def main():
                ("automl", "H2OAutoML", "Miscellaneous")]
     builders = bi.model_builders().items()
     for name, mb in builders:
-        if name in ["svm"]:
-            continue
         module = name
         if name == "drf": module = "random_forest"
         if name == "naivebayes": module = "naive_bayes"
