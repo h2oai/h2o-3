@@ -38,8 +38,8 @@ public class StackedEnsembleTest extends TestUtil {
 
     @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
-  @Rule
-  public ExpectedException expectedException = ExpectedException.none();
+    @Rule
+    public transient ExpectedException expectedException = ExpectedException.none();
 
     private abstract class PrepData { abstract int prep(Frame fr); }
 
