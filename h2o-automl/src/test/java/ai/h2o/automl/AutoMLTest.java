@@ -3,6 +3,7 @@ package ai.h2o.automl;
 import hex.Model;
 import hex.SplitFrame;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
@@ -189,12 +190,13 @@ public class AutoMLTest extends water.TestUtil {
   }
 
 
+  @Ignore("not reliable: runtime can vary significantly in multinode")
   @Test public void test_individual_model_max_runtime() {
     AutoML aml=null;
     Frame fr=null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-//      fr = parse_test_file("./smalldata/prostate/prostate_complete.csv"); //using slightly larger dataset to make this test useful
+//      fr = parse_test_file("./smalldata/prostate/prostate.csv"); //using slightly larger dataset to make this test useful
 //      autoMLBuildSpec.input_spec.response_column = "CAPSULE";
       fr = parse_test_file("./smalldata/diabetes/diabetes_text_train.csv"); //using slightly larger dataset to make this test useful
       autoMLBuildSpec.input_spec.response_column = "diabetesMed";
