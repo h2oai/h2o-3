@@ -57,7 +57,6 @@ public class DefaultMojoImplTest extends TestUtil {
     }
   }
 
-  /* FIXME: PUBDEV-6387: gblinear causes a segmenation fault
   @Test
   public void testGBLinear() throws IOException {
     Scope.enter();
@@ -69,7 +68,6 @@ public class DefaultMojoImplTest extends TestUtil {
       Scope.exit();
     }
   }
-  */
 
   private static XGBoostModel trainModel(Booster booster) {
     Frame tfr = parse_test_file("./smalldata/prostate/prostate.csv");
