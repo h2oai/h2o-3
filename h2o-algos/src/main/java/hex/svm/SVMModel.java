@@ -70,7 +70,7 @@ public class SVMModel extends Model<SVMModel, SVMModel.SVMParameters, SVMModel.S
 
     // Kernel
     public KernelType _kernel_type = KernelType.gaussian;
-    public double _gamma = 1.0;
+    public double _gamma = -1; // by default use 1/(#expanded features)
 
     // ** Expert **
     

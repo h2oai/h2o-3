@@ -170,7 +170,7 @@ public class SVM extends ModelBuilder<SVMModel, SVMModel.SVMParameters, SVMModel
         if (svs.length() > sampleSize) { // scale the estimate to the actual number of SVs
           estimatedSize = (estimatedSize * svs.length()) / sampleSize;
         }
-        final boolean tooBig = estimatedSize >= Value.MAX; 
+        final boolean tooBig = estimatedSize >= Value.MAX;
         if (! tooBig) {
           Frame fr = new Frame(di._adaptedFrame);
           fr.add("__alpha", alpha);
