@@ -87,7 +87,7 @@ stackedensemble.blending_frame.suite <- function() {
         tryCatch({
               train_stackedensemble(ds_notrain, base_models)
               fail(message = "training Stackedensemble model with NULL training_frame should have raised error")
-            }, error = function(e) expect_match(e$message, "'training_frame' must be a valid H2OFrame")
+            }, error = function(e) expect_match(e$message, "argument 'training_frame' is NULL or missing")
         )
     }
 

@@ -35,21 +35,13 @@ h2o.word2vec <- function(training_frame = NULL,
                          export_checkpoints_dir = NULL
                          ) 
 {
-
+  # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   # training_frame is required if pre_trained frame is not specified
   if (missing(pre_trained) && missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
-  # training_frame must be a key or an H2OFrame object
-  if (!missing(training_frame) && !is.H2OFrame(training_frame))
-    tryCatch(training_frame <- h2o.getFrame(training_frame),
-             error = function(err) {
-               stop("argument 'training_frame' must be a valid H2OFrame or key")
-             })
-  # pre_trained must be a key or an H2OFrame object
-  if (!missing(pre_trained) && !is.H2OFrame(pre_trained))
-    tryCatch(pre_trained <- h2o.getFrame(pre_trained),
-             error = function(err) {
-               stop("argument 'pre_trained' must be a valid H2OFrame or key")
-             })
+  training_frame <- .validate.H2OFrame(training_frame)
+  pre_trained <- .validate.H2OFrame(pre_trained)
+
+  # Handle other args
   # Parameter list to send to model builder
   parms <- list()
   parms$training_frame <- training_frame
