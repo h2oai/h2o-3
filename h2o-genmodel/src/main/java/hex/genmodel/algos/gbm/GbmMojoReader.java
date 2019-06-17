@@ -2,6 +2,7 @@ package hex.genmodel.algos.gbm;
 
 import hex.genmodel.algos.tree.SharedTreeMojoReader;
 import hex.genmodel.utils.DistributionFamily;
+import hex.genmodel.utils.LinkFunctionType;
 
 import java.io.IOException;
 
@@ -19,6 +20,7 @@ public class GbmMojoReader extends SharedTreeMojoReader<GbmMojoModel> {
     super.readModelData();
     _model._family = DistributionFamily.valueOf((String)readkv("distribution"));
     _model._init_f = readkv("init_f");
+    _model._link_function = LinkFunctionType.valueOf((String)readkv("link_function"));
   }
 
   @Override

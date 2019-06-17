@@ -13,8 +13,6 @@ Use this option to specify a custom distribution function. A custom distribution
 
 **Note**: This option is only supported in the Python client.
 
-**Note**: This option is not supported in POJO and MOJO.
-
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
@@ -66,22 +64,8 @@ Example
 	# Create a custom Bernoulli distribution and save as custom_bernoulli.py
 	# Note that this references a java class java.lang.Math
     class CustomDistributionBernoulli:
-        def link(self, f):
-            def log(x):
-                import java.lang.Math as Math
-                min_log = -19
-                x = Math.max(0, x)
-                if x == 0:
-                    return min_log
-                else:
-                    return Math.max(min_log, Math.log(x))
-            return log(f / (1 - f))
-        
-        def inversion(self, f):
-            def exp(x):
-                import java.lang.Math as Math
-                return Math.min(1e19, Math.exp(x))
-            return 1 / (1 + exp(-f))
+        def link(self):
+            return "logit"
         
         def deviance(self, w, y, f):
             def log(x):

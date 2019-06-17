@@ -14,16 +14,9 @@ public class TestBernoulliCustomDistribution implements CDistributionFunc {
         x = Math.max(0, x);
         return x == 0 ? MIN_LOG : Math.max(MIN_LOG, Math.log(x));
     }
-    
-    @Override
-    public double link(double f) {
-        return log(f / (1 - f));
-    }
 
     @Override
-    public double inversion(double f) {
-        return 1 / (1 + exp(-f));
-    }
+    public String link() { return "logit";}
 
     @Override
     public double deviance(double w, double y, double f) {
@@ -37,7 +30,7 @@ public class TestBernoulliCustomDistribution implements CDistributionFunc {
 
     @Override
     public double gradient(double y, double f) {
-        return y - inversion(f);
+        return y - (1 / (1 + exp(-f)));
     }
 
     @Override

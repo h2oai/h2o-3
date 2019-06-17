@@ -1545,7 +1545,7 @@ def upload_custom_distribution(func, func_file="distributions.py", func_name=Non
 import water.udf.CDistributionFunc as DistributionFunc
 
 # User given metric function as a class implementing
-# 6 methods defined by interface CDistributionFunc
+# 5 methods defined by interface CDistributionFunc
 {}
 
 # Generated user distribution which satisfies the interface
@@ -1573,7 +1573,7 @@ class {}Wrapper({}, DistributionFunc, object):
         class_name = "{}.{}Wrapper".format(module_name, class_name)
     else:
         assert_satisfies(func, inspect.isclass(func), "The parameter `func` should be str or class")
-        for method in ['link', 'inversion', 'deviance', 'gradient', 'init', 'gamma']:
+        for method in ['link', 'deviance', 'gradient', 'init', 'gamma']:
             assert_satisfies(func, method in dir(func), "The class `func` needs to define method `{}`".format(method))
 
         assert_satisfies(class_name, class_name is None,

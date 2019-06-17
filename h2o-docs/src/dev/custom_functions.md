@@ -68,11 +68,8 @@ distributed invocation:
 The custom distribution is a function which implements `water.udf.CDistributionFunc` interface.
 The interface follows the design of `hex.Distribution` and contains six methods to support
 distributed invocation:
-  - `link` : the method returns link function transformation of the probability of response variable to a continuous scale that is unbounded.
-  The method is designed to be called where `hex.Distribution#link` method is used.
-  It can return `response` by default (Identity Link Function).
-  - `inversion` : inversion of link function.
-  The method is designed to be called where `hex.Distribution#linkInv` method is used.
+  - `link` : the method returns type of link function transformation of the probability of response variable to a continuous scale that is unbounded.
+  The method is designed to be called where `hex.Distribution#link` and `hex.Distribution#linkInv` methods are used.
   It can return `response` by default (Identity Link Function).
   - `deviance` : the method returns deviance of given distribution function at given predicted value. 
   It can combines observation weight, actual response and predicted response in original response space (including offset).
@@ -175,9 +172,8 @@ via methods `custom_metric_name()` and `custom_metric_value()`.
 #### Custom Distribution Function
 
 The custom distribution function is defined in Python as a class which provides
-six methods following the semantics of Java API above:
+five methods following the semantics of Java API above:
   - `link`
-  - `inversion`
   - `deviance`
   - `init`
   - `gradient`
@@ -188,12 +184,9 @@ For example, custom Gaussian distribution:
 ```python
 class CustomDistributionGaussian:
 
-    def link(self, f):
-        return f
+    def link(self):
+        return "identity"
         
-    def inversion(self, f):
-        return f
-    
     def deviance(self, w, y, f):
         return w * (y - f) * (y - f)
 

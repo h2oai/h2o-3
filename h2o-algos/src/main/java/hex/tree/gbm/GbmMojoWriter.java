@@ -1,5 +1,7 @@
 package hex.tree.gbm;
 
+import hex.Distribution;
+import hex.DistributionFactory;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.SharedTreeMojoWriter;
 import water.H2O;
@@ -24,11 +26,9 @@ public class GbmMojoWriter extends SharedTreeMojoWriter<GBMModel, GBMModel.GBMPa
 
   @Override
   protected void writeModelData() throws IOException {
-    if (model._parms._distribution == DistributionFamily.custom) {
-      H2O.unimpl("MOJO is not currently supported for custom distribution models.");
-    }
     super.writeModelData();
-    writekv("distribution", model._parms._distribution);
+    writekv("distribution", model._dist.distribution);
+    writekv("link_function", model._dist.linkFunction.linkFunctionType);
     writekv("init_f", model._output._init_f);
     writekv("offset_column", "null");  // Not known yet
   }

@@ -3,9 +3,8 @@ package water.udf;
 /**
  * Custom Distribution Function Interface to customize loss and prediction calculation in GBM algorithm
  * 
- * The function has six parts:
+ * The function has five parts:
  * - link: link function transforms the probability of response variable to a continuous scale that is unbounded
- * - inversion: inversion of link function
  * - deviance: deviance of given distribution function at given predicted value. 
  * - init: computes numerator and denominator of the initial value.
  * - gradient: computes (Negative half) Gradient of deviance function at predicted value for actual response
@@ -14,18 +13,10 @@ package water.udf;
 public interface CDistributionFunc extends CFunc {
 
     /**
-     * Canonical link.
-     * @param f value in original space, to be transformed to link space
-     * @return link
+     * Type of Link function.
+     * @return name of link function. Possible functions: log, logit, identity, inverse, ologit, ologlog, oprobit
      */
-    double link(double f);
-
-    /** 
-     * Canonical link inverse.
-     * @param f value in link space, to be transformed to original space
-     * @return link inverse
-     */
-    double inversion(double f);
+    String link();
     
     /**
      * Deviance of given distribution function at predicted value f.

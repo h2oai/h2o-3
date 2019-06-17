@@ -4,11 +4,8 @@ from . import locate
 
 class CustomDistributionGaussian:
 
-    def link(self, f):
-        return f
-    
-    def inversion(self, f):
-        return f
+    def link(self):
+        return "identity"
     
     def deviance(self, w, y, f):
         return w * (y - f) * (y - f)
@@ -25,12 +22,9 @@ class CustomDistributionGaussian:
 
 class CustomDistributionGaussianWrong:
 
-    def link(self, f):
-        return f
-
-    def inversion(self, f):
-        return f
-
+    def link(self):
+        return "identity"
+        
     def deviance(self, w, y, f):
         return w * (y - f) * (y - f)
 
@@ -46,22 +40,8 @@ class CustomDistributionGaussianWrong:
 
 class CustomDistributionBernoulli:
 
-    def link(self, f):
-        def log(x):
-            import java.lang.Math as Math
-            min_log = -19
-            x = Math.max(0, x)
-            if x == 0:
-                return min_log
-            else:
-                return Math.max(min_log, Math.log(x))
-        return log(f / (1 - f))
-
-    def inversion(self, f):
-        def exp(x):
-            import java.lang.Math as Math
-            return Math.min(1e19, Math.exp(x))
-        return 1 / (1 + exp(-f))
+    def link(self):
+        return "logit"
 
     def deviance(self, w, y, f):
         def log(x):
@@ -78,7 +58,11 @@ class CustomDistributionBernoulli:
         return [w * (y - o), w]
 
     def gradient(self, y, f):
-        return y - self.inversion(f)
+        def exp(x):
+            import java.lang.Math as Math
+            max_exp = 1e19
+            return Math.min(max_exp, Math.exp(x));
+        return y - (1/(1+exp(-f)))
 
     def gamma(self, w, y, z, f):
         ff = y - z
@@ -87,22 +71,8 @@ class CustomDistributionBernoulli:
 
 class CustomDistributionMultinomial:
 
-    def link(self, f):
-        def log(x):
-            import java.lang.Math as Math
-            min_log = -19
-            x = Math.max(0, x)
-            if x == 0:
-                return min_log
-            else:
-                return Math.max(min_log, Math.log(x))
-        return log(f)
-
-    def inversion(self, f):
-        def exp(x):
-            import java.lang.Math as Math
-            return Math.min(1e19, Math.exp(x))
-        return exp(f)
+    def link(self):
+        return "log"
 
     def deviance(self, w, y, f):
         return w * (y - f) * (y - f)
@@ -121,11 +91,8 @@ class CustomDistributionMultinomial:
 
 class CustomDistributionNull:
 
-    def link(self, f):
-        return 0
-
-    def inversion(self, f):
-        return 0
+    def link(self):
+        return "identity"
 
     def deviance(self, w, y, f):
         return 0

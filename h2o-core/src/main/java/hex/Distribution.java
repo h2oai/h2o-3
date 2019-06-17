@@ -12,7 +12,7 @@ public abstract class Distribution extends Iced<Distribution> {
     public final double tweediePower; // tweedie power
     public final double quantileAlpha; // for quantile regression
     public double huberDelta; // should be updated to huber_alpha quantile of absolute error of predictions via setter
-    public final LinkFunction linkFunction; // link function to use mainly for GLM
+    public LinkFunction linkFunction; // link function to use mainly for GLM
     public final DistributionFamily distribution; // distribution name, important for some algos to decide what to do
     
     public Distribution(DistributionFamily family, LinkFunction lf) {
@@ -47,6 +47,10 @@ public abstract class Distribution extends Iced<Distribution> {
         assert (tweediePower > 1 && tweediePower < 2);
         linkFunction = new IdentityFunction();
         distribution = params._distribution;
+    }
+    
+    public void setLinkFunction(LinkFunction lf){
+        this.linkFunction = lf;
     }
     
     /**
@@ -154,5 +158,8 @@ public abstract class Distribution extends Iced<Distribution> {
      */
     public double gammaDenom(double w, double y, double z, double f) {
         throw H2O.unimpl();
+    }
+    
+    public void reset(){
     }
 }

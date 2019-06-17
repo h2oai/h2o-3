@@ -1028,7 +1028,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     final private int _nclass;
     private double _num;
     private double _denom;
-    
 
     public  double initialValue() {
       if (_dist.distribution == DistributionFamily.multinomial || (_dist.distribution == DistributionFamily.custom && _nclass > 2))

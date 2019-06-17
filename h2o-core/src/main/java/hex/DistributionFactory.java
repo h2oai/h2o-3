@@ -435,29 +435,13 @@ class QuantileDistribution extends Distribution {
 class CustomDistribution extends Distribution {
     
     private CustomDistributionWrapper customDistribution;
-    private final String customDistributionFunc;
     
     public CustomDistribution(Model.Parameters params){
         super(params);
-        customDistributionFunc = params._custom_distribution_func;
-        customDistribution = new CustomDistributionWrapper(CFuncRef.from(customDistributionFunc));
+        customDistribution = new CustomDistributionWrapper(CFuncRef.from(params._custom_distribution_func));
         assert customDistribution != null;
         assert customDistribution.getFunc() != null;
-    }
-
-    @Override
-    public double link(double f) {
-        return customDistribution.getFunc().link(f);
-    }
-
-    @Override
-    public double linkInv(double f) {
-        return customDistribution.getFunc().inversion(f);
-    }
-
-    @Override
-    public String linkInvString(String f) { 
-        throw H2O.unimpl("POJO is not currently supported for custom distribution models."); 
+        this.setLinkFunction(LinkFunctionFactory.getLinkFunction(customDistribution.getFunc().link()));
     }
 
     @Override
@@ -497,6 +481,11 @@ class CustomDistribution extends Distribution {
         assert gamma.length == 2;
         return gamma[1];
     }
+
+    @Override
+    public void reset() {
+        customDistribution.setupLocal();
+    }
 }
 
 /**
@@ -511,6 +500,11 @@ class CustomDistributionWrapper extends CFuncObject<CDistributionFunc> {
     @Override
     protected Class<CDistributionFunc> getFuncType() {
         return CDistributionFunc.class;
+    }
+
+    @Override
+    protected void setupLocal() {
+        super.setupLocal();
     }
 }
 
