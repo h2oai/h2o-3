@@ -1,5 +1,6 @@
 package hex.genmodel.descriptor;
 
+import java.io.Serializable;
 
 /**
  * Represents model's variables and their relative importances in the model.
