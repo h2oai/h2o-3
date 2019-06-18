@@ -480,6 +480,57 @@ public class GLMBasicTestMultinomial extends TestUtil {
       if(preds != null)preds.delete();
     }
   }
+  
+  @Test
+  public void testMultinomialOctave() {
+    Scope.enter();
+    try {
+      Random generator = new Random();
+      Frame fr = parse_test_file("/Users/wendycwong/temp/debug_multinomial_glm/multinomial_3_cols_num_3_class_20Rows.csv");
+      Vec v = fr.remove("C4");
+      fr.add("C4", v.toCategoricalVec());
+      v.remove();
+      Scope.track(fr);
+      GLMParameters params = new GLMParameters(Family.multinomial);
+      params._response_column = fr._names[fr.numCols()-1];
+      params._ignored_columns = new String[]{};
+      params._train = fr._key;
+      params._lambda = new double[]{0.5};
+      params._alpha = new double[]{0.5};
+      params._solver = Solver.IRLSM_SPEEDUP;
+      int nclass = 3;
+
+      GLMModel.GLMWeightsFun glmw = new GLMModel.GLMWeightsFun(params);
+      DataInfo dinfo = new DataInfo(fr, null, 1, true, DataInfo.TransformType.STANDARDIZE,
+              DataInfo.TransformType.NONE, true, false, false, false,
+              false, false);
+      int ncoeffPClass = dinfo.fullN()+1;
+      double sumExp = 0;
+      double[] beta = new double[nclass*ncoeffPClass];
+      for (int ind = 0; ind < beta.length; ind++) {
+        beta[ind] = generator.nextDouble();
+      }
+      int P = dinfo.fullN();       // number of predictors
+      int N = dinfo.fullN() + 1;   // number of GLM coefficients per class
+      for (int i = 1; i < nclass; ++i)
+        sumExp += Math.exp(beta[i * N + P]);
+
+      Vec [] vecs = dinfo._adaptedFrame.anyVec().makeDoubles(2, new double[]{sumExp,0});  // store sum exp and maxRow
+      dinfo.addResponse(new String[]{"__glm_sumExp", "__glm_logSumExp"}, vecs);
+      Scope.track(vecs[0]);
+      Scope.track(vecs[1]);
+      // calculate Hessian, xy and likelihood manually
+      double[][] hessian = new double[beta.length][beta.length];
+      double[] xy = new double[beta.length];
+      double manualLLH = manualHessianXYLLH(beta, hessian, xy, dinfo, nclass, ncoeffPClass, fr.numCols()-1);
+      GLMTask.GLMIterationTask gmt = new GLMTask.GLMIterationTask(null,dinfo,glmw,beta,
+              nclass, true, null, ncoeffPClass).doAll(dinfo._adaptedFrame);
+
+
+    } finally {
+      Scope.exit();
+    }
+  }
 
   @Test
   public void testNaiveCoordinateDescent() {
