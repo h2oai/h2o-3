@@ -9,6 +9,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
+from h2o.utils.shared_utils import quoted
 from h2o.utils.typechecks import assert_is_type, Enum, numeric, is_type
 import json
 import ast
@@ -314,5 +315,9 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         def extend_parms(parms):
             if blending_frame is not None:
                 parms['blending_frame'] = blending_frame
+            if self.metalearner_fold_column is not None:
+                parms['ignored_columns'].remove(quoted(self.metalearner_fold_column))
 
-        super(self.__class__, self)._train(x, y, training_frame, extend_parms_fn=extend_parms, **kwargs)
+        super(self.__class__, self)._train(x, y, training_frame, 
+                                           extend_parms_fn=extend_parms, 
+                                           **kwargs)
