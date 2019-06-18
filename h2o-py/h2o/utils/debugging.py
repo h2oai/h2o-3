@@ -287,7 +287,7 @@ def _find_function_from_code(frame, code):
         for item in iterable:
             if item is None: continue
             found = None
-            if hasattr(item, "__code__") and item.__code__ == code:
+            if hasattr(item, "__code__") and ((code.__eq__(item.__code__)) is True):
                 found = item
             elif isinstance(item, type) or isinstance(item, ModuleType):  # class / module
                 try:
