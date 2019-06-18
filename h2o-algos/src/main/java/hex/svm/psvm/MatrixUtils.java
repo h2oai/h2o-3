@@ -1,4 +1,4 @@
-package hex.svm;
+package hex.svm.psvm;
 
 import water.MRTask;
 import water.fvec.Chunk;

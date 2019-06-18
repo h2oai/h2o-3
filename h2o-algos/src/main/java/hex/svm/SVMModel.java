@@ -5,6 +5,9 @@ import hex.genmodel.algos.h2osvm.KernelParameters;
 import hex.genmodel.algos.h2osvm.KernelType;
 import hex.genmodel.algos.h2osvm.ScorerFactory;
 import hex.genmodel.algos.h2osvm.SupportVectorScorer;
+import hex.svm.psvm.Kernel;
+import hex.svm.psvm.KernelFactory;
+import hex.svm.psvm.PrimalDualIPM;
 import water.Futures;
 import water.Key;
 import water.fvec.Frame;
@@ -85,7 +88,7 @@ public class SVMModel extends Model<SVMModel, SVMModel.SVMParameters, SVMModel.S
     public double _mu_factor = IPM_DEFAULTS._mu_factor;
 
     public Kernel kernel() {
-      return new GaussianKernel(kernelParms());
+      return KernelFactory.make(_kernel_type, kernelParms());
     }
     KernelParameters kernelParms() {
       KernelParameters kp = new KernelParameters();

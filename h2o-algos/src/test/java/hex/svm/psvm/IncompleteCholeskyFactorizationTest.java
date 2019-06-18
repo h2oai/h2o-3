@@ -1,4 +1,4 @@
-package hex.svm;
+package hex.svm.psvm;
 
 import org.junit.BeforeClass;
 import org.junit.Test;

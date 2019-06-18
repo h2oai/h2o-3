@@ -1,4 +1,19 @@
-package hex.svm;
+/*
+Copyright 2007 Google Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+package hex.svm.psvm;
 
 import water.Iced;
 import water.MRTask;
@@ -13,9 +28,9 @@ import water.util.Log;
  *    https://code.google.com/archive/p/psvm/source/default/source
  *    original code: Copyright 2007 Google Inc., Apache License, Version 2.0   
  */
-class PrimalDualIPM {
+public class PrimalDualIPM {
 
-  static Vec solve(Frame rbicf, Vec label, Parms params) {
+  public static Vec solve(Frame rbicf, Vec label, Parms params) {
     checkLabel(label);
 
     Frame volatileWorkspace = makeVolatileWorkspace(label,
@@ -495,26 +510,26 @@ class PrimalDualIPM {
     }
   }
 
-  static class Parms {
+  public static class Parms {
     
-    Parms() {
+    public Parms() {
       super();
     }
-    
-    Parms(double c_pos, double c_neg) {
+
+    public Parms(double c_pos, double c_neg) {
       _c_pos = c_pos;
       _c_neg = c_neg;
     }
-    
-    int _max_iter = 200;
-    double _mu_factor = 10.0;
-    double _tradeoff = 0;
-    double _feasible_threshold = 1.0e-3;
-    double _sgap_threshold = 1.0e-3;
-    double _x_epsilon = 1.0e-9;
 
-    double _c_neg = Double.NaN;
-    double _c_pos = Double.NaN;
+    public int _max_iter = 200;
+    public double _mu_factor = 10.0;
+    public double _tradeoff = 0;
+    public double _feasible_threshold = 1.0e-3;
+    public double _sgap_threshold = 1.0e-3;
+    public double _x_epsilon = 1.0e-9;
+
+    public double _c_neg = Double.NaN;
+    public double _c_pos = Double.NaN;
   }
 
   private static Frame makeVolatileWorkspace(Vec blueprintVec, String... names) {

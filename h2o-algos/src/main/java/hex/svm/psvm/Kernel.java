@@ -13,10 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package hex.svm;
+package hex.svm.psvm;
 
 import hex.DataInfo;
 import hex.genmodel.algos.h2osvm.KernelParameters;
+import hex.genmodel.algos.h2osvm.KernelType;
 import water.Freezable;
 import water.Iced;
 
@@ -25,7 +26,7 @@ public interface Kernel extends Freezable {
   double calcKernelWithLabel(DataInfo.Row a, DataInfo.Row b);
 
   double calcKernel(DataInfo.Row a, DataInfo.Row b);
-
+  
 }
 
 final class GaussianKernel extends Iced implements Kernel {
