@@ -26,13 +26,13 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yates/5/index.
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6515'>PUBDEV-6515</a>] - Fixed an issue that caused MOJO loading to fail when categorical values contained a newline character.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6530'>PUBDEV-6530</a>] - Users can now export a file directly to a compressed format (gzip) and choose a delimiter. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6530'>PUBDEV-6530</a>] - Users can now export a file directly to a compressed format (gzip) and choose a delimiter.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6548'>PUBDEV-6548</a>] - Users can now specify which certificate alias to use when starting H2O with SSL. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6582'>PUBDEV-6582</a>] - Added Conda install instructions to the download page.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6591'>PUBDEV-6591</a>] - Users can now specify a custom separator for CSV export. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6591'>PUBDEV-6591</a>] - Users can now specify a custom separator for CSV export. 
 </li>
 </ul>
 
@@ -77,13 +77,13 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yates/5/index.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6473'>PUBDEV-6473</a>] - Added Target Encoding options to the Parameters appendix.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6516'>PUBDEV-6516</a>] - Updated the description for the Tweedie family in the User Guide and in the GLM booklet. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6516'>PUBDEV-6516</a>] - Updated the description for the Tweedie family in the User Guide and in the GLM booklet.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6537'>PUBDEV-6537</a>] - Removed ologlog and oprobit from list of `link` options that can be specified in GLM.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6568'>PUBDEV-6568</a>] - Upated documentation to indicate that predict_leaf_node_assignment is not supported with XGBoost.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6596'>PUBDEV-6596</a>] - Added the new `-jks_alias` option to list of options that can be specified when starting H2O. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6596'>PUBDEV-6596</a>] - Added the new `-jks_alias` option to list of options that can be specified when starting H2O.
 </li>
 </ul>
 
