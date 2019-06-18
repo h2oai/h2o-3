@@ -615,12 +615,12 @@ public final class AutoBuffer {
         if( _is != null ) _bb.position(_bb.position()+res); // Advance BB for Streams manually
         _size += res;            // What we read
       } catch( IOException e ) { // Dunno how to handle so crash-n-burn
-          // Linux/Ubuntu message for a reset-channel
-          if("An existing connection was forcibly closed by the remote host".equals(e.getMessage()))
-            throw new AutoBufferException(e);
-          // Windows message for a reset-channel
-          if("An established connection was aborted by the software in your host machine".equals(e.getMessage()))
-            throw new AutoBufferException(e);
+        // Linux/Ubuntu message for a reset-channel
+        if("An existing connection was forcibly closed by the remote host".equals(e.getMessage()))
+          throw new AutoBufferException(e);
+        // Windows message for a reset-channel
+        if("An established connection was aborted by the software in your host machine".equals(e.getMessage()))
+          throw new AutoBufferException(e);
         throw Log.throwErr(e);
       }
     }
