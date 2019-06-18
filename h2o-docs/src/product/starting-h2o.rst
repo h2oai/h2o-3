@@ -277,6 +277,7 @@ Authentication Options
 
 -  ``-jks <filename>``: Specify a Java keystore file.
 -  ``-jks_pass <password>``: Specify the Java keystore password.
+-  ``-jks_alias <alias>``: Optional, use if the keystore has multiple certificates and you want to use a specific one.
 -  ``-hash_login``: Specify to use Jetty HashLoginService. This defaults to False.
 -  ``-ldap_login``: Specify to use Jetty LdapLoginService. This defaults to False.
 -  ``-kerberos_login``: Specify to use Kerberos LoginService. This defaults to False.

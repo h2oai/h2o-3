@@ -66,31 +66,6 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
     return true;
   }
 
-  @Override
-  public void init(boolean expensive) {
-    super.init(expensive);
-
-    checkFoldColumnPresent(_parms._metalearner_fold_column, train(), valid(), _parms.blending());
-  }
-
-  /**
-   * Checks for presence of a fold column in given {@link Frame}s. Null fold column means no checks are done.
-   *
-   * @param foldColumnName Name of the fold column. Null means no fold column has been specified
-   * @param frames         A list of frames to check the presence of fold column in
-   */
-  private static void checkFoldColumnPresent(final String foldColumnName, final Frame... frames) {
-    if (foldColumnName == null) return; // Unspecified fold column implies no checks are needs on provided frames 
-
-    for (Frame frame : frames) {
-      if (frame == null) continue; // No frame provided, no checks required
-      if (frame.vec(foldColumnName) == null) {
-        throw new IllegalArgumentException(String.format("Specified fold column '%s' not found in one of the supplied data frames. Available column names are: %s",
-                foldColumnName, Arrays.toString(frame.names())));
-      }
-    }
-  }
-
   static void addModelPredictionsToLevelOneFrame(Model aModel, Frame aModelsPredictions, Frame levelOneFrame) {
     if (aModel._output.isBinomialClassifier()) {
       // GLM uses a different column name than the other algos
