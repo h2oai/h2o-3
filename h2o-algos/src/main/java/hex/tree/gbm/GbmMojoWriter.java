@@ -27,8 +27,9 @@ public class GbmMojoWriter extends SharedTreeMojoWriter<GBMModel, GBMModel.GBMPa
   @Override
   protected void writeModelData() throws IOException {
     super.writeModelData();
-    writekv("distribution", model._dist.distribution);
-    writekv("link_function", model._dist.linkFunction.linkFunctionType);
+    Distribution dist = DistributionFactory.getDistribution(model._parms);
+    writekv("distribution", dist.distribution);
+    writekv("link_function", dist.linkFunction.linkFunctionType);
     writekv("init_f", model._output._init_f);
     writekv("offset_column", "null");  // Not known yet
   }
