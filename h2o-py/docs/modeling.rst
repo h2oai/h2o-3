@@ -55,6 +55,12 @@ Supervised
     :show-inheritance:
     :members:
 
+:mod:`H2OSupportVectorMachinesEstimator`
+----------------------------------------
+.. autoclass:: h2o.estimators.svm.H2OSupportVectorMachinesEstimator
+    :show-inheritance:
+    :members:
+
 :mod:`H2OXGBoostEstimator`
 --------------------------
 .. autoclass:: h2o.estimators.xgboost.H2OXGBoostEstimator

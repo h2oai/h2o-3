@@ -58,6 +58,7 @@ public class IncompleteCholeskyFactorization {
                   ". Trace value = " + fp._trace + " (convergence threshold = " + threshold + ").");
           break;
         }
+        Log.info("ICF Iteration " + i + ": trace: " + fp._trace);
 
         Vec newCol = frame.anyVec().makeZero();
         icf.add("C" + (i + 1), newCol);

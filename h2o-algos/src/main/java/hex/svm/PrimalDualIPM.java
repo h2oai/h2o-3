@@ -49,10 +49,11 @@ class PrimalDualIPM {
     for (int iter = 0; iter < params._max_iter; iter++) {
       final double eta = new SurrogateGapTask(params).doAll(workspace)._sum;
       final double t = (params._mu_factor * num_constraints) / eta;
-      Log.debug("Surrogate gap: " + eta + " t: " + t);
+      Log.info("Surrogate gap before iteration " + iter + ": " + eta + "; t: " + t);
 
       computePartialZ(rbicf, x, params._tradeoff, z);
       CheckConvergenceTask cct = new CheckConvergenceTask(params, nu).doAll(workspace);
+      Log.info("Residual (primal): " + cct._resp + "; residual (dual): " + cct._resd + ". Feasible threshold: " + params._feasible_threshold);
       converged = cct._resp <= params._feasible_threshold && cct._resd <= params._feasible_threshold && eta <= params._sgap_threshold;
       if (converged) {
         break;
