@@ -15,8 +15,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yates/5/index.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6549'>PUBDEV-6549</a>] - ClearDKVTask now detects shared resources when deleting frames and models.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6592'>PUBDEV-6592</a>] - Fixed a TypeError in Python debugging. (STILL OPEN)
-</li>
 </ul>
 
 <h4>New Feature</h4>
