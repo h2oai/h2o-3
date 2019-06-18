@@ -1,4 +1,19 @@
-package hex.svm;
+/*
+Copyright 2007 Google Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+package hex.svm.psvm;
 
 import hex.DataInfo;
 import water.*;
@@ -21,7 +36,7 @@ public class IncompleteCholeskyFactorization {
     return icf(di._adaptedFrame, di, kernel, n, threshold);
   }
   
-  public static Frame icf(Frame frame, String response, Kernel kernel, int n, double threshold) {
+  static Frame icf(Frame frame, String response, Kernel kernel, int n, double threshold) {
     Frame adapted = new Frame(frame);
     try {
       adapted.add(response, adapted.remove(response)); // make response to the last column

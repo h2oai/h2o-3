@@ -1,4 +1,4 @@
-package hex.svm;
+package hex.svm.psvm;
 
 import Jama.CholeskyDecomposition;
 import Jama.Matrix;
