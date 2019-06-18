@@ -9,8 +9,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yates/5/index.
 <h4>Bug</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6112'>PUBDEV-6112</a>] - Fixed a Null Pointer Exception with StackedEnsemble models in AutoML.
-</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6387'>PUBDEV-6387</a>] - Fixed a segmentation fault that occurred when running XGBoost with `booster=gblinear`.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6534'>PUBDEV-6534</a>] - Users can now rbind two frames when one frame contains all missing values in some of its columns.
