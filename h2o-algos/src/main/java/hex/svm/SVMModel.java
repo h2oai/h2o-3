@@ -70,6 +70,7 @@ public class SVMModel extends Model<SVMModel, SVMModel.SVMParameters, SVMModel.S
     public double _negative_weight = 1.0;
     public double _sv_threshold = 1.0e-4;
     public double _zero_threshold = 1.0e-9; // not exposed
+    public boolean _disable_training_metrics = true;
 
     // Kernel
     public KernelType _kernel_type = KernelType.gaussian;

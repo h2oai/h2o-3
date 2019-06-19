@@ -181,6 +181,9 @@ public class SVM extends ModelBuilder<SVMModel, SVMModel.SVMParameters, SVMModel
           assert (svs.length() > sampleSize) || model._output._compressed_svs.length == estimatedSize; // sanity check - small models should have precise estimate
         } else {
           Log.err("Estimated model size (" + estimatedSize + "B) exceeds limits of DKV. Support vectors will not be stored.");
+          model.addWarning("Model too big (size " + estimatedSize + "B) exceeds maximum model size. " +
+                  "Support vectors will not be stored as a part of the model. You can still inspect what vectors were " +
+                  "chosen and what are their alpha coefficients (see Frame alpha in model output).");
           model._output._compressed_svs = new byte[0];
         }
 
@@ -189,11 +192,16 @@ public class SVM extends ModelBuilder<SVMModel, SVMModel.SVMParameters, SVMModel
         model.update(_job);
 
         if (! tooBig) {
-          _job.update(0,"Scoring training frame");
-          Frame scoringTrain = new Frame(train());
-          model.adaptTestForTrain(scoringTrain, true, true);
-          model._output._training_metrics = model.makeModelMetrics(train(), scoringTrain, "Training metrics");
-          
+          if (_parms._disable_training_metrics) {
+            String noMetricsWarning = "Not creating training metrics: scoring disabled (use disable_training_metrics = false to override)";
+            Log.warn(noMetricsWarning);
+            model.addWarning(noMetricsWarning);
+          } else {
+            _job.update(0, "Scoring training frame");
+            Frame scoringTrain = new Frame(train());
+            model.adaptTestForTrain(scoringTrain, true, true);
+            model._output._training_metrics = model.makeModelMetrics(train(), scoringTrain, "Training metrics");
+          }
           if (valid() != null) {
             _job.update(0,"Scoring validation frame");
             Frame scoringValid = new Frame(valid());

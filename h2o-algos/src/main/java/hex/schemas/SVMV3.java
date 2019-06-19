@@ -22,6 +22,7 @@ public class SVMV3 extends ModelBuilderSchema<SVM, SVMV3, SVMV3.SVMParametersV3>
             "rank_ratio",
             "positive_weight",
             "negative_weight",
+            "disable_training_metrics",
             "sv_threshold",
             "fact_threshold",
             "feasible_threshold",
@@ -49,6 +50,9 @@ public class SVMV3 extends ModelBuilderSchema<SVM, SVMV3, SVMV3.SVMParametersV3>
     @API(help = "Weight of positive (-1) class of observations")
     public double negative_weight;
 
+    @API(help = "Disable calculating training metrics (expensive on large datasets)")
+    public boolean disable_training_metrics;
+    
     @API(help = "Threshold for accepting a candidate observation into the set of support vectors", level = API.Level.secondary)
     public double sv_threshold;
 

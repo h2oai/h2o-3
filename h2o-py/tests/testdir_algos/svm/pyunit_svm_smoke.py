@@ -8,7 +8,7 @@ from h2o.estimators.svm import H2OSupportVectorMachinesEstimator
 
 def svm_smoke():
     splice = h2o.import_file(pyunit_utils.locate("smalldata/splice/splice.svm"))
-    svm = H2OSupportVectorMachinesEstimator(gamma=0.01, rank_ratio=0.1)
+    svm = H2OSupportVectorMachinesEstimator(gamma=0.01, rank_ratio=0.1, disable_training_metrics=False)
     svm.train(y="C1", training_frame=splice)
 
     pred = svm.predict(test_data=splice)
