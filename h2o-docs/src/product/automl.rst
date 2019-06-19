@@ -126,6 +126,8 @@ Optional Miscellaneous Parameters
 
 - `keep_cross_validation_fold_assignment <data-science/algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment.  Defaults to FALSE.
 
+- **verbosity**: (Optional: Python and R only) The verbosity of the backend messages printed during training. Must be one of ``"debug", "info", "warn"``. Defaults to ``NULL/None`` (client logging disabled).
+
 
 Notes
 ~~~~~
@@ -339,6 +341,10 @@ Here is an example leaderboard for a binary classification task:
 +--------------------------------------------------------+-----------+-----------+----------------------+-----------+-----------+
 
 
+When using Python or R clients, you can also access meta information with the following AutoML object properties:
+
+- **event_log**: an ``H2OFrame`` with selected AutoML backend events generated during training.
+- **training_info**: a dictionary exposing data that could be useful for post-analysis; for example various timings.
 
 
 
