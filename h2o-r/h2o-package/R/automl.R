@@ -342,7 +342,7 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
   should_fetch <- function(prop) is.null(properties) | prop %in% properties
 
   if (should_fetch('leaderboard')) {
-    leaderboard <- .automl.fetch_table(leaderboard, destination_frame=.key.make('leaderboard'), show_progress=FALSE)
+    leaderboard <- .automl.fetch_table(leaderboard, destination_frame=paste0(project_name, '_leaderboard'), show_progress=FALSE)
     # If the leaderboard is empty, it creates a dummy row so let's remove it
     if (leaderboard$model_id[1,1] == "") {
       leaderboard <- leaderboard[-1,]
@@ -362,7 +362,7 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
 
   if (should_fetch('event_log')) {
     event_log <- as.data.frame(automl_job["event_log_table"]$event_log_table)
-    event_log <- .automl.fetch_table(event_log, destination_frame=.key.make('eventlog'), show_progress=FALSE)
+    event_log <- .automl.fetch_table(event_log, destination_frame=paste0(project_name, '_eventlog'), show_progress=FALSE)
     # row.names(event_log) <- seq(nrow(event_log))
   } else {
     event_log <- NULL
