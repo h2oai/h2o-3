@@ -14,9 +14,12 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
+import water.util.TwoDimTable;
 import water.util.VecUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class SVM extends ModelBuilder<SVMModel, SVMModel.SVMParameters, SVMModel.SVMModelOutput> {
 
@@ -141,7 +144,8 @@ public class SVM extends ModelBuilder<SVMModel, SVMModel.SVMParameters, SVMModel
         Scope.track(icf);
 
         _job.update(0, "Running IPM");
-        Vec alpha = PrimalDualIPM.solve(icf, response, _parms.ipmParms());
+        IPMInfo ipmInfo = new IPMInfo();
+        Vec alpha = PrimalDualIPM.solve(icf, response, _parms.ipmParms(), ipmInfo);
         icf.remove();
         Log.info("IPM finished");
 
@@ -188,7 +192,8 @@ public class SVM extends ModelBuilder<SVMModel, SVMModel.SVMParameters, SVMModel
         }
 
         Log.info("Total #support vectors: " + model._output._svs_count + " (size in memory " + estimatedSize + "B)");
-        
+        model._output._model_summary = createModelSummaryTable(model._output, ipmInfo);
+
         model.update(_job);
 
         if (! tooBig) {
@@ -439,6 +444,61 @@ public class SVM extends ModelBuilder<SVMModel, SVMModel.SVMParameters, SVMModel
       o._svs_count = _svs_count;
       o._bsv_count = _bsv_count;
       return outputFrame().vec(0);
+    }
+  }
+
+  private static TwoDimTable createModelSummaryTable(SVMModel.SVMModelOutput output, IPMInfo ipmInfo) {
+    List<String> colHeaders = new ArrayList<>();
+    List<String> colTypes = new ArrayList<>();
+    List<String> colFormat = new ArrayList<>();
+
+    colHeaders.add("Number of Support Vectors"); colTypes.add("long"); colFormat.add("%d");
+    colHeaders.add("Number of Bounded Support Vectors"); colTypes.add("long"); colFormat.add("%d");
+    colHeaders.add("Raw Model Size in Bytes"); colTypes.add("long"); colFormat.add("%d");
+    colHeaders.add("rho"); colTypes.add("double"); colFormat.add("%.5f");
+
+    colHeaders.add("Number of Iterations"); colTypes.add("long"); colFormat.add("%d");
+    colHeaders.add("Surrogate Gap"); colTypes.add("double"); colFormat.add("%.5f");
+    colHeaders.add("Primal Residual"); colTypes.add("double"); colFormat.add("%.5f");
+    colHeaders.add("Dual Residual"); colTypes.add("double"); colFormat.add("%.5f");
+
+    final int rows = 1;
+    TwoDimTable table = new TwoDimTable(
+            "Model Summary", null,
+            new String[rows],
+            colHeaders.toArray(new String[0]),
+            colTypes.toArray(new String[0]),
+            colFormat.toArray(new String[0]),
+            "");
+    int row = 0;
+    int col = 0;
+    table.set(row, col++, output._svs_count);
+    table.set(row, col++, output._bsv_count);
+    table.set(row, col++, output._compressed_svs != null ? output._compressed_svs.length : -1);
+    table.set(row, col++, output._rho);
+    table.set(row, col++, ipmInfo._iter);
+    table.set(row, col++, ipmInfo._sgap);
+    table.set(row, col++, ipmInfo._resp);
+    table.set(row, col++, ipmInfo._resd);
+    assert col == colHeaders.size();
+
+    return table;
+  }
+
+  private static class IPMInfo implements PrimalDualIPM.ProgressObserver {
+    int _iter;
+    double _sgap;
+    double _resp;
+    double _resd;
+    boolean _converged;
+
+    @Override
+    public void reportProgress(int iter, double sgap, double resp, double resd, boolean converged) {
+      _iter = iter;
+      _sgap = sgap;
+      _resp = resp;
+      _resd = resd;
+      _converged = converged;
     }
   }
 

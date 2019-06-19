@@ -13,8 +13,8 @@ public class SVMModelV3 extends ModelSchemaV3<SVMModel, SVMModelV3, SVMModel.SVM
     public long svs_count;
     @API(help = "Number of bounded support vectors")
     public long bsv_count;
-    @API(help = "B")
-    public double intersect;
+    @API(help = "rho")
+    public double rho;
     @API(help = "Weights of support vectors")
     public KeyV3.FrameKeyV3 alpha_key;
   } // SVMModelOutputV3

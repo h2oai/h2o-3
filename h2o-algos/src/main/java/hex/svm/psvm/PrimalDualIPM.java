@@ -30,19 +30,19 @@ import water.util.Log;
  */
 public class PrimalDualIPM {
 
-  public static Vec solve(Frame rbicf, Vec label, Parms params) {
+  public static Vec solve(Frame rbicf, Vec label, Parms params, ProgressObserver observer) {
     checkLabel(label);
 
     Frame volatileWorkspace = makeVolatileWorkspace(label,
             "z", "xi", "dxi", "la", "dla", "tlx", "tux", "xilx", "laux", "d", "dx");
     try {
-      return solve(rbicf, label, params, volatileWorkspace);
+      return solve(rbicf, label, params, volatileWorkspace, observer);
     } finally {
       volatileWorkspace.remove();
     }
   }
 
-  private static Vec solve(Frame rbicf, Vec label, Parms params, Frame volatileWorkspace) {
+  private static Vec solve(Frame rbicf, Vec label, Parms params, Frame volatileWorkspace, ProgressObserver observer) {
     Frame workspace = new Frame(new String[]{"label"}, new Vec[]{label});
     workspace.add("x", label.makeZero());
     workspace.add(volatileWorkspace);
@@ -70,6 +70,9 @@ public class PrimalDualIPM {
       CheckConvergenceTask cct = new CheckConvergenceTask(params, nu).doAll(workspace);
       Log.info("Residual (primal): " + cct._resp + "; residual (dual): " + cct._resd + ". Feasible threshold: " + params._feasible_threshold);
       converged = cct._resp <= params._feasible_threshold && cct._resd <= params._feasible_threshold && eta <= params._sgap_threshold;
+      if (observer != null) {
+        observer.reportProgress(iter, eta, cct._resp, cct._resd, converged);
+      }
       if (converged) {
         break;
       }
@@ -535,5 +538,9 @@ public class PrimalDualIPM {
   private static Frame makeVolatileWorkspace(Vec blueprintVec, String... names) {
     return new Frame(names, blueprintVec.makeVolatileDoubles(names.length));
   }
-    
+
+  public interface ProgressObserver {
+    void reportProgress(int iter, double sgap, double resp, double resd, boolean converged);
+  }
+
 }
