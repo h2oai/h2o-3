@@ -344,8 +344,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     runCountdown.stop();
     eventLog().info(Stage.Workflow, "AutoML build stopped: " + EventLogEntry.dateTimeFormat.format(runCountdown.stop_time()))
             .setNamedValue("stop_epoch", runCountdown.stop_time(), EventLogEntry.epochFormat);
-    eventLog().info(Stage.Workflow, "AutoML build done: built " + modelCount + " models")
-            .setNamedValue("model_count", modelCount);
+    eventLog().info(Stage.Workflow, "AutoML build done: built " + modelCount + " models");
     eventLog().info(Stage.Workflow, "AutoML duration: "+ PrettyPrint.msecs(runCountdown.duration(), true))
             .setNamedValue("duration_secs", Math.round(runCountdown.duration() / 1000.));
 

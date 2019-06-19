@@ -26,9 +26,7 @@ def test_event_log():
     now = dt.datetime.now()
     assert stop_dt.day == now.day
     assert stop_dt.hour == now.hour
-
-    print(aml.leaderboard.nrows)
-    assert int(aml.training_info['model_count']) == aml.leaderboard.nrows
+    assert abs(int(aml.training_info['duration_secs']) - (int(aml.training_info['stop_epoch']) - int(aml.training_info['start_epoch']))) < 1
 
 
 def test_train_verbosity():
