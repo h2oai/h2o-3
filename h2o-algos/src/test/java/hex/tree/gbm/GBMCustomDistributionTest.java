@@ -26,7 +26,7 @@ public class GBMCustomDistributionTest extends TestUtil {
 
     @Test
     public void testCustomDistribution() throws Exception {
-        Frame fr = null;
+        Frame fr = null, fr2 = null;
         GBMModel gbm_default = null;
         GBMModel gbm_custom = null;
         final CFuncRef func = bernoulliCustomDistribution();
@@ -40,16 +40,26 @@ public class GBMCustomDistributionTest extends TestUtil {
 
             System.out.println("Creating default model GBM...");
             GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+            parms = new GBMModel.GBMParameters();
             parms._train = fr._key;
-            parms._response_column = "y"; 
+            parms._response_column = "y";
             parms._distribution = DistributionFamily.bernoulli;
             gbm_default = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
 
+            fr2 = parse_test_file("./smalldata/gbm_test/alphabet_cattest.csv");
+            int idx2 = fr2.find("y");
+            if (!fr2.vecs()[idx2].isCategorical()) {
+                Scope.track(fr2.replace(idx2, fr2.vecs()[idx2].toCategoricalVec()));
+            }
+            
             System.out.println("Creating custom distribution model GBM...");
+            parms = new GBMModel.GBMParameters();
+            parms._train = fr2._key;
             parms._distribution = DistributionFamily.custom;
             parms._custom_distribution_func = func.toRef();
+            parms._response_column = "y";
             gbm_custom = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
-
+            
             System.out.println("Test MSE is the same for default (" + gbm_default._output._training_metrics.mse() + ") and custom (" + gbm_custom._output._training_metrics.mse() + ")");
             Assert.assertEquals(gbm_default._output._training_metrics.mse(), gbm_custom._output._training_metrics.mse(), 1e-4);
 
@@ -80,7 +90,7 @@ public class GBMCustomDistributionTest extends TestUtil {
                 System.out.println("Catch illegal argument exception.");
             }
         } finally {
-            FrameUtils.delete(fr, gbm_default, gbm_custom);
+            FrameUtils.delete(fr, fr2,  gbm_default, gbm_custom);
             DKV.remove(func.getKey());
             Scope.exit();
         }
