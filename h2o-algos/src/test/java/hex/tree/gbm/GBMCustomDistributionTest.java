@@ -20,12 +20,16 @@ import static water.udf.JFuncUtils.loadTestFunc;
 public class GBMCustomDistributionTest extends TestUtil {
 
     @BeforeClass
-    static public void setup() { stall_till_cloudsize(1); }
+    static public void setup() {
+        stall_till_cloudsize(1);
+    }
 
     @Test
     public void testCustomDistribution() throws Exception {
+        Frame fr = null;
+        GBMModel gbm_default = null;
+        GBMModel gbm_custom = null;
         final CFuncRef func = bernoulliCustomDistribution();
-        Frame fr = null; GBMModel gbm_default = null; GBMModel gbm_custom = null;
         try {
             Scope.enter();
             fr = parse_test_file("./smalldata/gbm_test/alphabet_cattest.csv");
@@ -49,8 +53,23 @@ public class GBMCustomDistributionTest extends TestUtil {
             parms._custom_distribution_func = func.toRef();
             gbm_custom = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
 
+            System.out.println("Test MSE is the same for default (" + gbm_default._output._training_metrics.mse() + ") and custom (" + gbm_custom._output._training_metrics.mse() + ")");
             Assert.assertEquals(gbm_default._output._training_metrics.mse(), gbm_custom._output._training_metrics.mse(), 1e-4);
+
+            System.out.println("Test RMSE is the same for default (" + gbm_default._output._training_metrics.rmse() + ") and custom (" + gbm_custom._output._training_metrics.rmse() + ")");
+            Assert.assertEquals(gbm_default._output._training_metrics.rmse(), gbm_custom._output._training_metrics.rmse(), 1e-4);
+
+            System.out.println("Test AUC is the same for default (" + gbm_default._output._training_metrics.auc_obj()._auc + ") and custom (" + gbm_custom._output._training_metrics.auc_obj()._auc + ")");
             Assert.assertEquals(gbm_default._output._training_metrics.auc_obj()._auc, gbm_custom._output._training_metrics.auc_obj()._auc, 1e-4);
+
+            System.out.println("Test accuracy is the same for default (" + gbm_default._output._training_metrics.cm().accuracy() + ") and custom (" + gbm_custom._output._training_metrics.cm().accuracy() + ")");
+            Assert.assertEquals(gbm_default._output._training_metrics.cm().accuracy(), gbm_custom._output._training_metrics.cm().accuracy(), 1e-4);
+
+            System.out.println("Test precision is the same for default (" + gbm_default._output._training_metrics.cm().precision() + ") and custom (" + gbm_custom._output._training_metrics.cm().precision() + ")");
+            Assert.assertEquals(gbm_default._output._training_metrics.cm().precision(), gbm_custom._output._training_metrics.cm().precision(), 1e-4);
+
+            System.out.println("Test recall is the same for default (" + gbm_default._output._training_metrics.cm().recall() + ") and custom (" + gbm_custom._output._training_metrics.cm().recall() + ")");
+            Assert.assertEquals(gbm_default._output._training_metrics.cm().recall(), gbm_custom._output._training_metrics.cm().recall(), 1e-4);
 
             try {
                 System.out.println("Creating custom distribution model GBM wrong setting...");
@@ -60,18 +79,16 @@ public class GBMCustomDistributionTest extends TestUtil {
                 parms._distribution = DistributionFamily.custom;
                 parms._custom_distribution_func = null;
                 gbm_custom = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
-            } catch (H2OModelBuilderIllegalArgumentException ex){
+            } catch (H2OModelBuilderIllegalArgumentException ex) {
                 System.out.println("Catch illegal argument exception.");
             }
-            
-            
-        }  finally {
+        } finally {
             FrameUtils.delete(fr, gbm_default, gbm_custom);
             DKV.remove(func.getKey());
             Scope.exit();
         }
     }
-    
+
     private CFuncRef bernoulliCustomDistribution() throws IOException {
         return loadTestFunc("customDistribution.key", TestBernoulliCustomDistribution.class);
     }

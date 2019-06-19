@@ -1020,20 +1020,28 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   // Helper MRTask to compute the initial value
   private static class InitialValue extends MRTask<InitialValue> {
-    public  InitialValue(Model.Parameters parms, int nclass) { 
-      _dist = DistributionFactory.getDistribution(parms);
+    public  InitialValue(Model.Parameters parms, int nclass) {
       _nclass = nclass;
+      _dist = DistributionFactory.getDistribution(parms);
     }
-    final private Distribution _dist;
+    
+    private Distribution _dist;
     final private int _nclass;
     private double _num;
     private double _denom;
+
+    @Override
+    protected void setupLocal() {
+        super.setupLocal();
+        _dist.reset();
+    }
 
     public  double initialValue() {
       if (_dist.distribution == DistributionFamily.multinomial || (_dist.distribution == DistributionFamily.custom && _nclass > 2))
         return -0.5*DistributionFactory.getDistribution(DistributionFamily.bernoulli).link(_num/_denom);
       else return _dist.link(_num / _denom);
     }
+    
     @Override public void map(Chunk response, Chunk weight, Chunk offset) {
       for (int i=0;i<response._len;++i) {
         if (response.isNA(i)) continue;
