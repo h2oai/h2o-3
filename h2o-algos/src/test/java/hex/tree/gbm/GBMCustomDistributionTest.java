@@ -41,14 +41,11 @@ public class GBMCustomDistributionTest extends TestUtil {
             System.out.println("Creating default model GBM...");
             GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
             parms._train = fr._key;
-            parms._response_column = "y"; // Train on the outcome
+            parms._response_column = "y"; 
             parms._distribution = DistributionFamily.bernoulli;
             gbm_default = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
 
             System.out.println("Creating custom distribution model GBM...");
-            parms = new GBMModel.GBMParameters();
-            parms._train = fr._key;
-            parms._response_column = "y"; // Train on the outcome
             parms._distribution = DistributionFamily.custom;
             parms._custom_distribution_func = func.toRef();
             gbm_custom = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());

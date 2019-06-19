@@ -1,9 +1,9 @@
 package hex;
 
-import sun.awt.image.ImageWatched;
 import water.Iced;
 
 import hex.genmodel.utils.LinkFunctionType;
+import org.apache.commons.math3.distribution.NormalDistribution;
 
 /**
  * Link function class to calculate link, link inverse and string link inverse functions.
@@ -176,18 +176,22 @@ class OloglogFunction extends LinkFunction {
 
 class OprobitFunction extends LinkFunction {
 
+    org.apache.commons.math3.distribution.NormalDistribution normalDistribution;
+
     public OprobitFunction(){
         linkFunctionType = LinkFunctionType.oprobit;
+        normalDistribution = new NormalDistribution(0, 1);
     }
 
     @Override
-    public double link(double f) { return 0; }
+    public double link(double f) { return normalDistribution.inverseCumulativeProbability(f); }
 
     @Override
-    public double linkInv(double f) { return 0; }
+    public double linkInv(double f) { return normalDistribution.cumulativeProbability(f); }
 
     @Override
-    public String linkInvString(String f) { return "0";
+    public String linkInvString(String f) { 
+        return "new org.apache.commons.math3.distribution.NormalDistribution(0, 1).cumulativeProbability("+f+");"; 
     }
 }
 
