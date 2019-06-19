@@ -10,6 +10,7 @@ import hex.svm.psvm.KernelFactory;
 import hex.svm.psvm.PrimalDualIPM;
 import water.Futures;
 import water.Key;
+import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.util.Log;
 
@@ -34,14 +35,58 @@ public class SVMModel extends Model<SVMModel, SVMModel.SVMParameters, SVMModel.S
 
   @Override
   protected double[] score0(double[] data, double[] preds) {
-    double pred = getScorer().score0(data) + _output._rho;
+    double svScore = getScorer().score0(data);
+    return makePreds(svScore, preds);
+  }
+
+  private double[] makePreds(double svScore, double[] preds) {
+    double pred = svScore + _output._rho;
     int label = pred < 0 ? 0 : 1;
     preds[0] = label;
     preds[1 + label] = 1;
     preds[2 - label] = 0;
     return preds;
   }
+  
+  @Override
+  protected BigScorePredict setupBigScorePredict(BigScore bs) {
+    BulkSupportVectorScorer bulkScorer = BulkScorerFactory.makeScorer(
+            _parms._kernel_type, _parms.kernelParms(), _output._compressed_svs, (int) _output._svs_count, true);
+    return new SVMBigScorePredict(bulkScorer);
+  }
 
+  private class SVMBigScorePredict implements BigScorePredict {
+    private BulkSupportVectorScorer _bulkScorer;
+
+    SVMBigScorePredict(BulkSupportVectorScorer bulkScorer) {
+      _bulkScorer = bulkScorer;
+    }
+
+    @Override
+    public BigScoreChunkPredict initMap(Frame fr, Chunk[] chks) {
+      double[] scores = _bulkScorer.bulkScore0(chks);
+      return new SVMBigScoreChunkPredict(scores);
+    }
+  }
+  
+  private class SVMBigScoreChunkPredict implements BigScoreChunkPredict {
+    private final double[] _scores;
+
+    private SVMBigScoreChunkPredict(double[] scores) {
+      _scores = scores;
+    }
+
+    @Override
+    public double[] score0(Chunk[] chks, double offset, int row_in_chunk, double[] tmp, double[] preds) {
+      return makePreds(_scores[row_in_chunk], preds);
+    }
+
+    @Override
+    public void close() {
+      // nothing to do
+    } 
+  }
+  
   private SupportVectorScorer getScorer() {
     SupportVectorScorer svs = _scorer;
     if (svs == null) {

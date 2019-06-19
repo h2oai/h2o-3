@@ -1,6 +1,8 @@
 package hex.svm;
 
 import hex.*;
+import hex.genmodel.algos.h2osvm.ScorerFactory;
+import hex.genmodel.algos.h2osvm.SupportVectorScorer;
 import hex.splitframe.ShuffleSplitFrame;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -59,6 +61,8 @@ public class SVMTest extends TestUtil {
       assertVecEquals(expected.vec("predict"), predicted.vec("predict"), 0);
 
       checkCM(model, fr, fr.vec("C1"), predicted.vec(0));
+
+      checkScorers(model, fr, expected.vec("score"));
     } finally {
       Scope.exit();
     }
@@ -161,7 +165,8 @@ public class SVMTest extends TestUtil {
       parms._ignored_columns = new String[]{"ID"};
       parms._gamma = 0.4;
       parms._hyper_param = 2;
-      
+      parms._disable_training_metrics = false;
+
       SVM svm = new SVM(parms);
 
       SVMModel model = svm.trainModel().get();
@@ -267,6 +272,67 @@ public class SVMTest extends TestUtil {
       ConfusionMatrixTest.assertCMEqual(domain, expectedCM._cm, actualCM);
     } finally {
       Scope.exit();
+    }
+  }
+
+  private static void checkScorers(SVMModel model, Frame f, Vec expected) {
+    assertEquals(model._parms._response_column, f.name(0)); // expect SVM-light kind of format
+    Frame adapted = new Frame(f); // naive adapt
+    adapted.remove(model._parms._response_column);
+    Frame scores = new CheckScorersTask(model._key).doAll(3, Vec.T_NUM, adapted).outputFrame();
+    Scope.track(scores);
+    assertVecEquals(expected, scores.vec(0), 1e-6); // per-row
+    assertVecEquals(expected, scores.vec(1), 1e-6); // bulk (raw)
+    assertVecEquals(expected, scores.vec(2), 1e-6); // bulk (pojo)
+  }
+
+  private static class CheckScorersTask extends MRTask {
+
+    private final Key<SVMModel> _model_key;
+    private transient SVMModel _model;
+
+    CheckScorersTask(Key<SVMModel> modelKey) {
+      _model_key = modelKey;
+    }
+
+    @Override
+    protected void setupLocal() {
+      _model = _model_key.get();
+    }
+
+    @Override
+    public void map(Chunk[] cs, NewChunk[] ncs) {
+      final double rho = _model._output._rho;
+      
+      // per row scoring (MOJO-like)
+      final SupportVectorScorer scorer = ScorerFactory.makeScorer(
+              _model._parms._kernel_type, _model._parms.kernelParms(), _model._output._compressed_svs);
+      double[] row = new double[cs.length];
+      for (int i = 0; i < cs[0]._len; i++) {
+        for (int j = 0; j < cs.length; j++) {
+          row[j] = cs[j].atd(i);
+        }
+        double s = scorer.score0(row);
+        ncs[0].addNum(s + rho);
+      }
+
+      // bulk scoring (raw bytes)
+      final BulkSupportVectorScorer rawBulkScorer = BulkScorerFactory.makeScorer(
+              _model._parms._kernel_type, _model._parms.kernelParms(), _model._output._compressed_svs,
+              (int) _model._output._svs_count, true);
+      double[] scoresRaw = rawBulkScorer.bulkScore0(cs);
+      for (double s : scoresRaw) {
+        ncs[1].addNum(s + rho);
+      }
+
+      // bulk scoring (parsed objects)
+      final BulkSupportVectorScorer pojoBulkScorer = BulkScorerFactory.makeScorer(
+              _model._parms._kernel_type, _model._parms.kernelParms(), _model._output._compressed_svs,
+              (int) _model._output._svs_count, true);
+      double[] scoresPojo = pojoBulkScorer.bulkScore0(cs);
+      for (double s : scoresPojo) {
+        ncs[2].addNum(s + rho);
+      }
     }
   }
   
