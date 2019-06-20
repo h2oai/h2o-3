@@ -95,6 +95,7 @@ public class SVMModel extends Model<SVMModel, SVMModel.SVMParameters, SVMModel.S
     return svs;
   }
 
+  @SuppressWarnings("WeakerAccess")
   public static class SVMParameters extends Model.Parameters {
     private static final PrimalDualIPM.Parms IPM_DEFAULTS = new PrimalDualIPM.Parms(); 
 
