@@ -300,7 +300,7 @@ def algo_to_classname(algo):
     if algo == "pca": return "H2OPrincipalComponentAnalysisEstimator"
     if algo == "stackedensemble": return "H2OStackedEnsembleEstimator"
     if algo == "isolationforest": return "H2OIsolationForestEstimator"
-    if algo == "psvm": return "H2OSupportVectorMachinesEstimator"
+    if algo == "psvm": return "H2OSupportVectorMachineEstimator"
     return "H2O" + algo.capitalize() + "Estimator"
 
 def extra_imports_for(algo):

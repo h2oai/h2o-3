@@ -43,9 +43,9 @@ Supervised
     :show-inheritance:
     :members:
 
-:mod:`H2OSupportVectorMachinesEstimator`
-----------------------------------------
-.. autoclass:: h2o.estimators.psvm.H2OSupportVectorMachinesEstimator
+:mod:`H2OSupportVectorMachineEstimator`
+---------------------------------------
+.. autoclass:: h2o.estimators.psvm.H2OSupportVectorMachineEstimator
     :show-inheritance:
     :members:
 

@@ -12,7 +12,7 @@ from h2o.frame import H2OFrame
 from h2o.utils.typechecks import assert_is_type, Enum, numeric
 
 
-class H2OSupportVectorMachinesEstimator(H2OEstimator):
+class H2OSupportVectorMachineEstimator(H2OEstimator):
     """
     PSVM
 
@@ -21,7 +21,7 @@ class H2OSupportVectorMachinesEstimator(H2OEstimator):
     algo = "psvm"
 
     def __init__(self, **kwargs):
-        super(H2OSupportVectorMachinesEstimator, self).__init__()
+        super(H2OSupportVectorMachineEstimator, self).__init__()
         self._parms = {}
         names_list = {"model_id", "training_frame", "validation_frame", "response_column", "ignored_columns",
                       "ignore_const_cols", "hyper_param", "kernel_type", "gamma", "rank_ratio", "positive_weight",
