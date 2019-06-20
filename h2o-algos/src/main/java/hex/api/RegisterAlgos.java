@@ -1,7 +1,7 @@
 package hex.api;
 
 import hex.ModelBuilder;
-import hex.generic.Generic;
+import hex.psvm.PSVM;
 import hex.tree.TreeHandler;
 import water.api.AlgoAbstractRegister;
 import water.api.RestApiContext;
@@ -29,7 +29,7 @@ public class RegisterAlgos extends AlgoAbstractRegister {
             new hex.ensemble    .StackedEnsemble(true),
             new hex.coxph       .CoxPH       (true),
             new hex.generic     .Generic     (true),
-            new hex.svm         .SVM         (true)        
+            new PSVM(true)        
     };
 
     // "Word2Vec", "Example", "Grep"
