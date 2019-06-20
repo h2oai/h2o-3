@@ -41,7 +41,7 @@ public class PSVMV3 extends ModelBuilderSchema<PSVM, PSVMV3, PSVMV3.PSVMParamete
     @API(help = "Coefficient of the kernel (currently RBF gamma for gaussian kernel, -1 means 1/#features)", gridable = true)
     public double gamma;
 
-    @API(help = "Desired rank of the ICF matrix expressed as an ration of number of input rows (-1 means use sqrt(#rows)).")
+    @API(help = "Desired rank of the ICF matrix expressed as an ration of number of input rows (-1 means use sqrt(#rows)).", gridable = true)
     public double rank_ratio;
 
     @API(help = "Weight of positive (+1) class of observations")
