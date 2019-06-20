@@ -1112,7 +1112,7 @@ def algo_to_modelname(algo):
     if algo == "pca": return "Principal Components Analysis"
     if algo == "svd": return "Singular Value Decomposition"
     if algo == "stackedensemble": return "H2O Stacked Ensemble"
-    if algo == "stackedensemble": return "Support Vector Machine"
+    if algo == "psvm": return "Support Vector Machine"
     return algo
 
 def indent(string, n):
