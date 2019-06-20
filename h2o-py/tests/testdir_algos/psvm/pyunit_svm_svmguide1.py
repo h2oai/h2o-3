@@ -3,7 +3,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-from h2o.estimators.psvm import H2OSupportVectorMachinesEstimator
+from h2o.estimators.psvm import H2OSupportVectorMachineEstimator
 
 
 def svm_svmguide1():
@@ -14,7 +14,7 @@ def svm_svmguide1():
     svmguide1["C1"] = svmguide1["C1"].asfactor()
     svmguide1_test["C1"] = svmguide1_test["C1"].asfactor()
 
-    svm = H2OSupportVectorMachinesEstimator(gamma=0.01, rank_ratio=0.1, disable_training_metrics=False)
+    svm = H2OSupportVectorMachineEstimator(gamma=0.01, rank_ratio=0.1, disable_training_metrics=False)
     svm.train(y="C1", training_frame=svmguide1, validation_frame=svmguide1_test)
     svm.show()
 
