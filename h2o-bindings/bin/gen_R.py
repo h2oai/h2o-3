@@ -152,7 +152,7 @@ def gen_module(schema, algo, module):
     if algo in ["stackedensemble"]:
         yield "  blending_frame <- .validate.H2OFrame(blending_frame)"
         yield "  # Validate other required args"
-    if algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
+    if algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes", "stackedensemble", "psvm"]:
         yield "  # If x is missing, then assume user wants to use all columns as features."
         yield "  if (missing(x)) {"
         yield "     if (is.numeric(y)) {"
@@ -213,7 +213,7 @@ def gen_module(schema, algo, module):
     if algo == "glrm":
         yield " if(!missing(cols))"
         yield " parms$ignored_columns <- .verify_datacols(training_frame, cols)$cols_ignore"
-    elif algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes", "stackedensemble", "coxph"]:
+    elif algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes", "stackedensemble", "coxph", "psvm"]:
         if any(param["name"] == "autoencoder" for param in schema["parameters"]):
             yield "  args <- .verify_dataxy(training_frame, x, y, autoencoder)"
         elif algo == "coxph":
@@ -228,7 +228,7 @@ def gen_module(schema, algo, module):
             if algo == "coxph":
                 yield "  if( !missing(start_column) && !is.null(start_column)) args$x_ignore <- args$x_ignore[!( start_column == args$x_ignore )]"
                 yield "  if( !missing(stop_column) && !is.null(stop_column)) args$x_ignore <- args$x_ignore[!( stop_column == args$x_ignore )]"
-            else:
+            elif algo != "psvm":
                 yield "  if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]"
             yield "  parms$ignored_columns <- args$x_ignore"
         yield "  parms$response_column <- args$y\n"
@@ -476,6 +476,12 @@ def help_preamble_for(algo):
             Imports a generic model into H2O. Such model can be used then used for scoring and obtaining
             additional information about the model. The imported model has to be supported by H2O.
         """
+    if algo == "psvm":
+        return """
+            Trains a Support Vector Machine model on an H2O dataset
+            
+            Alpha version. Supports only binomial classification problems. 
+        """
 
 def help_details_for(algo):
     if algo == "naivebayes":
@@ -650,7 +656,7 @@ def help_example_for(algo):
 def get_extra_params_for(algo):
     if algo == "glrm":
         return "training_frame, cols = NULL"
-    elif algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
+    elif algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes", "stackedensemble", "psvm"]:
         return "x, y, training_frame"
     elif algo == "svd":
         return "training_frame, x, destination_key"
@@ -666,7 +672,7 @@ def get_extra_params_for(algo):
 def help_extra_params_for(algo):
     if algo == "glrm":
         return "#' @param cols (Optional) A vector containing the data columns on which k-means operates."
-    elif algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes"]:
+    elif algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes", "psvm"]:
         x_string = """#' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
             #'        If x is missing, then all columns except y are used."""
     elif algo == "coxph":
@@ -686,7 +692,7 @@ def help_extra_params_for(algo):
         return None
     else:  #Aggregator, PCA, SVD, K-Means: can this be grouped in with the others?  why are only character names supported?
         return """#' @param x A vector containing the \code{character} names of the predictors in the model."""
-    if algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
+    if algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes", "stackedensemble", "psvm"]:
         return x_string + "\n" + """#' @param y The name or column index of the response variable in the data. The response must be either a numeric or a
             #'        categorical/factor variable. If the response is numeric, then a regression model will be trained, otherwise it will train a classification model."""
 
@@ -1106,6 +1112,7 @@ def algo_to_modelname(algo):
     if algo == "pca": return "Principal Components Analysis"
     if algo == "svd": return "Singular Value Decomposition"
     if algo == "stackedensemble": return "H2O Stacked Ensemble"
+    if algo == "stackedensemble": return "Support Vector Machine"
     return algo
 
 def indent(string, n):
@@ -1139,8 +1146,6 @@ def main():
     bi.init("R", "../../../h2o-r/h2o-package/R", clear_dir=False)
 
     for name, mb in bi.model_builders().items():
-        if name in ["psvm"]:
-            continue 
         module = name
         file_name = name
         if name == "drf":

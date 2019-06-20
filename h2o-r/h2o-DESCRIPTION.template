@@ -85,6 +85,7 @@ Collate:
          'glrm.R'
          'pca.R'
          'svd.R'
+         'psvm.R'
          'deeplearning.R'
          'stackedensemble.R'
          'deepwater.R'
