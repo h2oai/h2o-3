@@ -296,9 +296,6 @@ public class GBMModel extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, 
   @Override protected void toJavaUnifyPreds(SBPrintStream body) {
     // Preds are filled in from the trees, but need to be adjusted according to
     // the loss function.
-    if(_parms._distribution == DistributionFamily.custom) {
-      throw new UnsupportedOperationException("POJO is not supported for custom distribution models.");
-    }
     if( _parms._distribution == DistributionFamily.bernoulli
         || _parms._distribution == DistributionFamily.quasibinomial
         || _parms._distribution == DistributionFamily.modified_huber

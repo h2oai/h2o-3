@@ -2,9 +2,7 @@ package hex.tree.gbm;
 
 import hex.Distribution;
 import hex.DistributionFactory;
-import hex.genmodel.utils.DistributionFamily;
 import hex.tree.SharedTreeMojoWriter;
-import water.H2O;
 
 import java.io.IOException;
 
