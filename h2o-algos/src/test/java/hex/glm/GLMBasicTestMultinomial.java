@@ -18,6 +18,7 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 
+import java.util.Arrays;
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
@@ -498,18 +499,20 @@ public class GLMBasicTestMultinomial extends TestUtil {
       params._lambda = new double[]{0.5};
       params._alpha = new double[]{0.5};
       params._solver = Solver.IRLSM_SPEEDUP;
+      params._standardize = false;
       int nclass = 3;
 
       GLMModel.GLMWeightsFun glmw = new GLMModel.GLMWeightsFun(params);
-      DataInfo dinfo = new DataInfo(fr, null, 1, true, DataInfo.TransformType.STANDARDIZE,
+      DataInfo dinfo = new DataInfo(fr, null, 1, true, DataInfo.TransformType.NONE,
               DataInfo.TransformType.NONE, true, false, false, false,
               false, false);
       int ncoeffPClass = dinfo.fullN()+1;
       double sumExp = 0;
-      double[] beta = new double[nclass*ncoeffPClass];
-      for (int ind = 0; ind < beta.length; ind++) {
+      double[] beta = new double[]{0.387797, 0.269003, 0.444987, 0.403535, 0.129472, 0.826823, 0.221008, 0.402504, 
+              0.378747, 0.137892, 0.129652, 0.024352};
+/*      for (int ind = 0; ind < beta.length; ind++) {
         beta[ind] = generator.nextDouble();
-      }
+      }*/
       int P = dinfo.fullN();       // number of predictors
       int N = dinfo.fullN() + 1;   // number of GLM coefficients per class
       for (int i = 1; i < nclass; ++i)
@@ -525,8 +528,6 @@ public class GLMBasicTestMultinomial extends TestUtil {
       double manualLLH = manualHessianXYLLH(beta, hessian, xy, dinfo, nclass, ncoeffPClass, fr.numCols()-1);
       GLMTask.GLMIterationTask gmt = new GLMTask.GLMIterationTask(null,dinfo,glmw,beta,
               nclass, true, null, ncoeffPClass).doAll(dinfo._adaptedFrame);
-
-
     } finally {
       Scope.exit();
     }
@@ -785,6 +786,8 @@ public class GLMBasicTestMultinomial extends TestUtil {
     double[][] w = new double[nclass][nclass]; // reuse for each row
     double[] wz = new double[nclass];           // reuse for each row
     double[][] xtx = new double[ncoeffPClass][ncoeffPClass];
+    double[] grads = new double[initialBeta.length];
+    double[] multipliers = new double[nclass];
     for (int classInd = 0; classInd < nclass; classInd++) {
       System.arraycopy(initialBeta,classInd*ncoeffPClass, multinomialBetas[classInd], 0, ncoeffPClass);
     }
@@ -804,8 +807,13 @@ public class GLMBasicTestMultinomial extends TestUtil {
       addX2W(xtx, hessian, w, dinfo, rowInd, nclass, ncoeffPClass); // checked out okay
       // calculate wz W*Etas+Grad again, without the predictors
       calculateWZ(w, wz, yresp, probs, etas); // checked out okay
+      Arrays.fill(grads, 0.0);
+      for (int classInd = 0; classInd < nclass; classInd++) { // calculate the multiplier here
+        multipliers[classInd] = classInd==yresp?(probs[classInd]-1):probs[classInd];
+      }
+      updateGradient(grads, nclass, ncoeffPClass, dinfo, rowInd, multipliers);
       // add predictors to wz to form XY
-      addX2Wz(xy, wz, dinfo, rowInd, nclass, ncoeffPClass); // checked out okay
+      addX2Wz(xy, wz, dinfo, rowInd, nclass, ncoeffPClass, grads); // checked out okay
     }
     return likelihood;
   }
@@ -887,7 +895,7 @@ public class GLMBasicTestMultinomial extends TestUtil {
     }
   }
 
-  public void addX2Wz(double[] xy, double[] wz, DataInfo dinfo, int rowInd, int nclass, int coeffPClass) {
+  public void addX2Wz(double[] xy, double[] wz, DataInfo dinfo, int rowInd, int nclass, int coeffPClass, double[] grads) {
     for (int predInd = 0; predInd < dinfo._cats; predInd++) { // cat
       int cid = dinfo.getCategoricalId(predInd, (int) dinfo._adaptedFrame.vec(predInd).at(rowInd));
       for (int classInd = 0; classInd < nclass; classInd++) {
@@ -908,6 +916,9 @@ public class GLMBasicTestMultinomial extends TestUtil {
     for (int classInd=0; classInd < nclass; classInd++) { // intercept terms
       xy[(classInd+1)*coeffPClass-1] += wz[classInd];
     }
+    
+    for (int pind = 0; pind < xy.length; pind++)
+      xy[pind] -= grads[pind]; // add gradient part
   }
 
   public void calculateW(double[][] w, double[] probs) {
@@ -923,7 +934,7 @@ public class GLMBasicTestMultinomial extends TestUtil {
     int nclass = wz.length;
 
     for (int rclassInd=0; rclassInd < nclass; rclassInd++) {
-      wz[rclassInd] = rclassInd==y?(1-probs[y]):-probs[rclassInd]; // gradient part
+      wz[rclassInd] = 0; // gradient part
       for (int cclassInd=0; cclassInd < nclass; cclassInd++) {
         wz[rclassInd] += w[rclassInd][cclassInd]*etas[cclassInd];   // due to transpose(W)*beta
       }
