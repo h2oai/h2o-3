@@ -174,16 +174,21 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
             // Initialize Booster
             booster = sharedmodel.deserializeBooster();
             booster.setParams(boosterParms.get());
-
+            int treeLimit = 0;
+            if (parms._booster == XGBoostModel.XGBoostParameters.Booster.dart) {
+                // DART with treeLimit=0 returns non-deterministic random predictions
+                treeLimit = parms._ntrees;
+            }
+            
             // Predict
             ScoreResult result = new ScoreResult();
             switch (outputType) {
                 case PREDICT:
-                    result._preds = booster.predict(data);
+                    result._preds = booster.predict(data, false, treeLimit);
                     result._labels = data.getLabel();
                     break;
                 case PREDICT_CONTRIB_APPROX:
-                    result._preds = booster.predictContrib(data, 0);
+                    result._preds = booster.predictContrib(data, treeLimit);
                     break;
                 default:
                     throw new UnsupportedOperationException("Unsupported output type: " + outputType);
