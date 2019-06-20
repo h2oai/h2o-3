@@ -403,10 +403,12 @@ class ModelBase(backwards_compatible()):
 
         print(self.__class__.__name__, ": ", self._model_json["algo_full_name"])
         print("Model Key: ", self._id)
-
-        self.summary()
-
         print()
+
+        summary = self.summary()
+        if summary:
+            print(summary)
+
         # training metrics
         tm = model["training_metrics"]
         if tm: tm.show()

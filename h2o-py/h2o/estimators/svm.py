@@ -25,8 +25,8 @@ class H2OSupportVectorMachinesEstimator(H2OEstimator):
         self._parms = {}
         names_list = {"model_id", "training_frame", "validation_frame", "response_column", "ignored_columns",
                       "ignore_const_cols", "hyper_param", "kernel_type", "gamma", "rank_ratio", "positive_weight",
-                      "negative_weight", "sv_threshold", "fact_threshold", "feasible_threshold",
-                      "surrogate_gap_threshold", "mu_factor", "max_iterations", "seed"}
+                      "negative_weight", "disable_training_metrics", "sv_threshold", "fact_threshold",
+                      "feasible_threshold", "surrogate_gap_threshold", "mu_factor", "max_iterations", "seed"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -201,6 +201,21 @@ class H2OSupportVectorMachinesEstimator(H2OEstimator):
     def negative_weight(self, negative_weight):
         assert_is_type(negative_weight, None, numeric)
         self._parms["negative_weight"] = negative_weight
+
+
+    @property
+    def disable_training_metrics(self):
+        """
+        Disable calculating training metrics (expensive on large datasets)
+
+        Type: ``bool``  (default: ``True``).
+        """
+        return self._parms.get("disable_training_metrics")
+
+    @disable_training_metrics.setter
+    def disable_training_metrics(self, disable_training_metrics):
+        assert_is_type(disable_training_metrics, None, bool)
+        self._parms["disable_training_metrics"] = disable_training_metrics
 
 
     @property
