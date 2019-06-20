@@ -43,6 +43,12 @@ Supervised
     :show-inheritance:
     :members:
 
+:mod:`H2OSupportVectorMachinesEstimator`
+----------------------------------------
+.. autoclass:: h2o.estimators.psvm.H2OSupportVectorMachinesEstimator
+    :show-inheritance:
+    :members:
+
 :mod:`H2ORandomForestEstimator`
 -------------------------------
 .. autoclass:: h2o.estimators.random_forest.H2ORandomForestEstimator
@@ -52,12 +58,6 @@ Supervised
 :mod:`H2OStackedEnsembleEstimator`
 ----------------------------------
 .. autoclass:: h2o.estimators.stackedensemble.H2OStackedEnsembleEstimator
-    :show-inheritance:
-    :members:
-
-:mod:`H2OSupportVectorMachinesEstimator`
-----------------------------------------
-.. autoclass:: h2o.estimators.svm.H2OSupportVectorMachinesEstimator
     :show-inheritance:
     :members:
 
