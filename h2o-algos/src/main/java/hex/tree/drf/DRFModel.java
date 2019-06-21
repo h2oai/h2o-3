@@ -68,7 +68,8 @@ public class DRFModel extends SharedTreeModel<DRFModel, DRFModel.DRFParameters, 
     }
     return preds;
   }
-
+  
+  @Override
   public Frame scoreContributions(Frame frame, Key<Frame> destination_key) {
     if (_output.nclasses() > 2) {
       throw new UnsupportedOperationException(
