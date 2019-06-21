@@ -71,9 +71,9 @@ public class DRFModel extends SharedTreeModel<DRFModel, DRFModel.DRFParameters, 
   
   @Override
   public Frame scoreContributions(Frame frame, Key<Frame> destination_key) {
-    if (_output.nclasses() >= 2) {
+    if (_output.nclasses() > 2) {
       throw new UnsupportedOperationException(
-              "Calculating contributions for a DRF model is currently not supported for binomial and multinomial models.");
+              "Calculating contributions is currently not supported for multinomial models.");
     }
 
     Frame adaptFrm = new Frame(frame);
@@ -90,7 +90,7 @@ public class DRFModel extends SharedTreeModel<DRFModel, DRFModel.DRFParameters, 
             .outputFrame(destination_key, outputNames, null);
   }
 
-  private static class ScoreContributionsTask extends MRTask<DRFModel.ScoreContributionsTask> {
+  private static class ScoreContributionsTask extends MRTask<ScoreContributionsTask> {
     private final Key<DRFModel> _modelKey;
 
     private transient DRFModel _model;
@@ -142,7 +142,11 @@ public class DRFModel extends SharedTreeModel<DRFModel, DRFModel.DRFParameters, 
 
         for (int i = 0; i < nc.length; i++) {
           // Prediction of DRF tree ensemble is an average prediction of all trees. So, divide contribs by ntrees
-          nc[i].addNum(contribs[i] / _model._output._ntrees); 
+          if (_model._output.nclasses() == 1) {
+            nc[i].addNum(contribs[i] / _model._output._ntrees);
+          } else {
+            nc[i].addNum(1 - (contribs[i] / _model._output._ntrees)); // Not right
+          }
         }
       }
     }
