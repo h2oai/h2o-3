@@ -235,10 +235,11 @@ Reproducibility
  The error could be cumulated, and the laws of algebra do not necessarily hold. For example, algorithms based on unstable computations can generate various output for various input due to a cumulation of error, and associativity is not guaranteed in floating point.
 
  So, if you use a different leader node in the multi-node cluster, it can choose a different order for map-reduce operations and can cause a different roundoff error.
-|
+
 - **Why would my model score be different if I used a different number of nthreads, but otherwise used the same model parameters?**
 
  Reproducibility in H2O depends on keeping the layout of the cluster exactly the same, and on making sure that all the nodes have the same number of CPU cores (or that the nthreads parameter is explicitly used).
 
- The parallelization level (number of cores, nthreads) controls how the dataset will be partitioned in memory (into "chunks"). H2O then runs map-reduce tasks in a predictable order on these chunks/partitions. If the number of chunks/partitions is different, the order of reduce operations will be different. Generally, numeric operations can produce different results based on the order of operations. AUC calculation is also sensitive to the ordering, and will produce slightly different results for different chunking. This might cause the model to stop later or earlier. 
+ The parallelization level (number of cores, nthreads) controls how the dataset will be partitioned in memory (into "chunks"). H2O then runs map-reduce tasks in a predictable order on these chunks/partitions. If the number of chunks/partitions is different, the order of reduce operations will be different. Generally, numeric operations can produce different results based on the order of operations. AUC calculation is also sensitive to the ordering, and will produce slightly different results for different chunking. This might cause the model to stop later or earlier.
+
 .. Role in GBM - scoring intervals and early stopping, creating histograms
