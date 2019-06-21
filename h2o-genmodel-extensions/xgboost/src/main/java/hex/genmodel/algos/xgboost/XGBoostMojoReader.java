@@ -3,7 +3,6 @@ package hex.genmodel.algos.xgboost;
 import hex.genmodel.ModelMojoReader;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 /**
  */
@@ -18,6 +17,8 @@ public class XGBoostMojoReader extends ModelMojoReader<XGBoostMojoModel> {
 
   @Override
   protected void readModelData() throws IOException {
+    _model._boosterType = readkv("booster");
+    _model._ntrees = readkv("ntrees", 0);
     _model._nums = readkv("nums");
     _model._cats = readkv("cats");
     _model._catOffsets = readkv("cat_offsets");
