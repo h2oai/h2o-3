@@ -215,6 +215,7 @@ reference:
       - h2o.prod 
       - h2o.proj_archetypes
       - h2o.pr_auc
+      - h2o.psvm
       - h2o.quantile
       - h2o.r2
       - h2o.randomForest
