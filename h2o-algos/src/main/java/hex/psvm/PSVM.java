@@ -133,7 +133,7 @@ public class PSVM extends ModelBuilder<PSVMModel, PSVMModel.PSVMParameters, PSVM
         final Vec response = di._adaptedFrame.vec(_parms._response_column);
 
         PSVMModel.PSVMModelOutput output = new PSVMModel.PSVMModelOutput(PSVM.this, prototypeFrame(di), response().domain());
-        model = new PSVMModel(_job._result, _parms, output);
+        model = new PSVMModel(_result, _parms, output);
         model.delete_and_lock(_job);
 
         final int rank = getRankICF(_parms._rank_ratio, di._adaptedFrame.numRows());
