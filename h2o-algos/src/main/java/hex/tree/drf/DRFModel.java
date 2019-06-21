@@ -71,9 +71,9 @@ public class DRFModel extends SharedTreeModel<DRFModel, DRFModel.DRFParameters, 
   
   @Override
   public Frame scoreContributions(Frame frame, Key<Frame> destination_key) {
-    if (_output.nclasses() > 2) {
+    if (_output.nclasses() >= 2) {
       throw new UnsupportedOperationException(
-              "Calculating contributions is currently not supported for multinomial models.");
+              "Calculating contributions for a DRF model is currently not supported for binomial and multinomial models.");
     }
 
     Frame adaptFrm = new Frame(frame);
