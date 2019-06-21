@@ -1,15 +1,18 @@
 package hex.genmodel.algos.drf;
 
 import hex.genmodel.GenModel;
-import hex.genmodel.algos.tree.SharedTreeGraph;
-import hex.genmodel.algos.tree.SharedTreeMojoModel;
-import hex.genmodel.algos.tree.SharedTreeGraphConverter;
+import hex.genmodel.PredictContributions;
+import hex.genmodel.PredictContributionsFactory;
+import hex.genmodel.algos.tree.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
  * "Distributed Random Forest" MojoModel
  */
-public final class DrfMojoModel extends SharedTreeMojoModel implements SharedTreeGraphConverter {
+public final class DrfMojoModel extends SharedTreeMojoModel implements SharedTreeGraphConverter, PredictContributionsFactory {
     protected boolean _binomial_double_trees;
 
 
@@ -56,6 +59,38 @@ public final class DrfMojoModel extends SharedTreeMojoModel implements SharedTre
     @Override
     public double[] score0(double[] row, double[] preds) {
         return score0(row, 0.0, preds);
+    }
+
+    @Override
+    public PredictContributions makeContributionsPredictor() {
+        if (_nclasses > 2) {
+            throw new UnsupportedOperationException("Predicting contributions for multinomial classification problems is not yet supported.");
+        }
+        SharedTreeGraph graph = _computeGraph(-1);
+        final SharedTreeNode[] empty = new SharedTreeNode[0];
+        List<TreeSHAPPredictor<double[]>> treeSHAPs = new ArrayList<>(graph.subgraphArray.size());
+        for (SharedTreeSubgraph tree : graph.subgraphArray) {
+            SharedTreeNode[] nodes = tree.nodesArray.toArray(empty);
+            treeSHAPs.add(new TreeSHAP<>(nodes, nodes, 0));
+        }
+        TreeSHAPPredictor<double[]> predictor = new TreeSHAPEnsemble<>(treeSHAPs, 0);
+        return new DrfMojoModel.DrfContributionsPredictor(predictor);
+    }
+
+    private final class DrfContributionsPredictor implements PredictContributions {
+        private final TreeSHAPPredictor<double[]> _treeSHAPPredictor;
+        private final Object _workspace;
+
+        private DrfContributionsPredictor(TreeSHAPPredictor<double[]> treeSHAPPredictor) {
+            _treeSHAPPredictor = treeSHAPPredictor;
+            _workspace = _treeSHAPPredictor.makeWorkspace();
+        }
+
+        @Override
+        public float[] calculateContributions(double[] input) {
+            float[] contribs = new float[nfeatures() + 1];
+            return  _treeSHAPPredictor.calculateContributions(input, contribs, 0, -1, _workspace);
+        }
     }
 
 }

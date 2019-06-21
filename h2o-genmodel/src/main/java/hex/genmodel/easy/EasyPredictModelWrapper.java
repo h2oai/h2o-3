@@ -180,7 +180,7 @@ public class EasyPredictModelWrapper implements Serializable {
       if (val && (model==null))
         throw new IOException("setEnableContributions cannot be set with null model.  Call setModel() first.");
       if (val && !(model instanceof PredictContributionsFactory))
-        throw new IOException("setEnableContributions can be set to true only with GBM or XGBoost models.");
+        throw new IOException("setEnableContributions can be set to true only with DRF, GBM, or XGBoost models.");
       if (val && (ModelCategory.Multinomial.equals(model.getModelCategory()))) {
         throw new IOException("setEnableContributions is not yet supported for multinomial classification models.");
       }

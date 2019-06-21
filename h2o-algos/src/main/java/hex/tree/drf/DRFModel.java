@@ -1,12 +1,25 @@
 package hex.tree.drf;
 
+import hex.Model;
+import hex.genmodel.algos.tree.*;
 import hex.tree.SharedTreeModel;
 import water.Key;
+import water.MRTask;
+import water.MemoryManager;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
+import water.util.ArrayUtils;
 import water.util.MathUtils;
 import water.util.SBPrintStream;
 
+import java.util.ArrayList;
+import java.util.List;
 
-public class DRFModel extends SharedTreeModel<DRFModel, DRFModel.DRFParameters, DRFModel.DRFOutput> {
+
+public class DRFModel extends SharedTreeModel<DRFModel, DRFModel.DRFParameters, DRFModel.DRFOutput>
+        implements Model.Contributions{
 
   public static class DRFParameters extends SharedTreeModel.SharedTreeParameters {
     public String algoName() { return "DRF"; }
@@ -56,6 +69,84 @@ public class DRFModel extends SharedTreeModel<DRFModel, DRFModel.DRFParameters, 
     return preds;
   }
 
+  public Frame scoreContributions(Frame frame, Key<Frame> destination_key) {
+    if (_output.nclasses() > 2) {
+      throw new UnsupportedOperationException(
+              "Calculating contributions is currently not supported for multinomial models.");
+    }
+
+    Frame adaptFrm = new Frame(frame);
+    adaptTestForTrain(adaptFrm, true, false);
+    // remove non-feature columns
+    adaptFrm.remove(_parms._response_column);
+    adaptFrm.remove(_parms._fold_column);
+    adaptFrm.remove(_parms._weights_column);
+    adaptFrm.remove(_parms._offset_column);
+
+    final String[] outputNames = ArrayUtils.append(adaptFrm.names(), "BiasTerm");
+    return new ScoreContributionsTask(this)
+            .doAll(outputNames.length, Vec.T_NUM, adaptFrm)
+            .outputFrame(destination_key, outputNames, null);
+  }
+
+  private static class ScoreContributionsTask extends MRTask<DRFModel.ScoreContributionsTask> {
+    private final Key<DRFModel> _modelKey;
+
+    private transient DRFModel _model;
+    private transient TreeSHAPPredictor<double[]> _treeSHAP;
+
+    private ScoreContributionsTask(DRFModel model) {
+      _modelKey = model._key;
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    protected void setupLocal() {
+      _model = _modelKey.get();
+      assert _model != null;
+      final SharedTreeNode[] empty = new SharedTreeNode[0];
+      List<TreeSHAPPredictor<double[]>> treeSHAPs = new ArrayList<>(_model._output._ntrees);
+      for (int treeIdx = 0; treeIdx < _model._output._ntrees; treeIdx++) {
+        for (int treeClass = 0; treeClass < _model._output._treeKeys[treeIdx].length; treeClass++) {
+          if (_model._output._treeKeys[treeIdx][treeClass] == null) {
+            continue;
+          }
+          SharedTreeSubgraph tree = _model.getSharedTreeSubgraph(treeIdx, treeClass);
+          SharedTreeNode[] nodes = tree.nodesArray.toArray(empty);
+          treeSHAPs.add(new TreeSHAP<>(nodes, nodes, 0));
+        }
+      }
+      assert treeSHAPs.size() == _model._output._ntrees; // for now only regression and binomial to keep the output sane
+      _treeSHAP = new TreeSHAPEnsemble<>(treeSHAPs, (float) _model._output._init_f);
+    }
+
+    @Override
+    public void map(Chunk chks[], NewChunk[] nc) {
+      assert chks.length == nc.length - 1; // calculate contribution for each feature + the model bias
+      double[] input = MemoryManager.malloc8d(chks.length);
+      float[] contribs = MemoryManager.malloc4f(nc.length);
+
+      Object workspace = _treeSHAP.makeWorkspace();
+
+      for (int row = 0; row < chks[0]._len; row++) {
+        for (int i = 0; i < chks.length; i++) {
+          input[i] = chks[i].atd(row);
+        }
+        for (int i = 0; i < contribs.length; i++) {
+          contribs[i] = 0;
+        }
+
+        // calculate Shapley values
+        _treeSHAP.calculateContributions(input, contribs, 0, -1, workspace);
+
+        for (int i = 0; i < nc.length; i++) {
+          // Prediction of DRF tree ensemble is an average prediction of all trees. So, divide contribs by ntrees
+          nc[i].addNum(contribs[i] / _model._output._ntrees); 
+        }
+      }
+    }
+  }
+  
   @Override protected void toJavaUnifyPreds(SBPrintStream body) {
     if (_output.nclasses() == 1) { // Regression
       body.ip("preds[0] /= " + _output._ntrees + ";").nl();

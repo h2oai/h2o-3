@@ -127,7 +127,7 @@ class ModelMetricsHandler extends Handler {
     @API(help = "Predict the class probabilities at each stage (optional, only for GBM models)", json = false)
     public boolean predict_staged_proba;
 
-    @API(help = "Predict the feature contributions - Shapley values (optional, only for GBM and XGBoost models)", json = false)
+    @API(help = "Predict the feature contributions - Shapley values (optional, only for DRF, GBM and XGBoost models)", json = false)
     public boolean predict_contributions;
 
     @API(help = "Retrieve the feature frequencies on paths in trees in tree-based models (optional, only for GBM, DRF and Isolation Forest)", json = false)
