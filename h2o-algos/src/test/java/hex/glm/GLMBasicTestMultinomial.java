@@ -485,8 +485,8 @@ public class GLMBasicTestMultinomial extends TestUtil {
   @Test
   public void testMultinomialOctave() {
     Scope.enter();
+    double threshold = 1e-6;
     try {
-      Random generator = new Random();
       Frame fr = parse_test_file("/Users/wendycwong/temp/debug_multinomial_glm/multinomial_3_cols_num_3_class_20Rows.csv");
       Vec v = fr.remove("C4");
       fr.add("C4", v.toCategoricalVec());
@@ -510,9 +510,35 @@ public class GLMBasicTestMultinomial extends TestUtil {
       double sumExp = 0;
       double[] beta = new double[]{0.387797, 0.269003, 0.444987, 0.403535, 0.129472, 0.826823, 0.221008, 0.402504, 
               0.378747, 0.137892, 0.129652, 0.024352};
-/*      for (int ind = 0; ind < beta.length; ind++) {
-        beta[ind] = generator.nextDouble();
-      }*/
+      double[][] hessOctave = new double[][] {{3.077923688343536e+01,-8.685803439702172e-01,-1.697824483926594e+00, 
+              -1.330913565153130e-02,-1.677233669317430e+01,-1.873981054238402e-01,1.802337255199468e+00, 
+              1.870571937361168e+00,-1.400690019026108e+01,1.055978449394056e+00,-1.045127712728748e-01,
+              -1.857262801709639e+00}, {-0.8685803440,26.5888012004,2.9993618574,-2.8050586367,-0.1873981054,
+              -14.4601337537,-1.1594200164,-2.5266824574,1.0559784494,-12.1286674467,-1.8399418410,5.3317410941},
+              {-1.6978244839,2.9993618574,29.9811292986,2.4235167078,1.8023372552,-1.1594200164,-17.4504288380,
+                      -2.5728170363,-0.1045127713,-1.8399418410,-12.5307004605,0.1493003285},
+              {-0.0133091357,-2.8050586367,2.4235167078,23.6758820685,1.8705719374,-2.5266824574,-2.5728170363,
+                      -13.3960348550,-1.8572628017,5.3317410941,0.1493003285,-10.2798472135}, {-16.7723366932,
+              -0.1873981054,1.8023372552,1.8705719374,27.9399464075,0.8369202727,-2.0341028546,-3.0680161449,
+              -11.1676097144,-0.6495221673,0.2317655994,1.1974442075},
+              {-0.1873981054,-14.4601337537,-1.1594200164,-2.5266824574,0.8369202727,24.7780082243,1.6806632958,
+                      2.7738188490,-0.6495221673,-10.3178744706,-0.5212432794,-0.2471363916},
+              {1.8023372552,-1.1594200164,-17.4504288380,-2.5728170363,-2.0341028546,1.6806632958,29.5494884092,
+                      0.5605243917,0.2317655994,-0.5212432794,-12.0990595712,2.0122926446},
+              {1.8705719374,-2.5266824574,-2.5728170363,-13.3960348550,-3.0680161449,2.7738188490,0.5605243917,
+                      22.4852713692,1.1974442075,-0.2471363916,2.0122926446,-9.0892365142},{-14.0069001903,
+              1.0559784494,-0.1045127713,-1.8572628017,-11.1676097144,-0.6495221673,0.2317655994,1.1974442075,
+              25.1745099046,-0.4064562821,-0.1272528281,0.6598185942},{1.0559784494,-12.1286674467,-1.8399418410,
+              5.3317410941,-0.6495221673,-10.3178744706,-0.5212432794,-0.2471363916,-0.4064562821,22.4465419173,
+              2.3611851204,-5.0846047024},{-0.1045127713,-1.8399418410,-12.5307004605,0.1493003285,0.2317655994,
+              -0.5212432794,-12.0990595712,2.0122926446,-0.1272528281,2.3611851204,24.6297600317,-2.1615929731},
+              {-1.8572628017,5.3317410941,0.1493003285,-10.2798472135,1.1974442075,-0.2471363916,2.0122926446,
+                      -9.0892365142,0.6598185942,-5.0846047024,-2.1615929731,19.3690837277}};
+
+      double[] xyOctave = new double[]{ 3.723724862851886e+01, 1.909982057504991e+01, 4.830201387562915e+00, 
+              -3.881247433218718e+00, 1.101789544111538e+00, 4.130113056508980e+00, 2.516354284946583e+00, 
+              1.284557939124202e+00, -3.833903817263046e+01, -2.322993363155884e+01, -7.346555672509493e+00,
+              2.596689494094514e+00};
       int P = dinfo.fullN();       // number of predictors
       int N = dinfo.fullN() + 1;   // number of GLM coefficients per class
       for (int i = 1; i < nclass; ++i)
@@ -528,10 +554,104 @@ public class GLMBasicTestMultinomial extends TestUtil {
       double manualLLH = manualHessianXYLLH(beta, hessian, xy, dinfo, nclass, ncoeffPClass, fr.numCols()-1);
       GLMTask.GLMIterationTask gmt = new GLMTask.GLMIterationTask(null,dinfo,glmw,beta,
               nclass, true, null, ncoeffPClass).doAll(dinfo._adaptedFrame);
+      // check xy
+      TestUtil.checkArrays(xyOctave, xy, threshold);
+      TestUtil.checkArrays(xyOctave, gmt._xy, threshold);
+      // check hessian
+      double[][] glmHessian = gmt.getGram().getXX();
+      checkDoubleArrays(hessOctave, glmHessian, threshold);
+      checkDoubleArrays(hessOctave, hessian, threshold);
+      assertEquals(manualLLH, gmt._likelihood, threshold);
     } finally {
       Scope.exit();
     }
   }
+
+  @Test
+  public void testMultinomialOctaveEnum() {
+    Scope.enter();
+    double threshold = 1e-6;
+    try {
+      Frame fr = parse_test_file("/Users/wendycwong/temp/debug_multinomial_glm/multinomial_2enum_1num_3_class_training_set_20Rows.csv");
+      Vec v = fr.remove("C4");
+      fr.add("C4", v.toCategoricalVec());
+      v.remove();
+      Scope.track(fr);
+      GLMParameters params = new GLMParameters(Family.multinomial);
+      params._response_column = fr._names[fr.numCols()-1];
+      params._ignored_columns = new String[]{};
+      params._train = fr._key;
+      params._lambda = new double[]{0.5};
+      params._alpha = new double[]{0.5};
+      params._solver = Solver.IRLSM_SPEEDUP;
+      params._standardize = false;
+      int nclass = 3;
+
+      GLMModel.GLMWeightsFun glmw = new GLMModel.GLMWeightsFun(params);
+      DataInfo dinfo = new DataInfo(fr, null, 1, true, DataInfo.TransformType.NONE,
+              DataInfo.TransformType.NONE, true, false, false, false,
+              false, false);
+      int ncoeffPClass = dinfo.fullN()+1;
+      double sumExp = 0;
+      double[] beta = new double[]{0.387797, 0.269003, 0.444987, 0.403535, 0.129472, 0.826823, 0.221008, 0.402504,
+              0.378747, 0.137892, 0.129652, 0.024352};
+      double[][] hessOctave = new double[][] {{3.077923688343536e+01,-8.685803439702172e-01,-1.697824483926594e+00,
+              -1.330913565153130e-02,-1.677233669317430e+01,-1.873981054238402e-01,1.802337255199468e+00,
+              1.870571937361168e+00,-1.400690019026108e+01,1.055978449394056e+00,-1.045127712728748e-01,
+              -1.857262801709639e+00}, {-0.8685803440,26.5888012004,2.9993618574,-2.8050586367,-0.1873981054,
+              -14.4601337537,-1.1594200164,-2.5266824574,1.0559784494,-12.1286674467,-1.8399418410,5.3317410941},
+              {-1.6978244839,2.9993618574,29.9811292986,2.4235167078,1.8023372552,-1.1594200164,-17.4504288380,
+                      -2.5728170363,-0.1045127713,-1.8399418410,-12.5307004605,0.1493003285},
+              {-0.0133091357,-2.8050586367,2.4235167078,23.6758820685,1.8705719374,-2.5266824574,-2.5728170363,
+                      -13.3960348550,-1.8572628017,5.3317410941,0.1493003285,-10.2798472135}, {-16.7723366932,
+              -0.1873981054,1.8023372552,1.8705719374,27.9399464075,0.8369202727,-2.0341028546,-3.0680161449,
+              -11.1676097144,-0.6495221673,0.2317655994,1.1974442075},
+              {-0.1873981054,-14.4601337537,-1.1594200164,-2.5266824574,0.8369202727,24.7780082243,1.6806632958,
+                      2.7738188490,-0.6495221673,-10.3178744706,-0.5212432794,-0.2471363916},
+              {1.8023372552,-1.1594200164,-17.4504288380,-2.5728170363,-2.0341028546,1.6806632958,29.5494884092,
+                      0.5605243917,0.2317655994,-0.5212432794,-12.0990595712,2.0122926446},
+              {1.8705719374,-2.5266824574,-2.5728170363,-13.3960348550,-3.0680161449,2.7738188490,0.5605243917,
+                      22.4852713692,1.1974442075,-0.2471363916,2.0122926446,-9.0892365142},{-14.0069001903,
+              1.0559784494,-0.1045127713,-1.8572628017,-11.1676097144,-0.6495221673,0.2317655994,1.1974442075,
+              25.1745099046,-0.4064562821,-0.1272528281,0.6598185942},{1.0559784494,-12.1286674467,-1.8399418410,
+              5.3317410941,-0.6495221673,-10.3178744706,-0.5212432794,-0.2471363916,-0.4064562821,22.4465419173,
+              2.3611851204,-5.0846047024},{-0.1045127713,-1.8399418410,-12.5307004605,0.1493003285,0.2317655994,
+              -0.5212432794,-12.0990595712,2.0122926446,-0.1272528281,2.3611851204,24.6297600317,-2.1615929731},
+              {-1.8572628017,5.3317410941,0.1493003285,-10.2798472135,1.1974442075,-0.2471363916,2.0122926446,
+                      -9.0892365142,0.6598185942,-5.0846047024,-2.1615929731,19.3690837277}};
+
+      double[] xyOctave = new double[]{ 3.723724862851886e+01, 1.909982057504991e+01, 4.830201387562915e+00,
+              -3.881247433218718e+00, 1.101789544111538e+00, 4.130113056508980e+00, 2.516354284946583e+00,
+              1.284557939124202e+00, -3.833903817263046e+01, -2.322993363155884e+01, -7.346555672509493e+00,
+              2.596689494094514e+00};
+      int P = dinfo.fullN();       // number of predictors
+      int N = dinfo.fullN() + 1;   // number of GLM coefficients per class
+      for (int i = 1; i < nclass; ++i)
+        sumExp += Math.exp(beta[i * N + P]);
+
+      Vec [] vecs = dinfo._adaptedFrame.anyVec().makeDoubles(2, new double[]{sumExp,0});  // store sum exp and maxRow
+      dinfo.addResponse(new String[]{"__glm_sumExp", "__glm_logSumExp"}, vecs);
+      Scope.track(vecs[0]);
+      Scope.track(vecs[1]);
+      // calculate Hessian, xy and likelihood manually
+      double[][] hessian = new double[beta.length][beta.length];
+      double[] xy = new double[beta.length];
+      double manualLLH = manualHessianXYLLH(beta, hessian, xy, dinfo, nclass, ncoeffPClass, fr.numCols()-1);
+      GLMTask.GLMIterationTask gmt = new GLMTask.GLMIterationTask(null,dinfo,glmw,beta,
+              nclass, true, null, ncoeffPClass).doAll(dinfo._adaptedFrame);
+      // check xy
+      TestUtil.checkArrays(xyOctave, xy, threshold);
+      TestUtil.checkArrays(xyOctave, gmt._xy, threshold);
+      // check hessian
+      double[][] glmHessian = gmt.getGram().getXX();
+      checkDoubleArrays(hessOctave, glmHessian, threshold);
+      checkDoubleArrays(hessOctave, hessian, threshold);
+      assertEquals(manualLLH, gmt._likelihood, threshold);
+    } finally {
+      Scope.exit();
+    }
+  }
+
 
   @Test
   public void testNaiveCoordinateDescent() {
