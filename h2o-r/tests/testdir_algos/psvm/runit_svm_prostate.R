@@ -16,12 +16,8 @@ test.psvm.prostate <- function() {
     print(sprintf("Accuracy (on test): %s", accuracy))
 
     adapt <- function(f) {
-        f$AGE <- h2o.scale(f$AGE)
-        f$PSA <- h2o.scale(f$PSA)
-        f$VOL <- h2o.scale(f$VOL)
-        f$GLEASON <- h2o.scale(f$GLEASON)
         f$CAPSULE <- as.factor(f$CAPSULE)
-        f
+        h2o.scale(f)
     }
     
     prostate_cat <- h2o.importFile(locate('smalldata/glm_test/prostate_cat_train.csv'))
