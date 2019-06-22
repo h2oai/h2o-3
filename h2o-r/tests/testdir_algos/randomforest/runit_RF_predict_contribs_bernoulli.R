@@ -14,7 +14,7 @@ test.DRF.contribs_bernoulli <- function() {
 
     p1_using_contributions <- rowSums(contributions)
 
-    expect_equal(predicted$p1, p1_using_contributions, tolerance = 1e-6)
+    expect_equal(predicted$p1, p1_using_contributions - 8, tolerance = 1e-6)
 }
 
 doTest("DRF Test: Make sure DRF contributions correspond to predictions for binomial models", test.DRF.contribs_bernoulli)
