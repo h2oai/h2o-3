@@ -4,6 +4,9 @@ import com.google.gson.*;
 import hex.genmodel.descriptor.JsonModelDescriptorReader;
 import hex.genmodel.descriptor.ModelDescriptorBuilder;
 import hex.genmodel.descriptor.Table;
+import hex.genmodel.descriptor.models.Common;
+import hex.genmodel.descriptor.models.Model;
+import hex.genmodel.descriptor.models.convert.TableConverter;
 import hex.genmodel.utils.ParseUtils;
 import hex.genmodel.utils.StringEscapeUtils;
 
@@ -11,6 +14,7 @@ import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -188,14 +192,61 @@ public abstract class ModelMojoReader<M extends MojoModel> {
   }
 
   private ModelDescriptor readModelDescriptor() {
-    final JsonObject modelJson = JsonModelDescriptorReader.parseModelJson(_reader);
-    ModelDescriptorBuilder modelDescriptorBuilder = new ModelDescriptorBuilder(_model);
+    _model.h2oModel = buildH2OModel();
 
+    final JsonObject modelJson = JsonModelDescriptorReader.parseModelJson(_reader);
+
+    ModelDescriptorBuilder modelDescriptorBuilder = new ModelDescriptorBuilder(_model.h2oModel);
     final Table model_summary_table = JsonModelDescriptorReader.extractTableFromJson(modelJson, "output.model_summary");
+    // TODO: Do not initialize twice, the rest of the code should be adjusted, current state is WIP
+    _model.h2oModel = _model.h2oModel.toBuilder()
+            .setSummary(TableConverter.convert(model_summary_table))
+            .build();
     modelDescriptorBuilder.modelSummary(model_summary_table);
 
     readModelSpecificDescription(modelDescriptorBuilder, modelJson);
     return modelDescriptorBuilder.build();
+  }
+
+  private Model.H2OModel buildH2OModel() {
+    final Model.H2OModel.Builder builder = Model.H2OModel.newBuilder();
+    builder.setCategory(Model.H2OModel.ModelCategory.valueOf(_model._category.toString()));
+    builder.setUuid(_model.getUUID());
+    builder.setSupervised(_model.isSupervised());
+    builder.setFeaturesCount(_model.nfeatures());
+    builder.setClassesCount(_model.nclasses());
+    builder.setClassesBalanced(_model._balanceClasses);
+    builder.setDefaultThreshold(_model._defaultThreshold);
+    builder.setH2OVersion(_model._h2oVersion);
+    if (_model._offsetColumn != null) builder.setOffsetColumn(_model._offsetColumn);
+    builder.addAllColumnName(Arrays.asList(_model._names));
+    builder.setCreated((String) readkv("timestamp"));
+    builder.addAllFeaturesName(Arrays.asList(_model.features()));
+    if (_model._priorClassDistrib != null) {
+      for (double dist : _model._priorClassDistrib) {
+        builder.addAprioriClassDistributions(dist);
+      }
+    }
+
+    if (_model._modelClassDistrib != null) {
+      for (double distrib : _model._modelClassDistrib) {
+        builder.addModelClassDistributions(distrib);
+      }
+    }
+
+    if (_model._domains != null) {
+      for (int i = 0; i < _model._domains.length; i++) {
+        // H2O uses index as the ultimate pointer, but public API uses sets where possible for user-friendliness.
+        final String[] domain = _model._domains[i];
+        if(domain == null) continue;
+        final Common.StringList.Builder domainListBuilder = Common.StringList.newBuilder();
+        domainListBuilder.addAllValue(Arrays.asList(domain));
+        builder.putDomains(_model._names[i], domainListBuilder.build());
+
+      }
+    }
+
+    return builder.build();
   }
 
   protected void readModelSpecificDescription(final ModelDescriptorBuilder modelDescriptorBuilder, final JsonObject modelJson) {

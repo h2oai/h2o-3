@@ -1,3 +1,6 @@
+plugins {
+  id "com.google.protobuf" version "0.8.8"
+}
 //
 // H2O Generated Model Support Module
 //
@@ -28,9 +31,26 @@ dependencies {
   compile "net.sf.opencsv:opencsv:2.3"
   compile "com.google.code.gson:gson:2.6.2"
   compile "ai.h2o:h2o-tree-api:0.3.7"
+  compile group: 'com.google.protobuf', name: 'protobuf-java', version: '3.8.0'
   // DeepWater dependencies - users will need to provide excluded & compileOnly dependencies
   compile("ai.h2o:deepwater-backend-api:1.0.4") {
     exclude group: 'org.slf4j'
   }
   compileOnly "com.google.protobuf.nano:protobuf-javanano:3.1.0"
+}
+
+sourceSets {
+  main {
+    proto {
+      srcDir 'src/main/resources/protobuf'
+    }
+  }
+}
+
+protobuf {
+  generatedFilesBaseDir = "$projectDir/src"
+  protoc {
+    // The artifact spec for the Protobuf Compiler
+    artifact = 'com.google.protobuf:protoc:3.8.0'
+  }
 }

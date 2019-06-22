@@ -27,7 +27,6 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
         _mojoBytes = mojoBytes;
         _mojoModel = mojoModel;
         _output = new GenericModelOutput(_mojoModel._modelDescriptor);
-
     }
 
     private static MojoModel reconstructMojo(ByteVec mojoBytes) {
