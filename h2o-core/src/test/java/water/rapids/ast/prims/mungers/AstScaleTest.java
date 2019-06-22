@@ -94,7 +94,7 @@ public class AstScaleTest extends TestUtil {
 
       ValFrame v = (ValFrame) Rapids.exec("(scale " + fr._key + " 1 1)");
 
-      compareFrames(expected, v.getFrame(), 1e-10);
+      compareFrames(expected, v.getFrame());
     } finally {
       Scope.exit();
     }
@@ -102,28 +102,32 @@ public class AstScaleTest extends TestUtil {
 
   @Test
   public void testCalcMeans_invalidCols() {
+    Frame origFr = mock(Frame.class);
     Frame fr = mock(Frame.class);
     AstRoot meanSpec = mock(AstNumList.class);
 
     when(fr.numCols()).thenReturn(43);
     when(((AstNumList) meanSpec).expand()).thenReturn(new double[4]);
 
-    ee.expectMessage("Numlist must be the same length as the numeric columns of the Frame");
+    ee.expectMessage("Values must be the same length as is the number of columns of the Frame to scale" +
+            " (fill 0 for non-numeric columns).");
     
-    AstScale.calcMeans(null, meanSpec, fr);
+    AstScale.calcMeans(null, meanSpec, fr, origFr);
   }
 
   @Test
   public void testCalcMults_invalidCols() {
+    Frame origFr = mock(Frame.class);
     Frame fr = mock(Frame.class);
     AstRoot multSpec = mock(AstNumList.class);
 
     when(fr.numCols()).thenReturn(43);
     when(((AstNumList) multSpec).expand()).thenReturn(new double[4]);
 
-    ee.expectMessage("Numlist must be the same length as the numeric columns of the Frame");
+    ee.expectMessage("Values must be the same length as is the number of columns of the Frame to scale" +
+            " (fill 0 for non-numeric columns).");
 
-    AstScale.calcMults(null, multSpec, fr);
+    AstScale.calcMults(null, multSpec, fr, origFr);
   }
 
 }
