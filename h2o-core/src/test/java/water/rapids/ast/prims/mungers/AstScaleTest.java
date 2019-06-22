@@ -76,6 +76,31 @@ public class AstScaleTest extends TestUtil {
   }
 
   @Test
+  public void testScaleNoNumeric() {
+    Scope.enter();
+    try {
+      Frame fr = new TestFrameBuilder()
+              .withColNames("C1", "C2")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", "c", "d"))
+              .withDataForCol(1, ar("a", "b", "c", "d"))
+              .build();
+      Frame expected = new TestFrameBuilder()
+              .withColNames("C1", "C2")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", "c", "d"))
+              .withDataForCol(1, ar("a", "b", "c", "d"))
+              .build();
+
+      ValFrame v = (ValFrame) Rapids.exec("(scale " + fr._key + " 1 1)");
+
+      compareFrames(expected, v.getFrame(), 1e-10);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
   public void testCalcMeans_invalidCols() {
     Frame fr = mock(Frame.class);
     AstRoot meanSpec = mock(AstNumList.class);
