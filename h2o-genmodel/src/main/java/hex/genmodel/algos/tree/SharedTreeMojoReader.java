@@ -1,13 +1,12 @@
 package hex.genmodel.algos.tree;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import hex.genmodel.ModelMojoReader;
 import hex.genmodel.descriptor.JsonModelDescriptorReader;
 import hex.genmodel.descriptor.ModelDescriptorBuilder;
 import hex.genmodel.descriptor.Table;
 import hex.genmodel.descriptor.VariableImportances;
+import hex.genmodel.descriptor.models.Model;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -60,7 +59,16 @@ public abstract class SharedTreeMojoReader<M extends SharedTreeMojoModel> extend
 
   @Override
   protected void readModelSpecificDescription(final ModelDescriptorBuilder modelDescriptorBuilder, final JsonObject modelJson) {
-    modelDescriptorBuilder.variableImportances(extractVariableImportances(modelJson));
+    final VariableImportances variableImportances = extractVariableImportances(modelJson);
+    assert variableImportances._importances.length == variableImportances._variables.length;
+    modelDescriptorBuilder.variableImportances(variableImportances);
+    // TODO: remove duplicated initialization, this is POC only
+    final Model.H2OModel.Builder builder = _model.h2oModel.toBuilder();
+
+    for (int i = 0; i < variableImportances._importances.length; i++) {
+      builder.putVariableImportances(variableImportances._variables[i], variableImportances._importances[i]);
+    }
+    _model.h2oModel = builder.build();
   }
 
   private VariableImportances extractVariableImportances(final JsonObject modelJson) {

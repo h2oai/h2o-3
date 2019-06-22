@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+import "common.proto";
+
+package hex.genmodel.descriptor.models;
+option java_package = "hex.genmodel.descriptor.models";
+
+
+message H2OModel {
+    
+    enum ModelCategory {
+        Unknown = 0;
+        Binomial = 1;
+        Multinomial = 2;
+        Ordinal = 3;
+        Regression = 4;
+        Clustering = 5;
+        AutoEncoder = 6;
+        DimReduction = 7;
+        WordEmbedding = 8;
+        CoxPH = 9;
+        AnomalyDetection = 10;
+    }
+    
+    // Basic MOJO information
+    string project_version = 3; 
+    string algorithm_shortcut = 1;
+    string algorithm_full_name = 2;
+    string h2o_version = 20;
+    
+    // Model information
+    ModelCategory category = 7;
+    bool supervised = 8;
+    string uuid = 16;
+    string created = 17;
+    map<string, double> variable_importances = 18;
+    map<string, StringList> domains = 21;
+    Table summary = 24;
+    
+    
+    // Model parameters
+    string offset_column = 4;
+    string weights_column = 5;
+    string fold_column = 6;
+    repeated string ignored_column = 19;
+    int32 features_count = 9;
+    repeated string features_name = 10;
+    int32 classes_count = 11;
+    repeated string classes_name = 12;
+    bool classes_balanced = 13;
+    repeated string column_name = 22;
+    double default_threshold = 14;
+    repeated double apriori_class_distributions = 15;
+    repeated double model_class_distributions = 23;
+    
+}
+
+

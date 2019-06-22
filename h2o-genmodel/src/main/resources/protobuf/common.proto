@@ -1,0 +1,23 @@
+syntax = "proto3";
+package hex.genmodel.descriptor.models;
+
+import "google/protobuf/any.proto";
+
+message StringList {
+    repeated string value = 1;
+}
+
+message Table {
+    enum ColumnType{
+        LONG = 0;
+        DOUBLE = 1;
+        STRING = 2;
+    }
+    string header = 1;
+    string description = 2;
+    repeated string row_header = 3;
+    repeated string column_header = 4;
+    repeated ColumnType column_type = 5;
+    repeated StringList column_values = 6;
+}
+
