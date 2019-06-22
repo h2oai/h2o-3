@@ -10,6 +10,7 @@ import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstNumList;
+import water.util.Log;
 
 import java.util.Arrays;
 
@@ -42,6 +43,11 @@ public class AstScale extends AstPrimitive {
       if (v.get_type() == Vec.T_NUM) {
         numericFrame.add(originalFrame.name(i), v);
       }
+    }
+
+    if (numericFrame.numCols() == 0) {
+      Log.info("Nothing scaled in frame '%s'. There are no numeric columns.");
+      return new ValFrame(originalFrame);
     }
 
     final double[] means = calcMeans(env, asts[2], numericFrame);
