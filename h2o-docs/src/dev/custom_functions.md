@@ -66,24 +66,20 @@ distributed invocation:
 ### Custom distributions
 
 The custom distribution is a function which implements `water.udf.CDistributionFunc` interface.
-The interface follows the design of `hex.Distribution` and contains six methods to support
+The interface follows the design of `hex.Distribution` and contains four methods to support
 distributed invocation:
   - `link` : the method returns type of link function transformation of the probability of response variable to a continuous scale that is unbounded.
   The method is designed to be called where `hex.Distribution#link` and `hex.Distribution#linkInv` methods are used.
   It can return `response` by default (Identity Link Function).
-  - `deviance` : the method returns deviance of given distribution function at given predicted value. 
-  It can combines observation weight, actual response and predicted response in original response space (including offset).
-  This method is important only for regression models to calculate the deviance metric. In other cases, the user can return NaN value.
-  The method is designed to be called where `hex.Distribution#deviance` method is used.
   - `init` : the method combines weight, actual response and offset to compute numerator and denominator of the initial value.
   It can return `[ weight * (response - offset), weight]` by default.
   The method is designed to be called where `hex.Distribution#initFNum` and `hex.Distribution#initFDenom` methods are used.
+  - `gamma` : the method combines weight, actual response, residual and predicted response to compute numerator 
+  and denominator of size of step in terminal node estimate - gamma (The Elements of Statistical Learning II:, page 387.  Step 2b iii.).
+  The method is designed to be called where `hex.Distribution#gammaNum` and `hex.Distribution#gammaDenom` methods are used.
   - `gradient` : the method computes (Negative half) Gradient of deviance function at predicted value for actual response
    in one GBM learning step (The Elements of Statistical Learning II, page 387, Steps 2a, 2b). 
    The method is designed to be called where `hex.Distribution#negHalfGradient` method is used.
-  - `gamma` : the method combines weight, actual response, residual and predicted response to compute numerator 
-  and denominator of terminal node estimate - gamma (The Elements of Statistical Learning II:, page 387.  Step 2b iii.).
-  The method is designed to be called where `hex.Distribution#gammaNum` and `hex.Distribution#gammaDenom` methods are used.
   
 ### Other design alternatives
   - Translation into Rapids
@@ -174,10 +170,9 @@ via methods `custom_metric_name()` and `custom_metric_value()`.
 The custom distribution function is defined in Python as a class which provides
 five methods following the semantics of Java API above:
   - `link`
-  - `deviance`
   - `init`
-  - `gradient`
   - `gamma`
+  - `gradient`
   
 For example, custom Gaussian distribution:
 
@@ -186,18 +181,15 @@ class CustomDistributionGaussian:
 
     def link(self):
         return "identity"
-        
-    def deviance(self, w, y, f):
-        return w * (y - f) * (y - f)
 
     def init(self, w, o, y):
         return [w * (y - o), w]
+        
+    def gamma(self, w, y, z, f):
+        return [w * z, w]
     
     def gradient(self, y, f):
         return y - f
-    
-    def gamma(self, w, y, z, f):
-        return [w * z, w]
 ```
 
 ##### Publishing custom distribution function in cluster

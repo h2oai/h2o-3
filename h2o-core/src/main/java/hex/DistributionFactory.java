@@ -446,7 +446,7 @@ class CustomDistribution extends Distribution {
 
     @Override
     public double deviance(double w, double y, double f) {
-        return customDistribution.getFunc().deviance(w, y, f);
+        throw H2O.unimpl("Deviance is not supported in Custom Distribution.");
     }
 
     @Override

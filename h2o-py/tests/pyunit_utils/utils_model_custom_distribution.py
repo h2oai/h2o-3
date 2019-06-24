@@ -2,115 +2,23 @@ import h2o
 from . import locate
 
 
-class CustomDistributionGaussian:
-
-    def link(self):
-        return "identity"
-    
-    def deviance(self, w, y, f):
-        return w * (y - f) * (y - f)
-
-    def init(self, w, o, y):
-        return [w * (y - o), w]
-    
-    def gradient(self, y, f):
-        return y - f
-    
-    def gamma(self, w, y, z, f):
-        return [w * z, w]
+def check_models(default_model, custom_model, model_type):
+    shd = default_model.scoring_history()
+    shc = custom_model.scoring_history()
+    for metric in shd:
+        if metric in ["timestamp", "duration", "training_deviance", "validation_deviance"]:
+            continue
+        assert (shd[metric].isnull() == shc[metric].isnull()).all(), \
+            "Scoring history is not the same for default and custom %s distribution and %s metric" % (model_type, metric)
+        assert (shd[metric].dropna() == shc[metric].dropna()).all(), \
+            "Scoring history is not the same for default and custom %s distribution and %s metric." % (model_type, metric)
 
 
-class CustomDistributionGaussianWrong:
-
-    def link(self):
-        return "identity"
-        
-    def deviance(self, w, y, f):
-        return w * (y - f) * (y - f)
-
-    def init(self, w, o, y):
-        return [w * (y - o), w]
-
-    def gradient(self, y, f):
-        return (y - f) * (y - f)
-
-    def gamma(self, w, y, z, f):
-        return [w * z, w]
-
-
-class CustomDistributionBernoulli:
-
-    def link(self):
-        return "logit"
-
-    def deviance(self, w, y, f):
-        def log(x):
-            import java.lang.Math as Math
-            min_log = -19
-            x = Math.max(0, x)
-            if x == 0:
-                return min_log
-            else:
-                return Math.max(min_log, Math.log(x))
-        return -2 * w * (y * log(f) + (1 - y) * log(1 - f))
-
-    def init(self, w, o, y):
-        return [w * (y - o), w]
-
-    def gradient(self, y, f):
-        def exp(x):
-            import java.lang.Math as Math
-            max_exp = 1e19
-            return Math.min(max_exp, Math.exp(x));
-        return y - (1/(1+exp(-f)))
-
-    def gamma(self, w, y, z, f):
-        ff = y - z
-        return [w * z, w * ff * (1 - ff)]
-    
-
-class CustomDistributionMultinomial:
-
-    def link(self):
-        return "log"
-
-    def deviance(self, w, y, f):
-        return w * (y - f) * (y - f)
-
-    def init(self, w, o, y):
-        return [w * (y - o), w]
-
-    def gradient(self, y, f):
-        return y - f
-
-    def gamma(self, w, y, z, f):
-        import java.lang.Math as math
-        absz = math.abs(z)
-        return [w * z, w * (absz * (1 - absz))]
-    
-
-class CustomDistributionNull:
-
-    def link(self):
-        return "identity"
-
-    def deviance(self, w, y, f):
-        return 0
-
-    def init(self, w, o, y):
-        return [0, 0]
-
-    def gradient(self, y, f):
-        return 0
-
-    def gamma(self, w, y, z, f):
-        return 0
-
-
-def dataset_prostate():
+def dataset_prostate(categorical=True):
     df = h2o.import_file(path=locate("smalldata/prostate/prostate.csv"))
     df = df.drop("ID")
-    df["CAPSULE"] = df["CAPSULE"].asfactor()
+    if categorical:
+        df["CAPSULE"] = df["CAPSULE"].asfactor()
     return df.split_frame(ratios=[0.6, 0.3], seed=0)
 
 
@@ -119,20 +27,20 @@ def dataset_iris():
     return df.split_frame(ratios=[0.6, 0.3], seed=0)
 
 
-def regression_model_default(ModelType):
+def regression_model_default(Model, distribution):
     (ftrain, fvalid, ftest) = dataset_prostate()
-    model = ModelType(model_id="regression",
+    model = Model(model_id="regression",
                       ntrees=3, 
                       max_depth=5,
                       score_each_iteration=True,
-                      distribution="gaussian")
+                      distribution=distribution)
     model.train(y="AGE", x=ftrain.names, training_frame=ftrain, validation_frame=fvalid)
     return model, ftest
 
 
-def regression_model_distribution(ModelType, custom_distribution_func):
+def regression_model_distribution(Model, custom_distribution_func):
     (ftrain, fvalid, ftest) = dataset_prostate()
-    model = ModelType(model_id="regression_custom",
+    model = Model(model_id="regression_custom",
                       ntrees=3,
                       max_depth=5,
                       score_each_iteration=True,
@@ -142,20 +50,20 @@ def regression_model_distribution(ModelType, custom_distribution_func):
     return model, ftest
 
 
-def bernoulli_model_default(ModelType):
-    (ftrain, fvalid, ftest) = dataset_prostate()
-    model = ModelType(model_id="binomial",
+def binomial_model_default(Model, distribution):
+    (ftrain, fvalid, ftest) = dataset_prostate(not(distribution is "quasibinomial"))
+    model = Model(model_id="binomial",
                       ntrees=3,
                       max_depth=5,
                       score_each_iteration=True,
-                      distribution="bernoulli")
+                      distribution=distribution)
     model.train(y="CAPSULE", x=ftrain.names, training_frame=ftrain, validation_frame=fvalid)
     return model, ftest
 
 
-def bernoulli_model_distribution(ModelType, custom_distribution_func):
-    (ftrain, fvalid, ftest) = dataset_prostate()
-    model = ModelType(model_id="binomial_custom",
+def binomial_model_distribution(Model, custom_distribution_func, categorical=True):
+    (ftrain, fvalid, ftest) = dataset_prostate(categorical)
+    model = Model(model_id="binomial_custom",
                       ntrees=3,
                       max_depth=5,
                       score_each_iteration=True,
@@ -165,9 +73,9 @@ def bernoulli_model_distribution(ModelType, custom_distribution_func):
     return model, ftest
 
 
-def multinomial_model_default(ModelType):
+def multinomial_model_default(Model):
     (ftrain, fvalid, ftest) = dataset_iris()
-    model = ModelType(model_id="multinomial_custom", 
+    model = Model(model_id="multinomial_custom", 
                       ntrees=3, 
                       max_depth=5,
                       score_each_iteration=True,
@@ -176,9 +84,9 @@ def multinomial_model_default(ModelType):
     return model, ftest
 
 
-def multinomial_model_distribution(ModelType, custom_distribution_func):
+def multinomial_model_distribution(Model, custom_distribution_func):
     (ftrain, fvalid, ftest) = dataset_iris()
-    model = ModelType(model_id="multinomial_custom", 
+    model = Model(model_id="multinomial_custom", 
                       ntrees=3, 
                       max_depth=5,
                       score_each_iteration=True,

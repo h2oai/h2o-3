@@ -67,17 +67,6 @@ Example
         def link(self):
             return "logit"
         
-        def deviance(self, w, y, f):
-            def log(x):
-                import java.lang.Math as Math
-                min_log = -19
-                x = Math.max(0, x)
-                if x == 0:
-                    return min_log
-                else:
-                    return Math.max(min_log, Math.log(x))
-            return -2 * w * (y * log(f) + (1 - y) * log(1 - f))
-        
         def init(self, w, o, y):
             return [w * (y - o), w]
         

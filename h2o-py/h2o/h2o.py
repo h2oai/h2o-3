@@ -1407,6 +1407,17 @@ def _create_zip_file(dest_filename, *content_list):
     return dest_filename
 
 
+def _inspect_methods_separately(obj):
+    import inspect
+    class_def = "class {}:\n".format(obj.__name__)
+    for name, member in inspect.getmembers(obj):
+        if inspect.ismethod(member):
+            class_def += inspect.getsource(member)
+        elif inspect.isfunction(member):
+            class_def += inspect.getsource(member)
+    return class_def
+
+
 def _default_source_provider(obj):
     import inspect
     # First try to get source code via inspect
@@ -1419,14 +1430,16 @@ def _default_source_provider(obj):
         # (1) get IPython history and find class definition, or
         # (2) compose body of class from methods, since it is still possible to get
         #     method body
-        class_def = "class {}:\n".format(obj.__name__)
-        for name, member in inspect.getmembers(obj):
-            if inspect.ismethod(member):
-                class_def += inspect.getsource(member)
-            elif inspect.isfunction(member):
-                class_def += inspect.getsource(member)
-        return class_def
+        return _inspect_methods_separately(obj)
 
+
+def _default_custom_distribution_source_provider(obj):
+    from h2o.utils.distributions import CustomDistributionGeneric
+    if CustomDistributionGeneric in obj.mro():
+        return _inspect_methods_separately(obj)
+    else:
+        return _default_source_provider(obj)
+    
 
 def upload_custom_metric(func, func_file="metrics.py", func_name=None, class_name=None, source_provider=None):
     """
@@ -1538,14 +1551,14 @@ def upload_custom_distribution(func, func_file="distributions.py", func_name=Non
 
     # Use default source provider
     if not source_provider:
-        source_provider = _default_source_provider
+        source_provider = _default_custom_distribution_source_provider
 
     # The template wraps given metrics representation
     _CFUNC_CODE_TEMPLATE = """# Generated code
 import water.udf.CDistributionFunc as DistributionFunc
 
 # User given metric function as a class implementing
-# 5 methods defined by interface CDistributionFunc
+# 4 methods defined by interface CDistributionFunc
 {}
 
 # Generated user distribution which satisfies the interface
@@ -1573,7 +1586,7 @@ class {}Wrapper({}, DistributionFunc, object):
         class_name = "{}.{}Wrapper".format(module_name, class_name)
     else:
         assert_satisfies(func, inspect.isclass(func), "The parameter `func` should be str or class")
-        for method in ['link', 'deviance', 'gradient', 'init', 'gamma']:
+        for method in ['link', 'init', 'gamma', 'gradient']:
             assert_satisfies(func, method in dir(func), "The class `func` needs to define method `{}`".format(method))
 
         assert_satisfies(class_name, class_name is None,

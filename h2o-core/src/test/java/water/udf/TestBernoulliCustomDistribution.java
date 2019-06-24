@@ -19,11 +19,6 @@ public class TestBernoulliCustomDistribution implements CDistributionFunc {
     public String link() { return "logit";}
 
     @Override
-    public double deviance(double w, double y, double f) {
-        return -2 * w * (y * log(f) + (1 - y) * log(1 - f));
-    }
-
-    @Override
     public double[] init(double w, double o, double y) {
         return new double[]{w * (y - o), w};
     }
