@@ -3,7 +3,7 @@
 ``stopping_metric``
 -------------------
 
-- Available in: GBM, DRF, Deep Learning, AutoML, XGBoost
+- Available in: GBM, DRF, Deep Learning, AutoML, XGBoost, Isolation Forest
 - Hyperparameter: yes
 
 Description
