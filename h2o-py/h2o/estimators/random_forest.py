@@ -57,8 +57,7 @@ class H2ORandomForestEstimator(H2OEstimator):
 
     @training_frame.setter
     def training_frame(self, training_frame):
-        assert_is_type(training_frame, None, H2OFrame)
-        self._parms["training_frame"] = training_frame
+        self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
 
 
     @property
@@ -72,8 +71,7 @@ class H2ORandomForestEstimator(H2OEstimator):
 
     @validation_frame.setter
     def validation_frame(self, validation_frame):
-        assert_is_type(validation_frame, None, H2OFrame)
-        self._parms["validation_frame"] = validation_frame
+        self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
 
 
     @property
@@ -736,8 +734,7 @@ class H2ORandomForestEstimator(H2OEstimator):
 
     @calibration_frame.setter
     def calibration_frame(self, calibration_frame):
-        assert_is_type(calibration_frame, None, H2OFrame)
-        self._parms["calibration_frame"] = calibration_frame
+        self._parms["calibration_frame"] = H2OFrame._validate(calibration_frame, 'calibration_frame')
 
 
     @property
