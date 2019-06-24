@@ -50,8 +50,8 @@ public class AstScale extends AstPrimitive {
       return new ValFrame(originalFrame);
     }
 
-    final double[] means = calcMeans(env, asts[2], numericFrame);
-    final double[] mults = calcMults(env, asts[3], numericFrame);
+    final double[] means = calcMeans(env, asts[2], numericFrame, originalFrame);
+    final double[] mults = calcMults(env, asts[3], numericFrame, originalFrame);
     // Update in-place.
     new InPlaceSlateTask(means, mults).doAll(numericFrame);
 
@@ -78,13 +78,11 @@ public class AstScale extends AstPrimitive {
   }
   
   // Peel out the bias/shift/mean
-  static double[] calcMeans(Env env, AstRoot meanSpec, Frame fr) {
+  static double[] calcMeans(Env env, AstRoot meanSpec, Frame fr, Frame origFr) {
     final int ncols = fr.numCols();
     double[] means;
     if (meanSpec instanceof AstNumList) {
-      means = ((AstNumList) meanSpec).expand();
-      if (means.length != ncols)
-        throw new IllegalArgumentException("Numlist must be the same length as the numeric columns of the Frame");
+      means = extractNumericValues(((AstNumList) meanSpec).expand(), fr, origFr);
     } else {
       double d = meanSpec.exec(env).getNum();
       if (d == 0) means = new double[ncols]; // No change on means, so zero-filled
@@ -95,21 +93,18 @@ public class AstScale extends AstPrimitive {
   }
   
   // Peel out the scale/stddev
-  static double[] calcMults(Env env, AstRoot multSpec, Frame fr) {
-    final int ncols = fr.numCols();
+  static double[] calcMults(Env env, AstRoot multSpec, Frame fr, Frame origFr) {
     double[] mults;
     if (multSpec instanceof AstNumList) {
-      mults = ((AstNumList) multSpec).expand();
-      if (mults.length != ncols)
-        throw new IllegalArgumentException("Numlist must be the same length as the numeric columns of the Frame");
+      mults = extractNumericValues(((AstNumList) multSpec).expand(), fr, origFr);
     } else {
       Val v = multSpec.exec(env);
       if (v instanceof ValFrame) {
-        mults = toArray(v.getFrame().anyVec());
+        mults = extractNumericValues(toArray(v.getFrame().anyVec()), fr, origFr);
       } else {
         double d = v.getNum();
         if (d == 0)
-          Arrays.fill(mults = new double[ncols], 1.0); // No change on mults, so one-filled
+          Arrays.fill(mults = new double[fr.numCols()], 1.0); // No change on mults, so one-filled
         else if (d == 1) mults = fr.mults();
         else throw new IllegalArgumentException("Only true or false allowed");
       }
@@ -123,4 +118,23 @@ public class AstScale extends AstPrimitive {
       res[i] = v.at(i);
     return res;
   }
+
+  private static double[] extractNumericValues(double[] vals, Frame fr, Frame origFr) {
+    if (vals.length != origFr.numCols()) {
+      throw new IllegalArgumentException("Values must be the same length as is the number of columns of the Frame to scale" +
+              " (fill 0 for non-numeric columns).");
+    }
+    if (vals.length == fr.numCols())
+      return vals;
+    double[] numVals = new double[fr.numCols()];
+    int pos = 0;
+    for (int i = 0; i < origFr.numCols(); i++) {
+      if (origFr.vec(i).get_type() != Vec.T_NUM)
+        continue;
+      numVals[pos++] = vals[i];
+    }
+    assert pos == numVals.length;
+    return numVals;
+  }
+
 }
