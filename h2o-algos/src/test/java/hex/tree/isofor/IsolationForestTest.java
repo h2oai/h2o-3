@@ -45,6 +45,32 @@ public class IsolationForestTest extends TestUtil {
   }
 
   @Test
+  public void testEarlyStopping() {
+    try {
+      Scope.enter();
+      Frame train = Scope.track(parse_test_file("smalldata/anomaly/ecg_discord_train.csv"));
+
+      IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
+      p._train = train._key;
+      p._seed = 0xDECAF;
+      p._ntrees = 1000;
+      p._min_rows = 1;
+      p._sample_size = 5;
+      p._stopping_rounds = 3;
+      p._score_each_iteration = true;
+      p._stopping_tolerance = 0.05;
+
+      IsolationForestModel model = new IsolationForest(p).trainModel().get();
+      assertNotNull(model);
+      Scope.track_generic(model);
+
+      assertEquals(0, model._output._ntrees, 20); // stops in 20 trees or less
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
   public void testEmptyOOB() {
     try {
       Scope.enter();

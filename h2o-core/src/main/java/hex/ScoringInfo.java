@@ -91,16 +91,12 @@ public class ScoringInfo extends Iced<ScoringInfo> {
    * @param criterion scalar model metric / stopping criterion by which to sort
    * @return a Comparator on a stopping criterion / metric
    */
-  public static final Comparator<ScoringInfo> comparator(final ScoreKeeper.StoppingMetric criterion) {
+  public static Comparator<ScoringInfo> comparator(final ScoreKeeper.StoppingMetric criterion) {
+    final int direction = criterion.direction();
     return new Comparator<ScoringInfo>() {
       @Override
       public int compare(ScoringInfo o1, ScoringInfo o2) {
-        boolean moreIsBetter = ScoreKeeper.moreIsBetter(criterion);
-
-        if (!moreIsBetter)
-          return (int)Math.signum(o2.metric(criterion) - o1.metric(criterion));
-        else
-          return (int)Math.signum(o1.metric(criterion) - o2.metric(criterion));
+        return direction * (int)Math.signum(o1.metric(criterion) - o2.metric(criterion));
       }
     };
   }
