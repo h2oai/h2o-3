@@ -468,6 +468,22 @@ predict.H2OModel <- function(object, newdata, ...) {
   h2o.predict.H2OModel(object, newdata, ...)
 }
 
+#' Predict on an H2O Model
+#'
+#' @param object a fitted model object for which prediction is desired.
+#' @param newdata An H2OFrame object in which to look for
+#'        variables with which to predict.
+#' @param ... additional arguments to pass on.
+#' @return Returns an H2OFrame object with probabilites and
+#'         default predictions.
+#' @export
+h2o.predict <- function(object, newdata, ...){
+  UseMethod("h2o.predict", object)
+}
+
+#'
+#' @rdname predict.H2OModel
+#' @export
 h2o.predict.H2OModel <- function(object, newdata, ...) {
   if (missing(newdata)) {
     stop("predictions with a missing `newdata` argument is not implemented yet")
@@ -482,11 +498,6 @@ h2o.predict.H2OModel <- function(object, newdata, ...) {
   h2o.getFrame(dest_key)
 }
 
-#' @rdname predict.H2OModel
-#' @export
-h2o.predict <- function(object, newdata, ...){
-  UseMethod("h2o.predict", object)
-}
 #' Predict the Leaf Node Assignment on an H2O Model
 #'
 #' Obtains leaf node assignment from fitted H2O model objects.
