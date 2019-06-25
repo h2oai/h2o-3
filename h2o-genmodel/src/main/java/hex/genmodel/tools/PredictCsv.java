@@ -4,12 +4,11 @@ import au.com.bytecode.opencsv.CSVReader;
 import hex.ModelCategory;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
-import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.algos.glrm.GlrmMojoModel;
+import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.prediction.*;
-import hex.genmodel.utils.ArrayUtils;
 
 import java.io.BufferedWriter;
 import java.io.FileReader;
@@ -34,6 +33,7 @@ public class PredictCsv {
   public boolean setInvNumNA = false;    // enable .setConvertInvalidNumbersToNa(true)
   public boolean getTreePath = false; // enable tree models to obtain the leaf-assignment information
   boolean returnGLRMReconstruct = false; // for GLRM, return x factor by default unless set this to true
+  public int glrmIterNumber = -1;  // for GLRM, default to 100.
   // Model instance
   private EasyPredictModelWrapper model;
 
@@ -358,6 +358,7 @@ public class PredictCsv {
 
     if (returnGLRMReconstruct)
       config.setEnableGLRMReconstrut(true);
+    
     model = new EasyPredictModelWrapper(config);
   }
 
@@ -370,7 +371,10 @@ public class PredictCsv {
 
     if (returnGLRMReconstruct)
       config.setEnableGLRMReconstrut(true);
-
+    
+    if (glrmIterNumber > 0)   // set GLRM Mojo iteration number
+      config.setGLRMIterNumber(glrmIterNumber);
+    
     model = new EasyPredictModelWrapper(config);
   }
 
@@ -390,6 +394,7 @@ public class PredictCsv {
     System.out.println("     --leafNodeAssignment will show the leaf node assignment for GBM and DRF instead of the" +
             " prediction results");
     System.out.println("     --glrmReconstruct will return the reconstructed dataset for GLRM mojo instead of X factor derived from the dataset.");
+    System.out.println("     --glrmIterNumber integer indicating number of iterations to go through when constructing X factor derived from the dataset.");
     System.out.println("");
     System.exit(1);
   }
@@ -465,6 +470,7 @@ public class PredictCsv {
             case "--input":  inputCSVFileName = sarg; break;
             case "--output": outputCSVFileName = sarg; break;
             case "--separator": separator=sarg.charAt(sarg.length()-1);; break;
+            case "--glrmIterNumber": glrmIterNumber=Integer.valueOf(sarg); break;
             default:
               System.out.println("ERROR: Unknown command line argument: " + s);
               usage();
