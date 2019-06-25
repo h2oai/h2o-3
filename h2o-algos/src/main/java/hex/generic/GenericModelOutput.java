@@ -17,6 +17,7 @@ public class GenericModelOutput extends Model.Output {
     private final ModelCategory _modelCategory;
     private final int _nfeatures;
     public final TwoDimTable _variable_importances;
+    public final TwoDimTable[] _generic_tables;
 
 
     public GenericModelOutput(final MojoModel mojoModel) {
@@ -38,6 +39,7 @@ public class GenericModelOutput extends Model.Output {
         _nfeatures = modelDescriptor.nfeatures();
 
         _variable_importances = readVariableImportances(h2oModel.getVariableImportancesMap());
+        _generic_tables = new TwoDimTable[]{_variable_importances, _variable_importances}; // POC
         _model_summary = convertTable(modelDescriptor.modelSummary());
     }
 
