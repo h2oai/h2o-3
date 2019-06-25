@@ -326,15 +326,13 @@ class H2OIsolationForestEstimator(H2OEstimator):
         for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
         client.
 
-        One of: ``"auto"``, ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``,
-        ``"lift_top_group"``, ``"misclassification"``, ``"mean_per_class_error"``, ``"anomaly_score"``, ``"custom"``,
-        ``"custom_increasing"``  (default: ``"auto"``).
+        One of: ``"AUTO"``, ``"anomaly_score"``  (default: ``"auto"``).
         """
         return self._parms.get("stopping_metric")
 
     @stopping_metric.setter
     def stopping_metric(self, stopping_metric):
-        assert_is_type(stopping_metric, None, Enum("auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "lift_top_group", "misclassification", "mean_per_class_error", "anomaly_score", "custom", "custom_increasing"))
+        assert_is_type(stopping_metric, None, Enum("AUTO", "anomaly_score"))
         self._parms["stopping_metric"] = stopping_metric
 
 
