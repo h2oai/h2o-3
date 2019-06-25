@@ -168,7 +168,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
 
           meanResDeviance = new MeanResidualDeviance(_dist, preds.anyVec(), actual, weight).exec().meanResidualDeviance;
         }
-      } else if(m._parms._distribution != DistributionFamily.custom) {
+      } else if((m != null && m._parms._distribution != DistributionFamily.custom) || (_dist != null && _dist.distribution != DistributionFamily.custom) ) {
         meanResDeviance = _sumdeviance / _wcount; //mean residual deviance
       } else {
         meanResDeviance = Double.NaN;
