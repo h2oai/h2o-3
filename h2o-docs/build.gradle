@@ -13,8 +13,7 @@ def bookletList = [
             "DeepLearningBooklet",
             "SparklingWaterBooklet",
             "RBooklet",
-            "PythonBooklet",
-            "DeepWaterBooklet"]
+            "PythonBooklet"]
 
 task(createBuildInfoTex) {
     doLast {
