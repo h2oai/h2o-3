@@ -27,5 +27,8 @@ public class GenericModelV3 extends ModelSchemaV3<GenericModel, GenericModelV3, 
 
         @API(help="Generic model summary", direction = API.Direction.OUTPUT, level = API.Level.secondary)
         TwoDimTableV3 model_summary;
+
+        @API(help="Generic tables", direction = API.Direction.OUTPUT, level = API.Level.secondary)
+        TwoDimTableV3[] generic_tables;
     }
 }

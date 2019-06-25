@@ -29,6 +29,7 @@ def mojo_model_test():
     # Test constructor generating the model from existing MOJO file
     model = H2OGenericEstimator.from_file(original_model_filename)
     model.show()
+    model.summary()
     
     
 if __name__ == "__main__":

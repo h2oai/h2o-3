@@ -57,6 +57,12 @@ class H2OGenericEstimator(H2OEstimator):
         :return: False.
         """
         return False
+        
+    def show(self):
+        # This part should be automatically generated - edited as a part of a POC
+        super(H2OGenericEstimator, self).show()
+
+        self._model_json["output"]["generic_tables"].show()
 
     @staticmethod
     def from_file(file=str):
@@ -73,3 +79,4 @@ class H2OGenericEstimator(H2OEstimator):
         model.train()
 
         return model
+
