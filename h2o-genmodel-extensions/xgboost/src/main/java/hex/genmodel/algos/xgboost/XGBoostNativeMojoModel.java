@@ -39,11 +39,13 @@ public final class XGBoostNativeMojoModel extends XGBoostMojoModel {
 
   public final double[] score0(double[] doubles, double offset, double[] preds) {
     return score0(doubles, offset, preds,
+            _boosterType, _ntrees,
             _booster, _nums, _cats, _catOffsets, _useAllFactorLevels,
             _nclasses, _priorClassDistrib, _defaultThreshold, _sparse);
   }
 
   public static double[] score0(double[] doubles, double offset, double[] preds,
+                                String _boosterType, int _ntrees,
                                 Booster _booster, int _nums, int _cats,
                                 int[] _catOffsets, boolean _useAllFactorLevels,
                                 int nclasses, double[] _priorClassDistrib,
@@ -59,10 +61,16 @@ public final class XGBoostNativeMojoModel extends XGBoostMojoModel {
     try {
       dmat = new DMatrix(floats,1, floats.length, _sparse ? 0 : Float.NaN);
       final DMatrix row = dmat;
+      final int treeLimit;
+      if ("dart".equals(_boosterType)) {
+        treeLimit = _ntrees;
+      } else {
+        treeLimit = 0;
+      }
       BoosterHelper.BoosterOp<float[]> predictOp = new BoosterHelper.BoosterOp<float[]>() {
         @Override
         public float[] apply(Booster booster) throws XGBoostError {
-          return booster.predict(row)[0];
+          return booster.predict(row, false, treeLimit)[0];
         }
       };
       out = BoosterHelper.doWithLocalRabit(predictOp, _booster);

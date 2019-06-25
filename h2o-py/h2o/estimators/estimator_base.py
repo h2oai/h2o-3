@@ -114,8 +114,10 @@ class H2OEstimator(ModelBase):
     def _train(self, x=None, y=None, training_frame=None, offset_column=None, fold_column=None,
               weights_column=None, validation_frame=None, max_runtime_secs=None, ignored_columns=None,
               model_id=None, verbose=False, extend_parms_fn=None):
-        assert_is_type(training_frame, None, H2OFrame)
-        assert_is_type(validation_frame, None, H2OFrame)
+        has_default_training_frame = hasattr(self, 'training_frame') and self.training_frame is not None
+        training_frame = H2OFrame._validate(training_frame, 'training_frame',
+                                            required=self._requires_training_frame() and not has_default_training_frame)
+        validation_frame = H2OFrame._validate(validation_frame, 'validation_frame')
         assert_is_type(y, None, int, str)
         assert_is_type(x, None, int, str, [str, int], {str, int})
         assert_is_type(ignored_columns, None, [str, int], {str, int})
@@ -128,11 +130,9 @@ class H2OEstimator(ModelBase):
         assert_is_type(extend_parms_fn, None, FunctionType)
 
         training_frame_exists = training_frame is not None
-        if self._requires_training_frame() and not training_frame_exists:
-            raise H2OValueError("Training frame required for %s algorithm, but none was given." % self.algo)
-
         if not training_frame_exists:
             self._verify_training_frame_params(offset_column, fold_column, weights_column, validation_frame)
+            training_frame = self.training_frame if has_default_training_frame else None
 
         algo = self.algo
         if verbose and algo not in ["drf", "gbm", "deeplearning", "xgboost"]:
@@ -142,9 +142,10 @@ class H2OEstimator(ModelBase):
             del parms["__class__"]
         is_auto_encoder = bool(parms.get("autoencoder"))
         is_supervised = not(is_auto_encoder or algo in {"aggregator", "pca", "svd", "kmeans", "glrm", "word2vec", "isolationforest", "generic"})
-        if training_frame_exists:
-            names = training_frame.names
-            ncols = training_frame.ncols
+
+        names = training_frame.names if training_frame_exists else []
+        ncols = training_frame.ncols if training_frame_exists else 0
+        types = training_frame.types if training_frame_exists else {}
 
         if is_supervised:
             if y is None: y = "response"
@@ -155,7 +156,7 @@ class H2OEstimator(ModelBase):
             else:
                 if y not in names:
                     raise H2OValueError("Column %s does not exist in the training frame" % y)
-            self._estimator_type = "classifier" if training_frame.types[y] == "enum" else "regressor"
+            self._estimator_type = "classifier" if types[y] == "enum" else "regressor"
         else:
             # If `y` is provided for an unsupervised model we'll simply ignore
             # it. This way an unsupervised model can be used as a step in
@@ -207,29 +208,35 @@ class H2OEstimator(ModelBase):
         # Step 2
         is_auto_encoder = "autoencoder" in parms and parms["autoencoder"]
         is_unsupervised = is_auto_encoder or self.algo in {"aggregator", "pca", "svd", "kmeans", "glrm", "word2vec", "isolationforest"}
-        if is_auto_encoder and y is not None: raise ValueError("y should not be specified for autoencoder.")
-        if not is_unsupervised and y is None and self.algo not in ["generic"]: raise ValueError("Missing response")
+        if is_auto_encoder and y is not None:
+            raise ValueError("y should not be specified for autoencoder.")
+        if not is_unsupervised and y is None and self.algo not in ["generic"]:
+            raise ValueError("Missing response")
 
-        # Step 3
         if training_frame_exists:
             parms["training_frame"] = training_frame
             offset = parms["offset_column"]
             folds = parms["fold_column"]
             weights = parms["weights_column"]
 
-        if validation_frame is not None: parms["validation_frame"] = validation_frame
-        if is_type(y, int): y = training_frame.names[y]
-        if y is not None: parms["response_column"] = y
-        if not isinstance(x, (list, tuple)): x = [x]
+        if validation_frame is not None:
+            parms["validation_frame"] = validation_frame
+
+        if is_type(y, int):
+            y = names[y]
+        if y is not None:
+            parms["response_column"] = y
+        if not isinstance(x, (list, tuple)):
+            x = [x]
         if is_type(x[0], int):
-            x = [training_frame.names[i] for i in x]
+            x = [names[i] for i in x]
         if training_frame_exists:
-            ignored_columns = list(set(training_frame.names) - set(x + [y, offset, folds, weights] + self._additional_used_columns(parms)))
+            ignored_columns = list(set(names) - set(x + [y, offset, folds, weights]))
             parms["ignored_columns"] = None if ignored_columns == [] else [quoted(col) for col in ignored_columns]
-        parms["interactions"] = (None if "interactions" not in parms or parms["interactions"] is None else
-                                 [quoted(col) for col in parms["interactions"]])
-        parms["interaction_pairs"] = (None if "interaction_pairs" not in parms or parms["interaction_pairs"] is None else
-                                 [tuple(map(quoted, ip)) for ip in parms["interaction_pairs"]])
+        parms["interactions"] = (None if "interactions" not in parms or parms["interactions"] is None
+                                 else [quoted(col) for col in parms["interactions"]])
+        parms["interaction_pairs"] = (None if "interaction_pairs" not in parms or parms["interaction_pairs"] is None
+                                      else [tuple(map(quoted, ip)) for ip in parms["interaction_pairs"]])
     
         # internal hook allowing subclasses to extend train parms 
         if extend_parms_fn is not None:

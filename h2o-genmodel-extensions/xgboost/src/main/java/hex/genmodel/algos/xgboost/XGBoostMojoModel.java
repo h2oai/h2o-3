@@ -48,6 +48,8 @@ public abstract class XGBoostMojoModel extends MojoModel implements SharedTreeGr
     }
   }
 
+  public String _boosterType;
+  public int _ntrees;
   public int _nums;
   public int _cats;
   public int[] _catOffsets;
