@@ -51,6 +51,8 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
 
   @Override public boolean isSupervised() { return false; }
 
+  @Override protected ScoreKeeper.ProblemType getProblemType() { return ScoreKeeper.ProblemType.anomaly_detection; }
+
   @Override public void init(boolean expensive) {
     super.init(expensive);
     // Initialize local variables

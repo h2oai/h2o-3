@@ -2,6 +2,7 @@ package hex.tree.isofor;
 
 import hex.ModelCategory;
 import hex.ModelMetrics;
+import hex.ScoreKeeper;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.SharedTreeModel;
 import water.Key;
@@ -31,6 +32,9 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
       // _nbins_top_level = 2;
       _histogram_type = HistogramType.Random;
       _distribution = DistributionFamily.gaussian;
+
+      // early stopping
+      _stopping_tolerance = 0.01; // (default 0.001 is too low for the default criterion anomaly_score)
     }
   }
 

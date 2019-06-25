@@ -479,8 +479,9 @@ class H2ORandomForestEstimator(H2OEstimator):
     @property
     def stopping_metric(self):
         """
-        Metric to use for early stopping (AUTO: logloss for classification, deviance for regression). Note that custom
-        and custom_increasing can only be used in GBM and DRF with the Python client.
+        Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and anonomaly_score
+        for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
+        client.
 
         One of: ``"auto"``, ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``,
         ``"lift_top_group"``, ``"misclassification"``, ``"mean_per_class_error"``, ``"custom"``, ``"custom_increasing"``

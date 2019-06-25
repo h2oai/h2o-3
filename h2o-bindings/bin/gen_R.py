@@ -75,7 +75,12 @@ def gen_module(schema, algo, module):
         if param["type"] == "boolean":
             phelp = "\code{Logical}. " + phelp
         if param["values"]:
-            phelp += " Must be one of: %s." % ", ".join('"%s"' % p for p in param["values"])
+            values = param["values"][:]
+            if (param["name"] == u'stopping_metric') and (not(algo == u'isolationforest')):    # anomaly_score only in Isolation Forest
+                values.remove(u'anomaly_score')
+            if (param["name"] == u'stopping_metric') and (algo == u'isolationforest'):
+                values = [u'AUTO', u'anomaly_score']
+            phelp += " Must be one of: %s." % ", ".join('"%s"' % p for p in values)
         if (param["name"]==u'distribution') and (not(algo==u'glm') and not(algo==u'gbm')):    # quasibinomial only in glm, gbm
             phelp=phelp.replace(' "quasibinomial",',"")
         if (param["name"]==u'distribution') and not(algo==u'glm'):    # ordinal only in glm
@@ -134,7 +139,7 @@ def gen_module(schema, algo, module):
                 temp = temp.replace(' "ordinal",',"")
             list.append(indent("%s = %s" % (param["name"], temp), 17 + len(module)))
         else:
-            list.append(indent("%s = %s" % (param["name"], normalize_value(param)), 17 + len(module)))
+            list.append(indent("%s = %s" % (param["name"], normalize_value(param, algo=algo)), 17 + len(module)))
     if algo in ["deeplearning","drf", "gbm","xgboost"]:
         list.append(indent("verbose = FALSE ",17 + len(module)))
     yield ",\n".join(list)
@@ -1118,11 +1123,17 @@ def algo_to_modelname(algo):
 def indent(string, n):
     return " " * n + string
 
-def normalize_value(param, is_help = False):
+
+def normalize_value(param, is_help=False, algo="unknown"):
     if param["name"] == "metalearner_params":
         return "NULL"
     if not(is_help) and param["type"][:4] == "enum":
-        return "c(%s)" % ", ".join('"%s"' % p for p in param["values"])
+        values = param["values"][:]
+        if (param["name"] == u'stopping_metric') and (not(algo == u'isolationforest')): # anomaly_score only in Isolation Forest
+            values.remove(u'anomaly_score')
+        if (param["name"] == u'stopping_metric') and (algo == u'isolationforest'):
+            values = [u'AUTO', u'anomaly_score']
+        return "c(%s)" % ", ".join('"%s"' % p for p in values)
     if param["default_value"] is None:
         if param["type"] in ["short", "int", "long", "double"]:
             return 0
