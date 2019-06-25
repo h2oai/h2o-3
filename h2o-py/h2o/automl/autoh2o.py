@@ -66,7 +66,8 @@ class H2OAutoML(object):
                  keep_cross_validation_models=False,
                  keep_cross_validation_fold_assignment=False,
                  sort_metric="AUTO",
-                 export_checkpoints_dir=None):
+                 export_checkpoints_dir=None,
+                 verbosity=None):
         """
         Create a new H2OAutoML instance.
         
@@ -118,6 +119,8 @@ class H2OAutoML(object):
           ``auc``, ``"logloss"``, ``"mean_per_class_error"``, ``"rmse"``, ``"mse"``.  For regression choose between ``"deviance"``, ``"rmse"``, 
           ``"mse"``, ``"mae"``, ``"rmlse"``. For multinomial classification choose between ``"mean_per_class_error"``, ``"logloss"``, ``"rmse"``, ``"mse"``.
         :param export_checkpoints_dir: Path to a directory where every model will be stored in binary form.
+        :param verbosity: Verbosity of the backend messages printed during training.
+            Available options are 'debug', 'info' or 'warn'. Defaults to None (disable live log).
         """
         # Check if H2O jar contains AutoML
         try:
@@ -231,6 +234,7 @@ class H2OAutoML(object):
         self._job = None
         self._leader_id = None
         self._leaderboard = None
+        self._verbosity = verbosity
         self._event_log = None
         self._training_info = None
         self._state_json = None
@@ -242,6 +246,7 @@ class H2OAutoML(object):
         if export_checkpoints_dir is not None:
             assert_is_type(export_checkpoints_dir, str)
             self.build_control["export_checkpoints_dir"] = export_checkpoints_dir
+
 
     #---------------------------------------------------------------------------
     # Basic properties
@@ -304,7 +309,7 @@ class H2OAutoML(object):
     # Training AutoML
     #---------------------------------------------------------------------------
     def train(self, x=None, y=None, training_frame=None, fold_column=None,
-              weights_column=None, validation_frame=None, leaderboard_frame=None, blending_frame=None, verbosity=None):
+              weights_column=None, validation_frame=None, leaderboard_frame=None, blending_frame=None):
         """
         Begins an AutoML task, a background task that automatically builds a number of models
         with various algorithms and tracks their performance in a leaderboard. At any point 
@@ -328,8 +333,6 @@ class H2OAutoML(object):
         :param blending_frame: H2OFrame used to train the the metalearning algorithm in Stacked Ensembles (instead of relying on cross-validated predicted values).
             This is optional, but when provided, it is also recommended to disable cross validation 
             by setting `nfolds=0` and to provide a leaderboard frame for scoring purposes.
-        :param verbosity: Verbosity of the backend messages printed during training.
-            Available options are 'debug', 'info' or 'warn'. Defaults to None (disable live log).
 
         :returns: An H2OAutoML object.
 
@@ -432,7 +435,7 @@ class H2OAutoML(object):
             return
 
         self._job = H2OJob(resp['job'], "AutoML")
-        poll_updates = ft.partial(self._poll_training_updates, verbosity=verbosity, state={})
+        poll_updates = ft.partial(self._poll_training_updates, verbosity=self._verbosity, state={})
         try:
             self._job.poll(poll_updates=poll_updates)
         finally:
