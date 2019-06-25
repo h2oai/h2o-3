@@ -9,7 +9,7 @@ from h2o.utils.distributions import CustomDistributionGaussian, CustomDistributi
     CustomDistributionTweedie, CustomDistributionLaplace, CustomDistributionQuantile
 from tests.pyunit_utils import regression_model_distribution, regression_model_default
 from tests.pyunit_utils import multinomial_model_default, multinomial_model_distribution
-from tests.pyunit_utils import binomial_model_default, binomial_model_distribution, check_models
+from tests.pyunit_utils import binomial_model_default, binomial_model_distribution, check_model_metrics
 
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
@@ -66,7 +66,7 @@ def test_regression():
         print("Create custom ", name,  "model")
         (model2, f_test2) = regression_model_distribution(H2OGradientBoostingEstimator, 
                                                           upload_distribution(distribution, name))
-        check_models(model, model2, name)
+        check_model_metrics(model, model2, name)
     
     
 def test_binomial():
@@ -81,7 +81,7 @@ def test_binomial():
         (model2, f_test2) = binomial_model_distribution(H2OGradientBoostingEstimator, 
                                                         upload_distribution(distribution, name),
                                                         not(distribution is CustomDistributionQuasibinomial))
-        check_models(model, model2, name)
+        check_model_metrics(model, model2, name)
         
 
 def test_multinomial():
@@ -91,7 +91,7 @@ def test_multinomial():
     print("Create custom multinomial model")
     (model2, f_test2) = multinomial_model_distribution(H2OGradientBoostingEstimator, 
                                                        upload_distribution(CustomDistributionMultinomial, "multinomial"))
-    check_models(model, model2, "multinomial")
+    check_model_metrics(model, model2, "multinomial")
                  
 
 def test_null():
@@ -119,7 +119,7 @@ def test_inherited_custom_distribution():
     print("Create custom gaussian model without inheritance")
     (model3, f_test3) = regression_model_distribution(H2OGradientBoostingEstimator,
                                                       upload_distribution(CustomDistributionGaussianNoInh, "gaussian_ni"))
-    check_models(model, model3, "gaussian_ni")
+    check_model_metrics(model, model3, "gaussian_ni")
 
 
 if __name__ == "__main__":

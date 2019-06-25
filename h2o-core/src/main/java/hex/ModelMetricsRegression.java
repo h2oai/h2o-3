@@ -125,7 +125,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       
       // Deviance method is not support in custom distribution
       if((m != null && m._parms._distribution != DistributionFamily.custom) || (_dist != null && _dist .distribution != DistributionFamily.custom)) {
-        if (m._parms._distribution != DistributionFamily.huber) {
+        if (m != null && m._parms._distribution != DistributionFamily.huber) {
           _sumdeviance += m.deviance(w, yact[0], ds[0]);
         } else if (_dist != null) {
           _sumdeviance += _dist.deviance(w, yact[0], ds[0]);

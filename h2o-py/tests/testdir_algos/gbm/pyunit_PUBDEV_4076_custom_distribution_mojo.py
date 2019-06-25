@@ -6,7 +6,7 @@ import h2o
 from tests.pyunit_utils import standalone_test
 from tests.pyunit_utils import random_dataset, build_save_model_GBM, getMojoName, mojo_predict
 from tests.pyunit_utils import compare_frames_local
-from tests.pyunit_utils import CustomDistributionGaussian, CustomDistributionBernoulli
+from h2o.utils.distributions import CustomDistributionBernoulli
 
 def custom_distribution_bernoulli():
     return h2o.upload_custom_distribution(CustomDistributionBernoulli, func_name="custom_bernoulli", func_file="custom_bernoulli.py")

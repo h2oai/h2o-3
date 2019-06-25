@@ -2,7 +2,7 @@ import h2o
 from . import locate
 
 
-def check_models(default_model, custom_model, model_type):
+def check_model_metrics(default_model, custom_model, model_type):
     shd = default_model.scoring_history()
     shc = custom_model.scoring_history()
     for metric in shd:
