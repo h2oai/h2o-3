@@ -34,19 +34,20 @@ def test_train_verbosity():
     y = 'CAPSULE'
     train[y] = train[y].asfactor()
 
-    aml = H2OAutoML(project_name="test_train_verbosity",
-                    keep_cross_validation_predictions=True,
-                    max_models=2,
-                    stopping_tolerance=0.01,  # triggers a warning event log message
-                    seed=1234)
+    make_aml = lambda verbosity=None: H2OAutoML(project_name="test_train_verbosity",
+                                                keep_cross_validation_predictions=True,
+                                                max_models=2,
+                                                stopping_tolerance=0.01,  # triggers a warning event log message
+                                                seed=1234,
+                                                verbosity=verbosity)
     print("verbosity off")
-    aml.train(y=y, training_frame=train)
+    make_aml().train(y=y, training_frame=train)
     print("verbosity debug")
-    aml.train(y=y, training_frame=train, verbosity='debug')
+    make_aml('debug').train(y=y, training_frame=train)
     print("verbosity info")
-    aml.train(y=y, training_frame=train, verbosity='info')
+    make_aml('info').train(y=y, training_frame=train)
     print("verbosity warn")
-    aml.train(y=y, training_frame=train, verbosity='warn')
+    make_aml('warn').train(y=y, training_frame=train)
 
 
 pyunit_utils.run_tests([
