@@ -142,10 +142,11 @@ public class DRFModel extends SharedTreeModel<DRFModel, DRFModel.DRFParameters, 
 
         for (int i = 0; i < nc.length; i++) {
           // Prediction of DRF tree ensemble is an average prediction of all trees. So, divide contribs by ntrees
-          if (_model._output.nclasses() == 1) {
+          if (_model._output.nclasses() == 1) { //Regression
             nc[i].addNum(contribs[i] / _model._output._ntrees);
-          } else {
-            nc[i].addNum((1 - contribs[i]) / _model._output._ntrees); // Not right
+          } else { //Binomial
+            float featurePlusBiasRatio = (float)1/(_model._output.nfeatures() + 1); // + 1 for bias term
+            nc[i].addNum(featurePlusBiasRatio - (contribs[i] / _model._output._ntrees));
           }
         }
       }
