@@ -51,6 +51,9 @@ public class PartialDependenceV3 extends SchemaV3<PartialDependence, PartialDepe
   @SuppressWarnings("unused")
   @API(help="Partial Dependence Data", direction=API.Direction.OUTPUT)
   public TwoDimTableV3[] partial_dependence_data;
+  
+  @API(help="lists of column name pairs to plot 2D pdp for", direction=API.Direction.INOUT)
+  public String[][] col_pairs_2dpdp;
 
   @API(help="Key to store the destination", direction=API.Direction.INPUT)
   public KeyV3.PartialDependenceKeyV3 destination_key;
