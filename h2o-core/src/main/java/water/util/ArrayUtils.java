@@ -1828,6 +1828,25 @@ public class ArrayUtils {
     return res;
   }
 
+  /**
+   * Convert an ArrayList of {@link Double}s to a primitive int[] array.
+   */
+  public static double[] toPrimitive(Collection<Double> arr) {
+    double[] res = new double[arr.size()];
+    final Iterator<Double> iterator = arr.iterator();
+    for (int i = 0; i < res.length; i++)
+      res[i] = iterator.next();
+    return res;
+  }
+  
+  public static String[] toArray(Collection<String> arr){
+    String[] res = new String[arr.size()];
+    final Iterator<String> iterator = arr.iterator();
+    for (int i = 0; i < res.length; i++)
+      res[i] = iterator.next();
+    return res;
+  }
+
   public static boolean isSorted(int[] vals) {
     for (int i = 1; i < vals.length; ++i)
       if (vals[i - 1] > vals[i]) return false;
