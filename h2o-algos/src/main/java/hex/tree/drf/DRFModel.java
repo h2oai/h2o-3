@@ -145,7 +145,7 @@ public class DRFModel extends SharedTreeModel<DRFModel, DRFModel.DRFParameters, 
           if (_model._output.nclasses() == 1) {
             nc[i].addNum(contribs[i] / _model._output._ntrees);
           } else {
-            nc[i].addNum(1 - (contribs[i] / _model._output._ntrees)); // Not right
+            nc[i].addNum((1 - contribs[i]) / _model._output._ntrees); // Not right
           }
         }
       }
