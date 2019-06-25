@@ -4,32 +4,40 @@ import hex.Model;
 import hex.ModelCategory;
 import hex.ModelMetrics;
 import hex.genmodel.ModelDescriptor;
+import hex.genmodel.MojoModel;
 import hex.genmodel.descriptor.Table;
 import hex.genmodel.descriptor.VariableImportances;
+import water.util.ArrayUtils;
 import water.util.TwoDimTable;
+
+import java.util.Map;
 
 public class GenericModelOutput extends Model.Output {
     
     private final ModelCategory _modelCategory;
     private final int _nfeatures;
     public final TwoDimTable _variable_importances;
-    
 
-    public GenericModelOutput(final ModelDescriptor modelDescriptor) {
-        _isSupervised = modelDescriptor.isSupervised();
+
+    public GenericModelOutput(final MojoModel mojoModel) {
+        final ModelDescriptor modelDescriptor = mojoModel._modelDescriptor; // TODO : Could be removed in future or not.
+
+        final hex.genmodel.descriptor.models.Model.H2OModel h2oModel = mojoModel.h2oModel;
+
+        _isSupervised = h2oModel.getSupervised();
         _domains = modelDescriptor.scoringDomains();
         _origDomains = modelDescriptor.scoringDomains();
-        _hasOffset = modelDescriptor.offsetColumn() != null;
-        _hasWeights = modelDescriptor.weightsColumn() != null;
-        _hasFold = modelDescriptor.foldColumn() != null;
+        _hasOffset = !h2oModel.getOffsetColumn().isEmpty();
+        _hasWeights = !h2oModel.getWeightsColumn().isEmpty();
+        _hasFold = !h2oModel.getFoldColumn().isEmpty();
         _distribution = modelDescriptor.modelClassDist();
-        _priorClassDist = modelDescriptor.priorClassDist();
-        _names = modelDescriptor.columnNames();
+        _priorClassDist = ArrayUtils.toPrimitive(h2oModel.getAprioriClassDistributionsList());
+        _names = h2oModel.getColumnNameList().toArray(new String[0]);
         
         _modelCategory = modelDescriptor.getModelCategory();
         _nfeatures = modelDescriptor.nfeatures();
-        
-        _variable_importances = readVariableImportances(modelDescriptor.variableImportances());
+
+        _variable_importances = readVariableImportances(h2oModel.getVariableImportancesMap());
         _model_summary = convertTable(modelDescriptor.modelSummary());
     }
 
@@ -42,15 +50,18 @@ public class GenericModelOutput extends Model.Output {
     public int nfeatures() {
         return _nfeatures;
     }
-    
-    private static TwoDimTable readVariableImportances(final VariableImportances variableImportances){
+
+    private static TwoDimTable readVariableImportances(final Map<String, Double> variableImportances) {
         if(variableImportances == null) return null;
 
-        TwoDimTable varImps = ModelMetrics.calcVarImp(variableImportances._importances, variableImportances._variables);
+
+        TwoDimTable varImps = ModelMetrics.calcVarImp(ArrayUtils.toPrimitive(variableImportances.values()),
+                ArrayUtils.toArray(variableImportances.keySet()));
         return varImps;
     }
     
     private static TwoDimTable convertTable(final Table convertedTable){
+        // TODO: Convertible to ProtoBuf classes as well, serves as a compatibility showcase 
         if(convertedTable == null) return null;
         final TwoDimTable table = new TwoDimTable(convertedTable.getTableHeader(), convertedTable.getTableDescription(),
                 convertedTable.getRowHeaders(), convertedTable.getColHeaders(), convertedTable.getColTypesString(),
