@@ -16,9 +16,7 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.util.Log;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.Charset;
 
 import static org.junit.Assert.assertEquals;
@@ -77,15 +75,12 @@ public class DefaultMojoImplTest extends TestUtil {
   public void testOldDARTMojoUsesNativeScoring() throws IOException {
     Scope.enter();
     try {
-      XGBoostModel model = trainModel(Booster.dart);
-
-      try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-        new OldSerializationXGBMojoWriter(model).writeTo(os);
-        MojoReaderBackend mojoReaderBackend = MojoReaderBackendFactory.createReaderBackend(
-            new ByteArrayInputStream(os.toByteArray()), MojoReaderBackendFactory.CachingStrategy.MEMORY);
-        MojoModel mojo = MojoModel.load(mojoReaderBackend);
-        assertEquals(XGBoostNativeMojoModel.class.getName(), mojo.getClass().getName());
-      }
+      InputStream oldMojo = getClass().getResourceAsStream("oldDart.mojo");
+      MojoReaderBackend mojoReaderBackend = MojoReaderBackendFactory.createReaderBackend(
+          oldMojo, MojoReaderBackendFactory.CachingStrategy.MEMORY
+      );
+      MojoModel mojo = MojoModel.load(mojoReaderBackend);
+      assertEquals(XGBoostNativeMojoModel.class.getName(), mojo.getClass().getName());
     } finally {
       Scope.exit();
     }
@@ -112,29 +107,6 @@ public class DefaultMojoImplTest extends TestUtil {
     Scope.track_generic(model);
     Log.info(model);
     return model;
-  }
-
-  /**
-   * Old mojo writer that does not include use_java_scoring_by_default
-   */
-  private static final class OldSerializationXGBMojoWriter extends XGBoostMojoWriter {
-
-    public OldSerializationXGBMojoWriter(XGBoostModel model) {
-      super(model);
-    }
-
-    @Override
-    protected void writeModelData() throws IOException {
-      writeblob("boosterBytes", this.model.model_info()._boosterBytes);
-      writekv("nums", model._output._nums);
-      writekv("cats", model._output._cats);
-      writekv("cat_offsets", model._output._catOffsets);
-      writekv("use_all_factor_levels", model._output._useAllFactorLevels);
-      writekv("sparse", model._output._sparse);
-      writekv("booster", model._parms._booster.toString());
-      writeblob("feature_map", model.model_info().getFeatureMap().getBytes(Charset.forName("UTF-8")));
-    }
-
   }
 
 }
