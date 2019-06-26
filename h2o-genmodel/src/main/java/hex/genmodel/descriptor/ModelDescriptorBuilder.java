@@ -1,7 +1,6 @@
 package hex.genmodel.descriptor;
 
 import hex.ModelCategory;
-import hex.genmodel.ModelDescriptor;
 import hex.genmodel.MojoModel;
 
 import java.util.Arrays;
@@ -23,10 +22,10 @@ public class ModelDescriptorBuilder {
     private final String[] _names;
     private final String _algoName;
 
-    // Optional
-    private VariableImportances _variableImportances = null;
-    private Table _modelSummary = null;
-
+    /**
+     * 
+     * @param mojoModel A MojoModel to extract the model description from
+     */
     public ModelDescriptorBuilder(final MojoModel mojoModel) {
         _category = mojoModel._category;
         _uuid = mojoModel._uuid;
@@ -42,16 +41,6 @@ public class ModelDescriptorBuilder {
         _domains = mojoModel._domains;
         _names = mojoModel._names;
         _algoName = mojoModel.getClass().getName();
-    }
-
-    public ModelDescriptorBuilder variableImportances(final VariableImportances variableImportances) {
-        _variableImportances = variableImportances;
-        return this;
-    }
-
-    public ModelDescriptorBuilder modelSummary(final Table modelSummary) {
-        _modelSummary = modelSummary;
-        return this;
     }
 
     /**
@@ -155,16 +144,6 @@ public class ModelDescriptorBuilder {
             @Override
             public String timestamp() {
                 return null;
-            }
-
-            @Override
-            public VariableImportances variableImportances() {
-                return _variableImportances;
-            }
-
-            @Override
-            public Table modelSummary() {
-                return _modelSummary;
             }
         };
     }

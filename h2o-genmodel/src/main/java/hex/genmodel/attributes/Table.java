@@ -1,4 +1,4 @@
-package hex.genmodel.descriptor;
+package hex.genmodel.attributes;
 
 
 import java.util.Arrays;

@@ -1,9 +1,9 @@
 package hex.genmodel;
 
 import com.google.gson.*;
-import hex.genmodel.descriptor.JsonModelDescriptorReader;
+import hex.genmodel.attributes.JsonModelDescriptorReader;
 import hex.genmodel.descriptor.ModelDescriptorBuilder;
-import hex.genmodel.descriptor.Table;
+import hex.genmodel.attributes.Table;
 import hex.genmodel.utils.ParseUtils;
 import hex.genmodel.utils.StringEscapeUtils;
 
@@ -183,23 +183,15 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     checkMaxSupportedMojoVersion();
     readModelData();
     if (readModelDescriptor) {
-      _model._modelDescriptor = readModelDescriptor();
+      _model._modelDescriptor = new ModelDescriptorBuilder(_model).build();
     }
-  }
 
-  private ModelDescriptor readModelDescriptor() {
     final JsonObject modelJson = JsonModelDescriptorReader.parseModelJson(_reader);
-    ModelDescriptorBuilder modelDescriptorBuilder = new ModelDescriptorBuilder(_model);
-
-    final Table model_summary_table = JsonModelDescriptorReader.extractTableFromJson(modelJson, "output.model_summary");
-    modelDescriptorBuilder.modelSummary(model_summary_table);
-
-    readModelSpecificDescription(modelDescriptorBuilder, modelJson);
-    return modelDescriptorBuilder.build();
+    readModelSpecificAttributes(modelJson);
   }
 
-  protected void readModelSpecificDescription(final ModelDescriptorBuilder modelDescriptorBuilder, final JsonObject modelJson) {
-    // Default behavior is empty on purpose
+  protected void readModelSpecificAttributes(final JsonObject modelJson) {
+    final Table model_summary_table = JsonModelDescriptorReader.extractTableFromJson(modelJson, "output.model_summary");
   }
 
   private static Map<String, Object> parseModelInfo(MojoReaderBackend reader) throws IOException {

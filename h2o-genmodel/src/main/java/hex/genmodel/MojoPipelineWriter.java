@@ -1,8 +1,9 @@
 package hex.genmodel;
 
 import hex.ModelCategory;
-import hex.genmodel.descriptor.Table;
-import hex.genmodel.descriptor.VariableImportances;
+import hex.genmodel.descriptor.ModelDescriptor;
+import hex.genmodel.attributes.Table;
+import hex.genmodel.attributes.VariableImportances;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -202,16 +203,6 @@ public class MojoPipelineWriter extends AbstractMojoWriter {
     @Override
     public String timestamp() {
       return String.valueOf(new Date().getTime());
-    }
-
-    @Override
-    public VariableImportances variableImportances() {
-      return null;
-    }
-
-    @Override
-    public Table modelSummary() {
-      return null;
     }
   }
 

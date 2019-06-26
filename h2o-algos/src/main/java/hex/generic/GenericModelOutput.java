@@ -3,9 +3,9 @@ package hex.generic;
 import hex.Model;
 import hex.ModelCategory;
 import hex.ModelMetrics;
-import hex.genmodel.ModelDescriptor;
-import hex.genmodel.descriptor.Table;
-import hex.genmodel.descriptor.VariableImportances;
+import hex.genmodel.descriptor.ModelDescriptor;
+import hex.genmodel.attributes.Table;
+import hex.genmodel.attributes.VariableImportances;
 import water.util.TwoDimTable;
 
 public class GenericModelOutput extends Model.Output {
@@ -29,8 +29,8 @@ public class GenericModelOutput extends Model.Output {
         _modelCategory = modelDescriptor.getModelCategory();
         _nfeatures = modelDescriptor.nfeatures();
         
-        _variable_importances = readVariableImportances(modelDescriptor.variableImportances());
-        _model_summary = convertTable(modelDescriptor.modelSummary());
+        _variable_importances = null;
+        _model_summary = null;
     }
 
     @Override

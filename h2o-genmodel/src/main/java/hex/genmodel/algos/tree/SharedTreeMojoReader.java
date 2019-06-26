@@ -2,10 +2,9 @@ package hex.genmodel.algos.tree;
 
 import com.google.gson.JsonObject;
 import hex.genmodel.ModelMojoReader;
-import hex.genmodel.descriptor.JsonModelDescriptorReader;
-import hex.genmodel.descriptor.ModelDescriptorBuilder;
-import hex.genmodel.descriptor.Table;
-import hex.genmodel.descriptor.VariableImportances;
+import hex.genmodel.attributes.JsonModelDescriptorReader;
+import hex.genmodel.attributes.Table;
+import hex.genmodel.attributes.VariableImportances;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -57,8 +56,7 @@ public abstract class SharedTreeMojoReader<M extends SharedTreeMojoModel> extend
   }
 
   @Override
-  protected void readModelSpecificDescription(final ModelDescriptorBuilder modelDescriptorBuilder, final JsonObject modelJson) {
-    modelDescriptorBuilder.variableImportances(extractVariableImportances(modelJson));
+  protected void readModelSpecificAttributes(final JsonObject modelJson) {
   }
 
   private VariableImportances extractVariableImportances(final JsonObject modelJson) {

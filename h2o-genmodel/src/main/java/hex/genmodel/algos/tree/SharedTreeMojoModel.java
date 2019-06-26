@@ -3,7 +3,7 @@ package hex.genmodel.algos.tree;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.drf.DrfMojoModel;
 import hex.genmodel.algos.gbm.GbmMojoModel;
-import hex.genmodel.descriptor.VariableImportances;
+import hex.genmodel.attributes.VariableImportances;
 import hex.genmodel.utils.ByteBufferWrapper;
 import hex.genmodel.utils.GenmodelBitSet;
 

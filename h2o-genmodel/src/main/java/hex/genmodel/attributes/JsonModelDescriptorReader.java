@@ -1,4 +1,4 @@
-package hex.genmodel.descriptor;
+package hex.genmodel.attributes;
 
 import com.google.gson.*;
 import hex.genmodel.*;
@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
 /**
  * Utility class for extracting model details from JSON
  */
-public class JsonModelDescriptorReader {
+class JsonModelDescriptorReader {
 
     public static final String MODEL_DETAILS_FILE = "experimental/modelDetails.json";
 

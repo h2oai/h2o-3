@@ -1,5 +1,7 @@
 package hex.genmodel;
 
+import hex.genmodel.descriptor.ModelDescriptor;
+
 import java.io.*;
 
 
