@@ -78,7 +78,7 @@ def check_leaderboard(aml, excluded_algos, expected_metrics, expected_sort_metri
     assert len([a for a in included_algos if len([b for b in model_ids if a in b]) > 0]) == len(included_algos), \
         "leaderboard is missing some algos from {included}: {models}".format(included=included_algos, models=model_ids)
 
-    j_leaderboard = aml._state_json['leaderboard']
+    j_leaderboard = aml._get_params()['leaderboard']
     sort_metric = j_leaderboard['sort_metric']
     assert sort_metric == expected_sort_metric, \
         "expected leaderboard sorted by {expected} but was sorted by {actual}".format(expected=expected_sort_metric, actual=sort_metric)

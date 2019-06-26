@@ -26,8 +26,7 @@ tokenize <- function(sentences, stop.words = STOP_WORDS) {
     tokenized.words[is.na(tokenized.words) || (! tokenized.words %in% STOP_WORDS),]
 }
 
-# `predict` conflicts with generic fn defined in R.stats
-.predict <- function(job.title, w2v, gbm) {
+predict <- function(job.title, w2v, gbm) {
     words <- tokenize(as.character(as.h2o(job.title)))
     job.title.vec <- h2o.transform(w2v, words, aggregate_method = "AVERAGE")
     h2o.predict(gbm, job.title.vec)
@@ -55,6 +54,6 @@ gbm.model <- h2o.gbm(x = names(job.title.vecs), y = "category",
                      training_frame = data.split[[1]], validation_frame = data.split[[2]])
 
 print("Predict!")
-print(.predict("school teacher having holidays every month", w2v.model, gbm.model))
-print(.predict("developer with 3+ Java experience, jumping", w2v.model, gbm.model))
-print(.predict("Financial accountant CPA preferred", w2v.model, gbm.model))
+print(predict("school teacher having holidays every month", w2v.model, gbm.model))
+print(predict("developer with 3+ Java experience, jumping", w2v.model, gbm.model))
+print(predict("Financial accountant CPA preferred", w2v.model, gbm.model))

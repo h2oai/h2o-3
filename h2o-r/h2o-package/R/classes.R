@@ -825,6 +825,4 @@ setClass("H2OFrame", contains = "environment")
 #' @export
 setClass("H2OAutoML", slots = c(project_name = "character",
                                 leader = "H2OModel",
-                                leaderboard = "H2OFrame",
-                                event_log = "H2OFrame",
-                                training_info = "list"))
+                                leaderboard = "H2OFrame"))
