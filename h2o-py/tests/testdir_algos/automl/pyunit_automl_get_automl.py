@@ -6,22 +6,33 @@ from tests import pyunit_utils
 from h2o.automl import H2OAutoML
 from h2o.automl.autoh2o import get_automl
 
+def prostate_automl_get_automl():
 
-def test_get_automl():
-    train = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
-    y = 'CAPSULE'
-    train[y] = train[y].asfactor()
+    df = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
 
-    aml = H2OAutoML(project_name="test_get_automl",
-                    max_models=2,
-                    seed=1234)
-    aml.train(y=y, training_frame=train)
+    #Split frames
+    fr = df.split_frame(ratios=[.8,.1])
+
+    #Set up train, validation, and test sets
+    train = fr[0]
+    valid = fr[1]
+    test = fr[2]
+
+    train["CAPSULE"] = train["CAPSULE"].asfactor()
+    valid["CAPSULE"] = valid["CAPSULE"].asfactor()
+    test["CAPSULE"] = test["CAPSULE"].asfactor()
+
+    aml = H2OAutoML(project_name="py_aml0", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=2, seed=1234)
+    aml.train(y="CAPSULE", training_frame=train)
 
     get_aml = get_automl(aml.project_name)
 
     assert aml.project_name == get_aml["project_name"]
-    assert aml.leader.model_id == get_aml["leader"].model_id
+    get_aml_leader = get_aml["leader"]
+    assert aml.leader.model_id == get_aml_leader.model_id
     assert aml.leaderboard.get_frame_data() == get_aml["leaderboard"].get_frame_data()
-    assert aml.event_log.get_frame_data() == get_aml["event_log"].get_frame_data()
 
-pyunit_utils.run_tests([test_get_automl])
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(prostate_automl_get_automl)
+else:
+    prostate_automl_get_automl()

@@ -7,13 +7,14 @@ A job can be polled for completion and reports the current progress as long as i
 """
 from __future__ import division, print_function, absolute_import, unicode_literals
 
-import functools as ft
 import warnings
 
 import h2o
-from h2o.exceptions import H2OJobCancelled
+from h2o.exceptions import H2OJobCancelled, H2OResponseError
 from h2o.utils.progressbar import ProgressBar
 from h2o.utils.shared_utils import clamp
+from datetime import datetime
+import time
 
 class H2OJob(object):
     """A class representing an H2O Job."""
@@ -41,20 +42,18 @@ class H2OJob(object):
         self._poll_count = 10**10
 
 
-    def poll(self, poll_updates=None):
+    def poll(self, verbose_model_scoring_history = False):
         """
         Wait until the job finishes.
 
         This method will continuously query the server about the status of the job, until the job reaches a
         completion. During this time we will display (in stdout) a progress bar with % completion status.
-        :param poll_updates: a callback function called a each polling iteration with 2 arguments:
-            (current_job: H2OJob, bar_progression: float)
         """
         try:
             hidden = not H2OJob.__PROGRESS_BAR__
             pb = ProgressBar(title=self._job_type + " progress", hidden=hidden)
-            if poll_updates:
-                pb.execute(self._refresh_job_status, print_verbose_info=ft.partial(poll_updates, self))
+            if verbose_model_scoring_history:
+                pb.execute(self._refresh_job_status, print_verbose_info=lambda x: self._print_verbose_info() if int(x * 10) % 5 == 0  else " ")
             else:
                 pb.execute(self._refresh_job_status)
         except StopIteration as e:
@@ -107,6 +106,20 @@ class H2OJob(object):
         if self.status == "FAILED": raise StopIteration("failed")
         if self.status == "CANCELLED": raise StopIteration("cancelled by the server")
         return self.progress
+
+    def _print_verbose_info(self):
+        try:
+            model = h2o.get_model(self.job['dest']['name'])
+            print("\nScoring History for Model " + str(model.model_id) + " at " + str(datetime.now()))
+            print("Model Build is {0:.0f}% done...".format(self.progress*100))
+            print(model.scoring_history().tail())
+            print("\n")
+        except H2OResponseError: #To catch 400 error
+            pass
+            print("Model build is starting now...")
+        except AttributeError: #To catch NoneType error if scoring history is not available
+            pass
+            print("Scoring History is not available yet...")
 
     def __repr__(self):
         if self.status in {"CREATED", "RUNNING"}:
