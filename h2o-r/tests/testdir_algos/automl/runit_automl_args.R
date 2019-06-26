@@ -402,45 +402,6 @@ automl.args.test <- function() {
         expect_equal(base_model@model$cross_validation_fold_assignment_frame_id, NULL)
     }
 
-    test_max_runtime_secs <- function() {
-        print("Check that automl gets interrupted after `max_runtime_secs`")
-        ds <- import_dataset()
-        max_runtime_secs <- 60
-        cancel_tolerance_secs <- 6+5 # should be enough for most cases given job notification mechanism (adding 5 more ~=10% for SEs)
-        time <- system.time(aml <- h2o.automl(x=ds$x, y=ds$y,
-                            training_frame=ds$train,
-                            project_name="aml_max_runtime_secs",
-                            max_runtime_secs=max_runtime_secs)
-        )[['elapsed']]
-        print(paste("trained", length(get_partitioned_models(aml)$non_se), "models"))
-        expect_lte(abs(time - max_runtime_secs), cancel_tolerance_secs)
-        expect_equal(length(get_partitioned_models(aml)$se), 2)
-    }
-
-    test_max_runtime_secs_per_model <- function() {
-      print("Check that individual model get interrupted after `max_runtime_secs_per_model`")
-      # need a larger dataset to obtain significant differences in behaviour
-      train <- h2o.importFile(locate("smalldata/prostate/prostate_complete.csv.zip"), destination_frame="prostate_complete")
-      y <- 'CAPSULE'
-      x <- setdiff(names(train), y)
-      ds <- list(train=train, x=x, y=y)
-
-      max_runtime_secs <- 30
-      models_count <- list()
-      for (max_runtime_secs_per_model in c(0, 3, max_runtime_secs)) {
-        aml <- h2o.automl(x=ds$x, y=ds$y,
-                          training_frame=ds$train,
-                          seed=1,
-                          project_name=paste0("aml_max_runtime_secs_per_model_", max_runtime_secs_per_model),
-                          max_runtime_secs_per_model=max_runtime_secs_per_model,
-                          max_runtime_secs=max_runtime_secs)
-        models_count[paste0(max_runtime_secs_per_model)] = nrow(aml@leaderboard)
-      }
-      expect_lte(abs(models_count[[paste0(0)]] - models_count[[paste0(max_runtime_secs)]]), 1)
-      expect_gt(abs(models_count[[paste0(0)]] - models_count[[paste0(3)]]), 1)
-      # TODO: add assertions about single model timing once 'automl event_log' is available on client side
-    }
-
     test_max_models <- function() {
         print("Check that automl get interrupted after `max_models`")
         ds <- import_dataset()
@@ -521,8 +482,6 @@ automl.args.test <- function() {
         test_keep_cv_fold_assignment_defaults_with_nfolds_gt_0,
         test_keep_cv_fold_assignment_TRUE_with_nfolds_gt_0,
         test_keep_cv_fold_assignment_TRUE_with_nfolds_eq_0,
-        test_max_runtime_secs,
-        test_max_runtime_secs_per_model,
         test_max_models,
         test_frames_can_be_passed_as_keys
     )
