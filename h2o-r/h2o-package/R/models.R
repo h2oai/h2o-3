@@ -168,14 +168,24 @@ NULL
   h2o.getFutureModel(.h2o.startModelJob(algo, params, h2oRestApiVersion))
 }
 
+.h2o.pollModelUpdates <- function(job) {
+  cat(paste0("\nScoring History for Model ",job$dest$name, " at ", Sys.time(),"\n"))
+  print(paste0("Model Build is ", job$progress*100, "% done..."))
+  if(!is.null(job$progress_msg)){
+  #   print(tail(h2o.getModel(job$dest$name)@model$scoring_history))
+  }else{
+    print("Scoring history is not available yet...") #Catch 404 with scoring history. Can occur when nfolds >=2
+  }
+}
+
 #' Get future model
 #'
 #' @rdname h2o.getFutureModel
 #' @param object H2OModel
 #' @param verbose Print model progress to console. Default is FALSE
 #' @export
-h2o.getFutureModel <- function(object,verbose=FALSE) {
-  .h2o.__waitOnJob(object@job_key,verboseModelScoringHistory=verbose)
+h2o.getFutureModel <- function(object, verbose=FALSE) {
+  .h2o.__waitOnJob(object@job_key, pollUpdates=ifelse(verbose, .h2o.pollModelUpdates, as.null))
   h2o.getModel(object@model_id)
 }
 
@@ -455,6 +465,26 @@ h2o.getFutureModel <- function(object,verbose=FALSE) {
 #'          generation in h2o.
 #' @export
 predict.H2OModel <- function(object, newdata, ...) {
+  h2o.predict.H2OModel(object, newdata, ...)
+}
+
+#' Predict on an H2O Model
+#'
+#' @param object a fitted model object for which prediction is desired.
+#' @param newdata An H2OFrame object in which to look for
+#'        variables with which to predict.
+#' @param ... additional arguments to pass on.
+#' @return Returns an H2OFrame object with probabilites and
+#'         default predictions.
+#' @export
+h2o.predict <- function(object, newdata, ...){
+  UseMethod("h2o.predict", object)
+}
+
+#'
+#' @rdname predict.H2OModel
+#' @export
+h2o.predict.H2OModel <- function(object, newdata, ...) {
   if (missing(newdata)) {
     stop("predictions with a missing `newdata` argument is not implemented yet")
   }
@@ -468,15 +498,6 @@ predict.H2OModel <- function(object, newdata, ...) {
   h2o.getFrame(dest_key)
 }
 
-#' @rdname predict.H2OModel
-#' @export
-h2o.predict <- function(object, newdata, ...){
-  if(class(object) == "H2OAutoML"){
-    return(predict.H2OAutoML(object, newdata, ...))
-  }else{
-    return(predict.H2OModel(object, newdata, ...))
-  }
-}
 #' Predict the Leaf Node Assignment on an H2O Model
 #'
 #' Obtains leaf node assignment from fitted H2O model objects.

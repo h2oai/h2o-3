@@ -140,6 +140,8 @@ class ProgressBar(object):
             where delay is the time interval for when the progress should be checked again. This function may at
             any point raise the ``StopIteration(message)`` exception, which will interrupt the progress bar,
             display the ``message`` in red font, and then re-raise the exception.
+        :param print_verbose_info: a callback function called at each iteration
+            with `bar_progression: float` as a single argument.
         :raises StopIteration: if the job is interrupted. The reason for interruption is provided in the exception's
             message. The message will say "cancelled" if the job was interrupted by the user by pressing Ctrl+C.
         """

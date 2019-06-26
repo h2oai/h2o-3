@@ -54,6 +54,8 @@
 #'        "mean_per_class_error", "logloss", "RMSE", "MSE". Default is "AUTO". If set to "AUTO", then "AUC" will be used for binomial classification,
 #'        "mean_per_class_error" for multinomial classification, and "mean_residual_deviance" for regression.
 #' @param export_checkpoints_dir (Optional) Path to a directory where every model will be stored in binary form.
+#' @param verbosity Verbosity of the backend messages printed during training; Optional.
+#'        Must be one of "debug", "info", "warn". Defaults to NULL (disable live log).
 #' @details AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
 #'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.
 #' @return An \linkS4class{H2OAutoML} object.
@@ -90,7 +92,8 @@ h2o.automl <- function(x, y, training_frame,
                        keep_cross_validation_models = FALSE,
                        keep_cross_validation_fold_assignment = FALSE,
                        sort_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "mean_per_class_error"),
-                       export_checkpoints_dir = NULL)
+                       export_checkpoints_dir = NULL,
+                       verbosity = NULL)
 {
 
   tryCatch({
@@ -242,7 +245,12 @@ h2o.automl <- function(x, y, training_frame,
 
   # POST call to AutoMLBuilder (executes the AutoML job)
   res <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "POST", page = "AutoMLBuilder", autoML = TRUE, .params = params)
-  .h2o.__waitOnJob(res$job$key$name)
+
+  poll_state = list()
+  poll_updates <- function(job) {
+    poll_state <<- do.call(.automl.poll_updates, list(job, verbosity=verbosity, state=poll_state))
+  }
+  .h2o.__waitOnJob(res$job$key$name, pollUpdates=poll_updates)
 
   # GET AutoML object
   aml <- h2o.getAutoML(project_name = res$job$dest$name)
@@ -267,6 +275,13 @@ h2o.automl <- function(x, y, training_frame,
 #'         default predictions.
 #' @export
 predict.H2OAutoML <- function(object, newdata, ...) {
+  h2o.predict.H2OAutoML(object, newdata, ...)
+}
+
+#'
+#' @rdname predict.H2OAutoML
+#' @export
+h2o.predict.H2OAutoML <- function(object, newdata, ...) {
   if (missing(newdata)) {
     stop("predictions with a missing `newdata` argument is not implemented yet")
   }
@@ -280,6 +295,90 @@ predict.H2OAutoML <- function(object, newdata, ...) {
   dest_key <- res$dest$name
   .h2o.__waitOnJob(job_key)
   h2o.getFrame(dest_key)
+}
+
+.automl.poll_updates <- function(job, verbosity=NULL, state=NULL) {
+  levels <- c('Debug', 'Info', 'Warn')
+  idx = ifelse(is.null(verbosity), NA, match(tolower(verbosity), tolower(levels)))
+  if (is.na(idx)) return()
+
+  levels <- levels[idx:length(levels)]
+  try({
+      if (job$progress > ifelse(is.null(state$last_job_progress), 0, state$last_job_progress)) {
+        project_name <- job$dest$name
+        events <- .automl.fetch_state(project_name, properties=c('event_log'))$event_log
+        events <- events[events['level'] %in% levels,]
+        last_nrows <- ifelse(is.null(state$last_events_nrows), 0, state$last_events_nrows)
+        if (h2o.nrow(events) > last_nrows) {
+          for (row in (last_nrows+1):nrow(events)) {
+            cat(paste0("\n", events[row, 'timestamp'], ': ', events[row, 'message']))
+          }
+          state$last_events_nrows <- h2o.nrow(events)
+        }
+      }
+      state$last_job_progress <- job$progress
+  })
+  return(state)
+}
+
+.automl.fetch_table <- function(table, destination_frame=NULL, show_progress=TRUE) {
+  # disable the progress bar is show_progress is set to FALSE, e.g. since showing multiple progress bars is confusing to users.
+  # In any case, revert back to user's original progress setting.
+  is_progress <- isTRUE(as.logical(.h2o.is_progress()))
+  if (show_progress) h2o.show_progress() else h2o.no_progress()
+  frame <- tryCatch(
+    as.h2o(table, destination_frame=destination_frame),
+    error = identity,
+    finally = if (is_progress) h2o.show_progress() else h2o.no_progress()
+  )
+  return(frame)
+}
+
+.automl.fetch_state <- function(project_name, properties=NULL) {
+  # GET AutoML job and leaderboard for project
+  automl_job <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "GET", page = paste0("AutoML/", project_name))
+  #project <- automl_job$project  # This is not functional right now, we can get project_name from user input instead
+
+  leaderboard <- as.data.frame(automl_job["leaderboard_table"]$leaderboard_table)
+  row.names(leaderboard) <- seq(nrow(leaderboard))
+
+  should_fetch <- function(prop) is.null(properties) | prop %in% properties
+
+  if (should_fetch('leaderboard')) {
+    leaderboard <- .automl.fetch_table(leaderboard, destination_frame=paste0(project_name, '_leaderboard'), show_progress=FALSE)
+    # If the leaderboard is empty, it creates a dummy row so let's remove it
+    if (leaderboard$model_id[1,1] == "") {
+      leaderboard <- leaderboard[-1,]
+      warning("The leaderboard contains zero models: try running AutoML for longer (the default is 1 hour).")
+    }
+  }
+
+  # If leaderboard is not empty, grab the leader model, otherwise create a "dummy" leader
+  if (should_fetch('leader') & nrow(leaderboard) > 0) {
+    leaderboard[,2:length(leaderboard)] <- as.numeric(leaderboard[,2:length(leaderboard)])  # Convert metrics to numeric
+    leader <- h2o.getModel(automl_job$leaderboard$models[[1]]$name)
+  } else {
+    # create a phony leader
+    Class <- paste0("H2OBinomialModel")
+    leader <- .newH2OModel(Class = Class, model_id = "dummy")
+  }
+
+  if (should_fetch('event_log')) {
+    event_log <- as.data.frame(automl_job["event_log_table"]$event_log_table)
+    event_log <- .automl.fetch_table(event_log, destination_frame=paste0(project_name, '_eventlog'), show_progress=FALSE)
+    # row.names(event_log) <- seq(nrow(event_log))
+  } else {
+    event_log <- NULL
+  }
+
+  project <- automl_job$project
+
+  return(list(
+    project_name=project,
+    leaderboard=leaderboard,
+    leader=leader,
+    event_log=event_log
+  ))
 }
 
 #' Get an R object that is a subclass of \linkS4class{H2OAutoML}
@@ -299,44 +398,21 @@ predict.H2OAutoML <- function(object, newdata, ...) {
 #' @export
 h2o.getAutoML <- function(project_name) {
 
-  # GET AutoML job and leaderboard for project
-  automl_job <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "GET", page = paste0("AutoML/", project_name))
-  #project <- automl_job$project  # This is not functional right now, we can get project_name from user input instead
-  leaderboard <- as.data.frame(automl_job["leaderboard_table"]$leaderboard_table)
-  row.names(leaderboard) <- seq(nrow(leaderboard))
-  
-  # Intentionally mask the progress bar here since showing multiple progress bars is confusing to users.
-  # If any failure happens, revert back to user's original setting for progress and display the error message.
-  is_progress <- isTRUE(as.logical(.h2o.is_progress()))
-  h2o.no_progress()
-  leaderboard <- tryCatch(
-    as.h2o(leaderboard),
-    error = identity,
-    finally = if (is_progress) h2o.show_progress()
-  )
+  state <- .automl.fetch_state(project_name)
 
-  # If the leaderboard is empty, it creates a dummy row so let's remove it
-  if (leaderboard$model_id[1,1] == "") {
-    leaderboard <- leaderboard[-1,]
-    warning("The leaderboard contains zero models: try running AutoML for longer (the default is 1 hour).")
+  training_info <- list()
+  for (i in seq(nrow(state$event_log))) {
+    key <-state$event_log[i, 'name']
+    if (!is.na(key)) training_info[key] <- state$event_log[i, 'value']
   }
-  # If leaderboard is not empty, grab the leader model, otherwise create a "dummy" leader
-  if (nrow(leaderboard) > 0) {
-    leaderboard[,2:length(leaderboard)] <- as.numeric(leaderboard[,2:length(leaderboard)])  # Convert metrics to numeric
-    leader <- h2o.getModel(automl_job$leaderboard$models[[1]]$name)
-  } else {
-    # create a phony leader
-    Class <- paste0("H2OBinomialModel")
-    leader <- .newH2OModel(Class = Class,
-                           model_id = "dummy")
-  }
-  project <- automl_job$project
 
   # Make AutoML object
   return(new("H2OAutoML",
-             project_name = project,
-             leader = leader,
-             leaderboard = leaderboard
+             project_name = state$project,
+             leader = state$leader,
+             leaderboard = state$leaderboard,
+             event_log = state$event_log,
+             training_info = training_info
   ))
 }
 
