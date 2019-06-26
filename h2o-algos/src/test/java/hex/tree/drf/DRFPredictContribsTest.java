@@ -88,10 +88,7 @@ public class DRFPredictContribsTest extends TestUtil {
             Frame contribsAggregated = new DRFPredictContribsTest.RowSumTask().doAll(Vec.T_NUM, contributions).outputFrame();
             Scope.track(contribsAggregated);
             
-            //Below gets:
-            //Tree inconsistency found:
-            //Note: this is a known issue for DRF and Isolation Forest models, please refer to https://0xdata.atlassian.net/browse/PUBDEV-6140
-            //assertTrue(drf.testJavaScoring(fr, contribsAggregated, 1e-5));
+            assertTrue(drf.testJavaScoring(fr, contribsAggregated, 1e-5));
 
             // Now test MOJO scoring
             EasyPredictModelWrapper.Config cfg = new EasyPredictModelWrapper.Config()

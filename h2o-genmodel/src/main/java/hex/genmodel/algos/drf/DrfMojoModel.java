@@ -89,7 +89,12 @@ public final class DrfMojoModel extends SharedTreeMojoModel implements SharedTre
         @Override
         public float[] calculateContributions(double[] input) {
             float[] contribs = new float[nfeatures() + 1];
-            return  _treeSHAPPredictor.calculateContributions(input, contribs, 0, -1, _workspace);
+            _treeSHAPPredictor.calculateContributions(input, contribs, 0, -1, _workspace);
+            // Need to divide contribs by number of trees for DRF
+            for (int i = 0; i < contribs.length; i++) {
+               contribs[i] = contribs[i] / _ntree_groups;
+            }
+            return contribs;
         }
     }
 
