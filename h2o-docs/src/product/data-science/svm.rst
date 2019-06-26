@@ -66,4 +66,4 @@ SVM Algorithm
 References
 ~~~~~~~~~~
 
-Implementation of ICF based on https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/34638.pdf
+ E.Y. Chang, K. Zhu , H. Wang, H. Bai, J. Li, Z. Qiu, H. Cui, Parallelizing support vector machines on distributed computers, in Proceedings of NIPS, 2007 `Google Scholar <http://papers.nips.cc/paper/3202-parallelizing-support-vector-machines-on-distributed-computers.pdf>`__
