@@ -189,7 +189,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
    The available options are:
 
     - ``auto``: This defaults to ``logloss`` for classification, ``deviance`` for regression, and ``anomaly_score`` for Isolation Forest. Note that custom and custom_increasing can only be used in GBM and DRF with the Python client. Must be one of: ``AUTO``, ``anomaly_score``. Defaults to ``AUTO``.
-    - ``anomaly_score``
+    - ``anomaly_score`` (Isolation Forest only)
     - ``deviance``
     - ``logloss``
     - ``mse``
