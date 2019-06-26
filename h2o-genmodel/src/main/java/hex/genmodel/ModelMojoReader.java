@@ -1,9 +1,9 @@
 package hex.genmodel;
 
 import com.google.gson.*;
-import hex.genmodel.attributes.JsonModelDescriptorReader;
+import hex.genmodel.attributes.ModelAttributes;
+import hex.genmodel.attributes.ModelJsonReader;
 import hex.genmodel.descriptor.ModelDescriptorBuilder;
-import hex.genmodel.attributes.Table;
 import hex.genmodel.utils.ParseUtils;
 import hex.genmodel.utils.StringEscapeUtils;
 
@@ -186,12 +186,13 @@ public abstract class ModelMojoReader<M extends MojoModel> {
       _model._modelDescriptor = new ModelDescriptorBuilder(_model).build();
     }
 
-    final JsonObject modelJson = JsonModelDescriptorReader.parseModelJson(_reader);
-    readModelSpecificAttributes(modelJson);
+    _model._modelAttributes = readModelSpecificAttributes();
+
   }
 
-  protected void readModelSpecificAttributes(final JsonObject modelJson) {
-    final Table model_summary_table = JsonModelDescriptorReader.extractTableFromJson(modelJson, "output.model_summary");
+  protected ModelAttributes readModelSpecificAttributes() {
+    final JsonObject modelJson = ModelJsonReader.parseModelJson(_reader);
+    return new ModelAttributes(modelJson);
   }
 
   private static Map<String, Object> parseModelInfo(MojoReaderBackend reader) throws IOException {

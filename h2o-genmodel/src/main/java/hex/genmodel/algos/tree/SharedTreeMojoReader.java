@@ -2,15 +2,10 @@ package hex.genmodel.algos.tree;
 
 import com.google.gson.JsonObject;
 import hex.genmodel.ModelMojoReader;
-import hex.genmodel.attributes.JsonModelDescriptorReader;
-import hex.genmodel.attributes.Table;
-import hex.genmodel.attributes.VariableImportances;
+import hex.genmodel.attributes.*;
 
 import java.io.IOException;
-import java.util.Arrays;
 
-/**
- */
 public abstract class SharedTreeMojoReader<M extends SharedTreeMojoModel> extends ModelMojoReader<M> {
 
 
@@ -56,19 +51,8 @@ public abstract class SharedTreeMojoReader<M extends SharedTreeMojoModel> extend
   }
 
   @Override
-  protected void readModelSpecificAttributes(final JsonObject modelJson) {
-  }
-
-  private VariableImportances extractVariableImportances(final JsonObject modelJson) {
-    final Table table = JsonModelDescriptorReader.extractTableFromJson(modelJson, "output.variable_importances");
-    if (table == null) return null;
-    final double[] relativeVarimps = new double[table.rows()];
-    final int column = table.findColumnIndex("Relative Importance");
-    if (column == -1) return null;
-    for (int i = 0; i < table.rows(); i++) {
-      relativeVarimps[i] = (double) table.getCell(column, i);
-    }
-
-    return new VariableImportances(Arrays.copyOf(_model._names, _model.nfeatures()), relativeVarimps);
+  protected SharedTreeModelAttributes readModelSpecificAttributes() {
+    final JsonObject modelJson = ModelJsonReader.parseModelJson(_reader);
+    return new SharedTreeModelAttributes(modelJson, _model);
   }
 }

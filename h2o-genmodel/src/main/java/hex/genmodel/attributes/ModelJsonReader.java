@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
 /**
  * Utility class for extracting model details from JSON
  */
-class JsonModelDescriptorReader {
+public class ModelJsonReader {
 
     public static final String MODEL_DETAILS_FILE = "experimental/modelDetails.json";
 

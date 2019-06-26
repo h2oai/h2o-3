@@ -3,19 +3,21 @@ package hex.generic;
 import hex.Model;
 import hex.ModelCategory;
 import hex.ModelMetrics;
+import hex.genmodel.attributes.ModelAttributes;
+import hex.genmodel.attributes.SharedTreeModelAttributes;
 import hex.genmodel.descriptor.ModelDescriptor;
 import hex.genmodel.attributes.Table;
 import hex.genmodel.attributes.VariableImportances;
 import water.util.TwoDimTable;
 
 public class GenericModelOutput extends Model.Output {
-    
-    private final ModelCategory _modelCategory;
-    private final int _nfeatures;
-    public final TwoDimTable _variable_importances;
-    
 
-    public GenericModelOutput(final ModelDescriptor modelDescriptor) {
+    final ModelCategory _modelCategory;
+    final int _nfeatures;
+    TwoDimTable _variable_importances;
+
+
+    public GenericModelOutput(final ModelDescriptor modelDescriptor, final ModelAttributes modelAttributes) {
         _isSupervised = modelDescriptor.isSupervised();
         _domains = modelDescriptor.scoringDomains();
         _origDomains = modelDescriptor.scoringDomains();
@@ -25,25 +27,33 @@ public class GenericModelOutput extends Model.Output {
         _distribution = modelDescriptor.modelClassDist();
         _priorClassDist = modelDescriptor.priorClassDist();
         _names = modelDescriptor.columnNames();
-        
         _modelCategory = modelDescriptor.getModelCategory();
         _nfeatures = modelDescriptor.nfeatures();
-        
-        _variable_importances = null;
-        _model_summary = null;
+        _model_summary = convertTable(modelAttributes.getModelSummary());
+
+        if (modelAttributes instanceof SharedTreeModelAttributes) {
+            fillSharedTreeModelAttributes((SharedTreeModelAttributes) modelAttributes);
+        } else {
+            _variable_importances = null;
+        }
     }
+
+    private void fillSharedTreeModelAttributes(SharedTreeModelAttributes sharedTreeModelAttributes) {
+        _variable_importances = convertVariableImportances(sharedTreeModelAttributes.getVariableImportances());
+    }
+
 
     @Override
     public ModelCategory getModelCategory() {
-        return _modelCategory;
+        return _modelCategory; // Might be calculated as well, but the information in MOJO is the one to display.
     }
 
     @Override
     public int nfeatures() {
         return _nfeatures;
     }
-    
-    private static TwoDimTable readVariableImportances(final VariableImportances variableImportances){
+
+    private static TwoDimTable convertVariableImportances(final VariableImportances variableImportances) {
         if(variableImportances == null) return null;
 
         TwoDimTable varImps = ModelMetrics.calcVarImp(variableImportances._importances, variableImportances._variables);

@@ -387,6 +387,8 @@ public class GenericModelTest extends TestUtil {
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
             genericModel = generic.trainModel().get();
+            assertNotNull(genericModel._output._model_summary);
+            assertNotNull(genericModel._output._variable_importances);
 
             predictions = genericModel.score(testFrame);
             assertEquals(2691, predictions.numRows());

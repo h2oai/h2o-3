@@ -67,7 +67,7 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
                     throw new IllegalArgumentException(String.format("Unsupported MOJO model %s. ", mojoModel.getClass().getName()));
                 }
 
-                final GenericModelOutput genericModelOutput = new GenericModelOutput(mojoModel._modelDescriptor);
+                final GenericModelOutput genericModelOutput = new GenericModelOutput(mojoModel._modelDescriptor, mojoModel._modelAttributes);
                 final GenericModel genericModel = new GenericModel(_result, _parms, genericModelOutput, mojoModel, mojoBytes);
 
                 genericModel.write_lock(_job);
