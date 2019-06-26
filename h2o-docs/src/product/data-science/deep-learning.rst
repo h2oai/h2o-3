@@ -188,7 +188,8 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 -  `stopping_metric <algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping.
    The available options are:
 
-    - ``auto``: This defaults to ``logloss`` for classification, ``deviance`` for regression
+    - ``auto``: This defaults to ``logloss`` for classification, ``deviance`` for regression, and ``anomaly_score`` for Isolation Forest. Note that custom and custom_increasing can only be used in GBM and DRF with the Python client. Must be one of: ``AUTO``, ``anomaly_score``. Defaults to ``AUTO``.
+    - ``anomaly_score``
     - ``deviance``
     - ``logloss``
     - ``mse``
@@ -199,6 +200,8 @@ H2O Deep Learning models have many input parameters, many of which are only acce
     - ``lift_top_group``
     - ``misclassification``
     - ``mean_per_class_error``
+    - ``custom`` (Python client only)
+    - ``custom_increasing`` (Python client only)
     
 -  `stopping_tolerance <algo-params/stopping_tolerance.html>`__: Specify the relative tolerance for the
    metric-based stopping to stop training if the improvement is less
