@@ -1397,7 +1397,7 @@ public class XGBoostTest extends TestUtil {
 
   @Test
   public void testMojoBoosterDump() throws IOException { 
-    assertEquals(Boolean.valueOf(confMojoJavaScoring), XGBoostMojoReader.useJavaScoring(true, null));
+    Assume.assumeFalse(XGBoostMojoReader.useJavaScoring(true, null));
     Scope.enter();
     try {
       Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
