@@ -1,5 +1,6 @@
 package hex.genmodel.algos.drf;
 
+import hex.ModelCategory;
 import hex.genmodel.GenModel;
 import hex.genmodel.PredictContributions;
 import hex.genmodel.PredictContributionsFactory;
@@ -90,9 +91,15 @@ public final class DrfMojoModel extends SharedTreeMojoModel implements SharedTre
         public float[] calculateContributions(double[] input) {
             float[] contribs = new float[nfeatures() + 1];
             _treeSHAPPredictor.calculateContributions(input, contribs, 0, -1, _workspace);
-            // Need to divide contribs by number of trees for DRF
-            for (int i = 0; i < contribs.length; i++) {
-               contribs[i] = contribs[i] / _ntree_groups;
+            if (_category.equals(ModelCategory.Regression)) { // Regression
+                for (int i = 0; i < contribs.length; i++) {
+                    contribs[i] = contribs[i] / _ntree_groups;
+                }
+            } else { // Binomial
+                float featurePlusBiasRatio = (float)1/(_nfeatures + 1);
+                for (int i = 0; i < contribs.length; i++) {
+                    contribs[i] = featurePlusBiasRatio - (contribs[i] / _ntree_groups);
+                }
             }
             return contribs;
         }
