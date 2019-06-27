@@ -5,12 +5,13 @@
 #
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from datetime import datetime
 import inspect
 import types
 import warnings
 
 import h2o
-from h2o.exceptions import H2OValueError
+from h2o.exceptions import H2OValueError, H2OResponseError
 from h2o.frame import H2OFrame
 from h2o.job import H2OJob
 from h2o.utils.compatibility import *  # NOQA
@@ -256,9 +257,27 @@ class H2OEstimator(ModelBase):
             self._rest_version = rest_ver
             return
 
-        model.poll(verbose_model_scoring_history=verbose)
+        model.poll(poll_updates=self._print_model_scoring_history if verbose else None)
         model_json = h2o.api("GET /%d/Models/%s" % (rest_ver, model.dest_key))["models"][0]
         self._resolve_model(model.dest_key, model_json)
+
+
+    def _print_model_scoring_history(self, job, bar_progress=0):
+        """
+        the callback function used to poll/print updates during model training.
+        """
+        if int(bar_progress * 10) % 5 > 0:
+            return
+        try:
+            model = h2o.get_model(job.job['dest']['name'])
+            print("\nScoring History for Model " + str(model.model_id) + " at " + str(datetime.now()))
+            print("Model Build is {0:.0f}% done...".format(job.progress*100))
+            print(model.scoring_history().tail())
+            print("\n")
+        except H2OResponseError:  # To catch 400 error
+            print("Model build is starting now...")
+        except AttributeError:  # To catch NoneType error if scoring history is not available
+            print("Scoring History is not available yet...")
 
 
     @staticmethod

@@ -853,7 +853,7 @@ h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
 #   Job Polling
 #-----------------------------------------------------------------------------------------------------------------------
 
-.h2o.__waitOnJob <- function(job_key, pollInterval = 1, verboseModelScoringHistory=FALSE) {
+.h2o.__waitOnJob <- function(job_key, pollInterval = 1, pollUpdates = NULL) {
   progressBar <- .h2o.is_progress()
   if (progressBar) pb <- txtProgressBar(style = 3L)
   keepRunning <- TRUE
@@ -915,15 +915,7 @@ h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
 
       if (keepRunning) {
         Sys.sleep(pollInterval)
-        if(verboseModelScoringHistory){
-          cat(paste0("\nScoring History for Model ",job$dest$name, " at ", Sys.time(),"\n"))
-          print(paste0("Model Build is ", job$progress*100, "% done..."))
-          if(!is.null(job$progress_msg)){
-            print(tail(h2o.getModel(job$dest$name)@model$scoring_history))
-          }else{
-            print("Scoring history is not available yet...") #Catch 404 with scoring history. Can occur when nfolds >=2
-          }
-        }
+        if (is.function(pollUpdates)) pollUpdates(job)
       } else {
         if (progressBar) {
           close(pb)
@@ -932,12 +924,12 @@ h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
       }
     }
   },
-    interrupt = function(x) {
-      url.suf <- paste0(.h2o.__JOBS,"/",job_key,"/cancel")
-      .h2o.doSafePOST(urlSuffix=url.suf)
-      message(paste0("\nJob ",job_key," was cancelled.\n"))
-      return()
-    })
+  interrupt = function(x) {
+    url.suf <- paste0(.h2o.__JOBS,"/",job_key,"/cancel")
+    .h2o.doSafePOST(urlSuffix=url.suf)
+    message(paste0("\nJob ",job_key," was cancelled.\n"))
+    return()
+  })
 }
 
 #------------------------------------ Utilities ------------------------------------#
