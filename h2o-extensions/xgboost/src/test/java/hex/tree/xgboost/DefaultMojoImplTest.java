@@ -1,6 +1,8 @@
 package hex.tree.xgboost;
 
 import hex.genmodel.MojoModel;
+import hex.genmodel.MojoReaderBackend;
+import hex.genmodel.MojoReaderBackendFactory;
 import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
 import hex.genmodel.algos.xgboost.XGBoostMojoReader;
 import hex.genmodel.algos.xgboost.XGBoostNativeMojoModel;
@@ -14,10 +16,11 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.util.Log;
 
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.Charset;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class DefaultMojoImplTest extends TestUtil {
 
@@ -29,8 +32,7 @@ public class DefaultMojoImplTest extends TestUtil {
   @Before
   public void setupMojoJavaScoring() {
     System.clearProperty(XGBoostMojoReader.SCORE_JAVA_PROP); // force default behavior
-
-    assertNull(XGBoostMojoReader.getJavaScoringConfig()); // check that MOJO scoring config is not present
+    assertTrue(XGBoostMojoReader.useJavaScoring(true, null)); // check default value for MOJO scoring impl
   }
 
   @Test
@@ -51,7 +53,7 @@ public class DefaultMojoImplTest extends TestUtil {
     try {
       XGBoostModel model = trainModel(Booster.dart);
       MojoModel mojo = model.toMojo();
-      assertEquals(XGBoostNativeMojoModel.class.getName(), mojo.getClass().getName());
+      assertEquals(XGBoostJavaMojoModel.class.getName(), mojo.getClass().getName());
     } finally {
       Scope.exit();
     }
@@ -63,11 +65,27 @@ public class DefaultMojoImplTest extends TestUtil {
     try {
       XGBoostModel model = trainModel(Booster.gblinear);
       MojoModel mojo = model.toMojo();
+      assertEquals(XGBoostJavaMojoModel.class.getName(), mojo.getClass().getName());
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testOldDARTMojoUsesNativeScoring() throws IOException {
+    Scope.enter();
+    try {
+      InputStream oldMojo = getClass().getResourceAsStream("oldDart.mojo");
+      MojoReaderBackend mojoReaderBackend = MojoReaderBackendFactory.createReaderBackend(
+          oldMojo, MojoReaderBackendFactory.CachingStrategy.MEMORY
+      );
+      MojoModel mojo = MojoModel.load(mojoReaderBackend);
       assertEquals(XGBoostNativeMojoModel.class.getName(), mojo.getClass().getName());
     } finally {
       Scope.exit();
     }
   }
+
 
   private static XGBoostModel trainModel(Booster booster) {
     Frame tfr = parse_test_file("./smalldata/prostate/prostate.csv");

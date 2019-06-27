@@ -32,5 +32,6 @@ public class XGBoostMojoWriter extends ModelMojoWriter<XGBoostModel, XGBoostMode
     writekv("booster", model._parms._booster.toString());
     writekv("ntrees", model._parms._ntrees);
     writeblob("feature_map", model.model_info().getFeatureMap().getBytes(Charset.forName("UTF-8")));
+    writekv("use_java_scoring_by_default", true);
   }
 }
