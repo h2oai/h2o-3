@@ -75,7 +75,7 @@ h2o.predict_json <- function(model, json, genmodelpath, labels, classpath, javao
 #' @param verbose  Optional, if TRUE, then additional debug information will be printed. FALSE by default.
 #' @return Returns a data.frame containing computed predictions
 #' @export
-h2o.mojo_predict_csv <- function(input_csv_path, mojo_zip_path, output_csv_path=NULL, genmodel_jar_path=NULL, classpath=NULL, java_options=NULL, verbose=F) {
+h2o.mojo_predict_csv <- function(input_csv_path, mojo_zip_path, output_csv_path=NULL, genmodel_jar_path=NULL, classpath=NULL, java_options=NULL, verbose=F, setInvNumNA=F) {
 	default_java_options <- '-Xmx4g -XX:ReservedCodeCacheSize=256m'
 	prediction_output_file <- 'prediction.csv'
 
@@ -141,7 +141,13 @@ h2o.mojo_predict_csv <- function(input_csv_path, mojo_zip_path, output_csv_path=
 	}
 	cmd <- c(cmd, "-cp", classpath, 'hex.genmodel.tools.PredictCsv', "--mojo", mojo_zip_path, "--input", input_csv_path,
 	'--output', output_csv_path, '--decimal')
+    
+    if (setInvNumNA) {
+        cmd <- c(cmd, '--setConvertInvalidNum')
+    }
+    
 	cmd_str <- paste(cmd, collapse=' ')
+    
 	if (verbose) {
 		cat(sprintf("java cmd:\t%s", cmd_str), '\n')
 	}
@@ -171,7 +177,7 @@ h2o.mojo_predict_csv <- function(input_csv_path, mojo_zip_path, output_csv_path=
 #' @param verbose  Optional, if TRUE, then additional debug information will be printed. FALSE by default.
 #' @return Returns a data.frame containing computed predictions
 #' @export
-h2o.mojo_predict_df <- function(frame, mojo_zip_path, genmodel_jar_path=NULL, classpath=NULL, java_options=NULL, verbose=F) {
+h2o.mojo_predict_df <- function(frame, mojo_zip_path, genmodel_jar_path=NULL, classpath=NULL, java_options=NULL, verbose=F, setInvNumNA=F) {
 	tmp_dir <- tempdir()
 	dir.create(tmp_dir)
 	tryCatch(
@@ -179,7 +185,7 @@ h2o.mojo_predict_df <- function(frame, mojo_zip_path, genmodel_jar_path=NULL, cl
 			input_csv_path <- file.path(tmp_dir, 'input.csv')
 			prediction_csv_path <- file.path(tmp_dir, 'prediction.csv')
 			write.csv(frame, file=input_csv_path, row.names=F)
-			return(h2o.mojo_predict_csv(input_csv_path=input_csv_path, mojo_zip_path=mojo_zip_path, output_csv_path=prediction_csv_path, genmodel_jar_path=genmodel_jar_path, classpath=classpath, java_options=java_options, verbose=verbose))
+			return(h2o.mojo_predict_csv(input_csv_path=input_csv_path, mojo_zip_path=mojo_zip_path, output_csv_path=prediction_csv_path, genmodel_jar_path=genmodel_jar_path, classpath=classpath, java_options=java_options, verbose=verbose, setInvNumNA=setInvNumNA))
 		},
 		finally={
 			unlink(tmp_dir, recursive=T)
