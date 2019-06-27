@@ -877,7 +877,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private boolean exceededSearchLimits(WorkAllocations.Work work, String algo_desc, boolean ignoreLimits) {
     String fullName = algo_desc == null ? work.algo.toString() : work.algo+" ("+algo_desc+")";
     if (job.stop_requested()) {
-      userFeedback.info(Stage.ModelTraining, "AutoML: job cancelled; skipping " + fullName + " in " + work.type);
+      eventLog().debug(Stage.ModelTraining, "AutoML: job cancelled; skipping "+fullName+" in "+work.type);
       return true;
     }
 
