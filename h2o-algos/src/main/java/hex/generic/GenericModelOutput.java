@@ -3,7 +3,13 @@ package hex.generic;
 import hex.*;
 import hex.genmodel.attributes.*;
 import hex.genmodel.descriptor.ModelDescriptor;
+import water.util.Log;
 import water.util.TwoDimTable;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.HashMap;
+import java.util.Map;
 
 public class GenericModelOutput extends Model.Output {
 
@@ -58,6 +64,44 @@ public class GenericModelOutput extends Model.Output {
     }
 
     private static Object convertObjects(final Object source, final Object target) {
+
+        final Class<?> targetClass = target.getClass();
+        final Field[] targetDeclaredFields = targetClass.getDeclaredFields();
+
+        final Class<?> sourceClass = source.getClass();
+        final Field[] sourceDeclaredFields = sourceClass.getDeclaredFields();
+        
+        // Create a map for faster search afterwards
+        final Map<String, Field> sourceFieldMap = new HashMap(sourceDeclaredFields.length);
+        for (Field sourceField : sourceDeclaredFields) {
+            sourceFieldMap.put(sourceField.getName(), sourceField);
+        }
+
+        for (int i = 0; i < targetDeclaredFields.length; i++) {
+            final Field targetField = targetDeclaredFields[i];
+            final String targetFieldName = targetField.getName();
+            final Field sourceField = sourceFieldMap.get(targetFieldName);
+            if(sourceField == null) {
+                Log.warn(String.format("Field '%s' not found in the source object. Ignoring.", targetFieldName));
+                continue;
+            }
+            
+            try{
+                targetField.setAccessible(true);
+                sourceField.setAccessible(true);
+                if(targetField.getType().isAssignableFrom(sourceField.getType())){
+                    targetField.set(target, sourceField.get(source));
+                }
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            } finally {
+                targetField.setAccessible(false);
+                sourceField.setAccessible(false);
+            }
+            
+        }
+
+
         return target;
     }
 
