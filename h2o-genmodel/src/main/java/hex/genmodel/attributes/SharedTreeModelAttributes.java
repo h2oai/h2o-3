@@ -9,10 +9,14 @@ import java.util.Arrays;
 public class SharedTreeModelAttributes extends ModelAttributes {
 
   private final VariableImportances _variableImportances;
+  private final MojoModelMetrics _trainingMetrics;
 
   public <M extends SharedTreeMojoModel> SharedTreeModelAttributes(JsonObject modelJson, M model) {
     super(modelJson);
     _variableImportances = extractVariableImportances(modelJson, model);
+    final MojoModelMetrics mojoModelMetrics = new MojoModelMetrics();
+    ModelJsonReader.fillObject(mojoModelMetrics, modelJson, "output.training_metrics");
+    _trainingMetrics = mojoModelMetrics;
   }
 
   private VariableImportances extractVariableImportances(final JsonObject modelJson, final MojoModel model) {
@@ -33,5 +37,9 @@ public class SharedTreeModelAttributes extends ModelAttributes {
    */
   public VariableImportances getVariableImportances() {
     return _variableImportances;
+  }
+  
+  public MojoModelMetrics getTrainingMetrics(){
+    return _trainingMetrics;
   }
 }

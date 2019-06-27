@@ -1,13 +1,8 @@
 package hex.generic;
 
-import hex.Model;
-import hex.ModelCategory;
-import hex.ModelMetrics;
-import hex.genmodel.attributes.ModelAttributes;
-import hex.genmodel.attributes.SharedTreeModelAttributes;
+import hex.*;
+import hex.genmodel.attributes.*;
 import hex.genmodel.descriptor.ModelDescriptor;
-import hex.genmodel.attributes.Table;
-import hex.genmodel.attributes.VariableImportances;
 import water.util.TwoDimTable;
 
 public class GenericModelOutput extends Model.Output {
@@ -38,8 +33,17 @@ public class GenericModelOutput extends Model.Output {
         }
     }
 
-    private void fillSharedTreeModelAttributes(SharedTreeModelAttributes sharedTreeModelAttributes) {
+    private void fillSharedTreeModelAttributes(final SharedTreeModelAttributes sharedTreeModelAttributes) {
         _variable_importances = convertVariableImportances(sharedTreeModelAttributes.getVariableImportances());
+        convertMetrics(sharedTreeModelAttributes);
+    }
+
+    private void convertMetrics(final SharedTreeModelAttributes sharedTreeModelAttributes) {
+        // Training metrics
+        final MojoModelMetrics trainingMetrics = sharedTreeModelAttributes.getTrainingMetrics();
+        final ModelMetrics modelMetrics = new ModelMetrics(null, null, trainingMetrics._nobs, trainingMetrics._MSE, trainingMetrics._description,
+                new CustomMetric(trainingMetrics._custom_metric_name, trainingMetrics._custom_metric_value));
+        _training_metrics = (ModelMetrics) convertObjects(sharedTreeModelAttributes.getTrainingMetrics(), modelMetrics);
     }
 
 
@@ -51,6 +55,10 @@ public class GenericModelOutput extends Model.Output {
     @Override
     public int nfeatures() {
         return _nfeatures;
+    }
+
+    private static Object convertObjects(final Object source, final Object target) {
+        return target;
     }
 
     private static TwoDimTable convertVariableImportances(final VariableImportances variableImportances) {

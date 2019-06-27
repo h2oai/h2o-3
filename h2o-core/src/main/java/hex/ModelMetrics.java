@@ -36,7 +36,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
 
   public final double _MSE;     // Mean Squared Error (Every model is assumed to have this, otherwise leave at NaN)
   public final long _nobs;
-
+  
   public ModelMetrics(Model model, Frame frame, long nobs, double MSE, String desc, CustomMetric customMetric) {
     super(buildKey(model, frame));
     withModelAndFrame(model, frame);

@@ -5,6 +5,8 @@ import hex.genmodel.*;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
@@ -87,6 +89,60 @@ public class ModelJsonReader {
 
         return new Table(tableJson.get("name").getAsString(), tableJson.get("description").getAsString(),
                 new String[rowCount], columnHeaders, columnTypes, "", data);
+    }
+
+    public static void fillObject(final Object object, final JsonElement from, final String elementPath) {
+        Objects.requireNonNull(object);
+        Objects.requireNonNull(elementPath);
+
+        final JsonElement jsonSourceElement = findInJson(from, elementPath).getAsJsonObject();
+
+        if (jsonSourceElement instanceof JsonNull) {
+            System.out.println(String.format("Element '%s' not found in JSON. Skipping. Object '%s' is not populated by values.",
+                    elementPath, object.getClass().getName()));
+            return;
+        }
+
+        final JsonObject jsonSourceObj = jsonSourceElement.getAsJsonObject();
+
+        final Class<?> aClass = object.getClass();
+        final Field[] declaredFields = aClass.getDeclaredFields();
+
+        for (int i = 0; i < declaredFields.length; i++) {
+            Field field = declaredFields[i];
+            if (Modifier.isTransient(field.getModifiers())) continue;
+
+            final Class<?> type = field.getType();
+            String fieldName = field.getName();
+            if (fieldName.charAt(0) == '_') fieldName = fieldName.substring(1);
+
+            try {
+                field.setAccessible(true);
+                Object value = null;
+                if (type.isAssignableFrom(double.class) || type.isAssignableFrom(Double.class)) {
+                    final JsonElement jsonElement = jsonSourceObj.get(fieldName);
+                    if (jsonElement != null) value = jsonElement.getAsDouble();
+                } else if (type.isAssignableFrom(int.class) || type.isAssignableFrom(Integer.class)) {
+                    final JsonElement jsonElement = jsonSourceObj.get(fieldName);
+                    if (jsonElement != null) value = jsonElement.getAsInt();
+                } else if (type.isAssignableFrom(long.class) || type.isAssignableFrom(Long.class)) {
+                    final JsonElement jsonElement = jsonSourceObj.get(fieldName);
+                    if (jsonElement != null) value = jsonElement.getAsLong();
+                } else if (type.isAssignableFrom(String.class)) {
+                    final JsonElement jsonElement = jsonSourceObj.get(fieldName);
+                    if (jsonElement != null) value = jsonElement.getAsString();
+                }
+                if (value != null) field.set(object, value);
+            } catch (IllegalAccessException e) {
+                System.out.println(String.format("Field '%s' could not be accessed. Ignoring.", fieldName));
+            } catch (ClassCastException | UnsupportedOperationException e) {
+                System.out.println(String.format("Field '%s' could not be casted to '%s'. Ignoring.", fieldName, type.toString()));
+            } finally {
+                field.setAccessible(false);
+            }
+        }
+
+
     }
 
 
