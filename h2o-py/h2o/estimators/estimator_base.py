@@ -129,8 +129,8 @@ class H2OEstimator(ModelBase):
         assert_is_type(verbose, bool)
         assert_is_type(extend_parms_fn, None, FunctionType)
 
-        training_frame_exists = training_frame is not None
-        if not training_frame_exists:
+        override_default_training_frame = training_frame is not None
+        if not override_default_training_frame:
             self._verify_training_frame_params(offset_column, fold_column, weights_column, validation_frame)
             training_frame = self.training_frame if has_default_training_frame else None
 
@@ -143,9 +143,9 @@ class H2OEstimator(ModelBase):
         is_auto_encoder = bool(parms.get("autoencoder"))
         is_supervised = not(is_auto_encoder or algo in {"aggregator", "pca", "svd", "kmeans", "glrm", "word2vec", "isolationforest", "generic"})
 
-        names = training_frame.names if training_frame_exists else []
-        ncols = training_frame.ncols if training_frame_exists else 0
-        types = training_frame.types if training_frame_exists else {}
+        names = training_frame.names if training_frame is not None else []
+        ncols = training_frame.ncols if training_frame is not None else 0
+        types = training_frame.types if training_frame is not None else {}
 
         if is_supervised:
             if y is None: y = "response"
@@ -163,7 +163,7 @@ class H2OEstimator(ModelBase):
             # sklearn's pipeline.
             y = None
 
-        if training_frame_exists:
+        if override_default_training_frame:
             assert_is_type(y, str, None)
             ignored_columns_set = set()
             if ignored_columns is None and "ignored_columns" in parms:
@@ -213,7 +213,8 @@ class H2OEstimator(ModelBase):
         if not is_unsupervised and y is None and self.algo not in ["generic"]:
             raise ValueError("Missing response")
 
-        if training_frame_exists:
+        # Step 3
+        if override_default_training_frame:
             parms["training_frame"] = training_frame
             offset = parms["offset_column"]
             folds = parms["fold_column"]
@@ -230,7 +231,7 @@ class H2OEstimator(ModelBase):
             x = [x]
         if is_type(x[0], int):
             x = [names[i] for i in x]
-        if training_frame_exists:
+        if override_default_training_frame:
             ignored_columns = list(set(names) - set(x + [y, offset, folds, weights]))
             parms["ignored_columns"] = None if ignored_columns == [] else [quoted(col) for col in ignored_columns]
         parms["interactions"] = (None if "interactions" not in parms or parms["interactions"] is None
