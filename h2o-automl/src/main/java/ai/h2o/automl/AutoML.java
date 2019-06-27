@@ -279,7 +279,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       String sort_metric = buildSpec.input_spec.sort_metric == null ? null : buildSpec.input_spec.sort_metric.toLowerCase();
       leaderboard = Leaderboard.getOrMake(projectName(), eventLog, this.leaderboardFrame, sort_metric);
     } catch (Exception e) {
-      deleteWithChildren(); //cleanup potentially leaked keys
+      delete(); //cleanup potentially leaked keys
       throw e;
     }
   }
@@ -1326,33 +1326,28 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
    */
   @Override
   protected Futures remove_impl(Futures fs) {
+    Key<Job> jobKey = job == null ? null : job._key;
+
+    if (gridKeys != null)
+      for (Key<Grid> gridKey : gridKeys) gridKey.remove(fs);
+
+    // If the Frame was made here (e.g. buildspec contained a path, then it will be deleted
+    if (buildSpec.input_spec.training_frame == null && origTrainingFrame != null) {
+      origTrainingFrame.delete(jobKey, fs);
+    }
+    if (buildSpec.input_spec.validation_frame == null && validationFrame != null) {
+      validationFrame.delete(jobKey, fs);
+    }
+    if (buildSpec.input_spec.leaderboard_frame == null && leaderboardFrame != null) {
+      leaderboardFrame.delete(jobKey, fs);
+    }
+
     if (trainingFrame != null && origTrainingFrame != null)
       Frame.deleteTempFrameAndItsNonSharedVecs(trainingFrame, origTrainingFrame);
     if (leaderboard != null) leaderboard.remove(fs);
     if (eventLog != null) eventLog.remove(fs);
+
     return super.remove_impl(fs);
-  }
-
-  /**
-   * Same as delete() but also deletes all Objects made from this instance.
-   */
-  void deleteWithChildren() {
-    if (leaderboard != null) leaderboard.deleteWithChildren();
-
-    if (gridKeys != null)
-      for (Key<Grid> gridKey : gridKeys) gridKey.remove();
-
-    // If the Frame was made here (e.g. buildspec contained a path, then it will be deleted
-    if (buildSpec.input_spec.training_frame == null && origTrainingFrame != null) {
-      origTrainingFrame.delete();
-    }
-    if (buildSpec.input_spec.validation_frame == null && validationFrame != null) {
-      validationFrame.delete();
-    }
-    if (buildSpec.input_spec.leaderboard_frame == null && leaderboardFrame != null) {
-      leaderboardFrame.delete();
-    }
-    delete();
   }
 
   // If we have multiple AutoML engines running on the same project they will be updating the Leaderboard concurrently,

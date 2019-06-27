@@ -51,7 +51,7 @@ public class EventLogTest extends water.TestUtil {
             Assert.assertEquals("foo", events.get(3, 4));
             Assert.assertEquals(Integer.toString(777), events.get(4, 5));
         } finally {
-            eventLog.delete();
+            eventLog.remove();
         }
 
     }

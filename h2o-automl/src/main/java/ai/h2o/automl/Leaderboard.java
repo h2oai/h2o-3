@@ -430,18 +430,15 @@ public class Leaderboard extends Keyed<Leaderboard> {
   }
 
   /**
-   * Delete everything in the DKV that this points to.  We currently need to be able to call this after deleteWithChildren().
+   * Delete object and its dependencies from DKV, including models.
    */
-  void delete() {
-    for (Key k : leaderboard_set_metrics.keySet())
-      k.remove();
-    remove();
-  }
-
-  void deleteWithChildren() {
+  @Override
+  protected Futures remove_impl(Futures fs) {
     for (Model m : getModels())
-      m.delete();
-    delete();
+      m.remove(fs);
+    for (Key k : leaderboard_set_metrics.keySet())
+      k.remove(fs);
+    return super.remove_impl(fs);
   }
 
   private static double[] defaultMetricForModel(Model m) {

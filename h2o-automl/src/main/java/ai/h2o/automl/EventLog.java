@@ -3,6 +3,7 @@ package ai.h2o.automl;
 import ai.h2o.automl.EventLogEntry.Level;
 import ai.h2o.automl.EventLogEntry.Stage;
 import water.DKV;
+import water.Futures;
 import water.Key;
 import water.Keyed;
 import water.util.Log;
@@ -81,11 +82,12 @@ public class EventLog extends Keyed<EventLog> {
   } // addEvent
 
   /**
-   * Delete everything in the DKV that this points to.  We currently need to be able to call this after deleteWithChildren().
+   * Delete object and its dependencies from DKV, including models.
    */
-  public void delete() {
+  @Override
+  protected Futures remove_impl(Futures fs) {
     _events = new EventLogEntry[0];
-    remove();
+    return super.remove_impl(fs);
   }
 
   public TwoDimTable toTwoDimTable() {
