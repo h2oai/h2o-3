@@ -25,7 +25,7 @@ automl.event_log.test <- function() {
     now <- as.POSIXlt(Sys.time())
     expect_equal(stop_dt$mday, now$mday)
     expect_equal(stop_dt$hour, now$hour)
-    expect_lt(abs(as.integer(aml@training_info['duration_secs']) - (as.integer(aml@training_info['stop_epoch']) - as.integer(aml@training_info['start_epoch']))), 1)
+    expect_lte(abs(as.integer(aml@training_info['duration_secs']) - (as.integer(aml@training_info['stop_epoch']) - as.integer(aml@training_info['start_epoch']))), 1)
 }
 
 automl.train_verbosity.test <- function() {
