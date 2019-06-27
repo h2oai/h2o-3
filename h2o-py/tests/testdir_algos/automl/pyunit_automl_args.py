@@ -257,36 +257,6 @@ def test_keep_cross_validation_fold_assignment_enabled_with_nfolds_eq_0():
     assert amodel._model_json["output"]["cross_validation_fold_assignment_frame_id"] == None
 
 
-def test_automl_stops_after_max_runtime_secs():
-    print("Check that automl gets interrupted after `max_runtime_secs`")
-    max_runtime_secs = 30
-    cancel_tolerance_secs = 5+5   # should work for most cases given current mechanism, +5 due to SE which currently ignore max_runtime_secs
-    ds = import_dataset()
-    aml = H2OAutoML(project_name="py_aml_max_runtime_secs", seed=1, max_runtime_secs=max_runtime_secs)
-    start = time.time()
-    aml.train(y=ds['target'], training_frame=ds['train'])
-    end = time.time()
-    assert abs(end-start - max_runtime_secs) < cancel_tolerance_secs, end-start
-
-
-def test_no_model_takes_more_than_max_runtime_secs_per_model():
-    print("Check that individual model get interrupted after `max_runtime_secs_per_model`")
-    ds = import_dataset(seed=1, larger=True)
-    max_runtime_secs = 30
-    models_count = {}
-    for max_runtime_secs_per_model in [0, 3, max_runtime_secs]:
-        aml = H2OAutoML(project_name="py_aml_max_runtime_secs_per_model_{}".format(max_runtime_secs_per_model), seed=1,
-                        max_runtime_secs_per_model=max_runtime_secs_per_model,
-                        max_runtime_secs=max_runtime_secs)
-        aml.train(y=ds['target'], training_frame=ds['train'])
-        models_count[max_runtime_secs_per_model] = len(aml.leaderboard)
-        # print(aml.leaderboard)
-    # there may be one model difference as reproducibility is not perfectly guaranteed in time-bound runs
-    assert abs(models_count[0] - models_count[max_runtime_secs]) <= 1
-    assert abs(models_count[0] - models_count[3]) > 1
-    # TODO: add assertions about single model timing once 'automl event_log' is available on client side
-
-
 def test_stacked_ensembles_are_trained_after_timeout():
     print("Check that Stacked Ensembles are still trained after timeout")
     max_runtime_secs = 20
@@ -378,8 +348,6 @@ pyunit_utils.run_tests([
     test_nfolds_default_and_fold_assignements_skipped_by_default,
     test_keep_cross_validation_fold_assignment_enabled_with_nfolds_neq_0,
     test_keep_cross_validation_fold_assignment_enabled_with_nfolds_eq_0,
-    test_automl_stops_after_max_runtime_secs,
-    test_no_model_takes_more_than_max_runtime_secs_per_model,
     test_stacked_ensembles_are_trained_after_timeout,
     test_automl_stops_after_max_models,
     test_stacked_ensembles_are_trained_after_max_models,
