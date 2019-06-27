@@ -41,6 +41,14 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
       writekv("inflection_point", teParams._blendingParams.getK());
       writekv("smoothing", teParams._blendingParams.getF());
     }
+
+    // Maybe we can use index of the column instead of its name in all the encoding maps. Check whether we need name somewhere.
+    Map<String, Integer> teColumnNameToIdx = ((TargetEncoderModel) model)._output._teColumnNameToIdx;
+    startWritingTextFile("feature_engineering/target_encoding/te_column_name_to_idx_map.ini");
+    for(Map.Entry<String, Integer> entry: teColumnNameToIdx.entrySet()) {
+      writelnkv(entry.getKey(), entry.getValue().toString()); 
+    }
+    finishWritingTextFile();
   }
 
   /**
@@ -61,9 +69,9 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
       for (Map.Entry<String, EncodingMap> columnEncodingsMap : convertedEncodingMap.entrySet()) {
         writeln("[" + columnEncodingsMap.getKey() + "]");
         EncodingMap encodings = columnEncodingsMap.getValue();
-        for (Map.Entry<String, int[]> catLevelInfo : encodings.entrySet()) {
+        for (Map.Entry<Integer, int[]> catLevelInfo : encodings.entrySet()) {
           int[] numAndDenom = catLevelInfo.getValue();
-          writelnkv(catLevelInfo.getKey(), numAndDenom[0] + " " + numAndDenom[1]);
+          writelnkv(catLevelInfo.getKey().toString(), numAndDenom[0] + " " + numAndDenom[1]);
         }
       }
       finishWritingTextFile();

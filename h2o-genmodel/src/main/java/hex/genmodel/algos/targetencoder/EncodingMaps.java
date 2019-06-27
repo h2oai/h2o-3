@@ -44,6 +44,10 @@ public class EncodingMaps {
     return _encodingMaps.entrySet();
   }
   
+  public Map<String, EncodingMap> encodingMap() {
+    return _encodingMaps;
+  }
+  
   public boolean containsKey(String key) {
     return _encodingMaps.containsKey(key);
   }

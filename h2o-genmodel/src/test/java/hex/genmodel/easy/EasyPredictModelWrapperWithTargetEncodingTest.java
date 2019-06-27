@@ -15,28 +15,6 @@ import static org.junit.Assert.*;
 public class EasyPredictModelWrapperWithTargetEncodingTest {
 
   @Test
-  public void transformWithTargetEncoding() throws PredictException{
-    MyTEModel model = new MyTEModel();
-
-    EncodingMaps targetEncodingMap = model._targetEncodingMap;
-    EncodingMap encodingsForEmbarkingColumn = new EncodingMap();
-    int[] encodingComponents = {3, 7};
-    encodingsForEmbarkingColumn.put("S", encodingComponents);
-    targetEncodingMap.put("embarked", encodingsForEmbarkingColumn);
-    
-    EasyPredictModelWrapper modelWrapper = new EasyPredictModelWrapper(model);
-
-    RowData row = new RowData();
-    row.put("embarked", "S");
-    row.put("age", 42.0);
-    
-    modelWrapper.transformWithTargetEncoding(row);
-    
-    assertEquals((double) row.get("embarked_te"), (double) encodingComponents[0] / encodingComponents[1], 1e-5);
-    assertNotEquals((double) row.get("embarked_te"), (double) encodingComponents[0] / encodingComponents[1] + 0.1, 1e-5);
-  }
-
-  @Test
   public void targetEncodingIsDisabledWhenEncodingMapIsNotProvided() throws PredictException {
     MyTEModel model = new MyTEModel();
 
@@ -55,18 +33,19 @@ public class EasyPredictModelWrapperWithTargetEncodingTest {
     } catch (IllegalStateException ex) {
       assertEquals((String) row.get("embarked"), "S");
     }
-    
   }
 
 
   private static class MyTEModel extends TargetEncoderMojoModel {
-    
+    @Override
+    public int nfeatures() {
+      return 2;
+    }
+
     @Override
     public ModelCategory getModelCategory() { return null; } 
     @Override
     public String getUUID() { return null; } 
-    @Override
-    public double[] score0(double[] row, double[] preds) { return new double[0]; }
 
     private static final String[][] DOMAINS = new String[][]{
             new String[]{"S", "Q"},

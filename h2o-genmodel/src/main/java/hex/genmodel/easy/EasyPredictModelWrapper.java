@@ -571,13 +571,14 @@ public class EasyPredictModelWrapper implements Serializable {
     return p;
   }
 
-  public void transformWithTargetEncoding(RowData data) throws PredictException{
+  public double[] transformWithTargetEncoding(RowData data) throws PredictException{
     if (! (m instanceof TargetEncoderMojoModel))
       throw new PredictException("Model is not of the expected type, class = " + m.getClass().getSimpleName());
 
-    TargetEncoderMojoModel targetEncoderMojoModel = (TargetEncoderMojoModel) this.m;
-    
-    targetEncoderMojoModel.transform(data);
+    assert data.size() == m.nfeatures() : "There is a mismatch between number of features model was trained on (" + data.size() + ") and number of features in input RowData (" + m.nfeatures() + ")";
+    int numberOfTEColumns = ((TargetEncoderMojoModel) m)._teColumnNameToIdx.keySet().size();
+    double[] preds = new double[numberOfTEColumns];
+    return predict(data, 0, preds);
   }
 
   @SuppressWarnings("unused") // not used in this class directly, kept for backwards compatibility
@@ -827,7 +828,7 @@ public class EasyPredictModelWrapper implements Serializable {
     return new RowToRawDataConverter(m, modelColumnNameToIndexMap, domainMap, errorConsumer, convertUnknownCategoricalLevelsToNa, convertInvalidNumbersToNa)
             .convert(data, rawData);
   }
-
+  
   protected double[] predict(RowData data, double offset, double[] preds) throws PredictException {
     double[] rawData = nanArray(m.nfeatures());
     rawData = fillRawData(data, rawData);

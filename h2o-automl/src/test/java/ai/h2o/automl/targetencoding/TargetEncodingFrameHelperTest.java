@@ -263,7 +263,7 @@ public class TargetEncodingFrameHelperTest extends TestUtil {
       for (Map.Entry<String, Frame> entry : encodingMap.entrySet()) {
         String key = entry.getKey();
         Frame encodingsForParticularColumn = entry.getValue();
-        IcedHashMap<String, TEComponents> table = new FrameToTETableTask().doAll(encodingsForParticularColumn).getResult()._table;
+        IcedHashMap<Integer, TEComponents> table = new FrameToTETableTask().doAll(encodingsForParticularColumn).getResult()._table;
 
       }
     }
@@ -283,7 +283,7 @@ public class TargetEncodingFrameHelperTest extends TestUtil {
       }
 
       for (Map.Entry<String, FrameToTETableTask> taskEntry : tasks.entrySet()) {
-        IcedHashMap<String, TEComponents> table = taskEntry.getValue().getResult()._table;
+        IcedHashMap<Integer, TEComponents> table = taskEntry.getValue().getResult()._table;
       }
     }
     long totalTimeDFork = System.currentTimeMillis() - startTimeDFork;

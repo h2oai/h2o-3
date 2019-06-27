@@ -17,9 +17,9 @@ public class EncodingMap {
    *        "C" -> [ 5, 6 ],                         
    *      )                        
    */                                       
-  Map<String, int[]> _encodingMap = null;
+  Map<Integer, int[]> _encodingMap = null;
 
-  public EncodingMap(Map<String, int[]> encodingMap) {
+  public EncodingMap(Map<Integer, int[]> encodingMap) {
     _encodingMap = encodingMap;
   }
 
@@ -27,15 +27,15 @@ public class EncodingMap {
     _encodingMap = new HashMap<>();
   }
 
-  public Set<Map.Entry<String, int[]>> entrySet() {
+  public Set<Map.Entry<Integer, int[]>> entrySet() {
     return _encodingMap.entrySet();
   }
 
-  public int[] get(String categoricalLevel) {
-    return _encodingMap.get(categoricalLevel);
+  public int[] get(int categoricalFactorIdx) {
+    return _encodingMap.get(categoricalFactorIdx);
   }
   
-  public int[] put(String categoricalLevel, int[] encodingComponents) {
-    return _encodingMap.put(categoricalLevel, encodingComponents);
+  public int[] put(int categoricalFactor, int[] encodingComponents) {
+    return _encodingMap.put(categoricalFactor, encodingComponents);
   }
 }

@@ -37,11 +37,11 @@ public class TargetEncoderMojoReaderTest {
 
     String test = new StringBuilder()
             .append("[embarked]\n")
-            .append("C = 2 4\n")
-            .append("D = 5 7\n")
+            .append("0 = 2 4\n")
+            .append("1 = 5 7\n")
             .append("[sex]\n")
-            .append("Male = 3 42\n")
-            .append("Female = 5 42")
+            .append("0 = 3 42\n")
+            .append("1 = 5 42")
             .toString();
 
     Reader inputString = new StringReader(test);
@@ -55,8 +55,8 @@ public class TargetEncoderMojoReaderTest {
     TestMojoReader testMojoReader = new TestMojoReader(mojoReaderBackendMock);
 
     EncodingMaps parsedEncodings = testMojoReader.parseEncodingMap("pathToFileWithEncodings");
-    assertArrayEquals(parsedEncodings.get("embarked").get("C"), new int[]{2, 4});
-    assertArrayEquals(parsedEncodings.get("sex").get("Male"), new int[]{3, 42});
+    assertArrayEquals(parsedEncodings.get("embarked").get(0), new int[]{2, 4});
+    assertArrayEquals(parsedEncodings.get("sex").get(0), new int[]{3, 42});
 
   }
 }

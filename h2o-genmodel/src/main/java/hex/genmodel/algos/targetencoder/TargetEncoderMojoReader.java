@@ -24,6 +24,7 @@ public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoMo
       _model._smoothing = readkv("smoothing");
     }
     _model._targetEncodingMap = parseEncodingMap("feature_engineering/target_encoding/encoding_map.ini");
+    _model._teColumnNameToIdx = parseTEColumnNameToIndexMap("feature_engineering/target_encoding/te_column_name_to_idx_map.ini");
   }
 
   @Override
@@ -31,14 +32,27 @@ public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoMo
     return new TargetEncoderMojoModel(columns, domains, responseColumn);
   }
   
-  public EncodingMaps parseEncodingMap(String pathToSource) throws IOException {
+  public Map<String, Integer> parseTEColumnNameToIndexMap(String pathToSource) throws IOException {
+    Map<String, Integer> teColumnNameToIndexMap = new HashMap<>();
+    if(exists(pathToSource)) {
+      Iterable<String> parsedFile = readtext(pathToSource);
+      for(String line : parsedFile) {
+        String[] nameAndIndex = line.split("\\s*=\\s*", 2);
+        teColumnNameToIndexMap.put(nameAndIndex[0], Integer.parseInt(nameAndIndex[1]));
+      }
+    }
+    return teColumnNameToIndexMap;
+  }
+  
+    public EncodingMaps parseEncodingMap(String pathToSource) throws IOException {
     Map<String, EncodingMap> encodingMaps = null;
 
-    if(getMojoReaderBackend().exists(pathToSource)) {
+    if(exists(pathToSource)) {
+//      Iterable<String> readtext = readtext(pathToSource);
       BufferedReader source = getMojoReaderBackend().getTextFile(pathToSource);
 
       encodingMaps = new HashMap<>();
-      Map<String, int[]> encodingsForColumn = null;
+      Map<Integer, int[]> encodingsForColumn = null;
       String sectionName = null;
       try {
         String line;
@@ -64,7 +78,7 @@ public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoMo
 
             String[] res = line.split("\\s*=\\s*", 2);
             int[] numAndDenom = processNumeratorAndDenominator(res[1].split(" "));
-            encodingsForColumn.put(res[0], numAndDenom);
+            encodingsForColumn.put(Integer.parseInt(res[0]), numAndDenom);
           }
         }
         source.close();
