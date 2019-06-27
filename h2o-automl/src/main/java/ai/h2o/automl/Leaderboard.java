@@ -434,7 +434,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
    */
   @Override
   protected Futures remove_impl(Futures fs) {
-    for (Model m : getModels())
+    for (Key<Model> m : models)
       m.remove(fs);
     for (Key k : leaderboard_set_metrics.keySet())
       k.remove(fs);

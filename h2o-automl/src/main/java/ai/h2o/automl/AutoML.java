@@ -389,11 +389,17 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return DKV.getGet(this.job._key);
   }
 
-  public Leaderboard leaderboard() { return (leaderboard == null ? null : leaderboard._key.get()); }
+  public Model leader() { return (leaderboard() == null ? null : leaderboard.getLeader()); }
 
-  public Model leader() { return (leaderboard() == null ? null : leaderboard().getLeader()); }
+  public Leaderboard leaderboard() {
+    if (leaderboard != null) leaderboard = leaderboard._key.get();
+    return leaderboard;
+  }
 
-  public EventLog eventLog() { return eventLog == null ? null : eventLog._key.get(); }
+  public EventLog eventLog() {
+    if (eventLog != null) eventLog = eventLog._key.get();
+    return eventLog;
+  }
 
   public String projectName() {
     return buildSpec == null ? null : buildSpec.project();
@@ -1344,8 +1350,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     if (trainingFrame != null && origTrainingFrame != null)
       Frame.deleteTempFrameAndItsNonSharedVecs(trainingFrame, origTrainingFrame);
-    if (leaderboard != null) leaderboard.remove(fs);
-    if (eventLog != null) eventLog.remove(fs);
+    if (leaderboard() != null) leaderboard().remove(fs);
+    if (eventLog() != null) eventLog().remove(fs);
 
     return super.remove_impl(fs);
   }
