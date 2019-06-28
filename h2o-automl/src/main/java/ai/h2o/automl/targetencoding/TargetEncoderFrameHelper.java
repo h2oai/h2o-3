@@ -123,7 +123,7 @@ public class TargetEncoderFrameHelper {
     }
 
     for (Map.Entry<String, FrameToTETableTask> taskEntry : tasks.entrySet()) {
-      IcedHashMap<Integer, TEComponents> table = taskEntry.getValue().getResult()._table;
+      IcedHashMap<String, TEComponents> table = taskEntry.getValue().getResult()._table;
       convertEncodingMapToGenModelFormat(convertedEncodingMap, taskEntry.getKey(), table);
     }
     
@@ -138,11 +138,11 @@ public class TargetEncoderFrameHelper {
    * @param convertedEncodingMap the Map we will put our converted encodings into
    * @param encodingMap encoding map for `teColumn`
    */
-  private static void convertEncodingMapToGenModelFormat(EncodingMaps convertedEncodingMap, String teColumn, IcedHashMap<Integer, TEComponents> encodingMap) {
+  private static void convertEncodingMapToGenModelFormat(EncodingMaps convertedEncodingMap, String teColumn, IcedHashMap<String, TEComponents> encodingMap) {
     Map<Integer, int[]> tableGenModelFormat = new HashMap<>();
-    for(Map.Entry<Integer, TEComponents> entry : encodingMap.entrySet()) {
+    for(Map.Entry<String, TEComponents> entry : encodingMap.entrySet()) {
       TEComponents value = entry.getValue();
-      tableGenModelFormat.put(entry.getKey(), new int[] {value.getNumerator(), value.getDenominator()});
+      tableGenModelFormat.put(Integer.parseInt(entry.getKey()), new int[] {value.getNumerator(), value.getDenominator()});
     }
     convertedEncodingMap.put(teColumn, new EncodingMap(tableGenModelFormat));
   }

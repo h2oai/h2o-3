@@ -48,7 +48,6 @@ public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoMo
     Map<String, EncodingMap> encodingMaps = null;
 
     if(exists(pathToSource)) {
-//      Iterable<String> readtext = readtext(pathToSource);
       BufferedReader source = getMojoReaderBackend().getTextFile(pathToSource);
 
       encodingMaps = new HashMap<>();

@@ -297,7 +297,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     }
   }
 
-  public MojoReaderBackend getMojoReaderBackend() {
+  protected MojoReaderBackend getMojoReaderBackend() {
     return _reader;
   }
 }
