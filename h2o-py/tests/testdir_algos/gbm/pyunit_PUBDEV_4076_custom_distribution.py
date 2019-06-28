@@ -4,9 +4,7 @@ sys.path.insert(1, "../../../")
 import h2o
 from tests import pyunit_utils
 from h2o.utils.distributions import CustomDistributionGaussian, CustomDistributionBernoulli, \
-    CustomDistributionQuasibinomial, CustomDistributionMultinomial, CustomDistributionGeneric, \
-    CustomDistributionModifiedHuber, CustomDistributionPoisson, CustomDistributionGamma, CustomDistributionHuber, \
-    CustomDistributionTweedie, CustomDistributionLaplace, CustomDistributionQuantile
+    CustomDistributionMultinomial, CustomDistributionGeneric
 from tests.pyunit_utils import regression_model_distribution, regression_model_default
 from tests.pyunit_utils import multinomial_model_default, multinomial_model_distribution
 from tests.pyunit_utils import binomial_model_default, binomial_model_distribution, check_model_metrics
@@ -34,7 +32,7 @@ class CustomDistributionGaussianNoInh:
     def gamma(self, w, y, z, f):
         return [w * z, w]
     
-    
+
 def upload_distribution(distribution, name):
     return h2o.upload_custom_distribution(distribution, func_name="custom_"+name,
                                           func_file="custom_"+name+".py")
@@ -51,47 +49,35 @@ def test_custom_distribution_computation():
     
 def test_regression():
     print("Regression tests")
-    distributions = {"gaussian": CustomDistributionGaussian
-                     # "gamma": CustomDistributionGamma,
-                     # "huber": CustomDistributionHuber,
-                     # "modified_huber": CustomDistributionModifiedHuber,
-                     # "tweedie": CustomDistributionTweedie,
-                     # "laplace": CustomDistributionLaplace,
-                     # "quantile": CustomDistributionQuantile,
-                     # "poisson": CustomDistributionPoisson
-                     }
-    for name, distribution in distributions.items():
-        print("Create default", name,  "model")
-        (model, f_test) = regression_model_default(H2OGradientBoostingEstimator, name)
-        print("Create custom ", name,  "model")
-        (model2, f_test2) = regression_model_distribution(H2OGradientBoostingEstimator, 
-                                                          upload_distribution(distribution, name))
-        check_model_metrics(model, model2, name)
+    name = "gaussian"
+    print("Create default", name,  "model")
+    (model, f_test) = regression_model_default(H2OGradientBoostingEstimator, name)
+    print("Create custom ", name,  "model")
+    (model2, f_test2) = regression_model_distribution(H2OGradientBoostingEstimator, 
+                                                      upload_distribution(CustomDistributionGaussian, name))
+    check_model_metrics(model, model2, name)
     
     
 def test_binomial():
     print("Binomial tests")
-    distributions = {"bernoulli" : CustomDistributionBernoulli
-                     # "quasibinomial: CustomDistributionQuasibinomial",
-                     }
-    for name, distribution in distributions.items():
-        print("Create default", name,  "model")
-        (model, f_test) = binomial_model_default(H2OGradientBoostingEstimator, name)
-        print("Create custom ", name,  "model")
-        (model2, f_test2) = binomial_model_distribution(H2OGradientBoostingEstimator, 
-                                                        upload_distribution(distribution, name),
-                                                        not(distribution is CustomDistributionQuasibinomial))
-        check_model_metrics(model, model2, name)
+    name = "Bernoulli"
+    print("Create default", name,  "model")
+    (model, f_test) = binomial_model_default(H2OGradientBoostingEstimator, name)
+    print("Create custom ", name,  "model")
+    (model2, f_test2) = binomial_model_distribution(H2OGradientBoostingEstimator, 
+                                                    upload_distribution(CustomDistributionBernoulli, name), True)
+    check_model_metrics(model, model2, name)
         
 
 def test_multinomial():
     print("Multinomial test")
-    print("Create default multinomial model")
+    name = "multinomial"
+    print("Create default", name,  "model")
     (model, f_test) = multinomial_model_default(H2OGradientBoostingEstimator)
-    print("Create custom multinomial model")
+    print("Create custom", name, "model")
     (model2, f_test2) = multinomial_model_distribution(H2OGradientBoostingEstimator, 
-                                                       upload_distribution(CustomDistributionMultinomial, "multinomial"))
-    check_model_metrics(model, model2, "multinomial")
+                                                       upload_distribution(CustomDistributionMultinomial, name))
+    check_model_metrics(model, model2, name)
                  
 
 def test_null():
