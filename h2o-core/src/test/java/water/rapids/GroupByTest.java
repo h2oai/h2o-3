@@ -9,13 +9,15 @@ import water.Key;
 import water.Keyed;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.fvec.Vec;
+import water.fvec.task.FillNAWithLongValueTask;
 import water.rapids.vals.ValFrame;
 import water.Scope;
 
 import static org.junit.Assert.assertTrue;
 
 public class GroupByTest extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(2); }
 
   @Test public void testBasic() {
     Frame fr = null;
@@ -274,6 +276,8 @@ public class GroupByTest extends TestUtil {
 
         String teColumnName = "home.dest";
 
+//        imputeNAsForColumn(fr, teColumnName, "imputedNA");
+
         int teColumnIndex = fr.find(teColumnName);
         int responseColumnIndex = fr.find(responseColumn);
 
@@ -291,6 +295,8 @@ public class GroupByTest extends TestUtil {
         } else {
           Scope.track(groupedFrame);
           try {
+            printOutFrameAsTable(etalon, false, etalon.numRows());
+            printOutFrameAsTable(groupedFrame, false, groupedFrame.numRows());
             assertTrue("Failed attempt number " + attempt, isBitIdentical(etalon, groupedFrame));
           } catch (AssertionError ex) {
             Frame.export(groupedFrame, "encoding_map_badboy" + attempt + ".csv", groupedFrame._key.toString(),
@@ -309,6 +315,18 @@ public class GroupByTest extends TestUtil {
     }
   }
 
+  Frame imputeNAsForColumn(Frame data, String teColumnName, String strToImpute) {
+    int columnIndex = data.find(teColumnName);
+    Vec currentVec = data.vec(columnIndex);
+    int indexForNACategory = currentVec.cardinality(); // Warn: Cardinality returns int but it could be larger than it for big datasets
+    new FillNAWithLongValueTask(columnIndex, indexForNACategory).doAll(data);
+    String[] oldDomain = currentVec.domain();
+    String[] newDomain = new String[indexForNACategory + 1];
+    System.arraycopy(oldDomain, 0, newDomain, 0, oldDomain.length);
+    newDomain[indexForNACategory] = strToImpute;
+    currentVec.setDomain(newDomain);
+    return data;
+  }
 
 
   private void chkDim( Frame fr, int col, int row ) {
