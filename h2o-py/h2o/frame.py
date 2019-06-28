@@ -18,10 +18,8 @@ import warnings
 from io import StringIO
 from types import FunctionType
 
-import requests
-import math
-
 import h2o
+from h2o.base import Keyed
 from h2o.display import H2ODisplay
 from h2o.exceptions import H2OTypeError, H2OValueError
 from h2o.expr import ExprNode
@@ -39,7 +37,7 @@ from h2o.utils.typechecks import (assert_is_type, assert_satisfies, Enum, I, is_
 __all__ = ("H2OFrame", )
 
 
-class H2OFrame(object):
+class H2OFrame(Keyed):
     """
     Primary data store for H2O.
 
@@ -235,6 +233,11 @@ class H2OFrame(object):
     #-------------------------------------------------------------------------------------------------------------------
     # Frame properties
     #-------------------------------------------------------------------------------------------------------------------
+
+    @property
+    def key(self):
+        return None if self._ex is None else self._ex._cache._id
+
 
     @property
     def names(self):
@@ -514,6 +517,9 @@ class H2OFrame(object):
                 res["distribution_summary"].show()
             print("\n")
         self.summary()
+
+    def detach(self):
+        self._ex = None
 
 
     def _frame(self, rows=10, rows_offset=0, cols=-1, cols_offset=0, fill_cache=False):

@@ -6,6 +6,7 @@ import traceback
 import warnings
 
 import h2o
+from h2o.base import Keyed
 from h2o.exceptions import H2OValueError
 from h2o.job import H2OJob
 from h2o.utils.backward_compatibility import backwards_compatible
@@ -15,7 +16,7 @@ from h2o.utils.shared_utils import can_use_pandas
 from h2o.utils.typechecks import I, assert_is_type, assert_satisfies, Enum, is_type
 
 
-class ModelBase(backwards_compatible()):
+class ModelBase(Keyed, backwards_compatible()):
     """Base class for all models."""
 
     def __init__(self):
@@ -37,6 +38,10 @@ class ModelBase(backwards_compatible()):
         self._end_time = None
         self._run_time = None
 
+
+    @property
+    def key(self):
+        return self._id
 
     @property
     def model_id(self):
@@ -256,6 +261,10 @@ class ModelBase(backwards_compatible()):
         :returns: A list of models.
         """
         return self.get_xval_models()
+
+
+    def detach(self):
+        self._id = None
 
 
     def deepfeatures(self, test_data, layer):

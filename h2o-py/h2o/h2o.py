@@ -11,16 +11,11 @@ import logging
 import os
 import warnings
 import webbrowser
-import types
 
-
-from h2o.backend import H2OConnection
-from h2o.backend import H2OConnectionConf
-from h2o.backend import H2OLocalServer
-from h2o.exceptions import H2OConnectionError, H2OValueError
-from h2o.utils.config import H2OConfigReader
-from h2o.utils.shared_utils import check_frame_id, deprecated, gen_header, py_tmp_key, quoted, urlopen
-from h2o.utils.typechecks import assert_is_type, assert_satisfies, BoundInt, BoundNumeric, I, is_type, numeric, U
+from .backend import H2OConnection
+from .backend import H2OConnectionConf
+from .backend import H2OLocalServer
+from .base import Keyed
 from .estimators.deeplearning import H2OAutoEncoderEstimator
 from .estimators.deeplearning import H2ODeepLearningEstimator
 from .estimators.deepwater import H2ODeepWaterEstimator
@@ -37,15 +32,18 @@ from .estimators.random_forest import H2ORandomForestEstimator
 from .estimators.stackedensemble import H2OStackedEnsembleEstimator
 from .estimators.word2vec import H2OWord2vecEstimator
 from .estimators.isolation_forest import H2OIsolationForestEstimator
+from .exceptions import H2OConnectionError, H2OValueError
 from .expr import ExprNode
 from .frame import H2OFrame
 from .grid.grid_search import H2OGridSearch
 from .job import H2OJob
 from .model.model_base import ModelBase
 from .transforms.decomposition import H2OSVD
-from .utils.debugging import *  # NOQA
+from .utils.config import H2OConfigReader
 from .utils.compatibility import *  # NOQA
 from .utils.compatibility import PY3
+from .utils.shared_utils import check_frame_id, deprecated, gen_header, py_tmp_key, quoted, urlopen
+from .utils.typechecks import assert_is_type, assert_satisfies, BoundInt, BoundNumeric, I, is_type, numeric, U
 
 logging.basicConfig()
 
@@ -913,20 +911,20 @@ def remove(x):
     :param x: H2OFrame, H2OEstimator, or string, or a list of those things: the object(s) or unique id(s)
         pointing to the object(s) to be removed.
     """
-    item_type = U(str, H2OFrame, H2OEstimator)
+    item_type = U(str, Keyed)
     assert_is_type(x, item_type, [item_type])
     if not isinstance(x, list): x = [x]
     for xi in x:
         if isinstance(xi, H2OFrame):
-            xi_id = xi._ex._cache._id  # String or None
-            if xi_id is None: return  # Lazy frame, never evaluated, nothing in cluster
-            rapids("(rm {})".format(xi_id))
-            xi._ex = None
-        elif isinstance(xi, H2OEstimator):
-            api("DELETE /3/DKV/%s" % xi.model_id)
-            xi._id = None
+            if xi.key is None: return  # Lazy frame, never evaluated, nothing in cluster
+            rapids("(rm {})".format(xi.key))
+            xi.detach()
+        elif isinstance(xi, Keyed):
+            api("DELETE /3/DKV/%s" % xi.key)
+            xi.detach()
         else:
             # string may be a Frame key name part of a rapids session... need to call rm thru rapids here
+            assert isinstance(xi, str)
             try:
                 rapids("(rm {})".format(xi))
             except:
