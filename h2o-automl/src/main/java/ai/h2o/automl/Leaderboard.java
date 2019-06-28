@@ -434,8 +434,15 @@ public class Leaderboard extends Keyed<Leaderboard> {
    */
   @Override
   protected Futures remove_impl(Futures fs) {
-    for (Key<Model> m : models)
+    for (Key<Model> m : models) {
+      Model model = m.get();
+      if (model != null) {
+        model.deleteCrossValidationPreds();
+        model.deleteCrossValidationModels();
+        model.deleteCrossValidationFoldAssignment();
+      }
       m.remove(fs);
+    }
     for (Key k : leaderboard_set_metrics.keySet())
       k.remove(fs);
     return super.remove_impl(fs);

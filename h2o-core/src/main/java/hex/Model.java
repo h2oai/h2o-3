@@ -2359,6 +2359,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
   }
 
+  public void deleteCrossValidationFoldAssignment() {
+    if (_output._cross_validation_fold_assignment_frame_id != null) {
+      _output._cross_validation_fold_assignment_frame_id.remove();
+    }
+  }
+
   @Override public String toString() {
     return _output.toString();
   }

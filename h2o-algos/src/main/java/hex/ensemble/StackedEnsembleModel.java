@@ -446,5 +446,9 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     _output._metalearner.deleteCrossValidationPreds();
   }
 
+  @Override
+  public void deleteCrossValidationFoldAssignment() {
+    _output._metalearner.deleteCrossValidationFoldAssignment();
+  }
 }
 

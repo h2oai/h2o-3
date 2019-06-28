@@ -389,16 +389,16 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return DKV.getGet(this.job._key);
   }
 
-  public Model leader() { return (leaderboard() == null ? null : leaderboard.getLeader()); }
+  public Model leader() {
+    return leaderboard() == null ? null : leaderboard.getLeader();
+  }
 
   public Leaderboard leaderboard() {
-    if (leaderboard != null) leaderboard = leaderboard._key.get();
-    return leaderboard;
+    return leaderboard == null ? null : (leaderboard = leaderboard._key.get());
   }
 
   public EventLog eventLog() {
-    if (eventLog != null) eventLog = eventLog._key.get();
-    return eventLog;
+    return eventLog == null ? null : (eventLog = eventLog._key.get());
   }
 
   public String projectName() {
