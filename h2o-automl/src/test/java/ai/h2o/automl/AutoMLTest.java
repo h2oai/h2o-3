@@ -3,6 +3,7 @@ package ai.h2o.automl;
 import hex.Model;
 import hex.SplitFrame;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
@@ -189,6 +190,7 @@ public class AutoMLTest extends water.TestUtil {
   }
 
 
+  @Ignore
   @Test public void test_individual_model_max_runtime() {
     AutoML aml=null;
     Frame fr=null;
