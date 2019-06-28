@@ -1,7 +1,7 @@
 @Library('test-shared-library') _
 import ai.h2o.ci.buildsummary.StagesSummary
 
-DEFAULT_LABEL = 'mr-0xc10'
+DEFAULT_LABEL = 'mr-0x2'
 
 // initialize build summary
 buildSummary('https://github.com/h2oai/h2o-3', true)
