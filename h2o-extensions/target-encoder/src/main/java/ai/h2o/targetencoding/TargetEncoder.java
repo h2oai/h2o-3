@@ -10,6 +10,7 @@ import water.rapids.Rapids;
 import water.rapids.Val;
 import water.rapids.ast.prims.mungers.AstGroup;
 import water.util.IcedHashMapGeneric;
+import water.util.ArrayUtils;
 import water.util.Log;
 
 import java.util.ArrayList;
@@ -292,16 +293,16 @@ public class TargetEncoder extends Iced<TargetEncoder>{
         }
     }
 
-    Frame mergeByTEAndFoldColumns(Frame leftFrame, Frame holdoutEncodeMap, int teColumnIndexOriginal, int foldColumnIndexOriginal, int teColumnIndex) {
+    Frame mergeByTEAndFoldColumns(Frame leftFrame, Frame holdoutEncodeMap, int teColumnIndexOriginal, int foldColumnIndexOriginal, int teColumnIndex, int numberOfFolds) {
       addNumeratorAndDenominatorTo(leftFrame);
 
       int foldColumnIndexInEncodingMap = holdoutEncodeMap.find("foldValueForMerge");
-      return BroadcastJoinForTargetEncoder.join(leftFrame, new int[]{teColumnIndexOriginal}, foldColumnIndexOriginal, holdoutEncodeMap, new int[]{teColumnIndex}, foldColumnIndexInEncodingMap);
+      return BroadcastJoinForTargetEncoder.join(leftFrame, new int[]{teColumnIndexOriginal}, foldColumnIndexOriginal, holdoutEncodeMap, new int[]{teColumnIndex}, foldColumnIndexInEncodingMap, numberOfFolds);
     }
 
     Frame mergeByTEColumn(Frame leftFrame, Frame holdoutEncodeMap, int teColumnIndexOriginal, int teColumnIndex) {
       addNumeratorAndDenominatorTo(leftFrame);
-      return BroadcastJoinForTargetEncoder.join(leftFrame, new int[]{teColumnIndexOriginal}, -1, holdoutEncodeMap, new int[]{teColumnIndex}, -1);
+      return BroadcastJoinForTargetEncoder.join(leftFrame, new int[]{teColumnIndexOriginal}, -1, holdoutEncodeMap, new int[]{teColumnIndex}, -1, 0);
       }
   
     private void addNumeratorAndDenominatorTo(Frame leftFrame) {
@@ -635,8 +636,13 @@ public class TargetEncoder extends Iced<TargetEncoder>{
                     Scope.exit();
                   }
                   // End of the preparation phase
-                  
-                  dataWithMergedAggregationsK = mergeByTEAndFoldColumns(dataWithAllEncodings, holdoutEncodeMap, teColumnIndex, foldColumnIndex, teColumnIndexInEncodingMap);
+
+                  // Note: Folds might be sparse and this will cause array of encodings to be sparse/inflated as well
+                  long minFoldValue = ArrayUtils.minValue(foldValues);
+                  assert minFoldValue == 1 : "It is assumed that folds are one-based";
+                  int numberOfFolds = (int) ArrayUtils.maxValue(foldValues);
+
+                  dataWithMergedAggregationsK = mergeByTEAndFoldColumns(dataWithAllEncodings, holdoutEncodeMap, teColumnIndex, foldColumnIndex, teColumnIndexInEncodingMap, numberOfFolds);
 
                   Frame withEncodingsFrameK = calculateEncoding(dataWithMergedAggregationsK, encodingMapForCurrentTEColumn, newEncodedColumnName, useBlending, blendingParams);
 
