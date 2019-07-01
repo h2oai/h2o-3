@@ -63,7 +63,7 @@ public class DistributionFactory {
             case quantile:
                 return new QuantileDistribution(params);
             case custom:
-                return new CustomDistribution(params);
+                return CustomDistribution.getCustomDistribution(params);
             default:
                 throw H2O.unimpl("Try to get "+family+" which is not supported.");
         }
@@ -435,13 +435,22 @@ class QuantileDistribution extends Distribution {
 class CustomDistribution extends Distribution {
     
     private CustomDistributionWrapper customDistribution;
+    private static CustomDistribution inst;
     
-    public CustomDistribution(Model.Parameters params){
+    private CustomDistribution(Model.Parameters params){
         super(params);
         customDistribution = new CustomDistributionWrapper(CFuncRef.from(params._custom_distribution_func));
         assert customDistribution != null;
         assert customDistribution.getFunc() != null;
         this.setLinkFunction(LinkFunctionFactory.getLinkFunction(customDistribution.getFunc().link()));
+    }
+    
+    public static CustomDistribution getCustomDistribution(Model.Parameters params){
+        if(inst == null){
+            System.out.println("new instance");
+            inst = new CustomDistribution(params);
+        } 
+        return inst;
     }
 
     @Override

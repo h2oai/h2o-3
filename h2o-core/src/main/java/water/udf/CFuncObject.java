@@ -31,7 +31,9 @@ abstract public class CFuncObject<T extends CFunc> extends Iced<CFuncObject> {
     abstract protected Class<T> getFuncType();
     
     public T getFunc() {
-        if (func == null) setupLocal();
+        if (func == null) {
+            setupLocal();
+        }
         return func;
     }
 }

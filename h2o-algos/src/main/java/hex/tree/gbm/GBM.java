@@ -324,6 +324,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // Define a "working set" of leaf splits, from here to tree._len
       int[] leaves = new int[_nclass];
 
+      // Get distribution 
+      Distribution distributionImpl = DistributionFactory.getDistribution(_parms);
+      
       // Compute predictions and resulting residuals
       // ESL2, page 387, Steps 2a, 2b
       // fills "Work" columns for all rows (incl. OOB) with the residuals
@@ -333,15 +336,14 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         // https://statweb.stanford.edu/~jhf/ftp/trebst.pdf
         // compute absolute diff |y-(f+o)| for all rows
         Vec diff = new ComputeAbsDiff(frameMap).doAll(1, (byte)3 /*numeric*/, _train).outputFrame().anyVec();
-        Distribution dist = DistributionFactory.getDistribution(_parms);
         // compute weighted alpha-quantile of the absolute residual -> this is the delta for the huber loss
         huberDelta = MathUtils.computeWeightedQuantile(_weights, diff, _parms._huber_alpha);
-        dist.setHuberDelta(huberDelta);
+        distributionImpl.setHuberDelta(huberDelta);
         // now compute residuals using the gradient of the huber loss (with a globally adjusted delta)
-        new StoreResiduals(frameMap, dist).doAll(_train, _parms._build_tree_one_node);
+        new StoreResiduals(frameMap, distributionImpl).doAll(_train, _parms._build_tree_one_node);
       } else {
         // compute predictions and residuals in one shot
-        new ComputePredAndRes(frameMap, _nclass, _model._output._distribution, DistributionFactory.getDistribution(_parms))
+        new ComputePredAndRes(frameMap, _nclass, _model._output._distribution, distributionImpl)
             .doAll(_train, _parms._build_tree_one_node);
       }
       for (int k = 0; k < _nclass; k++) {
@@ -365,7 +367,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // ----
       // ESL2, page 387.  Step 2b iii.  Compute the gammas (leaf node predictions === fit best constant), and store them back
       // into the tree leaves.  Includes learn_rate.
-      GammaPass gp = new GammaPass(frameMap, ktrees, leaves, DistributionFactory.getDistribution(_parms), _nclass);
+      GammaPass gp = new GammaPass(frameMap, ktrees, leaves, distributionImpl, _nclass);
       gp.doAll(_train);
       if (_parms._distribution == DistributionFamily.laplace) {
         fitBestConstantsQuantile(ktrees, leaves[0], 0.5); //special case for Laplace: compute the median for each leaf node and store that as prediction

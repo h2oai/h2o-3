@@ -6,7 +6,6 @@ import h2o
 from tests import pyunit_utils
 
 import pandas as pd
-import datetime
 
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
 from h2o.utils.distributions import CustomDistributionGaussian
@@ -66,10 +65,9 @@ class AsymmetricLossDistribution(CustomDistributionGaussian):
 
 def test_gaussian():
     # load data 
-    data = pd.read_csv(pyunit_utils.locate("smalldata/demos/item_demand_train.csv"))
+    data = pd.read_csv(pyunit_utils.locate("smalldata/demos/item_demand.csv"))
     # prepare date columns
     data = prepare_date(data, "date")
-    data = data[data.date > "2015-12-31"]
 
     # aggregate data, prepare lags, remove null rows
     data = group_by_agg_lags(data)
@@ -92,7 +90,7 @@ def test_gaussian():
 
     # Train GBM model with gaussian 
     gbm_gaussian = H2OGradientBoostingEstimator(model_id="sales_model",
-                                                ntrees=1,
+                                                ntrees=50,
                                                 max_depth=5,
                                                 score_each_iteration=True,
                                                 distribution="gaussian")
@@ -108,7 +106,7 @@ def test_gaussian():
                                                       func_file="custom_"+name+".py")
 
     gbm_custom = H2OGradientBoostingEstimator(model_id="custom_sales_model",
-                                              ntrees=1,
+                                              ntrees=50,
                                               max_depth=5,
                                               score_each_iteration=True,
                                               distribution="custom",
