@@ -96,34 +96,6 @@ public class TestUtil extends Iced {
     H2O.startServingRestApi();
   }
 
-
-  /**
-   * Converts a H2OFrame to a csv file for debugging purposes.
-   *
-   * @param fileNameWithPath: String containing filename with path that will contain the H2O Frame
-   * @param h2oframe: H2O Frame to be saved as CSV file.
-   * @param header: boolean to decide if column names should be saved.  Set to false if don't care.
-   * @param hex_string: boolean to decide if the double values are written in hex.  Set to false if don't care.
-   * @throws IOException
-   */
-  public static void writeFrameToCSV(String fileNameWithPath, Frame h2oframe, boolean header, boolean hex_string)
-          throws IOException {
-    InputStream frameToStream = h2oframe.toCSV(header, hex_string);    // read in frame as Inputstream
-    // write Inputstream to a real file
-    File targetFile = new File(fileNameWithPath);
-    OutputStream outStream = new FileOutputStream(targetFile);
-
-    byte[] buffer = new byte[1<<20];
-    int bytesRead;
-
-    while((bytesRead=frameToStream.read(buffer)) > 0) { // for our toCSV stream, return 0 as EOF, not -1
-      outStream.write(buffer, 0, bytesRead);
-    }
-    frameToStream.close();
-    outStream.flush();
-    outStream.close();
-  }
-
   @AfterClass
   public static void checkLeakedKeys() {
     int leaked_keys = H2O.store_size() - _initial_keycnt;
@@ -151,6 +123,23 @@ public class TestUtil extends Iced {
     _initial_keycnt = H2O.store_size();
   }
 
+  public static void checkArrays(double[] expected, double[] actual, double threshold) {
+    for(int i = 0; i < actual.length; i++) {
+      if (!Double.isNaN(expected[i]) && !Double.isNaN(actual[i])) // only compare when both are not NaN
+        assertEquals(expected[i], actual[i], threshold*Math.min(Math.abs(expected[i]),Math.abs(actual[i])));
+    }
+  }
+
+  public static void checkDoubleArrays(double[][] expected, double[][] actual, double threshold) {
+    int len1 = expected.length;
+    assertEquals(len1, actual.length);
+
+    for (int ind=0; ind < len1; ind++) {
+      assertEquals(expected[ind].length, actual[ind].length);
+      checkArrays(expected[ind], actual[ind], threshold);
+    }
+  }
+
   /**
    * generate random frames containing enum columns only
    * @param numCols
@@ -159,6 +148,12 @@ public class TestUtil extends Iced {
    * @return
    */
   protected static Frame generate_enum_only(int numCols, int numRows, int num_factor, double missingfrac) {
+    long seed = System.currentTimeMillis();
+    System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+seed);
+    return generate_enum_only(numCols, numRows, num_factor, missingfrac, seed);
+  }
+
+  protected static Frame generate_enum_only(int numCols, int numRows, int num_factor, double missingfrac, long seed) {
     CreateFrame cf = new CreateFrame();
     cf.rows= numRows;
     cf.cols = numCols;
@@ -168,7 +163,52 @@ public class TestUtil extends Iced {
     cf.categorical_fraction = 1;
     cf.has_response=false;
     cf.missing_fraction = missingfrac;
-    cf.seed = System.currentTimeMillis();
+    cf.seed =seed;
+    System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+cf.seed);
+    return cf.execImpl().get();
+  }
+
+  protected static Frame generate_real_only(int numCols, int numRows, double missingfrac) {
+    long seed = System.currentTimeMillis();
+    System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+seed);
+    return generate_real_only(numCols, numRows, missingfrac, seed);
+  }
+
+  protected static Frame generate_real_only(int numCols, int numRows, double missingfrac, long seed) {
+    CreateFrame cf = new CreateFrame();
+    cf.rows= numRows;
+    cf.cols = numCols;
+    cf.binary_fraction = 0;
+    cf.integer_fraction = 0;
+    cf.categorical_fraction = 0;
+    cf.time_fraction = 0;
+    cf.string_fraction = 0;
+    cf.has_response=false;
+    cf.missing_fraction = missingfrac;
+    cf.seed = seed;
+    System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+cf.seed);
+    return cf.execImpl().get();
+  }
+
+  protected static Frame generate_int_only(int numCols, int numRows, int integer_range, double missingfrac) {
+    long seed = System.currentTimeMillis();
+    System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+seed);
+    return generate_int_only(numCols, numRows, integer_range, missingfrac, seed);
+  }
+
+  protected static Frame generate_int_only(int numCols, int numRows, int integer_range, double missingfrac, long seed) {
+    CreateFrame cf = new CreateFrame();
+    cf.rows= numRows;
+    cf.cols = numCols;
+    cf.binary_fraction = 0;
+    cf.integer_fraction = 1;
+    cf.categorical_fraction = 0;
+    cf.time_fraction = 0;
+    cf.string_fraction = 0;
+    cf.has_response=false;
+    cf.missing_fraction = missingfrac;
+    cf.integer_range = integer_range;
+    cf.seed = seed;
     System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+cf.seed);
     return cf.execImpl().get();
   }
@@ -190,26 +230,6 @@ public class TestUtil extends Iced {
       sortDir[index] = dirs[rand.nextInt(2)];
     }
     return sortDir;
-  }
-  /**
-   * generate random frames containing enum columns only
-   * @param numCols
-   * @param numRows
-   * @return
-   */
-  protected static Frame generate_int_only(int numCols, int numRows, int iRange, double missingfrac) {
-    CreateFrame cf = new CreateFrame();
-    cf.rows= numRows;
-    cf.cols = numCols;
-    cf.binary_fraction = 0;
-    cf.integer_fraction = 1;
-    cf.categorical_fraction = 0;
-    cf.has_response=false;
-    cf.missing_fraction = missingfrac;
-    cf.integer_range=iRange;
-    cf.seed = System.currentTimeMillis();
-    System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+cf.seed);
-    return cf.execImpl().get();
   }
 
   private static class DKVCleaner extends MRTask<DKVCleaner> {
@@ -650,11 +670,22 @@ public class TestUtil extends Iced {
   public static <T> T[] aro(T ...a) { return a ;}
 
   // ==== Comparing Results ====
+  
+  public static void assertFrameEquals(Frame expected, Frame actual, double delta) {
+    assertEquals("Frames have different number of vecs. ", expected.vecs().length, actual.vecs().length);
+    for (int i = 0; i < expected.vecs().length; i++) {
+      assertVecEquals(i + "/" + expected._names[i] + " ", expected.vec(i), actual.vec(i), delta);
+    }
+  }
 
   public static void assertVecEquals(Vec expecteds, Vec actuals, double delta) {
+    assertVecEquals("", expecteds, actuals, delta);
+  }
+
+  public static void assertVecEquals(String messagePrefix, Vec expecteds, Vec actuals, double delta) {
     assertEquals(expecteds.length(), actuals.length());
     for(int i = 0; i < expecteds.length(); i++) {
-      final String message = i + ": " + expecteds.at(i) + " != " + actuals.at(i) + ", chunkIds = " + expecteds.elem2ChunkIdx(i) + ", " + actuals.elem2ChunkIdx(i) + ", row in chunks = " + (i - expecteds.chunkForRow(i).start()) + ", " + (i - actuals.chunkForRow(i).start());
+      final String message = messagePrefix + i + ": " + expecteds.at(i) + " != " + actuals.at(i) + ", chunkIds = " + expecteds.elem2ChunkIdx(i) + ", " + actuals.elem2ChunkIdx(i) + ", row in chunks = " + (i - expecteds.chunkForRow(i).start()) + ", " + (i - actuals.chunkForRow(i).start());
       assertEquals(message, expecteds.at(i), actuals.at(i), delta);
     }
   }

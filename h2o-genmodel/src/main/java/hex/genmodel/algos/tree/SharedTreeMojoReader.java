@@ -1,7 +1,5 @@
 package hex.genmodel.algos.tree;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import hex.genmodel.ModelMojoReader;
 import hex.genmodel.descriptor.JsonModelDescriptorReader;

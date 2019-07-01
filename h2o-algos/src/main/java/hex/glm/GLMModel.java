@@ -28,6 +28,8 @@ import java.util.NoSuchElementException;
  */
 public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput> {
 
+  final static public double _EPS = 1e-6;
+  final static public double _OneOEPS = 1e6;
   public GLMModel(Key selfKey, GLMParameters parms, GLM job, double [] ymu, double ySigma, double lambda_max, long nobs) {
     super(selfKey, parms, job == null?new GLMOutput():new GLMOutput(job));
     // modelKey, parms, null, Double.NaN, Double.NaN, Double.NaN, -1
@@ -138,10 +140,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public double deviance(double w, double y, double f) {
     if (w == 0) {
       return 0;
-    } else if (w == 1) {
-      return _parms.deviance(y, f);
     } else {
-      return Double.NaN; //TODO: add deviance(w, y, f)
+      return w*_parms.deviance(y,f);
     }
   }
 
@@ -450,7 +450,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case logit:
 //        case multinomial:
           double div = (x * (1 - x));
-          if(div < 1e-6) return 1e6; // avoid numerical instability
+          if(div < _EPS) return _OneOEPS; // avoid numerical instability
           return 1.0 / div;
         case identity:
           return 1;
@@ -461,7 +461,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case ologlog:
           double oneMx = 1.0-x;
           double divsor = -1.0*oneMx*Math.log(oneMx);
-          return (divsor<1e-6)?1e6:(1.0/divsor);
+          return (divsor<_EPS)?_OneOEPS:(1.0/divsor);
         case tweedie:
 //          double res = _tweedie_link_power == 0
 //            ?Math.max(2e-16,Math.exp(x))
@@ -539,8 +539,16 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     final Link _link;
     final double _var_power;
     final double _link_power;
+    final double _oneOoneMinusVarPower;
+    final double _oneOtwoMinusVarPower;
+    final double _oneMinusVarPower;
+    final double _twoMinusVarPower;
+    final double _oneOLinkPower;
+    final double _oneOLinkPowerSquare;
     double _theta;  // used by negative binomial, 0 < _theta <= 1
     double _invTheta;
+    double _oneOeta;
+    double _oneOetaSquare;
 
     final NormalDistribution _dprobit = new NormalDistribution(0,1);  // get the normal distribution
     
@@ -552,6 +560,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _link = link;
       _var_power = var_power;
       _link_power = link_power;
+      _oneMinusVarPower = 1-_var_power;
+      _twoMinusVarPower = 2-_var_power;
+      _oneOoneMinusVarPower = _var_power==1?1:1.0/(1-_var_power);
+      _oneOtwoMinusVarPower = _var_power==2?1:1.0/(2-_var_power);
+      _oneOLinkPower = 1.0/_link_power;
+      _oneOLinkPowerSquare = _oneOLinkPower*_oneOLinkPower;
       _theta = theta;
       _invTheta = 1/theta;
     }
@@ -596,9 +610,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case inverse:
           double xx = (x < 0) ? Math.min(-1e-5, x) : Math.max(1e-5, x);
           return -1 / (xx * xx);
-//        case tweedie:
-//          double vp = (1. - _tweedie_link_power) / _tweedie_link_power;
-//          return (1/ _tweedie_link_power) * Math.pow(x, vp);
+        case tweedie:
+          return _link_power==0?Math.max(x, Double.MIN_NORMAL):x*_oneOLinkPower*_oneOeta;
         default:
           throw new RuntimeException("unexpected link function id  " + this);
       }
@@ -611,6 +624,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           return 0;
         case log:
           return Math.max(x, Double.MIN_NORMAL);
+        case tweedie:
+          return _link_power==0?Math.max(x, Double.MIN_NORMAL):x*_oneOLinkPower*(_oneOLinkPower-1)*_oneOetaSquare;
         default:
           throw new RuntimeException("unexpected link function id  " + this);
       }
@@ -624,12 +639,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case logit:
 //        case multinomial:
           double div = (x * (1 - x));
-          if(div < 1e-6) return 1e6; // avoid numerical instability
+          if(div < _EPS) return _OneOEPS; // avoid numerical instability
           return 1.0 / div;
         case ologlog:
           double oneMx = 1.0-x;
           double divsor = -1.0*oneMx*Math.log(oneMx);
-          return (divsor<1e-6)?1e6:(1.0/divsor);
+          return (divsor<_EPS)?_OneOEPS:(1.0/divsor);
         case identity:
           return 1;
         case log:
@@ -666,7 +681,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case tweedie:
           return _link_power == 0
             ?Math.max(2e-16,Math.exp(x))
-            :Math.pow(x, 1/ _link_power);
+            :Math.pow(x, _oneOLinkPower);
         default:
           throw new RuntimeException("unexpected link function id  " + _link);
       }
@@ -678,7 +693,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case quasibinomial:
         case binomial:
           double res = mu * (1 - mu);
-          return res < 1e-6?1e-6:res;
+          return res < _EPS?_EPS:res;
         case poisson:
           return mu;
         case negativebinomial:
@@ -693,7 +708,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
 
     public final double deviance(double yr, double ym){
-      double y1 = yr == 0?.1:yr;
+      double y1 = yr == 0?0.1:yr; // this must be kept as 0.1, otherwise, answer differs from R.
       switch(_family){
         case gaussian:
           return (yr - ym) * (yr - ym);
@@ -713,13 +728,16 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           if( yr == 0 ) return -2;
           return -2 * (Math.log(yr / ym) - (yr - ym) / ym);
         case tweedie:
-          double theta = _var_power == 1
-            ?Math.log(y1/ym)
-            :(Math.pow(y1,1.-_var_power) - Math.pow(ym,1 - _var_power))/(1-_var_power);
-          double kappa = _var_power == 2
-            ?Math.log(y1/ym)
-            :(Math.pow(yr,2-_var_power) - Math.pow(ym,2-_var_power))/(2 - _var_power);
-          return 2 * (yr * theta - kappa);
+          double val;
+          if (_var_power==1) {
+            val = yr*Math.log(y1/ym)-(yr-ym);
+          } else if (_var_power==2) {
+            val = yr*(1/ym-1/y1)-Math.log(y1/ym);
+          } else {
+            val = (yr==0?0:yr*_oneOoneMinusVarPower*(Math.pow(yr,_oneMinusVarPower)-Math.pow(ym, _oneMinusVarPower)))-
+                    (Math.pow(yr,_twoMinusVarPower)-Math.pow(ym, _twoMinusVarPower))*_oneOtwoMinusVarPower;
+          }
+          return 2 * val;
         default:
           throw new RuntimeException("unknown family " + _family);
       }
@@ -749,7 +767,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case gamma:
         case tweedie:
           x.dev = w*deviance(yr,ym);
-          x.l = x.dev; // todo: verify that this is not true for Poisson distribution
+          x.l = likelihood(w, yr, ym); // todo: verify that this is not true for Poisson distribution
           break;
         case negativebinomial:
           x.dev = w*deviance(yr,ym); // CHECKED-log/CHECKED-identity
@@ -785,8 +803,16 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case gamma:
           if (yr == 0) return -2;
           return -2 * (Math.log(yr / ym) - (yr - ym) / ym);
-        case tweedie:
-          return deviance(yr, ym); //fixme: not really correct, not sure what the likelihood is right now
+        case tweedie: // we ignore the a(y,phi,p) term in the likelihood calculation here since we are not optimizing over them
+          double temp = 0;
+          if (_var_power==1) {
+            temp = Math.pow(ym, _twoMinusVarPower)*_oneOtwoMinusVarPower-yr*Math.log(ym);
+          } else if (_var_power==2) {
+            temp = Math.log(ym)-yr*Math.pow(ym, _oneMinusVarPower)*_oneOoneMinusVarPower;
+          } else {
+            temp = Math.pow(ym, _twoMinusVarPower)*_oneOtwoMinusVarPower-yr*Math.pow(ym, _oneMinusVarPower)*_oneOoneMinusVarPower;
+          }
+          return temp; // ignored the a(y,phi,p) term as it is a constant for us
         default:
           throw new RuntimeException("unknown family " + _family);
       }
@@ -795,7 +821,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public GLMWeights computeWeights(double y, double eta, double off, double w, GLMWeights x) {
       double etaOff = eta + off;
       x.mu = linkInv(etaOff);
-//      x.mu = x.mu==0?hex.glm.GLMTask.EPS:x.mu;
       double var = variance(x.mu);//Math.max(1e-5, variance(x.mu)); // avoid numerical problems with 0 variance
       double d = linkDeriv(x.mu);
       if (_family.equals(Family.negativebinomial)) {
@@ -814,9 +839,28 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           x.w = 0;
           x.z = 0;
         }
+      } else if (_family.equals(Family.tweedie)) {  // here, the x.z is actually wz
+        double oneOxmu = x.mu==0?_OneOEPS:1.0/x.mu;
+        double oneOxmuSquare = oneOxmu*oneOxmu;
+        _oneOeta = etaOff==0?_OneOEPS:1.0/etaOff; // use etaOff here since the derivative is wrt to eta+offset
+        _oneOetaSquare = _oneOeta*_oneOeta;
+        double diffOneSquare = linkInvDeriv(x.mu)*linkInvDeriv(x.mu);
+        double xmuPowMP = Math.pow(x.mu, -_var_power);
+        if (_var_power==1) {
+          x.w = y*oneOxmuSquare*diffOneSquare-(y*oneOxmu-1)*linkInvDeriv2(x.mu);
+          x.z = (x.w*eta + (y*oneOxmu-1)*linkInvDeriv(x.mu))*w;
+        } else if (_var_power == 2) {
+          x.w = (oneOxmu-y*xmuPowMP)*linkInvDeriv2(x.mu)+ (y*2*Math.pow(x.mu, -3)-oneOxmuSquare)*diffOneSquare;
+          x.z = (x.w*eta+(y*oneOxmuSquare-oneOxmu)*linkInvDeriv(x.mu))*w;
+        } else {
+          x.w = (_var_power*y*Math.pow(x.mu, -_var_power-1)+_oneMinusVarPower*xmuPowMP)*diffOneSquare-
+                  (y*xmuPowMP-Math.pow(x.mu, _oneMinusVarPower))*linkInvDeriv2(x.mu);
+          x.z = (x.w*eta+(y*Math.pow(x.mu, -_var_power)-Math.pow(x.mu, _oneMinusVarPower))*linkInvDeriv(x.mu))*w;
+        }
+        x.w *= w;
       } else {
         x.w = w / (var * d * d);  // formula did not quite work with negative binomial
-        x.z = eta + (y - x.mu) * d;
+        x.z = eta + (y - x.mu) * d; // only eta and no r.offset should be applied.  I derived this.
       }
       likelihoodAndDeviance(y,x,w);
       return x;
@@ -903,6 +947,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public int _lambda_1se = -1; // lambda_best + sd(lambda); only applicable if running lambda search with nfold
     public int _selected_lambda_idx; // lambda which minimizes deviance on validation (if provided) or train (if not)
     public double lambda_best(){return _submodels.length == 0 ? -1 : _submodels[_best_lambda_idx].lambda_value;}
+    public double dispersion(){ return _dispersion;}
     public double lambda_1se(){return _lambda_1se == -1 || _lambda_1se >= _submodels.length?-1:_submodels.length == 0 ? -1 : _submodels[_lambda_1se].lambda_value;}
     public double lambda_selected(){return _submodels[_selected_lambda_idx].lambda_value;}
     double[] _global_beta;

@@ -1119,7 +1119,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if(_parms._family != Family.binomial && _parms._family != Family.poisson) {
           seEst = true;
           ComputeSETsk ct = new ComputeSETsk(null, _state.activeData(), _job._key, beta, _parms).doAll(_state.activeData()._adaptedFrame);
-          se = ct._sumsqe / (_nobs - 1 - _state.activeData().fullN());
+          se = ct._sumsqe / (_nobs - 1 - _state.activeData().fullN());  // this is the dispersion parameter estimate
         }
         double [] zvalues = MemoryManager.malloc8d(_state.activeData().fullN()+1);
         Cholesky chol = _chol;
@@ -1153,10 +1153,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       Frame train = DKV.<Frame>getGet(_parms._train);
       _model.score(train).delete();
       ModelMetrics mtrain = ModelMetrics.getFromDKV(_model, train); // updated by model.scoreAndUpdateModel
-      _model._output._training_metrics = mtrain;
       long t2 = System.currentTimeMillis();
+      if (!(mtrain==null)) {
+        _model._output._training_metrics = mtrain;
+        Log.info(LogMsg(mtrain.toString()));
+      } else {
+        Log.info(LogMsg("ModelMetrics mtrain is null"));
+      }
       Log.info(LogMsg("Training metrics computed in " + (t2-t1) + "ms"));
-      Log.info(LogMsg(mtrain.toString()));
       if(_valid != null) {
         Frame valid = DKV.<Frame>getGet(_parms._valid);
         _model.score(valid).delete();
@@ -2072,7 +2076,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         for (int i = 0; i < v.length(); ++i) {
           if (!v.isNA(i) && map[i] != -1) {
             int idx = map == null ? i : map[i];
-            if (idx > _dinfo.numStart() && idx < _dinfo.fullN()) {
+            if (idx >= _dinfo.numStart() && idx < _dinfo.fullN()) {
               _dinfo._normSub[idx - _dinfo.numStart()] = v.at(i);
             } else {
               // categorical or Intercept, will be ignored
@@ -2086,7 +2090,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         for (int i = 0; i < v.length(); ++i) {
           if (!v.isNA(i) && map[i] != -1) {
             int idx = map == null ? i : map[i];
-            if (idx > _dinfo.numStart() && idx < _dinfo.fullN()) {
+            if (idx >= _dinfo.numStart() && idx < _dinfo.fullN()) {
               _dinfo._normMul[idx - _dinfo.numStart()] = 1.0 / v.at(i);
             } else {
               // categorical or Intercept, will be ignored

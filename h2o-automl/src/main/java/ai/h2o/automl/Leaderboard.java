@@ -2,7 +2,6 @@ package ai.h2o.automl;
 
 import hex.*;
 import water.*;
-import water.api.schemas3.KeyV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
@@ -10,13 +9,9 @@ import water.util.IcedHashMap;
 import water.util.Log;
 import water.util.TwoDimTable;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static water.DKV.getGet;
-import static water.Key.make;
 
 
 /**
@@ -102,10 +97,9 @@ public class Leaderboard extends Keyed<Leaderboard> {
   private boolean have_set_sort_metric = false;
 
   /**
-   * UserFeedback object used to send, um, feedback to the, ah, user.  :-)
-   * Right now this is a "new leader" message.
+   * The eventLog attached to same AutoML instance as this Leaderboard object.
    */
-  private UserFeedback userFeedback;
+  private EventLog eventLog;
 
   /**
    * Frame for which we return the metrics, by default.
@@ -120,43 +114,31 @@ public class Leaderboard extends Keyed<Leaderboard> {
   /**
    *
    */
-  public Leaderboard(String project_name, UserFeedback userFeedback, Frame leaderboardFrame, String sort_metric) {
-    this._key = make(idForProject(project_name));
+  public Leaderboard(String project_name, EventLog eventLog, Frame leaderboardFrame, String sort_metric) {
+    this._key = Key.make(idForProject(project_name));
     this.project_name = project_name;
-    this.userFeedback = userFeedback;
+    this.eventLog = eventLog;
     this.leaderboardFrame = leaderboardFrame;
     this.leaderboardFrameChecksum = leaderboardFrame == null ? 0 : leaderboardFrame.checksum();
     this.sort_metric = sort_metric == null ? null : sort_metric.toLowerCase();
   }
 
-  static Leaderboard getOrMakeLeaderboard(String project_name, UserFeedback userFeedback, Frame leaderboardFrame, String sort_metric) {
-    Leaderboard exists = DKV.getGet(Key.make(idForProject(project_name)));
-    if (null != exists) {
-      exists.userFeedback = userFeedback;
-      exists.leaderboardFrame = leaderboardFrame;
+  static Leaderboard getOrMake(String project_name, EventLog eventLog, Frame leaderboardFrame, String sort_metric) {
+    Leaderboard leaderboard = DKV.getGet(Key.make(idForProject(project_name)));
+    if (null != leaderboard) {
+      leaderboard.eventLog = eventLog;
+      leaderboard.leaderboardFrame = leaderboardFrame;
       if (sort_metric != null) {
-        exists.sort_metric = sort_metric.toLowerCase();
-        exists.sort_decreasing = exists.sort_metric.equals("auc");
+        leaderboard.sort_metric = sort_metric.toLowerCase();
+        leaderboard.sort_decreasing = leaderboard.sort_metric.equals("auc");
       }
-      exists.leaderboardFrameChecksum = leaderboardFrame == null ? 0 : leaderboardFrame.checksum();
+      leaderboard.leaderboardFrameChecksum = leaderboardFrame == null ? 0 : leaderboardFrame.checksum();
 
-      DKV.put(exists);
-      return exists;
+    } else {
+      leaderboard = new Leaderboard(project_name, eventLog, leaderboardFrame, sort_metric);
     }
-
-    Leaderboard newLeaderboard = new Leaderboard(project_name, userFeedback, leaderboardFrame, sort_metric);
-    DKV.put(newLeaderboard);
-    return newLeaderboard;
-  }
-
-  // satisfy typing for job return type...
-  public static class LeaderboardKeyV3 extends KeyV3<Iced, LeaderboardKeyV3, Leaderboard> {
-    public LeaderboardKeyV3() {
-    }
-
-    public LeaderboardKeyV3(Key<Leaderboard> key) {
-      super(key);
-    }
+    DKV.put(leaderboard);
+    return leaderboard;
   }
 
   public static String idForProject(String project_name) { return "AutoML_Leaderboard_" + project_name; }
@@ -164,6 +146,8 @@ public class Leaderboard extends Keyed<Leaderboard> {
   public String getProject() {
     return project_name;
   }
+
+  private EventLog eventLog() { return eventLog == null ? null : eventLog._key.get(); }
 
   private void setMetricAndDirection(String metric, String[] otherMetrics, boolean sortDecreasing) {
     this.sort_metric = metric;
@@ -244,7 +228,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
         for (Key<Model> aKey : updating.models) {
           model = aKey.get();
           if (null == model) {
-            userFeedback.warn(UserFeedbackEvent.Stage.ModelTraining, "Model in the leaderboard has unexpectedly been deleted from H2O: " + aKey);
+            eventLog().warn(EventLogEntry.Stage.ModelTraining, "Model in the leaderboard has unexpectedly been deleted from H2O: " + aKey);
             continue;
           }
 
@@ -338,7 +322,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
 
     // always
     if (null != newLeader[0]) {
-      userFeedback.info(UserFeedbackEvent.Stage.ModelTraining,
+      eventLog().info(EventLogEntry.Stage.ModelTraining,
               "New leader: " + newLeader[0] + ", " + sort_metric + ": " + newLeaderSortMetric[0]);
     }
   } // addModels
@@ -372,7 +356,8 @@ public class Leaderboard extends Keyed<Leaderboard> {
    * @return list of keys of models sorted by the default metric for the model category, fetched from the DKV
    */
   Key<Model>[] getModelKeys() {
-    return ((Leaderboard)DKV.getGet(this._key)).models;
+    Leaderboard uptodate = DKV.getGet(this._key);
+    return uptodate == null ? new Key[0] : uptodate.models;
   }
 
   /**
@@ -658,7 +643,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
   }
 
   public TwoDimTable toTwoDimTable() {
-    return toTwoDimTable("Leaderboard for project_name: " + project_name, false);
+    return toTwoDimTable("Leaderboard for AutoML: " + project_name, false);
   }
 
   TwoDimTable toTwoDimTable(String tableHeader, boolean leftJustifyModelIds) {

@@ -22,7 +22,7 @@
 #'        Defaults to 500.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #' df <- h2o.createFrame(rows=100, cols=5, categorical_fraction=0.6, integer_fraction=0,
@@ -48,15 +48,10 @@ h2o.aggregator <- function(training_frame, x,
                            export_checkpoints_dir = NULL
                            ) 
 {
+  # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
+  training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
 
-  # Required args: training_frame
-  if (missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
-  # Training_frame must be a key or an H2OFrame object
-  if (!is.H2OFrame(training_frame))
-     tryCatch(training_frame <- h2o.getFrame(training_frame),
-           error = function(err) {
-             stop("argument 'training_frame' must be a valid H2OFrame or key")
-           })
+  # Handle other args
   # Parameter list to send to model builder
   parms <- list()
   parms$training_frame <- training_frame
@@ -93,7 +88,7 @@ h2o.aggregator <- function(training_frame, x,
 #'
 #' @param model an \linkS4class{H2OClusteringModel} corresponding from a \code{h2o.aggregator} call.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #' df <- h2o.createFrame(rows=100, cols=5, categorical_fraction=0.6, integer_fraction=0,

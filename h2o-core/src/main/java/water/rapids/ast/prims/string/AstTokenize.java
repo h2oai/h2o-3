@@ -1,5 +1,6 @@
 package water.rapids.ast.prims.string;
 
+import hex.RegexTokenizer;
 import water.MRTask;
 import water.fvec.*;
 import water.parser.BufferedString;
@@ -35,30 +36,8 @@ public class AstTokenize extends AstPrimitive {
         throw new IllegalArgumentException("tokenize() requires all input columns to be of a String type. "
                 + "Received " + fr.anyVec().get_type_str() + ". Please convert column to a string column first.");
 
-    Frame tokenized = new Tokenizer(regex).doAll(Vec.T_STR, fr).outputFrame();
+    Frame tokenized = new RegexTokenizer(regex).transform(fr);
     return new ValFrame(tokenized);
-  }
-
-  private static class Tokenizer extends MRTask<Tokenizer> {
-    private final String _regex;
-
-    public Tokenizer(String regex) {
-      _regex = regex;
-    }
-
-    @Override
-    public void map(Chunk[] cs, NewChunk nc) {
-      BufferedString tmpStr = new BufferedString();
-      for (int row = 0; row < cs[0]._len; row++) {
-        for (Chunk chk : cs) {
-          if (chk.isNA(row)) continue;
-          String[] ss = chk.atStr(tmpStr, row).toString().split(_regex);
-          for (String s : ss)
-            nc.addStr(s);
-        }
-        nc.addNA();
-      }
-    }
   }
 
 }

@@ -134,6 +134,10 @@ def gen_module(schema, algo):
             enum_values.remove(u'ordinal')
         if (pname==u'distribution') and (not(algo==u'gbm')):    # custom only in gbm
             enum_values.remove(u'custom')
+        if (pname==u'stopping_metric') and (not(algo==u'isolationforest')):    # anomaly_score only in Isolation Forest
+            enum_values.remove(u'anomaly_score')
+        if (pname == u'stopping_metric') and (algo == u'isolationforest'):
+            enum_values = [u'AUTO', u'anomaly_score']
         if pname in reserved_words: pname += "_"
         param_names.append(pname)
         param["pname"] = pname
@@ -273,9 +277,11 @@ def gen_module(schema, algo):
             yield "            self._parms[\"%s\"] = str(json.dumps(%s))" % (sname, pname)
             yield "        else:"
             yield "            self._parms[\"%s\"] = None" % (sname)
+        elif ptype == "H2OFrame":
+            yield "        self._parms[\"%s\"] = H2OFrame._validate(%s, '%s')" % (sname, pname, pname)
         else:
             yield "        assert_is_type(%s, None, %s)" % (pname, ptype)
-        if pname not in {"base_models", "metalearner_params"}:
+        if pname not in {"base_models", "metalearner_params"} and ptype != "H2OFrame":
             yield "        self._parms[\"%s\"] = %s" % (sname, pname)
         yield ""
         yield ""
@@ -302,6 +308,7 @@ def algo_to_classname(algo):
     if algo == "pca": return "H2OPrincipalComponentAnalysisEstimator"
     if algo == "stackedensemble": return "H2OStackedEnsembleEstimator"
     if algo == "isolationforest": return "H2OIsolationForestEstimator"
+    if algo == "psvm": return "H2OSupportVectorMachineEstimator"
     return "H2O" + algo.capitalize() + "Estimator"
 
 def extra_imports_for(algo):
@@ -528,7 +535,7 @@ def class_extra_for(algo):
         
         # Override train method to support blending 
         def train(self, x=None, y=None, training_frame=None, blending_frame=None, **kwargs):
-            assert_is_type(blending_frame, None, H2OFrame)
+            blending_frame = H2OFrame._validate(blending_frame, 'blending_frame', required=False)
             
             def extend_parms(parms):
                 if blending_frame is not None:

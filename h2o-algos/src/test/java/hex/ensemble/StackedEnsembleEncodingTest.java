@@ -28,7 +28,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
 public class StackedEnsembleEncodingTest extends TestUtil {
@@ -38,6 +38,7 @@ public class StackedEnsembleEncodingTest extends TestUtil {
     @Parameterized.Parameters
     public static Iterable<?> data() {
         return Arrays.asList(Model.Parameters.CategoricalEncodingScheme.values());
+//        return Arrays.asList(Model.Parameters.CategoricalEncodingScheme.OneHotExplicit);
     }
 
     @Parameterized.Parameter
@@ -51,7 +52,7 @@ public class StackedEnsembleEncodingTest extends TestUtil {
         try {
             Scope.enter();
             final Frame train = new TestFrameBuilder()
-                    .withName("trainLabelEncoding")
+                    .withName("trainEncoding")
                     .withColNames("ColA", "Response")
                     .withVecTypes(Vec.T_CAT, Vec.T_CAT)
                     .withDataForCol(0, ar("B", "B", "A", "A", "A", "B", "A"))
@@ -94,7 +95,7 @@ public class StackedEnsembleEncodingTest extends TestUtil {
             assertStringVecEquals(train.vec(target), trainPreds.vec(0));
 
             final Frame test = new TestFrameBuilder()
-                    .withName("testLabelEncoding")
+                    .withName("testEncoding")
                     .withColNames("ColA")
                     .withVecTypes(Vec.T_CAT)
                     .withDataForCol(0, ar("A", "B"))
@@ -129,7 +130,7 @@ public class StackedEnsembleEncodingTest extends TestUtil {
         try {
             Scope.enter();
             final Frame train = new TestFrameBuilder()
-                    .withName("trainLabelEncoding")
+                    .withName("trainEncoding")
                     .withColNames("ColA", "Response")
                     .withVecTypes(Vec.T_CAT, Vec.T_CAT)
                     .withDataForCol(0, ar("B", "B", "A", "A", "A", "B", "A", "E"))
@@ -155,8 +156,10 @@ public class StackedEnsembleEncodingTest extends TestUtil {
                 put("_ntrees", new Integer[]{1, 2});
                 put("_max_depth", new Integer[]{2, 3});
             }});
-            Grid grid = gridSearch.get(); deletables.add(grid);
-            Model[] gridModels = grid.getModels(); deletables.addAll(Arrays.asList(gridModels));
+            Grid grid = gridSearch.get();
+            deletables.add(grid);
+            Model[] gridModels = grid.getModels();
+            deletables.addAll(Arrays.asList(gridModels));
             assertEquals(4, gridModels.length);
 
             StackedEnsembleParameters seParams = new StackedEnsembleParameters();
@@ -164,13 +167,14 @@ public class StackedEnsembleEncodingTest extends TestUtil {
             seParams._response_column = target;
             seParams._base_models = ArrayUtils.append(grid.getModelKeys());
             seParams._seed = 1;
-            StackedEnsembleModel se = new StackedEnsemble(seParams).trainModel().get(); deletables.add(se);
+            StackedEnsembleModel se = new StackedEnsemble(seParams).trainModel().get();
+            deletables.add(se);
 
             Frame trainPreds = se.score(train);
             Scope.track(trainPreds);
 
             final Frame test = new TestFrameBuilder()
-                    .withName("testLabelEncoding")
+                    .withName("testEncoding")
                     .withColNames("ColA")
                     .withVecTypes(Vec.T_CAT)
                     .withDataForCol(0, ar("A", "D", "E"))
@@ -186,6 +190,127 @@ public class StackedEnsembleEncodingTest extends TestUtil {
             Scope.track(testPreds);
 
             assertEquals("V", testPreds.vec(0).stringAt(0));
+        } catch (IllegalArgumentException e) {
+
+        } finally {
+            Scope.exit();
+            for (Lockable l: deletables) {
+                if (l instanceof Model) ((Model)l).deleteCrossValidationPreds();
+                l.delete();
+            }
+        }
+    }
+
+    @Test public void testSE_CategoricalEncodingWithPredictionsOnFeaturesSubset() {
+        if (encoding == Model.Parameters.CategoricalEncodingScheme.OneHotInternal) return; //not supported for Tree algos
+        Log.info("Using encoding "+encoding);
+
+        List<Lockable> deletables = new ArrayList<>();
+        try {
+            Scope.enter();
+            final Frame train = new TestFrameBuilder()
+                    .withName("trainEncoding")
+                    .withColNames("ColA", "ColB", "Response")
+                    .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT)
+                    .withDataForCol(0, ar("B", "B", "A", "A", "A", "B", "A"))
+                    .withDataForCol(1, ar(2, 2, 1, 1, 1, 2, 1))
+                    .withDataForCol(2, ar("C", "C", "V", "V", "V", "C", "V"))
+                    .build();
+            String target = "Response";
+
+            DRFModel.DRFParameters params = new DRFModel.DRFParameters();
+            params._train = train._key;
+            params._response_column = target;
+            params._min_rows = 1;
+            params._sample_rate = 1;
+            params._col_sample_rate_per_tree = .5;
+            params._seed = 1;
+            params._nfolds = 2;
+            params._keep_cross_validation_models = false;
+            params._keep_cross_validation_predictions = true;
+            params._categorical_encoding = encoding;
+            if (encoding == Model.Parameters.CategoricalEncodingScheme.EnumLimited) {
+                params._max_categorical_levels = 2;
+            }
+
+            Job<Grid> gridSearch = GridSearch.startGridSearch(null, params, new HashMap<String, Object[]>() {{
+                put("_ntrees", new Integer[]{1, 2});
+                put("_max_depth", new Integer[]{2, 3});
+            }});
+            Grid grid = gridSearch.get();
+            deletables.add(grid);
+            Model[] gridModels = grid.getModels();
+            deletables.addAll(Arrays.asList(gridModels));
+            assertEquals(4, gridModels.length);
+
+            StackedEnsembleParameters seParams = new StackedEnsembleParameters();
+            seParams._train = train._key;
+            seParams._response_column = target;
+            seParams._base_models = ArrayUtils.append(grid.getModelKeys());
+            seParams._seed = 1;
+            StackedEnsembleModel se = new StackedEnsemble(seParams).trainModel().get();
+            deletables.add(se);
+
+            Frame trainPreds = se.score(train);
+            Scope.track(trainPreds);
+
+            final Frame test_cat = new TestFrameBuilder()
+                    .withName("testEncodingCat")
+                    .withColNames("ColA", "ColZ")
+                    .withVecTypes(Vec.T_CAT, Vec.T_NUM)
+                    .withDataForCol(0, ar("A"))
+                    .withDataForCol(1, ard(1/3))
+                    .build();
+
+            for (Model model : gridModels) {
+                final Frame testPreds = model.score(test_cat);
+                Scope.track(testPreds);
+                assertEquals("V", testPreds.vec(0).stringAt(0));
+            }
+            final Frame testPreds = se.score(test_cat);
+            Scope.track(testPreds);
+            assertEquals("V", testPreds.vec(0).stringAt(0));
+
+            final Frame test_num = new TestFrameBuilder()
+                    .withName("testEncodingNum")
+                    .withColNames("ColB")
+                    .withVecTypes(Vec.T_NUM)
+                    .withDataForCol(0, ar(1))
+                    .build();
+
+            for (Model model : gridModels) {
+                final Frame testPreds2 = model.score(test_num);
+                Scope.track(testPreds2);
+                assertEquals("V", testPreds2.vec(0).stringAt(0));
+            }
+            final Frame testPreds2 = se.score(test_num);
+            Scope.track(testPreds2);
+            assertEquals("V", testPreds2.vec(0).stringAt(0));
+
+            final Frame test_no_common = new TestFrameBuilder()
+                    .withName("testEncodingNoCommon")
+                    .withColNames("ColZ")
+                    .withVecTypes(Vec.T_NUM)
+                    .withDataForCol(0, ar(1))
+                    .build();
+            for (Model model : gridModels) {
+                try {
+                    Scope.track(model.score(test_no_common));
+                    fail("Should have thrown IllegalArgumentException");
+                } catch (IllegalArgumentException e) {
+                    assertTrue("Expected exception due to no column in common with training data, but got: "+e.getMessage(),
+                            e.getMessage().contains("no columns in common"));
+                }
+            }
+
+            try {
+                Scope.track(se.score(test_no_common));
+                fail("Should have thrown IllegalArgumentException");
+            } catch (IllegalArgumentException e) {
+                assertTrue("Expected exception due to no column in common with training data, but got: "+e.getMessage(),
+                        e.getMessage().contains("no columns in common"));
+            }
+
         } finally {
             Scope.exit();
             for (Lockable l: deletables) {

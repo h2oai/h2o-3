@@ -59,7 +59,7 @@
 #' @return Returns an object of class \linkS4class{H2OBinomialModel} if the response has two categorical levels,
 #'         and \linkS4class{H2OMultinomialModel} otherwise.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' h2o.init()
 #' votes_path <- system.file("extdata", "housevotes.csv", package = "h2o")
 #' votes <- h2o.uploadFile(path = votes_path, header = TRUE)
@@ -94,6 +94,9 @@ h2o.naiveBayes <- function(x, y, training_frame,
                            export_checkpoints_dir = NULL
                            ) 
 {
+  # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
+  training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
+  validation_frame <- .validate.H2OFrame(validation_frame)
   # If x is missing, then assume user wants to use all columns as features.
   if (missing(x)) {
      if (is.numeric(y)) {
@@ -103,24 +106,9 @@ h2o.naiveBayes <- function(x, y, training_frame,
      }
   }
  .naivebayes.map <- c("x" = "ignored_columns", "y" = "response_column", 
-                          "threshold" = "min_sdev", "eps" = "eps_sdev")
+                      "threshold" = "min_sdev", "eps" = "eps_sdev")
 
-  # Required args: training_frame
-  if (missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
-  # Training_frame must be a key or an H2OFrame object
-  if (!is.H2OFrame(training_frame))
-     tryCatch(training_frame <- h2o.getFrame(training_frame),
-           error = function(err) {
-             stop("argument 'training_frame' must be a valid H2OFrame or key")
-           })
-  # Validation_frame must be a key or an H2OFrame object
-  if (!is.null(validation_frame)) {
-     if (!is.H2OFrame(validation_frame))
-         tryCatch(validation_frame <- h2o.getFrame(validation_frame),
-             error = function(err) {
-                 stop("argument 'validation_frame' must be a valid H2OFrame or key")
-             })
-  }
+  # Handle other args
   # Parameter list to send to model builder
   parms <- list()
   parms$training_frame <- training_frame

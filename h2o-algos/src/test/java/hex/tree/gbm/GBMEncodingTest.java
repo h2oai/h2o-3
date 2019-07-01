@@ -14,7 +14,7 @@ import water.util.Log;
 
 import java.util.Arrays;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
 public class GBMEncodingTest extends TestUtil {
@@ -36,7 +36,7 @@ public class GBMEncodingTest extends TestUtil {
         try {
             Scope.enter();
             final Frame train = new TestFrameBuilder()
-                    .withName("trainLabelEncoding")
+                    .withName("trainEncoding")
                     .withColNames("ColA", "Response")
                     .withVecTypes(Vec.T_CAT, Vec.T_CAT)
                     .withDataForCol(0, ar("B", "B", "A", "A", "A"))
@@ -66,7 +66,7 @@ public class GBMEncodingTest extends TestUtil {
             assertStringVecEquals(train.vec(target), trainPreds.vec(0));
 
             final Frame test = new TestFrameBuilder()
-                    .withName("testLabelEncoding")
+                    .withName("testEncoding")
                     .withColNames("ColA")
                     .withVecTypes(Vec.T_CAT)
                     .withDataForCol(0, ar("A"))
@@ -89,7 +89,7 @@ public class GBMEncodingTest extends TestUtil {
         try {
             Scope.enter();
             final Frame train = new TestFrameBuilder()
-                    .withName("trainLabelEncoding")
+                    .withName("trainEncoding")
                     .withColNames("ColA", "Response")
                     .withVecTypes(Vec.T_CAT, Vec.T_CAT)
                     .withDataForCol(0, ar("B", "B", "A", "A", "A", "B", "A"))
@@ -118,7 +118,7 @@ public class GBMEncodingTest extends TestUtil {
             Scope.track(trainPreds);
 
             final Frame test = new TestFrameBuilder()
-                    .withName("testLabelEncoding")
+                    .withName("testEncoding")
                     .withColNames("ColA")
                     .withVecTypes(Vec.T_CAT)
                     .withDataForCol(0, ar("A", "D", "E"))
@@ -128,6 +128,85 @@ public class GBMEncodingTest extends TestUtil {
             Scope.track(testPreds);
 
             assertEquals("V", testPreds.vec(0).stringAt(0));
+
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test public void testGBM_CategoricalEncodingWithPredictionsOnFeaturesSubset() {
+        if (encoding == Model.Parameters.CategoricalEncodingScheme.OneHotInternal) return; //not supported for Tree algos
+        Log.info("Using encoding "+encoding);
+
+        try {
+            Scope.enter();
+            final Frame train = new TestFrameBuilder()
+                    .withName("trainEncoding")
+                    .withColNames("ColA", "ColB", "Response")
+                    .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT)
+                    .withDataForCol(0, ar("B", "B", "A", "A", "A", "B", "A"))
+                    .withDataForCol(1, ar(2, 2, 1, 1, 1, 2, 1))
+                    .withDataForCol(2, ar("C", "C", "V", "V", "V", "C", "V"))
+                    .build();
+            String target = "Response";
+
+            GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+            parms._seed = 1;
+            parms._train = train._key;
+            parms._response_column = target;
+            parms._ntrees = 1;
+            parms._max_depth = 3;
+            parms._learn_rate = 1;
+            parms._min_rows = 1;
+            parms._categorical_encoding = encoding;
+            if (encoding == Model.Parameters.CategoricalEncodingScheme.EnumLimited) {
+                parms._max_categorical_levels = 2;
+            }
+
+            GBM job = new GBM(parms);
+            GBMModel gbm = job.trainModel().get();
+            Scope.track_generic(gbm);
+
+            Frame trainPreds = gbm.score(train);
+            Scope.track(trainPreds);
+
+            final Frame test_cat = new TestFrameBuilder()
+                    .withName("testEncodingCat")
+                    .withColNames("ColA", "ColZ")
+                    .withVecTypes(Vec.T_CAT, Vec.T_NUM)
+                    .withDataForCol(0, ar("A"))
+                    .withDataForCol(1, ard(1/3))
+                    .build();
+
+            final Frame testPreds = gbm.score(test_cat);
+            Scope.track(testPreds);
+            assertEquals("V", testPreds.vec(0).stringAt(0));
+
+            final Frame test_num = new TestFrameBuilder()
+                    .withName("testEncodingNum")
+                    .withColNames("ColB")
+                    .withVecTypes(Vec.T_NUM)
+                    .withDataForCol(0, ar(1))
+                    .build();
+
+            final Frame testPreds2 = gbm.score(test_num);
+            Scope.track(testPreds2);
+            assertEquals("V", testPreds2.vec(0).stringAt(0));
+
+            final Frame test_no_common = new TestFrameBuilder()
+                    .withName("testEncodingNoCommon")
+                    .withColNames("ColZ")
+                    .withVecTypes(Vec.T_NUM)
+                    .withDataForCol(0, ar(1))
+                    .build();
+
+            try {
+                Scope.track(gbm.score(test_no_common));
+                fail("Should have thrown IllegalArgumentException");
+            } catch (IllegalArgumentException e) {
+                assertTrue("Expected exception due to no column in common with training data, but got: "+e.getMessage(),
+                        e.getMessage().contains("no columns in common"));
+            }
 
         } finally {
             Scope.exit();

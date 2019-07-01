@@ -73,8 +73,8 @@
 #'        indicates: If lambda_search is set to False and lambda is equal to zero, the default value of gradient_epsilon
 #'        is equal to .000001, otherwise the default value is .0001. If lambda_search is set to True, the conditional
 #'        values above are 1E-8 and 1E-6 respectively. Defaults to -1.
-#' @param link  Must be one of: "family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit", "oprobit",
-#'        "ologlog". Defaults to family_default.
+#' @param link  Must be one of: "family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit". Defaults to
+#'        family_default.
 #' @param prior Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
 #'        of response does not reflect reality. Defaults to -1.
 #' @param lambda_min_ratio Minimum lambda used in lambda search, specified as a ratio of lambda_max (the smallest lambda that drives all
@@ -113,7 +113,7 @@
 #'          \code{\link{h2o.confusionMatrix}}, \code{\link{h2o.performance}}, \code{\link{h2o.giniCoef}},
 #'          \code{\link{h2o.logloss}}, \code{\link{h2o.varimp}}, \code{\link{h2o.scoreHistory}}
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' h2o.init()
 #' 
 #' # Run GLM of CAPSULE ~ AGE + RACE + PSA + DCAPS
@@ -174,7 +174,7 @@ h2o.glm <- function(x, y, training_frame,
                     objective_epsilon = -1,
                     beta_epsilon = 0.0001,
                     gradient_epsilon = -1,
-                    link = c("family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit", "oprobit", "ologlog"),
+                    link = c("family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"),
                     prior = -1,
                     lambda_min_ratio = -1,
                     beta_constraints = NULL,
@@ -191,6 +191,9 @@ h2o.glm <- function(x, y, training_frame,
                     custom_metric_func = NULL
                     ) 
 {
+  # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
+  training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
+  validation_frame <- .validate.H2OFrame(validation_frame)
   # If x is missing, then assume user wants to use all columns as features.
   if (missing(x)) {
      if (is.numeric(y)) {
@@ -210,22 +213,7 @@ h2o.glm <- function(x, y, training_frame,
     beta_constraints <- as.h2o(beta_constraints)
   }
 
-  # Required args: training_frame
-  if (missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
-  # Training_frame must be a key or an H2OFrame object
-  if (!is.H2OFrame(training_frame))
-     tryCatch(training_frame <- h2o.getFrame(training_frame),
-           error = function(err) {
-             stop("argument 'training_frame' must be a valid H2OFrame or key")
-           })
-  # Validation_frame must be a key or an H2OFrame object
-  if (!is.null(validation_frame)) {
-     if (!is.H2OFrame(validation_frame))
-         tryCatch(validation_frame <- h2o.getFrame(validation_frame),
-             error = function(err) {
-                 stop("argument 'validation_frame' must be a valid H2OFrame or key")
-             })
-  }
+  # Handle other args
   # Parameter list to send to model builder
   parms <- list()
   parms$training_frame <- training_frame

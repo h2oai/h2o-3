@@ -200,6 +200,7 @@ public class NetworkInit {
     final H2OHttpConfig config = new H2OHttpConfig();
     config.jks = args.jks;
     config.jks_pass = args.jks_pass;
+    config.jks_alias = args.jks_alias;
     config.loginType = parseLoginType(args);
     configureLoginType(config.loginType, args.login_conf);
     config.login_conf = args.login_conf;

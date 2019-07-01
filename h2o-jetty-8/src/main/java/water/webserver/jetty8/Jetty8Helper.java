@@ -57,6 +57,9 @@ class Jetty8Helper {
       proto = "https";
       final SslContextFactory sslContextFactory = new SslContextFactory(config.jks);
       sslContextFactory.setKeyStorePassword(config.jks_pass);
+      if (config.jks_alias != null) {
+        sslContextFactory.setCertAlias(config.jks_alias);
+      }
       connector = new SslSocketConnector(sslContextFactory);
     } else {
       proto = "http";

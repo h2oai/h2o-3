@@ -38,7 +38,7 @@
 #' @note Users may wish to manually upgrade their package (rather than waiting until being prompted), which requires
 #' that they fully uninstall and reinstall the H2O package, and the H2O client package. You must unload packages running
 #' in the environment before upgrading. It's recommended that users restart R or R studio after upgrading
-#' @seealso \href{http://h2o-release.s3.amazonaws.com/h2o-dev/rel-shannon/2/docs-website/h2o-r/h2o_package.pdf}{H2O R package documentation} for more details. \code{\link{h2o.shutdown}} for shutting down from R.
+#' @seealso \href{http://docs.h2o.ai/h2o/latest-stable/h2o-r/h2o_package.pdf}{H2O R package documentation} for more details. \code{\link{h2o.shutdown}} for shutting down from R.
 #' @examples
 #' \dontrun{
 #' # Try to connect to a local H2O instance that is already running.
@@ -395,7 +395,7 @@ h2o.shutdown <- function(prompt = TRUE) {
 #'
 #' @seealso \linkS4class{H2OConnection}, \code{\link{h2o.init}}
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' h2o.init()
 #' h2o.clusterStatus()
 #' }

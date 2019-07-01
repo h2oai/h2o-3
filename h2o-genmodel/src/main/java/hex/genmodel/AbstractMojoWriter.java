@@ -184,6 +184,7 @@ public abstract class AbstractMojoWriter {
     writekv("prior_class_distrib", Arrays.toString(model.priorClassDist()));
     writekv("model_class_distrib", Arrays.toString(model.modelClassDist()));
     writekv("timestamp", model.timestamp());
+    writekv("escape_domain_values", true); // Without escaping, there is no way to represent multiline categoricals as one-line values.
   }
 
   /**
@@ -236,13 +237,13 @@ public abstract class AbstractMojoWriter {
   /**
    * Create files containing domain definitions for each categorical column.
    */
-  private void writeDomains() throws IOException {
+  protected void writeDomains() throws IOException {
     int domIndex = 0;
     for (String[] domain : model.scoringDomains()) {
       if (domain == null) continue;
       startWritingTextFile(String.format("domains/d%03d.txt", domIndex++));
       for (String category : domain) {
-        writeln(category.replaceAll("\n", "\\n"));  // replace newlines with "\n" escape sequences
+        writeln(StringEscapeUtils.escapeNewlines(category));
       }
       finishWritingTextFile();
     }

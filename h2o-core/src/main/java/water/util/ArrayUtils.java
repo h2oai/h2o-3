@@ -1335,9 +1335,9 @@ public class ArrayUtils {
     return c;
   }
 
-  /** Flatenize given array.
+  /** Flatenize given array (skips null arrays)
    *
-   * Example: [[1,2], [3,null], [4]] -> [1,2,3,null,4]
+   * Example: [[1,2], null, [3,null], [4]] -> [1,2,3,null,4]
    * @param arr array of arrays
    * @param <T> any type
    * @return flattened array, if input was null return null, if input was empty return null
@@ -1346,10 +1346,12 @@ public class ArrayUtils {
     if (arr == null) return null;
     if (arr.length == 0) return null;
     int tlen = 0;
-    for (T[] t : arr) tlen += t.length;
+    for (T[] t : arr) tlen += (t != null) ? t.length : 0;
     T[] result = Arrays.copyOf(arr[0], tlen);
     int j = arr[0].length;
     for (int i = 1; i < arr.length; i++) {
+      if (arr[i] == null)
+        continue;
       System.arraycopy(arr[i], 0, result, j, arr[i].length);
       j += arr[i].length;
     }
@@ -1371,10 +1373,12 @@ public class ArrayUtils {
     if (arr == null) return null;
     if (arr.length == 0) return null;
     int tlen = 0;
-    for (double[] t : arr) tlen += t.length;
+    for (double[] t : arr) tlen += (t != null) ? t.length : 0;
     double[] result = Arrays.copyOf(arr[0], tlen);
     int j = arr[0].length;
     for (int i = 1; i < arr.length; i++) {
+      if (arr[i] == null)
+        continue;
       System.arraycopy(arr[i], 0, result, j, arr[i].length);
       j += arr[i].length;
     }

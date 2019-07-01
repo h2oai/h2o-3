@@ -372,7 +372,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     cannot see the file, then an exception will be thrown by the H2O cluster. Does a parallel/distributed
     multi-threaded pull of the data. The main difference between this method and :func:`upload_file` is that
     the latter works with local files, whereas this method imports remote files (i.e. files local to the server).
-    If you running H2O server on your own maching, then both methods behave the same.
+    If you running H2O server on your own machine, then both methods behave the same.
 
     :param path: path(s) specifying the location of the data to import or a path to a directory of files to import
     :param destination_frame: The unique hex key assigned to the imported file. If none is given, a key will be
@@ -933,9 +933,16 @@ def remove(x):
                 api("DELETE /3/DKV/%s" % xi)
 
 
-def remove_all():
-    """Remove all objects from H2O."""
-    api("DELETE /3/DKV")
+def remove_all(retained=None):
+    """
+    Removes all objects from H2O with possibility to specify models and frames to retain.
+    Retained keys must be keys of models and frames only. For models retained, training and validation frames are retained as well.
+    Cross validation models of a retained model are NOT retained automatically, those must be specified explicitely.
+    :param retained: Keys of models and frames to retain 
+    """
+
+    params = {"retained_keys": retained}
+    api(endpoint="DELETE /3/DKV", data=params)
 
 
 def rapids(expr):
@@ -1100,13 +1107,14 @@ def load_model(path):
     return get_model(res["models"][0]["model_id"]["name"])
 
 
-def export_file(frame, path, force=False, parts=1):
+def export_file(frame, path, force=False, sep=",", compression=None, parts=1):
     """
     Export a given H2OFrame to a path on the machine this python session is currently connected to.
 
     :param frame: the Frame to save to disk.
     :param path: the path to the save point on disk.
     :param force: if True, overwrite any preexisting file with the same path
+    :param compression: how to compress the exported dataset (default none; gzip, bzip2 and snappy available)
     :param parts: enables export to multiple 'part' files instead of just a single file.
         Convenient for large datasets that take too long to store in a single file.
         Use parts=-1 to instruct H2O to determine the optimal number of part files or
@@ -1116,9 +1124,12 @@ def export_file(frame, path, force=False, parts=1):
     """
     assert_is_type(frame, H2OFrame)
     assert_is_type(path, str)
+    assert_is_type(sep, I(str, lambda s: len(s) == 1))
     assert_is_type(force, bool)
     assert_is_type(parts, int)
-    H2OJob(api("POST /3/Frames/%s/export" % (frame.frame_id), data={"path": path, "num_parts": parts, "force": force}),
+    assert_is_type(compression, str, None)
+    H2OJob(api("POST /3/Frames/%s/export" % (frame.frame_id), 
+               data={"path": path, "num_parts": parts, "force": force, "compression": compression, "separator": ord(sep)}),
            "Export File").poll()
 
 
@@ -1633,6 +1644,7 @@ def upload_mojo(mojo_path):
     mojo_estimator.train()
     print(mojo_estimator)
     return mojo_estimator
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Private

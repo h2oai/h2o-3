@@ -18,6 +18,7 @@ from .isolation_forest import H2OIsolationForestEstimator
 from .kmeans import H2OKMeansEstimator
 from .naive_bayes import H2ONaiveBayesEstimator
 from .pca import H2OPrincipalComponentAnalysisEstimator
+from .psvm import H2OSupportVectorMachineEstimator
 from .random_forest import H2ORandomForestEstimator
 from .stackedensemble import H2OStackedEnsembleEstimator
 from .svd import H2OSingularValueDecompositionEstimator
@@ -33,7 +34,8 @@ __all__ = (
     "H2OGeneralizedLowRankEstimator", "H2OGeneralizedLowRankEstimator", "H2OIsolationForestEstimator",
     "H2OIsolationForestEstimator", "H2OKMeansEstimator", "H2OKMeansEstimator", "H2ONaiveBayesEstimator",
     "H2ONaiveBayesEstimator", "H2OPrincipalComponentAnalysisEstimator", "H2OPrincipalComponentAnalysisEstimator",
-    "H2ORandomForestEstimator", "H2ORandomForestEstimator", "H2OStackedEnsembleEstimator",
-    "H2OStackedEnsembleEstimator", "H2OSingularValueDecompositionEstimator", "H2OSingularValueDecompositionEstimator",
-    "H2OWord2vecEstimator", "H2OWord2vecEstimator", "H2OXGBoostEstimator", "H2OXGBoostEstimator"
+    "H2OSupportVectorMachineEstimator", "H2OSupportVectorMachineEstimator", "H2ORandomForestEstimator",
+    "H2ORandomForestEstimator", "H2OStackedEnsembleEstimator", "H2OStackedEnsembleEstimator",
+    "H2OSingularValueDecompositionEstimator", "H2OSingularValueDecompositionEstimator", "H2OWord2vecEstimator",
+    "H2OWord2vecEstimator", "H2OXGBoostEstimator", "H2OXGBoostEstimator"
 )

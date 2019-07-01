@@ -38,6 +38,7 @@ public class VecUtils {
       case Vec.T_CAT:
         return src.makeCopy(src.domain());
       case Vec.T_NUM:
+      case Vec.T_BAD:
         return numericToCategorical(src);
       case Vec.T_STR: // PUBDEV-2204
         return stringToCategorical(src);
@@ -288,6 +289,7 @@ public class VecUtils {
         return UUIDToStringVec(src);
       case Vec.T_TIME:
       case Vec.T_NUM:
+      case Vec.T_BAD:
         return numericToStringVec(src);
       default:
         throw new H2OIllegalArgumentException("Unrecognized column type " + src.get_type_str()

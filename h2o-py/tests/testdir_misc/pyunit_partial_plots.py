@@ -54,6 +54,18 @@ def partial_plot_test():
     assert h2o_stddev_response_pdp2_race == pdp_manual[1]
     assert h2o_std_error_mean_response_pdp2_race == pdp_manual[2]
 
+    # Plot Partial Dependence for one row 
+    pdp_row=gbm_model.partial_plot(data=data, cols=['AGE'], server=True, plot=True, row_index=1)
+    #Manual test
+    h2o_mean_response_pdp_row = pdp_row[0]["mean_response"]
+    h2o_stddev_response_pdp_row = pdp_row[0]["stddev_response"]
+    h2o_std_error_mean_response_pdp_row = pdp_row[0]["std_error_mean_response"]
+    pdp_row_manual = partial_dependence(gbm_model, data[1,:], "AGE", pdp_row, 0)
+
+    assert h2o_mean_response_pdp_row == pdp_row_manual[0]
+    assert h2o_stddev_response_pdp_row == pdp_row_manual[1]
+    assert h2o_std_error_mean_response_pdp_row == pdp_row_manual[2]
+    
 def partial_dependence(object, pred_data, xname, h2o_pp, pdp_name_idx):
     x_pt = h2o_pp[pdp_name_idx][xname.lower()] #Needs to be lower case here as the PDP response sets everything to lower
     y_pt = list(range(len(x_pt)))

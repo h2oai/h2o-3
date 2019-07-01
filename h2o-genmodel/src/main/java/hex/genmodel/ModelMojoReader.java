@@ -115,7 +115,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
       return val != null ? (T) val : defVal;
     return ((RawValue) val).parse(defVal);
   }
-
+  
   /**
    * Retrieve binary data previously saved to the mojo file using `writeblob(key, blob)`.
    */
@@ -252,6 +252,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
   }
 
   private String[][] parseModelDomains(int n_columns) throws IOException {
+    final boolean escapeDomainValues = Boolean.TRUE.equals(readkv("escape_domain_values")); // The key might not exist in older MOJOs
     String[][] domains = new String[n_columns][];
     // noinspection unchecked
     Map<Integer, String> domass = (Map<Integer, String>) _lkv.get("[domains]");
@@ -263,20 +264,18 @@ public abstract class ModelMojoReader<M extends MojoModel> {
       int n_elements = Integer.parseInt(info[0]);
       String domfile = info[1];
       String[] domain = new String[n_elements];
-      BufferedReader br = _reader.getTextFile("domains/" + domfile);
-      try {
+
+      try (BufferedReader br = _reader.getTextFile("domains/" + domfile)) {
         String line;
         int id = 0;  // domain elements counter
-        while (true) {
-          line = br.readLine();
-          if (line == null) break;
+        while ((line = br.readLine()) != null) {
+          if (escapeDomainValues) {
+            line = StringEscapeUtils.unescapeNewlines(line);
+          }
           domain[id++] = line;
         }
         if (id != n_elements)
           throw new IOException("Not enough elements in the domain file");
-        br.close();
-      } finally {
-        try { br.close(); } catch (IOException ioe) { /* ignored */ }
       }
       domains[col_index] = domain;
     }

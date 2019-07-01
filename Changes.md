@@ -2,6 +2,157 @@
 
 ## H2O
 
+### Yates (3.24.0.5) - 6/18/2019
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yates/5/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yates/5/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6387'>PUBDEV-6387</a>] - Fixed a segmentation fault that occurred when running XGBoost with `booster=gblinear`.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6534'>PUBDEV-6534</a>] - Users can now rbind two frames when one frame contains all missing values in some of its columns.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6549'>PUBDEV-6549</a>] - ClearDKVTask now detects shared resources when deleting frames and models.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6592'>PUBDEV-6592</a>] - Fixed a TypeError in Python debugging.
+</li>
+</ul>
+
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6515'>PUBDEV-6515</a>] - Fixed an issue that caused MOJO loading to fail when categorical values contained a newline character.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6530'>PUBDEV-6530</a>] - Users can now export a file directly to a compressed format (gzip) and choose a delimiter.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6548'>PUBDEV-6548</a>] - Users can now specify which certificate alias to use when starting H2O with SSL. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6582'>PUBDEV-6582</a>] - Added Conda install instructions to the download page.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6591'>PUBDEV-6591</a>] - Users can now specify a custom separator for CSV export. 
+</li>
+</ul>
+
+<h4>Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6457'>PUBDEV-6457</a>] - Fixed GLM std-error and Tweedie calculations.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6472'>PUBDEV-6472</a>] - Implemented dispersion factor optimization for Tweedie GLM.
+</li>
+</ul>
+
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6458'>PUBDEV-6458</a>] - The MOJO Tree Visualizer and Tree API no longer show categorical splits as numeric and string.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6508'>PUBDEV-6508</a>] - Improved the user experience with Target Encoding in R by providing more meaningful error messages.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6520'>PUBDEV-6520</a>] - Users can now tokenize a frame to the Scala API to enable that using H2O's Word2Vec.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6525'>PUBDEV-6525</a>] - Defined several default values in the R API for Target Encoding.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6527'>PUBDEV-6527</a>] - Improved the user experience with Target Encoding in Python by providing more meaningful error messages.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6529'>PUBDEV-6529</a>] - Set default values for blending hyperparameters in Target Encoding when using the Python client. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6533'>PUBDEV-6533</a>] - Fixed an issue that resulted in a "NaN undefined" label in the Flow cluster status.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6538'>PUBDEV-6538</a>] - Exposed ClearDKVTask via REST API.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6547'>PUBDEV-6547</a>] - H2O-3 now provides a warning when using MOJO prediction with a test/validation dataset that has missing columns.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6575'>PUBDEV-6575</a>] - Upgraded the JTransforms library.
+</li>
+</ul>
+                                                                                       
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6392'>PUBDEV-6392</a>] - Added a Best Practices sub section to Starting H2O in the User Guide.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6473'>PUBDEV-6473</a>] - Added Target Encoding options to the Parameters appendix.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6516'>PUBDEV-6516</a>] - Updated the description for the Tweedie family in the User Guide and in the GLM booklet.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6537'>PUBDEV-6537</a>] - Removed ologlog and oprobit from list of `link` options that can be specified in GLM.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6568'>PUBDEV-6568</a>] - Upated documentation to indicate that predict_leaf_node_assignment is not supported with XGBoost.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6596'>PUBDEV-6596</a>] - Added the new `-jks_alias` option to list of options that can be specified when starting H2O.
+</li>
+</ul>
+
+### Yates (3.24.0.4) - 5/28/2019
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yates/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yates/4/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4305'>PUBDEV-4305</a>] - Fixed an error that occurred when applying as.matrix() to an h2o dataframe with numeric values of size ~ 600K x 300.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5937'>PUBDEV-5937</a>] - Introduced a new xgboost.predict.native.enable property, which ensures that H2OXGBoostEstimator will no longer always predicts the same value.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6440'>PUBDEV-6440</a>] - Users can now parse files from s3 using s3's directory URL with s3 protocol.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6475'>PUBDEV-6475</a>] - Fixed an issue that caused h2o.getModelTree to produce an "invalid object for slot nas" error when XGBoost produced a root-node only decision tree. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6476'>PUBDEV-6476</a>] - Improved performance of H2OXGBoost on OS X.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6479'>PUBDEV-6479</a>] - In Stacked Ensembles, fixed a categorical encoding mismatch error when building the ensemble. Users can now use SE on top of base models that are trained with categorical encoding.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6483'>PUBDEV-6483</a>] - In Isolation Forest, you can now specify that mtries = the number of features.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6488'>PUBDEV-6488</a>] - Fixed an issue that caused XGBoost to produce a tree with split features being all NA.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6489'>PUBDEV-6489</a>] - In h2o.getModelTree, when retrieving a threshold for values that are all NAs, updated the description to state that the "Split value is NA."
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6490'>PUBDEV-6490</a>] - Fixed an issue that caused trivial features with NAs to be given inflated importance when monotonicity constraints was enabled. As a result, variable importance values were incorrect.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6491'>PUBDEV-6491</a>] - Fixed an NPE issue at water.init.HostnameGuesser when trying to launch a Sparkling Water cluster.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6496'>PUBDEV-6496</a>] - Removed internal_cv_weights from h2o.predict_contributions() output when the prediction was used on a fold column from a model run with nfolds.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6521'>PUBDEV-6521</a>] - Models that use Label Encoding no longer predict incorrectly on test data.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6523'>PUBDEV-6523</a>] - Predictions now work correctly on a subset of training features when using categorical_encoding. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6532'>PUBDEV-6532</a>] - Fixed an issue that caused XGBoost to format non-integer numbers (doubles, floats) using Locale.ENGLISH to ensure that a decimal point "." was used instead of a comma ",".
+This locale setting grouped large numbers by thousands and split the groups with ",", which was unparseable to XGBoost.
+</li>
+</ul>
+
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6478'>PUBDEV-6478</a>] - Added support for CDH 6.2.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6503'>PUBDEV-6503</a>] - Users can now specify an external IP for h2odriver callback.
+</li>
+</ul>
+
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6519'>PUBDEV-6519</a>] - Added a "toCategoricalCol" helper function for column type conversion.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6522'>PUBDEV-6522</a>] - Renamed "Generic Models" to "MOJO Import" in the documentation. 
+</li>
+</ul>
+                                                               
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6486'>PUBDEV-6486</a>] - Added CDH 6.2 to list of supported Hadoop platforms.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6511'>PUBDEV-6511</a>] - Added the import_hive_table() and import_mojo() functions to the R HTML documentation.
+</li>
+</ul>
+
+
 ### Yates (3.24.0.3) - 5/7/2019
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yates/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yates/3/index.html</a>
@@ -160,6 +311,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yates/1/index.
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5809'>PUBDEV-5809</a>] - AutoML now includes a max_runtime_secs_per_model option.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5925'>PUBDEV-5925</a>] - In GLM, added support for negative binomial family.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5980'>PUBDEV-5980</a>] - ExposeD Java target encoding to R.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6056'>PUBDEV-6056</a>] - For GBM and XGBoost models, users can now generate feature contributions (SHAP values). 
 </li>

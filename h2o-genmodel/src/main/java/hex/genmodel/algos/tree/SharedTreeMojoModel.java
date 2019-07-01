@@ -337,9 +337,13 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
         if (!naVsRest) {
             // Extract value or group to split on
             if (equal == 0) {
+              float splitVal = ab.get4f();
+
+              if (domains[colId] != null) {
+                node.setDomainValues(domains[colId]);
+              }
                 // Standard float-compare test (either < or ==)
-                float splitVal = ab.get4f();  // Get the float to compare
-                node.setSplitValue(splitVal);
+              node.setSplitValue(splitVal);
             } else {
                 // Bitset test
                 GenmodelBitSet bs = new GenmodelBitSet(0);

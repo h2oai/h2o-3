@@ -2,7 +2,6 @@ package hex.tree.xgboost;
 
 import org.junit.Test;
 
-import java.text.DecimalFormat;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -21,8 +20,8 @@ public class BoosterParmsTest {
     }});
     Map<String, Object> expected = Collections.unmodifiableMap(new HashMap<String, Object>() {{
       put("integer", 42);
-      put("float", DecimalFormat.getNumberInstance().format(0.5f));
-      put("double", DecimalFormat.getNumberInstance().format(Math.E));
+      put("float", new Float(0.5F).toString());
+      put("double", new Double(Math.E).toString());
       put("boolean", true);
     }});
 

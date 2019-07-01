@@ -117,7 +117,7 @@ Defining a GLM Model
 
 -  `gradient_epsilon <algo-params/gradient_epsilon.html>`__: (For L-BFGS only) Specify a threshold for convergence. If the objective value (using the L-infinity norm) is less than this threshold, the model is converged.
 
--  `link <algo-params/link.html>`__: Specify a link function (Identity, Family_Default, Logit, Log, Inverse, Tweedie, Ologit, Oprobit, and Ologlog).
+-  `link <algo-params/link.html>`__: Specify a link function (Identity, Family_Default, Logit, Log, Inverse, Tweedie, or Ologit).
 
    -  If the family is **Gaussian**, then **Identity**, **Log**, and **Inverse** are supported.
    -  If the family is **Binomial**, then **Logit** is supported.
@@ -126,7 +126,7 @@ Defining a GLM Model
    -  If the family is **Tweedie**, then only **Tweedie** is supported.
    -  If the family is **Multinomial**, then only **Family_Default** is supported. (This defaults to ``multinomial``.)
    -  If the family is **Quasibinomial**, then only **Logit** is supported.
-   -  If the family is **Ordinal**, then only **Ologit**, **Oprobit**, and **Ologlog** are supported. (Note that only Ologit is available for Ordinal regression.)
+   -  If the family is **Ordinal**, then only **Ologit** is supported
    -  If the family is **Negative Binomial**, then only **Log** and **Identity** are supported.
 
 -  `prior <algo-params/prior.html>`__: Specify prior probability for p(y==1). Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. This value defaults to -1 and must be a value in the range (0,1).
@@ -383,9 +383,9 @@ The corresponding deviance is equal to:
 Tweedie Models
 ^^^^^^^^^^^^^^
 
-Tweedie distributions are a family of distributions that include gamma, normal, Poisson, and their combination. Tweedie distributions are especially useful for modeling positive continuous variables with exact zeros. The variance of the Tweedie distribution is proportional to the :math:`p\text{th}` power of the mean :math:`var(y_i) = \phi\mu{^p_i}`. 
+Tweedie distributions are a family of distributions that include gamma, normal, Poisson, and their combinations. Tweedie distributions are especially useful for modeling positive continuous variables with exact zeros. The variance of the Tweedie distribution is proportional to the :math:`p`-{th} power of the mean :math:`var(y_i) = \phi\mu{^p_i}`, where :math:`\phi` is the dispersion parameter and :math:`p` is the variance power. 
 
-The Tweedie distribution is parametrized by variance power :math:`p`. It is defined for all :math:`p` values except in the (0,1) interval and has the following distributions as special cases:
+The Tweedie distribution is parametrized by variance power :math:`p` while :math:`\phi` is an unknown constant. It is defined for all :math:`p` values except in the (0,1) interval and has the following distributions as special cases:
 
 - :math:`p = 0`: Normal
 - :math:`p = 1`: Poisson
@@ -394,19 +394,29 @@ The Tweedie distribution is parametrized by variance power :math:`p`. It is defi
 - :math:`p = 3`: Inverse-Gaussian
 - :math:`p > 2`: Stable, with support on the positive reals
 
-For :math:`p > 1`, the model likelood to maximize has the form:
+The model likelood to maximize has the form:
 
-.. math::
+.. figure:: ../images/model_log_likelihood_tweedie.png
+   :alt: Tweedie model log likelihood
+   :scale: 50%
 
- ^\text{max}_{\beta,\beta_0} \sum_{i=1}^{N} \text{log} (a(y_i, \phi)) + \bigg( \dfrac {1} {\phi} \bigg(\dfrac {y_i\mu{^{1-p}_i}} {1-p} - \kappa(\mu_i, p) \bigg) \bigg) - \lambda \bigg ( \alpha || \beta ||_1 + \dfrac {1} {2} (1-\alpha) ||\beta||{^2_2} \bigg )
+where the function :math:`a(y_i,\phi)` is evaluated using an infinite series expansion and does not have an analytical solution. However, because :math:`\phi` is an unknown constant, :math:`\sum_{i=1}^N\text{log}(a(y_i,\phi))` is a constant and will be ignored. Hence, the final objective function to minimize with the penalty term is:
 
-where :math:`\kappa(\mu,p) = \mu^{2-p} / (2-p)` for :math:`p \neq 2` and :math:`\kappa(\mu,p) = \text{log} (\mu)` for :math:`p=2`, and where the function :math:`a(y_i,\phi)` is evaluated using series expansion because it does not have an analytical solution. The link function in the GLM representation of the Tweedie distribution defaults to :math:`g(\mu) = \mu^q = \eta = X\beta` with :math:`q=1-p`. The link power :math:`q` can be set to other values, including :math:`q=0`, which is interpreated as :math:`\text{log}(\mu)=\eta`. 
+.. figure:: ../images/minimize_penalty.png
+   :alt: Objective function to minimize penalty
 
-The corresponding deviance when :math:`p \neq 1` and :math:`p \neq 2` is equal to:
+The link function in the GLM representation of the Tweedie distribution defaults to:
 
-.. math::
+.. figure:: ../images/link_function_tweedie.png
+   :alt: Link function of tweedie distribution
+   :scale: 50%
 
- D = 2\sum_{i}^N \frac{y_{i}(y_{i}^{1-p} - \hat{y}_{i}^{1-p})}{(1-p)} - \frac{(y_{i}^{2-p} - \hat{y}_{i}^{2-p})}{(2-p)}
+And :math:`q = 1 - p`. The link power :math:`q` can be set to other values as well.
+
+The corresponding deviance is equal to:
+
+.. figure:: ../images/tweedie_deviance.png
+   :alt: Deviance in tweedie
 
 .. _negative_binomial:
 
@@ -459,35 +469,34 @@ Links
 
 As indicated previously, a link function :math:`g`: :math:`E(y) = \mu = {g^-1}(\eta)` relates the expected value of the response :math:`\mu` to the linear component :math:`\eta`. The link function can be any monotonic differentiable function. This relaxes the constraints on the additivity of the covariates, and it allows the response to belong to a restricted range of values depending on the chosen transformation :math:`g`.
 
-H2O's GLM supports the following link functions: Family_Default, Identity, Logit, Log, Inverse, Tweedie, Ologit, Oprobit, and Ologlog. 
+H2O's GLM supports the following link functions: Family_Default, Identity, Logit, Log, Inverse, Tweedie, and Ologit. 
 
 The following table describes the allowed Family/Link combinations.
 
-+-------------------+-------------------------------------------------------------+--------+---------+---------+
-| **Family**        | **Link Function**                                                                        |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
-|                   | Family_Default | Identity | Logit | Log | Inverse | Tweedie | Ologit | Oprobit | Ologlog |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
-| Binomial          | X              |          | X     |     |         |         |        |         |         |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
-| Quasibinomial     | X              |          | X     |     |         |         |        |         |         |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
-| Multinomial       | X              |          |       |     |         |         |        |         |         |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
-| Ordinal           | X              |          |       |     |         |         | X      | X*      | X*      |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
-| Gaussian          | X              | X        |       | X   | X       |         |        |         |         |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
-| Poisson           | X              | X        |       | X   |         |         |        |         |         |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
-| Gamma             | X              | X        |       | X   | X       |         |        |         |         |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
-| Tweedie           | X              |          |       |     |         | X       |        |         |         |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
-| Negative Binomial | X              | X        |       | X   |         |         |        |         |         |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
++-------------------+-------------------------------------------------------------+--------+
+| **Family**        | **Link Function**                                                    |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+
+|                   | Family_Default | Identity | Logit | Log | Inverse | Tweedie | Ologit |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Binomial          | X              |          | X     |     |         |         |        |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Quasibinomial     | X              |          | X     |     |         |         |        |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Multinomial       | X              |          |       |     |         |         |        |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Ordinal           | X              |          |       |     |         |         | X      |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Gaussian          | X              | X        |       | X   | X       |         |        |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Poisson           | X              | X        |       | X   |         |         |        |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Gamma             | X              | X        |       | X   | X       |         |        |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Tweedie           | X              |          |       |     |         | X       |        |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Negative Binomial | X              | X        |       | X   |         |         |        |
++-------------------+----------------+----------+-------+-----+---------+---------+--------+
 
-\* Supported with ordinal classification only; not available for ordinal regression.
 
 Regularization
 ~~~~~~~~~~~~~~

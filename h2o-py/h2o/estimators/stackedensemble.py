@@ -77,8 +77,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
 
     @training_frame.setter
     def training_frame(self, training_frame):
-        assert_is_type(training_frame, None, H2OFrame)
-        self._parms["training_frame"] = training_frame
+        self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
 
 
     @property
@@ -107,8 +106,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
 
     @validation_frame.setter
     def validation_frame(self, validation_frame):
-        assert_is_type(validation_frame, None, H2OFrame)
-        self._parms["validation_frame"] = validation_frame
+        self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
 
 
     @property
@@ -123,8 +121,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
 
     @blending_frame.setter
     def blending_frame(self, blending_frame):
-        assert_is_type(blending_frame, None, H2OFrame)
-        self._parms["blending_frame"] = blending_frame
+        self._parms["blending_frame"] = H2OFrame._validate(blending_frame, 'blending_frame')
 
 
     @property
@@ -309,7 +306,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
 
     # Override train method to support blending 
     def train(self, x=None, y=None, training_frame=None, blending_frame=None, **kwargs):
-        assert_is_type(blending_frame, None, H2OFrame)
+        blending_frame = H2OFrame._validate(blending_frame, 'blending_frame', required=False)
 
         def extend_parms(parms):
             if blending_frame is not None:

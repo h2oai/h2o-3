@@ -211,17 +211,17 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         // Create a New Model or continuing from a checkpoint
         if (_parms.hasCheckpoint()) {
           // Get the model to continue
-          _model = DKV.get(_parms._checkpoint).<M>get().deepClone(_result);
+          M model = DKV.get(_parms._checkpoint).<M>get().deepClone(_result);
           // Override original parameters by new parameters
-          _model._parms = _parms;
+          model._parms = _parms;
           // We create a new model
-          _model.delete_and_lock(_job);
+          _model = model.delete_and_lock(_job);
         } else {                   // New Model
           // Compute the zero-tree error - guessing only the class distribution.
           // MSE is stddev squared when guessing for regression.
           // For classification, guess the largest class.
-          _model = makeModel(dest(), _parms);
-          _model.delete_and_lock(_job); // and clear & write-lock it (smashing any prior)
+          M model = makeModel(dest(), _parms);
+          _model = model.delete_and_lock(_job); // and clear & write-lock it (smashing any prior)
           _model._output._init_f = _initialPrediction;
         }
 
@@ -431,7 +431,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       for( int tid=0; tid< _ntrees; tid++) {
         // During first iteration model contains 0 trees, then 1-tree, ...
         boolean scored = doScoringAndSaveModel(false, oob, _parms._build_tree_one_node);
-        if (scored && ScoreKeeper.stopEarly(_model._output.scoreKeepers(), _parms._stopping_rounds, _nclass > 1, _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
+        if (scored && ScoreKeeper.stopEarly(_model._output.scoreKeepers(), _parms._stopping_rounds, getProblemType(), _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
           doScoringAndSaveModel(true, oob, _parms._build_tree_one_node);
           _job.update(_ntrees-_model._output._ntrees); //finish
           return;
@@ -454,6 +454,11 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     }
   }
 
+  protected ScoreKeeper.ProblemType getProblemType() {
+    assert isSupervised();
+    return ScoreKeeper.ProblemType.forSupervised(_nclass > 1);
+  }
+  
   // --------------------------------------------------------------------------
   // Build an entire layer of all K trees
   protected DHistogram[][][] buildLayer(final Frame fr, final int nbins, int nbins_cats, final DTree ktrees[], final int leafs[], final DHistogram hcs[][][], boolean build_tree_one_node) {

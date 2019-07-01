@@ -1,9 +1,13 @@
 package water.fvec;
 
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.Scope;
 import water.TestUtil;
 import water.parser.BufferedString;
+import water.rapids.Rapids;
+import water.rapids.Val;
 import water.util.TwoDimTable;
 
 import java.util.Random;
@@ -228,4 +232,32 @@ public class TestFrameBuilderTest extends TestUtil {
 
     fr.delete();
   }
+
+  @Test
+  public void testBadVec(){
+    try {
+      Scope.enter();
+
+      Frame frame = new TestFrameBuilder()
+              .withVecTypes(Vec.T_BAD)
+              .withDataForCol(0, ard(Float.NaN, Float.NaN, Float.NaN)) // All NaN column
+              .withName("fr")
+              .build();
+      
+      assertNotNull(frame);
+      assertEquals(1, frame.numCols());
+
+      final Vec badVec = frame.vec(0);
+      assertEquals(Vec.T_BAD, badVec._type);
+      assertEquals(3, badVec.length());
+      assertTrue(badVec.isBad());
+
+      for (int i = 0; i < badVec.length(); i++) {
+        assertEquals(Float.NaN, badVec.at(i), 0D);
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+  
 }

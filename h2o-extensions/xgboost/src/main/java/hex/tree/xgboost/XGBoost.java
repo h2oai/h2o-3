@@ -5,6 +5,7 @@ import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMTask;
 import hex.tree.TreeUtils;
 import hex.tree.xgboost.rabit.RabitTrackerH2O;
+import hex.tree.xgboost.util.FeatureScore;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
@@ -376,7 +377,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       for( int tid=0; tid< _parms._ntrees; tid++) {
         // During first iteration model contains 0 trees, then 1-tree, ...
         boolean scored = doScoring(model, boosterProvider, false);
-        if (scored && ScoreKeeper.stopEarly(model._output.scoreKeepers(), _parms._stopping_rounds, _nclass > 1, _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
+        if (scored && ScoreKeeper.stopEarly(model._output.scoreKeepers(), _parms._stopping_rounds, ScoreKeeper.ProblemType.forSupervised(_nclass > 1), _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
           Log.info("Early stopping triggered - stopping XGBoost training");
           break;
         }
@@ -468,13 +469,13 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         model.doScoring(_train, _parms.train(), _valid, _parms.valid());
         _timeLastScoreEnd = System.currentTimeMillis();
         XGBoostOutput out = model._output;
-        final Map<String, XGBoostUtils.FeatureScore> varimp;
+        final Map<String, FeatureScore> varimp;
         Booster booster = null;
         try {
           booster = model.model_info().deserializeBooster();
-          varimp = BoosterHelper.doWithLocalRabit(new BoosterHelper.BoosterOp<Map<String, XGBoostUtils.FeatureScore>>() {
+          varimp = BoosterHelper.doWithLocalRabit(new BoosterHelper.BoosterOp<Map<String, FeatureScore>>() {
             @Override
-            public Map<String, XGBoostUtils.FeatureScore> apply(Booster booster) throws XGBoostError {
+            public Map<String, FeatureScore> apply(Booster booster) throws XGBoostError {
               final String[] modelDump = booster.getModelDump(featureMapFileAbsolutePath, true);
               return XGBoostUtils.parseFeatureScores(modelDump);
             }
@@ -505,7 +506,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
             new String[]{"Relative Importance", "Scaled Importance", "Percentage"});
   }
 
-  private static XgbVarImp computeVarImp(Map<String, XGBoostUtils.FeatureScore> varimp) {
+  private static XgbVarImp computeVarImp(Map<String, FeatureScore> varimp) {
     if (varimp.isEmpty())
       return null;
     float[] gains = new float[varimp.size()];
@@ -513,7 +514,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     int[] freqs = new int[varimp.size()];
     String[] names = new String[varimp.size()];
     int j = 0;
-    for (Map.Entry<String, XGBoostUtils.FeatureScore> it : varimp.entrySet()) {
+    for (Map.Entry<String, FeatureScore> it : varimp.entrySet()) {
       gains[j] = it.getValue()._gain;
       covers[j] = it.getValue()._cover;
       freqs[j] = it.getValue()._frequency;

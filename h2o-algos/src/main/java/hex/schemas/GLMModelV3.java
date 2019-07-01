@@ -34,6 +34,9 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
     @API(help="Lambda best + 1 standard error. Only applicable with lambda search and cross-validation")
     double lambda_1se;
 
+    @API(help="Dispersion parameter, only applicable to Tweedie family")
+    double dispersion;
+
     private GLMModelOutputV3 fillMultinomial(GLMOutput impl) {
       if(impl.get_global_beta_multinomial() == null)
         return this; // no coefificients yet
@@ -169,6 +172,7 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
       super.fillFromImpl(impl);
       lambda_1se = impl.lambda_1se();
       lambda_best = impl.lambda_best();
+      dispersion = impl.dispersion();
       if(impl._multinomial || impl._ordinal)
         return fillMultinomial(impl);
       String [] names = impl.coefficientNames().clone();

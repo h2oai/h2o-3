@@ -79,19 +79,29 @@ test <- function() {
   h2o_age_pp = h2o.partialPlot(object = prostate_drf, data = prostate_hex, cols = "AGE", plot = F)
   h2o_age_pp_2 = partialDependence(object = prostate_drf, pred.data = prostate_hex, xname = "AGE", h2o.pp = h2o_age_pp)
   h2o_race_pp_2 = partialDependence(object = prostate_drf, pred.data = prostate_hex, xname = "RACE", h2o.pp = h2o_race_pp)
-
+  
+  ## Calculate partial dependence uisng h2o.partialPlot for column "AGE" on row 1
+  h2o_row1_age_pp = h2o.partialPlot(object = prostate_drf, data = prostate_hex, cols = "AGE", plot = F, row_index=1)
+  h2o_row1_age_pp_2 = partialDependence(object = prostate_drf, pred.data = prostate_hex[1,], xname = "AGE", h2o.pp = h2o_age_pp)
+    
   #Mean response
   checkEqualsNumeric(h2o_age_pp_2[,"mean_response"], h2o_age_pp[,"mean_response"])
   checkEqualsNumeric(h2o_race_pp_2[,"mean_response"], h2o_race_pp[,"mean_response"])
-
+  #Mean response for a single row
+  checkEqualsNumeric(h2o_row1_age_pp_2[,"mean_response"], h2o_row1_age_pp[,"mean_response"])
+    
   #Standard Deviation of Response
   checkEqualsNumeric(h2o_age_pp_2[,"stddev_response"], h2o_age_pp[,"stddev_response"])
   checkEqualsNumeric(h2o_race_pp_2[,"stddev_response"], h2o_race_pp[,"stddev_response"])
-
+  #Standard Deviation of Response for a single row
+  checkEqualsNumeric(h2o_row1_age_pp_2[,"stddev_response"], h2o_row1_age_pp[,"stddev_response"])
+    
   #Standard Error of Mean Response
   checkEqualsNumeric(h2o_age_pp_2[,"std_error_mean_response"], h2o_age_pp[,"std_error_mean_response"])
   checkEqualsNumeric(h2o_race_pp_2[,"std_error_mean_response"], h2o_race_pp[,"std_error_mean_response"])
-  
+  #Standard Error of Mean Response for a single row
+  checkEqualsNumeric(h2o_row1_age_pp_2[,"std_error_mean_response"], h2o_row1_age_pp[,"std_error_mean_response"])
+    
   ## Check spliced/subsetted datasets
   prostate_hex[, "RACE"] = as.factor(prostate_hex[, "RACE"])
   prostate_drf = h2o.randomForest(x = c("AGE", "RACE"), y = "CAPSULE", training_frame = prostate_hex, ntrees = 25, seed = seed)

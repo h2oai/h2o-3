@@ -345,7 +345,7 @@ def schemas_map(add_generics=False):
     m = {}
     for schema in schemas():
         if schema["name"].startswith('AutoML'): continue  # Generation code doesn't know how to deal with defaults for complex objects yet
-        if schema["name"].startswith('UserFeedback'): continue  # UserFeedback schema contains an AutoMLKeyV3
+        if schema["name"].startswith('EventLog'): continue  # EventLog schema contains an AutoMLKeyV3
         m[schema["name"]] = schema
 
     def find_field(fields, field_name):

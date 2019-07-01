@@ -30,7 +30,7 @@
 #'
 #' @return Returns a list of hex keys in the current H2O instance.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
@@ -47,11 +47,15 @@ h2o.ls <- function() {
 #' Remove All Objects on the H2O Cluster
 #'
 #' Removes the data from the h2o cluster, but does not remove the local references.
+#' Retains frames and vectors specified in retained_elements argument.
+#' Retained keys must be keys of models and frames only. For models retained, training and validation frames are retained as well.
+#' Cross validation models of a retained model are NOT retained automatically, those must be specified explicitely.
 #'
 #' @param timeout_secs Timeout in seconds. Default is no timeout.
+#' @param retained_elements Frames and vectors to be retained. Other keys provided are ignored.
 #' @seealso \code{\link{h2o.rm}}
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
@@ -61,10 +65,24 @@ h2o.ls <- function() {
 #' h2o.ls()
 #' }
 #' @export
-h2o.removeAll <- function(timeout_secs=0) {
+h2o.removeAll <- function(timeout_secs=0, retained_elements = c()) {
   gc()
   tryCatch(
-    invisible(.h2o.__remoteSend(.h2o.__DKV, method = "DELETE", timeout=timeout_secs)),
+    {
+    retained_keys <- list()
+    
+    for (element in retained_elements) {
+      if (is(element, "H2OModel")) {
+        retained_keys <- append(retained_keys, element@model_id)
+      } else if (is.H2OFrame(element)) {
+        retained_keys <- append(retained_keys, h2o.getId(element))
+      }
+    }
+    
+    parms <- list()
+    parms$retained_keys <- paste0("[", paste(retained_keys, collapse=','), "]")
+    
+    invisible(.h2o.__remoteSend(.h2o.__DKV, method = "DELETE", timeout=timeout_secs, .params = parms))},
     error = function(e) {
       print("Timeout on DELETE /DKV from R")
       print("Attempt thread dump...")
@@ -124,7 +142,7 @@ h2o.getFrame <- function(id) {
 #' @param model_id A string indicating the unique model_id of the model to retrieve.
 #' @return Returns an object that is a subclass of \linkS4class{H2OModel}.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #'
@@ -227,7 +245,7 @@ h2o.getModel <- function(model_id) {
 #' @return If path is NULL, then pretty print the POJO to the console.
 #'         Otherwise save it to the specified directory and return POJO file name.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h <- h2o.init()
 #' fr <- as.h2o(iris)
@@ -312,7 +330,7 @@ h2o.download_pojo <- function(model, path=NULL, getjar=NULL, get_jar=TRUE, jar_n
 #' @return Name of the MOJO file written to the path.
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h <- h2o.init()
 #' fr <- as.h2o(iris)

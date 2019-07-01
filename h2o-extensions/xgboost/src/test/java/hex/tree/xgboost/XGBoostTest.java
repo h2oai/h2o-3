@@ -12,6 +12,7 @@ import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.BinomialModelPrediction;
 import hex.genmodel.utils.DistributionFamily;
+import hex.tree.xgboost.util.FeatureScore;
 import ml.dmlc.xgboost4j.java.*;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoost;
@@ -54,17 +55,17 @@ public class XGBoostTest extends TestUtil {
   public String confJavaPredict;
 
   @Rule
-  public ExpectedException thrown = ExpectedException.none();
+  public transient ExpectedException thrown = ExpectedException.none();
 
   @Rule
-  public TemporaryFolder tmp = new TemporaryFolder();
+  public transient TemporaryFolder tmp = new TemporaryFolder();
   
   @Before
   public void setupMojoJavaScoring() {
     System.setProperty("sys.ai.h2o.xgboost.scoring.java.enable", confMojoJavaScoring); // mojo scoring
     System.setProperty("sys.ai.h2o.xgboost.predict.java.enable", confJavaPredict); // in-h2o predict
 
-    assertEquals(Boolean.valueOf(confMojoJavaScoring), XGBoostMojoReader.getJavaScoringConfig()); // check that MOJO scoring config was applied
+    assertEquals(Boolean.valueOf(confMojoJavaScoring), XGBoostMojoReader.useJavaScoring(true, null)); // check that MOJO scoring config was applied
   }
 
   public static final class FrameMetadata {
@@ -325,7 +326,7 @@ public class XGBoostTest extends TestUtil {
     Booster booster = XGBoost.train(trainMat, params, 10, watches, null, null);
 
     final Map<String, Integer> expected = booster.getFeatureScore((String) null);
-    final Map<String, XGBoostUtils.FeatureScore> actual = getExtFeatureScore(booster);
+    final Map<String, FeatureScore> actual = getExtFeatureScore(booster);
 
     assertEquals(expected.keySet(), actual.keySet());
     for (String feature : expected.keySet()) {
@@ -336,8 +337,8 @@ public class XGBoostTest extends TestUtil {
     Booster booster2 = XGBoost.train(trainMat, params, 2, watches, null, null);
 
     // Check that gain(booster2) >= gain(booster1)
-    final Map<String, XGBoostUtils.FeatureScore> fs1 = getExtFeatureScore(booster1);
-    final Map<String, XGBoostUtils.FeatureScore> fs2 = getExtFeatureScore(booster2);
+    final Map<String, FeatureScore> fs1 = getExtFeatureScore(booster1);
+    final Map<String, FeatureScore> fs2 = getExtFeatureScore(booster2);
 
     for (String feature : fs2.keySet()) {
       assertTrue(fs2.get(feature)._gain > 0);
@@ -347,7 +348,7 @@ public class XGBoostTest extends TestUtil {
     Rabit.shutdown();
   }
 
-  private Map<String, XGBoostUtils.FeatureScore> getExtFeatureScore(Booster booster) throws XGBoostError {
+  private Map<String, FeatureScore> getExtFeatureScore(Booster booster) throws XGBoostError {
     String[] modelDump = booster.getModelDump((String) null, true);
     return XGBoostUtils.parseFeatureScores(modelDump);
   }
@@ -806,6 +807,7 @@ public class XGBoostTest extends TestUtil {
 
   @Test
   public void testBinomialTrainingWeights() {
+    Assume.assumeTrue(H2O.getCloudSize() == 1); // FIXME: PUBDEV-6565
     XGBoostModel model = null;
     XGBoostModel noWeightsModel = null;
     Scope.enter();
@@ -856,6 +858,7 @@ public class XGBoostTest extends TestUtil {
 
   @Test
   public void testRegressionTrainingWeights() {
+    Assume.assumeTrue(H2O.getCloudSize() == 1); // FIXME: PUBDEV-6565
     XGBoostModel model = null;
     XGBoostModel noWeightsModel = null;
     Scope.enter();
@@ -906,6 +909,7 @@ public class XGBoostTest extends TestUtil {
 
   @Test
   public void testMultinomialTrainingWeights() {
+    Assume.assumeTrue(H2O.getCloudSize() == 1); // FIXME: PUBDEV-6565
     XGBoostModel model = null;
     XGBoostModel noWeightsModel = null;
     Scope.enter();
@@ -1076,6 +1080,7 @@ public class XGBoostTest extends TestUtil {
       parms._max_depth = 3;
       parms._train = tfr._key;
       parms._response_column = response;
+      parms._seed = 0xCAFEBABE;
 
       model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
       Log.info(model);
@@ -1169,6 +1174,7 @@ public class XGBoostTest extends TestUtil {
       parms._max_depth = 3;
       parms._train = tfr._key;
       parms._response_column = response;
+      parms._seed = 0xCAFEBABE;
 
       // emulate LightGBM
       parms._tree_method = XGBoostModel.XGBoostParameters.TreeMethod.hist;
@@ -1390,8 +1396,8 @@ public class XGBoostTest extends TestUtil {
   }
 
   @Test
-  public void testMojoBoosterDump() throws IOException {
-    Assume.assumeFalse(XGBoostMojoReader.getJavaScoringConfig());
+  public void testMojoBoosterDump() throws IOException { 
+    Assume.assumeFalse(XGBoostMojoReader.useJavaScoring(true, null));
     Scope.enter();
     try {
       Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
@@ -1457,6 +1463,7 @@ public class XGBoostTest extends TestUtil {
 
   @Test
   public void testMonotoneConstraints() {
+    Assume.assumeTrue(H2O.getCloudSize() == 1); // FIXME: PUBDEV-6565
     Scope.enter();
     try {
       final String response = "power (hp)";
@@ -1566,20 +1573,7 @@ public class XGBoostTest extends TestUtil {
       assertEquals("BiasTerm", contributions.names()[contributions.names().length - 1]);
       
       // basic sanity check - contributions should sum-up to predictions
-      Frame predsFromContributions = new MRTask() {
-        @Override
-        public void map(Chunk[] cs, NewChunk nc) {
-          for (int i = 0; i < cs[0]._len; i++) {
-            float sum = 0;
-            for (Chunk c : cs)
-              sum += c.atd(i);
-            nc.addNum(sigmoid(sum));
-          }
-        }
-        private float sigmoid(float x) {
-          return (1f / (1f + (float) Math.exp(-x)));
-        }
-      }.doAll(Vec.T_NUM, contributions).outputFrame();
+      Frame predsFromContributions = new CalcContribsTask().doAll(Vec.T_NUM, contributions).outputFrame();
       Frame expectedPreds = model.score(tfr);
       Scope.track(expectedPreds);
       assertVecEquals(expectedPreds.vec(2), predsFromContributions.vec(0), 1e-6);
@@ -1597,24 +1591,47 @@ public class XGBoostTest extends TestUtil {
       
       // finally check the contributions
       assertEquals(expectedContribs.length, contributions.numRows());
-      new MRTask() {
-        @Override
-        public void map(Chunk[] cs) {
-          for (int i = 0; i < cs[0]._len; i++) {
-            for (int j = 0; j < cs.length; j++) {
-              float contrib = (float) cs[j].atd(i);
-              int row = (int) cs[0].start() + i;
-              assertEquals("Contribution in row=" + row + " on position=" + j + " should match.", 
-                      expectedContribs[row][j], contrib, 1e-6);
-            }
-          }
-        }
-      }.doAll(contributions).outputFrame();
+      new CheckContribsTask(expectedContribs).doAll(contributions).outputFrame();
     } finally {
       Scope.exit();
     }
   }
 
+  private static class CalcContribsTask extends MRTask<CalcContribsTask> {
+    @Override
+    public void map(Chunk[] cs, NewChunk nc) {
+      for (int i = 0; i < cs[0]._len; i++) {
+        float sum = 0;
+        for (Chunk c : cs)
+          sum += c.atd(i);
+        nc.addNum(sigmoid(sum));
+      }
+    }
+    private float sigmoid(float x) {
+      return (1f / (1f + (float) Math.exp(-x)));
+    }
+  }
+  
+  private static class CheckContribsTask extends MRTask<CheckContribsTask> {
+    private final float[][] _expectedContribs;
+
+    private CheckContribsTask(float[][] expectedContribs) {
+      _expectedContribs = expectedContribs;
+    }
+
+    @Override
+    public void map(Chunk[] cs) {
+      for (int i = 0; i < cs[0]._len; i++) {
+        for (int j = 0; j < cs.length; j++) {
+          float contrib = (float) cs[j].atd(i);
+          int row = (int) cs[0].start() + i;
+          assertEquals("Contribution in row=" + row + " on position=" + j + " should match.",
+                  _expectedContribs[row][j], contrib, 1e-6);
+        }
+      }
+    }
+  }
+  
   @Test
   public void testScoringWithUnseenCategoricals() {
     try {

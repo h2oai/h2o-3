@@ -177,17 +177,19 @@ public class SharedTreeNode implements INode<double[]>, INodeStat {
     BitSet inheritedInclusiveLevels = findInclusiveLevels(colId);
     BitSet childInclusiveLevels = new BitSet();
 
+
     for (int i = 0; i < domainValues.length; i++) {
       // Calculate whether this level should flow into this child node.
       boolean includeThisLevel = false;
       {
         if (discardAllLevels) {
           includeThisLevel = false;
-        }
-        else if (includeAllLevels) {
+        } else if (includeAllLevels) {
           includeThisLevel = calculateIncludeThisLevel(inheritedInclusiveLevels, i);
-        }
-        else if (bs.isInRange(i) && bs.contains(i) == nodeBitsetDoesContain) {
+        } else if (!Float.isNaN(splitValue)) {
+          // This branch is only used if categorical split is represented numerically
+          includeThisLevel = splitValue < i ^ !nodeBitsetDoesContain;
+        } else if (bs.isInRange(i) && bs.contains(i) == nodeBitsetDoesContain) {
           includeThisLevel = calculateIncludeThisLevel(inheritedInclusiveLevels, i);
         }
       }
@@ -296,8 +298,7 @@ public class SharedTreeNode implements INode<double[]>, INodeStat {
       os.print("fontsize="+treeOptions._fontSize+", label=\"");
       float predv = treeOptions._setDecimalPlace?treeOptions.roundNPlace(predValue):predValue;
       os.print(predv);
-    }
-    else if (isBitset()) {
+    } else if (isBitset() && (Float.isNaN(splitValue) || !treeOptions._internal)) {
       os.print("shape=box, fontsize="+treeOptions._fontSize+", label=\"");
       os.print(escapeQuotes(colName));
     }
@@ -360,7 +361,7 @@ public class SharedTreeNode implements INode<double[]>, INodeStat {
   private void printDotEdgesCommon(PrintStream os, int maxLevelsToPrintPerEdge, ArrayList<String> arr,
                                    SharedTreeNode child, float totalWeight, boolean detail,
                                    PrintMojo.PrintTreeOptions treeOptions) {
-    if (isBitset()) {
+    if (isBitset() || (!Float.isNaN(splitValue) && treeOptions._internal)) { // Print categorical levels even in case of internal numerical representation
       BitSet childInclusiveLevels = child.getInclusiveLevels();
       int total = childInclusiveLevels.cardinality();
       if ((total > 0) && (total <= maxLevelsToPrintPerEdge)) {
@@ -416,7 +417,7 @@ public class SharedTreeNode implements INode<double[]>, INodeStat {
         arr.add("[Not NA]");
       }
       else {
-        if (! isBitset()) {
+        if (!isBitset() || (!Float.isNaN(splitValue) && treeOptions._internal)) {
           arr.add("<");
         }
       }
@@ -433,7 +434,7 @@ public class SharedTreeNode implements INode<double[]>, INodeStat {
       }
 
       if (! naVsRest) {
-        if (! isBitset()) {
+        if (!isBitset() || (!Float.isNaN(splitValue) && treeOptions._internal)) {
           arr.add(">=");
         }
       }

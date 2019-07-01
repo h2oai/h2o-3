@@ -31,10 +31,10 @@ function cleanup () {
   RC="`paste $OUTDIR/status.* | sed 's/[[:blank:]]//g'`"
   if [ "$RC" != "00000" ]; then
     cat $OUTDIR/out.*
-    echo h2o-algos junit tests FAILED
+    echo h2o-ext-xgboost junit tests FAILED
     exit 1
   else
-    echo h2o-algos junit tests PASSED
+    echo h2o-ext-xgboost junit tests PASSED
     exit 0
   fi
 }
@@ -65,7 +65,7 @@ MAX_MEM=${H2O_JVM_XMX:-2500m}
 if [ $JACOCO_ENABLED = true ]
 then
     AGENT="../jacoco/jacocoagent.jar"
-    COVERAGE="-javaagent:$AGENT=destfile=build/jacoco/h2o-algos.exec"
+    COVERAGE="-javaagent:$AGENT=destfile=build/jacoco/h2o-ext-xgboost.exec"
     MAX_MEM=${H2O_JVM_XMX:-8g}
 else
     COVERAGE=""
@@ -87,7 +87,7 @@ JUNIT_RUNNER="water.junit.H2OTestRunner"
 # Cut the   "water/MRThrow.java" down to "water/MRThrow"
 # Slash/dot "water/MRThrow"      becomes "water.MRThrow"
 
-# On this h2o-algos testMultiNode.sh only, force the tests.txt to be in the same order for all machines.
+# On this h2o-ext-xgboost testMultiNode.sh only, force the tests.txt to be in the same order for all machines.
 # If sorted, the result of the cd/grep varies by machine. 
 # If randomness is desired, replace sort with the unix 'shuf'
 # Use /usr/bin/sort because of cygwin on windows. 
