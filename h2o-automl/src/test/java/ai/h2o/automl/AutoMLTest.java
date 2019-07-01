@@ -251,10 +251,6 @@ public class AutoMLTest extends water.TestUtil {
     } finally {
       if(aml!=null) aml.delete();
       if(fr != null) fr.remove();
-      if(leader!=null) {
-        Frame cvFoldAssignmentFrame = DKV.getGet(leader._output._cross_validation_fold_assignment_frame_id);
-        cvFoldAssignmentFrame.delete();
-      }
     }
   }
 

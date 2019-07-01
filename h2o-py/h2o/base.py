@@ -2,7 +2,7 @@
 # Copyright: (c) 2019 H2O.ai
 # License:   Apache License Version 2.0 (see LICENSE for details)
 """
-:mod:`abstract` -- base/abstract H2O classes used internally.
+:mod:`base` -- base/abstract H2O classes used internally.
 """
 
 

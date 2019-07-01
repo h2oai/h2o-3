@@ -447,6 +447,7 @@ def test_suite_remove_automl():
 
         keys = list_keys_in_memory()
         # manually remove the first item for each category to verify robustness of global automl deletion
+        # for example, to verify that exceptions (if any) are handled correctly when automl is trying to remove a base model that was already removed
         for k, v in keys.items():
             if k == 'all': continue
             if len(v) > 0:

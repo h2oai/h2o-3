@@ -97,6 +97,24 @@ setMethod("show", "H2OConnection", function(object) {
   cat("Key Count :", object@mutable$key_count,  "\n")
 })
 
+#' Virtual Keyed class
+#'
+#' Base class for all objects having a persistent representation on backend.
+#'
+#' @export
+setClass("Keyed", contains="VIRTUAL")
+#' Method on \code{Keyed} objects allowing to obtain their key.
+#'
+#' @param object A \code{Keyed} object
+#' @return the string key holding the persistent object.
+#' @export
+setGeneric("h2o.keyof", function(object) {
+  standardGeneric("h2o.keyof")
+})
+setMethod("h2o.keyof", signature(object = "Keyed"), function(object) {
+  stop("`keyof` not implemented for this object type.")
+})
+
 #'
 #' The H2OModel object.
 #'
@@ -117,12 +135,14 @@ setMethod("show", "H2OConnection", function(object) {
 setClass("H2OModel",
          representation(model_id="character", algorithm="character", parameters="list", allparameters="list", have_pojo="logical", have_mojo="logical", model="list"),
          prototype(model_id=NA_character_),
-         contains="VIRTUAL")
+         contains=c("Keyed","VIRTUAL"))
 
 # TODO: make a more model-specific constructor
 .newH2OModel <- function(Class, model_id, ...) {
   new(Class, model_id=model_id, ...)
 }
+
+setMethod("h2o.keyof", signature("H2OModel"), function(object) object@model_id)
 
 #' @rdname H2OModel-class
 #' @param object an \code{H2OModel} object.
@@ -815,7 +835,8 @@ setMethod("summary", "H2OGrid",
 #' This class represents an H2OFrame object
 #'
 #' @export
-setClass("H2OFrame", contains = "environment")
+setClass("H2OFrame", contains = c("Keyed", "environment"))
+setMethod("h2o.keyof", signature("H2OFrame"), function(object) attr(object, "id"))
 
 #'
 #' The H2OAutoML class
@@ -827,4 +848,6 @@ setClass("H2OAutoML", slots = c(project_name = "character",
                                 leader = "H2OModel",
                                 leaderboard = "H2OFrame",
                                 event_log = "H2OFrame",
-                                training_info = "list"))
+                                training_info = "list"),
+                      contains = "Keyed")
+setMethod("h2o.keyof", signature("H2OAutoML"), function(object) object@project_name)
