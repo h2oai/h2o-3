@@ -464,7 +464,7 @@ Thus, the one-dimensional partial dependence of function :math:`g` on :math:`X_j
 
 - The partial dependence of a given feature is :math:`Xj` (where :math:`j` is the column index)
 - You can also change the equation to sum from 1 to N instead of 0 to N-1
-- Use the `col_pairs_2dpdp` option along with a list containing pairs of column names to generate 2D partial dependence plots
+- Use the ``col_pairs_2dpdp`` option along with a list containing pairs of column names to generate 2D partial dependence plots
 
 .. figure:: images/pdp_summary.png
     :alt: Partial Dependence Summary
