@@ -29,6 +29,7 @@ def mojo_model_test():
     
     # Test constructor generating the model from existing MOJO file
     model = H2OGenericEstimator.from_file(original_model_filename)
+    print(model)
     assert model is not None
     predictions = model.predict(airlines)
     assert predictions is not None

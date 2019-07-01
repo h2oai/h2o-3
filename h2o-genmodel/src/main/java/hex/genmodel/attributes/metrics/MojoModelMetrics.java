@@ -1,4 +1,4 @@
-package hex.genmodel.attributes;
+package hex.genmodel.attributes.metrics;
 
 public class MojoModelMetrics {
 

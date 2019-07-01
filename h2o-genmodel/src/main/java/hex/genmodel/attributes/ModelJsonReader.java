@@ -2,6 +2,7 @@ package hex.genmodel.attributes;
 
 import com.google.gson.*;
 import hex.genmodel.*;
+import hex.genmodel.attributes.metrics.SerializedName;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -35,7 +36,7 @@ public class ModelJsonReader {
      * @param tablePath Path in the given JSON to the desired table. Levels are dot-separated.
      * @return An instance of {@link Table}, if there was a table found by following the given path. Otherwise null.
      */
-    public static Table extractTableFromJson(final JsonObject modelJson, final String tablePath) {
+    public static Table readTable(final JsonObject modelJson, final String tablePath) {
         Objects.requireNonNull(modelJson);
         JsonElement potentialTableJson = findInJson(modelJson, tablePath);
         if (potentialTableJson.isJsonNull()) {
@@ -86,9 +87,9 @@ public class ModelJsonReader {
 
             }
         }
-
+    
         return new Table(tableJson.get("name").getAsString(), tableJson.get("description").getAsString(),
-                new String[rowCount], columnHeaders, columnTypes, "", data);
+                new String[rowCount], columnHeaders, columnTypes, null, data);
     }
 
     public static void fillObject(final Object object, final JsonElement from, final String elementPath) {
@@ -113,11 +114,18 @@ public class ModelJsonReader {
             if (Modifier.isTransient(field.getModifiers())) continue;
 
             final Class<?> type = field.getType();
-            String fieldName = field.getName();
-            if (fieldName.charAt(0) == '_') fieldName = fieldName.substring(1);
+            final SerializedName serializedName = field.getAnnotation(SerializedName.class);
+            final String fieldName;
+            if (serializedName == null) {
+                String name = field.getName();
+                fieldName = name.charAt(0) == '_' ? name.substring(1) : name;
+            } else {
+                fieldName = serializedName.value();
+            }
 
             try {
                 field.setAccessible(true);
+                assert field.isAccessible();
                 Object value = null;
                 if (type.isAssignableFrom(double.class) || type.isAssignableFrom(Double.class)) {
                     final JsonElement jsonElement = jsonSourceObj.get(fieldName);
@@ -131,14 +139,15 @@ public class ModelJsonReader {
                 } else if (type.isAssignableFrom(String.class)) {
                     final JsonElement jsonElement = jsonSourceObj.get(fieldName);
                     if (jsonElement != null) value = jsonElement.getAsString();
+                } else if (type.isAssignableFrom(Table.class)) {
+                    final JsonElement jsonElement = jsonSourceObj.get(fieldName);
+                    if (jsonElement != null) value = readTable(jsonElement.getAsJsonObject(), "");
                 }
                 if (value != null) field.set(object, value);
             } catch (IllegalAccessException e) {
                 System.out.println(String.format("Field '%s' could not be accessed. Ignoring.", fieldName));
             } catch (ClassCastException | UnsupportedOperationException e) {
                 System.out.println(String.format("Field '%s' could not be casted to '%s'. Ignoring.", fieldName, type.toString()));
-            } finally {
-                field.setAccessible(false);
             }
         }
 

@@ -1,6 +1,11 @@
 package hex.generic;
 
 import hex.ModelCategory;
+import hex.ModelMetrics;
+import hex.ModelMetricsBinomial;
+import hex.deeplearning.DeepLearning;
+import hex.deeplearning.DeepLearningModel;
+import hex.genmodel.algos.deeplearning.DeeplearningMojoModel;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.tree.drf.DRF;
@@ -49,7 +54,7 @@ public class GenericModelTest extends TestUtil {
             model = job.trainModel().get();
             assertEquals(model._output.getModelCategory(), ModelCategory.Binomial);
             final ByteArrayOutputStream originalModelMojo = new ByteArrayOutputStream();
-            final File originalModelMojoFile = File.createTempFile("mojo", "zip");
+            final File originalModelMojoFile = new File("/home/pavel/gbm_binom.zip");
             model.getMojo().writeTo(originalModelMojo);
             model.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
 
@@ -59,6 +64,10 @@ public class GenericModelTest extends TestUtil {
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
             genericModel = generic.trainModel().get();
+
+
+            assertNotNull(genericModel._output._training_metrics);
+            assertTrue(genericModel._output._training_metrics instanceof ModelMetricsBinomial);
 
             predictions = genericModel.score(testFrame);
 

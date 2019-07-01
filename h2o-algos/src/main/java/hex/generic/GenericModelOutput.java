@@ -2,12 +2,13 @@ package hex.generic;
 
 import hex.*;
 import hex.genmodel.attributes.*;
+import hex.genmodel.attributes.metrics.MojoModelMetrics;
+import hex.genmodel.attributes.metrics.MojoModelMetricsBinomial;
 import hex.genmodel.descriptor.ModelDescriptor;
 import water.util.Log;
 import water.util.TwoDimTable;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,23 +34,56 @@ public class GenericModelOutput extends Model.Output {
         _model_summary = convertTable(modelAttributes.getModelSummary());
 
         if (modelAttributes instanceof SharedTreeModelAttributes) {
-            fillSharedTreeModelAttributes((SharedTreeModelAttributes) modelAttributes);
+            fillSharedTreeModelAttributes((SharedTreeModelAttributes) modelAttributes, modelDescriptor);
         } else {
             _variable_importances = null;
+            _training_metrics = null;
         }
     }
 
-    private void fillSharedTreeModelAttributes(final SharedTreeModelAttributes sharedTreeModelAttributes) {
+    private void fillSharedTreeModelAttributes(final SharedTreeModelAttributes sharedTreeModelAttributes, final ModelDescriptor modelDescriptor) {
         _variable_importances = convertVariableImportances(sharedTreeModelAttributes.getVariableImportances());
-        convertMetrics(sharedTreeModelAttributes);
+        convertMetrics(sharedTreeModelAttributes, modelDescriptor);
     }
 
-    private void convertMetrics(final SharedTreeModelAttributes sharedTreeModelAttributes) {
+    private void convertMetrics(final SharedTreeModelAttributes sharedTreeModelAttributes, final ModelDescriptor modelDescriptor) {
         // Training metrics
         final MojoModelMetrics trainingMetrics = sharedTreeModelAttributes.getTrainingMetrics();
-        final ModelMetrics modelMetrics = new ModelMetrics(null, null, trainingMetrics._nobs, trainingMetrics._MSE, trainingMetrics._description,
-                new CustomMetric(trainingMetrics._custom_metric_name, trainingMetrics._custom_metric_value));
+        final ModelMetrics modelMetrics = determineModelmetricsType(trainingMetrics, modelDescriptor);
         _training_metrics = (ModelMetrics) convertObjects(sharedTreeModelAttributes.getTrainingMetrics(), modelMetrics);
+    }
+
+    private ModelMetrics determineModelmetricsType(final MojoModelMetrics mojoMetrics, final ModelDescriptor modelDescriptor) {
+        final ModelCategory modelCategory = modelDescriptor.getModelCategory();
+        switch (modelCategory) {
+            case Unknown:
+                return new ModelMetrics(null, null, mojoMetrics._nobs, mojoMetrics._MSE, mojoMetrics._description,
+                        new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value));
+            case Binomial:
+                assert mojoMetrics instanceof MojoModelMetricsBinomial;
+                final MojoModelMetricsBinomial binomial = (MojoModelMetricsBinomial) mojoMetrics;
+                final AUC2 auc = AUC2.emptyAUC();
+                auc._auc = binomial._auc;
+                auc._pr_auc = binomial._pr_auc;
+                auc._gini = binomial._gini;
+                return new ModelMetricsBinomial(null, null, mojoMetrics._nobs, mojoMetrics._MSE,
+                        modelDescriptor.scoringDomains()[modelDescriptor.nfeatures() - 1], 0D,
+                        auc, binomial._logloss, convertTable(binomial._gains_lift_table),
+                        new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value), binomial._mean_per_class_error,
+                        convertTable(binomial._thresholds_and_metric_scores), convertTable(binomial._max_criteria_and_metric_scores));
+            case Multinomial:
+            case Ordinal:
+            case Regression:
+            case Clustering:
+            case AutoEncoder:
+            case DimReduction:
+            case WordEmbedding:
+            case CoxPH:
+            case AnomalyDetection:
+            default:
+                return new ModelMetrics(null, null, mojoMetrics._nobs, mojoMetrics._MSE, mojoMetrics._description,
+                        new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value));
+        }
     }
 
 
@@ -82,10 +116,12 @@ public class GenericModelOutput extends Model.Output {
             final String targetFieldName = targetField.getName();
             final Field sourceField = sourceFieldMap.get(targetFieldName);
             if(sourceField == null) {
-                Log.warn(String.format("Field '%s' not found in the source object. Ignoring.", targetFieldName));
+                Log.debug(String.format("Field '%s' not found in the source object. Ignoring.", targetFieldName));
                 continue;
             }
-            
+
+            final boolean targetAccessible = targetField.isAccessible();
+            final boolean sourceAccessible = sourceField.isAccessible();
             try{
                 targetField.setAccessible(true);
                 sourceField.setAccessible(true);
@@ -95,8 +131,8 @@ public class GenericModelOutput extends Model.Output {
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
             } finally {
-                targetField.setAccessible(false);
-                sourceField.setAccessible(false);
+                targetField.setAccessible(targetAccessible);
+                sourceField.setAccessible(sourceAccessible);
             }
             
         }

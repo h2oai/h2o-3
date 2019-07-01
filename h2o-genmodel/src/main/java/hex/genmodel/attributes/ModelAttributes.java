@@ -7,7 +7,7 @@ public class ModelAttributes {
   private final Table _modelSummary;
 
   public ModelAttributes(final JsonObject modelJson) {
-    _modelSummary = ModelJsonReader.extractTableFromJson(modelJson, "output.model_summary");
+    _modelSummary = ModelJsonReader.readTable(modelJson, "output.model_summary");
   }
 
   /**

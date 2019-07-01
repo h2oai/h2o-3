@@ -1,8 +1,11 @@
 package hex.genmodel.attributes;
 
 import com.google.gson.JsonObject;
+import hex.ModelCategory;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
+import hex.genmodel.attributes.metrics.MojoModelMetrics;
+import hex.genmodel.attributes.metrics.MojoModelMetricsBinomial;
 
 import java.util.Arrays;
 
@@ -14,13 +17,34 @@ public class SharedTreeModelAttributes extends ModelAttributes {
   public <M extends SharedTreeMojoModel> SharedTreeModelAttributes(JsonObject modelJson, M model) {
     super(modelJson);
     _variableImportances = extractVariableImportances(modelJson, model);
-    final MojoModelMetrics mojoModelMetrics = new MojoModelMetrics();
+    final MojoModelMetrics mojoModelMetrics = determineModelMetricsType(model._category);
+
     ModelJsonReader.fillObject(mojoModelMetrics, modelJson, "output.training_metrics");
     _trainingMetrics = mojoModelMetrics;
   }
 
+  private static MojoModelMetrics determineModelMetricsType(final ModelCategory modelCategory) {
+    switch (modelCategory) {
+      case Unknown:
+        return new MojoModelMetrics();
+      case Binomial:
+        return new MojoModelMetricsBinomial();
+      case Multinomial:
+      case Ordinal:
+      case Regression:
+      case Clustering:
+      case AutoEncoder:
+      case DimReduction:
+      case WordEmbedding:
+      case CoxPH:
+      case AnomalyDetection:
+      default:
+        return new MojoModelMetrics();
+    }
+  }
+
   private VariableImportances extractVariableImportances(final JsonObject modelJson, final MojoModel model) {
-    final Table table = ModelJsonReader.extractTableFromJson(modelJson, "output.variable_importances");
+    final Table table = ModelJsonReader.readTable(modelJson, "output.variable_importances");
     if (table == null) return null;
     final double[] relativeVarimps = new double[table.rows()];
     final int column = table.findColumnIndex("Relative Importance");
