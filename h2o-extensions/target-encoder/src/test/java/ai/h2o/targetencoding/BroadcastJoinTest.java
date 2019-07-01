@@ -126,9 +126,8 @@ public class BroadcastJoinTest extends TestUtil {
             .build();
 
     int cardinality = fr.vec("ColA").cardinality();
-    int[][] levelMaps = {CategoricalWrappedVec.computeMap(fr.vec(0).domain(), fr.vec(0).domain())};
-    
-    int[][] encodingDataArray = new BroadcastJoinForTargetEncoder.FrameWithEncodingDataToArray(0, 1, 2, 3, cardinality, (int)biggerThanIntMax, levelMaps)
+
+    int[][] encodingDataArray = new BroadcastJoinForTargetEncoder.FrameWithEncodingDataToArray(0, 1, 2, 3, cardinality, (int)biggerThanIntMax)
             .doAll(fr)
             .getEncodingDataArray();
   }
@@ -147,9 +146,8 @@ public class BroadcastJoinTest extends TestUtil {
             .build();
 
     int cardinality = fr.vec("ColA").cardinality();
-    int[][] levelMaps = {CategoricalWrappedVec.computeMap(fr.vec(0).domain(), fr.vec(0).domain())};
 
-    new BroadcastJoinForTargetEncoder.FrameWithEncodingDataToArray(0, 1, 2, 3, cardinality, Math.max(randomInt, 42), levelMaps)
+    new BroadcastJoinForTargetEncoder.FrameWithEncodingDataToArray(0, 1, 2, 3, cardinality, Math.max(randomInt, 42))
             .doAll(fr)
             .getEncodingDataArray();
   }
