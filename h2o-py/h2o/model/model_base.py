@@ -189,6 +189,21 @@ class ModelBase(backwards_compatible()):
                     data={"predict_contributions": True})
         return h2o.get_frame(j["predictions_frame"]["name"])
 
+    def feature_frequencies(self, test_data):
+        """
+        Retrieve the number of occurrences of each feature for given observations 
+        on their respective paths in a tree ensemble model.
+        Available for GBM, Random Forest and Isolation Forest models.
+
+        :param H2OFrame test_data: Data on which to calculate feature frequencies.
+
+        :returns: A new H2OFrame made of feature contributions.
+        """
+        if not isinstance(test_data, h2o.H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
+        j = h2o.api("POST /3/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
+                    data={"feature_frequencies": True})
+        return h2o.get_frame(j["predictions_frame"]["name"])
+
     def predict(self, test_data, custom_metric = None, custom_metric_func = None):
         """
         Predict on a dataset.

@@ -89,6 +89,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     Frame scoreLeafNodeAssignment(Frame frame, LeafNodeAssignmentType type, Key<Frame> destination_key);
   }
 
+  public interface FeatureFrequencies {
+    Frame scoreFeatureFrequencies(Frame frame, Key<Frame> destination_key);
+  }
+
   public interface StagedPredictions {
     Frame scoreStagedPredictions(Frame frame, Key<Frame> destination_key);
   }

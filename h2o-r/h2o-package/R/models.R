@@ -678,6 +678,34 @@ predict_contributions.H2OModel <- function(object, newdata, ...) {
 #' @export
 h2o.predict_contributions <- predict_contributions.H2OModel
 
+#' Retrieve the number of occurrences of each feature for given observations 
+#  on their respective paths in a tree ensemble model.
+#' Available for GBM, Random Forest and Isolation Forest models.
+#'
+#' @param object a fitted \linkS4class{H2OModel} object for which prediction is
+#'        desired
+#' @param newdata An H2OFrame object in which to look for
+#'        variables with which to predict.
+#' @param ... additional arguments to pass on.
+#' @return Returns an H2OFrame contain per-feature frequencies on the predict path for each input row.
+#' @seealso \code{\link{h2o.gbm}} and  \code{\link{h2o.randomForest}} for model
+#'          generation in h2o.
+feature_frequencies.H2OModel <- function(object, newdata, ...) {
+    if (missing(newdata)) {
+        stop("predictions with a missing `newdata` argument is not implemented yet")
+    }
+
+    url <- paste0('Predictions/models/', object@model_id, '/frames/',  h2o.getId(newdata))
+    res <- .h2o.__remoteSend(url, method = "POST", feature_frequencies=TRUE)
+    res <- res$predictions_frame
+    h2o.getFrame(res$name)
+}
+
+#' @rdname feature_frequencies.H2OModel
+#' @export
+h2o.feature_frequencies <- feature_frequencies.H2OModel
+
+
 #' Model Performance Metrics in H2O
 #'
 #' Given a trained h2o model, compute its performance on the given

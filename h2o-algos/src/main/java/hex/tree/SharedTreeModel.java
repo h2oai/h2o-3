@@ -6,6 +6,7 @@ import static hex.ModelCategory.Binomial;
 import static hex.genmodel.GenModel.createAuxKey;
 
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
+import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.glm.GLMModel;
 import hex.util.LinearAlgebraUtils;
@@ -29,7 +30,7 @@ public abstract class SharedTreeModel<
         M extends SharedTreeModel<M, P, O>,
         P extends SharedTreeModel.SharedTreeParameters,
         O extends SharedTreeModel.SharedTreeOutput
-        > extends Model<M, P, O> implements Model.LeafNodeAssignment, Model.GetMostImportantFeatures {
+        > extends Model<M, P, O> implements Model.LeafNodeAssignment, Model.GetMostImportantFeatures, Model.FeatureFrequencies {
 
   @Override
   public String[] getMostImportantFeatures(int n) {
@@ -391,6 +392,111 @@ public abstract class SharedTreeModel<
     @Override
     protected Frame execute(Frame adaptFrm, String[] names, Key<Frame> destKey) {
       return doAll(names.length, Vec.T_NUM, adaptFrm).outputFrame(destKey, names, null);
+    }
+  }
+
+  @Override
+  public Frame scoreFeatureFrequencies(Frame frame, Key<Frame> destination_key) {
+    Frame adaptFrm = new Frame(frame);
+    adaptTestForTrain(adaptFrm, true, false);
+
+    // remove non-feature columns
+    adaptFrm.remove(_parms._response_column);
+    adaptFrm.remove(_parms._fold_column);
+    adaptFrm.remove(_parms._weights_column);
+    adaptFrm.remove(_parms._offset_column);
+
+    assert adaptFrm.numCols() == _output.nfeatures();
+
+    return new ScoreFeatureFrequenciesTask(_output)
+            .doAll(adaptFrm.numCols(), Vec.T_NUM, adaptFrm)
+            .outputFrame(destination_key, adaptFrm.names(), null);
+  }
+
+  private static class ComputeSharedTreesFun extends MrFun<ComputeSharedTreesFun> {
+    final Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _treeKeys;
+    final Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _auxTreeKeys;
+    final String[] _names;
+    final String[][] _domains;
+    
+    transient SharedTreeSubgraph[/*_ntrees*/][/*_nclass*/] _trees;
+
+    ComputeSharedTreesFun(SharedTreeSubgraph[][] trees, 
+                          Key<CompressedTree>[][] treeKeys, Key<CompressedTree>[][] auxTreeKeys,
+                          String[] names, String[][] domains) {
+      _trees = trees;
+      _treeKeys = treeKeys;
+      _auxTreeKeys = auxTreeKeys;
+      _names = names;
+      _domains = domains;
+    }
+
+    @Override
+    protected void map(int t) {
+      for (int c = 0; c < _treeKeys[t].length; c++) {
+        if (_treeKeys[t][c] == null)
+          continue;
+        _trees[t][c] = SharedTreeMojoModel.computeTreeGraph(0, "T",
+                _treeKeys[t][c].get()._bits, _auxTreeKeys[t][c].get()._bits, _names, _domains);
+      }
+    }
+  }
+
+  private static class ScoreFeatureFrequenciesTask extends MRTask<ScoreFeatureFrequenciesTask> {
+    final Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _treeKeys;
+    final Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _auxTreeKeys;
+    final String _domains[][];
+
+    transient SharedTreeSubgraph[/*_ntrees*/][/*_nclass*/] _trees;
+    
+    ScoreFeatureFrequenciesTask(SharedTreeOutput output) {
+      _treeKeys = output._treeKeys;
+      _auxTreeKeys = output._treeKeysAux;
+      _domains = output._domains;
+    }
+
+    @Override
+    protected void setupLocal() {
+      _trees = new SharedTreeSubgraph[_treeKeys.length][];
+      for (int t = 0; t < _treeKeys.length; t++) {
+        _trees[t] = new SharedTreeSubgraph[_treeKeys[t].length];
+      }
+      MrFun<?> getSharedTreesFun = new ComputeSharedTreesFun(_trees, _treeKeys, _auxTreeKeys, _fr.names(), _domains);
+      H2O.submitTask(new LocalMR(getSharedTreesFun, _trees.length)).join();
+    }
+
+    @Override
+    public void map(Chunk[] cs, NewChunk[] ncs) {
+      double[] input = new double[cs.length];
+      int[] output = new int[ncs.length];
+      for (int r = 0; r < cs[0]._len; r++) {
+        for (int i = 0; i < cs.length; i++)
+          input[i] = cs[i].atd(r);
+        Arrays.fill(output, 0);
+        
+        for (int t = 0; t < _treeKeys.length; t++) {
+          for (int c = 0; c < _treeKeys[t].length; c++) {
+            if (_treeKeys[t][c] == null)
+              continue;
+            double d = SharedTreeMojoModel.scoreTree(_treeKeys[t][c].get()._bits, input, true, _domains);
+            String decisionPath = SharedTreeMojoModel.getDecisionPath(d);
+            SharedTreeNode n = _trees[t][c].walkNodes(decisionPath);
+            updateStats(n, output);
+          }
+        }
+
+        for (int i = 0; i < ncs.length; i++) {
+          ncs[i].addNum(output[i]);
+        }
+      }
+    }
+
+    private void updateStats(final SharedTreeNode leaf, int[] stats) {
+      SharedTreeNode n = leaf.getParent();
+      while (n != null) {
+        stats[n.getColId()]++;
+        n = n.getParent();
+      }
     }
   }
 
