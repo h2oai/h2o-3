@@ -51,7 +51,7 @@ Defining an Isolation Forest Model
 
 -  `sample_size <algo-params/sample_size.html>`__: The number of randomly sampled observations used to train each Isolation Forest tree. Only one of ``sample_size`` or ``sample_rate`` should be defined. If ``sample_rate`` is defined, ``sample_size`` will be ignored. This value defaults to 256.
 
--  `sample_rate <algo-params/sample_rate.html>`__: Specify the row sampling rate (x-axis). (Note that this method is sample without replacement.) The range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" (`Friedman, 1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__). If set to -1 (default), then ``sample_size`` will be used instead. 
+-  `sample_rate <algo-params/sample_rate.html>`__: Specify the row sampling rate (x-axis). (Note that this method is sample without replacement.) The range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" (`Friedman, 1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__). If set to -1 (default), then ``sample_size`` will be used instead.
 
 -  `col_sample_rate_change_per_level <algo-params/col_sample_rate_change_per_level.html>`__: This option specifies to change the column sampling rate as a function of the depth in the tree. This can be a value > 0.0 and <= 2.0 and defaults to 1. (Note that this method is sample without replacement.) For example:
 
@@ -77,6 +77,40 @@ Defining an Isolation Forest Model
   - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
   - ``label_encoder`` or ``LabelEncoder``:  Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.)
   - ``sort_by_response`` or ``SortByResponse``: Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.). This is useful in GBM/DRF, for example, when you have more levels than ``nbins_cats``, and where the top level splits now have a chance at separating the data with a split. Note that this requires a specified response column.
+
+-  `stopping_rounds <algo-params/stopping_rounds.html>`__: Stops training when the option selected for
+   **stopping\_metric** doesn't improve for the specified number of
+   training rounds, based on a simple moving average. To disable this
+   feature, specify ``0``. The metric is computed on the validation data
+   (if provided); otherwise, training data is used.
+   
+   **Note**: If cross-validation is enabled:
+
+    - All cross-validation models stop training when the validation metric doesn't improve.
+    - The main model runs for the mean number of epochs.
+    - N+1 models may be off by the number specified for **stopping\_rounds** from the best model, but the cross-validation metric estimates the performance of the main model for the resulting number of epochs (which may be fewer than the specified number of epochs).
+
+-  `stopping_metric <algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping.
+   The available options are:
+
+    - ``auto``: This defaults to ``logloss`` for classification, ``deviance`` for regression, and ``anomaly_score`` for Isolation Forest. Note that custom and custom_increasing can only be used in GBM and DRF with the Python client. Must be one of: ``AUTO``, ``anomaly_score``. Defaults to ``AUTO``.
+    - ``anomaly_score`` (Isolation Forest only)
+    - ``deviance``
+    - ``logloss``
+    - ``mse``
+    - ``rmse``
+    - ``mae``
+    - ``rmsle``
+    - ``auc``
+    - ``lift_top_group``
+    - ``misclassification``
+    - ``mean_per_class_error``
+    - ``custom`` (Python client only)
+    - ``custom_increasing`` (Python client only)
+
+-  `stopping_tolerance <algo-params/stopping_tolerance.html>`__: Specify the relative tolerance for the
+   metric-based stopping to stop training if the improvement is less
+   than this value. This value defaults to 0.01.
 
 Simple Example
 ~~~~~~~~~~~~~~

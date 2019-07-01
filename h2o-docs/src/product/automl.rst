@@ -68,19 +68,23 @@ Optional Miscellaneous Parameters
 
 - `max_runtime_secs_per_model <data-science/algo-params/max_runtime_secs_per_model.html>`__: Specify the max amount of time dedicated to the training of each individual model in the AutoML run. Defaults to 0 (disabled). Note that setting this parameter can affect AutoML reproducibility.
 
-- `stopping_metric <data-science/algo-params/stopping_metric.html>`__: Specifies the metric to use for early stopping of the grid searches and individual models. Defaults to ``"AUTO"``.  The available options are:
+-  `stopping_metric <algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping.
+   The available options are:
 
-    - ``AUTO``: This defaults to ``logloss`` for classification, ``deviance`` for regression
-    - ``deviance`` (mean residual deviance)
+    - ``auto``: This defaults to ``logloss`` for classification, ``deviance`` for regression, and ``anomaly_score`` for Isolation Forest. Note that custom and custom_increasing can only be used in GBM and DRF with the Python client. Must be one of: ``AUTO``, ``anomaly_score``. Defaults to ``AUTO``.
+    - ``anomaly_score`` (Isolation Forest only)
+    - ``deviance``
     - ``logloss``
-    - ``MSE``
-    - ``RMSE``
-    - ``MAE``
-    - ``RMSLE``
-    - ``AUC``
+    - ``mse``
+    - ``rmse``
+    - ``mae``
+    - ``rmsle``
+    - ``auc``
     - ``lift_top_group``
     - ``misclassification``
     - ``mean_per_class_error``
+    - ``custom`` (Python client only)
+    - ``custom_increasing`` (Python client only)
 
 - `stopping_tolerance <data-science/algo-params/stopping_tolerance.html>`__: This option specifies the relative tolerance for the metric-based stopping criterion to stop a grid search and the training of individual models within the AutoML run. This value defaults to 0.001 if the dataset is at least 1 million rows; otherwise it defaults to a bigger value determined by the size of the dataset and the non-NA-rate.  In that case, the value is computed as 1/sqrt(nrows * non-NA-rate).
 

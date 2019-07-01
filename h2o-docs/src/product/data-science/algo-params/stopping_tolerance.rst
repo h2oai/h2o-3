@@ -3,7 +3,7 @@
 ``stopping_tolerance``
 ----------------------
 
-- Available in: GBM, DRF, Deep Learning, AutoML, XGBoost
+- Available in: GBM, DRF, Deep Learning, AutoML, XGBoost, Isolation Forest
 - Hyperparameter: yes
 
 Description
@@ -24,7 +24,7 @@ These stopping options are used to increase performance by restricting the numbe
 **Notes**: 
 
 - ``stopping_rounds`` must be enabled for ``stopping_metric`` or ``stopping_tolerance`` to work.
-- For all supported algorithms except AutoML, this value defaults to 0.001. In AutoML, this value defaults to 0.001 if the  dataset is at least 1 million rows; otherwise it defaults to a bigger value determined by the size of the dataset and the non-NA-rate.
+- For all supported algorithms except AutoML and Isolation Forest, this value defaults to 0.001. In AutoML, this value defaults to 0.001 if the  dataset is at least 1 million rows; otherwise it defaults to a bigger value determined by the size of the dataset and the non-NA-rate. In Isolation Forest, this value defaults to 0.01.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
