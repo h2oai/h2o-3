@@ -3,7 +3,7 @@
 ``stopping_metric``
 -------------------
 
-- Available in: GBM, DRF, Deep Learning, AutoML, XGBoost, Isolation Forest
+- Available in: GBM, DRF, Deep Learning, AutoML, XGBoost
 - Hyperparameter: yes
 
 Description
@@ -19,8 +19,7 @@ then the model will stop training after reaching three scoring events in a row i
 
 Available options for ``stopping_metric`` include the following:
 
-- ``AUTO``: This defaults to ``logloss`` for classification, ``deviance`` (mean residual deviance) for regression, and ``anomaly_score`` for Isolation Forest.
-- ``anomaly_score`` (for Isolation Forest only)
+- ``AUTO``: This defaults to ``logloss`` for classification, ``deviance`` (mean residual deviance) for regression
 - ``deviance``
 - ``logloss``
 - ``MSE``
