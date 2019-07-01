@@ -700,7 +700,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       updated = true;
 
       Log.info("============================================================== ");
-      SharedTreeModel.SharedTreeOutput out = _model._output;
+      O out = _model._output;
       _timeLastScoreStart = now;
 
       final boolean printout = (_parms._score_each_iteration || finalScoring || sinceLastScore > _parms._score_interval);
@@ -738,6 +738,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         out._varimp = new hex.VarImp(_improvPerVar, out._names);
         out._variable_importances = hex.ModelMetrics.calcVarImp(out._varimp);
       }
+      addCustomInfo(out);
       if (printout) {
         Log.info(_model.toString());
       }
@@ -784,6 +785,10 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     }
 
     return updated;
+  }
+
+  protected void addCustomInfo(O out) {
+    // nothing by default - can be overridden in subclasses
   }
 
   static int counter = 0;

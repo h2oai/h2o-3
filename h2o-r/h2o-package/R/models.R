@@ -1661,6 +1661,25 @@ h2o.varimp <- function(object) {
 }
 
 #'
+#' Retrieve per-variable split information for a given Isolation Forest model.
+#' 
+#' @param object An Isolation Forest model represented by \linkS4class{H2OModel} object.
+#' @export
+h2o.varsplits <- function(object) {
+  if( is(object, "H2OModel") ) {
+    vi <- object@model$variable_splits
+    if( is.null(vi) ) {
+      warning("This model doesn't have variable splits information, only Isolation Forest can be used with h2o.varsplits().", call. = FALSE)
+      return(invisible(NULL))
+    }
+    vi
+  } else {
+    warning( paste0("No variable importances for ", class(o)) )
+    return(NULL)
+  }
+}
+
+#'
 #' Retrieve Model Score History
 #'
 #' @param object An \linkS4class{H2OModel} object.
