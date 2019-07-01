@@ -9,6 +9,7 @@ import hex.tree.DTree.LeafNode;
 import hex.tree.DTree.UndecidedNode;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
+import water.Iced;
 import water.Job;
 import water.Key;
 import water.MRTask;
@@ -17,9 +18,7 @@ import water.fvec.Frame;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static water.util.RandomUtils.getRNG;
 import static hex.tree.isofor.IsolationForestModel.IsolationForestParameters;
@@ -52,6 +51,8 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
   @Override public boolean isSupervised() { return false; }
 
   @Override protected ScoreKeeper.ProblemType getProblemType() { return ScoreKeeper.ProblemType.anomaly_detection; }
+
+  private transient VarSplits _var_splits;
 
   @Override public void init(boolean expensive) {
     super.init(expensive);
@@ -125,6 +126,14 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
     }
   }
 
+  @Override
+  protected void addCustomInfo(IsolationForestOutput out) {
+    if (_var_splits != null) {
+      out._var_splits = _var_splits;
+      out._variable_splits = _var_splits.toTwoDimTable(out.features(), "Variable Splits");
+    }
+  }
+
   // ----------------------
   private class IsolationForestDriver extends Driver {
     @Override protected boolean doOOBScoring() { return true; }
@@ -144,6 +153,7 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
       }
 
       _initialPrediction = 0;
+      _var_splits = new VarSplits(_ncols);
     }
 
     // --------------------------------------------------------------------------
@@ -224,6 +234,20 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
             }
           }
         }
+      }
+      updatePerFeatureInfo(tree, depths);
+    }
+
+    private void updatePerFeatureInfo(DTree tree, int[] depths) {
+      for (int i = 0; i < tree._len; i++) {
+        DTree.Node n = tree.node(i);
+        if (! (n instanceof DecidedNode))
+          continue;
+        DecidedNode dn = (DecidedNode) n;
+        DTree.Split split = dn._split;
+        if (split == null)
+          continue;
+        _var_splits.update(split.col(), split, depths[n.nid()]);
       }
     }
 
@@ -347,4 +371,38 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
     return true;
   }
 
+  public static class VarSplits extends Iced<VarSplits> {
+    public final int[] _splitCounts;
+    public final float[] _aggSplitRatios;
+    public final long[] _splitDepths;
+
+    private VarSplits(int ncols) {
+      _splitCounts = new int[ncols];
+      _aggSplitRatios = new float[ncols];
+      _splitDepths = new long[ncols];
+    }
+
+    void update(int col, DTree.Split split, int depth) {
+      _aggSplitRatios[col] += Math.abs(split.n0() - split.n1()) / (split.n0() + split.n1());
+      _splitCounts[col]++;
+      _splitDepths[col] += depth + 1;
+    }
+
+    public TwoDimTable toTwoDimTable(String[] coef_names, String table_header) {
+
+      double[][] dblCellValues = new double[_splitCounts.length][];
+      for (int i = 0; i < _splitCounts.length; i++) {
+        dblCellValues[i] = new double[]{_splitCounts[i], _aggSplitRatios[i], _splitDepths[i]};
+      }
+
+      String[] col_headers = {"Count", "Aggregated Split Ratios", "Aggregated Split Depths"};
+      String[] col_types = {"int", "double", "long"};
+      String[] col_formats = {"%10d", "%5f", "%10d"};
+
+      return new TwoDimTable(table_header, null, coef_names, col_headers, col_types, col_formats, 
+              "Variable", new String[_splitCounts.length][], dblCellValues);
+    }
+
+  }
+  
 }

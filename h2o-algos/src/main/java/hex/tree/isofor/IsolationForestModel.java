@@ -8,6 +8,7 @@ import hex.tree.SharedTreeModel;
 import water.Key;
 import water.fvec.Frame;
 import water.util.SBPrintStream;
+import water.util.TwoDimTable;
 
 
 public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, IsolationForestModel.IsolationForestParameters, IsolationForestModel.IsolationForestOutput> {
@@ -41,6 +42,9 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
   public static class IsolationForestOutput extends SharedTreeModel.SharedTreeOutput {
     public int _max_path_length;
     public int _min_path_length;
+
+    public IsolationForest.VarSplits _var_splits;
+    public TwoDimTable _variable_splits;
 
     public IsolationForestOutput(IsolationForest b) { super(b); }
 

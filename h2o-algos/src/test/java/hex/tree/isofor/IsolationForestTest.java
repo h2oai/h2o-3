@@ -1,11 +1,14 @@
 package hex.tree.isofor;
 
+import hex.genmodel.algos.tree.SharedTreeNode;
+import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Scope;
 import water.TestUtil;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
+import water.util.ArrayUtils;
 
 import static org.junit.Assert.*;
 
@@ -132,5 +135,46 @@ public class IsolationForestTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testVarSplits() {
+    try {
+      Scope.enter();
+      Frame train = Scope.track(parse_test_file("smalldata/testng/prostate.csv"));
+
+      IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
+      p._train = train._key;
+      p._seed = 0xDECAF;
+      p._ntrees = 1;
+
+      IsolationForestModel model = new IsolationForest(p).trainModel().get();
+      assertNotNull(model);
+      Scope.track_generic(model);
+
+      IsolationForest.VarSplits splits = model._output._var_splits;
+      SharedTreeSubgraph tree = model.getSharedTreeSubgraph(0, 0);
+
+      int[] expSplitCounts = new int[model._output.nfeatures()];
+      long[] expDepths = new long[model._output.nfeatures()];
+      int nSplits = 0;
+      for (SharedTreeNode node: tree.nodesArray) {
+        if (node.isLeaf())
+          continue;
+        nSplits++;
+        expSplitCounts[node.getColId()]++;
+        expDepths[node.getColId()] += node.getDepth() + 1;
+      }
+
+      assertEquals(nSplits, ArrayUtils.sum(splits._splitCounts));
+      assertArrayEquals(expSplitCounts, splits._splitCounts);
+      assertArrayEquals(expDepths, splits._splitDepths);
+
+      for (int i = 0; i < model._output.nfeatures(); i++) {
+        assertEquals((long) expSplitCounts[i], model._output._variable_splits.get(i, 0));
+        assertEquals(expDepths[i], model._output._variable_splits.get(i, 2));
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
 
 }
