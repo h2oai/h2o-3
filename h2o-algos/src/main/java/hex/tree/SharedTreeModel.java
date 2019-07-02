@@ -736,5 +736,25 @@ public abstract class SharedTreeModel<
   protected <T extends JCodeSB> T toJavaForestName(T sb, String mname, int t ) {
     return (T) sb.p(mname).p("_Forest_").p(t);
   }
+  
+  public Frame scoreContributions(Frame frame, Key<Frame> destination_key) {
+    if (_output.nclasses() > 2) {
+      throw new UnsupportedOperationException(
+              "Calculating contributions is currently not supported for multinomial models.");
+    }
+
+    Frame adaptFrm = new Frame(frame);
+    adaptTestForTrain(adaptFrm, true, false);
+    // remove non-feature columns
+    adaptFrm.remove(_parms._response_column);
+    adaptFrm.remove(_parms._fold_column);
+    adaptFrm.remove(_parms._weights_column);
+    adaptFrm.remove(_parms._offset_column);
+
+    final String[] outputNames = ArrayUtils.append(adaptFrm.names(), "BiasTerm");
+    return new ScoreContributionsTask(this, _output._ntrees, _output._treeKeys, _output._init_f)
+            .doAll(outputNames.length, Vec.T_NUM, adaptFrm)
+            .outputFrame(destination_key, outputNames, null);
+  }
 
 }

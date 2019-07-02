@@ -23,7 +23,6 @@ import java.io.IOException;
 import static hex.genmodel.utils.DistributionFamily.gaussian;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
 
 public class GBMPredictContribsTest extends TestUtil {
 
