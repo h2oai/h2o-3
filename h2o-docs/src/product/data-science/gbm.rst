@@ -261,6 +261,8 @@ Defining a GBM Model
 
 -  `custom_metric_func <algo-params/custom_metric_func.html>`__: Optionally specify a custom evaluation function.
 
+-  `custom_distribution_func <algo-params/custom_distribution_func.html>`__: Optionally specify a custom distribution function.
+
 -  **export_checkpoints_dir**: Optionally specify a path to a directory where every generated model will be stored when checkpointing models.
 
 -  **monotone_constraints**: A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint. Note that constraints can only be defined for numerical columns. Also note that this option can only be used when the distribution is either ``gaussian`` or ``bernoulli``. A Python demo is available `here <https://github.com/h2oai/h2o-3/tree/master/h2o-py/demos/H2O_tutorial_gbm_monotonicity.ipynb>`__.

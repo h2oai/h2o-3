@@ -1,7 +1,7 @@
 .. _custom_distribution_func:
 
 ``custom_distribution_func``
-----------------------
+----------------------------
 
 - Available in: GBM 
 - Hyperparameter: no
@@ -9,7 +9,7 @@
 Description
 ~~~~~~~~~~~
 
-Use this option to specify a custom distribution function. A custom distribution function can be used to customized loss function calculation.
+Use this option to specify a custom distribution function. A custom distribution function can be used to customize a loss function calculation.
 
 **Note**: This option is only supported in the Python client.
 
@@ -63,19 +63,19 @@ Example
 	# Use a custom distribution
 	# Create a custom Bernoulli distribution and save as custom_bernoulli.py
 	# Note that this references a java class java.lang.Math
-    class CustomDistributionBernoulli:
-        def link(self):
-            return "logit"
-        
-        def init(self, w, o, y):
-            return [w * (y - o), w]
-        
-        def gradient(self, y, f):
-            return y - self.inversion(f)
-        
-        def gamma(self, w, y, z, f):
-            ff = y - z
-            return [w * z, w * ff * (1 - ff)]
+	class CustomDistributionBernoulli:
+	    def link(self):
+	        return "logit"
+	    
+	    def init(self, w, o, y):
+	        return [w * (y - o), w]
+	    
+	    def gradient(self, y, f):
+	        return y - self.inversion(f)
+	    
+	    def gamma(self, w, y, z, f):
+	        ff = y - z
+	        return [w * z, w * ff * (1 - ff)]
 
 	# Upload the custom distribution
 	custom_dist_func = h2o.upload_custom_distribution(CustomDistributionBernoulli, 
@@ -90,6 +90,6 @@ Example
 	                                                   seed=1234)
 	                                     
 	airlines_gbm_custom.train(x=predictors, y=response, training_frame=train, validation_frame=valid)
-	
-    # print the auc for the validation data - the result should be the same
+
+	# print the auc for the validation data - the result should be the same
 	airlines_gbm_custom.auc(valid=True)

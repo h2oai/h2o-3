@@ -33,6 +33,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/col_sample_rate_per_tree
    data-science/algo-params/compute_metrics
    data-science/algo-params/compute_p_values
+   data-science/algo-params/custom_distribution_func
    data-science/algo-params/custom_metric_func
    data-science/algo-params/distribution
    data-science/algo-params/early_stopping
