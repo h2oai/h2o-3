@@ -73,6 +73,7 @@ h2o.predict_json <- function(model, json, genmodelpath, labels, classpath, javao
 #' @param classpath  Optional, specifies custom user defined classpath which will be used when scoring. If NULL (default) then the default classpath for this MOJO model will be used.
 #' @param java_options  Optional, custom user defined options for Java. By default '-Xmx4g -XX:ReservedCodeCacheSize=256m' is used.
 #' @param verbose  Optional, if TRUE, then additional debug information will be printed. FALSE by default.
+#' @param setInvNumNA  Optional, if TRUE, then then for an string that cannot be parsed into a number an N/A value will be produced, if false the command will fail. FALSE by default.
 #' @return Returns a data.frame containing computed predictions
 #' @export
 h2o.mojo_predict_csv <- function(input_csv_path, mojo_zip_path, output_csv_path=NULL, genmodel_jar_path=NULL, classpath=NULL, java_options=NULL, verbose=F, setInvNumNA=F) {
@@ -175,6 +176,7 @@ h2o.mojo_predict_csv <- function(input_csv_path, mojo_zip_path, output_csv_path=
 #' @param classpath  Optional, specifies custom user defined classpath which will be used when scoring. If NULL (default) then the default classpath for this MOJO model will be used.
 #' @param java_options  Optional, custom user defined options for Java. By default '-Xmx4g -XX:ReservedCodeCacheSize=256m' is used.
 #' @param verbose  Optional, if TRUE, then additional debug information will be printed. FALSE by default.
+#' @param setInvNumNA  Optional, if TRUE, then then for an string that cannot be parsed into a number an N/A value will be produced, if false the command will fail. FALSE by default.
 #' @return Returns a data.frame containing computed predictions
 #' @export
 h2o.mojo_predict_df <- function(frame, mojo_zip_path, genmodel_jar_path=NULL, classpath=NULL, java_options=NULL, verbose=F, setInvNumNA=F) {
