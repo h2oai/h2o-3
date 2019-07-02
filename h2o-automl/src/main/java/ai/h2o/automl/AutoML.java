@@ -908,7 +908,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     commonXGBoostParameters._score_tree_interval = 5;
     commonXGBoostParameters._stopping_rounds = 5;
-//    commonXGBoostParameters._stopping_tolerance = Math.min(1e-2, RandomDiscreteValueSearchCriteria.default_stopping_tolerance_for_frame(this.trainingFrame));
 
     commonXGBoostParameters._ntrees = 10000;
     commonXGBoostParameters._learn_rate = 0.05;
@@ -991,7 +990,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     xgBoostParameters._score_tree_interval = 5;
     xgBoostParameters._stopping_rounds = 5;
-//    xgBoostParameters._stopping_tolerance = Math.min(1e-2, RandomDiscreteValueSearchCriteria.default_stopping_tolerance_for_frame(this.trainingFrame));
 
     xgBoostParameters._ntrees = 10000;
     xgBoostParameters._learn_rate = 0.05;
@@ -1147,7 +1145,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // NOTE: removed MissingValuesHandling.Skip for now because it's crashing.  See https://0xdata.atlassian.net/browse/PUBDEV-4974
     searchParams.put("_missing_values_handling", new DeepLearningParameters.MissingValuesHandling[] {
             DeepLearningParameters.MissingValuesHandling.MeanImputation,
-            DeepLearningParameters.MissingValuesHandling.Skip
+//            DeepLearningParameters.MissingValuesHandling.Skip
     });
 
     Job<Grid> glmJob = hyperparameterSearch(gridKey, work, glmParameters, searchParams);
