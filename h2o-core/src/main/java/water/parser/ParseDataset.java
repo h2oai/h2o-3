@@ -229,8 +229,8 @@ public final class ParseDataset {
       if (mfpt != null) mfpt.onExceptionCleanup(fs);
       // Assume the input is corrupt - or already partially deleted after
       // parsing.  Nuke it all - no partial Vecs lying around.
-      for (Key k : _keys) Keyed.remove(k, fs);
-      Keyed.remove(_pds._job._result,fs);
+      for (Key k : _keys) Keyed.remove(k, fs, true);
+      Keyed.remove(_pds._job._result, fs, true);
       fs.blockForPending();
     }
   }
@@ -748,7 +748,7 @@ public final class ParseDataset {
         if(_deleteOnDone) vec.remove();
       } else {
         Frame fr = (Frame)ice;
-        if(_deleteOnDone) fr.delete(_jobKey,new Futures()).blockForPending();
+        if(_deleteOnDone) fr.delete(_jobKey,new Futures(), true).blockForPending();
         else if( fr._key != null ) fr.unlock(_jobKey);
       }
     }
@@ -1036,7 +1036,7 @@ public final class ParseDataset {
           if( _outerMFPT._deleteOnDone) ((ByteVec)ice).remove();
         } else {
           Frame fr = (Frame)ice;
-          if( _outerMFPT._deleteOnDone) fr.delete(_outerMFPT._jobKey,new Futures()).blockForPending();
+          if( _outerMFPT._deleteOnDone) fr.delete(_outerMFPT._jobKey,new Futures(), true).blockForPending();
           else if( fr._key != null ) fr.unlock(_outerMFPT._jobKey);
         }
       }
@@ -1048,7 +1048,7 @@ public final class ParseDataset {
       int ncols = _parseSetup._number_columns;
       for( int i = 0; i < ncols; ++i ) {
         Key vkey = _vg.vecKey(_vecIdStart + i);
-        Keyed.remove(vkey,fs);
+        Keyed.remove(vkey, fs, true);
         for( int c = 0; c < nchunks; ++c )
           DKV.remove(Vec.chunkKey(vkey,c),fs);
       }

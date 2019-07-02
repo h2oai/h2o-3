@@ -77,7 +77,7 @@ public class Frame extends Lockable<Frame> {
     Key[] keys = tempFrame.keys();
     for( int i=0; i<keys.length; i++ )
       if( baseFrame.find(keys[i]) == -1 ) //only delete vecs that aren't shared
-        keys[i].remove();
+        Keyed.remove(keys[i]);
     DKV.remove(tempFrame._key); //delete the frame header
   }
 
@@ -776,7 +776,7 @@ public class Frame extends Lockable<Frame> {
 
   /** Actually remove/delete all Vecs from memory, not just from the Frame.
    *  @return the original Futures, for flow-coding */
-  @Override protected Futures remove_impl(Futures fs) {
+  @Override protected Futures remove_impl(Futures fs, boolean cascade) {
     final Key[] keys = _keys;
     if( keys.length==0 ) return fs;
 

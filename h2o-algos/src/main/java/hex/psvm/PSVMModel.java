@@ -10,6 +10,7 @@ import hex.psvm.psvm.KernelFactory;
 import hex.psvm.psvm.PrimalDualIPM;
 import water.Futures;
 import water.Key;
+import water.Keyed;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.util.Log;
@@ -186,10 +187,9 @@ public class PSVMModel extends Model<PSVMModel, PSVMModel.PSVMParameters, PSVMMo
   }
 
   @Override
-  protected Futures remove_impl(Futures fs) {
-    if (_output._alpha_key != null)
-      _output._alpha_key.remove(fs);
-    return super.remove_impl(fs);
+  protected Futures remove_impl(Futures fs, boolean cascade) {
+    Keyed.remove(_output._alpha_key, fs, true);
+    return super.remove_impl(fs, cascade);
   }
 
 }

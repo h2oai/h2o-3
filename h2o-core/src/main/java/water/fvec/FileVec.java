@@ -62,7 +62,7 @@ public abstract class FileVec extends ByteVec {
     // sections (_chunkSize < DFLT_CHUNK_SIZE) or skip data
     // (_chunkSize > DFLT_CHUNK_SIZE). This reverses this side-effect.
     Futures fs = new Futures();
-    Keyed.remove(_key, fs);
+    Keyed.remove(_key, fs, true);
     fs.blockForPending();
     if (chunkSize <= 0) throw new IllegalArgumentException("Chunk sizes must be > 0.");
     if (chunkSize > (1<<30) ) throw new IllegalArgumentException("Chunk sizes must be < 1G.");

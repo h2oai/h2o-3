@@ -904,7 +904,7 @@ def log_and_echo(message=""):
     api("POST /3/LogAndEcho", data={"message": str(message)})
 
 
-def remove(x):
+def remove(x, cascade=True):
     """
     Remove object(s) from H2O.
 
@@ -920,14 +920,14 @@ def remove(x):
             rapids("(rm {})".format(xi.key))
             xi.detach()
         elif isinstance(xi, Keyed):
-            api("DELETE /3/DKV/%s" % xi.key)
+            api("DELETE /3/DKV/%s" % xi.key, data=dict(cascade=cascade))
             xi.detach()
         else:
             # string may be a Frame key name part of a rapids session... need to call rm thru rapids here
             try:
                 rapids("(rm {})".format(xi))
             except:
-                api("DELETE /3/DKV/%s" % xi)
+                api("DELETE /3/DKV/%s" % xi, data=dict(cascade=cascade))
 
 
 def remove_all(retained=None):

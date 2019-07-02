@@ -399,20 +399,20 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         if (_output._levelone_frame_id != null && key.get() != null)
           Frame.deleteTempFrameAndItsNonSharedVecs(key.get(), _output._levelone_frame_id);
         else
-          key.remove();
+          Keyed.remove(key);
       }
       _output._base_model_predictions_keys = null;
     }
   }
 
-  @Override protected Futures remove_impl(Futures fs ) {
+  @Override protected Futures remove_impl(Futures fs, boolean cascade) {
     deleteBaseModelPredictions(); 
     if (_output._metalearner != null)
       _output._metalearner.remove(fs);
     if (_output._levelone_frame_id != null)
       _output._levelone_frame_id.remove(fs);
 
-    return super.remove_impl(fs);
+    return super.remove_impl(fs, cascade);
   }
 
   /** Write out models (base + metalearner) */

@@ -1,9 +1,6 @@
 package water.rapids;
 
-import water.DKV;
-import water.Futures;
-import water.Key;
-import water.MRTask;
+import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.nbhm.*;
@@ -136,7 +133,7 @@ public class Session {
           if (i > 0) REFCNTS.put(vec, i);
           else {
             REFCNTS.remove(vec);
-            vec.remove(fs);
+            Keyed.remove(vec, fs, true);
           }
         }
         DKV.remove(fr._key, fs);   // Shallow remove, internal Vecs removed 1-by-1
@@ -230,7 +227,7 @@ public class Session {
       for (Key<Vec> vec : fr.keys()) {
         GLOBALS.remove(vec);         // Not a global anymore
         if (REFCNTS.get(vec) == null) // If not shared with temps
-          vec.remove(fs);            // Remove unshared dead global
+          Keyed.remove(vec, fs, true);            // Remove unshared dead global
       }
     } else {                    // Else a temp and not a global
       fs = downRefCnt(fr, fs);   // Standard down-ref counting of all Vecs
@@ -248,7 +245,7 @@ public class Session {
     for (Key<Vec> vec : fr.keys())    // Refcnt -1 all Vecs
       if (addRefCnt(vec, -1) == 0) {
         if (fs == null) fs = new Futures();
-        vec.remove(fs);
+        Keyed.remove(vec, fs, true);
       }
     return fs;
   }
@@ -267,7 +264,7 @@ public class Session {
     if (fr != null) {          // Prior frame exists
       for (Key<Vec> vec : fr.keys()) {
         if (GLOBALS.remove(vec) && _getRefCnt(vec) == 0)
-          vec.remove(fs);       // Remove unused global vec
+          Keyed.remove(vec, fs, true);       // Remove unused global vec
       }
     }
     // Copy (defensive) the base vecs array.  Then copy any vecs which are

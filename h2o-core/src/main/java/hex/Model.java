@@ -1805,12 +1805,17 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return _output.nclasses() == 1 ? pred[0] /* regression */ : ArrayUtils.maxIndex(pred) /*classification?*/; 
   }
 
-  @Override protected Futures remove_impl( Futures fs ) {
+  @Override protected Futures remove_impl(Futures fs, boolean cascade) {
     if (_output._model_metrics != null)
       for( Key k : _output._model_metrics )
-        k.remove(fs);
+        Keyed.remove(k, fs, true);
+    if (cascade) {
+      deleteCrossValidationFoldAssignment();
+      deleteCrossValidationPreds();
+      deleteCrossValidationModels();
+    }
     cleanUp(_toDelete);
-    return super.remove_impl(fs);
+    return super.remove_impl(fs, cascade);
   }
 
   /** Write out K/V pairs, in this case model metrics. */
@@ -2377,16 +2382,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       int count = deleteAll(_output._cross_validation_predictions);
       Log.info(count+" CV predictions were removed");
     }
-
-    if (_output._cross_validation_holdout_predictions_frame_id != null) {
-      _output._cross_validation_holdout_predictions_frame_id.remove();
-    }
+    Keyed.remove(_output._cross_validation_holdout_predictions_frame_id);
   }
 
   public void deleteCrossValidationFoldAssignment() {
-    if (_output._cross_validation_fold_assignment_frame_id != null) {
-      _output._cross_validation_fold_assignment_frame_id.remove();
-    }
+    Keyed.remove(_output._cross_validation_fold_assignment_frame_id);
   }
 
   @Override public String toString() {
