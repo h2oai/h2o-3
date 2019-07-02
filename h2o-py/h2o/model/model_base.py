@@ -140,7 +140,7 @@ class ModelBase(backwards_compatible()):
 
         :param H2OFrame test_data: Data on which to make predictions.
         :param Enum type: How to identify the leaf node. Nodes can be either identified by a path from to the root node
-        of the tree to the node or by H2O's internal node id. One of: ``"Path"``, ``"Node_ID"`` (default: ``"Path"``).
+            of the tree to the node or by H2O's internal node id. One of: ``"Path"``, ``"Node_ID"`` (default: ``"Path"``).
 
         :returns: A new H2OFrame of predictions.
         """
@@ -210,7 +210,7 @@ class ModelBase(backwards_compatible()):
 
         :param H2OFrame test_data: Data on which to make predictions.
         :param custom_metric:  custom evaluation function defined as class reference, the class get uploaded
-        into cluster
+            into the cluster
         :param custom_metric_func: custom evaluation function reference, e.g, result of upload_custom_metric
 
         :returns: A new H2OFrame of predictions.
