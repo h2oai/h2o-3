@@ -16,7 +16,7 @@ from h2o.utils.shared_utils import can_use_pandas
 from h2o.utils.typechecks import I, assert_is_type, assert_satisfies, Enum, is_type
 
 
-class ModelBase(Keyed, backwards_compatible()):
+class ModelBase(backwards_compatible(Keyed)):
     """Base class for all models."""
 
     def __init__(self):
