@@ -828,7 +828,7 @@ public class EasyPredictModelWrapper implements Serializable {
     return new RowToRawDataConverter(m, modelColumnNameToIndexMap, domainMap, errorConsumer, convertUnknownCategoricalLevelsToNa, convertInvalidNumbersToNa)
             .convert(data, rawData);
   }
-  
+
   protected double[] predict(RowData data, double offset, double[] preds) throws PredictException {
     double[] rawData = nanArray(m.nfeatures());
     rawData = fillRawData(data, rawData);
