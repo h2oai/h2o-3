@@ -8,8 +8,10 @@ from tests.pyunit_utils import random_dataset, build_save_model_GBM, getMojoName
 from tests.pyunit_utils import compare_frames_local
 from h2o.utils.distributions import CustomDistributionBernoulli
 
+
 def custom_distribution_bernoulli():
     return h2o.upload_custom_distribution(CustomDistributionBernoulli, func_name="custom_bernoulli", func_file="custom_bernoulli.py")
+
 
 # Test a mojo model is computed correctly with custom distribution
 def custom_distribution_mojo_test():

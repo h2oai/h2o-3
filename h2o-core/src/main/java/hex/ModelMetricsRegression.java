@@ -44,7 +44,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
     if(!Double.isNaN(_mean_residual_deviance)) {
       sb.append(" mean residual deviance: " + (float) _mean_residual_deviance + "\n");
     } else {
-      sb.append(" mean residual deviance: " + _mean_residual_deviance + "\n");
+      sb.append(" mean residual deviance: N/A\n");
     }
     sb.append(" mean absolute error: " + (float)_mean_absolute_error + "\n");
     sb.append(" root mean squared log error: " + (float)_root_mean_squared_log_error + "\n");
@@ -123,8 +123,8 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       _rmslerror += w*err_msle;
       assert !Double.isNaN(_sumsqe);
       
-      // Deviance method is not support in custom distribution
-      if((m != null && m._parms._distribution != DistributionFamily.custom) || (_dist != null && _dist .distribution != DistributionFamily.custom)) {
+      // Deviance method is not supported in custom distribution
+      if((m != null && m._parms._distribution != DistributionFamily.custom) || (_dist != null && _dist ._family != DistributionFamily.custom)) {
         if (m != null && m._parms._distribution != DistributionFamily.huber) {
           _sumdeviance += m.deviance(w, yact[0], ds[0]);
         } else if (_dist != null) {
@@ -168,7 +168,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
 
           meanResDeviance = new MeanResidualDeviance(_dist, preds.anyVec(), actual, weight).exec().meanResidualDeviance;
         }
-      } else if((m != null && m._parms._distribution != DistributionFamily.custom) || (_dist != null && _dist.distribution != DistributionFamily.custom) ) {
+      } else if((m != null && m._parms._distribution != DistributionFamily.custom) || (_dist != null && _dist._family != DistributionFamily.custom) ) {
         meanResDeviance = _sumdeviance / _wcount; //mean residual deviance
       } else {
         meanResDeviance = Double.NaN;

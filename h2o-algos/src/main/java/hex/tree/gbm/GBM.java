@@ -558,7 +558,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       tmpFrame2.add("resMinusMedianRes", diffMinusMedianDiff);
       double[] huberGamma = new HuberLeafMath(frameMap, huberDelta,strata).doAll(tmpFrame2)._huberGamma;
 
-      // now assign the median per leaf + the above _huberCorrection[i] to each leaf
+      // now assign the median per leaf + the above huberCorrection[i] to each leaf
       final DTree tree = ktrees[0];
       for (int i = 0; i < sqt._quantiles.length; i++) {
         double huber = (sqt._quantiles[i] /*median*/ + huberGamma[i]);
@@ -806,7 +806,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         double f = preds.atd(row) + offset.atd(row);
         double y = ys.atd(row);
 //          Log.info(f + " vs " + y); //expect that the model predicts very negative values for 0 and very positive values for 1
-        if ((dist.distribution == DistributionFamily.multinomial && fs != null) || (dist.distribution == DistributionFamily.custom && nclass > 2)) {
+        if ((dist._family == DistributionFamily.multinomial && fs != null) || (dist._family == DistributionFamily.custom && nclass > 2)) {
           double sum = score1static(chks, fm.tree0Index, 0.0 /*not used for multiclass*/, fs, row, dist, nclass);
           if (Double.isInfinite(sum)) {  // Overflow (happens for constant responses)
             for (int k = 0; k < nclass; k++) {
@@ -1055,9 +1055,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       if (_denom[tree][nid] == 0) return 0;
       double g = num / _denom[tree][nid];
       assert (!Double.isInfinite(g) && !Double.isNaN(g));
-      if (_dist.distribution == DistributionFamily.poisson ||
-              _dist.distribution == DistributionFamily.gamma ||
-              _dist.distribution == DistributionFamily.tweedie) {
+      if (_dist._family == DistributionFamily.poisson ||
+              _dist._family == DistributionFamily.gamma ||
+              _dist._family == DistributionFamily.tweedie) {
         return _dist.link(g);
       } else {
         return g;
@@ -1125,9 +1125,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           // OOB rows get placed properly (above), but they don't affect the computed Gamma (below)
           // For Laplace/Quantile distribution, we need to compute the median of (y-offset-preds == y-f), will be done outside of here
           if (wasOOBRow
-              || _dist.distribution == DistributionFamily.laplace
-              || _dist.distribution == DistributionFamily.huber
-              || _dist.distribution == DistributionFamily.quantile) continue;
+              || _dist._family == DistributionFamily.laplace
+              || _dist._family == DistributionFamily.huber
+              || _dist._family == DistributionFamily.quantile) continue;
 
           double z = ress.atd(row);  // residual
           double f = preds.atd(row) + offset.atd(row);
@@ -1223,13 +1223,13 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   private static double score1static(Chunk[] chks, int treeIdx, double offset, double[] fs, int row, Distribution dist, int nClasses) {
     double f = chks[treeIdx].atd(row) + offset;
     double p = dist.linkInv(f);
-    if (dist.distribution == DistributionFamily.modified_huber || dist.distribution == DistributionFamily.bernoulli || dist.distribution == DistributionFamily.quasibinomial || 
-            (dist.distribution == DistributionFamily.custom && nClasses == 2)) {
+    if (dist._family == DistributionFamily.modified_huber || dist._family == DistributionFamily.bernoulli || dist._family == DistributionFamily.quasibinomial || 
+            (dist._family == DistributionFamily.custom && nClasses == 2)) {
       fs[2] = p;
       fs[1] = 1.0 - p;
       return 1;                 // f2 = 1.0 - f1; so f1+f2 = 1.0
-    } else if (dist.distribution == DistributionFamily.multinomial || 
-            (dist.distribution == DistributionFamily.custom && nClasses > 2)) {
+    } else if (dist._family == DistributionFamily.multinomial || 
+            (dist._family == DistributionFamily.custom && nClasses > 2)) {
       if (nClasses == 2) {
         // This optimization assumes the 2nd tree of a 2-class system is the
         // inverse of the first.  Fill in the missing tree

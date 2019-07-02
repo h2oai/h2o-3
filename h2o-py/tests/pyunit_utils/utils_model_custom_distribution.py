@@ -28,7 +28,7 @@ def dataset_iris():
 
 
 def regression_model_default(Model, distribution):
-    (ftrain, fvalid, ftest) = dataset_prostate()
+    (ftrain, fvalid, ftest) = dataset_prostate(False)
     model = Model(model_id="regression",
                       ntrees=3, 
                       max_depth=5,
@@ -39,7 +39,7 @@ def regression_model_default(Model, distribution):
 
 
 def regression_model_distribution(Model, custom_distribution_func):
-    (ftrain, fvalid, ftest) = dataset_prostate()
+    (ftrain, fvalid, ftest) = dataset_prostate(False)
     model = Model(model_id="regression_custom",
                       ntrees=3,
                       max_depth=5,
@@ -51,7 +51,7 @@ def regression_model_distribution(Model, custom_distribution_func):
 
 
 def binomial_model_default(Model, distribution):
-    (ftrain, fvalid, ftest) = dataset_prostate(not(distribution is "quasibinomial"))
+    (ftrain, fvalid, ftest) = dataset_prostate()
     model = Model(model_id="binomial",
                       ntrees=3,
                       max_depth=5,
@@ -61,8 +61,8 @@ def binomial_model_default(Model, distribution):
     return model, ftest
 
 
-def binomial_model_distribution(Model, custom_distribution_func, categorical=True):
-    (ftrain, fvalid, ftest) = dataset_prostate(categorical)
+def binomial_model_distribution(Model, custom_distribution_func):
+    (ftrain, fvalid, ftest) = dataset_prostate()
     model = Model(model_id="binomial_custom",
                       ntrees=3,
                       max_depth=5,

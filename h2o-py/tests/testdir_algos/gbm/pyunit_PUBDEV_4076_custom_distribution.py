@@ -65,7 +65,7 @@ def test_binomial():
     (model, f_test) = binomial_model_default(H2OGradientBoostingEstimator, name)
     print("Create custom ", name,  "model")
     (model2, f_test2) = binomial_model_distribution(H2OGradientBoostingEstimator, 
-                                                    upload_distribution(CustomDistributionBernoulli, name), True)
+                                                    upload_distribution(CustomDistributionBernoulli, name))
     check_model_metrics(model, model2, name)
         
 
@@ -84,7 +84,7 @@ def test_null():
     print("Null model test")
     print("Create custom null model")
     (model, f_test) = regression_model_distribution(H2OGradientBoostingEstimator,
-                                                      upload_distribution(CustomDistributionGeneric, "null"))
+                                                    upload_distribution(CustomDistributionGeneric, "null"))
     print("rmse null model train:", model.rmse(valid=False))
     print("rmse null model valid:", model.rmse(valid=True))
     

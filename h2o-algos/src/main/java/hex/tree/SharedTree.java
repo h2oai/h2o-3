@@ -1042,7 +1042,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     }
 
     public  double initialValue() {
-      if (_dist.distribution == DistributionFamily.multinomial || (_dist.distribution == DistributionFamily.custom && _nclass > 2))
+      if (_dist._family == DistributionFamily.multinomial || (_dist._family == DistributionFamily.custom && _nclass > 2))
         return -0.5*DistributionFactory.getDistribution(DistributionFamily.bernoulli).link(_num/_denom);
       else return _dist.link(_num / _denom);
     }

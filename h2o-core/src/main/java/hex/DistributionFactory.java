@@ -345,31 +345,31 @@ class TweedieDistribution extends Distribution {
     @Override
     public double deviance(double w, double y, double f) {
         f = link(f); // bring back f to link space
-        assert (tweediePower > 1 && tweediePower < 2);
-        return 2 * w * (Math.pow(y, 2 - tweediePower) / ((1 - tweediePower) * (2 - tweediePower)) - y * LogExpUtil.exp(f * (1 - tweediePower)) / (1 - tweediePower) + LogExpUtil.exp(f * (2 - tweediePower)) / (2 - tweediePower));
+        assert (_tweediePower > 1 && _tweediePower < 2);
+        return 2 * w * (Math.pow(y, 2 - _tweediePower) / ((1 - _tweediePower) * (2 - _tweediePower)) - y * LogExpUtil.exp(f * (1 - _tweediePower)) / (1 - _tweediePower) + LogExpUtil.exp(f * (2 - _tweediePower)) / (2 - _tweediePower));
     }
 
     @Override
     public double negHalfGradient(double y, double f) {
-        assert (tweediePower > 1 && tweediePower < 2);
-        return y * LogExpUtil.exp(f * (1 - tweediePower)) - LogExpUtil.exp(f * (2 - tweediePower));
+        assert (_tweediePower > 1 && _tweediePower < 2);
+        return y * LogExpUtil.exp(f * (1 - _tweediePower)) - LogExpUtil.exp(f * (2 - _tweediePower));
     }
 
     @Override
     public double initFNum(double w, double o, double y) {
-        return w * y * LogExpUtil.exp(o * (1 - tweediePower));
+        return w * y * LogExpUtil.exp(o * (1 - _tweediePower));
     }
 
     @Override
     public double initFDenom(double w, double o, double y) {
-        return w * LogExpUtil.exp(o * (2 - tweediePower));
+        return w * LogExpUtil.exp(o * (2 - _tweediePower));
     }
 
     @Override
-    public double gammaNum(double w, double y, double z, double f) { return w * y * LogExpUtil.exp(f * (1 - tweediePower)); }
+    public double gammaNum(double w, double y, double z, double f) { return w * y * LogExpUtil.exp(f * (1 - _tweediePower)); }
 
     @Override
-    public double gammaDenom(double w, double y, double z, double f) { return w * LogExpUtil.exp(f * (2 - tweediePower)); }
+    public double gammaDenom(double w, double y, double z, double f) { return w * LogExpUtil.exp(f * (2 - _tweediePower)); }
 }
 
 class HuberDistribution extends Distribution {
@@ -381,19 +381,19 @@ class HuberDistribution extends Distribution {
 
     @Override
     public double deviance(double w, double y, double f) {
-        if (Math.abs(y - f) <= huberDelta) {
+        if (Math.abs(y - f) <= _huberDelta) {
             return w * (y - f) * (y - f); // same as wMSE
         } else {
-            return 2 * w * (Math.abs(y - f) - huberDelta) * huberDelta; // note quite the same as wMAE
+            return 2 * w * (Math.abs(y - f) - _huberDelta) * _huberDelta; // note quite the same as wMAE
         }
     }
 
     @Override
     public double negHalfGradient(double y, double f) {
-        if (Math.abs(y - f) <= huberDelta) {
+        if (Math.abs(y - f) <= _huberDelta) {
             return y - f;
         } else {
-            return f >= y ? -huberDelta : huberDelta;
+            return f >= y ? -_huberDelta : _huberDelta;
         }
     }
 }
@@ -422,10 +422,10 @@ class QuantileDistribution extends Distribution {
     }
 
     @Override
-    public double deviance(double w, double y, double f) { return y > f ? w * quantileAlpha * (y - f) : w * (1 - quantileAlpha) * (f - y); }
+    public double deviance(double w, double y, double f) { return y > f ? w * _quantileAlpha * (y - f) : w * (1 - _quantileAlpha) * (f - y); }
 
     @Override
-    public double negHalfGradient(double y, double f) { return y > f ? 0.5 * quantileAlpha : 0.5 * (quantileAlpha - 1); }
+    public double negHalfGradient(double y, double f) { return y > f ? 0.5 * _quantileAlpha : 0.5 * (_quantileAlpha - 1); }
 }
 
 /**
@@ -434,67 +434,62 @@ class QuantileDistribution extends Distribution {
  */
 class CustomDistribution extends Distribution {
     
-    private CustomDistributionWrapper customDistribution;
-    private static CustomDistribution inst;
+    private CustomDistributionWrapper _wrapper;
+    private static CustomDistribution _instance;
+    public static String _distributionDef;
     
     private CustomDistribution(Model.Parameters params){
         super(params);
-        customDistribution = new CustomDistributionWrapper(CFuncRef.from(params._custom_distribution_func));
-        assert customDistribution != null;
-        assert customDistribution.getFunc() != null;
-        this.setLinkFunction(LinkFunctionFactory.getLinkFunction(customDistribution.getFunc().link()));
+        _distributionDef = params._custom_distribution_func;
+        _wrapper = new CustomDistributionWrapper(CFuncRef.from(params._custom_distribution_func));
+        assert _wrapper != null;
+        assert _wrapper.getFunc() != null;
+        super._linkFunction = LinkFunctionFactory.getLinkFunction(_wrapper.getFunc().link());
     }
     
     public static CustomDistribution getCustomDistribution(Model.Parameters params){
-        if(inst == null){
-            System.out.println("new instance");
-            inst = new CustomDistribution(params);
+        if(_instance == null || params._custom_distribution_func != _distributionDef){
+            _instance = new CustomDistribution(params);
         } 
-        return inst;
+        return _instance;
     }
 
     @Override
-    public double deviance(double w, double y, double f) {
-        throw H2O.unimpl("Deviance is not supported in Custom Distribution.");
-    }
+    public double deviance(double w, double y, double f) { throw H2O.unimpl("Deviance is not supported in Custom Distribution."); }
 
     @Override
-    public double negHalfGradient(double y, double f) {
-        return customDistribution.getFunc().gradient(y, f);
-    }
+    public double negHalfGradient(double y, double f) { return _wrapper.getFunc().gradient(y, f); }
 
     @Override
     public double initFNum(double w, double o, double y) {
-        double[] init = customDistribution.getFunc().init(w, o, y);
+        double[] init = _wrapper.getFunc().init(w, o, y);
         assert init.length == 2;
         return init[0];
     }
 
     @Override
     public double initFDenom(double w, double o, double y) {
-        double[] init = customDistribution.getFunc().init(w, o, y);
+        double[] init = _wrapper.getFunc().init(w, o, y);
         assert init.length == 2;
         return init[1];
     }
 
     @Override
     public double gammaNum(double w, double y, double z, double f) {
-        double[] gamma = customDistribution.getFunc().gamma(w, y, z, f);
+        double[] gamma = _wrapper.getFunc().gamma(w, y, z, f);
         assert gamma.length == 2;
         return gamma[0];
     }
 
     @Override
     public double gammaDenom(double w, double y, double z, double f) {
-        double[] gamma = customDistribution.getFunc().gamma(w, y, z, f);
+        double[] gamma = _wrapper.getFunc().gamma(w, y, z, f);
         assert gamma.length == 2;
         return gamma[1];
     }
 
     @Override
-    public void reset() {
-        customDistribution.setupLocal();
-    }
+    public void reset() { _wrapper.setupLocal(); }
 }
 
 /**
@@ -512,9 +507,7 @@ class CustomDistributionWrapper extends CFuncObject<CDistributionFunc> {
     }
 
     @Override
-    protected void setupLocal() {
-        super.setupLocal();
-    }
+    protected void setupLocal() { super.setupLocal(); }
 }
 
 /**
