@@ -558,7 +558,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       tmpFrame2.add("resMinusMedianRes", diffMinusMedianDiff);
       double[] huberGamma = new HuberLeafMath(frameMap, huberDelta,strata).doAll(tmpFrame2)._huberGamma;
 
-      // now assign the median per leaf + the above huberCorrection[i] to each leaf
+      // now assign the median per leaf + the above _huberCorrection[i] to each leaf
       final DTree tree = ktrees[0];
       for (int i = 0; i < sqt._quantiles.length; i++) {
         double huber = (sqt._quantiles[i] /*median*/ + huberGamma[i]);

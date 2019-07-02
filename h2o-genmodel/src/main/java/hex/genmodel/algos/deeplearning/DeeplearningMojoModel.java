@@ -125,6 +125,7 @@ public class DeeplearningMojoModel extends MojoModel {
     return preds;
   }
 
+  
   /**
    * Calculate inverse link depends on distribution type
    * Be careful if you are changing code here - you have to change it in hex.LinkFunction too

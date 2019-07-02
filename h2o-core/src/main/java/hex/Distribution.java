@@ -155,7 +155,10 @@ public abstract class Distribution extends Iced<Distribution> {
     public double gammaDenom(double w, double y, double z, double f) {
         throw H2O.unimpl();
     }
-    
-    public void reset(){
-    }
+
+    /**
+     * Method useful for custom distribution only.
+     * It resets custom function to be loaded again.
+     */
+    public void reset(){}
 }

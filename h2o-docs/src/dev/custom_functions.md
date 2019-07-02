@@ -70,7 +70,7 @@ The interface follows the design of `hex.Distribution` and contains four methods
 distributed invocation:
   - `link` : the method returns type of link function transformation of the probability of response variable to a continuous scale that is unbounded.
   The method is designed to be called where `hex.Distribution#link` and `hex.Distribution#linkInv` methods are used.
-  It can return `response` by default (Identity Link Function).
+  It can return `identity` by default (Identity Link Function).
   - `init` : the method combines weight, actual response and offset to compute numerator and denominator of the initial value.
   It can return `[ weight * (response - offset), weight]` by default.
   The method is designed to be called where `hex.Distribution#initFNum` and `hex.Distribution#initFDenom` methods are used.
@@ -90,7 +90,7 @@ distributed invocation:
       - missing transpiler from Python into Rapids (we have limited transpiler for Lambdas)
 
 ## Python Client
-The idea is to pass definition of custom metric directly from Python in the form of Python code.
+The idea is to pass definition of custom metric or custom distribution directly from Python in the form of Python code.
 That needs:
   - an API which represents a custom metric function at caller side
   - backend support to interpret Python code
@@ -168,7 +168,7 @@ via methods `custom_metric_name()` and `custom_metric_value()`.
 #### Custom Distribution Function
 
 The custom distribution function is defined in Python as a class which provides
-five methods following the semantics of Java API above:
+four methods following the semantics of Java API above:
   - `link`
   - `init`
   - `gamma`

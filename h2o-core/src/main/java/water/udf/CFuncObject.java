@@ -24,9 +24,7 @@ abstract public class CFuncObject<T extends CFunc> extends Iced<CFuncObject> {
         return new DkvClassLoader(cFuncRef.getKey(), getParentClassloader());
     }
 
-    protected ClassLoader getParentClassloader() {
-        return Thread.currentThread().getContextClassLoader();
-    }
+    protected ClassLoader getParentClassloader() { return Thread.currentThread().getContextClassLoader(); }
 
     abstract protected Class<T> getFuncType();
     
