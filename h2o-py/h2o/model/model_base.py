@@ -972,12 +972,12 @@ class ModelBase(backwards_compatible()):
         :param plot: A boolean specifying whether to plot partial dependence table.
         :param plot_stddev: A boolean specifying whether to add std err to partial dependence plot.
         :param figsize: Dimension/size of the returning plots, adjust to fit your output cells.
-        :param server: ?
+        :param server: Specify whether to activate matplotlib "server" mode. In this case, the plots are saved to a file instead of being rendered.
         :param include_na: A boolean specifying whether missing value should be included in the Feature values.
         :param user_splits: a dictionary containing column names as key and user defined split values as value in a list.
         :param col_pairs_2dpdp: list containing pairs of column names for 2D pdp
-        :param save_to_file Fully qualified name to an image file the resulting plot should be saved to, e.g. '/home/user/pdpplot.png'. The 'png' postfix might be omitted. If the file already exists, it will be overridden. Plot is only saved if plot = True.
-        :param row_index Row for which partial dependence will be calculated instead of the whole input frame.
+        :param save_to_file: Fully qualified name to an image file the resulting plot should be saved to, e.g. '/home/user/pdpplot.png'. The 'png' postfix might be omitted. If the file already exists, it will be overridden. Plot is only saved if plot = True.
+        :param row_index: Row for which partial dependence will be calculated instead of the whole input frame.
         :returns: Plot and list of calculated mean response tables for each feature requested.
         """
 
