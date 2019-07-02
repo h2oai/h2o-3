@@ -3470,9 +3470,7 @@ row_index=-1) {
     lapply(pps[1:numCols], pp.plot.save)
   }
   
-  if (!noPairs &&
-      ("plot3Drgl" %in% rownames(installed.packages())) &&
-      ("rgl" %in% rownames(installed.packages()))) {
+  if (!noPairs && use.package("plot3Drgl") && use.package("rgl")) {
     if (plot && !is.null(save_to)) {
       # plot and save to file
       if (is.null(user_splits)) {
@@ -3512,11 +3510,9 @@ row_index=-1) {
         )
       }
     }
-  } else {
-    if (plot && !noPairs)
-    warning("Install packages plot3Drgl and rgl in order to generate 2D partial plots.") 
-}
-
+  } else if (plot && !noPairs) {
+    warning("Install packages plot3Drgl and rgl in order to generate 2D partial plots.")     
+  }
 
   if(length(pps) == 1) {
     return(pps[[1]])
