@@ -17,7 +17,7 @@ import water.util.SBPrintStream;
 import java.util.Arrays;
 
 public class GBMModel extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, GBMModel.GBMOutput> 
-        implements Model.StagedPredictions, Model.Contributions {
+        implements Model.StagedPredictions {
 
   public static class GBMParameters extends SharedTreeModel.SharedTreeParameters {
     public double _learn_rate;

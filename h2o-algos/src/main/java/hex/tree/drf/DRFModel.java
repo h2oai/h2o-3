@@ -1,13 +1,11 @@
 package hex.tree.drf;
 
-import hex.Model;
 import hex.tree.SharedTreeModel;
 import water.Key;
 import water.util.MathUtils;
 import water.util.SBPrintStream;
 
-public class DRFModel extends SharedTreeModel<DRFModel, DRFModel.DRFParameters, DRFModel.DRFOutput>
-        implements Model.Contributions{
+public class DRFModel extends SharedTreeModel<DRFModel, DRFModel.DRFParameters, DRFModel.DRFOutput> {
 
   public static class DRFParameters extends SharedTreeModel.SharedTreeParameters {
     public String algoName() { return "DRF"; }

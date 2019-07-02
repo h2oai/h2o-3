@@ -32,7 +32,7 @@ public abstract class SharedTreeModel<
         M extends SharedTreeModel<M, P, O>,
         P extends SharedTreeModel.SharedTreeParameters,
         O extends SharedTreeModel.SharedTreeOutput
-        > extends Model<M, P, O> implements Model.LeafNodeAssignment, Model.GetMostImportantFeatures, Model.FeatureFrequencies {
+        > extends Model<M, P, O> implements Model.LeafNodeAssignment, Model.GetMostImportantFeatures, Model.FeatureFrequencies, Model.Contributions {
 
   @Override
   public String[] getMostImportantFeatures(int n) {
@@ -739,6 +739,7 @@ public abstract class SharedTreeModel<
     return (T) sb.p(mname).p("_Forest_").p(t);
   }
   
+  @Override
   public Frame scoreContributions(Frame frame, Key<Frame> destination_key) {
     if (_output.nclasses() > 2) {
       throw new UnsupportedOperationException(
