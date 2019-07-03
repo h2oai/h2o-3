@@ -349,6 +349,8 @@ public class EasyPredictModelWrapper implements Serializable {
         return predictDimReduction(data);
       case WordEmbedding:
         return predictWord2Vec(data);
+      case TargetEncoder:
+        return transformWithTargetEncoding(data);
       case AnomalyDetection:
         return predictAnomalyDetection(data);
 
@@ -571,14 +573,23 @@ public class EasyPredictModelWrapper implements Serializable {
     return p;
   }
 
-  public double[] transformWithTargetEncoding(RowData data) throws PredictException{
+  /**
+   * Perform target encoding based on TargetEncoderMojoModel
+   * @param data RowData structure with data for which we want to produce transformations
+   * @return TargetEncoderPrediction with transformations ordered in accordance with corresponding categorical columns' indices in training data
+   * @throws PredictException
+   */
+  public TargetEncoderPrediction transformWithTargetEncoding(RowData data) throws PredictException{
     if (! (m instanceof TargetEncoderMojoModel))
       throw new PredictException("Model is not of the expected type, class = " + m.getClass().getSimpleName());
 
     assert data.size() == m.nfeatures() : "There is a mismatch between number of features model was trained on (" + data.size() + ") and number of features in input RowData (" + m.nfeatures() + ")";
     int numberOfTEColumns = ((TargetEncoderMojoModel) m)._teColumnNameToIdx.keySet().size();
     double[] preds = new double[numberOfTEColumns];
-    return predict(data, 0, preds);
+
+    TargetEncoderPrediction prediction = new TargetEncoderPrediction();
+    prediction.transformations = predict(data, 0, preds);
+    return prediction;
   }
 
   @SuppressWarnings("unused") // not used in this class directly, kept for backwards compatibility

@@ -107,11 +107,11 @@ public class TEMojoIntegrationTest extends TestUtil {
         rowToPredictFor.put("pclass", "1");
 
         if(encodings == null ) {
-          encodings = teModelWrapper.transformWithTargetEncoding(rowToPredictFor);
+          encodings = teModelWrapper.transformWithTargetEncoding(rowToPredictFor).transformations;
           homeDestPredIdx = fr.find("home.dest") < fr.find("embarked") ? 0 : 1;
         } else
         {
-          double[] currentEncodings = teModelWrapper.transformWithTargetEncoding(rowToPredictFor);
+          double[] currentEncodings = teModelWrapper.transformWithTargetEncoding(rowToPredictFor).transformations;
           //Let's check that specified in the test categorical columns have been encoded in accordance with targetEncodingMap
           EncodingMaps targetEncodingMap = loadedMojoModel._targetEncodingMap;
 
@@ -233,7 +233,7 @@ public class TEMojoIntegrationTest extends TestUtil {
       rowToPredictFor.put("body", "123");
       rowToPredictFor.put("pclass", "1");
 
-      double[] encodings = teModelWrapper.transformWithTargetEncoding(rowToPredictFor);
+      double[] encodings = teModelWrapper.transformWithTargetEncoding(rowToPredictFor).transformations;
 
       //Check that specified in the test categorical columns have been encoded in accordance with targetEncodingMap
       EncodingMaps targetEncodingMap = loadedMojoModel._targetEncodingMap;
@@ -327,7 +327,7 @@ public class TEMojoIntegrationTest extends TestUtil {
       rowToPredictFor.put("body", "123");
       rowToPredictFor.put("pclass", "1");
 
-      double[] encodings = teModelWrapper.transformWithTargetEncoding(rowToPredictFor);
+      double[] encodings = teModelWrapper.transformWithTargetEncoding(rowToPredictFor).transformations;
 
       // Check that specified in the test categorical columns have been encoded in accordance with encoding map
       // We reusing static helper methods from TargetEncoderMojoModel as it is not the point of current test to check them.
