@@ -8,7 +8,6 @@ import static hex.genmodel.GenModel.createAuxKey;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
-import hex.genmodel.algos.tree.*;
 import hex.glm.GLMModel;
 import hex.util.LinearAlgebraUtils;
 import water.*;
@@ -26,13 +25,12 @@ import water.util.*;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 public abstract class SharedTreeModel<
         M extends SharedTreeModel<M, P, O>,
         P extends SharedTreeModel.SharedTreeParameters,
         O extends SharedTreeModel.SharedTreeOutput
-        > extends Model<M, P, O> implements Model.LeafNodeAssignment, Model.GetMostImportantFeatures, Model.FeatureFrequencies, Model.Contributions {
+        > extends Model<M, P, O> implements Model.LeafNodeAssignment, Model.GetMostImportantFeatures, Model.FeatureFrequencies {
 
   @Override
   public String[] getMostImportantFeatures(int n) {
@@ -737,111 +735,6 @@ public abstract class SharedTreeModel<
 
   protected <T extends JCodeSB> T toJavaForestName(T sb, String mname, int t ) {
     return (T) sb.p(mname).p("_Forest_").p(t);
-  }
-  
-  @Override
-  public Frame scoreContributions(Frame frame, Key<Frame> destination_key) {
-    if (_output.nclasses() > 2) {
-      throw new UnsupportedOperationException(
-              "Calculating contributions is currently not supported for multinomial models.");
-    }
-    if ((!_parms.algoName().equals("GBM")) && (!_parms.algoName().equals("DRF"))) {
-      throw new UnsupportedOperationException("Calculating contributions is currently not supported for " + _parms.algoName());
-    }
-
-    Frame adaptFrm = new Frame(frame);
-    adaptTestForTrain(adaptFrm, true, false);
-    // remove non-feature columns
-    adaptFrm.remove(_parms._response_column);
-    adaptFrm.remove(_parms._fold_column);
-    adaptFrm.remove(_parms._weights_column);
-    adaptFrm.remove(_parms._offset_column);
-
-    final String[] outputNames = ArrayUtils.append(adaptFrm.names(), "BiasTerm");
-    return new ScoreContributionsTask(this, _output._ntrees, _output._treeKeys, _output._init_f)
-            .doAll(outputNames.length, Vec.T_NUM, adaptFrm)
-            .outputFrame(destination_key, outputNames, null);
-  }
-
-
-  public class ScoreContributionsTask extends MRTask<ScoreContributionsTask> {
-
-    private final Key<SharedTreeModel> _modelKey;
-
-    private transient SharedTreeModel _model;
-    private transient int _ntrees;
-    private transient Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _treeKeys;
-    private transient double _init_f;
-    private transient TreeSHAPPredictor<double[]> _treeSHAP;
-
-    public ScoreContributionsTask(SharedTreeModel model, int ntrees,
-                                  Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] treeKeys,
-                                  double init_f) {
-      _modelKey = model._key;
-      _ntrees = ntrees;
-      _treeKeys = treeKeys;
-      _init_f = init_f;
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    protected void setupLocal() {
-      _model = _modelKey.get();
-      assert _model != null;
-      final SharedTreeNode[] empty = new SharedTreeNode[0];
-      List<TreeSHAPPredictor<double[]>> treeSHAPs = new ArrayList<>(_ntrees);
-      for (int treeIdx = 0; treeIdx < _ntrees; treeIdx++) {
-        for (int treeClass = 0; treeClass < _treeKeys[treeIdx].length; treeClass++) {
-          if (_treeKeys[treeIdx][treeClass] == null) {
-            continue;
-          }
-          SharedTreeSubgraph tree = _model.getSharedTreeSubgraph(treeIdx, treeClass);
-          SharedTreeNode[] nodes = tree.nodesArray.toArray(empty);
-          treeSHAPs.add(new TreeSHAP<>(nodes, nodes, 0));
-        }
-      }
-      assert treeSHAPs.size() == _ntrees; // for now only regression and binomial to keep the output sane
-      _treeSHAP = new TreeSHAPEnsemble<>(treeSHAPs, (float) _init_f);
-    }
-
-    @Override
-    public void map(Chunk chks[], NewChunk[] nc) {
-      assert chks.length == nc.length - 1; // calculate contribution for each feature + the model bias
-      double[] input = MemoryManager.malloc8d(chks.length);
-      float[] contribs = MemoryManager.malloc4f(nc.length);
-
-      Object workspace = _treeSHAP.makeWorkspace();
-
-      for (int row = 0; row < chks[0]._len; row++) {
-        for (int i = 0; i < chks.length; i++) {
-          input[i] = chks[i].atd(row);
-        }
-        for (int i = 0; i < contribs.length; i++) {
-          contribs[i] = 0;
-        }
-
-        // calculate Shapley values
-        _treeSHAP.calculateContributions(input, contribs, 0, -1, workspace);
-
-        if (_model._parms.algoName().equals("GBM")) { // GBM
-          for (int i = 0; i < nc.length; i++) {
-            nc[i].addNum(contribs[i]);
-          }
-        } else if (_model._parms.algoName().equals("DRF"))  { // DRF
-          for (int i = 0; i < nc.length; i++) {
-            // Prediction of DRF tree ensemble is an average prediction of all trees. So, divide contribs by ntrees
-            if (_model._output.nclasses() == 1) { //Regression
-              nc[i].addNum(contribs[i] / _ntrees);
-            } else { //Binomial
-              float featurePlusBiasRatio = (float)1 / (_model._output.nfeatures() + 1); // + 1 for bias term
-              nc[i].addNum(featurePlusBiasRatio - (contribs[i] / _ntrees));
-            }
-          }
-        } else {
-          throw new UnsupportedOperationException("Calculating contributions is currently not supported for " + _parms.algoName());
-        }
-      }
-    }
   }
 
 }

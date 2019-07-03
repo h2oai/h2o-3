@@ -1,13 +1,13 @@
 package hex.tree.drf;
 
-import hex.tree.SharedTreeModel;
+import hex.tree.SharedTreeModelGBMDRF;
 import water.Key;
 import water.util.MathUtils;
 import water.util.SBPrintStream;
 
-public class DRFModel extends SharedTreeModel<DRFModel, DRFModel.DRFParameters, DRFModel.DRFOutput> {
+public class DRFModel extends SharedTreeModelGBMDRF<DRFModel, DRFModel.DRFParameters, DRFModel.DRFOutput> {
 
-  public static class DRFParameters extends SharedTreeModel.SharedTreeParameters {
+  public static class DRFParameters extends SharedTreeModelGBMDRF.SharedTreeParameters {
     public String algoName() { return "DRF"; }
     public String fullName() { return "Distributed Random Forest"; }
     public String javaName() { return DRFModel.class.getName(); }
@@ -24,7 +24,7 @@ public class DRFModel extends SharedTreeModel<DRFModel, DRFModel.DRFParameters, 
     }
   }
 
-  public static class DRFOutput extends SharedTreeModel.SharedTreeOutput {
+  public static class DRFOutput extends SharedTreeModelGBMDRF.SharedTreeOutput {
     public DRFOutput( DRF b) { super(b); }
   }
 
