@@ -7,21 +7,71 @@ Predefined distributions to use for custom distribution definition
 """
 
 
-class CustomDistributionGeneric:
+class CustomDistributionGeneric(object):
+    """
+        Predefined generic distribution class to use for customization distribution.
+
+        The class has four methods:
+            - link: link function transforms the probability of response variable to a continuous scale that is unbounded
+            - init: computes numerator and denominator of the initial value.
+            - gradient: computes (Negative half) Gradient of deviance function at predicted value for an actual response
+            - gamma: computes numerator and denominator of terminal node estimate
+
+        For customization a loss function, the gradient and gamma methods are important.
+
+        To customize a special type of problem we recommend you to inherit from predefined classes:
+            - CustomDistributionGaussian - for regression problems
+            - CustomDistributionBernoulli - for 2-class classification problems
+            - CustomDistributionMultinomial - for n-class classification problems
+    """
     def link(self):
+        """
+        Type of Link Function.
+
+        :return: name of link function. Possible functions: log, logit, identity, inverse, ologit, ologlog, oprobit
+        """
         return "identity"
 
     def init(self, w, o, y):
+        """
+        Contribution for initial value computation (numerator and denominator).
+
+        :param w: weight
+        :param o: offset
+        :param y: response
+        :return: list [weighted contribution to init numerator,  weighted contribution to init denominator]
+        """
         return [0, 0]
 
     def gradient(self, y, f):
+        """
+        (Negative half) Gradient of deviance function at predicted value f, for actual response y.
+        Important fot customization of a loss function.
+
+        :param y: actual response
+        :param f: predicted response in link space including offset
+        :return: gradient
+        """
         return 0
 
     def gamma(self, w, y, z, f):
-        return 0
+        """
+        Contribution for GBM's leaf node prediction (numerator and denominator).
+        Important for customization of a loss function.
+
+        :param w: weight
+        :param y: actual response
+        :param z: residual
+        :param f: predicted response including offset
+        :return: list [weighted contribution to gamma numerator, weighted contribution to gamma denominator]
+        """
+        return 1
 
 
 class CustomDistributionGaussian(CustomDistributionGeneric):
+    """
+        Predefined distribution class for regression problems.
+    """
 
     def link(self):
         return "identity"
@@ -37,6 +87,9 @@ class CustomDistributionGaussian(CustomDistributionGeneric):
 
 
 class CustomDistributionBernoulli(CustomDistributionGeneric):
+    """
+        Predefined distribution class for 2-class classification problems.
+    """
 
     def exp(self, x):
         import java.lang.Math as Math
@@ -58,6 +111,9 @@ class CustomDistributionBernoulli(CustomDistributionGeneric):
     
 
 class CustomDistributionMultinomial(CustomDistributionGeneric):
+    """
+        Predefined distribution class for n-class classification problems.
+    """
 
     def link(self):
         return "log"

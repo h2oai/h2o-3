@@ -7,7 +7,7 @@ package water.udf;
  * - link: link function transforms the probability of response variable to a continuous scale that is unbounded
  * - init: computes numerator and denominator of the initial value.
  * - gradient: computes (Negative half) Gradient of deviance function at predicted value for actual response
- * - gamma: computes numerator and denominator of terminal node estimate - gamma 
+ * - gamma: computes numerator and denominator of terminal node estimate
  */
 public interface CDistributionFunc extends CFunc {
 
@@ -22,13 +22,13 @@ public interface CDistributionFunc extends CFunc {
      * @param w weight
      * @param o offset
      * @param y response
-     * @return [weighted contribution to numerator,  weighted contribution to denominator]
+     * @return [weighted contribution to init numerator,  weighted contribution to init denominator]
      */
     double[] init(double w, double o, double y);
     
     /**
      * (Negative half) Gradient of deviance function at predicted value f, for actual response y.
-     * Important for customized loss function.
+     * Important for customization of a loss function.
      * @param y (actual) response
      * @param f (predicted) response in link space (including offset)
      * @return gradient
@@ -37,12 +37,12 @@ public interface CDistributionFunc extends CFunc {
 
     /**
      * Contribution for GBM's leaf node prediction (numerator and denominator).
-     * Important for customized loss function.
+     * Important for customization of a loss function.
      * @param w weight
      * @param y response
      * @param z residual
      * @param f predicted value (including offset)
-     * @return [weighted contribution to numerator, weighted contribution to denominator]
+     * @return [weighted contribution to gamma numerator, weighted contribution to gamma denominator]
      */
     double[] gamma(double w, double y, double z, double f);
 }
