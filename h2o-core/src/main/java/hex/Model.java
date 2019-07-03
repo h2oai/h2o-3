@@ -1363,32 +1363,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
 
-  private static class ScoreRunnable extends H2O.RemoteRunnable<ScoreRunnable> {
-    private Key<Model> _modelKey;
-    private Key<Frame> _frameKey;
-    private Key<Frame> _result;
-
-    public ScoreRunnable(Model m, Frame fr) {
-      _modelKey = m._key;
-      _frameKey = fr._key;
-    }
-
-    @Override
-    public void run() {
-      Model m = _modelKey.get();
-      Frame fr = _frameKey.get();
-      Frame predictions = m.score(fr);
-      _result = predictions._key;
-    }
-  }
-
-  public Frame scoreOnH20Node(Frame fr) throws IllegalArgumentException {
-    ScoreRunnable runnable = new ScoreRunnable(this, fr);
-    H2O.runOnH2ONode(runnable);
-    return runnable._result == null ? null : runnable._result.get();
-  }
-
-
   /**
    * Bulk score the frame, and auto-name the resulting predictions frame.
    * @see #score(Frame, String)

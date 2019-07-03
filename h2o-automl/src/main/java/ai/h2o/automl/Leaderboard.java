@@ -240,7 +240,6 @@ public class Leaderboard extends Keyed<Leaderboard> {
             mm = ModelMetrics.getFromDKV(model, leaderboardFrame);
             if (mm == null) {
               //scores and magically stores the metrics where we're looking for it on the next line
-//              model.scoreOnH20Node(leaderboardFrame).delete();  // immediately delete the resulting frame to avoid leaks
               model.score(leaderboardFrame).delete();
               mm = ModelMetrics.getFromDKV(model, leaderboardFrame);
             }
