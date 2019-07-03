@@ -725,7 +725,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     /** List of all the associated ModelMetrics objects, so we can delete them
      *  when we delete this model. */
-    Key[] _model_metrics = new Key[0];
+    Key<ModelMetrics>[] _model_metrics = new Key[0];
 
     /** Job info: final status (canceled, crashed), build time */
     public Job _job;
@@ -828,7 +828,26 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     public boolean isAutoencoder() { return false; } // Override in DeepLearning and so on.
 
-    public synchronized void clearModelMetrics() { _model_metrics = new Key[0]; }
+    public synchronized Key<ModelMetrics>[] clearModelMetrics(boolean keepModelTrainingMetrics) {
+      Key<ModelMetrics>[] removed;
+      if (keepModelTrainingMetrics) {
+        Key<ModelMetrics>[] kept = new Key[0];
+        if (_training_metrics != null) kept = ArrayUtils.append(kept, _training_metrics._key);
+        if (_validation_metrics != null) kept = ArrayUtils.append(kept, _validation_metrics._key);
+        if (_cross_validation_metrics != null) kept = ArrayUtils.append(kept, _cross_validation_metrics._key);
+
+        removed = new Key[0];
+        for (Key<ModelMetrics> k : _model_metrics) {
+          if (!ArrayUtils.contains(kept, k))
+            removed = ArrayUtils.append(removed, k);
+        }
+        _model_metrics = kept;
+      } else {
+        removed = Arrays.copyOf(_model_metrics, _model_metrics.length);
+        _model_metrics = new Key[0];
+      }
+      return removed;
+    }
 
     public synchronized Key<ModelMetrics>[] getModelMetrics() { return Arrays.copyOf(_model_metrics, _model_metrics.length); }
 
@@ -1341,6 +1360,32 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     return haveCategoricalPredictors;
 
+  }
+
+
+  private static class ScoreRunnable extends H2O.RemoteRunnable<ScoreRunnable> {
+    private Key<Model> _modelKey;
+    private Key<Frame> _frameKey;
+    private Key<Frame> _result;
+
+    public ScoreRunnable(Model m, Frame fr) {
+      _modelKey = m._key;
+      _frameKey = fr._key;
+    }
+
+    @Override
+    public void run() {
+      Model m = _modelKey.get();
+      Frame fr = _frameKey.get();
+      Frame predictions = m.score(fr);
+      _result = predictions._key;
+    }
+  }
+
+  public Frame scoreOnH20Node(Frame fr) throws IllegalArgumentException {
+    ScoreRunnable runnable = new ScoreRunnable(this, fr);
+    H2O.runOnH2ONode(runnable);
+    return runnable._result == null ? null : runnable._result.get();
   }
 
 

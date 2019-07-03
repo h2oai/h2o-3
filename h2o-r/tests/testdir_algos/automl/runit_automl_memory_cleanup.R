@@ -24,25 +24,55 @@ automl.cleanup.suite <- function() {
   test_remove_automl_instance <- function() {
     ds <- import_dataset()
     aml <- h2o.automl(project_name="test_remove_R_automl_instance",
-                      x=ds$x, y=ds$y,
-                      training_frame=ds$train,
-                      validation_frame=ds$valid,
-                      leaderboard_frame=ds$test,
-                      max_models=max_models)
+    x=ds$x, y=ds$y,
+    training_frame=ds$train,
+    validation_frame=ds$valid,
+    leaderboard_frame=ds$test,
+    max_models=max_models)
 
     keys <- h2o.ls()$key
     expect_gt(length(grep("_AutoML_", keys)), nrow(aml@leaderboard))
 
     h2o.rm(aml)
     clean <- h2o.ls()$key
-    expect_equal(length(grep("_AutoML_", clean)), 0)
+    print(clean)
+    expect_equal(length(grep("_AutoML_", !!clean)), 0)
     # verify that the original frames were not deleted
     for (frame in c(ds$train, ds$valid, ds$test)) {
       expect_true(any(grepl(paste0("^",h2o.getId(frame),"$"), clean)))
     }
   }
 
-  makeSuite(test_remove_automl_instance)
+  test_remove_automl_instance_after_keeping_cv <- function() {
+    ds <- import_dataset()
+    aml <- h2o.automl(project_name="test_remove_R_automl_instance_after_keeping_cv",
+                      x=ds$x, y=ds$y,
+                      training_frame=ds$train,
+                      validation_frame=ds$valid,
+                      leaderboard_frame=ds$test,
+                      max_models=max_models,
+                      keep_cross_validation_models=TRUE,
+                      keep_cross_validation_predictions=TRUE,
+                      keep_cross_validation_fold_assignment=TRUE
+                      )
+
+    keys <- h2o.ls()$key
+    expect_gt(length(grep("_AutoML_", keys)), nrow(aml@leaderboard))
+
+    h2o.rm(aml)
+    clean <- h2o.ls()$key
+    print(clean)
+    expect_equal(length(grep("_AutoML_", !!clean)), 0)
+    # verify that the original frames were not deleted
+    for (frame in c(ds$train, ds$valid, ds$test)) {
+      expect_true(any(grepl(paste0("^",h2o.getId(frame),"$"), clean)))
+    }
+  }
+
+  makeSuite(
+    test_remove_automl_instance,
+    test_remove_automl_instance_after_keeping_cv
+  )
 }
 
 doSuite("AutoML Memory Cleanup Test", automl.cleanup.suite())

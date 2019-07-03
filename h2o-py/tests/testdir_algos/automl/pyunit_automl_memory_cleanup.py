@@ -326,7 +326,7 @@ def test_suite_remove_automl():
             predictions=0,
             metrics=(max_models * 3  # for each non-SE model, 1 on training_frame, 1 on validation_frame, 1 on leaderboard_frame
                      + (2 * 2)  # for each SE model, 1 on training frame, 1 on leaderboard frame
-                     + (2 * 4)  # for each SE metalearner, 1+1 on levelone training+validation, 1+1 for final scoring (preds_levelone training+leaderbird)
+                     + (2 * 2)  # for each SE metalearner, 1+1 on levelone training+validation
                      )
         )
         for k, v in expectations.items():
@@ -334,7 +334,7 @@ def test_suite_remove_automl():
 
         h2o.remove(aml)
         clean = list_keys_in_memory()
-        # print(clean['all'].values)
+        print(clean['all'].values)
         assert not contains_leaderboard(project_name, clean)
         assert not contains_event_log(project_name, clean)
         assert len(clean['models_base']) == 0
@@ -371,9 +371,9 @@ def test_suite_remove_automl():
             predictions=(len(keys['cv_models'])  # cv predictions
                          + len(keys['models_base'])  # cv holdout predictions
                          ),
-            metrics=(len(keys['cv_models']) * 3  # for each cv model, 1 on training frame, 1 on validation frame (=training for cv), 1 on frame with null key (what is this?)
+            metrics=(len(keys['cv_models']) * 2  # for each cv model, 1 on training frame, 1 on validation frame (=training for cv)
                      + len(keys['models_base'])  # for each model, 1 on training_frame
-                     + (2 * 2)  # for each SE, 1 on levelone training, 1 for final scoring (preds_levelone)
+                     + (2 * 1)  # for each SE, 1 on levelone training
                      )
         )
         for k, v in expectations.items():
@@ -381,7 +381,7 @@ def test_suite_remove_automl():
 
         h2o.remove(aml)
         clean = list_keys_in_memory()
-        # print(clean['all'].values)
+        print(clean['all'].values)
         assert not contains_leaderboard(project_name, clean)
         assert not contains_event_log(project_name, clean)
         assert len(clean['models_base']) == 0
@@ -396,7 +396,7 @@ def test_suite_remove_automl():
 
     def test_remove_automl_no_xval():
         target, train, blend, test = prepare_data()
-        project_name='aml_no_xval_remove_test'
+        project_name = 'aml_no_xval_remove_test'
         max_models = 3
         aml = H2OAutoML(project_name=project_name,
                         nfolds=0,
@@ -405,7 +405,7 @@ def test_suite_remove_automl():
         aml.train(y=target, training_frame=train, blending_frame=blend)
 
         keys = list_keys_in_memory()
-        # print(keys['all'].values)
+        print(keys['all'].values)
         assert contains_leaderboard(project_name, keys)
         assert contains_event_log(project_name, keys)
         expectations = dict(
@@ -413,8 +413,8 @@ def test_suite_remove_automl():
             cv_models=0,
             predictions=0,
             metrics=(len(keys['models_base']) * 2  # for each model, 1 on training_frame, 1 on leaderboard frame (those are extracted from original training_frame)
-                     + max_models * 2  # for each non-SE model, 1 on blending frame, 1 on validation frame
-                     + (2 * 4)  # for each SE metalearner, 1 on levelone training, 1 on levelone validation, 2 for final scoring (1 on training, 1 on leaderboard)
+                     + max_models * 1  # for each non-SE model, 1 on validation frame
+                     + (2 * 2)  # for each SE metalearner, 1 on levelone training, 1 on levelone validation
                      )
         )
         for k, v in expectations.items():
@@ -422,7 +422,7 @@ def test_suite_remove_automl():
 
         h2o.remove(aml)
         clean = list_keys_in_memory()
-        # print(clean['all'].values)
+        print(clean['all'].values)
         assert not contains_leaderboard(project_name, clean)
         assert not contains_event_log(project_name, clean)
         assert len(clean['models_base']) == 0
@@ -455,7 +455,7 @@ def test_suite_remove_automl():
 
         h2o.remove(aml)
         clean = list_keys_in_memory()
-        # print(clean['all'].values)
+        print(clean['all'].values)
         assert not contains_leaderboard(project_name, clean)
         assert not contains_event_log(project_name, clean)
         assert len(clean['models_base']) == 0
@@ -478,7 +478,7 @@ def test_suite_remove_automl():
 
 
 pyunit_utils.run_tests(list(iter.chain.from_iterable([
-    test_suite_clean_cv_predictions(),
-    test_suite_clean_cv_models(),
+    # test_suite_clean_cv_predictions(),
+    # test_suite_clean_cv_models(),
     test_suite_remove_automl()
 ])))
