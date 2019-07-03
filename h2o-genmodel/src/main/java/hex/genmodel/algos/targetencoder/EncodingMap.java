@@ -1,10 +1,11 @@
 package hex.genmodel.algos.targetencoder;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-public class EncodingMap {
+public class EncodingMap implements Serializable {
 
   /**
    * Represents mapping from categorical level to  2-elements array of `numerator` and `denominator` 

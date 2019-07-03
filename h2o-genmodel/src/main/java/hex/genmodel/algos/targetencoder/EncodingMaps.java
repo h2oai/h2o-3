@@ -1,10 +1,11 @@
 package hex.genmodel.algos.targetencoder;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-public class EncodingMaps {
+public class EncodingMaps implements Serializable {
 
   /**
    * Outer Map stores encoding maps for each categorical column.
