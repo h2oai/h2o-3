@@ -745,6 +745,9 @@ public abstract class SharedTreeModel<
       throw new UnsupportedOperationException(
               "Calculating contributions is currently not supported for multinomial models.");
     }
+    if ((!_parms.algoName().equals("GBM")) && (!_parms.algoName().equals("DRF"))) {
+      throw new UnsupportedOperationException("Calculating contributions is currently not supported for " + _parms.algoName());
+    }
 
     Frame adaptFrm = new Frame(frame);
     adaptTestForTrain(adaptFrm, true, false);
@@ -761,7 +764,7 @@ public abstract class SharedTreeModel<
   }
 
 
-  public class ScoreContributionsTask extends MRTask {
+  public class ScoreContributionsTask extends MRTask<ScoreContributionsTask> {
 
     private final Key<SharedTreeModel> _modelKey;
 
@@ -835,7 +838,7 @@ public abstract class SharedTreeModel<
             }
           }
         } else {
-          throw new H2OIllegalArgumentException("Calculating prediction contributions are not supported for " + _model._parms.algoName());
+          throw new UnsupportedOperationException("Calculating contributions is currently not supported for " + _parms.algoName());
         }
       }
     }
