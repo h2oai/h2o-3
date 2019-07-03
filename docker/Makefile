@@ -16,7 +16,7 @@ else
 endif
 
 dev-base:
-	docker build --no-cache -t harbor.h2o.ai/opsh2oai/h2o-3/dev-base$(GPU_SUFFIX):$(VERSION) \
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-base$(GPU_SUFFIX):$(VERSION) \
 		-f jenkins-images/Dockerfile-base \
 		--build-arg FROM_IMAGE=$(BASE_FROM_IMAGE) \
 		.
@@ -29,7 +29,7 @@ ifneq ($(CI), 1)
 dev-jdk-8-base: dev-base
 endif
 dev-jdk-8-base:
-	docker build --no-cache -t harbor.h2o.ai/opsh2oai/h2o-3/dev-jdk-8-base$(GPU_SUFFIX):$(VERSION) \
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-jdk-8-base$(GPU_SUFFIX):$(VERSION) \
 		-f jenkins-images/Dockerfile-jdk-8-base \
 		--build-arg GPU_SUFFIX=$(GPU_SUFFIX) \
 		--build-arg FROM_VERSION=$(VERSION) \
@@ -42,7 +42,7 @@ ifneq ($(CI), 1)
 dev-jdk-others-base: dev-base
 endif
 dev-jdk-others-base:
-	docker build --no-cache -t harbor.h2o.ai/opsh2oai/h2o-3/dev-jdk-others-base$(GPU_SUFFIX):$(VERSION) \
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-jdk-others-base$(GPU_SUFFIX):$(VERSION) \
 		-f jenkins-images/Dockerfile-jdk-others-base \
 		--build-arg GPU_SUFFIX=$(GPU_SUFFIX) \
 		--build-arg FROM_VERSION=$(VERSION) \
@@ -56,7 +56,7 @@ ifneq ($(CI), 1)
 dev-python-base: dev-jdk-8-base
 endif
 dev-python-base:
-	docker build --no-cache -t harbor.h2o.ai/opsh2oai/h2o-3/dev-python-base$(GPU_SUFFIX):$(VERSION) \
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-python-base$(GPU_SUFFIX):$(VERSION) \
 		-f jenkins-images/Dockerfile-python-base \
 		--build-arg GPU_SUFFIX=$(GPU_SUFFIX) \
 		--build-arg FROM_VERSION=$(VERSION) \
@@ -69,7 +69,7 @@ ifneq ($(CI), 1)
 dev-r-base: dev-jdk-8-base
 endif
 dev-r-base:
-	docker build --no-cache -t harbor.h2o.ai/opsh2oai/h2o-3/dev-r-base$(GPU_SUFFIX):$(VERSION) \
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-r-base$(GPU_SUFFIX):$(VERSION) \
 		-f jenkins-images/Dockerfile-r-base \
 		--build-arg GPU_SUFFIX=$(GPU_SUFFIX) \
 		--build-arg FROM_VERSION=$(VERSION) \
@@ -82,7 +82,7 @@ ifneq ($(CI), 1)
 dev-python-2.7-openjdk-7: dev-python-2.7
 endif
 dev-python-2.7-openjdk-7:
-	docker build --no-cache -t harbor.h2o.ai/opsh2oai/h2o-3/dev-python-2.7-openjdk-7$(GPU_SUFFIX):$(VERSION) \
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-python-2.7-openjdk-7$(GPU_SUFFIX):$(VERSION) \
 		-f jenkins-images/Dockerfile-openjdk-others \
 		--build-arg GPU_SUFFIX=$(GPU_SUFFIX) \
 		--build-arg FROM_VERSION=$(VERSION) \
@@ -97,7 +97,7 @@ ifneq ($(CI), 1)
 dev-python-2.7-jdk-%: dev-python-2.7
 endif
 dev-python-2.7-jdk-%:
-	docker build --no-cache -t harbor.h2o.ai/opsh2oai/h2o-3/dev-python-2.7-jdk-$*$(GPU_SUFFIX):$(VERSION) \
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-python-2.7-jdk-$*$(GPU_SUFFIX):$(VERSION) \
 		-f jenkins-images/Dockerfile-jdk-others \
 		--build-arg GPU_SUFFIX=$(GPU_SUFFIX) \
 		--build-arg FROM_VERSION=$(VERSION) \
@@ -112,7 +112,7 @@ ifneq ($(CI), 1)
 dev-python-3.5-openjdk-7: dev-python-3.5
 endif
 dev-python-3.5-openjdk-7:
-	docker build --no-cache -t harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.5-openjdk-7$(GPU_SUFFIX):$(VERSION) \
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.5-openjdk-7$(GPU_SUFFIX):$(VERSION) \
 		-f jenkins-images/Dockerfile-openjdk-others \
 		--build-arg GPU_SUFFIX=$(GPU_SUFFIX) \
 		--build-arg FROM_VERSION=$(VERSION) \
@@ -127,7 +127,7 @@ ifneq ($(CI), 1)
 dev-python-3.5-jdk-%: dev-python-3.5
 endif
 dev-python-3.5-jdk-%:
-	docker build --no-cache -t harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.5-jdk-$*$(GPU_SUFFIX):$(VERSION) \
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.5-jdk-$*$(GPU_SUFFIX):$(VERSION) \
 		-f jenkins-images/Dockerfile-jdk-others \
 		--build-arg GPU_SUFFIX=$(GPU_SUFFIX) \
 		--build-arg FROM_VERSION=$(VERSION) \
@@ -142,7 +142,7 @@ ifneq ($(CI), 1)
 dev-python-3.6-openjdk-7: dev-python-3.6
 endif
 dev-python-3.6-openjdk-7:
-	docker build --no-cache -t harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.6-openjdk-7$(GPU_SUFFIX):$(VERSION) \
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.6-openjdk-7$(GPU_SUFFIX):$(VERSION) \
 		-f jenkins-images/Dockerfile-openjdk-others \
 		--build-arg GPU_SUFFIX=$(GPU_SUFFIX) \
 		--build-arg FROM_VERSION=$(VERSION) \
@@ -157,7 +157,7 @@ ifneq ($(CI), 1)
 dev-python-3.6-jdk-%: dev-python-3.6
 endif
 dev-python-3.6-jdk-%:
-	docker build --no-cache -t harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.6-jdk-$*$(GPU_SUFFIX):$(VERSION) \
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.6-jdk-$*$(GPU_SUFFIX):$(VERSION) \
 		-f jenkins-images/Dockerfile-jdk-others \
 		--build-arg GPU_SUFFIX=$(GPU_SUFFIX) \
 		--build-arg FROM_VERSION=$(VERSION) \
@@ -172,7 +172,7 @@ ifneq ($(CI), 1)
 dev-python-%: dev-python-base
 endif
 dev-python-%:
-	docker build --no-cache -t harbor.h2o.ai/opsh2oai/h2o-3/dev-python-$*$(GPU_SUFFIX):$(VERSION) \
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-python-$*$(GPU_SUFFIX):$(VERSION) \
 		-f jenkins-images/Dockerfile-python \
 		--build-arg GPU_SUFFIX=$(GPU_SUFFIX) \
 		--build-arg FROM_VERSION=$(VERSION) \
@@ -187,7 +187,7 @@ ifneq ($(CI), 1)
 dev-r-3.3.3-openjdk-7: dev-r-3.3.3
 endif
 dev-r-3.3.3-openjdk-7:
-	docker build --no-cache -t harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.3.3-openjdk-7$(GPU_SUFFIX):$(VERSION) \
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.3.3-openjdk-7$(GPU_SUFFIX):$(VERSION) \
 		-f jenkins-images/Dockerfile-openjdk-others \
 		--build-arg GPU_SUFFIX=$(GPU_SUFFIX) \
 		--build-arg FROM_VERSION=$(VERSION) \
@@ -202,7 +202,7 @@ ifneq ($(CI), 1)
 dev-r-3.3.3-jdk-%: dev-r-3.3.3
 endif
 dev-r-3.3.3-jdk-%:
-	docker build --no-cache -t harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.3.3-jdk-$*$(GPU_SUFFIX):$(VERSION) \
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.3.3-jdk-$*$(GPU_SUFFIX):$(VERSION) \
 		-f jenkins-images/Dockerfile-jdk-others \
 		--build-arg GPU_SUFFIX=$(GPU_SUFFIX) \
 		--build-arg FROM_VERSION=$(VERSION) \
@@ -217,7 +217,7 @@ ifneq ($(CI), 1)
 dev-r-3.4.1-openjdk-7: dev-r-3.4.1
 endif
 dev-r-3.4.1-openjdk-7:
-	docker build --no-cache -t harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.4.1-openjdk-7$(GPU_SUFFIX):$(VERSION) \
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.4.1-openjdk-7$(GPU_SUFFIX):$(VERSION) \
 		-f jenkins-images/Dockerfile-openjdk-others \
 		--build-arg GPU_SUFFIX=$(GPU_SUFFIX) \
 		--build-arg FROM_VERSION=$(VERSION) \
@@ -232,7 +232,7 @@ ifneq ($(CI), 1)
 dev-r-3.4.1-jdk-%: dev-r-3.4.1
 endif
 dev-r-3.4.1-jdk-%:
-	docker build --no-cache -t harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.4.1-jdk-$*$(GPU_SUFFIX):$(VERSION) \
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.4.1-jdk-$*$(GPU_SUFFIX):$(VERSION) \
 		-f jenkins-images/Dockerfile-jdk-others \
 		--build-arg GPU_SUFFIX=$(GPU_SUFFIX) \
 		--build-arg FROM_VERSION=$(VERSION) \
@@ -247,7 +247,7 @@ ifneq ($(CI), 1)
 dev-r-%: dev-r-base
 endif
 dev-r-%:
-	docker build --no-cache -t harbor.h2o.ai/opsh2oai/h2o-3/dev-r-$*$(GPU_SUFFIX):$(VERSION) \
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-r-$*$(GPU_SUFFIX):$(VERSION) \
 		-f jenkins-images/Dockerfile-r \
 		--build-arg GPU_SUFFIX=$(GPU_SUFFIX) \
 		--build-arg FROM_VERSION=$(VERSION) \
@@ -261,7 +261,7 @@ ifneq ($(CI), 1)
 dev-openjdk-7: dev-jdk-others-base
 endif
 dev-openjdk-7:
-	docker build --no-cache -t harbor.h2o.ai/opsh2oai/h2o-3/dev-openjdk-7$(GPU_SUFFIX):$(VERSION) \
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-openjdk-7$(GPU_SUFFIX):$(VERSION) \
 		-f jenkins-images/Dockerfile-openjdk-others \
 		--build-arg GPU_SUFFIX=$(GPU_SUFFIX) \
 		--build-arg FROM_VERSION=$(VERSION) \
@@ -275,7 +275,7 @@ ifneq ($(CI), 1)
 dev-jdk-%: dev-jdk-others-base
 endif
 dev-jdk-%:
-	docker build --no-cache -t harbor.h2o.ai/opsh2oai/h2o-3/dev-jdk-$*$(GPU_SUFFIX):$(VERSION) \
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-jdk-$*$(GPU_SUFFIX):$(VERSION) \
 		-f jenkins-images/Dockerfile-jdk-others \
 		--build-arg GPU_SUFFIX=$(GPU_SUFFIX) \
 		--build-arg FROM_VERSION=$(VERSION) \
@@ -289,7 +289,7 @@ ifneq ($(CI), 1)
 dev-build-base: dev-r-3.4.1
 endif
 dev-build-base:
-	docker build --no-cache -t harbor.h2o.ai/opsh2oai/h2o-3/dev-build-base$(GPU_SUFFIX):$(VERSION) \
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-build-base$(GPU_SUFFIX):$(VERSION) \
 		-f jenkins-images/Dockerfile-build-base \
 		--build-arg GPU_SUFFIX=$(GPU_SUFFIX) \
 		--build-arg FROM_VERSION=$(VERSION) \
@@ -303,7 +303,7 @@ ifneq ($(CI), 1)
 dev-build-gradle-%: dev-build-base
 endif
 dev-build-gradle-%:
-	docker build --no-cache -t harbor.h2o.ai/opsh2oai/h2o-3/dev-build-gradle-$*$(GPU_SUFFIX):$(VERSION) \
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-build-gradle-$*$(GPU_SUFFIX):$(VERSION) \
 		-f jenkins-images/Dockerfile-build \
 		--build-arg GPU_SUFFIX=$(GPU_SUFFIX) \
 		--build-arg FROM_VERSION=$(VERSION) \
@@ -317,7 +317,7 @@ ifneq ($(CI), 1)
 dev-benchmark-gradle-%: dev-build-gradle-$(GRADLE_VERSION)
 endif
 dev-benchmark-gradle-%:
-	docker build --no-cache -t harbor.h2o.ai/opsh2oai/h2o-3/dev-benchmark-gradle-$*$(GPU_SUFFIX):$(VERSION) \
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-benchmark-gradle-$*$(GPU_SUFFIX):$(VERSION) \
 		-f jenkins-images/Dockerfile-benchmark \
 		--build-arg GPU_SUFFIX=$(GPU_SUFFIX) \
 		--build-arg FROM_VERSION=$(VERSION) \
@@ -331,7 +331,7 @@ ifneq ($(CI), 1)
 dev-build-hadoop-gradle-%: dev-build-gradle-$(GRADLE_VERSION)
 endif
 dev-build-hadoop-gradle-%:
-	docker build --no-cache -t harbor.h2o.ai/opsh2oai/h2o-3/dev-build-hadoop-gradle-$*$(GPU_SUFFIX):$(VERSION) \
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-build-hadoop-gradle-$*$(GPU_SUFFIX):$(VERSION) \
 		-f jenkins-images/Dockerfile-build-hadoop \
 		--build-arg GPU_SUFFIX=$(GPU_SUFFIX) \
 		--build-arg FROM_VERSION=$(VERSION) \
@@ -346,7 +346,7 @@ ifneq ($(CI), 1)
 dev-release-gradle-%: dev-build-hadoop-gradle-$(GRADLE_VERSION)
 endif
 dev-release-gradle-%:
-	docker build --no-cache -t harbor.h2o.ai/opsh2oai/h2o-3/dev-release-gradle-$*$(GPU_SUFFIX):$(VERSION) \
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-release-gradle-$*$(GPU_SUFFIX):$(VERSION) \
 		-f jenkins-images/Dockerfile-release \
 		--build-arg GPU_SUFFIX=$(GPU_SUFFIX) \
 		--build-arg FROM_VERSION=$(VERSION) \
