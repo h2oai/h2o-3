@@ -55,6 +55,8 @@ Suggests: ggplot2,
           slam,
           bit64 (>= 0.9.7),
           data.table (>= 1.9.8),
+          rgl (>= 0.100.19),
+          plot3Drgl (>= 1.0.1),
           survival
 Collate:
          'aggregator.R'

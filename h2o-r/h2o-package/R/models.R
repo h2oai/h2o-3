@@ -3475,18 +3475,18 @@ row_index=-1) {
         lower = pp[, 3] - pp[, 4]
         Zupper = matrix(upper, ncol=dim(XX)[2], byrow=F)
         Zlower = matrix(lower, ncol=dim(XX)[2], byrow=F)
-        open3d()
-        persp3Drgl(XX, YY, ZZ,theta=30, phi=15, axes=TRUE,scale=2, box=TRUE, nticks=5, 
-                ticktype="detailed",xlab=names(pp)[1], ylab=names(pp)[2], zlab="2D partial plots", 
+        rgl::open3d()
+        plot3Drgl::persp3Drgl(XX, YY, ZZ, theta=30, phi=15, axes=TRUE,scale=2, box=TRUE, nticks=5,
+                ticktype="detailed", xlab=names(pp)[1], ylab=names(pp)[2], zlab="2D partial plots",
                 main=tTitle, border='black', alpha=0.5)
-        persp3Drgl(XX, YY, Zupper,alpha=0.2,lwd=2, add=TRUE, border='yellow')   
-        persp3Drgl(XX, YY, Zlower,alpha=0.2,lwd=2, add=TRUE, border='green')  
-        grid3d(c("x", "y", "z"))
+        plot3Drgl::persp3Drgl(XX, YY, Zupper, alpha=0.2, lwd=2, add=TRUE, border='yellow')
+        plot3Drgl::persp3Drgl(XX, YY, Zlower, alpha=0.2, lwd=2, add=TRUE, border='green')
+        rgl::grid3d(c("x", "y", "z"))
       } else {
-        persp3D(XX, YY, ZZ,theta=30, phi=50, axes=TRUE,scale=2, box=TRUE, nticks=5, 
-                ticktype="detailed",xlab=names(pp)[1], ylab=names(pp)[2], zlab="2D partial plots", 
+        rgl::persp3d(XX, YY, ZZ, theta=30, phi=50, axes=TRUE,scale=2, box=TRUE, nticks=5,
+                ticktype="detailed", xlab=names(pp)[1], ylab=names(pp)[2], zlab="2D partial plots",
                 main=tTitle, border='black', alpha=0.5)
-        grid3d(c("x", "y", "z"))
+        rgl::grid3d(c("x", "y", "z"))
       }
     } else {
       print("2D Partial Dependence not calculated--make sure nbins is as high as the level count")
@@ -3504,24 +3504,20 @@ row_index=-1) {
 
   pp.plot.save2 <- function(pp, nBins=nbins, user_cols=NULL, user_num_splits=NULL) {
     # If user accidentally provides one of the most common suffixes in R, it is removed.
-    save_to <- gsub(replacement = "",pattern = "(\\.png)|(\\.jpg)|(\\.pdf)", x = save_to)
+    save_to <- gsub(replacement = "", pattern = "(\\.png)|(\\.jpg)|(\\.pdf)", x = save_to)
     colnames = paste0(names(pp)[1], "_", names(pp)[2])
     destination_file <- paste0(save_to,"_",colnames,'.png')
     pp.plot2(pp, nbins, user_cols, user_num_splits)
-    snapshot3d(destination_file)
+    rgl::snapshot3d(destination_file)
     dev.off()
-}
+  }
 
   if(plot && !noCols) lapply(pps[1:numCols], pp.plot) # plot 1d pdp here
   if(plot && !noCols && !is.null(save_to)){  # save 1d pdp here
     lapply(pps[1:numCols], pp.plot.save)
   }
-  
-  if (!noPairs &&
-      ("plot3Drgl" %in% rownames(installed.packages())) &&
-      ("rgl" %in% rownames(installed.packages()))) {
-    library(plot3Drgl)
-    library(rgl)
+
+  if (!noPairs && requireNamespace("plot3Drgl", quietly = TRUE) && requireNamespace("rgl", quietly = TRUE)) {
     if (plot && !is.null(save_to)) {
       # plot and save to file
       if (is.null(user_splits)) {
@@ -3561,11 +3557,9 @@ row_index=-1) {
         )
       }
     }
-  } else {
-    if (plot && !noPairs)
-      print("Cannot generate 2D partial plots.  Libraries plot3Drgl and rgl are missing")
+  } else if (plot && !noPairs) {
+    warning("Install packages plot3Drgl and rgl in order to generate 2D partial plots.")     
   }
-
 
   if(length(pps) == 1) {
     return(pps[[1]])
