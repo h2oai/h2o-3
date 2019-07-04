@@ -3469,8 +3469,8 @@ row_index=-1) {
   if(plot && !noCols && !is.null(save_to)){  # save 1d pdp here
     lapply(pps[1:numCols], pp.plot.save)
   }
-  
-  if (!noPairs && use.package("plot3Drgl") && use.package("rgl")) {
+
+  if (!noPairs && requireNamespace("plot3Drgl", quietly = TRUE) && requireNamespace("rgl", quietly = TRUE)) {
     if (plot && !is.null(save_to)) {
       # plot and save to file
       if (is.null(user_splits)) {
