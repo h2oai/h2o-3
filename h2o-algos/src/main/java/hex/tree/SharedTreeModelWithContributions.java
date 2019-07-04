@@ -42,30 +42,27 @@ public abstract class SharedTreeModelWithContributions<
 
     final String[] outputNames = ArrayUtils.append(adaptFrm.names(), "BiasTerm");
     
-    return getScoreContributionsTask(this, _output._ntrees, _output._treeKeys, _output._init_f)
+    return getScoreContributionsTask(this, _output)
             .doAll(outputNames.length, Vec.T_NUM, adaptFrm)
             .outputFrame(destination_key, outputNames, null);
   }
 
-  protected abstract ScoreContributionsTask getScoreContributionsTask(SharedTreeModel model, int ntrees, Key<CompressedTree>[][] treeKeys, double init_f);
+  protected abstract ScoreContributionsTask getScoreContributionsTask(SharedTreeModel model, SharedTreeOutput output);
   
   public abstract class ScoreContributionsTask extends MRTask<ScoreContributionsTask> {
-
     private final Key<SharedTreeModel> _modelKey;
-
+    protected transient SharedTreeOutput _output;
+    
     protected transient SharedTreeModel _model;
+    protected transient TreeSHAPPredictor<double[]> _treeSHAP;
+    
     protected transient int _ntrees;
     protected transient Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _treeKeys;
     protected transient double _init_f;
-    protected transient TreeSHAPPredictor<double[]> _treeSHAP;
 
-    public ScoreContributionsTask(SharedTreeModel model, int ntrees,
-                                  Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] treeKeys,
-                                  double init_f) {
+    public ScoreContributionsTask(SharedTreeModel model, SharedTreeOutput output) {
       _modelKey = model._key;
-      _ntrees = ntrees;
-      _treeKeys = treeKeys;
-      _init_f = init_f;
+      _output = output;
     }
 
     @Override
@@ -73,6 +70,9 @@ public abstract class SharedTreeModelWithContributions<
     protected void setupLocal() {
       _model = _modelKey.get();
       assert _model != null;
+      _ntrees = _output._ntrees;
+      _treeKeys = _output._treeKeys;
+      _init_f = _output._init_f;
       final SharedTreeNode[] empty = new SharedTreeNode[0];
       List<TreeSHAPPredictor<double[]>> treeSHAPs = new ArrayList<>(_ntrees);
       for (int treeIdx = 0; treeIdx < _ntrees; treeIdx++) {

@@ -34,8 +34,8 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
   public DRFModel(Key<DRFModel> selfKey, DRFParameters parms, DRFOutput output ) { super(selfKey, parms, output); }
 
   @Override
-  protected ScoreContributionsTask getScoreContributionsTask(SharedTreeModel model, int ntrees, Key<CompressedTree>[][] treeKeys, double init_f) {
-    return new ScoreContributionsTaskDRF(this, _output._ntrees, _output._treeKeys, _output._init_f);
+  protected ScoreContributionsTask getScoreContributionsTask(SharedTreeModel model, SharedTreeOutput output) {
+    return new ScoreContributionsTaskDRF(this, _output);
   }
 
   @Override protected boolean binomialOpt() { return !_parms._binomial_double_trees; }
@@ -83,8 +83,8 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
 
   public class ScoreContributionsTaskDRF extends ScoreContributionsTask {
 
-    public ScoreContributionsTaskDRF(SharedTreeModel model, int ntrees, Key<CompressedTree>[][] treeKeys, double init_f) {
-        super(model, ntrees, treeKeys, init_f);
+    public ScoreContributionsTaskDRF(SharedTreeModel model, SharedTreeOutput output) {
+        super(model, output);
     }
 
     @Override
@@ -92,10 +92,10 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
         for (int i = 0; i < nc.length; i++) {
             // Prediction of DRF tree ensemble is an average prediction of all trees. So, divide contribs by ntrees
             if (_model._output.nclasses() == 1) { //Regression
-                nc[i].addNum(contribs[i] / _ntrees);
+                nc[i].addNum(contribs[i] / _output._ntrees);
             } else { //Binomial
                 float featurePlusBiasRatio = (float)1 / (_model._output.nfeatures() + 1); // + 1 for bias term
-                nc[i].addNum(featurePlusBiasRatio - (contribs[i] / _ntrees));
+                nc[i].addNum(featurePlusBiasRatio - (contribs[i] / _output._ntrees));
             }
         }
     }
