@@ -19,9 +19,9 @@ public abstract class SharedTreeModelWithContributions<
         M extends SharedTreeModel<M, P, O>,
         P extends SharedTreeModel.SharedTreeParameters,
         O extends SharedTreeModel.SharedTreeOutput
-        > extends SharedTreeModel<M, P, O> implements Model.Contributions{
+        > extends SharedTreeModel<M, P, O> implements Model.Contributions {
     
-    public SharedTreeModelWithContributions(Key<M> selfKey, P parms, O output) {
+  public SharedTreeModelWithContributions(Key<M> selfKey, P parms, O output) {
         super(selfKey, parms, output);
     }
     
@@ -48,26 +48,6 @@ public abstract class SharedTreeModelWithContributions<
   }
 
   protected abstract ScoreContributionsTask getScoreContributionsTask(SharedTreeModel model, int ntrees, Key<CompressedTree>[][] treeKeys, double init_f);
-  
-  public class ScoreContributionsTaskDRF extends ScoreContributionsTask {
-
-    public ScoreContributionsTaskDRF(SharedTreeModel model, int ntrees, Key<CompressedTree>[][] treeKeys, double init_f) {
-      super(model, ntrees, treeKeys, init_f);
-    }
-
-    @Override
-    public void addContribToNewChunk(float[] contribs, NewChunk[] nc) {
-      for (int i = 0; i < nc.length; i++) {
-        // Prediction of DRF tree ensemble is an average prediction of all trees. So, divide contribs by ntrees
-        if (_model._output.nclasses() == 1) { //Regression
-          nc[i].addNum(contribs[i] / _ntrees);
-        } else { //Binomial
-          float featurePlusBiasRatio = (float)1 / (_model._output.nfeatures() + 1); // + 1 for bias term
-          nc[i].addNum(featurePlusBiasRatio - (contribs[i] / _ntrees));
-        }
-      }
-    }
-  }
   
   public abstract class ScoreContributionsTask extends MRTask<ScoreContributionsTask> {
 
@@ -130,15 +110,13 @@ public abstract class SharedTreeModelWithContributions<
         
         // Add contribs to new chunk
         addContribToNewChunk(contribs, nc);
-
       }
     }
 
-    public void addContribToNewChunk(float[] contribs, NewChunk[] nc) {
+    protected void addContribToNewChunk(float[] contribs, NewChunk[] nc) {
       for (int i = 0; i < nc.length; i++) {
         nc[i].addNum(contribs[i]);
       }
     }
-    
   }
 }

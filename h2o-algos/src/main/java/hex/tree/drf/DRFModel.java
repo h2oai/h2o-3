@@ -4,6 +4,7 @@ import hex.tree.CompressedTree;
 import hex.tree.SharedTreeModel;
 import hex.tree.SharedTreeModelWithContributions;
 import water.Key;
+import water.fvec.NewChunk;
 import water.util.MathUtils;
 import water.util.SBPrintStream;
 
@@ -77,6 +78,26 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
       if (_parms._balance_classes)
         body.ip("hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
       body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, PRIOR_CLASS_DISTRIB, data, " + defaultThreshold() + ");").nl();
+    }
+  }
+
+  public class ScoreContributionsTaskDRF extends ScoreContributionsTask {
+
+    public ScoreContributionsTaskDRF(SharedTreeModel model, int ntrees, Key<CompressedTree>[][] treeKeys, double init_f) {
+        super(model, ntrees, treeKeys, init_f);
+    }
+
+    @Override
+    public void addContribToNewChunk(float[] contribs, NewChunk[] nc) {
+        for (int i = 0; i < nc.length; i++) {
+            // Prediction of DRF tree ensemble is an average prediction of all trees. So, divide contribs by ntrees
+            if (_model._output.nclasses() == 1) { //Regression
+                nc[i].addNum(contribs[i] / _ntrees);
+            } else { //Binomial
+                float featurePlusBiasRatio = (float)1 / (_model._output.nfeatures() + 1); // + 1 for bias term
+                nc[i].addNum(featurePlusBiasRatio - (contribs[i] / _ntrees));
+            }
+        }
     }
   }
 
