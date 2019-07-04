@@ -209,8 +209,7 @@ def test_AUTO_stopping_metric_with_no_sorting_metric_binomial():
     non_se = get_partitioned_model_names(aml.leaderboard).non_se
     first = [m for m in non_se if 'XGBoost_1' in m]
     others = [m for m in non_se if m not in first]
-    # check_model_property(first, 'stopping_metric', True, "AUTO")  # disabling due to bug PUBDEV-6385
-    check_model_property(first, 'stopping_metric', True, "logloss") # should fail and replace by above once PUBDEV-6385 is fixed
+    check_model_property(first, 'stopping_metric', True, "AUTO")
     check_model_property(others, 'stopping_metric', True, "logloss")
 
 
@@ -228,8 +227,7 @@ def test_AUTO_stopping_metric_with_no_sorting_metric_regression():
     non_se = get_partitioned_model_names(aml.leaderboard).non_se
     first = [m for m in non_se if 'XGBoost_1' in m]
     others = [m for m in non_se if m not in first]
-    # check_model_property(first, 'stopping_metric', True, "AUTO")  # disabling due to bug PUBDEV-6385
-    check_model_property(first, 'stopping_metric', True, "deviance") # should fail and replace by above once PUBDEV-6385 is fixed
+    check_model_property(first, 'stopping_metric', True, "AUTO")
     check_model_property(others, 'stopping_metric', True, "deviance")
 
 
