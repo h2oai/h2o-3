@@ -376,7 +376,8 @@ gen_model_file_name = "h2o-genmodel.jar"
 h2o_predictor_class = "hex.genmodel.tools.PredictCsv"
 
 
-def mojo_predict_pandas(dataframe, mojo_zip_path, genmodel_jar_path=None, classpath=None, java_options=None, verbose=False):
+def mojo_predict_pandas(dataframe, mojo_zip_path, genmodel_jar_path=None, classpath=None, java_options=None, 
+                        verbose=False, setInvNumNA=False):
     """
     MOJO scoring function to take a Pandas frame and use MOJO model as zip file to score.
 
@@ -401,13 +402,14 @@ def mojo_predict_pandas(dataframe, mojo_zip_path, genmodel_jar_path=None, classp
         dataframe.to_csv(input_csv_path)
         mojo_predict_csv(input_csv_path=input_csv_path, mojo_zip_path=mojo_zip_path,
                          output_csv_path=prediction_csv_path, genmodel_jar_path=genmodel_jar_path,
-                         classpath=classpath, java_options=java_options, verbose=verbose)
+                         classpath=classpath, java_options=java_options, verbose=verbose, setInvNumNA=setInvNumNA)
         return pandas.read_csv(prediction_csv_path)
     finally:
         shutil.rmtree(tmp_dir)
 
 
-def mojo_predict_csv(input_csv_path, mojo_zip_path, output_csv_path=None, genmodel_jar_path=None, classpath=None, java_options=None, verbose=False):
+def mojo_predict_csv(input_csv_path, mojo_zip_path, output_csv_path=None, genmodel_jar_path=None, classpath=None, 
+                     java_options=None, verbose=False, setInvNumNA=False):
     """
     MOJO scoring function to take a CSV file and use MOJO model as zip file to score.
 
@@ -478,9 +480,14 @@ def mojo_predict_csv(input_csv_path, mojo_zip_path, output_csv_path=None, genmod
         cmd += [option]
     cmd += ["-cp", classpath, h2o_predictor_class, "--mojo", mojo_zip_path, "--input", input_csv_path,
             '--output', output_csv_path, '--decimal']
+
+    if setInvNumNA:
+        cmd.append('--setConvertInvalidNum')
+        
     if verbose:
         cmd_str = " ".join(cmd)
         print("java cmd:\t%s" % cmd_str)
+               
 
     # invoke the command
     subprocess.check_call(cmd, shell=False)
