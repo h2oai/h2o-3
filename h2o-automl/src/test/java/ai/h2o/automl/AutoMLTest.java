@@ -2,9 +2,7 @@ package ai.h2o.automl;
 
 import hex.Model;
 import hex.SplitFrame;
-import hex.tree.SharedTreeModel;
 import hex.tree.SharedTreeModel.SharedTreeParameters;
-import hex.tree.xgboost.XGBoostModel;
 import hex.tree.xgboost.XGBoostModel.XGBoostParameters;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -520,7 +518,7 @@ public class AutoMLTest extends water.TestUtil {
     AutoML aml=null;
     Frame fr=null;
     try {
-      int maxModels = 20;
+      int maxModels = 20; // generating enough models so that we can check every algo x every mode (single model + grid models)
       int seed = 0;
       int nfolds = 0;  //this test currently fails if CV is enabled due to PUBDEV-6385 (the final model gets its `stopping_rounds` param reset to 0)
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();

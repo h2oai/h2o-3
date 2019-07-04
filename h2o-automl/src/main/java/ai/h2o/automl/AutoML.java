@@ -27,6 +27,7 @@ import water.util.ArrayUtils;
 import water.util.Countdown;
 import water.util.Log;
 import water.util.PrettyPrint;
+import water.util.fp.Predicate;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -116,6 +117,19 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     int remainingWork() {
       return sum(allocations);
+    }
+
+    int remainingWork(Predicate<Work> predicate) {
+      List<Work> selected = predicate.filter(Arrays.asList(allocations));
+      return sum(selected.toArray(new Work[0]));
+    }
+
+    float remainingWorkRatio(Work work) {
+      return (float) work.share / remainingWork();
+    }
+
+    float remainingWorkRatio(Work work, Predicate<Work> predicate) {
+      return (float) work.share / remainingWork(predicate);
     }
 
   }
@@ -742,9 +756,14 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     setStoppingCriteria(baseParms, defaults, false);
 
     RandomDiscreteValueSearchCriteria searchCriteria = (RandomDiscreteValueSearchCriteria) buildSpec.build_control.stopping_criteria.getSearchCriteria().clone();
-    float remainingWorkRatio = (float) work.share / workAllocations.remainingWork();
-    double maxAssignedTime = remainingWorkRatio * timeRemainingMs() / 1e3;
-    int maxAssignedModels = (int) Math.ceil(remainingWorkRatio * remainingModels());
+    double maxAssignedTime = timeRemainingMs() * workAllocations.remainingWorkRatio(work) / 1e3;
+    // predicate can be removed if/when we decide to include SEs in the max_models limit
+    int maxAssignedModels = (int) Math.ceil(remainingModels() * workAllocations.remainingWorkRatio(work, new Predicate<WorkAllocations.Work>() {
+      @Override
+      public Boolean apply(WorkAllocations.Work work) {
+        return work.algo != Algo.StackedEnsemble;
+      }
+    }));
 
     if (searchCriteria.max_runtime_secs() == 0)
       searchCriteria.set_max_runtime_secs(maxAssignedTime);
