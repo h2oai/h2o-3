@@ -1,13 +1,15 @@
 package hex.tree.drf;
 
-import hex.tree.SharedTreeModelGBMDRF;
+import hex.tree.CompressedTree;
+import hex.tree.SharedTreeModel;
+import hex.tree.SharedTreeModelWithContributions;
 import water.Key;
 import water.util.MathUtils;
 import water.util.SBPrintStream;
 
-public class DRFModel extends SharedTreeModelGBMDRF<DRFModel, DRFModel.DRFParameters, DRFModel.DRFOutput> {
+public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFModel.DRFParameters, DRFModel.DRFOutput> {
 
-  public static class DRFParameters extends SharedTreeModelGBMDRF.SharedTreeParameters {
+  public static class DRFParameters extends SharedTreeModelWithContributions.SharedTreeParameters {
     public String algoName() { return "DRF"; }
     public String fullName() { return "Distributed Random Forest"; }
     public String javaName() { return DRFModel.class.getName(); }
@@ -24,11 +26,16 @@ public class DRFModel extends SharedTreeModelGBMDRF<DRFModel, DRFModel.DRFParame
     }
   }
 
-  public static class DRFOutput extends SharedTreeModelGBMDRF.SharedTreeOutput {
+  public static class DRFOutput extends SharedTreeModelWithContributions.SharedTreeOutput {
     public DRFOutput( DRF b) { super(b); }
   }
 
   public DRFModel(Key<DRFModel> selfKey, DRFParameters parms, DRFOutput output ) { super(selfKey, parms, output); }
+
+  @Override
+  protected ScoreContributionsTask getScoreContributionsTask(SharedTreeModel model, int ntrees, Key<CompressedTree>[][] treeKeys, double init_f) {
+    return new ScoreContributionsTaskDRF(this, _output._ntrees, _output._treeKeys, _output._init_f);
+  }
 
   @Override protected boolean binomialOpt() { return !_parms._binomial_double_trees; }
 

@@ -16,7 +16,7 @@ import water.util.SBPrintStream;
 
 import java.util.Arrays;
 
-public class GBMModel extends SharedTreeModelGBMDRF<GBMModel, GBMModel.GBMParameters, GBMModel.GBMOutput> 
+public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMModel.GBMParameters, GBMModel.GBMOutput> 
         implements Model.StagedPredictions {
 
   public static class GBMParameters extends SharedTreeModel.SharedTreeParameters {
@@ -95,6 +95,12 @@ public class GBMModel extends SharedTreeModelGBMDRF<GBMModel, GBMModel.GBMParame
   public GBMModel(Key<GBMModel> selfKey, GBMParameters parms, GBMOutput output) {
     super(selfKey,parms,output);
   }
+
+  @Override
+  protected ScoreContributionsTask getScoreContributionsTask(SharedTreeModel model, int ntrees, Key<CompressedTree>[][] treeKeys, double init_f) {
+    return new ScoreContributionsTaskGBM(this, _output._ntrees, _output._treeKeys, _output._init_f);
+  }
+
 
   @Override
   public Frame scoreStagedPredictions(Frame frame, Key<Frame> destination_key) {
