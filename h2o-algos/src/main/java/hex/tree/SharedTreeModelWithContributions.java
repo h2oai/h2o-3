@@ -48,20 +48,6 @@ public abstract class SharedTreeModelWithContributions<
   }
 
   protected abstract ScoreContributionsTask getScoreContributionsTask(SharedTreeModel model, int ntrees, Key<CompressedTree>[][] treeKeys, double init_f);
-    
-  public class ScoreContributionsTaskGBM extends ScoreContributionsTask {
-
-    public ScoreContributionsTaskGBM(SharedTreeModel model, int ntrees, Key<CompressedTree>[][] treeKeys, double init_f) {
-      super(model, ntrees, treeKeys, init_f);
-    }
-
-    @Override
-    public void addContribToNewChunk(float[] contribs, NewChunk[] nc) {
-      for (int i = 0; i < nc.length; i++) {
-        nc[i].addNum(contribs[i]);
-      }
-    }
-  }
   
   public class ScoreContributionsTaskDRF extends ScoreContributionsTask {
 
@@ -147,8 +133,12 @@ public abstract class SharedTreeModelWithContributions<
 
       }
     }
-    
-    public abstract void addContribToNewChunk(float[] contribs, NewChunk[] nc);
+
+    public void addContribToNewChunk(float[] contribs, NewChunk[] nc) {
+      for (int i = 0; i < nc.length; i++) {
+        nc[i].addNum(contribs[i]);
+      }
+    }
     
   }
 }
