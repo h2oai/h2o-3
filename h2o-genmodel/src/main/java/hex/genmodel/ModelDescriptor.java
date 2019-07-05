@@ -4,7 +4,6 @@ import hex.ModelCategory;
 import hex.genmodel.descriptor.Table;
 import hex.genmodel.descriptor.VariableImportances;
 
-
 public interface ModelDescriptor {
 
   String[][] scoringDomains();
@@ -38,7 +37,7 @@ public interface ModelDescriptor {
   double defaultThreshold();
 
   double[] priorClassDist();
-
+  
   double[] modelClassDist();
 
   String uuid();
