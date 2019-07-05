@@ -42,27 +42,22 @@ public abstract class SharedTreeModelWithContributions<
 
     final String[] outputNames = ArrayUtils.append(adaptFrm.names(), "BiasTerm");
     
-    return getScoreContributionsTask(this, _output)
+    return getScoreContributionsTask(this)
             .doAll(outputNames.length, Vec.T_NUM, adaptFrm)
             .outputFrame(destination_key, outputNames, null);
   }
 
-  protected abstract ScoreContributionsTask getScoreContributionsTask(SharedTreeModel model, SharedTreeOutput output);
+  protected abstract ScoreContributionsTask getScoreContributionsTask(SharedTreeModel model);
   
   public abstract class ScoreContributionsTask extends MRTask<ScoreContributionsTask> {
     private final Key<SharedTreeModel> _modelKey;
-    protected transient SharedTreeOutput _output;
     
-    protected transient SharedTreeModel _model;
-    protected transient TreeSHAPPredictor<double[]> _treeSHAP;
-    
-    protected transient int _ntrees;
-    protected transient Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _treeKeys;
-    protected transient double _init_f;
+    private transient SharedTreeModel _model;
+    private transient SharedTreeOutput _output;
+    private transient TreeSHAPPredictor<double[]> _treeSHAP;
 
-    public ScoreContributionsTask(SharedTreeModel model, SharedTreeOutput output) {
+    public ScoreContributionsTask(SharedTreeModel model) {
       _modelKey = model._key;
-      _output = output;
     }
 
     @Override
@@ -70,14 +65,13 @@ public abstract class SharedTreeModelWithContributions<
     protected void setupLocal() {
       _model = _modelKey.get();
       assert _model != null;
-      _ntrees = _output._ntrees;
-      _treeKeys = _output._treeKeys;
-      _init_f = _output._init_f;
+      _output = (SharedTreeOutput) _model._output; // Need to cast to SharedTreeModel to access ntrees, treeKeys, & init_f params
+      assert _output != null;
       final SharedTreeNode[] empty = new SharedTreeNode[0];
-      List<TreeSHAPPredictor<double[]>> treeSHAPs = new ArrayList<>(_ntrees);
-      for (int treeIdx = 0; treeIdx < _ntrees; treeIdx++) {
-        for (int treeClass = 0; treeClass < _treeKeys[treeIdx].length; treeClass++) {
-          if (_treeKeys[treeIdx][treeClass] == null) {
+      List<TreeSHAPPredictor<double[]>> treeSHAPs = new ArrayList<>(_output._ntrees);
+      for (int treeIdx = 0; treeIdx < _output._ntrees; treeIdx++) {
+        for (int treeClass = 0; treeClass < _output._treeKeys[treeIdx].length; treeClass++) {
+          if (_output._treeKeys[treeIdx][treeClass] == null) {
             continue;
           }
           SharedTreeSubgraph tree = _model.getSharedTreeSubgraph(treeIdx, treeClass);
@@ -85,8 +79,8 @@ public abstract class SharedTreeModelWithContributions<
           treeSHAPs.add(new TreeSHAP<>(nodes, nodes, 0));
         }
       }
-      assert treeSHAPs.size() == _ntrees; // for now only regression and binomial to keep the output sane
-      _treeSHAP = new TreeSHAPEnsemble<>(treeSHAPs, (float) _init_f);
+      assert treeSHAPs.size() == _output._ntrees; // for now only regression and binomial to keep the output sane
+      _treeSHAP = new TreeSHAPEnsemble<>(treeSHAPs, (float) _output._init_f);
     }
 
     @Override

@@ -1,6 +1,5 @@
 package hex.tree.drf;
 
-import hex.tree.CompressedTree;
 import hex.tree.SharedTreeModel;
 import hex.tree.SharedTreeModelWithContributions;
 import water.Key;
@@ -34,8 +33,8 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
   public DRFModel(Key<DRFModel> selfKey, DRFParameters parms, DRFOutput output ) { super(selfKey, parms, output); }
 
   @Override
-  protected ScoreContributionsTask getScoreContributionsTask(SharedTreeModel model, SharedTreeOutput output) {
-    return new ScoreContributionsTaskDRF(this, _output);
+  protected ScoreContributionsTask getScoreContributionsTask(SharedTreeModel model) {
+    return new ScoreContributionsTaskDRF(this);    
   }
 
   @Override protected boolean binomialOpt() { return !_parms._binomial_double_trees; }
@@ -83,18 +82,18 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
 
   public class ScoreContributionsTaskDRF extends ScoreContributionsTask {
 
-    public ScoreContributionsTaskDRF(SharedTreeModel model, SharedTreeOutput output) {
-        super(model, output);
+    public ScoreContributionsTaskDRF(SharedTreeModel model) {
+        super(model);
     }
 
     @Override
     public void addContribToNewChunk(float[] contribs, NewChunk[] nc) {
         for (int i = 0; i < nc.length; i++) {
             // Prediction of DRF tree ensemble is an average prediction of all trees. So, divide contribs by ntrees
-            if (_model._output.nclasses() == 1) { //Regression
-                nc[i].addNum(contribs[i] / _output._ntrees);
+            if (_output.nclasses() == 1) { //Regression
+                nc[i].addNum(contribs[i] /_output._ntrees);
             } else { //Binomial
-                float featurePlusBiasRatio = (float)1 / (_model._output.nfeatures() + 1); // + 1 for bias term
+                float featurePlusBiasRatio = (float)1 / (_output.nfeatures() + 1); // + 1 for bias term
                 nc[i].addNum(featurePlusBiasRatio - (contribs[i] / _output._ntrees));
             }
         }
