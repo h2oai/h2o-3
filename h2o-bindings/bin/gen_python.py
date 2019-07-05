@@ -132,6 +132,8 @@ def gen_module(schema, algo):
             enum_values.remove(u'quasibinomial')
         if (pname==u'distribution') and (not(algo==u'glm')):    # ordinal only in glm
             enum_values.remove(u'ordinal')
+        if (pname==u'distribution') and (not(algo==u'gbm')):    # custom only in gbm
+            enum_values.remove(u'custom')
         if (pname==u'stopping_metric') and (not(algo==u'isolationforest')):    # anomaly_score only in Isolation Forest
             enum_values.remove(u'anomaly_score')
         if (pname == u'stopping_metric') and (algo == u'isolationforest'):

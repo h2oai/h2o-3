@@ -332,6 +332,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      */
     public String _custom_metric_func = null;
 
+
+    /**
+     * Reference to custom distribution function.
+     */
+    public String _custom_distribution_func = null;
+
     /**
      * Directory where generated models will be exported
      */
@@ -880,7 +886,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     _dist = isSupervised() && _output.nclasses() == 1 ? DistributionFactory.getDistribution(_parms) : null;
     Log.info("Starting model "+ selfKey);
   }
-
   /**
    * Deviance of given distribution function at predicted value f
    * @param w observation weight
@@ -1465,7 +1470,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     final int weightIdx=predictions.find(_parms._weights_column);
 
     final Distribution myDist = _dist == null ? null : IcedUtils.deepCopy(_dist);
-    if (myDist != null && myDist.distribution == DistributionFamily.huber) {
+    if (myDist != null && myDist._family == DistributionFamily.huber) {
       myDist.setHuberDelta(hex.ModelMetricsRegression.computeHuberDelta(
               valid.vec(_parms._response_column), //actual
               predictions.vec(0), //predictions
@@ -1482,7 +1487,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           double y=response.atd(i);
           if (_output.nclasses()==1) { //regression - deviance
             double f=cs[0].atd(i);
-            if (myDist!=null && myDist.distribution == DistributionFamily.huber) {
+            if (myDist!=null && myDist._family == DistributionFamily.huber) {
               nc[0].addNum(myDist.deviance(w, y, f)); //use above custom huber delta for this dataset
             }
             else {

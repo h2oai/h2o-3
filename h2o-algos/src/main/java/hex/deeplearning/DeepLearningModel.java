@@ -177,7 +177,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     }
     assert(get_params() != cp.model_info().get_params()); //make sure we have a clone
     _dist = DistributionFactory.getDistribution(get_params());
-    assert(_dist.distribution != DistributionFamily.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
+    assert(_dist._family != DistributionFamily.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
     actual_best_model_key = cp.actual_best_model_key;
     if (actual_best_model_key.get() == null) {
       DeepLearningModel best = IcedUtils.deepCopy(cp);
@@ -230,7 +230,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     model_info = new DeepLearningModelInfo(parms, destKey, dinfo, nClasses, train, valid);
     model_info_key = Key.make(H2O.SELF);
     _dist = DistributionFactory.getDistribution(get_params());
-    assert(_dist.distribution != DistributionFamily.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
+    assert(_dist._family != DistributionFamily.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
     actual_best_model_key = Key.make(H2O.SELF);
     if (parms._nfolds != 0) actual_best_model_key = null;
     if (!parms._autoencoder) {

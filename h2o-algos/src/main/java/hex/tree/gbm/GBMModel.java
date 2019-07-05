@@ -1,6 +1,5 @@
 package hex.tree.gbm;
 
-import hex.Distribution;
 import hex.DistributionFactory;
 import hex.KeyValue;
 import hex.Model;
@@ -274,11 +273,13 @@ public class GBMModel extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, 
   private double[] score0Probabilities(double preds[/*nclasses+1*/], double offset) {
     if (_parms._distribution == DistributionFamily.bernoulli
         || _parms._distribution == DistributionFamily.quasibinomial
-        || _parms._distribution == DistributionFamily.modified_huber) {
+        || _parms._distribution == DistributionFamily.modified_huber
+        || (_parms._distribution == DistributionFamily.custom && _output.nclasses() == 2)) { // custom distribution could be also binomial
       double f = preds[1] + _output._init_f + offset; //Note: class 1 probability stored in preds[1] (since we have only one tree)
       preds[2] = DistributionFactory.getDistribution(_parms).linkInv(f);
       preds[1] = 1.0 - preds[2];
-    } else if (_parms._distribution == DistributionFamily.multinomial) { // Kept the initial prediction for binomial
+    } else if (_parms._distribution == DistributionFamily.multinomial // Kept the initial prediction for binomial
+                || (_parms._distribution == DistributionFamily.custom && _output.nclasses() > 2) ) { // custom distribution could be also multinomial
       if (_output.nclasses() == 2) { //1-tree optimization for binomial
         preds[1] += _output._init_f + offset; //offset is not yet allowed, but added here to be future-proof
         preds[2] = -preds[1];

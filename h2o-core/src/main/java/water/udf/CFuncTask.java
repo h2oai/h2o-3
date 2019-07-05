@@ -16,7 +16,7 @@ abstract public class CFuncTask<T extends CFunc, S extends CFuncTask<T,S>> exten
   
   @Override
   protected void setupLocal() {
-    if (cFuncRef != null) {
+    if (cFuncRef != null && func == null) {
       ClassLoader localCl = getFuncClassLoader();
       CFuncLoader loader = CFuncLoaderService.INSTANCE.getByLang(cFuncRef.language);
       if (loader != null) {
@@ -37,8 +37,3 @@ abstract public class CFuncTask<T extends CFunc, S extends CFuncTask<T,S>> exten
 
   // TODO: we should cleanup loader
 }
-
-/**
- * Custom function marker interface.
- */
-interface CFunc {}

@@ -71,7 +71,7 @@
 #' @param learn_rate Learning rate (from 0.0 to 1.0) Defaults to 0.1.
 #' @param learn_rate_annealing Scale the learning rate by this factor after each tree (e.g., 0.99 or 0.999)  Defaults to 1.
 #' @param distribution Distribution function Must be one of: "AUTO", "bernoulli", "quasibinomial", "multinomial", "gaussian",
-#'        "poisson", "gamma", "tweedie", "laplace", "quantile", "huber". Defaults to AUTO.
+#'        "poisson", "gamma", "tweedie", "laplace", "quantile", "huber", "custom". Defaults to AUTO.
 #' @param quantile_alpha Desired quantile for Quantile regression, must be between 0 and 1. Defaults to 0.5.
 #' @param tweedie_power Tweedie power for Tweedie regression, must be between 1 and 2. Defaults to 1.5.
 #' @param huber_alpha Desired quantile for Huber/M-regression (threshold between quadratic and linear loss, must be between 0 and
@@ -93,6 +93,7 @@
 #'        accurate estimates of class probabilities. Defaults to FALSE.
 #' @param calibration_frame Calibration frame for Platt Scaling
 #' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
+#' @param custom_distribution_func Reference to custom distribution, format: `language:keyName=funcName`
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @param monotone_constraints A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a
 #'        decreasing constraint.
@@ -149,7 +150,7 @@ h2o.gbm <- function(x, y, training_frame,
                     build_tree_one_node = FALSE,
                     learn_rate = 0.1,
                     learn_rate_annealing = 1,
-                    distribution = c("AUTO", "bernoulli", "quasibinomial", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
+                    distribution = c("AUTO", "bernoulli", "quasibinomial", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber", "custom"),
                     quantile_alpha = 0.5,
                     tweedie_power = 1.5,
                     huber_alpha = 0.9,
@@ -167,6 +168,7 @@ h2o.gbm <- function(x, y, training_frame,
                     calibrate_model = FALSE,
                     calibration_frame = NULL,
                     custom_metric_func = NULL,
+                    custom_distribution_func = NULL,
                     export_checkpoints_dir = NULL,
                     monotone_constraints = NULL,
                     check_constant_response = TRUE,
@@ -299,6 +301,8 @@ h2o.gbm <- function(x, y, training_frame,
     parms$calibration_frame <- calibration_frame
   if (!missing(custom_metric_func))
     parms$custom_metric_func <- custom_metric_func
+  if (!missing(custom_distribution_func))
+    parms$custom_distribution_func <- custom_distribution_func
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
   if (!missing(monotone_constraints))

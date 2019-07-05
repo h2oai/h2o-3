@@ -23,8 +23,9 @@ Certain cases can exist, however, in which the median starting value for this lo
 - If the distribution is ``quantile``, the response column must be numeric.
 - If the distribution is ``huber``, the response column must be numeric.
 - If the distribution is ``tweedie``, the response column must be numeric.
+- If the distribution is ``custom``, the response column must be numeric/binary/categorical depends on type of custom distribution.
 
-**NOTE**: ``laplace``, ``quantile``, and ``huber`` are NOT available in XGBoost.
+**NOTE**: ``laplace``, ``quantile``, and ``huber`` are NOT available in XGBoost. ``custom`` is available ONLY in GBM.
 
 The following general guidelines apply when selecting a distribution:
 
@@ -51,7 +52,9 @@ When ``quantile`` is specified, then users can also specify a ``quantile_alpha``
 
 When ``huber`` is specified, then users can also specify a ``huber_alpha`` value. This indicates the top percentile of error that should be considered as outliers. Note that this option is not available in XGBoost.
 
-For all distributions except ``multinomial``, you can specify an ``offset_column``. Offsets are per-row “bias values” that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__. 
+When ``custom`` is specified, then users must also specify a ``custom_distribution_func`` value. This is reference to loaded custom distribution function. For information how to load custom distribution see `custom_distribution_func <custom_distribution_func.html>`__.
+
+For all distributions except ``multinomial`` and ``custom``, you can specify an ``offset_column``. Offsets are per-row “bias values” that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__. 
 
 Some examples of response distributions are provided below.
 
@@ -83,6 +86,7 @@ Related Parameters
 - `quantile_alpha <quantile_alpha.html>`__
 - `tweedie_power <tweedie_power.html>`__
 - `y <y.html>`__
+- `custom_distribution_func <custom_distribution_func.html>`__
 
 Example
 ~~~~~~~

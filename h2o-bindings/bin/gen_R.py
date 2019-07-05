@@ -85,6 +85,8 @@ def gen_module(schema, algo, module):
             phelp=phelp.replace(' "quasibinomial",',"")
         if (param["name"]==u'distribution') and not(algo==u'glm'):    # ordinal only in glm
             phelp=phelp.replace(' "ordinal",',"")
+        if (param["name"]==u'distribution') and not(algo==u'gbm'):    # custom only in gbm 
+            phelp=phelp.replace(', "custom"',"")
         if param["default_value"] is not None:
             phelp += " Defaults to %s." % normalize_value(param, True)
         yield "#' @param %s %s" % (param["name"], bi.wrap(phelp, indent=("#'        "), indent_first=False))
@@ -137,6 +139,8 @@ def gen_module(schema, algo, module):
                 temp = temp.replace(' "quasibinomial",',"")
             if not(algo==u'glm'):
                 temp = temp.replace(' "ordinal",',"")
+            if not(algo==u'gbm'):
+                temp = temp.replace(', "custom"',"")  # custom only in gbm
             list.append(indent("%s = %s" % (param["name"], temp), 17 + len(module)))
         else:
             list.append(indent("%s = %s" % (param["name"], normalize_value(param, algo=algo)), 17 + len(module)))
