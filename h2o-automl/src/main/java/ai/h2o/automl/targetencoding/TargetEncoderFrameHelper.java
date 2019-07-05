@@ -1,7 +1,5 @@
 package ai.h2o.automl.targetencoding;
 
-import hex.genmodel.algos.targetencoder.EncodingMap;
-import hex.genmodel.algos.targetencoder.EncodingMaps;
 import water.DKV;
 import water.Key;
 import water.MRTask;
@@ -109,42 +107,6 @@ public class TargetEncoderFrameHelper {
     Vec foldVec = frame.anyVec().makeZero();
     frame.add(name, AstKFold.kfoldColumn(foldVec, nfolds, seed == -1 ? new Random().nextLong() : seed));
     return frame;
-  }
-  
-  static EncodingMaps convertEncodingMapFromFrameToMap(Map<String, Frame> encodingMap) {
-    EncodingMaps convertedEncodingMap = new EncodingMaps();
-    Map<String, FrameToTETableTask> tasks = new HashMap<>();
-
-    for (Map.Entry<String, Frame> entry : encodingMap.entrySet()) {
-
-      Frame encodingsForParticularColumn = entry.getValue();
-      FrameToTETableTask task = new FrameToTETableTask().doAll(encodingsForParticularColumn);
-      tasks.put(entry.getKey(), task);
-    }
-
-    for (Map.Entry<String, FrameToTETableTask> taskEntry : tasks.entrySet()) {
-      IcedHashMap<String, TEComponents> table = taskEntry.getValue().getResult()._table;
-      convertEncodingMapToGenModelFormat(convertedEncodingMap, taskEntry.getKey(), table);
-    }
-    
-    return convertedEncodingMap;
-  }
-
-  /**
-   * Note: We can't use the same class for {numerator, denominator} in both `h2o-genmodel` and `h2o-automl` as we need it to be extended 
-   * from Iced in `h2o-automl` to make it serializable to distribute MRTasks and we can't use this Iced class from `h2o-genmodel` module 
-   * as there is no dependency between modules in this direction 
-   * 
-   * @param convertedEncodingMap the Map we will put our converted encodings into
-   * @param encodingMap encoding map for `teColumn`
-   */
-  private static void convertEncodingMapToGenModelFormat(EncodingMaps convertedEncodingMap, String teColumn, IcedHashMap<String, TEComponents> encodingMap) {
-    Map<Integer, int[]> tableGenModelFormat = new HashMap<>();
-    for(Map.Entry<String, TEComponents> entry : encodingMap.entrySet()) {
-      TEComponents value = entry.getValue();
-      tableGenModelFormat.put(Integer.parseInt(entry.getKey()), new int[] {value.getNumerator(), value.getDenominator()});
-    }
-    convertedEncodingMap.put(teColumn, new EncodingMap(tableGenModelFormat));
   }
 
   /**
