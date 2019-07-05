@@ -1014,10 +1014,15 @@ public class TestUtil extends Iced {
     Vec vec = frame.vec(columnName);
     frame.replace(frame.find(columnName), vec.toCategoricalVec());
     vec.remove();
+    DKV.put(frame);
     return frame;
   }
 
-  public void printOutFrameAsTable(Frame fr, boolean rollups, long limit) {
+  public static void printOutFrameAsTable(Frame fr) {
+    printOutFrameAsTable(fr, false, fr.numRows());
+  }
+
+  public static void printOutFrameAsTable(Frame fr, boolean rollups, long limit) {
     assert limit <= Integer.MAX_VALUE;
     TwoDimTable twoDimTable = fr.toTwoDimTable(0, (int) limit, rollups);
     System.out.println(twoDimTable.toString(2, true));
