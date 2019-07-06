@@ -10,7 +10,7 @@ Description
 
 When performing N-fold cross validation, you can specify to split the data into subsets using a `fold_assignment <fold_assignment.html>`__. A fold assignment is suitable for datasets that are i.i.d. 
 
-If your dataset requires custom grouping to perform meaningful cross-validation, then a "fold column" should be created and provided instead. The ``fold_column`` option specifies the column in the dataset that contains the cross-validation fold index assignment per observation. The fold column can include integers or categorical values. When specified, the algorithm uses that column’s values to split the data into subsets.
+If your dataset requires custom grouping to perform meaningful cross-validation, then a "fold column" should be created and provided instead. The ``fold_column`` option specifies the column in the dataset that contains the cross-validation fold index assignment per observation. The fold column can include integers (0, 1, 2, ... , N-1 values or 1, 2, 3... , N values) or categorical values. When specified, the algorithm uses that column’s values to split the data into subsets.
 
 **Notes** 
 
