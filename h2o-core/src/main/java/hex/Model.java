@@ -2087,7 +2087,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       // Output is in the model's domain, but needs to be mapped to the scored
       // dataset's domain.
       int[] omap = null;
-      if( _output.isClassifier() ) {
+      if( _output.isClassifier() && model_predictions.vec(0).domain() != null) {
         Vec actual = fr.vec(_output.responseName());
         String[] sdomain = actual == null ? null : actual.domain(); // Scored/test domain; can be null
         String[] mdomain = model_predictions.vec(0).domain(); // Domain of predictions (union of test and train)
