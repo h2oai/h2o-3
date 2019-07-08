@@ -21,8 +21,7 @@ public final class GbmMojoModel extends SharedTreeMojoModelWithContributions imp
 
     @Override
     protected ContributionsPredictor getContributionsPredictor(TreeSHAPPredictor<double[]> treeSHAPPredictor) {
-        return new ContributionsPredictor(treeSHAPPredictor){
-        };
+        return new ContributionsPredictor(treeSHAPPredictor);
     }
     
     @Override

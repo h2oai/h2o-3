@@ -18,8 +18,7 @@ public final class DrfMojoModel extends SharedTreeMojoModelWithContributions imp
 
     @Override
     protected ContributionsPredictor getContributionsPredictor(TreeSHAPPredictor<double[]> treeSHAPPredictor) {
-        return new ContributionsPredictorDRF(treeSHAPPredictor){
-        };
+        return new ContributionsPredictorDRF(treeSHAPPredictor);
     }
 
     /**
