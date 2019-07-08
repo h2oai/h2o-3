@@ -1734,24 +1734,29 @@ public class XGBoostTest extends TestUtil {
   }
   
   private static <T extends ModelMetricsSupervised> void checkMetrics(final T expectedMM, final T actualMM) {
-    assertEquals(expectedMM.rmse(), actualMM.rmse(), 1e-8);
-    assertEquals(expectedMM._sigma, actualMM._sigma, 1e-8);
-    assertEquals(expectedMM._nobs, actualMM._nobs, 1e-8);
+    double precision = 1e-8;
+    if (H2O.getCloudSize() > 0) {
+      // for multinode expect lower precision
+      precision = 1e-3;
+    }
+    assertEquals(expectedMM.rmse(), actualMM.rmse(), precision);
+    assertEquals(expectedMM._sigma, actualMM._sigma, precision);
+    assertEquals(expectedMM._nobs, actualMM._nobs, precision);
     if (expectedMM instanceof ModelMetricsBinomial) {
       final ModelMetricsBinomial mmbExp = (ModelMetricsBinomial) expectedMM;
       final ModelMetricsBinomial mmbAct = (ModelMetricsBinomial) actualMM;
-      assertEquals(mmbExp.logloss(), mmbExp.logloss(), 1e-8);
-      assertEquals(mmbExp.auc(), mmbAct.auc(), 1e-8);
-      assertEquals(mmbExp.mean_per_class_error(), mmbAct.mean_per_class_error(), 1e-8);
+      assertEquals(mmbExp.logloss(), mmbExp.logloss(), precision);
+      assertEquals(mmbExp.auc(), mmbAct.auc(), precision);
+      assertEquals(mmbExp.mean_per_class_error(), mmbAct.mean_per_class_error(), precision);
       checkConfusionMatrix(mmbExp.cm(), mmbAct.cm());
     } else if (expectedMM instanceof ModelMetricsMultinomial) {
       final ModelMetricsMultinomial mmmExp = (ModelMetricsMultinomial) expectedMM;
       final ModelMetricsMultinomial mmmAct = (ModelMetricsMultinomial) actualMM;
-      assertEquals(mmmExp.logloss(), mmmAct.logloss(), 1e-8);
-      assertEquals(mmmExp.mean_per_class_error(), mmmAct.mean_per_class_error(), 1e-8);
+      assertEquals(mmmExp.logloss(), mmmAct.logloss(), precision);
+      assertEquals(mmmExp.mean_per_class_error(), mmmAct.mean_per_class_error(), precision);
       checkConfusionMatrix(mmmExp.cm(), mmmAct.cm());
     }
-    assertArrayEquals(expectedMM.hr(), actualMM.hr(), 1e-8f);
+    assertArrayEquals(expectedMM.hr(), actualMM.hr(), (float) precision);
     assertArrayEquals(expectedMM._domain, actualMM._domain);
   }
 
