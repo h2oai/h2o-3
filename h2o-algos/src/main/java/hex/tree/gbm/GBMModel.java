@@ -98,8 +98,7 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
 
   @Override
   protected ScoreContributionsTask getScoreContributionsTask(SharedTreeModel model) {
-      return new ScoreContributionsTask(this) {
-    };
+      return new ScoreContributionsTask(this);
   }
 
 
