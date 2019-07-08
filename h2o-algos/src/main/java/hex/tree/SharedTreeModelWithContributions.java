@@ -49,7 +49,7 @@ public abstract class SharedTreeModelWithContributions<
 
   protected abstract ScoreContributionsTask getScoreContributionsTask(SharedTreeModel model);
   
-  public abstract class ScoreContributionsTask extends MRTask<ScoreContributionsTask> {
+  public class ScoreContributionsTask extends MRTask<ScoreContributionsTask> {
     private final Key<SharedTreeModel> _modelKey;
     
     private transient SharedTreeModel _model;
