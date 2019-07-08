@@ -675,7 +675,7 @@ Predict Stage Probabilities
 
 Use the ``staged_predict_proba`` function to predict class probabilities at each stage of an H2O Model. Note that this can only be used with GBM.
 
-Using the previous example, run the following to predict stage probabilities:
+Using the previous example, run the following to predict probabilities at each stage in the model:
 
 .. example-code::
    .. code-block:: r
