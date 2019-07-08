@@ -1543,8 +1543,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                                       CFuncRef customMetricFunc) {
     return new BigScore(domains[0],
                         names != null ? names.length : 0,
-                        adaptFrm.means(),
-                        _output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,
+                        adaptFrm,
                         computeMetrics,
                         makePrediction,
                         j,
@@ -1624,14 +1623,18 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     /** Output parameter: Metric builder */
     public ModelMetrics.MetricBuilder _mb;
 
-    public BigScore(String[] domain, int ncols, double[] mean, boolean testHasWeights,
+    public BigScore(String[] domain, int ncols, Frame adaptFrm,
                     boolean computeMetrics, boolean makePreds, Job j, CFuncRef customMetricFunc) {
       super(customMetricFunc);
       _j = j;
-      _domain = domain; _npredcols = ncols; _mean = mean; _computeMetrics = computeMetrics; _makePreds = makePreds;
-      if(_output._hasWeights && _computeMetrics && !testHasWeights)
-        throw new IllegalArgumentException("Missing weights when computing validation metrics.");
-      _hasWeights = testHasWeights;
+      _domain = domain;
+      _npredcols = ncols;
+      _computeMetrics = computeMetrics;
+      _makePreds = makePreds;
+      _mean = adaptFrm.means();
+      _hasWeights = _output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0;
+      if(_computeMetrics && _output.hasWeights() && !_hasWeights)
+        throw new IllegalArgumentException("Missing weights when computing metrics.");
     }
 
     @Override

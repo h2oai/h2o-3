@@ -925,8 +925,8 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
         e.printStackTrace();
       }
     }
-    DeepWaterBigScore(String[] domain, int ncols, double[] mean, boolean testHasWeights, boolean computeMetrics, boolean makePreds, Job j) {
-      super(domain, ncols, mean, testHasWeights, computeMetrics, makePreds, j, CFuncRef.NOP);
+    DeepWaterBigScore(String[] domain, int ncols, Frame adaptFrm, boolean computeMetrics, boolean makePreds, Job j) {
+      super(domain, ncols, adaptFrm, computeMetrics, makePreds, j, CFuncRef.NOP);
     }
   }
 
@@ -967,7 +967,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     }
     */
     // Score the dataset, building the class distribution & predictions
-    BigScore bs = new DeepWaterBigScore(domains[0],names.length,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, true /*make preds*/, j).doAll(adaptFrm);
+    BigScore bs = new DeepWaterBigScore(domains[0],names.length,adaptFrm,computeMetrics, true /*make preds*/, j).doAll(adaptFrm);
     if (computeMetrics) bs._mb.makeModelMetrics(this, fr, adaptFrm, bs.outputFrame());
     if (makeNative) removeNativeState();
     return bs.outputFrame(null == destination_key ? Key.<Frame>make() : Key.<Frame>make(destination_key), names, domains);
@@ -981,7 +981,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     // Build up the names & domains.
     String [] domain = !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
     // Score the dataset, building the class distribution & predictions
-    BigScore bs = new DeepWaterBigScore(domain,0,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, false /*no preds*/, null).doAll(adaptFrm);
+    BigScore bs = new DeepWaterBigScore(domain,0,adaptFrm,computeMetrics, false /*no preds*/, null).doAll(adaptFrm);
     if (makeNative) removeNativeState();
     return bs._mb;
   }
