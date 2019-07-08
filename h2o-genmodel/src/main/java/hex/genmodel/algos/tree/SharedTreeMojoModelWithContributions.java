@@ -28,7 +28,7 @@ public abstract class SharedTreeMojoModelWithContributions extends SharedTreeMoj
     }
 
     public double getInitF() {
-        return 0;
+        return 0; // Set to zero by default, which is correct for DRF. However, need to override in GBMMojoModel with correct init_f.
     }
     
     protected abstract ContributionsPredictor getContributionsPredictor(TreeSHAPPredictor<double[]> treeSHAPPredictor);
