@@ -480,41 +480,6 @@ With H2O-3, you can generate predictions for a model based on samples in a test 
 
 For classification problems, predicted probabilities and labels are compared against known results. (Note that for binary models, labels are based on the maximum F1 threshold from the model object.) For regression problems, predicted regression targets are compared against testing targets and typical error metrics.
 
-Predicting Leaf Node Assignment
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-For tree-based models, including GBM, DRF, and Isolation Forest, the ``h2o.predict_leaf_node_assignment()`` function predicts the leaf assignment on an H2O model. 
-
-This function predicts against a test frame. For every row in the test frame, this function returns the leaf placements of the row in all the trees in the model. An optional Type can also be specified to define the placements. Placements can be represented either by paths to the leaf nodes from the tree root (``Path`` - default) or by H2O's internal identifiers (``Node_ID``). The order of the rows in the results is the same as the order in which the data was loaded.
-
-This function returns an H2OFrame object with categorical leaf assignment identifiers for each tree in the model.
-
-**Note**: This option is not currently supported for XGBoost.
-
-Predict Contributions
-~~~~~~~~~~~~~~~~~~~~~
-
-In H2O-3, each returned H2OFrame has a specific shape (#rows, #features + 1). This includes a feature contribution column for each input feature, with the last column being the model bias (same value for each row). The sum of the feature contributions and the bias term is equal to the raw prediction of the model. Raw prediction of tree-based model is the sum of the predictions of the individual trees before the inverse link function is applied to get the actual prediction. For Gaussian distribution, the sum of the contributions is equal to the model prediction. 
-
-H2O-3 supports TreeSHAP for DRF, GBM, and XGBoost. For these problems, the ``predict_contributions`` returns a new H2OFrame with the predicted feature contributions - SHAP (SHapley Additive exPlanation) values on an H2O model.
-        
-**Note**: Multinomial classification models are currently not supported.
-
-Predict Stage Probabilities
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Use the ``staged_predict_proba`` function to predict class probabilities at each stage of an H2O Model. Note that this can only be used with GBM.
-
-Prediction Threshold
-~~~~~~~~~~~~~~~~~~~~
-
-For classification problems, when running ``h2o.predict()`` or ``.predict()``, the prediction threshold is selected as follows:
-
-- If you train a model with only training data, the Max F1 threshold from the train data model metrics is used.
-- If you train a model with train and validation data, the Max F1 threshold from the validation data model metrics is used.
-- If you train a model with train data and set the ``nfold`` parameter, the Max F1 threshold from the training data model metrics is used.
-- If you train a model with the train data and validation data and also set the ``nfold parameter``, the Max F1 threshold from the validation data model metrics is used.
-
 In-Memory Prediction
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -635,6 +600,155 @@ This section provides examples of performing predictions in Python and R. Refer 
     # Predict based on the path from the root node of the tree.
     predict_lna = model.predict_leaf_node_assignment(test, "Path")
 
+Predicting Leaf Node Assignment
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For tree-based models, including GBM, DRF, and Isolation Forest, the ``h2o.predict_leaf_node_assignment()`` function predicts the leaf assignment on an H2O model. 
+
+This function predicts against a test frame. For every row in the test frame, this function returns the leaf placements of the row in all the trees in the model. An optional Type can also be specified to define the placements. Placements can be represented either by paths to the leaf nodes from the tree root (``Path`` - default) or by H2O's internal identifiers (``Node_ID``). The order of the rows in the results is the same as the order in which the data was loaded.
+
+This function returns an H2OFrame object with categorical leaf assignment identifiers for each tree in the model.
+
+**Note**: This option is not currently supported for XGBoost.
+
+.. example-code::
+   .. code-block:: r
+
+    library(h2o)
+    h2o.init()
+
+    # Import the prostate dataset
+    prostate.hex <- h2o.importFile(path = "https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv", 
+                                   destination_frame = "prostate.hex")
+
+    # Split dataset giving the training dataset 75% of the data
+    prostate.split <- h2o.splitFrame(data=prostate.hex, ratios=0.75)
+
+    # Create a training set from the 1st dataset in the split
+    prostate.train <- prostate.split[[1]]
+
+    # Create a testing set from the 2nd dataset in the split
+    prostate.test <- prostate.split[[2]]
+
+    # Convert the response column to a factor
+    prostate.train$CAPSULE <- as.factor(prostate.train$CAPSULE)
+
+    # Build a GBM model
+    model <- h2o.gbm(y="CAPSULE",
+                     x=c("AGE", "RACE", "PSA", "GLEASON"),
+                     training_frame=prostate.train,
+                     distribution="bernoulli",
+                     ntrees=100,
+                     max_depth=4,
+                     learn_rate=0.1)
+
+    # Predict using the GBM model and the testing dataset
+    pred <- h2o.predict(object=model, newdata=prostate.test)
+    pred
+      predict         p0          p1
+    1       0 0.7414373 0.25856274
+    2       1 0.3114293 0.68857073
+    3       0 0.9852284 0.01477161
+    4       0 0.6647902 0.33520975
+    5       0 0.6075046 0.39249538
+    6       1 0.4065468 0.59345323
+
+    [88 rows x 3 columns] 
+
+    # View a summary of the prediction with a probability of TRUE
+    summary(pred$p1, exact_quantiles=TRUE)
+     p1                
+     Min.   :0.008925  
+     1st Qu.:0.160050  
+     Median :0.350236  
+     Mean   :0.451507  
+     3rd Qu.:0.818486  
+     Max.   :0.99040  
+
+    # Predict the leaf node assigment using the GBM model and test data.
+    # Predict based on the path from the root node of the tree.
+    predict_lna <- h2o.predict_leaf_node_assignment(model, prostate.test)
+
+    # View a summary of the leaf node assignment prediction
+    summary(predict_lna$T1.C1, exact_quantiles=TRUE)
+    T1.C1   
+    RRLR:15 
+    RRR :13 
+    LLLR:12 
+    LLLL:11 
+    LLRR: 8 
+    LLRL: 6 
+
+
+   .. code-block:: python
+
+    import h2o
+    from h2o.estimators.gbm import H2OGradientBoostingEstimator
+    h2o.init()
+    
+    # Import the prostate dataset
+    h2o_df = h2o.import_file("https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv")
+    
+    # Split the data into Train/Test/Validation with Train having 70% and test and validation 15% each
+    train,test,valid = h2o_df.split_frame(ratios=[.7, .15])
+
+    # Convert the response column to a factor
+    h2o_df["CAPSULE"] = h2o_df["CAPSULE"].asfactor()
+    
+    # Generate a GBM model using the training dataset
+    model = H2OGradientBoostingEstimator(distribution="bernoulli",
+                                         ntrees=100,
+                                         max_depth=4,
+                                         learn_rate=0.1)
+    model.train(y="CAPSULE", x=["AGE","RACE","PSA","GLEASON"],training_frame=h2o_df)
+    
+    # Predict using the GBM model and the testing dataset
+    predict = model.predict(test)
+    
+    # View a summary of the prediction
+    predict.head()
+    predict        p0        p1
+    ---------  --------  --------
+            0  0.8993    0.1007
+            1  0.168391  0.831609
+            1  0.166067  0.833933
+            1  0.327212  0.672788
+            1  0.25991   0.74009
+            0  0.758978  0.241022
+            0  0.540797  0.459203
+            0  0.838489  0.161511
+            0  0.704853  0.295147
+            0  0.642381  0.357619
+
+    [10 rows x 3 columns]
+
+    # Predict the leaf node assigment using the GBM model and test data.
+    # Predict based on the path from the root node of the tree.
+    predict_lna = model.predict_leaf_node_assignment(test, "Path")
+
+Predict Contributions
+~~~~~~~~~~~~~~~~~~~~~
+
+In H2O-3, each returned H2OFrame has a specific shape (#rows, #features + 1). This includes a feature contribution column for each input feature, with the last column being the model bias (same value for each row). The sum of the feature contributions and the bias term is equal to the raw prediction of the model. Raw prediction of tree-based model is the sum of the predictions of the individual trees before the inverse link function is applied to get the actual prediction. For Gaussian distribution, the sum of the contributions is equal to the model prediction. 
+
+H2O-3 supports TreeSHAP for DRF, GBM, and XGBoost. For these problems, the ``predict_contributions`` returns a new H2OFrame with the predicted feature contributions - SHAP (SHapley Additive exPlanation) values on an H2O model.
+        
+**Note**: Multinomial classification models are currently not supported.
+
+Predict Stage Probabilities
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Use the ``staged_predict_proba`` function to predict class probabilities at each stage of an H2O Model. Note that this can only be used with GBM.
+
+Prediction Threshold
+~~~~~~~~~~~~~~~~~~~~
+
+For classification problems, when running ``h2o.predict()`` or ``.predict()``, the prediction threshold is selected as follows:
+
+- If you train a model with only training data, the Max F1 threshold from the train data model metrics is used.
+- If you train a model with train and validation data, the Max F1 threshold from the validation data model metrics is used.
+- If you train a model with train data and set the ``nfold`` parameter, the Max F1 threshold from the training data model metrics is used.
+- If you train a model with the train data and validation data and also set the ``nfold parameter``, the Max F1 threshold from the validation data model metrics is used.
 
 Predict using MOJOs
 ~~~~~~~~~~~~~~~~~~~
