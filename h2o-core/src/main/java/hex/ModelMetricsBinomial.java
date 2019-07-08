@@ -24,6 +24,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
   public final TwoDimTable _gainsLiftTable;
   public final TwoDimTable _thresholds_and_metric_scores;
   public final TwoDimTable _max_criteria_and_metric_scores;
+  public final TwoDimTable _confusion_matrix;
 
   public ModelMetricsBinomial(Model model, Frame frame, long nobs, double mse, String[] domain,
                               double sigma, AUC2 auc, double logloss, GainsLift gainsLift,
@@ -38,12 +39,13 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     _gainsLiftTable = null;
     _thresholds_and_metric_scores = null;
     _max_criteria_and_metric_scores = null;
+    _confusion_matrix = null;
   }
 
   public ModelMetricsBinomial(Model model, Frame frame, long nobs, double mse, String[] domain,
                               double sigma, AUC2 auc, double logloss, TwoDimTable gainsLiftTable,
                               CustomMetric customMetric, double mean_per_class_error, TwoDimTable thresholds_and_metric_scores,
-                              TwoDimTable max_criteria_and_metric_scores) {
+                              TwoDimTable max_criteria_and_metric_scores, TwoDimTable confusion_matrix) {
     super(model, frame, nobs, mse, domain, sigma, customMetric);
     _auc = auc;
     _logloss = logloss;
@@ -52,6 +54,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     _mean_per_class_error = mean_per_class_error;
     _thresholds_and_metric_scores = thresholds_and_metric_scores;
     _max_criteria_and_metric_scores = max_criteria_and_metric_scores;
+    _confusion_matrix = confusion_matrix;
   }
 
   public static ModelMetricsBinomial getFromDKV(Model model, Frame frame) {

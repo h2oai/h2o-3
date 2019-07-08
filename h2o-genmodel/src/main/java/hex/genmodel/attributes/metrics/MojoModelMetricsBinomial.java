@@ -14,4 +14,6 @@ public class MojoModelMetricsBinomial extends MojoModelMetrics {
   public Table _gains_lift_table;
   public Table _thresholds_and_metric_scores;
   public Table _max_criteria_and_metric_scores;
+  @SerializedName(value = "cm", insideElementPath = "table")
+  public Table _confusion_matrix;
 }

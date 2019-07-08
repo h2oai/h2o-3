@@ -141,7 +141,7 @@ public class ModelJsonReader {
                     if (jsonElement != null) value = jsonElement.getAsString();
                 } else if (type.isAssignableFrom(Table.class)) {
                     final JsonElement jsonElement = jsonSourceObj.get(fieldName);
-                    if (jsonElement != null) value = readTable(jsonElement.getAsJsonObject(), "");
+                    if (jsonElement != null) value = readTable(jsonElement.getAsJsonObject(),  serializedName != null ? serializedName.insideElementPath() : "");
                 }
                 if (value != null) field.set(object, value);
             } catch (IllegalAccessException e) {

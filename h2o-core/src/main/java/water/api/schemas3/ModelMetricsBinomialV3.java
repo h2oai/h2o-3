@@ -54,7 +54,11 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
     mean_per_class_error = modelMetrics._mean_per_class_error;
 
 
-    if (null != modelMetrics.cm()) {
+    if (modelMetrics._confusion_matrix != null) {
+      final ConfusionMatrixV3 convertedConfusionMatrix = new ConfusionMatrixV3();
+      convertedConfusionMatrix.table = new TwoDimTableV3().fillFromImpl(modelMetrics._confusion_matrix);
+      this.cm = convertedConfusionMatrix;
+    } else if (null != modelMetrics.cm()) {
       ConfusionMatrix cm = modelMetrics.cm();
       cm.table(); // Fill in lazy table, for icing
       this.cm = (ConfusionMatrixV3) SchemaServer.schema(this.getSchemaVersion(), cm).fillFromImpl(cm);

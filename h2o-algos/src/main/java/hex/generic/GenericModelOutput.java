@@ -70,7 +70,8 @@ public class GenericModelOutput extends Model.Output {
                         modelDescriptor.scoringDomains()[modelDescriptor.nfeatures() - 1], 0D,
                         auc, binomial._logloss, convertTable(binomial._gains_lift_table),
                         new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value), binomial._mean_per_class_error,
-                        convertTable(binomial._thresholds_and_metric_scores), convertTable(binomial._max_criteria_and_metric_scores));
+                        convertTable(binomial._thresholds_and_metric_scores), convertTable(binomial._max_criteria_and_metric_scores),
+                        convertTable(binomial._confusion_matrix));
             case Multinomial:
             case Ordinal:
             case Regression:
