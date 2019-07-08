@@ -538,22 +538,7 @@ This section provides examples of performing predictions in Python and R. Refer 
      Mean   :0.451507  
      3rd Qu.:0.818486  
      Max.   :0.99040  
-
-    # Predict the leaf node assigment using the GBM model and test data.
-    # Predict based on the path from the root node of the tree.
-    predict_lna <- h2o.predict_leaf_node_assignment(model, prostate.test)
-
-    # View a summary of the leaf node assignment prediction
-    summary(predict_lna$T1.C1, exact_quantiles=TRUE)
-    T1.C1   
-    RRLR:15 
-    RRR :13 
-    LLLR:12 
-    LLLL:11 
-    LLRR: 8 
-    LLRL: 6 
-
-
+ 
    .. code-block:: python
 
     import h2o
@@ -596,14 +581,10 @@ This section provides examples of performing predictions in Python and R. Refer 
 
     [10 rows x 3 columns]
 
-    # Predict the leaf node assigment using the GBM model and test data.
-    # Predict based on the path from the root node of the tree.
-    predict_lna = model.predict_leaf_node_assignment(test, "Path")
-
 Predicting Leaf Node Assignment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For tree-based models, including GBM, DRF, and Isolation Forest, the ``h2o.predict_leaf_node_assignment()`` function predicts the leaf assignment on an H2O model. 
+For tree-based models, including GBM, DRF, and Isolation Forest, the ``h2o.predict_leaf_node_assignment()`` function predicts the leaf node assignment on an H2O model. 
 
 This function predicts against a test frame. For every row in the test frame, this function returns the leaf placements of the row in all the trees in the model. An optional Type can also be specified to define the placements. Placements can be represented either by paths to the leaf nodes from the tree root (``Path`` - default) or by H2O's internal identifiers (``Node_ID``). The order of the rows in the results is the same as the order in which the data was loaded.
 
@@ -611,60 +592,11 @@ This function returns an H2OFrame object with categorical leaf assignment identi
 
 **Note**: This option is not currently supported for XGBoost.
 
+Using the previous example, run the following to predict the leaf node assignments:
+
 .. example-code::
    .. code-block:: r
-
-    library(h2o)
-    h2o.init()
-
-    # Import the prostate dataset
-    prostate.hex <- h2o.importFile(path = "https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv", 
-                                   destination_frame = "prostate.hex")
-
-    # Split dataset giving the training dataset 75% of the data
-    prostate.split <- h2o.splitFrame(data=prostate.hex, ratios=0.75)
-
-    # Create a training set from the 1st dataset in the split
-    prostate.train <- prostate.split[[1]]
-
-    # Create a testing set from the 2nd dataset in the split
-    prostate.test <- prostate.split[[2]]
-
-    # Convert the response column to a factor
-    prostate.train$CAPSULE <- as.factor(prostate.train$CAPSULE)
-
-    # Build a GBM model
-    model <- h2o.gbm(y="CAPSULE",
-                     x=c("AGE", "RACE", "PSA", "GLEASON"),
-                     training_frame=prostate.train,
-                     distribution="bernoulli",
-                     ntrees=100,
-                     max_depth=4,
-                     learn_rate=0.1)
-
-    # Predict using the GBM model and the testing dataset
-    pred <- h2o.predict(object=model, newdata=prostate.test)
-    pred
-      predict         p0          p1
-    1       0 0.7414373 0.25856274
-    2       1 0.3114293 0.68857073
-    3       0 0.9852284 0.01477161
-    4       0 0.6647902 0.33520975
-    5       0 0.6075046 0.39249538
-    6       1 0.4065468 0.59345323
-
-    [88 rows x 3 columns] 
-
-    # View a summary of the prediction with a probability of TRUE
-    summary(pred$p1, exact_quantiles=TRUE)
-     p1                
-     Min.   :0.008925  
-     1st Qu.:0.160050  
-     Median :0.350236  
-     Mean   :0.451507  
-     3rd Qu.:0.818486  
-     Max.   :0.99040  
-
+  
     # Predict the leaf node assigment using the GBM model and test data.
     # Predict based on the path from the root node of the tree.
     predict_lna <- h2o.predict_leaf_node_assignment(model, prostate.test)
@@ -681,46 +613,6 @@ This function returns an H2OFrame object with categorical leaf assignment identi
 
 
    .. code-block:: python
-
-    import h2o
-    from h2o.estimators.gbm import H2OGradientBoostingEstimator
-    h2o.init()
-    
-    # Import the prostate dataset
-    h2o_df = h2o.import_file("https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv")
-    
-    # Split the data into Train/Test/Validation with Train having 70% and test and validation 15% each
-    train,test,valid = h2o_df.split_frame(ratios=[.7, .15])
-
-    # Convert the response column to a factor
-    h2o_df["CAPSULE"] = h2o_df["CAPSULE"].asfactor()
-    
-    # Generate a GBM model using the training dataset
-    model = H2OGradientBoostingEstimator(distribution="bernoulli",
-                                         ntrees=100,
-                                         max_depth=4,
-                                         learn_rate=0.1)
-    model.train(y="CAPSULE", x=["AGE","RACE","PSA","GLEASON"],training_frame=h2o_df)
-    
-    # Predict using the GBM model and the testing dataset
-    predict = model.predict(test)
-    
-    # View a summary of the prediction
-    predict.head()
-    predict        p0        p1
-    ---------  --------  --------
-            0  0.8993    0.1007
-            1  0.168391  0.831609
-            1  0.166067  0.833933
-            1  0.327212  0.672788
-            1  0.25991   0.74009
-            0  0.758978  0.241022
-            0  0.540797  0.459203
-            0  0.838489  0.161511
-            0  0.704853  0.295147
-            0  0.642381  0.357619
-
-    [10 rows x 3 columns]
 
     # Predict the leaf node assigment using the GBM model and test data.
     # Predict based on the path from the root node of the tree.
@@ -735,10 +627,67 @@ H2O-3 supports TreeSHAP for DRF, GBM, and XGBoost. For these problems, the ``pre
         
 **Note**: Multinomial classification models are currently not supported.
 
+Using the previous example, run the following to predict contributions:
+
+.. example-code::
+   .. code-block:: r
+  
+    # Predict the contributions using the GBM model and test data.
+    predict_contributions <- h2o.predict_contributions(model, prostate.test)
+    predict_contributions
+
+    AGE        RACE       PSA        GLEASON    BiasTerm
+    ---------  ---------- ---------  ---------  ----------
+    -0.3929753  0.02188157 0.3530045  0.5453218 -0.6589417
+    -0.6489378 -0.24417394 1.0434356  0.7937416 -0.6589417
+     0.3244801 -0.23901901 0.9877144  1.0463049 -0.6589417
+     0.9402978 -0.33412665 2.0499718  1.0571480 -0.6589417
+    -0.7762397  0.03393304 0.1952782  1.8620299 -0.6589417
+     0.5900557  0.03899451 0.6708371 -1.2606093 -0.6589417
+
+     [95 rows x 5 columns]
+
+
+   .. code-block:: python
+
+    # Predict the contributions using the GBM model and test data.
+    predict_contributions = model.predict_contributions(test)
+    predict_contributions
+
+    AGE          RACE        PSA        GLEASON    BiasTerm
+    -----------  ----------  ---------  ---------  ----------
+    -0.414587     0.0263119  -0.120703   0.407889   -0.581522
+     0.0913486    0.0250697  -0.746584   1.16642    -0.581522
+     0.565866     0.0603216   2.51301    0.739406   -0.581522
+    -0.670981     0.0210115   0.164873  -2.03487    -0.581522
+    -0.398603     0.0255295  -0.494069   0.537647   -0.581522
+     0.00915739   0.0458912   0.557667  -0.262171   -0.581522
+    -0.199497    -0.265438    2.18964    2.89974    -0.581522
+    -0.137073     0.0271401  -1.00939    1.47302    -0.581522
+     0.440857     0.0407717  -0.574498  -0.537758   -0.581522
+    -0.901466     0.0216657   0.453894  -2.39536    -0.581522
+
+    [58 rows x 5 columns]
+
+
 Predict Stage Probabilities
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Use the ``staged_predict_proba`` function to predict class probabilities at each stage of an H2O Model. Note that this can only be used with GBM.
+
+Using the previous example, run the following to predict stage probabilities:
+
+.. example-code::
+   .. code-block:: r
+  
+    # Predict the class probabilities using the GBM model and test data.
+    staged_predict_proba <- h2o.staged_predict_proba(model, prostate.test)
+
+
+   .. code-block:: python
+
+    # Predict the class probabilities using the GBM model and test data.
+    staged_predict_proba = model.staged_predict_proba(test)
 
 Prediction Threshold
 ~~~~~~~~~~~~~~~~~~~~
