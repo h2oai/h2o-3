@@ -18,7 +18,7 @@ class CustomDistributionGaussianWrong(CustomDistributionGaussian):
         return (y - f) * (y - f)
 
 
-class CustomDistributionGaussianNoInh:
+class CustomDistributionGaussianNoInh(object):
 
     def link(self):
         return "identity"
