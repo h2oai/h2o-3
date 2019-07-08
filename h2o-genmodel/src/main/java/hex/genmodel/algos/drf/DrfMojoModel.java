@@ -2,23 +2,24 @@ package hex.genmodel.algos.drf;
 
 import hex.ModelCategory;
 import hex.genmodel.GenModel;
-import hex.genmodel.PredictContributions;
-import hex.genmodel.PredictContributionsFactory;
 import hex.genmodel.algos.tree.*;
-
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**
  * "Distributed Random Forest" MojoModel
  */
-public final class DrfMojoModel extends SharedTreeMojoModel implements SharedTreeGraphConverter, PredictContributionsFactory {
+public final class DrfMojoModel extends SharedTreeMojoModelWithContributions implements SharedTreeGraphConverter {
     protected boolean _binomial_double_trees;
 
 
     public DrfMojoModel(String[] columns, String[][] domains, String responseColumn) {
         super(columns, domains, responseColumn);
+    }
+
+    @Override
+    protected ContributionsPredictor getContributionsPredictor(TreeSHAPPredictor<double[]> treeSHAPPredictor) {
+        return new ContributionsPredictorDRF(treeSHAPPredictor){
+        };
     }
 
     /**
@@ -61,36 +62,15 @@ public final class DrfMojoModel extends SharedTreeMojoModel implements SharedTre
     public double[] score0(double[] row, double[] preds) {
         return score0(row, 0.0, preds);
     }
+    
+    public class ContributionsPredictorDRF extends ContributionsPredictor {
 
-    @Override
-    public PredictContributions makeContributionsPredictor() {
-        if (_nclasses > 2) {
-            throw new UnsupportedOperationException("Predicting contributions for multinomial classification problems is not yet supported.");
+        public ContributionsPredictorDRF(TreeSHAPPredictor<double[]> treeSHAPPredictor) {
+            super(treeSHAPPredictor);
         }
-        SharedTreeGraph graph = _computeGraph(-1);
-        final SharedTreeNode[] empty = new SharedTreeNode[0];
-        List<TreeSHAPPredictor<double[]>> treeSHAPs = new ArrayList<>(graph.subgraphArray.size());
-        for (SharedTreeSubgraph tree : graph.subgraphArray) {
-            SharedTreeNode[] nodes = tree.nodesArray.toArray(empty);
-            treeSHAPs.add(new TreeSHAP<>(nodes, nodes, 0));
-        }
-        TreeSHAPPredictor<double[]> predictor = new TreeSHAPEnsemble<>(treeSHAPs, 0);
-        return new DrfMojoModel.DrfContributionsPredictor(predictor);
-    }
-
-    private final class DrfContributionsPredictor implements PredictContributions {
-        private final TreeSHAPPredictor<double[]> _treeSHAPPredictor;
-        private final Object _workspace;
-
-        private DrfContributionsPredictor(TreeSHAPPredictor<double[]> treeSHAPPredictor) {
-            _treeSHAPPredictor = treeSHAPPredictor;
-            _workspace = _treeSHAPPredictor.makeWorkspace();
-        }
-
+        
         @Override
-        public float[] calculateContributions(double[] input) {
-            float[] contribs = new float[nfeatures() + 1];
-            _treeSHAPPredictor.calculateContributions(input, contribs, 0, -1, _workspace);
+        public float[] getContribs(float[] contribs) {
             if (_category.equals(ModelCategory.Regression)) { // Regression
                 for (int i = 0; i < contribs.length; i++) {
                     contribs[i] = contribs[i] / _ntree_groups;
@@ -104,5 +84,5 @@ public final class DrfMojoModel extends SharedTreeMojoModel implements SharedTre
             return contribs;
         }
     }
-
+    
 }
