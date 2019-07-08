@@ -1509,7 +1509,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   protected String[][] makeScoringDomains(Frame adaptFrm, boolean computeMetrics, String[] names) {
     String[][] domains = new String[names.length][];
-    domains[0] = names.length == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length - 1] : adaptFrm.lastVec().domain();
+    domains[0] = names.length == 1 ? null
+            : !computeMetrics ? _output._domains[_output._domains.length - 1]
+            : adaptFrm.lastVec().domain();
     if (_parms._distribution == DistributionFamily.quasibinomial) {
       domains[0] = new String[]{"0", "1"};
     }
@@ -1641,7 +1643,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     @Override public void map(Chunk chks[], NewChunk cpreds[] ) {
       if (isCancelled() || _j != null && _j.stop_requested()) return;
-      Chunk weightsChunk = _hasWeights && _computeMetrics ? chks[_output.weightsIdx()] : null;
+      Chunk weightsChunk = _hasWeights ? chks[_output.weightsIdx()] : null;
       Chunk offsetChunk = _output.hasOffset() ? chks[_output.offsetIdx()] : null;
       Chunk responseChunk = null;
       float [] actual = null;

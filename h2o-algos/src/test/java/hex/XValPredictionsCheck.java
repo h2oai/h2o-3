@@ -17,8 +17,11 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.ast.prims.advmath.AstKFold;
 import water.util.ArrayUtils;
+import water.util.Log;
 
-import static org.junit.Assert.assertEquals;
+import java.util.Arrays;
+
+import static org.junit.Assert.*;
 
 /**
  * This test is intended to corroborate the documented description of cross-validated
@@ -97,32 +100,40 @@ public class XValPredictionsCheck extends TestUtil {
 
   void checkModel(Model m, Vec foldId, int nclass) {
     if(!(m instanceof DRFModel)) // DRF does out of back instead of true training, nobs might be different
-      assertEquals(m._output._training_metrics._nobs,m._output._cross_validation_metrics._nobs);
-    m.delete();
-    m.deleteCrossValidationModels();
-    Key[] xvalKeys = m._output._cross_validation_predictions;
-    Key xvalKey = m._output._cross_validation_holdout_predictions_frame_id;
-    final int[] id = new int[1];
-    for(Key k: xvalKeys) {
-      Frame preds = DKV.getGet(k);
-      assert preds.numRows() == foldId.length();
-      Vec[] vecs = new Vec[nclass+1];
-      vecs[0] = foldId;
-      if( nclass==1 ) vecs[1] = preds.anyVec();
-      else
-        System.arraycopy(preds.vecs(ArrayUtils.range(1, nclass)), 0, vecs, 1, nclass);
-      new MRTask() {
-        @Override public void map(Chunk[] cs) {
-          Chunk foldId = cs[0];
-          for(int r=0;r<cs[0]._len; ++r)
-            if( foldId.at8(r) != id[0] )
-              for(int i=1; i<cs.length;++i)
-                assert cs[i].atd(r)==0; // no prediction for this row!
+      assertEquals(m._output._training_metrics._nobs, m._output._cross_validation_metrics._nobs);
+    try {
+      Key[] xvalKeys = m._output._cross_validation_predictions;
+      final int[] id = new int[1];
+      for(Key k: xvalKeys) {
+        Frame preds = DKV.getGet(k);
+        try {
+          assert preds.numRows() == foldId.length();
+          Vec[] vecs = new Vec[nclass + 1];
+          vecs[0] = foldId;
+          if (nclass == 1) vecs[1] = preds.anyVec();
+          else
+            System.arraycopy(preds.vecs(ArrayUtils.range(1, nclass)), 0, vecs, 1, nclass);
+          new MRTask() {
+            @Override
+            public void map(Chunk[] cs) {
+              Chunk foldId = cs[0];
+              for (int r = 0; r < cs[0]._len; ++r)
+                if (foldId.at8(r) != id[0])
+                  for (int i = 1; i < cs.length; ++i)
+                    assertEquals(0, cs[i].atd(r), 0); // no prediction for this row!
+            }
+          }.doAll(vecs);
+          id[0]++;
+        } finally {
+          preds.delete();
         }
-      }.doAll(vecs);
-      id[0]++;
-      preds.delete();
+      }
+      Key xvalKey = m._output._cross_validation_holdout_predictions_frame_id;
+      assertNotNull(xvalKey);
+      xvalKey.remove();
+    } finally {
+      m.delete();
+      m.deleteCrossValidationModels();
     }
-    xvalKey.remove();
   }
 }
