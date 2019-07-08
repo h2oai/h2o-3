@@ -1735,9 +1735,10 @@ public class XGBoostTest extends TestUtil {
   
   private static <T extends ModelMetricsSupervised> void checkMetrics(final T expectedMM, final T actualMM) {
     double precision = 1e-8;
+    boolean doCheckCM = true;
     if (H2O.getCloudSize() > 0) {
-      // for multinode expect lower precision
-      precision = 5e-2;
+      precision = 5e-2; // results are non-deterministic
+      doCheckCM = false; // CM can be about 5% different values
     }
     assertEquals(expectedMM.rmse(), actualMM.rmse(), precision);
     assertEquals(expectedMM._sigma, actualMM._sigma, precision);
@@ -1748,13 +1749,17 @@ public class XGBoostTest extends TestUtil {
       assertEquals(mmbExp.logloss(), mmbExp.logloss(), precision);
       assertEquals(mmbExp.auc(), mmbAct.auc(), precision);
       assertEquals(mmbExp.mean_per_class_error(), mmbAct.mean_per_class_error(), precision);
-      checkConfusionMatrix(mmbExp.cm(), mmbAct.cm());
+      if (doCheckCM) {
+        checkConfusionMatrix(mmbExp.cm(), mmbAct.cm());
+      }
     } else if (expectedMM instanceof ModelMetricsMultinomial) {
       final ModelMetricsMultinomial mmmExp = (ModelMetricsMultinomial) expectedMM;
       final ModelMetricsMultinomial mmmAct = (ModelMetricsMultinomial) actualMM;
       assertEquals(mmmExp.logloss(), mmmAct.logloss(), precision);
       assertEquals(mmmExp.mean_per_class_error(), mmmAct.mean_per_class_error(), precision);
-      checkConfusionMatrix(mmmExp.cm(), mmmAct.cm());
+      if (doCheckCM) {
+        checkConfusionMatrix(mmmExp.cm(), mmmAct.cm());
+      }
     }
     assertArrayEquals(expectedMM.hr(), actualMM.hr(), (float) precision);
     assertArrayEquals(expectedMM._domain, actualMM._domain);
