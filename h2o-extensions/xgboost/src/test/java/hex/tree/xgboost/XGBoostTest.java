@@ -1737,7 +1737,7 @@ public class XGBoostTest extends TestUtil {
     double precision = 1e-8;
     if (H2O.getCloudSize() > 0) {
       // for multinode expect lower precision
-      precision = 1e-3;
+      precision = 5e-2;
     }
     assertEquals(expectedMM.rmse(), actualMM.rmse(), precision);
     assertEquals(expectedMM._sigma, actualMM._sigma, precision);
