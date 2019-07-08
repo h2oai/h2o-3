@@ -33,7 +33,7 @@ public abstract class SharedTreeMojoModelWithContributions extends SharedTreeMoj
     
     protected abstract ContributionsPredictor getContributionsPredictor(TreeSHAPPredictor<double[]> treeSHAPPredictor);
     
-    public abstract class ContributionsPredictor implements PredictContributions {
+    public class ContributionsPredictor implements PredictContributions {
         private final TreeSHAPPredictor<double[]> _treeSHAPPredictor;
         private final Object _workspace;
 
