@@ -14,13 +14,13 @@ class BuildConfig {
   private static final String DEFAULT_HADOOP_IMAGE_NAME_PREFIX = 'dev-build-hadoop-gradle'
   private static final String DEFAULT_RELEASE_IMAGE_NAME_PREFIX = 'dev-release-gradle'
 
-  public static final int DEFAULT_IMAGE_VERSION_TAG = 25
+  public static final int DEFAULT_IMAGE_VERSION_TAG = 26
   public static final String AWSCLI_IMAGE = DOCKER_REGISTRY + '/opsh2oai/awscli'
   public static final String S3CMD_IMAGE = DOCKER_REGISTRY + '/opsh2oai/s3cmd'
 
   private static final String HADOOP_IMAGE_NAME_PREFIX = 'h2o-3-hadoop'
   private static final String HADOOP_IMAGE_VERSION_TAG = '79'
-  
+
   private static final String K8S_TEST_IMAGE_VERSION_TAG = '1'
 
   public static final String XGB_TARGET_MINIMAL = 'minimal'
@@ -135,7 +135,7 @@ class BuildConfig {
   String getBenchmarkNodeLabel() {
     return nodeLabels.getBenchmarkNodeLabel()
   }
-  
+
   String getGPUBenchmarkNodeLabel() {
     return nodeLabels.getGPUBenchmarkNodeLabel()
   }
@@ -202,7 +202,7 @@ class BuildConfig {
   String getHadoopImageVersion() {
     return HADOOP_IMAGE_VERSION_TAG
   }
-  
+
   String getK8STestImageVersion() {
     return K8S_TEST_IMAGE_VERSION_TAG
   }
@@ -321,7 +321,7 @@ class BuildConfig {
     }
     return getSmokeHadoopImageImpl(distribution, version, krbSuffix)
   }
-  
+
   String getHadoopEdgeNodeImage(final distribution, final version, final useKrb) {
     def suffix = "-0xd-edge"
     if (useKrb) {
@@ -329,7 +329,7 @@ class BuildConfig {
     }
     return getSmokeHadoopImageImpl(distribution, version, suffix)
   }
-  
+
   String getSmokeHadoopImageImpl(final distribution, final version, final suffix) {
     return "${DOCKER_REGISTRY}/opsh2oai/${HADOOP_IMAGE_NAME_PREFIX}-${distribution}-${version}${suffix}:${HADOOP_IMAGE_VERSION_TAG}".toString()
   }
