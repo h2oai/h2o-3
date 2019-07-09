@@ -280,7 +280,7 @@ class ModelBase(backwards_compatible()):
         """
         Return the frame for the respective weight matrix.
 
-        :param: matrix_id: an integer, ranging from 0 to number of layers, that specifies the weight matrix to return.
+        :param matrix_id: an integer, ranging from 0 to number of layers, that specifies the weight matrix to return.
 
         :returns: an H2OFrame which represents the weight matrix identified by matrix_id
         """
@@ -444,7 +444,7 @@ class ModelBase(backwards_compatible()):
         """
         Pretty print the variable importances, or return them in a list.
 
-        :param use_pandas: If True, then the variable importances will be returned as a pandas data frame.
+        :param bool use_pandas: If True, then the variable importances will be returned as a pandas data frame.
 
         :returns: A list or Pandas DataFrame.
         """
@@ -806,7 +806,7 @@ class ModelBase(backwards_compatible()):
 
         :param path:  An absolute path to the directory where POJO should be saved.
         :param get_genmodel_jar: if True, then also download h2o-genmodel.jar and store it in folder ``path``.
-        :param genmodel_name Custom name of genmodel jar
+        :param genmodel_name: Custom name of genmodel jar
         :returns: name of the POJO file written.
         """
         assert_is_type(path, str)
@@ -821,7 +821,7 @@ class ModelBase(backwards_compatible()):
 
         :param path: the path where MOJO file should be saved.
         :param get_genmodel_jar: if True, then also download h2o-genmodel.jar and store it in folder ``path``.
-        :param genmodel_name Custom name of genmodel jar
+        :param genmodel_name: Custom name of genmodel jar
         :returns: name of the MOJO file written.
         """
         assert_is_type(path, str)
