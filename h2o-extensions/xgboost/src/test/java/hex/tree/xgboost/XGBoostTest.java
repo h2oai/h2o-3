@@ -807,18 +807,17 @@ public class XGBoostTest extends TestUtil {
 
   @Test
   public void testBinomialTrainingWeights() {
-    Assume.assumeTrue(H2O.getCloudSize() == 1); // FIXME: PUBDEV-6565
     XGBoostModel model = null;
     XGBoostModel noWeightsModel = null;
     Scope.enter();
     try {
       Frame airlinesFrame = Scope.track(parse_test_file("./smalldata/testng/airlines.csv"));
       airlinesFrame.replace(0, airlinesFrame.vecs()[0].toCategoricalVec()).remove();
-      DKV.put(airlinesFrame);
 
       final Vec weightsVector = createRandomBinaryWeightsVec(airlinesFrame.numRows(), 10);
       final String weightsColumnName = "weights";
       airlinesFrame.add(weightsColumnName, weightsVector);
+      DKV.put(airlinesFrame);
 
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
@@ -858,7 +857,6 @@ public class XGBoostTest extends TestUtil {
 
   @Test
   public void testRegressionTrainingWeights() {
-    Assume.assumeTrue(H2O.getCloudSize() == 1); // FIXME: PUBDEV-6565
     XGBoostModel model = null;
     XGBoostModel noWeightsModel = null;
     Scope.enter();
@@ -866,11 +864,11 @@ public class XGBoostTest extends TestUtil {
       Frame prostateFrame = parse_test_file("./smalldata/prostate/prostate.csv");
       prostateFrame.replace(8, prostateFrame.vecs()[8].toCategoricalVec()).remove();   // Convert GLEASON to categorical
       Scope.track(prostateFrame);
-      DKV.put(prostateFrame);
 
       final Vec weightsVector = createRandomBinaryWeightsVec(prostateFrame.numRows(), 10);
       final String weightsColumnName = "weights";
       prostateFrame.add(weightsColumnName, weightsVector);
+      DKV.put(prostateFrame);
 
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
@@ -909,7 +907,6 @@ public class XGBoostTest extends TestUtil {
 
   @Test
   public void testMultinomialTrainingWeights() {
-    Assume.assumeTrue(H2O.getCloudSize() == 1); // FIXME: PUBDEV-6565
     XGBoostModel model = null;
     XGBoostModel noWeightsModel = null;
     Scope.enter();
@@ -917,11 +914,11 @@ public class XGBoostTest extends TestUtil {
       Frame irisFrame = parse_test_file("./smalldata/extdata/iris.csv");
       irisFrame.replace(4, irisFrame.vecs()[4].toCategoricalVec()).remove();
       Scope.track(irisFrame);
-      DKV.put(irisFrame);
 
       final Vec weightsVector = createRandomBinaryWeightsVec(irisFrame.numRows(), 10);
       final String weightsColumnName = "weights";
       irisFrame.add(weightsColumnName, weightsVector);
+      DKV.put(irisFrame);
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
       parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
@@ -1435,7 +1432,7 @@ public class XGBoostTest extends TestUtil {
     try {
       final String response = "cylinders";
 
-      Frame f = parse_test_file("smalldata/junit/cars.csv");
+      Frame f = parse_test_file("./smalldata/junit/cars.csv");
       f.replace(f.find(response), f.vecs()[f.find(response)].toCategoricalVec()).remove();
       DKV.put(Scope.track(f));
 
@@ -1463,12 +1460,10 @@ public class XGBoostTest extends TestUtil {
 
   @Test
   public void testMonotoneConstraints() {
-    Assume.assumeTrue(H2O.getCloudSize() == 1); // FIXME: PUBDEV-6565
     Scope.enter();
     try {
       final String response = "power (hp)";
-
-      Frame f = parse_test_file("smalldata/junit/cars.csv");
+      Frame f = parse_test_file("./smalldata/junit/cars.csv");
       f.replace(f.find(response), f.vecs()[f.find("cylinders")].toNumericVec()).remove();
       DKV.put(Scope.track(f));
 
@@ -1476,9 +1471,10 @@ public class XGBoostTest extends TestUtil {
       parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
       parms._response_column = response;
       parms._train = f._key;
-      parms._ignored_columns = new String[]{"name"};
+      parms._ignored_columns = new String[] { "name" };
       parms._seed = 42;
       parms._reg_lambda = 0;
+      parms._tree_method = XGBoostModel.XGBoostParameters.TreeMethod.hist;
 
       XGBoostModel.XGBoostParameters noConstrParams = (XGBoostModel.XGBoostParameters) parms.clone();
       XGBoostModel noConstrModel = new hex.tree.xgboost.XGBoost(noConstrParams).trainModel().get();
@@ -1487,7 +1483,7 @@ public class XGBoostTest extends TestUtil {
       assertTrue(ArrayUtils.contains(noConstrModel._output._varimp._names, "cylinders"));
 
       XGBoostModel.XGBoostParameters constrParams = (XGBoostModel.XGBoostParameters) parms.clone();
-      constrParams._monotone_constraints = new KeyValue[] {new KeyValue("cylinders", -1)};
+      constrParams._monotone_constraints = new KeyValue[] { new KeyValue("cylinders", -1) };
       XGBoostModel constrModel = new hex.tree.xgboost.XGBoost(constrParams).trainModel().get();
       Scope.track_generic(constrModel);
 
@@ -1738,24 +1734,34 @@ public class XGBoostTest extends TestUtil {
   }
   
   private static <T extends ModelMetricsSupervised> void checkMetrics(final T expectedMM, final T actualMM) {
-    assertEquals(expectedMM.rmse(), actualMM.rmse(), 1e-8);
-    assertEquals(expectedMM._sigma, actualMM._sigma, 1e-8);
-    assertEquals(expectedMM._nobs, actualMM._nobs, 1e-8);
+    double precision = 1e-8;
+    boolean doCheckCM = true;
+    if (H2O.getCloudSize() >= 2) {
+      precision = 5e-2; // results are non-deterministic
+      doCheckCM = false; // CM can be about 5% different values
+    }
+    assertEquals(expectedMM.rmse(), actualMM.rmse(), precision);
+    assertEquals(expectedMM._sigma, actualMM._sigma, precision);
+    assertEquals(expectedMM._nobs, actualMM._nobs, precision);
     if (expectedMM instanceof ModelMetricsBinomial) {
       final ModelMetricsBinomial mmbExp = (ModelMetricsBinomial) expectedMM;
       final ModelMetricsBinomial mmbAct = (ModelMetricsBinomial) actualMM;
-      assertEquals(mmbExp.logloss(), mmbExp.logloss(), 1e-8);
-      assertEquals(mmbExp.auc(), mmbAct.auc(), 1e-8);
-      assertEquals(mmbExp.mean_per_class_error(), mmbAct.mean_per_class_error(), 1e-8);
-      checkConfusionMatrix(mmbExp.cm(), mmbAct.cm());
+      assertEquals(mmbExp.logloss(), mmbExp.logloss(), precision);
+      assertEquals(mmbExp.auc(), mmbAct.auc(), precision);
+      assertEquals(mmbExp.mean_per_class_error(), mmbAct.mean_per_class_error(), precision);
+      if (doCheckCM) {
+        checkConfusionMatrix(mmbExp.cm(), mmbAct.cm());
+      }
     } else if (expectedMM instanceof ModelMetricsMultinomial) {
       final ModelMetricsMultinomial mmmExp = (ModelMetricsMultinomial) expectedMM;
       final ModelMetricsMultinomial mmmAct = (ModelMetricsMultinomial) actualMM;
-      assertEquals(mmmExp.logloss(), mmmAct.logloss(), 1e-8);
-      assertEquals(mmmExp.mean_per_class_error(), mmmAct.mean_per_class_error(), 1e-8);
-      checkConfusionMatrix(mmmExp.cm(), mmmAct.cm());
+      assertEquals(mmmExp.logloss(), mmmAct.logloss(), precision);
+      assertEquals(mmmExp.mean_per_class_error(), mmmAct.mean_per_class_error(), precision);
+      if (doCheckCM) {
+        checkConfusionMatrix(mmmExp.cm(), mmmAct.cm());
+      }
     }
-    assertArrayEquals(expectedMM.hr(), actualMM.hr(), 1e-8f);
+    assertArrayEquals(expectedMM.hr(), actualMM.hr(), (float) precision);
     assertArrayEquals(expectedMM._domain, actualMM._domain);
   }
 
