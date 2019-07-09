@@ -46,7 +46,7 @@ class H2OTree():
     def descriptions(self):
         """Descriptions for each node to be found in the tree.
          Contains split threshold if the split is based on numerical column.
-         For cactegorical splits, it contains list of categorical levels for transition from the parent node.
+         For categorical splits, it contains list of categorical levels for transition from the parent node.
          """
         return self._descriptions
 
@@ -64,15 +64,13 @@ class H2OTree():
 
     @property
     def tree_class(self):
-        """The name of a tree's class. Number of tree classes equals to the number of levels in
-         categorical response column.
-
-         As there is exactly one class per categorical level, name of tree's class equals to the corresponding
-          categorical level of response column.
-
-         In case of regression and binomial, the name of the categorical level is ignored can be omitted,
-          as there is exactly one tree built in both cases.
-          """
+        """The name of a tree's class.
+        Number of tree classes equals to the number of levels in categorical response column.
+        As there is exactly one class per categorical level, name of tree's class equals to the corresponding
+            categorical level of response column.
+        In case of regression and binomial, the name of the categorical level is ignored can be omitted,
+            as there is exactly one tree built in both cases.
+        """
         return self._tree_class
 
     @property
