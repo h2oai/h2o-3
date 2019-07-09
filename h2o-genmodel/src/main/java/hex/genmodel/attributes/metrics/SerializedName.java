@@ -11,5 +11,5 @@ import static java.lang.annotation.ElementType.*;
 public @interface SerializedName {
 
   String value();
-  String insideElementPath() default "";
+  String insideElementPath() default ""; // TODO: Unite or refactor code, temporary solution to work with my outdated codebase
 }

@@ -386,7 +386,7 @@ public class GenericModelTest extends TestUtil {
             model = job.trainModel().get();
             assertEquals(model._output.getModelCategory(), ModelCategory.Multinomial);
             final ByteArrayOutputStream originalModelMojo = new ByteArrayOutputStream();
-            final File originalModelMojoFile = File.createTempFile("mojo", "zip");
+            final File originalModelMojoFile = new File("/home/pavel/mojo_gbm_mult.zip");
             model.getMojo().writeTo(originalModelMojo);
             model.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
 

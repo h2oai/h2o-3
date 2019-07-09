@@ -6,6 +6,7 @@ import hex.genmodel.MojoModel;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.attributes.metrics.MojoModelMetrics;
 import hex.genmodel.attributes.metrics.MojoModelMetricsBinomial;
+import hex.genmodel.attributes.metrics.MojoModelMetricsMultinomial;
 
 import java.util.Arrays;
 
@@ -30,6 +31,7 @@ public class SharedTreeModelAttributes extends ModelAttributes {
       case Binomial:
         return new MojoModelMetricsBinomial();
       case Multinomial:
+        return new MojoModelMetricsMultinomial();
       case Ordinal:
       case Regression:
       case Clustering:
@@ -39,7 +41,7 @@ public class SharedTreeModelAttributes extends ModelAttributes {
       case CoxPH:
       case AnomalyDetection:
       default:
-        return new MojoModelMetrics();
+        return new MojoModelMetrics(); // Basic model metrics if nothing else is available
     }
   }
 

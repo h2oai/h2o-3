@@ -4,6 +4,7 @@ import hex.*;
 import hex.genmodel.attributes.*;
 import hex.genmodel.attributes.metrics.MojoModelMetrics;
 import hex.genmodel.attributes.metrics.MojoModelMetricsBinomial;
+import hex.genmodel.attributes.metrics.MojoModelMetricsMultinomial;
 import hex.genmodel.descriptor.ModelDescriptor;
 import water.util.Log;
 import water.util.TwoDimTable;
@@ -67,12 +68,19 @@ public class GenericModelOutput extends Model.Output {
                 auc._pr_auc = binomial._pr_auc;
                 auc._gini = binomial._gini;
                 return new ModelMetricsBinomial(null, null, mojoMetrics._nobs, mojoMetrics._MSE,
-                        modelDescriptor.scoringDomains()[modelDescriptor.nfeatures() - 1], 0D,
+                        modelDescriptor.scoringDomains()[modelDescriptor.nfeatures() - 1], 0D, // TODO: sigma
                         auc, binomial._logloss, convertTable(binomial._gains_lift_table),
                         new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value), binomial._mean_per_class_error,
                         convertTable(binomial._thresholds_and_metric_scores), convertTable(binomial._max_criteria_and_metric_scores),
                         convertTable(binomial._confusion_matrix));
             case Multinomial:
+                assert mojoMetrics instanceof MojoModelMetricsMultinomial;
+                final MojoModelMetricsMultinomial multinomial = (MojoModelMetricsMultinomial) mojoMetrics;
+                return new ModelMetricsMultinomial(null, null, mojoMetrics._nobs, mojoMetrics._MSE,
+                        modelDescriptor.scoringDomains()[modelDescriptor.nfeatures() - 1], 0D,
+                        convertTable(multinomial._confusion_matrix), convertTable(multinomial._hit_ratios),
+                        multinomial._logloss, new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value),
+                        multinomial._mean_per_class_error);
             case Ordinal:
             case Regression:
             case Clustering:
