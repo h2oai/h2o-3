@@ -1736,7 +1736,7 @@ public class XGBoostTest extends TestUtil {
   private static <T extends ModelMetricsSupervised> void checkMetrics(final T expectedMM, final T actualMM) {
     double precision = 1e-8;
     boolean doCheckCM = true;
-    if (H2O.getCloudSize() > 0) {
+    if (H2O.getCloudSize() >= 2) {
       precision = 5e-2; // results are non-deterministic
       doCheckCM = false; // CM can be about 5% different values
     }
