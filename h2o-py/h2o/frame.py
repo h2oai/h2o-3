@@ -2356,7 +2356,7 @@ class H2OFrame(object):
         fr._ex._cache.nrows = self.nrow
         return fr
 
-    def tokenize(self, split:):
+    def tokenize(self, split):
         """
         Tokenize String
 
