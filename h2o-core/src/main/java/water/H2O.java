@@ -1822,13 +1822,13 @@ final public class H2O {
 
   public static void waitForCloudSize(int x, long ms) {
     long start = System.currentTimeMillis();
-    while( System.currentTimeMillis() - start < ms ) {
-      if( CLOUD.size() >= x && Paxos._commonKnowledge )
+    while (System.currentTimeMillis() - start < ms) {
+      if (CLOUD.size() >= x && Paxos._commonKnowledge)
         break;
-      try { Thread.sleep(100); } catch( InterruptedException ignore ) { }
+      try { Thread.sleep(100); } catch (InterruptedException ignore) {}
     }
-    if( H2O.CLOUD.size() < x )
-      throw new RuntimeException("Cloud size under " + x);
+    if (CLOUD.size() < x)
+      throw new RuntimeException("Cloud size " + CLOUD.size() + " under " + x);
   }
 
   public static int getCloudSize() {
