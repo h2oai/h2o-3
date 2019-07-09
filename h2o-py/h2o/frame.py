@@ -436,7 +436,7 @@ class H2OFrame(object):
         """
         Used by the H2OFrame.__repr__ method to print or display a snippet of the data frame.
 
-        If called from IPython, displays an html'ized result. Else prints a tabulate'd result.
+        If called from IPython, displays the results in HTML format. Otherwise, this prints a tabulated result.
         """
         if self._ex is None:
             print("This H2OFrame has been removed.")
@@ -2728,14 +2728,18 @@ class H2OFrame(object):
     def rank_within_group_by(self, group_by_cols, sort_cols, ascending=[], new_col_name="New_Rank_column", sort_cols_sorted=False):
         """
         This function will add a new column rank where the ranking is produced as follows:
-         1. sorts the H2OFrame by columns sorted in by columns specified in group_by_cols and sort_cols in the directions
-           specified by the ascending for the sort_cols.  The sort directions for the group_by_cols are ascending only.
+        
+         1. Sorts the H2OFrame by columns sorted in by columns specified in group_by_cols and sort_cols in the directions
+         specified by the ascending for the sort_cols.  The sort directions for the group_by_cols are ascending only.
+
          2. A new rank column is added to the frame which will contain a rank assignment performed next.  The user can
-           choose to assign a name to this new column.  The default name is New_Rank_column.
+         choose to assign a name to this new column.  The default name is New_Rank_column.
+
          3. For each groupby groups, a rank is assigned to the row starting from 1, 2, ... to the end of that group.
+
          4. If sort_cols_sorted is TRUE, a final sort on the frame will be performed frame according to the sort_cols and
-            the sort directions in ascending.  If sort_cols_sorted is FALSE (by default), the frame from step 3 will be
-            returned as is with no extra sort.  This may provide a small speedup if desired.
+         the sort directions in ascending.  If sort_cols_sorted is FALSE (by default), the frame from step 3 will be
+         returned as is with no extra sort.  This may provide a small speedup if desired.
 
         :param group_by_cols: The columns to group on (either a single column name/index, or a list of column names
           or column indices
