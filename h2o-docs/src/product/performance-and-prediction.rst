@@ -480,41 +480,6 @@ With H2O-3, you can generate predictions for a model based on samples in a test 
 
 For classification problems, predicted probabilities and labels are compared against known results. (Note that for binary models, labels are based on the maximum F1 threshold from the model object.) For regression problems, predicted regression targets are compared against testing targets and typical error metrics.
 
-Predicting Leaf Node Assignment
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-For tree-based models, including GBM, DRF, and Isolation Forest, the ``h2o.predict_leaf_node_assignment()`` function predicts the leaf assignment on an H2O model. 
-
-This function predicts against a test frame. For every row in the test frame, this function returns the leaf placements of the row in all the trees in the model. An optional Type can also be specified to define the placements. Placements can be represented either by paths to the leaf nodes from the tree root (``Path`` - default) or by H2O's internal identifiers (``Node_ID``). The order of the rows in the results is the same as the order in which the data was loaded.
-
-This function returns an H2OFrame object with categorical leaf assignment identifiers for each tree in the model.
-
-**Note**: This option is not currently supported for XGBoost.
-
-Predict Contributions
-~~~~~~~~~~~~~~~~~~~~~
-
-In H2O-3, each returned H2OFrame has a specific shape (#rows, #features + 1). This includes a feature contribution column for each input feature, with the last column being the model bias (same value for each row). The sum of the feature contributions and the bias term is equal to the raw prediction of the model. Raw prediction of tree-based model is the sum of the predictions of the individual trees before the inverse link function is applied to get the actual prediction. For Gaussian distribution, the sum of the contributions is equal to the model prediction. 
-
-H2O-3 supports TreeSHAP for DRF, GBM, and XGBoost. For these problems, the ``predict_contributions`` returns a new H2OFrame with the predicted feature contributions - SHAP (SHapley Additive exPlanation) values on an H2O model.
-        
-**Note**: Multinomial classification models are currently not supported.
-
-Predict Stage Probabilities
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Use the ``staged_predict_proba`` function to predict class probabilities at each stage of an H2O Model. Note that this can only be used with GBM.
-
-Prediction Threshold
-~~~~~~~~~~~~~~~~~~~~
-
-For classification problems, when running ``h2o.predict()`` or ``.predict()``, the prediction threshold is selected as follows:
-
-- If you train a model with only training data, the Max F1 threshold from the train data model metrics is used.
-- If you train a model with train and validation data, the Max F1 threshold from the validation data model metrics is used.
-- If you train a model with train data and set the ``nfold`` parameter, the Max F1 threshold from the training data model metrics is used.
-- If you train a model with the train data and validation data and also set the ``nfold parameter``, the Max F1 threshold from the validation data model metrics is used.
-
 In-Memory Prediction
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -573,22 +538,7 @@ This section provides examples of performing predictions in Python and R. Refer 
      Mean   :0.451507  
      3rd Qu.:0.818486  
      Max.   :0.99040  
-
-    # Predict the leaf node assigment using the GBM model and test data.
-    # Predict based on the path from the root node of the tree.
-    predict_lna <- h2o.predict_leaf_node_assignment(model, prostate.test)
-
-    # View a summary of the leaf node assignment prediction
-    summary(predict_lna$T1.C1, exact_quantiles=TRUE)
-    T1.C1   
-    RRLR:15 
-    RRR :13 
-    LLLR:12 
-    LLLL:11 
-    LLRR: 8 
-    LLRL: 6 
-
-
+ 
    .. code-block:: python
 
     import h2o
@@ -631,10 +581,123 @@ This section provides examples of performing predictions in Python and R. Refer 
 
     [10 rows x 3 columns]
 
+Predicting Leaf Node Assignment
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For tree-based models, including GBM, DRF, and Isolation Forest, the ``h2o.predict_leaf_node_assignment()`` function predicts the leaf node assignment on an H2O model. 
+
+This function predicts against a test frame. For every row in the test frame, this function returns the leaf placements of the row in all the trees in the model. An optional Type can also be specified to define the placements. Placements can be represented either by paths to the leaf nodes from the tree root (``Path`` - default) or by H2O's internal identifiers (``Node_ID``). The order of the rows in the results is the same as the order in which the data was loaded.
+
+This function returns an H2OFrame object with categorical leaf assignment identifiers for each tree in the model.
+
+**Note**: This option is not currently supported for XGBoost.
+
+Using the previous example, run the following to predict the leaf node assignments:
+
+.. example-code::
+   .. code-block:: r
+  
+    # Predict the leaf node assigment using the GBM model and test data.
+    # Predict based on the path from the root node of the tree.
+    predict_lna <- h2o.predict_leaf_node_assignment(model, prostate.test)
+
+    # View a summary of the leaf node assignment prediction
+    summary(predict_lna$T1.C1, exact_quantiles=TRUE)
+    T1.C1   
+    RRLR:15 
+    RRR :13 
+    LLLR:12 
+    LLLL:11 
+    LLRR: 8 
+    LLRL: 6 
+
+
+   .. code-block:: python
+
     # Predict the leaf node assigment using the GBM model and test data.
     # Predict based on the path from the root node of the tree.
     predict_lna = model.predict_leaf_node_assignment(test, "Path")
 
+Predict Contributions
+~~~~~~~~~~~~~~~~~~~~~
+
+In H2O-3, each returned H2OFrame has a specific shape (#rows, #features + 1). This includes a feature contribution column for each input feature, with the last column being the model bias (same value for each row). The sum of the feature contributions and the bias term is equal to the raw prediction of the model. Raw prediction of tree-based model is the sum of the predictions of the individual trees before the inverse link function is applied to get the actual prediction. For Gaussian distribution, the sum of the contributions is equal to the model prediction. 
+
+H2O-3 supports TreeSHAP for DRF, GBM, and XGBoost. For these problems, the ``predict_contributions`` returns a new H2OFrame with the predicted feature contributions - SHAP (SHapley Additive exPlanation) values on an H2O model.
+        
+**Note**: Multinomial classification models are currently not supported.
+
+Using the previous example, run the following to predict contributions:
+
+.. example-code::
+   .. code-block:: r
+  
+    # Predict the contributions using the GBM model and test data.
+    predict_contributions <- h2o.predict_contributions(model, prostate.test)
+    predict_contributions
+
+    AGE        RACE       PSA        GLEASON    BiasTerm
+    ---------  ---------- ---------  ---------  ----------
+    -0.3929753  0.02188157 0.3530045  0.5453218 -0.6589417
+    -0.6489378 -0.24417394 1.0434356  0.7937416 -0.6589417
+     0.3244801 -0.23901901 0.9877144  1.0463049 -0.6589417
+     0.9402978 -0.33412665 2.0499718  1.0571480 -0.6589417
+    -0.7762397  0.03393304 0.1952782  1.8620299 -0.6589417
+     0.5900557  0.03899451 0.6708371 -1.2606093 -0.6589417
+
+     [95 rows x 5 columns]
+
+
+   .. code-block:: python
+
+    # Predict the contributions using the GBM model and test data.
+    predict_contributions = model.predict_contributions(test)
+    predict_contributions
+
+    AGE          RACE        PSA        GLEASON    BiasTerm
+    -----------  ----------  ---------  ---------  ----------
+    -0.414587     0.0263119  -0.120703   0.407889   -0.581522
+     0.0913486    0.0250697  -0.746584   1.16642    -0.581522
+     0.565866     0.0603216   2.51301    0.739406   -0.581522
+    -0.670981     0.0210115   0.164873  -2.03487    -0.581522
+    -0.398603     0.0255295  -0.494069   0.537647   -0.581522
+     0.00915739   0.0458912   0.557667  -0.262171   -0.581522
+    -0.199497    -0.265438    2.18964    2.89974    -0.581522
+    -0.137073     0.0271401  -1.00939    1.47302    -0.581522
+     0.440857     0.0407717  -0.574498  -0.537758   -0.581522
+    -0.901466     0.0216657   0.453894  -2.39536    -0.581522
+
+    [58 rows x 5 columns]
+
+
+Predict Stage Probabilities
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Use the ``staged_predict_proba`` function to predict class probabilities at each stage of an H2O Model. Note that this can only be used with GBM.
+
+Using the previous example, run the following to predict probabilities at each stage in the model:
+
+.. example-code::
+   .. code-block:: r
+  
+    # Predict the class probabilities using the GBM model and test data.
+    staged_predict_proba <- h2o.staged_predict_proba(model, prostate.test)
+
+
+   .. code-block:: python
+
+    # Predict the class probabilities using the GBM model and test data.
+    staged_predict_proba = model.staged_predict_proba(test)
+
+Prediction Threshold
+~~~~~~~~~~~~~~~~~~~~
+
+For classification problems, when running ``h2o.predict()`` or ``.predict()``, the prediction threshold is selected as follows:
+
+- If you train a model with only training data, the Max F1 threshold from the train data model metrics is used.
+- If you train a model with train and validation data, the Max F1 threshold from the validation data model metrics is used.
+- If you train a model with train data and set the ``nfold`` parameter, the Max F1 threshold from the training data model metrics is used.
+- If you train a model with the train data and validation data and also set the ``nfold parameter``, the Max F1 threshold from the validation data model metrics is used.
 
 Predict using MOJOs
 ~~~~~~~~~~~~~~~~~~~
