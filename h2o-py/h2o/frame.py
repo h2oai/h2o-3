@@ -2276,17 +2276,18 @@ class H2OFrame(object):
 
         :returns: An H2OFrame of the matrix containing element-wise distance between the
             strings of this frame and ``y``. The returned frame has the same shape as the input frames.
+        :examples:
+          >>>
+          >>> x = h2o.H2OFrame.from_python(['Martha', 'Dwayne', 'Dixon'], column_types=['factor'])
+          >>> y = h2o.H2OFrame.from_python(['Marhta', 'Duane', 'Dicksonx'], column_types=['string'])
+          >>> x.strdistance(y, measure="jw")
         """
         assert_is_type(y, H2OFrame)
         assert_is_type(measure, Enum('lv', 'lcs', 'qgram', 'jaccard', 'jw', 'soundex'))
         assert_is_type(compare_empty, bool)
         return H2OFrame._expr(expr=ExprNode("strDistance", self, y, measure, compare_empty))._frame()
 
-:examples:
-          >>>
-          >>> x = h2o.H2OFrame.from_python(['Martha', 'Dwayne', 'Dixon'], column_types=['factor'])
-          >>> y = h2o.H2OFrame.from_python(['Marhta', 'Duane', 'Dicksonx'], column_types=['string'])
-          >>> x.strdistance(y, measure="jw")
+       
 
     def asfactor(self):
         """
