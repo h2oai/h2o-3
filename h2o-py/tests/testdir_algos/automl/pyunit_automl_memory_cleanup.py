@@ -371,7 +371,7 @@ def test_suite_remove_automl():
             predictions=(len(keys['cv_models'])  # cv predictions
                          + len(keys['models_base'])  # cv holdout predictions
                          ),
-            metrics=(len(keys['cv_models']) * 2  # for each cv model, 1 on training frame, 1 on validation frame (=training for cv)
+            metrics=(len(keys['cv_models']) * 3  # for each cv model, 1 on training frame, 1 on validation frame (=training for cv), one on adapted frame (to be removed with PUBDEV-6638)
                      + len(keys['models_base'])  # for each model, 1 on training_frame
                      + (2 * 1)  # for each SE, 1 on levelone training
                      )
@@ -405,7 +405,7 @@ def test_suite_remove_automl():
         aml.train(y=target, training_frame=train, blending_frame=blend)
 
         keys = list_keys_in_memory()
-        print(keys['all'].values)
+        # print(keys['all'].values)
         assert contains_leaderboard(project_name, keys)
         assert contains_event_log(project_name, keys)
         expectations = dict(
@@ -478,7 +478,7 @@ def test_suite_remove_automl():
 
 
 pyunit_utils.run_tests(list(iter.chain.from_iterable([
-    # test_suite_clean_cv_predictions(),
-    # test_suite_clean_cv_models(),
+    test_suite_clean_cv_predictions(),
+    test_suite_clean_cv_models(),
     test_suite_remove_automl()
 ])))
