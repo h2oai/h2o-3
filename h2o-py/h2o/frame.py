@@ -1885,7 +1885,7 @@ class H2OFrame(object):
         :param axis:  0 for columnar-wise or 1 for row-wise fill
         :param maxlen: Max number of consecutive NA's to fill
         
-        :return: 
+        :returns: A new Frame that fills NA along a given axis and along a given direction with a maximum fill length.
         """
         assert_is_type(axis, 0, 1)
         assert_is_type(method,str)
@@ -1950,8 +1950,8 @@ class H2OFrame(object):
         Merge two datasets based on common column names.  We do not support all_x=True and all_y=True.
         Only one can be True or none is True.  The default merge method is auto and it will default to the
         radix method.  The radix method will return the correct merge result regardless of duplicated rows
-         in the right frame.  In addition, the radix method can perform merge even if you have string columns
-         in your frames.  If there are duplicated rows in your rite frame, they will not be included if you use
+        in the right frame.  In addition, the radix method can perform merge even if you have string columns
+        in your frames.  If there are duplicated rows in your rite frame, they will not be included if you use
         the hash method.  The hash method cannot perform merge if you have string columns in your left frame.
         Hence, we consider the radix method superior to the hash method and is the default method to use.
 
@@ -2702,12 +2702,12 @@ class H2OFrame(object):
         """
         Pivot the frame designated by the three columns: index, column, and value. Index and column should be
         of type enum, int, or time.
-        For cases of multiple indexes for a column label, the aggregation method is to pick the first occurrence in the data frame
+        For cases of multiple indexes for a column label, the aggregation method is to pick the first occurrence in the data frame.
 
         :param index: Index is a column that will be the row label
         :param column: The labels for the columns in the pivoted Frame
         :param value: The column of values for the given index and column label
-        :returns:
+        :returns: Returns a new H2OFrame with pivoted columns.
         """
         assert_is_type(index, str)
         assert_is_type(column, str)
