@@ -2365,7 +2365,7 @@ class H2OFrame(object):
 
         :param str split: The regular expression to split on.
         
-        :return: An H2OFrame with a single column representing the tokenized Strings. Original rows of the input DF are separated by NA.
+        :returns: An H2OFrame with a single column representing the tokenized Strings. Original rows of the input DF are separated by NA.
         """
         fr = H2OFrame._expr(expr=ExprNode("tokenize", self, split))
         return fr
