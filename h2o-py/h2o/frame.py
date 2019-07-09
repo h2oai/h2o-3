@@ -2270,22 +2270,24 @@ class H2OFrame(object):
             - ``"jw"``:        Jaro, or Jaro-Winker distance
             - ``"soundex"``:   Distance based on soundex encoding
 
-        :param compare_empty if set to FALSE, empty strings will be handled as NaNs
+        :param compare_empty: if set to FALSE, empty strings will be handled as NaNs
 
+        
+
+        :returns: An H2OFrame of the matrix containing element-wise distance between the
+            strings of this frame and ``y``. The returned frame has the same shape as the input frames.
         :examples:
           >>>
           >>> x = h2o.H2OFrame.from_python(['Martha', 'Dwayne', 'Dixon'], column_types=['factor'])
           >>> y = h2o.H2OFrame.from_python(['Marhta', 'Duane', 'Dicksonx'], column_types=['string'])
           >>> x.strdistance(y, measure="jw")
-
-        :returns: An H2OFrame of the matrix containing element-wise distance between the
-            strings of this frame and ``y``. The returned frame has the same shape as the input frames.
         """
         assert_is_type(y, H2OFrame)
         assert_is_type(measure, Enum('lv', 'lcs', 'qgram', 'jaccard', 'jw', 'soundex'))
         assert_is_type(compare_empty, bool)
         return H2OFrame._expr(expr=ExprNode("strDistance", self, y, measure, compare_empty))._frame()
 
+       
 
     def asfactor(self):
         """
@@ -2361,8 +2363,9 @@ class H2OFrame(object):
         tokenize() is similar to strsplit(), the difference between them is that tokenize() will store the tokenized
         text into a single column making it easier for additional processing (filtering stop words, word2vec algo, ...).
 
-        :param str split The regular expression to split on.
-        @return An H2OFrame with a single column representing the tokenized Strings. Original rows of the input DF are separated by NA.
+        :param str split: The regular expression to split on.
+        
+        :returns: An H2OFrame with a single column representing the tokenized Strings. Original rows of the input DF are separated by NA.
         """
         fr = H2OFrame._expr(expr=ExprNode("tokenize", self, split))
         return fr
@@ -2847,7 +2850,7 @@ class H2OFrame(object):
     def topNBottomN(self, column=0, nPercent=10, grabTopN=-1):
         """
         Given a column name or one column index, a percent N, this function will return the top or bottom N% of the
-         values of the column of a frame.  The column must be a numerical column.
+        values of the column of a frame.  The column must be a numerical column.
     
         :param column: a string for column name or an integer index
         :param nPercent: a top or bottom percentage of the column values to return
