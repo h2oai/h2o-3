@@ -2363,8 +2363,9 @@ class H2OFrame(object):
         tokenize() is similar to strsplit(), the difference between them is that tokenize() will store the tokenized
         text into a single column making it easier for additional processing (filtering stop words, word2vec algo, ...).
 
-        :param str split The regular expression to split on.
-        @return An H2OFrame with a single column representing the tokenized Strings. Original rows of the input DF are separated by NA.
+        :param str split: The regular expression to split on.
+        
+        :return: An H2OFrame with a single column representing the tokenized Strings. Original rows of the input DF are separated by NA.
         """
         fr = H2OFrame._expr(expr=ExprNode("tokenize", self, split))
         return fr
