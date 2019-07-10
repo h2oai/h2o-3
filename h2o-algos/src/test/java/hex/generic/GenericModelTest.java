@@ -54,7 +54,7 @@ public class GenericModelTest extends TestUtil {
             model = job.trainModel().get();
             assertEquals(model._output.getModelCategory(), ModelCategory.Binomial);
             final ByteArrayOutputStream originalModelMojo = new ByteArrayOutputStream();
-            final File originalModelMojoFile = new File("/home/pavel/gbm_binom.zip");
+            final File originalModelMojoFile = File.createTempFile("mojo", "zip");
             model.getMojo().writeTo(originalModelMojo);
             model.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
 
@@ -198,7 +198,7 @@ public class GenericModelTest extends TestUtil {
             model = job.trainModel().get();
             assertEquals(model._output.getModelCategory(), ModelCategory.Regression);
             final ByteArrayOutputStream originalModelMojo = new ByteArrayOutputStream();
-            final File originalModelMojoFile = new File("/home/pavel/mojo_gbm_reg.zip");
+            final File originalModelMojoFile = File.createTempFile("mojo", "zip");
             model.getMojo().writeTo(originalModelMojo);
             model.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
 
@@ -386,7 +386,7 @@ public class GenericModelTest extends TestUtil {
             model = job.trainModel().get();
             assertEquals(model._output.getModelCategory(), ModelCategory.Multinomial);
             final ByteArrayOutputStream originalModelMojo = new ByteArrayOutputStream();
-            final File originalModelMojoFile = new File("/home/pavel/mojo_gbm_mult.zip");
+            final File originalModelMojoFile = File.createTempFile("mojo", "zip");
             model.getMojo().writeTo(originalModelMojo);
             model.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
 
