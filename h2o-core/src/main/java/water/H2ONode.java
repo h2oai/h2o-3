@@ -352,9 +352,25 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     return sb.toString();
   }
 
-  @Override public int hashCode() { return _key.hashCode(); }
-  @Override public boolean equals(Object o) { return _key.equals   (((H2ONode)o)._key); }
-  @Override public int compareTo( Object o) { return _key.compareTo(((H2ONode)o)._key); }
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    H2ONode h2ONode = (H2ONode) o;
+
+    if (_timestamp != h2ONode._timestamp) return false;
+    return _key.equals(h2ONode._key);
+  }
+
+  @Override
+  public int hashCode() {
+    int result = (int) _timestamp;
+    result = 31 * result + _key.hashCode();
+    return result;
+  }
+
+  @Override public int compareTo(Object o) { return _key.compareTo(((H2ONode)o)._key); }
 
   // index of this node in the current cloud... can change at the next cloud.
   public int index() { return H2O.CLOUD.nidx(this); }
