@@ -10,7 +10,7 @@ def mojo_model_test():
     # GBM
     airlines = h2o.import_file(path=pyunit_utils.locate("smalldata/testng/airlines_train.csv"))
     gbm = H2OGradientBoostingEstimator(ntrees = 1)
-    gbm.train(x = ["Origin", "IsDepDelayed"], y = "Dest", training_frame=airlines)
+    gbm.train(x = ["Origin", "IsDepDelayed"], y = "Distance", training_frame=airlines)
 
     original_model_filename = tempfile.mkdtemp()
     original_model_filename = gbm.download_mojo(original_model_filename)
@@ -19,7 +19,7 @@ def mojo_model_test():
     fr = h2o.get_frame(key[0])
     model = H2OGenericEstimator(model_key = fr)
     model.train()
-    print(model)
+    print(model) 
     predictions = model.predict(airlines)
     assert predictions is not None
     assert predictions.nrows == 24421

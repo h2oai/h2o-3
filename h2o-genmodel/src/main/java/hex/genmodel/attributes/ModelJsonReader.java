@@ -107,7 +107,7 @@ public class ModelJsonReader {
         final JsonObject jsonSourceObj = jsonSourceElement.getAsJsonObject();
 
         final Class<?> aClass = object.getClass();
-        final Field[] declaredFields = aClass.getDeclaredFields();
+        final Field[] declaredFields = aClass.getFields();
 
         for (int i = 0; i < declaredFields.length; i++) {
             Field field = declaredFields[i];
