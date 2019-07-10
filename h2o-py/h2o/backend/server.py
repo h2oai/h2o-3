@@ -75,17 +75,17 @@ class H2OLocalServer(object):
         :param max_mem_size: Maximum heap size (jvm option Xmx), in bytes.
         :param min_mem_size: Minimum heap size (jvm option Xms), in bytes.
         :param log_dir: Directory for H2O logs to be stored if a new instance is started. Default directory is determined
-        by H2O internally.
+            by H2O internally.
         :param log_level: The logger level for H2O if a new instance is started.
         :param ice_root: A directory where H2O stores its temporary files. Default location is determined by
             tempfile.mkdtemp().
         :param port: Port where to start the new server. This could be either an integer, or a string of the form
             "DDDDD+", indicating that the server should start looking for an open port starting from DDDDD and up.
         :param name: name of the h2o cluster to be started
-        :param extra_classpath List of paths to libraries that should be included on the Java classpath.
+        :param extra_classpath: List of paths to libraries that should be included on the Java classpath.
         :param verbose: If True, then connection info will be printed to the stdout.
-        :param jvm_custom_args Custom, user-defined arguments for the JVM H2O is instantiated in
-        :param bind_to_localhost A flag indicating whether access to the H2O instance should be restricted to the local
+        :param jvm_custom_args: Custom, user-defined arguments for the JVM H2O is instantiated in
+        :param bind_to_localhost: A flag indicating whether access to the H2O instance should be restricted to the local
             machine (default) or if it can be reached from other computers on the network.
             Only applicable when H2O is started from the Python client.
 
