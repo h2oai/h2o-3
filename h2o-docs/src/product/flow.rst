@@ -1076,6 +1076,19 @@ The available options vary depending on the selected model. If an option is only
 
 -  **check_constant_response**: (GBM, DRF) Check if the response column is a constant value. If enabled (default), then an exception is thrown if the response column is a constant value. If disabled, then the model will train regardless of the response column being a constant value or not.
 
+
+-  **col_sample_rate_change_per_level**: (IF) This option specifies to change the column sampling rate as a function of the depth in the tree. This can be a value > 0.0 and <= 2.0 and defaults to 1. (Note that this method is sample without replacement.) For example:
+
+   level 1: **col\_sample_rate**
+  
+   level 2: **col\_sample_rate** * **factor**
+  
+   level 3: **col\_sample_rate** * **factor^2**
+  
+   level 4: **col\_sample_rate** * **factor^3**
+  
+   etc.
+
 --------------
 
 Viewing Models
