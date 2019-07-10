@@ -436,7 +436,7 @@ class H2OFrame(object):
         """
         Used by the H2OFrame.__repr__ method to print or display a snippet of the data frame.
 
-        If called from IPython, displays an html'ized result. Else prints a tabulate'd result.
+        If called from IPython, displays the results in HTML format. Otherwise, this prints a tabulated result.
         """
         if self._ex is None:
             print("This H2OFrame has been removed.")
@@ -1885,7 +1885,7 @@ class H2OFrame(object):
         :param axis:  0 for columnar-wise or 1 for row-wise fill
         :param maxlen: Max number of consecutive NA's to fill
         
-        :return: 
+        :returns: A new Frame that fills NA along a given axis and along a given direction with a maximum fill length.
         """
         assert_is_type(axis, 0, 1)
         assert_is_type(method,str)
@@ -1950,8 +1950,8 @@ class H2OFrame(object):
         Merge two datasets based on common column names.  We do not support all_x=True and all_y=True.
         Only one can be True or none is True.  The default merge method is auto and it will default to the
         radix method.  The radix method will return the correct merge result regardless of duplicated rows
-         in the right frame.  In addition, the radix method can perform merge even if you have string columns
-         in your frames.  If there are duplicated rows in your rite frame, they will not be included if you use
+        in the right frame.  In addition, the radix method can perform merge even if you have string columns
+        in your frames.  If there are duplicated rows in your rite frame, they will not be included if you use
         the hash method.  The hash method cannot perform merge if you have string columns in your left frame.
         Hence, we consider the radix method superior to the hash method and is the default method to use.
 
@@ -2702,12 +2702,12 @@ class H2OFrame(object):
         """
         Pivot the frame designated by the three columns: index, column, and value. Index and column should be
         of type enum, int, or time.
-        For cases of multiple indexes for a column label, the aggregation method is to pick the first occurrence in the data frame
+        For cases of multiple indexes for a column label, the aggregation method is to pick the first occurrence in the data frame.
 
         :param index: Index is a column that will be the row label
         :param column: The labels for the columns in the pivoted Frame
         :param value: The column of values for the given index and column label
-        :returns:
+        :returns: Returns a new H2OFrame with pivoted columns.
         """
         assert_is_type(index, str)
         assert_is_type(column, str)
@@ -2728,14 +2728,19 @@ class H2OFrame(object):
     def rank_within_group_by(self, group_by_cols, sort_cols, ascending=[], new_col_name="New_Rank_column", sort_cols_sorted=False):
         """
         This function will add a new column rank where the ranking is produced as follows:
-         1. sorts the H2OFrame by columns sorted in by columns specified in group_by_cols and sort_cols in the directions
-           specified by the ascending for the sort_cols.  The sort directions for the group_by_cols are ascending only.
+        
+         1. Sorts the H2OFrame by columns sorted in by columns specified in group_by_cols and sort_cols in the directions
+         specified by the ascending for the sort_cols.  The sort directions for the group_by_cols are ascending only.
+
          2. A new rank column is added to the frame which will contain a rank assignment performed next.  The user can
-           choose to assign a name to this new column.  The default name is New_Rank_column.
-         3. For each groupby groups, a rank is assigned to the row starting from 1, 2, ... to the end of that group.
+         choose to assign a name to this new column.  The default name is New_Rank_column.
+
+         3. For each groupby groups, a rank is assigned to the row starting from 1, 2, ... to the end of that 
+         group.
+
          4. If sort_cols_sorted is TRUE, a final sort on the frame will be performed frame according to the sort_cols and
-            the sort directions in ascending.  If sort_cols_sorted is FALSE (by default), the frame from step 3 will be
-            returned as is with no extra sort.  This may provide a small speedup if desired.
+         the sort directions in ascending.  If sort_cols_sorted is FALSE (by default), the frame from step 3 will be
+         returned as is with no extra sort.  This may provide a small speedup if desired.
 
         :param group_by_cols: The columns to group on (either a single column name/index, or a list of column names
           or column indices
@@ -2747,81 +2752,81 @@ class H2OFrame(object):
         :param sort_cols_sorted: Optional Boolean to denote if the returned frame should be sorted according to sort_cols
           and sort directions specified in ascending.  Default is False.
 
-        :return: a new Frame with new rank (sorted by columns in sort_cols) column within the grouping specified
-          by the group_by_cols.
+        :returns: A new Frame with new rank (sorted by columns in sort_cols) column within the grouping 
+          specified by the group_by_cols.
 
-         The following example is generated by Nidhi Mehta.
-         If the input frame is train:
-
-         ID Group_by_column        num data Column_to_arrange_by       num_1 fdata
-         12               1   2941.552    1                    3  -3177.9077     1
-         12               1   2941.552    1                    5 -13311.8247     1
-         12               2 -22722.174    1                    3  -3177.9077     1
-         12               2 -22722.174    1                    5 -13311.8247     1
-         13               3 -12776.884    1                    5 -18421.6171     0
-         13               3 -12776.884    1                    4  28080.1607     0
-         13               1  -6049.830    1                    5 -18421.6171     0
-         13               1  -6049.830    1                    4  28080.1607     0
-         15               3 -16995.346    1                    1  -9781.6373     0
-         16               1 -10003.593    0                    3 -61284.6900     0
-         16               3  26052.495    1                    3 -61284.6900     0
-         16               3 -22905.288    0                    3 -61284.6900     0
-         17               2 -13465.496    1                    2  12094.4851     1
-         17               2 -13465.496    1                    3 -11772.1338     1
-         17               2 -13465.496    1                    3   -415.1114     0
-         17               2  -3329.619    1                    2  12094.4851     1
-         17               2  -3329.619    1                    3 -11772.1338     1
-         17               2  -3329.619    1                    3   -415.1114     0
-
-         If the following commands are issued:
-         rankedF1 = h2o.rank_within_group_by(train, ["Group_by_column"], ["Column_to_arrange_by"], [TRUE])
-         rankedF1.summary()
-
-         The returned frame rankedF1 will look like this:
-         ID Group_by_column        num fdata Column_to_arrange_by       num_1 fdata.1 New_Rank_column
-         12               1   2941.552     1                    3  -3177.9077       1               1
-         16               1 -10003.593     0                    3 -61284.6900       0               2
-         13               1  -6049.830     0                    4  28080.1607       0               3
-         12               1   2941.552     1                    5 -13311.8247       1               4
-         13               1  -6049.830     0                    5 -18421.6171       0               5
-         17               2 -13465.496     0                    2  12094.4851       1               1
-         17               2  -3329.619     0                    2  12094.4851       1               2
-         12               2 -22722.174     1                    3  -3177.9077       1               3
-         17               2 -13465.496     0                    3 -11772.1338       1               4
-         17               2 -13465.496     0                    3   -415.1114       0               5
-         17               2  -3329.619     0                    3 -11772.1338       1               6
-         17               2  -3329.619     0                    3   -415.1114       0               7
-         12               2 -22722.174     1                    5 -13311.8247       1               8
-         15               3 -16995.346     1                    1  -9781.6373       0               1
-         16               3  26052.495     0                    3 -61284.6900       0               2
-         16               3 -22905.288     1                    3 -61284.6900       0               3
-         13               3 -12776.884     1                    4  28080.1607       0               4
-         13               3 -12776.884     1                    5 -18421.6171       0               5
-
-         If the following commands are issued:
-         rankedF1 = h2o.rank_within_group_by(train, ["Group_by_column"], ["Column_to_arrange_by"], [TRUE], sort_cols_sorted=True)
-         h2o.summary(rankedF1)
-
-         The returned frame will be sorted according to sort_cols and hence look like this instead:
-         ID Group_by_column        num fdata Column_to_arrange_by       num_1 fdata.1 New_Rank_column
-         15               3 -16995.346     1                    1  -9781.6373       0               1
-         17               2 -13465.496     0                    2  12094.4851       1               1
-         17               2  -3329.619     0                    2  12094.4851       1               2
-         12               1   2941.552     1                    3  -3177.9077       1               1
-         12               2 -22722.174     1                    3  -3177.9077       1               3
-         16               1 -10003.593     0                    3 -61284.6900       0               2
-         16               3  26052.495     0                    3 -61284.6900       0               2
-         16               3 -22905.288     1                    3 -61284.6900       0               3
-         17               2 -13465.496     0                    3 -11772.1338       1               4
-         17               2 -13465.496     0                    3   -415.1114       0               5
-         17               2  -3329.619     0                    3 -11772.1338       1               6
-         17               2  -3329.619     0                    3   -415.1114       0               7
-         13               3 -12776.884     1                    4  28080.1607       0               4
-         13               1  -6049.830     0                    4  28080.1607       0               3
-         12               1   2941.552     1                    5 -13311.8247       1               4
-         12               2 -22722.174     1                    5 -13311.8247       1               8
-         13               3 -12776.884     1                    5 -18421.6171       0               5
-         13               1  -6049.830     0                    5 -18421.6171       0               5
+        :examples: 
+         >>> #If the input frame is train:
+         >>> ID Group_by_column        num data Column_to_arrange_by       num_1 fdata
+         >>> 12               1   2941.552    1                    3  -3177.9077     1
+         >>> 12               1   2941.552    1                    5 -13311.8247     1
+         >>> 12               2 -22722.174    1                    3  -3177.9077     1
+         >>> 12               2 -22722.174    1                    5 -13311.8247     1
+         >>> 13               3 -12776.884    1                    5 -18421.6171     0
+         >>> 13               3 -12776.884    1                    4  28080.1607     0
+         >>> 13               1  -6049.830    1                    5 -18421.6171     0
+         >>> 13               1  -6049.830    1                    4  28080.1607     0
+         >>> 15               3 -16995.346    1                    1  -9781.6373     0
+         >>> 16               1 -10003.593    0                    3 -61284.6900     0
+         >>> 16               3  26052.495    1                    3 -61284.6900     0
+         >>> 16               3 -22905.288    0                    3 -61284.6900     0
+         >>> 17               2 -13465.496    1                    2  12094.4851     1
+         >>> 17               2 -13465.496    1                    3 -11772.1338     1
+         >>> 17               2 -13465.496    1                    3   -415.1114     0
+         >>> 17               2  -3329.619    1                    2  12094.4851     1
+         >>> 17               2  -3329.619    1                    3 -11772.1338     1
+         >>> 17               2  -3329.619    1                    3   -415.1114     0
+         >>> 
+         >>> #If the following commands are issued:
+         >>> rankedF1 = h2o.rank_within_group_by(train, ["Group_by_column"], ["Column_to_arrange_by"], 
+         >>>                                     [TRUE])
+         >>> rankedF1.summary()
+         >>> 
+         >>> #The returned frame rankedF1 will look like this:
+         >>> ID Group_by_column        num fdata Column_to_arrange_by       num_1 fdata.1 New_Rank_column
+         >>> 12               1   2941.552     1                    3  -3177.9077       1               1
+         >>> 13               1  -6049.830     0                    4  28080.1607       0               3
+         >>> 12               1   2941.552     1                    5 -13311.8247       1               4
+         >>> 13               1  -6049.830     0                    5 -18421.6171       0               5
+         >>> 17               2 -13465.496     0                    2  12094.4851       1               1
+         >>> 17               2  -3329.619     0                    2  12094.4851       1               2
+         >>> 12               2 -22722.174     1                    3  -3177.9077       1               3
+         >>> 17               2 -13465.496     0                    3 -11772.1338       1               4
+         >>> 17               2 -13465.496     0                    3   -415.1114       0               5
+         >>> 17               2  -3329.619     0                    3 -11772.1338       1               6
+         >>> 17               2  -3329.619     0                    3   -415.1114       0               7
+         >>> 12               2 -22722.174     1                    5 -13311.8247       1               8
+         >>> 15               3 -16995.346     1                    1  -9781.6373       0               1
+         >>> 16               3  26052.495     0                    3 -61284.6900       0               2
+         >>> 16               3 -22905.288     1                    3 -61284.6900       0               3
+         >>> 13               3 -12776.884     1                    4  28080.1607       0               4
+         >>> 13               3 -12776.884     1                    5 -18421.6171       0               5
+         >>> 
+         >>> #If the following commands are issued:
+         >>> rankedF1 = h2o.rank_within_group_by(train, ["Group_by_column"], ["Column_to_arrange_by"], 
+         >>>                                     [TRUE], sort_cols_sorted=True)
+         >>> h2o.summary(rankedF1)
+         >>> 
+         >>> # The returned frame will be sorted according to sort_cols and hence look like this instead:
+         >>> ID Group_by_column        num fdata Column_to_arrange_by       num_1 fdata.1 New_Rank_column
+         >>> 15               3 -16995.346     1                    1  -9781.6373       0               1
+         >>> 17               2 -13465.496     0                    2  12094.4851       1               1
+         >>> 17               2  -3329.619     0                    2  12094.4851       1               2
+         >>> 12               1   2941.552     1                    3  -3177.9077       1               1
+         >>> 12               2 -22722.174     1                    3  -3177.9077       1               3
+         >>> 16               1 -10003.593     0                    3 -61284.6900       0               2
+         >>> 16               3  26052.495     0                    3 -61284.6900       0               2
+         >>> 16               3 -22905.288     1                    3 -61284.6900       0               3
+         >>> 17               2 -13465.496     0                    3 -11772.1338       1               4
+         >>> 17               2 -13465.496     0                    3   -415.1114       0               5
+         >>> 17               2  -3329.619     0                    3 -11772.1338       1               6
+         >>> 17               2  -3329.619     0                    3   -415.1114       0               7
+         >>> 13               3 -12776.884     1                    4  28080.1607       0               4
+         >>> 13               1  -6049.830     0                    4  28080.1607       0               3
+         >>> 12               1   2941.552     1                    5 -13311.8247       1               4
+         >>> 12               2 -22722.174     1                    5 -13311.8247       1               8
+         >>> 13               3 -12776.884     1                    5 -18421.6171       0               5
+         >>> 13               1  -6049.830     0                    5 -18421.6171       0               5
 
         """
         assert_is_type(group_by_cols, str, int, [str, int])
