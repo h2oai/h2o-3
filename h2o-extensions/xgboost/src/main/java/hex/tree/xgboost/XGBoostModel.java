@@ -297,12 +297,14 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       } else if (XGBoost.hasGPU(H2O.CLOUD.members()[0], p._gpu_id)) {
         Log.info("Using GPU backend (gpu_id: " + p._gpu_id + ").");
         params.put("gpu_id", p._gpu_id);
-        if (p._tree_method == XGBoostParameters.TreeMethod.exact) {
+        if (p._booster == XGBoostParameters.Booster.gblinear) {
+          Log.info("Using gpu_coord_descent updater."); 
+          params.put("updater", "gpu_coord_descent");
+        } else  if (p._tree_method == XGBoostParameters.TreeMethod.exact) {
           Log.info("Using grow_gpu (exact) updater.");
           params.put("tree_method", "exact");
           params.put("updater", "grow_gpu");
-        }
-        else {
+        } else {
           Log.info("Using grow_gpu_hist (approximate) updater.");
           params.put("max_bins", p._max_bins);
           params.put("tree_method", "exact");
