@@ -35,7 +35,7 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
     };
   }
   @Override public BuilderVisibility builderVisibility() {
-    return BuilderVisibility.Beta;
+    return BuilderVisibility.Stable;
   }
 
   // Called from an http request
