@@ -527,7 +527,7 @@ h2o.clusterStatus <- function() {
     return("Sorry, GNU Java is not supported for H2O.")
   }
   # NOTE for developers: keep the following blacklist in logically consistent with whitelist in java code - see water.H2O.checkUnsupportedJava, near line 1849
-  if (any(grepl("^java version \"1\\.[1-6]\\.", jver))) {
+  if (any(grepl("^java version \"1\\.[1-7]\\.", jver))) {
     return(paste0("Your java is not supported: ", jver[1]))
   }
   return(NULL)
