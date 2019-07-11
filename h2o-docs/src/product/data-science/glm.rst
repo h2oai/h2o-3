@@ -287,7 +287,7 @@ Compared to multiclass logistic regression, all classes share the same :math:`\b
 
 We choose a logistic function to model the probability :math:`P(y \leq j|X_i)` but other choices are possible. 
 
-To determine the values of :math:`\beta` and :math:`\theta`, we minimize the negative log-likelihood plus the same Regularization Penalty, as with the other families. 
+To determine the values of :math:`\beta` and :math:`\theta`, we maximize the log-likelihood minus the same Regularization Penalty, as with the other families. However, in the actual H2O-3 code, we determine the values of :math:`\alpha` and :math:`\theta` by minimizing the negative log-likelihood plus the same Regularization Penalty, as with the other families.
 
 .. math::
 
