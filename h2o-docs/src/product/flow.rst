@@ -819,7 +819,7 @@ The available options vary depending on the selected model. If an option is only
 
 -  **max_hit_ratio_k**: (DRF, DL, Naïve Bayes, GBM, GLM) Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multinomial only. To disable, enter 0.
 
--  **stopping_metric**: (GBM, DRF, DL, XGBoost, AutoML) Specify the metric to use for early stopping. The available options are:
+-  **stopping_metric**: (GBM, DRF, DL, XGBoost, AutoML, IF) Specify the metric to use for early stopping. The available options are:
 
     - AUTO: This defaults to logloss for classification, deviance for regression
     - deviance
@@ -835,7 +835,7 @@ The available options vary depending on the selected model. If an option is only
     - custom
     - custom_increasing
 
--  **stopping_rounds**: (GBM, DRF, DL, XGBoost, AutoML) Stops training when the option selected for **stopping_metric** doesn’t improve for the specified number of training rounds, based on a simple moving average. To disable this feature, specify 0. The metric is computed on the validation data (if provided); otherwise, training data is used.
+-  **stopping_rounds**: (GBM, DRF, DL, XGBoost, AutoML, IF) Stops training when the option selected for **stopping_metric** doesn’t improve for the specified number of training rounds, based on a simple moving average. To disable this feature, specify 0. The metric is computed on the validation data (if provided); otherwise, training data is used.
 
    **Note**: If cross-validation is enabled:
    
@@ -843,7 +843,7 @@ The available options vary depending on the selected model. If an option is only
    - The main model runs for the mean number of epochs.
    - N+1 models may be off by the number specified for stopping_rounds from the best model, but the cross-validation metric estimates the performance of the main model for the resulting number of epochs (which may be fewer than the specified number of epochs).
 
--  **stopping_tolerance**: (GBM, DRF, DL, XGBoost, AutoML) This option specifies the tolerance value by which a model must improve before training ceases.
+-  **stopping_tolerance**: (GBM, DRF, DL, XGBoost, AutoML, IF) This option specifies the tolerance value by which a model must improve before training ceases.
 
 -  **sort_metric**: (AutoML) Specifies the metric used to sort the Leaderboard by at the end of an AutoML run. Available options include:
 
@@ -886,7 +886,7 @@ The available options vary depending on the selected model. If an option is only
 
 -  **tweedie_power**: (DL, GBM, XGBoost) (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie power. The range is from 1 to 2. For a normal distribution, enter ``0``. For Poisson distribution, enter ``1``. For a gamma distribution, enter ``2``. For a compound Poisson-gamma distribution, enter a value greater than 1 but less than 2. For more information, refer to `Tweedie distribution <https://en.wikipedia.org/wiki/Tweedie_distribution>`__.
 
--  **categorical_encoding**: Specify one of the following encoding schemes for handling categorical features: Note that the default value varies based on the algorithm.
+-  **categorical_encoding** (GBM, DRF, DL, K-Means, Aggregator, XGBoost, IF): Specify one of the following encoding schemes for handling categorical features: Note that the default value varies based on the algorithm.
 
   - ``AUTO``: Allow the algorithm to decide. This is determined by the algorithm.
   - ``Enum``: 1 column per categorical feature
@@ -910,7 +910,7 @@ The available options vary depending on the selected model. If an option is only
 
 	**Note**: This option requires a loss function other than CrossEntropy. If this option is enabled, **use_all_factor_levels**  must be enabled.
 
--  **col_sample_rate_per_tree**: (XGBoost, IF) Specify the column subsampling rate per tree.
+-  **col_sample_rate_per_tree**: (GBM, DRF, XGBoost, IF) Specify the column subsampling rate per tree.
 
 -  **monotone_constraints**: (XGBoost, GBM) A mapping representing `monotonic constraints <https://xiaoxiaowang87.github.io/monotonicity_constraint/>`__. Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint. Note that constraints can only be defined for numerical columns. Also note that in GBM, this option can only be used when the distribution is either ``gaussian`` or ``bernoulli``. 
 
@@ -1077,7 +1077,7 @@ The available options vary depending on the selected model. If an option is only
 -  **check_constant_response**: (GBM, DRF) Check if the response column is a constant value. If enabled (default), then an exception is thrown if the response column is a constant value. If disabled, then the model will train regardless of the response column being a constant value or not.
 
 
--  **col_sample_rate_change_per_level**: (IF) This option specifies to change the column sampling rate as a function of the depth in the tree. This can be a value > 0.0 and <= 2.0 and defaults to 1. (Note that this method is sample without replacement.) For example:
+-  **col_sample_rate_change_per_level**: (GBM, DRF, IF) This option specifies to change the column sampling rate as a function of the depth in the tree. This can be a value > 0.0 and <= 2.0 and defaults to 1. (Note that this method is sample without replacement.) For example:
 
    level 1: **col\_sample_rate**
   
