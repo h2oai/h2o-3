@@ -32,19 +32,17 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/1/index.ht
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6134'>PUBDEV-6134</a>] - Added support for SVM in the h2o-3 R and Python clients.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6213'>PUBDEV-6213</a>] -         Implement Broadcast Join for Target Encoding
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6213'>PUBDEV-6213</a>] - Implemented broadcast join for Target Encoding. (STILL OPEN)
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6214'>PUBDEV-6214</a>] -         Review Supporting Frequency Feature Importance for Isolation Forest
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6214'>PUBDEV-6214</a>] -         Review Supporting Frequency Feature Importance for Isolation Forest (STILL OPEN)
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6255'>PUBDEV-6255</a>] -         Target Encoding MOJO
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6255'>PUBDEV-6255</a>] - Added support for Target Encoding MOJOs. (STILL OPEN)
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6492'>PUBDEV-6492</a>] -         Add Isolation Forest to Flow
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6492'>PUBDEV-6492</a>] - Added Isolation Forest to Flow.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6510'>PUBDEV-6510</a>] -         XGBoost Improve performance of moving sparse matrices to off-heap memory
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6510'>PUBDEV-6510</a>] - In XGBoost improved performance of moving sparse matrices to off-heap memory.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6518'>PUBDEV-6518</a>] -         Downloading logs from H2O in plain text format
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6594'>PUBDEV-6594</a>] -         Some XGBoost junit tests are disabled in multinode - fix &amp; enable them
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6518'>PUBDEV-6518</a>] - Logs from H2O can now be downloaded in plain text format. (STILL OPEN)
 </li>
 </ul>
     
