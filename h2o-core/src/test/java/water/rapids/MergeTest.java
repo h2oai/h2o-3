@@ -35,7 +35,10 @@ public class MergeTest extends TestUtil {
       int[][] levelMaps = {CategoricalWrappedVec.computeMap(fr.vec(0).domain(), holdoutEncodingMap.vec(0).domain())};
       Frame res = Merge.merge(fr, holdoutEncodingMap, new int[]{0}, new int[]{0}, false, levelMaps);
       printOutFrameAsTable(res, false, res.numRows());
-      assertStringVecEquals(cvec("c", "a", "e"), res.vec("ColA"));
+      Vec expected = cvec("c", "a", "e");
+      assertStringVecEquals(expected, res.vec("ColA"));
+      Scope.track(expected);
+      Scope.track(res);
     } finally {
       Scope.exit();
     }

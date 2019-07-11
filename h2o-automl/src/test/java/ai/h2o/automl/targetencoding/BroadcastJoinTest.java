@@ -21,7 +21,7 @@ public class BroadcastJoinTest extends TestUtil {
 
   @BeforeClass
   public static void setup() {
-    stall_till_cloudsize(2);
+    stall_till_cloudsize(1);
   }
 
   private Frame fr = null;
@@ -39,7 +39,7 @@ public class BroadcastJoinTest extends TestUtil {
               .withColNames("ColA", "fold")
               .withVecTypes(Vec.T_CAT, Vec.T_NUM)
               .withDataForCol(0, ar("a", "c", "b"))
-              .withDataForCol(1, ar(1, 0, 1))
+              .withDataForCol(1, ar(2, 1, 2))
               .build();
 
       rightFr = new TestFrameBuilder()
@@ -47,7 +47,7 @@ public class BroadcastJoinTest extends TestUtil {
               .withColNames("ColA", "fold", TargetEncoder.NUMERATOR_COL_NAME, TargetEncoder.DENOMINATOR_COL_NAME)
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
               .withDataForCol(0, ar("a", "b", "c"))
-              .withDataForCol(1, ar(1, 0, 0))
+              .withDataForCol(1, ar(2, 1, 1))
               .withDataForCol(2, ar(22, 33, 42))
               .withDataForCol(3, ar(44, 66, 84))
               .build();
@@ -57,13 +57,15 @@ public class BroadcastJoinTest extends TestUtil {
       emptyDenominator = fr.anyVec().makeCon(0);
       fr.add(TargetEncoder.DENOMINATOR_COL_NAME, emptyDenominator);
       
-      Frame joined = BroadcastJoinForTargetEncoder.join(fr, new int[]{0}, 1, rightFr, new int[]{0}, 1);
+      Frame joined = BroadcastJoinForTargetEncoder.join(fr, new int[]{0}, 1, rightFr, new int[]{0}, 1, 2);
 
       Scope.enter();
+      
+      printOutFrameAsTable(joined);
       assertStringVecEquals(cvec("a", "c", "b"), joined.vec("ColA"));
       assertEquals(22, joined.vec(TargetEncoder.NUMERATOR_COL_NAME).at(0), 1e-5);
-      assertEquals(42, joined.vec(TargetEncoder.NUMERATOR_COL_NAME).at(1), 1e-5);
       assertEquals(44, joined.vec(TargetEncoder.DENOMINATOR_COL_NAME).at(0), 1e-5);
+      assertEquals(42, joined.vec(TargetEncoder.NUMERATOR_COL_NAME).at(1), 1e-5);
       assertEquals(84, joined.vec(TargetEncoder.DENOMINATOR_COL_NAME).at(1), 1e-5);
       assertTrue(joined.vec(TargetEncoder.NUMERATOR_COL_NAME).isNA(2));
       assertTrue(joined.vec(TargetEncoder.DENOMINATOR_COL_NAME).isNA(2));
@@ -73,55 +75,6 @@ public class BroadcastJoinTest extends TestUtil {
     }
   }
   
-
-  @Property(trials = 1000)
-  public void hashCodeTest(String randomString, @InRange(minInt = 0, maxInt = 100)int randomInt) {
-    String levelValue = randomString.length() == 0 ? "a" : randomString.substring(0,1);
-    CompositeLookupKey lookupKey = new CompositeLookupKey(levelValue, randomInt);
-    int expected = lookupKey.hashCode();
-    CompositeLookupKey lookupKey2 = new CompositeLookupKey(levelValue, randomInt);
-    int actual = lookupKey2.hashCode();
-    assertEquals(expected, actual);
-    
-    //Mutation of the fields will change hash code
-    lookupKey2.update("test", -1);
-    assertNotEquals(lookupKey2.hashCode(), actual);
-  }
-
-  @Test
-  public void serializationTest() {
-    AutoBuffer ab = new AutoBuffer();
-    FrameWithEncodingDataToHashMap task = new FrameWithEncodingDataToHashMap(0, -1, 1, 2);
-    // After adding data to the map we should be able to serialize it
-    task._encodingDataMapPerNode.put(new CompositeLookupKey("a", 42), new EncodingData(33, 55));
-    task.write(ab);
-
-    // Expectation of this test is that no exceptions will be thrown during serialisation
-  }
-  
-  @Test
-  public void icedHashMapPutAllTest() {
-
-    IcedHashMap<CompositeLookupKey, EncodingData> mapOne = new IcedHashMap<>();
-    IcedHashMap<CompositeLookupKey, EncodingData> mapTwo = new IcedHashMap<>();
-
-    CompositeLookupKey keyOne = new CompositeLookupKey("a", 0);
-    EncodingData valueOne = new EncodingData(11, 22);
-    mapOne.put(keyOne, valueOne);
-    
-    CompositeLookupKey keyTwo = new CompositeLookupKey("b", 0);
-    EncodingData valueTwo = new EncodingData(11, 33);
-    mapTwo.put(keyTwo, valueTwo);
-
-    IcedHashMap<CompositeLookupKey, EncodingData> finalMap = new IcedHashMap<>();
-    
-    finalMap.putAll(mapOne);
-    finalMap.putAll(mapTwo);
-    
-    assertTrue(finalMap.containsKey(keyOne) && finalMap.containsKey(keyTwo));
-    assertEquals(finalMap.get(keyOne) , valueOne);
-    assertEquals(finalMap.get(keyTwo) , valueTwo);
-  }
 
   // Shows that with Merge.merge method we will loose original order due to grouping otherwise this(swapping left and right frames) would be a possible workaround 
   @Test(expected = AssertionError.class)
@@ -159,7 +112,7 @@ public class BroadcastJoinTest extends TestUtil {
   }
 
 
-  @Test(expected = DistributedException.class)
+  @Test(expected = AssertionError.class)
   public void foldValuesThatAreBiggerThanIntegerWillCauseExceptionTest() {
     long biggerThanIntMax = Integer.MAX_VALUE + 1;
     fr = new TestFrameBuilder()
@@ -173,13 +126,14 @@ public class BroadcastJoinTest extends TestUtil {
             .withChunkLayout(2,1)
             .build();
 
-    IcedHashMap<CompositeLookupKey, EncodingData> encodingDataMap = new FrameWithEncodingDataToHashMap(0, 1, 2, 3)
+    int cardinality = fr.vec("ColA").cardinality();
+    new FrameWithEncodingDataToArray(0, 1, 2, 3, cardinality, (int)biggerThanIntMax)
             .doAll(fr)
-            .getEncodingDataMap();
+            .getEncodingDataArray();
   }
 
   @Property(trials = 100)
-  public void foldValuesThatAreInRangeWouldNotCauseExceptionTest(@InRange(minInt = 0)int randomInt) {
+  public void foldValuesThatAreInRangeWouldNotCauseExceptionTest(@InRange(minInt = 1, maxInt = 1000)int randomInt) {
     fr = new TestFrameBuilder()
             .withName("testFrame")
             .withColNames("ColA", "fold", TargetEncoder.NUMERATOR_COL_NAME, TargetEncoder.DENOMINATOR_COL_NAME)
@@ -190,10 +144,12 @@ public class BroadcastJoinTest extends TestUtil {
             .withDataForCol(3, ar(88, 132, 168))
             .withChunkLayout(2,1)
             .build();
-    
-    new FrameWithEncodingDataToHashMap(0, 1, 2, 3)
+
+    int cardinality = fr.vec("ColA").cardinality();
+
+    new FrameWithEncodingDataToArray(0, 1, 2, 3, cardinality, Math.max(randomInt, 42))
             .doAll(fr)
-            .getEncodingDataMap();
+            .getEncodingDataArray();
   }
     
   @After

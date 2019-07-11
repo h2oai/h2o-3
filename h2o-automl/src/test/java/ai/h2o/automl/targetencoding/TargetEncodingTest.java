@@ -695,7 +695,7 @@ public class TargetEncodingTest extends TestUtil {
       String[] teColumns = {""};
       TargetEncoder tec = new TargetEncoder(teColumns);
 
-      Frame merged = tec.mergeByTEAndFoldColumns(fr, holdoutEncodingMap, 0, 1, 0);
+      Frame merged = tec.mergeByTEAndFoldColumns(fr, holdoutEncodingMap, 0, 1, 0, 2);
       
       Vec expectedStr = svec("22", null, "88");
       Vec expected = expectedStr.toNumericVec();
