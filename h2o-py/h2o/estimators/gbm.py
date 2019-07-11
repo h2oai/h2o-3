@@ -286,6 +286,19 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Balance training data class counts via over/under-sampling (for imbalanced data).
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+        
+        >>> covtype = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
+        >>> covtype[54] = covtype[54].asfactor()
+        >>> predictors = covtype.columns[0:54]
+        >>> response = 'C55'
+        >>> train, valid = covtype.split_frame(ratios = [.8], seed = 1234)
+        >>> cov_gbm = H2OGradientBoostingEstimator(balance_classes = True, seed = 1234)
+        >>> cov_gbm.train(x = predictors,
+                          y = response,
+                          training_frame = train,
+                          validation_frame = valid)        
         """
         return self._parms.get("balance_classes")
 
