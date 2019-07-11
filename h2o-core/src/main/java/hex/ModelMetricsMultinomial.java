@@ -19,32 +19,12 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
   public final double _logloss;
   public final double _mean_per_class_error;
 
-  public final TwoDimTable _hit_ratio_table;
-  public final TwoDimTable _confusion_matrix_table;
-
   public ModelMetricsMultinomial(Model model, Frame frame, long nobs, double mse, String[] domain, double sigma, ConfusionMatrix cm, float[] hr, double logloss, CustomMetric customMetric) {
     super(model, frame, nobs, mse, domain, sigma, customMetric);
     _cm = cm;
     _hit_ratios = hr;
     _logloss = logloss;
     _mean_per_class_error = cm==null || cm.tooLarge() ? Double.NaN : cm.mean_per_class_error();
-
-    _hit_ratio_table = null;
-    _confusion_matrix_table = null;
-    
-  }
-
-  public ModelMetricsMultinomial(Model model, Frame frame, long nobs, double mse, String[] domain, double sigma,
-                                 TwoDimTable confusion_matrix, TwoDimTable hit_ratio_table, double logloss, CustomMetric customMetric,
-                                 double mean_per_class_error) {
-    super(model, frame, nobs, mse, domain, sigma, customMetric);
-    _logloss = logloss;
-
-    _hit_ratio_table = hit_ratio_table;
-    _hit_ratios = null;
-    _mean_per_class_error = mean_per_class_error;
-    _confusion_matrix_table = confusion_matrix; 
-    _cm = null;
   }
 
   @Override

@@ -77,7 +77,7 @@ public class GenericModelOutput extends Model.Output {
             case Multinomial:
                 assert mojoMetrics instanceof MojoModelMetricsMultinomial;
                 final MojoModelMetricsMultinomial multinomial = (MojoModelMetricsMultinomial) mojoMetrics;
-                return new ModelMetricsMultinomial(null, null, mojoMetrics._nobs, mojoMetrics._MSE,
+                return new ModelMetricsMultinomialGeneric(null, null, mojoMetrics._nobs, mojoMetrics._MSE,
                         modelDescriptor.scoringDomains()[modelDescriptor.nfeatures() - 1], Double.NaN,
                         convertTable(multinomial._confusion_matrix), convertTable(multinomial._hit_ratios),
                         multinomial._logloss, new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value),

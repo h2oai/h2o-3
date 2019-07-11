@@ -30,18 +30,12 @@ public class ModelMetricsMultinomialV3<I extends ModelMetricsMultinomial, S exte
     logloss = modelMetrics._logloss;
     r2 = modelMetrics.r2();
 
-    if (modelMetrics._hit_ratio_table != null) {
-      hit_ratio_table = new TwoDimTableV3(modelMetrics._hit_ratio_table);
-    } else if (modelMetrics._hit_ratios != null) {
+    if (modelMetrics._hit_ratios != null) {
       TwoDimTable table = getHitRatioTable(modelMetrics._hit_ratios);
       hit_ratio_table = (TwoDimTableV3) SchemaServer.schema(this.getSchemaVersion(), table).fillFromImpl(table);
     }
 
-    if (null != modelMetrics._confusion_matrix_table) {
-      final ConfusionMatrixV3 convertedConfusionMatrix = new ConfusionMatrixV3();
-      convertedConfusionMatrix.table = new TwoDimTableV3().fillFromImpl(modelMetrics._confusion_matrix_table);
-      this.cm = convertedConfusionMatrix;
-    } else if (null != modelMetrics._cm) {
+    if (null != modelMetrics._cm) {
       modelMetrics._cm.table();  // Fill in lazy table, for icing
       cm = (ConfusionMatrixV3) SchemaServer.schema(this.getSchemaVersion(), modelMetrics._cm).fillFromImpl
           (modelMetrics._cm);
