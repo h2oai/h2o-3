@@ -431,7 +431,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       for( int tid=0; tid< _ntrees; tid++) {
         // During first iteration model contains 0 trees, then 1-tree, ...
         boolean scored = doScoringAndSaveModel(false, oob, _parms._build_tree_one_node);
-        if (scored && ScoreKeeper.stopEarly(_model._output.scoreKeepers(), _parms._stopping_rounds, _nclass > 1, _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
+        if (scored && ScoreKeeper.stopEarly(_model._output.scoreKeepers(), _parms._stopping_rounds, getProblemType(), _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
           doScoringAndSaveModel(true, oob, _parms._build_tree_one_node);
           _job.update(_ntrees-_model._output._ntrees); //finish
           return;
@@ -454,6 +454,11 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     }
   }
 
+  protected ScoreKeeper.ProblemType getProblemType() {
+    assert isSupervised();
+    return ScoreKeeper.ProblemType.forSupervised(_nclass > 1);
+  }
+  
   // --------------------------------------------------------------------------
   // Build an entire layer of all K trees
   protected DHistogram[][][] buildLayer(final Frame fr, final int nbins, int nbins_cats, final DTree ktrees[], final int leafs[], final DHistogram hcs[][][], boolean build_tree_one_node) {
@@ -695,7 +700,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       updated = true;
 
       Log.info("============================================================== ");
-      SharedTreeModel.SharedTreeOutput out = _model._output;
+      O out = _model._output;
       _timeLastScoreStart = now;
 
       final boolean printout = (_parms._score_each_iteration || finalScoring || sinceLastScore > _parms._score_interval);
@@ -733,6 +738,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         out._varimp = new hex.VarImp(_improvPerVar, out._names);
         out._variable_importances = hex.ModelMetrics.calcVarImp(out._varimp);
       }
+      addCustomInfo(out);
       if (printout) {
         Log.info(_model.toString());
       }
@@ -779,6 +785,10 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     }
 
     return updated;
+  }
+
+  protected void addCustomInfo(O out) {
+    // nothing by default - can be overridden in subclasses
   }
 
   static int counter = 0;
@@ -1011,7 +1021,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
    * @return initial value
    */
   protected double getInitialValue() {
-    return new InitialValue(_parms).doAll(
+    return new InitialValue(_parms, _nclass).doAll(
             _response,
             hasWeightCol() ? _weights : _response.makeCon(1),
             hasOffsetCol() ? _offset : _response.makeCon(0)
@@ -1020,20 +1030,28 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   // Helper MRTask to compute the initial value
   private static class InitialValue extends MRTask<InitialValue> {
-    public  InitialValue(Model.Parameters parms) { 
+    public  InitialValue(Model.Parameters parms, int nclass) {
+      _nclass = nclass;
       _dist = DistributionFactory.getDistribution(parms);
-      _family = parms._distribution;
     }
-    final private Distribution _dist;
-    final private DistributionFamily _family;
+    
+    private Distribution _dist;
+    final private int _nclass;
     private double _num;
     private double _denom;
 
+    @Override
+    protected void setupLocal() {
+        super.setupLocal();
+        _dist.reset();
+    }
+
     public  double initialValue() {
-      if (_family == DistributionFamily.multinomial)
+      if (_dist._family == DistributionFamily.multinomial || (_dist._family == DistributionFamily.custom && _nclass > 2))
         return -0.5*DistributionFactory.getDistribution(DistributionFamily.bernoulli).link(_num/_denom);
       else return _dist.link(_num / _denom);
     }
+    
     @Override public void map(Chunk response, Chunk weight, Chunk offset) {
       for (int i=0;i<response._len;++i) {
         if (response.isNA(i)) continue;

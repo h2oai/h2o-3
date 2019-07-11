@@ -96,34 +96,6 @@ public class TestUtil extends Iced {
     H2O.startServingRestApi();
   }
 
-
-  /**
-   * Converts a H2OFrame to a csv file for debugging purposes.
-   *
-   * @param fileNameWithPath: String containing filename with path that will contain the H2O Frame
-   * @param h2oframe: H2O Frame to be saved as CSV file.
-   * @param header: boolean to decide if column names should be saved.  Set to false if don't care.
-   * @param hex_string: boolean to decide if the double values are written in hex.  Set to false if don't care.
-   * @throws IOException
-   */
-  public static void writeFrameToCSV(String fileNameWithPath, Frame h2oframe, boolean header, boolean hex_string)
-          throws IOException {
-    InputStream frameToStream = h2oframe.toCSV(header, hex_string);    // read in frame as Inputstream
-    // write Inputstream to a real file
-    File targetFile = new File(fileNameWithPath);
-    OutputStream outStream = new FileOutputStream(targetFile);
-
-    byte[] buffer = new byte[1<<20];
-    int bytesRead;
-
-    while((bytesRead=frameToStream.read(buffer)) > 0) { // for our toCSV stream, return 0 as EOF, not -1
-      outStream.write(buffer, 0, bytesRead);
-    }
-    frameToStream.close();
-    outStream.flush();
-    outStream.close();
-  }
-
   @AfterClass
   public static void checkLeakedKeys() {
     int leaked_keys = H2O.store_size() - _initial_keycnt;
@@ -698,11 +670,22 @@ public class TestUtil extends Iced {
   public static <T> T[] aro(T ...a) { return a ;}
 
   // ==== Comparing Results ====
+  
+  public static void assertFrameEquals(Frame expected, Frame actual, double delta) {
+    assertEquals("Frames have different number of vecs. ", expected.vecs().length, actual.vecs().length);
+    for (int i = 0; i < expected.vecs().length; i++) {
+      assertVecEquals(i + "/" + expected._names[i] + " ", expected.vec(i), actual.vec(i), delta);
+    }
+  }
 
   public static void assertVecEquals(Vec expecteds, Vec actuals, double delta) {
+    assertVecEquals("", expecteds, actuals, delta);
+  }
+
+  public static void assertVecEquals(String messagePrefix, Vec expecteds, Vec actuals, double delta) {
     assertEquals(expecteds.length(), actuals.length());
     for(int i = 0; i < expecteds.length(); i++) {
-      final String message = i + ": " + expecteds.at(i) + " != " + actuals.at(i) + ", chunkIds = " + expecteds.elem2ChunkIdx(i) + ", " + actuals.elem2ChunkIdx(i) + ", row in chunks = " + (i - expecteds.chunkForRow(i).start()) + ", " + (i - actuals.chunkForRow(i).start());
+      final String message = messagePrefix + i + ": " + expecteds.at(i) + " != " + actuals.at(i) + ", chunkIds = " + expecteds.elem2ChunkIdx(i) + ", " + actuals.elem2ChunkIdx(i) + ", row in chunks = " + (i - expecteds.chunkForRow(i).start()) + ", " + (i - actuals.chunkForRow(i).start());
       assertEquals(message, expecteds.at(i), actuals.at(i), delta);
     }
   }

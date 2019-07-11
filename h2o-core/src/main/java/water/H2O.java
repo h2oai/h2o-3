@@ -1822,13 +1822,13 @@ final public class H2O {
 
   public static void waitForCloudSize(int x, long ms) {
     long start = System.currentTimeMillis();
-    while( System.currentTimeMillis() - start < ms ) {
-      if( CLOUD.size() >= x && Paxos._commonKnowledge )
+    while (System.currentTimeMillis() - start < ms) {
+      if (CLOUD.size() >= x && Paxos._commonKnowledge)
         break;
-      try { Thread.sleep(100); } catch( InterruptedException ignore ) { }
+      try { Thread.sleep(100); } catch (InterruptedException ignore) {}
     }
-    if( H2O.CLOUD.size() < x )
-      throw new RuntimeException("Cloud size under " + x);
+    if (CLOUD.size() < x)
+      throw new RuntimeException("Cloud size " + CLOUD.size() + " under " + x);
   }
 
   public static int getCloudSize() {
@@ -1983,8 +1983,8 @@ final public class H2O {
     // Notes: 
     // - make sure that the following whitelist is logically consistent with whitelist in R code - see function .h2o.check_java_version in connection.R
     // - upgrade of the javassist library should be considered when adding support for a new java version
-    if (JAVA_VERSION.isKnown() && !isUserEnabledJavaVersion() && (JAVA_VERSION.getMajor()<7 || JAVA_VERSION.getMajor()>12)) {
-      System.err.println("Only Java 7, 8, 9, 10, 11 and 12 are supported, system version is " + System.getProperty("java.version"));
+    if (JAVA_VERSION.isKnown() && !isUserEnabledJavaVersion() && (JAVA_VERSION.getMajor()<8 || JAVA_VERSION.getMajor()>12)) {
+      System.err.println("Only Java 8, 9, 10, 11 and 12 are supported, system version is " + System.getProperty("java.version"));
       return true;
     }
     String vmName = System.getProperty("java.vm.name");

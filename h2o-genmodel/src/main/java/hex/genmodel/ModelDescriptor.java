@@ -4,7 +4,6 @@ import hex.ModelCategory;
 import hex.genmodel.descriptor.Table;
 import hex.genmodel.descriptor.VariableImportances;
 
-import java.io.Serializable;
 
 public interface ModelDescriptor {
 

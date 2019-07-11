@@ -65,7 +65,7 @@ public class ScoreKeeper extends Iced {
   }
 
   public boolean isEmpty() {
-    return Double.isNaN(_mse) && Double.isNaN(_logloss); // at least one of them should always be filled
+    return Double.isNaN(_mse) && Double.isNaN(_logloss) && Double.isNaN(_anomaly_score_normalized); // at least one of them should always be filled
   }
 
   public void fillFrom(ModelMetrics m) {
@@ -111,30 +111,133 @@ public class ScoreKeeper extends Iced {
       _custom_metric =  m._custom_metric.value;
   }
 
-  public enum StoppingMetric { AUTO, deviance, logloss, MSE, RMSE,MAE,RMSLE, AUC, lift_top_group, misclassification, mean_per_class_error, custom, custom_increasing} //, r2}
-  static boolean moreIsBetter(StoppingMetric criterion) {
-    return (criterion == StoppingMetric.AUC || criterion == StoppingMetric.lift_top_group || criterion == StoppingMetric.custom_increasing); // || criterion == StoppingMetric.r2);
+  public interface IStoppingMetric {
+    int direction();
+    boolean isLowerBoundBy0();
+    IConvergenceStrategy getConvergenceStrategy();
+    double metricValue(ScoreKeeper sk);
   }
-  // only for those metrics where "less is better"
-  private static boolean hasLowerBound(StoppingMetric criterion) {
-    return criterion != StoppingMetric.deviance;
+  
+  public enum StoppingMetric implements IStoppingMetric {
+    AUTO(ConvergenceStrategy.AUTO, false), 
+    deviance(ConvergenceStrategy.LESS_IS_BETTER, false),
+    logloss(ConvergenceStrategy.LESS_IS_BETTER, true),
+    MSE(ConvergenceStrategy.LESS_IS_BETTER, true),
+    RMSE(ConvergenceStrategy.LESS_IS_BETTER, true),
+    MAE(ConvergenceStrategy.LESS_IS_BETTER, true),
+    RMSLE(ConvergenceStrategy.LESS_IS_BETTER, true),
+    AUC(ConvergenceStrategy.MORE_IS_BETTER, false),
+    lift_top_group(ConvergenceStrategy.MORE_IS_BETTER, false),
+    misclassification(ConvergenceStrategy.LESS_IS_BETTER, true),
+    mean_per_class_error(ConvergenceStrategy.LESS_IS_BETTER, true),
+    custom(ConvergenceStrategy.LESS_IS_BETTER, false),
+    custom_increasing(ConvergenceStrategy.MORE_IS_BETTER, false),
+    anomaly_score(ConvergenceStrategy.NON_DIRECTIONAL, false);
+
+    private final ConvergenceStrategy _convergence;
+    private final boolean _lowerBoundBy0;
+
+    StoppingMetric(ConvergenceStrategy convergence, boolean lowerBoundBy0) {
+      _convergence = convergence;
+      _lowerBoundBy0 = lowerBoundBy0;
+    }
+
+    public int direction() {
+      return _convergence._direction;
+    }
+
+    public boolean isLowerBoundBy0() {
+      return _lowerBoundBy0;
+    }
+
+    public ConvergenceStrategy getConvergenceStrategy() {
+      return _convergence;
+    }
+
+    @Override
+    public double metricValue(ScoreKeeper skj) {
+      double val;
+      switch (this) {
+        case AUC:
+          val = skj._AUC;
+          break;
+        case MSE:
+          val = skj._mse;
+          break;
+        case RMSE:
+          val = skj._rmse;
+          break;
+        case MAE:
+          val = skj._mae;
+          break;
+        case RMSLE:
+          val = skj._rmsle;
+          break;
+        case deviance:
+          val = skj._mean_residual_deviance;
+          break;
+        case logloss:
+          val = skj._logloss;
+          break;
+        case misclassification:
+          val = skj._classError;
+          break;
+        case mean_per_class_error:
+          val = skj._mean_per_class_error;
+          break;
+        case lift_top_group:
+          val = skj._lift;
+          break;
+        case custom:
+        case custom_increasing:
+          val = skj._custom_metric;
+          break;
+        case anomaly_score:
+          val = skj._anomaly_score_normalized;
+          break;
+        default:
+          throw H2O.unimpl("Undefined stopping criterion.");
+      }
+      return val;
+    }
+
+  }
+
+  public enum ProblemType {
+    regression(StoppingMetric.deviance),
+    classification(StoppingMetric.logloss),
+    anomaly_detection(StoppingMetric.anomaly_score);
+
+    private final StoppingMetric _defaultMetric;
+    
+    ProblemType(StoppingMetric defaultMetric) {
+      _defaultMetric = defaultMetric;
+    }
+
+    public StoppingMetric defaultMetric() {
+      return _defaultMetric;
+    }
+
+    public static ProblemType forSupervised(boolean isClassifier) {
+      return isClassifier ? classification : regression;
+    }
   }
 
   /** Based on the given array of ScoreKeeper and stopping criteria should we stop early? */
-  public static boolean stopEarly(ScoreKeeper[] sk, int k, boolean classification, StoppingMetric criterion, double rel_improvement, String what, boolean verbose) {
+  public static boolean stopEarly(ScoreKeeper[] sk, int k, ProblemType type, IStoppingMetric criterion, double rel_improvement, String what, boolean verbose) {
     if (k == 0) return false;
     int len = sk.length - 1; //how many "full"/"conservative" scoring events we have (skip the first)
     if (len < 2*k) return false; //need at least k for SMA and another k to tell whether the model got better or not
 
-    if (criterion==StoppingMetric.AUTO) {
-      criterion = classification ? StoppingMetric.logloss : StoppingMetric.deviance;
+    if (StoppingMetric.AUTO.equals(criterion)) {
+      criterion = type.defaultMetric();
     }
 
-    boolean moreIsBetter = moreIsBetter(criterion);
-    boolean hasLowerBound = hasLowerBound(criterion);
+    IConvergenceStrategy convergenceStrategy = criterion.getConvergenceStrategy();
     double movingAvg[] = new double[k+1]; //need one moving average value for the last k+1 scoring events
-    double lastBeforeK = moreIsBetter ? -Double.MAX_VALUE : Double.MAX_VALUE;
-    double bestInLastK = moreIsBetter ? -Double.MAX_VALUE : Double.MAX_VALUE;
+    double lastBeforeK = Double.MAX_VALUE;
+    double minInLastK = Double.MAX_VALUE;
+    double maxInLastK = -Double.MAX_VALUE;
     for (int i=0;i<movingAvg.length;++i) {
       movingAvg[i] = 0;
       // compute k+1 simple moving averages of window size k
@@ -161,77 +264,109 @@ public class ScoreKeeper extends Iced {
       int startIdx = sk.length-2*k+i;
       for (int j = 0; j < k; ++j) {
         ScoreKeeper skj = sk[startIdx+j];
-        double val;
-        switch (criterion) {
-          case AUC:
-            val = skj._AUC;
-            break;
-          case MSE:
-            val = skj._mse;
-            break;
-          case RMSE:
-            val = skj._rmse;
-            break;
-          case MAE:
-            val = skj._mae;
-            break;
-          case RMSLE:
-            val = skj._rmsle;
-            break;
-          case deviance:
-            val = skj._mean_residual_deviance;
-            break;
-          case logloss:
-            val = skj._logloss;
-            break;
-          case misclassification:
-            val = skj._classError;
-            break;
-          case mean_per_class_error:
-            val = skj._mean_per_class_error;
-            break;
-          case lift_top_group:
-            val = skj._lift;
-            break;
- /*         case r2:
-            val = skj._r2;
-            break; */
-          case custom:
-          case custom_increasing:
-            val = skj._custom_metric;
-            break;
-          default:
-            throw H2O.unimpl("Undefined stopping criterion.");
-        }
+        double val = criterion.metricValue(skj);
         movingAvg[i] += val;
       }
       movingAvg[i]/=k;
       if (Double.isNaN(movingAvg[i])) return false;
       if (i==0)
         lastBeforeK = movingAvg[i];
-      else
-        bestInLastK = moreIsBetter ? Math.max(movingAvg[i], bestInLastK) : Math.min(movingAvg[i], bestInLastK);
+      else {
+        minInLastK = Math.min(movingAvg[i], minInLastK);
+        maxInLastK = Math.max(movingAvg[i], maxInLastK);
+      }
     }
-    // zero-crossing could be for residual deviance or r^2 -> mark it not yet converged, avoid division by 0 or weird relative improvements math below
-    if (Math.signum(ArrayUtils.maxValue(movingAvg)) != Math.signum(ArrayUtils.minValue(movingAvg))) return false;
-    if (Math.signum(bestInLastK) != Math.signum(lastBeforeK)) return false;
     assert(lastBeforeK != Double.MAX_VALUE);
-    assert(bestInLastK != Double.MAX_VALUE);
+    assert(maxInLastK != -Double.MAX_VALUE);
+    assert(minInLastK != Double.MAX_VALUE);
+
     if (verbose)
       Log.info("Windowed averages (window size " + k + ") of " + what + " " + (k+1) + " " + criterion.toString() + " metrics: " + Arrays.toString(movingAvg));
 
-    if (lastBeforeK==0 && !moreIsBetter && hasLowerBound) // eg. deviance - less better and can be negative
+    if (criterion.isLowerBoundBy0() && lastBeforeK == 0.0) {
+      Log.info("Checking convergence with " + criterion.toString() + " metric: " + lastBeforeK + " (metric converged to its lower bound).");
       return true;
+    }
 
-    double ratio = bestInLastK / lastBeforeK;
-    if (Double.isNaN(ratio)) return false;
-    boolean improved = moreIsBetter ? ratio > 1+rel_improvement : ratio < 1-rel_improvement;
+    final double extremePoint = convergenceStrategy.extremePoint(lastBeforeK, minInLastK, maxInLastK);
+
+    // zero-crossing could be for residual deviance or r^2 -> mark it not yet stopEarly, avoid division by 0 or weird relative improvements math below
+    if (Math.signum(ArrayUtils.maxValue(movingAvg)) != Math.signum(ArrayUtils.minValue(movingAvg))) return false;
+    if (Math.signum(extremePoint) != Math.signum(lastBeforeK)) 
+      return false;
+
+    boolean stopEarly = convergenceStrategy.stopEarly(lastBeforeK, minInLastK, maxInLastK, rel_improvement);
 
     if (verbose)
-      Log.info("Checking convergence with " + criterion.toString() + " metric: " + lastBeforeK + " --> " + bestInLastK + (improved ? " (still improving)." : " (converged)."));
-    return !improved;
+      Log.info("Checking convergence with " + criterion.toString() + " metric: " + lastBeforeK + " --> " + extremePoint + (stopEarly ? " (converged)." : " (still improving)."));
+    return stopEarly;
   } // stopEarly
 
+  interface IConvergenceStrategy {
+    double extremePoint(double lastBeforeK, double minInLastK, double maxInLastK);
+    boolean stopEarly(double lastBeforeK, double minInLastK, double maxInLastK, double rel_improvement);
+  }
+  
+  enum ConvergenceStrategy implements IConvergenceStrategy {
+    AUTO(0), // dummy - should never be actually used (meant to be assigned to AUTO metric) 
+    MORE_IS_BETTER(1) {
+      @Override
+      public double extremePoint(double lastBeforeK, double minInLastK, double maxInLastK) {
+        return maxInLastK;
+      }
+      @Override
+      public boolean stopEarly(double lastBeforeK, double minInLastK, double maxInLastK, double rel_improvement) {
+        double ratio = maxInLastK / lastBeforeK;
+        if (Double.isNaN(ratio))
+          return false;
+        return ratio <= 1 + rel_improvement;
+      }
+    },
+    LESS_IS_BETTER(-1) {
+      @Override
+      public double extremePoint(double lastBeforeK, double minInLastK, double maxInLastK) {
+        return minInLastK;
+      }
+      @Override
+      public boolean stopEarly(double lastBeforeK, double minInLastK, double maxInLastK, double rel_improvement) {
+        double ratio = minInLastK / lastBeforeK;
+        if (Double.isNaN(ratio))
+          return false;
+        return ratio >= 1 - rel_improvement;
+      }
+    },
+    NON_DIRECTIONAL(0) {
+      @Override
+      public double extremePoint(double lastBeforeK, double minInLastK, double maxInLastK) {
+        return Math.abs(lastBeforeK - minInLastK) > Math.abs(lastBeforeK - maxInLastK) ? minInLastK : maxInLastK;
+      }
+      @Override
+      public boolean stopEarly(double lastBeforeK, double minInLastK, double maxInLastK, double rel_change) {
+        double extreme = extremePoint(lastBeforeK, minInLastK, maxInLastK);
+        double ratio = extreme / lastBeforeK;
+        if (Double.isNaN(ratio))
+          return false;
+        return ratio >= 1 - rel_change && ratio <= 1 + rel_change;
+      }
+    };
+
+    final int _direction;
+
+    ConvergenceStrategy(int direction) {
+      _direction = direction;
+    }
+
+    @Override
+    public double extremePoint(double lastBeforeK, double minInLastK, double maxInLastK) {
+      throw new IllegalStateException("Should overridden in Strategy implementation");
+    }
+
+    @Override
+    public boolean stopEarly(double lastBeforeK, double minInLastK, double maxInLastK, double rel_improvement) {
+      throw new IllegalStateException("Should overridden in Strategy implementation");
+    }
+  }
+  
   /**
    * Compare this ScoreKeeper with that ScoreKeeper
    * @param that
@@ -273,7 +408,7 @@ public class ScoreKeeper extends Iced {
         ", _mean_per_class_error=" + _mean_per_class_error +
         ", _hitratio=" + Arrays.toString(_hitratio) +
         ", _lift=" + _lift +
-      //  ", _r2=" + _r2 +
+        ", _anomaly_score_normalized=" + _anomaly_score_normalized +
         '}';
   }
 

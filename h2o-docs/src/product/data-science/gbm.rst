@@ -195,7 +195,8 @@ Defining a GBM Model
 -  `stopping_metric <algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping.
    The available options are:
 
-    - ``auto``: This defaults to ``logloss`` for classification, ``deviance`` for regression
+    - ``auto``: This defaults to ``logloss`` for classification, ``deviance`` for regression, and ``anomaly_score`` for Isolation Forest. Note that custom and custom_increasing can only be used in GBM and DRF with the Python client. Must be one of: ``AUTO``, ``anomaly_score``. Defaults to ``AUTO``.
+    - ``anomaly_score`` (Isolation Forest only)
     - ``deviance``
     - ``logloss``
     - ``mse``
@@ -259,6 +260,8 @@ Defining a GBM Model
 -  `calibration_frame <algo-params/calibration_frame.html>`__: Specifies the frame to be used for Platt scaling.
 
 -  `custom_metric_func <algo-params/custom_metric_func.html>`__: Optionally specify a custom evaluation function.
+
+-  `custom_distribution_func <algo-params/custom_distribution_func.html>`__: Optionally specify a custom distribution function.
 
 -  **export_checkpoints_dir**: Optionally specify a path to a directory where every generated model will be stored when checkpointing models.
 

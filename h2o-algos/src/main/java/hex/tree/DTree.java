@@ -154,6 +154,8 @@ public class DTree extends Iced {
     public final int   col() { return _col; }
     public final int   bin() { return _bin; }
     public final DHistogram.NASplitDir naSplitDir() { return _nasplit; }
+    public final double n0() { return _n0; }
+    public final double n1() { return _n1; }
 
     // Split-at dividing point.  Don't use the step*bin+bmin, due to roundoff
     // error we can have that point be slightly higher or lower than the bin

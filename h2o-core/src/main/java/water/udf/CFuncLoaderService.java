@@ -18,7 +18,7 @@ public class CFuncLoaderService {
     loader = ServiceLoader.load(CFuncLoader.class);
   }
 
-  public CFuncLoader getByLang(String lang) {
+  synchronized public CFuncLoader getByLang(String lang) {
     Iterator<CFuncLoader> it = loader.iterator();
 
     while (it.hasNext()) {

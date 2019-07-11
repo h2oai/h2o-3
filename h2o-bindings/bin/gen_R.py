@@ -75,11 +75,18 @@ def gen_module(schema, algo, module):
         if param["type"] == "boolean":
             phelp = "\code{Logical}. " + phelp
         if param["values"]:
-            phelp += " Must be one of: %s." % ", ".join('"%s"' % p for p in param["values"])
+            values = param["values"][:]
+            if (param["name"] == u'stopping_metric') and (not(algo == u'isolationforest')):    # anomaly_score only in Isolation Forest
+                values.remove(u'anomaly_score')
+            if (param["name"] == u'stopping_metric') and (algo == u'isolationforest'):
+                values = [u'AUTO', u'anomaly_score']
+            phelp += " Must be one of: %s." % ", ".join('"%s"' % p for p in values)
         if (param["name"]==u'distribution') and (not(algo==u'glm') and not(algo==u'gbm')):    # quasibinomial only in glm, gbm
             phelp=phelp.replace(' "quasibinomial",',"")
         if (param["name"]==u'distribution') and not(algo==u'glm'):    # ordinal only in glm
             phelp=phelp.replace(' "ordinal",',"")
+        if (param["name"]==u'distribution') and not(algo==u'gbm'):    # custom only in gbm 
+            phelp=phelp.replace(', "custom"',"")
         if param["default_value"] is not None:
             phelp += " Defaults to %s." % normalize_value(param, True)
         yield "#' @param %s %s" % (param["name"], bi.wrap(phelp, indent=("#'        "), indent_first=False))
@@ -132,14 +139,29 @@ def gen_module(schema, algo, module):
                 temp = temp.replace(' "quasibinomial",',"")
             if not(algo==u'glm'):
                 temp = temp.replace(' "ordinal",',"")
+            if not(algo==u'gbm'):
+                temp = temp.replace(', "custom"',"")  # custom only in gbm
             list.append(indent("%s = %s" % (param["name"], temp), 17 + len(module)))
         else:
-            list.append(indent("%s = %s" % (param["name"], normalize_value(param)), 17 + len(module)))
+            list.append(indent("%s = %s" % (param["name"], normalize_value(param, algo=algo)), 17 + len(module)))
     if algo in ["deeplearning","drf", "gbm","xgboost"]:
         list.append(indent("verbose = FALSE ",17 + len(module)))
     yield ",\n".join(list)
     yield indent(") \n{", 17 + len(module))
-    if algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
+    yield "  # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object"
+    if algo == "word2vec":
+        yield "  # training_frame is required if pre_trained frame is not specified"
+        yield "  if (missing(pre_trained) && missing(training_frame)) stop(\"argument \'training_frame\' is missing, with no default\")"
+        yield "  training_frame <- .validate.H2OFrame(training_frame)"
+        yield "  pre_trained <- .validate.H2OFrame(pre_trained)"
+    elif algo not in ["generic"]:
+        yield "  training_frame <- .validate.H2OFrame(training_frame, required=TRUE)"
+    if algo not in ["word2vec", "aggregator", "coxph", "isolationforest", "generic"]:
+        yield "  validation_frame <- .validate.H2OFrame(validation_frame)"
+    if algo in ["stackedensemble"]:
+        yield "  blending_frame <- .validate.H2OFrame(blending_frame)"
+        yield "  # Validate other required args"
+    if algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes", "stackedensemble", "psvm"]:
         yield "  # If x is missing, then assume user wants to use all columns as features."
         yield "  if (missing(x)) {"
         yield "     if (is.numeric(y)) {"
@@ -148,26 +170,7 @@ def gen_module(schema, algo, module):
         yield "         x <- setdiff(colnames(training_frame), y)"
         yield "     }"
         yield "  }"
-        if algo == "gbm":
-            yield "  # Required maps for different names params, including deprecated params"
-            yield "  .gbm.map <- c(\"x\" = \"ignored_columns\","
-            yield "                \"y\" = \"response_column\")"
-        elif algo == "naivebayes":
-            yield " .naivebayes.map <- c(\"x\" = \"ignored_columns\", \"y\" = \"response_column\", \n \
-                         \"threshold\" = \"min_sdev\", \"eps\" = \"eps_sdev\")"
-        elif algo == "glm":
-            yield "  # if (!is.null(beta_constraints)) {"
-            yield "  #     if (!inherits(beta_constraints, 'data.frame') && !is.H2OFrame(beta_constraints))"
-            yield "  #       stop(paste('`beta_constraints` must be an H2OH2OFrame or R data.frame. Got: ', class(beta_constraints)))"
-            yield "  #     if (inherits(beta_constraints, 'data.frame')) {"
-            yield "  #       beta_constraints <- as.h2o(beta_constraints)"
-            yield "  #     }"
-            yield "  # }"
-            yield "  if (inherits(beta_constraints, 'data.frame')) {"
-            yield "    beta_constraints <- as.h2o(beta_constraints)"
-            yield "  }"
-    yield ""
-    if algo == "coxph":
+    elif algo == "coxph":
         yield "  # If x is missing, then assume user wants to use all columns as features."
         yield "  if (missing(x)) {"
         yield "     if (is.numeric(event_column)) {"
@@ -176,6 +179,30 @@ def gen_module(schema, algo, module):
         yield "         x <- setdiff(colnames(training_frame), event_column)"
         yield "     }"
         yield "  }"
+    if algo == "gbm":
+        yield "  # Required maps for different names params, including deprecated params"
+        yield "  .gbm.map <- c(\"x\" = \"ignored_columns\","
+        yield "                \"y\" = \"response_column\")"
+    elif algo == "naivebayes":
+        yield " .naivebayes.map <- c(\"x\" = \"ignored_columns\", \"y\" = \"response_column\", \n \
+                     \"threshold\" = \"min_sdev\", \"eps\" = \"eps_sdev\")"
+    elif algo == "glm":
+        yield "  # if (!is.null(beta_constraints)) {"
+        yield "  #     if (!inherits(beta_constraints, 'data.frame') && !is.H2OFrame(beta_constraints))"
+        yield "  #       stop(paste('`beta_constraints` must be an H2OH2OFrame or R data.frame. Got: ', class(beta_constraints)))"
+        yield "  #     if (inherits(beta_constraints, 'data.frame')) {"
+        yield "  #       beta_constraints <- as.h2o(beta_constraints)"
+        yield "  #     }"
+        yield "  # }"
+        yield "  if (inherits(beta_constraints, 'data.frame')) {"
+        yield "    beta_constraints <- as.h2o(beta_constraints)"
+        yield "  }"
+    elif algo == "generic":
+        yield "  # Required args: model_key"
+        yield "  if (is.null(model_key)) stop(\"argument 'model_key' must be provided\")"
+    yield ""
+    yield "  # Handle other args"
+    if algo == "coxph":
         yield "  if (is.null(interactions_only) && (! is.null(interactions) || ! is.null(interaction_pairs))) {"
         yield "     used <- unique(c(interactions, unlist(sapply(interaction_pairs, function(x) {x[1]})), unlist(sapply(interaction_pairs, function(x) {x[2]}))))"
         yield "     interactions_only <- setdiff(used, x)"
@@ -188,43 +215,6 @@ def gen_module(schema, algo, module):
         yield "  if(!is.character(stop_column) && !is.numeric(stop_column)) {"
         yield "     stop('argument \"stop_column\" must be a column name or an index')"
         yield "  }"
-    if algo == "generic":
-        yield "  # Required args: model_key"
-        yield "  if (is.null(model_key)) stop(\"argument 'model_key' must be provided\")"
-    if algo == "word2vec":
-        yield "  # training_frame is required if pre_trained frame is not specified"
-        yield "  if (missing(pre_trained) && missing(training_frame)) stop(\"argument \'training_frame\' is missing, with no default\")"
-        yield "  # training_frame must be a key or an H2OFrame object"
-        yield "  if (!missing(training_frame) && !is.H2OFrame(training_frame))"
-        yield "    tryCatch(training_frame <- h2o.getFrame(training_frame),"
-        yield "             error = function(err) {"
-        yield "               stop(\"argument \'training_frame\' must be a valid H2OFrame or key\")"
-        yield "             })"
-        yield "  # pre_trained must be a key or an H2OFrame object"
-        yield "  if (!missing(pre_trained) && !is.H2OFrame(pre_trained))"
-        yield "    tryCatch(pre_trained <- h2o.getFrame(pre_trained),"
-        yield "             error = function(err) {"
-        yield "               stop(\"argument \'pre_trained\' must be a valid H2OFrame or key\")"
-        yield "             })"
-    elif algo not in ["generic"]:
-        yield "  # Required args: training_frame"
-        yield "  if (missing(training_frame)) stop(\"argument \'training_frame\' is missing, with no default\")"
-        # yield "  if( missing(validation_frame) ) validation_frame = NULL"
-        yield "  # Training_frame must be a key or an H2OFrame object"
-        yield "  if (!is.H2OFrame(training_frame))"
-        yield "     tryCatch(training_frame <- h2o.getFrame(training_frame),"
-        yield "           error = function(err) {"
-        yield "             stop(\"argument \'training_frame\' must be a valid H2OFrame or key\")"
-        yield "           })"
-    if algo not in ["word2vec", "aggregator", "coxph", "isolationforest", "generic"]:
-        yield "  # Validation_frame must be a key or an H2OFrame object"
-        yield "  if (!is.null(validation_frame)) {"
-        yield "     if (!is.H2OFrame(validation_frame))"
-        yield "         tryCatch(validation_frame <- h2o.getFrame(validation_frame),"
-        yield "             error = function(err) {"
-        yield "                 stop(\"argument \'validation_frame\' must be a valid H2OFrame or key\")"
-        yield "             })"
-        yield "  }"
     yield "  # Parameter list to send to model builder"
     yield "  parms <- list()"
     if algo not in ["generic"]:
@@ -232,7 +222,7 @@ def gen_module(schema, algo, module):
     if algo == "glrm":
         yield " if(!missing(cols))"
         yield " parms$ignored_columns <- .verify_datacols(training_frame, cols)$cols_ignore"
-    elif algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes", "stackedensemble", "coxph"]:
+    elif algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes", "stackedensemble", "coxph", "psvm"]:
         if any(param["name"] == "autoencoder" for param in schema["parameters"]):
             yield "  args <- .verify_dataxy(training_frame, x, y, autoencoder)"
         elif algo == "coxph":
@@ -247,7 +237,7 @@ def gen_module(schema, algo, module):
             if algo == "coxph":
                 yield "  if( !missing(start_column) && !is.null(start_column)) args$x_ignore <- args$x_ignore[!( start_column == args$x_ignore )]"
                 yield "  if( !missing(stop_column) && !is.null(stop_column)) args$x_ignore <- args$x_ignore[!( stop_column == args$x_ignore )]"
-            else:
+            elif algo != "psvm":
                 yield "  if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]"
             yield "  parms$ignored_columns <- args$x_ignore"
         yield "  parms$response_column <- args$y\n"
@@ -495,6 +485,12 @@ def help_preamble_for(algo):
             Imports a generic model into H2O. Such model can be used then used for scoring and obtaining
             additional information about the model. The imported model has to be supported by H2O.
         """
+    if algo == "psvm":
+        return """
+            Trains a Support Vector Machine model on an H2O dataset
+            
+            Alpha version. Supports only binomial classification problems. 
+        """
 
 def help_details_for(algo):
     if algo == "naivebayes":
@@ -669,7 +665,7 @@ def help_example_for(algo):
 def get_extra_params_for(algo):
     if algo == "glrm":
         return "training_frame, cols = NULL"
-    elif algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
+    elif algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes", "stackedensemble", "psvm"]:
         return "x, y, training_frame"
     elif algo == "svd":
         return "training_frame, x, destination_key"
@@ -685,7 +681,7 @@ def get_extra_params_for(algo):
 def help_extra_params_for(algo):
     if algo == "glrm":
         return "#' @param cols (Optional) A vector containing the data columns on which k-means operates."
-    elif algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes"]:
+    elif algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes", "psvm"]:
         x_string = """#' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
             #'        If x is missing, then all columns except y are used."""
     elif algo == "coxph":
@@ -705,7 +701,7 @@ def help_extra_params_for(algo):
         return None
     else:  #Aggregator, PCA, SVD, K-Means: can this be grouped in with the others?  why are only character names supported?
         return """#' @param x A vector containing the \code{character} names of the predictors in the model."""
-    if algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
+    if algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes", "stackedensemble", "psvm"]:
         return x_string + "\n" + """#' @param y The name or column index of the response variable in the data. The response must be either a numeric or a
             #'        categorical/factor variable. If the response is numeric, then a regression model will be trained, otherwise it will train a classification model."""
 
@@ -1125,16 +1121,23 @@ def algo_to_modelname(algo):
     if algo == "pca": return "Principal Components Analysis"
     if algo == "svd": return "Singular Value Decomposition"
     if algo == "stackedensemble": return "H2O Stacked Ensemble"
+    if algo == "psvm": return "Support Vector Machine"
     return algo
 
 def indent(string, n):
     return " " * n + string
 
-def normalize_value(param, is_help = False):
+
+def normalize_value(param, is_help=False, algo="unknown"):
     if param["name"] == "metalearner_params":
         return "NULL"
     if not(is_help) and param["type"][:4] == "enum":
-        return "c(%s)" % ", ".join('"%s"' % p for p in param["values"])
+        values = param["values"][:]
+        if (param["name"] == u'stopping_metric') and (not(algo == u'isolationforest')): # anomaly_score only in Isolation Forest
+            values.remove(u'anomaly_score')
+        if (param["name"] == u'stopping_metric') and (algo == u'isolationforest'):
+            values = [u'AUTO', u'anomaly_score']
+        return "c(%s)" % ", ".join('"%s"' % p for p in values)
     if param["default_value"] is None:
         if param["type"] in ["short", "int", "long", "double"]:
             return 0

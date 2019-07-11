@@ -12,7 +12,7 @@ The H2O XGBoost implementation is based on two separated modules. The first modu
 
 The second module, `h2o-ext-xgboost <https://github.com/h2oai/h2o-3/tree/master/h2o-extensions/xgboost>`__, contains the actual XGBoost model and model builder code, which communicates with native XGBoost libraries via the JNI API. The module also provides all necessary REST API definitions to expose the XGBoost model builder to clients.
 
-XGBoost in H2O supports multicore, thanks to OpenMP. The multicore implementation will only be available if the system itself supports it. (It has the right version of libraries.) If the requirements are not satisfied, XGBoost will use a fallback that is single core only. Multi-node support is currently available as a Beta feature.
+XGBoost in H2O supports multicore, thanks to OpenMP. The multicore implementation will only be available if the system itself supports it. (It has the right version of libraries.) If the requirements are not satisfied, XGBoost will use a fallback that is single core only.
 
 Refer to the `XGBoost in H2O Machine Learning Platform <https://www.h2o.ai/blog/xgboost-in-h2o-machine-learning-platform/>`__ blog post for an example of how to use XGBoost with the HIGGS dataset. 
 
@@ -64,7 +64,8 @@ Defining an XGBoost Model
 -  `stopping_metric <algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping.
    The available options are:
 
-    - ``auto``: This defaults to ``logloss`` for classification, ``deviance`` for regression
+    - ``auto``: This defaults to ``logloss`` for classification, ``deviance`` for regression, and ``anomaly_score`` for Isolation Forest. Note that custom and custom_increasing can only be used in GBM and DRF with the Python client. Must be one of: ``AUTO``, ``anomaly_score``. Defaults to ``AUTO``.
+    - ``anomaly_score`` (Isolation Forest only)
     - ``deviance``
     - ``logloss``
     - ``mse``
@@ -75,6 +76,8 @@ Defining an XGBoost Model
     - ``lift_top_group``
     - ``misclassification``
     - ``mean_per_class_error``
+    - ``custom`` (Python client only)
+    - ``custom_increasing`` (Python client only)
 
 -  `stopping_tolerance <algo-params/stopping_tolerance.html>`__: Specify the relative tolerance for the metric-based stopping to stop training if the improvement is less than this value. This value defaults to 0.001.
 

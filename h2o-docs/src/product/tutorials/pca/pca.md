@@ -55,7 +55,7 @@ Now, parse the imported data:
 2. Select `Principal Component Analysis` from the drop-down **Select an algorithm** menu, then click the **Build model** button. 
 3. If the parsed arrhythmia.hex file is not already listed in the **Training_frame** drop-down list, select it. Otherwise, continue to the next step. 
 4. From the drop-down **pca_method** menu, select the method for computing PCA. For this example, select *GramSVD*. The *GramSVD* option forms the Gram matrix of the training frame via a distributed computation, then computes the singular value decomposition (SVD) of the Gram locally using the JAMA package. The principal component vectors and standard deviations are recovered from the SVD. 
-5. In the **K** field, specify the number of clusters. For this example, enter `3`.  
+5. In the **K** field, specify the number of principal components. For this example, enter `3`.  
 6. In the **Max_iterations** field, specify the maximum number of iterations. For this example, enter `100`. 
 7. Click the **Build Model** button. 
 

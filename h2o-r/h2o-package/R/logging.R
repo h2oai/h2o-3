@@ -2,10 +2,12 @@
 #'
 #' @name aaa
 #' @examples
-#'if(Sys.info()['sysname'] == "Darwin" && Sys.info()['release'] == '13.4.0'){
-#'  quit(save="no")
-#'}else{
+#' \dontrun{
+#' if (Sys.info()['sysname'] == "Darwin" && Sys.info()['release'] == '13.4.0') {
+#'   quit(save="no")
+#' } else {
 #'  h2o.init(nthreads = 2)
+#' }
 #'}
 NULL
 
@@ -13,10 +15,12 @@ NULL
 #'
 #' @name zzz
 #' @examples
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #' h2o.shutdown(prompt = FALSE)
 #' Sys.sleep(3)
+#' }
 NULL
 
 # Initialize functions for R logging

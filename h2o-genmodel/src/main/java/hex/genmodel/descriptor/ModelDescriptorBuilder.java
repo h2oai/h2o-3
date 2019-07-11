@@ -4,7 +4,6 @@ import hex.ModelCategory;
 import hex.genmodel.ModelDescriptor;
 import hex.genmodel.MojoModel;
 
-import java.io.Serializable;
 import java.util.Arrays;
 
 public class ModelDescriptorBuilder {

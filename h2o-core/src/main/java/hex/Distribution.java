@@ -9,44 +9,44 @@ import hex.genmodel.utils.DistributionFamily;
  */
 public abstract class Distribution extends Iced<Distribution> {
     
-    public final double tweediePower; // tweedie power
-    public final double quantileAlpha; // for quantile regression
-    public double huberDelta; // should be updated to huber_alpha quantile of absolute error of predictions via setter
-    public final LinkFunction linkFunction; // link function to use mainly for GLM
-    public final DistributionFamily distribution; // distribution name, important for some algos to decide what to do
+    public final double _tweediePower; // tweedie power
+    public final double _quantileAlpha; // for quantile regression
+    public double _huberDelta; // should be updated to huber_alpha quantile of absolute error of predictions via setter
+    public LinkFunction _linkFunction; // link function to use mainly for GLM
+    public final DistributionFamily _family; // distribution name, important for some algos to decide what to do
     
     public Distribution(DistributionFamily family, LinkFunction lf) {
-        tweediePower = 1.5;
-        quantileAlpha = 0.5;
-        huberDelta = Double.NaN;
-        linkFunction = lf;
-        distribution = family;
+        _tweediePower = 1.5;
+        _quantileAlpha = 0.5;
+        _huberDelta = Double.NaN;
+        _linkFunction = lf;
+        _family = family;
     }
 
     public Distribution(DistributionFamily family) {
-        tweediePower = 1.5;
-        quantileAlpha = 0.5;
-        huberDelta = Double.NaN;
-        linkFunction = new IdentityFunction();
-        distribution = family;
+        _tweediePower = 1.5;
+        _quantileAlpha = 0.5;
+        _huberDelta = Double.NaN;
+        _linkFunction = new IdentityFunction();
+        _family = family;
     }
 
     public Distribution(Model.Parameters params, LinkFunction lf) {
-        tweediePower = params._tweedie_power;
-        quantileAlpha = params._quantile_alpha;
-        huberDelta = 1;
-        assert (tweediePower > 1 && tweediePower < 2);
-        linkFunction = lf;
-        distribution = params._distribution;
+        _tweediePower = params._tweedie_power;
+        _quantileAlpha = params._quantile_alpha;
+        _huberDelta = 1;
+        assert (_tweediePower > 1 && _tweediePower < 2);
+        _linkFunction = lf;
+        _family = params._distribution;
     }
     
     public Distribution(Model.Parameters params) {
-        tweediePower = params._tweedie_power;
-        quantileAlpha = params._quantile_alpha;
-        huberDelta = 1;
-        assert (tweediePower > 1 && tweediePower < 2);
-        linkFunction = new IdentityFunction();
-        distribution = params._distribution;
+        _tweediePower = params._tweedie_power;
+        _quantileAlpha = params._quantile_alpha;
+        _huberDelta = 1;
+        assert (_tweediePower > 1 && _tweediePower < 2);
+        _linkFunction = new IdentityFunction();
+        _family = params._distribution;
     }
     
     /**
@@ -55,7 +55,7 @@ public abstract class Distribution extends Iced<Distribution> {
      * @param huberDelta
      */
     public void setHuberDelta(double huberDelta) {
-        this.huberDelta = huberDelta;
+        this._huberDelta = huberDelta;
     }
     
     /**
@@ -64,9 +64,7 @@ public abstract class Distribution extends Iced<Distribution> {
      * @param f value in original space, to be transformed to link space
      * @return link(f)
      */
-    public double link(double f) {
-        return linkFunction.link(f);
-    }
+    public double link(double f) { return _linkFunction.link(f); }
 
     /**
      * Canonical link inverse
@@ -74,9 +72,7 @@ public abstract class Distribution extends Iced<Distribution> {
      * @param f value in link space, to be transformed back to original space
      * @return linkInv(f)
      */
-    public double linkInv(double f) {
-        return linkFunction.linkInv(f);
-    }
+    public double linkInv(double f) { return _linkFunction.linkInv(f); }
 
     /**
      * String version of link inverse (for POJO scoring code generation)
@@ -85,7 +81,7 @@ public abstract class Distribution extends Iced<Distribution> {
      * @return String that turns into compilable expression of linkInv(f)
      */
     public String linkInvString(String f) {
-        return linkFunction.linkInvString(f);
+        return _linkFunction.linkInvString(f);
     }
 
     /**
@@ -108,9 +104,7 @@ public abstract class Distribution extends Iced<Distribution> {
      * @param f (predicted) response in link space (including offset)
      * @return -1/2 * d/df deviance(w=1,y,f)
      */
-    public double negHalfGradient(double y, double f) {
-        throw H2O.unimpl();
-    }
+    public double negHalfGradient(double y, double f) { throw H2O.unimpl(); }
     
     /**
      * Contribution to numerator for initial value computation
@@ -161,4 +155,10 @@ public abstract class Distribution extends Iced<Distribution> {
     public double gammaDenom(double w, double y, double z, double f) {
         throw H2O.unimpl();
     }
+
+    /**
+     * Method useful for custom distribution only.
+     * It resets custom function to be loaded again.
+     */
+    public void reset(){}
 }

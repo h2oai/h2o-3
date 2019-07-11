@@ -167,6 +167,7 @@ class MetricsBase(backwards_compatible()):
         return self._metric_json['AUC']
 
     def pr_auc(self):
+        """The area under the precision recall curve."""
         return self._metric_json['pr_auc']
 
 
@@ -466,7 +467,7 @@ class H2OBinomialModelMetrics(MetricsBase):
         """
         :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the
             thresholds in this set of metrics will be used.
-        :returns: THe miss rate (same as False Negative Rate).
+        :returns: The miss rate (same as False Negative Rate).
         """
         return self.metric("fnr", thresholds=thresholds)
 

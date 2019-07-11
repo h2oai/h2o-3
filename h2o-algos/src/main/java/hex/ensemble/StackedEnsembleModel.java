@@ -244,7 +244,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         Distribution distribution = ((Distribution)distributionField.get(aModel));
         DistributionFamily distributionFamily;
         if (null != distribution)
-          distributionFamily = distribution.distribution;
+          distributionFamily = distribution._family;
         else
           distributionFamily = aModel._parms._distribution;
 

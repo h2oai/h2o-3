@@ -1,11 +1,11 @@
 package water;
 
+import hex.Model;
+import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.Log;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /** A Distributed Key/Value Store.
  *  <p>
@@ -225,45 +225,5 @@ public abstract class DKV {
     // Get data "the hard way"
     RPC<TaskGetKey> tgk = TaskGetKey.start(home,key);
     return blocking ? TaskGetKey.get(tgk) : null;
-  }
-
-  /**
-   * Clears keys in all H2O nodes, except for the ones marked as retained.
-   * Only Model and Frame keys are retained. If a key of any other type is provided, it will be removed as well.
-   */
-  public static final class ClearDKVTask extends MRTask<ClearDKVTask> {
-
-    private final Key[] _retainedKeys; // Only model and frame keys
-
-    /**
-     *
-     * @param retainedKeys Keys that are NOT deleted and will remain in DKV. Only Model keys and Frame keys are accepted
-     */
-    public ClearDKVTask(Key[] retainedKeys) {
-      _retainedKeys = retainedKeys;
-    }
-
-    @Override
-    protected void setupLocal() {
-      final Set<Key> retainedKeys = new HashSet<>(_retainedKeys.length);
-      retainedKeys.addAll(Arrays.asList(_retainedKeys));
-      final Collection<Value> storeKeys = H2O.STORE.values();
-      Futures removalFutures = new Futures();
-      for (final Value value : storeKeys) {
-        if (retainedKeys.contains(value._key)) {
-          if (value.isFrame() || value.isModel()) {
-            continue;
-          } else {
-            Log.info(String.format("Given key %s is of type %d. Not retaining.", value._key.toString(), value.type()));
-          }
-        }
-        if(value.isNull()) continue;
-        if (!value.isModel() && !value.isFrame()) continue;
-
-        // It is important to trigger the removal strategy on the Keyed object itself
-        ((Keyed) value.get()).remove(removalFutures);
-      }
-      removalFutures.blockForPending();
-    }
   }
 }

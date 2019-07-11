@@ -22,9 +22,11 @@ h2o.generic <- function(
                         model_key = NULL
                         ) 
 {
-
+  # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   # Required args: model_key
   if (is.null(model_key)) stop("argument 'model_key' must be provided")
+
+  # Handle other args
   # Parameter list to send to model builder
   parms <- list()
   if (!missing(model_id))

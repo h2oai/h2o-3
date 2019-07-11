@@ -39,8 +39,8 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                       "checkpoint", "sample_rate", "sample_rate_per_class", "col_sample_rate",
                       "col_sample_rate_change_per_level", "col_sample_rate_per_tree", "min_split_improvement",
                       "histogram_type", "max_abs_leafnode_pred", "pred_noise_bandwidth", "categorical_encoding",
-                      "calibrate_model", "calibration_frame", "custom_metric_func", "export_checkpoints_dir",
-                      "monotone_constraints", "check_constant_response"}
+                      "calibrate_model", "calibration_frame", "custom_metric_func", "custom_distribution_func",
+                      "export_checkpoints_dir", "monotone_constraints", "check_constant_response"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -63,8 +63,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
     @training_frame.setter
     def training_frame(self, training_frame):
-        assert_is_type(training_frame, None, H2OFrame)
-        self._parms["training_frame"] = training_frame
+        self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
 
 
     @property
@@ -78,8 +77,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
     @validation_frame.setter
     def validation_frame(self, validation_frame):
-        assert_is_type(validation_frame, None, H2OFrame)
-        self._parms["validation_frame"] = validation_frame
+        self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
 
 
     @property
@@ -487,8 +485,9 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     @property
     def stopping_metric(self):
         """
-        Metric to use for early stopping (AUTO: logloss for classification, deviance for regression). Note that custom
-        and custom_increasing can only be used in GBM and DRF with the Python client.
+        Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and anonomaly_score
+        for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
+        client.
 
         One of: ``"auto"``, ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``,
         ``"lift_top_group"``, ``"misclassification"``, ``"mean_per_class_error"``, ``"custom"``, ``"custom_increasing"``
@@ -598,13 +597,13 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Distribution function
 
         One of: ``"auto"``, ``"bernoulli"``, ``"quasibinomial"``, ``"multinomial"``, ``"gaussian"``, ``"poisson"``,
-        ``"gamma"``, ``"tweedie"``, ``"laplace"``, ``"quantile"``, ``"huber"``  (default: ``"auto"``).
+        ``"gamma"``, ``"tweedie"``, ``"laplace"``, ``"quantile"``, ``"huber"``, ``"custom"``  (default: ``"auto"``).
         """
         return self._parms.get("distribution")
 
     @distribution.setter
     def distribution(self, distribution):
-        assert_is_type(distribution, None, Enum("auto", "bernoulli", "quasibinomial", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"))
+        assert_is_type(distribution, None, Enum("auto", "bernoulli", "quasibinomial", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber", "custom"))
         self._parms["distribution"] = distribution
 
 
@@ -847,8 +846,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
     @calibration_frame.setter
     def calibration_frame(self, calibration_frame):
-        assert_is_type(calibration_frame, None, H2OFrame)
-        self._parms["calibration_frame"] = calibration_frame
+        self._parms["calibration_frame"] = H2OFrame._validate(calibration_frame, 'calibration_frame')
 
 
     @property
@@ -864,6 +862,21 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     def custom_metric_func(self, custom_metric_func):
         assert_is_type(custom_metric_func, None, str)
         self._parms["custom_metric_func"] = custom_metric_func
+
+
+    @property
+    def custom_distribution_func(self):
+        """
+        Reference to custom distribution, format: `language:keyName=funcName`
+
+        Type: ``str``.
+        """
+        return self._parms.get("custom_distribution_func")
+
+    @custom_distribution_func.setter
+    def custom_distribution_func(self, custom_distribution_func):
+        assert_is_type(custom_distribution_func, None, str)
+        self._parms["custom_distribution_func"] = custom_distribution_func
 
 
     @property

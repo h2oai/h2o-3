@@ -78,7 +78,7 @@ def check_leaderboard(aml, excluded_algos, expected_metrics, expected_sort_metri
     assert len([a for a in included_algos if len([b for b in model_ids if a in b]) > 0]) == len(included_algos), \
         "leaderboard is missing some algos from {included}: {models}".format(included=included_algos, models=model_ids)
 
-    j_leaderboard = aml._get_params()['leaderboard']
+    j_leaderboard = aml._state_json['leaderboard']
     sort_metric = j_leaderboard['sort_metric']
     assert sort_metric == expected_sort_metric, \
         "expected leaderboard sorted by {expected} but was sorted by {actual}".format(expected=expected_sort_metric, actual=sort_metric)
@@ -209,8 +209,7 @@ def test_AUTO_stopping_metric_with_no_sorting_metric_binomial():
     non_se = get_partitioned_model_names(aml.leaderboard).non_se
     first = [m for m in non_se if 'XGBoost_1' in m]
     others = [m for m in non_se if m not in first]
-    # check_model_property(first, 'stopping_metric', True, "AUTO")  # disabling due to bug PUBDEV-6385
-    check_model_property(first, 'stopping_metric', True, "logloss") # should fail and replace by above once PUBDEV-6385 is fixed
+    check_model_property(first, 'stopping_metric', True, "AUTO")
     check_model_property(others, 'stopping_metric', True, "logloss")
 
 
@@ -228,8 +227,7 @@ def test_AUTO_stopping_metric_with_no_sorting_metric_regression():
     non_se = get_partitioned_model_names(aml.leaderboard).non_se
     first = [m for m in non_se if 'XGBoost_1' in m]
     others = [m for m in non_se if m not in first]
-    # check_model_property(first, 'stopping_metric', True, "AUTO")  # disabling due to bug PUBDEV-6385
-    check_model_property(first, 'stopping_metric', True, "deviance") # should fail and replace by above once PUBDEV-6385 is fixed
+    check_model_property(first, 'stopping_metric', True, "AUTO")
     check_model_property(others, 'stopping_metric', True, "deviance")
 
 

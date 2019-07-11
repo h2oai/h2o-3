@@ -1,11 +1,11 @@
 package water.util;
 
-import edu.emory.mathcs.jtransforms.dct.DoubleDCT_1D;
-import edu.emory.mathcs.jtransforms.dct.DoubleDCT_2D;
-import edu.emory.mathcs.jtransforms.dct.DoubleDCT_3D;
-import edu.emory.mathcs.utils.ConcurrencyUtils;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
+import org.jtransforms.dct.DoubleDCT_1D;
+import org.jtransforms.dct.DoubleDCT_2D;
+import org.jtransforms.dct.DoubleDCT_3D;
+import pl.edu.icm.jlargearrays.ConcurrencyUtils;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;

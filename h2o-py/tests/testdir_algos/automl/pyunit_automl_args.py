@@ -1,5 +1,8 @@
 from __future__ import print_function
 import sys, os, time
+
+from h2o.exceptions import H2OTypeError
+
 sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
 from tests import pyunit_utils
@@ -254,36 +257,6 @@ def test_keep_cross_validation_fold_assignment_enabled_with_nfolds_eq_0():
     assert amodel._model_json["output"]["cross_validation_fold_assignment_frame_id"] == None
 
 
-def test_automl_stops_after_max_runtime_secs():
-    print("Check that automl gets interrupted after `max_runtime_secs`")
-    max_runtime_secs = 30
-    cancel_tolerance_secs = 5+5   # should work for most cases given current mechanism, +5 due to SE which currently ignore max_runtime_secs
-    ds = import_dataset()
-    aml = H2OAutoML(project_name="py_aml_max_runtime_secs", seed=1, max_runtime_secs=max_runtime_secs)
-    start = time.time()
-    aml.train(y=ds['target'], training_frame=ds['train'])
-    end = time.time()
-    assert abs(end-start - max_runtime_secs) < cancel_tolerance_secs, end-start
-
-
-def test_no_model_takes_more_than_max_runtime_secs_per_model():
-    print("Check that individual model get interrupted after `max_runtime_secs_per_model`")
-    ds = import_dataset(seed=1, larger=True)
-    max_runtime_secs = 30
-    models_count = {}
-    for max_runtime_secs_per_model in [0, 3, max_runtime_secs]:
-        aml = H2OAutoML(project_name="py_aml_max_runtime_secs_per_model_{}".format(max_runtime_secs_per_model), seed=1,
-                        max_runtime_secs_per_model=max_runtime_secs_per_model,
-                        max_runtime_secs=max_runtime_secs)
-        aml.train(y=ds['target'], training_frame=ds['train'])
-        models_count[max_runtime_secs_per_model] = len(aml.leaderboard)
-        # print(aml.leaderboard)
-    # there may be one model difference as reproducibility is not perfectly guaranteed in time-bound runs
-    assert abs(models_count[0] - models_count[max_runtime_secs]) <= 1
-    assert abs(models_count[0] - models_count[3]) > 1
-    # TODO: add assertions about single model timing once 'automl event_log' is available on client side
-
-
 def test_stacked_ensembles_are_trained_after_timeout():
     print("Check that Stacked Ensembles are still trained after timeout")
     max_runtime_secs = 20
@@ -335,6 +308,26 @@ def test_stacked_ensembles_are_trained_with_blending_frame_even_if_nfolds_eq_0()
         assert model._model_json['output']['stacking_strategy'] == 'blending'
 
 
+def test_frames_cannot_be_passed_as_key():
+    print("Check that all AutoML frames can be passed as keys.")
+    ds = import_dataset()
+    aml = H2OAutoML(project_name="py_aml_frames_as_keys", seed=1, max_models=3, nfolds=0)
+
+    kw_args = [
+        dict(training_frame=ds['train'].frame_id),
+        dict(training_frame=ds['train'], validation_frame=ds['valid'].frame_id),
+        dict(training_frame=ds['train'], blending_frame=ds['valid'].frame_id),
+        dict(training_frame=ds['train'], leaderboard_frame=ds['test'].frame_id),
+    ]
+    for kwargs in kw_args:
+        try:
+            aml.train(y=ds['target'], **kwargs)
+            assert False, "should have thrown due to wrong frame key"
+        except H2OTypeError as e:
+            attr = next(k for k, v in kwargs.items() if v is not ds['train'])
+            assert "'{}' must be a valid H2OFrame".format(attr) in str(e)
+
+
     # TO DO  PUBDEV-5676
     # Add a test that checks fold_column like in runit
 
@@ -355,10 +348,9 @@ pyunit_utils.run_tests([
     test_nfolds_default_and_fold_assignements_skipped_by_default,
     test_keep_cross_validation_fold_assignment_enabled_with_nfolds_neq_0,
     test_keep_cross_validation_fold_assignment_enabled_with_nfolds_eq_0,
-    test_automl_stops_after_max_runtime_secs,
-    test_no_model_takes_more_than_max_runtime_secs_per_model,
     test_stacked_ensembles_are_trained_after_timeout,
     test_automl_stops_after_max_models,
     test_stacked_ensembles_are_trained_after_max_models,
     test_stacked_ensembles_are_trained_with_blending_frame_even_if_nfolds_eq_0,
+    test_frames_cannot_be_passed_as_key,
 ])

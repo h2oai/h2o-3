@@ -80,7 +80,7 @@ public class SharedTreeNode implements INode<double[]>, INodeStat {
     colName = v2;
   }
 
-  private int getColId() {
+  public int getColId() {
     return colId;
   }
 
