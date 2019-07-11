@@ -57,12 +57,6 @@ Defining an SVM Model
    consistent for each H2O instance so that you can create models with
    the same starting conditions in alternative configurations.
 
-Interpreting an SVM Model
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-SVM Algorithm
-~~~~~~~~~~~~~
-
 References
 ~~~~~~~~~~
 
