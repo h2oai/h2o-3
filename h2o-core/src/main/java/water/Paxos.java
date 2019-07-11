@@ -68,8 +68,8 @@ public abstract class Paxos {
     // I am client and non-client node is trying to talk to me
     // 
     // Check if cloud hashes are equal. If not, we need to drop the state for previous cloud hash and connect to the
-    // new cloud
-    if (H2O.ARGS.client && !h2o._heartbeat._client && H2O.SELF._heartbeat._cloud_hash != h2o._heartbeat._cloud_hash) {
+    // new cloud. We are doing this only in case cloud is locked to allow normal clouding behaviour
+    if (_cloudLocked && H2O.ARGS.client && !h2o._heartbeat._client && H2O.SELF._heartbeat._cloud_hash != h2o._heartbeat._cloud_hash) {
       resetState();
     }
 
