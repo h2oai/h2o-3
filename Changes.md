@@ -2,6 +2,151 @@
 
 ## H2O
 
+### Yau (3.26.0.1) - 7/15/2019
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yau/1/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5595'>PUBDEV-5595</a>] - Removed an unncessary warning in predict function that occcured when a test set was missing `fold_column`.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6359'>PUBDEV-6359</a>] - AutoML no longer continues training models after a job cancellation.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6453'>PUBDEV-6453</a>] - Fixed an issue that caused h2o Docker image builds to fail.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6552'>PUBDEV-6552</a>] - In XGBoost, parallel sparse matrix conversion is no longer using a non-threadsafe API.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6569'>PUBDEV-6569</a>] - AutoML uses a default value of 5 for `score_tree_interval` with all algorithms.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6661'>PUBDEV-6661</a>] - Fixed a link function NPE in MOJOs.
+</li>
+</ul>
+        
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4076'>PUBDEV-4076</a>] - Added support  for a custom Loss Metric in GBM.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6108'>PUBDEV-6108</a>] - CoxPH is now available in the Python client.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6134'>PUBDEV-6134</a>] - Added support for SVM in the h2o-3 R and Python clients.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6213'>PUBDEV-6213</a>] -         Implement Broadcast Join for Target Encoding
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6214'>PUBDEV-6214</a>] -         Review Supporting Frequency Feature Importance for Isolation Forest
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6255'>PUBDEV-6255</a>] -         Target Encoding MOJO
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6492'>PUBDEV-6492</a>] -         Add Isolation Forest to Flow
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6510'>PUBDEV-6510</a>] -         XGBoost Improve performance of moving sparse matrices to off-heap memory
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6518'>PUBDEV-6518</a>] -         Downloading logs from H2O in plain text format
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6594'>PUBDEV-6594</a>] -         Some XGBoost junit tests are disabled in multinode - fix &amp; enable them
+</li>
+</ul>
+    
+<h4>Story</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6497'>PUBDEV-6497</a>] -         Make Target Encoding available in h2o-genmodel
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6499'>PUBDEV-6499</a>] -         Target Encoder Benchmarks
+</li>
+</ul>
+    
+<h4>Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6015'>PUBDEV-6015</a>] -         Deprecate support for Java 7
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6485'>PUBDEV-6485</a>] -         Coordinate blog post for 3.26.0.1 release
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6611'>PUBDEV-6611</a>] -         h2o.scale corrupts frame when run over a frame with categorical columns
+</li>
+</ul>
+    
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6410'>PUBDEV-6410</a>] -         Add Early Stopping to Isolation Forest
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6436'>PUBDEV-6436</a>] -         Mojo import Flow functionality
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6437'>PUBDEV-6437</a>] -         MOJO import - extract all metadata about models serialized in MOJO archives
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6438'>PUBDEV-6438</a>] -         Add 2D Partial Dependence Plots
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6464'>PUBDEV-6464</a>] -         Add a warning when a user sets a parameter that will not create a reproable model
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6482'>PUBDEV-6482</a>] -         GBM MOJO Import Support on New H2O-3 Versions
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6506'>PUBDEV-6506</a>] -         Introduce warning when user is trying to get cross validation predictions from Stacked Ensemble model
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6543'>PUBDEV-6543</a>] -         Add row_index parameter to PDP
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6553'>PUBDEV-6553</a>] -         Add row_index for PDP to H2O Flow
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6572'>PUBDEV-6572</a>] -         AutoML: disable default `max_runtime_secs`=1h if `max_models` is set &gt;0
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6573'>PUBDEV-6573</a>] -         Enable Java scoring for XGBoost MOJOs
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6590'>PUBDEV-6590</a>] -         AutoML: support for AutoML deletion (including models and other dependencies) from clients and REST APIs
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6621'>PUBDEV-6621</a>] -         Add TreeShap for DRF
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6633'>PUBDEV-6633</a>] -         Add function to retrieve number of times a feature was used on a prediction path in a tree model
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6634'>PUBDEV-6634</a>] -         Isolation should provide information about splits
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6642'>PUBDEV-6642</a>] -         Fix parameters listing for predict and predict_leaf_node_assignment in the Python documentation
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6646'>PUBDEV-6646</a>] -         Create SharedTreeMojoModelWithContributions class to have central location of contribs for DRF and GBM MOJO
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6647'>PUBDEV-6647</a>] -         ScoreContributionsTask should not be abstract
+</li>
+</ul>
+                                                                                                
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6500'>PUBDEV-6500</a>] - Create initial version of SVM documentation (alph documentation).
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6554'>PUBDEV-6554</a>] - Added `upload_custom_distribution` to the Parameters Appendix.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6610'>PUBDEV-6610</a>] - Explained how the nthreads parameter can impact reproducibility.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6613'>PUBDEV-6613</a>] - Added stopping parameters to the Isolation Forest chapter.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6644'>PUBDEV-6644</a>] - DRF is now included in the list of supported algorithms for predict_contributions.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6648'>PUBDEV-6648</a>] - Added more examples to the Predict topic.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6650'>PUBDEV-6650</a>] - Improved Data Manipulation Python documentation.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6651'>PUBDEV-6651</a>] - Improved Modeling functions in the Python documentation.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6653'>PUBDEV-6653</a>] - Improved the tree_class Python documentation.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6654'>PUBDEV-6654</a>] - Improved the Model Metrics Python documentation.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6656'>PUBDEV-6656</a>] - Improved GLM documentation by informing users that they can only specify a list in the GLM `interactions` parameter. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6660'>PUBDEV-6660</a>] - Updated Flow documentation to include Isolation Forest. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6663'>PUBDEV-6663</a>] - Improved the Python documentation for h2o.frame(). 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6664'>PUBDEV-6664</a>] - Added examples to the TargetEncoding Python documentation. (STILL OPEN)
+</li>
+</ul>
+
+
+
+
+
+
 ### Yates (3.24.0.5) - 6/18/2019
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yates/5/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yates/5/index.html</a>
