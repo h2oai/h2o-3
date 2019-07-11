@@ -32,7 +32,7 @@ public abstract class Paxos {
   public static volatile boolean _cloudLocked = false;
 
   public static final NonBlockingHashMap<H2Okey,H2ONode> PROPOSED = new NonBlockingHashMap<>();
-
+  
   // ---
   // This is a packet announcing what Cloud this Node thinks is the current
   // Cloud, plus other status bits
@@ -64,6 +64,14 @@ public abstract class Paxos {
       return 0;
     }
 
+    // Because of previous check we can be sure that the nodes are with the same cluster names
+    // I am client and non-client node is trying to talk to me
+    // 
+    // Check if cloud hashes are equal. If not, we need to drop the state for previous cloud hash and connect to the
+    // new cloud
+    if (H2O.ARGS.client && !h2o._heartbeat._client && H2O.SELF._heartbeat._cloud_hash != h2o._heartbeat._cloud_hash) {
+      resetState();
+    }
 
     // Update manual flatfile in case of flatfile is enabled
     if (H2O.isFlatfileEnabled()) {
@@ -134,6 +142,13 @@ public abstract class Paxos {
     return 0;
   }
 
+  private static void resetState() {
+    PROPOSED.clear();
+    _cloudLocked = false;
+    _commonKnowledge = false;
+    H2O.SELF._heartbeat._cloud_hash = 0;
+  }
+  
   static private int doHash() {
     int hash = 0;
     for( H2ONode h2o : PROPOSED.values() )
