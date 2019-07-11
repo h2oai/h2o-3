@@ -99,7 +99,7 @@ h2o.removeAll <- function(timeout_secs=0, retained_elements = c()) {
 #' @param ids The object or hex key associated with the object to be removed or a vector/list of those things.
 #' @seealso \code{\link{h2o.assign}}, \code{\link{h2o.ls}}
 #' @export
-h2o.rm <- function(ids) {
+h2o.rm <- function(ids, cascade=TRUE) {
   gc()
   if( !is.vector(ids) ) x_list = c(ids) else x_list = ids
   for (xi in x_list) {
@@ -109,9 +109,9 @@ h2o.rm <- function(ids) {
       if( is.null(key) ) return() # Lazy frame, never evaluated, nothing in cluster
       .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=paste0("(rm ",key,")"), session_id=h2o.getConnection()@mutable$session_id, method = "POST")
     } else if( is(xi, "Keyed") ) {
-      .h2o.__remoteSend(paste0(.h2o.__DKV, "/",h2o.keyof(xi)), method = "DELETE")
+      .h2o.__remoteSend(paste0(.h2o.__DKV, "/",h2o.keyof(xi)), method = "DELETE", .params=list(cascade=cascade))
     } else if( is.character(xi) ) {
-      .h2o.__remoteSend(paste0(.h2o.__DKV, "/",xi), method = "DELETE")
+      .h2o.__remoteSend(paste0(.h2o.__DKV, "/",xi), method = "DELETE", .params=list(cascade=cascade))
     } else {
       stop("input to h2o.rm must be a Keyed instance (e.g. H2OFrame, H2OModel) or character")
     }
