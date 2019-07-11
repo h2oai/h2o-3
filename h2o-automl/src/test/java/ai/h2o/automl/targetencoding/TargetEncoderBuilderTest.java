@@ -1,7 +1,9 @@
 package ai.h2o.automl.targetencoding;
 
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
+import water.Job;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
@@ -19,7 +21,7 @@ public class TargetEncoderBuilderTest extends TestUtil {
   }
 
   @Test
-  public void getTargetEncodingMapByTrainingTEBuilder(){
+  public void getTargetEncodingMapByTrainingTEBuilder() throws InterruptedException{
 
     Map<String, Frame> encodingMapFromTargetEncoder = null;
     Map<String, Frame> targetEncodingMapFromBuilder = null;
@@ -40,10 +42,10 @@ public class TargetEncoderBuilderTest extends TestUtil {
       targetEncoderParameters.setTrain(fr._key);
       targetEncoderParameters._response_column = responseColumnName;
 
-      TargetEncoderBuilder job = new TargetEncoderBuilder(targetEncoderParameters);
+      TargetEncoderBuilder builder = new TargetEncoderBuilder(targetEncoderParameters);
 
-      TargetEncoderModel targetEncoderModel = job.trainModel().get();
-      Scope.track_generic(targetEncoderModel);
+      builder.trainModel().get(); // Waiting for training to be finished
+      TargetEncoderModel targetEncoderModel = builder.getTargetEncoderModel(); // TODO change the way of how we getting model after PUBDEV-6670. We should be able to get it from DKV with .trainModel().get()
       
       //Stage 2: 
       // Let's create encoding map by TargetEncoder directly
@@ -93,10 +95,10 @@ public class TargetEncoderBuilderTest extends TestUtil {
       targetEncoderParameters.setTrain(fr._key);
       targetEncoderParameters._response_column = responseColumnName;
 
-      TargetEncoderBuilder job = new TargetEncoderBuilder(targetEncoderParameters);
+      TargetEncoderBuilder builder = new TargetEncoderBuilder(targetEncoderParameters);
 
-      TargetEncoderModel targetEncoderModel = job.trainModel().get();
-      Scope.track_generic(targetEncoderModel);
+      builder.trainModel().get(); // Waiting for training to be finished
+      TargetEncoderModel targetEncoderModel = builder.getTargetEncoderModel(); // TODO change the way of how we getting model after PUBDEV-6670. We should be able to get it from DKV with .trainModel().get()
 
       //Stage 2: 
       // Let's create encoding map by TargetEncoder directly
@@ -119,6 +121,7 @@ public class TargetEncoderBuilderTest extends TestUtil {
     }
   }
 
+  @Ignore("Enable when TargetEncoderModel is a full fledged model: PUBDEV-6670")
   @Test
   public void transform_KFold_scenario(){
 
@@ -146,10 +149,10 @@ public class TargetEncoderBuilderTest extends TestUtil {
       targetEncoderParameters.setTrain(fr._key);
       targetEncoderParameters._response_column = responseColumnName;
 
-      TargetEncoderBuilder job = new TargetEncoderBuilder(targetEncoderParameters);
+      TargetEncoderBuilder builder = new TargetEncoderBuilder(targetEncoderParameters);
 
-      TargetEncoderModel targetEncoderModel = job.trainModel().get();
-      Scope.track_generic(targetEncoderModel);
+      builder.trainModel().get(); // Waiting for training to be finished
+      TargetEncoderModel targetEncoderModel = builder.getTargetEncoderModel(); // TODO change the way of how we getting model after PUBDEV-6670. We should be able to get it from DKV with .trainModel().get()
       
       long seed = 1234;
       byte strategy = TargetEncoder.DataLeakageHandlingStrategy.KFold;

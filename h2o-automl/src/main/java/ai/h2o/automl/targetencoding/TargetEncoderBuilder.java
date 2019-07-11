@@ -11,7 +11,14 @@ import java.util.Map;
 
 public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, TargetEncoderModel.TargetEncoderParameters, TargetEncoderModel.TargetEncoderOutput> {
 
-  public transient Map<String, Frame> _targetEncodingMap;
+  public Map<String, Frame> _targetEncodingMap;
+
+  public TargetEncoderModel getTargetEncoderModel() {
+    assert _targetEncoderModel != null : "Training phase of the TargetEncoderBuilder did not take place yet. TargetEncoderModel is not available.";
+    return _targetEncoderModel;
+  }
+
+  private TargetEncoderModel _targetEncoderModel;
   
   public TargetEncoderBuilder(TargetEncoderModel.TargetEncoderParameters parms) {
     super(parms);
@@ -35,8 +42,10 @@ public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, Targe
 
       disableIgnoreConstColsFeature();
 
-      TargetEncoderModel targetEncoderModel = new TargetEncoderModel(_job._result, _parms,  new TargetEncoderModel.TargetEncoderOutput(TargetEncoderBuilder.this), tec);
-      DKV.put(targetEncoderModel);
+      _targetEncoderModel = new TargetEncoderModel(_job._result, _parms,  new TargetEncoderModel.TargetEncoderOutput(TargetEncoderBuilder.this), tec);
+
+      // Note: For now we are not going to make TargetEncoderModel to be a real model. It should be treated as a wrapper for just getting a mojo.
+      // DKV.put(targetEncoderModel);
     }
 
     private void disableIgnoreConstColsFeature() {
