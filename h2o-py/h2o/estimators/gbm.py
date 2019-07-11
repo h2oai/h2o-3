@@ -565,6 +565,16 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Run on one node only; no network overhead but fewer cpus used.  Suitable for small datasets.
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(build_tree_one_node = True, seed = 1234)
+        >>> cars_gbm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
+        >>> cars_gbm.auc(valid=True)
         """
         return self._parms.get("build_tree_one_node")
 
@@ -839,6 +849,26 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         of class probabilities.
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+        >>> ecology = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/ecology_model.csv")
+        >>> ecology['Angaus'] = ecology['Angaus'].asfactor()
+        >>> response = 'Angaus'
+        >>> predictors = ecology.columns[3:13]
+        >>> train, calib = ecology.split_frame(seed = 12354)
+        >>> w = h2o.create_frame(binary_fraction=1,
+                                 binary_ones_fraction=0.5,
+                                 missing_fraction=0,
+                                 rows=744, cols=1)
+        >>> w.set_names(["weight"])
+        >>> train = train.cbind(w)
+        >>> ecology_gbm = H2OGradientBoostingEstimator(ntrees = 10, max_depth = 5, min_rows = 10,
+                                           learn_rate = 0.1, distribution = "multinomial",
+                                           weights_column = "weight", calibrate_model = True,
+                                           calibration_frame = calib)
+        >>> ecology_gbm.train(x = predictors,
+                              y = "Angaus",
+                              training_frame = train)
         """
         return self._parms.get("calibrate_model")
 
@@ -854,6 +884,26 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Calibration frame for Platt Scaling
 
         Type: ``H2OFrame``.
+
+        :examples:
+        >>> ecology = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/ecology_model.csv")
+        >>> ecology['Angaus'] = ecology['Angaus'].asfactor()
+        >>> response = 'Angaus'
+        >>> predictors = ecology.columns[3:13]
+        >>> train, calib = ecology.split_frame(seed = 12354)
+        >>> w = h2o.create_frame(binary_fraction=1,
+                                 binary_ones_fraction=0.5,
+                                 missing_fraction=0,
+                                 rows=744, cols=1)
+        >>> w.set_names(["weight"])
+        >>> train = train.cbind(w)
+        >>> ecology_gbm = H2OGradientBoostingEstimator(ntrees = 10, max_depth = 5, min_rows = 10,
+                                           learn_rate = 0.1, distribution = "multinomial",
+                                           calibrate_model = True, calibration_frame = calib)
+        >>> ecology_gbm.train(x = predictors,
+                              y = "Angaus",
+                              training_frame = train,
+                              weights_column = "weight")
         """
         return self._parms.get("calibration_frame")
 
