@@ -1333,10 +1333,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   @Override
   protected Futures remove_impl(Futures fs) {
     Key<Job> jobKey = job == null ? null : job._key;
-
-    if (gridKeys != null)
-      for (Key<Grid> gridKey : gridKeys) gridKey.remove(fs);
-
+    Log.debug("Cleaning up AutoML "+jobKey);
     // If the Frame was made here (e.g. buildspec contained a path, then it will be deleted
     if (buildSpec.input_spec.training_frame == null && origTrainingFrame != null) {
       origTrainingFrame.delete(jobKey, fs);
@@ -1352,6 +1349,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       Frame.deleteTempFrameAndItsNonSharedVecs(trainingFrame, origTrainingFrame);
     if (leaderboard() != null) leaderboard().remove(fs);
     if (eventLog() != null) eventLog().remove(fs);
+
+    // grid should be removed after leaderboard cleanup
+    if (gridKeys != null)
+      for (Key<Grid> gridKey : gridKeys) gridKey.remove(fs);
 
     return super.remove_impl(fs);
   }

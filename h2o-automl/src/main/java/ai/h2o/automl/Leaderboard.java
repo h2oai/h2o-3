@@ -434,12 +434,15 @@ public class Leaderboard extends Keyed<Leaderboard> {
    */
   @Override
   protected Futures remove_impl(Futures fs) {
+    Log.debug("Cleaning up leaderboard from models "+Arrays.toString(models));
     for (Key<Model> m : models) {
       Model model = m.get();
       if (model != null) {
+        model.deleteCrossValidationFoldAssignment();
         model.deleteCrossValidationPreds();
         model.deleteCrossValidationModels();
-        model.deleteCrossValidationFoldAssignment();
+      } else {
+        Log.info("Model "+m+" was already removed");
       }
       m.remove(fs);
     }
