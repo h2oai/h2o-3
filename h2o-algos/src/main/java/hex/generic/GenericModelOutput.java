@@ -68,7 +68,7 @@ public class GenericModelOutput extends Model.Output {
                 auc._auc = binomial._auc;
                 auc._pr_auc = binomial._pr_auc;
                 auc._gini = binomial._gini;
-                return new ModelMetricsBinomial(null, null, mojoMetrics._nobs, mojoMetrics._MSE,
+                return new ModelMetricsBinomialGeneric(null, null, mojoMetrics._nobs, mojoMetrics._MSE,
                         modelDescriptor.scoringDomains()[modelDescriptor.nfeatures() - 1], Double.NaN, // TODO: sigma
                         auc, binomial._logloss, convertTable(binomial._gains_lift_table),
                         new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value), binomial._mean_per_class_error,

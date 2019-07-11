@@ -12,6 +12,7 @@ test.model.generic.gbm <- function() {
     mojo_original_path <- paste0(tempdir(),"/",mojo_original_name)
     
     generic_model <- h2o.genericModel(mojo_original_path)
+    print(generic_model)
     generic_model_preds  <- h2o.predict(generic_model, data)
     expect_equal(length(generic_model_preds), 3)
     expect_equal(h2o.nrow(generic_model_preds), 24421)

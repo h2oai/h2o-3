@@ -12,7 +12,6 @@ import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.MathUtils;
-import water.util.TwoDimTable;
 
 import java.util.Arrays;
 
@@ -21,10 +20,6 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
   public final double _logloss;
   public final double _mean_per_class_error;
   public final GainsLift _gainsLift;
-  public final TwoDimTable _gainsLiftTable;
-  public final TwoDimTable _thresholds_and_metric_scores;
-  public final TwoDimTable _max_criteria_and_metric_scores;
-  public final TwoDimTable _confusion_matrix;
 
   public ModelMetricsBinomial(Model model, Frame frame, long nobs, double mse, String[] domain,
                               double sigma, AUC2 auc, double logloss, GainsLift gainsLift,
@@ -34,27 +29,6 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     _logloss = logloss;
     _gainsLift = gainsLift;
     _mean_per_class_error = cm() == null ? Double.NaN : cm().mean_per_class_error();
-
-    // Nullable fields
-    _gainsLiftTable = null;
-    _thresholds_and_metric_scores = null;
-    _max_criteria_and_metric_scores = null;
-    _confusion_matrix = null;
-  }
-
-  public ModelMetricsBinomial(Model model, Frame frame, long nobs, double mse, String[] domain,
-                              double sigma, AUC2 auc, double logloss, TwoDimTable gainsLiftTable,
-                              CustomMetric customMetric, double mean_per_class_error, TwoDimTable thresholds_and_metric_scores,
-                              TwoDimTable max_criteria_and_metric_scores, TwoDimTable confusion_matrix) {
-    super(model, frame, nobs, mse, domain, sigma, customMetric);
-    _auc = auc;
-    _logloss = logloss;
-    _gainsLiftTable = gainsLiftTable;
-    _gainsLift = null;
-    _mean_per_class_error = mean_per_class_error;
-    _thresholds_and_metric_scores = thresholds_and_metric_scores;
-    _max_criteria_and_metric_scores = max_criteria_and_metric_scores;
-    _confusion_matrix = confusion_matrix;
   }
 
   public static ModelMetricsBinomial getFromDKV(Model model, Frame frame) {

@@ -72,7 +72,7 @@ class MetricsBase(backwards_compatible()):
         types_w_clustering = ['ModelMetricsClustering']
         types_w_mult = ['ModelMetricsMultinomial']
         types_w_ord = ['ModelMetricsOrdinal']
-        types_w_bin = ['ModelMetricsBinomial', 'ModelMetricsBinomialGLM']
+        types_w_bin = ['ModelMetricsBinomial', 'ModelMetricsBinomialGeneric', 'ModelMetricsBinomialGLM']
         types_w_r2 = ['ModelMetricsRegressionGLM']
         types_w_mean_residual_deviance = ['ModelMetricsRegressionGLM', 'ModelMetricsRegression']
         types_w_mean_absolute_error = ['ModelMetricsRegressionGLM', 'ModelMetricsRegression']

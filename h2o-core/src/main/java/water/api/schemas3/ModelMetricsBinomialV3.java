@@ -54,11 +54,7 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
     mean_per_class_error = modelMetrics._mean_per_class_error;
 
 
-    if (modelMetrics._confusion_matrix != null) {
-      final ConfusionMatrixV3 convertedConfusionMatrix = new ConfusionMatrixV3();
-      convertedConfusionMatrix.table = new TwoDimTableV3().fillFromImpl(modelMetrics._confusion_matrix);
-      this.cm = convertedConfusionMatrix;
-    } else if (null != modelMetrics.cm()) {
+    if (null != modelMetrics.cm()) {
       ConfusionMatrix cm = modelMetrics.cm();
       cm.table(); // Fill in lazy table, for icing
       this.cm = (ConfusionMatrixV3) SchemaServer.schema(this.getSchemaVersion(), cm).fillFromImpl(cm);
@@ -90,22 +86,17 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
         formats   [i+1] = crits[i]._isInt ? "%d"   : "%f"    ;
       }
       colHeaders[i+1]  = "idx"; types[i+1] = "int"; formats[i+1] = "%d";
-      
-      if(modelMetrics._thresholds_and_metric_scores == null) {
-        TwoDimTable thresholdsByMetrics = new TwoDimTable("Metrics for Thresholds", "Binomial metrics as a function of classification thresholds", new String[auc._nBins], colHeaders, types, formats, null);
-        for (i = 0; i < auc._nBins; i++) {
-          int j = 0;
-          thresholdsByMetrics.set(i, j, Double.valueOf(thresholds[i]));
-          for (j = 0; j < crits.length; j++) {
-            double d = crits[j].exec(auc, i); // Note: casts to Object are NOT redundant
-            thresholdsByMetrics.set(i, 1 + j, crits[j]._isInt ? (Object) ((long) d) : d);
-          }
-          thresholdsByMetrics.set(i, 1 + j, i);
+      TwoDimTable thresholdsByMetrics = new TwoDimTable("Metrics for Thresholds", "Binomial metrics as a function of classification thresholds", new String[auc._nBins], colHeaders, types, formats, null );
+      for( i=0; i<auc._nBins; i++ ) {
+        int j=0;
+        thresholdsByMetrics.set(i, j, Double.valueOf(thresholds[i]));
+        for (j = 0; j < crits.length; j++) {
+          double d = crits[j].exec(auc, i); // Note: casts to Object are NOT redundant
+          thresholdsByMetrics.set(i, 1+j, crits[j]._isInt ? (Object) ((long) d) : d);
         }
-        this.thresholds_and_metric_scores = new TwoDimTableV3().fillFromImpl(thresholdsByMetrics);
-      } else {
-        this.thresholds_and_metric_scores = new TwoDimTableV3().fillFromImpl(modelMetrics._thresholds_and_metric_scores);
+        thresholdsByMetrics.set(i, 1+j, i);
       }
+      this.thresholds_and_metric_scores = new TwoDimTableV3().fillFromImpl(thresholdsByMetrics);
 
       // Fill TwoDimTable
       TwoDimTable maxMetrics = new TwoDimTable("Maximum Metrics", "Maximum metrics at their respective thresholds", colHeadersMax,
@@ -119,18 +110,12 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
         maxMetrics.set(i,1,idx==-1 ? Double.NaN : crits[i].exec(auc,idx));
         maxMetrics.set(i,2,idx);
       }
-      
-      if(modelMetrics._max_criteria_and_metric_scores == null) {
-        max_criteria_and_metric_scores = new TwoDimTableV3().fillFromImpl(maxMetrics);
-      } else {
-        max_criteria_and_metric_scores = new TwoDimTableV3().fillFromImpl(modelMetrics._max_criteria_and_metric_scores);
-      }
+
+      max_criteria_and_metric_scores = new TwoDimTableV3().fillFromImpl(maxMetrics);
     }
     if (modelMetrics._gainsLift != null) {
       TwoDimTable t = modelMetrics._gainsLift.createTwoDimTable();
       if (t!=null) this.gains_lift_table = new TwoDimTableV3().fillFromImpl(t);
-    } else if (modelMetrics._gainsLiftTable != null) {
-      this.gains_lift_table = new TwoDimTableV3().fillFromImpl(modelMetrics._gainsLiftTable);
     }
     return (S) this;
   }
