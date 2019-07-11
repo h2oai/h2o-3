@@ -119,7 +119,7 @@ class MetricsBase(backwards_compatible()):
             print("AUC: " + str(self.auc()))
             print("pr_auc: " + str(self.pr_auc()))
             print("Gini: " + str(self.gini()))
-            # self.confusion_matrix().show() // TODO: confusion matrix not yet converted, commented out temporarily
+            self.confusion_matrix().show()
             self._metric_json["max_criteria_and_metric_scores"].show()
             if self.gains_lift():
                 print(self.gains_lift())
