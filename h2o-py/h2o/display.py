@@ -22,6 +22,8 @@ class H2ODisplay(object):
 
     # True/False flag whether we are connected to a Jupyter notebook. Computed on the first use.
     _jupyter = None
+    # True/False flag whether we are connected to a Zeppelin note. Computed on the first use.
+    _zeppelin = None
 
     def __init__(self, table=None, header=None, table_header=None, **kwargs):
         self.table_header = table_header
@@ -41,7 +43,10 @@ class H2ODisplay(object):
             print()
             print(self.table_header + ":")
             print()
-        if H2ODisplay._in_ipy():
+        if H2ODisplay._in_zep():
+            print("%html " + H2ODisplay._html_table(self.table, self.header))
+            self.do_print = False
+        elif H2ODisplay._in_ipy():
             from IPython.display import display
             display(self)
             self.do_print = False
@@ -79,6 +84,13 @@ class H2ODisplay(object):
             except ImportError:
                 H2ODisplay._jupyter = False
         return H2ODisplay._jupyter
+        
+    @staticmethod
+    def _in_zep():  # are we in zeppelin? then use zeppelin pretty print support
+        if H2ODisplay._zeppelin is None:
+            import os
+            H2ODisplay._zeppelin = H2ODisplay._in_ipy() and "ZEPPELIN_RUNNER" in os.environ
+        return H2ODisplay._zeppelin
 
     # some html table builder helper things
     @staticmethod

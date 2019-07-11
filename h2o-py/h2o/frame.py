@@ -448,15 +448,17 @@ class H2OFrame(object):
             print("This H2OFrame is empty.")
             return
         if not self._ex._cache.is_valid(): self._frame()._ex._cache.fill()
-        if H2ODisplay._in_ipy():
+        if H2ODisplay._in_zep():
+            print("%html " + self._ex._cache._tabulate("html", False, rows=rows))
+        elif H2ODisplay._in_ipy():
             import IPython.display
             if use_pandas and can_use_pandas():
-                IPython.display.display(self.head(rows=rows, cols=cols).as_data_frame(fill_cache=True))
+                IPython.display.display(self.head(rows=rows, cols=cols).as_data_frame(use_pandas=True))
             else:
-                IPython.display.display_html(self._ex._cache._tabulate("html", False), raw=True)
+                IPython.display.display_html(self._ex._cache._tabulate("html", False, rows=rows), raw=True)
         else:
             if use_pandas and can_use_pandas():
-                print(self.head(rows=rows, cols=cols).as_data_frame(True))  # no keyword fill_cache
+                print(self.head(rows=rows, cols=cols).as_data_frame(use_pandas=True))
             else:
                 s = self.__unicode__()
                 stk = traceback.extract_stack()
@@ -483,6 +485,8 @@ class H2OFrame(object):
         if not return_data:
             if self.nrows == 0:
                 print("This H2OFrame is empty.")
+            elif H2ODisplay._in_zep():
+                print("%html " + self._ex._cache._tabulate("html", True))
             elif H2ODisplay._in_ipy():
                 import IPython.display
                 IPython.display.display_html(self._ex._cache._tabulate("html", True), raw=True)
@@ -508,7 +512,7 @@ class H2OFrame(object):
             print("Rows:{}".format(self.nrow))
             print("Cols:{}".format(self.ncol))
 
-            #The chunk & distribution summaries are not cached, so must be pulled if chunk_summary=True.
+            # The chunk & distribution summaries are not cached, so must be pulled if chunk_summary=True.
             if chunk_summary:
                 res["chunk_summary"].show()
                 res["distribution_summary"].show()
@@ -574,7 +578,6 @@ class H2OFrame(object):
         ret._ex._cache._names = ["%s(%s)" % (op, name) for name in self._ex._cache._names]
         ret._ex._cache._types = {name: rtype for name in ret._ex._cache._names}
         return ret
-
 
     # Binary operations
     def __add__(self, rhs):
