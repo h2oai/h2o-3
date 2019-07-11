@@ -20,7 +20,27 @@ public class GbmMojoReader extends SharedTreeMojoReader<GbmMojoModel> {
     super.readModelData();
     _model._family = DistributionFamily.valueOf((String)readkv("distribution"));
     _model._init_f = readkv("init_f");
-    _model._link_function = LinkFunctionType.valueOf((String)readkv("link_function"));
+    _model._link_function = resolveLinkFunction((String)readkv("link_function"), _model._family);
+  }
+  
+  private LinkFunctionType resolveLinkFunction(String linkFunction, DistributionFamily family){
+    if(linkFunction == null){
+      switch (family){
+        case bernoulli:
+        case quasibinomial:
+        case modified_huber:
+        case ordinal:
+          linkFunction = "logit";
+        case multinomial:
+        case poisson:
+        case gamma:
+        case tweedie:
+          linkFunction = "log";
+        default:
+          linkFunction = "identity";
+      }
+    }
+    return LinkFunctionType.valueOf(linkFunction);
   }
 
   @Override
