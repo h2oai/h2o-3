@@ -924,7 +924,6 @@ def remove(x):
             xi.detach()
         else:
             # string may be a Frame key name part of a rapids session... need to call rm thru rapids here
-            assert isinstance(xi, str)
             try:
                 rapids("(rm {})".format(xi))
             except:
