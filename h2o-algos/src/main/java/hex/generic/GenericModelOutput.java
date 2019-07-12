@@ -51,9 +51,16 @@ public class GenericModelOutput extends Model.Output {
 
     private void convertMetrics(final SharedTreeModelAttributes sharedTreeModelAttributes, final ModelDescriptor modelDescriptor) {
         // Training metrics
-        final MojoModelMetrics trainingMetrics = sharedTreeModelAttributes.getTrainingMetrics();
-        final ModelMetrics modelMetrics = determineModelmetricsType(trainingMetrics, modelDescriptor);
-        _training_metrics = (ModelMetrics) convertObjects(sharedTreeModelAttributes.getTrainingMetrics(), modelMetrics);
+
+        if (sharedTreeModelAttributes.getTrainingMetrics() != null) {
+            _training_metrics = (ModelMetrics) convertObjects(sharedTreeModelAttributes.getTrainingMetrics(), determineModelmetricsType(sharedTreeModelAttributes.getTrainingMetrics(), modelDescriptor));
+        }
+        if (sharedTreeModelAttributes.getValidationMetrics() != null) {
+            _validation_metrics = (ModelMetrics) convertObjects(sharedTreeModelAttributes.getValidationMetrics(), determineModelmetricsType(sharedTreeModelAttributes.getValidationMetrics(), modelDescriptor));
+        }
+        if (sharedTreeModelAttributes.getCrossValidationMetrics() != null) {
+            _cross_validation_metrics = (ModelMetrics) convertObjects(sharedTreeModelAttributes.getCrossValidationMetrics(), determineModelmetricsType(sharedTreeModelAttributes.getCrossValidationMetrics(), modelDescriptor));
+        }
     }
 
     private ModelMetrics determineModelmetricsType(final MojoModelMetrics mojoMetrics, final ModelDescriptor modelDescriptor) {

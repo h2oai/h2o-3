@@ -30,7 +30,7 @@ def mojo_model_test_multinomial():
     # GBM
     airlines = h2o.import_file(path=pyunit_utils.locate("smalldata/testng/airlines_train.csv"))
     gbm = H2OGradientBoostingEstimator(ntrees = 1)
-    gbm.train(x = ["Origin", "Distance"], y = "Dest", training_frame=airlines)
+    gbm.train(x = ["Origin", "Distance"], y = "Dest", training_frame=airlines, validation_frame=airlines)
     print(gbm)
     with Capturing() as original_output:
         gbm.show()
@@ -84,7 +84,7 @@ def mojo_model_test_binomial():
     # GBM
     airlines = h2o.import_file(path=pyunit_utils.locate("smalldata/testng/airlines_train.csv"))
     gbm = H2OGradientBoostingEstimator(ntrees = 1)
-    gbm.train(x = ["Origin", "Distance"], y = "IsDepDelayed", training_frame=airlines)
+    gbm.train(x = ["Origin", "Distance"], y = "IsDepDelayed", training_frame=airlines, validation_frame=airlines)
     print(gbm)
     with Capturing() as original_output:
         gbm.show()
@@ -134,7 +134,7 @@ def mojo_model_test_regression():
     # GBM
     airlines = h2o.import_file(path=pyunit_utils.locate("smalldata/testng/airlines_train.csv"))
     gbm = H2OGradientBoostingEstimator(ntrees=1)
-    gbm.train(x=["Origin", "IsDepDelayed"], y="Distance", training_frame=airlines)
+    gbm.train(x=["Origin", "IsDepDelayed"], y="Distance", training_frame=airlines, validation_frame=airlines)
     print(gbm)
     with Capturing() as original_output:
         gbm.show()

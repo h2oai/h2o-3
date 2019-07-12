@@ -9,20 +9,33 @@ import hex.genmodel.attributes.metrics.MojoModelMetricsBinomial;
 import hex.genmodel.attributes.metrics.MojoModelMetricsMultinomial;
 import hex.genmodel.attributes.metrics.MojoModelMetricsRegression;
 
-import java.util.Arrays;
 
 public class SharedTreeModelAttributes extends ModelAttributes {
 
   private final VariableImportances _variableImportances;
   private final MojoModelMetrics _trainingMetrics;
+  private final MojoModelMetrics _validation_metrics;
+  private final MojoModelMetrics _cross_validation_metrics;
 
   public <M extends SharedTreeMojoModel> SharedTreeModelAttributes(JsonObject modelJson, M model) {
     super(modelJson);
     _variableImportances = extractVariableImportances(modelJson, model);
-    final MojoModelMetrics mojoModelMetrics = determineModelMetricsType(model._category);
 
-    ModelJsonReader.fillObject(mojoModelMetrics, modelJson, "output.training_metrics");
-    _trainingMetrics = mojoModelMetrics;
+    if (ModelJsonReader.elementExists(modelJson, "output.training_metrics")) {
+      _trainingMetrics = determineModelMetricsType(model._category);
+      ModelJsonReader.fillObject(_trainingMetrics, modelJson, "output.training_metrics");
+    } else _trainingMetrics = null;
+
+    if (ModelJsonReader.elementExists(modelJson, "output.validation_metrics")) {
+      _validation_metrics = determineModelMetricsType(model._category);
+      ModelJsonReader.fillObject(_validation_metrics, modelJson, "output.validation_metrics");
+    } else _validation_metrics = null;
+
+    if (ModelJsonReader.elementExists(modelJson, "output.cross_validation_metrics")) {
+      _cross_validation_metrics = determineModelMetricsType(model._category);
+      ModelJsonReader.fillObject(_cross_validation_metrics, modelJson, "output.cross_validation_metrics");
+    } else _cross_validation_metrics = null;
+
   }
 
   private static MojoModelMetrics determineModelMetricsType(final ModelCategory modelCategory) {
@@ -73,5 +86,13 @@ public class SharedTreeModelAttributes extends ModelAttributes {
   
   public MojoModelMetrics getTrainingMetrics(){
     return _trainingMetrics;
+  }
+
+  public MojoModelMetrics getValidationMetrics() {
+    return _validation_metrics;
+  }
+
+  public MojoModelMetrics getCrossValidationMetrics() {
+    return _cross_validation_metrics;
   }
 }

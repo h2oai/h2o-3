@@ -96,15 +96,15 @@ public class ModelJsonReader {
         Objects.requireNonNull(object);
         Objects.requireNonNull(elementPath);
 
-        final JsonElement jsonSourceElement = findInJson(from, elementPath).getAsJsonObject();
+        final JsonElement jsonSourceObject = findInJson(from, elementPath);
 
-        if (jsonSourceElement instanceof JsonNull) {
+        if (jsonSourceObject instanceof JsonNull) {
             System.out.println(String.format("Element '%s' not found in JSON. Skipping. Object '%s' is not populated by values.",
                     elementPath, object.getClass().getName()));
             return;
         }
 
-        final JsonObject jsonSourceObj = jsonSourceElement.getAsJsonObject();
+        final JsonObject jsonSourceObj = jsonSourceObject.getAsJsonObject();
 
         final Class<?> aClass = object.getClass();
         final Field[] declaredFields = aClass.getFields();
@@ -165,7 +165,7 @@ public class ModelJsonReader {
      *                    E.g. 'model._output.variable_importances'.
      * @return JsonElement, if found. Otherwise {@link JsonNull}.
      */
-    private static JsonElement findInJson(JsonElement jsonElement, String jsonPath) {
+    private static JsonElement findInJson(final JsonElement jsonElement, final String jsonPath) {
 
         final String[] route = JSON_PATH_PATTERN.split(jsonPath);
         JsonElement result = jsonElement;
@@ -189,5 +189,17 @@ public class ModelJsonReader {
         }
 
         return result;
+    }
+
+    /**
+     *
+     * @param jsonElement A (potentially complex) element to search in
+     * @param jsonPath    Path in the given JSON to the desired table. Levels are dot-separated.
+     *                    E.g. 'model._output.variable_importances'.
+     * @return True if the element exists under the given path in the target JSON, otherwise false
+     */
+    public static boolean elementExists(JsonElement jsonElement, String jsonPath){
+        final boolean isEmpty = findInJson(jsonElement, jsonPath) instanceof JsonNull;
+        return !isEmpty;
     }
 }
