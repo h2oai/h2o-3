@@ -111,6 +111,7 @@ setClass("Keyed", contains="VIRTUAL")
 setGeneric("h2o.keyof", function(object) {
   standardGeneric("h2o.keyof")
 })
+#' @rdname h2o.keyof
 setMethod("h2o.keyof", signature(object = "Keyed"), function(object) {
   stop("`keyof` not implemented for this object type.")
 })
@@ -142,6 +143,7 @@ setClass("H2OModel",
   new(Class, model_id=model_id, ...)
 }
 
+#' @rdname h2o.keyof
 setMethod("h2o.keyof", signature("H2OModel"), function(object) object@model_id)
 
 #' @rdname H2OModel-class
@@ -836,6 +838,7 @@ setMethod("summary", "H2OGrid",
 #'
 #' @export
 setClass("H2OFrame", contains = c("Keyed", "environment"))
+#' @rdname h2o.keyof
 setMethod("h2o.keyof", signature("H2OFrame"), function(object) attr(object, "id"))
 
 #'
@@ -850,4 +853,5 @@ setClass("H2OAutoML", slots = c(project_name = "character",
                                 event_log = "H2OFrame",
                                 training_info = "list"),
                       contains = "Keyed")
+#' @rdname h2o.keyof
 setMethod("h2o.keyof", signature("H2OAutoML"), function(object) object@project_name)
