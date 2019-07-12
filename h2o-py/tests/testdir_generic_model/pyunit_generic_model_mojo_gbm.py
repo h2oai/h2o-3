@@ -75,9 +75,7 @@ def mojo_model_test_multinomial():
 def compare_binomial_output(original, generic):
     # The table from the MOJO uses 0/1 instead of YES/NO, which is the only difference. Values must be the same
     original = original[original.find("'Model Summary: '"):].replace('ModelMetricsBinomial: gbm','')\
-        .replace("YES", '1  ')\ 
-        .replace("NO", '0 ')\
-        .strip()
+        .replace("YES", '1  ').replace("NO", '0 ').strip()
     generic = generic[generic.find("'Model Summary: '"):].replace('ModelMetricsBinomialGeneric: generic', '').strip()
     assert generic == original
     
@@ -129,6 +127,8 @@ def mojo_model_test_binomial():
     
     
 if __name__ == "__main__":
+    pyunit_utils.standalone_test(mojo_model_test_multinomial)
     pyunit_utils.standalone_test(mojo_model_test_binomial)
 else:
     mojo_model_test_multinomial()
+    mojo_model_test_binomial()
