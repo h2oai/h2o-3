@@ -185,7 +185,7 @@ public class GenericModelOutput extends Model.Output {
                 table.set(j, i, convertedTable.getCell(i,j));
             }
         }
-        
-                                           return table;
+
+        return table;
     }
 }
