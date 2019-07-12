@@ -214,10 +214,9 @@ Scoring Server on AWS
 ~~~~~~~~~~~~~~~~~~~~~
 You can deploy a RESTful server on AWS, using the marketplace AMI (H2O Inference server - Hourly). Transfer the
 MOJO file into the /tmp folder of this instance before launching. If your MOJO is in S3, assign a role that provides
-S3 access to the instance. You could use this "userdata" to transfer the file
+S3 access to the instance. You could use the following bash script as "userdata" to transfer your MOJO into the instance. 
 
-.. code::bash
-
+.. code::
    #!/bin/bash
    export mojofile="s3://yourbucket/yourmojo.zip"
    aws s3 cp $mojo /tmp/pipeline.mojo
@@ -225,7 +224,6 @@ S3 access to the instance. You could use this "userdata" to transfer the file
 Once this instance has launched, you can make real time inference using this command. Remember to change the ip address, and input data is provided through the "row" parameter in the URL.
 
 .. code::
-
 	  curl "http://<yourIP>:8080/model?type=1&row=2000,2000"
 
 
