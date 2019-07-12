@@ -30,27 +30,27 @@ test.jira.pubdev5789 <- function() {
   )))
 
   # docker run -it --rm java:7-jdk-alpine java -version
-  expect_null(.h2o.check_java_version(c(
-  'java version "1.7.0_121"',
+  expect_equal('Your java is not supported: java version "1.7.0_121"', .h2o.check_java_version(c(
+    'java version "1.7.0_121"',
     'OpenJDK Runtime Environment (IcedTea 2.6.8) (Alpine 7.121.2.6.8-r0)',
     'OpenJDK 64-Bit Server VM (build 24.121-b00, mixed mode)'
   )))
 
-  ###### Versions that must pass  ######
-
   # docker run -it --rm java:7-jdk java -version
-  expect_null(.h2o.check_java_version(c(
+  expect_equal('Your java is not supported: java version "1.7.0_111"', .h2o.check_java_version(c(
     'java version "1.7.0_111"',
     'OpenJDK Runtime Environment (IcedTea 2.6.7) (7u111-2.6.7-2~deb8u1)',
     'OpenJDK 64-Bit Server VM (build 24.111-b01, mixed mode)'
   )))
 
   # docker run -it --rm java:openjdk-7-jdk-alpine java -version
-  expect_null(.h2o.check_java_version(c(
+  expect_equal('Your java is not supported: java version "1.7.0_121"', .h2o.check_java_version(c(
     'java version "1.7.0_121"',
     'OpenJDK Runtime Environment (IcedTea 2.6.8) (Alpine 7.121.2.6.8-r0)',
     'OpenJDK 64-Bit Server VM (build 24.121-b00, mixed mode)'
   )))
+
+  ###### Versions that must pass  ######
 
   # oracle jdk 8
   expect_null(.h2o.check_java_version(c(
