@@ -583,7 +583,7 @@ public class AutoMLTest extends water.TestUtil {
       }
     } finally {
       // Cleanup
-      if(aml!=null) aml.deleteWithChildren();
+      if(aml!=null) aml.delete();
       if(fr != null) fr.delete();
     }
   }
