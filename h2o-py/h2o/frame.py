@@ -52,11 +52,11 @@ class H2OFrame(Keyed):
         - None: create an empty H2OFrame
         - A list/tuple of strings or numbers: create a single-column H2OFrame containing the contents of this list.
         - A dictionary of ``{name: list}`` pairs: create an H2OFrame with multiple columns, each column having the
-            provided ``name`` and contents from ``list``. If the source dictionary is not an OrderedDict, then the
-            columns in the H2OFrame may appear shuffled.
+          provided ``name`` and contents from ``list``. If the source dictionary is not an OrderedDict, then the
+          columns in the H2OFrame may appear shuffled.
         - A list of lists of strings/numbers: construct an H2OFrame from a rectangular table of values, with inner
-            lists treated as rows of the table. I.e. ``H2OFrame([[1, 'a'], [2, 'b'], [3, 'c']])`` will create a
-            frame with 3 rows and 2 columns, one numeric and one string.
+          lists treated as rows of the table. I.e. ``H2OFrame([[1, 'a'], [2, 'b'], [3, 'c']])`` will create a
+          frame with 3 rows and 2 columns, one numeric and one string.
         - A Pandas dataframe, or a Numpy ndarray: create a matching H2OFrame.
         - A Scipy sparse matrix: create a matching sparse H2OFrame.
 
@@ -73,6 +73,11 @@ class H2OFrame(Keyed):
         be given on a per-column basis, either as a list-of-lists, or as a dictionary {column name: list of nas}.
     :param str destination_frame: (internal) name of the target DKV key in the H2O backend.
     :param str separator: (deprecated)
+
+    :example:
+    >>> python_obj = [1, 2, 2.5, -100.9, 0]
+    >>> frame = h2o.H2OFrame(python_obj)
+    >>> pyunit_utils.check_dims_values(python_obj, the_frame, rows=5, cols=1)
     """
 
     # Temp flag: set this to false for now if encountering path conversion/expansion issues when import files to remote server
