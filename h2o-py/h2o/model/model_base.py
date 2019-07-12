@@ -1112,11 +1112,12 @@ class ModelBase(backwards_compatible(Keyed)):
             if num_2dpdp>0: # 2d pdp requested
                 axes3D = _get_mplot3d_pyplot("2D partial plots")
                 cm = _get_matplotlib_cm("2D partial plots")
-
+            figPlotted = 0  # indicated number of figures plotted
             for i, pp in enumerate(pps):
                 if (i >= num_1dpdp): # plot 2D pdp
                     if (axes3D==None) or (cm==None) or (plt==None):    # quit if cannot find toolbox
                         break
+                    figPlotted = 1  # if a figure is plotted, change this to 1
                     ax = fig.add_subplot(gxs[i], projection='3d')
                     colPairs = col_pairs_2dpdp[i-num_1dpdp]
                     x = self.__grabValues(pp, 0, data, colPairs[0], ax) # change to numpy 2d_array
@@ -1140,6 +1141,7 @@ class ModelBase(backwards_compatible(Keyed)):
                     titles = '2D partial dependence plot for '+colPairs[0] + ' and '+colPairs[1]
                     ax.set_title(titles)
                 else:  # plot 1D pdp
+                    figPlotted = 1  # if a figure is plotted, change this to 1
                     col = cols[i]
                     cat = data[col].isfactor()[0]
                     upper = [a + b for a, b in zip(pp[1], pp[2]) ]  # pp[1] is mean, pp[2] is std
@@ -1147,11 +1149,16 @@ class ModelBase(backwards_compatible(Keyed)):
                     axs = fig.add_subplot(gxs[i])
                     self.__setAxs1D(axs, upper, lower, plot_stddev, cat, pp, 0, col)  # setup graph, axis, labels and ...
 
-            if totFig > 1:
+            if figPlotted > 0:
                 fig.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
-            if(save_to_file is not None):
+            else:
+                print("No partial plot is generated.  You may be missing toolboxes like mpl_toolkits.mplot3d, "
+                      "matplotlib")
+            if (save_to_file is not None) and (figPlotted > 0):
                 plt.savefig(save_to_file)
-
+            else:
+                print("No partial plot is generated and saved.  You may be missing toolboxes like "
+                      "mpl_toolkits.mplot3d, matplotlib")
         return pps
     
     # change x, y, z to be 2-D numpy arrays in order to plot it.
