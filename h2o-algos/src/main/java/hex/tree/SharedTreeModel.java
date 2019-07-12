@@ -569,7 +569,7 @@ public abstract class SharedTreeModel<
     M newModel = IcedUtils.deepCopy(self());
     newModel._key = result;
     // Do not clone model metrics
-    newModel._output.clearModelMetrics();
+    newModel._output.clearModelMetrics(false);
     newModel._output._training_metrics = null;
     newModel._output._validation_metrics = null;
     // Clone trees

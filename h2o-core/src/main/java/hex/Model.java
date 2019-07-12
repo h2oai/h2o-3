@@ -731,7 +731,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     /** List of all the associated ModelMetrics objects, so we can delete them
      *  when we delete this model. */
-    Key[] _model_metrics = new Key[0];
+    Key<ModelMetrics>[] _model_metrics = new Key[0];
 
     /** Job info: final status (canceled, crashed), build time */
     public Job _job;
@@ -834,7 +834,26 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     public boolean isAutoencoder() { return false; } // Override in DeepLearning and so on.
 
-    public synchronized void clearModelMetrics() { _model_metrics = new Key[0]; }
+    public synchronized Key<ModelMetrics>[] clearModelMetrics(boolean keepModelTrainingMetrics) {
+      Key<ModelMetrics>[] removed;
+      if (keepModelTrainingMetrics) {
+        Key<ModelMetrics>[] kept = new Key[0];
+        if (_training_metrics != null) kept = ArrayUtils.append(kept, _training_metrics._key);
+        if (_validation_metrics != null) kept = ArrayUtils.append(kept, _validation_metrics._key);
+        if (_cross_validation_metrics != null) kept = ArrayUtils.append(kept, _cross_validation_metrics._key);
+
+        removed = new Key[0];
+        for (Key<ModelMetrics> k : _model_metrics) {
+          if (!ArrayUtils.contains(kept, k))
+            removed = ArrayUtils.append(removed, k);
+        }
+        _model_metrics = kept;
+      } else {
+        removed = Arrays.copyOf(_model_metrics, _model_metrics.length);
+        _model_metrics = new Key[0];
+      }
+      return removed;
+    }
 
     public synchronized Key<ModelMetrics>[] getModelMetrics() { return Arrays.copyOf(_model_metrics, _model_metrics.length); }
 
@@ -2343,7 +2362,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    */
   public void deleteCrossValidationModels() {
     if (_output._cross_validation_models != null) {
-      Log.info("Cleaning up CV Models for " + this._key.toString());
+      Log.info("Cleaning up CV Models for " + _key);
       int count = deleteAll(_output._cross_validation_models);
       Log.info(count+" CV models were removed");
     }
@@ -2354,13 +2373,19 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    */
   public void deleteCrossValidationPreds() {
     if (_output._cross_validation_predictions != null) {
-      Log.info("Cleaning up CV Predictions for " + this._key.toString());
+      Log.info("Cleaning up CV Predictions for " + _key);
       int count = deleteAll(_output._cross_validation_predictions);
       Log.info(count+" CV predictions were removed");
     }
 
     if (_output._cross_validation_holdout_predictions_frame_id != null) {
       _output._cross_validation_holdout_predictions_frame_id.remove();
+    }
+  }
+
+  public void deleteCrossValidationFoldAssignment() {
+    if (_output._cross_validation_fold_assignment_frame_id != null) {
+      _output._cross_validation_fold_assignment_frame_id.remove();
     }
   }
 

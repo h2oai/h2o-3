@@ -50,7 +50,7 @@ public class AutoMLTest extends water.TestUtil {
       assertEquals(3+2, aml.leaderboard().getModelCount());
     } finally {
       // Cleanup
-      if(aml!=null) aml.deleteWithChildren();
+      if(aml!=null) aml.delete();
       if(fr != null) fr.delete();
     }
   }
@@ -82,7 +82,7 @@ public class AutoMLTest extends water.TestUtil {
       assertEquals(3, aml.leaderboard().getModelCount());
     } finally {
       // Cleanup
-      if(aml!=null) aml.deleteWithChildren();
+      if(aml!=null) aml.delete();
       if(fr != null) fr.delete();
     }
   }
@@ -128,7 +128,6 @@ public class AutoMLTest extends water.TestUtil {
     } finally {
       // Cleanup
       for (Lockable l: deletables) {
-        if (l instanceof AutoML) ((AutoML)l).deleteWithChildren();
         l.delete();
       }
     }
@@ -160,7 +159,7 @@ public class AutoMLTest extends water.TestUtil {
       // no assertion, we just want to check leaked keys
     } finally {
       // Cleanup
-      if(aml!=null) aml.deleteWithChildren();
+      if(aml!=null) aml.delete();
       if(fr != null) fr.delete();
     }
   }
@@ -186,7 +185,7 @@ public class AutoMLTest extends water.TestUtil {
       // no assertion, we just want to check leaked keys
     } finally {
       // Cleanup
-      if(aml!=null) aml.deleteWithChildren();
+      if(aml!=null) aml.delete();
       if(fr != null) fr.delete();
     }
   }
@@ -224,7 +223,7 @@ public class AutoMLTest extends water.TestUtil {
       }
     } finally {
       // Cleanup
-      if(aml!=null) aml.deleteWithChildren();
+      if(aml!=null) aml.delete();
       if(fr != null) fr.delete();
     }
   }
@@ -252,12 +251,8 @@ public class AutoMLTest extends water.TestUtil {
       assertNotNull(leader._output._cross_validation_fold_assignment_frame_id);
 
     } finally {
-      if(aml!=null) aml.deleteWithChildren();
+      if(aml!=null) aml.delete();
       if(fr != null) fr.remove();
-      if(leader!=null) {
-        Frame cvFoldAssignmentFrame = DKV.getGet(leader._output._cross_validation_fold_assignment_frame_id);
-        cvFoldAssignmentFrame.delete();
-      }
     }
   }
 
@@ -283,7 +278,7 @@ public class AutoMLTest extends water.TestUtil {
       assertNull(leader._output._cross_validation_fold_assignment_frame_id);
 
     } finally {
-      if(aml!=null) aml.deleteWithChildren();
+      if(aml!=null) aml.delete();
       if(fr != null) fr.delete();
     }
   }
@@ -323,7 +318,7 @@ public class AutoMLTest extends water.TestUtil {
       assertEquals(workPlan.remainingWork(), maxTotalWork - defaultAllocs.get(Algo.DeepLearning) - defaultAllocs.get(Algo.DRF));
 
     } finally {
-      if (aml != null) aml.deleteWithChildren();
+      if (aml != null) aml.delete();
       if (fr != null) fr.remove();
     }
   }
@@ -349,7 +344,7 @@ public class AutoMLTest extends water.TestUtil {
       assertEquals(0.1, (double)aml.getValidationFrame().numRows() / fr.numRows(), tolerance);
       assertEquals(test.numRows(), aml.getLeaderboardFrame().numRows());
     } finally {
-      if (aml != null) aml.deleteWithChildren();
+      if (aml != null) aml.delete();
       if (fr != null) fr.remove();
       if (test != null) test.remove();
     }
@@ -376,7 +371,7 @@ public class AutoMLTest extends water.TestUtil {
       assertEquals(test.numRows(), aml.getValidationFrame().numRows());
       assertEquals(0.1, (double)aml.getLeaderboardFrame().numRows() / fr.numRows(), tolerance);
     } finally {
-      if (aml != null) aml.deleteWithChildren();
+      if (aml != null) aml.delete();
       if (fr != null) fr.remove();
       if (test != null) test.remove();
     }
@@ -402,7 +397,7 @@ public class AutoMLTest extends water.TestUtil {
       assertEquals(0.1, (double)aml.getValidationFrame().numRows() / fr.numRows(), tolerance);
       assertEquals(0.1, (double)aml.getLeaderboardFrame().numRows() / fr.numRows(), tolerance);
     } finally {
-      if (aml != null) aml.deleteWithChildren();
+      if (aml != null) aml.delete();
       if (fr != null) fr.remove();
     }
   }
@@ -425,7 +420,7 @@ public class AutoMLTest extends water.TestUtil {
       assertNull(aml.getValidationFrame());
       assertNull(aml.getLeaderboardFrame());
     } finally {
-      if (aml != null) aml.deleteWithChildren();
+      if (aml != null) aml.delete();
       if (fr != null) fr.remove();
     }
   }
@@ -454,7 +449,7 @@ public class AutoMLTest extends water.TestUtil {
         }
       }
     } finally {
-      if (aml != null) aml.deleteWithChildren();
+      if (aml != null) aml.delete();
       if (fr != null) fr.remove();
     }
   }
@@ -488,7 +483,7 @@ public class AutoMLTest extends water.TestUtil {
         }
       }
     } finally {
-      if (aml != null) aml.deleteWithChildren();
+      if (aml != null) aml.delete();
       if (fr != null) fr.remove();
     }
   }
@@ -510,7 +505,7 @@ public class AutoMLTest extends water.TestUtil {
         assertTrue(e.getMessage().startsWith("Parameters `exclude_algos` and `include_algos` are mutually exclusive"));
       }
     } finally {
-      if (aml != null) aml.deleteWithChildren();
+      if (aml != null) aml.delete();
       if (fr != null) fr.remove();
     }
   }

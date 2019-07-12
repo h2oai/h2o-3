@@ -180,7 +180,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
     Key<Frame> predsKey = buildPredsKey(model, frame);
     Frame preds = DKV.getGet(predsKey);
     if (preds == null) {
-      preds =  model.score(frame, predsKey.toString());
+      preds =  model.score(frame, predsKey.toString(), null, false);  // no need for metrics here (leaks in client mode)
       Scope.untrack(preds.keysList());
     }
     if (_model._output._base_model_predictions_keys == null)
