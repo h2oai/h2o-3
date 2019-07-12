@@ -97,6 +97,7 @@ h2o.removeAll <- function(timeout_secs=0, retained_elements = c()) {
 #' Remove the h2o Big Data object(s) having the key name(s) from ids.
 #'
 #' @param ids The object or hex key associated with the object to be removed or a vector/list of those things.
+#' @param cascade Boolean, if set to TRUE (default), the object dependencies (e.g. submodels) are also removed.
 #' @seealso \code{\link{h2o.assign}}, \code{\link{h2o.ls}}
 #' @export
 h2o.rm <- function(ids, cascade=TRUE) {

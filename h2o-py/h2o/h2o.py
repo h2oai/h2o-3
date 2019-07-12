@@ -910,6 +910,7 @@ def remove(x, cascade=True):
 
     :param x: H2OFrame, H2OEstimator, or string, or a list of those things: the object(s) or unique id(s)
         pointing to the object(s) to be removed.
+    :param cascade: boolean, if set to TRUE (default), the object dependencies (e.g. submodels) are also removed.
     """
     item_type = U(str, Keyed)
     assert_is_type(x, item_type, [item_type])
