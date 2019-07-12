@@ -13,52 +13,13 @@ import hex.genmodel.attributes.metrics.MojoModelMetricsRegression;
 public class SharedTreeModelAttributes extends ModelAttributes {
 
   private final VariableImportances _variableImportances;
-  private final MojoModelMetrics _trainingMetrics;
-  private final MojoModelMetrics _validation_metrics;
-  private final MojoModelMetrics _cross_validation_metrics;
 
   public <M extends SharedTreeMojoModel> SharedTreeModelAttributes(JsonObject modelJson, M model) {
-    super(modelJson);
+    super(model, modelJson);
     _variableImportances = extractVariableImportances(modelJson, model);
 
-    if (ModelJsonReader.elementExists(modelJson, "output.training_metrics")) {
-      _trainingMetrics = determineModelMetricsType(model._category);
-      ModelJsonReader.fillObject(_trainingMetrics, modelJson, "output.training_metrics");
-    } else _trainingMetrics = null;
-
-    if (ModelJsonReader.elementExists(modelJson, "output.validation_metrics")) {
-      _validation_metrics = determineModelMetricsType(model._category);
-      ModelJsonReader.fillObject(_validation_metrics, modelJson, "output.validation_metrics");
-    } else _validation_metrics = null;
-
-    if (ModelJsonReader.elementExists(modelJson, "output.cross_validation_metrics")) {
-      _cross_validation_metrics = determineModelMetricsType(model._category);
-      ModelJsonReader.fillObject(_cross_validation_metrics, modelJson, "output.cross_validation_metrics");
-    } else _cross_validation_metrics = null;
-
   }
 
-  private static MojoModelMetrics determineModelMetricsType(final ModelCategory modelCategory) {
-    switch (modelCategory) {
-      case Unknown:
-        return new MojoModelMetrics();
-      case Binomial:
-        return new MojoModelMetricsBinomial();
-      case Multinomial:
-        return new MojoModelMetricsMultinomial();
-      case Regression:
-        return new MojoModelMetricsRegression();
-      case Ordinal:
-      case Clustering:
-      case AutoEncoder:
-      case DimReduction:
-      case WordEmbedding:
-      case CoxPH:
-      case AnomalyDetection:
-      default:
-        return new MojoModelMetrics(); // Basic model metrics if nothing else is available
-    }
-  }
 
   private VariableImportances extractVariableImportances(final JsonObject modelJson, final MojoModel model) {
     final Table table = ModelJsonReader.readTable(modelJson, "output.variable_importances");
@@ -84,15 +45,4 @@ public class SharedTreeModelAttributes extends ModelAttributes {
     return _variableImportances;
   }
   
-  public MojoModelMetrics getTrainingMetrics(){
-    return _trainingMetrics;
-  }
-
-  public MojoModelMetrics getValidationMetrics() {
-    return _validation_metrics;
-  }
-
-  public MojoModelMetrics getCrossValidationMetrics() {
-    return _cross_validation_metrics;
-  }
 }

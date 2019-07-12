@@ -192,7 +192,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
 
   protected ModelAttributes readModelSpecificAttributes() {
     final JsonObject modelJson = ModelJsonReader.parseModelJson(_reader);
-    return new ModelAttributes(modelJson);
+    return new ModelAttributes(_model, modelJson);
   }
 
   private static Map<String, Object> parseModelInfo(MojoReaderBackend reader) throws IOException {

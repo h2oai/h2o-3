@@ -34,6 +34,7 @@ public class GenericModelOutput extends Model.Output {
         _modelCategory = modelDescriptor.getModelCategory();
         _nfeatures = modelDescriptor.nfeatures();
         _model_summary = convertTable(modelAttributes.getModelSummary());
+        _cross_validation_metrics_summary = convertTable(modelAttributes.getCrossValidationMetricsSummary());
 
         if (modelAttributes instanceof SharedTreeModelAttributes) {
             fillSharedTreeModelAttributes((SharedTreeModelAttributes) modelAttributes, modelDescriptor);
@@ -61,6 +62,7 @@ public class GenericModelOutput extends Model.Output {
         if (sharedTreeModelAttributes.getCrossValidationMetrics() != null) {
             _cross_validation_metrics = (ModelMetrics) convertObjects(sharedTreeModelAttributes.getCrossValidationMetrics(), determineModelmetricsType(sharedTreeModelAttributes.getCrossValidationMetrics(), modelDescriptor));
         }
+        
     }
 
     private ModelMetrics determineModelmetricsType(final MojoModelMetrics mojoMetrics, final ModelDescriptor modelDescriptor) {
