@@ -58,6 +58,19 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Id of the training data frame.
 
         Type: ``H2OFrame``.
+
+        :examples:
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234)
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.auc(valid=True)
         """
         return self._parms.get("training_frame")
 
@@ -72,6 +85,19 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Id of the validation data frame.
 
         Type: ``H2OFrame``.
+
+        :examples:
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234)
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.auc(valid=True)
         """
         return self._parms.get("validation_frame")
 
@@ -199,6 +225,21 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Whether to score during each iteration of model training.
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(score_each_iteration = True,
+        ...                                         ntrees = 55,
+        ...                                         seed = 1234)
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.scoring_history()
         """
         return self._parms.get("score_each_iteration")
 
@@ -214,6 +255,20 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Score the model after every so many trees. Disabled if set to 0.
 
         Type: ``int``  (default: ``0``).
+
+        :examples:
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(score_tree_interval = 5,
+        ...                                         seed = 1234)
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.scoring_history()
         """
         return self._parms.get("score_tree_interval")
 
@@ -403,6 +458,20 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
         Type: ``str``.
+
+        :examples:
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234)
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid,
+        ...                weights_column = "weight")
+        >>> cars_gbm.auc(valid=True)
         """
         return self._parms.get("weights_column")
 
@@ -773,6 +842,27 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
 
         Type: ``int``  (default: ``0``).
+
+        :examples:
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"]= airlines["Year"].asfactor()
+        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+        >>> response = "IsDepDelayed"
+        >>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+        >>> airlines_gbm = H2OGradientBoostingEstimator(stopping_metric = "auc",
+        ...                                             stopping_rounds = 3,
+        ...                                             stopping_tolerance = 1e-2,
+        ...                                             seed =1234)
+        >>> airlines_gbm.train(x = predictors,
+        ...                    y = response,
+        ...                    training_frame = train,
+        ...                    validation_frame = valid)
+        >>> airlines_gbm.auc(valid=True)
         """
         return self._parms.get("stopping_rounds")
 
@@ -792,6 +882,27 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         One of: ``"auto"``, ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``,
         ``"lift_top_group"``, ``"misclassification"``, ``"mean_per_class_error"``, ``"custom"``, ``"custom_increasing"``
         (default: ``"auto"``).
+
+        :examples:
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"]= airlines["Year"].asfactor()
+        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+        >>> response = "IsDepDelayed"
+        >>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+        >>> airlines_gbm = H2OGradientBoostingEstimator(stopping_metric = "auc",
+        ...                                             stopping_rounds = 3,
+        ...                                             stopping_tolerance = 1e-2,
+        ...                                             seed =1234)
+        >>> airlines_gbm.train(x = predictors,
+        ...                    y = response,
+        ...                    training_frame = train,
+        ...                    validation_frame = valid)
+        >>> airlines_gbm.auc(valid=True) 
         """
         return self._parms.get("stopping_metric")
 
@@ -807,6 +918,27 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
 
         Type: ``float``  (default: ``0.001``).
+
+        :examples:
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"]= airlines["Year"].asfactor()
+        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+        >>> response = "IsDepDelayed"
+        >>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+        >>> airlines_gbm = H2OGradientBoostingEstimator(stopping_metric = "auc",
+        ...                                             stopping_rounds = 3,
+        ...                                             stopping_tolerance = 1e-2,
+        ...                                             seed =1234)
+        >>> airlines_gbm.train(x = predictors,
+        ...                    y = response,
+        ...                    training_frame = train,
+        ...                    validation_frame = valid)
+        >>> airlines_gbm.auc(valid=True)
         """
         return self._parms.get("stopping_tolerance")
 
@@ -853,6 +985,32 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Seed for pseudo random number generator (if applicable)
 
         Type: ``int``  (default: ``-1``).
+
+        :examples:
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"]= airlines["Year"].asfactor()
+        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+        >>> response = "IsDepDelayed"
+        >>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+        >>> gbm_w_seed_1 = H2OGradientBoostingEstimator(col_sample_rate = .7, seed = 1234)
+        >>> gbm_w_seed_1.train(x = predictors,
+        ...                    y = response,
+        ...                    training_frame = train,
+        ...                    validation_frame = valid)
+        >>> gbm_w_seed_2 = H2OGradientBoostingEstimator(col_sample_rate = .7,
+        ...                                             seed = 1234)
+        >>> gbm_w_seed_2.train(x = predictors,
+        ...                    y = response,
+        ...                    training_frame = train,
+        ...                    validation_frame = valid)
+        >>> print('auc for the 1st model built with a seed:', gbm_w_seed_1.auc(valid=True))
+        >>> print('auc for the 2nd model built with a seed:', gbm_w_seed_1.auc(valid=True))
+
         """
         return self._parms.get("seed")
 
@@ -994,6 +1152,21 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Desired quantile for Quantile regression, must be between 0 and 1.
 
         Type: ``float``  (default: ``0.5``).
+
+        :examples:
+        >>> boston = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
+        >>> predictors = boston.columns[:-1]
+        >>> response = "medv"
+        >>> boston['chas'] = boston['chas'].asfactor()
+        >>> train, valid = boston.split_frame(ratios = [.8], seed = 1234)
+        >>> boston_gbm = H2OGradientBoostingEstimator(distribution = "quantile",
+        ...                                           quantile_alpha = .8,
+        ...                                           seed = 1234)
+        >>> boston_gbm.train(x = predictors,
+        ...                  y = response,
+        ...                  training_frame = train,
+        ...                  validation_frame = valid)
+        >>> print(boston_gbm.mse(valid=True))
         """
         return self._parms.get("quantile_alpha")
 
@@ -1009,6 +1182,22 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Tweedie power for Tweedie regression, must be between 1 and 2.
 
         Type: ``float``  (default: ``1.5``).
+
+        :examples:
+        >>> insurance = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/insurance.csv")
+        >>> predictors = insurance.columns[0:4]
+        >>> response = 'Claims'
+        >>> insurance['Group'] = insurance['Group'].asfactor()
+        >>> insurance['Age'] = insurance['Age'].asfactor()
+        >>> train, valid = insurance.split_frame(ratios = [.8], seed = 1234)
+        >>> insurance_gbm = H2OGradientBoostingEstimator(distribution="tweedie",
+        ...                                              tweedie_power = 1.2,
+        ...                                              seed =1234)
+        >>> insurance_gbm.train(x = predictors,
+        ...                     y = response,
+        ...                     training_frame = train,
+        ...                     validation_frame = valid)
+        >>> print(insurance_gbm.mse(valid=True))
         """
         return self._parms.get("tweedie_power")
 
@@ -1097,6 +1286,25 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Row sample rate per tree (from 0.0 to 1.0)
 
         Type: ``float``  (default: ``1``).
+
+        :examples:
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"]= airlines["Year"].asfactor()
+        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+        >>> response = "IsDepDelayed"
+        >>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+        >>> airlines_gbm = H2OGradientBoostingEstimator(sample_rate = .7,
+        ...                                             seed =1234)
+        >>> airlines_gbm.train(x = predictors,
+        ...                    y = response,
+        ...                    training_frame = train,
+        ...                    validation_frame = valid)
+        >>> print(airlines_gbm.auc(valid=True))
         """
         return self._parms.get("sample_rate")
 
@@ -1112,6 +1320,22 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         A list of row sample rates per class (relative fraction for each class, from 0.0 to 1.0), for each tree
 
         Type: ``List[float]``.
+
+        :examples:
+        >>> covtype = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
+        >>> covtype[54] = covtype[54].asfactor()
+        >>> predictors = covtype.columns[0:54]
+        >>> response = 'C55'
+        >>> train, valid = covtype.split_frame(ratios = [.8], seed = 1234)
+        >>> print(train[response].table())
+        >>> rate_per_class_list = [1, .4, 1, 1, 1, 1, 1]
+        >>> cov_gbm = H2OGradientBoostingEstimator(sample_rate_per_class = rate_per_class_list,
+        ...                                        seed = 1234)
+        >>> cov_gbm.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> print('logloss', cov_gbm.logloss(valid = True))
         """
         return self._parms.get("sample_rate_per_class")
 
@@ -1323,6 +1547,21 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node predictions
 
         Type: ``float``  (default: ``0``).
+
+        :examples:
+        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+        >>> titanic['survived'] = titanic['survived'].asfactor()
+        >>> predictors = titanic.columns
+        >>> del predictors[1:3]
+        >>> response = 'survived'
+        >>> train, valid = titanic.split_frame(ratios = [.8], seed = 1234)
+        >>> titanic_gbm = H2OGradientBoostingEstimator(pred_noise_bandwidth = 0.1,
+        ...                                            seed = 1234)
+        >>> titanic_gbm.train(x = predictors,
+        ...                   y = response,
+        ...                   training_frame = train,
+        ...                   validation_frame = valid)
+        >>> print(titanic_gbm.auc(valid = True))
         """
         return self._parms.get("pred_noise_bandwidth")
 
