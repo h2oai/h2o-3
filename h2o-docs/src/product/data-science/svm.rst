@@ -1,6 +1,8 @@
 Support Vector Machine (SVM)
 ----------------------------
 
+**Note**: This is an alpha version of the documentation.
+
 Introduction
 ~~~~~~~~~~~~
 
