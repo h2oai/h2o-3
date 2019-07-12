@@ -1,8 +1,6 @@
 import sys
-import os
 sys.path.insert(1,"../../")
 import h2o
-import tempfile
 from tests import pyunit_utils
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 
