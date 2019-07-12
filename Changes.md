@@ -11,7 +11,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/1/index.ht
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5595'>PUBDEV-5595</a>] - Removed an unncessary warning in predict function that occcured when a test set was missing `fold_column`.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6359'>PUBDEV-6359</a>] - AutoML no longer continues training models after a job cancellation.
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6359'>PUBDEV-6359</a>] - AutoML no longer continues training models after a job cancellation. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6453'>PUBDEV-6453</a>] - Fixed an issue that caused h2o Docker image builds to fail.
 </li>
@@ -19,7 +19,17 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/1/index.ht
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6569'>PUBDEV-6569</a>] - AutoML uses a default value of 5 for `score_tree_interval` with all algorithms.
 </li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6576'>PUBDEV-6576</a>] - Fixed an issue that caused the Python client API to break when passing a frame to the constructor.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6601'>PUBDEV-6601</a>] - In Flow, you can now specify `blending_frrame`  and `max_runtime_per_model` when running AutoML.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6627'>PUBDEV-6627</a>] - Frame Summary is now available when running the Python client in Zeppelin.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6657'>PUBDEV-6657</a>] - Fixed an issue that caused      H2O.CLOUD._memary(idx).getTimestamp to return 0 rather than the timestamp of the remote node.
+</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6661'>PUBDEV-6661</a>] - Fixed a link function NPE in MOJOs.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6673'>PUBDEV-6673</a>] - Fixed the frame.tocsv signature. Instead of passing true, false, this now takes CSVStreamParams. (STILL OPEN)
 </li>
 </ul>
         
@@ -28,15 +38,13 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/1/index.ht
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4076'>PUBDEV-4076</a>] - Added support  for a custom Loss Metric in GBM.
 </li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6089'>PUBDEV-6089</a>] - When running AutoML in R or Python, and EventLog is now available. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6090'>PUBDEV-6090</a>] - When polling an AutoML run, an EventLog displays now rather than a progress bar. 
+</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6108'>PUBDEV-6108</a>] - CoxPH is now available in the Python client.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6134'>PUBDEV-6134</a>] - Added support for SVM in the h2o-3 R and Python clients.
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6213'>PUBDEV-6213</a>] - Implemented broadcast join for Target Encoding. (STILL OPEN)
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6214'>PUBDEV-6214</a>] -         Review Supporting Frequency Feature Importance for Isolation Forest (STILL OPEN)
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6255'>PUBDEV-6255</a>] - Added support for Target Encoding MOJOs. (STILL OPEN)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6492'>PUBDEV-6492</a>] - Added Isolation Forest to Flow.
 </li>
@@ -46,77 +54,72 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/1/index.ht
 </li>
 </ul>
     
-<h4>Story</h4>
-
-<ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6497'>PUBDEV-6497</a>] -         Make Target Encoding available in h2o-genmodel
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6499'>PUBDEV-6499</a>] -         Target Encoder Benchmarks
-</li>
-</ul>
-    
 <h4>Task</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6015'>PUBDEV-6015</a>] -         Deprecate support for Java 7
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6015'>PUBDEV-6015</a>] - Deprecated support for Java 7.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6485'>PUBDEV-6485</a>] -         Coordinate blog post for 3.26.0.1 release
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6611'>PUBDEV-6611</a>] - Fixed an issue that caused h2o.scale to corrupt the frame when run over a frame with categorical columns.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6611'>PUBDEV-6611</a>] -         h2o.scale corrupts frame when run over a frame with categorical columns
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6619'>PUBDEV-6619</a>] - Removed the Deep Water booklet from H2O-3 builds. 
 </li>
 </ul>
     
 <h4>Improvement</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6410'>PUBDEV-6410</a>] -         Add Early Stopping to Isolation Forest
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5316'>PUBDEV-5316</a>] - AutoML runtime information is now stored and available in an EventLog.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6436'>PUBDEV-6436</a>] -         Mojo import Flow functionality
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5885'>PUBDEV-5885</a>] - Users can now pass an ID to training_frame in h2o.StackedEnsemble.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6437'>PUBDEV-6437</a>] -         MOJO import - extract all metadata about models serialized in MOJO archives
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6410'>PUBDEV-6410</a>] - Added early stopping options to Isolation Forest.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6438'>PUBDEV-6438</a>] -         Add 2D Partial Dependence Plots
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6436'>PUBDEV-6436</a>] - In Flow, uploading a MOJO now also automatically creates a generic model from the MOJO. (STILL OPEN)
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6464'>PUBDEV-6464</a>] -         Add a warning when a user sets a parameter that will not create a reproable model
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6438'>PUBDEV-6438</a>] - Users can now build 2D Partial Dependence plots with the R and Python clients.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6482'>PUBDEV-6482</a>] -         GBM MOJO Import Support on New H2O-3 Versions
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6482'>PUBDEV-6482</a>] - When loading MOJOs that were trained on older versions of H2O-3 into newer versions of H2O-3, users can now access all the information that was saved in the model object and use the MOJO to score. (STILL OPEN)
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6506'>PUBDEV-6506</a>] -         Introduce warning when user is trying to get cross validation predictions from Stacked Ensemble model
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6543'>PUBDEV-6543</a>] - Users can now specify a `row_index` parameter when building PDPs. This allows partial dependence to be calculated for a row.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6543'>PUBDEV-6543</a>] -         Add row_index parameter to PDP
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6553'>PUBDEV-6553</a>] - Users can now specify a `row_index` parameter when building PDPs in Flow.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6553'>PUBDEV-6553</a>] -         Add row_index for PDP to H2O Flow
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6573'>PUBDEV-6573</a>] - Enabled Java scoring for XGBoost MOJOs.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6572'>PUBDEV-6572</a>] -         AutoML: disable default `max_runtime_secs`=1h if `max_models` is set &gt;0
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6590'>PUBDEV-6590</a>] - User can now delete an AutoML instance and all its dependencies from any client (including models and other dependencies). (STILL OPEN)
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6573'>PUBDEV-6573</a>] -         Enable Java scoring for XGBoost MOJOs
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6617'>PUBDEV-6617</a>] - h2o.mojo_predict_csv() and h2o.mojo_predict_pandas() now accept a setInvNumNA parameter.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6590'>PUBDEV-6590</a>] -         AutoML: support for AutoML deletion (including models and other dependencies) from clients and REST APIs
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6621'>PUBDEV-6621</a>] - Added support for TreeShap in DRF.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6621'>PUBDEV-6621</a>] -         Add TreeShap for DRF
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6633'>PUBDEV-6633</a>] - Added a `feature_frequencies` function in GBM, DRF, and IF, which retrieves the number of times a feature was used on a prediction path in a tree model.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6633'>PUBDEV-6633</a>] -         Add function to retrieve number of times a feature was used on a prediction path in a tree model
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6634'>PUBDEV-6634</a>] - Users can now retrieve variable split information in the Isolation Forest output.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6634'>PUBDEV-6634</a>] -         Isolation should provide information about splits
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6646'>PUBDEV-6646</a>] - Created a SharedTreeMojoModelWithContributions class, which provides a central location of contribs for DRF and GBM MOJO.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6642'>PUBDEV-6642</a>] -         Fix parameters listing for predict and predict_leaf_node_assignment in the Python documentation
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6646'>PUBDEV-6646</a>] -         Create SharedTreeMojoModelWithContributions class to have central location of contribs for DRF and GBM MOJO
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6647'>PUBDEV-6647</a>] -         ScoreContributionsTask should not be abstract
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6647'>PUBDEV-6647</a>] - ScoreContributionsTask is no longer abstract.
 </li>
 </ul>
                                                                                                 
 <h4>Docs</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6500'>PUBDEV-6500</a>] - Create initial version of SVM documentation (alph documentation).
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6452'>PUBDEV-6452</a>] - Clarified in the GLM docs that h2o-3 determines the values of alpha and theta by minimizing the negative log-likelihood plus the same Regularization Penalty. 
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6554'>PUBDEV-6554</a>] - Added `upload_custom_distribution` to the Parameters Appendix.
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6500'>PUBDEV-6500</a>] - Create initial, alpha version of SVM documentation.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6554'>PUBDEV-6554</a>] - Added `upload_custom_distribution` to the Parameters Appendix. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6604'>PUBDEV-6604</a>] - Removed note in XGBoost documentation indicating that "Multi-node support is currently available as a Beta feature."
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6608'>PUBDEV-6608</a>] - SVM R client documentation is now available.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6610'>PUBDEV-6610</a>] - Explained how the nthreads parameter can impact reproducibility.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6613'>PUBDEV-6613</a>] - Added stopping parameters to the Isolation Forest chapter.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6642'>PUBDEV-6642</a>] - Fixed the parameters listing display for predict and predict_leaf_node_assignment in the Python documentation.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6644'>PUBDEV-6644</a>] - DRF is now included in the list of supported algorithms for predict_contributions.
 </li>
@@ -132,17 +135,13 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/1/index.ht
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6656'>PUBDEV-6656</a>] - Improved GLM documentation by informing users that they can only specify a list in the GLM `interactions` parameter. 
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6660'>PUBDEV-6660</a>] - Updated Flow documentation to include Isolation Forest. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6660'>PUBDEV-6660</a>] - Updated Flow documentation to include Isolation Forest.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6663'>PUBDEV-6663</a>] - Improved the Python documentation for h2o.frame(). 
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6664'>PUBDEV-6664</a>] - Added examples to the TargetEncoding Python documentation. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6664'>PUBDEV-6664</a>] - Added examples to the TargetEncoding Python documentation.
 </li>
 </ul>
-
-
-
-
 
 
 ### Yates (3.24.0.5) - 6/18/2019
