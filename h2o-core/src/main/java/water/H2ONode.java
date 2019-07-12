@@ -38,8 +38,8 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   transient public long _last_heard_from; // Time in msec since we last heard from this Node
   transient public volatile HeartBeat _heartbeat;  // My health info.  Changes 1/sec.
   transient public int _tcp_readers;               // Count of started TCP reader threads
-
-  transient private short _timestamp; // 0 means unknown
+    
+  transient private short _timestamp = H2ONodeTimestamp.UNDEFINED;
 
   transient private boolean _removed_from_cloud;
 
@@ -58,7 +58,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   // Does this node technically correspond to a possible client? It doesn't say anything if the node can be part of the cluster
   // We intern all nodes that are trying to communicate with us regardless if they belong to the cluster or not.
   private boolean isPossibleClient() {
-    return H2O.decodeIsClient(_timestamp) || isClient();
+    return H2ONodeTimestamp.decodeIsClient(_timestamp) || isClient();
   }
 
   void setHeartBeat(HeartBeat hb) {
@@ -197,7 +197,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   }
 
   private void refreshClient(short newTimestamp) {
-    boolean respawned = _timestamp != 0 && newTimestamp != 0 && _timestamp != newTimestamp;
+    boolean respawned = H2ONodeTimestamp.hasNodeRespawned(_timestamp, newTimestamp);
     if (respawned) {
       Log.info("Client reconnected with a new timestamp=" + newTimestamp + ", old client: " + toDebugString());
       if (_sendThread != null) {
@@ -209,7 +209,8 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
         startSendThread();
       }
     }
-    if (newTimestamp != 0) { // timestamp 0 should quickly transition into non-0 and stay this way
+    //Transition the timestamp to defined state for this client
+    if (!H2ONodeTimestamp.isDefined(newTimestamp)) {
       _timestamp = newTimestamp;
     }
     _removed_from_cloud = false;
@@ -226,11 +227,15 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   // Create and/or re-use an H2ONode.  Each gets a unique dense index, and is
   // *interned*: there is only one per InetAddress.
   static private H2ONode intern(H2Okey key, short timestamp) {
-    final boolean foundPossibleClient = H2O.decodeIsClient(timestamp);
+    final boolean foundPossibleClient = H2ONodeTimestamp.decodeIsClient(timestamp);
     H2ONode h2o = INTERN.get(key);
     if (h2o != null) {
       if (foundPossibleClient || h2o.isPossibleClient()) {
         h2o.refreshClient(timestamp);
+      }
+      // Transition the timestamp to defined state for both workers & client
+      if (!H2ONodeTimestamp.isDefined(h2o.getTimestamp())) {
+        h2o._timestamp = timestamp;
       }
       return h2o;
     } else {
@@ -260,7 +265,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
 
   public static H2ONode intern(InetAddress ip, int port, short timestamp) { return intern(new H2Okey(ip, port), timestamp); }
 
-  public static H2ONode intern(InetAddress ip, int port) { return intern(ip, port, (short) 0); }
+  public static H2ONode intern(InetAddress ip, int port) { return intern(ip, port, H2ONodeTimestamp.UNDEFINED); }
 
   public static H2ONode intern(byte[] bs, int off) {
     byte[] b = new byte[H2Okey.SIZE_OF_IP]; // the size depends on version of selected IP stack
@@ -325,7 +330,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
       throw Log.throwErr(e);
     }
 
-    return intern(new H2Okey(local, H2O.H2O_PORT), H2O.calculateNodeTimestamp());
+    return intern(new H2Okey(local, H2O.H2O_PORT), H2ONodeTimestamp.calculateNodeTimestamp());
   }
 
   // Happy printable string
@@ -722,7 +727,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
 
   // Custom Serialization Class: H2OKey need to be built.
   public final AutoBuffer write_impl(AutoBuffer ab) { return _key.write(ab); }
-  public final H2ONode read_impl( AutoBuffer ab ) { return intern(H2Okey.read(ab), (short) 0 ); }
+  public final H2ONode read_impl( AutoBuffer ab ) { return intern(H2Okey.read(ab), H2ONodeTimestamp.UNDEFINED); }
   public final AutoBuffer writeJSON_impl(AutoBuffer ab) { return ab.putJSONStr("node",_key.toString()); }
   public final H2ONode readJSON_impl( AutoBuffer ab ) { throw H2O.fail(); }
 
