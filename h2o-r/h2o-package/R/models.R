@@ -1702,7 +1702,7 @@ h2o.varsplits <- function(object) {
     }
     vi
   } else {
-    warning( paste0("No variable importances for ", class(o)) )
+    warning( paste0("No variable importances for ", class(object)) )
     return(NULL)
   }
 }
