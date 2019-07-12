@@ -207,6 +207,7 @@ is constructed based on passed parameters and follows the following structure: `
 
 For example:
 ```python
+from h2o.utils.distributions import CustomDistributionGaussian
 custom_dist_func = h2o.upload_custom_distribution(CustomDistributionGaussian, func_name="gaussian", func_file="dist_gaussian.py")
 ```
 
