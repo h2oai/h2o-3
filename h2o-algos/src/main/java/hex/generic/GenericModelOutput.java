@@ -77,7 +77,7 @@ public class GenericModelOutput extends Model.Output {
                 auc._pr_auc = binomial._pr_auc;
                 auc._gini = binomial._gini;
                 return new ModelMetricsBinomialGeneric(null, null, mojoMetrics._nobs, mojoMetrics._MSE,
-                        modelDescriptor.scoringDomains()[modelDescriptor.nfeatures() - 1], Double.NaN, // TODO: sigma
+                        _domains[_domains.length - 1], Double.NaN, // TODO: sigma
                         auc, binomial._logloss, convertTable(binomial._gains_lift_table),
                         new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value), binomial._mean_per_class_error,
                         convertTable(binomial._thresholds_and_metric_scores), convertTable(binomial._max_criteria_and_metric_scores),
@@ -86,7 +86,7 @@ public class GenericModelOutput extends Model.Output {
                 assert mojoMetrics instanceof MojoModelMetricsMultinomial;
                 final MojoModelMetricsMultinomial multinomial = (MojoModelMetricsMultinomial) mojoMetrics;
                 return new ModelMetricsMultinomialGeneric(null, null, mojoMetrics._nobs, mojoMetrics._MSE,
-                        modelDescriptor.scoringDomains()[modelDescriptor.nfeatures() - 1], Double.NaN,
+                        _domains[_domains.length - 1], Double.NaN,
                         convertTable(multinomial._confusion_matrix), convertTable(multinomial._hit_ratios),
                         multinomial._logloss, new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value),
                         multinomial._mean_per_class_error);
