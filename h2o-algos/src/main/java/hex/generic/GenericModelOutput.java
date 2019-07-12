@@ -155,7 +155,7 @@ public class GenericModelOutput extends Model.Output {
                     targetField.set(target, sourceField.get(source));
                 }
             } catch (IllegalAccessException e) {
-                e.printStackTrace();
+                continue;
             } finally {
                 targetField.setAccessible(targetAccessible);
                 sourceField.setAccessible(sourceAccessible);
