@@ -6,7 +6,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 test.model.generic.glm <- function() {
     data <- h2o.importFile(path = locate('smalldata/testng/airlines_train.csv'))
     cols <- c("Origin", "IsDepDelayed")
-    original_model <- h2o.glm(x=cols, y = "Distance", training_frame = data)
+    original_model <- h2o.glm(x=cols, y = "Distance", training_frame = data, validation_frame = data, nfolds = 3)
 
     mojo_original_name <- h2o.download_mojo(model = original_model, path = tempdir())
     mojo_original_path <- paste0(tempdir(),"/",mojo_original_name)
