@@ -48,6 +48,7 @@ public class ModelJsonReader {
         final int rowCount = tableJson.get("rowcount").getAsInt();
 
         final String[] columnHeaders;
+        final String[] columnFormats;
         final Table.ColumnType[] columnTypes;
         final Object[][] data;
 
@@ -57,11 +58,13 @@ public class ModelJsonReader {
         final int columnCount = columns.size();
         columnHeaders = new String[columnCount];
         columnTypes = new Table.ColumnType[columnCount];
+        columnFormats = new String[columnCount];
 
         for (int i = 0; i < columnCount; i++) {
             final JsonObject column = columns.get(i).getAsJsonObject();
             columnHeaders[i] = column.get("description").getAsString();
             columnTypes[i] = Table.ColumnType.extractType(column.get("type").getAsString());
+            columnFormats[i] = column.get("format").getAsString();
         }
 
 
@@ -89,7 +92,7 @@ public class ModelJsonReader {
         }
     
         return new Table(tableJson.get("name").getAsString(), tableJson.get("description").getAsString(),
-                new String[rowCount], columnHeaders, columnTypes, null, data);
+                new String[rowCount], columnHeaders, columnTypes, null, columnFormats, data);
     }
 
     public static void fillObject(final Object object, final JsonElement from, final String elementPath) {

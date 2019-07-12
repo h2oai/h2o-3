@@ -178,9 +178,9 @@ public class GenericModelOutput extends Model.Output {
         if(convertedTable == null) return null;
         final TwoDimTable table = new TwoDimTable(convertedTable.getTableHeader(), convertedTable.getTableDescription(),
                 convertedTable.getRowHeaders(), convertedTable.getColHeaders(), convertedTable.getColTypesString(),
-                null, convertedTable.getColHeaderForRowHeaders());
+                convertedTable.getColumnFormats(), convertedTable.getColHeaderForRowHeaders());
 
-                  for (int i = 0; i < convertedTable.columns(); i++) {
+        for (int i = 0; i < convertedTable.columns(); i++) {
             for (int j = 0; j < convertedTable.rows(); j++) {
                 table.set(j, i, convertedTable.getCell(i,j));
             }
@@ -188,4 +188,5 @@ public class GenericModelOutput extends Model.Output {
 
         return table;
     }
+    
 }

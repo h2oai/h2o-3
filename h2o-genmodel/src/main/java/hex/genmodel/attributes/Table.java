@@ -16,6 +16,7 @@ public class Table {
     private ColumnType[] _colTypes;
     private Object[][] _cellValues;
     private String _colHeaderForRowHeaders;
+    private String[] _colFormats;
 
     /**
      * @param tableHeader
@@ -23,10 +24,12 @@ public class Table {
      * @param rowHeaders
      * @param columnHeaders
      * @param columnTypes
+     * @param colFormats
      * @param colHeaderForRowHeaders
+     * @param cellValues
      */
     public Table(String tableHeader, String tableDescription, String[] rowHeaders, String[] columnHeaders,
-                 ColumnType[] columnTypes, String colHeaderForRowHeaders, Object[][] cellValues) {
+                 ColumnType[] columnTypes, String colHeaderForRowHeaders,String[] colFormats, Object[][] cellValues) {
         Objects.requireNonNull(columnHeaders);
         Objects.requireNonNull(rowHeaders);
         Objects.requireNonNull(cellValues);
@@ -49,11 +52,8 @@ public class Table {
                 columnHeaders[c] = "";
         }
 
-        final int rowDim = rowHeaders.length;
-        final int colDim = columnHeaders.length;
-
         if (columnTypes == null) {
-            columnTypes = new ColumnType[colDim];
+            columnTypes = new ColumnType[columnHeaders.length];
             Arrays.fill(_colTypes, ColumnType.STRING);
         }
 
@@ -63,6 +63,7 @@ public class Table {
         _colHeaders = columnHeaders;
         _colTypes = columnTypes;
         _cellValues = cellValues;
+        _colFormats = colFormats;
     }
 
     public enum ColumnType {
@@ -130,6 +131,10 @@ public class Table {
     
     public Object getCell(final int column, final int row){
         return _cellValues[column][row];
+    }
+    
+    public String[] getColumnFormats(){
+        return _colFormats;
     }
 
     public int findColumnIndex(final String columnName) {
