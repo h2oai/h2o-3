@@ -17,6 +17,7 @@ def mojo_model_drf_test():
       
     model = H2OGenericEstimator.from_file(original_model_filename)
     assert model is not None
+    print(model)
     predictions = model.predict(airlines)
     assert predictions is not None
     assert predictions.nrows == 24421

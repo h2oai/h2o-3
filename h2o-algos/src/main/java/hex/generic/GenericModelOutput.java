@@ -45,6 +45,7 @@ public class GenericModelOutput extends Model.Output {
 
     private void fillSharedTreeModelAttributes(final SharedTreeModelAttributes sharedTreeModelAttributes, final ModelDescriptor modelDescriptor) {
         _variable_importances = convertVariableImportances(sharedTreeModelAttributes.getVariableImportances());
+        _scoring_history = convertTable(sharedTreeModelAttributes.getScoringHistory());
         convertMetrics(sharedTreeModelAttributes, modelDescriptor);
     }
 
@@ -170,12 +171,12 @@ public class GenericModelOutput extends Model.Output {
                 convertedTable.getRowHeaders(), convertedTable.getColHeaders(), convertedTable.getColTypesString(),
                 null, convertedTable.getColHeaderForRowHeaders());
 
-        for (int i = 0; i < convertedTable.columns(); i++) {
+                  for (int i = 0; i < convertedTable.columns(); i++) {
             for (int j = 0; j < convertedTable.rows(); j++) {
                 table.set(j, i, convertedTable.getCell(i,j));
             }
         }
         
-        return table;
+                                           return table;
     }
 }

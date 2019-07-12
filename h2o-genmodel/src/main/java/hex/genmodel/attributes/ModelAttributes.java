@@ -5,9 +5,11 @@ import com.google.gson.JsonObject;
 public class ModelAttributes {
 
   private final Table _modelSummary;
+  private final Table _scoring_history;
 
   public ModelAttributes(final JsonObject modelJson) {
     _modelSummary = ModelJsonReader.readTable(modelJson, "output.model_summary");
+    _scoring_history = ModelJsonReader.readTable(modelJson, "output.scoring_history");
   }
 
   /**
@@ -17,5 +19,13 @@ public class ModelAttributes {
    */
   public Table getModelSummary() {
     return _modelSummary;
+  }
+
+  /**
+   * Retrieves model's scoring history.
+   * @return A {@link Table} with model's scoring history, if existing. Otherwise null.
+   */
+  public Table getScoringHistory(){
+    return _scoring_history;
   }
 }

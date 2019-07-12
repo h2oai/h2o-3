@@ -18,7 +18,7 @@ import java.util.Arrays;
 public class ModelMetricsBinomial extends ModelMetricsSupervised {
   public final AUC2 _auc;
   public final double _logloss;
-  public final double _mean_per_class_error;
+  public double _mean_per_class_error;
   public final GainsLift _gainsLift;
 
   public ModelMetricsBinomial(Model model, Frame frame, long nobs, double mse, String[] domain,

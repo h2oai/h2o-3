@@ -1,12 +1,7 @@
 package water.api.schemas3;
 
-import hex.ModelMetricsMultinomial;
 import hex.ModelMetricsMultinomialGeneric;
-import water.api.API;
-import water.api.SchemaServer;
-import water.util.TwoDimTable;
 
-import static hex.ModelMetricsMultinomial.getHitRatioTable;
 
 public class ModelMetricsMultinomialGenericV3<I extends ModelMetricsMultinomialGeneric, S extends ModelMetricsMultinomialGenericV3<I, S>>
     extends ModelMetricsMultinomialV3<I, S> {

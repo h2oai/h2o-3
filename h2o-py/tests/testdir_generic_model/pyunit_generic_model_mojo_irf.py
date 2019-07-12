@@ -16,6 +16,7 @@ def mojo_model_irf_test():
     original_model_filename = irf.download_mojo(original_model_filename)
       
     model = H2OGenericEstimator.from_file(original_model_filename)
+    print(model)
     assert model is not None
     predictions = model.predict(airlines)
     assert predictions is not None
