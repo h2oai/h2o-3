@@ -18,7 +18,6 @@ public class ModelMetricsBinomialGenericV3<I extends ModelMetricsBinomialGeneric
   @Override
   public S fillFromImpl(ModelMetricsBinomialGeneric modelMetrics) {
     super.fillFromImpl(modelMetrics);
-//    sigma = modelMetrics._sigma;
     r2 = modelMetrics.r2();
     logloss = modelMetrics._logloss;
 

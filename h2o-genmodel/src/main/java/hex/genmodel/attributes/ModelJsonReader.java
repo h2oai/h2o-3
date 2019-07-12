@@ -132,19 +132,19 @@ public class ModelJsonReader {
                 Object value = null;
                 if (type.isAssignableFrom(double.class) || type.isAssignableFrom(Double.class)) {
                     final JsonElement jsonElement = jsonSourceObj.get(fieldName);
-                    if (jsonElement != null) value = jsonElement.getAsDouble();
+                    if (jsonElement != null && !jsonElement.isJsonNull()) value = jsonElement.getAsDouble();
                 } else if (type.isAssignableFrom(int.class) || type.isAssignableFrom(Integer.class)) {
                     final JsonElement jsonElement = jsonSourceObj.get(fieldName);
-                    if (jsonElement != null) value = jsonElement.getAsInt();
+                    if (jsonElement != null && !jsonElement.isJsonNull()) value = jsonElement.getAsInt();
                 } else if (type.isAssignableFrom(long.class) || type.isAssignableFrom(Long.class)) {
                     final JsonElement jsonElement = jsonSourceObj.get(fieldName);
-                    if (jsonElement != null) value = jsonElement.getAsLong();
+                    if (jsonElement != null && !jsonElement.isJsonNull()) value = jsonElement.getAsLong();
                 } else if (type.isAssignableFrom(String.class)) {
                     final JsonElement jsonElement = jsonSourceObj.get(fieldName);
-                    if (jsonElement != null) value = jsonElement.getAsString();
+                    if (jsonElement != null && !jsonElement.isJsonNull()) value = jsonElement.getAsString();
                 } else if (type.isAssignableFrom(Table.class)) {
                     final JsonElement jsonElement = jsonSourceObj.get(fieldName);
-                    if (jsonElement != null) value = readTable(jsonElement.getAsJsonObject(),  serializedName != null ? serializedName.insideElementPath() : "");
+                    if (jsonElement != null && !jsonElement.isJsonNull()) value = readTable(jsonElement.getAsJsonObject(),  serializedName != null ? serializedName.insideElementPath() : "");
                 }
                 if (value != null) field.set(object, value);
             } catch (IllegalAccessException e) {
