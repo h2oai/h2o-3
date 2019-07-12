@@ -1090,17 +1090,81 @@ class ModelBase(backwards_compatible(Keyed)):
                     kwargs["user_cols"] = user_cols
                     kwargs["user_splits"] = user_values
                     kwargs["num_user_splits"] = user_num_splits
-                else:
-                    kwargs["user_cols"] = None
-                    kwargs["user_splits"] = None
-                    kwargs["num_user_splits"] = None
-
+        else:
+            kwargs["user_cols"] = None
+            kwargs["user_splits"] = None
+            kwargs["num_user_splits"] = None
+            
         json = H2OJob(h2o.api("POST /3/PartialDependence/", data=kwargs),  job_type="PartialDependencePlot").poll()
         json = h2o.api("GET /3/PartialDependence/%s" % json.dest_key)
 
         # Extract partial dependence data from json response
         pps = json["partial_dependence_data"]
 
+        # Plot partial dependence plots using matplotlib
+        self.__generate_partial_plots(num_1dpdp, num_2dpdp, plot, server, pps, figsize, col_pairs_2dpdp, data, nbins,
+                                      kwargs["user_cols"], kwargs["num_user_splits"], plot_stddev, cols, save_to_file)
+        # totFig = num_1dpdp+num_2dpdp
+        # if plot and totFig>0:     # plot 1d pdp for now
+        #     plt = _get_matplotlib_pyplot(server)
+        #     if not plt: return pps
+        #     import matplotlib.gridspec as gridspec
+        #     fig = plt.figure(figsize=figsize)
+        #     gxs = gridspec.GridSpec(totFig, 1)
+        #     if num_2dpdp>0: # 2d pdp requested
+        #         axes3D = _get_mplot3d_pyplot("2D partial plots")
+        #         cm = _get_matplotlib_cm("2D partial plots")
+        #     figPlotted = 0  # indicated number of figures plotted
+        #     for i, pp in enumerate(pps):
+        #         if (i >= num_1dpdp): # plot 2D pdp
+        #             if (axes3D==None) or (cm==None) or (plt==None):    # quit if cannot find toolbox
+        #                 break
+        #             figPlotted = 1  # if a figure is plotted, change this to 1
+        #             ax = fig.add_subplot(gxs[i], projection='3d')
+        #             colPairs = col_pairs_2dpdp[i-num_1dpdp]
+        #             x = self.__grabValues(pp, 0, data, colPairs[0], ax) # change to numpy 2d_array
+        #             y = self.__grabValues(pp, 1, data, colPairs[1], ax)
+        #             X,Y,Z = self.__predFor3D(x,y,pp[2], colPairs, nbins, user_cols, user_num_splits)
+        # 
+        #             zupper = [a + b for a, b in zip(pp[2], pp[3]) ]  # pp[1] is mean, pp[2] is std
+        #             zlower = [a - b for a, b in zip(pp[2], pp[3]) ]
+        #             _,_,Zupper = self.__predFor3D(x,y,zupper, colPairs, nbins, user_cols, user_num_splits)
+        #             _,_,Zlower = self.__predFor3D(x,y,zlower, colPairs, nbins, user_cols, user_num_splits)
+        #             ax.plot_surface(X, Y, Z, cmap=cm.coolwarm,linewidth=1, antialiased=False, alpha=0.5, edgecolor='k')
+        #             if plot_stddev:
+        #                 ax.plot_surface(X, Y, Zupper, cmap=cm.coolwarm,linewidth=0.2, antialiased=False, alpha=0.3, edgecolor='y')
+        #                 ax.plot_surface(X, Y, Zlower, cmap=cm.coolwarm,linewidth=0.2, antialiased=False, alpha=0.3, edgecolor='g')
+        #             ax.set_xlabel(colPairs[0])
+        #             ax.set_xlim(min(x), max(x))
+        #             ax.set_ylabel(colPairs[1])
+        #             ax.set_ylim(min(y), max(y))
+        #             ax.set_zlim(min([min(zupper), min(zlower), min(pp[2])]), max([max(zupper), max(zlower), max(pp[2])]))
+        #             ax.set_zlabel('Partial dependence')
+        #             titles = '2D partial dependence plot for '+colPairs[0] + ' and '+colPairs[1]
+        #             ax.set_title(titles)
+        #         else:  # plot 1D pdp
+        #             figPlotted = 1  # if a figure is plotted, change this to 1
+        #             col = cols[i]
+        #             cat = data[col].isfactor()[0]
+        #             upper = [a + b for a, b in zip(pp[1], pp[2]) ]  # pp[1] is mean, pp[2] is std
+        #             lower = [a - b for a, b in zip(pp[1], pp[2]) ]
+        #             axs = fig.add_subplot(gxs[i])
+        #             self.__setAxs1D(axs, upper, lower, plot_stddev, cat, pp, 0, col)  # setup graph, axis, labels and ...
+        # 
+        #     if figPlotted > 0:
+        #         fig.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
+        #     else:
+        #         print("No partial plot is generated.  You may be missing toolboxes like mpl_toolkits.mplot3d, "
+        #               "matplotlib")
+        #     if (save_to_file is not None) and (figPlotted > 0):
+        #         plt.savefig(save_to_file)
+        #     else:
+        #         print("No partial plot is generated and saved.  You may be missing toolboxes like "
+        #               "mpl_toolkits.mplot3d, matplotlib")
+        return pps
+
+    def __generate_partial_plots(self, num_1dpdp, num_2dpdp, plot, server, pps, figsize, col_pairs_2dpdp, data, nbins,
+                                 user_cols, user_num_splits, plot_stddev, cols, save_to_file):
         # Plot partial dependence plots using matplotlib
         totFig = num_1dpdp+num_2dpdp
         if plot and totFig>0:     # plot 1d pdp for now
@@ -1141,7 +1205,7 @@ class ModelBase(backwards_compatible(Keyed)):
                     titles = '2D partial dependence plot for '+colPairs[0] + ' and '+colPairs[1]
                     ax.set_title(titles)
                 else:  # plot 1D pdp
-                    figPlotted = 1  # if a figure is plotted, change this to 1
+                    figPlotted = 1
                     col = cols[i]
                     cat = data[col].isfactor()[0]
                     upper = [a + b for a, b in zip(pp[1], pp[2]) ]  # pp[1] is mean, pp[2] is std
@@ -1153,15 +1217,14 @@ class ModelBase(backwards_compatible(Keyed)):
                 fig.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
             else:
                 print("No partial plot is generated.  You may be missing toolboxes like mpl_toolkits.mplot3d, "
-                      "matplotlib")
-            if (save_to_file is not None) and (figPlotted > 0):
+                  "matplotlib")
+            if (save_to_file is not None) and (figPlotted > 0): # only save when a figure is actually plotted
                 plt.savefig(save_to_file)
             else:
                 print("No partial plot is generated and saved.  You may be missing toolboxes like "
-                      "mpl_toolkits.mplot3d, matplotlib")
-        return pps
-    
-    # change x, y, z to be 2-D numpy arrays in order to plot it.
+                  "mpl_toolkits.mplot3d, matplotlib")
+
+            # change x, y, z to be 2-D numpy arrays in order to plot it.
     # note that, x stays at one value for the duration of y value changes.
     def __predFor3D(self, x, y, z, colPairs, nbins, user_cols, user_num_splits):
         # deal with y axis first
