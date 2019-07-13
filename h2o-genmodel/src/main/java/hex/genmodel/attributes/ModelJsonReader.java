@@ -83,6 +83,10 @@ public class ModelJsonReader {
                     case DOUBLE:
                         data[i][j] = primitiveValue.getAsDouble();
                         break;
+                    case FLOAT:
+                        data[i][j] = primitiveValue.getAsFloat();
+                    case INT:
+                        data[i][j] = primitiveValue.getAsInt();
                     case STRING:
                         data[i][j] = primitiveValue.getAsString();
                         break;

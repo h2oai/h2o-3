@@ -69,6 +69,8 @@ public class Table {
     public enum ColumnType {
         LONG,
         DOUBLE,
+        FLOAT,
+        INT,
         STRING;
 
         public static ColumnType extractType(final String type) {

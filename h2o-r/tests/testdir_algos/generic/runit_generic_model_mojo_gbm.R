@@ -4,9 +4,9 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test.model.generic.gbm <- function() {
-    data <- h2o.importFile(path = locate('smalldata/testng/airlines_train.csv'))
-    cols <- c("Origin", "Dest")
-    original_model <- h2o.gbm(x=cols, y = "IsDepDelayed", training_frame = data, validation_frame = data, nfolds = 3, ntrees = 1)
+    data <- h2o.importFile(path = "/home/pavel/AirlinesTrain.csv")
+    cols <- c("Origin", "IsDepDelayed")
+    original_model <- h2o.gbm(x=cols, y = "Dest", training_frame = data, validation_frame = data, nfolds = 3, ntrees = 1)
     print(original_model)
 
     mojo_original_name <- h2o.download_mojo(model = original_model, path = tempdir())

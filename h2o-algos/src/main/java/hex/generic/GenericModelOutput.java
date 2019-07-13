@@ -126,10 +126,10 @@ public class GenericModelOutput extends Model.Output {
     private static Object convertObjects(final Object source, final Object target) {
 
         final Class<?> targetClass = target.getClass();
-        final Field[] targetDeclaredFields = targetClass.getDeclaredFields();
+        final Field[] targetDeclaredFields = targetClass.getFields();
 
         final Class<?> sourceClass = source.getClass();
-        final Field[] sourceDeclaredFields = sourceClass.getDeclaredFields();
+        final Field[] sourceDeclaredFields = sourceClass.getFields();
         
         // Create a map for faster search afterwards
         final Map<String, Field> sourceFieldMap = new HashMap(sourceDeclaredFields.length);
@@ -155,6 +155,7 @@ public class GenericModelOutput extends Model.Output {
                     targetField.set(target, sourceField.get(source));
                 }
             } catch (IllegalAccessException e) {
+                Log.err(e);
                 continue;
             } finally {
                 targetField.setAccessible(targetAccessible);

@@ -45,7 +45,7 @@ def test(x, y, output_test):
     with Capturing() as original_output:
         gbm.show()
     
-    original_model_filename = "/home/pavel/mojo_binom_from_test.zip"
+    original_model_filename = tempfile.mkdtemp()
     original_model_filename = gbm.download_mojo(original_model_filename)
     
     key = h2o.lazy_import(original_model_filename)
