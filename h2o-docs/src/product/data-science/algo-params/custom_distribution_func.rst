@@ -20,6 +20,7 @@ Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
 - `distribution <distribution.html>`__
+- `upload_custom_distribution <upload_custom_distribution.html>`__
 
 Example
 ~~~~~~~

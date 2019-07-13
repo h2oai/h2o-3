@@ -32,7 +32,8 @@ Three separate fields must be specified when using this function:
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
-- None
+- `custom_distribution_func <custom_distribution_func.html>`__
+- `distribution <distribution.html>`__
 
 Example
 ~~~~~~~
@@ -45,7 +46,9 @@ Example
 
 	# wip
 	from h2o.utils.distributions import CustomDistributionGaussian
-	custom_dist_func = h2o.upload_custom_distribution(CustomDistributionGaussian, func_name="gaussian", func_file="dist_gaussian.py")
+	custom_dist_func = h2o.upload_custom_distribution(CustomDistributionGaussian, 
+	                                                  func_name="gaussian", 
+	                                                  func_file="dist_gaussian.py")
 
 	# wip
 	print(custom_dist_func)
