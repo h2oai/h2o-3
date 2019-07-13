@@ -5,6 +5,8 @@ import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -311,4 +313,30 @@ public class FrameTest extends TestUtil {
       Scope.exit();
     }
   }
+
+  @Test
+  public void testPubDev6673() {
+    checkToCSV(false, false);
+    checkToCSV(true, false);
+    checkToCSV(false, true);
+    checkToCSV(true, true);
+  }
+
+  private static void checkToCSV(final boolean headers, final boolean hex_string) {
+    final InputStream invoked = new ByteArrayInputStream(new byte[0]);
+
+    Frame f = new Frame() {
+      @Override
+      public InputStream toCSV(CSVStreamParams parms) {
+        assertEquals(headers, parms._headers);
+        assertEquals(hex_string, parms._hex_string);
+        return invoked;
+      }
+    };
+
+    InputStream wasInvoked = f.toCSV(headers, hex_string);
+
+    assertSame(invoked, wasInvoked); // just make sure the asserts were actually called
+  }
+
 }
