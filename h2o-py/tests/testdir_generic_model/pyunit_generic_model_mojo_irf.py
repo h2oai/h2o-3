@@ -7,10 +7,9 @@ from tests import pyunit_utils
 
 def mojo_model_irf_test():
 
-    # GLM
     airlines = h2o.import_file(path=pyunit_utils.locate("smalldata/testng/airlines_train.csv"))
     irf = H2OIsolationForestEstimator(ntrees=1)
-    irf.train(x = ["Origin", "Dest"], y = "Distance", training_frame=airlines, validation_frame=airlines)
+    irf.train(x = ["Origin", "Dest"], y = "Distance", training_frame=airlines)
 
     original_model_filename = tempfile.mkdtemp()
     original_model_filename = irf.download_mojo(original_model_filename)
