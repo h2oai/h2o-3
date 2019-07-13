@@ -1512,6 +1512,17 @@ public class Frame extends Lockable<Frame> {
     return job.start(t, fr.anyVec().nChunks());
   }
 
+  /**
+   * @deprecated As of release 3.24.0.5, replaced by {@link #toCSV(CSVStreamParams)}}
+   */
+  @Deprecated
+  public InputStream toCSV(boolean headers, boolean hex_string) {
+    CSVStreamParams params = new CSVStreamParams()
+            .setHeaders(headers)
+            .setHexString(hex_string);
+    return toCSV(params);
+  }
+
   /** Convert this Frame to a CSV (in an {@link InputStream}), that optionally
    *  is compatible with R 3.1's recent change to read.csv()'s behavior.
    *
