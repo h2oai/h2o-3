@@ -42,10 +42,8 @@ public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, Targe
 
       disableIgnoreConstColsFeature();
 
-      _targetEncoderModel = new TargetEncoderModel(_job._result, _parms,  new TargetEncoderModel.TargetEncoderOutput(TargetEncoderBuilder.this), tec);
-
-      // Note: For now we are not going to make TargetEncoderModel to be a real model. It should be treated as a wrapper for just getting a mojo.
-      // DKV.put(targetEncoderModel);
+      _targetEncoderModel = new TargetEncoderModel(_job._result, _parms,  new TargetEncoderModel.TargetEncoderOutput(TargetEncoderBuilder.this));
+       DKV.put(_targetEncoderModel);
     }
 
     private void disableIgnoreConstColsFeature() {

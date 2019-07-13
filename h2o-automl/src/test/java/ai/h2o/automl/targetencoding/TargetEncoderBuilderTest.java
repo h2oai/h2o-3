@@ -1,11 +1,12 @@
 package ai.h2o.automl.targetencoding;
 
+import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import water.Job;
-import water.Scope;
-import water.TestUtil;
+import water.*;
 import water.fvec.Frame;
 
 import java.util.Map;
@@ -20,11 +21,13 @@ public class TargetEncoderBuilderTest extends TestUtil {
     stall_till_cloudsize(1);
   }
 
+  // Also checking that TargetEncoderModel could be stored in DKV and later retrieved without loosing ability to transform
   @Test
-  public void getTargetEncodingMapByTrainingTEBuilder() throws InterruptedException{
+  public void getTargetEncodingMapByTrainingTEBuilder(){
 
     Map<String, Frame> encodingMapFromTargetEncoder = null;
     Map<String, Frame> targetEncodingMapFromBuilder = null;
+    TargetEncoderModel targetEncoderModel = null;
     Scope.enter();
     try {
       Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
@@ -42,14 +45,26 @@ public class TargetEncoderBuilderTest extends TestUtil {
       targetEncoderParameters.setTrain(fr._key);
       targetEncoderParameters._response_column = responseColumnName;
 
-      TargetEncoderBuilder builder = new TargetEncoderBuilder(targetEncoderParameters);
+      TargetEncoderBuilder job = new TargetEncoderBuilder(targetEncoderParameters);
+      Job<TargetEncoderModel> targetEncoderModelJob = job.trainModel();
 
-      builder.trainModel().get(); // Waiting for training to be finished
-      TargetEncoderModel targetEncoderModel = builder.getTargetEncoderModel(); // TODO change the way of how we getting model after PUBDEV-6670. We should be able to get it from DKV with .trainModel().get()
-      
-      //Stage 2: 
+      // Make sure with .get() that computation is finished
+      targetEncoderModel = targetEncoderModelJob.get();
+      Scope.track_generic(targetEncoderModel);
+
+      Assume.assumeFalse(targetEncoderModel._key.home());
+
+      // Removing from local cache to make sure model was retrieved from DKV 
+      H2O.STORE.remove(targetEncoderModel._key);
+      System.out.println(targetEncoderModel._key.home_node().getIpPortString());
+
+      TargetEncoderModel retrievedNotFromCacheModel = DKV.getGet(targetEncoderModel._key);
+      targetEncodingMapFromBuilder = retrievedNotFromCacheModel._output._targetEncodingMap;
+      Map<String, Integer> teColumnNameToIdx = retrievedNotFromCacheModel._output._teColumnNameToIdx;
+
+      Assert.assertNotNull(teColumnNameToIdx);
+
       // Let's create encoding map by TargetEncoder directly
-
       TargetEncoder tec = new TargetEncoder(teColumns, params);
 
       Frame fr2 = parse_test_file("./smalldata/gbm_test/titanic.csv");
@@ -58,11 +73,11 @@ public class TargetEncoderBuilderTest extends TestUtil {
 
       encodingMapFromTargetEncoder = tec.prepareEncodingMap(fr2, responseColumnName, null);
 
-      targetEncodingMapFromBuilder = targetEncoderModel._output._target_encoding_map;
-
+      // Compare
       areEncodingMapsIdentical(encodingMapFromTargetEncoder, targetEncodingMapFromBuilder);
 
     } finally {
+      if(targetEncoderModel!=null) TargetEncoderFrameHelper.encodingMapCleanUp( targetEncoderModel._output._targetEncodingMap);
       removeEncodingMaps(encodingMapFromTargetEncoder, targetEncodingMapFromBuilder);
       Scope.exit();
     }
@@ -111,7 +126,7 @@ public class TargetEncoderBuilderTest extends TestUtil {
 
       encodingMapFromTargetEncoder = tec.prepareEncodingMap(fr2, responseColumnName, foldColumnName);
 
-      targetEncodingMapFromBuilder = targetEncoderModel._output._target_encoding_map;
+      targetEncodingMapFromBuilder = targetEncoderModel._output._targetEncodingMap;
 
       areEncodingMapsIdentical(encodingMapFromTargetEncoder, targetEncodingMapFromBuilder);
 
@@ -158,7 +173,7 @@ public class TargetEncoderBuilderTest extends TestUtil {
       byte strategy = TargetEncoder.DataLeakageHandlingStrategy.KFold;
       Frame transformedTrainWithModelFromBuilder = targetEncoderModel.transform(fr, strategy, seed);
       Scope.track(transformedTrainWithModelFromBuilder);
-      targetEncodingMapFromBuilder = targetEncoderModel._output._target_encoding_map;
+      targetEncodingMapFromBuilder = targetEncoderModel._output._targetEncodingMap;
       
       //Stage 2: 
       // Let's create encoding map by TargetEncoder directly and transform with it
