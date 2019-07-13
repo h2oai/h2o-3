@@ -2,12 +2,7 @@ package water.util;
 
 import water.*;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
+import java.io.*;
 
 /**
  * Get zipped log directory data from a node.
@@ -18,15 +13,22 @@ public class GetLogsFromNode extends Iced {
   static final int MB = 1 << 20;
   static final int MAX_SIZE = 25 * MB;
 
+  public GetLogsFromNode(int nodeidx, LogArchiveContainer container) {
+    this.nodeidx = nodeidx;
+    this.container = container;
+  }
+
   // Input
   /**
    * Node number to get logs from (starting at 0).
    */
-  public int nodeidx;
+  private final int nodeidx;
 
+  private final LogArchiveContainer container;
+  
   // Output
   /**
-   * Byte array containing a zipped file with the entire log directory.
+   * Byte array containing a archived file with the entire log directory.
    */
   public byte[] bytes;
 
@@ -35,13 +37,13 @@ public class GetLogsFromNode extends Iced {
    */
   public void doIt() {
     if (nodeidx == -1) {
-      GetLogsTask t = new GetLogsTask();
+      GetLogsTask t = new GetLogsTask(container);
       t.doIt();
       bytes = t._bytes;
     }
     else {
       H2ONode node = H2O.CLOUD._memary[nodeidx];
-      GetLogsTask t = new GetLogsTask();
+      GetLogsTask t = new GetLogsTask(container);
       Log.trace("GetLogsTask starting to node " + nodeidx + "...");
       // Synchronous RPC call to get ticks from remote (possibly this) node.
       new RPC<>(node, t).call().get();
@@ -51,18 +53,23 @@ public class GetLogsFromNode extends Iced {
   }
 
   private static class GetLogsTask extends DTask<GetLogsTask> {
+    // IN
+    private final LogArchiveContainer _container;
+    // OUT
     private byte[] _bytes;
 
-    public GetLogsTask() { super(H2O.MIN_HI_PRIORITY); _bytes = null; }
+    public GetLogsTask(LogArchiveContainer container) { 
+      super(H2O.MIN_HI_PRIORITY);
+      _container = container;
+      _bytes = null;
+    }
 
     public void doIt() {
-      try {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ZipOutputStream zos = new ZipOutputStream(baos);
+      try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+           LogArchiveWriter archiveWriter = _container.createLogArchiveWriter(baos)) {
         String archiveRoot = String.format("h2ologs_node%d_%s_%d", H2O.SELF.index(),  H2O.SELF_ADDRESS.getHostAddress(), H2O.API_PORT);
-        zipDir(Log.LOG_DIR, archiveRoot, baos, zos);
-        zos.close();
-        baos.close();
+        archiveDir(Log.LOG_DIR, archiveRoot, baos, archiveWriter);
+        archiveWriter.close(); // need to close before we extract the bytes
         _bytes = baos.toByteArray();
       }
       catch (Exception e) {
@@ -76,18 +83,18 @@ public class GetLogsFromNode extends Iced {
     }
 
     //here is the code for the method
-    private void zipDir(String dir2zip, String pathInArchive, ByteArrayOutputStream baos, ZipOutputStream zos) throws IOException
-    {
+    private void archiveDir(String dir, String pathInArchive, ByteArrayOutputStream baos, LogArchiveWriter writer) {
       try
       {
         //convert paths represented as strings into File instances
-        File sourceDir = new File(dir2zip);
+        File sourceDir = new File(dir);
         File destinationDir = new File(pathInArchive);
         //get a listing of the directory content
         String[] dirList = sourceDir.list();
+        if (dirList == null)
+          return;
         byte[] readBuffer = new byte[4096]; 
-        int bytesIn = 0;
-        //loop through dirList, and zip the files
+        //loop through dirList, and archive the files
         for(int i=0; i<dirList.length; i++)
         {
           File sourceFile = new File(sourceDir, dirList[i]);
@@ -95,7 +102,7 @@ public class GetLogsFromNode extends Iced {
           if(sourceFile.isDirectory())
           {
             //if the File object is a directory, call this
-            zipDir(sourceFile.getPath(), destinationFile.getPath(), baos, zos);
+            archiveDir(sourceFile.getPath(), destinationFile.getPath(), baos, writer);
             //loop again
             continue;
           }
@@ -109,17 +116,17 @@ public class GetLogsFromNode extends Iced {
           //if we reached here, the File object f was not a directory
           //create a FileInputStream on top of f
           FileInputStream fis = new FileInputStream(sourceFile.getPath());
-          // create a new zip entry
-          ZipEntry anEntry = new ZipEntry(destinationFile.getPath());
-          anEntry.setTime(sourceFile.lastModified());
-          //place the zip entry in the ZipOutputStream object
-          zos.putNextEntry(anEntry);
-          //now write the content of the file to the ZipOutputStream
+          //create a new archive entry
+          LogArchiveWriter.ArchiveEntry anEntry = new LogArchiveWriter.ArchiveEntry(destinationFile.getPath(), sourceFile.lastModified());
+          //place the archive entry
+          writer.putNextEntry(anEntry);
 
+          //now add the content of the file to the archive
           boolean stopEarlyBecauseTooMuchData = false;
+          int bytesIn;
           while((bytesIn = fis.read(readBuffer)) != -1)
           {
-            zos.write(readBuffer, 0, bytesIn);
+            writer.write(readBuffer, 0, bytesIn);
             if (baos.size() > MAX_SIZE) {
               stopEarlyBecauseTooMuchData = true;
               break;
@@ -127,7 +134,7 @@ public class GetLogsFromNode extends Iced {
           }
           //close the Stream
           fis.close();
-          zos.closeEntry();
+          writer.closeEntry();
 
           if (stopEarlyBecauseTooMuchData) {
             Log.warn("GetLogsTask stopEarlyBecauseTooMuchData");
