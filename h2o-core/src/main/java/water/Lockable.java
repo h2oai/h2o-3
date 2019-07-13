@@ -70,7 +70,7 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
     Lockable old =  write_lock(job_key);
     if( old != null ) {
       Log.debug("lock-then-clear "+_key+" by job "+job_key);
-      old.remove_impl(new Futures(), true).blockForPending();
+      old.remove_impl(new Futures(), false).blockForPending();  // internal delete, don't remove dependencies as they're often still needed.
     }
     return (T)this;
   }
