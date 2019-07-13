@@ -64,7 +64,7 @@ This option specifies the encoding scheme to use for handling categorical featur
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
-- none
+- None
 
 
 Example

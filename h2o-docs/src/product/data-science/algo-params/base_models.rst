@@ -14,7 +14,7 @@ The ``base_models`` parameter is used to specify a list of models (or model IDs)
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
-- none
+- None
 
 Example
 ~~~~~~~
