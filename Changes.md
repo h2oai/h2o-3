@@ -86,7 +86,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/1/index.ht
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6573'>PUBDEV-6573</a>] - Enabled Java scoring for XGBoost MOJOs.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6590'>PUBDEV-6590</a>] - User can now delete an AutoML instance and all its dependencies from any client (including models and other dependencies). (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6590'>PUBDEV-6590</a>] - User can now delete an AutoML instance and all its dependencies from any client (including models and other dependencies). 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6617'>PUBDEV-6617</a>] - h2o.mojo_predict_csv() and h2o.mojo_predict_pandas() now accept a setInvNumNA parameter.
 </li>
