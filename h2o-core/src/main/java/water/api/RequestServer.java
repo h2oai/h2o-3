@@ -19,13 +19,7 @@ import water.init.NodePersistentStorage;
 import water.nbhm.NonBlockingHashMap;
 import water.rapids.Assembly;
 import water.server.ServletUtils;
-import water.util.GetLogsFromNode;
-import water.util.HttpResponseStatus;
-import water.util.IcedHashMapGeneric;
-import water.util.JCodeGen;
-import water.util.Log;
-import water.util.PojoUtils;
-import water.util.StringUtils;
+import water.util.*;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -49,8 +43,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 /**
  * This is a simple web server which accepts HTTP requests and routes them
@@ -732,7 +724,14 @@ public class RequestServer extends HttpServlet {
       // url "/3/Foo/bar" => path ["", "GET", "Foo", "bar", "3"]
       String[] path = uri.getPath();
       if (path[2].equals("")) return redirectToFlow();
-      if (path[2].equals("Logs") && path[3].equals("download")) return downloadLogs();
+      if (path[2].equals("Logs") && path[3].equals("download")) {
+        // if archive type was specified path will look like ["", "GET", "Logs", "download", "<TYPE>", 3]
+        // if archive type was not specified it will be just ["", "GET", "Logs", "download", 3]
+        boolean containerTypeSpecified = path.length >= 6;
+        LogArchiveContainer container = containerTypeSpecified ? 
+                LogArchiveContainer.valueOf(path[4].toUpperCase()) : LogArchiveContainer.ZIP; // use ZIP as default
+        return downloadLogs(container);
+      }
       if (path[2].equals("NodePersistentStorage.bin") && path.length == 6) return downloadNps(path[3], path[4]);
     }
     return null;
@@ -814,11 +813,11 @@ public class RequestServer extends HttpServlet {
     return res;
   }
 
-  private static NanoResponse downloadLogs() {
+  private static NanoResponse downloadLogs(LogArchiveContainer logContainer) {
     Log.info("\nCollecting logs.");
 
     H2ONode[] members = H2O.CLOUD.members();
-    byte[][] perNodeZipByteArray = new byte[members.length][];
+    byte[][] perNodeArchiveByteArray = new byte[members.length][];
     byte[] clientNodeByteArray = null;
 
     for (int i = 0; i < members.length; i++) {
@@ -827,8 +826,7 @@ public class RequestServer extends HttpServlet {
       try {
         // Skip nodes that aren't healthy, since they are likely to cause the entire process to hang.
         if (members[i].isHealthy()) {
-          GetLogsFromNode g = new GetLogsFromNode();
-          g.nodeidx = i;
+          GetLogsFromNode g = new GetLogsFromNode(i, logContainer);
           g.doIt();
           bytes = g.bytes;
         } else {
@@ -838,14 +836,13 @@ public class RequestServer extends HttpServlet {
       catch (Exception e) {
         bytes = StringUtils.toBytes(e);
       }
-      perNodeZipByteArray[i] = bytes;
+      perNodeArchiveByteArray[i] = bytes;
     }
 
     if (H2O.ARGS.client) {
       byte[] bytes;
       try {
-        GetLogsFromNode g = new GetLogsFromNode();
-        g.nodeidx = -1;
+        GetLogsFromNode g = new GetLogsFromNode(-1, logContainer);
         g.doIt();
         bytes = g.bytes;
       }
@@ -856,17 +853,17 @@ public class RequestServer extends HttpServlet {
     }
 
     String outputFileStem = getOutputLogStem();
-    byte[] finalZipByteArray;
+    byte[] finalArchiveByteArray;
     try {
-      finalZipByteArray = zipLogs(perNodeZipByteArray, clientNodeByteArray, outputFileStem);
+      finalArchiveByteArray = archiveLogs(logContainer, new Date(), perNodeArchiveByteArray, clientNodeByteArray, outputFileStem);
     }
     catch (Exception e) {
-      finalZipByteArray = StringUtils.toBytes(e);
+      finalArchiveByteArray = StringUtils.toBytes(e);
     }
 
-    NanoResponse res = new NanoResponse(HTTP_OK, MIME_DEFAULT_BINARY, new ByteArrayInputStream(finalZipByteArray));
-    res.addHeader("Content-Length", Long.toString(finalZipByteArray.length));
-    res.addHeader("Content-Disposition", "attachment; filename=" + outputFileStem + ".zip");
+    NanoResponse res = new NanoResponse(HTTP_OK, logContainer.getMimeType(), new ByteArrayInputStream(finalArchiveByteArray));
+    res.addHeader("Content-Length", Long.toString(finalArchiveByteArray.length));
+    res.addHeader("Content-Disposition", "attachment; filename=" + outputFileStem + "." + logContainer.getFileExtension());
     return res;
   }
 
@@ -877,49 +874,50 @@ public class RequestServer extends HttpServlet {
     return "h2ologs_" + now;
   }
 
-  private static byte[] zipLogs(byte[][] results, byte[] clientResult, String topDir) throws IOException {
+  private static byte[] archiveLogs(LogArchiveContainer container, Date now,
+                                    byte[][] results, byte[] clientResult, String topDir) throws IOException {
     int l = 0;
     assert H2O.CLOUD._memary.length == results.length : "Unexpected change in the cloud!";
     for (byte[] result : results) l += result.length;
     ByteArrayOutputStream baos = new ByteArrayOutputStream(l);
 
     // Add top-level directory.
-    ZipOutputStream zos = new ZipOutputStream(baos);
+    LogArchiveWriter archive = container.createLogArchiveWriter(baos);
     {
-      ZipEntry zde = new ZipEntry (topDir + File.separator);
-      zos.putNextEntry(zde);
+      LogArchiveWriter.ArchiveEntry entry = new LogArchiveWriter.ArchiveEntry(topDir + File.separator, now);
+      archive.putNextEntry(entry);
     }
 
     try {
-      // Add zip directory from each cloud member.
+      // Archive directory from each cloud member.
       for (int i =0; i<results.length; i++) {
         String filename =
             topDir + File.separator +
                 "node" + i + "_" +
                 H2O.CLOUD._memary[i].getIpPortString().replace(':', '_').replace('/', '_') +
-                ".zip";
-        ZipEntry ze = new ZipEntry(filename);
-        zos.putNextEntry(ze);
-        zos.write(results[i]);
-        zos.closeEntry();
+                "." + container.getFileExtension();
+        LogArchiveWriter.ArchiveEntry ze = new LogArchiveWriter.ArchiveEntry(filename, now);
+        archive.putNextEntry(ze);
+        archive.write(results[i]);
+        archive.closeEntry();
       }
 
-      // Add zip directory from the client node.  Name it 'driver' since that's what Sparking Water users see.
+      // Archive directory from the client node.  Name it 'driver' since that's what Sparking Water users see.
       if (clientResult != null) {
         String filename =
             topDir + File.separator +
-                "driver.zip";
-        ZipEntry ze = new ZipEntry(filename);
-        zos.putNextEntry(ze);
-        zos.write(clientResult);
-        zos.closeEntry();
+                "driver." + container.getFileExtension();
+        LogArchiveWriter.ArchiveEntry ze = new LogArchiveWriter.ArchiveEntry(filename, now);
+        archive.putNextEntry(ze);
+        archive.write(clientResult);
+        archive.closeEntry();
       }
 
       // Close the top-level directory.
-      zos.closeEntry();
+      archive.closeEntry();
     } finally {
-      // Close the full zip file.
-      zos.close();
+      // Close the archive file.
+      archive.close();
     }
 
     return baos.toByteArray();
