@@ -29,10 +29,10 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/1/index.ht
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6661'>PUBDEV-6661</a>] - Fixed a link function NPE in MOJOs.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6673'>PUBDEV-6673</a>] - Fixed the frame.tocsv signature. Instead of passing true, false, this now takes CSVStreamParams. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6673'>PUBDEV-6673</a>] - Fixed the frame.tocsv signature. Instead of passing true, false, this now takes CSVStreamParams.
 </li>
 </ul>
-        
+
 <h4>New Feature</h4>
 
 <ul>
@@ -50,10 +50,10 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/1/index.ht
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6510'>PUBDEV-6510</a>] - In XGBoost improved performance of moving sparse matrices to off-heap memory.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6518'>PUBDEV-6518</a>] - Logs from H2O can now be downloaded in plain text format. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6518'>PUBDEV-6518</a>] - Logs from H2O can now be downloaded in plain text format. 
 </li>
 </ul>
-    
+
 <h4>Task</h4>
 
 <ul>
@@ -64,7 +64,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/1/index.ht
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6619'>PUBDEV-6619</a>] - Removed the Deep Water booklet from H2O-3 builds. 
 </li>
 </ul>
-    
+
 <h4>Improvement</h4>
 
 <ul>
@@ -101,7 +101,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/1/index.ht
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6647'>PUBDEV-6647</a>] - ScoreContributionsTask is no longer abstract.
 </li>
 </ul>
-                                                                                                
+                                              
 <h4>Docs</h4>
 
 <ul>
