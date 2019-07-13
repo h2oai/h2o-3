@@ -12,7 +12,7 @@ Enable this option to specify that the algorithm will run on a single node. This
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
-- none
+- None
 
 
 Example

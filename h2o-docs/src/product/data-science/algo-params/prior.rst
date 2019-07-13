@@ -12,7 +12,7 @@ This option specifies the prior probability of class 1 in the response when ``fa
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
-- none
+- None
 
 Example
 ~~~~~~~

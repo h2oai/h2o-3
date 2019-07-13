@@ -14,7 +14,7 @@ The optional ``blending_frame`` parameter is used to specify a frame to be used 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
-- none
+- None
 
 Example
 ~~~~~~~

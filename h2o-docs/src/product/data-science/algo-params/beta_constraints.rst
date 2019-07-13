@@ -47,7 +47,7 @@ If you want to supply the beta constraints for a standardized model, scale your 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
-- none
+- None
 
 Example
 ~~~~~~~

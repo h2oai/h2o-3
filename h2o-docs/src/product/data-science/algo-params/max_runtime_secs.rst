@@ -22,7 +22,8 @@ Specifying ``max_runtime_secs=0`` disables this option, thus allowing for an unl
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
-- none
+- `max_models <max_models.html>`__
+- `max_runtime_secs_per_model <max_runtime_secs_per_model.html>`__
 
 Example
 ~~~~~~~
