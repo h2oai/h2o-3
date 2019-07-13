@@ -74,19 +74,41 @@ public class ModelJsonReader {
         for (int i = 0; i < columnCount; i++) {
             JsonArray column = dataColumns.get(i).getAsJsonArray();
             for (int j = 0; j < rowCount; j++) {
-                final JsonPrimitive primitiveValue = column.get(j).getAsJsonPrimitive();
+                final JsonElement cellValue = column.get(j);
+                if (cellValue == null || !cellValue.isJsonPrimitive()) {
+                    data[i][j] = null;
+                    continue;
+                }
+                JsonPrimitive primitiveValue = cellValue.getAsJsonPrimitive();
+
 
                 switch (columnTypes[i]) {
                     case LONG:
-                        data[i][j] = primitiveValue.getAsLong();
+                        if (primitiveValue.isNumber()) {
+                            data[i][j] = primitiveValue.getAsLong();
+                        } else {
+                            data[i][j] = null;
+                        }
                         break;
                     case DOUBLE:
-                        data[i][j] = primitiveValue.getAsDouble();
+                        if (primitiveValue.isNumber()) {
+                            data[i][j] = primitiveValue.getAsDouble();
+                        } else {
+                            data[i][j] = null;
+                        }
                         break;
                     case FLOAT:
-                        data[i][j] = primitiveValue.getAsFloat();
+                        if (primitiveValue.isNumber()) {
+                            data[i][j] = primitiveValue.getAsFloat();
+                        } else {
+                            data[i][j] = null;
+                        }
                     case INT:
-                        data[i][j] = primitiveValue.getAsInt();
+                        if (primitiveValue.isNumber()) {
+                            data[i][j] = primitiveValue.getAsInt();
+                        } else {
+                            data[i][j] = null;
+                        }
                     case STRING:
                         data[i][j] = primitiveValue.getAsString();
                         break;
