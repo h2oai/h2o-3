@@ -8,6 +8,9 @@ import hex.genmodel.attributes.metrics.MojoModelMetricsBinomial;
 import hex.genmodel.attributes.metrics.MojoModelMetricsMultinomial;
 import hex.genmodel.attributes.metrics.MojoModelMetricsRegression;
 
+/**
+ * Attributes of a MOJO model extracted from the MOJO itself.
+ */
 public class ModelAttributes {
 
   private final Table _modelSummary;
@@ -81,18 +84,32 @@ public class ModelAttributes {
     return _scoring_history;
   }
 
+  /**
+   * @return A {@link MojoModelMetrics} instance with training metrics. If available, otherwise null.
+   */
   public MojoModelMetrics getTrainingMetrics() {
     return _trainingMetrics;
   }
 
+  /**
+   * @return A {@link MojoModelMetrics} instance with validation metrics. If available, otherwise null.
+   */
   public MojoModelMetrics getValidationMetrics() {
     return _validation_metrics;
   }
 
+  /**
+   *
+   * @return A {@link MojoModelMetrics} instance with cross-validation metrics. If available, otherwise null.
+   */
   public MojoModelMetrics getCrossValidationMetrics() {
     return _cross_validation_metrics;
   }
 
+  /**
+   *
+   * @return A {@link Table} instance with summary table of the cross-validation metrics. If available, otherwise null.
+   */
   public Table getCrossValidationMetricsSummary() {
     return _cross_validation_metrics_summary;
   }

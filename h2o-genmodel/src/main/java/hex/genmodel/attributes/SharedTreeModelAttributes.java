@@ -1,13 +1,8 @@
 package hex.genmodel.attributes;
 
 import com.google.gson.JsonObject;
-import hex.ModelCategory;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
-import hex.genmodel.attributes.metrics.MojoModelMetrics;
-import hex.genmodel.attributes.metrics.MojoModelMetricsBinomial;
-import hex.genmodel.attributes.metrics.MojoModelMetricsMultinomial;
-import hex.genmodel.attributes.metrics.MojoModelMetricsRegression;
 
 
 public class SharedTreeModelAttributes extends ModelAttributes {
