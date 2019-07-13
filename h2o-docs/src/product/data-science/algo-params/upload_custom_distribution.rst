@@ -11,13 +11,13 @@ Description
 
 H2O’s GBM provides a number of distribution options that can be specified when building a model. Alternatively, you can use the ``upload_custom_distribution`` function to upload a custom distribution into a running H2O cluster.
 
-The custom distribution is a function which implements the `water.udf.CDistributionFunc` interface. This interface follows the design of `hex.Distribution` and contains four methods to support distributed invocation:
+The custom distribution is a function that implements the `water.udf.CDistributionFunc` interface. This interface follows the design of `hex.Distribution` and contains four methods to support distributed invocation:
 
 - ``link``: This method returns type of link function transformation of the probability of response variable to a continuous scale that is unbounded.
 
-- ``init``: This method combines weight, actual response and offset to compute the numerator and denominator of the initial value. It can return `[ weight * (response - offset), weight]` by default.
+- ``init``: This method combines weight, actual response, and offset to compute the numerator and denominator of the initial value. It can return `[ weight * (response - offset), weight]` by default.
 
-- ``gamma``: This method combines weight, actual response, residual and predicted response to compute numerator and denominator of size of step in terminal node estimate.
+- ``gamma``: This method combines weight, actual response, residual, and predicted response to compute numerator and denominator of size of step in terminal node estimate.
 
 - ``gradient``: This method computes the (negative half) gradient of deviance function at the predicted value for actual response in one GBM learning step.
 
