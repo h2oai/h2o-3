@@ -60,6 +60,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``H2OFrame``.
 
         :examples:
+        
         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
@@ -87,6 +88,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``H2OFrame``.
 
         :examples:
+        
         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
@@ -114,6 +116,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``int``  (default: ``0``).
 
         :examples:
+        
         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
@@ -142,6 +145,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``bool``  (default: ``True``).
 
         :examples:
+        
         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
@@ -170,6 +174,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``bool``  (default: ``False``).
 
         :examples:
+        
         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
@@ -199,6 +204,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``bool``  (default: ``False``).
 
         :examples:
+        
         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
@@ -227,6 +233,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``bool``  (default: ``False``).
 
         :examples:
+        
         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
@@ -257,6 +264,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``int``  (default: ``0``).
 
         :examples:
+        
         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
@@ -287,6 +295,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         One of: ``"auto"``, ``"random"``, ``"modulo"``, ``"stratified"``  (default: ``"auto"``).
 
         :examples:
+        
         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
@@ -315,6 +324,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``str``.
 
         :examples:
+        
         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
@@ -361,6 +371,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``List[str]``.
 
         :examples:
+        
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
         >>> airlines["Year"]= airlines["Year"].asfactor()
         >>> airlines["Month"]= airlines["Month"].asfactor()
@@ -395,6 +406,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``bool``  (default: ``True``).
 
         :examples:
+        
         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
@@ -426,6 +438,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``str``.
 
         :examples:
+        
         >>> boston = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
         >>> predictors = boston.columns[:-1]
         >>> response = "medv"
@@ -460,6 +473,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``str``.
 
         :examples:
+        
         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","acceleration","year"]
@@ -518,6 +532,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``List[float]``.
         
         :examples:
+        
         >>> covtype = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
         >>> covtype[54] = covtype[54].asfactor()
         >>> predictors = covtype.columns[0:54]
@@ -550,6 +565,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``float``  (default: ``5``).
 
         :examples:
+        
         >>> covtype = h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
         >>> covtype[54] = covtype[54].asfactor()
         >>> predictors = covtype.columns[0:54]
@@ -582,6 +598,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``int``  (default: ``20``).
 
         :examples:
+        
         >>>
         """
         return self._parms.get("max_confusion_matrix_size")
@@ -600,6 +617,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``int``  (default: ``0``).
 
         :examples:
+        
         >>> covtype = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
         >>> covtype[54] = covtype[54].asfactor()
         >>> predictors = covtype.columns[0:54]
@@ -629,6 +647,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``int``  (default: ``50``).
 
         :examples:
+        
         >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
         >>> titanic['survived'] = titanic['survived'].asfactor()
         >>> predictors = titanic.columns
@@ -663,6 +682,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``int``  (default: ``5``).
 
         :examples:
+        
         >>> df = h2o.import_file(path = "http://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
         >>> response = "survived"
         >>> df[response] = df[response].asfactor()
@@ -695,6 +715,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``float``  (default: ``10``).
 
         :examples:
+        
         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
@@ -723,6 +744,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``int``  (default: ``20``).
 
         :examples:
+        
         >>> eeg = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/eeg/eeg_eyestate.csv")
         >>> eeg['eyeDetection'] = eeg['eyeDetection'].asfactor()
         >>> predictors = eeg.columns[:-1]
@@ -756,6 +778,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``int``  (default: ``1024``).
 
         :examples:
+        
         >>> eeg = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/eeg/eeg_eyestate.csv")
         >>> eeg['eyeDetection'] = eeg['eyeDetection'].asfactor()
         >>> predictors = eeg.columns[:-1]
@@ -789,6 +812,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``int``  (default: ``1024``).
 
         :examples:
+        
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
         >>> airlines["Year"]= airlines["Year"].asfactor()
         >>> airlines["Month"]= airlines["Month"].asfactor()
@@ -826,6 +850,9 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         exceeds this
 
         Type: ``float``  (default: ``1.797693135e+308``).
+
+        :examples:
+        
         """
         return self._parms.get("r2_stopping")
 
@@ -844,6 +871,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``int``  (default: ``0``).
 
         :examples:
+        
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
         >>> airlines["Year"]= airlines["Year"].asfactor()
         >>> airlines["Month"]= airlines["Month"].asfactor()
@@ -884,6 +912,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         (default: ``"auto"``).
 
         :examples:
+        
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
         >>> airlines["Year"]= airlines["Year"].asfactor()
         >>> airlines["Month"]= airlines["Month"].asfactor()
@@ -920,6 +949,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``float``  (default: ``0.001``).
 
         :examples:
+        
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
         >>> airlines["Year"]= airlines["Year"].asfactor()
         >>> airlines["Month"]= airlines["Month"].asfactor()
@@ -956,6 +986,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``float``  (default: ``0``).
 
         :examples:
+        
         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
@@ -987,6 +1018,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``int``  (default: ``-1``).
 
         :examples:
+        
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
         >>> airlines["Year"]= airlines["Year"].asfactor()
         >>> airlines["Month"]= airlines["Month"].asfactor()
@@ -1028,6 +1060,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``bool``  (default: ``False``).
 
         :examples:
+        
         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
@@ -1057,6 +1090,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``float``  (default: ``0.1``).
 
         :examples:
+        
         >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
         >>> titanic['survived'] = titanic['survived'].asfactor()
         >>> predictors = titanic.columns
@@ -1091,6 +1125,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``float``  (default: ``1``).
 
         :examples:
+        
         >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
         >>> titanic['survived'] = titanic['survived'].asfactor()
         >>> predictors = titanic.columns
@@ -1127,6 +1162,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         ``"gamma"``, ``"tweedie"``, ``"laplace"``, ``"quantile"``, ``"huber"``, ``"custom"``  (default: ``"auto"``).
 
         :examples:
+        
         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "cylinders"
@@ -1154,6 +1190,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``float``  (default: ``0.5``).
 
         :examples:
+        
         >>> boston = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
         >>> predictors = boston.columns[:-1]
         >>> response = "medv"
@@ -1184,6 +1221,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``float``  (default: ``1.5``).
 
         :examples:
+        
         >>> insurance = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/insurance.csv")
         >>> predictors = insurance.columns[0:4]
         >>> response = 'Claims'
@@ -1215,6 +1253,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``float``  (default: ``0.9``).
 
         :examples:
+        
         >>> insurance = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/insurance.csv")
         >>> predictors = insurance.columns[0:4]
         >>> response = 'Claims'
@@ -1246,6 +1285,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``str``.
 
         :examples:
+        
         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
@@ -1288,6 +1328,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``float``  (default: ``1``).
 
         :examples:
+        
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
         >>> airlines["Year"]= airlines["Year"].asfactor()
         >>> airlines["Month"]= airlines["Month"].asfactor()
@@ -1322,6 +1363,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``List[float]``.
 
         :examples:
+        
         >>> covtype = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
         >>> covtype[54] = covtype[54].asfactor()
         >>> predictors = covtype.columns[0:54]
@@ -1353,6 +1395,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``float``  (default: ``1``).
 
         :examples:
+        
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
         >>> airlines["Year"]= airlines["Year"].asfactor()
         >>> airlines["Month"]= airlines["Month"].asfactor()
@@ -1387,6 +1430,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``float``  (default: ``1``).
 
         :examples:
+        
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
         >>> airlines["Year"]= airlines["Year"].asfactor()
         >>> airlines["Month"]= airlines["Month"].asfactor()
@@ -1421,6 +1465,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``float``  (default: ``1``).
 
         :examples:
+        
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
         >>> airlines["Year"]= airlines["Year"].asfactor()
         >>> airlines["Month"]= airlines["Month"].asfactor()
@@ -1456,6 +1501,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``float``  (default: ``1e-05``).
 
         :examples:
+        
         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
@@ -1486,6 +1532,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         ``"auto"``).
 
         :examples:
+        
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
         >>> airlines["Year"]= airlines["Year"].asfactor()
         >>> airlines["Month"]= airlines["Month"].asfactor()
@@ -1520,6 +1567,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``float``  (default: ``1.797693135e+308``).
 
         :examples:
+        
         >>> covtype = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
         >>> covtype[54] = covtype[54].asfactor()
         >>> predictors = covtype.columns[0:54]
@@ -1549,6 +1597,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``float``  (default: ``0``).
 
         :examples:
+        
         >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
         >>> titanic['survived'] = titanic['survived'].asfactor()
         >>> predictors = titanic.columns
@@ -1580,6 +1629,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         ``"label_encoder"``, ``"sort_by_response"``, ``"enum_limited"``  (default: ``"auto"``).
 
         :examples:
+        
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
         >>> airlines["Year"]= airlines["Year"].asfactor()
         >>> airlines["Month"]= airlines["Month"].asfactor()
@@ -1613,6 +1663,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``bool``  (default: ``False``).
 
         :examples:
+        
         >>> ecology = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/ecology_model.csv")
         >>> ecology['Angaus'] = ecology['Angaus'].asfactor()
         >>> response = 'Angaus'
@@ -1648,6 +1699,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``H2OFrame``.
 
         :examples:
+        
         >>> ecology = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/ecology_model.csv")
         >>> ecology['Angaus'] = ecology['Angaus'].asfactor()
         >>> response = 'Angaus'
@@ -1682,6 +1734,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``str``.
 
         :examples:
+        
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
         >>> airlines["Year"]= airlines["Year"].asfactor()
         >>> airlines["Month"]= airlines["Month"].asfactor()
@@ -1740,6 +1793,9 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Reference to custom distribution, format: `language:keyName=funcName`
 
         Type: ``str``.
+
+        :examples:
+        
         """
         return self._parms.get("custom_distribution_func")
 
@@ -1755,6 +1811,9 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Automatically export generated models to this directory.
 
         Type: ``str``.
+
+        :examples:
+        
         """
         return self._parms.get("export_checkpoints_dir")
 
@@ -1771,6 +1830,9 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         decreasing constraint.
 
         Type: ``dict``.
+
+        :examples:
+        
         """
         return self._parms.get("monotone_constraints")
 
@@ -1790,6 +1852,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``bool``  (default: ``True``).
 
         :examples:
+        
         >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
         >>> train["constantCol"] = 1
         >>> my_gbm = H2OGradientBoostingEstimator(check_constant_response=False)
