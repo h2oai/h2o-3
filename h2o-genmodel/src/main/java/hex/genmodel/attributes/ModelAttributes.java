@@ -8,10 +8,12 @@ import hex.genmodel.attributes.metrics.MojoModelMetricsBinomial;
 import hex.genmodel.attributes.metrics.MojoModelMetricsMultinomial;
 import hex.genmodel.attributes.metrics.MojoModelMetricsRegression;
 
+import java.io.Serializable;
+
 /**
  * Attributes of a MOJO model extracted from the MOJO itself.
  */
-public class ModelAttributes {
+public class ModelAttributes implements Serializable {
 
   private final Table _modelSummary;
   private final Table _scoring_history;

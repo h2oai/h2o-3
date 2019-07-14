@@ -1,6 +1,8 @@
 package hex.genmodel.attributes.metrics;
 
-public class MojoModelMetrics {
+import java.io.Serializable;
+
+public class MojoModelMetrics implements Serializable {
 
   public long _frame_checksum;
   public String _description;
