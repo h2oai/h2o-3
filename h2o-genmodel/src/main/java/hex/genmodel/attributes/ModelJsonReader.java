@@ -18,14 +18,18 @@ public class ModelJsonReader {
 
     public static final String MODEL_DETAILS_FILE = "experimental/modelDetails.json";
 
+    /**
+     * @param mojoReaderBackend
+     * @return {@link JsonObject} representing the deserialized Json.
+     */
     public static JsonObject parseModelJson(final MojoReaderBackend mojoReaderBackend) {
 
         try (BufferedReader fileReader = mojoReaderBackend.getTextFile(MODEL_DETAILS_FILE)) {
             final Gson gson = new GsonBuilder().create();
 
             return gson.fromJson(fileReader, JsonObject.class);
-        } catch (IOException e) {
-            throw new IllegalStateException("Could not read file inside MOJO " + MODEL_DETAILS_FILE, e);
+        } catch (Exception e){
+            return null;
         }
     }
 

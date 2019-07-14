@@ -35,8 +35,8 @@ public class GenericModelOutput extends Model.Output {
         _nfeatures = modelDescriptor.nfeatures();
         _model_summary = convertTable(modelAttributes.getModelSummary());
         _cross_validation_metrics_summary = convertTable(modelAttributes.getCrossValidationMetricsSummary());
-
-        if (modelAttributes instanceof SharedTreeModelAttributes) {
+        
+        if (modelAttributes != null && modelAttributes instanceof SharedTreeModelAttributes) {
             fillSharedTreeModelAttributes((SharedTreeModelAttributes) modelAttributes, modelDescriptor);
         } else {
             _variable_importances = null;

@@ -53,6 +53,10 @@ public abstract class SharedTreeMojoReader<M extends SharedTreeMojoModel> extend
   @Override
   protected SharedTreeModelAttributes readModelSpecificAttributes() {
     final JsonObject modelJson = ModelJsonReader.parseModelJson(_reader);
-    return new SharedTreeModelAttributes(modelJson, _model);
+    if(modelJson != null) {
+      return new SharedTreeModelAttributes(modelJson, _model);
+    } else {
+      return null;
+    }
   }
 }
