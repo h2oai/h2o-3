@@ -1,6 +1,11 @@
 package hex.generic;
 
 import hex.ModelCategory;
+import hex.ModelMetrics;
+import hex.ModelMetricsBinomial;
+import hex.deeplearning.DeepLearning;
+import hex.deeplearning.DeepLearningModel;
+import hex.genmodel.algos.deeplearning.DeeplearningMojoModel;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.tree.drf.DRF;
@@ -59,6 +64,10 @@ public class GenericModelTest extends TestUtil {
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
             genericModel = generic.trainModel().get();
+
+
+            assertNotNull(genericModel._output._training_metrics);
+            assertTrue(genericModel._output._training_metrics instanceof ModelMetricsBinomial);
 
             predictions = genericModel.score(testFrame);
 
@@ -387,6 +396,8 @@ public class GenericModelTest extends TestUtil {
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
             genericModel = generic.trainModel().get();
+            assertNotNull(genericModel._output._model_summary);
+            assertNotNull(genericModel._output._variable_importances);
 
             predictions = genericModel.score(testFrame);
             assertEquals(2691, predictions.numRows());

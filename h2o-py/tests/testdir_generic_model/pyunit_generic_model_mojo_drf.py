@@ -9,14 +9,15 @@ def mojo_model_drf_test():
 
     # GLM
     airlines = h2o.import_file(path=pyunit_utils.locate("smalldata/testng/airlines_train.csv"))
-    drf = H2ORandomForestEstimator(ntrees=1)
-    drf.train(x = ["Origin", "Dest"], y = "Distance", training_frame=airlines)
+    drf = H2ORandomForestEstimator(ntrees=1, nfolds = 3)
+    drf.train(x = ["Origin", "Dest"], y = "Distance", training_frame=airlines, validation_frame=airlines)
 
     original_model_filename = tempfile.mkdtemp()
     original_model_filename = drf.download_mojo(original_model_filename)
       
     model = H2OGenericEstimator.from_file(original_model_filename)
     assert model is not None
+    print(model)
     predictions = model.predict(airlines)
     assert predictions is not None
     assert predictions.nrows == 24421

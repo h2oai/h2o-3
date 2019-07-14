@@ -65,6 +65,7 @@ public class GlmMultinomialMojoModelTest {
     @Override
     public BufferedReader getTextFile(String filename) throws IOException {
       InputStream is = GlmMojoModelTest.class.getResourceAsStream("multinomial/" + filename);
+      if(is == null) return null;
       return new BufferedReader(new InputStreamReader(is));
     }
 

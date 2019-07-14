@@ -21,11 +21,7 @@ public class GenericModelV3 extends ModelSchemaV3<GenericModel, GenericModelV3, 
     }
 
     public static final class GenericModelOutputV3 extends ModelOutputSchemaV3<GenericModelOutput, GenericModelOutputV3>{
-
         @API(help="Variable Importances", direction=API.Direction.OUTPUT, level = API.Level.secondary)
         TwoDimTableV3 variable_importances;
-
-        @API(help="Generic model summary", direction = API.Direction.OUTPUT, level = API.Level.secondary)
-        TwoDimTableV3 model_summary;
     }
 }

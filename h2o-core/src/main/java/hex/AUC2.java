@@ -28,7 +28,7 @@ public class AUC2 extends Iced {
   public final double[] _tps;     // True  Positives
   public final double[] _fps;     // False Positives
   public final double _p, _n;     // Actual trues, falses
-  public final double _auc, _gini, _pr_auc; // Actual AUC value
+  public double _auc, _gini, _pr_auc; // Actual AUC value
   public final int _max_idx;    // Threshold that maximizes the default criterion
 
   public static final ThresholdCriterion DEFAULT_CM = ThresholdCriterion.f1;

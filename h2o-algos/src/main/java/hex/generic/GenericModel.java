@@ -26,7 +26,7 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
         super(selfKey, parms, output);
         _mojoBytes = mojoBytes;
         _mojoModel = mojoModel;
-        _output = new GenericModelOutput(_mojoModel._modelDescriptor);
+        _output = new GenericModelOutput(_mojoModel._modelDescriptor, _mojoModel._modelAttributes);
 
     }
 
