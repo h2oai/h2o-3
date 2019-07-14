@@ -70,7 +70,7 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
     Lockable old =  write_lock(job_key);
     if( old != null ) {
       Log.debug("lock-then-clear "+_key+" by job "+job_key);
-      old.remove_impl(new Futures()).blockForPending();
+      old.remove_impl(new Futures(), false).blockForPending();  // internal delete, don't remove dependencies as they're often still needed.
     }
     return (T)this;
   }
@@ -86,22 +86,23 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
   /** Write-lock 'this' and delete; blocking.
    *  Throws IAE if the _key is already locked.
    *
-   *  Subclasses that need custom deletion logic should override {@link #remove_impl(Futures)}
+   *  Subclasses that need custom deletion logic should override {@link Keyed#remove_impl(Futures, boolean)}
    *  as by contract, the only difference between {@link #delete()} and {@link #remove()}
    *  is that `delete` first write-locks `this`.
    */
-  public final void delete( ) { delete(null,new Futures()).blockForPending(); }
-  /** Write-lock 'this' and delete. 
+  public final void delete( ) { delete(true); }
+  public final void delete(boolean cascade) { delete(null, new Futures(), cascade).blockForPending(); }
+  /** Write-lock 'this' and delete.
    *  Throws IAE if the _key is already locked.
    *
-   *  Subclasses that need custom deletion logic should override {@link #remove_impl(Futures)}.
+   *  Subclasses that need custom deletion logic should override {@link Keyed#remove_impl(Futures, boolean)}.
    */
-  public final Futures delete( Key<Job> job_key, Futures fs ) {
+  public final Futures delete(Key<Job> job_key, Futures fs, boolean cascade) {
     if( _key != null ) {
       Log.debug("lock-then-delete "+_key+" by job "+job_key);
       new PriorWriteLock(job_key).invoke(_key);
     }
-    return remove(fs);
+    return remove(fs, cascade);
   }
 
   // Obtain the write-lock on _key, which may already exist, using the current 'this'.

@@ -720,12 +720,12 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   }
 
   @Override
-  protected Futures remove_impl(Futures fs) {
+  protected Futures remove_impl(Futures fs, boolean cascade) {
     DataInfo di = model_info().dataInfo();
     if (di != null) {
       di.remove(fs);
     }
-    return super.remove_impl(fs);
+    return super.remove_impl(fs, cascade);
   }
 
   @Override

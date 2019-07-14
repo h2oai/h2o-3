@@ -433,22 +433,16 @@ public class Leaderboard extends Keyed<Leaderboard> {
    * Delete object and its dependencies from DKV, including models.
    */
   @Override
-  protected Futures remove_impl(Futures fs) {
+  protected Futures remove_impl(Futures fs, boolean cascade) {
     Log.debug("Cleaning up leaderboard from models "+Arrays.toString(models));
-    for (Key<Model> m : models) {
-      Model model = m.get();
-      if (model != null) {
-        model.deleteCrossValidationFoldAssignment();
-        model.deleteCrossValidationPreds();
-        model.deleteCrossValidationModels();
-      } else {
-        Log.info("Model "+m+" was already removed");
+    if (cascade) {
+      for (Key<Model> m : models) {
+        Keyed.remove(m, fs, true);
       }
-      m.remove(fs);
     }
     for (Key k : leaderboard_set_metrics.keySet())
-      k.remove(fs);
-    return super.remove_impl(fs);
+      Keyed.remove(k, fs, true);
+    return super.remove_impl(fs, cascade);
   }
 
   private static double[] defaultMetricForModel(Model m) {

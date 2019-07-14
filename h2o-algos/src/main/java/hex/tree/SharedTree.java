@@ -361,7 +361,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
       } finally {
         if( _model!=null ) _model.unlock(_job);
-        for (Key k : getGlobalQuantilesKeys()) if (k!=null) k.remove();
+        for (Key k : getGlobalQuantilesKeys()) Keyed.remove(k);
         if (_validWorkspace != null) {
           _validWorkspace.remove();
           _validWorkspace = null;

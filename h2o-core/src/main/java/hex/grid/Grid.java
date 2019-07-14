@@ -390,11 +390,13 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
 
   // Cleanup models and grid
   @Override
-  protected Futures remove_impl(final Futures fs) {
-    for (Key<Model> k : _models.values())
-      k.remove(fs);
+  protected Futures remove_impl(final Futures fs, boolean cascade) {
+    if (cascade) {
+      for (Key<Model> k : _models.values())
+        Keyed.remove(k, fs, true);
+    }
     _models.clear();
-    return fs;
+    return super.remove_impl(fs, cascade);
   }
 
   /**

@@ -85,9 +85,9 @@ public class EventLog extends Keyed<EventLog> {
    * Delete object and its dependencies from DKV, including models.
    */
   @Override
-  protected Futures remove_impl(Futures fs) {
+  protected Futures remove_impl(Futures fs, boolean cascade) {
     _events = new EventLogEntry[0];
-    return super.remove_impl(fs);
+    return super.remove_impl(fs, cascade);
   }
 
   public TwoDimTable toTwoDimTable() {

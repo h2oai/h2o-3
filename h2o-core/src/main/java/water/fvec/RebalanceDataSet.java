@@ -93,7 +93,7 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
   }
   @Override public boolean onExceptionalCompletion(Throwable t, CountedCompleter caller) {
     t.printStackTrace();
-    if( _out != null ) _out.delete(_jobKey,new Futures()).blockForPending();
+    if( _out != null ) _out.delete(_jobKey,new Futures(), true).blockForPending();
     return true;
   }
 

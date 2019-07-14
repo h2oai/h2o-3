@@ -192,7 +192,7 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
     Futures fs = new Futures();
     for (Key key : keys) {
       try {
-        getFromDKV("(none)", key).delete(null, fs);
+        getFromDKV("(none)", key).delete(null, fs, true);
       } catch (IllegalArgumentException iae) {
         missing.add(key.toString());
       }

@@ -187,12 +187,12 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     super(selfKey, parms, output);
   }
 
-  @Override protected Futures remove_impl( Futures fs ) {
-    if (_output._init_key != null) _output._init_key.remove(fs);
-    if (_output._x_factor_key !=null) _output._x_factor_key.remove(fs);
-    if (_output._representation_key != null) _output._representation_key.remove(fs);
+  @Override protected Futures remove_impl(Futures fs, boolean cascade) {
+    Keyed.remove(_output._init_key, fs, true);
+    Keyed.remove(_output._x_factor_key, fs, true);
+    Keyed.remove(_output._representation_key, fs, true);
 
-    return super.remove_impl(fs);
+    return super.remove_impl(fs, cascade);
   }
 
   @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
