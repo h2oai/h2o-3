@@ -3,7 +3,6 @@ package ai.h2o.automl.targetencoding;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import water.Job;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
@@ -17,11 +16,11 @@ public class TargetEncoderBuilderTest extends TestUtil {
 
   @BeforeClass
   public static void setup() {
-    stall_till_cloudsize(1);
+    stall_till_cloudsize(2);
   }
 
   @Test
-  public void getTargetEncodingMapByTrainingTEBuilder() throws InterruptedException{
+  public void getTargetEncodingMapByTrainingTEBuilder() {
 
     Map<String, Frame> encodingMapFromTargetEncoder = null;
     Map<String, Frame> targetEncodingMapFromBuilder = null;

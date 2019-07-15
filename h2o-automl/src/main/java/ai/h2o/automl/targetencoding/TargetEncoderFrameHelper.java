@@ -103,7 +103,7 @@ public class TargetEncoderFrameHelper {
    * @param nfolds number of folds
    * @param seed
    */
-  static public Frame addKFoldColumn(Frame frame, String name, int nfolds, long seed) {
+  public static Frame addKFoldColumn(Frame frame, String name, int nfolds, long seed) {
     Vec foldVec = frame.anyVec().makeZero();
     frame.add(name, AstKFold.kfoldColumn(foldVec, nfolds, seed == -1 ? new Random().nextLong() : seed));
     return frame;
@@ -112,13 +112,13 @@ public class TargetEncoderFrameHelper {
   /**
    * @return Frame that is registered in DKV
    */
-  static public Frame register(Frame frame) {
+  public static Frame register(Frame frame) {
     frame._key = Key.make();
     DKV.put(frame);
     return frame;
   }
 
-  static public void encodingMapCleanUp(Map<String, Frame> encodingMap) {
+  public static void encodingMapCleanUp(Map<String, Frame> encodingMap) {
     for (Map.Entry<String, Frame> map : encodingMap.entrySet()) {
       map.getValue().delete();
     }

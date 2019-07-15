@@ -2,7 +2,6 @@ package ai.h2o.automl.targetencoding;
 
 import hex.ModelBuilder;
 import hex.ModelCategory;
-import water.DKV;
 import water.Scope;
 import water.fvec.Frame;
 import water.util.Log;
@@ -10,8 +9,6 @@ import water.util.Log;
 import java.util.Map;
 
 public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, TargetEncoderModel.TargetEncoderParameters, TargetEncoderModel.TargetEncoderOutput> {
-
-  public Map<String, Frame> _targetEncodingMap;
 
   public TargetEncoderModel getTargetEncoderModel() {
     assert _targetEncoderModel != null : "Training phase of the TargetEncoderBuilder did not take place yet. TargetEncoderModel is not available.";
@@ -32,8 +29,8 @@ public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, Targe
       TargetEncoder tec = new TargetEncoder(_parms._columnNamesToEncode, _parms._blendingParams);
 
       Scope.untrack(train().keys());
-      
-      _targetEncodingMap = tec.prepareEncodingMap(train(), _parms._response_column, _parms._teFoldColumnName);
+
+      Map<String, Frame> _targetEncodingMap = tec.prepareEncodingMap(train(), _parms._response_column, _parms._teFoldColumnName);
 
       for(Map.Entry<String, Frame> entry: _targetEncodingMap.entrySet()) {
         Frame frameWithEncodingMap = entry.getValue();
@@ -42,7 +39,8 @@ public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, Targe
 
       disableIgnoreConstColsFeature();
 
-      _targetEncoderModel = new TargetEncoderModel(_job._result, _parms,  new TargetEncoderModel.TargetEncoderOutput(TargetEncoderBuilder.this), tec);
+      TargetEncoderModel.TargetEncoderOutput output = new TargetEncoderModel.TargetEncoderOutput(TargetEncoderBuilder.this, _targetEncodingMap);
+      _targetEncoderModel = new TargetEncoderModel(_job._result, _parms, output, tec);
 
       // Note: For now we are not going to make TargetEncoderModel to be a real model. It should be treated as a wrapper for just getting a mojo.
       // DKV.put(targetEncoderModel);

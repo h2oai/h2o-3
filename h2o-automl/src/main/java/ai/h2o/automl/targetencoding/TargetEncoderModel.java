@@ -58,14 +58,14 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     
     public transient Map<String, Frame> _target_encoding_map;
     public TargetEncoderParameters _teParams;
-    public transient Map<String, Integer> _teColumnNameToIdx = new HashMap<>();
+    public transient Map<String, Integer> _teColumnNameToIdx;
     
-    public TargetEncoderOutput(TargetEncoderBuilder b) {
+    public TargetEncoderOutput(TargetEncoderBuilder b, Map<String, Frame> teMap) {
       super(b);
-      _target_encoding_map = b._targetEncodingMap;
+      _target_encoding_map = teMap;
       _teParams = b._parms;
 
-      _teColumnNameToIdx = createColumnNameToIndexMap( _teParams);
+      _teColumnNameToIdx = createColumnNameToIndexMap(_teParams);
     }
     
     private Map<String, Integer> createColumnNameToIndexMap(TargetEncoderParameters teParams) {
