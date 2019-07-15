@@ -775,32 +775,44 @@ random_dataset <-
       response_num = round(runif(1, 3, 10))
     }
 
-    # generate all the fractions
-    fractions <-
-      c(runif(1, 0, 1),
-        runif(1, 0, 1),
-        runif(1, 0, 1),
-        runif(1, 0, 1),
-        runif(1, 0, 1))
-    fractions <- fractions / sum(fractions)
-    random_frame <-
-      h2o.createFrame(
-        rows = num_rows,
-        cols = num_cols,
-        randomize = TRUE,
-        has_response = TRUE,
-        categorical_fraction = fractions[1],
-        integer_fraction = fractions[2],
-        binary_fraction = fractions[3],
-        time_fraction = fractions[4],
-        string_fraction = 0,
-        response_factors = response_num,
-        missing_fraction = runif(1, 0, 0.05)
-      )
-
-    return(random_frame)
+    random_dataseta_fixed_size(response_type, num_rows, num_cols, response_num, testrow)
   }
 
+
+#----------------------------------------------------------------------
+# This function will generate a random dataset for regression/binomial
+# and multinomial.  Copied from Pasha.
+#
+# Parameters:  response_type should be "regression", "binomial" or "multinomial"
+#----------------------------------------------------------------------
+random_dataset_fixed_size <-
+function(response_type, num_rows=1000, num_cols=10, response_num=3, testrow = 1000, seed=12345) {
+    # generate all the fractions
+    fractions <-
+    c(runif(1, 0, 1),
+    runif(1, 0, 1),
+    runif(1, 0, 1),
+    runif(1, 0, 1),
+    runif(1, 0, 1))
+    fractions <- fractions / sum(fractions)
+    random_frame <-
+    h2o.createFrame(
+    rows = num_rows,
+    cols = num_cols,
+    randomize = TRUE,
+    has_response = TRUE,
+    categorical_fraction = fractions[1],
+    integer_fraction = fractions[2],
+    binary_fraction = fractions[3],
+    time_fraction = fractions[4],
+    string_fraction = 0,
+    response_factors = response_num,
+    missing_fraction = 0.01,
+        seed = seed
+    )
+
+    return(random_frame)
+}
 #----------------------------------------------------------------------
 # This function will generate a random dataset containing enum columns only.
 # Copied from Pasha.
@@ -900,12 +912,11 @@ random_NN <- function(actFunc, max_layers, max_node_number) {
 
     if (grepl('Dropout', actFunc, fixed = TRUE)) {
       hiddenDropouts <- c(hiddenDropouts, runif(1, 0, 0.1))
-
     }
   }
   return(list("hidden" = hidden, "hiddenDropouts" = hiddenDropouts))
 }
-
+    
 #----------------------------------------------------------------------
 # This function will compare two frames and make sure they are equal.
 # However, the frames must contain columns that can be converted to

@@ -216,7 +216,7 @@ def np_comparison_check(h2o_data, np_data, num_elements):
  # perform h2o predict and mojo predict.  Frames containing h2o prediction is returned and mojo predict are
 # returned.
 
-def mojo_predict(model, tmpdir, mojoname, glrmReconstruct=False, get_leaf_node_assignment=False, glrmIterNumber=-1, zipFilePath=None):
+def mojo_predict(model, tmpdir, mojoname, glrmReconstruct=False, get_leaf_node_assignment=False, glrmIterNumber=-1, zipFilePath=None, colTypes=None):
     
     """
     perform h2o predict and mojo predict.  Frames containing h2o prediction is returned and mojo predict are returned.
@@ -228,7 +228,10 @@ def mojo_predict(model, tmpdir, mojoname, glrmReconstruct=False, get_leaf_node_a
     :param glrmReconstruct: True to return reconstructed dataset, else return the x factor.
     :return: the h2o prediction frame and the mojo prediction frame
     """
-    newTest = h2o.import_file(os.path.join(tmpdir, 'in.csv'), header=1)   # Make sure h2o and mojo use same in.csv
+    if (colTypes==None):
+        newTest = h2o.import_file(os.path.join(tmpdir, 'in.csv'), header=1)   # Make sure h2o and mojo use same in.csv
+    else:
+        newTest = h2o.import_file(os.path.join(tmpdir, 'in.csv'), header=1, col_types = colTypes)   # Make sure h2o and mojo use same in.csv
     predict_h2o = model.predict(newTest)
 
     # load mojo and have it do predict

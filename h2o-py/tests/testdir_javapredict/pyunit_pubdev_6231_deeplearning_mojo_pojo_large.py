@@ -64,7 +64,12 @@ def run_comparison_tests(auto_encoder, act_fun, missing_values_handling, set_all
     # save test file, h2o predict/mojo use same file
     h2o.download_csv(test[x], os.path.join(TMPDIR, 'in.csv'))  
     # load model and perform predict
-    pred_h2o, pred_mojo = pyunit_utils.mojo_predict(deeplearning_model, TMPDIR, MOJONAME)  
+    colTypes = train.types
+    del colTypes["response"]
+    # for key, value in colTypes.iteritems():
+    #     if value=="int" or value=="real":
+    #         colTypes[key]="Numeric"
+    pred_h2o, pred_mojo = pyunit_utils.mojo_predict(deeplearning_model, TMPDIR, MOJONAME, colTypes=colTypes)  
     pred_pojo = pyunit_utils.pojo_predict(deeplearning_model, TMPDIR, MOJONAME)
     # save model for debugging
     h2o.save_model(deeplearning_model, path=TMPDIR, force=True)  
