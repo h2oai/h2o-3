@@ -8,15 +8,17 @@ import water.H2O;
 import water.Key;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
-import water.util.IcedHashMapGeneric;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderModel.TargetEncoderParameters, TargetEncoderModel.TargetEncoderOutput> {
+
+  private final transient TargetEncoder _targetEncoder;
   
-  public TargetEncoderModel(Key<TargetEncoderModel> selfKey, TargetEncoderParameters parms, TargetEncoderOutput output) {
+  public TargetEncoderModel(Key<TargetEncoderModel> selfKey, TargetEncoderParameters parms, TargetEncoderOutput output, TargetEncoder tec) {
     super(selfKey, parms, output);
+    _targetEncoder = tec;
   }
   
   @Override
@@ -54,27 +56,20 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
 
   public static class TargetEncoderOutput extends Model.Output {
     
-    public IcedHashMapGeneric<String, Frame> _targetEncodingMap; // stores encoding map created and 'prepareEncodingMap'
+    public transient Map<String, Frame> _target_encoding_map;
     public TargetEncoderParameters _teParams;
-    public IcedHashMapGeneric<String, Integer> _teColumnNameToIdx;
+    public transient Map<String, Integer> _teColumnNameToIdx = new HashMap<>();
     
     public TargetEncoderOutput(TargetEncoderBuilder b) {
       super(b);
-      _targetEncodingMap = convertMapIntoIcedMap(b._targetEncodingMap);
+      _target_encoding_map = b._targetEncodingMap;
       _teParams = b._parms;
 
       _teColumnNameToIdx = createColumnNameToIndexMap( _teParams);
     }
     
-    // TODO `TargetEncoder.prepareEncodingMap` can return appropriate(iced) structure from the beginning but it is better to do this in a separate PR
-    public IcedHashMapGeneric<String, Frame> convertMapIntoIcedMap(Map<String, Frame> map) {
-      IcedHashMapGeneric<String, Frame> icedMap = new IcedHashMapGeneric<>();
-      icedMap.putAll(map);
-      return icedMap;
-    }
-    
-    private IcedHashMapGeneric<String, Integer> createColumnNameToIndexMap(TargetEncoderParameters teParams) {
-      IcedHashMapGeneric<String, Integer> teColumnNameToIdx = new IcedHashMapGeneric<>();
+    private Map<String, Integer> createColumnNameToIndexMap(TargetEncoderParameters teParams) {
+      Map<String, Integer> teColumnNameToIdx = new HashMap<>();
       String[] names = teParams.train().names().clone();
       String[] features = ArrayUtils.remove(names, teParams._response_column);
       for(String teColumn : teParams._columnNamesToEncode) {
@@ -93,21 +88,17 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     }
   }
 
-  private TargetEncoder constructTargetEncoderFromTargetEncoderParameters() {
-    return new TargetEncoder(_parms._columnNamesToEncode, _parms._blendingParams);
-  }
   /**
    * Transform with noise */
   public Frame transform(Frame data, byte strategy, double noiseLevel, long seed){
-    return constructTargetEncoderFromTargetEncoderParameters()
-            .applyTargetEncoding(data, _parms._response_column, this._output._targetEncodingMap, strategy,
+    return _targetEncoder.applyTargetEncoding(data, _parms._response_column, this._output._target_encoding_map, strategy,
             _parms._teFoldColumnName, _parms._withBlending, noiseLevel, true, seed);
   }
 
   /**
    * Transform with default noise of 0.01 */
   public Frame transform(Frame data, byte strategy, long seed){
-    return constructTargetEncoderFromTargetEncoderParameters().applyTargetEncoding(data, _parms._response_column, this._output._targetEncodingMap, strategy,
+    return _targetEncoder.applyTargetEncoding(data, _parms._response_column, this._output._target_encoding_map, strategy,
             _parms._teFoldColumnName, _parms._withBlending, true, seed);
   }
   
