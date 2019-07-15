@@ -280,6 +280,22 @@ class H2ORandomForestEstimator(H2OEstimator):
         Balance training data class counts via over/under-sampling (for imbalanced data).
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> covtype = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
+        >>> covtype[54] = covtype[54].asfactor()
+        >>> predictors = covtype.columns[0:54]
+        >>> response = 'C55'
+        >>> train, valid = covtype.split_frame(ratios = [.8], seed = 1234)
+        >>> cov_drf = H2ORandomForestEstimator(balance_classes = True,
+        ...                                    seed = 1234)
+        >>> cov_drf.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> print('logloss', cov_drf.logloss(valid = True)
+
         """
         return self._parms.get("balance_classes")
 
@@ -546,6 +562,21 @@ class H2ORandomForestEstimator(H2OEstimator):
         Run on one node only; no network overhead but fewer cpus used.  Suitable for small datasets.
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_drf = H2ORandomForestEstimator(build_tree_one_node = True,
+        ...                                     seed = 1234)
+        >>> cars_drf.train(x = predictors,
+        ...                y = response,
+        ...                training = train,
+        ...                validation_frame = valid)
+        >>> cars_drf.auc(valid=True)
         """
         return self._parms.get("build_tree_one_node")
 
@@ -607,6 +638,28 @@ class H2ORandomForestEstimator(H2OEstimator):
         For binary classification: Build 2x as many trees (one per class) - can lead to higher accuracy.
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_drf = H2ORandomForestEstimator(binomial_double_trees = False,
+        ...                                     seed = 1234)
+        >>> cars_drf.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> print('without binomial_double_trees:', cars_drf.auc(valid=True))
+        >>> cars_drf_2 = H2ORandomForestEstimator(binomial_double_trees = True,
+        ...                                       seed = 1234)
+        >>> cars_drf_2.train(x = predictors,
+        ...                  y = response,
+        ...                  training_frame = train,
+        ...                  validation_frame = valid)
+        >>> print('with binomial_double_trees:', cars_drf_2.auc(valid=True))
         """
         return self._parms.get("binomial_double_trees")
 
@@ -715,6 +768,18 @@ class H2ORandomForestEstimator(H2OEstimator):
         of class probabilities.
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> ecology = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/ecology_model.csv")
+        >>> ecology['Angaus'] = ecology['Angaus'].asfactor()
+        >>> response = 'Angaus'
+        >>> predictors = ecology.columns[3:13]
+        >>> train, calib = ecology.split_frame(seed = 12354)
+        >>> w = h2o.create_frame(binary_fraction=1, binary_ones_fraction=0.5, missing_fraction=0, rows=744, cols=1)
+        >>> w.set_names(["weight"])
+        >>> train = train.cbind(w)
+        >>> ecology
         """
         return self._parms.get("calibrate_model")
 
