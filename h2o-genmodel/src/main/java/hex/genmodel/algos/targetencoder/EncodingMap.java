@@ -18,7 +18,7 @@ public class EncodingMap implements Serializable {
    *        "C" -> [ 5, 6 ],                         
    *      )                        
    */                                       
-  Map<Integer, int[]> _encodingMap = null;
+  Map<Integer, int[]> _encodingMap;
 
   public EncodingMap(Map<Integer, int[]> encodingMap) {
     _encodingMap = encodingMap;

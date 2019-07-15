@@ -156,7 +156,7 @@ public class TargetEncoderFrameHelper {
     return frame;
   }
 
-  public static  void encodingMapCleanUp(Map<String, Frame> encodingMap) {
+  public static void encodingMapCleanUp(Map<String, Frame> encodingMap) {
     for (Map.Entry<String, Frame> map : encodingMap.entrySet()) {
       map.getValue().delete();
     }

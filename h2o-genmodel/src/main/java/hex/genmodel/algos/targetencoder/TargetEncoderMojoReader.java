@@ -10,6 +10,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoModel> {
+  
+  private static final String ENCODING_MAP_PATH = "feature_engineering/target_encoding/encoding_map.ini";
+  
+  private static final String COLUMN_MAP_PATH = "feature_engineering/target_encoding/te_column_name_to_idx_map.ini";
 
   @Override
   public String getModelName() {
@@ -23,8 +27,8 @@ public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoMo
       _model._inflectionPoint = readkv("inflection_point");
       _model._smoothing = readkv("smoothing");
     }
-    _model._targetEncodingMap = parseEncodingMap("feature_engineering/target_encoding/encoding_map.ini");
-    _model._teColumnNameToIdx = parseTEColumnNameToIndexMap("feature_engineering/target_encoding/te_column_name_to_idx_map.ini");
+    _model._targetEncodingMap = parseEncodingMap();
+    _model._teColumnNameToIdx = parseTEColumnNameToIndexMap();
   }
 
   @Override
@@ -32,10 +36,10 @@ public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoMo
     return new TargetEncoderMojoModel(columns, domains, responseColumn);
   }
   
-  public Map<String, Integer> parseTEColumnNameToIndexMap(String pathToSource) throws IOException {
+  private Map<String, Integer> parseTEColumnNameToIndexMap() throws IOException {
     Map<String, Integer> teColumnNameToIndexMap = new HashMap<>();
-    if(exists(pathToSource)) {
-      Iterable<String> parsedFile = readtext(pathToSource);
+    if(exists(COLUMN_MAP_PATH)) {
+      Iterable<String> parsedFile = readtext(COLUMN_MAP_PATH);
       for(String line : parsedFile) {
         String[] nameAndIndex = line.split("\\s*=\\s*", 2);
         teColumnNameToIndexMap.put(nameAndIndex[0], Integer.parseInt(nameAndIndex[1]));
@@ -44,47 +48,40 @@ public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoMo
     return teColumnNameToIndexMap;
   }
   
-    public EncodingMaps parseEncodingMap(String pathToSource) throws IOException {
-    Map<String, EncodingMap> encodingMaps = null;
-
-    if(exists(pathToSource)) {
-      BufferedReader source = getMojoReaderBackend().getTextFile(pathToSource);
-
+    public EncodingMaps parseEncodingMap() throws IOException {
+    if(!exists(ENCODING_MAP_PATH)) {
+      return null;
+    }
+    Map<String, EncodingMap> encodingMaps;
+    try (BufferedReader source = getMojoReaderBackend().getTextFile(ENCODING_MAP_PATH)) {
       encodingMaps = new HashMap<>();
       Map<Integer, int[]> encodingsForColumn = null;
       String sectionName = null;
-      try {
-        String line;
+      String line;
 
-        while (true) {
-          line = source.readLine();
-          if (line == null) { // EOF
-            encodingMaps.put(sectionName, new EncodingMap(encodingsForColumn));
-            break;
-          }
-          line = line.trim();
-          if (sectionName == null) {
-            sectionName = matchNewSection(line);
-            encodingsForColumn = new HashMap<>();
-          } else {
-            String matchResult = matchNewSection(line);
-            if (matchResult != null) {
-              encodingMaps.put(sectionName, new EncodingMap(encodingsForColumn));
-              encodingsForColumn = new HashMap<>();
-              sectionName = matchResult;
-              continue;
-            }
-
-            String[] res = line.split("\\s*=\\s*", 2);
-            int[] numAndDenom = processNumeratorAndDenominator(res[1].split(" "));
-            encodingsForColumn.put(Integer.parseInt(res[0]), numAndDenom);
-          }
+      while (true) {
+        line = source.readLine();
+        if (line == null) { // EOF
+          encodingMaps.put(sectionName, new EncodingMap(encodingsForColumn));
+          break;
         }
-        source.close();
-      } finally {
-        try {
-          source.close();
-        } catch (IOException e) { /* ignored */ }
+        line = line.trim();
+        if (sectionName == null) {
+          sectionName = matchNewSection(line);
+          encodingsForColumn = new HashMap<>();
+        } else {
+          String matchResult = matchNewSection(line);
+          if (matchResult != null) {
+            encodingMaps.put(sectionName, new EncodingMap(encodingsForColumn));
+            encodingsForColumn = new HashMap<>();
+            sectionName = matchResult;
+            continue;
+          }
+
+          String[] res = line.split("\\s*=\\s*", 2);
+          int[] numAndDenom = processNumeratorAndDenominator(res[1].split(" "));
+          encodingsForColumn.put(Integer.parseInt(res[0]), numAndDenom);
+        }
       }
     }
     return new EncodingMaps(encodingMaps);

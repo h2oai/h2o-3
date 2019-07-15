@@ -59,9 +59,6 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
       reimportedFrame = parse_test_file(Key.make("parsed"), tmpName, true);
       printOutFrameAsTable(reimportedFrame);
 
-      printOutColumnsMetadata(fr);
-      printOutColumnsMetadata(reimportedFrame);
-
       String[] teColumns = {teColumnName};
       TargetEncoder tec = new TargetEncoder(teColumns);
       targetEncodingMap = tec.prepareEncodingMap(reimportedFrame, targetColumnName, null);
@@ -147,8 +144,6 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
     String[] teColumns = {teColumnName};
     TargetEncoder tec = new TargetEncoder(teColumns);
 
-    printOutColumnsMetadata(fr);
-
     Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, null);
 
     Frame resultWithEncodings = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, false,0.0, true, 1234);
@@ -176,8 +171,6 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
 
     String[] teColumns = {teColumnName};
     TargetEncoder tec = new TargetEncoder(teColumns);
-
-    printOutColumnsMetadata(fr);
 
     Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, null);
 
