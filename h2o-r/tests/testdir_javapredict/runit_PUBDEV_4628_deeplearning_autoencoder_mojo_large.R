@@ -16,14 +16,8 @@ test.deeplearning.mojo <-
     #----------------------------------------------------------------------
     # Run the test
     #----------------------------------------------------------------------
+    e <- tryCatch({
       numTest = 200 # set test dataset to contain 1000 rows
-      allAct <- c("Tanh", "TanhWithDropout", "Rectifier", "RectifierWithDropout")
-      problemType <- c("binomial", "multinomial", "regression")
-      missingValues <- c('Skip', 'MeanImputation')
-      allFactors <- c(TRUE, FALSE)
-      categoricalEncodings <- c("AUTO", "OneHotInternal", "Binary", "Eigen")
-      enableAutoEncoder <- allFactors[sample(1:length(allFactors), replace = F)[1]]
-      
       params_prob_data <- setParmsData(numTest) # generate model parameters, random dataset
       
       modelAndDir<-buildModelSaveMojo(params_prob_data$params) # build the model and save mojo
@@ -34,6 +28,12 @@ test.deeplearning.mojo <-
       twoFrames<-mojoH2Opredict(modelAndDir$model, modelAndDir$dirName, filename) # perform H2O and mojo prediction and return frames
       
       compareFrames(twoFrames$h2oPredict,twoFrames$mojoPredict, prob=0.1, tolerance = 1e-4)
+    }, error = function(x) x)
+    if (!is.null(e))
+      print("Oh, caught some error")
+      print(typeof(e))
+    if (!is.null(e) && (!all(sapply("DistributedException", grepl, e[[1]]))))
+      FAIL(e)   # throw error unless it is unstable model error.
   }
 
 mojoH2Opredict<-function(model, tmpdir_name, filename) {
@@ -83,41 +83,35 @@ buildModelSaveMojo <- function(params) {
   return(list("model"=model, "dirName"=tmpdir_name))
 }
 
-# setParmsData <- function(numTest=1000) {
-#   #----------------------------------------------------------------------
-#   # Parameters for the test.
-#   #----------------------------------------------------------------------
-#   allAct <- c("Tanh", "TanhWithDropout", "Rectifier", "RectifierWithDropout", "Maxout", "MaxoutWithDropout")
-#   problemType <- c("binomial", "multinomial", "regression")
-#   missingValues <- c('Skip', 'MeanImputation')
-#   allFactors <- c(TRUE, FALSE)
-#   categoricalEncodings <- c("AUTO", "OneHotInternal", "Binary", "Eigen")
-#   enableAutoEncoder <- FALSE
-# 
-#   problem <- problemType[sample(1:length(problemType), replace = F)[1]]
-#   actFunc <- allAct[sample(1:length(allAct), replace = F)[1]]
-#   missing_values <- missingValues[sample(1:length(missingValues), replace = F)[1]]
-#   cateEn <-categoricalEncodings[sample(1:length(categoricalEncodings), replace = F)[1]]
-#   toStandardize <- allFactors[sample(1:length(allFactors), replace = F)[1]]
-#   useAllFactors <- allFactors[sample(1:length(allFactors), replace = F)[1]]
-#   
-#   training_file <- random_dataset_fixed_size(response_type, num_rows=8000, num_cols=5, response_num=3, testrow = 200)
-#   ratios <- (h2o.nrow(training_file)-numTest)/h2o.nrow(training_file)
-#   allFrames <- h2o.splitFrame(training_file, ratios)
-#   training_frame <- allFrames[[1]]
-#   test_frame <- allFrames[[2]]
-#   allNames = h2o.names(training_frame)
-#   
-#   hiddens = c(2,5)  # fixed NN size
-#   if (grepl('Dropout', actFunc, fixed = TRUE)) {
-#     hiddenDropouts <- c(0.5,0.5)
-#   } else {
-#     hiddenDropouts <= c()
-#   }
+setParmsData <- function(numTest=1000) {
+  #----------------------------------------------------------------------
+  # Parameters for the test.
+  #----------------------------------------------------------------------
+  allAct <- c("Tanh", "TanhWithDropout", "Rectifier", "RectifierWithDropout")
+  problemType <- c("binomial", "multinomial", "regression")
+  missingValues <- c('Skip', 'MeanImputation')
+  allFactors <- c(TRUE, FALSE)
+  categoricalEncodings <- c("AUTO", "OneHotInternal", "Binary", "Eigen")
+  enableAutoEncoder <- allFactors[sample(1:length(allFactors), replace = F)[1]]
+
+  if (!enableAutoEncoder) # autoEncoder cannot use maxout
+    allAct <- c(allAct, "Maxout", "MaxoutWithDropout")
   
-setParmsData <- function(useAllFactors, actFunc, toStandardize, missing_values, cateEn, training_frame, response_type, response_num) {  
-  training_file <- random_dataset_fixed_size(response_type, num_rows=8000, num_cols=5, response_num=3, testrow = 200)
-  nn_structure <- list("hidden" = hidden, "hiddenDropouts" = hiddenDropouts)
+  problem <- problemType[sample(1:length(problemType), replace = F)[1]]
+  actFunc <- allAct[sample(1:length(allAct), replace = F)[1]]
+  missing_values <- missingValues[sample(1:length(missingValues), replace = F)[1]]
+  cateEn <-categoricalEncodings[sample(1:length(categoricalEncodings), replace = F)[1]]
+  toStandardize <- allFactors[sample(1:length(allFactors), replace = F)[1]]
+  useAllFactors <- allFactors[sample(1:length(allFactors), replace = F)[1]]
+  
+  training_file <- random_dataset(problem, testrow = numTest)
+  ratios <- (h2o.nrow(training_file)-numTest)/h2o.nrow(training_file)
+  allFrames <- h2o.splitFrame(training_file, ratios)
+  training_frame <- allFrames[[1]]
+  test_frame <- allFrames[[2]]
+  allNames = h2o.names(training_frame)
+  
+  nn_structure <- random_NN(actFunc, 6, 10)
   params                  <- list()
   params$use_all_factor_levels <- useAllFactors
   params$activation <- actFunc
@@ -127,12 +121,12 @@ setParmsData <- function(useAllFactors, actFunc, toStandardize, missing_values, 
   params$hidden <- nn_structure$hidden
   params$training_frame <- training_frame
   params$x <- allNames[-which(allNames=="response")]
-  params$autoencoder <- FALSE
+  params$autoencoder <- enableAutoEncoder
   if (!params$autoencoder)
     params$y <- "response"
   
   if (length(nn_structure$hiddenDropouts) > 0) {
-    params$input_dropout_ratio <- 0.5
+    params$input_dropout_ratio <- runif(1, 0, 0.1)
     params$hidden_dropout_ratios <- nn_structure$hiddenDropouts
   }
   return(list("params" = params, "tDataset" = test_frame))
