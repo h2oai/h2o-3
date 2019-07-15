@@ -18,69 +18,73 @@ test.deeplearning.mojo <-
     #----------------------------------------------------------------------
     numTest = 200 # set test dataset to contain 1000 rows
     allAct <-
-      c("Tanh",
+      c(
+        "Tanh",
         "TanhWithDropout",
         "Rectifier",
-        "RectifierWithDropout")
+        "RectifierWithDropout",
+        "Maxout",
+        "MaxoutWithDropout"
+      )
     problemType <- c("binomial", "multinomial", "regression")
-    missingValues <- c('Skip', 'MeanImputation')
-    allFactors <- c(TRUE, FALSE)
+    missingValues <- c('MeanImputation', 'Skip')
     categoricalEncodings <-
-      c("AUTO", "OneHotInternal", "Binary", "Eigen")
+      c("Eigen", "AUTO", "OneHotInternal", "Binary")
     model_count = 1
-    for (useAllFactors in allFactors) {
-      for (actFunc in allAct) {
-        for (toStandardize in allFactors) {
-          for (missing_values in missingValues) {
-            for (cateEn in categoricalEncodings) {
-              for (response_type in problemType) {
-                if (grepl('regression', response_type, fixed = TRUE)) {
-                  response_num = 1
-                } else if (grepl('binomial', response_type, fixed = TRUE)) {
-                  response_num = 2
-                } else {
-                  response_num = 3
-                }
-                print(paste("*******   Model number", model_count, sep=":"))
-                model_count = model_count+1
-                print(paste("useAllFactor", useAllFactors, sep=":"))
-                print(paste("activation function", actFunc, sep=":"))
-                print(paste("toStandardsize", toStandardize, sep=":"))
-                print(paste("missing values handling", missing_values, sep=":"))
-                print(paste("categorical encodings", cateEn, sep=":"))
-                print(paste("response type", response_type, sep=":"))
-                setParmsData(
-                  useAllFactors,
-                  actFunc,
-                  toStandardize,
-                  missing_values,
-                  cateEn,
-                  response_type,
-                  response_num
-                )
-                print("Generating model parameters and dataset....") 
-                params_prob_data <-
-                  setParmsData(numTest) # generate model parameters, random dataset
-                print("Building model and saving mojo....") 
-                modelAndDir <-
-                  buildModelSaveMojo(params_prob_data$params) # build the model and save mojo
-                filename = sprintf("%s/in.csv", modelAndDir$dirName) # save the test dataset into a in.csv file.
-                h2o.downloadCSV(params_prob_data$tDataset[, params_prob_data$params$x], filename)
-                print("Generating model predict and mojo predict .....")               
-                twoFrames <-
-                  mojoH2Opredict(modelAndDir$model,
-                                 modelAndDir$dirName,
-                                 filename) # perform H2O and mojo prediction and return frames
-                print("Comparing model predict and mojo predict .....")                  
-                compareFrames(
-                  twoFrames$h2oPredict,
-                  twoFrames$mojoPredict,
-                  prob = 0.1,
-                  tolerance = 1e-4
-                )
-              print("Test SUCCESS....")
-              }
+    useAllFactors <- TRUE
+    toStandardize <- FALSE
+
+    for (missing_values in missingValues) {
+      for (cateEn in categoricalEncodings) {
+        for (actFunc in allAct) {
+          for (response_type in problemType) {
+            if (grepl('regression', response_type, fixed = TRUE)) {
+              response_num = 1
+            } else if (grepl('binomial', response_type, fixed = TRUE)) {
+              response_num = 2
+            } else {
+              response_num = 3
             }
+            browser()
+            print(paste("*******   Model number", model_count, sep =
+                          ":"))
+            model_count = model_count + 1
+            print(paste("useAllFactor", useAllFactors, sep = ":"))
+            print(paste("activation function", actFunc, sep = ":"))
+            print(paste("toStandardsize", toStandardize, sep = ":"))
+            print(paste("missing values handling", missing_values, sep =
+                          ":"))
+            print(paste("categorical encodings", cateEn, sep = ":"))
+            print(paste("response type", response_type, sep = ":"))
+            print("Generating model parameters and dataset....")
+            params_prob_data <- setParmsData(
+              useAllFactors,
+              actFunc,
+              toStandardize,
+              missing_values,
+              cateEn,
+              response_type,
+              response_num
+            )
+            browser()
+            print("Building model and saving mojo....")
+            modelAndDir <-
+              buildModelSaveMojo(params_prob_data$params) # build the model and save mojo
+            filename = sprintf("%s/in.csv", modelAndDir$dirName) # save the test dataset into a in.csv file.
+            h2o.downloadCSV(params_prob_data$tDataset[, params_prob_data$params$x], filename)
+            print("Generating model predict and mojo predict .....")
+            twoFrames <-
+              mojoH2Opredict(modelAndDir$model,
+                             modelAndDir$dirName,
+                             filename) # perform H2O and mojo prediction and return frames
+            print("Comparing model predict and mojo predict .....")
+            compareFrames(
+              twoFrames$h2oPredict,
+              twoFrames$mojoPredict,
+              prob = 0.1,
+              tolerance = 1e-4
+            )
+            print("Test SUCCESS....")
           }
         }
       }
@@ -135,7 +139,20 @@ buildModelSaveMojo <- function(params) {
 }
 
 setParmsData <- function(useAllFactors, actFunc, toStandardize, missing_values, cateEn, training_frame, response_type, response_num) {  
-  training_file <- random_dataset_fixed_size(response_type, num_rows=8000, num_cols=5, response_num=3, testrow = 200)
+  if (grepl('regression', response_type, fixed = TRUE))  {
+    response_num <- 1
+  } else if (grepl('binomial', response_type, fixed = TRUE))  {
+    response_num <- 2
+  } else {
+    response_num <- 3
+  }
+  training_file <- random_dataset_fixed_size(response_type, 5000, 4, response_num, testrow = 200)
+  ratios <- (h2o.nrow(training_file)-200)/h2o.nrow(training_file)
+  allFrames <- h2o.splitFrame(training_file, ratios)
+  training_frame <- allFrames[[1]]
+  test_frame <- allFrames[[2]]
+  allNames = h2o.names(training_frame)
+  
   params                  <- list()
   params$use_all_factor_levels <- useAllFactors
   params$activation <- actFunc
