@@ -9,14 +9,18 @@
 Description
 ~~~~~~~~~~~
 
-Use this option to specify a custom distribution function. A custom distribution function can be used to customize a loss function calculation.
+Use this option to specify a custom distribution function, which can then be used to customize a loss function calculation.
 
-**Note**: This option is only supported in the Python client.
+**Notes**: 
+
+- This option is only supported in the Python client.
+- Additional information is located at https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/dev/custom_functions.md. 
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
 - `distribution <distribution.html>`__
+- `upload_custom_distribution <upload_custom_distribution.html>`__
 
 Example
 ~~~~~~~
@@ -43,7 +47,8 @@ Example
 	airlines['FlightNum'] = airlines['FlightNum'].asfactor()
 
 	# set the predictor names and the response column name
-	predictors = ["Origin", "Dest", "Year", "UniqueCarrier", "DayOfWeek", "Month", "Distance", "FlightNum"]
+	predictors = ["Origin", "Dest", "Year", "UniqueCarrier", 
+	              "DayOfWeek", "Month", "Distance", "FlightNum"]
 	response = "IsDepDelayed"
 
 	# split into train and validation sets 
@@ -51,9 +56,9 @@ Example
 
 	# initialize the estimator then train the model
 	airlines_gbm = H2OGradientBoostingEstimator(ntrees=3,
-												max_depth=5,
-												distribution="bernoulli",
-												seed=1234)
+	                                            max_depth=5,
+	                                            distribution="bernoulli",
+	                                            seed=1234)
 
 	airlines_gbm.train(x=predictors, y=response, training_frame=train, validation_frame=valid)
 
@@ -87,17 +92,18 @@ Example
 
 	# upload the custom distribution
 	custom_dist_func = h2o.upload_custom_distribution(MyBernoulli,
-													  func_name="custom_bernoulli",
-													  func_file="custom_bernoulli.py")
+	                                                  func_name="custom_bernoulli",
+	                                                  func_file="custom_bernoulli.py")
 
 	# train the model
 	airlines_gbm_custom = H2OGradientBoostingEstimator(ntrees=3,
-													   max_depth=5,
-													   distribution="custom",
-													   custom_distribution_func=custom_dist_func,
-													   seed=1234)
+	                                                   max_depth=5,
+	                                                   distribution="custom",
+	                                                   custom_distribution_func=custom_dist_func,
+	                                                   seed=1234)
 
-	airlines_gbm_custom.train(x=predictors, y=response, training_frame=train, validation_frame=valid)
+	airlines_gbm_custom.train(x=predictors, y=response, 
+	                          training_frame=train, validation_frame=valid)
 
 	# print the auc for the validation data - the result should be the same
 	print(airlines_gbm_custom.auc(valid=True))
@@ -120,15 +126,16 @@ Example
 
 	# Upload the custom distribution
 	custom_dist_func = h2o.upload_custom_distribution(MyBernoulliAsymmetric,
-													  func_name="custom_bernoulli_asym",
-													  func_file="custom_bernoulli_asym.py")
+	                                                  func_name="custom_bernoulli_asym",
+	                                                  func_file="custom_bernoulli_asym.py")
 
 	# Train the model
 	airlines_gbm_custom_asym = H2OGradientBoostingEstimator(ntrees=3,
-															max_depth=5,
-															distribution="custom",
-															custom_distribution_func=custom_dist_func,
-															seed=1234)
+	                                                        max_depth=5,
+	                                                        distribution="custom",
+	                                                        custom_distribution_func=custom_dist_func,
+	                                                        seed=1234)
 
-	airlines_gbm_custom_asym.train(x=predictors, y=response, training_frame=train, validation_frame=valid)
+	airlines_gbm_custom_asym.train(x=predictors, y=response, 
+	                               training_frame=train, validation_frame=valid)
 	print(airlines_gbm_custom_asym.auc(valid=True))

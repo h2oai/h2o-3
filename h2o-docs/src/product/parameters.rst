@@ -124,6 +124,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/tweedie_link_power
    data-science/algo-params/tweedie_power
    data-science/algo-params/tweedie_variance_power
+   data-science/algo-params/upload_custom_distribution
    data-science/algo-params/use_all_factor_levels
    data-science/algo-params/user_points
    data-science/algo-params/validation_frame
