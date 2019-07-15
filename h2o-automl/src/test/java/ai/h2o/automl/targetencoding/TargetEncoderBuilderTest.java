@@ -16,7 +16,7 @@ public class TargetEncoderBuilderTest extends TestUtil {
 
   @BeforeClass
   public static void setup() {
-    stall_till_cloudsize(2);
+    stall_till_cloudsize(1);
   }
 
   @Test
