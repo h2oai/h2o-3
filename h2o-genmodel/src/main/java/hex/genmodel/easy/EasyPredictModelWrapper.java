@@ -68,6 +68,7 @@ public class EasyPredictModelWrapper implements Serializable {
   private final boolean enableGLRMReconstruct;  // if set true, will return the GLRM resconstructed value, A_hat=X*Y instead of just X
   private final boolean enableStagedProbabilities; // if set true, staged probabilities from tree agos are returned
   private final boolean enableContributions; // if set to true, will return prediction contributions (SHAP values) - for GBM & XGBoost
+  private final int glrmIterNumber; // allow user to set GLRM mojo iteration number in constructing x.
 
   private final PredictContributions predictContributions;
   
@@ -107,6 +108,7 @@ public class EasyPredictModelWrapper implements Serializable {
     private boolean enableGLRMReconstrut = false;
     private boolean enableStagedProbabilities = false;
     private boolean enableContributions = false;
+    private int glrmIterNumber = 100; // default set to 100
 
     /**
      * Specify model object to wrap.
@@ -156,6 +158,19 @@ public class EasyPredictModelWrapper implements Serializable {
       return this;
     }
 
+    public Config setGLRMIterNumber(int value) throws IOException {
+      if (model==null)
+        throw new IOException("Cannot set glrmIterNumber for a null model.  Call config.setModel() first.");
+
+      if (!(model instanceof GlrmMojoModel))
+        throw new IOException("glrmIterNumber  shall only be used with GlrmMojoModels.");
+      
+      if (value <= 0)
+        throw new IllegalArgumentException("GLRMIterNumber must be positive.");
+      glrmIterNumber = value;
+      return this;
+    }
+
     public Config setEnableStagedProbabilities (boolean val) throws IOException {
         if (val && (model==null))
             throw new IOException("enableStagedProbabilities cannot be set with null model.  Call setModel() first.");
@@ -187,6 +202,8 @@ public class EasyPredictModelWrapper implements Serializable {
      * @return Setting for unknown categorical levels handling
      */
     public boolean getConvertUnknownCategoricalLevelsToNa() { return convertUnknownCategoricalLevelsToNa; }
+
+    public int getGLRMIterNumber() { return glrmIterNumber; }
 
     /**
      * Specify the default action when a string value cannot be converted to
@@ -271,7 +288,10 @@ public class EasyPredictModelWrapper implements Serializable {
     enableGLRMReconstruct = config.getEnableGLRMReconstrut();
     enableStagedProbabilities = config.getEnableStagedProbabilities();
     enableContributions = config.getEnableContributions();
+    glrmIterNumber = config.getGLRMIterNumber();
 
+    if (m instanceof GlrmMojoModel)
+      ((GlrmMojoModel)m)._iterNumber=glrmIterNumber;
     if (enableContributions) {
       if (!(m instanceof PredictContributionsFactory)) {
         throw new IllegalStateException("Model " + m.getClass().getName() + " cannot be used to predict contributions.");
