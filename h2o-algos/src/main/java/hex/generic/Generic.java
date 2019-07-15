@@ -8,6 +8,7 @@ import hex.genmodel.algos.gbm.GbmMojoModel;
 import hex.genmodel.algos.glm.GlmMojoModel;
 import hex.genmodel.algos.isofor.IsolationForestMojoModel;
 import hex.genmodel.algos.kmeans.KMeansMojoModel;
+import water.DKV;
 import water.H2O;
 import water.Key;
 import water.fvec.ByteVec;
@@ -16,6 +17,7 @@ import water.util.ArrayUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -59,7 +61,14 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
     class MojoDelegatingModelDriver extends Driver {
         @Override
         public void computeImpl() {
-            Key<Frame> dataKey = importFile();
+            final Key<Frame> dataKey;
+            if (_parms._path != null) {
+                dataKey = importFile();
+            } else if (_parms._model_key != null) {
+                dataKey = _parms._model_key;
+            } else {
+                throw new IllegalArgumentException("Either MOJO zip path or key to the uploaded MOJO frame must be specified");
+            }
             final ByteVec mojoBytes = getUploadedMojo(dataKey);
             final MojoModel mojoModel;
             try {
@@ -88,7 +97,7 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
         ArrayList<String> dels = new ArrayList<>();
         H2O.getPM().importFiles(_parms._path, null, files, keys, fails, dels);
         if (!fails.isEmpty()) {
-            throw new RuntimeException("Failed to import file: " + fails.toString());
+            throw new RuntimeException("Failed to import file: " + Arrays.toString(fails.toArray()));
         }
         assert keys.size() == 1;
         return Key.make(keys.get(0));

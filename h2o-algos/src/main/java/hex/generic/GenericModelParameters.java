@@ -10,6 +10,11 @@ public class GenericModelParameters extends Model.Parameters {
      * Path of the file with embedded model
      */
     public String _path;
+
+    /**
+     * Key to the file with embedded model
+     */
+    public Key<Frame> _model_key;
     
     @Override
     public String algoName() {

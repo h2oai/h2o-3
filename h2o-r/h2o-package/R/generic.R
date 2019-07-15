@@ -7,6 +7,7 @@
 #' additional information about the model. The imported model has to be supported by H2O.
 #' 
 #' @param model_id Destination id for this model; auto-generated if not specified.
+#' @param model_key Key to the self-contained model archive already uploaded to H2O.
 #' @param path Path to file with self-contained model archive.
 #' @examples
 #' \dontrun{
@@ -19,6 +20,7 @@
 #' @export
 h2o.generic <- function(
                         model_id = NULL,
+                        model_key = NULL,
                         path = NULL
                         ) 
 {
@@ -31,6 +33,8 @@ h2o.generic <- function(
   parms <- list()
   if (!missing(model_id))
     parms$model_id <- model_id
+  if (!missing(model_key))
+    parms$model_key <- model_key
   if (!missing(path))
     parms$path <- path
   # Error check and build model

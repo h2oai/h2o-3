@@ -23,7 +23,7 @@ class H2OGenericEstimator(H2OEstimator):
     def __init__(self, **kwargs):
         super(H2OGenericEstimator, self).__init__()
         self._parms = {}
-        names_list = {"model_id", "path"}
+        names_list = {"model_id", "model_key", "path"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -34,6 +34,20 @@ class H2OGenericEstimator(H2OEstimator):
                 setattr(self, pname, pvalue)
             else:
                 raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
+
+    @property
+    def model_key(self):
+        """
+        Key to the self-contained model archive already uploaded to H2O.
+
+        Type: ``H2OFrame``.
+        """
+        return self._parms.get("model_key")
+
+    @model_key.setter
+    def model_key(self, model_key):
+        self._parms["model_key"] = H2OFrame._validate(model_key, 'model_key')
+
 
     @property
     def path(self):
