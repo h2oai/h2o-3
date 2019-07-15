@@ -775,7 +775,7 @@ random_dataset <-
       response_num = round(runif(1, 3, 10))
     }
 
-    return(random_dataseta_fixed_size(response_type, num_rows, num_cols, response_num, testrow)
+    random_dataseta_fixed_size(response_type, num_rows, num_cols, response_num, testrow)
   }
 
 
