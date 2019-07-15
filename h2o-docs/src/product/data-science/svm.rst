@@ -59,32 +59,27 @@ Defining an SVM Model
    consistent for each H2O instance so that you can create models with
    the same starting conditions in alternative configurations.
 
-Algorithm
-~~~~~~~~~
+SVM Algorithm
+~~~~~~~~~~~~~
 
-H2O's implementation of Support-vector Machine follows the algoritnm specified by E. Chang and et al. (2007).
-Simplified description in this section is based on the original PSVM paper, for details please refer to this paper.
-
-Our implementation can be used to solve binary classification problems. In this configuration SVM can be formulated
-as a quadratic optimization problem 
+H2O's implementation of support vector machine follows the algorithm specified by Edward Y. Chang and others (refer to the reference below for more information). This implementation can be used to solve binary classification problems. In this configuration, SVM can be formulated as a quadratic optimization problem:
 
 :math:`\min{\frac{1}{2}\|\mathbf{w}\|^2 + C\sum_{i=1}^n\xi_i}` s.t. :math:`1 - y_i(\mathbf{w}^T\phi(\mathbf{x}_i) + b) \leq \xi_i, \xi_i > 0`
 
 
-Here :math:`C` is a regularization hyperparameter, :math:`\phi(\cdot)` a basis function which maps each observation :math:`\mathbf{x}_i` to a Reproducing Kernel Hilbert Space.
-Solution of the problem is a vector of weights :math:`w` and a threshold :math:`b` that defines a separating hyperplane with the largest separation, or margin, between the two classes in the RKHS space. Decision function of a SVM classifier thus is :math:`f(\mathbf{x}) = \mathbf{w}^T\phi(\mathbf{x})+b`.
+where :math:`C` is a regularization hyperparameter, and :math:`\phi(\cdot)` is a basis function that maps each observation :math:`\mathbf{x}_i` to a Reproducing Kernel Hilbert Space. The solution of the problem is a vector of weights :math:`w` and a threshold :math:`b` that defines a separating hyperplane with the largest separation, or margin, between the two classes in the RKHS space. As a result, the decision function of a SVM classifier is :math:`f(\mathbf{x}) = \mathbf{w}^T\phi(\mathbf{x})+b`.
 
-Because this formulation of the problem is difficult to solve the duality principle is used to formulate a dual problem using the method of Lagrangian multipliers:
+Due to the difficulty of solving this formulation of the problem, the duality principle is used to formulate a dual problem using the method of Lagrangian multipliers:
 
 :math:`\min{\frac{1}{2}\alpha^T\mathbf{Q}\alpha - \alpha^T\mathbf{1}}` s.t. :math:`\mathbf{0} \leq \alpha \leq \mathbf{C}, \mathbf{y}^T\alpha = 0`
 
-Matrix :math:`\mathbf{Q}` is defined as :math:`\mathbf{Q}_{ij} = y_{i}y_{j}K(\mathbf{x}_i,\mathbf{x}_j)` where :math:`K` is a Kernel function. In our setting this problem represent a convex Quadratic Programming problem with linear constraints. This problem can be solved by Interior-Point method (IPM): https://en.wikipedia.org/wiki/Interior-point_method.
+Matrix :math:`\mathbf{Q}` is defined as :math:`\mathbf{Q}_{ij} = y_{i}y_{j}K(\mathbf{x}_i,\mathbf{x}_j)`, where :math:`K` is a Kernel function. In our setting, this problem represents a convex Quadratic Programming problem with linear constraints. This problem can be solved by Interior-Point method (IPM): https://en.wikipedia.org/wiki/Interior-point_method.
 
-The main idea of the PSVM algorithm is to approximate the (potentially very large) matrix :math:`\mathbf{Q}` using row-based Incomplete Cholesky Factorization (:math:`\mathbf{Q} \approx \mathbf{H}\mathbf{H}^T`). The row-based nature of the factorization algorithm allows for paralellization that can be implemented in the distributed environment of the H2O platform. Quality of the approximation is measured by :math:`trace(\mathbf{Q} - \mathbf{H}\mathbf{H}^T)` and the algorithm stops when the value of the trace is within a user provided threshold or the configured maximum rank of the ICF matrix is reached.
+The main idea of the SVM algorithm is to approximate the (potentially very large) matrix :math:`\mathbf{Q}` using row-based Incomplete Cholesky Factorization (:math:`\mathbf{Q} \approx \mathbf{H}\mathbf{H}^T`). The row-based nature of the factorization algorithm allows for paralellization that can be implemented in the distributed environment of the H2O platform. The quality of the approximation is measured by :math:`trace(\mathbf{Q} - \mathbf{H}\mathbf{H}^T)`, and the algorithm stops when the value of the trace is within a user provided threshold, or when the configured maximum rank of the ICF matrix is reached.
 
-Approximation of the :math:`\mathbf{Q}` matrix is used in the IPM algorithm in order to speed-up the bottleneck of the Newton step and leverage the parallel execution environment.
+An approximation of the :math:`\mathbf{Q}` matrix is used in the IPM algorithm in order to speed up the bottleneck of the Newton step and leverage the parallel execution environment.
 
 References
 ~~~~~~~~~~
 
- E.Y. Chang, K. Zhu , H. Wang, H. Bai, J. Li, Z. Qiu, H. Cui, Parallelizing support vector machines on distributed computers, in Proceedings of NIPS, 2007 `Google Scholar <http://papers.nips.cc/paper/3202-parallelizing-support-vector-machines-on-distributed-computers.pdf>`__
+ E.Y. Chang, K. Zhu, H. Wang, H. Bai, J. Li, Z. Qiu, H. Cui, Parallelizing support vector machines on distributed computers, in Proceedings of NIPS, 2007 `Google Scholar <http://papers.nips.cc/paper/3202-parallelizing-support-vector-machines-on-distributed-computers.pdf>`__
