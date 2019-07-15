@@ -11,20 +11,15 @@ source("../../scripts/h2o-r-test-setup.R")
 # randomly.  We hope to test all different network settings here.
 #----------------------------------------------------------------------
 
-test.deeplearning.mojo <-
+test.deeplearning.autoencoder.mojo <-
   function() {
-    #----------------------------------------------------------------------
-    # Run the test
-    #----------------------------------------------------------------------
     numTest = 200 # set test dataset to contain 1000 rows
     allAct <-
       c(
         "Tanh",
         "TanhWithDropout",
         "Rectifier",
-        "RectifierWithDropout",
-        "Maxout",
-        "MaxoutWithDropout"
+        "RectifierWithDropout"
       )
     problemType <- c("binomial", "multinomial", "regression")
     missingValues <- c('MeanImputation', 'Skip')
@@ -33,19 +28,11 @@ test.deeplearning.mojo <-
     model_count = 1
     useAllFactors <- TRUE
     toStandardize <- FALSE
-
+    
     for (missing_values in missingValues) {
       for (cateEn in categoricalEncodings) {
         for (actFunc in allAct) {
           for (response_type in problemType) {
-            browser()
-
-            # actFunc <- "MaxoutWithDropout"
-            # missing_values <- 'Skip'
-            # cateEn <- "Binary"
-            # response_type <- "regression"
-
-            
             if (grepl('regression', response_type, fixed = TRUE)) {
               response_num = 1
             } else if (grepl('binomial', response_type, fixed = TRUE)) {
@@ -74,7 +61,7 @@ test.deeplearning.mojo <-
               response_type,
               response_num
             )
-            browser()
+            e <- tryCatch({           
             print("Building model and saving mojo....")
             modelAndDir <-
               buildModelSaveMojo(params_prob_data$params) # build the model and save mojo
@@ -92,6 +79,14 @@ test.deeplearning.mojo <-
               prob = 0.1,
               tolerance = 1e-4
             )
+            }, error = function(x) x)
+            if (!is.null(e)) {
+              print("Oh, caught some error")
+              print(typeof(e))
+              if (!is.null(e) && (!all(sapply("DistributedException", grepl, e[[1]]))))
+                FAIL(e)   # throw error unless it is unstable model error. 
+            }
+
             print("Test SUCCESS....")
           }
         }
@@ -146,46 +141,46 @@ buildModelSaveMojo <- function(params) {
   return(list("model"=model, "dirName"=tmpdir_name))
 }
 
-setParmsData <- function(useAllFactors, actFunc, toStandardize, missing_values, cateEn, training_frame, response_type, response_num) {  
-  if (grepl('regression', response_type, fixed = TRUE))  {
-    response_num <- 1
-  } else if (grepl('binomial', response_type, fixed = TRUE))  {
-    response_num <- 2
-  } else {
-    response_num <- 3
-  }
-  training_file <- random_dataset_fixed_size(response_type, 5000, 4, response_num, testrow = 200)
-  ratios <- (h2o.nrow(training_file)-200)/h2o.nrow(training_file)
-  allFrames <- h2o.splitFrame(training_file, ratios)
-  training_frame <- allFrames[[1]]
-  test_frame <- allFrames[[2]]
-  allNames = h2o.names(training_frame)
-  
-  params                  <- list()
-  params$use_all_factor_levels <- useAllFactors
-  params$activation <- actFunc
-  params$standardize <- toStandardize
-  params$missing_values_handling <- missing_values
-  params$categorical_encoding <- cateEn
-  hidden <- c(2,3)
-  if (grepl('Dropout', actFunc, fixed = TRUE)) {
-    hiddenDropouts <- c(0.5, 0.5)
-  } else {
-    hiddenDropouts <- c()
-  }
-  nn_structure <- list("hidden" = hidden, "hiddenDropouts" = hiddenDropouts) 
-  params$hidden <- nn_structure$hidden
-  params$training_frame <- training_frame
-  params$x <- allNames[-which(allNames=="response")]
-  params$autoencoder <- FALSE
-  params$seed <- 12345
-  if (!params$autoencoder)
-    params$y <- "response"
-  if (length(nn_structure$hiddenDropouts) > 0) {
-    params$input_dropout_ratio <- 0.5
-    params$hidden_dropout_ratios <- nn_structure$hiddenDropouts
-  }
-  return(list("params" = params, "tDataset" = test_frame))
+setParmsData <- function(useAllFactors, actFunc, toStandardize, missing_values, cateEn, training_frame, response_type, response_num) {
+    if (grepl('regression', response_type, fixed = TRUE))  {
+        response_num <- 1
+    } else if (grepl('binomial', response_type, fixed = TRUE))  {
+        response_num <- 2
+    } else {
+        response_num <- 3
+    }
+    training_file <- random_dataset_fixed_size(response_type, 8000, 5, response_num, testrow = 200)
+    ratios <- (h2o.nrow(training_file)-200)/h2o.nrow(training_file)
+    allFrames <- h2o.splitFrame(training_file, ratios)
+    training_frame <- allFrames[[1]]
+    test_frame <- allFrames[[2]]
+    allNames = h2o.names(training_frame)
+
+    params                  <- list()
+    params$use_all_factor_levels <- useAllFactors
+    params$activation <- actFunc
+    params$standardize <- toStandardize
+    params$missing_values_handling <- missing_values
+    params$categorical_encoding <- cateEn
+    hidden <- c(2,3)
+    if (grepl('Dropout', actFunc, fixed = TRUE)) {
+        hiddenDropouts <- c(0.5, 0.5)
+    } else {
+        hiddenDropouts <- c()
+    }
+    nn_structure <- list("hidden" = hidden, "hiddenDropouts" = hiddenDropouts)
+    params$hidden <- nn_structure$hidden
+    params$training_frame <- training_frame
+    params$x <- allNames[-which(allNames=="response")]
+    params$autoencoder <- TRUE
+    if (!params$autoencoder)
+        params$y <- "response"
+    if (length(nn_structure$hiddenDropouts) > 0) {
+        params$input_dropout_ratio <- 0.5
+        params$hidden_dropout_ratios <- nn_structure$hiddenDropouts
+    }
+    return(list("params" = params, "tDataset" = test_frame))
 }
 
-doTest("Deeplearning mojo test", test.deeplearning.mojo)
+
+doTest("Deeplearning autoencoder mojo test", test.deeplearning.autoencoder.mojo)
