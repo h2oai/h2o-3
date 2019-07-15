@@ -4044,8 +4044,7 @@ h2o.get_seed <- get_seed.H2OModel
 #' }
 #' @export
 h2o.genericModel <- function(model_file_path){
-  model_file_key <- h2o.importFile(model_file_path, parse = FALSE)
-  h2o.generic(model_key = model_file_key)
+  h2o.generic(path = mojo_file_path)
 }
 
 #' Imports a MOJO under given path, creating a Generic model with it.
@@ -4079,8 +4078,7 @@ h2o.genericModel <- function(model_file_path){
 #' }
 #' @export
 h2o.import_mojo <- function(mojo_file_path){
-  model_file_key <- h2o.importFile(mojo_file_path, parse = FALSE)
-  model <- h2o.generic(model_key = model_file_key)
+  model <- h2o.generic(path = mojo_file_path)
   print(model)
   return(model)
 }
