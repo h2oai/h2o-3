@@ -852,6 +852,29 @@ function(integerRange, num_rows, num_cols) {
   missing_fraction = runif(1, 0, 0.05)
   )
 
+#----------------------------------------------------------------------
+# This function will generate a random dataset containing real columns only.
+# Copied from Pasha.
+#
+# Parameters:  denote factor range
+#----------------------------------------------------------------------
+random_dataset_real_only <-
+function(num_rows, num_cols, realRange=10, seed=1234, missingF=0.0) {
+random_frame <-
+h2o.createFrame(
+rows = num_rows,
+cols = num_cols,
+randomize = TRUE,
+has_response = FALSE,
+categorical_fraction = 0,
+integer_fraction = 0,
+binary_fraction = 0,
+time_fraction = 0,
+string_fraction = 0,
+seed = seed,
+real_range = realRange,
+missing_fraction = missingF
+)
   return(random_frame)
 }
 
