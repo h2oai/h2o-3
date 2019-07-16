@@ -1,10 +1,9 @@
 package hex.genmodel;
 
 import com.google.gson.*;
-import hex.genmodel.descriptor.JsonModelDescriptorReader;
-import hex.genmodel.descriptor.ModelDescriptor;
+import hex.genmodel.attributes.ModelAttributes;
+import hex.genmodel.attributes.ModelJsonReader;
 import hex.genmodel.descriptor.ModelDescriptorBuilder;
-import hex.genmodel.descriptor.Table;
 import hex.genmodel.utils.ParseUtils;
 import hex.genmodel.utils.StringEscapeUtils;
 
@@ -184,23 +183,18 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     checkMaxSupportedMojoVersion();
     readModelData();
     if (readModelDescriptor) {
-      _model._modelDescriptor = readModelDescriptor();
+      _model._modelDescriptor = new ModelDescriptorBuilder(_model).build();
     }
+    _model._modelAttributes = readModelSpecificAttributes();
   }
 
-  private ModelDescriptor readModelDescriptor() {
-    final JsonObject modelJson = JsonModelDescriptorReader.parseModelJson(getMojoReaderBackend());
-    ModelDescriptorBuilder modelDescriptorBuilder = new ModelDescriptorBuilder(_model);
-
-    final Table model_summary_table = JsonModelDescriptorReader.extractTableFromJson(modelJson, "output.model_summary");
-    modelDescriptorBuilder.modelSummary(model_summary_table);
-
-    readModelSpecificDescription(modelDescriptorBuilder, modelJson);
-    return modelDescriptorBuilder.build();
-  }
-
-  protected void readModelSpecificDescription(final ModelDescriptorBuilder modelDescriptorBuilder, final JsonObject modelJson) {
-    // Default behavior is empty on purpose
+  protected ModelAttributes readModelSpecificAttributes() {
+    final JsonObject modelJson = ModelJsonReader.parseModelJson(_reader);
+    if(modelJson != null) {
+      return new ModelAttributes(_model, modelJson);
+    } else {
+      return null;
+    }
   }
 
   private static Map<String, Object> parseModelInfo(MojoReaderBackend reader) throws IOException {
