@@ -185,12 +185,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     if (readModelDescriptor) {
       _model._modelDescriptor = new ModelDescriptorBuilder(_model).build();
     }
-    if (readTargetEncoding) {
-      _model._targetEncodingMap = parseTargetEncodingMap("feature_engineering/target_encoding.ini");
-    }
-    
     _model._modelAttributes = readModelSpecificAttributes();
-
   }
 
   protected ModelAttributes readModelSpecificAttributes() {
