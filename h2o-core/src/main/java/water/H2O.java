@@ -2291,6 +2291,10 @@ final public class H2O {
     return downloadLogs(destinationDir.toString(), logContainer);
   }
 
+  public static URI downloadLogs(URI destinationDir, String logContainer) {
+    return downloadLogs(destinationDir, LogArchiveContainer.valueOf(logContainer));
+  }
+
   public static URI downloadLogs(String destinationDir, LogArchiveContainer logContainer) {
     String outputFileStem = LogsHandler.getOutputLogStem();
     String outputFileName = outputFileStem + "." + logContainer.getFileExtension();
@@ -2304,4 +2308,9 @@ final public class H2O {
     }
     return destination.toURI();
   }
+  
+  public static URI downloadLogs(String destinationDir, String logContainer) {
+    return downloadLogs(destinationDir, LogArchiveContainer.valueOf(logContainer));
+  }
+  
 }
