@@ -22,6 +22,7 @@ public class TargetEncoderBuilderTest extends TestUtil {
   @Test
   public void getTargetEncodingMapByTrainingTEBuilder() {
 
+    TargetEncoderModel targetEncoderModel = null;
     Map<String, Frame> encodingMapFromTargetEncoder = null;
     Map<String, Frame> targetEncodingMapFromBuilder = null;
     Scope.enter();
@@ -44,7 +45,7 @@ public class TargetEncoderBuilderTest extends TestUtil {
       TargetEncoderBuilder builder = new TargetEncoderBuilder(targetEncoderParameters);
 
       builder.trainModel().get(); // Waiting for training to be finished
-      TargetEncoderModel targetEncoderModel = builder.getTargetEncoderModel(); // TODO change the way of how we getting model after PUBDEV-6670. We should be able to get it from DKV with .trainModel().get()
+      targetEncoderModel = builder.getTargetEncoderModel(); // TODO change the way of how we getting model after PUBDEV-6670. We should be able to get it from DKV with .trainModel().get()
       
       //Stage 2: 
       // Let's create encoding map by TargetEncoder directly
@@ -63,6 +64,7 @@ public class TargetEncoderBuilderTest extends TestUtil {
 
     } finally {
       removeEncodingMaps(encodingMapFromTargetEncoder, targetEncodingMapFromBuilder);
+      targetEncoderModel.remove();
       Scope.exit();
     }
   }
@@ -72,6 +74,8 @@ public class TargetEncoderBuilderTest extends TestUtil {
 
     Map<String, Frame> encodingMapFromTargetEncoder = null;
     Map<String, Frame> targetEncodingMapFromBuilder = null;
+
+    TargetEncoderModel targetEncoderModel = null;
     Scope.enter();
     try {
       Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
@@ -97,7 +101,7 @@ public class TargetEncoderBuilderTest extends TestUtil {
       TargetEncoderBuilder builder = new TargetEncoderBuilder(targetEncoderParameters);
 
       builder.trainModel().get(); // Waiting for training to be finished
-      TargetEncoderModel targetEncoderModel = builder.getTargetEncoderModel(); // TODO change the way of how we getting model after PUBDEV-6670. We should be able to get it from DKV with .trainModel().get()
+      targetEncoderModel = builder.getTargetEncoderModel(); // TODO change the way of how we getting model after PUBDEV-6670. We should be able to get it from DKV with .trainModel().get()
 
       //Stage 2: 
       // Let's create encoding map by TargetEncoder directly
@@ -116,6 +120,7 @@ public class TargetEncoderBuilderTest extends TestUtil {
 
     } finally {
       removeEncodingMaps(encodingMapFromTargetEncoder, targetEncodingMapFromBuilder);
+      targetEncoderModel.remove();
       Scope.exit();
     }
   }
@@ -126,6 +131,7 @@ public class TargetEncoderBuilderTest extends TestUtil {
 
     Map<String, Frame> encodingMapFromTargetEncoder = null;
     Map<String, Frame> targetEncodingMapFromBuilder = null;
+    TargetEncoderModel targetEncoderModel = null;
     Scope.enter();
     try {
       Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
@@ -151,7 +157,7 @@ public class TargetEncoderBuilderTest extends TestUtil {
       TargetEncoderBuilder builder = new TargetEncoderBuilder(targetEncoderParameters);
 
       builder.trainModel().get(); // Waiting for training to be finished
-      TargetEncoderModel targetEncoderModel = builder.getTargetEncoderModel(); // TODO change the way of how we getting model after PUBDEV-6670. We should be able to get it from DKV with .trainModel().get()
+      targetEncoderModel = builder.getTargetEncoderModel(); // TODO change the way of how we getting model after PUBDEV-6670. We should be able to get it from DKV with .trainModel().get()
       
       long seed = 1234;
       byte strategy = TargetEncoder.DataLeakageHandlingStrategy.KFold;
@@ -178,6 +184,7 @@ public class TargetEncoderBuilderTest extends TestUtil {
 
     } finally {
       removeEncodingMaps(encodingMapFromTargetEncoder, targetEncodingMapFromBuilder);
+      targetEncoderModel.remove();
       Scope.exit();
     }
   }

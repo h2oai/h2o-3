@@ -217,8 +217,8 @@ public class TargetEncoderMojoModelTest {
     EncodingMap encodingMapForCat1 = new EncodingMap();
     int factorForLevelA = 0;
     int factorForLevelB = 1;
-    encodingMapForCat1.put(factorForLevelA, new int[]{2,5});
-    encodingMapForCat1.put(factorForLevelB, new int[]{3,7});
+    encodingMapForCat1.put(factorForLevelA, new int[]{2, 5});
+    encodingMapForCat1.put(factorForLevelB, new int[]{3, 7});
 
     encodingMap.put(predictorName, encodingMapForCat1);
 

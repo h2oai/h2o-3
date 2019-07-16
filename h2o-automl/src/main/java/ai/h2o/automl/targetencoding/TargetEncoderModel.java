@@ -4,6 +4,7 @@ import hex.Model;
 import hex.ModelCategory;
 import hex.ModelMetrics;
 import hex.ModelMojoWriter;
+import water.Futures;
 import water.H2O;
 import water.Key;
 import water.fvec.Frame;
@@ -113,5 +114,11 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
   public ModelMojoWriter getMojo() {
     return new TargetEncoderMojoWriter(this);
   }
-  
+
+  @Override
+  protected Futures remove_impl(Futures fs, boolean cascade) {
+    TargetEncoderFrameHelper.encodingMapCleanUp(_output._target_encoding_map);
+    _output._teColumnNameToIdx.clear();
+    return super.remove_impl(fs, cascade);
+  }
 }

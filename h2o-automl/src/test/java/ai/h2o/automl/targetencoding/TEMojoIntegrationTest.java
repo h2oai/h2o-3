@@ -8,7 +8,9 @@ import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import water.DKV;
 import water.Job;
 import water.Scope;
@@ -24,6 +26,7 @@ import java.util.Random;
 
 import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public class TEMojoIntegrationTest extends TestUtil {
 
@@ -32,6 +35,9 @@ public class TEMojoIntegrationTest extends TestUtil {
     stall_till_cloudsize(1);
   }
 
+  @Rule
+  public TemporaryFolder folder = new TemporaryFolder();
+
   @Test
   public void withoutBlending() throws PredictException, IOException{
 
@@ -39,10 +45,12 @@ public class TEMojoIntegrationTest extends TestUtil {
 
     double[] encodings = null;
     int homeDestPredIdx = -1;
-            
+    String mojoFileName = "mojo_te.zip";
+    File mojoFile = null;
+
     for(int i = 0; i <= 10; i++) {
-      String mojoFileName = "mojo_te.zip";
       TargetEncoderModel targetEncoderModel = null;
+      mojoFile = folder.newFile(mojoFileName);
 
       Scope.enter();
       try {
@@ -68,22 +76,21 @@ public class TEMojoIntegrationTest extends TestUtil {
         targetEncoderParameters.setTrain(fr._key);
         targetEncoderParameters._response_column = responseColumnName;
 
-        TargetEncoderBuilder job = new TargetEncoderBuilder(targetEncoderParameters);
+        TargetEncoderBuilder targetEncoderBuilder = new TargetEncoderBuilder(targetEncoderParameters);
 
-        Job<TargetEncoderModel> targetEncoderModelJob = job.trainModel();
+        targetEncoderBuilder.trainModel().get();
 
-        targetEncoderModel = targetEncoderModelJob.get();
-        Scope.track_generic(targetEncoderModel);
+        targetEncoderModel = targetEncoderBuilder.getTargetEncoderModel();
 
-        FileOutputStream modelOutput = new FileOutputStream(mojoFileName);
-        targetEncoderModel.getMojo().writeTo(modelOutput);
-        modelOutput.close();
-        System.out.println("Model has been written down to a file as a mojo: " + mojoFileName);
+        try (FileOutputStream modelOutput = new FileOutputStream(mojoFile)){
+          targetEncoderModel.getMojo().writeTo(modelOutput);
+          System.out.println("Model has been written down to a file as a mojo: " + mojoFileName);
+        }
 
         // Let's load model that we just have written and use it for prediction.
         EasyPredictModelWrapper teModelWrapper = null;
 
-        TargetEncoderMojoModel loadedMojoModel = (TargetEncoderMojoModel) MojoModel.load(mojoFileName);
+        TargetEncoderMojoModel loadedMojoModel = (TargetEncoderMojoModel) MojoModel.load(mojoFile.getPath());
 
         teModelWrapper = new EasyPredictModelWrapper(loadedMojoModel);
 
@@ -138,15 +145,9 @@ public class TEMojoIntegrationTest extends TestUtil {
           }
         }
 
-      } catch (Exception ex) {
-        throw ex;
-      } finally {
-        if (targetEncoderModel._output._target_encoding_map != null)
-          TargetEncoderFrameHelper.encodingMapCleanUp(targetEncoderModel._output._target_encoding_map);
-
-
-        File mojoFile = new File(mojoFileName);
-        if (mojoFile.exists()) mojoFile.delete();
+      } finally { 
+        targetEncoderModel.remove();
+        mojoFile.delete();
         Scope.exit();
       }
     }
@@ -172,6 +173,7 @@ public class TEMojoIntegrationTest extends TestUtil {
     //TODO test kfold scenario as in FrameToTETableTask we do not account for extra columns in frame
 
     String mojoFileName = "mojo_te.zip";
+    File mojoFile = folder.newFile(mojoFileName);;
     TargetEncoderModel targetEncoderModel = null;
     Scope.enter();
     try {
@@ -197,20 +199,19 @@ public class TEMojoIntegrationTest extends TestUtil {
 
       TargetEncoderBuilder job = new TargetEncoderBuilder(targetEncoderParameters);
 
-      Job<TargetEncoderModel> targetEncoderModelJob = job.trainModel();
+      job.trainModel().get();
 
-      targetEncoderModel = targetEncoderModelJob.get();
-      Scope.track_generic(targetEncoderModel);
+      targetEncoderModel = job.getTargetEncoderModel();
 
-      FileOutputStream modelOutput = new FileOutputStream(mojoFileName);
-      targetEncoderModel.getMojo().writeTo(modelOutput);
-      modelOutput.close();
-      System.out.println("Model has been written down to a file as a mojo: " + mojoFileName);
+      try (FileOutputStream modelOutput = new FileOutputStream(mojoFile)){
+        targetEncoderModel.getMojo().writeTo(modelOutput);
+        System.out.println("Model has been written down to a file as a mojo: " + mojoFileName);
+      }
 
       // Let's load model that we just have written and use it for prediction.
       EasyPredictModelWrapper teModelWrapper = null;
 
-      TargetEncoderMojoModel loadedMojoModel = (TargetEncoderMojoModel) MojoModel.load(mojoFileName);
+      TargetEncoderMojoModel loadedMojoModel = (TargetEncoderMojoModel) MojoModel.load(mojoFile.getPath());
 
       teModelWrapper = new EasyPredictModelWrapper(loadedMojoModel); 
 
@@ -244,16 +245,9 @@ public class TEMojoIntegrationTest extends TestUtil {
       assertEquals(encodings[1], encodingForHomeDest, 1e-5);
       assertEquals(encodings[0], encodingForHomeEmbarked, 1e-5);
 
-    } catch (Exception ex) {
-      throw ex;
-    }
-    finally {
-      if(targetEncoderModel._output._target_encoding_map != null)
-        TargetEncoderFrameHelper.encodingMapCleanUp(targetEncoderModel._output._target_encoding_map);
-
-
-      File mojoFile = new File(mojoFileName);
-      if(mojoFile.exists()) mojoFile.delete();
+    } finally {
+      targetEncoderModel.remove();
+      mojoFile.delete();
       Scope.exit();
     }
   }
@@ -262,7 +256,10 @@ public class TEMojoIntegrationTest extends TestUtil {
   public void check_that_encoding_map_was_stored_and_loaded_properly_and_blending_was_applied_correctly() throws IOException, PredictException  {
 
     String mojoFileName = "mojo_te.zip";
+    File mojoFile = folder.newFile(mojoFileName);
+    ;
     Map<String, Frame> testEncodingMap = null;
+    TargetEncoderModel targetEncoderModel = null;
     Scope.enter();
     try {
       Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
@@ -288,19 +285,21 @@ public class TEMojoIntegrationTest extends TestUtil {
 
       TargetEncoderBuilder job = new TargetEncoderBuilder(targetEncoderParameters);
 
-      TargetEncoderModel targetEncoderModel = job.trainModel().get();
-      testEncodingMap = targetEncoderModel._output._target_encoding_map;
-      Scope.track_generic(targetEncoderModel);
+      job.trainModel().get();
 
-      FileOutputStream modelOutput = new FileOutputStream(mojoFileName);
-      targetEncoderModel.getMojo().writeTo(modelOutput);
-      modelOutput.close();
-      System.out.println("Model has been written down to a file as a mojo: " + mojoFileName);
+      targetEncoderModel = job.getTargetEncoderModel();
+      
+      testEncodingMap = targetEncoderModel._output._target_encoding_map;
+
+      try (FileOutputStream modelOutput = new FileOutputStream(mojoFile)){
+        targetEncoderModel.getMojo().writeTo(modelOutput);
+        System.out.println("Model has been written down to a file as a mojo: " + mojoFileName);
+      }
 
       // Let's load model that we just have written and use it for prediction.
       EasyPredictModelWrapper teModelWrapper = null;
 
-      TargetEncoderMojoModel loadedMojoModel = (TargetEncoderMojoModel) MojoModel.load(mojoFileName);
+      TargetEncoderMojoModel loadedMojoModel = (TargetEncoderMojoModel) MojoModel.load(mojoFile.getPath());
 
       assertEquals(targetEncoderParameters._withBlending, loadedMojoModel._withBlending);
       assertEquals(targetEncoderParameters._blendingParams.getK(), loadedMojoModel._inflectionPoint, 1e-5);
@@ -351,11 +350,48 @@ public class TEMojoIntegrationTest extends TestUtil {
       assertEquals(expectedBlendedEncodingForHomeDest, encodings[1], 1e-5);
 
     } finally {
-      if(testEncodingMap != null)
-        TargetEncoderFrameHelper.encodingMapCleanUp(testEncodingMap);
+      targetEncoderModel.remove();
+      mojoFile.delete();
+      Scope.exit();
+    }
+  }
 
-      File mojoFile = new File(mojoFileName);
-      if(mojoFile.exists()) mojoFile.delete();
+  @Test
+  public void check_that_we_can_remove_model() {
+
+    Scope.enter();
+    try {
+      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+
+      String responseColumnName = "survived";
+
+      asFactor(fr, responseColumnName);
+      Scope.track(fr);
+
+      String[] teColumns = {"home.dest", "embarked"};
+
+      TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
+
+      targetEncoderParameters._columnNamesToEncode = teColumns;
+      targetEncoderParameters._withBlending = true;
+      targetEncoderParameters._blendingParams = new BlendingParams(5, 1);
+
+      targetEncoderParameters._ignore_const_cols = false;
+      targetEncoderParameters.setTrain(fr._key);
+      targetEncoderParameters._response_column = responseColumnName;
+
+      TargetEncoderBuilder targetEncoderBuilder = new TargetEncoderBuilder(targetEncoderParameters);
+
+      targetEncoderBuilder.trainModel().get();
+
+      TargetEncoderModel targetEncoderModel = targetEncoderBuilder.getTargetEncoderModel();
+      
+      targetEncoderModel.remove();
+      
+      assertEquals(0, targetEncoderModel._output._target_encoding_map.get("embarked").byteSize());
+      assertEquals(0, targetEncoderModel._output._target_encoding_map.get("home.dest").byteSize());
+      assertEquals(0, targetEncoderModel._output._teColumnNameToIdx.size());
+    } finally {
       Scope.exit();
     }
   }
