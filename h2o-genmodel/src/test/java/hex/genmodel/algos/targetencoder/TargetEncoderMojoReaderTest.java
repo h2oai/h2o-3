@@ -23,7 +23,7 @@ public class TargetEncoderMojoReaderTest {
     }
 
     @Override public String getModelName() { return null; }
-    @Override protected void readModelData() throws IOException { }
+    @Override protected void readModelData() { }
     @Override public String mojoVersion() { return null; }
 
     @Override
@@ -54,7 +54,7 @@ public class TargetEncoderMojoReaderTest {
 
     TestMojoReader testMojoReader = new TestMojoReader(mojoReaderBackendMock);
 
-    EncodingMaps parsedEncodings = testMojoReader.parseEncodingMap("pathToFileWithEncodings");
+    EncodingMaps parsedEncodings = testMojoReader.parseEncodingMap();
     assertArrayEquals(parsedEncodings.get("embarked").get(0), new int[]{2, 4});
     assertArrayEquals(parsedEncodings.get("sex").get(0), new int[]{3, 42});
 

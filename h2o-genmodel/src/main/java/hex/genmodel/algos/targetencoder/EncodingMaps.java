@@ -23,7 +23,7 @@ public class EncodingMaps implements Serializable {
    *                                       "green" -> [ 3, 9 ]
    *                                     )
    */                                       
-  private Map<String, EncodingMap> _encodingMaps = null;
+  private Map<String, EncodingMap> _encodingMaps;
   
   public EncodingMaps(Map<String, EncodingMap> encodingMaps) {
     _encodingMaps = encodingMaps;

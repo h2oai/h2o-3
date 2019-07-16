@@ -55,31 +55,28 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
    * Writes encoding map into the file line by line
    */
   private void writeTargetEncodingMap() throws IOException {
-    
-    // We need to convert map only here - before writing to MOJO. Everywhere else having encoding maps based on Frames is fine.
     TargetEncoderModel.TargetEncoderOutput targetEncoderOutput = ((TargetEncoderModel) model)._output;
     Map<String, Frame> targetEncodingMapOnFrames = targetEncoderOutput._target_encoding_map;
 
     ifNeededRegroupEncodingMapsByFoldColumn(targetEncoderOutput, targetEncodingMapOnFrames);
 
+    // We need to convert map only here - before writing to MOJO. Everywhere else having encoding maps based on Frames is fine.
     EncodingMaps convertedEncodingMap = TargetEncoderFrameHelper.convertEncodingMapFromFrameToMap(targetEncodingMapOnFrames);
-
-    if(convertedEncodingMap != null) {
-      startWritingTextFile("feature_engineering/target_encoding/encoding_map.ini");
-      for (Map.Entry<String, EncodingMap> columnEncodingsMap : convertedEncodingMap.entrySet()) {
-        writeln("[" + columnEncodingsMap.getKey() + "]");
-        EncodingMap encodings = columnEncodingsMap.getValue();
-        for (Map.Entry<Integer, int[]> catLevelInfo : encodings.entrySet()) {
-          int[] numAndDenom = catLevelInfo.getValue();
-          writelnkv(catLevelInfo.getKey().toString(), numAndDenom[0] + " " + numAndDenom[1]);
-        }
+    startWritingTextFile("feature_engineering/target_encoding/encoding_map.ini");
+    for (Map.Entry<String, EncodingMap> columnEncodingsMap : convertedEncodingMap.entrySet()) {
+      writeln("[" + columnEncodingsMap.getKey() + "]");
+      EncodingMap encodings = columnEncodingsMap.getValue();
+      for (Map.Entry<Integer, int[]> catLevelInfo : encodings.entrySet()) {
+        int[] numAndDenom = catLevelInfo.getValue();
+        writelnkv(catLevelInfo.getKey().toString(), numAndDenom[0] + " " + numAndDenom[1]);
       }
-      finishWritingTextFile();
     }
+    finishWritingTextFile();
   }
 
   /**
-   * For transforming(making predictions) non-training data we don't need `te folds` in our encoding maps */
+   * For transforming (making predictions) non-training data we don't need `te folds` in our encoding maps 
+   */
   private void ifNeededRegroupEncodingMapsByFoldColumn(TargetEncoderModel.TargetEncoderOutput targetEncoderOutput, Map<String, Frame> targetEncodingMapOnFrames) {
     String teFoldColumnName = targetEncoderOutput._teParams._teFoldColumnName;
     if(teFoldColumnName != null) {
@@ -91,7 +88,7 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
           originalFrameWithFolds.delete();
         }
       } catch (Exception ex) {
-        throw new IllegalStateException("Failed to group encoding maps by fold column");
+        throw new IllegalStateException("Failed to group encoding maps by fold column", ex);
       }
     }
   }
