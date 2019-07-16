@@ -1,20 +1,10 @@
 package water.api;
 
-import water.DKV;
-import water.H2O;
-import water.H2OError;
-import water.H2OModelBuilderError;
-import water.H2ONode;
-import water.RPC;
-import water.UDPRebooted;
+import water.*;
 import water.api.schemas3.H2OErrorV3;
 import water.api.schemas3.H2OModelBuilderErrorV3;
 import water.api.schemas99.AssemblyV99;
-import water.exceptions.H2OAbstractRuntimeException;
-import water.exceptions.H2OFailException;
-import water.exceptions.H2OIllegalArgumentException;
-import water.exceptions.H2OModelBuilderIllegalArgumentException;
-import water.exceptions.H2ONotFoundArgumentException;
+import water.exceptions.*;
 import water.init.NodePersistentStorage;
 import water.nbhm.NonBlockingHashMap;
 import water.rapids.Assembly;
@@ -24,24 +14,9 @@ import water.util.*;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.MalformedURLException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -730,7 +705,7 @@ public class RequestServer extends HttpServlet {
         boolean containerTypeSpecified = path.length >= 6;
         LogArchiveContainer container = containerTypeSpecified ? 
                 LogArchiveContainer.valueOf(path[4].toUpperCase()) : LogArchiveContainer.ZIP; // use ZIP as default
-        return downloadLogs(container);
+        return downloadLogsViaRestAPI(container);
       }
       if (path[2].equals("NodePersistentStorage.bin") && path.length == 6) return downloadNps(path[3], path[4]);
     }
@@ -813,116 +788,16 @@ public class RequestServer extends HttpServlet {
     return res;
   }
 
-  private static NanoResponse downloadLogs(LogArchiveContainer logContainer) {
-    Log.info("\nCollecting logs.");
-
-    H2ONode[] members = H2O.CLOUD.members();
-    byte[][] perNodeArchiveByteArray = new byte[members.length][];
-    byte[] clientNodeByteArray = null;
-
-    for (int i = 0; i < members.length; i++) {
-      byte[] bytes;
-
-      try {
-        // Skip nodes that aren't healthy, since they are likely to cause the entire process to hang.
-        if (members[i].isHealthy()) {
-          GetLogsFromNode g = new GetLogsFromNode(i, logContainer);
-          g.doIt();
-          bytes = g.bytes;
-        } else {
-          bytes = StringUtils.bytesOf("Node not healthy");
-        }
-      }
-      catch (Exception e) {
-        bytes = StringUtils.toBytes(e);
-      }
-      perNodeArchiveByteArray[i] = bytes;
-    }
-
-    if (H2O.ARGS.client) {
-      byte[] bytes;
-      try {
-        GetLogsFromNode g = new GetLogsFromNode(-1, logContainer);
-        g.doIt();
-        bytes = g.bytes;
-      }
-      catch (Exception e) {
-        bytes = StringUtils.toBytes(e);
-      }
-      clientNodeByteArray = bytes;
-    }
-
-    String outputFileStem = getOutputLogStem();
-    byte[] finalArchiveByteArray;
-    try {
-      finalArchiveByteArray = archiveLogs(logContainer, new Date(), perNodeArchiveByteArray, clientNodeByteArray, outputFileStem);
-    }
-    catch (Exception e) {
-      finalArchiveByteArray = StringUtils.toBytes(e);
-    }
+  private static NanoResponse downloadLogsViaRestAPI(LogArchiveContainer logContainer) {
+    String outputFileStem = LogsHandler.getOutputLogStem();
+    byte[] finalArchiveByteArray = LogsHandler.downloadLogs(logContainer, outputFileStem);
 
     NanoResponse res = new NanoResponse(HTTP_OK, logContainer.getMimeType(), new ByteArrayInputStream(finalArchiveByteArray));
     res.addHeader("Content-Length", Long.toString(finalArchiveByteArray.length));
     res.addHeader("Content-Disposition", "attachment; filename=" + outputFileStem + "." + logContainer.getFileExtension());
     return res;
   }
-
-  private static String getOutputLogStem() {
-    String pattern = "yyyyMMdd_hhmmss";
-    SimpleDateFormat formatter = new SimpleDateFormat(pattern);
-    String now = formatter.format(new Date());
-    return "h2ologs_" + now;
-  }
-
-  private static byte[] archiveLogs(LogArchiveContainer container, Date now,
-                                    byte[][] results, byte[] clientResult, String topDir) throws IOException {
-    int l = 0;
-    assert H2O.CLOUD._memary.length == results.length : "Unexpected change in the cloud!";
-    for (byte[] result : results) l += result.length;
-    ByteArrayOutputStream baos = new ByteArrayOutputStream(l);
-
-    // Add top-level directory.
-    LogArchiveWriter archive = container.createLogArchiveWriter(baos);
-    {
-      LogArchiveWriter.ArchiveEntry entry = new LogArchiveWriter.ArchiveEntry(topDir + File.separator, now);
-      archive.putNextEntry(entry);
-    }
-
-    try {
-      // Archive directory from each cloud member.
-      for (int i =0; i<results.length; i++) {
-        String filename =
-            topDir + File.separator +
-                "node" + i + "_" +
-                H2O.CLOUD._memary[i].getIpPortString().replace(':', '_').replace('/', '_') +
-                "." + container.getFileExtension();
-        LogArchiveWriter.ArchiveEntry ze = new LogArchiveWriter.ArchiveEntry(filename, now);
-        archive.putNextEntry(ze);
-        archive.write(results[i]);
-        archive.closeEntry();
-      }
-
-      // Archive directory from the client node.  Name it 'driver' since that's what Sparking Water users see.
-      if (clientResult != null) {
-        String filename =
-            topDir + File.separator +
-                "driver." + container.getFileExtension();
-        LogArchiveWriter.ArchiveEntry ze = new LogArchiveWriter.ArchiveEntry(filename, now);
-        archive.putNextEntry(ze);
-        archive.write(clientResult);
-        archive.closeEntry();
-      }
-
-      // Close the top-level directory.
-      archive.closeEntry();
-    } finally {
-      // Close the archive file.
-      archive.close();
-    }
-
-    return baos.toByteArray();
-  }
-
+  
   // cache of all loaded resources
   @SuppressWarnings("MismatchedQueryAndUpdateOfCollection") // remove this once TO-DO below is addressed
   private static final NonBlockingHashMap<String,byte[]> _cache = new NonBlockingHashMap<>();
