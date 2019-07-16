@@ -111,8 +111,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
 
   @Override
   public ModelMojoWriter getMojo() {
-//    return new TargetEncoderMojoWriter(this);
-    throw H2O.unimpl("Will be enabled after PR #3282");
+    return new TargetEncoderMojoWriter(this);
   }
   
 }
