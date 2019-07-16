@@ -13,6 +13,7 @@ public enum ModelCategory {
   Regression,
   Clustering,
   AutoEncoder,
+  TargetEncoder,
   DimReduction,
   WordEmbedding,
   CoxPH,

@@ -11,10 +11,13 @@ import water.fvec.task.IsNotNaTask;
 import water.fvec.task.UniqTask;
 import water.rapids.ast.prims.advmath.AstKFold;
 import water.rapids.ast.prims.mungers.AstGroup;
+import water.util.IcedHashMap;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
-class TargetEncoderFrameHelper {
+public class TargetEncoderFrameHelper {
 
   /** @return the expanded with constant vector Frame, for flow-coding */
   static Frame addCon(Frame fr, String appendedColumnName, long constant ) { fr.add(appendedColumnName, Vec.makeCon(constant, fr.numRows(), Vec.T_NUM)); return fr; }
@@ -23,7 +26,8 @@ class TargetEncoderFrameHelper {
    * @return frame without rows with NAs in `columnIndex` column
    */
   static Frame filterOutNAsInColumn(Frame fr, int columnIndex) {
-    Frame noNaPredicateFrame = new IsNotNaTask().doAll(1, Vec.T_NUM, new Frame(fr.vec(columnIndex))).outputFrame();
+    Frame oneColumnFrame = new Frame(fr.vec(columnIndex));
+    Frame noNaPredicateFrame = new IsNotNaTask().doAll(1, Vec.T_NUM, oneColumnFrame).outputFrame();
     return selectByPredicate(fr, noNaPredicateFrame);
   }
 
@@ -99,7 +103,7 @@ class TargetEncoderFrameHelper {
    * @param nfolds number of folds
    * @param seed
    */
-  static public Frame addKFoldColumn(Frame frame, String name, int nfolds, long seed) {
+  public static Frame addKFoldColumn(Frame frame, String name, int nfolds, long seed) {
     Vec foldVec = frame.anyVec().makeZero();
     frame.add(name, AstKFold.kfoldColumn(foldVec, nfolds, seed == -1 ? new Random().nextLong() : seed));
     return frame;
@@ -108,10 +112,16 @@ class TargetEncoderFrameHelper {
   /**
    * @return Frame that is registered in DKV
    */
-  static public Frame register(Frame frame) {
+  public static Frame register(Frame frame) {
     frame._key = Key.make();
     DKV.put(frame);
     return frame;
+  }
+
+  public static void encodingMapCleanUp(Map<String, Frame> encodingMap) {
+    for (Map.Entry<String, Frame> map : encodingMap.entrySet()) {
+      map.getValue().delete();
+    }
   }
 
 }
