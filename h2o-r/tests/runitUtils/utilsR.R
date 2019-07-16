@@ -786,7 +786,7 @@ random_dataset <-
 # Parameters:  response_type should be "regression", "binomial" or "multinomial"
 #----------------------------------------------------------------------
 random_dataset_fixed_size <-
-function(response_type, num_rows=1000, num_cols=10, response_num=3, testrow = 1000) {
+function(response_type, num_rows=1000, num_cols=10, response_num=3, testrow = 1000, seed=12345) {
     # generate all the fractions
     fractions <-
     c(runif(1, 0, 1),
@@ -807,7 +807,8 @@ function(response_type, num_rows=1000, num_cols=10, response_num=3, testrow = 10
     time_fraction = fractions[4],
     string_fraction = 0,
     response_factors = response_num,
-    missing_fraction = runif(1, 0, 0.05)
+    missing_fraction = 0.01,
+        seed = seed
     )
 
     return(random_frame)

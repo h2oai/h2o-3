@@ -11,7 +11,7 @@ source("../../scripts/h2o-r-test-setup.R")
 # randomly.  We hope to test all different network settings here.
 #----------------------------------------------------------------------
 
-test.deeplearning.mojo <-
+test.deeplearning.autoencoder.mojo <-
   function() {
     numTest = 200 # set test dataset to contain 1000 rows
     allAct <-
@@ -183,4 +183,4 @@ setParmsData <- function(useAllFactors, actFunc, toStandardize, missing_values, 
 }
 
 
-doTest("Deeplearning mojo test", test.deeplearning.mojo)
+doTest("Deeplearning autoencoder mojo test", test.deeplearning.autoencoder.mojo)

@@ -38,6 +38,14 @@ test.deeplearning.mojo <-
       for (cateEn in categoricalEncodings) {
         for (actFunc in allAct) {
           for (response_type in problemType) {
+            browser()
+
+            # actFunc <- "MaxoutWithDropout"
+            # missing_values <- 'Skip'
+            # cateEn <- "Binary"
+            # response_type <- "regression"
+
+            
             if (grepl('regression', response_type, fixed = TRUE)) {
               response_num = 1
             } else if (grepl('binomial', response_type, fixed = TRUE)) {
@@ -170,6 +178,7 @@ setParmsData <- function(useAllFactors, actFunc, toStandardize, missing_values, 
   params$training_frame <- training_frame
   params$x <- allNames[-which(allNames=="response")]
   params$autoencoder <- FALSE
+  params$seed <- 12345
   if (!params$autoencoder)
     params$y <- "response"
   if (length(nn_structure$hiddenDropouts) > 0) {
