@@ -1,8 +1,9 @@
 package ai.h2o.automl.targetencoding;
 
-import hex.ModelStubs;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
@@ -10,20 +11,27 @@ import water.fvec.Frame;
 import java.io.File;
 import java.io.FileOutputStream;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
-public class TargetEncoderMojoWriterTest extends TestUtil implements ModelStubs {
+public class TargetEncoderMojoWriterTest extends TestUtil {
 
   @BeforeClass
   public static void stall() { stall_till_cloudsize(1); }
 
-  Frame trainFrame = parse_test_file("./smalldata/gbm_test/titanic.csv");
+  @Rule
+  public TemporaryFolder folder = new TemporaryFolder();
 
   @Test
   public void writeModelToZipFile() throws Exception{
+    Frame trainFrame = parse_test_file("./smalldata/gbm_test/titanic.csv");
+
+    TargetEncoderModel targetEncoderModel = null;
+    String fileNameForMojo = "test_mojo_te.zip";
     Scope.enter();
     try {
-      TestModel.TestParam p = new TestModel.TestParam();
+      Scope.track(trainFrame);
+      TargetEncoderModel.TargetEncoderParameters p = new TargetEncoderModel.TargetEncoderParameters();
       String[] teColumns = {"home.dest", "embarked"};
       String responseColumnName = "survived";
 
@@ -37,26 +45,18 @@ public class TargetEncoderMojoWriterTest extends TestUtil implements ModelStubs 
       TargetEncoderBuilder builder = new TargetEncoderBuilder(p);
 
       builder.trainModel().get(); // Waiting for training to be finished
-      TargetEncoderModel targetEncoderModel = builder.getTargetEncoderModel(); // TODO change the way of how we getting model after PUBDEV-6670. We should be able to get it from DKV with .trainModel().get()
+      targetEncoderModel = builder.getTargetEncoderModel(); // TODO change the way of how we getting model after PUBDEV-6670. We should be able to get it from DKV with .trainModel().get()
 
-      String fileName = "test_mojo_te.zip";
+      File mojoFile = folder.newFile(fileNameForMojo);
+      
+      try (FileOutputStream modelOutput = new FileOutputStream(mojoFile)){
+        assertEquals(0, mojoFile.length());
 
-      try {
-        FileOutputStream modelOutput = new FileOutputStream(fileName);
         targetEncoderModel.getMojo().writeTo(modelOutput);
-        modelOutput.close();
-
-        assertTrue(new File(fileName).exists());
-
-      } finally {
-        File file = new File(fileName);
-        if (file.exists()) {
-          file.delete();
-        }
-        trainFrame.delete();
-        TargetEncoderFrameHelper.encodingMapCleanUp(targetEncoderModel._output._target_encoding_map);
+        assertTrue(mojoFile.length() > 0);
       }
     } finally {
+      if(targetEncoderModel != null) TargetEncoderFrameHelper.encodingMapCleanUp(targetEncoderModel._output._target_encoding_map);
       Scope.exit();
     }
   }
