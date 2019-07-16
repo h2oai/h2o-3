@@ -34,10 +34,10 @@ public class TargetEncoderMojoWriterTest extends TestUtil implements ModelStubs 
       p.setTrain(trainFrame._key);
       p._response_column = responseColumnName;
 
-      TargetEncoderBuilder job = new TargetEncoderBuilder(p);
+      TargetEncoderBuilder builder = new TargetEncoderBuilder(p);
 
-      TargetEncoderModel targetEncoderModel = job.trainModel().get();
-      Scope.track_generic(targetEncoderModel);
+      builder.trainModel().get(); // Waiting for training to be finished
+      TargetEncoderModel targetEncoderModel = builder.getTargetEncoderModel(); // TODO change the way of how we getting model after PUBDEV-6670. We should be able to get it from DKV with .trainModel().get()
 
       String fileName = "test_mojo_te.zip";
 
