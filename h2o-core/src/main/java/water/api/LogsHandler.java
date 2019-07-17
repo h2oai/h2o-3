@@ -200,7 +200,7 @@ public class LogsHandler extends Handler {
     try (FileOutputStream fileOutputStream = new FileOutputStream(destination)) {
       fileOutputStream.write(logBytes);
     } catch (IOException e) {
-      e.printStackTrace();
+      Log.err("Can't write logs to " + destinationDir + ", reason: \n" + e);
     }
     return destination.toURI();
   }
