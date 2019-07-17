@@ -2288,29 +2288,19 @@ final public class H2O {
   }
 
   public static URI downloadLogs(URI destinationDir, LogArchiveContainer logContainer) {
-    return downloadLogs(destinationDir.toString(), logContainer);
+    return LogsHandler.downloadLogs(destinationDir.toString(), logContainer);
   }
 
   public static URI downloadLogs(URI destinationDir, String logContainer) {
-    return downloadLogs(destinationDir, LogArchiveContainer.valueOf(logContainer));
+    return LogsHandler.downloadLogs(destinationDir.toString(), LogArchiveContainer.valueOf(logContainer));
   }
 
   public static URI downloadLogs(String destinationDir, LogArchiveContainer logContainer) {
-    String outputFileStem = LogsHandler.getOutputLogStem();
-    String outputFileName = outputFileStem + "." + logContainer.getFileExtension();
-    byte[] logBytes = LogsHandler.downloadLogs(logContainer, outputFileStem);
-    File destination = new File(destinationDir, outputFileName);
-
-    try (FileOutputStream fileOutputStream = new FileOutputStream(destination)) {
-      fileOutputStream.write(logBytes);
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-    return destination.toURI();
+    return LogsHandler.downloadLogs(destinationDir, logContainer);
   }
   
   public static URI downloadLogs(String destinationDir, String logContainer) {
-    return downloadLogs(destinationDir, LogArchiveContainer.valueOf(logContainer));
+    return LogsHandler.downloadLogs(destinationDir, LogArchiveContainer.valueOf(logContainer));
   }
   
 }

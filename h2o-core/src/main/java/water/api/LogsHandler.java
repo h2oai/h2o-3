@@ -5,8 +5,11 @@ import water.api.schemas3.LogsV3;
 import water.util.*;
 
 import java.io.*;
+import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+
+import static water.api.RequestServer.HTTP_OK;
 
 public class LogsHandler extends Handler {
   private static class GetLogTask extends DTask<GetLogTask> {
@@ -117,7 +120,7 @@ public class LogsHandler extends Handler {
       tryComplete();
     }
   }
-  
+
   private static H2ONode getH2ONode(String nodeIdx) {
     try {
       int numNodeIdx = Integer.parseInt(nodeIdx);
@@ -188,7 +191,31 @@ public class LogsHandler extends Handler {
     return s;
   }
 
-  public static byte[] downloadLogs(LogArchiveContainer logContainer, String outputFileStem) {
+  public static URI downloadLogs(String destinationDir, LogArchiveContainer logContainer) {
+    String outputFileStem = LogsHandler.getOutputLogStem();
+    String outputFileName = outputFileStem + "." + logContainer.getFileExtension();
+    byte[] logBytes = LogsHandler.downloadLogs(logContainer, outputFileStem);
+    File destination = new File(destinationDir, outputFileName);
+
+    try (FileOutputStream fileOutputStream = new FileOutputStream(destination)) {
+      fileOutputStream.write(logBytes);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    return destination.toURI();
+  }
+
+  static NanoResponse downloadLogsViaRestAPI(LogArchiveContainer logContainer) {
+    String outputFileStem = LogsHandler.getOutputLogStem();
+    byte[] finalArchiveByteArray = LogsHandler.downloadLogs(logContainer, outputFileStem);
+
+    NanoResponse res = new NanoResponse(HTTP_OK, logContainer.getMimeType(), new ByteArrayInputStream(finalArchiveByteArray));
+    res.addHeader("Content-Length", Long.toString(finalArchiveByteArray.length));
+    res.addHeader("Content-Disposition", "attachment; filename=" + outputFileStem + "." + logContainer.getFileExtension());
+    return res;
+  }
+  
+  private static byte[] downloadLogs(LogArchiveContainer logContainer, String outputFileStem) {
     Log.info("\nCollecting logs.");
 
     byte[][] workersLogs = getWorkersLogs(logContainer);
@@ -200,8 +227,8 @@ public class LogsHandler extends Handler {
       return StringUtils.toBytes(e);
     }
   }
-  
-  public static String getOutputLogStem() {
+
+  private static String getOutputLogStem() {
     String pattern = "yyyyMMdd_hhmmss";
     SimpleDateFormat formatter = new SimpleDateFormat(pattern);
     String now = formatter.format(new Date());
@@ -248,13 +275,13 @@ public class LogsHandler extends Handler {
     assert H2O.CLOUD._memary.length == results.length : "Unexpected change in the cloud!";
     for (byte[] result : results) l += result.length;
     ByteArrayOutputStream baos = new ByteArrayOutputStream(l);
-    
+
     try (LogArchiveWriter archive = container.createLogArchiveWriter(baos)) {
-      
+
       // Add top-level directory.
       LogArchiveWriter.ArchiveEntry entry = new LogArchiveWriter.ArchiveEntry(topDir + File.separator, now);
       archive.putNextEntry(entry);
-      
+
       // Archive directory from each cloud member.
       for (int i = 0; i < results.length; i++) {
         String filename =

@@ -705,7 +705,7 @@ public class RequestServer extends HttpServlet {
         boolean containerTypeSpecified = path.length >= 6;
         LogArchiveContainer container = containerTypeSpecified ? 
                 LogArchiveContainer.valueOf(path[4].toUpperCase()) : LogArchiveContainer.ZIP; // use ZIP as default
-        return downloadLogsViaRestAPI(container);
+        return LogsHandler.downloadLogsViaRestAPI(container);
       }
       if (path[2].equals("NodePersistentStorage.bin") && path.length == 6) return downloadNps(path[3], path[4]);
     }
@@ -785,16 +785,6 @@ public class RequestServer extends HttpServlet {
     NanoResponse res = new NanoResponse(HTTP_OK, MIME_DEFAULT_BINARY, is);
     res.addHeader("Content-Length", Long.toString(length.get()));
     res.addHeader("Content-Disposition", "attachment; filename=" + keyName + ".flow");
-    return res;
-  }
-
-  private static NanoResponse downloadLogsViaRestAPI(LogArchiveContainer logContainer) {
-    String outputFileStem = LogsHandler.getOutputLogStem();
-    byte[] finalArchiveByteArray = LogsHandler.downloadLogs(logContainer, outputFileStem);
-
-    NanoResponse res = new NanoResponse(HTTP_OK, logContainer.getMimeType(), new ByteArrayInputStream(finalArchiveByteArray));
-    res.addHeader("Content-Length", Long.toString(finalArchiveByteArray.length));
-    res.addHeader("Content-Disposition", "attachment; filename=" + outputFileStem + "." + logContainer.getFileExtension());
     return res;
   }
   
