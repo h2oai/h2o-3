@@ -209,19 +209,25 @@ subprojects {
         if (project.hasProperty("enableMavenLocal")) { // useful for development
             mavenLocal()
         }
-        mavenCentral()
-        jcenter()
-        maven {
-          url "https://repository.cloudera.com/artifactory/cloudera-repos/"
-        }
-        maven {
-          url "http://repo.hortonworks.com/content/repositories/releases/"
-        }
-        maven {
-          url "http://repo.hortonworks.com/content/repositories/jetty-hadoop/"
-        }
-        maven {
-          url "http://repository.mapr.com/maven/"
+        if (project.ext.isCi) {
+            maven {
+                url "${localNexusLocation}/public"
+            }
+        } else {
+            mavenCentral()
+            jcenter()
+            maven {
+                url "https://repository.cloudera.com/artifactory/cloudera-repos/"
+            }
+            maven {
+                url "http://repo.hortonworks.com/content/repositories/releases/"
+            }
+            maven {
+                url "http://repo.hortonworks.com/content/repositories/jetty-hadoop/"
+            }
+            maven {
+                url "http://repository.mapr.com/maven/"
+            }
         }
     }
 
