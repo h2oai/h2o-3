@@ -189,6 +189,27 @@ public class LogsHandler extends Handler {
     return s;
   }
 
+  public static byte[] downloadLogs(LogArchiveContainer logContainer, String outputFileStem) {
+    Log.info("\nCollecting logs.");
+
+    byte[][] workersLogs = getWorkersLogs(logContainer);
+    byte[] clientLogs = getClientLogs(logContainer);
+
+    try {
+      return archiveLogs(logContainer, new Date(), workersLogs, clientLogs, outputFileStem);
+    } catch (Exception e) {
+      return StringUtils.toBytes(e);
+    }
+  }
+
+
+  public static String getOutputLogStem() {
+    String pattern = "yyyyMMdd_hhmmss";
+    SimpleDateFormat formatter = new SimpleDateFormat(pattern);
+    String now = formatter.format(new Date());
+    return "h2ologs_" + now;
+  }
+  
   private static byte[][] getWorkersLogs(LogArchiveContainer logContainer) {
     H2ONode[] members = H2O.CLOUD.members();
     byte[][] perNodeArchiveByteArray = new byte[members.length][];
@@ -221,27 +242,6 @@ public class LogsHandler extends Handler {
       }
     }
     return null;
-  }
-
-  public static byte[] downloadLogs(LogArchiveContainer logContainer, String outputFileStem) {
-    Log.info("\nCollecting logs.");
-
-    byte[][] workersLogs = getWorkersLogs(logContainer);
-    byte[] clientLogs = getClientLogs(logContainer);
-
-    try {
-      return archiveLogs(logContainer, new Date(), workersLogs, clientLogs, outputFileStem);
-    } catch (Exception e) {
-      return StringUtils.toBytes(e);
-    }
-  }
-
-
-  public static String getOutputLogStem() {
-    String pattern = "yyyyMMdd_hhmmss";
-    SimpleDateFormat formatter = new SimpleDateFormat(pattern);
-    String now = formatter.format(new Date());
-    return "h2ologs_" + now;
   }
 
   private static byte[] archiveLogs(LogArchiveContainer container, Date now,
