@@ -117,8 +117,7 @@ public class LogsHandler extends Handler {
       tryComplete();
     }
   }
-
-
+  
   private static H2ONode getH2ONode(String nodeIdx) {
     try {
       int numNodeIdx = Integer.parseInt(nodeIdx);
@@ -201,18 +200,17 @@ public class LogsHandler extends Handler {
       return StringUtils.toBytes(e);
     }
   }
-
-
+  
   public static String getOutputLogStem() {
     String pattern = "yyyyMMdd_hhmmss";
     SimpleDateFormat formatter = new SimpleDateFormat(pattern);
     String now = formatter.format(new Date());
     return "h2ologs_" + now;
   }
-  
+
   private static byte[][] getWorkersLogs(LogArchiveContainer logContainer) {
     H2ONode[] members = H2O.CLOUD.members();
-    byte[][] perNodeArchiveByteArray = new byte[members.length][];
+    byte[][] perNodeArchive = new byte[members.length][];
 
     for (int i = 0; i < members.length; i++) {
       try {
@@ -220,15 +218,15 @@ public class LogsHandler extends Handler {
         if (members[i].isHealthy()) {
           GetLogsFromNode g = new GetLogsFromNode(i, logContainer);
           g.doIt();
-          perNodeArchiveByteArray[i] = g.bytes;
+          perNodeArchive[i] = g.bytes;
         } else {
-          perNodeArchiveByteArray[i] = StringUtils.bytesOf("Node not healthy");
+          perNodeArchive[i] = StringUtils.bytesOf("Node not healthy");
         }
       } catch (Exception e) {
-        perNodeArchiveByteArray[i] = StringUtils.toBytes(e);
+        perNodeArchive[i] = StringUtils.toBytes(e);
       }
     }
-    return perNodeArchiveByteArray;
+    return perNodeArchive;
   }
 
   private static byte[] getClientLogs(LogArchiveContainer logContainer) {
