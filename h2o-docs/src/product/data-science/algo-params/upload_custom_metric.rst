@@ -1,23 +1,32 @@
-.. _custom_metric_func:
+.. _upload_custom_metric:
 
-``custom_metric_func``
-----------------------
+``upload_custom_metric``
+------------------------
 
-- Available in: GBM, DRF, GLM 
+- Available in: GBM, DRF, GLM
 - Hyperparameter: no
 
 Description
 ~~~~~~~~~~~
 
-Use this option to specify a custom evaluation function. A custom metric function can be used to produce adhoc scoring metrics if actuals are presented.
+Use this option to upload a custom metric function into a running H2O cluster. A custom metric function can be used to produce adhoc scoring metrics if actuals are presented.
+
+Three separate fields must be specified when using this function:
+
+- ``klazz``: Represents a custom function.
+
+- ``func_name``: Assigns a name with uploaded custom functions. This name corresponds to the name of the key in the distributed key-value store.
+
+- ``func_file``: The name of the file to store the function in an uploaded jar file. The source code of the given class is saved into a file that is subsequently zipped, uploaded as a zip-archive, and saved into the distributed key-value store.
+
+The parameters ``func_name`` and ``func_file`` must be unique for each uploaded custom distribution.
 
 **Note**: This option is only supported in the Python client.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
-- `upload_custom_metric <upload_custom_metric.html>`__
-- `stopping_metric <stopping_metric.html>`__
+- `custom_metric_func <custom_metric_func.html>`__
 
 Example
 ~~~~~~~

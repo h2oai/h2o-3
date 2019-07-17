@@ -149,6 +149,8 @@ Defining a GLM Model
 
 -  `custom_metric_func <algo-params/custom_metric_func.html>`__: Optionally specify a custom evaluation function.
 
+- `upload_custom_metric <upload_custom_metric.html>`__: Upload a custom metric into a running H2O cluster.
+
 
 Interpreting a GLM Model
 ~~~~~~~~~~~~~~~~~~~~~~~~
