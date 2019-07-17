@@ -7,14 +7,11 @@ import jsr166y.ForkJoinWorkerThread;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
 import water.UDPRebooted.ShutdownTsk;
+import water.api.LogsHandler;
 import water.api.RequestServer;
 import water.exceptions.H2OFailException;
 import water.exceptions.H2OIllegalArgumentException;
-import water.init.AbstractBuildVersion;
-import water.init.AbstractEmbeddedH2OConfig;
-import water.init.JarHash;
-import water.init.NetworkInit;
-import water.init.NodePersistentStorage;
+import water.init.*;
 import water.nbhm.NonBlockingHashMap;
 import water.parser.DecryptionTool;
 import water.parser.ParserService;
@@ -23,20 +20,11 @@ import water.server.ServletUtils;
 import water.util.*;
 import water.webserver.iface.WebServer;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Field;
-import java.net.Inet4Address;
-import java.net.Inet6Address;
-import java.net.InetAddress;
-import java.net.MulticastSocket;
-import java.net.NetworkInterface;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.net.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -2298,4 +2286,31 @@ final public class H2O {
   public static Key<DecryptionTool> defaultDecryptionTool() {
     return H2O.ARGS.decrypt_tool != null ? Key.<DecryptionTool>make(H2O.ARGS.decrypt_tool) : null;
   }
+
+  public static URI downloadLogs(URI destinationDir, LogArchiveContainer logContainer) {
+    return downloadLogs(destinationDir.toString(), logContainer);
+  }
+
+  public static URI downloadLogs(URI destinationDir, String logContainer) {
+    return downloadLogs(destinationDir, LogArchiveContainer.valueOf(logContainer));
+  }
+
+  public static URI downloadLogs(String destinationDir, LogArchiveContainer logContainer) {
+    String outputFileStem = LogsHandler.getOutputLogStem();
+    String outputFileName = outputFileStem + "." + logContainer.getFileExtension();
+    byte[] logBytes = LogsHandler.downloadLogs(logContainer, outputFileStem);
+    File destination = new File(destinationDir, outputFileName);
+
+    try (FileOutputStream fileOutputStream = new FileOutputStream(destination)) {
+      fileOutputStream.write(logBytes);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    return destination.toURI();
+  }
+  
+  public static URI downloadLogs(String destinationDir, String logContainer) {
+    return downloadLogs(destinationDir, LogArchiveContainer.valueOf(logContainer));
+  }
+  
 }
