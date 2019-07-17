@@ -624,10 +624,7 @@ def class_extra_for(algo):
             :param file: A string containing path to the file to create the model from
             :return: H2OGenericEstimator instance representing the generic model
             \"\"\"
-            from h2o import lazy_import, get_frame
-            model_key = lazy_import(file)
-            model_bytes_frame = get_frame(model_key[0])
-            model = H2OGenericEstimator(model_key = model_bytes_frame)
+            model = H2OGenericEstimator(path = file)
             model.train()
             
             return model

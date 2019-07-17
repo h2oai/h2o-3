@@ -7,6 +7,11 @@ import water.fvec.Frame;
 public class GenericModelParameters extends Model.Parameters {
 
     /**
+     * Path of the file with embedded model
+     */
+    public String _path;
+
+    /**
      * Key to the file with embedded model
      */
     public Key<Frame> _model_key;
@@ -18,7 +23,7 @@ public class GenericModelParameters extends Model.Parameters {
 
     @Override
     public String fullName() {
-        return "Generic Model";
+        return "MOJO Model";
     }
 
     @Override
