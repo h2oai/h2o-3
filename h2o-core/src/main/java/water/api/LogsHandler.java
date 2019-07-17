@@ -193,53 +193,53 @@ public class LogsHandler extends Handler {
     return s;
   }
 
+  private static byte[][] getWorkersLogs(LogArchiveContainer logContainer) {
+      H2ONode[] members = H2O.CLOUD.members();
+      byte[][] perNodeArchiveByteArray = new byte[members.length][];
+
+      for (int i = 0; i < members.length; i++) {
+          try {
+              // Skip nodes that aren't healthy, since they are likely to cause the entire process to hang.
+              if (members[i].isHealthy()) {
+                  GetLogsFromNode g = new GetLogsFromNode(i, logContainer);
+                  g.doIt();
+                  perNodeArchiveByteArray[i] = g.bytes;
+              } else {
+                  perNodeArchiveByteArray[i] = StringUtils.bytesOf("Node not healthy");
+              }
+          }
+          catch (Exception e) {
+              perNodeArchiveByteArray[i] = StringUtils.toBytes(e);
+          }
+      }
+      return perNodeArchiveByteArray;
+  }
+  
+  private static byte[] getClientLogs(LogArchiveContainer logContainer) {
+      if (H2O.ARGS.client) {
+          try {
+              GetLogsFromNode g = new GetLogsFromNode(-1, logContainer);
+              g.doIt();
+              return g.bytes;
+          }
+          catch (Exception e) {
+              return StringUtils.toBytes(e);
+          }
+      }
+      return null;
+  }
+  
   public static byte[] downloadLogs(LogArchiveContainer logContainer, String outputFileStem) {
     Log.info("\nCollecting logs.");
 
-    H2ONode[] members = H2O.CLOUD.members();
-    byte[][] perNodeArchiveByteArray = new byte[members.length][];
-    byte[] clientNodeByteArray = null;
-
-    for (int i = 0; i < members.length; i++) {
-      byte[] bytes;
-
-      try {
-        // Skip nodes that aren't healthy, since they are likely to cause the entire process to hang.
-        if (members[i].isHealthy()) {
-          GetLogsFromNode g = new GetLogsFromNode(i, logContainer);
-          g.doIt();
-          bytes = g.bytes;
-        } else {
-          bytes = StringUtils.bytesOf("Node not healthy");
-        }
-      }
-      catch (Exception e) {
-        bytes = StringUtils.toBytes(e);
-      }
-      perNodeArchiveByteArray[i] = bytes;
-    }
-
-    if (H2O.ARGS.client) {
-      byte[] bytes;
-      try {
-        GetLogsFromNode g = new GetLogsFromNode(-1, logContainer);
-        g.doIt();
-        bytes = g.bytes;
-      }
-      catch (Exception e) {
-        bytes = StringUtils.toBytes(e);
-      }
-      clientNodeByteArray = bytes;
-    }
-
-    byte[] finalArchiveByteArray;
+    byte[][] workersLogs = getWorkersLogs(logContainer);
+    byte[] clientLogs = getClientLogs(logContainer);
+    
     try {
-      finalArchiveByteArray = archiveLogs(logContainer, new Date(), perNodeArchiveByteArray, clientNodeByteArray, outputFileStem);
+      return archiveLogs(logContainer, new Date(), workersLogs, clientLogs, outputFileStem);
+    } catch (Exception e) {
+      return StringUtils.toBytes(e);
     }
-    catch (Exception e) {
-      finalArchiveByteArray = StringUtils.toBytes(e);
-    }
-    return finalArchiveByteArray;
   }
 
   
@@ -266,7 +266,7 @@ public class LogsHandler extends Handler {
 
     try {
       // Archive directory from each cloud member.
-      for (int i =0; i<results.length; i++) {
+      for (int i=0; i<results.length; i++) {
         String filename =
                 topDir + File.separator +
                         "node" + i + "_" +
