@@ -241,7 +241,7 @@ Defining a DRF Model
 
 -  `custom_metric_func <algo-params/custom_metric_func.html>`__: Optionally specify a custom evaluation function.
 
-- `upload_custom_metric <upload_custom_metric.html>`__: Upload a custom metric into a running H2O cluster.
+- `upload_custom_metric <algo-params/upload_custom_metric.html>`__: Upload a custom metric into a running H2O cluster.
 
 -  **export_checkpoints_dir**: Optionally specify a path to a directory where every generated model will be stored when checkpointing models.
 
