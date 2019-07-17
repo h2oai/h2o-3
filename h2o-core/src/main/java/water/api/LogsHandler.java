@@ -248,15 +248,13 @@ public class LogsHandler extends Handler {
     assert H2O.CLOUD._memary.length == results.length : "Unexpected change in the cloud!";
     for (byte[] result : results) l += result.length;
     ByteArrayOutputStream baos = new ByteArrayOutputStream(l);
-
-    // Add top-level directory.
-    LogArchiveWriter archive = container.createLogArchiveWriter(baos);
-    {
+    
+    try (LogArchiveWriter archive = container.createLogArchiveWriter(baos)) {
+      
+      // Add top-level directory.
       LogArchiveWriter.ArchiveEntry entry = new LogArchiveWriter.ArchiveEntry(topDir + File.separator, now);
       archive.putNextEntry(entry);
-    }
-
-    try {
+      
       // Archive directory from each cloud member.
       for (int i = 0; i < results.length; i++) {
         String filename =
@@ -283,9 +281,6 @@ public class LogsHandler extends Handler {
 
       // Close the top-level directory.
       archive.closeEntry();
-    } finally {
-      // Close the archive file.
-      archive.close();
     }
 
     return baos.toByteArray();
