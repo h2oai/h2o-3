@@ -192,9 +192,9 @@ public class LogsHandler extends Handler {
   }
 
   public static URI downloadLogs(String destinationDir, LogArchiveContainer logContainer) {
-    String outputFileStem = LogsHandler.getOutputLogStem();
+    String outputFileStem = getOutputLogStem();
     String outputFileName = outputFileStem + "." + logContainer.getFileExtension();
-    byte[] logBytes = LogsHandler.downloadLogs(logContainer, outputFileStem);
+    byte[] logBytes = downloadLogs(logContainer, outputFileStem);
     File destination = new File(destinationDir, outputFileName);
 
     try (FileOutputStream fileOutputStream = new FileOutputStream(destination)) {
@@ -206,8 +206,8 @@ public class LogsHandler extends Handler {
   }
 
   static NanoResponse downloadLogsViaRestAPI(LogArchiveContainer logContainer) {
-    String outputFileStem = LogsHandler.getOutputLogStem();
-    byte[] finalArchiveByteArray = LogsHandler.downloadLogs(logContainer, outputFileStem);
+    String outputFileStem = getOutputLogStem();
+    byte[] finalArchiveByteArray = downloadLogs(logContainer, outputFileStem);
 
     NanoResponse res = new NanoResponse(HTTP_OK, logContainer.getMimeType(), new ByteArrayInputStream(finalArchiveByteArray));
     res.addHeader("Content-Length", Long.toString(finalArchiveByteArray.length));
