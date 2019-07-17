@@ -2,11 +2,9 @@ package hex.generic;
 
 import hex.*;
 import hex.genmodel.attributes.*;
-import hex.genmodel.attributes.metrics.MojoModelMetrics;
-import hex.genmodel.attributes.metrics.MojoModelMetricsBinomial;
-import hex.genmodel.attributes.metrics.MojoModelMetricsMultinomial;
-import hex.genmodel.attributes.metrics.MojoModelMetricsRegression;
+import hex.genmodel.attributes.metrics.*;
 import hex.genmodel.descriptor.ModelDescriptor;
+import hex.tree.isofor.ModelMetricsAnomaly;
 import water.util.Log;
 import water.util.TwoDimTable;
 
@@ -68,9 +66,6 @@ public class GenericModelOutput extends Model.Output {
     private ModelMetrics determineModelmetricsType(final MojoModelMetrics mojoMetrics, final ModelDescriptor modelDescriptor) {
         final ModelCategory modelCategory = modelDescriptor.getModelCategory();
         switch (modelCategory) {
-            case Unknown:
-                return new ModelMetrics(null, null, mojoMetrics._nobs, mojoMetrics._MSE, mojoMetrics._description,
-                        new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value));
             case Binomial:
                 assert mojoMetrics instanceof MojoModelMetricsBinomial;
                 final MojoModelMetricsBinomial binomial = (MojoModelMetricsBinomial) mojoMetrics;
@@ -95,17 +90,25 @@ public class GenericModelOutput extends Model.Output {
             case Regression:
                 assert mojoMetrics instanceof MojoModelMetricsRegression;
                 MojoModelMetricsRegression metricsRegression = (MojoModelMetricsRegression) mojoMetrics;
-                
+
                 return new ModelMetricsRegression(null, null, metricsRegression._nobs, metricsRegression._MSE,
                         Double.NaN, metricsRegression._mae, metricsRegression._root_mean_squared_log_error, metricsRegression._mean_residual_deviance,
                         new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value));
+            case AnomalyDetection:
+                assert mojoMetrics instanceof MojoModelMetricsAnomaly;
+                // There is no need to introduce new Generic alternatives to the original metric objects at the moment.
+                // The total values can be simply calculated. The extra calculation time is negligible.
+                MojoModelMetricsAnomaly metricsAnomaly = (MojoModelMetricsAnomaly) mojoMetrics;
+                return new ModelMetricsAnomaly(null, null, new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value),
+                        mojoMetrics._nobs, metricsAnomaly._mean_score * metricsAnomaly._nobs, metricsAnomaly._mean_normalized_score * metricsAnomaly._nobs,
+                        metricsAnomaly._description);
+            case Unknown:
             case Ordinal:
             case Clustering:
             case AutoEncoder:
             case DimReduction:
             case WordEmbedding:
             case CoxPH:
-            case AnomalyDetection:
             default:
                 return new ModelMetrics(null, null, mojoMetrics._nobs, mojoMetrics._MSE, mojoMetrics._description,
                         new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value));
