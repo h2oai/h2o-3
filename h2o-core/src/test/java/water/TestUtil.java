@@ -18,7 +18,8 @@ import water.util.Log;
 import water.util.Timer;
 import water.util.TwoDimTable;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -670,11 +671,15 @@ public class TestUtil extends Iced {
   public static <T> T[] aro(T ...a) { return a ;}
 
   // ==== Comparing Results ====
-  
+
   public static void assertFrameEquals(Frame expected, Frame actual, double delta) {
+    assertFrameEquals(expected, actual, delta, false);
+  }
+
+  public static void assertFrameEquals(Frame expected, Frame actual, double delta, boolean relativeDelta) {
     assertEquals("Frames have different number of vecs. ", expected.vecs().length, actual.vecs().length);
     for (int i = 0; i < expected.vecs().length; i++) {
-      assertVecEquals(i + "/" + expected._names[i] + " ", expected.vec(i), actual.vec(i), delta);
+      assertVecEquals(i + "/" + expected._names[i] + " ", expected.vec(i), actual.vec(i), delta, relativeDelta);
     }
   }
 
@@ -683,10 +688,25 @@ public class TestUtil extends Iced {
   }
 
   public static void assertVecEquals(String messagePrefix, Vec expecteds, Vec actuals, double delta) {
+    assertVecEquals(messagePrefix, expecteds, actuals, delta, false);
+  }
+
+  public static void assertVecEquals(String messagePrefix, Vec expecteds, Vec actuals, double delta, boolean relativeDelta) {
     assertEquals(expecteds.length(), actuals.length());
     for(int i = 0; i < expecteds.length(); i++) {
       final String message = messagePrefix + i + ": " + expecteds.at(i) + " != " + actuals.at(i) + ", chunkIds = " + expecteds.elem2ChunkIdx(i) + ", " + actuals.elem2ChunkIdx(i) + ", row in chunks = " + (i - expecteds.chunkForRow(i).start()) + ", " + (i - actuals.chunkForRow(i).start());
-      assertEquals(message, expecteds.at(i), actuals.at(i), delta);
+      double expectedVal = expecteds.at(i);
+      double actualVal = actuals.at(i);
+      double assertionDelta = delta;
+      if (relativeDelta) {
+        double deltaBase = Math.abs(expectedVal);
+        if (deltaBase == 0) {
+          assertionDelta = delta;
+        } else {
+          assertionDelta = deltaBase * delta;
+        }
+      }
+      assertEquals(message, expectedVal, actualVal, assertionDelta);
     }
   }
 
