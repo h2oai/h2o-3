@@ -24,6 +24,8 @@ class H2OGenericEstimator(H2OEstimator):
         super(H2OGenericEstimator, self).__init__()
         self._parms = {}
         names_list = {"model_id", "model_key", "path"}
+        if(all(name is None for name in names_list)):
+                raise H2OValueError("At least one of model-generic")
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
