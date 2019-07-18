@@ -54,6 +54,22 @@ class H2OXGBoostEstimator(H2OEstimator):
         Id of the training data frame.
 
         Type: ``H2OFrame``.
+
+        :examples:
+
+        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+        >>> titanic['survived'] = titanic['survived'].asfactor()
+        >>> predictors = titanic.columns
+        >>> del predictors[1:3]
+        >>> response = 'survived'
+        >>> train, valid = titanic.split_frame(ratios = [.8],
+        ...                                    seed = 1234)
+        >>> titanic_xgb = H2OXGBoostEstimator(seed = 1234)
+        >>> titanic_xgb.train(x=predictors,
+        ...                   y=response,
+        ...                   training_frame=train,
+        ...                   validation_frame=valid)
+        >>> titanic_xgb.auc(valid=True)
         """
         return self._parms.get("training_frame")
 
@@ -68,6 +84,22 @@ class H2OXGBoostEstimator(H2OEstimator):
         Id of the validation data frame.
 
         Type: ``H2OFrame``.
+
+        :examples:
+
+        >>> insurance = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/insurance.csv")
+        >>> insurance['Group'] = insurance['Group'].asfactor()
+        >>> insurance['Age'] = insurance['Age'].asfactor()
+        >>> predictors = insurance.columns[0:4]
+        >>> response = 'Claims'
+        >>> train, valid = insurance.split_frame(ratios = [.8],
+        ...                                      seed = 1234)
+        >>> insurance_xgb = H2OXGBoostEstimator(seed = 1234)
+        >>> insurance_xgb.train(x=predictors,
+        ...                     y=response,
+        ...                     training_frame=train,
+        ...                     validation_frame=valid)
+        >>> print(insurance_xgb.mse(valid=True))
         """
         return self._parms.get("validation_frame")
 
@@ -82,6 +114,21 @@ class H2OXGBoostEstimator(H2OEstimator):
         Number of folds for K-fold cross-validation (0 to disable or >= 2).
 
         Type: ``int``  (default: ``0``).
+
+        :examples:
+
+        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+        >>> titanic['survived'] = titanic['survived'].asfactor()
+        >>> predictors = titanic.columns
+        >>> del predictors[1:3]
+        >>> response = 'survived'
+        >>> folds = 5
+        >>> titanic_xgb = H2OXGBoostEstimator(nfolds = folds,
+        ...                                   seed = 1234)
+        >>> titanic_xgb.train(x=predictors,
+        ...                   y=response,
+        ...                   training_frame=titanic)
+        >>> titanic_xgb.auc(xval=True)
         """
         return self._parms.get("nfolds")
 
@@ -97,6 +144,22 @@ class H2OXGBoostEstimator(H2OEstimator):
         Whether to keep the cross-validation models.
 
         Type: ``bool``  (default: ``True``).
+
+        :examples:
+
+        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+        >>> titanic['survived'] = titanic['survived'].asfactor()
+        >>> predictors = titanic.columns
+        >>> response = 'survived'
+        >>> train, valid = titanic.split_frame(ratios = [.8],
+        ...                                    seed = 1234)
+        >>> titanic_xgb = H2OXGBoostEstimator(keep_cross_validation_models = True,
+        ...                                   nfolds = 5 ,
+        ...                                   seed = 1234)
+        >>> titanic_xgb.train(x = predictors,
+        ...                   y = response,
+        ...                   training_frame = train)
+        >>> titanic_xgb.cross_validation_models()
         """
         return self._parms.get("keep_cross_validation_models")
 
@@ -112,6 +175,22 @@ class H2OXGBoostEstimator(H2OEstimator):
         Whether to keep the predictions of the cross-validation models.
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+        >>> titanic['survived'] = titanic['survived'].asfactor()
+        >>> predictors = titanic.columns
+        >>> response = 'survived'
+        >>> train, valid = titanic.split_frame(ratios = [.8],
+        ...                                    seed = 1234)
+        >>> titanic_xgb = H2OXGBoostEstimator(keep_cross_validation_predictions = True,
+        ...                                   nfolds = 5,
+        ...                                   seed = 1234)
+        >>> titanic_xgb.train(x=predictors,
+        ...                   y=response,
+        ...                   training_frame=train)
+        >>> titanic_xgb.cross_validation_predictions()
         """
         return self._parms.get("keep_cross_validation_predictions")
 
@@ -127,6 +206,22 @@ class H2OXGBoostEstimator(H2OEstimator):
         Whether to keep the cross-validation fold assignment.
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+        >>> titanic['survived'] = titanic['survived'].asfactor()
+        >>> predictors = titanic.columns
+        >>> response = 'survived'
+        >>> train, valid = titanic.split_frame(ratios = [.8],
+        ...                                    seed = 1234)
+        >>> titanic_xgb = H2OXGBoostEstimator(keep_cross_validation_fold_assignment = True,
+        ...                                   nfolds = 5,
+        ...                                   seed = 1234)
+        >>> titanic_xgb.train(x=predictors,
+        ...                   y=response,
+        ...                   training_frame=train)
+        >>> titanic_xgb.cross_validation_fold_assignment()
         """
         return self._parms.get("keep_cross_validation_fold_assignment")
 
@@ -142,6 +237,28 @@ class H2OXGBoostEstimator(H2OEstimator):
         Whether to score during each iteration of model training.
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"]= airlines["Year"].asfactor()
+        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+        >>> response = "IsDepDelayed"
+        >>> train, valid= airlines.split_frame(ratios = [.8],
+        ...                                    seed = 1234)
+        >>> airlines_xgb = H2OXGBoostEstimator(score_each_iteration = True,
+        ...                                    ntrees = 55,
+        ...                                    seed = 1234)
+        >>> airlines_xgb.train(x=predictors,
+        ...                    y=response,
+        ...                    training_frame=train,
+        ...                    validation_frame=valid)
+        >>> airlines_xgb.scoring_history()
         """
         return self._parms.get("score_each_iteration")
 
@@ -158,6 +275,21 @@ class H2OXGBoostEstimator(H2OEstimator):
         the folds based on the response variable, for classification problems.
 
         One of: ``"auto"``, ``"random"``, ``"modulo"``, ``"stratified"``  (default: ``"auto"``).
+
+        :examples:
+        
+        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+        >>> titanic['survived'] = titanic['survived'].asfactor()
+        >>> predictors = titanic.columns
+        >>> response = 'survived'
+        >>> assignment_type = "Random"
+        >>> titanic_xgb = H2OXGBoostEstimator(fold_assignment = assignment_type,
+        ...                                   nfolds = 5,
+        ...                                   seed = 1234)
+        >>> titanic_xgb.train(x = predictors,
+        ...                   y = response,
+        ...                   training_frame = titanic)
+        >>> titanic_xgb.auc(xval=True)
         """
         return self._parms.get("fold_assignment")
 
@@ -173,6 +305,24 @@ class H2OXGBoostEstimator(H2OEstimator):
         Column with cross-validation fold index assignment per observation.
 
         Type: ``str``.
+
+        :examples:
+
+        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+        >>> titanic['survived'] = titanic['survived'].asfactor()
+        >>> predictors = titanic.columns
+        >>> response = 'survived'
+        >>> fold_numbers = titanic.kfold_column(n_folds = 5,
+        ...                                     seed = 1234)
+        >>> fold_numbers.set_names(["fold_numbers"])
+        >>> titanic = titanic.cbind(fold_numbers)
+        >>> print(titanic['fold_numbers'])
+        >>> titanic_xgb = H2OXGBoostEstimator(seed = 1234)
+        >>> titanic_xgb.train(x=predictors,
+        ...                   y=response,
+        ...                   training_frame=titanic,
+        ...                   fold_column="fold_numbers")
+        >>> titanic_xgb.auc(xval=True)
         """
         return self._parms.get("fold_column")
 
@@ -188,6 +338,22 @@ class H2OXGBoostEstimator(H2OEstimator):
         Response variable column.
 
         Type: ``str``.
+
+        :examples:
+
+        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+        >>> titanic['survived'] = titanic['survived'].asfactor()
+        >>> predictors = titanic.columns
+        >>> del predictors[1:3]
+        >>> response = 'survived'
+        >>> train, valid = titanic.split_frame(ratios = [.8],
+        ...                                    seed = 1234)
+        >>> titanic_xgb = H2OXGBoostEstimator(seed = 1234)
+        >>> titanic_xgb.train(x=predictors,
+        ...                   y=response,
+        ...                   training_frame=train,
+        ...                   validation_frame=valid)
+        >>> titanic_xgb.auc(valid=True)
         """
         return self._parms.get("response_column")
 
@@ -218,6 +384,24 @@ class H2OXGBoostEstimator(H2OEstimator):
         Ignore constant columns.
 
         Type: ``bool``  (default: ``True``).
+
+        :examples:
+
+        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+        >>> titanic['survived'] = titanic['survived'].asfactor()
+        >>> predictors = titanic.columns
+        >>> response = 'survived'
+        >>> titanic["const_1"] = 6
+        >>> titanic["const_2"] = 7
+        >>> train, valid = titanic.split_frame(ratios = [.8],
+        ...                                    seed = 1234)
+        >>> titanic_xgb = H2OXGBoostEstimator(seed = 1234,
+        ...                                   ignore_const_cols = True)
+        >>> titanic_xgb.train(x=predictors,
+        ...                   y=response,
+        ...                   training_frame=train,
+        ...                   validation_frame=valid)
+        >>> titanic_xgb.auc(valid=True)
         """
         return self._parms.get("ignore_const_cols")
 
@@ -252,6 +436,22 @@ class H2OXGBoostEstimator(H2OEstimator):
         During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
         Type: ``str``.
+
+        :examples:
+
+        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+        >>> titanic['survived'] = titanic['survived'].asfactor()
+        >>> predictors = titanic.columns
+        >>> del predictors[1:3]
+        >>> response = 'survived'
+        >>> train, valid = titanic.split_frame(ratios = [.8],
+        ...                                    seed = 1234)
+        >>> titanic_xgb = H2OXGBoostEstimator(seed = 1234)
+        >>> titanic_xgb.train(x=predictors,
+        ...                   y=response,
+        ...                   training_frame=train,
+        ...                   validation_frame=valid)
+        >>> titanic_xgb.auc(valid=True)
         """
         return self._parms.get("weights_column")
 
@@ -268,6 +468,29 @@ class H2OXGBoostEstimator(H2OEstimator):
         stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
 
         Type: ``int``  (default: ``0``).
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"]= airlines["Year"].asfactor()
+        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+        >>> response = "IsDepDelayed"
+        >>> train, valid= airlines.split_frame(ratios = [.8],
+        ...                                    seed = 1234)
+        >>> airlines_xgb = H2OXGBoostEstimator(stopping_metric = "auc",
+        ...                                    stopping_rounds = 3,
+        ...                                    stopping_tolerance = 1e-2,
+        ...                                    seed = 1234)
+        >>> airlines_xgb.train(x=predictors,
+        ...                    y=response,
+        ...                    training_frame=train,
+        ...                    validation_frame=valid)
+        >>> airlines_xgb.auc(valid=True)
         """
         return self._parms.get("stopping_rounds")
 
@@ -287,6 +510,28 @@ class H2OXGBoostEstimator(H2OEstimator):
         One of: ``"auto"``, ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``,
         ``"lift_top_group"``, ``"misclassification"``, ``"mean_per_class_error"``, ``"custom"``, ``"custom_increasing"``
         (default: ``"auto"``).
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"]= airlines["Year"].asfactor()
+        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+        >>> response = "IsDepDelayed"
+        >>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+        >>> airlines_xgb = H2OXGBoostEstimator(stopping_metric = "auc",
+        ...                                    stopping_rounds = 3,
+        ...                                    stopping_tolerance = 1e-2,
+        ...                                    seed = 1234)
+        >>> airlines_xgb.train(x=predictors,
+        ...                    y=response,
+        ...                    training_frame=train,
+        ...                    validation_frame=valid)
+        >>> airlines_xgb.auc(valid=True)
         """
         return self._parms.get("stopping_metric")
 
@@ -302,6 +547,29 @@ class H2OXGBoostEstimator(H2OEstimator):
         Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
 
         Type: ``float``  (default: ``0.001``).
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"]= airlines["Year"].asfactor()
+        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+        >>> response = "IsDepDelayed"
+        >>> train, valid= airlines.split_frame(ratios = [.8],
+        ...                                    seed = 1234)
+        >>> airlines_xgb = H2OXGBoostEstimator(stopping_metric = "auc",
+        ...                                    stopping_rounds = 3,
+        ...                                    stopping_tolerance = 1e-2,
+        ...                                    seed = 1234)
+        >>> airlines_xgb.train(x=predictors,
+        ...                    y=response,
+        ...                    training_frame=train,
+        ...                    validation_frame=valid)
+        >>> airlines_xgb.auc(valid=True)
         """
         return self._parms.get("stopping_tolerance")
 
@@ -317,6 +585,24 @@ class H2OXGBoostEstimator(H2OEstimator):
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
         Type: ``float``  (default: ``0``).
+
+        :examples:
+
+        >>> covtype = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
+        >>> covtype[54] = covtype[54].asfactor()
+        >>> predictors = covtype.columns[0:54]
+        >>> response = 'C55'
+        >>> train, valid = covtype.split_frame(ratios = [.8],
+        ...                                    seed = 1234)
+        >>> cov_xgb = H2OXGBoostEstimator(max_runtime_secs = 10,
+        ...                               ntrees = 10000,
+        ...                               max_depth = 10,
+        ...                               seed = 1234)
+        >>> cov_xgb.train(x=predictors,
+        ...               y=response,
+        ...               training_frame=train,
+        ...               validation_frame=valid)
+        >>> print(cov_xgb.logloss(valid=True))
         """
         return self._parms.get("max_runtime_secs")
 
@@ -332,6 +618,35 @@ class H2OXGBoostEstimator(H2OEstimator):
         Seed for pseudo random number generator (if applicable)
 
         Type: ``int``  (default: ``-1``).
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"]= airlines["Year"].asfactor()
+        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+        >>> response = "IsDepDelayed"
+        >>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+        >>> xgb_w_seed_1 = H2OXGBoostEstimator(col_sample_rate = .7,
+        ...                                    seed = 1234)
+        >>> xgb_w_seed_1.train(x=predictors,
+        ...                    y=response,
+        ...                    training_frame=train,
+        ...                    validation_frame=valid)
+        >>> xgb_w_seed_2 = H2OXGBoostEstimator(col_sample_rate = .7,
+        ...                                    seed = 1234)
+        >>> xgb_w_seed_2.train(x=predictors,
+        ...                    y=response,
+        ...                    training_frame=train,
+        ...                    validation_frame=valid)
+        >>> print('auc for the 1st model built with a seed:',
+        ...        xgb_w_seed_1.auc(valid=True))
+        >>> print('auc for the 2nd model built with a seed:',
+        ...        xgb_w_seed_2.auc(valid=True))
         """
         return self._parms.get("seed")
 
@@ -348,6 +663,21 @@ class H2OXGBoostEstimator(H2OEstimator):
 
         One of: ``"auto"``, ``"bernoulli"``, ``"multinomial"``, ``"gaussian"``, ``"poisson"``, ``"gamma"``,
         ``"tweedie"``, ``"laplace"``, ``"quantile"``, ``"huber"``  (default: ``"auto"``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "cylinders"
+        >>> train, valid = cars.split_frame(ratios = [.8],
+        ...                                 seed = 1234)
+        >>> cars_xgb = H2OXGBoostEstimator(distribution = "poisson",
+        ...                                seed = 1234)
+        >>> cars_xgb.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_xgb.mse(valid=True)        
         """
         return self._parms.get("distribution")
 
@@ -363,6 +693,24 @@ class H2OXGBoostEstimator(H2OEstimator):
         Tweedie power for Tweedie regression, must be between 1 and 2.
 
         Type: ``float``  (default: ``1.5``).
+
+        :examples:
+
+        >>> insurance = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/insurance.csv")
+        >>> predictors = insurance.columns[0:4]
+        >>> response = 'Claims'
+        >>> insurance['Group'] = insurance['Group'].asfactor()
+        >>> insurance['Age'] = insurance['Age'].asfactor()
+        >>> train, valid = insurance.split_frame(ratios = [.8],
+        ...                                      seed = 1234)
+        >>> insurance_xgb = H2OXGBoostEstimator(distribution="tweedie",
+        ...                                     tweedie_power = 1.2,
+        ...                                     seed = 1234)
+        >>> insurance_xgb.train(x=predictors,
+        ...                     y=response,
+        ...                     training_frame=train,
+        ...                     validation_frame=valid)
+        >>> print(insurance_xgb.mse(valid=True))
         """
         return self._parms.get("tweedie_power")
 
@@ -379,6 +727,28 @@ class H2OXGBoostEstimator(H2OEstimator):
 
         One of: ``"auto"``, ``"enum"``, ``"one_hot_internal"``, ``"one_hot_explicit"``, ``"binary"``, ``"eigen"``,
         ``"label_encoder"``, ``"sort_by_response"``, ``"enum_limited"``  (default: ``"auto"``).
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"]= airlines["Year"].asfactor()
+        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+        >>> response = "IsDepDelayed"
+        >>> train, valid= airlines.split_frame(ratios = [.8],
+        ...                                    seed = 1234)
+        >>> encoding = "one_hot_explicit"
+        >>> airlines_xgb = H2OXGBoostEstimator(categorical_encoding = encoding,
+        ...                                    seed =1234)
+        >>> airlines_xgb.train(x = predictors,
+        ...                    y = response,
+        ...                    training_frame = train,
+        ...                    validation_frame = valid)
+        >>> airlines_xgb.auc(valid=True)
         """
         return self._parms.get("categorical_encoding")
 
@@ -424,6 +794,31 @@ class H2OXGBoostEstimator(H2OEstimator):
         (same as n_estimators) Number of trees.
 
         Type: ``int``  (default: ``50``).
+
+        :examples:
+
+        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+        >>> titanic['survived'] = titanic['survived'].asfactor()
+        >>> predictors = titanic.columns
+        >>> del predictors[1:3]
+        >>> response = 'survived'
+        >>> train, valid = titanic.split_frame(ratios = [.8],
+        ...                                    seed = 1234)
+        >>> tree_num = [20, 50, 80, 110, 140, 170, 200]
+        >>> label = ["20", "50", "80", "110",
+        ...          "140", "170", "200"]
+        >>> for key, num in enumerate(tree_num):
+        #              Input integer for 'num' and 'key'
+        >>> titanic_xgb = H2OXGBoostEstimator(ntrees = num,
+        ...                                   seed = 1234)
+        >>> titanic_xgb.train(x=predictors,
+        ...                   y=response,
+        ...                   training_frame=train,
+        ...                   validation_frame=valid)
+        >>> print(label[key], 'training score',
+        ...       titanic_xgb.auc(train = True))
+        >>> print(label[key], 'validation score',
+        ...       titanic_xgb.auc(valid = True))
         """
         return self._parms.get("ntrees")
 
@@ -439,6 +834,26 @@ class H2OXGBoostEstimator(H2OEstimator):
         Maximum tree depth.
 
         Type: ``int``  (default: ``6``).
+
+        :examples:
+
+        >>> df = h2o.import_file(path = "http://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+        >>> response = "survived"
+        >>> df[response] = df[response].asfactor()
+        >>> predictors = df.columns
+        >>> del predictors[1:3]
+        >>> train, valid, test = df.split_frame(ratios=[0.6,0.2],
+        ...                                     seed=1234,
+        ...                                     destination_frames=
+        ...                                     ['train.hex',
+        ...                                     'valid.hex',
+        ...                                     'test.hex'])
+        >>> xgb = H2OXGBoostEstimator()
+        >>> xgb.train(x=predictors,
+        ...           y=response,
+        ...           training_frame=train)
+        >>> perf = xgb.model_performance(valid)
+        >>> print perf.auc()
         """
         return self._parms.get("max_depth")
 
@@ -454,6 +869,23 @@ class H2OXGBoostEstimator(H2OEstimator):
         (same as min_child_weight) Fewest allowed (weighted) observations in a leaf.
 
         Type: ``float``  (default: ``1``).
+
+        :examples:
+
+        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+        >>> titanic['survived'] = titanic['survived'].asfactor()
+        >>> predictors = titanic.columns
+        >>> del predictors[1:3]
+        >>> response = 'survived'
+        >>> train, valid = titanic.split_frame(ratios = [.8],
+        ...                                    seed = 1234)
+        >>> titanic_xgb = H2OXGBoostEstimator(min_rows = 16,
+        ...                                   seed = 1234)
+        >>> titanic_xgb.train(x=predictors,
+        ...                   y=response,
+        ...                   training_frame=train,
+        ...                   validation_frame=valid)
+        >>> print(titanic_xgb.auc(valid=True))
         """
         return self._parms.get("min_rows")
 
@@ -469,6 +901,23 @@ class H2OXGBoostEstimator(H2OEstimator):
         (same as min_rows) Fewest allowed (weighted) observations in a leaf.
 
         Type: ``float``  (default: ``1``).
+
+        :examples:
+
+        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+        >>> titanic['survived'] = titanic['survived'].asfactor()
+        >>> predictors = titanic.columns
+        >>> del predictors[1:3]
+        >>> response = 'survived'
+        >>> train, valid = titanic.split_frame(ratios = [.8],
+        ...                                    seed = 1234)
+        >>> titanic_xgb = H2OXGBoostEstimator(min_rows = 16,
+        ...                                   seed = 1234)
+        >>> titanic_xgb.train(x=predictors,
+        ...                   y=response,
+        ...                   training_frame=train,
+        ...                   validation_frame=valid)
+        >>> print(titanic_xgb.auc(valid=True))
         """
         return self._parms.get("min_child_weight")
 
@@ -484,6 +933,26 @@ class H2OXGBoostEstimator(H2OEstimator):
         (same as eta) Learning rate (from 0.0 to 1.0)
 
         Type: ``float``  (default: ``0.3``).
+
+        :examples:
+
+        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+        >>> titanic['survived'] = titanic['survived'].asfactor()
+        >>> predictors = titanic.columns
+        >>> del predictors[1:3]
+        >>> response = 'survived'
+        >>> train, valid = titanic.split_frame(ratios = [.8], seed = 1234)
+        >>> titanic_xgb = H2OXGBoostEstimator(ntrees = 10000,
+        ...                                   learn_rate = 0.01,
+        ...                                   stopping_rounds = 5,
+        ...                                   stopping_metric = "AUC",
+        ...                                   stopping_tolerance = 1e-4,
+        ...                                   seed = 1234)
+        >>> titanic_xgb.train(x=predictors,
+        ...                   y=response,
+        ...                   training_frame=train,
+        ...                   validation_frame=valid)
+        >>> print(titanic_xgb.auc(valid=True))
         """
         return self._parms.get("learn_rate")
 
@@ -499,6 +968,27 @@ class H2OXGBoostEstimator(H2OEstimator):
         (same as learn_rate) Learning rate (from 0.0 to 1.0)
 
         Type: ``float``  (default: ``0.3``).
+
+        :examples:
+
+        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+        >>> titanic['survived'] = titanic['survived'].asfactor()
+        >>> predictors = titanic.columns
+        >>> del predictors[1:3]
+        >>> response = 'survived'
+        >>> train, valid = titanic.split_frame(ratios = [.8],
+        ...                                    seed = 1234)
+        >>> titanic_xgb = H2OXGBoostEstimator(ntrees = 10000,
+        ...                                   learn_rate = 0.01,
+        ...                                   stopping_rounds = 5,
+        ...                                   stopping_metric = "AUC",
+        ...                                   stopping_tolerance = 1e-4,
+        ...                                   seed = 1234)
+        >>> titanic_xgb.train(x = predictors,
+        ...                   y = response,
+        ...                   training_frame = train,
+        ...                   validation_frame = valid)
+        >>>  print(titanic_xgb.auc(valid=True))
         """
         return self._parms.get("eta")
 
@@ -514,6 +1004,27 @@ class H2OXGBoostEstimator(H2OEstimator):
         (same as subsample) Row sample rate per tree (from 0.0 to 1.0)
 
         Type: ``float``  (default: ``1``).
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"]= airlines["Year"].asfactor()
+        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+        >>> response = "IsDepDelayed"
+        >>> train, valid= airlines.split_frame(ratios = [.8],
+        ...                                    seed = 1234)
+        >>> airlines_xgb = H2OXGBoostEstimator(sample_rate = .7,
+        ...                                    seed = 1234)
+        >>> airlines_xgb.train(x=predictors,
+        ...                    y=response,
+        ...                    training_frame=train,
+        ...                    validation_frame=valid)
+        >>> print(airlines_xgb.auc(valid=True))
         """
         return self._parms.get("sample_rate")
 
@@ -529,6 +1040,27 @@ class H2OXGBoostEstimator(H2OEstimator):
         (same as sample_rate) Row sample rate per tree (from 0.0 to 1.0)
 
         Type: ``float``  (default: ``1``).
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"]= airlines["Year"].asfactor()
+        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+        >>> response = "IsDepDelayed"
+        >>> train, valid= airlines.split_frame(ratios = [.8],
+        ...                                    seed = 1234)
+        >>> airlines_xgb = H2OXGBoostEstimator(sample_rate = .7,
+        ...                                    seed = 1234)
+        >>> airlines_xgb.train(x=predictors,
+        ...                    y=response,
+        ...                    training_frame=train,
+        ...                    validation_frame=valid)
+        >>> print(airlines_xgb.auc(valid=True))
         """
         return self._parms.get("subsample")
 
@@ -544,6 +1076,27 @@ class H2OXGBoostEstimator(H2OEstimator):
         (same as colsample_bylevel) Column sample rate (from 0.0 to 1.0)
 
         Type: ``float``  (default: ``1``).
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"]= airlines["Year"].asfactor()
+        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+        >>> response = "IsDepDelayed"
+        >>> train, valid= airlines.split_frame(ratios = [.8],
+        ...                                    seed = 1234)
+        >>> airlines_xgb = H2OXGBoostEstimator(col_sample_rate = .7,
+        ...                                    seed = 1234)
+        >>> airlines_xgb.train(x = predictors,
+        ...                    y = response,
+        ...                    training_frame = train,
+        ...                    validation_frame = valid)
+        >>> print(airlines_xgb.auc(valid=True))
         """
         return self._parms.get("col_sample_rate")
 
@@ -559,6 +1112,27 @@ class H2OXGBoostEstimator(H2OEstimator):
         (same as col_sample_rate) Column sample rate (from 0.0 to 1.0)
 
         Type: ``float``  (default: ``1``).
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"]= airlines["Year"].asfactor()
+        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+        >>> response = "IsDepDelayed"
+        >>> train, valid= airlines.split_frame(ratios = [.8],
+        ...                                    seed = 1234)
+        >>> airlines_xgb = H2OXGBoostEstimator(col_sample_rate = .7,
+        ...                                    seed = 1234)
+        >>> airlines_xgb.train(x = predictors,
+        ...                    y = response,
+        ...                    training_frame = train,
+        ...                    validation_frame = valid)
+        >>> print(airlines_xgb.auc(valid=True))
         """
         return self._parms.get("colsample_bylevel")
 
@@ -574,6 +1148,26 @@ class H2OXGBoostEstimator(H2OEstimator):
         (same as colsample_bytree) Column sample rate per tree (from 0.0 to 1.0)
 
         Type: ``float``  (default: ``1``).
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"]= airlines["Year"].asfactor()
+        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+        >>> response = "IsDepDelayed"
+        >>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+        >>> airlines_xgb = H2OXGBoostEstimator(col_sample_rate_per_tree = .7,
+        ...                                    seed =1234)
+        >>> airlines_xgb.train(x = predictors,
+        ...                    y = response,
+        ...                    training_frame = train,
+        ...                    validation_frame = valid)
+        >>> print(airlines_xgb.auc(valid=True))
         """
         return self._parms.get("col_sample_rate_per_tree")
 
@@ -589,6 +1183,26 @@ class H2OXGBoostEstimator(H2OEstimator):
         (same as col_sample_rate_per_tree) Column sample rate per tree (from 0.0 to 1.0)
 
         Type: ``float``  (default: ``1``).
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"]= airlines["Year"].asfactor()
+        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+        >>> response = "IsDepDelayed"
+        >>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+        >>> airlines_xgb = H2OXGBoostEstimator(col_sample_rate_per_tree = .7,
+        ...                                    seed =1234)
+        >>> airlines_xgb.train(x = predictors,
+        ...                    y = response,
+        ...                    training_frame = train,
+        ...                    validation_frame = valid)
+        >>> print(airlines_xgb.auc(valid=True))
         """
         return self._parms.get("colsample_bytree")
 
@@ -604,6 +1218,22 @@ class H2OXGBoostEstimator(H2OEstimator):
         (same as max_delta_step) Maximum absolute value of a leaf node prediction
 
         Type: ``float``  (default: ``0``).
+
+        :examples:
+
+        >>> covtype = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
+        >>> covtype[54] = covtype[54].asfactor()
+        >>> predictors = covtype.columns[0:54]
+        >>> response = 'C55'
+        >>> train, valid = covtype.split_frame(ratios = [.8],
+        ...                                    seed = 1234)
+        >>> cov_xgb = H2OXGBoostEstimator(max_abs_leafnode_pred= float(2),
+        ...                               seed=1234)
+        >>> cov_xgb.train(x=predictors,
+        ...               y=response,
+        ...               training_frame=train,
+        ...               validation_frame=valid)
+        >>> print(cov_xgb.logloss(valid=True))
         """
         return self._parms.get("max_abs_leafnode_pred")
 
@@ -650,6 +1280,27 @@ class H2OXGBoostEstimator(H2OEstimator):
         Score the model after every so many trees. Disabled if set to 0.
 
         Type: ``int``  (default: ``0``).
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"]= airlines["Year"].asfactor()
+        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+        >>> response = "IsDepDelayed"
+        >>> train, valid= airlines.split_frame(ratios = [.8],
+        ...                                    seed = 1234)
+        >>> airlines_xgb = H2OXGBoostEstimator(score_tree_interval = 5,
+        ...                                    seed = 1234)
+        >>> airlines_xgb.train(x=predictors,
+        ...                    y=response,
+        ...                    training_frame=train,
+        ...                    validation_frame=valid)
+        >>> airlines_xgb.scoring_history()
         """
         return self._parms.get("score_tree_interval")
 
@@ -665,7 +1316,25 @@ class H2OXGBoostEstimator(H2OEstimator):
         (same as gamma) Minimum relative improvement in squared error reduction for a split to happen
 
         Type: ``float``  (default: ``0``).
+
+        :examples:
+
+        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+        >>> titanic['survived'] = titanic['survived'].asfactor()
+        >>> predictors = titanic.columns
+        >>> del predictors[1:3]
+        >>> response = 'survived'
+        >>> train, valid = titanic.split_frame(ratios = [.8],
+        ...                                    seed = 1234)
+        >>> train, valid = titanic.split_frame(ratios = [.8],
+        ...                                    seed = 1234)
+        >>> titanic_xgb.train(x=predictors,
+        ...                   y=response,
+        ...                   training_frame=train,
+        ...                   validation_frame=valid)
+        >>> print(titanic_xgb.auc(valid=True))
         """
+    
         return self._parms.get("min_split_improvement")
 
     @min_split_improvement.setter
@@ -680,6 +1349,22 @@ class H2OXGBoostEstimator(H2OEstimator):
         (same as min_split_improvement) Minimum relative improvement in squared error reduction for a split to happen
 
         Type: ``float``  (default: ``0``).
+
+        :examples:
+
+        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+        >>> titanic['survived'] = titanic['survived'].asfactor()
+        >>> predictors = titanic.columns
+        >>> response = 'survived'
+        >>> train, valid = titanic.split_frame(ratios = [.8],
+        ...                                    seed = 1234)
+        >>> titanic_xgb = H2OXGBoostEstimator(min_split_improvement = 1e-3,
+        ...                                   seed = 1234)
+        >>> titanic_xgb.train(x = predictors,
+        ...                   y = response,
+        ...                   training_frame = train,
+        ...                   validation_frame = valid)
+        >>> print(titanic_xgb.auc(valid=True))
         """
         return self._parms.get("gamma")
 
