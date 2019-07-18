@@ -198,8 +198,8 @@ def gen_module(schema, algo, module):
         yield "    beta_constraints <- as.h2o(beta_constraints)"
         yield "  }"
     elif algo == "generic":
-        yield "  # Required args: either model_key or path"
-        yield "  if (is.null(model_key) && is.null(path)) stop(\"argument 'model_key' or 'path' must be provided\")"
+        yield "  # Required args: model_key"
+        yield "  if (is.null(model_key)) stop(\"argument 'model_key' must be provided\")"
     yield ""
     yield "  # Handle other args"
     if algo == "coxph":
