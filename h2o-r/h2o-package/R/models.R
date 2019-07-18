@@ -4043,7 +4043,7 @@ h2o.get_seed <- get_seed.H2OModel
 #' generic_model_predictions  <- h2o.predict(generic_model, data)
 #' }
 #' @export
-h2o.genericModel <- function(model_file_path){
+h2o.genericModel <- function(mojo_file_path){
   h2o.generic(path = mojo_file_path)
 }
 
