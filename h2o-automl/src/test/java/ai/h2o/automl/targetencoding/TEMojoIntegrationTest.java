@@ -16,7 +16,6 @@ import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
-import water.util.ArrayUtilsTest;
 import water.util.Log;
 
 import java.io.File;
@@ -27,7 +26,6 @@ import java.util.Random;
 
 import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class TEMojoIntegrationTest extends TestUtil {
 
@@ -123,6 +121,7 @@ public class TEMojoIntegrationTest extends TestUtil {
     }
   }
   
+  //TODO before merging this check whether issue with PUBDEV-6319 is fixed. If it is not yet fixed then add @Ignore annotation
   @Test
   public void transformation_consistency_test() throws PredictException, IOException{
 
@@ -132,8 +131,11 @@ public class TEMojoIntegrationTest extends TestUtil {
     int homeDestPredIdx = -1;
     String mojoFileName = "mojo_te.zip";
     File mojoFile = null;
-
-    for(int i = 0; i <= 10; i++) {
+    
+    int inconsistencyCounter = 0;
+    int numberOfRuns = 50;
+    
+    for(int i = 0; i <= numberOfRuns; i++) {
       TargetEncoderModel targetEncoderModel = null;
       mojoFile = folder.newFile(mojoFileName);
 
@@ -198,11 +200,10 @@ public class TEMojoIntegrationTest extends TestUtil {
         rowToPredictFor.put("body", "123");
         rowToPredictFor.put("pclass", "1");
 
-        if(encodings == null ) {
+        if (encodings == null) {
           encodings = teModelWrapper.transformWithTargetEncoding(rowToPredictFor).transformations;
           homeDestPredIdx = fr.find("home.dest") < fr.find("embarked") ? 0 : 1;
-        } else
-        {
+        } else {
           double[] currentEncodings = teModelWrapper.transformWithTargetEncoding(rowToPredictFor).transformations;
           //Let's check that specified in the test categorical columns have been encoded in accordance with targetEncodingMap
           EncodingMaps targetEncodingMap = loadedMojoModel._targetEncodingMap;
@@ -214,10 +215,7 @@ public class TEMojoIntegrationTest extends TestUtil {
           // Because of the random swap we need to know which index is lower so that we know order of transformations/predictions
           int currentHomeDestPredIdx = fr.find("home.dest") < fr.find("embarked") ? 0 : 1;
 
-          assertEquals(currentEncodings[currentHomeDestPredIdx], encodingForHomeDest, 1e-5);
-          assertEquals(currentEncodings[currentHomeDestPredIdx == 0 ? 1 : 0], encodingForHomeEmbarked, 1e-5);
-
-          compareWithReference(encodings, homeDestPredIdx, swapIdx1, swapIdx2, currentEncodings, currentHomeDestPredIdx);
+          inconsistencyCounter += isEqualToReferenceValue(encodings, homeDestPredIdx, swapIdx1, swapIdx2, currentEncodings, currentHomeDestPredIdx) ? 0 : 1;
         }
 
       } finally {
@@ -226,6 +224,8 @@ public class TEMojoIntegrationTest extends TestUtil {
         Scope.exit();
       }
     }
+    
+    assertEquals("Transformation failed " + inconsistencyCounter + " times out of " + numberOfRuns + " runs",0, inconsistencyCounter);
   }
 
   private double checkEncodingsByFactorValue(Frame fr, String homeDestFactorValue, EncodingMaps targetEncodingMap, String teColumn) {
@@ -236,9 +236,10 @@ public class TEMojoIntegrationTest extends TestUtil {
 
   @Test
   public void without_blending_kfold_scenario() throws PredictException, IOException {
-    
+
     String mojoFileName = "mojo_te.zip";
-    File mojoFile = folder.newFile(mojoFileName);;
+    File mojoFile = folder.newFile(mojoFileName);
+    
     TargetEncoderModel targetEncoderModel = null;
     Scope.enter();
     try {
@@ -249,7 +250,7 @@ public class TEMojoIntegrationTest extends TestUtil {
       String foldColumnName = "fold_column";
 
       addKFoldColumn(fr, foldColumnName, 5, 1234L);
-      
+
       Scope.track(fr);
 
       String[] teColumns = {"home.dest", "embarked"};
@@ -268,7 +269,7 @@ public class TEMojoIntegrationTest extends TestUtil {
 
       targetEncoderModel = job.getTargetEncoderModel();
 
-      try (FileOutputStream modelOutput = new FileOutputStream(mojoFile)){
+      try (FileOutputStream modelOutput = new FileOutputStream(mojoFile)) {
         targetEncoderModel.getMojo().writeTo(modelOutput);
         System.out.println("Model has been written down to a file as a mojo: " + mojoFileName);
       }
@@ -278,7 +279,7 @@ public class TEMojoIntegrationTest extends TestUtil {
 
       TargetEncoderMojoModel loadedMojoModel = (TargetEncoderMojoModel) MojoModel.load(mojoFile.getPath());
 
-      teModelWrapper = new EasyPredictModelWrapper(loadedMojoModel); 
+      teModelWrapper = new EasyPredictModelWrapper(loadedMojoModel);
 
       // RowData that is not encoded yet
       RowData rowToPredictFor = new RowData();
@@ -317,7 +318,7 @@ public class TEMojoIntegrationTest extends TestUtil {
   }
 
   @Test
-  public void check_that_encoding_map_was_stored_and_loaded_properly_and_blending_was_applied_correctly() throws IOException, PredictException  {
+  public void check_that_encoding_map_was_stored_and_loaded_properly_and_blending_was_applied_correctly() throws IOException, PredictException {
 
     String mojoFileName = "mojo_te.zip";
     File mojoFile = folder.newFile(mojoFileName);
@@ -332,11 +333,11 @@ public class TEMojoIntegrationTest extends TestUtil {
 
       asFactor(fr, responseColumnName);
       Scope.track(fr);
-      
+
       String[] teColumns = {"home.dest", "embarked"};
 
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
-      
+
       targetEncoderParameters._columnNamesToEncode = teColumns;
 
       // Enable blending
@@ -352,10 +353,10 @@ public class TEMojoIntegrationTest extends TestUtil {
       job.trainModel().get();
 
       targetEncoderModel = job.getTargetEncoderModel();
-      
+
       testEncodingMap = targetEncoderModel._output._target_encoding_map;
 
-      try (FileOutputStream modelOutput = new FileOutputStream(mojoFile)){
+      try (FileOutputStream modelOutput = new FileOutputStream(mojoFile)) {
         targetEncoderModel.getMojo().writeTo(modelOutput);
         System.out.println("Model has been written down to a file as a mojo: " + mojoFileName);
       }
@@ -405,7 +406,7 @@ public class TEMojoIntegrationTest extends TestUtil {
 
       int homeDestIndex = ArrayUtils.find(fr.vec(teColumn).domain(), homeDestFactorValue);
       int[] encodingComponentsForHomeDest = homeDestEncodingMap.get(homeDestIndex);
-      double posteriorMean =  (double) encodingComponentsForHomeDest[0] / encodingComponentsForHomeDest[1];
+      double posteriorMean = (double) encodingComponentsForHomeDest[0] / encodingComponentsForHomeDest[1];
 
       double expectedLambda = TargetEncoderMojoModel.computeLambda(encodingComponentsForHomeDest[1], targetEncoderParameters._blendingParams.getK(), targetEncoderParameters._blendingParams.getF());
 
@@ -448,9 +449,9 @@ public class TEMojoIntegrationTest extends TestUtil {
       targetEncoderBuilder.trainModel().get();
 
       TargetEncoderModel targetEncoderModel = targetEncoderBuilder.getTargetEncoderModel();
-      
+
       targetEncoderModel.remove();
-      
+
       assertEquals(0, targetEncoderModel._output._target_encoding_map.get("embarked").byteSize());
       assertEquals(0, targetEncoderModel._output._target_encoding_map.get("home.dest").byteSize());
       assertEquals(0, targetEncoderModel._output._teColumnNameToIdx.size());
@@ -531,17 +532,18 @@ public class TEMojoIntegrationTest extends TestUtil {
     }
   }
 
-  private void compareWithReference(double[] encodings, int homeDestPredIdx, int swapIdx1, int swapIdx2, double[] currentEncodings, int currentHomeDestPredIdx) {
+  private Boolean isEqualToReferenceValue(double[] encodings, int homeDestPredIdx, int swapIdx1, int swapIdx2, double[] currentEncodings, int currentHomeDestPredIdx) {
     try {
       assertEquals(encodings[homeDestPredIdx], currentEncodings[currentHomeDestPredIdx], 1e-5);
       assertEquals(encodings[homeDestPredIdx == 0 ? 1 : 0], currentEncodings[currentHomeDestPredIdx == 0 ? 1 : 0], 1e-5);
+      return true;
     } catch (AssertionError error) {
 
       Log.warn("Unexpected encodings. Most likely it is due to race conditions in AstGroup (see https://github.com/h2oai/h2o-3/pull/3374 )");
       Log.warn("Swap:" + swapIdx1 + " <-> " + swapIdx2);
       Log.warn("encodings[homeDest]:" + encodings[homeDestPredIdx] + " currentEncodings[homeDest]: " + currentEncodings[currentHomeDestPredIdx]);
       Log.warn("encodings[embarked]:" + encodings[homeDestPredIdx == 0 ? 1 : 0] + " currentEncodings[embarked]: " + currentEncodings[currentHomeDestPredIdx == 0 ? 1 : 0]);
+      return false;
     }
   }
-
 }
