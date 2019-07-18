@@ -354,6 +354,7 @@ class H2OEstimator(ModelBase):
 
 
     #------ Scikit-learn Interface Methods -------
+
     def fit(self, X, y=None, **params):
         """
         Fit an H2O model as part of a scikit-learn pipeline or grid search.
