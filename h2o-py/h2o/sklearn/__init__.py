@@ -5,7 +5,6 @@ from sklearn.base import ClassifierMixin, RegressorMixin
 
 from .. import automl
 from .. import estimators
-from .pipeline import H2OPipeline, H2OClassifierPipeline, H2ORegressorPipeline
 from .wrapper import estimator, expect_h2o_frames
 
 module = sys.modules[__name__]
