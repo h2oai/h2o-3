@@ -243,9 +243,9 @@ class H2OEstimator(ModelBase):
         # internal hook allowing subclasses to extend train parms 
         if extend_parms_fn is not None:
             extend_parms_fn(parms)
-            
+
         parms = {k: H2OEstimator._keyify_if_h2oframe(parms[k]) for k in parms}
-        if ("stopping_metric" in parms.keys()) and ("r2" in parms["stopping_metric"]):
+        if "r2" in (parms.get('stopping_metric') or []):
             raise H2OValueError("r2 cannot be used as an early stopping_metric yet.  Check this JIRA https://0xdata.atlassian.net/browse/PUBDEV-5381 for progress.")
         rest_ver = parms.pop("_rest_version") if "_rest_version" in parms else 3
 
