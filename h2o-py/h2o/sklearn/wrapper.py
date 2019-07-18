@@ -209,7 +209,6 @@ class _H2OtoSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OClusterMixin)
     @expect_h2o_frames
     def fit(self, X, y=None, **fit_params):
         params = {k: getattr(self, k, None) for k in self._estimator_params}
-        print(params)
         self._estimator = self._estimator_cls(**params)
         training_frame = X if y is None else X.concat(y)
         self._estimator.train(y=-1, training_frame=training_frame, **fit_params)
