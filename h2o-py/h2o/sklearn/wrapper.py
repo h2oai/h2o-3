@@ -1,6 +1,7 @@
+from collections import OrderedDict
 from functools import partial, update_wrapper, wraps
 
-from sklearn.base import BaseEstimator, MetaEstimatorMixin, TransformerMixin
+from sklearn.base import is_classifier, is_regressor, BaseEstimator, TransformerMixin
 
 from .. import h2o, H2OFrame
 
@@ -11,7 +12,7 @@ except ImportError:
 
 
 class H2OClusterMixin(object):
-    """ Mixin that automatically hand"""
+    """ Mixin that automatically handle the connection to H2O backend"""
 
     _h2o_components = []
 
@@ -24,11 +25,10 @@ class H2OClusterMixin(object):
         if not h2o.connection():
             h2o.init(**kwargs)
         self._h2o_components.append(self)
-        return
 
     def shutdown_cluster(self):
         """
-
+        force H2O cluster shutdown
         """
         if h2o.connection():
             h2o.cluster().shutdown()
@@ -46,47 +46,57 @@ class H2OClusterMixin(object):
 
 
 def mixin(obj, *mixins):
+    """
+
+    :param obj: the object on which to apply the mixins
+    :param mixins: the list of mixin classes to add to the object
+    :return: the object with the mixins applied
+    """
     obj.__class__ = type(obj.__class__.__name__, (obj.__class__,)+tuple(mixins), dict())
     return obj
 
 
 def estimator(cls, name=None, mixins=None, is_generic=False):
-    o = mixin(cls(), BaseEstimator)
-    defaults = o.get_params()
-    gen_class_name = '.'.join([__name__, (name if name is not None else cls.__name__+'Sklearn')])
+    try:
+        # try to obtain the list of estimator params (with defaults) by mixing it with BaseEstimator
+        # create a default instance, and use the introspection logic implemented in BaseEstimator.get_params
+        o = mixin(cls(), BaseEstimator)
+        defaults = o.get_params()
+    except:
+        # if the previous logic fails (constructor may do some nasty logic)
+        # then we're just obtain the signature from the estimator class constructor
+        sig = signature(cls.__init__)
+        defaults = OrderedDict((p.name, p.default if p.default is not p.empty else None)
+                               for p in sig.parameters.values())
+        del defaults['self']
 
-    def gen_init():
+    gen_class_name = name if name is not None else '.'.join([__name__, cls.__name__+'Sklearn'])
+
+    # generate the constructor signature for introspection by BaseEstimator (get_params)
+    #  and also for auto-completion in some environments.
+    def gen_init_sig():
         yield "def init(self,"
         for k, v in defaults.items():
             yield "         {k}={v},".format(k=k, v=repr(v))
         yield "         init_cluster_args=None,"
-        yield "         estimator_cls=None,"
         if is_generic:
             yield "         estimator_type=None,"
-        yield "         ):"
-        yield "    kwargs = locals()"
-        yield "    del kwargs['self']"
-        yield "    super(self.__class__, self).__init__(**kwargs)"
-        # yield "    super({name}, self).__init__(**kwargs)".format(name=gen_class_name)
-    init_code = '\n'.join(list(gen_init()))
-    # print(init_code)
+        yield "         ): pass"
+    init_sig = '\n'.join(list(gen_init_sig()))
     scope = {}
-    exec(init_code, scope)
-    init = (partial(scope['init'], estimator_cls=cls))
+    exec(init_sig, scope)  # execute the signature code in given scope for further access
+
+    # the real constructor implementation logic
+    def init(self, **kwargs):
+        kwargs['estimator_cls'] = cls
+        super(self.__class__, self).__init__(**kwargs)
+
+    # modify init to look like the signature previously generated
     update_wrapper(init, scope['init'])
-    # init = scope['init']
 
-    # def get_param_names(cls):
-    #     return o._get_param_names()
-
-    # extended = type(cls.__name__+'Sklearn', (cls, BaseEstimator, MetaEstimatorMixin)+tuple(mixins), dict(
-    #     __init__=init,
-        # _get_param_names=classmethod(get_param_names)
-    # ))
     mixins = tuple(mixins) if mixins is not None else ()
-    extended = type(gen_class_name, (H2OtoSklearnEstimator,)+mixins, dict(
+    extended = type(gen_class_name, (_H2OtoSklearnEstimator,)+mixins, dict(
         __init__=init,
-        _h2o_estimator_cls=cls
     ))
     return extended
 
@@ -116,7 +126,7 @@ def expect_h2o_frames(fn):
     def decorator(*args, **kwargs):
         _args = sig.bind(*args, **kwargs).arguments
         is_classifier = False
-        if has_self and isinstance(_args.get('self', None), MetaEstimatorMixin):
+        if has_self and isinstance(_args.get('self', None), BaseEstimatorMixin):
             is_classifier = _args.get('self').is_classifier()
         if has_X:
             _args['X'] = _to_h2o_frame(_args.get('X', None))
@@ -127,28 +137,50 @@ def expect_h2o_frames(fn):
     return decorator
 
 
-class H2OtoSklearnEstimator(BaseEstimator, MetaEstimatorMixin, H2OClusterMixin):
+class BaseEstimatorMixin(object):
 
-    def __init__(self, estimator_cls=None, estimator_type=None, init_cluster_args=None, **kwargs):
-        super(H2OtoSklearnEstimator, self).__init__()
-        self._estimator = None
-        self._h2o_estimator_params = kwargs
-        self._h2o_estimator_cls = estimator_cls
+    def is_classifier(self):
+        return is_classifier(self)
+
+    def is_regressor(self):
+        return is_regressor(self)
+
+
+class _H2OtoSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OClusterMixin):
+
+    def __init__(self,
+                 estimator_cls=None,
+                 estimator_type=None,
+                 init_cluster_args=None,
+                 **estimator_params):
+        """
+        :param estimator_cls: the H2O Estimator class.
+        :param estimator_type: if provided, must be one of ('classifier', 'regressor').
+        :param init_cluster_args: the arguments passed to `h2o.init()` if there's no connection to H2O backend.
+        :param estimator_params: the estimator/model parameters.
+        """
+        super(_H2OtoSklearnEstimator, self).__init__()
+        self._estimator_cls = estimator_cls
         if estimator_type is not None:
             self._estimator_type = estimator_type
+
+        # we only keep a ref to parameters names
+        # all those params are also exposed as a regular attribute and can be modified directly
+        #  on the estimator instance
+        self._estimator_params = estimator_params.keys()
+        self.__dict__.update(estimator_params)
+
+        self._estimator = None
+
         if init_cluster_args is None:
             init_cluster_args = {}
         self.init_cluster(**init_cluster_args)
 
-    def get_params(self, deep=True):
-        return self._h2o_estimator_params
-
-    def set_params(self, **params):
-        self._h2o_estimator_params.update(params)
-
     @expect_h2o_frames
     def fit(self, X, y=None, **fit_params):
-        self._estimator = self._h2o_estimator_cls(self._h2o_estimator_params)
+        params = {k: getattr(self, k, None) for k in self._estimator_params}
+        print(params)
+        self._estimator = self._estimator_cls(**params)
         training_frame = X if y is None else X.concat(y)
         self._estimator.train(y=-1, training_frame=training_frame, **fit_params)
         return self
