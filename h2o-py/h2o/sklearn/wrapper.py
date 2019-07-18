@@ -12,40 +12,6 @@ except ImportError:
     from sklearn.utils.fixes import signature
 
 
-class H2OClusterMixin(object):
-    """ Mixin that automatically handle the connection to H2O backend"""
-
-    _h2o_components = []
-
-    def init_cluster(self, **kwargs):
-        """
-        initialize the H2O cluster if needed
-        and track the current instance to be able to automatically shutdown the cluster
-        when there's no more instances in scope
-        """
-        if not h2o.connection():
-            h2o.init(**kwargs)
-        self._h2o_components.append(self)
-
-    def shutdown_cluster(self):
-        """
-        force H2O cluster shutdown
-        """
-        if h2o.connection():
-            h2o.cluster().shutdown()
-
-    def __del__(self):
-        """
-        remove tracking reference to current h2o component
-        and shutdown the H2O cluster if there's no more tracked component
-        """
-        if self in self._h2o_components:
-            self._h2o_components.remove(self)
-        if not self._h2o_components:
-            self.shutdown_cluster()
-
-
-
 def mixin(obj, *mixins):
     """
 
@@ -100,7 +66,7 @@ def estimator(cls, name=None, module=None, default_params=None, mixins=None, is_
     update_wrapper(init, scope['init'])
 
     mixins = tuple(mixins) if mixins else ()
-    extended = type(gen_class_name, (_H2OtoSklearnEstimator,)+mixins, dict(
+    extended = type(gen_class_name, (H2OtoSklearnEstimator,) + mixins, dict(
         __init__=init,
     ))
     extended.__module__ = gen_class_module
@@ -134,6 +100,11 @@ def _to_numpy(fr):
 
 
 def expect_h2o_frames(fn):
+    """
+    A decorator that can be applied to estimator methods, to support the consumption of non-H2OFrame datasets
+    :param fn: the function to be decorated
+    :return: a new function that will convert X, and y parameters before passing them to the original function.
+    """
     sig = signature(fn)
     has_self = 'self' in sig.parameters
     has_X = 'X' in sig.parameters
@@ -176,7 +147,41 @@ class BaseEstimatorMixin(object):
         return is_regressor(self)
 
 
-class _H2OtoSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OClusterMixin):
+class H2OClusterMixin(object):
+    """ Mixin that automatically handle the connection to H2O backend"""
+
+    _h2o_components = []
+
+    def init_cluster(self, **kwargs):
+        """
+        initialize the H2O cluster if needed
+        and track the current instance to be able to automatically shutdown the cluster
+        when there's no more instances in scope
+        """
+        if not h2o.connection():
+            h2o.init(**kwargs)
+        self._h2o_components.append(self)
+
+    def shutdown_cluster(self):
+        """
+        force H2O cluster shutdown
+        """
+        if h2o.connection():
+            h2o.cluster().shutdown()
+
+    def __del__(self):
+        """
+        remove tracking reference to current h2o component
+        and shutdown the H2O cluster if there's no more tracked component
+        """
+        if self in self._h2o_components:
+            self._h2o_components.remove(self)
+        if not self._h2o_components:
+            self.shutdown_cluster()
+
+
+
+class H2OtoSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OClusterMixin):
 
     def __init__(self,
                  estimator_cls=None,
@@ -189,7 +194,7 @@ class _H2OtoSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OClusterMixin)
         :param init_cluster_args: the arguments passed to `h2o.init()` if there's no connection to H2O backend.
         :param estimator_params: the estimator/model parameters.
         """
-        super(_H2OtoSklearnEstimator, self).__init__()
+        super(H2OtoSklearnEstimator, self).__init__()
         self._estimator_cls = estimator_cls
         if estimator_type:
             self._estimator_type = estimator_type
