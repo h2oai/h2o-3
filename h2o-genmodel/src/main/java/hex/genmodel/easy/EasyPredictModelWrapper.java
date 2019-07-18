@@ -16,10 +16,7 @@ import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.*;
 
 import java.io.*;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * An easy-to-use prediction wrapper for generated models.  Instantiate as follows.  The following two are equivalent.
@@ -583,9 +580,13 @@ public class EasyPredictModelWrapper implements Serializable {
     if (! (m instanceof TargetEncoderMojoModel))
       throw new PredictException("Model is not of the expected type, class = " + m.getClass().getSimpleName());
 
-    assert data.size() == m.nfeatures() : "There is a mismatch between number of features model was trained on (" + data.size() + ") and number of features in input RowData (" + m.nfeatures() + ")";
-    int numberOfTEColumns = ((TargetEncoderMojoModel) m)._teColumnNameToIdx.keySet().size();
-    double[] preds = new double[numberOfTEColumns];
+    TargetEncoderMojoModel tem = (TargetEncoderMojoModel) this.m;
+    Set<String> teColumnNames = tem._teColumnNameToIdx.keySet();
+    for(String teColumnName : teColumnNames) {
+      if(!data.containsKey(teColumnName)) System.out.printf("Feature `%s` target encoding model was trained for is not present in a test data.%n", teColumnName);
+    }
+
+    double[] preds = new double[teColumnNames.size()];
 
     TargetEncoderPrediction prediction = new TargetEncoderPrediction();
     prediction.transformations = predict(data, 0, preds);

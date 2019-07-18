@@ -12,10 +12,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import water.DKV;
-import water.Job;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.util.ArrayUtils;
+import water.util.ArrayUtilsTest;
 import water.util.Log;
 
 import java.io.File;
@@ -39,7 +40,91 @@ public class TEMojoIntegrationTest extends TestUtil {
   public TemporaryFolder folder = new TemporaryFolder();
 
   @Test
-  public void withoutBlending() throws PredictException, IOException{
+  public void withoutBlending() throws PredictException, IOException {
+
+    String mojoFileName = "mojo_te.zip";
+    File mojoFile = folder.newFile(mojoFileName);
+
+    TargetEncoderModel targetEncoderModel = null;
+
+    Scope.enter();
+    try {
+      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+
+      String responseColumnName = "survived";
+
+      asFactor(fr, responseColumnName);
+
+      Scope.track(fr);
+
+      String[] teColumns = {"home.dest", "embarked"};
+
+      TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
+      targetEncoderParameters._withBlending = false;
+      targetEncoderParameters._columnNamesToEncode = teColumns;
+      targetEncoderParameters._ignore_const_cols = false; // Why ignore_const_column ignores `name` column? bad naming
+      targetEncoderParameters.setTrain(fr._key);
+      targetEncoderParameters._response_column = responseColumnName;
+
+      TargetEncoderBuilder targetEncoderBuilder = new TargetEncoderBuilder(targetEncoderParameters);
+
+      targetEncoderBuilder.trainModel().get();
+
+      targetEncoderModel = targetEncoderBuilder.getTargetEncoderModel();
+
+      try (FileOutputStream modelOutput = new FileOutputStream(mojoFile)) {
+        targetEncoderModel.getMojo().writeTo(modelOutput);
+        System.out.println("Model has been written down to a file as a mojo: " + mojoFileName);
+      }
+
+      // Let's load model that we just have written and use it for prediction.
+      EasyPredictModelWrapper teModelWrapper = null;
+
+      TargetEncoderMojoModel loadedMojoModel = (TargetEncoderMojoModel) MojoModel.load(mojoFile.getPath());
+
+      teModelWrapper = new EasyPredictModelWrapper(loadedMojoModel);
+
+      // RowData that is not encoded yet
+      RowData rowToPredictFor = new RowData();
+      String homeDestFactorValue = "Montreal  PQ / Chesterville  ON";
+      String embarkedFactorValue = "S";
+
+      rowToPredictFor.put("home.dest", homeDestFactorValue);
+      rowToPredictFor.put("sex", "female");
+      rowToPredictFor.put("age", "2.0");
+      rowToPredictFor.put("fare", "151.55");
+      rowToPredictFor.put("cabin", "C22 C26");
+      rowToPredictFor.put("embarked", embarkedFactorValue);
+      rowToPredictFor.put("sibsp", "1");
+      rowToPredictFor.put("parch", "2");
+      rowToPredictFor.put("name", "1111"); // somehow encoded name
+      rowToPredictFor.put("ticket", "12345");
+      rowToPredictFor.put("boat", "2");
+      rowToPredictFor.put("body", "123");
+      rowToPredictFor.put("pclass", "1");
+
+      double[] currentEncodings = teModelWrapper.transformWithTargetEncoding(rowToPredictFor).transformations;
+      //Let's check that specified in the test categorical columns have been encoded in accordance with targetEncodingMap
+      EncodingMaps targetEncodingMap = loadedMojoModel._targetEncodingMap;
+
+      double encodingForHomeDest = checkEncodingsByFactorValue(fr, homeDestFactorValue, targetEncodingMap, "home.dest");
+
+      double encodingForHomeEmbarked = checkEncodingsByFactorValue(fr, embarkedFactorValue, targetEncodingMap, "embarked");
+
+      // Because of the random swap we need to know which index is lower so that we know order of transformations/predictions
+      int currentHomeDestPredIdx = fr.find("home.dest") < fr.find("embarked") ? 0 : 1;
+
+      assertEquals(currentEncodings[currentHomeDestPredIdx], encodingForHomeDest, 1e-5);
+      assertEquals(currentEncodings[currentHomeDestPredIdx == 0 ? 1 : 0], encodingForHomeEmbarked, 1e-5);
+
+    } finally {
+      targetEncoderModel.remove();
+      Scope.exit();
+    }
+  }
+  
+  @Test
+  public void transformation_consistency_test() throws PredictException, IOException{
 
     Random rg = new Random();
 
@@ -59,7 +144,7 @@ public class TEMojoIntegrationTest extends TestUtil {
         String responseColumnName = "survived";
 
         asFactor(fr, responseColumnName);
-        
+
         Scope.track(fr);
 
         int swapIdx1 = rg.nextInt(fr.numCols());
@@ -131,47 +216,27 @@ public class TEMojoIntegrationTest extends TestUtil {
 
           assertEquals(currentEncodings[currentHomeDestPredIdx], encodingForHomeDest, 1e-5);
           assertEquals(currentEncodings[currentHomeDestPredIdx == 0 ? 1 : 0], encodingForHomeEmbarked, 1e-5);
-          
-          try {
-            // Assert with etalon
-            assertEquals(encodings[homeDestPredIdx], currentEncodings[currentHomeDestPredIdx], 1e-5);
-            assertEquals(encodings[homeDestPredIdx == 0 ? 1 : 0], currentEncodings[currentHomeDestPredIdx == 0 ? 1 : 0], 1e-5);
-          } catch (AssertionError error) {
 
-            Log.warn("Unexpected encodings. Most likely it is due to race conditions in AstGroup (see https://github.com/h2oai/h2o-3/pull/3374 )");
-            Log.warn("Swap:" + swapIdx1 + " <-> " + swapIdx2);
-            Log.warn("encodings[homeDest]:" + encodings[homeDestPredIdx] + " currentEncodings[homeDest]: " + currentEncodings[currentHomeDestPredIdx]);
-            Log.warn("encodings[embarked]:" + encodings[homeDestPredIdx == 0 ? 1 : 0] + " currentEncodings[embarked]: " + currentEncodings[currentHomeDestPredIdx == 0 ? 1 : 0]);
-          }
+          compareWithReference(encodings, homeDestPredIdx, swapIdx1, swapIdx2, currentEncodings, currentHomeDestPredIdx);
         }
 
-      } finally { 
+      } finally {
         targetEncoderModel.remove();
-        mojoFile.delete();
+        mojoFile.delete(); // As we are in the loop we need to remove tmp file manually
         Scope.exit();
       }
     }
   }
 
   private double checkEncodingsByFactorValue(Frame fr, String homeDestFactorValue, EncodingMaps targetEncodingMap, String teColumn) {
-    int factorIndex = findIndex(fr.vec(teColumn).domain(), homeDestFactorValue);
+    int factorIndex = ArrayUtils.find(fr.vec(teColumn).domain(), homeDestFactorValue);
     int[] encodingComponents = targetEncodingMap.get(teColumn).get(factorIndex);
     return (double) encodingComponents[0] / encodingComponents[1];
-  }
-
-  private static<T> int findIndex(T[] a, T target) {
-    for (int i = 0; i < a.length; i++)
-      if (target.equals(a[i]))
-        return i;
-
-    return -1;
   }
 
   @Test
   public void without_blending_kfold_scenario() throws PredictException, IOException {
     
-    //TODO test kfold scenario as in FrameToTETableTask we do not account for extra columns in frame
-
     String mojoFileName = "mojo_te.zip";
     File mojoFile = folder.newFile(mojoFileName);;
     TargetEncoderModel targetEncoderModel = null;
@@ -247,7 +312,6 @@ public class TEMojoIntegrationTest extends TestUtil {
 
     } finally {
       targetEncoderModel.remove();
-      mojoFile.delete();
       Scope.exit();
     }
   }
@@ -339,7 +403,7 @@ public class TEMojoIntegrationTest extends TestUtil {
       // Will be checking that encoding map has been written and loaded correctly through the computation of the mean
       double expectedPriorMean = TargetEncoderMojoModel.computePriorMean(homeDestEncodingMap);
 
-      int homeDestIndex = findIndex(fr.vec(teColumn).domain(), homeDestFactorValue);
+      int homeDestIndex = ArrayUtils.find(fr.vec(teColumn).domain(), homeDestFactorValue);
       int[] encodingComponentsForHomeDest = homeDestEncodingMap.get(homeDestIndex);
       double posteriorMean =  (double) encodingComponentsForHomeDest[0] / encodingComponentsForHomeDest[1];
 
@@ -351,7 +415,6 @@ public class TEMojoIntegrationTest extends TestUtil {
 
     } finally {
       targetEncoderModel.remove();
-      mojoFile.delete();
       Scope.exit();
     }
   }
@@ -393,6 +456,91 @@ public class TEMojoIntegrationTest extends TestUtil {
       assertEquals(0, targetEncoderModel._output._teColumnNameToIdx.size());
     } finally {
       Scope.exit();
+    }
+  }
+
+  @Test
+  public void check_that_we_can_transform_dataframe_that_contains_only_columns_for_encoding() throws PredictException, IOException {
+
+    String mojoFileName = "mojo_te.zip";
+    File mojoFile = folder.newFile(mojoFileName);
+
+    TargetEncoderModel targetEncoderModel = null;
+
+    Scope.enter();
+    try {
+      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+
+      String responseColumnName = "survived";
+
+      asFactor(fr, responseColumnName);
+
+      Scope.track(fr);
+
+      String[] teColumns = {"home.dest", "embarked"};
+
+      TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
+      targetEncoderParameters._withBlending = false;
+      targetEncoderParameters._columnNamesToEncode = teColumns;
+      targetEncoderParameters._ignore_const_cols = false; // Why ignore_const_column ignores `name` column? bad naming
+      targetEncoderParameters.setTrain(fr._key);
+      targetEncoderParameters._response_column = responseColumnName;
+
+      TargetEncoderBuilder targetEncoderBuilder = new TargetEncoderBuilder(targetEncoderParameters);
+
+      targetEncoderBuilder.trainModel().get();
+
+      targetEncoderModel = targetEncoderBuilder.getTargetEncoderModel();
+
+      try (FileOutputStream modelOutput = new FileOutputStream(mojoFile)) {
+        targetEncoderModel.getMojo().writeTo(modelOutput);
+        System.out.println("Model has been written down to a file as a mojo: " + mojoFileName);
+      }
+
+      // Let's load model that we just have written and use it for prediction.
+      EasyPredictModelWrapper teModelWrapper = null;
+
+      TargetEncoderMojoModel loadedMojoModel = (TargetEncoderMojoModel) MojoModel.load(mojoFile.getPath());
+
+      teModelWrapper = new EasyPredictModelWrapper(loadedMojoModel);
+
+      // RowData that is not encoded yet
+      RowData rowToPredictFor = new RowData();
+      String homeDestFactorValue = "Montreal  PQ / Chesterville  ON";
+      String embarkedFactorValue = "S";
+
+      rowToPredictFor.put("home.dest", homeDestFactorValue);
+      rowToPredictFor.put("embarked", embarkedFactorValue);
+
+      double[] currentEncodings = teModelWrapper.transformWithTargetEncoding(rowToPredictFor).transformations;
+      //Let's check that specified in the test categorical columns have been encoded in accordance with targetEncodingMap
+      EncodingMaps targetEncodingMap = loadedMojoModel._targetEncodingMap;
+
+      double encodingForHomeDest = checkEncodingsByFactorValue(fr, homeDestFactorValue, targetEncodingMap, "home.dest");
+
+      double encodingForHomeEmbarked = checkEncodingsByFactorValue(fr, embarkedFactorValue, targetEncodingMap, "embarked");
+
+      // Because of the random swap we need to know which index is lower so that we know order of transformations/predictions
+      int currentHomeDestPredIdx = fr.find("home.dest") < fr.find("embarked") ? 0 : 1;
+
+      assertEquals(currentEncodings[currentHomeDestPredIdx], encodingForHomeDest, 1e-5);
+      assertEquals(currentEncodings[currentHomeDestPredIdx == 0 ? 1 : 0], encodingForHomeEmbarked, 1e-5);
+    } finally {
+      targetEncoderModel.remove();
+      Scope.exit();
+    }
+  }
+
+  private void compareWithReference(double[] encodings, int homeDestPredIdx, int swapIdx1, int swapIdx2, double[] currentEncodings, int currentHomeDestPredIdx) {
+    try {
+      assertEquals(encodings[homeDestPredIdx], currentEncodings[currentHomeDestPredIdx], 1e-5);
+      assertEquals(encodings[homeDestPredIdx == 0 ? 1 : 0], currentEncodings[currentHomeDestPredIdx == 0 ? 1 : 0], 1e-5);
+    } catch (AssertionError error) {
+
+      Log.warn("Unexpected encodings. Most likely it is due to race conditions in AstGroup (see https://github.com/h2oai/h2o-3/pull/3374 )");
+      Log.warn("Swap:" + swapIdx1 + " <-> " + swapIdx2);
+      Log.warn("encodings[homeDest]:" + encodings[homeDestPredIdx] + " currentEncodings[homeDest]: " + currentEncodings[currentHomeDestPredIdx]);
+      Log.warn("encodings[embarked]:" + encodings[homeDestPredIdx == 0 ? 1 : 0] + " currentEncodings[embarked]: " + currentEncodings[currentHomeDestPredIdx == 0 ? 1 : 0]);
     }
   }
 

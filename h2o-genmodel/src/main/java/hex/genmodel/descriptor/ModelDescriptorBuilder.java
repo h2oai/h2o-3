@@ -23,8 +23,6 @@ public class ModelDescriptorBuilder {
     private final String[] _names;
     private final String _algoName;
 
-  private Map<String, Map<String, int[]>> _target_encoding_map = null;
-
   /**
      * 
      * @param mojoModel A MojoModel to extract the model description from
