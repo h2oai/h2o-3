@@ -4,6 +4,7 @@ from functools import partial, update_wrapper, wraps
 from sklearn.base import is_classifier, is_regressor, BaseEstimator, TransformerMixin
 
 from .. import h2o, H2OFrame
+from ..utils.shared_utils import can_use_numpy, can_use_pandas
 
 try:
     from inspect import signature
@@ -90,7 +91,9 @@ def estimator(cls, name=None, module=None, default_params=None, mixins=None, is_
 
     # the real constructor implementation logic
     def init(self, **kwargs):
-        kwargs['estimator_cls'] = cls
+        for k, v in default_params.items():
+            kwargs.setdefault(k, v)
+        kwargs.update(estimator_cls=cls)
         super(self.__class__, self).__init__(**kwargs)
 
     # modify init to look like the signature previously generated
@@ -117,6 +120,19 @@ def _to_h2o_frame(X, as_factor=False):
     return fr.asfactor() if as_factor else fr
 
 
+def _to_numpy(fr):
+    if not isinstance(fr, H2OFrame):
+        return fr
+    df = fr.as_data_frame()
+    if can_use_pandas():
+        return df.values
+    elif can_use_numpy():
+        from numpy import array as np_array
+        return np_array(df)
+    else:
+        return df
+
+
 def expect_h2o_frames(fn):
     sig = signature(fn)
     has_self = 'self' in sig.parameters
@@ -125,17 +141,28 @@ def expect_h2o_frames(fn):
     assert has_X or has_y, "@expect_h2o_frames decorator is intended for methods " \
                            "taking at least an X or y argument."
 
+    def convert(arg, arguments, **kwargs):
+        ori = arguments.get(arg, None)
+        new = _to_h2o_frame(ori, **kwargs)
+        converted = new is not ori
+        arguments[arg] = new
+        return converted
+
+    def revert(result, converted=False):
+        return _to_numpy(result) if converted else result
+
     @wraps(fn)
     def decorator(*args, **kwargs):
         _args = sig.bind(*args, **kwargs).arguments
         is_classifier = False
         if has_self and isinstance(_args.get('self', None), BaseEstimatorMixin):
             is_classifier = _args.get('self').is_classifier()
+        converted = False
         if has_X:
-            _args['X'] = _to_h2o_frame(_args.get('X', None))
+            converted = convert('X', _args)
         if has_y:
-            _args['y'] = _to_h2o_frame(_args.get('y', None), as_factor=is_classifier)
-        return fn(**_args)
+            converted = convert('y', _args, as_factor=is_classifier) or converted
+        return revert(fn(**_args), converted=converted)
 
     return decorator
 
