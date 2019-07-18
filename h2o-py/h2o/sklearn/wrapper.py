@@ -56,27 +56,29 @@ def mixin(obj, *mixins):
     return obj
 
 
-def estimator(cls, name=None, mixins=None, is_generic=False):
-    try:
-        # try to obtain the list of estimator params (with defaults) by mixing it with BaseEstimator
-        # create a default instance, and use the introspection logic implemented in BaseEstimator.get_params
-        o = mixin(cls(), BaseEstimator)
-        defaults = o.get_params()
-    except:
-        # if the previous logic fails (constructor may do some nasty logic)
-        # then we're just obtain the signature from the estimator class constructor
-        sig = signature(cls.__init__)
-        defaults = OrderedDict((p.name, p.default if p.default is not p.empty else None)
-                               for p in sig.parameters.values())
-        del defaults['self']
+def estimator(cls, name=None, module=None, default_params=None, mixins=None, is_generic=False):
+    if default_params is None:
+        try:
+            # try to obtain the list of estimator params (with defaults) by mixing it with BaseEstimator
+            # create a default instance, and use the introspection logic implemented in BaseEstimator.get_params
+            o = mixin(cls(), BaseEstimator)
+            default_params = o.get_params()
+        except:
+            # if the previous logic fails (constructor may do some nasty logic)
+            # then we're just obtain the signature from the estimator class constructor
+            sig = signature(cls.__init__)
+            default_params = OrderedDict((p.name, p.default if p.default is not p.empty else None)
+                                         for p in sig.parameters.values())
+            del default_params['self']
 
-    gen_class_name = name if name is not None else '.'.join([__name__, cls.__name__+'Sklearn'])
+    gen_class_name = name if name else cls.__name__+'Sklearn'
+    gen_class_module = module if module else __name__
 
     # generate the constructor signature for introspection by BaseEstimator (get_params)
     #  and also for auto-completion in some environments.
     def gen_init_sig():
         yield "def init(self,"
-        for k, v in defaults.items():
+        for k, v in default_params.items():
             yield "         {k}={v},".format(k=k, v=repr(v))
         yield "         init_cluster_args=None,"
         if is_generic:
@@ -94,10 +96,11 @@ def estimator(cls, name=None, mixins=None, is_generic=False):
     # modify init to look like the signature previously generated
     update_wrapper(init, scope['init'])
 
-    mixins = tuple(mixins) if mixins is not None else ()
+    mixins = tuple(mixins) if mixins else ()
     extended = type(gen_class_name, (_H2OtoSklearnEstimator,)+mixins, dict(
         __init__=init,
     ))
+    extended.__module__ = gen_class_module
     return extended
 
 
@@ -161,7 +164,7 @@ class _H2OtoSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OClusterMixin)
         """
         super(_H2OtoSklearnEstimator, self).__init__()
         self._estimator_cls = estimator_cls
-        if estimator_type is not None:
+        if estimator_type:
             self._estimator_type = estimator_type
 
         # we only keep a ref to parameters names

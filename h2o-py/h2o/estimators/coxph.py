@@ -20,20 +20,20 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
     """
 
     algo = "coxph"
+    param_names = {"model_id", "training_frame", "start_column", "stop_column", "response_column", "ignored_columns",
+                   "weights_column", "offset_column", "stratify_by", "ties", "init", "lre_min", "max_iterations",
+                   "interactions", "interaction_pairs", "interactions_only", "use_all_factor_levels",
+                   "export_checkpoints_dir"}
 
     def __init__(self, **kwargs):
         super(H2OCoxProportionalHazardsEstimator, self).__init__()
         self._parms = {}
-        names_list = {"model_id", "training_frame", "start_column", "stop_column", "response_column", "ignored_columns",
-                      "weights_column", "offset_column", "stratify_by", "ties", "init", "lre_min", "max_iterations",
-                      "interactions", "interaction_pairs", "interactions_only", "use_all_factor_levels",
-                      "export_checkpoints_dir"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue
                 self._parms["model_id"] = pvalue
-            elif pname in names_list:
+            elif pname in self.param_names:
                 # Using setattr(...) will invoke type-checking of the arguments
                 setattr(self, pname, pvalue)
             else:

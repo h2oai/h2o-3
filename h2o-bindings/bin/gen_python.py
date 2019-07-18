@@ -177,12 +177,12 @@ def gen_module(schema, algo):
     yield "    \"\"\""
     yield ""
     yield '    algo = "%s"' % algo
+    yield "    param_names = {%s}" % bi.wrap(", ".join('"%s"' % p for p in param_names),
+                                             indent=(" " * 19), indent_first=False)
     yield ""
     yield "    def __init__(self, **kwargs):"
     yield "        super(%s, self).__init__()" % classname
     yield "        self._parms = {}"
-    yield "        names_list = {%s}" % bi.wrap(", ".join('"%s"' % p for p in param_names),
-                                                indent=(" " * 22), indent_first=False)
     yield '        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")'
     yield "        for pname, pvalue in kwargs.items():"
     yield "            if pname == 'model_id':"
@@ -193,7 +193,7 @@ def gen_module(schema, algo):
         yield '                setattr(self, pname, pvalue)'
         yield '                self._determine_vec_size();'
         yield '                setattr(self, \'vec_size\', self.vec_size)'
-    yield "            elif pname in names_list:"
+    yield "            elif pname in self.param_names:"
     yield "                # Using setattr(...) will invoke type-checking of the arguments"
     yield "                setattr(self, pname, pvalue)"
     yield "            else:"
@@ -659,9 +659,8 @@ def gen_init(modules):
     yield "#"
     module_strs = []
     for module, clz, category in sorted(modules):
-        if clz == "H2OGridSearch": continue
-        module_strs.append('"%s"' % clz)
-        if clz == "H2OAutoML": continue
+        if clz in ["H2OGridSearch", "H2OAutoML"]:
+            continue
         module_strs.append('"%s"' % clz)
         yield "from .%s import %s" % (module, clz)
     yield ""
