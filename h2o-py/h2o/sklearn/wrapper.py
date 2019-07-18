@@ -148,14 +148,14 @@ class BaseEstimatorMixin(object):
 
 
 class H2OClusterMixin(object):
-    """ Mixin that automatically handle the connection to H2O backend"""
+    """ Mixin that automatically handles the connection to H2O backend"""
 
     _h2o_components = []
 
     def init_cluster(self, **kwargs):
         """
         initialize the H2O cluster if needed
-        and track the current instance to be able to automatically shutdown the cluster
+        and track the current instance to be able to automatically close the conecction
         when there's no more instances in scope
         """
         if not h2o.connection():
@@ -166,18 +166,20 @@ class H2OClusterMixin(object):
         """
         force H2O cluster shutdown
         """
-        if h2o.connection():
+        if h2o.cluster():
             h2o.cluster().shutdown()
 
     def __del__(self):
         """
         remove tracking reference to current h2o component
-        and shutdown the H2O cluster if there's no more tracked component
+        and close the connection if there's no more tracked component.
+        If the cluster was started locally, the backend should detect when the last session is closed
+         and it will shutdown by itself.
         """
         if self in self._h2o_components:
             self._h2o_components.remove(self)
-        if not self._h2o_components:
-            self.shutdown_cluster()
+        if not self._h2o_components and h2o.connection():
+            h2o.connection().close()
 
 
 
