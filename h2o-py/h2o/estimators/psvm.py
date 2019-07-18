@@ -19,20 +19,20 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
     """
 
     algo = "psvm"
+    param_names = {"model_id", "training_frame", "validation_frame", "response_column", "ignored_columns",
+                   "ignore_const_cols", "hyper_param", "kernel_type", "gamma", "rank_ratio", "positive_weight",
+                   "negative_weight", "disable_training_metrics", "sv_threshold", "fact_threshold",
+                   "feasible_threshold", "surrogate_gap_threshold", "mu_factor", "max_iterations", "seed"}
 
     def __init__(self, **kwargs):
         super(H2OSupportVectorMachineEstimator, self).__init__()
         self._parms = {}
-        names_list = {"model_id", "training_frame", "validation_frame", "response_column", "ignored_columns",
-                      "ignore_const_cols", "hyper_param", "kernel_type", "gamma", "rank_ratio", "positive_weight",
-                      "negative_weight", "disable_training_metrics", "sv_threshold", "fact_threshold",
-                      "feasible_threshold", "surrogate_gap_threshold", "mu_factor", "max_iterations", "seed"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue
                 self._parms["model_id"] = pvalue
-            elif pname in names_list:
+            elif pname in self.param_names:
                 # Using setattr(...) will invoke type-checking of the arguments
                 setattr(self, pname, pvalue)
             else:

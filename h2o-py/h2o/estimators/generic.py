@@ -19,11 +19,11 @@ class H2OGenericEstimator(H2OEstimator):
     """
 
     algo = "generic"
+    param_names = {"model_id", "model_key", "path"}
 
     def __init__(self, **kwargs):
         super(H2OGenericEstimator, self).__init__()
         self._parms = {}
-        names_list = {"model_id", "model_key", "path"}
         if all(kwargs.get(name, None) is None for name in ["model_key", "path"]):
             raise H2OValueError('At least one of ["model_key", "path"] is required.')
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
@@ -31,7 +31,7 @@ class H2OGenericEstimator(H2OEstimator):
             if pname == 'model_id':
                 self._id = pvalue
                 self._parms["model_id"] = pvalue
-            elif pname in names_list:
+            elif pname in self.param_names:
                 # Using setattr(...) will invoke type-checking of the arguments
                 setattr(self, pname, pvalue)
             else:

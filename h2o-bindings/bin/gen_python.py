@@ -209,6 +209,8 @@ def gen_module(schema, algo):
     yield '    """'
     yield ""
     yield '    algo = "%s"' % algo
+    yield "    param_names = {%s}" % bi.wrap(", ".join('"%s"' % p for p in param_names),
+                                             indent=(" " * 19), indent_first=False)
     yield ""
     yield "    def __init__(self, **kwargs):"
     # TODO: generate __init__ docstring with all params (also generate exact signature to support auto-completion)
@@ -225,7 +227,7 @@ def gen_module(schema, algo):
     yield '                self._parms["model_id"] = pvalue'
     if class_init_setparams:
         yield reformat_block(class_init_setparams, 12)
-    yield "            elif pname in names_list:"
+    yield "            elif pname in self.param_names:"
     yield "                # Using setattr(...) will invoke type-checking of the arguments"
     yield "                setattr(self, pname, pvalue)"
     yield "            else:"
@@ -329,9 +331,8 @@ def gen_init(modules):
     yield "#"
     module_strs = []
     for module, clz, category in sorted(modules):
-        if clz == "H2OGridSearch": continue
-        module_strs.append('"%s"' % clz)
-        if clz == "H2OAutoML": continue
+        if clz in ["H2OGridSearch", "H2OAutoML"]:
+            continue
         module_strs.append('"%s"' % clz)
         yield "from .%s import %s" % (module, clz)
     yield ""

@@ -19,13 +19,13 @@ class H2OWord2vecEstimator(H2OEstimator):
     """
 
     algo = "word2vec"
+    param_names = {"model_id", "training_frame", "min_word_freq", "word_model", "norm_model", "vec_size", "window_size",
+                   "sent_sample_rate", "init_learning_rate", "epochs", "pre_trained", "max_runtime_secs",
+                   "export_checkpoints_dir"}
 
     def __init__(self, **kwargs):
         super(H2OWord2vecEstimator, self).__init__()
         self._parms = {}
-        names_list = {"model_id", "training_frame", "min_word_freq", "word_model", "norm_model", "vec_size",
-                      "window_size", "sent_sample_rate", "init_learning_rate", "epochs", "pre_trained",
-                      "max_runtime_secs", "export_checkpoints_dir"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -35,7 +35,7 @@ class H2OWord2vecEstimator(H2OEstimator):
                 setattr(self, pname, pvalue)
                 self._determine_vec_size();
                 setattr(self, 'vec_size', self.vec_size)
-            elif pname in names_list:
+            elif pname in self.param_names:
                 # Using setattr(...) will invoke type-checking of the arguments
                 setattr(self, pname, pvalue)
             else:
