@@ -6,13 +6,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import water.DKV;
-import water.Key;
-import water.Scope;
-import water.TestUtil;
+import water.*;
 import water.fvec.Frame;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -23,7 +19,7 @@ public class XGBoostPredictImplComparisonTest extends TestUtil {
     public static void setup() {
         stall_till_cloudsize(1);
     }
-    
+
     @Parameterized.Parameters(name = "XGBoost(booster={0},distribution={1},response={2}")
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][]{
@@ -35,7 +31,7 @@ public class XGBoostPredictImplComparisonTest extends TestUtil {
             {"gbtree", "poisson", "AGE"},
             {"gbtree", "tweedie", "AGE"},
             {"gbtree", "gamma", "AGE"},
-            {"dart", "AUTO", "AGE"}, 
+            {"dart", "AUTO", "AGE"},
             {"dart", "bernoulli", "CAPSULE"},
             {"dart", "multinomial", "CAPSULE"},
             {"dart", "gaussian", "AGE"},
@@ -64,7 +60,7 @@ public class XGBoostPredictImplComparisonTest extends TestUtil {
     public String response;
 
     @Test
-    public void testPredictionsAreSame() throws IOException {
+    public void testPredictionsAreSame() {
         Scope.enter();
         try {
             Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
@@ -74,7 +70,7 @@ public class XGBoostPredictImplComparisonTest extends TestUtil {
             DKV.put(tfr);
 
             // split into train/test
-            SplitFrame sf = new SplitFrame(tfr, new double[] { 0.7, 0.3 }, null);
+            SplitFrame sf = new SplitFrame(tfr, new double[]{0.7, 0.3}, null);
             sf.exec().get();
             Key[] splits = sf._destination_frames;
             Frame trainFrame = Scope.track((Frame) splits[0].get());
@@ -91,19 +87,19 @@ public class XGBoostPredictImplComparisonTest extends TestUtil {
 
             XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
             Scope.track_generic(model);
-            
+
             System.setProperty("sys.ai.h2o.xgboost.predict.native.enable", "true");
             Frame predsNative = Scope.track(model.score(testFrame));
             System.setProperty("sys.ai.h2o.xgboost.predict.native.enable", "false");
             Frame predsJava = Scope.track(model.score(testFrame));
 
-            assertFrameEquals(predsNative, predsJava, getDelta());
+            assertFrameEquals(predsNative, predsJava, getAbsDelta(), getRelDelta(parms));
         } finally {
             Scope.exit();
         }
     }
-    
-    private double getDelta() {
+
+    private double getAbsDelta() {
         if ("gbtree".equals(booster)) {
             return 1e-10;
         } else if ("dart".equals(booster)) {
@@ -116,4 +112,19 @@ public class XGBoostPredictImplComparisonTest extends TestUtil {
         }
     }
     
+    private Double getRelDelta(XGBoostModel.XGBoostParameters parms) {
+        if (usesGpu(parms)) {
+            // train/predict on gpu is non-deterministic
+            return 1e-3;
+        } else {
+            return null;
+        }
+    }
+
+    private boolean usesGpu(XGBoostModel.XGBoostParameters parms) {
+        return parms._backend == XGBoostModel.XGBoostParameters.Backend.gpu ||
+            (parms._backend == XGBoostModel.XGBoostParameters.Backend.auto &&
+                XGBoost.hasGPU(H2O.CLOUD.members()[0], 0));
+    }
+
 }
