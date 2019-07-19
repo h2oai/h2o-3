@@ -245,10 +245,7 @@ class H2OEstimator(ModelBase):
             extend_parms_fn(parms)
             
         parms = {k: H2OEstimator._keyify_if_h2oframe(parms[k]) for k in parms}
-        if ("stopping_metric" in parms.keys()) and ("r2" in parms["stopping_metric"]):
-            raise H2OValueError("r2 cannot be used as an early stopping_metric yet.  Check this JIRA https://0xdata.atlassian.net/browse/PUBDEV-5381 for progress.")
         rest_ver = parms.pop("_rest_version") if "_rest_version" in parms else 3
-
         model_builder_json = h2o.api("POST /%d/ModelBuilders/%s" % (rest_ver, self.algo), data=parms)
         model = H2OJob(model_builder_json, job_type=(self.algo + " Model Build"))
 

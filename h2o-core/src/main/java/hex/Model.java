@@ -968,6 +968,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         return (float)mean_per_class_error();
       case lift_top_group:
         return (float)lift_top_group();
+      case r2:
+        return (float)r2();
       case AUTO:
       default:
         return (float) (_output.isClassifier() ? logloss() : _output.isAutoencoder() ? mse() : deviance());

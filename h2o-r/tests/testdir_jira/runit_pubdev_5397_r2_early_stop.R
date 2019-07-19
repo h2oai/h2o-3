@@ -23,4 +23,4 @@ function() {
   expect_true(numTrees >= numTreesEarlyStop)
 }
 
-doTest("Perform the test for pubdev 5397", pubdev_5397_test)
+doTest("Perform the test for pubdev 5397 r2 early stopping", pubdev_5397_test)

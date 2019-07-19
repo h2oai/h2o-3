@@ -132,7 +132,8 @@ public class ScoreKeeper extends Iced {
     mean_per_class_error(ConvergenceStrategy.LESS_IS_BETTER, true),
     custom(ConvergenceStrategy.LESS_IS_BETTER, false),
     custom_increasing(ConvergenceStrategy.MORE_IS_BETTER, false),
-    anomaly_score(ConvergenceStrategy.NON_DIRECTIONAL, false);
+    anomaly_score(ConvergenceStrategy.NON_DIRECTIONAL, false),
+    r2(ConvergenceStrategy.MORE_IS_BETTER, true);
 
     private final ConvergenceStrategy _convergence;
     private final boolean _lowerBoundBy0;
@@ -194,6 +195,9 @@ public class ScoreKeeper extends Iced {
           break;
         case anomaly_score:
           val = skj._anomaly_score_normalized;
+          break;
+        case r2:
+          val = skj._r2;
           break;
         default:
           throw H2O.unimpl("Undefined stopping criterion.");
@@ -409,6 +413,7 @@ public class ScoreKeeper extends Iced {
         ", _hitratio=" + Arrays.toString(_hitratio) +
         ", _lift=" + _lift +
         ", _anomaly_score_normalized=" + _anomaly_score_normalized +
+            ", _R2="+_r2+
         '}';
   }
 
