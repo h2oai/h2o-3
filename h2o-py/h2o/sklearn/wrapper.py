@@ -50,20 +50,15 @@ def estimator(cls, name=None, module=None, default_params=None, mixins=None, is_
         yield "         init_cluster_args=None,"
         if is_generic:
             yield "         estimator_type=None,"
-        yield "         ): pass"
+        yield "         ):"
+        yield "    kwargs = locals()"
+        yield "    del kwargs['self']"
+        yield "    kwargs.update(estimator_cls=cls)"
+        yield "    super(self.__class__, self).__init__(**kwargs)"
     init_sig = '\n'.join(list(gen_init_sig()))
-    scope = {}
+    scope = dict(cls=cls)  # use a custom scope to avoid creating the init function in the global scope
     exec(init_sig, scope)  # execute the signature code in given scope for further access
-
-    # the real constructor implementation logic
-    def init(self, **kwargs):
-        for k, v in default_params.items():
-            kwargs.setdefault(k, v)
-        kwargs.update(estimator_cls=cls)
-        super(self.__class__, self).__init__(**kwargs)
-
-    # modify init to look like the signature previously generated
-    update_wrapper(init, scope['init'])
+    init = scope['init']
 
     mixins = tuple(mixins) if mixins else ()
     extended = type(gen_class_name, (H2OtoSklearnEstimator,) + mixins, dict(
