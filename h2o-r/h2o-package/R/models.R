@@ -4019,7 +4019,7 @@ h2o.get_seed <- get_seed.H2OModel
 #' generic_model <- h2o.genericModel(model_file_path = "/path/to/mojo.zip")
 #' predictions <- h2o.predict(generic_model, dataset)
 #'
-#' @param model_file_path Filesystem path to the model imported
+#' @param mojo_file_path Filesystem path to the model imported
 #' @return Returns H2O Generic Model based on given embedded model
 #'
 #' @examples
