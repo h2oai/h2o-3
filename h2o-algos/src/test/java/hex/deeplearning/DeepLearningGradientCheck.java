@@ -112,7 +112,7 @@ public class DeepLearningGradientCheck extends TestUtil {
                 parms._response_column = response;
                 parms._distribution = dist;
                 parms._max_w2 = 10;
-                parms._seed = 0xaaabbb;
+                parms._seed = 1; // old seed 0xaaabbb
                 parms._activation = act;
                 parms._adaptive_rate = adaptive;
                 parms._rate = 1e-4;
