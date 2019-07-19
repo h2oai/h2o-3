@@ -1,5 +1,7 @@
 package ai.h2o.automl.targetencoding;
 
+import hex.genmodel.algos.targetencoder.EncodingMaps;
+import hex.genmodel.algos.targetencoder.TargetEncoderMojoModel;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -901,6 +903,43 @@ public class TargetEncodingTest extends TestUtil {
     newReferenceFrame.delete(); // And we should not delete fr2 explicitly since it will be deleted by reference.
     assertEquals(1, fr.vec(0).at(0), 1e-5);
     fr.delete();
+  }
+
+  @Test
+  public void priorMeanInTargetEncoderAndTargetEncoderMojoModelAreEqual() {
+    Map<String, Frame> encodingMapFromTargetEncoder = null;
+    Scope.enter();
+    try {
+      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      Scope.track(fr);
+      String responseColumnName = "survived";
+
+      asFactor(fr, responseColumnName);
+
+      BlendingParams params = new BlendingParams(3, 1);
+      String[] teColumns = {"embarked"};
+
+      // Let's create encoding map by TargetEncoder directly
+      TargetEncoder tec = new TargetEncoder(teColumns, params);
+
+      Frame fr2 = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      asFactor(fr2, responseColumnName);
+      Scope.track(fr2);
+
+      encodingMapFromTargetEncoder = tec.prepareEncodingMap(fr2, responseColumnName, null);
+
+      double priorMeanForEmbarkedFromTE = tec.calculatePriorMean(encodingMapFromTargetEncoder.get("embarked"));
+      EncodingMaps encodingMapConvertedFromFrame = TargetEncoderFrameHelper.convertEncodingMapFromFrameToMap(encodingMapFromTargetEncoder);
+      
+      double priorMeanForEmbarkedFromTEMojo = TargetEncoderMojoModel.computePriorMean(encodingMapConvertedFromFrame.get("embarked"));
+      
+      assertEquals(priorMeanForEmbarkedFromTE, priorMeanForEmbarkedFromTEMojo , 1e-5);
+    } finally {
+      if (encodingMapFromTargetEncoder != null) {
+        TargetEncoderFrameHelper.encodingMapCleanUp(encodingMapFromTargetEncoder);
+      }
+      Scope.exit();
+    }
   }
 
   @Test
