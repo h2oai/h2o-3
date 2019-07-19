@@ -582,9 +582,6 @@ public class EasyPredictModelWrapper implements Serializable {
 
     TargetEncoderMojoModel tem = (TargetEncoderMojoModel) this.m;
     Set<String> teColumnNames = tem._teColumnNameToIdx.keySet();
-    for(String teColumnName : teColumnNames) {
-      if(!data.containsKey(teColumnName)) System.out.printf("Feature `%s` target encoding model was trained for is not present in a test data.%n", teColumnName);
-    }
 
     double[] preds = new double[teColumnNames.size()];
 

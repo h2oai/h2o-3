@@ -52,34 +52,34 @@ public class TargetEncoderMojoModel extends MojoModel {
       LinkedHashMap<String, EncodingMap> sortedByColumnIndex = sortByColumnIndex(_targetEncodingMap.encodingMap());
 
       for (Map.Entry<String, EncodingMap> columnToEncodingsMap : sortedByColumnIndex.entrySet() ) {
+        EncodingMap encodings = columnToEncodingsMap.getValue();
+
+        _priorMean = _priorMean == -1 ? computePriorMean(encodings) : _priorMean;
         
         String teColumn = columnToEncodingsMap.getKey();
         int indexOfColumnInRow = _teColumnNameToIdx.get(teColumn);
         
-        int originalValue = Double.isNaN(row[indexOfColumnInRow]) ? -1 :  (int)row[indexOfColumnInRow]; // original categorical level represented as index
-        EncodingMap encodings = columnToEncodingsMap.getValue();
-
-        _priorMean = _priorMean == -1 ? computePriorMean(encodings) : _priorMean;
-
-        int[] correspondingNumAndDen = encodings._encodingMap.get(originalValue);
-
-        if(correspondingNumAndDen == null) {
+        double originalValue = row[indexOfColumnInRow]; 
+        
+        if(Double.isNaN(originalValue)) {
           preds[predictionIndex] = _priorMean;
-        }
-        else {
+        } else {
+          //It is assumed that categorical levels are only represented with int values
+          int originalValueAsInt = (int) originalValue;
+          int[] correspondingNumAndDen = encodings._encodingMap.get(originalValueAsInt);
+
           double posteriorMean = (double) correspondingNumAndDen[0] / correspondingNumAndDen[1];
-          
-          if(_withBlending) {
+
+          if (_withBlending) {
             int numberOfRowsInCurrentCategory = correspondingNumAndDen[1];
             double lambda = computeLambda(numberOfRowsInCurrentCategory, _inflectionPoint, _smoothing);
             double blendedValue = computeBlendedEncoding(lambda, posteriorMean, _priorMean);
 
             preds[predictionIndex] = blendedValue;
-          }
-          else {
+          } else {
             preds[predictionIndex] = posteriorMean;
           }
-          
+
         }
         predictionIndex++;
       }
