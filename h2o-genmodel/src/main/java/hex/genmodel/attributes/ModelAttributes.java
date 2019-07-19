@@ -3,10 +3,7 @@ package hex.genmodel.attributes;
 import com.google.gson.JsonObject;
 import hex.ModelCategory;
 import hex.genmodel.MojoModel;
-import hex.genmodel.attributes.metrics.MojoModelMetrics;
-import hex.genmodel.attributes.metrics.MojoModelMetricsBinomial;
-import hex.genmodel.attributes.metrics.MojoModelMetricsMultinomial;
-import hex.genmodel.attributes.metrics.MojoModelMetricsRegression;
+import hex.genmodel.attributes.metrics.*;
 
 import java.io.Serializable;
 
@@ -49,21 +46,21 @@ public class ModelAttributes implements Serializable {
 
   private static MojoModelMetrics determineModelMetricsType(final ModelCategory modelCategory) {
     switch (modelCategory) {
-      case Unknown:
-        return new MojoModelMetrics();
       case Binomial:
         return new MojoModelMetricsBinomial();
       case Multinomial:
         return new MojoModelMetricsMultinomial();
       case Regression:
         return new MojoModelMetricsRegression();
+      case AnomalyDetection:
+        return new MojoModelMetricsAnomaly();
+      case Unknown:
       case Ordinal:
       case Clustering:
       case AutoEncoder:
       case DimReduction:
       case WordEmbedding:
       case CoxPH:
-      case AnomalyDetection:
       default:
         return new MojoModelMetrics(); // Basic model metrics if nothing else is available
     }
