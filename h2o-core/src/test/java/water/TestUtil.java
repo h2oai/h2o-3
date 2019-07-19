@@ -6,6 +6,7 @@ import org.junit.AfterClass;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.rules.TestRule;
+import org.junit.runner.Computer;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import water.fvec.*;
@@ -672,14 +673,14 @@ public class TestUtil extends Iced {
 
   // ==== Comparing Results ====
 
-  public static void assertFrameEquals(Frame expected, Frame actual, double delta) {
-    assertFrameEquals(expected, actual, delta, false);
+  public static void assertFrameEquals(Frame expected, Frame actual, double absDelta) {
+    assertFrameEquals(expected, actual, absDelta, null);
   }
 
-  public static void assertFrameEquals(Frame expected, Frame actual, double delta, boolean relativeDelta) {
+  public static void assertFrameEquals(Frame expected, Frame actual, Double absDelta, Double relativeDelta) {
     assertEquals("Frames have different number of vecs. ", expected.vecs().length, actual.vecs().length);
     for (int i = 0; i < expected.vecs().length; i++) {
-      assertVecEquals(i + "/" + expected._names[i] + " ", expected.vec(i), actual.vec(i), delta, relativeDelta);
+      assertVecEquals(i + "/" + expected._names[i] + " ", expected.vec(i), actual.vec(i), absDelta, relativeDelta);
     }
   }
 
@@ -688,25 +689,38 @@ public class TestUtil extends Iced {
   }
 
   public static void assertVecEquals(String messagePrefix, Vec expecteds, Vec actuals, double delta) {
-    assertVecEquals(messagePrefix, expecteds, actuals, delta, false);
+    assertVecEquals(messagePrefix, expecteds, actuals, delta, null);
   }
 
-  public static void assertVecEquals(String messagePrefix, Vec expecteds, Vec actuals, double delta, boolean relativeDelta) {
+  public static void assertVecEquals(String messagePrefix, Vec expecteds, Vec actuals, Double absDelta, Double relativeDelta) {
     assertEquals(expecteds.length(), actuals.length());
     for(int i = 0; i < expecteds.length(); i++) {
       final String message = messagePrefix + i + ": " + expecteds.at(i) + " != " + actuals.at(i) + ", chunkIds = " + expecteds.elem2ChunkIdx(i) + ", " + actuals.elem2ChunkIdx(i) + ", row in chunks = " + (i - expecteds.chunkForRow(i).start()) + ", " + (i - actuals.chunkForRow(i).start());
       double expectedVal = expecteds.at(i);
       double actualVal = actuals.at(i);
-      double assertionDelta = delta;
-      if (relativeDelta) {
-        double deltaBase = Math.abs(expectedVal);
-        if (deltaBase == 0) {
-          assertionDelta = delta;
-        } else {
-          assertionDelta = deltaBase * delta;
-        }
+      assertEquals(message, expectedVal, actualVal, computeAssertionDelta(expectedVal, absDelta, relativeDelta));
+    }
+  }
+  
+  private static double computeAssertionDelta(double expectedVal, Double absDelta, Double relDelta) {
+    if ((absDelta == null || absDelta.isNaN()) && (relDelta == null || relDelta.isNaN())) {
+      throw new IllegalArgumentException("Either absolute or relative delta has to be non-null and non-NaN");
+    } else if (relDelta == null || relDelta.isNaN()) {
+      return absDelta;
+    } else {
+      double computedRelativeDelta;
+      double deltaBase = Math.abs(expectedVal);
+      if (deltaBase == 0) {
+        computedRelativeDelta = relDelta;
+      } else {
+        computedRelativeDelta = deltaBase * relDelta;
       }
-      assertEquals(message, expectedVal, actualVal, assertionDelta);
+      if (absDelta == null || absDelta.isNaN()) {
+        return computedRelativeDelta;
+      } else {
+        // use the bigger delta for the assert
+        return Math.max(computedRelativeDelta, absDelta);
+      }
     }
   }
 
