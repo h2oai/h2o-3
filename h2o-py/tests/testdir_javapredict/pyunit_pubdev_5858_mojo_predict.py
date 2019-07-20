@@ -9,8 +9,8 @@ def glrm_mojo():
     h2o.remove_all()
     train = h2o.import_file(pyunit_utils.locate("smalldata/glrm_test/pubdev_5858_glrm_mojo_train.csv"))
     test = h2o.import_file(pyunit_utils.locate("smalldata/glrm_test/pubdev_5858_glrm_mojo_test.csv"))
-    predict_10iter = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glrm_test/pubdev_5858_glrm_predict_10iter.csv")
-    predict_1iter = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glrm_test/pubdev_5858_glrm_predict_1iter.csv")
+    predict_10iter = h2o.import_file(pyunit_utils.locate("smalldata/glrm_test/pubdev_5858_glrm_predict_10iter.csv"))
+    predict_1iter = h2o.import_file(pyunit_utils.locate("smalldata/glrm_test/pubdev_5858_glrm_predict_1iter.csv"))
 
     x = train.names
     transformN = "STANDARDIZE"
