@@ -184,8 +184,8 @@ def gen_module(schema, algo):
     yield "        names_list = {%s}" % bi.wrap(", ".join('"%s"' % p for p in param_names),
                                                 indent=(" " * 22), indent_first=False)
     if(algo == "generic"):
-        yield '        if(all(name is None for name in names_list)):'
-        yield '                raise H2OValueError("At least one of model-generic")'
+        yield '        if(all(kwargs.get(name, None) is None for name in [ "model_key", "path"])):'
+        yield '                raise H2OValueError("At least one of [\\"model_key\\", \\"path\\"] is required.")'
     yield '        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")'
     yield "        for pname, pvalue in kwargs.items():"
     yield "            if pname == 'model_id':"
