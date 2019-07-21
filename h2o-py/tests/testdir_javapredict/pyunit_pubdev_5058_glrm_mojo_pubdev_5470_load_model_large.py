@@ -14,6 +14,7 @@ def glrm_mojo():
     train = df[NTESTROWS:, :]
     test = df[:NTESTROWS, :]
     x = df.names
+    tol=1e-8
 
     transform_types = ["NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE"]
     transformN = transform_types[randint(0, len(transform_types)-1)]
@@ -40,13 +41,13 @@ def glrm_mojo():
             pred_h2o[col] = pred_h2o[col].asnumeric()
             predict_model[col] = predict_model[col].asnumeric()
     print("Comparing mojo predict and h2o predict...")
-    pyunit_utils.compare_frames_local(pred_h2o, pred_mojo, 1, tol=1e-10)
+    pyunit_utils.compare_frames_local(pred_h2o, pred_mojo, 1, tol=tol)
     print("Comparing mojo predict and h2o predict from saved model...")
-    pyunit_utils.compare_frames_local(pred_mojo, predict_model, 1, tol=1e-10)
+    pyunit_utils.compare_frames_local(pred_mojo, predict_model, 1, tol=tol)
     frameID, mojoXFactor = pyunit_utils.mojo_predict(glrmModel, TMPDIR, MOJONAME, glrmReconstruct=False) # save mojo XFactor
     glrmTestFactor = h2o.get_frame("GLRMLoading_"+frameID)   # store the x Factor for new test dataset
     print("Comparing mojo x Factor and model x Factor ...")
-    pyunit_utils.compare_frames_local(glrmTestFactor, mojoXFactor, 1, tol=1e-10)
+    pyunit_utils.compare_frames_local(glrmTestFactor, mojoXFactor, 1, tol=tol)
 
 def save_GLRM_mojo(model):
     # save model
