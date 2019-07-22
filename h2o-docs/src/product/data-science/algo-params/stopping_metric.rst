@@ -19,6 +19,7 @@ then the model will stop training after reaching three scoring events in a row i
 
 Available options for ``stopping_metric`` include the following:
 
+- ``aucpr``
 - ``AUTO``: This defaults to ``logloss`` for classification, ``deviance`` (mean residual deviance) for regression, and ``anomaly_score`` for Isolation Forest.
 - ``anomaly_score`` (for Isolation Forest only)
 - ``deviance``
