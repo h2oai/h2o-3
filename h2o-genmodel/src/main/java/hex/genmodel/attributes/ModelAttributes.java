@@ -3,6 +3,7 @@ package hex.genmodel.attributes;
 import com.google.gson.JsonObject;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.glm.GlmMojoModel;
+import hex.genmodel.algos.glm.GlmMultinomialMojoModel;
 import hex.genmodel.attributes.metrics.*;
 
 import java.io.Serializable;
@@ -51,7 +52,9 @@ public class ModelAttributes implements Serializable {
           return new MojoModelMetricsBinomialGLM();
         } else return new MojoModelMetricsBinomial();
       case Multinomial:
-        return new MojoModelMetricsMultinomial();
+        if (mojoModel instanceof GlmMultinomialMojoModel) {
+          return new MojoModelMetricsMultinomialGLM();
+        } else return new MojoModelMetricsMultinomial();
       case Regression:
         return new MojoModelMetricsRegression();
       case AnomalyDetection:

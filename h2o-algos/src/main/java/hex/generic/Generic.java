@@ -6,6 +6,8 @@ import hex.genmodel.*;
 import hex.genmodel.algos.drf.DrfMojoModel;
 import hex.genmodel.algos.gbm.GbmMojoModel;
 import hex.genmodel.algos.glm.GlmMojoModel;
+import hex.genmodel.algos.glm.GlmMultinomialMojoModel;
+import hex.genmodel.algos.glm.GlmOrdinalMojoModel;
 import hex.genmodel.algos.isofor.IsolationForestMojoModel;
 import hex.genmodel.algos.kmeans.KMeansMojoModel;
 import water.DKV;
@@ -26,9 +28,9 @@ import java.util.Objects;
  * Only H2O Mojos are currently supported.
  */
 public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, GenericModelOutput> {
-    
-    private static final Class[] SUPPORTED_MOJOS = new Class[]{GlmMojoModel.class, GbmMojoModel.class,
-            IsolationForestMojoModel.class, DrfMojoModel.class, KMeansMojoModel.class};
+
+    private static final Class[] SUPPORTED_MOJOS = new Class[]{GlmMojoModel.class, GlmMultinomialMojoModel.class,
+            GlmOrdinalMojoModel.class, GbmMojoModel.class, IsolationForestMojoModel.class, DrfMojoModel.class, KMeansMojoModel.class};
 
     public Generic(GenericModelParameters genericParameters){
         super(genericParameters);

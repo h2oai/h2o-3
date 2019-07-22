@@ -82,21 +82,33 @@ public class GenericModelOutput extends Model.Output {
                             convertTable(binomial._thresholds_and_metric_scores), convertTable(binomial._max_criteria_and_metric_scores),
                             convertTable(binomial._confusion_matrix), glmBinomial._nullDegressOfFreedom, glmBinomial._residualDegressOfFreedom,
                             glmBinomial._resDev, glmBinomial._nullDev, glmBinomial._AIC);
+                } else {
+                    return new ModelMetricsBinomialGeneric(null, null, mojoMetrics._nobs, mojoMetrics._MSE,
+                            _domains[_domains.length - 1], Double.NaN,
+                            auc, binomial._logloss, convertTable(binomial._gains_lift_table),
+                            new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value), binomial._mean_per_class_error,
+                            convertTable(binomial._thresholds_and_metric_scores), convertTable(binomial._max_criteria_and_metric_scores),
+                            convertTable(binomial._confusion_matrix));
                 }
-                return new ModelMetricsBinomialGeneric(null, null, mojoMetrics._nobs, mojoMetrics._MSE,
-                        _domains[_domains.length - 1], Double.NaN,
-                        auc, binomial._logloss, convertTable(binomial._gains_lift_table),
-                        new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value), binomial._mean_per_class_error,
-                        convertTable(binomial._thresholds_and_metric_scores), convertTable(binomial._max_criteria_and_metric_scores),
-                        convertTable(binomial._confusion_matrix));
             case Multinomial:
                 assert mojoMetrics instanceof MojoModelMetricsMultinomial;
-                final MojoModelMetricsMultinomial multinomial = (MojoModelMetricsMultinomial) mojoMetrics;
-                return new ModelMetricsMultinomialGeneric(null, null, mojoMetrics._nobs, mojoMetrics._MSE,
-                        _domains[_domains.length - 1], Double.NaN,
-                        convertTable(multinomial._confusion_matrix), convertTable(multinomial._hit_ratios),
-                        multinomial._logloss, new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value),
-                        multinomial._mean_per_class_error);
+
+                if (mojoMetrics instanceof MojoModelMetricsMultinomialGLM) {
+                    final MojoModelMetricsMultinomialGLM glmMultinomial = (MojoModelMetricsMultinomialGLM) mojoMetrics;
+                    return new ModelMetricsMultinomialGLMGeneric(null, null, mojoMetrics._nobs, mojoMetrics._MSE,
+                            _domains[_domains.length - 1], Double.NaN,
+                            convertTable(glmMultinomial._confusion_matrix), convertTable(glmMultinomial._hit_ratios),
+                            glmMultinomial._logloss, new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value),
+                            glmMultinomial._mean_per_class_error, glmMultinomial._nullDegressOfFreedom, glmMultinomial._residualDegressOfFreedom,
+                            glmMultinomial._resDev, glmMultinomial._nullDev, glmMultinomial._AIC);
+                } else {
+                    final MojoModelMetricsMultinomial multinomial = (MojoModelMetricsMultinomial) mojoMetrics;
+                    return new ModelMetricsMultinomialGeneric(null, null, mojoMetrics._nobs, mojoMetrics._MSE,
+                            _domains[_domains.length - 1], Double.NaN,
+                            convertTable(multinomial._confusion_matrix), convertTable(multinomial._hit_ratios),
+                            multinomial._logloss, new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value),
+                            multinomial._mean_per_class_error);
+                }
             case Regression:
                 assert mojoMetrics instanceof MojoModelMetricsRegression;
                 MojoModelMetricsRegression metricsRegression = (MojoModelMetricsRegression) mojoMetrics;

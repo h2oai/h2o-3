@@ -5,11 +5,11 @@ from h2o.estimators import H2OGeneralizedLinearEstimator, H2OGenericEstimator
 from tests import pyunit_utils
 from tests.testdir_generic_model import compare_output, Capturing
 
-def test(x, y, output_test, strip_part, algo_name, generic_algo_name):
+def test(x, y, output_test, strip_part, algo_name, generic_algo_name, family):
 
     # GLM
     airlines = h2o.import_file(path=pyunit_utils.locate("smalldata/testng/airlines_train.csv"))
-    glm = H2OGeneralizedLinearEstimator(nfolds = 3, family = "binomial")
+    glm = H2OGeneralizedLinearEstimator(nfolds = 3, family = family, alpha = 1, lambda_ = 1)
     glm.train(x = x, y = y, training_frame=airlines, validation_frame=airlines, )
     print(glm)
     with Capturing() as original_output:
@@ -34,9 +34,24 @@ def test(x, y, output_test, strip_part, algo_name, generic_algo_name):
     assert os.path.getsize(generic_mojo_filename) == os.path.getsize(original_model_filename)
 
 def mojo_model_test_binomial():
-    test(["Origin", "Dest"], "IsDepDelayed", compare_output, 'GLM Model: summary','ModelMetricsBinomialGLM: glm', 'ModelMetricsBinomialGLMGeneric: generic')
+    test(["Origin", "Dest"], "IsDepDelayed", compare_output, 'GLM Model: summary', 'ModelMetricsBinomialGLM: glm',
+         'ModelMetricsBinomialGLMGeneric: generic', 'binomial')
+
+
+def mojo_model_test_regression():
+    test(["Origin", "Dest"], "Distance", compare_output, 'GLM Model: summary', 'ModelMetricsBinomialGLM: glm',
+         'ModelMetricsBinomialGLMGeneric: generic')
+
+
+def mojo_model_test_multinomial():
+    test(["Origin", "Distance"], "Dest", compare_output, 'GLM Model: summary', 'ModelMetricsMultinomialGLM: glm',
+         'ModelMetricsMultinomialGLMGeneric: generic', 'multinomial')
     
 if __name__ == "__main__":
     pyunit_utils.standalone_test(mojo_model_test_binomial)
+    pyunit_utils.standalone_test(mojo_model_test_multinomial)
+    #pyunit_utils.standalone_test(mojo_model_test_regression)
 else:
     mojo_model_test_binomial()
+    mojo_model_test_multinomial()
+    mojo_model_test_regression()
