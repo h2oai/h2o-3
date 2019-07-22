@@ -21,19 +21,19 @@ class Capturing(list):
 
 # Output checks common for multiple algorithms
 
-def compare_multinomial_output(original, generic):
-    original = original[original.find("'Model Summary: '"):].replace('ModelMetricsMultinomial: gbm', '').strip()
+def compare_multinomial_output(original, generic, algo_name):
+    original = original[original.find("'Model Summary: '"):].replace('ModelMetricsMultinomial: ' + algo_name, '').strip()
     generic = generic[generic.find("'Model Summary: '"):].replace('ModelMetricsMultinomialGeneric: generic', '').strip()
     assert generic == original
 
 
-def compare_binomial_output(original, generic):
-    original = original[original.find("'Model Summary: '"):].replace('ModelMetricsBinomial: gbm', '').strip()
+def compare_binomial_output(original, generic, algo_name):
+    original = original[original.find("'Model Summary: '"):].replace('ModelMetricsBinomial: ' + algo_name, '').strip()
     generic = generic[generic.find("'Model Summary: '"):].replace('ModelMetricsBinomialGeneric: generic', '').strip()
     assert generic == original
 
 
-def compare_regression_output(original, generic):
-    original = original[original.find("'Model Summary: '"):].replace('ModelMetricsRegression: gbm', '').strip()
+def compare_regression_output(original, generic, algo_name):
+    original = original[original.find("'Model Summary: '"):].replace('ModelMetricsRegression: ' + algo_name, '').strip()
     generic = generic[generic.find("'Model Summary: '"):].replace('ModelMetricsRegression: generic', '').strip()
     assert generic == original

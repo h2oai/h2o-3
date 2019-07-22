@@ -13,6 +13,8 @@ def test(x, y, output_test):
     drf = H2ORandomForestEstimator(ntrees=1, nfolds = 3)
     drf.train(x = x, y = y, training_frame=airlines, validation_frame=airlines)
     print(drf)
+    with Capturing() as original_output:
+        drf.show()
 
     original_model_filename = tempfile.mkdtemp()
     original_model_filename = drf.download_mojo(original_model_filename)
@@ -20,6 +22,10 @@ def test(x, y, output_test):
     model = H2OGenericEstimator.from_file(original_model_filename)
     assert model is not None
     print(model)
+    with Capturing() as generic_output:
+        model.show()
+
+    output_test(str(original_output), str(generic_output), 'drf')
     predictions = model.predict(airlines)
     assert predictions is not None
     assert predictions.nrows == 24421

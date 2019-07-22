@@ -27,7 +27,7 @@ def test(x, y, output_test):
     with Capturing() as generic_output:
         model.show()
 
-    output_test(str(original_output), str(generic_output))
+    output_test(str(original_output), str(generic_output), 'gbm')
     
     predictions = model.predict(airlines)
     assert predictions is not None
