@@ -707,54 +707,55 @@ Use the ``feature_frequencies`` function to retrieve the number of times a featu
 .. example-code::
    .. code-block:: r
   
-    # Predict the class probabilities using the GBM model and test data.
-    staged_predict_proba <- h2o.staged_predict_proba(model, prostate.test)
+    # Retrieve the number of occurrences of each feature for given observations
+    # on their respective paths in a tree ensemble model
+    feature_frequencies.H2OModel <- function(object, newdata, ...) {
+    if (missing(newdata)) {
+        stop("predictions with a missing `newdata` argument is not implemented yet")
+    }
 
+    url <- paste0('Predictions/models/', object@model_id, '/frames/',  h2o.getId(newdata))
+    res <- .h2o.__remoteSend(url, method = "POST", feature_frequencies=TRUE)
+    res <- res$predictions_frame
+    h2o.getFrame(res$name)
+    }
+
+    h2o.feature_frequencies <- feature_frequencies.H2OModel
 
    .. code-block:: python
 
-    # Predict the class probabilities using the GBM model and test data.
-    from builtins import range
-import sys, os
-sys.path.insert(1, os.path.join("..","..",".."))
-import h2o
-from tests import pyunit_utils
-from h2o.estimators.gbm import H2OGradientBoostingEstimator
-from h2o.estimators.random_forest import H2ORandomForestEstimator
-from h2o.estimators.isolation_forest import H2OIsolationForestEstimator
+    # Retrieve the number of occurrences of each feature for given observations
+    # on their respective paths in a tree ensemble model
+    def feature_frequencies():
 
+        prostate_train = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate_train.csv"))
+        prostate_train["CAPSULE"] = prostate_train["CAPSULE"].asfactor()
+        features = list(range(1,prostate_train.ncol))
 
-def feature_frequencies():
+        gbm = H2OGradientBoostingEstimator(ntrees=5)
+        gbm.train(x=features, y="CAPSULE", training_frame=prostate_train)
+        ff_gbm = gbm.feature_frequencies(prostate_train)
 
-    prostate_train = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate_train.csv"))
-    prostate_train["CAPSULE"] = prostate_train["CAPSULE"].asfactor()
-    features = list(range(1,prostate_train.ncol))
+        print(ff_gbm.shape)
 
-    gbm = H2OGradientBoostingEstimator(ntrees=5)
-    gbm.train(x=features, y="CAPSULE", training_frame=prostate_train)
-    ff_gbm = gbm.feature_frequencies(prostate_train)
+        assert ff_gbm.shape == (prostate_train.nrow, len(features))
 
-    print(ff_gbm.shape)
+        drf = H2ORandomForestEstimator(ntrees=5)
+        drf.train(x=features, y="CAPSULE", training_frame=prostate_train)
+        ff_drf = drf.feature_frequencies(prostate_train)
 
-    assert ff_gbm.shape == (prostate_train.nrow, len(features))
+        assert ff_drf.shape == (prostate_train.nrow, len(features))
 
-    drf = H2ORandomForestEstimator(ntrees=5)
-    drf.train(x=features, y="CAPSULE", training_frame=prostate_train)
-    ff_drf = drf.feature_frequencies(prostate_train)
+        iforest = H2OIsolationForestEstimator(ntrees=5)
+        iforest.train(x=features, training_frame=prostate_train)
+        ff_iforest = drf.feature_frequencies(prostate_train)
 
-    assert ff_drf.shape == (prostate_train.nrow, len(features))
+        assert ff_iforest.shape == (prostate_train.nrow, len(features))
 
-    iforest = H2OIsolationForestEstimator(ntrees=5)
-    iforest.train(x=features, training_frame=prostate_train)
-    ff_iforest = drf.feature_frequencies(prostate_train)
-
-    assert ff_iforest.shape == (prostate_train.nrow, len(features))
-
-
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(feature_frequencies)
-else:
-    feature_frequencies()
+    if __name__ == "__main__":
+        pyunit_utils.standalone_test(feature_frequencies)
+    else:
+        feature_frequencies()
 
 Predict using MOJOs
 ~~~~~~~~~~~~~~~~~~~
