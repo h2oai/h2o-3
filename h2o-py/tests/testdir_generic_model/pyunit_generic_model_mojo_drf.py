@@ -3,7 +3,9 @@ import tempfile
 import os
 from h2o.estimators import H2ORandomForestEstimator, H2OGenericEstimator
 from tests import pyunit_utils
-from common import compare_multinomial_output, compare_binomial_output, compare_regression_output, Capturing
+from tests.testdir_generic_model import compare_binomial_output, compare_multinomial_output, compare_regression_output, \
+    Capturing
+
 
 def test(x, y, output_test):
 
