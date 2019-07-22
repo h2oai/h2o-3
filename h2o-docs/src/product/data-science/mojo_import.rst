@@ -12,7 +12,7 @@ Supported MOJOs
 Only a subset of H2O MOJO models is supported in this version. 
 
 -  GBM (Gradient Boosting Machines)
--  DRF (Distributd Random Forest)
+-  DRF (Distributed Random Forest)
 -  IRF (Isolation Random Forest)
 -  GLM (Generalized Linear Model)
 
