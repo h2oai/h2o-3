@@ -62,6 +62,7 @@ water.api.schemas3.ModelImportV3
 water.api.schemas3.ModelMetricsAutoEncoderV3
 water.api.schemas3.ModelMetricsBaseV3
 water.api.schemas3.ModelMetricsBinomialGLMV3
+water.api.schemas3.ModelMetricsBinomialGLMGenericV3
 water.api.schemas3.ModelMetricsBinomialV3
 water.api.schemas3.ModelMetricsBinomialGenericV3
 water.api.schemas3.ModelMetricsClusteringV3

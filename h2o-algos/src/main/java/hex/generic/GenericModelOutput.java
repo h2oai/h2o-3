@@ -38,27 +38,27 @@ public class GenericModelOutput extends Model.Output {
             fillSharedTreeModelAttributes((SharedTreeModelAttributes) modelAttributes, modelDescriptor);
         } else {
             _variable_importances = null;
-            _training_metrics = null;
         }
+        convertMetrics(modelAttributes, modelDescriptor);
+        _scoring_history = convertTable(modelAttributes.getScoringHistory());
+
     }
 
     private void fillSharedTreeModelAttributes(final SharedTreeModelAttributes sharedTreeModelAttributes, final ModelDescriptor modelDescriptor) {
         _variable_importances = convertVariableImportances(sharedTreeModelAttributes.getVariableImportances());
-        _scoring_history = convertTable(sharedTreeModelAttributes.getScoringHistory());
-        convertMetrics(sharedTreeModelAttributes, modelDescriptor);
     }
 
-    private void convertMetrics(final SharedTreeModelAttributes sharedTreeModelAttributes, final ModelDescriptor modelDescriptor) {
+    private void convertMetrics(final ModelAttributes modelAttributes, final ModelDescriptor modelDescriptor) {
         // Training metrics
 
-        if (sharedTreeModelAttributes.getTrainingMetrics() != null) {
-            _training_metrics = (ModelMetrics) convertObjects(sharedTreeModelAttributes.getTrainingMetrics(), determineModelmetricsType(sharedTreeModelAttributes.getTrainingMetrics(), modelDescriptor));
+        if (modelAttributes.getTrainingMetrics() != null) {
+            _training_metrics = (ModelMetrics) convertObjects(modelAttributes.getTrainingMetrics(), determineModelmetricsType(modelAttributes.getTrainingMetrics(), modelDescriptor));
         }
-        if (sharedTreeModelAttributes.getValidationMetrics() != null) {
-            _validation_metrics = (ModelMetrics) convertObjects(sharedTreeModelAttributes.getValidationMetrics(), determineModelmetricsType(sharedTreeModelAttributes.getValidationMetrics(), modelDescriptor));
+        if (modelAttributes.getValidationMetrics() != null) {
+            _validation_metrics = (ModelMetrics) convertObjects(modelAttributes.getValidationMetrics(), determineModelmetricsType(modelAttributes.getValidationMetrics(), modelDescriptor));
         }
-        if (sharedTreeModelAttributes.getCrossValidationMetrics() != null) {
-            _cross_validation_metrics = (ModelMetrics) convertObjects(sharedTreeModelAttributes.getCrossValidationMetrics(), determineModelmetricsType(sharedTreeModelAttributes.getCrossValidationMetrics(), modelDescriptor));
+        if (modelAttributes.getCrossValidationMetrics() != null) {
+            _cross_validation_metrics = (ModelMetrics) convertObjects(modelAttributes.getCrossValidationMetrics(), determineModelmetricsType(modelAttributes.getCrossValidationMetrics(), modelDescriptor));
         }
         
     }
@@ -73,8 +73,18 @@ public class GenericModelOutput extends Model.Output {
                 auc._auc = binomial._auc;
                 auc._pr_auc = binomial._pr_auc;
                 auc._gini = binomial._gini;
+                if (mojoMetrics instanceof MojoModelMetricsBinomialGLM) {
+                    final MojoModelMetricsBinomialGLM glmBinomial = (MojoModelMetricsBinomialGLM) binomial;
+                    return new ModelMetricsBinomialGLMGeneric(null, null, mojoMetrics._nobs, mojoMetrics._MSE,
+                            _domains[_domains.length - 1], Double.NaN,
+                            auc, binomial._logloss, convertTable(binomial._gains_lift_table),
+                            new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value), binomial._mean_per_class_error,
+                            convertTable(binomial._thresholds_and_metric_scores), convertTable(binomial._max_criteria_and_metric_scores),
+                            convertTable(binomial._confusion_matrix), glmBinomial._nullDegressOfFreedom, glmBinomial._residualDegressOfFreedom,
+                            glmBinomial._resDev, glmBinomial._nullDev, glmBinomial._AIC);
+                }
                 return new ModelMetricsBinomialGeneric(null, null, mojoMetrics._nobs, mojoMetrics._MSE,
-                        _domains[_domains.length - 1], Double.NaN, // TODO: sigma
+                        _domains[_domains.length - 1], Double.NaN,
                         auc, binomial._logloss, convertTable(binomial._gains_lift_table),
                         new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value), binomial._mean_per_class_error,
                         convertTable(binomial._thresholds_and_metric_scores), convertTable(binomial._max_criteria_and_metric_scores),
