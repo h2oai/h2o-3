@@ -1599,6 +1599,23 @@ class H2OXGBoostEstimator(H2OEstimator):
         For booster=dart only: normalize_type
 
         One of: ``"tree"``, ``"forest"``  (default: ``"tree"``).
+
+        :examples:
+
+        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+        >>> titanic['survived'] = titanic['survived'].asfactor()
+        >>> predictors = titanic.columns
+        >>> response = 'survived'
+        >>> train, valid = titanic.split_frame(ratios = [.8],
+        ...                                    seed = 1234)
+        >>> titanic_xgb = H2OXGBoostEstimator(booster='dart',
+        ...                                   normalize_type="tree",
+        ...                                   seed=1234)
+        >>> titanic_xgb.train(x=predictors,
+        ...                   y=response,
+        ...                   training_frame=train,
+        ...                   validation_frame=valid)
+        >>> print(titanic_xgb.auc(valid=True))
         """
         return self._parms.get("normalize_type")
 
@@ -1645,6 +1662,21 @@ class H2OXGBoostEstimator(H2OEstimator):
         For booster=dart only: one_drop
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+        >>> titanic['survived'] = titanic['survived'].asfactor()
+        >>> predictors = titanic.columns
+        >>> del predictors[1:3]
+        >>> response = 'survived'
+        >>> train, valid = titanic.split_frame(ratios = [.8],
+        ...                                    seed = 1234)
+        >>> titanic_xgb = H2OXGBoostEstimator(booster='dart',
+                                              one_drop=True,
+                                              seed=1234)  
+        >>> titanic_xgb.train(x=predictors, y=response, training_frame=train, validation_frame=valid)
+        >>> print(titanic_xgb.auc(valid=True))
         """
         return self._parms.get("one_drop")
 
