@@ -3372,8 +3372,10 @@ public class GBMTest extends TestUtil {
     boolean foundGoodSeed = false;
     for (int seedv = 5; seedv < 50; seedv++) {
       foundGoodSeed = testQuasibinomial(seedv) > 0;
-      if (foundGoodSeed)
+      if (foundGoodSeed) {
+        System.out.println("Good seed found: "+seedv);
         break;  // stop test found good seed already
+      }
     }
     if (!foundGoodSeed)
       Assert.assertTrue("testQuasiBinomial failed within tolerance...", 1==2);
