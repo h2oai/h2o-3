@@ -45,6 +45,8 @@ from .utils.compatibility import PY3
 from .utils.shared_utils import check_frame_id, deprecated, gen_header, py_tmp_key, quoted, urlopen
 from .utils.typechecks import assert_is_type, assert_satisfies, BoundInt, BoundNumeric, I, is_type, numeric, U
 
+logging.basicConfig()
+
 # An IPython deprecation warning is triggered after h2o.init(). Remove this once the deprecation has been resolved
 warnings.filterwarnings('ignore', category=DeprecationWarning, module='.*/IPython/.*')
 
@@ -145,7 +147,7 @@ def version_check():
 def init(url=None, ip=None, port=None, name=None, https=None, insecure=None, username=None, password=None,
          cookies=None, proxy=None, start_h2o=True, nthreads=-1, ice_root=None, log_dir=None, log_level=None,
          enable_assertions=True, max_mem_size=None, min_mem_size=None, strict_version_check=None, ignore_config=False,
-         extra_classpath=None, jvm_custom_args=None, bind_to_localhost=True, verbose=True, **kwargs):
+         extra_classpath=None, jvm_custom_args=None, bind_to_localhost=True, **kwargs):
     """
     Attempt to connect to a local server, or if not successful start a new server and connect to it.
 
@@ -172,7 +174,6 @@ def init(url=None, ip=None, port=None, name=None, https=None, insecure=None, use
     :param strict_version_check: If True, an error will be raised if the client and server versions don't match.
     :param ignore_config: Indicates whether a processing of a .h2oconfig file should be conducted or not. Default value is False.
     :param extra_classpath: List of paths to libraries that should be included on the Java classpath when starting H2O from Python.
-    :param verbose: Set to False to disable printing connection status messages.
     :param kwargs: (all other deprecated attributes)
     :param jvm_custom_args: Customer, user-defined argument's for the JVM H2O is instantiated in. Ignored if there is an instance of H2O already running and the client connects to it.
     """
@@ -259,7 +260,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, insecure=None, use
     try:
         h2oconn = H2OConnection.open(url=url, ip=ip, port=port, name=name, https=https,
                                      verify_ssl_certificates=verify_ssl_certificates,
-                                     auth=auth, proxy=proxy,cookies=cookies, verbose=verbose,
+                                     auth=auth, proxy=proxy,cookies=cookies, verbose=True,
                                      _msgs=("Checking whether there is an H2O instance running at {url} ",
                                             "connected.", "not found."))
     except H2OConnectionError:
@@ -273,14 +274,13 @@ def init(url=None, ip=None, port=None, name=None, https=None, insecure=None, use
                                   min_mem_size=mmin, ice_root=ice_root, log_dir=log_dir, log_level=log_level,
                                   port=port, name=name,
                                   extra_classpath=extra_classpath, jvm_custom_args=jvm_custom_args,
-                                  bind_to_localhost=bind_to_localhost, verbose=verbose)
+                                  bind_to_localhost=bind_to_localhost)
         h2oconn = H2OConnection.open(server=hs, https=https, verify_ssl_certificates=not insecure,
-                                     auth=auth, proxy=proxy,cookies=cookies, verbose=verbose)
+                                     auth=auth, proxy=proxy,cookies=cookies, verbose=True)
     if check_version:
         version_check()
     h2oconn.cluster.timezone = "UTC"
-    if verbose:
-        h2oconn.cluster.show_status()
+    h2oconn.cluster.show_status()
 
 def lazy_import(path, pattern=None):
     """
