@@ -1,4 +1,4 @@
-Mojo Import
+MOJO Models
 -----------
 
 Introduction
