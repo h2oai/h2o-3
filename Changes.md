@@ -74,8 +74,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/1/index.ht
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6410'>PUBDEV-6410</a>] - Added early stopping options to Isolation Forest.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6436'>PUBDEV-6436</a>] - In Flow, uploading a MOJO now also automatically creates a generic model from the MOJO. (STILL OPEN)
-</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6438'>PUBDEV-6438</a>] - Users can now build 2D Partial Dependence plots with the R and Python clients.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6482'>PUBDEV-6482</a>] - When loading MOJOs that were trained on older versions of H2O-3 into newer versions of H2O-3, users can now access all the information that was saved in the model object and use the MOJO to score. 
@@ -109,7 +107,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/1/index.ht
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6500'>PUBDEV-6500</a>] - Create initial, alpha version of SVM documentation.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6554'>PUBDEV-6554</a>] - Added `upload_custom_distribution` to the Parameters Appendix. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6554'>PUBDEV-6554</a>] - Added `upload_custom_distribution` to the Parameters Appendix.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6604'>PUBDEV-6604</a>] - Removed note in XGBoost documentation indicating that "Multi-node support is currently available as a Beta feature."
 </li>
