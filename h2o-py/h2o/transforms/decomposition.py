@@ -1,8 +1,7 @@
 from ..estimators.estimator_base import H2OEstimator
-from h2o.utils.typechecks import Enum
-from h2o.utils.typechecks import assert_is_type
 from h2o.frame import H2OFrame
-from h2o.utils.typechecks import assert_is_type, Enum, numeric
+from h2o.utils.typechecks import assert_is_type, Enum
+
 
 class H2OPCA(H2OEstimator):
     """
@@ -95,6 +94,7 @@ class H2OPCA(H2OEstimator):
         :returns: The input H2OFrame transformed by the Principal Components.
         """
         return self.predict(X)
+
 
 class H2OSVD(H2OEstimator):
     """Singular Value Decomposition"""
