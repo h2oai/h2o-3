@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.glm.GlmMojoModel;
 import hex.genmodel.algos.glm.GlmMultinomialMojoModel;
+import hex.genmodel.algos.glm.GlmOrdinalMojoModel;
 import hex.genmodel.attributes.metrics.*;
 
 import java.io.Serializable;
@@ -61,8 +62,11 @@ public class ModelAttributes implements Serializable {
         } else return new MojoModelMetricsRegression();
       case AnomalyDetection:
         return new MojoModelMetricsAnomaly();
-      case Unknown:
       case Ordinal:
+        if (mojoModel instanceof GlmOrdinalMojoModel) {
+          return new MojoModelMetricsOrdinalGLM();
+        } else return new MojoModelMetricsOrdinal();
+      case Unknown:
       case Clustering:
       case AutoEncoder:
       case DimReduction:

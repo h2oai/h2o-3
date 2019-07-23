@@ -65,6 +65,8 @@ def mojo_model_test_multinomial():
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(mojo_model_test_binomial)
+    pyunit_utils.standalone_test(mojo_model_test_multinomial)
+    pyunit_utils.standalone_test(mojo_model_test_regression)
 
 else:
     mojo_model_test_multinomial()

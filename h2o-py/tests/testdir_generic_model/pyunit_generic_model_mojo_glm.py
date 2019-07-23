@@ -46,12 +46,20 @@ def mojo_model_test_regression():
 def mojo_model_test_multinomial():
     test(["Origin", "Distance"], "Dest", compare_output, 'GLM Model: summary', 'ModelMetricsMultinomialGLM: glm',
          'ModelMetricsMultinomialGLMGeneric: generic', 'multinomial')
+
+
+def mojo_model_test_ordinal():
+    test(["Origin", "Distance", "IsDepDelayed"], "fDayOfWeek", compare_output, 'GLM Model: summary',
+         'ModelMetricsOrdinalGLM: glm',
+         'ModelMetricsOrdinalGLMGeneric: generic', 'ordinal')
     
 if __name__ == "__main__":
     pyunit_utils.standalone_test(mojo_model_test_binomial)
     pyunit_utils.standalone_test(mojo_model_test_multinomial)
     pyunit_utils.standalone_test(mojo_model_test_regression)
+    pyunit_utils.standalone_test(mojo_model_test_ordinal)
 else:
     mojo_model_test_binomial()
     mojo_model_test_multinomial()
     mojo_model_test_regression()
+    mojo_model_test_ordinal()

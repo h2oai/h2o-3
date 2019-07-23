@@ -72,6 +72,8 @@ water.api.schemas3.ModelMetricsMultinomialGenericV3
 water.api.schemas3.ModelMetricsMultinomialGLMGenericV3
 water.api.schemas3.ModelMetricsOrdinalGLMV3
 water.api.schemas3.ModelMetricsOrdinalV3
+water.api.schemas3.ModelMetricsOrdinalGenericV3
+water.api.schemas3.ModelMetricsOrdinalGLMGenericV3
 water.api.schemas3.ModelMetricsRegressionGLMV3
 water.api.schemas3.ModelMetricsRegressionGLMGenericV3
 water.api.schemas3.ModelMetricsRegressionV3
