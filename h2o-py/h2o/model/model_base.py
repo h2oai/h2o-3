@@ -6,6 +6,7 @@ import traceback
 import warnings
 
 import h2o
+from h2o.base import Keyed
 from h2o.exceptions import H2OValueError
 from h2o.job import H2OJob
 from h2o.utils.backward_compatibility import backwards_compatible
@@ -15,7 +16,7 @@ from h2o.utils.shared_utils import can_use_pandas
 from h2o.utils.typechecks import I, assert_is_type, assert_satisfies, Enum, is_type
 
 
-class ModelBase(backwards_compatible()):
+class ModelBase(backwards_compatible(Keyed)):
     """Base class for all models."""
 
     def __init__(self):
@@ -37,6 +38,10 @@ class ModelBase(backwards_compatible()):
         self._end_time = None
         self._run_time = None
 
+
+    @property
+    def key(self):
+        return self._id
 
     @property
     def model_id(self):
@@ -256,6 +261,10 @@ class ModelBase(backwards_compatible()):
         :returns: A list of models.
         """
         return self.get_xval_models()
+
+
+    def detach(self):
+        self._id = None
 
 
     def deepfeatures(self, test_data, layer):
@@ -980,7 +989,6 @@ class ModelBase(backwards_compatible()):
         :param row_index: Row for which partial dependence will be calculated instead of the whole input frame.
         :returns: Plot and list of calculated mean response tables for each feature requested.
         """
-
         if not isinstance(data, h2o.H2OFrame): raise ValueError("data must be an instance of H2OFrame")
         num_1dpdp = 0
         num_2dpdp = 0
@@ -1036,62 +1044,70 @@ class ModelBase(backwards_compatible()):
         kwargs["row_index"] = row_index
         kwargs["col_pairs_2dpdp"] = col_pairs_2dpdp
 
-        # extract user defined split points from dict user_splits into an integer array of column indices
-        # and a double array of user define values for the corresponding columns
-        if not(user_splits == None):
-            if not(isinstance(user_splits, dict)):
-                raise H2OValueError("user_splits must be a Python dict.")
-            else:
-                if len(user_splits)>0: # do nothing with an empty dict
-                    user_cols = []
-                    user_values = []
-                    user_num_splits = []
-                    data_ncol = data.ncol
-                    column_names = data.names
-                    for colKey,val in user_splits.items():
-                        if is_type(colKey, str) and colKey in column_names:
-                            user_cols.append(colKey)
-                        elif isinstance(colKey, int) and colKey < data_ncol:
-                            user_cols.append(column_names[colKey])
-                        else:
-                            raise H2OValueError("column names/indices used in user_splits are not valid.  They "
-                                                "should be chosen from the columns of your data set.")
-
-                        if data[colKey].isfactor()[0] or data[colKey].isnumeric()[0]: # replace enum string with actual value
-                            nVal = len(val)
-                            if data[colKey].isfactor()[0]:
-                                domains = data[colKey].levels()[0]
-
-                                numVal = [0]*nVal
-                                for ind in range(nVal):
-                                    if (val[ind] in domains):
-                                        numVal[ind] = domains.index(val[ind])
-                                    else:
-                                        raise H2OValueError("Illegal enum value {0} encountered.  To include missing"
-                                                        " values in your feature values, set include_na to "
-                                                        "True".format(val[ind]))
-
-                                user_values.extend(numVal)
-                            else:
-                                user_values.extend(val)
-                            user_num_splits.append(nVal)
-                        else:
-                            raise H2OValueError("Partial dependency plots are generated for numerical and categorical "
-                                                "columns only.")
-                    kwargs["user_cols"] = user_cols
-                    kwargs["user_splits"] = user_values
-                    kwargs["num_user_splits"] = user_num_splits
-                else:
-                    kwargs["user_cols"] = None
-                    kwargs["user_splits"] = None
-                    kwargs["num_user_splits"] = None
-
+        self.__generate_user_splits(user_splits, data, kwargs)
         json = H2OJob(h2o.api("POST /3/PartialDependence/", data=kwargs),  job_type="PartialDependencePlot").poll()
         json = h2o.api("GET /3/PartialDependence/%s" % json.dest_key)
 
         # Extract partial dependence data from json response
         pps = json["partial_dependence_data"]
 
+        # Plot partial dependence plots using matplotlib
+        self.__generate_partial_plots(num_1dpdp, num_2dpdp, plot, server, pps, figsize, col_pairs_2dpdp, data, nbins,
+                                      kwargs["user_cols"], kwargs["num_user_splits"], plot_stddev, cols, save_to_file)
+        return pps
+
+    def __generate_user_splits(self, user_splits, data, kwargs):
+        # extract user defined split points from dict user_splits into an integer array of column indices
+        # and a double array of user define values for the corresponding columns
+        if not(user_splits == None) and (len(user_splits) > 0):
+            if not(isinstance(user_splits, dict)):
+                raise H2OValueError("user_splits must be a Python dict.")
+            else:
+                user_cols = []
+                user_values = []
+                user_num_splits = []
+                data_ncol = data.ncol
+                column_names = data.names
+                for colKey,val in user_splits.items():
+                    if is_type(colKey, str) and colKey in column_names:
+                        user_cols.append(colKey)
+                    elif isinstance(colKey, int) and colKey < data_ncol:
+                        user_cols.append(column_names[colKey])
+                    else:
+                        raise H2OValueError("column names/indices used in user_splits are not valid.  They "
+                                                "should be chosen from the columns of your data set.")
+
+                    if data[colKey].isfactor()[0] or data[colKey].isnumeric()[0]: # replace enum string with actual value
+                        nVal = len(val)
+                        if data[colKey].isfactor()[0]:
+                            domains = data[colKey].levels()[0]
+
+                            numVal = [0]*nVal
+                            for ind in range(nVal):
+                                if (val[ind] in domains):
+                                    numVal[ind] = domains.index(val[ind])
+                                else:
+                                    raise H2OValueError("Illegal enum value {0} encountered.  To include missing"
+                                                            " values in your feature values, set include_na to "
+                                                            "True".format(val[ind]))
+
+                            user_values.extend(numVal)
+                        else:
+                            user_values.extend(val)
+                        user_num_splits.append(nVal)
+                    else:
+                        raise H2OValueError("Partial dependency plots are generated for numerical and categorical "
+                                                "columns only.")
+                kwargs["user_cols"] = user_cols
+                kwargs["user_splits"] = user_values
+                kwargs["num_user_splits"] = user_num_splits
+        else:
+            kwargs["user_cols"] = None
+            kwargs["user_splits"] = None
+            kwargs["num_user_splits"] = None
+
+    def __generate_partial_plots(self, num_1dpdp, num_2dpdp, plot, server, pps, figsize, col_pairs_2dpdp, data, nbins,
+                                 user_cols, user_num_splits, plot_stddev, cols, save_to_file):
         # Plot partial dependence plots using matplotlib
         totFig = num_1dpdp+num_2dpdp
         if plot and totFig>0:     # plot 1d pdp for now
@@ -1103,48 +1119,58 @@ class ModelBase(backwards_compatible()):
             if num_2dpdp>0: # 2d pdp requested
                 axes3D = _get_mplot3d_pyplot("2D partial plots")
                 cm = _get_matplotlib_cm("2D partial plots")
-
+            figPlotted = False  # indicated number of figures plotted
             for i, pp in enumerate(pps):
                 if (i >= num_1dpdp): # plot 2D pdp
                     if (axes3D==None) or (cm==None) or (plt==None):    # quit if cannot find toolbox
                         break
-                    ax = fig.add_subplot(gxs[i], projection='3d')
-                    colPairs = col_pairs_2dpdp[i-num_1dpdp]
-                    x = self.__grabValues(pp, 0, data, colPairs[0], ax) # change to numpy 2d_array
-                    y = self.__grabValues(pp, 1, data, colPairs[1], ax)
-                    X,Y,Z = self.__predFor3D(x,y,pp[2], colPairs, nbins, user_cols, user_num_splits)
-
-                    zupper = [a + b for a, b in zip(pp[2], pp[3]) ]  # pp[1] is mean, pp[2] is std
-                    zlower = [a - b for a, b in zip(pp[2], pp[3]) ]
-                    _,_,Zupper = self.__predFor3D(x,y,zupper, colPairs, nbins, user_cols, user_num_splits)
-                    _,_,Zlower = self.__predFor3D(x,y,zlower, colPairs, nbins, user_cols, user_num_splits)
-                    ax.plot_surface(X, Y, Z, cmap=cm.coolwarm,linewidth=1, antialiased=False, alpha=0.5, edgecolor='k')
-                    if plot_stddev:
-                        ax.plot_surface(X, Y, Zupper, cmap=cm.coolwarm,linewidth=0.2, antialiased=False, alpha=0.3, edgecolor='y')
-                        ax.plot_surface(X, Y, Zlower, cmap=cm.coolwarm,linewidth=0.2, antialiased=False, alpha=0.3, edgecolor='g')
-                    ax.set_xlabel(colPairs[0])
-                    ax.set_xlim(min(x), max(x))
-                    ax.set_ylabel(colPairs[1])
-                    ax.set_ylim(min(y), max(y))
-                    ax.set_zlim(min([min(zupper), min(zlower), min(pp[2])]), max([max(zupper), max(zlower), max(pp[2])]))
-                    ax.set_zlabel('Partial dependence')
-                    titles = '2D partial dependence plot for '+colPairs[0] + ' and '+colPairs[1]
-                    ax.set_title(titles)
+                    figPlotted = self.__plot_2dpdp(fig, col_pairs_2dpdp, gxs, num_1dpdp, data, pp, nbins, user_cols,
+                                                   user_num_splits, plot_stddev, cm, i)
                 else:  # plot 1D pdp
-                    col = cols[i]
-                    cat = data[col].isfactor()[0]
-                    upper = [a + b for a, b in zip(pp[1], pp[2]) ]  # pp[1] is mean, pp[2] is std
-                    lower = [a - b for a, b in zip(pp[1], pp[2]) ]
-                    axs = fig.add_subplot(gxs[i])
-                    self.__setAxs1D(axs, upper, lower, plot_stddev, cat, pp, 0, col)  # setup graph, axis, labels and ...
+                    figPlotted = self.__plot_1dpdp(cols, i, data, pp, fig, gxs, plot_stddev)
 
-            if totFig > 1:
+            if figPlotted:
                 fig.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
-            if(save_to_file is not None):
+            else:
+                print("No partial plot is generated and/or saved.  You may be missing toolboxes like "
+                      "mpl_toolkits.mplot3d, matplotlib")
+            if (save_to_file is not None) and figPlotted: # only save when a figure is actually plotted
                 plt.savefig(save_to_file)
 
-        return pps
+    def __plot_2dpdp(self, fig, col_pairs_2dpdp, gxs, num_1dpdp, data, pp, nbins, user_cols, user_num_splits, plot_stddev, cm, i):
+        ax = fig.add_subplot(gxs[i], projection='3d')
+        colPairs = col_pairs_2dpdp[i-num_1dpdp]
+        x = self.__grabValues(pp, 0, data, colPairs[0], ax) # change to numpy 2d_array
+        y = self.__grabValues(pp, 1, data, colPairs[1], ax)
+        X,Y,Z = self.__predFor3D(x,y,pp[2], colPairs, nbins, user_cols, user_num_splits)
+
+        zupper = [a + b for a, b in zip(pp[2], pp[3]) ]  # pp[1] is mean, pp[2] is std
+        zlower = [a - b for a, b in zip(pp[2], pp[3]) ]
+        _,_,Zupper = self.__predFor3D(x,y,zupper, colPairs, nbins, user_cols, user_num_splits)
+        _,_,Zlower = self.__predFor3D(x,y,zlower, colPairs, nbins, user_cols, user_num_splits)
+        ax.plot_surface(X, Y, Z, cmap=cm.coolwarm,linewidth=1, antialiased=False, alpha=0.5, edgecolor='k')
+        if plot_stddev:
+            ax.plot_surface(X, Y, Zupper, cmap=cm.coolwarm,linewidth=0.2, antialiased=False, alpha=0.3, edgecolor='y')
+            ax.plot_surface(X, Y, Zlower, cmap=cm.coolwarm,linewidth=0.2, antialiased=False, alpha=0.3, edgecolor='g')
+        ax.set_xlabel(colPairs[0])
+        ax.set_xlim(min(x), max(x))
+        ax.set_ylabel(colPairs[1])
+        ax.set_ylim(min(y), max(y))
+        ax.set_zlim(min([min(zupper), min(zlower), min(pp[2])]), max([max(zupper), max(zlower), max(pp[2])]))
+        ax.set_zlabel('Partial dependence')
+        titles = '2D partial dependence plot for '+colPairs[0] + ' and '+colPairs[1]
+        ax.set_title(titles)
+        return True
     
+    def __plot_1dpdp(self, cols, i, data, pp, fig, gxs, plot_stddev):
+        col = cols[i]
+        cat = data[col].isfactor()[0]
+        upper = [a + b for a, b in zip(pp[1], pp[2]) ]  # pp[1] is mean, pp[2] is std
+        lower = [a - b for a, b in zip(pp[1], pp[2]) ]
+        axs = fig.add_subplot(gxs[i])
+        self.__setAxs1D(axs, upper, lower, plot_stddev, cat, pp, 0, col)  # setup graph, axis, labels and ...
+        return True
+        
     # change x, y, z to be 2-D numpy arrays in order to plot it.
     # note that, x stays at one value for the duration of y value changes.
     def __predFor3D(self, x, y, z, colPairs, nbins, user_cols, user_num_splits):

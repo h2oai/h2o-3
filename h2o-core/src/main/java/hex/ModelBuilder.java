@@ -317,12 +317,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
                         @Override
                         public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
                           Log.warn("Model training job "+_job._description+" completed with exception: "+ex);
-                          if (_job._result != null) {
-                            try {
-                              _job._result.remove(); //ensure there's no incomplete model left for manipulation after crash or cancellation
-                            } catch (Exception logged) {
-                              Log.warn("Exception thrown when removing result from job "+ _job._description, logged);
-                            }
+                          try {
+                            Keyed.remove(_job._result); //ensure there's no incomplete model left for manipulation after crash or cancellation
+                          } catch (Exception logged) {
+                            Log.warn("Exception thrown when removing result from job "+ _job._description, logged);
                           }
                           return true;
                         }
@@ -474,7 +472,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           DKV.remove(mb._parms._train, fs);
           DKV.remove(mb._parms._valid, fs);
           DKV.remove(Key.make(mb.getPredictionKey()), fs);
-          mb._result.remove(fs);
+          Keyed.remove(mb._result, fs, true);
         }
         fs.blockForPending();
       }
@@ -1356,13 +1354,16 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.deviance && !getClass().getSimpleName().contains("GLM")) {
           error("_stopping_metric", "Stopping metric cannot be deviance for classification.");
         }
-        if (nclasses()!=2 && _parms._stopping_metric == ScoreKeeper.StoppingMetric.AUC) {
-          error("_stopping_metric", "Stopping metric cannot be AUC for multinomial classification.");
+        if (nclasses()!=2 && (_parms._stopping_metric == ScoreKeeper.StoppingMetric.AUC || _parms._stopping_metric
+                == ScoreKeeper.StoppingMetric.AUCPR)) {
+          error("_stopping_metric", "Stopping metric cannot be AUC or AUCPR for multinomial " +
+                  "classification.");
         }
       } else {
         if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.misclassification ||
                 _parms._stopping_metric == ScoreKeeper.StoppingMetric.AUC ||
-                _parms._stopping_metric == ScoreKeeper.StoppingMetric.logloss)
+                _parms._stopping_metric == ScoreKeeper.StoppingMetric.logloss || _parms._stopping_metric
+                == ScoreKeeper.StoppingMetric.AUCPR)
         {
           error("_stopping_metric", "Stopping metric cannot be " + _parms._stopping_metric.toString() + " for regression.");
         }

@@ -84,6 +84,10 @@ class TargetEncoder(object):
         Returns encoding map as an object that maps 'column_name' -> 'frame_with_encoding_map_for_this_column_name'
 
         :param frame frame: An H2OFrame object with which to create the target encoding map
+
+        :examples:
+        >>> targetEncoder = TargetEncoder(x=te_columns, y=responseColumnName, blended_avg=True, inflection_point=10, smoothing=20)
+        >>> targetEncoder.fit(trainFrame) 
         """
         self._teColumns = list(map(lambda i: frame.names[i], self._teColumns)) if all(isinstance(n, int) for n in self._teColumns) else self._teColumns
         self._responseColumnName = frame.names[self._responseColumnName] if isinstance(self._responseColumnName, int) else self._responseColumnName
@@ -109,6 +113,10 @@ class TargetEncoder(object):
                 
         :param float noise: the amount of random noise added to the target encoding.  This helps prevent overfitting. Defaults to 0.01 * range of y.
         :param int seed: a random seed used to generate draws from the uniform distribution for random noise. Defaults to -1.
+
+        :example:
+        >>> targetEncoder = TargetEncoder(x=te_columns, y=responseColumnName, blended_avg=True, inflection_point=10, smoothing=20)
+        >>> encodedTrain = targetEncoder.transform(frame=trainFrame, holdout_type="kfold", seed=1234, is_train_or_valid=True)
         """
         assert_is_type(holdout_type, "kfold", "loo", "none")
         

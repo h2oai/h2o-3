@@ -271,6 +271,7 @@ Defining a GBM Model
 
 -  **verbose**: Print scoring history to the console. For GBM, metrics are per tree. This value defaults to FALSE.
 
+-  `upload_custom_distribution <algo-params/upload_custom_distribution.html>`__: Upload a custom distribution into a running H2O cluster.
 
 Interpreting a GBM Model
 ~~~~~~~~~~~~~~~~~~~~~~~~

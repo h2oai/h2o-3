@@ -7,7 +7,6 @@ import water.exceptions.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
-import water.util.PrettyPrint;
 
 import java.util.*;
 
@@ -290,7 +289,7 @@ public class FramesHandler<I extends FramesHandler.Frames, S extends SchemaV3<I,
     Futures fs = new Futures();
     for (Key key : keys) {
       try {
-        getFromDKV("(none)", key).delete(null, fs);
+        getFromDKV("(none)", key).delete(null, fs, true);
       } catch (IllegalArgumentException iae) {
         missing.add(key.toString());
       }

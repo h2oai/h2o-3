@@ -99,7 +99,7 @@ public class FrameSplitter extends H2OCountedCompleter<FrameSplitter> {
     if (splits!=null)
       for (Frame s : splits)
         if (s!=null)
-          s.unlock(jobKey).delete(jobKey,fs);
+          s.unlock(jobKey).delete(jobKey,fs, true);
     fs.blockForPending();
     return true;
   }

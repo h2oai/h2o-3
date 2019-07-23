@@ -16,6 +16,7 @@ import hex.tree.SharedTreeModel;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import water.*;
 import water.api.StreamingSchema;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
@@ -29,7 +30,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
-import org.junit.runners.Parameterized;
 
 import static hex.genmodel.utils.DistributionFamily.*;
 import static org.junit.Assert.*;
@@ -3399,7 +3399,7 @@ public class GBMTest extends TestUtil {
       GBMModel.GBMParameters params = new GBMModel.GBMParameters();
       params._response_column = "CAPSULE";
       params._ignored_columns = new String[]{"ID"};
-      params._seed = 1234;
+      params._seed = 5;
       params._ntrees = 500;
       params._nfolds = 3;
       params._learn_rate = 0.01;

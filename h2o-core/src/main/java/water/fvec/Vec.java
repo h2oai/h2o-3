@@ -940,7 +940,7 @@ public class Vec extends Keyed<Vec> {
 
   /**
    * Marks the Vec as mutating. Vec needs to be marked as mutating whenever
-   * it is modified ({@link #preWriting()}) or removed ({@link #remove_impl(Futures)}).
+   * it is modified ({@link #preWriting()}) or removed ({@link Keyed#remove_impl(Futures, boolean)}).
    */
   private static void setMutating(Key rskey) {
     Value val = DKV.get(rskey);
@@ -1328,7 +1328,7 @@ public class Vec extends Keyed<Vec> {
   /** Remove associated Keys when this guy removes.  For Vecs, remove all
    *  associated Chunks.
    *  @return Passed in Futures for flow-coding  */
-  @Override public Futures remove_impl( Futures fs ) {
+  @Override public Futures remove_impl(Futures fs, boolean cascade) {
     bulk_remove(new Key[]{_key}, nChunks());
     return fs;
   }
@@ -1586,7 +1586,7 @@ public class Vec extends Keyed<Vec> {
     @Override protected long checksum_impl() { throw H2O.fail(); }
     // Fail to remove a VectorGroup unless you also remove all related Vecs,
     // Chunks, Rollups (and any Frame that uses them), etc.
-    @Override protected Futures remove_impl( Futures fs ) { throw H2O.fail(); }
+    @Override protected Futures remove_impl(Futures fs, boolean cascade) { throw H2O.fail(); }
     /** Write out K/V pairs */
     @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) { throw H2O.fail(); }
     @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) { throw H2O.unimpl(); }

@@ -10,11 +10,15 @@ import water.Keyed;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.rapids.vals.ValFrame;
+import water.Scope;
+import water.util.Log;
 
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class GroupByTest extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void testBasic() {
     Frame fr = null;
@@ -256,8 +260,40 @@ public class GroupByTest extends TestUtil {
 
     ids.delete();
     Keyed.remove(Key.make("cov"));
-  }    
+  }
+  
+  @Test
+  @Ignore // demonstrates issue PUBDEV-6319 - yet to be fixed
+  public void testPubDev6319() {
+    Scope.enter();
+    try {
+      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      Scope.track(fr);
 
+      String aggregateColumn = "survived";
+      String groupByColumn = "home.dest";
+
+      String rapidEx = String.format("(GB %s [%d]  sum %s \"all\" nrow %s \"all\")", fr._key,
+              fr.find(groupByColumn), fr.find(aggregateColumn), fr.find(aggregateColumn));
+      Frame expected = Rapids.exec(rapidEx).getFrame();
+      Scope.track(expected);
+
+      for (int attempt = 0; attempt < 200; attempt++) {
+        Log.info("Running attempt: " + attempt);
+        Val val = Rapids.exec(rapidEx);
+        Frame groupedFrame = val.getFrame();
+        Scope.track(groupedFrame);
+
+        assertArrayEquals(expected.vec(0).domain(), expected.vec(0).domain());
+        assertCatVecEquals(expected.vec(0), groupedFrame.vec(0));
+
+        assertVecEquals(expected.vec(1), groupedFrame.vec(1), 0); // sum
+        assertVecEquals(expected.vec(2), groupedFrame.vec(2), 0); // nrow
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
 
   private void chkDim( Frame fr, int col, int row ) {
     Assert.assertEquals(col,fr.numCols());

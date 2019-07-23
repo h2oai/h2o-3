@@ -569,7 +569,7 @@ public abstract class SharedTreeModel<
     M newModel = IcedUtils.deepCopy(self());
     newModel._key = result;
     // Do not clone model metrics
-    newModel._output.clearModelMetrics();
+    newModel._output.clearModelMetrics(false);
     newModel._output._training_metrics = null;
     newModel._output._validation_metrics = null;
     // Clone trees
@@ -599,16 +599,16 @@ public abstract class SharedTreeModel<
     return newModel;
   }
 
-  @Override protected Futures remove_impl( Futures fs ) {
+  @Override protected Futures remove_impl(Futures fs, boolean cascade) {
     for (Key[] ks : _output._treeKeys)
       for (Key k : ks)
-        if( k != null ) k.remove(fs);
+        Keyed.remove(k, fs, true);
     for (Key[] ks : _output._treeKeysAux)
       for (Key k : ks)
-        if( k != null ) k.remove(fs);
+        Keyed.remove(k, fs, true);
     if (_output._calib_model != null)
       _output._calib_model.remove(fs);
-    return super.remove_impl(fs);
+    return super.remove_impl(fs, cascade);
   }
 
   /** Write out K/V pairs */

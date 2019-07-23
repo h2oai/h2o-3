@@ -1,5 +1,6 @@
 package hex.genmodel;
 
+import hex.genmodel.descriptor.ModelDescriptor;
 import hex.genmodel.utils.StringEscapeUtils;
 
 import java.io.IOException;

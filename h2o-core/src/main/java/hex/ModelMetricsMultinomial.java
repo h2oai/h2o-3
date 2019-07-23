@@ -17,7 +17,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
   public final float[] _hit_ratios;         // Hit ratios
   public final ConfusionMatrix _cm;
   public final double _logloss;
-  public final double _mean_per_class_error;
+  public double _mean_per_class_error;
 
   public ModelMetricsMultinomial(Model model, Frame frame, long nobs, double mse, String[] domain, double sigma, ConfusionMatrix cm, float[] hr, double logloss, CustomMetric customMetric) {
     super(model, frame, nobs, mse, domain, sigma, customMetric);

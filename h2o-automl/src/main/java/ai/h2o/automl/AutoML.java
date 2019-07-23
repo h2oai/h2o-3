@@ -293,7 +293,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       String sort_metric = buildSpec.input_spec.sort_metric == null ? null : buildSpec.input_spec.sort_metric.toLowerCase();
       leaderboard = Leaderboard.getOrMake(projectName(), eventLog, this.leaderboardFrame, sort_metric);
     } catch (Exception e) {
-      deleteWithChildren(); //cleanup potentially leaked keys
+      delete(); //cleanup potentially leaked keys
       throw e;
     }
   }
@@ -403,11 +403,17 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return DKV.getGet(this.job._key);
   }
 
-  public Leaderboard leaderboard() { return (leaderboard == null ? null : leaderboard._key.get()); }
+  public Model leader() {
+    return leaderboard() == null ? null : leaderboard.getLeader();
+  }
 
-  public Model leader() { return (leaderboard() == null ? null : leaderboard().getLeader()); }
+  public Leaderboard leaderboard() {
+    return leaderboard == null ? null : (leaderboard = leaderboard._key.get());
+  }
 
-  public EventLog eventLog() { return eventLog == null ? null : eventLog._key.get(); }
+  public EventLog eventLog() {
+    return eventLog == null ? null : (eventLog = eventLog._key.get());
+  }
 
   public String projectName() {
     return buildSpec == null ? null : buildSpec.project();
@@ -1335,34 +1341,30 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
    * Delete the AutoML-related objects, but leave the grids and models that it built.
    */
   @Override
-  protected Futures remove_impl(Futures fs) {
-    if (trainingFrame != null && origTrainingFrame != null)
-      Frame.deleteTempFrameAndItsNonSharedVecs(trainingFrame, origTrainingFrame);
-    if (leaderboard != null) leaderboard.remove(fs);
-    if (eventLog != null) eventLog.remove(fs);
-    return super.remove_impl(fs);
-  }
-
-  /**
-   * Same as delete() but also deletes all Objects made from this instance.
-   */
-  void deleteWithChildren() {
-    if (leaderboard != null) leaderboard.deleteWithChildren();
-
-    if (gridKeys != null)
-      for (Key<Grid> gridKey : gridKeys) gridKey.remove();
-
+  protected Futures remove_impl(Futures fs, boolean cascade) {
+    Key<Job> jobKey = job == null ? null : job._key;
+    Log.debug("Cleaning up AutoML "+jobKey);
     // If the Frame was made here (e.g. buildspec contained a path, then it will be deleted
     if (buildSpec.input_spec.training_frame == null && origTrainingFrame != null) {
-      origTrainingFrame.delete();
+      origTrainingFrame.delete(jobKey, fs, true);
     }
     if (buildSpec.input_spec.validation_frame == null && validationFrame != null) {
-      validationFrame.delete();
+      validationFrame.delete(jobKey, fs, true);
     }
     if (buildSpec.input_spec.leaderboard_frame == null && leaderboardFrame != null) {
-      leaderboardFrame.delete();
+      leaderboardFrame.delete(jobKey, fs, true);
     }
-    delete();
+
+    if (trainingFrame != null && origTrainingFrame != null)
+      Frame.deleteTempFrameAndItsNonSharedVecs(trainingFrame, origTrainingFrame);
+    if (leaderboard() != null) leaderboard().remove(fs, cascade);
+    if (eventLog() != null) eventLog().remove(fs, cascade);
+
+    // grid should be removed after leaderboard cleanup
+    if (gridKeys != null)
+      for (Key<Grid> gridKey : gridKeys) Keyed.remove(gridKey, fs, true);
+
+    return super.remove_impl(fs, cascade);
   }
 
   // If we have multiple AutoML engines running on the same project they will be updating the Leaderboard concurrently,

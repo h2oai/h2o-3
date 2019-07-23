@@ -61,14 +61,11 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
       reimportedFrame = parse_test_file(Key.make("parsed"), tmpName, true);
       printOutFrameAsTable(reimportedFrame);
 
-      printOutColumnsMeta(fr);
-      printOutColumnsMeta(reimportedFrame);
-
       String[] teColumns = {teColumnName};
       TargetEncoder tec = new TargetEncoder(teColumns);
       targetEncodingMap = tec.prepareEncodingMap(reimportedFrame, targetColumnName, null);
 
-      result = tec.calculateAndAppendBlendedTEEncoding(reimportedFrame, targetEncodingMap.get(teColumnName), targetColumnName, "targetEncoded");
+      result = tec.calculateAndAppendBlendedTEEncoding(reimportedFrame, targetEncodingMap.get(teColumnName), targetColumnName);
 
       double globalMean = 2.0 / 3;
 
@@ -149,8 +146,6 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
     String[] teColumns = {teColumnName};
     TargetEncoder tec = new TargetEncoder(teColumns);
 
-    printOutColumnsMeta(fr);
-
     Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, null);
 
     Frame resultWithEncodings = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, false,0.0, true, 1234);
@@ -178,8 +173,6 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
 
     String[] teColumns = {teColumnName};
     TargetEncoder tec = new TargetEncoder(teColumns);
-
-    printOutColumnsMeta(fr);
 
     Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, null);
 
@@ -473,22 +466,6 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
   private void encodingMapCleanUp(Map<String, Frame> encodingMap) {
     for (Map.Entry<String, Frame> map : encodingMap.entrySet()) {
       map.getValue().delete();
-    }
-  }
-
-  private void printOutFrameAsTable(Frame fr) {
-
-    TwoDimTable twoDimTable = fr.toTwoDimTable();
-    System.out.println(twoDimTable.toString(2, false));
-  }
-
-
-  private void printOutColumnsMeta(Frame fr) {
-    for (String header : fr.toTwoDimTable().getColHeaders()) {
-      String type = fr.vec(header).get_type_str();
-      int cardinality = fr.vec(header).cardinality();
-      System.out.println(header + " - " + type + String.format("; Cardinality = %d", cardinality));
-
     }
   }
 }

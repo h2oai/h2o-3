@@ -360,13 +360,17 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
     return make(Arrays.copyOf(ab.buf(),ab.position()),rf);
   }
 
-  /** Remove a Key from the DKV, including any embedded Keys.
+  /**
+   * Remove a Key from the DKV, including any embedded Keys.
+   * @deprecated use {@link Keyed#remove(Key)} instead. Will be removed from version 3.30.
    */
-  public void remove() { remove(new Futures()).blockForPending(); }
+  public void remove() { Keyed.remove(this); }
+
+  /**
+   * @deprecated use {@link Keyed#remove(Key, Futures)} instead. Will be removed from version 3.30.
+   */
   public Futures remove(Futures fs) {
-    Value val = DKV.get(this);
-    if( val!=null ) ((Keyed)val.get()).remove(fs);
-    return fs;
+    return Keyed.remove(this, fs, true);
   }
 
   /** True if a {@link #USER_KEY} and not a system key.

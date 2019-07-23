@@ -18,10 +18,8 @@ import warnings
 from io import StringIO
 from types import FunctionType
 
-import requests
-import math
-
 import h2o
+from h2o.base import Keyed
 from h2o.display import H2ODisplay
 from h2o.exceptions import H2OTypeError, H2OValueError
 from h2o.expr import ExprNode
@@ -39,7 +37,7 @@ from h2o.utils.typechecks import (assert_is_type, assert_satisfies, Enum, I, is_
 __all__ = ("H2OFrame", )
 
 
-class H2OFrame(object):
+class H2OFrame(Keyed):
     """
     Primary data store for H2O.
 
@@ -54,11 +52,11 @@ class H2OFrame(object):
         - None: create an empty H2OFrame
         - A list/tuple of strings or numbers: create a single-column H2OFrame containing the contents of this list.
         - A dictionary of ``{name: list}`` pairs: create an H2OFrame with multiple columns, each column having the
-            provided ``name`` and contents from ``list``. If the source dictionary is not an OrderedDict, then the
-            columns in the H2OFrame may appear shuffled.
+          provided ``name`` and contents from ``list``. If the source dictionary is not an OrderedDict, then the
+          columns in the H2OFrame may appear shuffled.
         - A list of lists of strings/numbers: construct an H2OFrame from a rectangular table of values, with inner
-            lists treated as rows of the table. I.e. ``H2OFrame([[1, 'a'], [2, 'b'], [3, 'c']])`` will create a
-            frame with 3 rows and 2 columns, one numeric and one string.
+          lists treated as rows of the table. I.e. ``H2OFrame([[1, 'a'], [2, 'b'], [3, 'c']])`` will create a
+          frame with 3 rows and 2 columns, one numeric and one string.
         - A Pandas dataframe, or a Numpy ndarray: create a matching H2OFrame.
         - A Scipy sparse matrix: create a matching sparse H2OFrame.
 
@@ -75,6 +73,11 @@ class H2OFrame(object):
         be given on a per-column basis, either as a list-of-lists, or as a dictionary {column name: list of nas}.
     :param str destination_frame: (internal) name of the target DKV key in the H2O backend.
     :param str separator: (deprecated)
+
+    :example:
+    >>> python_obj = [1, 2, 2.5, -100.9, 0]
+    >>> frame = h2o.H2OFrame(python_obj)
+    >>> pyunit_utils.check_dims_values(python_obj, the_frame, rows=5, cols=1)
     """
 
     # Temp flag: set this to false for now if encountering path conversion/expansion issues when import files to remote server
@@ -235,6 +238,11 @@ class H2OFrame(object):
     #-------------------------------------------------------------------------------------------------------------------
     # Frame properties
     #-------------------------------------------------------------------------------------------------------------------
+
+    @property
+    def key(self):
+        return None if self._ex is None else self._ex._cache._id
+
 
     @property
     def names(self):
@@ -518,6 +526,9 @@ class H2OFrame(object):
                 res["distribution_summary"].show()
             print("\n")
         self.summary()
+
+    def detach(self):
+        self._ex = None
 
 
     def _frame(self, rows=10, rows_offset=0, cols=-1, cols_offset=0, fill_cache=False):

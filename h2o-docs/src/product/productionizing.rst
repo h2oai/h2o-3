@@ -210,6 +210,26 @@ Resource     Location
 Web sites    http://www.h2o.ai/steam/
 =========    ==================================================================================================
 
+Scoring Server on AWS
+~~~~~~~~~~~~~~~~~~~~~
+
+You can deploy a RESTful server on AWS using the marketplace AMI (H2O Inference server - Hourly). Notice that this is a paid AMI. 
+
+Transfer the MOJO file into the /tmp folder of this instance before launching. If your MOJO is in S3, assign a role that provides S3 access to the instance. 
+
+Run following bash script as "userdata" to transfer your MOJO into the instance before you launch the instance. Be sure you change the ``mojofile`` path below.
+
+.. code::
+
+   #!/bin/bash
+   export mojofile="s3://yourbucket/yourmojo.zip"
+   aws s3 cp $mojo /tmp/pipeline.mojo
+
+After this instance has launched, you can make real time inference using the following command. Remember to change the IP address. Input data is provided through the ``row`` parameter in the URL.
+
+.. code::
+
+   curl "http://<yourIP>:8080/model?type=1&row=2000,2000"
 
 Additional Resources
 --------------------

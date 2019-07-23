@@ -537,17 +537,188 @@ Supported Grid Search Hyperparameters
 
 The following hyperparameters are supported by grid search.
 
+Aggregator Hyperparameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  ``k``
+-  ``max_iterations``
+-  ``pca_method``
+-  ``radius_scale``
+-  ``transform``
+
+AutoML Hyperparameters
+~~~~~~~~~~~~~~~~~~~~~~
+
+- ``keep_cross_validation_models``
+
 Common Hyperparameters
 ~~~~~~~~~~~~~~~~~~~~~~
 
--  ``weights_column``
--  ``offset_column``
--  ``fold_column``
 -  ``fold_assignment``
--  ``stopping_rounds``
+-  ``fold_column``
 -  ``max_runtime_secs``
+-  ``offset_column``
 -  ``stopping_metric``
+-  ``stopping_rounds``
 -  ``stopping_tolerance``
+-  ``weights_column``
+
+Deep Learning Hyperparameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  ``activation``
+-  ``adaptive_rate``
+-  ``average_activation``
+-  ``balance_classes``
+-  ``categorical_encoding``
+-  ``classification_stop``
+-  ``class_sampling_factors``
+-  ``col_major``
+-  ``distribution``
+-  ``elastic_averaging_moving_rate``
+-  ``elastic_averaging_regularization``
+-  ``elastic_averaging``
+-  ``epochs``
+-  ``epsilon``
+-  ``fast_mode``
+-  ``force_load_balance``
+-  ``hidden_dropout_ratios``
+-  ``hidden``
+-  ``initial_biases``
+-  ``initial_weights``
+-  ``initial_weight_distribution``
+-  ``initial_weight_scale``
+-  ``input_dropout_ratio``
+-  ``l1``
+-  ``l2``
+-  ``loss``
+-  ``max_after_balance_size``
+-  ``max_categorical_features``
+-  ``max_w2``
+-  ``missing_values_handling``
+-  ``momentum_ramp``
+-  ``momentum_stable``
+-  ``momentum_start``
+-  ``nesterov_accelerated_gradient``
+-  ``overwrite_with_best_model``
+-  ``quantile_alpha``
+-  ``quiet_mode``
+-  ``rate_annealing``
+-  ``rate_decay``
+-  ``rate``
+-  ``regression_stop``
+-  ``replicate_training_data``
+-  ``reproducible``
+-  ``rho``
+-  ``score_duty_cycle``
+-  ``score_interval``
+-  ``score_training_samples``
+-  ``score_validation_samples``
+-  ``score_validation_sampling``
+-  ``seed``
+-  ``shuffle_training_data``
+-  ``single_node_mode``
+-  ``sparse``
+-  ``sparsity_beta``
+-  ``standardize``
+-  ``target_ratio_comm_to_comp``
+-  ``train_samples_per_iteration``
+-  ``tweedie_power``
+-  ``use_all_factor_levels``
+-  ``variable_importances``
+
+DRF Hyperparameters
+~~~~~~~~~~~~~~~~~~~
+
+-  ``categorical_encoding``
+-  ``mtries``
+
+GBM Hyperparameters
+~~~~~~~~~~~~~~~~~~~
+
+-  ``categorical_encoding``
+-  ``col_sample_rate``
+-  ``distribution``
+-  ``huber_alpha``
+-  ``learn_rate_annealing``
+-  ``learn_rate``
+-  ``max_abs_leafnode_pred``
+-  ``pred_noise_bandwidth``
+-  ``quantile_alpha``
+-  ``tweedie_power``
+
+GLM Hyperparameters
+~~~~~~~~~~~~~~~~~~~
+
+-  ``alpha``
+-  ``lambda``
+-  ``missing_values_handling``
+-  ``seed``
+-  ``standardize``
+-  ``theta``
+-  ``tweedie_link_power``
+-  ``tweedie_variance_power``
+
+GLRM Hyperparameters
+~~~~~~~~~~~~~~~~~~~~
+
+-  ``gamma_x``
+-  ``gamma_y``
+-  ``init_step_size``
+-  ``init``
+-  ``k``
+-  ``loss_by_col``
+-  ``loss``
+-  ``max_iterations``
+-  ``max_updates``
+-  ``min_step_size``
+-  ``multi_loss``
+-  ``period``
+-  ``regularization_x``
+-  ``regularization_y``
+-  ``seed``
+-  ``svd_method``
+-  ``transform``
+
+Isolation Forest Hyperparameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  ``categorical_encoding``
+-  ``max_depth``
+-  ``min_rows``
+-  ``mtries``
+-  ``ntrees``
+-  ``sample_rate``
+-  ``sample_size``
+
+K-Means Hyperparameters
+~~~~~~~~~~~~~~~~~~~~~~~
+
+-  ``categorical_encoding``
+-  ``estimate_k``
+-  ``init``
+-  ``k``
+-  ``max_iterations``
+-  ``seed``
+-  ``standardize``
+
+Naïve Bayes Hyperparameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  ``compute_metrics``
+-  ``eps_prob``
+-  ``eps_sdev``
+-  ``laplace``
+-  ``min_prob``
+-  ``min_sdev``
+-  ``seed``
+
+PCA Hyperparameters
+~~~~~~~~~~~~~~~~~~~
+
+-  ``k``
+-  ``max_iterations``
+-  ``transform``
 
 Shared Tree Hyperparameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -556,228 +727,62 @@ Shared Tree Hyperparameters
 
 -  ``balance_classes``
 -  ``class_sampling_factors``
--  ``max_after_balance_size``
--  ``ntrees``
--  ``max_depth``
--  ``min_rows``
--  ``nbins``
--  ``nbins_top_level``
--  ``nbins_cats``
--  ``seed``
--  ``sample_rate``
--  ``sample_rate_per_class``
--  ``col_sample_rate_per_tree``
 -  ``col_sample_rate_change_per_level``
--  ``min_split_improvement``
+-  ``col_sample_rate_per_tree``
 -  ``histogram_type``
-
-DRF Hyperparameters
-~~~~~~~~~~~~~~~~~~~
-
--  ``mtries``
--  ``categorical_encoding``
-
-GBM Hyperparameters
-~~~~~~~~~~~~~~~~~~~
-
--  ``learn_rate``
--  ``learn_rate_annealing``
--  ``col_sample_rate``
--  ``max_abs_leafnode_pred``
--  ``pred_noise_bandwidth``
--  ``distribution``
--  ``tweedie_power``
--  ``quantile_alpha``
--  ``huber_alpha``
--  ``categorical_encoding``
-
-Isolation Forest Hyperparameters
---------------------------------
-
--  ``mtries``
--  ``ntrees``
+-  ``max_after_balance_size``
 -  ``max_depth``
 -  ``min_rows``
--  ``categorical_encoding``
--  ``sample_size``
+-  ``min_split_improvement``
+-  ``nbins_cats``
+-  ``nbins_top_level``
+-  ``nbins``
+-  ``ntrees``
+-  ``sample_rate_per_class``
 -  ``sample_rate``
-
-K-Means Hyperparameters
-~~~~~~~~~~~~~~~~~~~~~~~
-
--  ``max_iterations``
--  ``standardize``
 -  ``seed``
--  ``init``
--  ``estimate_k``
--  ``k``
--  ``categorical_encoding``
 
-GLM Hyperparameters
+SVM Hyperparameters
 ~~~~~~~~~~~~~~~~~~~
 
+-  ``gamma``
+-  ``hyper_param``
 -  ``seed``
--  ``tweedie_variance_power``
--  ``tweedie_link_power``
--  ``alpha``
--  ``lambda``
--  ``missing_values_handling``
--  ``standardize``
--  ``theta``
-
-GLRM Hyperparameters
-~~~~~~~~~~~~~~~~~~~~
-
--  ``transform``
--  ``k``
--  ``loss``
--  ``multi_loss``
--  ``loss_by_col``
--  ``period``
--  ``regularization_x``
--  ``regularization_y``
--  ``gamma_x``
--  ``gamma_y``
--  ``max_iterations``
--  ``max_updates``
--  ``init_step_size``
--  ``min_step_size``
--  ``seed``
--  ``init``
--  ``svd_method``
-
-Naïve Bayes Hyperparameters
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
--  ``laplace``
--  ``min_sdev``
--  ``eps_sdev``
--  ``min_prob``
--  ``eps_prob``
--  ``compute_metrics``
--  ``seed``
-
-PCA Hyperparameters
-~~~~~~~~~~~~~~~~~~~
-
--  ``transform``
--  ``k``
--  ``max_iterations``
-
-Deep Learning Hyperparameters
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
--  ``balance_classes``
--  ``class_sampling_factors``
--  ``max_after_balance_size``
--  ``activation``
--  ``hidden``
--  ``epochs``
--  ``train_samples_per_iteration``
--  ``target_ratio_comm_to_comp``
--  ``seed``
--  ``adaptive_rate``
--  ``rho``
--  ``epsilon``
--  ``rate``
--  ``rate_annealing``
--  ``rate_decay``
--  ``momentum_start``
--  ``momentum_ramp``
--  ``momentum_stable``
--  ``nesterov_accelerated_gradient``
--  ``input_dropout_ratio``
--  ``hidden_dropout_ratios``
--  ``l1``
--  ``l2``
--  ``max_w2``
--  ``initial_weight_distribution``
--  ``initial_weight_scale``
--  ``initial_weights``
--  ``initial_biases``
--  ``loss``
--  ``distribution``
--  ``tweedie_power``
--  ``quantile_alpha``
--  ``score_interval``
--  ``score_training_samples``
--  ``score_validation_samples``
--  ``score_duty_cycle``
--  ``classification_stop``
--  ``regression_stop``
--  ``quiet_mode``
--  ``score_validation_sampling``
--  ``overwrite_with_best_model``
--  ``use_all_factor_levels``
--  ``standardize``
--  ``variable_importances``
--  ``fast_mode``
--  ``force_load_balance``
--  ``replicate_training_data``
--  ``single_node_mode``
--  ``shuffle_training_data``
--  ``missing_values_handling``
--  ``sparse``
--  ``col_major``
--  ``average_activation``
--  ``sparsity_beta``
--  ``max_categorical_features``
--  ``reproducible``
--  ``elastic_averaging``
--  ``elastic_averaging_moving_rate``
--  ``elastic_averaging_regularization``
--  ``categorical_encoding``
-
-Aggregator Hyperparameters
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
--  ``radius_scale``
--  ``transform``
--  ``pca_method``
--  ``k``
--  ``max_iterations``
 
 XGBoost Hyperparameters
 ~~~~~~~~~~~~~~~~~~~~~~~
 
--  ``ntrees``
--  ``max_depth``
--  ``min_rows``
--  ``seed``
--  ``sample_rate``
--  ``subsample``
--  ``col_sample_rate``
+-  ``booster``
+-  ``categorical_encoding``
 -  ``col_sample_by_level``
 -  ``col_sample_rate_per tree``
+-  ``col_sample_rate``
 -  ``colsample_bytree``
--  ``min_split_improvement``
--  ``gamma``
--  ``learn_rate``
+-  ``distribution``
 -  ``eta``
+-  ``gamma``
+-  ``grow_policy``
+-  ``learn_rate``
 -  ``max_abs_leafnode_pred``
 -  ``max_delta_step``
--  ``distribution``
--  ``tweedie_power``
--  ``categorical_encoding``
--  ``tree_method``
--  ``num_leaves``
--  ``min_sum_hessian_in_leaf``
+-  ``max_depth``
 -  ``min_data_in_leaf``
--  ``grow_policy``
--  ``booster``
--  ``reg_lambda``
--  ``sample_type``
+-  ``min_rows``
+-  ``min_split_improvement``
+-  ``min_sum_hessian_in_leaf``
 -  ``normalize_type``
--  ``rate_drop``
+-  ``ntrees``
+-  ``num_leaves``
 -  ``one_drop``
+-  ``rate_drop``
+-  ``reg_lambda``
+-  ``sample_rate``
+-  ``sample_type``
+-  ``seed``
 -  ``skip_drop``
-
-
-AutoML Hyperparameters
-~~~~~~~~~~~~~~~~~~~~~~
-
-- ``keep_cross_validation_models``
-
+-  ``subsample``
+-  ``tree_method``
+-  ``tweedie_power``
 
 Grid Testing
 ------------

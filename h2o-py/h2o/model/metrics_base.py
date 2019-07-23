@@ -70,9 +70,9 @@ class MetricsBase(backwards_compatible()):
         metric_type = self._metric_json['__meta']['schema_type']
         types_w_glm = ['ModelMetricsRegressionGLM', 'ModelMetricsBinomialGLM']
         types_w_clustering = ['ModelMetricsClustering']
-        types_w_mult = ['ModelMetricsMultinomial']
+        types_w_mult = ['ModelMetricsMultinomial', 'ModelMetricsMultinomialGeneric']
         types_w_ord = ['ModelMetricsOrdinal']
-        types_w_bin = ['ModelMetricsBinomial', 'ModelMetricsBinomialGLM']
+        types_w_bin = ['ModelMetricsBinomial', 'ModelMetricsBinomialGeneric', 'ModelMetricsBinomialGLM']
         types_w_r2 = ['ModelMetricsRegressionGLM']
         types_w_mean_residual_deviance = ['ModelMetricsRegressionGLM', 'ModelMetricsRegression']
         types_w_mean_absolute_error = ['ModelMetricsRegressionGLM', 'ModelMetricsRegression']
@@ -104,10 +104,10 @@ class MetricsBase(backwards_compatible()):
             print("Mean Residual Deviance: " + str(self.mean_residual_deviance()))
         if metric_type in types_w_logloss:
             print("LogLoss: " + str(self.logloss()))
-        if metric_type == 'ModelMetricsBinomial':
+        if metric_type in ['ModelMetricsBinomial', 'ModelMetricsBinomialGeneric']:
             # second element for first threshold is the actual mean per class error
             print("Mean Per-Class Error: %s" % self.mean_per_class_error()[0][1])
-        if metric_type == 'ModelMetricsMultinomial' or metric_type == 'ModelMetricsOrdinal':
+        if metric_type in types_w_mult or metric_type == 'ModelMetricsOrdinal':
             print("Mean Per-Class Error: " + str(self.mean_per_class_error()))
         if metric_type in types_w_glm:
             print("Null degrees of freedom: " + str(self.null_degrees_of_freedom()))

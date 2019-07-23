@@ -1112,7 +1112,7 @@ buildModelSaveMojoGLRM <- function(params) {
   return(list("model"=model, "dirName"=tmpdir_name))
 }
 
-mojoH2Opredict<-function(model, tmpdir_name, filename, get_leaf_node_assignment=FALSE, glrmReconstruct=FALSE) {
+mojoH2Opredict<-function(model, tmpdir_name, filename, get_leaf_node_assignment=FALSE, glrmReconstruct=FALSE, glrmIterNumber=-1) {
   newTest <- h2o.importFile(filename)
   predictions1 <- h2o.predict(model, newTest)
 
@@ -1150,6 +1150,10 @@ mojoH2Opredict<-function(model, tmpdir_name, filename, get_leaf_node_assignment=
 
   if (glrmReconstruct) {
     cmd <- paste(cmd, "--glrmReconstruct", sep=" ")
+  }
+  
+  if (glrmIterNumber >0) {
+    cmd <-paste(cmd, "--glrmIterNumber", glrmIterNumber, sep=" ")
   }
 
   safeSystem(cmd)  # perform mojo prediction

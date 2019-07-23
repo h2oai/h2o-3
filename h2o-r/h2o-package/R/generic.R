@@ -8,6 +8,7 @@
 #' 
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param model_key Key to the self-contained model archive already uploaded to H2O.
+#' @param path Path to file with self-contained model archive.
 #' @examples
 #' \dontrun{
 #' # library(h2o)
@@ -19,12 +20,13 @@
 #' @export
 h2o.generic <- function(
                         model_id = NULL,
-                        model_key = NULL
+                        model_key = NULL,
+                        path = NULL
                         ) 
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
-  # Required args: model_key
-  if (is.null(model_key)) stop("argument 'model_key' must be provided")
+  # Required args: either model_key or path
+  if (is.null(model_key) && is.null(path)) stop("argument 'model_key' or 'path' must be provided")
 
   # Handle other args
   # Parameter list to send to model builder
@@ -33,6 +35,8 @@ h2o.generic <- function(
     parms$model_id <- model_id
   if (!missing(model_key))
     parms$model_key <- model_key
+  if (!missing(path))
+    parms$path <- path
   # Error check and build model
   .h2o.modelJob('generic', parms, h2oRestApiVersion = 3) 
 }

@@ -8,8 +8,8 @@ public class RemoveHandler extends Handler {
   public RemoveV3 remove(int version, RemoveV3 u) {
     Keyed val = DKV.getGet(u.key.key());
     if (val != null) {
-      if (val instanceof Lockable) ((Lockable) val).delete(); // Fails if object already locked
-      else val.remove(); // Unconditional delete
+      if (val instanceof Lockable) ((Lockable) val).delete(u.cascade); // Fails if object already locked
+      else val.remove(u.cascade); // Unconditional delete
     }
     H2O.updateNotIdle();
     return u;

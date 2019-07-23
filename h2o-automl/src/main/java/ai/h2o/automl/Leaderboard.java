@@ -240,7 +240,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
             mm = ModelMetrics.getFromDKV(model, leaderboardFrame);
             if (mm == null) {
               //scores and magically stores the metrics where we're looking for it on the next line
-              model.score(leaderboardFrame).delete();  // immediately delete the resulting frame to avoid leaks
+              model.score(leaderboardFrame).delete();
               mm = ModelMetrics.getFromDKV(model, leaderboardFrame);
             }
           }
@@ -430,18 +430,19 @@ public class Leaderboard extends Keyed<Leaderboard> {
   }
 
   /**
-   * Delete everything in the DKV that this points to.  We currently need to be able to call this after deleteWithChildren().
+   * Delete object and its dependencies from DKV, including models.
    */
-  void delete() {
+  @Override
+  protected Futures remove_impl(Futures fs, boolean cascade) {
+    Log.debug("Cleaning up leaderboard from models "+Arrays.toString(models));
+    if (cascade) {
+      for (Key<Model> m : models) {
+        Keyed.remove(m, fs, true);
+      }
+    }
     for (Key k : leaderboard_set_metrics.keySet())
-      k.remove();
-    remove();
-  }
-
-  void deleteWithChildren() {
-    for (Model m : getModels())
-      m.delete();
-    delete();
+      Keyed.remove(k, fs, true);
+    return super.remove_impl(fs, cascade);
   }
 
   private static double[] defaultMetricForModel(Model m) {

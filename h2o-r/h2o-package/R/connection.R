@@ -523,6 +523,9 @@ h2o.clusterStatus <- function() {
 # This implementation is supposed to blacklist known unsupported versions.
 #
 .h2o.check_java_version <- function(jver = NULL) {
+  if(getOption("h2o.dev.javacheck.disable", default = FALSE)) {
+    return(NULL)
+  }
   if(any(grepl("GNU libgcj", jver))) {
     return("Sorry, GNU Java is not supported for H2O.")
   }

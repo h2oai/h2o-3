@@ -2,14 +2,15 @@
 import functools as ft
 
 import h2o
-from h2o.estimators import H2OEstimator
+from h2o.base import Keyed
 from h2o.exceptions import H2OValueError
-from h2o.job import H2OJob
 from h2o.frame import H2OFrame
-from h2o.utils.typechecks import assert_is_type, is_type
+from h2o.job import H2OJob
 from h2o.model.model_base import ModelBase
+from h2o.utils.typechecks import assert_is_type, is_type
 
-class H2OAutoML(object):
+
+class H2OAutoML(Keyed):
     """
     Automatic Machine Learning
 
@@ -251,6 +252,10 @@ class H2OAutoML(object):
     #---------------------------------------------------------------------------
     # Basic properties
     #---------------------------------------------------------------------------
+    @property
+    def key(self):
+        return self.project_name
+
     @property
     def leader(self):
         """
@@ -500,6 +505,14 @@ class H2OAutoML(object):
         """
 
         return ModelBase.download_mojo(self.leader, path, get_genmodel_jar, genmodel_name)
+
+    #-------------------------------------------------------------------------------------------------------------------
+    # Overrides
+    #-------------------------------------------------------------------------------------------------------------------
+    def detach(self):
+        self.project_name = None
+        h2o.remove(self.leaderboard)
+        h2o.remove(self.event_log)
 
     #-------------------------------------------------------------------------------------------------------------------
     # Private

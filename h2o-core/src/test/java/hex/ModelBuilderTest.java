@@ -232,8 +232,8 @@ public class ModelBuilderTest extends TestUtil {
     @Override
     protected double[] score0(double[] data, double[] preds) { return preds; }
     @Override
-    protected Futures remove_impl(Futures fs) {
-      super.remove_impl(fs);
+    protected Futures remove_impl(Futures fs, boolean cascade) {
+      super.remove_impl(fs, cascade);
       DKV.remove(_parms._trgt);
       return fs;
     }

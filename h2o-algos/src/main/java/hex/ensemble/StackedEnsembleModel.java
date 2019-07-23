@@ -159,6 +159,10 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       ModelMetrics lastComputedMetric = mms[mms.length - 1].get();
       ModelMetrics mmStackedEnsemble = lastComputedMetric.deepCloneWithDifferentModelAndFrame(this, fr);
       this.addModelMetrics(mmStackedEnsemble);
+      //now that we have the metric set on the SE model, removing the one we just computed on metalearner (otherwise it leaks in client mode)
+      for (Key<ModelMetrics> mm : metalearner._output.clearModelMetrics(true)) {
+        DKV.remove(mm);
+      }
     }
     Frame.deleteTempFrameAndItsNonSharedVecs(levelOneFrame, adaptFrm);
     return predictFr;
@@ -395,20 +399,20 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         if (_output._levelone_frame_id != null && key.get() != null)
           Frame.deleteTempFrameAndItsNonSharedVecs(key.get(), _output._levelone_frame_id);
         else
-          key.remove();
+          Keyed.remove(key);
       }
       _output._base_model_predictions_keys = null;
     }
   }
 
-  @Override protected Futures remove_impl(Futures fs ) {
+  @Override protected Futures remove_impl(Futures fs, boolean cascade) {
     deleteBaseModelPredictions(); 
     if (_output._metalearner != null)
       _output._metalearner.remove(fs);
     if (_output._levelone_frame_id != null)
       _output._levelone_frame_id.remove(fs);
 
-    return super.remove_impl(fs);
+    return super.remove_impl(fs, cascade);
   }
 
   /** Write out models (base + metalearner) */
@@ -446,5 +450,9 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     _output._metalearner.deleteCrossValidationPreds();
   }
 
+  @Override
+  public void deleteCrossValidationFoldAssignment() {
+    _output._metalearner.deleteCrossValidationFoldAssignment();
+  }
 }
 

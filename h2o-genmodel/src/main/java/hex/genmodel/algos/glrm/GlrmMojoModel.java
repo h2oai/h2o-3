@@ -31,7 +31,7 @@ public class GlrmMojoModel extends MojoModel {
   public boolean _transposed;
   public boolean _reverse_transform;
   public double _accuracyEps = 1e-10; // reconstruction accuracy A=X*Y
-  public int _iterNumber = 100; // maximum number of iterations to perform X update.
+  public int _iterNumber = 100; // maximum number of iterations to perform X update.  Default is 100
 
   // We don't really care about regularization of Y since it is changed during scoring
 

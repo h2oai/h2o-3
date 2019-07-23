@@ -563,7 +563,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       if (step <= _parms._min_step_size) return true;
 
       // Stopped when enough steps and average decrease in objective per iteration < TOLERANCE
-      return model._output._iterations > 10 && steps_in_row > 3 && Math.abs(model._output._avg_change_obj) < TOLERANCE;
+      return (model._output._iterations >= _parms._max_iterations) && steps_in_row > 3 && Math.abs(model._output._avg_change_obj) < TOLERANCE;
     }
 
     // Regularized Cholesky decomposition using H2O implementation

@@ -77,7 +77,7 @@ public class Frame extends Lockable<Frame> {
     Key[] keys = tempFrame.keys();
     for( int i=0; i<keys.length; i++ )
       if( baseFrame.find(keys[i]) == -1 ) //only delete vecs that aren't shared
-        keys[i].remove();
+        Keyed.remove(keys[i]);
     DKV.remove(tempFrame._key); //delete the frame header
   }
 
@@ -776,7 +776,7 @@ public class Frame extends Lockable<Frame> {
 
   /** Actually remove/delete all Vecs from memory, not just from the Frame.
    *  @return the original Futures, for flow-coding */
-  @Override protected Futures remove_impl(Futures fs) {
+  @Override protected Futures remove_impl(Futures fs, boolean cascade) {
     final Key[] keys = _keys;
     if( keys.length==0 ) return fs;
 
@@ -1510,6 +1510,17 @@ public class Frame extends Lockable<Frame> {
     FrameUtils.ExportTaskDriver t = new FrameUtils.ExportTaskDriver(
             fr, path, frameName, overwrite, job, nParts, compressionFactory, csvParms);
     return job.start(t, fr.anyVec().nChunks());
+  }
+
+  /**
+   * @deprecated As of release 3.24.0.5, replaced by {@link #toCSV(CSVStreamParams)}}
+   */
+  @Deprecated
+  public InputStream toCSV(boolean headers, boolean hex_string) {
+    CSVStreamParams params = new CSVStreamParams()
+            .setHeaders(headers)
+            .setHexString(hex_string);
+    return toCSV(params);
   }
 
   /** Convert this Frame to a CSV (in an {@link InputStream}), that optionally

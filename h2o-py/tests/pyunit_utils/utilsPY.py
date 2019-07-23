@@ -216,7 +216,8 @@ def np_comparison_check(h2o_data, np_data, num_elements):
  # perform h2o predict and mojo predict.  Frames containing h2o prediction is returned and mojo predict are
 # returned.
 
-def mojo_predict(model, tmpdir, mojoname, glrmReconstruct=False, get_leaf_node_assignment=False):
+def mojo_predict(model, tmpdir, mojoname, glrmReconstruct=False, get_leaf_node_assignment=False, glrmIterNumber=-1, zipFilePath=None):
+    
     """
     perform h2o predict and mojo predict.  Frames containing h2o prediction is returned and mojo predict are returned.
     It is assumed that the input data set is saved as in.csv in tmpdir directory.
@@ -233,6 +234,8 @@ def mojo_predict(model, tmpdir, mojoname, glrmReconstruct=False, get_leaf_node_a
     # load mojo and have it do predict
     outFileName = os.path.join(tmpdir, 'out_mojo.csv')
     mojoZip = os.path.join(tmpdir, mojoname) + ".zip"
+    if not(zipFilePath==None):
+        mojoZip = zipFilePath
     genJarDir = str.split(str(tmpdir),'/')
     genJarDir = '/'.join(genJarDir[0:genJarDir.index('h2o-py')])    # locate directory of genmodel.jar
 
@@ -246,6 +249,10 @@ def mojo_predict(model, tmpdir, mojoname, glrmReconstruct=False, get_leaf_node_a
 
     if glrmReconstruct:  # used for GLRM to grab the x coefficients (factors) instead of the predicted values
         java_cmd.append("--glrmReconstruct")
+    
+    if glrmIterNumber > 0:
+        java_cmd.append("--glrmIterNumber")
+        java_cmd.append(str(glrmIterNumber))
 
     p = subprocess.Popen(java_cmd, stdout=PIPE, stderr=STDOUT)
     o, e = p.communicate()
@@ -3483,7 +3490,8 @@ def compare_frames_local(f1, f2, prob=0.5, tol=1e-6, returnResult=False):
     :param returnResult:
     :return:
     '''
-    assert (f1.nrow==f2.nrow) and (f1.ncol==f2.ncol), "The two frames are of different sizes."
+    assert (f1.nrow==f2.nrow) and (f1.ncol==f2.ncol), "Frame 1 row {0}, col {1}.  Frame 2 row {2}, col {3}.  " \
+                                                      "They are different.".format(f1.nrow, f1.ncol, f2.nrow, f2.ncol)
     typeDict = f1.types
     frameNames = f1.names
 

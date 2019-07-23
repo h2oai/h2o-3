@@ -3,20 +3,29 @@ import tempfile
 import os
 from h2o.estimators import H2ORandomForestEstimator, H2OGenericEstimator
 from tests import pyunit_utils
+from tests.testdir_generic_model import compare_binomial_output, compare_multinomial_output, compare_regression_output, \
+    Capturing
 
 
-def mojo_model_drf_test():
+def test(x, y, output_test):
 
-    # GLM
     airlines = h2o.import_file(path=pyunit_utils.locate("smalldata/testng/airlines_train.csv"))
-    drf = H2ORandomForestEstimator(ntrees=1)
-    drf.train(x = ["Origin", "Dest"], y = "Distance", training_frame=airlines)
+    drf = H2ORandomForestEstimator(ntrees=1, nfolds = 3)
+    drf.train(x = x, y = y, training_frame=airlines, validation_frame=airlines)
+    print(drf)
+    with Capturing() as original_output:
+        drf.show()
 
     original_model_filename = tempfile.mkdtemp()
     original_model_filename = drf.download_mojo(original_model_filename)
       
     model = H2OGenericEstimator.from_file(original_model_filename)
     assert model is not None
+    print(model)
+    with Capturing() as generic_output:
+        model.show()
+
+    output_test(str(original_output), str(generic_output), 'drf')
     predictions = model.predict(airlines)
     assert predictions is not None
     assert predictions.nrows == 24421
@@ -28,8 +37,20 @@ def mojo_model_drf_test():
     generic_mojo_filename = tempfile.mkdtemp("zip", "genericMojo");
     generic_mojo_filename = model.download_mojo(path=generic_mojo_filename)
     assert os.path.getsize(generic_mojo_filename) == os.path.getsize(original_model_filename)
-    
+
+def mojo_model_test_regression():
+    test(["Origin", "Dest"], "Distance", compare_regression_output)
+
+def mojo_model_test_binomial():
+    test(["Origin", "Dest"], "IsDepDelayed", compare_binomial_output)
+
+def mojo_model_test_multinomial():
+    test(["Origin", "Distance"], "Dest", compare_multinomial_output)
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(mojo_model_drf_test)
+    pyunit_utils.standalone_test(mojo_model_test_binomial)
+    pyunit_utils.standalone_test(mojo_model_test_multinomial)
+    pyunit_utils.standalone_test(mojo_model_test_regression)
 else:
-    mojo_model_drf_test()
+    mojo_model_test_multinomial()
+    mojo_model_test_binomial()
+    mojo_model_test_regression()

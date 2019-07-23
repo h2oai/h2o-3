@@ -7,14 +7,11 @@ import jsr166y.ForkJoinWorkerThread;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
 import water.UDPRebooted.ShutdownTsk;
+import water.api.LogsHandler;
 import water.api.RequestServer;
 import water.exceptions.H2OFailException;
 import water.exceptions.H2OIllegalArgumentException;
-import water.init.AbstractBuildVersion;
-import water.init.AbstractEmbeddedH2OConfig;
-import water.init.JarHash;
-import water.init.NetworkInit;
-import water.init.NodePersistentStorage;
+import water.init.*;
 import water.nbhm.NonBlockingHashMap;
 import water.parser.DecryptionTool;
 import water.parser.ParserService;
@@ -23,20 +20,11 @@ import water.server.ServletUtils;
 import water.util.*;
 import water.webserver.iface.WebServer;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Field;
-import java.net.Inet4Address;
-import java.net.Inet6Address;
-import java.net.InetAddress;
-import java.net.MulticastSocket;
-import java.net.NetworkInterface;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.net.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -2299,49 +2287,20 @@ final public class H2O {
     return H2O.ARGS.decrypt_tool != null ? Key.<DecryptionTool>make(H2O.ARGS.decrypt_tool) : null;
   }
 
-  /**
-   * Select last 15 bytes from the jvm boot start time and return it as short. If the timestamp is 0, we increment it by
-   * 1 to be able to distinguish between client and node as -0 is the same as 0.
-   */
-  private static short truncateTimestamp(long jvmStartTime){
-    int bitMask = (1 << 15) - 1;
-    // select the lower 15 bits
-    short timestamp = (short) (jvmStartTime & bitMask);
-    // if the timestamp is 0 return 1 to be able to distinguish between positive and negative values
-    return timestamp == 0 ? 1 : timestamp;
+  public static URI downloadLogs(URI destinationDir, LogArchiveContainer logContainer) {
+    return LogsHandler.downloadLogs(destinationDir.toString(), logContainer);
   }
 
-
-  /**
-   * Calculate node timestamp from Current's node information. We use start of jvm boot time and information whether
-   * we are client or not. We combine these 2 information and create a char(2 bytes) with this info in a single variable.
-   */
-  static short calculateNodeTimestamp() {
-    return calculateNodeTimestamp(TimeLine.JVM_BOOT_MSEC, H2O.ARGS.client);
+  public static URI downloadLogs(URI destinationDir, String logContainer) {
+    return LogsHandler.downloadLogs(destinationDir.toString(), LogArchiveContainer.valueOf(logContainer));
   }
 
-  /**
-   * Calculate node timestamp from the provided information. We use start of jvm boot time and information whether
-   * we are client or not.
-   *
-   * The negative timestamp represents a client node, the positive one a regular H2O node
-   *
-   * @param bootTimestamp H2O node boot timestamp
-   * @param amIClient true if this node is client, otherwise false
-   */
-  static short calculateNodeTimestamp(long bootTimestamp, boolean amIClient) {
-    short timestamp = truncateTimestamp(bootTimestamp);
-    //if we are client, return negative timestamp, otherwise positive
-    return amIClient ? (short) -timestamp : timestamp;
+  public static URI downloadLogs(String destinationDir, LogArchiveContainer logContainer) {
+    return LogsHandler.downloadLogs(destinationDir, logContainer);
   }
-
-  /**
-   * Decodes whether the node is client or regular node from the timestamp
-   * @param timestamp timestamp
-   * @return true if timestamp is from client node, false otherwise
-   */
-  static boolean decodeIsClient(short timestamp) {
-    return timestamp < 0;
+  
+  public static URI downloadLogs(String destinationDir, String logContainer) {
+    return LogsHandler.downloadLogs(destinationDir, LogArchiveContainer.valueOf(logContainer));
   }
-
+  
 }

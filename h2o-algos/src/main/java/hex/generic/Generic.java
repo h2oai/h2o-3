@@ -8,12 +8,17 @@ import hex.genmodel.algos.gbm.GbmMojoModel;
 import hex.genmodel.algos.glm.GlmMojoModel;
 import hex.genmodel.algos.isofor.IsolationForestMojoModel;
 import hex.genmodel.algos.kmeans.KMeansMojoModel;
+import water.DKV;
+import water.H2O;
 import water.Key;
+import water.Scope;
 import water.fvec.ByteVec;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -55,19 +60,34 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
     }
 
     class MojoDelegatingModelDriver extends Driver {
+
+        @Override
+        public void compute2() {
+            if (_parms._path != null) { // If there is a file to be imported, do the import before the scope is entered
+                _parms._model_key = importFile();
+            }
+            super.compute2();
+        }
+
         @Override
         public void computeImpl() {
-            final ByteVec mojoBytes = getUploadedMojo(_parms._model_key);
+            final Key<Frame> dataKey;
+            if (_parms._model_key != null) {
+                dataKey = _parms._model_key;
+            } else {
+                throw new IllegalArgumentException("Either MOJO zip path or key to the uploaded MOJO frame must be specified");
+            }
+            final ByteVec mojoBytes = getUploadedMojo(dataKey);
             final MojoModel mojoModel;
             try {
                 final MojoReaderBackend readerBackend = MojoReaderBackendFactory.createReaderBackend(mojoBytes.openStream(_job._key), MojoReaderBackendFactory.CachingStrategy.MEMORY);
                 mojoModel = ModelMojoReader.readFrom(readerBackend, true);
-                
+
                 if(!ArrayUtils.isInstance(mojoModel, SUPPORTED_MOJOS)){
                     throw new IllegalArgumentException(String.format("Unsupported MOJO model %s. ", mojoModel.getClass().getName()));
                 }
 
-                final GenericModelOutput genericModelOutput = new GenericModelOutput(mojoModel._modelDescriptor);
+                final GenericModelOutput genericModelOutput = new GenericModelOutput(mojoModel._modelDescriptor, mojoModel._modelAttributes);
                 final GenericModel genericModel = new GenericModel(_result, _parms, genericModelOutput, mojoModel, mojoBytes);
 
                 genericModel.write_lock(_job);
@@ -77,7 +97,19 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
             }
         }
     }
-
+    
+    private Key importFile() {
+        ArrayList<String> files = new ArrayList<>();
+        ArrayList<String> keys = new ArrayList<>();
+        ArrayList<String> fails = new ArrayList<>();
+        ArrayList<String> dels = new ArrayList<>();
+        H2O.getPM().importFiles(_parms._path, null, files, keys, fails, dels);
+        if (!fails.isEmpty()) {
+            throw new RuntimeException("Failed to import file: " + Arrays.toString(fails.toArray()));
+        }
+        assert keys.size() == 1;
+        return Key.make(keys.get(0));
+    }
 
     /**
      * Retrieves pre-uploaded MOJO archive and performs basic verifications, if present.

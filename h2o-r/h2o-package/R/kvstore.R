@@ -97,23 +97,24 @@ h2o.removeAll <- function(timeout_secs=0, retained_elements = c()) {
 #' Remove the h2o Big Data object(s) having the key name(s) from ids.
 #'
 #' @param ids The object or hex key associated with the object to be removed or a vector/list of those things.
+#' @param cascade Boolean, if set to TRUE (default), the object dependencies (e.g. submodels) are also removed.
 #' @seealso \code{\link{h2o.assign}}, \code{\link{h2o.ls}}
 #' @export
-h2o.rm <- function(ids) {
+h2o.rm <- function(ids, cascade=TRUE) {
   gc()
   if( !is.vector(ids) ) x_list = c(ids) else x_list = ids
   for (xi in x_list) {
     if( is.null(xi) ) stop("h2o.rm with NULL object is not supported")
     if( is.H2OFrame(xi) ) {
-      xi_id <- attr(xi, "id")       # String or None
-      if( is.null(xi_id) ) return() # Lazy frame, never evaluated, nothing in cluster
-      .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=paste0("(rm ",xi_id[[1]],")"), session_id=h2o.getConnection()@mutable$session_id, method = "POST")
-    } else if( is(xi, "H2OModel") ) {
-      .h2o.__remoteSend(paste0(.h2o.__DKV, "/",xi@model_id), method = "DELETE")
+      key <- h2o.keyof(xi) # String or None
+      if( is.null(key) ) return() # Lazy frame, never evaluated, nothing in cluster
+      .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=paste0("(rm ",key,")"), session_id=h2o.getConnection()@mutable$session_id, method = "POST")
+    } else if( is(xi, "Keyed") ) {
+      .h2o.__remoteSend(paste0(.h2o.__DKV, "/",h2o.keyof(xi)), method = "DELETE", .params=list(cascade=cascade))
     } else if( is.character(xi) ) {
-      .h2o.__remoteSend(paste0(.h2o.__DKV, "/",xi), method = "DELETE")
+      .h2o.__remoteSend(paste0(.h2o.__DKV, "/",xi), method = "DELETE", .params=list(cascade=cascade))
     } else {
-      stop("input to h2o.rm must be one of: H2OFrame, H2OModel, or character")
+      stop("input to h2o.rm must be a Keyed instance (e.g. H2OFrame, H2OModel) or character")
     }
   }
 

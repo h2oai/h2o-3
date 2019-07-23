@@ -11,16 +11,11 @@ import logging
 import os
 import warnings
 import webbrowser
-import types
 
-
-from h2o.backend import H2OConnection
-from h2o.backend import H2OConnectionConf
-from h2o.backend import H2OLocalServer
-from h2o.exceptions import H2OConnectionError, H2OValueError
-from h2o.utils.config import H2OConfigReader
-from h2o.utils.shared_utils import check_frame_id, deprecated, gen_header, py_tmp_key, quoted, urlopen
-from h2o.utils.typechecks import assert_is_type, assert_satisfies, BoundInt, BoundNumeric, I, is_type, numeric, U
+from .backend import H2OConnection
+from .backend import H2OConnectionConf
+from .backend import H2OLocalServer
+from .base import Keyed
 from .estimators.deeplearning import H2OAutoEncoderEstimator
 from .estimators.deeplearning import H2ODeepLearningEstimator
 from .estimators.deepwater import H2ODeepWaterEstimator
@@ -37,15 +32,18 @@ from .estimators.random_forest import H2ORandomForestEstimator
 from .estimators.stackedensemble import H2OStackedEnsembleEstimator
 from .estimators.word2vec import H2OWord2vecEstimator
 from .estimators.isolation_forest import H2OIsolationForestEstimator
+from .exceptions import H2OConnectionError, H2OValueError
 from .expr import ExprNode
 from .frame import H2OFrame
 from .grid.grid_search import H2OGridSearch
 from .job import H2OJob
 from .model.model_base import ModelBase
 from .transforms.decomposition import H2OSVD
-from .utils.debugging import *  # NOQA
+from .utils.config import H2OConfigReader
 from .utils.compatibility import *  # NOQA
 from .utils.compatibility import PY3
+from .utils.shared_utils import check_frame_id, deprecated, gen_header, py_tmp_key, quoted, urlopen
+from .utils.typechecks import assert_is_type, assert_satisfies, BoundInt, BoundNumeric, I, is_type, numeric, U
 
 logging.basicConfig()
 
@@ -906,31 +904,31 @@ def log_and_echo(message=""):
     api("POST /3/LogAndEcho", data={"message": str(message)})
 
 
-def remove(x):
+def remove(x, cascade=True):
     """
     Remove object(s) from H2O.
 
     :param x: H2OFrame, H2OEstimator, or string, or a list of those things: the object(s) or unique id(s)
         pointing to the object(s) to be removed.
+    :param cascade: boolean, if set to TRUE (default), the object dependencies (e.g. submodels) are also removed.
     """
-    item_type = U(str, H2OFrame, H2OEstimator)
+    item_type = U(str, Keyed)
     assert_is_type(x, item_type, [item_type])
     if not isinstance(x, list): x = [x]
     for xi in x:
         if isinstance(xi, H2OFrame):
-            xi_id = xi._ex._cache._id  # String or None
-            if xi_id is None: return  # Lazy frame, never evaluated, nothing in cluster
-            rapids("(rm {})".format(xi_id))
-            xi._ex = None
-        elif isinstance(xi, H2OEstimator):
-            api("DELETE /3/DKV/%s" % xi.model_id)
-            xi._id = None
+            if xi.key is None: return  # Lazy frame, never evaluated, nothing in cluster
+            rapids("(rm {})".format(xi.key))
+            xi.detach()
+        elif isinstance(xi, Keyed):
+            api("DELETE /3/DKV/%s" % xi.key, data=dict(cascade=cascade))
+            xi.detach()
         else:
             # string may be a Frame key name part of a rapids session... need to call rm thru rapids here
             try:
                 rapids("(rm {})".format(xi))
             except:
-                api("DELETE /3/DKV/%s" % xi)
+                api("DELETE /3/DKV/%s" % xi, data=dict(cascade=cascade))
 
 
 def remove_all(retained=None):
@@ -1031,23 +1029,28 @@ def download_csv(data, filename):
         f.write(urlopen()(url).read())
 
 
-def download_all_logs(dirname=".", filename=None):
+def download_all_logs(dirname=".", filename=None, container=None):
     """
     Download H2O log files to disk.
 
     :param dirname: a character string indicating the directory that the log file should be saved in.
-    :param filename: a string indicating the name that the CSV file should be. Note that the saved format is .zip, so the file name must include the .zip extension.
-
+    :param filename: a string indicating the name that the CSV file should be.
+                     Note that the default container format is .zip, so the file name must include the .zip extension.
+    :param container: a string indicating how to archive the logs, choice of "ZIP" (default) and "LOG"
+                      ZIP: individual log files archived in a ZIP package
+                      LOG: all log files will be concatenated together in one text file
     :returns: path of logs written in a zip file.
 
-    :examples: The following code will save the zip file `'autoh2o_log.zip'` in a directory that is one down from where you are currently working into a directory called `your_directory_name`. (Please note that `your_directory_name` should be replaced with the name of the directory that you've created and that already exists.)
+    :examples: The following code will save the zip file `'h2o_log.zip'` in a directory that is one down from where you are currently working into a directory called `your_directory_name`. (Please note that `your_directory_name` should be replaced with the name of the directory that you've created and that already exists.)
 
-        >>> h2o.download_all_logs(dirname='./your_directory_name/', filename = 'autoh2o_log.zip')
+        >>> h2o.download_all_logs(dirname='./your_directory_name/', filename = 'h2o_log.zip')
 
     """
     assert_is_type(dirname, str)
     assert_is_type(filename, str, None)
-    url = "%s/3/Logs/download" % h2oconn.base_url
+    assert_is_type(container, "ZIP", "LOG", None)
+    type = "/%s" % container if container else ""
+    url = "%s/3/Logs/download%s" % (h2oconn.base_url, type)
     opener = urlopen()
     response = opener(url)
 
