@@ -878,7 +878,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (parms._stopping_metric == StoppingMetric.AUTO) {
       SortMetric sort_metric = getSortMetric();
       parms._stopping_metric = sort_metric == null ? StoppingMetric.AUTO
-                              : sort_metric.equals("auc") ? StoppingMetric.logloss
+                              : sort_metric == SortMetric.auc ? StoppingMetric.logloss
                               : metricValueOf(sort_metric);
     }
 

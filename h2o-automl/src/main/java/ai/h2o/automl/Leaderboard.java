@@ -84,7 +84,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
    * Binomial metrics: logloss, mean_per_class_error, rmse, & mse
    * Multinomial metrics: logloss, mean_per_class_error, rmse, & mse
    */
-  private String[] other_metrics;
+  private SortMetric[] other_metrics;
 
   /**
    * Metric direction used in the sort.
@@ -149,7 +149,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
 
   private EventLog eventLog() { return eventLog == null ? null : eventLog._key.get(); }
 
-  private void setMetricAndDirection(SortMetric metric, String[] otherMetrics, boolean sortDecreasing) {
+  private void setMetricAndDirection(SortMetric metric, SortMetric[] otherMetrics, boolean sortDecreasing) {
     this.sort_metric = metric;
     this.other_metrics = otherMetrics;
     this.sort_decreasing = sortDecreasing;
@@ -158,21 +158,21 @@ public class Leaderboard extends Keyed<Leaderboard> {
   }
 
   private void setDefaultMetricAndDirection(Model m) {
-    String[] metrics;
+    SortMetric[] metrics;
     if (m._output.isBinomialClassifier()) { //Binomial
-      metrics = new String[]{"logloss", "mean_per_class_error", "rmse", "mse"};
+      metrics = new SortMetric[]{SortMetric.logloss, SortMetric.mean_per_class_error, SortMetric.rmse, SortMetric.mse};
       if(this.sort_metric == null) {
         this.sort_metric = SortMetric.auc;
       }
     }
     else if (m._output.isMultinomialClassifier()) { //Multinomial
-      metrics = new String[]{"logloss", "rmse", "mse"};
+      metrics = new SortMetric[]{SortMetric.logloss, SortMetric.rmse, SortMetric.mse};
       if(this.sort_metric == null) {
         this.sort_metric = SortMetric.mean_per_class_error;
       }
     }
     else { //Regression
-      metrics = new String[]{"rmse", "mse", "mae", "rmsle"};
+      metrics = new SortMetric[]{SortMetric.rmse, SortMetric.mse, SortMetric.mae, SortMetric.rmsle};
       if(this.sort_metric == null) {
         this.sort_metric = SortMetric.mean_residual_deviance;
       }
@@ -505,8 +505,13 @@ public class Leaderboard extends Keyed<Leaderboard> {
     return sb.toString();
   }
 
-  private static String[] colHeaders(String metric, String[] other_metric) {
-    String[] headers = ArrayUtils.append(new String[]{"model_id",metric},other_metric);
+  private static String[] colHeaders(SortMetric metric, SortMetric[] other_metric) {
+    String[] headers = new String[other_metric.length + 2];
+    headers[0] = "model_id";
+    headers[1] = metric.name();
+    for (int i = 2; i < headers.length; i++) {
+      headers[i] = other_metric[i - 2].name();
+    }
     return headers;
   }
 
@@ -562,7 +567,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
           "%.6f"
   };
 
-  private static final TwoDimTable makeTwoDimTable(String tableHeader, SortMetric sort_metric, String[] other_metrics, Model[] models) {
+  private static final TwoDimTable makeTwoDimTable(String tableHeader, SortMetric sort_metric, SortMetric[] other_metrics, Model[] models) {
     assert sort_metric != null || models.length == 0 :
         "sort_metrics needs to be always not-null for non-empty array!";
 
@@ -574,36 +579,33 @@ public class Leaderboard extends Keyed<Leaderboard> {
       return new TwoDimTable(tableHeader,
               "no models in this leaderboard",
               rowHeaders,
-              Leaderboard.colHeaders("auc", other_metrics),
+              Leaderboard.colHeaders(SortMetric.auc, other_metrics),
               Leaderboard.colTypesBinomial,
               Leaderboard.colFormatsBinomial,
               "-");
     }
     if(models[0]._output.isBinomialClassifier()) {
-      //other_metrics =  new String[] {"logloss", "mean_per_class_error", "rmse", "mse"};
       return new TwoDimTable(tableHeader,
               "models sorted in order of " + sort_metric + ", best first",
               rowHeaders,
-              Leaderboard.colHeaders("auc", other_metrics),
+              Leaderboard.colHeaders(SortMetric.auc, other_metrics),
               Leaderboard.colTypesBinomial,
               Leaderboard.colFormatsBinomial,
               "#");
     } else if  (models[0]._output.isMultinomialClassifier()) {
-      //other_metrics =  new String[] {"logloss", "rmse", "mse"};
       return new TwoDimTable(tableHeader,
               "models sorted in order of " + sort_metric + ", best first",
               rowHeaders,
-              Leaderboard.colHeaders("mean_per_class_error", other_metrics),
+              Leaderboard.colHeaders(SortMetric.mean_per_class_error, other_metrics),
               Leaderboard.colTypesMultinomial,
               Leaderboard.colFormatsMultinomial,
               "#");
 
     } else {
-      //other_metrics = new String[] {"rmse", "mse", "mae","rmsle"};
       return new TwoDimTable(tableHeader,
               "models sorted in order of " + sort_metric + ", best first",
               rowHeaders,
-              Leaderboard.colHeaders("mean_residual_deviance", other_metrics),
+              Leaderboard.colHeaders(SortMetric.mean_residual_deviance, other_metrics),
               Leaderboard.colTypesRegression,
               Leaderboard.colFormatsRegression,
               "#");
@@ -654,14 +656,14 @@ public class Leaderboard extends Keyed<Leaderboard> {
 
     if (models.length == 0) { //No models due to exclude algos or ran out of time
       //Just use binomial metrics as a placeholder (no way to tell as user can pass in any metric to sort by)
-      this.other_metrics = new String[] {"logloss", "mean_per_class_error", "rmse", "mse"};
+      this.other_metrics = new SortMetric[] {SortMetric.logloss, SortMetric.mean_per_class_error, SortMetric.rmse, SortMetric.mse};
     }
     else if(models[0]._output.isBinomialClassifier()) {
-      this.other_metrics = new String[] {"logloss", "mean_per_class_error", "rmse", "mse"};
+      this.other_metrics = new SortMetric[] {SortMetric.logloss, SortMetric.mean_per_class_error, SortMetric.rmse, SortMetric.mse};
     } else if (models[0]._output.isMultinomialClassifier()) {
-      this.other_metrics = new String[] {"logloss", "rmse", "mse"};
+      this.other_metrics = new SortMetric[] {SortMetric.logloss, SortMetric.rmse, SortMetric.mse};
     } else {
-      this.other_metrics = new String[] {"rmse", "mse", "mae","rmsle"};
+      this.other_metrics = new SortMetric[] {SortMetric.rmse, SortMetric.mse, SortMetric.mae,SortMetric.rmsle};
     }
 
     TwoDimTable table = makeTwoDimTable(tableHeader, sort_metric, other_metrics, models);
