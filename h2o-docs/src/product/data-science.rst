@@ -50,7 +50,7 @@ Miscellaneous
 
    data-science/word2vec
 
-MOJO Import
+MOJO Models
 --------------
 
 .. toctree::
