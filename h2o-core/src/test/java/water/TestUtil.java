@@ -6,7 +6,6 @@ import org.junit.AfterClass;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.rules.TestRule;
-import org.junit.runner.Computer;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import water.fvec.*;
