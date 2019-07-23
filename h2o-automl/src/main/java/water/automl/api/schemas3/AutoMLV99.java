@@ -3,7 +3,7 @@ package water.automl.api.schemas3;
 import ai.h2o.automl.AutoML;
 import ai.h2o.automl.EventLog;
 import ai.h2o.automl.Leaderboard;
-import water.DKV;
+import ai.h2o.automl.SortMetric;
 import water.Iced;
 import water.Key;
 import water.api.API;
@@ -89,7 +89,8 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
     // NOTE: don't return nulls; return an empty leaderboard/eventLog, to ease life for the client
     Leaderboard leaderboard = autoML.leaderboard();
     if (null == leaderboard) {
-      leaderboard = new Leaderboard(autoML.projectName(), autoML.eventLog(), autoML.getLeaderboardFrame(), this.sort_metric);
+      SortMetric metric = this.sort_metric == null ? null : SortMetric.valueOf(this.sort_metric);
+      leaderboard = new Leaderboard(autoML.projectName(), autoML.eventLog(), autoML.getLeaderboardFrame(), metric);
     }
     this.leaderboard = new LeaderboardV99().fillFromImpl(leaderboard);
     this.leaderboard_table = new TwoDimTableV3().fillFromImpl(leaderboard.toTwoDimTable());

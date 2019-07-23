@@ -290,7 +290,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       }
     }
 
-      String sort_metric = buildSpec.input_spec.sort_metric == null ? null : buildSpec.input_spec.sort_metric.toLowerCase();
+      SortMetric sort_metric = buildSpec.input_spec.sort_metric == null ? null : SortMetric.valueOf(buildSpec.input_spec.sort_metric.toLowerCase());
       leaderboard = Leaderboard.getOrMake(projectName(), eventLog, this.leaderboardFrame, sort_metric);
     } catch (Exception e) {
       delete(); //cleanup potentially leaked keys
@@ -876,7 +876,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       parms._stopping_metric = buildSpec.build_control.stopping_criteria.stopping_metric();
 
     if (parms._stopping_metric == StoppingMetric.AUTO) {
-      String sort_metric = getSortMetric();
+      SortMetric sort_metric = getSortMetric();
       parms._stopping_metric = sort_metric == null ? StoppingMetric.AUTO
                               : sort_metric.equals("auc") ? StoppingMetric.logloss
                               : metricValueOf(sort_metric);
@@ -1384,18 +1384,18 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     modelCount.addAndGet(after - before);
   }
 
-  private String getSortMetric() {
+  private SortMetric getSortMetric() {
     //ensures that the sort metric is always updated according to the defaults set by leaderboard
     Leaderboard leaderboard = leaderboard();
     return leaderboard == null ? null : leaderboard.sort_metric;
   }
 
-  private static StoppingMetric metricValueOf(String name) {
-    if (name == null) return StoppingMetric.AUTO;
-    switch (name) {
-      case "mean_residual_deviance": return StoppingMetric.deviance;
+  private static StoppingMetric metricValueOf(SortMetric metric) {
+    if (metric == null) return StoppingMetric.AUTO;
+    switch (metric) {
+      case mean_residual_deviance: return StoppingMetric.deviance;
       default:
-        String[] attempts = { name, name.toUpperCase(), name.toLowerCase() };
+        String[] attempts = { metric.name(), metric.name().toUpperCase(), metric.name().toLowerCase() };
         for (String attempt : attempts) {
           try {
             return StoppingMetric.valueOf(attempt);

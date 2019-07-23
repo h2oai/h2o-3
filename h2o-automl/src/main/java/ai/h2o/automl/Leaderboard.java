@@ -76,7 +76,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
   /**
    * Metric used to sort this leaderboard.
    */
-  String sort_metric;
+  SortMetric sort_metric;
 
   /**
    * Other metrics reported in leaderboard
@@ -114,23 +114,23 @@ public class Leaderboard extends Keyed<Leaderboard> {
   /**
    *
    */
-  public Leaderboard(String project_name, EventLog eventLog, Frame leaderboardFrame, String sort_metric) {
+  public Leaderboard(String project_name, EventLog eventLog, Frame leaderboardFrame, SortMetric sort_metric) {
     this._key = Key.make(idForProject(project_name));
     this.project_name = project_name;
     this.eventLog = eventLog;
     this.leaderboardFrame = leaderboardFrame;
     this.leaderboardFrameChecksum = leaderboardFrame == null ? 0 : leaderboardFrame.checksum();
-    this.sort_metric = sort_metric == null ? null : sort_metric.toLowerCase();
+    this.sort_metric = sort_metric;
   }
 
-  static Leaderboard getOrMake(String project_name, EventLog eventLog, Frame leaderboardFrame, String sort_metric) {
+  static Leaderboard getOrMake(String project_name, EventLog eventLog, Frame leaderboardFrame, SortMetric sort_metric) {
     Leaderboard leaderboard = DKV.getGet(Key.make(idForProject(project_name)));
     if (null != leaderboard) {
       leaderboard.eventLog = eventLog;
       leaderboard.leaderboardFrame = leaderboardFrame;
       if (sort_metric != null) {
-        leaderboard.sort_metric = sort_metric.toLowerCase();
-        leaderboard.sort_decreasing = leaderboard.sort_metric.equals("auc");
+        leaderboard.sort_metric = sort_metric;
+        leaderboard.sort_decreasing = leaderboard.sort_metric == SortMetric.auc;
       }
       leaderboard.leaderboardFrameChecksum = leaderboardFrame == null ? 0 : leaderboardFrame.checksum();
 
@@ -149,7 +149,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
 
   private EventLog eventLog() { return eventLog == null ? null : eventLog._key.get(); }
 
-  private void setMetricAndDirection(String metric, String[] otherMetrics, boolean sortDecreasing) {
+  private void setMetricAndDirection(SortMetric metric, String[] otherMetrics, boolean sortDecreasing) {
     this.sort_metric = metric;
     this.other_metrics = otherMetrics;
     this.sort_decreasing = sortDecreasing;
@@ -162,22 +162,22 @@ public class Leaderboard extends Keyed<Leaderboard> {
     if (m._output.isBinomialClassifier()) { //Binomial
       metrics = new String[]{"logloss", "mean_per_class_error", "rmse", "mse"};
       if(this.sort_metric == null) {
-        this.sort_metric = "auc";
+        this.sort_metric = SortMetric.auc;
       }
     }
     else if (m._output.isMultinomialClassifier()) { //Multinomial
       metrics = new String[]{"logloss", "rmse", "mse"};
       if(this.sort_metric == null) {
-        this.sort_metric = "mean_per_class_error";
+        this.sort_metric = SortMetric.mean_per_class_error;
       }
     }
     else { //Regression
       metrics = new String[]{"rmse", "mse", "mae", "rmsle"};
       if(this.sort_metric == null) {
-        this.sort_metric = "mean_residual_deviance";
+        this.sort_metric = SortMetric.mean_residual_deviance;
       }
     }
-    boolean sortDecreasing = this.sort_metric.equals("auc");
+    boolean sortDecreasing = this.sort_metric == SortMetric.auc;
     setMetricAndDirection(this.sort_metric, metrics, sortDecreasing);
   }
 
@@ -251,9 +251,9 @@ public class Leaderboard extends Keyed<Leaderboard> {
         try {
           List<Key<Model>> modelsSorted = null;
           if (leaderboardFrame == null) {
-            modelsSorted = ModelMetrics.sortModelsByMetric(sort_metric, sort_decreasing, Arrays.asList(updating.models));
+            modelsSorted = ModelMetrics.sortModelsByMetric(sort_metric.name(), sort_decreasing, Arrays.asList(updating.models));
           } else {
-            modelsSorted = ModelMetrics.sortModelsByMetric(leaderboardFrame, sort_metric, sort_decreasing, Arrays.asList(updating.models));
+            modelsSorted = ModelMetrics.sortModelsByMetric(leaderboardFrame, sort_metric.name(), sort_decreasing, Arrays.asList(updating.models));
           }
           updating.models = modelsSorted.toArray(new Key[0]);
         } catch (H2OIllegalArgumentException e) {
@@ -267,22 +267,22 @@ public class Leaderboard extends Keyed<Leaderboard> {
         updating.sort_metrics = getMetrics(updating.sort_metric, updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
 
         if (model._output.isBinomialClassifier()) { // Binomial case
-          updating.auc = getMetrics("auc", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.logloss = getMetrics("logloss", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.mean_per_class_error = getMetrics("mean_per_class_error", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.rmse = getMetrics("rmse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.mse = getMetrics("mse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
+          updating.auc = getMetrics(SortMetric.auc, updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
+          updating.logloss = getMetrics(SortMetric.logloss, updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
+          updating.mean_per_class_error = getMetrics(SortMetric.mean_per_class_error, updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
+          updating.rmse = getMetrics(SortMetric.rmse, updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
+          updating.mse = getMetrics(SortMetric.mse, updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
         } else if (model._output.isMultinomialClassifier()) { //Multinomial Case
-          updating.mean_per_class_error = getMetrics("mean_per_class_error", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.logloss = getMetrics("logloss", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.rmse = getMetrics("rmse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.mse = getMetrics("mse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
+          updating.mean_per_class_error = getMetrics(SortMetric.mean_per_class_error, updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
+          updating.logloss = getMetrics(SortMetric.logloss, updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
+          updating.rmse = getMetrics(SortMetric.rmse, updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
+          updating.mse = getMetrics(SortMetric.mse, updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
         } else { //Regression Case
-          updating.mean_residual_deviance= getMetrics("mean_residual_deviance", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.rmse = getMetrics("rmse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.mse = getMetrics("mse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.mae = getMetrics("mae", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.rmsle = getMetrics("rmsle", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
+          updating.mean_residual_deviance= getMetrics(SortMetric.mean_residual_deviance, updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
+          updating.rmse = getMetrics(SortMetric.rmse, updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
+          updating.mse = getMetrics(SortMetric.mse, updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
+          updating.mae = getMetrics(SortMetric.mae, updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
+          updating.rmsle = getMetrics(SortMetric.rmsle, updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
         }
 
         // If we're updated leader let this know so that it can notify the user
@@ -405,7 +405,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
   /** Return the number of models in this Leaderboard. */
   int getModelCount() { return getModelKeys().length; }
 
-  private static double[] getMetrics(String metric, IcedHashMap<Key<ModelMetrics>, ModelMetrics> leaderboard_set_metrics, Frame leaderboardFrame, Model[] models) {
+  private static double[] getMetrics(SortMetric metric, IcedHashMap<Key<ModelMetrics>, ModelMetrics> leaderboard_set_metrics, Frame leaderboardFrame, Model[] models) {
     double[] other_metrics = new double[models.length];
     int i = 0;
     for (Model m : models) {
@@ -413,7 +413,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
       if (leaderboardFrame != null) {
         other_metrics[i++] = ModelMetrics.getMetricFromModelMetric(
             leaderboard_set_metrics.get(ModelMetrics.buildKey(m, leaderboardFrame)),
-            metric
+            metric.name()
         );
       } else {
         // otherwise use default model metrics
@@ -422,7 +422,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
         ModelMetrics mm = ModelMetrics.defaultModelMetrics(m);
         other_metrics[i++] = ModelMetrics.getMetricFromModelMetric(
             leaderboard_set_metrics.get(ModelMetrics.buildKey(model_key, model_checksum, mm.frame()._key, mm.frame().checksum())),
-            metric
+            metric.name()
         );
       }
     }
@@ -562,7 +562,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
           "%.6f"
   };
 
-  private static final TwoDimTable makeTwoDimTable(String tableHeader, String sort_metric, String[] other_metrics, Model[] models) {
+  private static final TwoDimTable makeTwoDimTable(String tableHeader, SortMetric sort_metric, String[] other_metrics, Model[] models) {
     assert sort_metric != null || models.length == 0 :
         "sort_metrics needs to be always not-null for non-empty array!";
 
