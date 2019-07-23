@@ -702,9 +702,9 @@ For classification problems, when running ``h2o.predict()`` or ``.predict()``, t
 Predict Feature Frequency
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Use the ``feature_frequencies`` function to retrieve the number of times a feature was used on a predication path in a tree model. This option is only available in GBM, DRF, and IF.
+Use the ``feature_frequencies`` function to retrieve the number of times a feature was used on a prediction path in a tree model. This option is only available in GBM, DRF, and IF.
 
-Using the previous example, run the following to predict the leaf node assignments:
+Using the previous example, run the following to the find frequency of each feature in the prediction path of the model:
 
 .. example-code::
    .. code-block:: r
@@ -714,12 +714,37 @@ Using the previous example, run the following to predict the leaf node assignmen
     feature_frequencies <- h2o.feature_frequencies(model, prostate.train)
     feature_frequencies
 
+    AGE RACE PSA GLEASON
+     98    8 199      46
+    114    6 238      42
+    103    9 227      57
+     94   13 183      53
+    103    9 225      57
+    102    5 238      36
+
+    [275 rows x 4 columns]
+
    .. code-block:: python
 
     # Retrieve the number of occurrences of each feature for given observations
     # on their respective paths in a tree ensemble model
     feature_frequencies = model.feature_frequencies(train)
     feature_frequencies
+
+    AGE    RACE    PSA    GLEASON
+    -----  ------  -----  ---------
+    109      10    197         68
+    109       3    220         64
+    101      11    222         66
+    106       6    188         65
+     90       1    199         61
+    130       7    194         65
+    103       3    217         66
+    103      11    203         65
+    102       3    218         66
+    112       6    203         64
+
+    [273 rows x 4 columns]
 
 Predict using MOJOs
 ~~~~~~~~~~~~~~~~~~~
