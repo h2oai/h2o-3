@@ -33,7 +33,10 @@ import java.util.*;
 public class TargetEncoder {
 
     // workaround for PUBDEV-6319: this makes sure TE does get consistent and correct aggregates
-    private static final AstGroup GROUP_BY = new AstGroup(false); 
+    private static final AstGroup GROUP_BY = new AstGroup(false);
+
+    public static String NUMERATOR_COL_NAME = "numerator";
+    public static String DENOMINATOR_COL_NAME = "denominator";
 
     private BlendingParams _blendingParams;
     private String[] _columnNamesToEncode;
@@ -110,8 +113,8 @@ public class TargetEncoder {
 
             teColumnFrame = groupThenAggregateForNumeratorAndDenominator(dataWithEncodedTarget, teColumnName, foldColumnName, targetIndex);
 
-            renameColumn(teColumnFrame,"sum_" + targetColumnName, "numerator");
-            renameColumn(teColumnFrame,"nrow", "denominator");
+            renameColumn(teColumnFrame,"sum_" + targetColumnName, NUMERATOR_COL_NAME);
+            renameColumn(teColumnFrame,"nrow", DENOMINATOR_COL_NAME);
 
             columnToEncodingMap.put(teColumnName, teColumnFrame);
           }
@@ -192,8 +195,17 @@ public class TargetEncoder {
       String[] newDomain = new String[indexForNACategory + 1];
       System.arraycopy(oldDomain, 0, newDomain, 0, oldDomain.length);
       newDomain[indexForNACategory] = strToImpute;
-      currentVec.setDomain(newDomain);
+      updateDomainGlobally(data, teColumnName, newDomain);
       return data;
+    }
+    
+    private void updateDomainGlobally(Frame fr, String teColumnName, String[] domain) {
+      Lockable lock = fr.write_lock();
+      Vec updatedVec = fr.vec(teColumnName);
+      updatedVec.setDomain(domain);
+      DKV.put(updatedVec);
+      fr.update();
+      lock.unlock();
     }
 
     Frame getOutOfFoldData(Frame encodingMap, String foldColumnName, long currentFoldValue)  {
@@ -225,8 +237,8 @@ public class TargetEncoder {
     }
 
     static Frame groupByTEColumnAndAggregate(Frame data, int teColumnIndex) {
-      int numeratorColumnIndex = data.find("numerator");
-      int denominatorColumnIndex = data.find("denominator");
+      int numeratorColumnIndex = data.find(NUMERATOR_COL_NAME);
+      int denominatorColumnIndex = data.find(DENOMINATOR_COL_NAME);
       AstGroup.AGG[] aggs = new AstGroup.AGG[2];
 
       AstGroup.NAHandling na = AstGroup.NAHandling.ALL;
@@ -300,23 +312,22 @@ public class TargetEncoder {
     }
 
     double calculatePriorMean(Frame fr) {
-        Vec numeratorVec = fr.vec("numerator");
-        Vec denominatorVec = fr.vec("denominator");
+        Vec numeratorVec = fr.vec(NUMERATOR_COL_NAME);
+        Vec denominatorVec = fr.vec(DENOMINATOR_COL_NAME);
         return numeratorVec.mean() / denominatorVec.mean();
     }
 
     Frame calculateAndAppendBlendedTEEncoding(Frame fr, Frame encodingMap, String appendedColumnName) {
-      int numeratorIndex = fr.find("numerator");
-      int denominatorIndex = fr.find("denominator");
+      int numeratorIndex = fr.find(NUMERATOR_COL_NAME);
+      int denominatorIndex = fr.find(DENOMINATOR_COL_NAME);
 
       double globalMeanForTargetClass = calculatePriorMean(encodingMap); // TODO since target column is the same for all categorical columns we are trying to encode we can compute global mean only once.
       Log.info("Global mean for blending = " + globalMeanForTargetClass);
 
-      Vec zeroVec = Vec.makeZero(fr.numRows());
+      Vec zeroVec = fr.anyVec().makeCon(0);
       fr.add(appendedColumnName, zeroVec);
       int encodingsColumnIdx = fr.find(appendedColumnName);
       new CalcEncodingsWithBlending(numeratorIndex, denominatorIndex, globalMeanForTargetClass, _blendingParams, encodingsColumnIdx).doAll(fr);
-      zeroVec.remove();
       return fr;
     }
 
@@ -358,16 +369,15 @@ public class TargetEncoder {
     }
 
     Frame calculateAndAppendTEEncoding(Frame fr, Frame encodingMap, String appendedColumnName) {
-      int numeratorIndex = fr.find("numerator");
-      int denominatorIndex = fr.find("denominator");
+      int numeratorIndex = fr.find(NUMERATOR_COL_NAME);
+      int denominatorIndex = fr.find(DENOMINATOR_COL_NAME);
 
       double globalMeanForTargetClass = calculatePriorMean(encodingMap); // we can only operate on encodingsMap because `fr` could not have target column at all
 
-      Vec zeroVec = Vec.makeZero(fr.numRows());
+      Vec zeroVec = fr.anyVec().makeCon(0);
       fr.add(appendedColumnName, zeroVec);
       int encodingsColumnIdx = fr.find(appendedColumnName);
       new CalcEncodings(numeratorIndex, denominatorIndex, globalMeanForTargetClass, encodingsColumnIdx).doAll( fr);
-      zeroVec.remove();
       return fr;
     }
 
@@ -406,7 +416,7 @@ public class TargetEncoder {
     Frame addNoise(Frame fr, String applyToColumnName, double noiseLevel, long seed) {
       int appyToColumnIndex = fr.find(applyToColumnName);
       if (seed == -1) seed = new Random().nextLong();
-      Vec zeroVec = Vec.makeZero(fr.numRows());
+      Vec zeroVec = fr.anyVec().makeCon(0);
       Vec randomVec = zeroVec.makeRand(seed);
       Vec runif = fr.add("runif", randomVec);
       int runifIdx = fr.find("runif");
@@ -443,8 +453,8 @@ public class TargetEncoder {
     }
 
     Frame subtractTargetValueForLOO(Frame data, String targetColumnName) {
-      int numeratorIndex = data.find("numerator");
-      int denominatorIndex = data.find("denominator");
+      int numeratorIndex = data.find(NUMERATOR_COL_NAME);
+      int denominatorIndex = data.find(DENOMINATOR_COL_NAME);
       int targetIndex = data.find(targetColumnName);
 
       new SubtractCurrentRowForLeaveOneOutTask(numeratorIndex, denominatorIndex, targetIndex).doAll(data);
@@ -551,8 +561,8 @@ public class TargetEncoder {
 
                       Frame groupedByTEColumnAndAggregate = groupByTEColumnAndAggregate(outOfFoldData, teColumnIndexInEncodingMap);
 
-                      renameColumn(groupedByTEColumnAndAggregate, "sum_numerator", "numerator");
-                      renameColumn(groupedByTEColumnAndAggregate, "sum_denominator", "denominator");
+                      renameColumn(groupedByTEColumnAndAggregate, "sum_numerator", NUMERATOR_COL_NAME);
+                      renameColumn(groupedByTEColumnAndAggregate, "sum_denominator", DENOMINATOR_COL_NAME);
 
                       Frame groupedWithAppendedFoldColumn = addCon(groupedByTEColumnAndAggregate, "foldValueForMerge", foldValue);
 
@@ -573,7 +583,7 @@ public class TargetEncoder {
                   // End of the preparation phase
 
                   dataWithMergedAggregationsK = mergeByTEAndFoldColumns(dataWithAllEncodings, holdoutEncodeMap, teColumnIndex, foldColumnIndex, teColumnIndexInEncodingMap);
-
+                  
                   Frame withEncodingsFrameK = calculateEncoding(dataWithMergedAggregationsK, encodingMapForCurrentTEColumn, newEncodedColumnName, withBlendedAvg);
 
                   Frame withAddedNoiseEncodingsFrameK = applyNoise(withEncodingsFrameK, newEncodedColumnName, noiseLevel, seed);
@@ -589,7 +599,7 @@ public class TargetEncoder {
 
                   dataWithAllEncodings.delete();
                   dataWithAllEncodings = imputedEncodingsFrameK;
-
+                  
                 } catch (Exception ex ) {
                   if (dataWithMergedAggregationsK != null) dataWithMergedAggregationsK.delete();
                   throw ex;
@@ -622,7 +632,6 @@ public class TargetEncoder {
 
                   dataWithAllEncodings.delete();
                   dataWithAllEncodings = imputedEncodingsFrameL;
-
                 } catch (Exception ex) {
                   if (dataWithMergedAggregationsL != null) dataWithMergedAggregationsL.delete();
                   throw ex;
@@ -683,9 +692,9 @@ public class TargetEncoder {
     }
 
     void removeNumeratorAndDenominatorColumns(Frame fr) {
-        Vec removedNumeratorNone = fr.remove("numerator");
+        Vec removedNumeratorNone = fr.remove(NUMERATOR_COL_NAME);
         removedNumeratorNone.remove();
-        Vec removedDenominatorNone = fr.remove("denominator");
+        Vec removedDenominatorNone = fr.remove(DENOMINATOR_COL_NAME);
         removedDenominatorNone.remove();
     }
 
@@ -700,8 +709,8 @@ public class TargetEncoder {
             int teColumnIndex = targetEncodingMap.find(teColumnName);
 
             Frame newTargetEncodingMap = groupByTEColumnAndAggregate(targetEncodingMap, teColumnIndex);
-            renameColumn(newTargetEncodingMap,  "sum_numerator", "numerator");
-            renameColumn(newTargetEncodingMap,  "sum_denominator", "denominator");
+            renameColumn(newTargetEncodingMap,  "sum_" + NUMERATOR_COL_NAME, NUMERATOR_COL_NAME);
+            renameColumn(newTargetEncodingMap,  "sum_" + DENOMINATOR_COL_NAME, DENOMINATOR_COL_NAME);
             return newTargetEncodingMap;
         } else {
             Frame targetEncodingMapCopy = targetEncodingMap.deepCopy(Key.make().toString());
