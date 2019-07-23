@@ -121,7 +121,6 @@ public class TEMojoIntegrationTest extends TestUtil {
     }
   }
   
-  //TODO before merging this check whether issue with PUBDEV-6319 is fixed. If it is not yet fixed then add @Ignore annotation
   @Test
   public void transformation_consistency_test() throws PredictException, IOException{
 
@@ -205,12 +204,6 @@ public class TEMojoIntegrationTest extends TestUtil {
           homeDestPredIdx = fr.find("home.dest") < fr.find("embarked") ? 0 : 1;
         } else {
           double[] currentEncodings = teModelWrapper.transformWithTargetEncoding(rowToPredictFor).transformations;
-          //Let's check that specified in the test categorical columns have been encoded in accordance with targetEncodingMap
-          EncodingMaps targetEncodingMap = loadedMojoModel._targetEncodingMap;
-
-          double encodingForHomeDest = checkEncodingsByFactorValue(fr, homeDestFactorValue, targetEncodingMap, "home.dest");
-
-          double encodingForHomeEmbarked = checkEncodingsByFactorValue(fr, embarkedFactorValue, targetEncodingMap, "embarked");
 
           // Because of the random swap we need to know which index is lower so that we know order of transformations/predictions
           int currentHomeDestPredIdx = fr.find("home.dest") < fr.find("embarked") ? 0 : 1;
