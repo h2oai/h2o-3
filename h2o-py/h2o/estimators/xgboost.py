@@ -1796,6 +1796,23 @@ class H2OXGBoostEstimator(H2OEstimator):
         Booster type
 
         One of: ``"gbtree"``, ``"gblinear"``, ``"dart"``  (default: ``"gbtree"``).
+
+        :examples:
+
+        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+        >>> titanic['survived'] = titanic['survived'].asfactor()
+        >>> predictors = titanic.columns
+        >>> response = 'survived'
+        >>> train, valid = titanic.split_frame(ratios = [.8],
+        ...                                    seed = 1234)
+        >>> titanic_xgb = H2OXGBoostEstimator(booster='dart',
+        ...                                   normalize_type="tree",
+        ...                                   seed=1234)
+        >>> titanic_xgb.train(x=predictors,
+        ...                   y=response,
+        ...                   training_frame=train,
+        ...                   validation_frame=valid)
+        >>> print(titanic_xgb.auc(valid=True))
         """
         return self._parms.get("booster")
 
@@ -1890,6 +1907,22 @@ class H2OXGBoostEstimator(H2OEstimator):
         Backend. By default (auto), a GPU is used if available.
 
         One of: ``"auto"``, ``"gpu"``, ``"cpu"``  (default: ``"auto"``).
+
+        :examples:
+
+        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+        >>> titanic['survived'] = titanic['survived'].asfactor()
+        >>> predictors = titanic.columns
+        >>> response = 'survived'
+        >>> assignment_type = "Random"
+        >>> titanic_xgb = H2OXGBoostEstimator(fold_assignment = assignment_type,
+        ...                                   nfolds = 5,
+        ...                                   backend = "cpu",
+        ...                                   seed = 1234)
+        >>> titanic_xgb.train(x = predictors,
+        ...                   y = response,
+        ...                   training_frame = titanic)
+        >>> titanic_xgb.auc(xval=True)
         """
         return self._parms.get("backend")
 
