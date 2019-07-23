@@ -23,27 +23,27 @@ def mixin(obj, *mixins):
     return obj
 
 
-def estimator(cls, name=None, module=None, default_params=None, mixins=None, is_generic=False):
+def wrap_estimator(cls,
+                   bases,
+                   name=None,
+                   module=None,
+                   default_params=None,
+                   is_generic=False):
+    assert cls is not None
+    assert isinstance(bases, tuple) and len(bases) > 0
     if default_params is None:
-        try:
-            # try to obtain the list of estimator params (with defaults) by mixing it with BaseEstimator
-            # create a default instance, and use the introspection logic implemented in BaseEstimator.get_params
-            o = mixin(cls(), BaseEstimator)
-            default_params = o.get_params()
-        except:
-            # if the previous logic fails (constructor may do some nasty logic)
-            # then we're just obtain the signature from the estimator class constructor
-            sig = signature(cls.__init__)
-            default_params = OrderedDict((p.name, p.default if p.default is not p.empty else None)
-                                         for p in sig.parameters.values())
-            del default_params['self']
+        # obtain the default params from signature of the estimator class constructor
+        sig = signature(cls.__init__)
+        default_params = OrderedDict((p.name, p.default if p.default is not p.empty else None)
+                                     for p in sig.parameters.values())
+        del default_params['self']
 
     gen_class_name = name if name else cls.__name__+'Sklearn'
     gen_class_module = module if module else __name__
 
     # generate the constructor signature for introspection by BaseEstimator (get_params)
     #  and also for auto-completion in some environments.
-    def gen_init_sig():
+    def gen_init_code():
         yield "def init(self,"
         for k, v in default_params.items():
             yield "         {k}={v},".format(k=k, v=repr(v))
@@ -55,23 +55,37 @@ def estimator(cls, name=None, module=None, default_params=None, mixins=None, is_
         yield "    del kwargs['self']"
         yield "    kwargs.update(estimator_cls=cls)"
         yield "    super(self.__class__, self).__init__(**kwargs)"
-    init_sig = '\n'.join(list(gen_init_sig()))
-    scope = dict(cls=cls)  # use a custom scope to avoid creating the init function in the global scope
-    exec(init_sig, scope)  # execute the signature code in given scope for further access
-    init = scope['init']
+    init_code = '\n'.join(list(gen_init_code()))
+    scope = locals()  # we can't create init in default scope, and we need to access some local variables
+    exec(init_code, scope)
+    init = scope['init']  # not necessary (init was created in local scope), but looks cleaner on editor
 
-    mixins = tuple(mixins) if mixins else ()
-    extended = type(gen_class_name, (H2OtoSklearnEstimator,) + mixins, dict(
+    extended = type(gen_class_name, bases, dict(
         __init__=init,
     ))
     extended.__module__ = gen_class_module
     return extended
 
 
-def transformer(cls, *mixins):
-    extended = type(cls.__name__+'Sklearn', (cls, BaseEstimator, TransformerMixin)+tuple(mixins), dict(
-    ))
-    return extended
+def estimator(cls, name=None, module=None, default_params=None, mixins=None, is_generic=False):
+    mixins = tuple(mixins) if mixins else ()
+    return wrap_estimator(cls=cls,
+                          bases=(H2OtoSklearnEstimator,) + mixins,
+                          name=name,
+                          module=module,
+                          default_params=default_params,
+                          is_generic=is_generic,
+                          )
+
+
+def transformer(cls, name=None, module=None, default_params=None, mixins=None):
+    mixins = tuple(mixins) if mixins else ()
+    return wrap_estimator(cls=cls,
+                          bases=(H2OtoSklearnTransformer,) + mixins,
+                          name=name,
+                          module=module,
+                          default_params=default_params,
+                          )
 
 
 def _to_h2o_frame(X, as_factor=False):
@@ -94,41 +108,56 @@ def _to_numpy(fr):
         return df
 
 
-def expect_h2o_frames(fn):
+def params_as_h2o_frames(frame_params=('X', 'y'), target_param='y', transform_result='auto'):
     """
-    A decorator that can be applied to estimator methods, to support the consumption of non-H2OFrame datasets
-    :param fn: the function to be decorated
-    :return: a new function that will convert X, and y parameters before passing them to the original function.
+    :param frame_params:
+    :param target_param:
+    :param transform_result:
+    :return:
     """
-    sig = signature(fn)
-    has_self = 'self' in sig.parameters
-    has_X = 'X' in sig.parameters
-    has_y = 'y' in sig.parameters
-    assert has_X or has_y, "@expect_h2o_frames decorator is intended for methods " \
-                           "taking at least an X or y argument."
+    def decorator(fn):
+        """
+        A decorator that can be applied to estimator methods, to support the consumption of non-H2OFrame datasets
+        :param fn: the function to be decorated
+        :return: a new function that will convert X, and y parameters before passing them to the original function.
+        """
+        sig = signature(fn)
+        has_self = 'self' in sig.parameters
+        assert any(arg in sig.parameters for arg in frame_params), \
+            "@expect_h2o_frames decorator should be applied to methods taking at least one of {} parameters.".format(frame_params)
 
-    def convert(arg, arguments, **kwargs):
-        ori = arguments.get(arg, None)
-        new = _to_h2o_frame(ori, **kwargs)
-        converted = new is not ori
-        arguments[arg] = new
-        return converted
+        def convert(arg, arguments, **kwargs):
+            ori = arguments.get(arg, None)
+            new = _to_h2o_frame(ori, **kwargs)
+            converted = new is not ori
+            arguments[arg] = new
+            return converted
 
-    def revert(result, converted=False):
-        return _to_numpy(result) if converted else result
+        def revert(result, converted=False):
+            do_convert = (transform_result == 'auto' and converted) or transform_result is True
+            return _to_numpy(result) if do_convert else result
 
-    @wraps(fn)
-    def decorator(*args, **kwargs):
-        _args = sig.bind(*args, **kwargs).arguments
-        is_classifier = False
-        if has_self and isinstance(_args.get('self', None), BaseEstimatorMixin):
-            is_classifier = _args.get('self').is_classifier()
-        converted = False
-        if has_X:
-            converted = convert('X', _args)
-        if has_y:
-            converted = convert('y', _args, as_factor=is_classifier) or converted
-        return revert(fn(**_args), converted=converted)
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            """
+            the logic executed before fn: converts params to H2OFrame if needed
+            and possibly backwards before returning result
+            :param args:
+            :param kwargs:
+            :return:
+            """
+            _args = sig.bind(*args, **kwargs).arguments
+            is_classifier = False
+            if has_self and isinstance(_args.get('self', None), BaseEstimatorMixin):
+                is_classifier = _args.get('self').is_classifier()
+            converted = False
+            for fr in frame_params:
+                if fr in sig.parameters:
+                    as_factor = is_classifier and fr == target_param
+                    converted = convert(fr, _args, as_factor=as_factor) or converted
+            return revert(fn(**_args), converted=converted)
+
+        return wrapper
 
     return decorator
 
@@ -147,7 +176,7 @@ class H2OClusterMixin(object):
 
     _h2o_components = []
 
-    def init_cluster(self, **kwargs):
+    def init_cluster(self, show_progress=True, **kwargs):
         """
         initialize the H2O cluster if needed
         and track the current instance to be able to automatically close the conecction
@@ -155,6 +184,10 @@ class H2OClusterMixin(object):
         """
         if not h2o.connection():
             h2o.init(**kwargs)
+            if show_progress:
+                h2o.show_progress()
+            else:
+                h2o.no_progress()
         self._h2o_components.append(self)
 
     def shutdown_cluster(self):
@@ -177,8 +210,7 @@ class H2OClusterMixin(object):
             h2o.connection().close()
 
 
-
-class H2OtoSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OClusterMixin):
+class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OClusterMixin):
 
     def __init__(self,
                  estimator_cls=None,
@@ -191,7 +223,7 @@ class H2OtoSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OClusterMixin):
         :param init_cluster_args: the arguments passed to `h2o.init()` if there's no connection to H2O backend.
         :param estimator_params: the estimator/model parameters.
         """
-        super(H2OtoSklearnEstimator, self).__init__()
+        super(BaseSklearnEstimator, self).__init__()
         self._estimator_cls = estimator_cls
         if estimator_type:
             self._estimator_type = estimator_type
@@ -208,10 +240,25 @@ class H2OtoSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OClusterMixin):
             init_cluster_args = {}
         self.init_cluster(**init_cluster_args)
 
-    @expect_h2o_frames
-    def fit(self, X, y=None, **fit_params):
+
+    def _make_estimator(self):
         params = {k: getattr(self, k, None) for k in self._estimator_params}
         self._estimator = self._estimator_cls(**params)
+        return self._estimator
+
+    def __str__(self):
+        return str(self._estimator) if self._estimator else super(H2OtoSklearnEstimator, self).__str__()
+
+
+
+class H2OtoSklearnEstimator(BaseSklearnEstimator):
+
+    def __init__(self, *args, **kwargs):
+        super(H2OtoSklearnEstimator, self).__init__(*args, **kwargs)
+
+    @params_as_h2o_frames()
+    def fit(self, X, y=None, **fit_params):
+        self._make_estimator()
         training_frame = X if y is None else X.concat(y)
         self._estimator.train(y=-1, training_frame=training_frame, **fit_params)
         return self
@@ -219,13 +266,37 @@ class H2OtoSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OClusterMixin):
     def _predict(self, X):
         return self._estimator.predict(X)
 
-    @expect_h2o_frames
+    @params_as_h2o_frames()
     def predict(self, X):
         return self._predict(X)[:, 0]
 
-    @expect_h2o_frames
+    @params_as_h2o_frames()
     def predict_proba(self, X):
         return self._predict(X)[:, 1:]
 
 
+class H2OtoSklearnTransformer(BaseSklearnEstimator, TransformerMixin):
 
+    def __init__(self, *args, **kwargs):
+        super(H2OtoSklearnTransformer, self).__init__(*args, **kwargs)
+
+    @params_as_h2o_frames()
+    def fit(self, X, y=None, **fit_params):
+        self._make_estimator()
+        return self._estimator.fit(X, y, **fit_params)
+
+    @params_as_h2o_frames(transform_result=False)
+    def transform(self, X):
+        return self._estimator.transform(X)
+
+    @params_as_h2o_frames(transform_result=False)
+    def fit_transform(self, X, y=None, **fit_params):
+        if hasattr(self._estimator, 'fit_transform'):
+            self._make_estimator()
+            return self._estimator.fit_transform(X, y, **fit_params)
+        else:
+            return super(H2OtoSklearnTransformer, self).fit_transform(X, y, **fit_params)
+
+    @params_as_h2o_frames(transform_result=False)
+    def inverse_transform(self, X):
+        return self._estimator.inverse_transform(X)
