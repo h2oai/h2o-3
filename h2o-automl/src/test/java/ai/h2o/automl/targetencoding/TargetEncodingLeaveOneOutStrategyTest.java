@@ -65,7 +65,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
       TargetEncoder tec = new TargetEncoder(teColumns);
       targetEncodingMap = tec.prepareEncodingMap(reimportedFrame, targetColumnName, null);
 
-      result = tec.calculateAndAppendBlendedTEEncoding(reimportedFrame, targetEncodingMap.get(teColumnName), targetColumnName);
+      result = tec.calculateAndAppendBlendedTEEncoding(reimportedFrame, targetEncodingMap.get(teColumnName), targetColumnName, "targetEncoded");
 
       double globalMean = 2.0 / 3;
 

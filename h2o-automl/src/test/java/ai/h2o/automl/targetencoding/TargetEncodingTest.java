@@ -2,7 +2,6 @@ package ai.h2o.automl.targetencoding;
 
 import org.junit.After;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
 import water.fvec.*;
@@ -521,7 +520,7 @@ public class TargetEncodingTest extends TestUtil {
 
         merged = tec.mergeByTEColumn(reimportedFrame, targetEncodingMap.get("ColA"), 0, 0);
 
-        resultWithEncoding = tec.calculateAndAppendBlendedTEEncoding(merged, targetEncodingMap.get("ColA"), "ColB_te");
+        resultWithEncoding = tec.calculateAndAppendBlendedTEEncoding(merged, targetEncodingMap.get("ColA"), "ColB", "targetEncoded");
 
 //      String[] dom = resultWithEncoding.vec(1).domain();
         // k <- 20
@@ -540,9 +539,12 @@ public class TargetEncodingTest extends TestUtil {
         double lambda3 = 1.0 / (1.0 + (Math.exp((20.0 - 2) / 10)));
         double te3 = (1.0 - lambda3) * globalMean + (lambda3 * 2 / 2);
 
+//        printOutFrameAsTable(resultWithEncoding, true, resultWithEncoding.numRows());
+
         assertEquals(te1, resultWithEncoding.vec(4).at(0), 1e-5);
         assertEquals(te3, resultWithEncoding.vec(4).at(1), 1e-5);
         assertEquals(te2, resultWithEncoding.vec(4).at(2), 1e-5);
+
 
       } finally {
         new File(tmpName).delete();
@@ -901,40 +903,6 @@ public class TargetEncodingTest extends TestUtil {
     newReferenceFrame.delete(); // And we should not delete fr2 explicitly since it will be deleted by reference.
     assertEquals(1, fr.vec(0).at(0), 1e-5);
     fr.delete();
-  }
-
-  @Test
-  public void transformFrameWithoutResponseColumn() {
-    Scope.enter();
-    try {
-      String teColumnName = "ColA";
-      fr = new TestFrameBuilder()
-              .withName("testFrame")
-              .withColNames(teColumnName, "y")
-              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
-              .withDataForCol(0, ar("a", "b", "b", "b"))
-              .withDataForCol(1, ar("2", "6", "6", "2"))
-              .build();
-
-      Frame frameWithoutResponse = new TestFrameBuilder()
-              .withName("testFrame2")
-              .withColNames(teColumnName)
-              .withVecTypes(Vec.T_CAT)
-              .withDataForCol(0, ar("a", "b", "b", "b"))
-              .build();
-
-      String[] teColumns = {teColumnName};
-      TargetEncoder tec = new TargetEncoder(teColumns);
-
-      Map<String, Frame> encodingMap = tec.prepareEncodingMap(fr, "y", null);
-      Scope.track(encodingMap.get(teColumnName));
-
-      Frame encoded = tec.applyTargetEncoding(frameWithoutResponse, "y", encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, false, true, 1234);
-      Scope.track(encoded);
-    } finally {
-      Scope.exit();
-    }
-
   }
 
   @After
