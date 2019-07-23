@@ -68,14 +68,17 @@ class MetricsBase(backwards_compatible()):
             print("WARNING: Model metrics cannot be calculated and metric_json is empty due to the absence of the response column in your dataset.")
             return
         metric_type = self._metric_json['__meta']['schema_type']
-        types_w_glm = ['ModelMetricsRegressionGLM', 'ModelMetricsBinomialGLM', 'ModelMetricsBinomialGLMGeneric']
+        types_w_glm = ['ModelMetricsRegressionGLM', 'ModelMetricsRegressionGLMGeneric', 'ModelMetricsBinomialGLM',
+                       'ModelMetricsBinomialGLMGeneric']
         types_w_clustering = ['ModelMetricsClustering']
         types_w_mult = ['ModelMetricsMultinomial', 'ModelMetricsMultinomialGeneric']
         types_w_ord = ['ModelMetricsOrdinal']
         types_w_bin = ['ModelMetricsBinomial', 'ModelMetricsBinomialGeneric', 'ModelMetricsBinomialGLM', 'ModelMetricsBinomialGLMGeneric']
-        types_w_r2 = ['ModelMetricsRegressionGLM']
-        types_w_mean_residual_deviance = ['ModelMetricsRegressionGLM', 'ModelMetricsRegression']
-        types_w_mean_absolute_error = ['ModelMetricsRegressionGLM', 'ModelMetricsRegression']
+        types_w_r2 = ['ModelMetricsRegressionGLM', 'ModelMetricsRegressionGLMGeneric']
+        types_w_mean_residual_deviance = ['ModelMetricsRegressionGLM', 'ModelMetricsRegressionGLMGeneric',
+                                          'ModelMetricsRegression']
+        types_w_mean_absolute_error = ['ModelMetricsRegressionGLM', 'ModelMetricsRegressionGLMGeneric',
+                                       'ModelMetricsRegression']
         types_w_logloss = types_w_bin + types_w_mult+types_w_ord
         types_w_dim = ["ModelMetricsGLRM"]
         types_w_anomaly = ['ModelMetricsAnomaly']

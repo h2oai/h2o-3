@@ -111,11 +111,21 @@ public class GenericModelOutput extends Model.Output {
                 }
             case Regression:
                 assert mojoMetrics instanceof MojoModelMetricsRegression;
-                MojoModelMetricsRegression metricsRegression = (MojoModelMetricsRegression) mojoMetrics;
 
-                return new ModelMetricsRegression(null, null, metricsRegression._nobs, metricsRegression._MSE,
-                        Double.NaN, metricsRegression._mae, metricsRegression._root_mean_squared_log_error, metricsRegression._mean_residual_deviance,
-                        new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value));
+                if (mojoMetrics instanceof MojoModelMetricsRegressionGLM) {
+                    final MojoModelMetricsRegressionGLM regressionGLM = (MojoModelMetricsRegressionGLM) mojoMetrics;
+                    return new ModelMetricsRegressionGLMGeneric(null, null, regressionGLM._nobs, regressionGLM._MSE,
+                            Float.NaN, regressionGLM._mae, regressionGLM._root_mean_squared_log_error, regressionGLM._mean_residual_deviance,
+                            new CustomMetric(regressionGLM._custom_metric_name, regressionGLM._custom_metric_value), regressionGLM._r2,
+                            regressionGLM._nullDegressOfFreedom, regressionGLM._residualDegressOfFreedom, regressionGLM._resDev,
+                            regressionGLM._nullDev, regressionGLM._AIC);
+                } else {
+                    MojoModelMetricsRegression metricsRegression = (MojoModelMetricsRegression) mojoMetrics;
+
+                    return new ModelMetricsRegressionGeneric(null, null, metricsRegression._nobs, metricsRegression._MSE,
+                            Double.NaN, metricsRegression._mae, metricsRegression._root_mean_squared_log_error, metricsRegression._mean_residual_deviance,
+                            new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value), metricsRegression._r2);
+                }
             case AnomalyDetection:
                 assert mojoMetrics instanceof MojoModelMetricsAnomaly;
                 // There is no need to introduce new Generic alternatives to the original metric objects at the moment.

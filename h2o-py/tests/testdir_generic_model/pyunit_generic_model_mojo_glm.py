@@ -39,8 +39,8 @@ def mojo_model_test_binomial():
 
 
 def mojo_model_test_regression():
-    test(["Origin", "Dest"], "Distance", compare_output, 'GLM Model: summary', 'ModelMetricsBinomialGLM: glm',
-         'ModelMetricsBinomialGLMGeneric: generic')
+    test(["Origin", "Dest"], "Distance", compare_output, 'GLM Model: summary', 'ModelMetricsRegressionGLM: glm',
+         'ModelMetricsRegressionGLMGeneric: generic', 'gaussian')
 
 
 def mojo_model_test_multinomial():
@@ -50,7 +50,7 @@ def mojo_model_test_multinomial():
 if __name__ == "__main__":
     pyunit_utils.standalone_test(mojo_model_test_binomial)
     pyunit_utils.standalone_test(mojo_model_test_multinomial)
-    #pyunit_utils.standalone_test(mojo_model_test_regression)
+    pyunit_utils.standalone_test(mojo_model_test_regression)
 else:
     mojo_model_test_binomial()
     mojo_model_test_multinomial()

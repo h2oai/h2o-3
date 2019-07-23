@@ -56,7 +56,9 @@ public class ModelAttributes implements Serializable {
           return new MojoModelMetricsMultinomialGLM();
         } else return new MojoModelMetricsMultinomial();
       case Regression:
-        return new MojoModelMetricsRegression();
+        if (mojoModel instanceof GlmMojoModel) {
+          return new MojoModelMetricsRegressionGLM();
+        } else return new MojoModelMetricsRegression();
       case AnomalyDetection:
         return new MojoModelMetricsAnomaly();
       case Unknown:
