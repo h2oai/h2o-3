@@ -673,7 +673,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public Key _cross_validation_predictions[];
     public Key<Frame> _cross_validation_holdout_predictions_frame_id;
     public Key<Frame> _cross_validation_fold_assignment_frame_id;
-
+    
     // Model-specific start/end/run times
     // Each individual model's start/end/run time is reported here, not the total time to build N+1 cross-validation models, or all grid models
     public long _start_time;
@@ -962,6 +962,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         return (float) classification_error();
       case AUC:
         return (float)(1-auc());
+      case AUCPR:
+        return (float)(1-AUCPR());
 /*      case r2:
         return (float)(1-r2());*/
       case mean_per_class_error:
@@ -1048,6 +1050,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     if (mm == null) return Double.NaN;
 
     return ((ModelMetricsBinomial)mm)._auc._auc;
+  }
+
+  public double AUCPR() {
+    if (scoringInfo != null)
+      return last_scored().cross_validation ? last_scored().scored_xval._pr_auc : last_scored().validation ? last_scored().scored_valid._pr_auc : last_scored().scored_train._pr_auc;
+
+    ModelMetrics mm = _output._cross_validation_metrics != null ? _output._cross_validation_metrics : _output._validation_metrics != null ? _output._validation_metrics : _output._training_metrics;
+    if (mm == null) return Double.NaN;
+
+    return ((ModelMetricsBinomial)mm)._auc._pr_auc;
   }
 
   public double deviance() {

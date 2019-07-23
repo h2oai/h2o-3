@@ -28,10 +28,16 @@ public abstract class Keyed<T extends Keyed> extends Iced<T> {
     return remove_impl(fs, cascade);
   }
 
-  /** Override to remove subparts, but not self, of composite Keyed objects.  
+  /**
+   * @deprecated Better override {@link #remove_impl(Futures, boolean)} instead
+   */
+  @Deprecated
+  protected Futures remove_impl(Futures fs) { return fs; }
+
+  /** Override to remove subparts, but not self, of composite Keyed objects.
    *  Examples include {@link Vec} (removing associated {@link Chunk} keys)
    *  and {@link Frame} (removing associated {@link Vec} keys.) */
-  protected Futures remove_impl(Futures fs, boolean cascade) { return fs; }
+  protected Futures remove_impl(Futures fs, boolean cascade) { return remove_impl(fs); }
 
   /** Removes the Keyed object associated to the key, and all subparts; blocking. */
   public static void remove( Key k ) {

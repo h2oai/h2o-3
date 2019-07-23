@@ -18,7 +18,8 @@ import water.util.Log;
 import water.util.Timer;
 import water.util.TwoDimTable;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -670,11 +671,15 @@ public class TestUtil extends Iced {
   public static <T> T[] aro(T ...a) { return a ;}
 
   // ==== Comparing Results ====
-  
-  public static void assertFrameEquals(Frame expected, Frame actual, double delta) {
+
+  public static void assertFrameEquals(Frame expected, Frame actual, double absDelta) {
+    assertFrameEquals(expected, actual, absDelta, null);
+  }
+
+  public static void assertFrameEquals(Frame expected, Frame actual, Double absDelta, Double relativeDelta) {
     assertEquals("Frames have different number of vecs. ", expected.vecs().length, actual.vecs().length);
     for (int i = 0; i < expected.vecs().length; i++) {
-      assertVecEquals(i + "/" + expected._names[i] + " ", expected.vec(i), actual.vec(i), delta);
+      assertVecEquals(i + "/" + expected._names[i] + " ", expected.vec(i), actual.vec(i), absDelta, relativeDelta);
     }
   }
 
@@ -683,10 +688,38 @@ public class TestUtil extends Iced {
   }
 
   public static void assertVecEquals(String messagePrefix, Vec expecteds, Vec actuals, double delta) {
+    assertVecEquals(messagePrefix, expecteds, actuals, delta, null);
+  }
+
+  public static void assertVecEquals(String messagePrefix, Vec expecteds, Vec actuals, Double absDelta, Double relativeDelta) {
     assertEquals(expecteds.length(), actuals.length());
     for(int i = 0; i < expecteds.length(); i++) {
       final String message = messagePrefix + i + ": " + expecteds.at(i) + " != " + actuals.at(i) + ", chunkIds = " + expecteds.elem2ChunkIdx(i) + ", " + actuals.elem2ChunkIdx(i) + ", row in chunks = " + (i - expecteds.chunkForRow(i).start()) + ", " + (i - actuals.chunkForRow(i).start());
-      assertEquals(message, expecteds.at(i), actuals.at(i), delta);
+      double expectedVal = expecteds.at(i);
+      double actualVal = actuals.at(i);
+      assertEquals(message, expectedVal, actualVal, computeAssertionDelta(expectedVal, absDelta, relativeDelta));
+    }
+  }
+  
+  private static double computeAssertionDelta(double expectedVal, Double absDelta, Double relDelta) {
+    if ((absDelta == null || absDelta.isNaN()) && (relDelta == null || relDelta.isNaN())) {
+      throw new IllegalArgumentException("Either absolute or relative delta has to be non-null and non-NaN");
+    } else if (relDelta == null || relDelta.isNaN()) {
+      return absDelta;
+    } else {
+      double computedRelativeDelta;
+      double deltaBase = Math.abs(expectedVal);
+      if (deltaBase == 0) {
+        computedRelativeDelta = relDelta;
+      } else {
+        computedRelativeDelta = deltaBase * relDelta;
+      }
+      if (absDelta == null || absDelta.isNaN()) {
+        return computedRelativeDelta;
+      } else {
+        // use the bigger delta for the assert
+        return Math.max(computedRelativeDelta, absDelta);
+      }
     }
   }
 
@@ -1014,10 +1047,15 @@ public class TestUtil extends Iced {
     Vec vec = frame.vec(columnName);
     frame.replace(frame.find(columnName), vec.toCategoricalVec());
     vec.remove();
+    DKV.put(frame);
     return frame;
   }
 
-  public void printOutFrameAsTable(Frame fr, boolean rollups, long limit) {
+  public static void printOutFrameAsTable(Frame fr) {
+    printOutFrameAsTable(fr, false, fr.numRows());
+  }
+
+  public static void printOutFrameAsTable(Frame fr, boolean rollups, long limit) {
     assert limit <= Integer.MAX_VALUE;
     TwoDimTable twoDimTable = fr.toTwoDimTable(0, (int) limit, rollups);
     System.out.println(twoDimTable.toString(2, true));

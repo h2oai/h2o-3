@@ -33,6 +33,17 @@ import java.util.Arrays;
  * The returned column(s).
  */
 public class AstGroup extends AstPrimitive {
+
+  private final boolean _per_node_aggregates;
+
+  public AstGroup() {
+    this(true);
+  }
+
+  public AstGroup(boolean perNodeAggregates) {
+    _per_node_aggregates = perNodeAggregates;
+  }
+
   public enum NAHandling {ALL, RM, IGNORE}
 
   // Functions handled by GroupBy
@@ -278,7 +289,7 @@ public class AstGroup extends AstPrimitive {
 
   public ValFrame performGroupingWithAggregations(Frame fr, int[] gbCols, AGG[] aggs) {
     final boolean hasMedian = hasMedian(aggs);
-    final IcedHashMap<G, String> gss = doGroups(fr, gbCols, aggs, hasMedian);
+    final IcedHashMap<G, String> gss = doGroups(fr, gbCols, aggs, hasMedian, _per_node_aggregates);
     final G[] grps = gss.keySet().toArray(new G[gss.size()]);
 
     applyOrdering(gbCols, grps);
@@ -433,17 +444,24 @@ public class AstGroup extends AstPrimitive {
   // the selected 'gbCols' columns, and for each group compute aggregrate
   // results using 'aggs'.  Return an array of groups, with the aggregate results.
   public static IcedHashMap<G, String> doGroups(Frame fr, int[] gbCols, AGG[] aggs) {
-    return doGroups(fr, gbCols, aggs, false);
+    return doGroups(fr, gbCols, aggs, false, true);
   }
 
-  public static IcedHashMap<G, String> doGroups(Frame fr, int[] gbCols, AGG[] aggs, boolean hasMedian) {
+  private static IcedHashMap<G, String> doGroups(Frame fr, int[] gbCols, AGG[] aggs, boolean hasMedian, boolean perNodeAggregates) {
     // do the group by work now
     long start = System.currentTimeMillis();
-    GBTask p1 = new GBTask(gbCols, aggs, hasMedian).doAll(fr);
+    GBTask<?> p1 = makeGBTask(perNodeAggregates, gbCols, aggs, hasMedian).doAll(fr);
     Log.info("Group By Task done in " + (System.currentTimeMillis() - start) / 1000. + " (s)");
-    return p1._gss;
+    return p1.getGroups();
   }
 
+  private static GBTask<? extends GBTask> makeGBTask(boolean perNodeAggregates, int[] gbCols, AGG[] aggs, boolean hasMedian) {
+    if (perNodeAggregates)
+      return new GBTaskAggsPerNode(gbCols, aggs, hasMedian);
+    else
+      return new GBTaskAggsPerMap(gbCols, aggs, hasMedian);
+  }
+  
   // Utility for AstDdply; return a single aggregate for counting rows-per-group
   public static AGG[] aggNRows() {
     return new AGG[]{new AGG(FCN.nrow, 0, NAHandling.IGNORE, 0)};
@@ -513,22 +531,33 @@ public class AstGroup extends AstPrimitive {
     }
   }
 
-
-  // --------------------------------------------------------------------------
-  // Main worker MRTask.  Makes 1 pass over the data, and accumulates both all
-  // groups and all aggregates
-  public static class GBTask extends MRTask<GBTask> {
-    final IcedHashMap<G, String> _gss; // Shared per-node, common, racy
-    private final int[] _gbCols; // Columns used to define group
-    private final AGG[] _aggs;   // Aggregate descriptions
-    private final boolean _hasMedian;
-
+  private static abstract class GBTask<E extends MRTask<E>> extends MRTask<E> {
+    final int[] _gbCols; // Columns used to define group
+    final AGG[] _aggs;   // Aggregate descriptions
+    final boolean _hasMedian;
 
     GBTask(int[] gbCols, AGG[] aggs, boolean hasMedian) {
       _gbCols = gbCols;
       _aggs = aggs;
-      _gss = new IcedHashMap<>();
       _hasMedian = hasMedian;
+    }
+    
+    abstract IcedHashMap<G, String> getGroups();
+    
+  } 
+  
+  // --------------------------------------------------------------------------
+  // Main worker MRTask.  Makes 1 pass over the data, and accumulates both all
+  // groups and all aggregates
+  // This version merges discovered groups into a per-node aggregates map - it
+  // more memory efficient but it seems to suffer from a race condition 
+  // (bug PUBDEV-6319).
+  private static class GBTaskAggsPerNode extends GBTask<GBTaskAggsPerNode> {
+    final IcedHashMap<G, String> _gss; // Shared per-node, common, racy
+
+    GBTaskAggsPerNode(int[] gbCols, AGG[] aggs, boolean hasMedian) {
+      super(gbCols, aggs, hasMedian);
+      _gss = new IcedHashMap<>();
     }
 
     @Override
@@ -556,7 +585,7 @@ public class AstGroup extends AstPrimitive {
     // the shared global hashtable being reduced into is ALSO being written by
     // parallel map calls.
     @Override
-    public void reduce(GBTask t) {
+    public void reduce(GBTaskAggsPerNode t) {
       if (_gss != t._gss) reduce(t._gss);
     }
 
@@ -568,6 +597,60 @@ public class AstGroup extends AstPrimitive {
           for (int i = 0; i < _aggs.length; i++)
             _aggs[i].atomic_op(lg._dss, lg._ns, i, rg._dss[i], rg._ns[i]); // Need to atomically merge groups here
         }
+    }
+
+    @Override
+    IcedHashMap<G, String> getGroups() {
+      return _gss;
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // "Safe" alternative of GBTaskAggsPerNode - instead of maintaining
+  // a node-global map of aggregates, it creates aggregates per chunk
+  // and uses reduce to reduce results of map into a single aggregated.
+  // Consumes more memory but doesn't suffer from bug PUBDEV-6319.
+  public static class GBTaskAggsPerMap extends GBTask<GBTaskAggsPerMap> {
+    IcedHashMap<G, String> _gss; // each map will have its own IcedHashMap
+
+    GBTaskAggsPerMap(int[] gbCols, AGG[] aggs, boolean hasMedian) {
+      super(gbCols, aggs, hasMedian);
+    }
+
+    @Override
+    public void map(Chunk[] cs) {
+      // Groups found in this Chunk
+      _gss = new IcedHashMap<>();
+      G gWork = new G(_gbCols.length, _aggs, _hasMedian); // Working Group
+      G gOld;                   // Existing Group to be filled in
+      for (int row = 0; row < cs[0]._len; row++) {
+        // Find the Group being worked on
+        gWork.fill(row, cs, _gbCols);            // Fill the worker Group for the hashtable lookup
+        if (_gss.putIfAbsent(gWork, "") == null) { // Insert if not absent (note: no race, no need for atomic)
+          gOld = gWork;                          // Inserted 'gWork' into table
+          gWork = new G(_gbCols.length, _aggs, _hasMedian);   // need entirely new G
+        } else gOld = _gss.getk(gWork);            // Else get existing group
+
+        for (int i = 0; i < _aggs.length; i++) // Accumulate aggregate reductions
+          _aggs[i].op(gOld._dss, gOld._ns, i, cs[_aggs[i]._col].atd(row));
+      }
+    }
+
+    // combine IcedHashMap from all threads here.
+    @Override
+    public void reduce(GBTaskAggsPerMap t) {
+      for (G rg : t._gss.keySet()) {
+        if (_gss.putIfAbsent(rg, "") != null) {
+          G lg = _gss.getk(rg);
+          for (int i = 0; i < _aggs.length; i++)
+            _aggs[i].atomic_op(lg._dss, lg._ns, i, rg._dss[i], rg._ns[i]); // Need to atomically merge groups here
+        }
+      }
+    }
+
+    @Override
+    IcedHashMap<G, String> getGroups() {
+      return _gss;
     }
   }
 

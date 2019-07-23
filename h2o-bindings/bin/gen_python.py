@@ -183,6 +183,9 @@ def gen_module(schema, algo):
     yield "        self._parms = {}"
     yield "        names_list = {%s}" % bi.wrap(", ".join('"%s"' % p for p in param_names),
                                                 indent=(" " * 22), indent_first=False)
+    if(algo == "generic"):
+        yield '        if(all(kwargs.get(name, None) is None for name in [ "model_key", "path"])):'
+        yield '                raise H2OValueError("At least one of [\\"model_key\\", \\"path\\"] is required.")'
     yield '        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")'
     yield "        for pname, pvalue in kwargs.items():"
     yield "            if pname == 'model_id':"
@@ -624,10 +627,7 @@ def class_extra_for(algo):
             :param file: A string containing path to the file to create the model from
             :return: H2OGenericEstimator instance representing the generic model
             \"\"\"
-            from h2o import lazy_import, get_frame
-            model_key = lazy_import(file)
-            model_bytes_frame = get_frame(model_key[0])
-            model = H2OGenericEstimator(model_key = model_bytes_frame)
+            model = H2OGenericEstimator(path = file)
             model.train()
             
             return model

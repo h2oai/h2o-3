@@ -181,7 +181,6 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
 
     Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, foldColumnName);
 
-    printOutFrameAsTable(targetEncodingMap.get(teColumnName), true, true);
     //If we do not pass noise_level as parameter then it will be calculated according to the type of target column. For categorical target column it defaults to 1e-2
     Frame resultWithEncoding = tec.applyTargetEncoding(fr2, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, false, false, 1234);
 
@@ -288,7 +287,6 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
     //If we do not pass noise_level as parameter then it will be calculated according to the type of target column. For categorical target column it defaults to 1e-2
     Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumn, false, 0.0, false, 1234);
 
-    printOutFrameAsTable(resultWithEncoding, true, true);
     double expectedDifferenceDueToNoise = 1e-5;
     Vec vec = resultWithEncoding.vec(3);
     Vec expected = dvec(0.5, 0, 0, 1, 1, 1, 1, 0.66666, 1, 1, 0.66666, 0, 1, 0, 0);
@@ -450,18 +448,6 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
     for (Map.Entry<String, Frame> map : encodingMap.entrySet()) {
       map.getValue().delete();
     }
-  }
-
-  private void printOutFrameAsTable(Frame fr) {
-
-    TwoDimTable twoDimTable = fr.toTwoDimTable();
-    System.out.println(twoDimTable.toString(2, false));
-  }
-
-  private void printOutFrameAsTable(Frame fr, boolean full, boolean rollups) {
-
-    TwoDimTable twoDimTable = fr.toTwoDimTable(0, 10000, rollups);
-    System.out.println(twoDimTable.toString(2, full));
   }
 
 }

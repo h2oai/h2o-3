@@ -126,9 +126,10 @@ public class ScoreKeeper extends Iced {
     RMSE(ConvergenceStrategy.LESS_IS_BETTER, true),
     MAE(ConvergenceStrategy.LESS_IS_BETTER, true),
     RMSLE(ConvergenceStrategy.LESS_IS_BETTER, true),
-    AUC(ConvergenceStrategy.MORE_IS_BETTER, false),
+    AUC(ConvergenceStrategy.MORE_IS_BETTER, true),
     lift_top_group(ConvergenceStrategy.MORE_IS_BETTER, false),
     misclassification(ConvergenceStrategy.LESS_IS_BETTER, true),
+    AUCPR(ConvergenceStrategy.MORE_IS_BETTER, true),
     mean_per_class_error(ConvergenceStrategy.LESS_IS_BETTER, true),
     custom(ConvergenceStrategy.LESS_IS_BETTER, false),
     custom_increasing(ConvergenceStrategy.MORE_IS_BETTER, false),
@@ -181,6 +182,9 @@ public class ScoreKeeper extends Iced {
           break;
         case misclassification:
           val = skj._classError;
+          break;
+        case AUCPR:
+          val = skj._pr_auc;
           break;
         case mean_per_class_error:
           val = skj._mean_per_class_error;
