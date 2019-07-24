@@ -234,6 +234,10 @@ Defining a GBM Model
    than 2. For more information, refer to `Tweedie
    distribution <https://en.wikipedia.org/wiki/Tweedie_distribution>`__.
 
+- `upload_custom_distribution <algo-params/upload_custom_distribution.html>`__: Upload a custom distribution into a running H2O cluster.
+
+- `upload_custom_metric <algo-params/upload_custom_metric.html>`__: Upload a custom metric into a running H2O cluster.
+
 -  `huber_alpha <algo-params/huber_alpha.html>`__: Specify the desired quantile for Huber/M-regression (the threshold between quadratic and linear loss). This value must be between 0 and 1.
 
 -  `checkpoint <algo-params/checkpoint.html>`__: Enter a model key associated with a
@@ -271,8 +275,6 @@ Defining a GBM Model
 -  `check_constant_response <algo-params/check_constant_response.html>`__: Check if the response column is a constant value. If enabled (default), then an exception is thrown if the response column is a constant value. If disabled, then the model will train regardless of the response column being a constant value or not.
 
 -  **verbose**: Print scoring history to the console. For GBM, metrics are per tree. This value defaults to FALSE.
-
--  `upload_custom_distribution <algo-params/upload_custom_distribution.html>`__: Upload a custom distribution into a running H2O cluster.
 
 Interpreting a GBM Model
 ~~~~~~~~~~~~~~~~~~~~~~~~
