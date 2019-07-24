@@ -1571,6 +1571,9 @@ class H2ORandomForestEstimator(H2OEstimator):
 
         :examples:
 
+        >>> import tempfile
+        >>> from os import listdir
+        >>> from h2o.grid.grid_search import H2OGridSearch
         >>> airlines = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip", destination_frame="air.hex")
         >>> predictors = ["DayofMonth", "DayOfWeek"]
         >>> response = "IsDepDelayed"
