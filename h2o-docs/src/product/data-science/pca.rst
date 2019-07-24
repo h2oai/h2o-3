@@ -55,6 +55,7 @@ Defining a PCA Model
 
 -  `impute_missing <algo-params/impute_missing.html>`__: Specifies whether to impute missing entries with the column mean value. This value defaults to False.
 
+-  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
 Interpreting a PCA Model
 ~~~~~~~~~~~~~~~~~~~~~~~~
