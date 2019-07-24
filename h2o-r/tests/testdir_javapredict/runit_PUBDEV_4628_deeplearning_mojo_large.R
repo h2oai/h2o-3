@@ -17,6 +17,7 @@ test.deeplearning.mojo <-
     # Run the test
     #----------------------------------------------------------------------
     numTest = 200 # set test dataset to contain 1000 rows
+    set.seed(12345)
     allAct <-
       c(
         "Tanh",
@@ -32,9 +33,10 @@ test.deeplearning.mojo <-
       c("Eigen", "AUTO", "OneHotInternal", "Binary")
     model_count = 1
     useAllFactors <- c(TRUE, FALSE)
+    autoEncoder <- c(FALSE)
     
     for (actFunc in allAct) {
-      for (autoEn in useAllFactors) {
+      for (autoEn in autoEncoder) {
         if ((
           grepl('Maxout', autoEn, fixed = TRUE) ||
           grepl('MaxoutWithDropout', autoEn, fixed = TRUE)
@@ -54,9 +56,12 @@ test.deeplearning.mojo <-
                   }
                   print(paste("*******   Model number", model_count, sep =
                                 ":"))
+                  if (model_count == 10) {
+                    browser()
+                  }
                   model_count = model_count + 1
                   print(paste("AutoEncoder on", autoEn, sep = ":"))
-                  print(paste("useAllFactor", useFactors, sep = ":"))
+                  print(paste("useAllFactor", useFactor, sep = ":"))
                   print(paste("activation function", actFunc, sep = ":"))
                   print(paste("toStandardsize", toStandardize, sep = ":"))
                   print(paste(
@@ -79,7 +84,6 @@ test.deeplearning.mojo <-
                     response_type,
                     response_num
                   )
-                  print("Training data types....")
                   columnTypes <-
                     h2o.getTypes(params_prob_data$params$training_frame)
                   colTypes <- c()
@@ -91,21 +95,20 @@ test.deeplearning.mojo <-
                     } else
                       colTypes <- c(colTypes, columnTypes[[index]])
                   }
+                  
                   colNames <-
                     h2o.names(params_prob_data$params$training_frame)
-                  print(columnTypes)
-                  print("Training column names....")
-                  print(colNames)
-                  print("Building model and saving mojo....")
-                  
                   e <- tryCatch({
                     modelAndDir <-
                       buildModelSaveMojo(params_prob_data$params) # build the model and save mojo
                     filename = sprintf("%s/in.csv", modelAndDir$dirName) # save the test dataset into a in.csv file.
-                    h2o.downloadCSV(params_prob_data$tDataset[, params_prob_data$params$x], filename)
-                    print("Generating model predict and mojo predict .....")
+                    #h2o.downloadCSV(params_prob_data$tDataset[, params_prob_data$params$x], filename)
+                    h2o.downloadCSV(params_prob_data$tDataset, filename)
                     colTypes = list(by.col.name = colNames[2:length(colNames)], types =
                                       colTypes)
+                    print("Test column names and types")
+                    print(colTypes)
+                    print("Generating model predict and mojo predict .....")
                     twoFrames <-
                       mojoH2Opredict(modelAndDir$model,
                                      modelAndDir$dirName,
@@ -138,13 +141,13 @@ test.deeplearning.mojo <-
                   , error = function(x)
                     x)
                   if (!is.null(e)) {
-                    print("Oh, caught some error")
-                    print(typeof(e))
+                    print("Oh, got some problems")
+                    print(e)
                     if (!is.null(e) &&
-                        (!all(sapply(
-                          "DistributedException", grepl, e[[1]]
-                        ))))
+                        (!all(sapply("unstable", grepl, e[[1]])))) {
+                      stop(e)
                       FAIL(e)   # throw error unless it is unstable model error.
+                    }
                   }
                   print("Test SUCCESS....")
                 }
@@ -221,7 +224,8 @@ setParmsData <-
                                 response_num,
                                 testrow = 200,
                                 seed = 12345)
-    ratios <- (h2o.nrow(training_file) - 200) / h2o.nrow(training_file)
+    ratios <-
+      (h2o.nrow(training_file) - 200) / h2o.nrow(training_file)
     allFrames <- h2o.splitFrame(training_file, ratios)
     training_frame <- allFrames[[1]]
     test_frame <- allFrames[[2]]
