@@ -150,18 +150,21 @@ public class GenericModelOutput extends Model.Output {
                 assert mojoMetrics instanceof MojoModelMetricsOrdinal;
 
                 if (mojoMetrics instanceof MojoModelMetricsOrdinalGLM) {
+                    assert modelAttributes instanceof GLMModelAttributes;
+                    final GLMModelAttributes glmModelAttributes = (GLMModelAttributes) modelAttributes;
                     MojoModelMetricsOrdinalGLM ordinalMetrics = (MojoModelMetricsOrdinalGLM) mojoMetrics;
                     return new ModelMetricsOrdinalGLMGeneric(null, null, ordinalMetrics._nobs, ordinalMetrics._MSE,
                             ordinalMetrics._domain, ordinalMetrics._sigma, convertTable(ordinalMetrics._cm), ordinalMetrics._hit_ratios,
                             ordinalMetrics._logloss, new CustomMetric(ordinalMetrics._custom_metric_name, ordinalMetrics._custom_metric_value),
                             ordinalMetrics._r2, ordinalMetrics._nullDegressOfFreedom, ordinalMetrics._residualDegressOfFreedom, ordinalMetrics._resDev,
-                            ordinalMetrics._nullDev, ordinalMetrics._AIC);
+                            ordinalMetrics._nullDev, ordinalMetrics._AIC, convertTable(glmModelAttributes._coefficients_table), 
+                            convertTable(ordinalMetrics._hit_ratio_table));
                 } else {
                     MojoModelMetricsOrdinal ordinalMetrics = (MojoModelMetricsOrdinal) mojoMetrics;
                     return new ModelMetricsOrdinalGeneric(null, null, ordinalMetrics._nobs, ordinalMetrics._MSE,
                             ordinalMetrics._domain, ordinalMetrics._sigma, convertTable(ordinalMetrics._cm), ordinalMetrics._hit_ratios,
                             ordinalMetrics._logloss, new CustomMetric(ordinalMetrics._custom_metric_name, ordinalMetrics._custom_metric_value),
-                            ordinalMetrics._r2);
+                            ordinalMetrics._r2, convertTable(ordinalMetrics._hit_ratio_table));
                 }
             case Unknown:
             case Clustering:
