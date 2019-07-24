@@ -351,7 +351,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     @property
     def response_column(self):
         """
-        Response variable column.
+        Response variable column. This is an alias of `y`.
 
         Type: ``str``.
 
@@ -1821,7 +1821,32 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``str``.
 
         :examples:
-        
+
+        >>> import tempfile
+        >>> from os import listdir
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> airlines = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip", destination_frame="air.hex")
+        >>> predictors = ["DayofMonth", "DayOfWeek"]
+        >>> response = "IsDepDelayed"
+        >>> hyper_parameters = {'ntrees': [5,10]}
+        >>> search_crit = {'strategy': "RandomDiscrete",
+        ...                'max_models': 5,
+        ...                'seed': 1234,
+        ...                'stopping_rounds': 3,
+        ...                'stopping_metric': "AUTO",
+        ...                'stopping_tolerance': 1e-2}
+        >>> checkpoints_dir = tempfile.mkdtemp()
+        >>> air_grid = H2OGridSearch(H2OGradientBoostingEstimator,
+        ...                          hyper_params=hyper_parameters,
+        ...                          search_criteria=search_crit)
+        >>> air_grid.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=airlines,
+        ...                distribution="bernoulli",
+        ...                learn_rate=0.1, max_depth=3,
+        ...                export_checkpoints_dir=checkpoints_dir)
+        >>> num_files = len(listdir(checkpoints_dir))
+        >>> num_files
         """
         return self._parms.get("export_checkpoints_dir")
 
@@ -1840,7 +1865,18 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``dict``.
 
         :examples:
-        
+
+        >>> prostate_hex = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        >>> prostate_hex["CAPSULE"] = prostate_hex["CAPSULE"].asfactor()
+        >>> response = "CAPSULE"
+        >>> seed=42
+        >>> monotone_constraints={"AGE":1}
+        >>> gbm_model = H2OGradientBoostingEstimator(seed=seed,
+                                                     monotone_constraints=monotone_constraints)
+        >>> gbm_model.train(y=response,
+                            ignored_columns=["ID"],
+                            training_frame=prostate_hex)
+        >>> gbm_model.scoring_history()
         """
         return self._parms.get("monotone_constraints")
 
