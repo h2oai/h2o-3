@@ -214,7 +214,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       int[] idxs = MemoryManager.malloc4(stratifyBy.length);
       for (int i = 0; i < idxs.length; i++)
         idxs[i] = i;
-      Collection<AstGroup.G> groups = AstGroup.doGroups(sf, idxs, AstGroup.aggNRows()).values();
+      Collection<AstGroup.G> groups = AstGroup.doGroups(sf, idxs, AstGroup.aggNRows());
       groups: for (AstGroup.G g : groups) {
         for (double val : g._gs)
           if (Double.isNaN(val))
