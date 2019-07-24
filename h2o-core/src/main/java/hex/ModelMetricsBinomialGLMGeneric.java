@@ -11,7 +11,6 @@ public class ModelMetricsBinomialGLMGeneric extends ModelMetricsBinomialGeneric 
   public final double _nullDev;
   public final double _AIC;
   public final TwoDimTable _coefficients_table;
-  public final double _r2;
 
   public ModelMetricsBinomialGLMGeneric(Model model, Frame frame, long nobs, double mse, String[] domain,
                                         double sigma, AUC2 auc, double logloss, TwoDimTable gainsLiftTable,
@@ -20,18 +19,12 @@ public class ModelMetricsBinomialGLMGeneric extends ModelMetricsBinomialGeneric 
                                         long nullDegressOfFreedom, long residualDegressOfFreedom, double resDev, double nullDev,
                                         double aic, TwoDimTable coefficients_table, double r2) {
     super(model, frame, nobs, mse, domain, sigma, auc, logloss, gainsLiftTable, customMetric, mean_per_class_error,
-            thresholds_and_metric_scores, max_criteria_and_metric_scores, confusion_matrix);
+            thresholds_and_metric_scores, max_criteria_and_metric_scores, confusion_matrix, r2);
     _nullDegressOfFreedom = nullDegressOfFreedom;
     _residualDegressOfFreedom = residualDegressOfFreedom;
     _resDev = resDev;
     _nullDev = nullDev;
     _AIC = aic;
     _coefficients_table = coefficients_table;
-    _r2 = r2;
-  }
-
-  @Override
-  public double r2() {
-    return _r2;
   }
 }

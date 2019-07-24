@@ -95,7 +95,7 @@ public class GenericModelOutput extends Model.Output {
                             auc, binomial._logloss, convertTable(binomial._gains_lift_table),
                             new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value), binomial._mean_per_class_error,
                             convertTable(binomial._thresholds_and_metric_scores), convertTable(binomial._max_criteria_and_metric_scores),
-                            convertTable(binomial._confusion_matrix));
+                            convertTable(binomial._confusion_matrix), binomial._r2);
                 }
             case Multinomial:
                 assert mojoMetrics instanceof MojoModelMetricsMultinomial;
