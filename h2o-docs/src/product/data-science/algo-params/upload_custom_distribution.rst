@@ -7,8 +7,6 @@
 Description
 ~~~~~~~~~~~
 
-**Note**: This function is only available in Python.
-
 H2O’s GBM provides a number of distribution options that can be specified when building a model. Alternatively, you can use the ``upload_custom_distribution`` function to upload a custom distribution into a running H2O cluster.
 
 The custom distribution is a function that implements the `water.udf.CDistributionFunc` interface. This interface follows the design of `hex.Distribution` and contains four methods to support distributed invocation:
@@ -30,6 +28,8 @@ Three separate fields must be specified when using this function:
 - ``func_file``: The name of the file to store the function in an uploaded jar file. The source code of the given class is saved into a file that is subsequently zipped, uploaded as a zip-archive, and saved into the distributed key-value store.
 
 The parameters ``func_name`` and ``func_file`` must be unique for each uploaded custom distribution.
+
+**Note**: This option is only supported in the Python client.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~

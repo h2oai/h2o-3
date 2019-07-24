@@ -242,6 +242,8 @@ Defining a DRF Model
 
 -  `custom_metric_func <algo-params/custom_metric_func.html>`__: Optionally specify a custom evaluation function.
 
+- `upload_custom_metric <algo-params/upload_custom_metric.html>`__: Upload a custom metric into a running H2O cluster.
+
 -  **export_checkpoints_dir**: Optionally specify a path to a directory where every generated model will be stored when checkpointing models.
 
 -  `check_constant_response <algo-params/check_constant_response.html>`__: Check if the response column is a constant value. If enabled (default), then an exception is thrown if the response column is a constant value. If disabled, then the model will train regardless of the response column being a constant value or not.
