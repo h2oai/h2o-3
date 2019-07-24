@@ -52,18 +52,22 @@ public class GenericModelOutput extends Model.Output {
         // Training metrics
 
         if (modelAttributes.getTrainingMetrics() != null) {
-            _training_metrics = (ModelMetrics) convertObjects(modelAttributes.getTrainingMetrics(), determineModelmetricsType(modelAttributes.getTrainingMetrics(), modelDescriptor));
+            _training_metrics = (ModelMetrics) convertObjects(modelAttributes.getTrainingMetrics(),
+                    determineModelmetricsType(modelAttributes.getTrainingMetrics(), modelDescriptor, modelAttributes));
         }
         if (modelAttributes.getValidationMetrics() != null) {
-            _validation_metrics = (ModelMetrics) convertObjects(modelAttributes.getValidationMetrics(), determineModelmetricsType(modelAttributes.getValidationMetrics(), modelDescriptor));
+            _validation_metrics = (ModelMetrics) convertObjects(modelAttributes.getValidationMetrics(),
+                    determineModelmetricsType(modelAttributes.getValidationMetrics(), modelDescriptor, modelAttributes));
         }
         if (modelAttributes.getCrossValidationMetrics() != null) {
-            _cross_validation_metrics = (ModelMetrics) convertObjects(modelAttributes.getCrossValidationMetrics(), determineModelmetricsType(modelAttributes.getCrossValidationMetrics(), modelDescriptor));
+            _cross_validation_metrics = (ModelMetrics) convertObjects(modelAttributes.getCrossValidationMetrics(),
+                    determineModelmetricsType(modelAttributes.getCrossValidationMetrics(), modelDescriptor, modelAttributes));
         }
         
     }
 
-    private ModelMetrics determineModelmetricsType(final MojoModelMetrics mojoMetrics, final ModelDescriptor modelDescriptor) {
+    private ModelMetrics determineModelmetricsType(final MojoModelMetrics mojoMetrics, final ModelDescriptor modelDescriptor,
+                                                   final ModelAttributes modelAttributes) {
         final ModelCategory modelCategory = modelDescriptor.getModelCategory();
         switch (modelCategory) {
             case Binomial:
@@ -113,12 +117,14 @@ public class GenericModelOutput extends Model.Output {
                 assert mojoMetrics instanceof MojoModelMetricsRegression;
 
                 if (mojoMetrics instanceof MojoModelMetricsRegressionGLM) {
+                    assert modelAttributes instanceof GLMModelAttributes;
+                    final GLMModelAttributes glmModelAttributes = (GLMModelAttributes) modelAttributes;
                     final MojoModelMetricsRegressionGLM regressionGLM = (MojoModelMetricsRegressionGLM) mojoMetrics;
                     return new ModelMetricsRegressionGLMGeneric(null, null, regressionGLM._nobs, regressionGLM._MSE,
                             Float.NaN, regressionGLM._mae, regressionGLM._root_mean_squared_log_error, regressionGLM._mean_residual_deviance,
                             new CustomMetric(regressionGLM._custom_metric_name, regressionGLM._custom_metric_value), regressionGLM._r2,
                             regressionGLM._nullDegressOfFreedom, regressionGLM._residualDegressOfFreedom, regressionGLM._resDev,
-                            regressionGLM._nullDev, regressionGLM._AIC);
+                            regressionGLM._nullDev, regressionGLM._AIC, convertTable(glmModelAttributes._coefficients_table));
                 } else {
                     MojoModelMetricsRegression metricsRegression = (MojoModelMetricsRegression) mojoMetrics;
 

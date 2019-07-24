@@ -1,3 +1,4 @@
+source("generic_model_test_common.R")
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 
@@ -7,11 +8,20 @@ test.model.generic.glm <- function() {
     data <- h2o.importFile(path = locate('smalldata/testng/airlines_train.csv'))
     cols <- c("Origin", "IsDepDelayed")
     original_model <- h2o.glm(x=cols, y = "Distance", training_frame = data, validation_frame = data, nfolds = 3)
-
-    mojo_original_name <- h2o.download_mojo(model = original_model, path = tempdir())
-    mojo_original_path <- paste0(tempdir(),"/",mojo_original_name)
+    print(original_model)
+    mojo_original_name <- h2o.download_mojo(model = original_model, path = "/home/pavel/")
+    mojo_original_path <- paste0("/home/pavel","/",mojo_original_name)
     
     generic_model <- h2o.genericModel(mojo_original_path)
+    print(generic_model)
+    
+    
+    original_output <- capture.output(print(original_model))
+    generic_output <- capture.output(print(generic_model))
+    compare_output(original_output, generic_output,
+                   c("Extract .+ frame","H2ORegressionModel: glm", "Model ID", "H2ORegressionMetrics: glm"),
+                   c("H2ORegressionModel: generic", "Model ID", "H2ORegressionMetrics: generic"))
+    
     generic_model_preds  <- h2o.predict(generic_model, data)
     expect_equal(length(generic_model_preds), 1)
     expect_equal(h2o.nrow(generic_model_preds), 24421)

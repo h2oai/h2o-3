@@ -4,9 +4,8 @@ import hex.ModelMetricsRegressionGLM;
 import water.api.API;
 import water.api.API.Direction;
 
-/**
- */
-public class ModelMetricsRegressionGLMV3 extends ModelMetricsRegressionV3<ModelMetricsRegressionGLM, ModelMetricsRegressionGLMV3> {
+public class ModelMetricsRegressionGLMV3<I extends ModelMetricsRegressionGLM, S extends ModelMetricsRegressionGLMV3<I, S>>
+        extends ModelMetricsRegressionV3<I, S> {
 
   @API(help = "residual deviance", direction = Direction.OUTPUT)
   public double residual_deviance;
