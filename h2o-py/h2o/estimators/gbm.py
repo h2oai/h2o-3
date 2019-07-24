@@ -1860,10 +1860,10 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         >>> seed=42
         >>> monotone_constraints={"AGE":1}
         >>> gbm_model = H2OGradientBoostingEstimator(seed=seed,
-                                                     monotone_constraints=monotone_constraints)
+        ...                                          monotone_constraints=monotone_constraints)
         >>> gbm_model.train(y=response,
-                            ignored_columns=["ID"],
-                            training_frame=prostate_hex)
+        ...                 ignored_columns=["ID"],
+        ...                 training_frame=prostate_hex)
         >>> gbm_model.scoring_history()
         """
         return self._parms.get("monotone_constraints")
