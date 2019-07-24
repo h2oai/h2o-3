@@ -1753,39 +1753,27 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
         >>> response = "IsDepDelayed"
         >>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
-        >>> airlines_gbm = H2OGradientBoostingEstimator(stopping_metric = "auc",
-        ...                                             stopping_rounds = 3,
-        ...                                             stopping_tolerance = 1e-2,
-        ...                                             seed =1234)
-        >>> airlines_gbm.train(x = predictors,
-        ...                    y = response,
-        ...                    training_frame = train,
-        ...                    validation_frame = valid)
-        >>> airlines_gbm.auc(valid=True)
-        >>> class CustomRmseFunc:
-        >>> def map(self, pred, act, w, o, model):
-        ...     idx = int(act[0])
-        ...     err = 1 - pred[idx + 1] if idx + 1 < len(pred) else 1
-        ...     return [err * err, 1]
-        >>> def reduce(self, l, r):
-        ...     return [l[0] + r[0], l[1] + r[1]]
-        >>> def metric(self, l):
-        ...     import java.lang.Math as math
-        ...     return math.sqrt(l[0] / l[1])
-        >>> custom_mm_func = h2o.upload_custom_metric(CustomRmseFunc,
-        ...                                           func_name="rmse",
-        ...                                           func_file="mm_rmse.py")
-        >>> model = H2OGradientBoostingEstimator(ntrees=3,
-        ...                                      max_depth=5,
-        ...                                      score_each_iteration=True,
-        ...                                      custom_metric_func=custom_mm_func,
-        ...                                      stopping_metric="custom",
-        ...                                      stopping_tolerance=0.1,
-        ...                                      stopping_rounds=3)
-        >>> model.train(x=predictors,
-        ...             y=response,
-        ...             training_frame train,
-        ...             validation_frame = valid)
+        >>> >>> airlines_gbm = H2OGradientBoostingEstimator(ntrees=3,
+        ...                                                 max_depth=5,
+        ...                                                 distribution="bernoulli",
+        ...                                                 seed=1234)
+        >>> airlines_gbm.train(x=predictors,
+        ...                    y=response,
+        ...                    training_frame=train,
+        ...                    validation_frame=valid)
+        >>> from h2o.utils.distributions import CustomDistributionBernoulli
+        >>> custom_distribution_bernoulli = h2o.upload_custom_distribution(CustomDistributionBernoulli,
+        ...                                                                func_name="custom_bernoulli",
+        ...                                                                func_file="custom_bernoulli.py")
+        >>> airlines_gbm_custom = H2OGradientBoostingEstimator(ntrees=3,
+        ...                                                    max_depth=5,
+        ...                                                    distribution="custom",
+        ...                                                    custom_distribution_func=custom_distribution_bernoulli,
+        ...                                                    seed=1235)
+        >>> airlines_gbm_custom.train(x=predictors,
+        ...                           y=response,
+        ...                           training_frame=train,
+        ...                           validation_frame=valid)
         """
         return self._parms.get("custom_metric_func")
 
