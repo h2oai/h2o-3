@@ -1290,6 +1290,20 @@ class H2OXGBoostEstimator(H2OEstimator):
         decreasing constraint.
 
         Type: ``dict``.
+
+        :examples:
+
+        >>> prostate_hex = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        >>> prostate_hex["CAPSULE"] = prostate_hex["CAPSULE"].asfactor()
+        >>> response = "CAPSULE"
+        >>> seed=42
+        >>> monotone_constraints={"AGE":1}
+        >>> xgb_model = H2OXGBoostEstimator(seed=seed,
+        ...                                 monotone_constraints=monotone_constraints)
+        >>> xgb_model.train(y=response,
+        ...                 ignored_columns=["ID"],
+        ...                 training_frame=prostate_hex)
+        >>> xgb_model.scoring_history()
         """
         return self._parms.get("monotone_constraints")
 
