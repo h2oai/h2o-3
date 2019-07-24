@@ -33,14 +33,15 @@ def partial_plot_test_with_user_splits():
                           75.21052631578948, 77.10526315789474]
     user_splits['RACE'] = ["Black", "White"]
     pdpUserSplit2D = gbm_model.partial_plot(data=data,server=True, plot=True, user_splits=user_splits, 
-                                            col_pairs_2dpdp=[['AGE', 'PSA'], ['AGE', 'RACE']], save_to_file=filename)
+                                            col_pairs_2dpdp=[['AGE', 'PSA'], ['AGE', 'RACE']], save_to_file=filename)  
     pdpUserSplit1D2D = gbm_model.partial_plot(data=data, cols=['AGE', 'RACE', 'DCAPS'], server=True, plot=True, 
                                               user_splits=user_splits, 
                                               col_pairs_2dpdp=[['AGE', 'PSA'], ['AGE', 'RACE']], save_to_file=filename)
     pdpUserSplit1D = gbm_model.partial_plot(data=data,cols=['AGE', 'RACE', 'DCAPS'], server=True, plot=True, 
                                             user_splits=user_splits, save_to_file=filename)
-
-    # compare results 1D pdp
+    if os.path.isfile(filename):
+        os.remove(filename)
+        # compare results 1D pdp
     for i in range(3):
         pyunit_utils.assert_H2OTwoDimTable_equal_upto(pdpUserSplit1D[i], pdpUserSplit1D2D[i], 
                                                       pdpUserSplit1D[i].col_header, tolerance=1e-10)

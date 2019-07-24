@@ -20,6 +20,9 @@ test <- function() {
   h2o_pp_1d_2d = h2o.partialPlot(object = prostate_drf, data = prostate_hex, cols = c("RACE", "AGE"), 
                                  col_pairs_2dpdp=list(c("RACE", "AGE"), c("AGE", "PSA")), plot = T, 
                                  user_splits=user_splits_list, save_to=temp_filename_no_extension)
+  if (file.exists(temp_filename_no_extension)) 
+    file.remove(temp_filename_no_extension)
+  
   h2o_pp_2d_only = h2o.partialPlot(object = prostate_drf, data = prostate_hex, col_pairs_2dpdp=list(c("RACE", "AGE"), c("AGE", "PSA")), plot = F,
                                    user_splits=user_splits_list)
   h2o_pp_1d_only = h2o.partialPlot(object = prostate_drf, data = prostate_hex, cols = c("RACE", "AGE"), plot = F, user_splits=user_splits_list)
