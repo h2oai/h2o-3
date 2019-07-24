@@ -1,4 +1,4 @@
-from collections import OrderedDict
+from collections import defaultdict, OrderedDict
 from functools import partial, update_wrapper, wraps
 
 from sklearn.base import is_classifier, is_regressor, BaseEstimator, TransformerMixin
@@ -48,7 +48,7 @@ def wrap_estimator(cls,
         for k, v in default_params.items():
             yield "         {k}={v},".format(k=k, v=repr(v))
         yield "         init_cluster_args=None,"
-        if is_generic:
+        if is_generic:  # if generic, add hook to decide estimator type dynamically (distribution param?)
             yield "         estimator_type=None,"
         yield "         ):"
         yield "    kwargs = locals()"
@@ -224,6 +224,7 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OClusterMixin):
         :param estimator_params: the estimator/model parameters.
         """
         super(BaseSklearnEstimator, self).__init__()
+        self._estimator = None
         self._estimator_cls = estimator_cls
         if estimator_type:
             self._estimator_type = estimator_type
@@ -231,23 +232,74 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OClusterMixin):
         # we only keep a ref to parameters names
         # all those params are also exposed as a regular attribute and can be modified directly
         #  on the estimator instance
-        self._estimator_params = estimator_params.keys()
-        self.__dict__.update(estimator_params)
-
-        self._estimator = None
+        self._estimator_param_names = estimator_params.keys()
+        self.set_params(**estimator_params)
 
         if init_cluster_args is None:
             init_cluster_args = {}
         self.init_cluster(**init_cluster_args)
 
 
+    @classmethod
+    def _no_conflict(cls, param):
+        # return param
+        return param+'_' if param in dir(cls) else param
+
+    def set_params(self, **params):
+        """
+        Override BaseEstimator logic to solve the conflict issue we have with some estimator parameters
+        like `transform` that conflict with method names in sklearn context.
+        :param params:
+        :return:
+        """
+        if not params:
+            return self
+        valid_params = self.get_params(deep=True)
+
+        nested_params = defaultdict(dict)  # grouped by prefix
+        for key, value in params.items():
+            key, delim, sub_key = key.partition('__')
+            if key not in valid_params:
+                raise ValueError("Invalid parameter %s for estimator %s. "
+                                 "Check the list of available parameters "
+                                 "with `estimator.get_params().keys()`."
+                                 % (key, self))
+
+            if delim:
+                nested_params[key][sub_key] = value
+            else:
+                setattr(self, self._no_conflict(key), value)
+
+        for key, sub_params in nested_params.items():
+            valid_params[key].set_params(**sub_params)
+
+        return self
+
+    def get_params(self, deep=True):
+        """
+        Override BaseEstimator logic to solve the conflict issue we have with some estimator parameters
+        like `transform` that conflict with method names in sklearn context.
+        :param deep:
+        :return:
+        """
+        params = {k: getattr(self, self._no_conflict(k), None) for k in self._estimator_param_names}
+        if deep:
+            out = dict()
+            for k, v in params.items():
+                if hasattr(v, 'get_params'):
+                    deep_items = v.get_params().items()
+                    out.update((k+'__'+key, val) for key, val in deep_items)
+            params.update(out)
+        return params
+
     def _make_estimator(self):
-        params = {k: getattr(self, k, None) for k in self._estimator_params}
+        print("new {}".format(self._estimator_cls.__name__))
+        params = self.get_params()
         self._estimator = self._estimator_cls(**params)
         return self._estimator
 
     def __str__(self):
-        return str(self._estimator) if self._estimator else super(H2OtoSklearnEstimator, self).__str__()
+        return str(self._estimator) if self._estimator else super(BaseSklearnEstimator, self).__str__()
 
 
 
