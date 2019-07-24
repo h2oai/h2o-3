@@ -78,6 +78,8 @@ public class GenericModelOutput extends Model.Output {
                 auc._pr_auc = binomial._pr_auc;
                 auc._gini = binomial._gini;
                 if (mojoMetrics instanceof MojoModelMetricsBinomialGLM) {
+                    assert modelAttributes instanceof GLMModelAttributes;
+                    final GLMModelAttributes glmModelAttributes = (GLMModelAttributes) modelAttributes;
                     final MojoModelMetricsBinomialGLM glmBinomial = (MojoModelMetricsBinomialGLM) binomial;
                     return new ModelMetricsBinomialGLMGeneric(null, null, mojoMetrics._nobs, mojoMetrics._MSE,
                             _domains[_domains.length - 1], Double.NaN,
@@ -85,7 +87,8 @@ public class GenericModelOutput extends Model.Output {
                             new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value), binomial._mean_per_class_error,
                             convertTable(binomial._thresholds_and_metric_scores), convertTable(binomial._max_criteria_and_metric_scores),
                             convertTable(binomial._confusion_matrix), glmBinomial._nullDegressOfFreedom, glmBinomial._residualDegressOfFreedom,
-                            glmBinomial._resDev, glmBinomial._nullDev, glmBinomial._AIC);
+                            glmBinomial._resDev, glmBinomial._nullDev, glmBinomial._AIC, convertTable(glmModelAttributes._coefficients_table),
+                            glmBinomial._r2);
                 } else {
                     return new ModelMetricsBinomialGeneric(null, null, mojoMetrics._nobs, mojoMetrics._MSE,
                             _domains[_domains.length - 1], Double.NaN,
