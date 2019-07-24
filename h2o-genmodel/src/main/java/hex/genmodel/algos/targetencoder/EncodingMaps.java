@@ -9,18 +9,20 @@ public class EncodingMaps implements Serializable {
 
   /**
    * Outer Map stores encoding maps for each categorical column.
-   * Inner Map (encoding map) represents mapping from categorical level to array of `numerator` and `denominator` 
+   * Inner Map (encoding map) represents mapping from categorical level index to array of `numerator` and `denominator` 
    * which are supposed to be used for calculation of response frequencies.
    * 
    *  Example:
    *    Map( "categorical_col_name_1" ->  EncodingMap ( 
-   *                                        "A" -> [ 4, 7 ], 
-   *                                        "B" -> [ 2, 8 ], 
-   *                                        "C" -> [ 5, 6 ], 
+   *                                        0 which represents "A" -> [ 4, 7 ], 
+   *                                        1 which represents "B" -> [ 2, 8 ], 
+   *                                        2 which represents "C" -> [ 5, 6 ], 
+   *                                        3 which represents "categorical_col_name_1_NA" -> [ 4, 5 ], 
    *                                      )
    *    Map( "categorical_col_name_2" ->  EncodingMap ( 
-   *                                       "red" -> [ 2, 2 ], 
-   *                                       "green" -> [ 3, 9 ]
+   *                                       0 which represents "red" -> [ 2, 2 ], 
+   *                                       1 which represents "green" -> [ 3, 9 ]
+   *                                       2 which represents "categorical_col_name_2_NA" -> [ 5, 8 ]
    *                                     )
    */                                       
   private Map<String, EncodingMap> _encodingMaps;

@@ -15,6 +15,8 @@ import water.DKV;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.fvec.TestFrameBuilder;
+import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
 
@@ -406,6 +408,80 @@ public class TEMojoIntegrationTest extends TestUtil {
       double expectedBlendedEncodingForHomeDest = TargetEncoderMojoModel.computeBlendedEncoding(expectedLambda, posteriorMean, expectedPriorMean);
 
       assertEquals(expectedBlendedEncodingForHomeDest, encodings[1], 1e-5);
+
+    } finally {
+      targetEncoderModel.remove();
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void check_that_encodings_for_null_values_are_the_same_in_TargetEncoderModel_and_TargetEncoderMojoModel() throws IOException, PredictException {
+
+    String mojoFileName = "mojo_te.zip";
+    File mojoFile = folder.newFile(mojoFileName);
+    ;
+    TargetEncoderModel targetEncoderModel = null;
+    Scope.enter();
+    try {
+      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+
+      String responseColumnName = "survived";
+
+      asFactor(fr, responseColumnName);
+      Scope.track(fr);
+
+      String[] teColumns = {"home.dest"};
+
+      TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
+
+      targetEncoderParameters._columnNamesToEncode = teColumns;
+
+      // Enable blending
+      targetEncoderParameters._withBlending = true;
+      targetEncoderParameters._blendingParams = new BlendingParams(5, 1);
+
+      targetEncoderParameters._ignore_const_cols = false;
+      targetEncoderParameters.setTrain(fr._key);
+      targetEncoderParameters._response_column = responseColumnName;
+
+      TargetEncoderBuilder job = new TargetEncoderBuilder(targetEncoderParameters);
+
+      job.trainModel().get();
+
+      targetEncoderModel = job.getTargetEncoderModel();
+
+      try (FileOutputStream modelOutput = new FileOutputStream(mojoFile)) {
+        targetEncoderModel.getMojo().writeTo(modelOutput);
+        System.out.println("Model has been written down to a file as a mojo: " + mojoFileName);
+      }
+
+      // Let's load model that we just have written and use it for prediction.
+      EasyPredictModelWrapper teModelWrapper = null;
+
+      TargetEncoderMojoModel loadedMojoModel = (TargetEncoderMojoModel) MojoModel.load(mojoFile.getPath());
+
+      teModelWrapper = new EasyPredictModelWrapper(loadedMojoModel); // TODO why we store GenModel even though we pass MojoModel?
+
+      // RowData that is not encoded yet
+      RowData rowToPredictFor = new RowData();
+      rowToPredictFor.put("home.dest", Double.NaN);
+
+      // Same data as in RowData but stored in Frame
+      Frame testFrame = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("home.dest")
+              .withVecTypes(Vec.T_CAT)
+              .withDataForCol(0, ar((String)null))
+              .build();
+
+      double[] encodingsFromMojoModel = teModelWrapper.transformWithTargetEncoding(rowToPredictFor).transformations;
+
+      byte noneHoldoutStrategy = 2;
+      Frame encodingsFromTargetEncoderModel = targetEncoderModel.transform(testFrame, noneHoldoutStrategy, 0.0, 1234);
+      Scope.track(encodingsFromTargetEncoderModel);
+      
+      assertEquals(encodingsFromMojoModel[0], encodingsFromTargetEncoderModel.vec("home.dest_te").at(0), 1e-5);
 
     } finally {
       targetEncoderModel.remove();

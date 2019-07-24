@@ -60,6 +60,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     public transient Map<String, Frame> _target_encoding_map;
     public TargetEncoderParameters _teParams;
     public transient Map<String, Integer> _teColumnNameToIdx;
+    public transient Map<String, Integer> _teColumnNameToMissingValuesPresence;
     
     public TargetEncoderOutput(TargetEncoderBuilder b, Map<String, Frame> teMap) {
       super(b);
@@ -67,6 +68,19 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       _teParams = b._parms;
 
       _teColumnNameToIdx = createColumnNameToIndexMap(_teParams);
+      _teColumnNameToMissingValuesPresence = createMissingValuesPresenceMap();
+    }
+
+    private Map<String, Integer> createMissingValuesPresenceMap() {
+
+      Map<String, Integer> presenceOfNAMap = new HashMap<>();
+      for(Map.Entry<String, Frame> entry : _target_encoding_map.entrySet()) {
+        String teColumn = entry.getKey();
+        Frame frameWithEncodings = entry.getValue();
+        presenceOfNAMap.put(teColumn, _teParams.train().vec(teColumn).cardinality() < frameWithEncodings.vec(teColumn).cardinality() ? 1 : 0);
+      }
+      
+      return presenceOfNAMap;
     }
     
     private Map<String, Integer> createColumnNameToIndexMap(TargetEncoderParameters teParams) {

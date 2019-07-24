@@ -197,7 +197,83 @@ public class TargetEncoderMojoModelTest {
   }
   
   @Test
-  public void transformUnknownCategories() throws PredictException {
+  public void transform_unknown_categories_when_training_data_had_missing_or_unexpected_values() throws PredictException {
+    String[][] domains = new String[3][2];
+    domains[0] = null;
+    domains[1][0] = "A";
+    domains[1][1] = "B";
+    domains[2] = null;
+
+    String predictorName = "categ_var1";
+    String numerical_col1 = "numerical_col1";
+    String numerical_col2 = "numerical_col2";
+
+    String[] names = new String[]{numerical_col1, predictorName, numerical_col2};
+
+    TargetEncoderMojoModel targetEncoderMojoModel = new TargetEncoderMojoModel(names, domains, null);
+    targetEncoderMojoModel._nfeatures = names.length; // model.getNumCols is overriden in MojoModel and GenModel's version which is based on `names` is not used
+
+    EncodingMaps encodingMap = new EncodingMaps();
+    EncodingMap encodingMapForCat1 = new EncodingMap();
+    int factorForLevelA = 0;
+    int factorForLevelB = 1;
+    int factorForNA = 2;
+    encodingMapForCat1.put(factorForLevelA, new int[]{2, 5});
+    encodingMapForCat1.put(factorForLevelB, new int[]{3, 7});
+    encodingMapForCat1.put(factorForNA, new int[]{6, 8});
+
+    encodingMap.put(predictorName, encodingMapForCat1);
+
+    targetEncoderMojoModel._targetEncodingMap = encodingMap;
+    targetEncoderMojoModel._withBlending = false;
+
+    targetEncoderMojoModel._teColumnNameToIdx = new HashMap<>();
+    targetEncoderMojoModel._teColumnNameToIdx.put(predictorName, 1);
+    targetEncoderMojoModel._teColumnNameToMissingValuesPresence = new HashMap<>();
+    targetEncoderMojoModel._teColumnNameToMissingValuesPresence.put(predictorName, 1);
+
+
+    VoidErrorConsumer errorConsumer = new VoidErrorConsumer();
+    HashMap<String, Integer> modelColumnNameToIndexMap = new HashMap<>();
+    modelColumnNameToIndexMap.put(predictorName, 1);
+    modelColumnNameToIndexMap.put(numerical_col1, 0);
+    modelColumnNameToIndexMap.put(numerical_col2, 2);
+
+    HashMap<Integer, HashMap<String, Integer>> domainMap = new DomainMapConstructor(targetEncoderMojoModel).create();
+    RowToRawDataConverter rowToRawDataConverter = new RowToRawDataConverter(targetEncoderMojoModel, modelColumnNameToIndexMap, domainMap, errorConsumer, true, true);
+
+    //Case 1:  Unexpected value `C`
+    RowData rowToPredictFor = new RowData();
+    rowToPredictFor.put(numerical_col1, 42.0);
+    rowToPredictFor.put(predictorName, "C");
+    rowToPredictFor.put(numerical_col2, 10.0);
+
+    double[] rawData = nanArray(3);
+    double[] testRawData = rowToRawDataConverter.convert(rowToPredictFor, rawData);
+    double[] preds = new double[1];
+
+    targetEncoderMojoModel.score0(testRawData, preds);
+
+    double expectedPosteriorProbabilityForNAFromTrainingData = 6.0 / 8;
+    assertEquals(expectedPosteriorProbabilityForNAFromTrainingData, preds[0], 1e-5);
+    
+    // Case 2:  Missing value `null`
+    RowData rowToPredictFor2 = new RowData();
+    rowToPredictFor2.put(numerical_col1, 42.0);
+    rowToPredictFor2.put(predictorName, Double.NaN);
+    rowToPredictFor2.put(numerical_col2, 10.0);
+
+    double[] rawData2 = nanArray(3);
+    double[] testRawData2 = rowToRawDataConverter.convert(rowToPredictFor2, rawData2);
+    double[] preds2 = new double[1];
+
+    targetEncoderMojoModel.score0(testRawData2, preds2);
+
+    assertEquals(expectedPosteriorProbabilityForNAFromTrainingData, preds[0], 1e-5);
+  }
+
+  @Test
+  public void transform_unknown_categories_when_training_data_does_not_have_missing_values() throws PredictException {
     String[][] domains = new String[3][2];
     domains[0] = null;
     domains[1][0] = "A";
@@ -227,6 +303,8 @@ public class TargetEncoderMojoModelTest {
 
     targetEncoderMojoModel._teColumnNameToIdx = new HashMap<>();
     targetEncoderMojoModel._teColumnNameToIdx.put(predictorName, 1);
+    targetEncoderMojoModel._teColumnNameToMissingValuesPresence = new HashMap<>();
+    targetEncoderMojoModel._teColumnNameToMissingValuesPresence.put(predictorName, 0);
 
 
     VoidErrorConsumer errorConsumer = new VoidErrorConsumer();
@@ -238,6 +316,7 @@ public class TargetEncoderMojoModelTest {
     HashMap<Integer, HashMap<String, Integer>> domainMap = new DomainMapConstructor(targetEncoderMojoModel).create();
     RowToRawDataConverter rowToRawDataConverter = new RowToRawDataConverter(targetEncoderMojoModel, modelColumnNameToIndexMap, domainMap, errorConsumer, true, true);
 
+    //Case 1:  Unexpected value `C`
     RowData rowToPredictFor = new RowData();
     rowToPredictFor.put(numerical_col1, 42.0);
     rowToPredictFor.put(predictorName, "C");
@@ -249,8 +328,22 @@ public class TargetEncoderMojoModelTest {
 
     targetEncoderMojoModel.score0(testRawData, preds);
 
-    double expectedPriorProbabilityForLevelA = (2.0 + 3) / (5 + 7);
-    assertEquals(expectedPriorProbabilityForLevelA, preds[0], 1e-5);
+    double expectedPriorProbabilityFromTrainingData = (2.0 + 3) / (5 + 7);
+    assertEquals(expectedPriorProbabilityFromTrainingData, preds[0], 1e-5);
+
+    // Case 2:  Missing value `null`
+    RowData rowToPredictFor2 = new RowData();
+    rowToPredictFor2.put(numerical_col1, 42.0);
+    rowToPredictFor2.put(predictorName, Double.NaN);
+    rowToPredictFor2.put(numerical_col2, 10.0);
+
+    double[] rawData2 = nanArray(3);
+    double[] testRawData2 = rowToRawDataConverter.convert(rowToPredictFor2, rawData2);
+    double[] preds2 = new double[1];
+
+    targetEncoderMojoModel.score0(testRawData2, preds2);
+
+    assertEquals(expectedPriorProbabilityFromTrainingData, preds[0], 1e-5);
   }
   
   // We test that order of transformation/predictions is determined by index of teColumn in the input data.

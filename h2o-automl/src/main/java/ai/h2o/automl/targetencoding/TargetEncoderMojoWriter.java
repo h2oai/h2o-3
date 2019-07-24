@@ -49,6 +49,14 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
       writelnkv(entry.getKey(), entry.getValue().toString()); 
     }
     finishWritingTextFile();
+
+    Map<String, Integer> _teColumnNameToMissingValuesPresence = ((TargetEncoderModel) model)._output._teColumnNameToMissingValuesPresence;
+    startWritingTextFile("feature_engineering/target_encoding/te_column_name_to_missing_values_presence.ini");
+    for(Map.Entry<String, Integer> entry: _teColumnNameToMissingValuesPresence.entrySet()) {
+      writelnkv(entry.getKey(), entry.getValue().toString());
+    }
+    finishWritingTextFile();
+    
   }
 
   /**

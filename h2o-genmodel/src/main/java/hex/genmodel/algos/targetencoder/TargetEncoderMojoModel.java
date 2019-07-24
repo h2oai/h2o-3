@@ -12,9 +12,17 @@ public class TargetEncoderMojoModel extends MojoModel {
 
   public EncodingMaps _targetEncodingMap;
   public Map<String, Integer> _teColumnNameToIdx = new HashMap<>();
+  public Map<String, Integer> _teColumnNameToMissingValuesPresence;
   public boolean _withBlending;
   public double _inflectionPoint;
   public double _smoothing;
+
+  /**
+   * Whether during training of the model unknown categorical level was imputed with NA level. 
+   * It will determine whether we are using posterior probability of NA level or prior probability when substitution didn't take place.
+   * TODO Default value is hardcoded to `true` as we need to investigate PUBDEV-6704
+   */
+  private final boolean _imputationOfUnknownLevelsIsEnabled = true;
 
   // Could be passed from the model training phase so that we don't have to recompute it here. Or maybe it is fine as it should be computed only once per mojoModel
   private double _priorMean = -1;
@@ -59,26 +67,23 @@ public class TargetEncoderMojoModel extends MojoModel {
         String teColumn = columnToEncodingsMap.getKey();
         int indexOfColumnInRow = _teColumnNameToIdx.get(teColumn);
         
-        double originalValue = row[indexOfColumnInRow]; 
+        double categoricalLevelIndex = row[indexOfColumnInRow]; 
         
-        if(Double.isNaN(originalValue)) {
-          preds[predictionIndex] = _priorMean;
+        if (Double.isNaN(categoricalLevelIndex)) {
+          if(_imputationOfUnknownLevelsIsEnabled) {
+            if(_teColumnNameToMissingValuesPresence.get(teColumn) == 1) {
+              int indexOfNALevel = encodings._encodingMap.size() - 1;
+              computeEncodings(preds, predictionIndex, encodings, indexOfNALevel);
+            } else { // imputation was enabled but we didn't encounter missing values in training data so using `_priorMean`
+              preds[predictionIndex] = _priorMean;
+            }
+          } else {
+            preds[predictionIndex] = _priorMean;
+          }
         } else {
           //It is assumed that categorical levels are only represented with int values
-          int originalValueAsInt = (int) originalValue;
-          int[] correspondingNumAndDen = encodings._encodingMap.get(originalValueAsInt);
-
-          double posteriorMean = (double) correspondingNumAndDen[0] / correspondingNumAndDen[1];
-
-          if (_withBlending) {
-            int numberOfRowsInCurrentCategory = correspondingNumAndDen[1];
-            double lambda = computeLambda(numberOfRowsInCurrentCategory, _inflectionPoint, _smoothing);
-            double blendedValue = computeBlendedEncoding(lambda, posteriorMean, _priorMean);
-
-            preds[predictionIndex] = blendedValue;
-          } else {
-            preds[predictionIndex] = posteriorMean;
-          }
+          int categoricalLevelIndexAsInt = (int) categoricalLevelIndex;
+          computeEncodings(preds, predictionIndex, encodings, categoricalLevelIndexAsInt);
 
         }
         predictionIndex++;
@@ -88,6 +93,22 @@ public class TargetEncoderMojoModel extends MojoModel {
     }
     
     return preds;
+  }
+
+  private void computeEncodings(double[] preds, int predictionIndex, EncodingMap encodings, int originalValueAsInt) {
+    int[] correspondingNumAndDen = encodings._encodingMap.get(originalValueAsInt);
+
+    double posteriorMean = (double) correspondingNumAndDen[0] / correspondingNumAndDen[1];
+
+    if (_withBlending) {
+      int numberOfRowsInCurrentCategory = correspondingNumAndDen[1];
+      double lambda = computeLambda(numberOfRowsInCurrentCategory, _inflectionPoint, _smoothing);
+      double blendedValue = computeBlendedEncoding(lambda, posteriorMean, _priorMean);
+
+      preds[predictionIndex] = blendedValue;
+    } else {
+      preds[predictionIndex] = posteriorMean;
+    }
   }
 
   public static class SortByKeyAssociatedIndex < K extends String, V > implements  Comparator<Map.Entry<K, V>>
