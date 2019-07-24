@@ -82,7 +82,7 @@ public class GenericModelOutput extends Model.Output {
                     final GLMModelAttributes glmModelAttributes = (GLMModelAttributes) modelAttributes;
                     final MojoModelMetricsBinomialGLM glmBinomial = (MojoModelMetricsBinomialGLM) binomial;
                     return new ModelMetricsBinomialGLMGeneric(null, null, mojoMetrics._nobs, mojoMetrics._MSE,
-                            _domains[_domains.length - 1], Double.NaN,
+                            _domains[_domains.length - 1], glmBinomial._sigma,
                             auc, binomial._logloss, convertTable(binomial._gains_lift_table),
                             new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value), binomial._mean_per_class_error,
                             convertTable(binomial._thresholds_and_metric_scores), convertTable(binomial._max_criteria_and_metric_scores),
@@ -91,7 +91,7 @@ public class GenericModelOutput extends Model.Output {
                             glmBinomial._r2);
                 } else {
                     return new ModelMetricsBinomialGeneric(null, null, mojoMetrics._nobs, mojoMetrics._MSE,
-                            _domains[_domains.length - 1], Double.NaN,
+                            _domains[_domains.length - 1], binomial._sigma,
                             auc, binomial._logloss, convertTable(binomial._gains_lift_table),
                             new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value), binomial._mean_per_class_error,
                             convertTable(binomial._thresholds_and_metric_scores), convertTable(binomial._max_criteria_and_metric_scores),
@@ -105,7 +105,7 @@ public class GenericModelOutput extends Model.Output {
                     final GLMModelAttributes glmModelAttributes = (GLMModelAttributes) modelAttributes;
                     final MojoModelMetricsMultinomialGLM glmMultinomial = (MojoModelMetricsMultinomialGLM) mojoMetrics;
                     return new ModelMetricsMultinomialGLMGeneric(null, null, mojoMetrics._nobs, mojoMetrics._MSE,
-                            _domains[_domains.length - 1], Double.NaN,
+                            _domains[_domains.length - 1], glmMultinomial._sigma,
                             convertTable(glmMultinomial._confusion_matrix), convertTable(glmMultinomial._hit_ratios),
                             glmMultinomial._logloss, new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value),
                             glmMultinomial._mean_per_class_error, glmMultinomial._nullDegressOfFreedom, glmMultinomial._residualDegressOfFreedom,
@@ -114,10 +114,10 @@ public class GenericModelOutput extends Model.Output {
                 } else {
                     final MojoModelMetricsMultinomial multinomial = (MojoModelMetricsMultinomial) mojoMetrics;
                     return new ModelMetricsMultinomialGeneric(null, null, mojoMetrics._nobs, mojoMetrics._MSE,
-                            _domains[_domains.length - 1], Double.NaN,
+                            _domains[_domains.length - 1], multinomial._sigma,
                             convertTable(multinomial._confusion_matrix), convertTable(multinomial._hit_ratios),
                             multinomial._logloss, new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value),
-                            multinomial._mean_per_class_error);
+                            multinomial._mean_per_class_error, multinomial._r2);
                 }
             case Regression:
                 assert mojoMetrics instanceof MojoModelMetricsRegression;
@@ -127,7 +127,7 @@ public class GenericModelOutput extends Model.Output {
                     final GLMModelAttributes glmModelAttributes = (GLMModelAttributes) modelAttributes;
                     final MojoModelMetricsRegressionGLM regressionGLM = (MojoModelMetricsRegressionGLM) mojoMetrics;
                     return new ModelMetricsRegressionGLMGeneric(null, null, regressionGLM._nobs, regressionGLM._MSE,
-                            Float.NaN, regressionGLM._mae, regressionGLM._root_mean_squared_log_error, regressionGLM._mean_residual_deviance,
+                            regressionGLM._sigma, regressionGLM._mae, regressionGLM._root_mean_squared_log_error, regressionGLM._mean_residual_deviance,
                             new CustomMetric(regressionGLM._custom_metric_name, regressionGLM._custom_metric_value), regressionGLM._r2,
                             regressionGLM._nullDegressOfFreedom, regressionGLM._residualDegressOfFreedom, regressionGLM._resDev,
                             regressionGLM._nullDev, regressionGLM._AIC, convertTable(glmModelAttributes._coefficients_table));
@@ -135,7 +135,7 @@ public class GenericModelOutput extends Model.Output {
                     MojoModelMetricsRegression metricsRegression = (MojoModelMetricsRegression) mojoMetrics;
 
                     return new ModelMetricsRegressionGeneric(null, null, metricsRegression._nobs, metricsRegression._MSE,
-                            Double.NaN, metricsRegression._mae, metricsRegression._root_mean_squared_log_error, metricsRegression._mean_residual_deviance,
+                            metricsRegression._sigma, metricsRegression._mae, metricsRegression._root_mean_squared_log_error, metricsRegression._mean_residual_deviance,
                             new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value), metricsRegression._r2);
                 }
             case AnomalyDetection:

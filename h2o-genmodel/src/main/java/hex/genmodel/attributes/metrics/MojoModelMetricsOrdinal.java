@@ -2,7 +2,7 @@ package hex.genmodel.attributes.metrics;
 
 import hex.genmodel.attributes.Table;
 
-public class MojoModelMetricsOrdinal extends MojoModelMetrics {
+public class MojoModelMetricsOrdinal extends MojoModelMetricsSupervised {
   public float[] _hit_ratios;
   @SerializedName(value = "cm", insideElementPath = "table")
   public Table _cm;
