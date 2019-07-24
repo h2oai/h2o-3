@@ -20,6 +20,9 @@ public class ModelMetricsMultinomialGLMGenericV3 extends ModelMetricsMultinomial
   @API(help="residual DOF", direction= Direction.OUTPUT)
   public long residual_degrees_of_freedom;
 
+  @API(direction = API.Direction.OUTPUT, help="coefficients_table")
+  public TwoDimTableV3 _coefficients_table; // Originally not part of metrics, put here to avoid GenericOutput having multiple output classes.
+
   @Override
   public ModelMetricsMultinomialGLMGenericV3 fillFromImpl(ModelMetricsMultinomialGLMGeneric mms) {
     super.fillFromImpl(mms);
@@ -28,6 +31,18 @@ public class ModelMetricsMultinomialGLMGenericV3 extends ModelMetricsMultinomial
     this.null_deviance = mms._nullDev;
     this.null_degrees_of_freedom = mms._nullDegressOfFreedom;
     this.residual_degrees_of_freedom = mms._residualDegressOfFreedom;
+    this._coefficients_table = new TwoDimTableV3().fillFromImpl(mms._coefficients_table);
+
+    if (mms._hit_ratio_table != null) {
+      hit_ratio_table = new TwoDimTableV3(mms._hit_ratio_table);
+    }
+
+    if (null != mms._confusion_matrix_table) {
+      final ConfusionMatrixV3 convertedConfusionMatrix = new ConfusionMatrixV3();
+      convertedConfusionMatrix.table = new TwoDimTableV3().fillFromImpl(mms._confusion_matrix_table);
+      this.cm = convertedConfusionMatrix;
+    }
+    
     return this;
   }
 

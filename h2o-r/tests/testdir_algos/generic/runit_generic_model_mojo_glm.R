@@ -48,6 +48,24 @@ test.model.generic.glm <- function() {
                    c("Extract .+ frame","H2OBinomialModel: glm", "Model ID", "H2OBinomialMetrics: glm"),
                    c("H2OBinomialModel: generic", "Model ID", "H2OBinomialMetrics: generic"))
     
+    # Multinomial
+    
+    cols <- c("Origin", "Distance")
+    original_model <- h2o.glm(x=cols, y = "fDayOfWeek", training_frame = data, validation_frame = data, nfolds = 3, family = "multinomial")
+    print(original_model)
+    mojo_original_name <- h2o.download_mojo(model = original_model, path = tempdir())
+    mojo_original_path <- paste0(tempdir(),"/",mojo_original_name)
+    
+    generic_model <- h2o.genericModel(mojo_original_path)
+    print(generic_model)
+    
+    
+    original_output <- capture.output(print(original_model))
+    generic_output <- capture.output(print(generic_model))
+    compare_output(original_output, generic_output,
+                   c("Extract .+ frame","H2OMultinomialModel: glm", "Model ID", "H2OMultinomialMetrics: glm"),
+                   c("H2OMultinomialModel: generic", "Model ID", "H2OMultinomialMetrics: generic"))
+    
 }
 
 doTest("Generic model from GLM MOJO", test.model.generic.glm )

@@ -101,13 +101,16 @@ public class GenericModelOutput extends Model.Output {
                 assert mojoMetrics instanceof MojoModelMetricsMultinomial;
 
                 if (mojoMetrics instanceof MojoModelMetricsMultinomialGLM) {
+                    assert modelAttributes instanceof GLMModelAttributes;
+                    final GLMModelAttributes glmModelAttributes = (GLMModelAttributes) modelAttributes;
                     final MojoModelMetricsMultinomialGLM glmMultinomial = (MojoModelMetricsMultinomialGLM) mojoMetrics;
                     return new ModelMetricsMultinomialGLMGeneric(null, null, mojoMetrics._nobs, mojoMetrics._MSE,
                             _domains[_domains.length - 1], Double.NaN,
                             convertTable(glmMultinomial._confusion_matrix), convertTable(glmMultinomial._hit_ratios),
                             glmMultinomial._logloss, new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value),
                             glmMultinomial._mean_per_class_error, glmMultinomial._nullDegressOfFreedom, glmMultinomial._residualDegressOfFreedom,
-                            glmMultinomial._resDev, glmMultinomial._nullDev, glmMultinomial._AIC);
+                            glmMultinomial._resDev, glmMultinomial._nullDev, glmMultinomial._AIC, convertTable(glmModelAttributes._coefficients_table),
+                            glmMultinomial._r2);
                 } else {
                     final MojoModelMetricsMultinomial multinomial = (MojoModelMetricsMultinomial) mojoMetrics;
                     return new ModelMetricsMultinomialGeneric(null, null, mojoMetrics._nobs, mojoMetrics._MSE,
