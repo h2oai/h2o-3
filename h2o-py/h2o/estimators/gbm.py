@@ -356,7 +356,18 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Type: ``str``.
 
         :examples:
-        
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234)
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.auc(valid=True)
         """
         return self._parms.get("response_column")
 
@@ -516,7 +527,8 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         >>> cov_gbm.train(x = predictors,
         ...               y = response,
         ...               training_frame = train,
-        ...               validation_frame = valid)        
+        ...               validation_frame = valid)
+        ... print('logloss', cov_gbm.logloss(valid = True))
         """
         return self._parms.get("balance_classes")
 
@@ -599,9 +611,6 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         [Deprecated] Maximum size (# classes) for confusion matrices to be printed in the Logs
 
         Type: ``int``  (default: ``20``).
-
-        :examples:
-        
         """
         return self._parms.get("max_confusion_matrix_size")
 
@@ -852,9 +861,6 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         exceeds this
 
         Type: ``float``  (default: ``1.797693135e+308``).
-
-        :examples:
-        
         """
         return self._parms.get("r2_stopping")
 
