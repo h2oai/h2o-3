@@ -848,12 +848,41 @@ function(integerRange, num_rows, num_cols) {
   binary_fraction = 0,
   time_fraction = 0,
   string_fraction = 0,
-  integer_ranger = integerRange,
+  integer_range = integerRange,
   missing_fraction = runif(1, 0, 0.05)
   )
 
   return(random_frame)
 }
+
+#----------------------------------------------------------------------
+# This function will generate a random dataset containing real columns only.
+# Copied from Pasha.
+#
+# Parameters:  denote factor range
+#----------------------------------------------------------------------
+random_dataset_real_only <-
+  function(num_rows, num_cols, realR=10, missingR=0.0, seed=12345) {
+    
+    random_frame <-
+      h2o.createFrame(
+        rows = num_rows,
+        cols = num_cols,
+        randomize = TRUE,
+        has_response = FALSE,
+        categorical_fraction = 0,
+        integer_fraction = 0,
+        binary_fraction = 0,
+        time_fraction = 0,
+        string_fraction = 0,
+        real_range = realR,
+        missing_fraction = missingR,
+        seed=seed
+      )
+    
+    return(random_frame)
+  }
+
 
 #----------------------------------------------------------------------
 # This function will generate a random neural network in the form of
