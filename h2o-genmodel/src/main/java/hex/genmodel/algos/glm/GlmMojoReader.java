@@ -2,7 +2,7 @@ package hex.genmodel.algos.glm;
 
 import com.google.gson.JsonObject;
 import hex.genmodel.ModelMojoReader;
-import hex.genmodel.attributes.GLMModelAttributes;
+import hex.genmodel.attributes.ModelAttributesGLM;
 import hex.genmodel.attributes.ModelAttributes;
 import hex.genmodel.attributes.ModelJsonReader;
 
@@ -43,7 +43,7 @@ public class GlmMojoReader extends ModelMojoReader<GlmMojoModelBase> {
   protected ModelAttributes readModelSpecificAttributes() {
     final JsonObject modelJson = ModelJsonReader.parseModelJson(_reader);
     if(modelJson != null) {
-      return new GLMModelAttributes(_model, modelJson);
+      return new ModelAttributesGLM(_model, modelJson);
     } else {
       return null;
     }
