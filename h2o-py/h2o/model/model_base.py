@@ -367,6 +367,20 @@ class ModelBase(backwards_compatible()):
                     raw_metrics = mm
                     break
             return self._metrics_class(raw_metrics, algo=self._model_json["algo"])
+        
+    def prediction_performance(self, data, acti, predi):
+        if not isinstance(data, h2o.H2OFrame):
+            raise ValueError("`data` must be of type H2OFrame.  Got: " + type(data))
+        if (self._model_json["response_column_name"] is not None) and not(self._model_json["response_column_name"] in data.names):
+            print("WARNING: Model metrics cannot be calculated and metric_json is empty due to the absence of the response column in your dataset.")
+            return
+        res = h2o.api("POST /3/ModelMetrics/models/%s/frames/%s" % (self.model_id, data.frame_id))
+        raw_metrics = None
+        for mm in res["model_metrics"]:
+            if mm["frame"] is not None and mm["frame"]["name"] == data.frame_id:
+                raw_metrics = mm
+                break
+        return self._metrics_class(raw_metrics, algo=self._model_json["algo"])
 
 
     def scoring_history(self):

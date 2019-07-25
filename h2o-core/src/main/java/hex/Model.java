@@ -2623,5 +2623,78 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       public Table modelSummary() { return null; }
     };
   }
+  
+  public ModelMetrics calculateMetricCustomPredictions(Frame frame, int lengthActual, int lengthPreds){
+    return new MetricScore(CFuncRef.from(_parms._custom_metric_func), _output._job, _output._domains[0], lengthActual, lengthPreds).doAll(frame)._mb.makeModelMetrics(this, frame, null, null);
+  }
+  
+  protected class MetricScore extends CMetricScoringTask<MetricScore>{
+    
+    final public Job _j;
+    final protected String[] _domain;
+    final int _lengthActual;
+    final int _lengthPreds;
+    
+    private transient BigScorePredict _localPredict;
+
+    /** Output parameter: Metric builder */
+    public ModelMetrics.MetricBuilder _mb;
+
+    public MetricScore(CFuncRef cFuncRef, Job j, String[] domain, int lengthActual, int lengthPreds) {
+      super(cFuncRef);
+      _j = j;
+      _domain = domain;
+      _lengthActual = lengthActual;
+      _lengthPreds = lengthPreds;
+    }
+
+    @Override
+    public void map(Chunk[] chks) {
+      if (isCancelled() || _j != null && _j.stop_requested()) return;
+      _mb = Model.this.makeMetricBuilder(_domain);
+      Chunk weightsChunk = _output.hasWeights() ? chks[chks.length-2] : null;
+      Chunk offsetChunk = _output.hasOffset() ? chks[chks.length-1] : null;
+
+      float[] actual = null;
+      double[] preds = null;
+
+      if (isSupervised()) {
+        actual = new float[1];
+      } else {
+        actual = new float[_lengthActual];
+      }
+      preds = new double[_lengthPreds];
+      
+      for(int row = 0; row < chks[0].len(); row++) {
+        if (isSupervised()) {
+          actual[0] = (float) chks[0].atd(row);
+        } else {
+          for (int i = 0; i < _lengthActual; ++i) {
+            actual[i] = (float) data(chks, row, i);
+          }
+        }
+        for (int i = 0; i < _lengthPreds; ++i) {
+          preds[i] = data(chks, row, i);
+        }
+        
+        double weight = _output.hasWeights() ? weightsChunk.atd(row) : null;
+        double offset = _output.hasOffset() ? offsetChunk.atd(row): null;
+        _mb.perRow(preds, actual, weight, offset, Model.this);
+        customMetricPerRow(preds, actual, weight, offset, Model.this);
+      }
+    }
+    
+    @Override public void reduce(MetricScore ms) {
+      super.reduce(ms);
+      if (_mb != null) _mb.reduce(ms._mb);
+    }
+
+    @Override protected void postGlobal() {
+      super.postGlobal();
+      if(_mb != null) {
+        _mb.postGlobal(getComputedCustomMetric());
+      }
+    }
+  }
 
 }
