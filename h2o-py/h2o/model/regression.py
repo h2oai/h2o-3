@@ -97,6 +97,8 @@ def h2o_explained_variance_score(y_actual, y_predicted, weights=None):
 
 
 def h2o_r2_score(y_actual, y_predicted, weights=1.):
+    print("types actual %s, predicted %s" % (type(y_actual), type(y_predicted)))
+
     """
     R-squared (coefficient of determination) regression score function
 
