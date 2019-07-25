@@ -216,8 +216,6 @@ def gen_module(schema, algo):
     # TODO: generate __init__ docstring with all params (also generate exact signature to support auto-completion)
     yield "        super(%s, self).__init__()" % classname
     yield "        self._parms = {}"
-    yield "        names_list = {%s}" % bi.wrap(", ".join('"%s"' % p for p in param_names),
-                                                indent=(" " * 22), indent_first=False)
     if class_init_validation:
         yield reformat_block(class_init_validation, 8)
     yield '        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")'
