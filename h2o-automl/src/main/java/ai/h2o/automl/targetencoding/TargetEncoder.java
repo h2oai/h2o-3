@@ -190,12 +190,15 @@ public class TargetEncoder {
       int columnIndex = data.find(teColumnName);
       Vec currentVec = data.vec(columnIndex);
       int indexForNACategory = currentVec.cardinality(); // Warn: Cardinality returns int but it could be larger than it for big datasets
-      new FillNAWithLongValueTask(columnIndex, indexForNACategory).doAll(data);
-      String[] oldDomain = currentVec.domain();
-      String[] newDomain = new String[indexForNACategory + 1];
-      System.arraycopy(oldDomain, 0, newDomain, 0, oldDomain.length);
-      newDomain[indexForNACategory] = strToImpute;
-      updateDomainGlobally(data, teColumnName, newDomain);
+      FillNAWithLongValueTask task = new FillNAWithLongValueTask(columnIndex, indexForNACategory);
+      task.doAll(data);
+      if(task._imputationHappened) {
+        String[] oldDomain = currentVec.domain();
+        String[] newDomain = new String[indexForNACategory + 1];
+        System.arraycopy(oldDomain, 0, newDomain, 0, oldDomain.length);
+        newDomain[indexForNACategory] = strToImpute;
+        updateDomainGlobally(data, teColumnName, newDomain);
+      }
       return data;
     }
     

@@ -6,6 +6,8 @@ import org.junit.Test;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.fvec.TestFrameBuilder;
+import water.fvec.Vec;
 
 import java.util.Map;
 
@@ -46,10 +48,8 @@ public class TargetEncoderBuilderTest extends TestUtil {
 
       builder.trainModel().get(); // Waiting for training to be finished
       targetEncoderModel = builder.getTargetEncoderModel(); // TODO change the way of how we getting model after PUBDEV-6670. We should be able to get it from DKV with .trainModel().get()
-      
-      //Stage 2: 
+       
       // Let's create encoding map by TargetEncoder directly
-
       TargetEncoder tec = new TargetEncoder(teColumns, params);
 
       Frame fr2 = parse_test_file("./smalldata/gbm_test/titanic.csv");
@@ -65,6 +65,48 @@ public class TargetEncoderBuilderTest extends TestUtil {
     } finally {
       removeEncodingMaps(encodingMapFromTargetEncoder, targetEncodingMapFromBuilder);
       targetEncoderModel.remove();
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void teColumnNameToMissingValuesPresenceMapIsComputedCorrectly() {
+
+    TargetEncoderModel targetEncoderModel = null;
+    Map<String, Frame> encodingMapFromTargetEncoder = null;
+    Map<String, Frame> targetEncodingMapFromBuilder = null;
+    Scope.enter();
+    try {
+      String responseColumnName = "ColB";
+      Frame fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("home.dest", "embarked", responseColumnName)
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b"))
+              .withDataForCol(1, ar("s", null))
+              .withDataForCol(2, ar("yes", "no"))
+              .build();
+
+      String[] teColumns = {"home.dest", "embarked"};
+
+      TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
+      targetEncoderParameters._withBlending = false;
+      targetEncoderParameters._columnNamesToEncode = teColumns;
+      targetEncoderParameters.setTrain(fr._key);
+      targetEncoderParameters._response_column = responseColumnName;
+      targetEncoderParameters._ignore_const_cols = false;
+
+      TargetEncoderBuilder builder = new TargetEncoderBuilder(targetEncoderParameters);
+
+      builder.trainModel().get(); // Waiting for training to be finished
+      targetEncoderModel = builder.getTargetEncoderModel(); // TODO change the way of how we getting model after PUBDEV-6670. We should be able to get it from DKV with .trainModel().get()
+
+      Map<String, Integer> teColumnNameToMissingValuesPresence = targetEncoderModel._output._teColumnNameToMissingValuesPresence;
+      assertTrue(teColumnNameToMissingValuesPresence.get("home.dest") == 0);
+      assertTrue(teColumnNameToMissingValuesPresence.get("embarked") == 1);
+    } finally {
+      removeEncodingMaps(encodingMapFromTargetEncoder, targetEncodingMapFromBuilder);
+      if (targetEncoderModel != null) targetEncoderModel.remove();
       Scope.exit();
     }
   }
