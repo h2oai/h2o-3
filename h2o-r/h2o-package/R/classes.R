@@ -165,9 +165,9 @@ setMethod("show", "H2OModel", function(object) {
   cat("\n")
   if( !is.null(m$coefficients_table) ){
     print(m$coefficients_table)
-  } else if(o@algorithm == 'generic' && !is.null(m$training_metrics@metrics$`_coefficients_table`)){
+  } else if(o@algorithm == 'generic' && !is.null(m$training_metrics@metrics$`coefficients_table`)){
     # In case of generic model, coefficient_table is part of the metrics object
-    print(m$training_metrics@metrics$`_coefficients_table`)
+    print(m$training_metrics@metrics$`coefficients_table`)
   }
 
   # metrics

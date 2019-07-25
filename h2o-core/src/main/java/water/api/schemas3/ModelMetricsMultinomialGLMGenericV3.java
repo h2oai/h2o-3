@@ -21,7 +21,7 @@ public class ModelMetricsMultinomialGLMGenericV3 extends ModelMetricsMultinomial
   public long residual_degrees_of_freedom;
 
   @API(direction = API.Direction.OUTPUT, help="coefficients_table")
-  public TwoDimTableV3 _coefficients_table; // Originally not part of metrics, put here to avoid GenericOutput having multiple output classes.
+  public TwoDimTableV3 coefficients_table; // Originally not part of metrics, put here to avoid GenericOutput having multiple output classes.
 
   @Override
   public ModelMetricsMultinomialGLMGenericV3 fillFromImpl(ModelMetricsMultinomialGLMGeneric mms) {
@@ -31,7 +31,7 @@ public class ModelMetricsMultinomialGLMGenericV3 extends ModelMetricsMultinomial
     this.null_deviance = mms._nullDev;
     this.null_degrees_of_freedom = mms._nullDegressOfFreedom;
     this.residual_degrees_of_freedom = mms._residualDegressOfFreedom;
-    this._coefficients_table = new TwoDimTableV3().fillFromImpl(mms._coefficients_table);
+    this.coefficients_table = mms._coefficients_table != null ? new TwoDimTableV3().fillFromImpl(mms._coefficients_table) : null;
 
     if (mms._hit_ratio_table != null) {
       hit_ratio_table = new TwoDimTableV3(mms._hit_ratio_table);

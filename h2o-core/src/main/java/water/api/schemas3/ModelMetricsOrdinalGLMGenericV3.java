@@ -21,7 +21,7 @@ public class ModelMetricsOrdinalGLMGenericV3<I extends ModelMetricsOrdinalGLMGen
   public long residual_degrees_of_freedom;
 
   @API(direction = API.Direction.OUTPUT, help="coefficients_table")
-  public TwoDimTableV3 _coefficients_table; // Originally not part of metrics, put here to avoid GenericOutput having multiple output classes.
+  public TwoDimTableV3 coefficients_table; // Originally not part of metrics, put here to avoid GenericOutput having multiple output classes.
 
   @Override
   public S fillFromImpl(I modelMetrics) {
@@ -32,7 +32,7 @@ public class ModelMetricsOrdinalGLMGenericV3<I extends ModelMetricsOrdinalGLMGen
     this.null_deviance = modelMetrics._nullDev;
     this.null_degrees_of_freedom = modelMetrics._nullDegressOfFreedom;
     this.residual_degrees_of_freedom = modelMetrics._residualDegressOfFreedom;
-    this._coefficients_table = new TwoDimTableV3().fillFromImpl(modelMetrics._coefficients_table);
+    this.coefficients_table = new TwoDimTableV3().fillFromImpl(modelMetrics._coefficients_table);
         
     return (S) this;
   }

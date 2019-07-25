@@ -22,7 +22,7 @@ public class ModelMetricsBinomialGLMGenericV3<I extends ModelMetricsBinomialGLMG
   public long residual_degrees_of_freedom;
 
   @API(direction = API.Direction.OUTPUT, help="coefficients_table")
-  public TwoDimTableV3 _coefficients_table; // Originally not part of metrics, put here to avoid GenericOutput having multiple output classes.
+  public TwoDimTableV3 coefficients_table; // Originally not part of metrics, put here to avoid GenericOutput having multiple output classes.
 
   @Override
   public S fillFromImpl(ModelMetricsBinomialGLMGeneric modelMetrics) {
@@ -34,7 +34,7 @@ public class ModelMetricsBinomialGLMGenericV3<I extends ModelMetricsBinomialGLMG
     this.null_degrees_of_freedom = modelMetrics._nullDegressOfFreedom;
     this.residual_degrees_of_freedom = modelMetrics._residualDegressOfFreedom;
 
-    _coefficients_table = modelMetrics._coefficients_table != null ?new TwoDimTableV3().fillFromImpl(modelMetrics._coefficients_table) : null;
+    coefficients_table = modelMetrics._coefficients_table != null ?new TwoDimTableV3().fillFromImpl(modelMetrics._coefficients_table) : null;
 
     return (S) this;
   }
