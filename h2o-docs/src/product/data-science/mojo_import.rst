@@ -62,8 +62,21 @@ To import a MOJO model in Flow:
 Advanced Generic Model Initialization
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-It is also possible to import a MOJO from already uploaded MOJO bytes using Generic model. Generic model is the underlying mechanism behind MOJO import. In this case, there is no need to re-upload the MOJO every 
-time a new MOJO imported model is created. The upload may occur only once.
+It is also possible to import a MOJO from already uploaded MOJO bytes using Generic model. Generic model is the underlying mechanism behind MOJO import. In this case, there is no need to re-upload the MOJO every time a new MOJO imported model is created. The upload may occur only once.
+
+Defining a Generic Model
+''''''''''''''''''''''''
+
+The following options can be specified when using a Generic model:
+
+- `model_id <algo-params/model_id.html>`__: Specify a custom name for the model to use as a reference.
+
+- **model_key**: Specify a key for the self-contained model archive.
+
+- **path**: Specify a path to the file with the self-contained model archive.
+
+Examples
+''''''''
 
 .. example-code::
    .. code-block:: r
