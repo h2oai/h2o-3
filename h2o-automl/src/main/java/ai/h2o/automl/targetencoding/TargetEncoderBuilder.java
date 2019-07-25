@@ -32,6 +32,9 @@ public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, Targe
 
       Map<String, Frame> _targetEncodingMap = tec.prepareEncodingMap(train(), _parms._response_column, _parms._teFoldColumnName);
 
+      // Mean could be computed from any encoding map as response column is shared
+      double priorMean = tec.calculatePriorMean(_targetEncodingMap.entrySet().iterator().next().getValue());
+
       for(Map.Entry<String, Frame> entry: _targetEncodingMap.entrySet()) {
         Frame frameWithEncodingMap = entry.getValue();
         Scope.untrack(frameWithEncodingMap.keys());
@@ -39,7 +42,7 @@ public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, Targe
 
       disableIgnoreConstColsFeature();
 
-      TargetEncoderModel.TargetEncoderOutput output = new TargetEncoderModel.TargetEncoderOutput(TargetEncoderBuilder.this, _targetEncodingMap);
+      TargetEncoderModel.TargetEncoderOutput output = new TargetEncoderModel.TargetEncoderOutput(TargetEncoderBuilder.this, _targetEncodingMap, priorMean);
       _targetEncoderModel = new TargetEncoderModel(_job._result, _parms, output, tec);
 
       // Note: For now we are not going to make TargetEncoderModel to be a real model. It should be treated as a wrapper for just getting a mojo.
@@ -54,6 +57,7 @@ public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, Targe
   
   @Override
   protected Driver trainModelImpl() {
+    // We can use Model.Parameters to configure Target Encoder
     return new TargetEncoderDriver();
   }
   

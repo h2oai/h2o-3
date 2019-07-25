@@ -1,5 +1,7 @@
 package ai.h2o.automl.targetencoding;
 
+import hex.genmodel.algos.targetencoder.EncodingMaps;
+import hex.genmodel.algos.targetencoder.TargetEncoderMojoModel;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Ignore;

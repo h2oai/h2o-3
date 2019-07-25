@@ -10,6 +10,7 @@ import hex.genmodel.algos.isofor.IsolationForestMojoReader;
 import hex.genmodel.algos.kmeans.KMeansMojoReader;
 import hex.genmodel.algos.pipeline.MojoPipelineReader;
 import hex.genmodel.algos.svm.SvmMojoReader;
+import hex.genmodel.algos.targetencoder.TargetEncoderMojoReader;
 import hex.genmodel.algos.word2vec.Word2VecMojoReader;
 import hex.genmodel.algos.ensemble.StackedEnsembleMojoReader;
 
@@ -71,6 +72,9 @@ public class ModelMojoFactory {
 
       case "Word2Vec":
         return new Word2VecMojoReader();
+        
+      case "TargetEncoder":
+        return new TargetEncoderMojoReader();
 
       case "Isolation Forest":
         return new IsolationForestMojoReader();
