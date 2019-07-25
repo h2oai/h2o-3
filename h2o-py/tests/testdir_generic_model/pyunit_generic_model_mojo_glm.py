@@ -14,7 +14,7 @@ def test(x, y, output_test, strip_part, algo_name, generic_algo_name, family):
     print(glm)
     with Capturing() as original_output:
         glm.show()
-    original_model_filename = "/home/pavel/mojo_glm_test.zip"
+    original_model_filename = tempfile.mkdtemp()
     original_model_filename = glm.download_mojo(original_model_filename)
       
     model = H2OGenericEstimator.from_file(original_model_filename)
