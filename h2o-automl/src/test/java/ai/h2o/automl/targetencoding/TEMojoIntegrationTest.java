@@ -417,8 +417,9 @@ public class TEMojoIntegrationTest extends TestUtil {
     }
   }
 
+  // We need to test only holdout None  case as we predict only for data which were not used for TEModel training 
   @Test
-  public void check_that_encodings_for_null_values_are_the_same_in_TargetEncoderModel_and_TargetEncoderMojoModel() throws IOException, PredictException {
+  public void check_that_encodings_for_unexpected_values_are_the_same_in_TargetEncoderModel_and_TargetEncoderMojoModel_holdout_none() throws IOException, PredictException {
 
     String mojoFileName = "mojo_te.zip";
     File mojoFile = folder.newFile(mojoFileName);
@@ -469,21 +470,35 @@ public class TEMojoIntegrationTest extends TestUtil {
       RowData rowToPredictFor = new RowData();
       rowToPredictFor.put("home.dest", Double.NaN);
 
-      // Same data as in RowData but stored in Frame
-      Frame testFrame = new TestFrameBuilder()
+      double[] encodingsFromMojoModel = teModelWrapper.transformWithTargetEncoding(rowToPredictFor).transformations;
+      byte noneHoldoutStrategy = 2;
+      
+      // Unexpected level value - `null`
+      Frame withNullFrame = new TestFrameBuilder()
               .withName("testFrame")
               .withColNames("home.dest")
               .withVecTypes(Vec.T_CAT)
               .withDataForCol(0, ar((String)null))
               .build();
 
-      double[] encodingsFromMojoModel = teModelWrapper.transformWithTargetEncoding(rowToPredictFor).transformations;
-
-      byte noneHoldoutStrategy = 2;
-      Frame encodingsFromTargetEncoderModel = targetEncoderModel.transform(testFrame, noneHoldoutStrategy, 0.0, 1234);
+      
+      Frame encodingsFromTargetEncoderModel = targetEncoderModel.transform(withNullFrame, noneHoldoutStrategy, 0.0, 1234);
       Scope.track(encodingsFromTargetEncoderModel);
       
       assertEquals(encodingsFromMojoModel[0], encodingsFromTargetEncoderModel.vec("home.dest_te").at(0), 1e-5);
+      
+      // Unexpected level value - unseen categorical level
+      Frame withUnseenLevelFrame = new TestFrameBuilder()
+              .withName("testFrame2")
+              .withColNames("home.dest")
+              .withVecTypes(Vec.T_CAT)
+              .withDataForCol(0, ar("xxx"))
+              .build();
+
+      Frame encodingsFromTEModelForUnseenLevel = targetEncoderModel.transform(withUnseenLevelFrame, noneHoldoutStrategy, 0.0, 1234);
+      Scope.track(encodingsFromTEModelForUnseenLevel);
+
+      assertEquals(encodingsFromMojoModel[0], encodingsFromTEModelForUnseenLevel.vec("home.dest_te").at(0), 1e-5);
 
     } finally {
       targetEncoderModel.remove();
