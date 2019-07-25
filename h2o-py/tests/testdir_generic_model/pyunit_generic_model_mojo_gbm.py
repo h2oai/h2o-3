@@ -4,11 +4,10 @@ import os
 
 from h2o.estimators import H2OGradientBoostingEstimator, H2OGenericEstimator
 from tests import pyunit_utils
-from tests.testdir_generic_model import Capturing, compare_regression_output, compare_binomial_output, \
-    compare_multinomial_output
+from tests.testdir_generic_model import Capturing, compare_output
 
 
-def test(x, y, output_test):
+def test(x, y, output_test, strip_part, algo_name, generic_algo_name):
     airlines = h2o.import_file(path=pyunit_utils.locate("smalldata/testng/airlines_train.csv"))
     gbm = H2OGradientBoostingEstimator(ntrees=1, nfolds=3)
     gbm.train(x=x, y=y, training_frame=airlines, validation_frame=airlines)
@@ -27,7 +26,7 @@ def test(x, y, output_test):
     with Capturing() as generic_output:
         model.show()
 
-    output_test(str(original_output), str(generic_output), 'gbm')
+    output_test(str(original_output), str(generic_output), strip_part, algo_name, generic_algo_name)
     
     predictions = model.predict(airlines)
     assert predictions is not None
@@ -53,18 +52,22 @@ def test(x, y, output_test):
     assert os.path.getsize(generic_mojo_filename) == os.path.getsize(original_model_filename)
     
 def mojo_model_test_regression():
-    test(["Origin", "Dest"], "Distance", compare_regression_output)
+    test(["Origin", "Dest"], "Distance", compare_output, "'Model Summary: '", 'ModelMetricsRegression: gbm',
+         'ModelMetricsRegressionGeneric: generic')
 
 def mojo_model_test_binomial():
-    test(["Origin", "Dest"], "IsDepDelayed", compare_binomial_output)
+    test(["Origin", "Dest"], "IsDepDelayed", compare_output, "'Model Summary: '", 'ModelMetricsBinomial: gbm',
+         'ModelMetricsBinomialGeneric: generic')
     
 def mojo_model_test_multinomial():
-    test(["Origin", "Distance"], "Dest", compare_multinomial_output)
+    test(["Origin", "Distance"], "Dest", compare_output, "'Model Summary: '", 'ModelMetricsMultinomial: gbm',
+         'ModelMetricsMultinomialGeneric: generic')
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(mojo_model_test_binomial)
     pyunit_utils.standalone_test(mojo_model_test_multinomial)
     pyunit_utils.standalone_test(mojo_model_test_regression)
+
 else:
     mojo_model_test_multinomial()
     mojo_model_test_binomial()
