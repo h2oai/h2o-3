@@ -31,10 +31,7 @@ import java.util.*;
  * Usage: see TargetEncodingTitanicBenchmark.java
  */
 public class TargetEncoder {
-
-    // workaround for PUBDEV-6319: this makes sure TE does get consistent and correct aggregates
-    private static final AstGroup GROUP_BY = new AstGroup(false);
-
+  
     public static String NUMERATOR_COL_NAME = "numerator";
     public static String DENOMINATOR_COL_NAME = "denominator";
 
@@ -146,7 +143,7 @@ public class TargetEncoder {
       aggs[0] = new AstGroup.AGG(AstGroup.FCN.sum, targetIndex, na, -1);
       aggs[1] = new AstGroup.AGG(AstGroup.FCN.nrow, targetIndex, na, -1);
 
-      Frame result = GROUP_BY.performGroupingWithAggregations(fr, groupByColumns, aggs).getFrame();
+      Frame result = new AstGroup().performGroupingWithAggregations(fr, groupByColumns, aggs).getFrame();
       return register(result);
     }
 
@@ -248,7 +245,7 @@ public class TargetEncoder {
       aggs[0] = new AstGroup.AGG(AstGroup.FCN.sum, numeratorColumnIndex, na, -1);
       aggs[1] = new AstGroup.AGG(AstGroup.FCN.sum, denominatorColumnIndex, na, -1);
 
-      Frame result = GROUP_BY.performGroupingWithAggregations(data, new int[]{teColumnIndex}, aggs).getFrame();
+      Frame result = new AstGroup().performGroupingWithAggregations(data, new int[]{teColumnIndex}, aggs).getFrame();
       return register(result);
     }
 
