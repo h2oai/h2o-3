@@ -113,6 +113,8 @@ Defining an Isolation Forest Model
    metric-based stopping to stop training if the improvement is less
    than this value. This value defaults to 0.01.
 
+-  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
+
 Simple Example
 ~~~~~~~~~~~~~~
 

@@ -6,14 +6,13 @@ import org.junit.Ignore;
 import org.junit.Test;
 import water.Job;
 import water.Key;
+import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
-import water.util.TwoDimTable;
 
 import java.io.File;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 
@@ -133,30 +132,36 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
 
   @Test
   public void naValuesWithLOOStrategyTest() {
-    String teColumnName = "ColA";
-    String targetColumnName = "ColB";
-    fr = new TestFrameBuilder()
-            .withName("testFrame")
-            .withColNames(teColumnName, targetColumnName)
-            .withVecTypes(Vec.T_CAT, Vec.T_CAT)
-            .withDataForCol(0, ar("a", "b", null, null, null))
-            .withDataForCol(1, ar("2", "6", "6", "2", "6"))
-            .build();
+    Scope.enter();
+    Map<String, Frame> targetEncodingMap = null;
+    try {
+      String teColumnName = "ColA";
+      String targetColumnName = "ColB";
+      Frame fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames(teColumnName, targetColumnName)
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", null, null, null))
+              .withDataForCol(1, ar("2", "6", "6", "2", "6"))
+              .withChunkLayout(3, 2)
+              .build();
 
-    String[] teColumns = {teColumnName};
-    TargetEncoder tec = new TargetEncoder(teColumns);
+      String[] teColumns = {teColumnName};
+      TargetEncoder tec = new TargetEncoder(teColumns);
 
-    Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, null);
+      targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, null);
 
-    Frame resultWithEncodings = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, false,0.0, true, 1234);
+      Frame resultWithEncodings = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, false, 0.0, true, 1234);
+      Scope.track(resultWithEncodings);
+      
+      Vec expected = dvec(0.6, 0.6, 0.5, 1, 0.5);
+      Scope.track(expected);
+      assertVecEquals(expected, resultWithEncodings.vec("ColA_te"), 1e-5);
 
-    Vec expected = dvec(0.6, 0.6, 0.5, 1, 0.5);
-    printOutFrameAsTable(resultWithEncodings);
-    assertVecEquals(expected, resultWithEncodings.vec("ColA_te"), 1e-5);
-
-    expected.remove();
-    encodingMapCleanUp(targetEncodingMap);
-    resultWithEncodings.delete();
+    } finally {
+      if (targetEncodingMap != null) TargetEncoderFrameHelper.encodingMapCleanUp(targetEncodingMap);
+      Scope.exit();
+    }
   }
 
   @Test

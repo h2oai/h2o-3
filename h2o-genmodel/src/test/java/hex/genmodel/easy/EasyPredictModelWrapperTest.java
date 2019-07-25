@@ -20,6 +20,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static hex.genmodel.utils.SerializationTestHelper.deserialize;
+import static hex.genmodel.utils.SerializationTestHelper.serialize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -266,14 +268,6 @@ public class EasyPredictModelWrapperTest {
             .setModel(rawModel)
             .setErrorConsumer(countingErrorConsumer));
     checkSerialization(m);
-  }
-
-  private static byte[] serialize(Object o) throws Exception {
-    try (ByteArrayOutputStream bos = new ByteArrayOutputStream(); ObjectOutput out = new ObjectOutputStream(bos)) {
-      out.writeObject(o);
-      out.flush();
-      return bos.toByteArray();
-    }
   }
 
   private static void checkSerialization(final EasyPredictModelWrapper m1) throws Exception {
@@ -549,16 +543,6 @@ public class EasyPredictModelWrapperTest {
     for (Field field : declaredFields) {
       Assert.assertFalse(Modifier.isTransient(field.getModifiers()));
       Assert.assertTrue(Serializable.class.isAssignableFrom(field.getDeclaringClass()));
-    }
-  }
-
-  private static Object deserialize(byte[] bs) throws Exception {
-    ByteArrayInputStream bis = new ByteArrayInputStream(bs);
-    try {
-      ObjectInput in = new ObjectInputStream(bis);
-      return in.readObject();
-    } finally {
-      bis.close();
     }
   }
 

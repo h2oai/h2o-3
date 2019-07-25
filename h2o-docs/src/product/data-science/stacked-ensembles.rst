@@ -97,8 +97,9 @@ Defining a Stacked Ensemble Model
 
 -  `seed <algo-params/seed.html>`__: (Optional) Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number).
 
-You can follow the progress of H2O's Stacked Ensemble development `here <https://0xdata.atlassian.net/issues/?filter=19301>`__.
+-  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
+You can follow the progress of H2O's Stacked Ensemble development `here <https://0xdata.atlassian.net/issues/?filter=19301>`__.
 
 Example
 ~~~~~~~

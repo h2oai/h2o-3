@@ -15,7 +15,6 @@ public class FrameToTETableTask extends MRTask<FrameToTETableTask> {
   @Override
   public void map(Chunk[] cs) {
     Chunk categoricalChunk = cs[0];
-    String[] domain = categoricalChunk.vec().domain();
     int numRowsInChunk = categoricalChunk._len;
     // Note: we don't store fold column as we need only to be able to give predictions for data which is not encoded yet. 
     // We need folds only for the case when we applying TE to the frame which we are going to train our model on. 

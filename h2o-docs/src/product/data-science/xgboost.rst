@@ -184,6 +184,8 @@ Defining an XGBoost Model
 
 -  **verbose**: Print scoring history to the console. For XGBoost, metrics are per tree. This value defaults to FALSE.
 
+-  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
+
 "LightGBM" Emulation Mode Options
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

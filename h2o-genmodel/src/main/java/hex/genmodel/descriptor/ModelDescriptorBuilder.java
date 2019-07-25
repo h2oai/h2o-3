@@ -4,6 +4,7 @@ import hex.ModelCategory;
 import hex.genmodel.MojoModel;
 
 import java.util.Arrays;
+import java.util.Map;
 
 public class ModelDescriptorBuilder {
     // Mandatory
@@ -22,7 +23,7 @@ public class ModelDescriptorBuilder {
     private final String[] _names;
     private final String _algoName;
 
-    /**
+  /**
      * 
      * @param mojoModel A MojoModel to extract the model description from
      */
