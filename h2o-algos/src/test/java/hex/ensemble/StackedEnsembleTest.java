@@ -223,6 +223,34 @@ public class StackedEnsembleTest extends TestUtil {
                 false, DistributionFamily.multinomial, Algorithm.glm, false);
 
     }
+    
+    
+    public static class Pubdev6157MRTask extends MRTask{
+      
+      private final int nclasses;
+
+      Pubdev6157MRTask(int nclasses) {
+        this.nclasses = nclasses;
+      }
+
+      @Override
+      public void map(Chunk[] cs, NewChunk[] ncs) {
+        Random r = new Random();
+        NewChunk predictor = ncs[0];
+        NewChunk response = ncs[1];
+        for (int i = 0; i < cs[0]._len; i++) {
+          long rowNum = (cs[0].start() + i);
+          predictor.addNum(r.nextDouble()); // noise
+          long respValue;
+          if (rowNum % 2 == 0) {
+            respValue = nclasses - 1;
+          } else {
+            respValue = rowNum % nclasses;
+          }
+          response.addNum(respValue); // more than 50% rows have last class as the response value
+        }
+      }
+    }
 
     @Test
     public void testPubDev6157() {
@@ -240,25 +268,8 @@ public class StackedEnsembleTest extends TestUtil {
             for (int i = 0; i < nclasses; i++)
                 domains[domains.length - 1][i] = "Level" + i; 
             
-            final Frame training = new MRTask() {
-                @Override
-                public void map(Chunk[] cs, NewChunk[] ncs) {
-                    Random r = new Random();
-                    NewChunk predictor = ncs[0];
-                    NewChunk response = ncs[1];
-                    for (int i = 0; i < cs[0]._len; i++) {
-                        long rowNum = (cs[0].start() + i);
-                        predictor.addNum(r.nextDouble()); // noise
-                        long respValue;
-                        if (rowNum % 2 == 0) {
-                            respValue = nclasses - 1;
-                        } else {
-                            respValue = rowNum % nclasses;
-                        }
-                        response.addNum(respValue); // more than 50% rows have last class as the response value
-                    }
-                }
-            }.doAll(types, v).outputFrame(Key.<Frame>make(), null, domains);
+            final Frame training = new Pubdev6157MRTask(nclasses)
+                    .doAll(types, v).outputFrame(Key.<Frame>make(), null, domains);
             Scope.track(training);
 
             GLMModel.GLMParameters parms = new GLMModel.GLMParameters();
