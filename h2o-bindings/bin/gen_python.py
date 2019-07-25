@@ -156,6 +156,7 @@ def gen_module(schema, algo):
     yield "from h2o.exceptions import H2OValueError"
     yield "from h2o.frame import H2OFrame"
     if classname == "H2OStackedEnsembleEstimator":
+        yield "from h2o.utils.shared_utils import quoted"
         yield "from h2o.utils.typechecks import assert_is_type, Enum, numeric, is_type"
         yield "import json"
         yield "import ast"
@@ -543,8 +544,12 @@ def class_extra_for(algo):
             def extend_parms(parms):
                 if blending_frame is not None:
                     parms['blending_frame'] = blending_frame
+                if self.metalearner_fold_column is not None:
+                    parms['ignored_columns'].remove(quoted(self.metalearner_fold_column))
                     
-            super(self.__class__, self)._train(x, y, training_frame, extend_parms_fn=extend_parms, **kwargs)
+            super(self.__class__, self)._train(x, y, training_frame, 
+                                               extend_parms_fn=extend_parms, 
+                                               **kwargs)
         """
     elif algo == "word2vec":
         return """
