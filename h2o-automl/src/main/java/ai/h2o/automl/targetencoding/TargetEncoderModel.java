@@ -61,14 +61,16 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     public TargetEncoderParameters _teParams;
     public transient Map<String, Integer> _teColumnNameToIdx;
     public transient Map<String, Integer> _teColumnNameToMissingValuesPresence;
+    public double _priorMean;
     
-    public TargetEncoderOutput(TargetEncoderBuilder b, Map<String, Frame> teMap) {
+    public TargetEncoderOutput(TargetEncoderBuilder b, Map<String, Frame> teMap, double priorMean) {
       super(b);
       _target_encoding_map = teMap;
       _teParams = b._parms;
 
       _teColumnNameToIdx = createColumnNameToIndexMap(_teParams);
       _teColumnNameToMissingValuesPresence = createMissingValuesPresenceMap();
+      _priorMean = priorMean;
     }
 
     private Map<String, Integer> createMissingValuesPresenceMap() {

@@ -16,6 +16,7 @@ public class TargetEncoderMojoModel extends MojoModel {
   public boolean _withBlending;
   public double _inflectionPoint;
   public double _smoothing;
+  public double _priorMean;
 
   /**
    * Whether during training of the model unknown categorical level was imputed with NA level. 
@@ -24,30 +25,12 @@ public class TargetEncoderMojoModel extends MojoModel {
    */
   private final boolean _imputationOfUnknownLevelsIsEnabled = true;
 
-  // Could be passed from the model training phase so that we don't have to recompute it here. Or maybe it is fine as it should be computed only once per mojoModel
-  private double _priorMean = -1;
-
   public static double computeLambda(int nrows, double inflectionPoint, double smoothing) {
     return 1.0 / (1 + Math.exp((inflectionPoint - nrows) / smoothing));
   }
   
   public static double computeBlendedEncoding(double lambda, double posteriorMean, double priorMean) {
     return lambda * posteriorMean + (1 - lambda) * priorMean;
-  }
-  
-  /**
-   * Computes prior mean i.e. unconditional mean of the response. Should be the same for all columns
-   */
-  public static double computePriorMean(EncodingMap encodingMap) {
-    int sumOfNumerators = 0;
-    int sumOfDenominators = 0;
-    Iterator<int[]> iterator = encodingMap._encodingMap.values().iterator();
-    while( iterator.hasNext()) {
-      int[] next = iterator.next();
-      sumOfNumerators += next[0];
-      sumOfDenominators += next[1];
-    }
-    return (double) sumOfNumerators / sumOfDenominators;
   }
   
   @Override
@@ -62,8 +45,6 @@ public class TargetEncoderMojoModel extends MojoModel {
       for (Map.Entry<String, EncodingMap> columnToEncodingsMap : sortedByColumnIndex.entrySet() ) {
         EncodingMap encodings = columnToEncodingsMap.getValue();
 
-        _priorMean = _priorMean == -1 ? computePriorMean(encodings) : _priorMean;
-        
         String teColumn = columnToEncodingsMap.getKey();
         int indexOfColumnInRow = _teColumnNameToIdx.get(teColumn);
         

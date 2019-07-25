@@ -12,23 +12,6 @@ import java.util.*;
 import static org.junit.Assert.*;
 
 public class TargetEncoderMojoModelTest {
-
-  @Test
-  public void computePriorMean(){
-    EncodingMap encodingMap = new EncodingMap();
-
-    int[] aTEComponents = {2, 5};
-    encodingMap.put(0, aTEComponents);
-    int[] bTEComponents = {3, 6};
-    encodingMap.put(1, bTEComponents);
-    int[] cTEComponents = {4, 7};
-    encodingMap.put(2, cTEComponents);
-
-    double priorMean = TargetEncoderMojoModel.computePriorMean(encodingMap);
-    
-    double expectedPriorMean = ((double) aTEComponents[0] + bTEComponents[0] + cTEComponents[0] ) / (aTEComponents[1] + bTEComponents[1] + cTEComponents[1]);
-    assertEquals(expectedPriorMean, priorMean, 1e-5);
-  }
   
   @Test
   public void computeLambda(){
@@ -93,6 +76,7 @@ public class TargetEncoderMojoModelTest {
     targetEncoderMojoModel._withBlending = true;
     targetEncoderMojoModel._inflectionPoint = 5;
     targetEncoderMojoModel._smoothing = 1;
+    targetEncoderMojoModel._priorMean = (2.0 + 3 + 4) / (5 + 6 + 7);
 
     
     targetEncoderMojoModel._teColumnNameToIdx = new HashMap<>();
@@ -305,6 +289,7 @@ public class TargetEncoderMojoModelTest {
     targetEncoderMojoModel._teColumnNameToIdx.put(predictorName, 1);
     targetEncoderMojoModel._teColumnNameToMissingValuesPresence = new HashMap<>();
     targetEncoderMojoModel._teColumnNameToMissingValuesPresence.put(predictorName, 0);
+    targetEncoderMojoModel._priorMean = (2.0 + 3) / (5 + 7);
 
 
     VoidErrorConsumer errorConsumer = new VoidErrorConsumer();

@@ -396,9 +396,11 @@ public class TEMojoIntegrationTest extends TestUtil {
       String teColumn = "home.dest";
       EncodingMap homeDestEncodingMap = encodingMapConvertedFromFrame.get(teColumn);
 
-      // Will be checking that encoding map has been written and loaded correctly through the computation of the mean
-      double expectedPriorMean = TargetEncoderMojoModel.computePriorMean(homeDestEncodingMap);
+      // Checking that priorMean was written and loaded properly
+      assertEquals(targetEncoderModel._output._priorMean, loadedMojoModel._priorMean, 1e-5);
+      double expectedPriorMean = loadedMojoModel._priorMean;
 
+      // Checking that encodings from Mojo model and manually computed ones are equal
       int homeDestIndex = ArrayUtils.find(fr.vec(teColumn).domain(), homeDestFactorValue);
       int[] encodingComponentsForHomeDest = homeDestEncodingMap.get(homeDestIndex);
       double posteriorMean = (double) encodingComponentsForHomeDest[0] / encodingComponentsForHomeDest[1];

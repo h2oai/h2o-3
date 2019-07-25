@@ -35,28 +35,29 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
    * Writes target encoding's extra info
    */
   private void writeTargetEncodingInfo() throws IOException {
-    TargetEncoderModel.TargetEncoderParameters teParams = ((TargetEncoderModel) model)._output._teParams;
+    TargetEncoderModel.TargetEncoderOutput output = ((TargetEncoderModel) model)._output;
+    TargetEncoderModel.TargetEncoderParameters teParams = output._teParams;
     writekv("with_blending", teParams._withBlending);
     if(teParams._withBlending) {
       writekv("inflection_point", teParams._blendingParams.getK());
       writekv("smoothing", teParams._blendingParams.getF());
     }
+    writekv("priorMean", output._priorMean);
 
     // Maybe we can use index of the column instead of its name in all the encoding maps. Check whether we need name somewhere.
-    Map<String, Integer> teColumnNameToIdx = ((TargetEncoderModel) model)._output._teColumnNameToIdx;
+    Map<String, Integer> teColumnNameToIdx = output._teColumnNameToIdx;
     startWritingTextFile("feature_engineering/target_encoding/te_column_name_to_idx_map.ini");
     for(Map.Entry<String, Integer> entry: teColumnNameToIdx.entrySet()) {
       writelnkv(entry.getKey(), entry.getValue().toString()); 
     }
     finishWritingTextFile();
 
-    Map<String, Integer> _teColumnNameToMissingValuesPresence = ((TargetEncoderModel) model)._output._teColumnNameToMissingValuesPresence;
+    Map<String, Integer> _teColumnNameToMissingValuesPresence = output._teColumnNameToMissingValuesPresence;
     startWritingTextFile("feature_engineering/target_encoding/te_column_name_to_missing_values_presence.ini");
     for(Map.Entry<String, Integer> entry: _teColumnNameToMissingValuesPresence.entrySet()) {
       writelnkv(entry.getKey(), entry.getValue().toString());
     }
     finishWritingTextFile();
-    
   }
 
   /**

@@ -32,6 +32,7 @@ public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoMo
     _model._targetEncodingMap = parseEncodingMap();
     _model._teColumnNameToIdx = parseTEColumnNameToIndexMap();
     _model._teColumnNameToMissingValuesPresence = parseTEColumnNameToMissingValuesPresenceMap();
+    _model._priorMean = readkv("priorMean");
   }
 
   @Override
