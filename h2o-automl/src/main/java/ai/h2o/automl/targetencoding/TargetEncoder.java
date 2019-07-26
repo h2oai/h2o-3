@@ -318,23 +318,17 @@ public class TargetEncoder {
       int numberOfRowsInEncodingMap = (int) encodingMapForCurrentTEColumn.numRows();
       String lastDomain = encodingMapForCurrentTEColumn.domains()[0][numberOfRowsInEncodingMap - 1];
       boolean missingValuesWerePresent = lastDomain.equals(teColumnName + "_NA");
-      Frame encodingsForNALevel = null;
-      try {
-        encodingsForNALevel = encodingMapForCurrentTEColumn.deepSlice(new long[]{numberOfRowsInEncodingMap - 1}, null);
 
-        double numeratorForNALevel = encodingsForNALevel.vec(NUMERATOR_COL_NAME).at(0);
-        double denominatorForNALevel = encodingsForNALevel.vec(DENOMINATOR_COL_NAME).at(0);
-        double posteriorForNALevel = numeratorForNALevel / denominatorForNALevel;
-        double valueForImputation = missingValuesWerePresent ? posteriorForNALevel : priorMean;
-        Vec vecWithEncodings = fr.vec(columnIndex);
-        assert vecWithEncodings.get_type() == Vec.T_NUM : "Imputation of mean value is supported only for numerical vectors.";
-        long numberOfNAs = vecWithEncodings.naCnt();
-        if (numberOfNAs > 0) {
-          new FillNAWithDoubleValueTask(columnIndex, valueForImputation).doAll(fr);
-          Log.info(String.format("Frame with id = %s was imputed with posterior mean from NA level = %f ( %d rows were affected)", fr._key, valueForImputation, numberOfNAs));
-        }
-      } finally {
-        if (encodingsForNALevel != null) encodingsForNALevel.delete();
+      double numeratorForNALevel = encodingMapForCurrentTEColumn.vec(NUMERATOR_COL_NAME).at(numberOfRowsInEncodingMap - 1);
+      double denominatorForNALevel = encodingMapForCurrentTEColumn.vec(DENOMINATOR_COL_NAME).at(numberOfRowsInEncodingMap - 1);
+      double posteriorForNALevel = numeratorForNALevel / denominatorForNALevel;
+      double valueForImputation = missingValuesWerePresent ? posteriorForNALevel : priorMean;
+      Vec vecWithEncodings = fr.vec(columnIndex);
+      assert vecWithEncodings.get_type() == Vec.T_NUM : "Imputation of mean value is supported only for numerical vectors.";
+      long numberOfNAs = vecWithEncodings.naCnt();
+      if (numberOfNAs > 0) {
+        new FillNAWithDoubleValueTask(columnIndex, valueForImputation).doAll(fr);
+        Log.info(String.format("Frame with id = %s was imputed with posterior mean from NA level = %f ( %d rows were affected)", fr._key, valueForImputation, numberOfNAs));
       }
       return fr;
     }
