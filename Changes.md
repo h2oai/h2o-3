@@ -2,6 +2,67 @@
 
 ## H2O
 
+### Yau (3.26.0.2) - 7/26/2019
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yau/2/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6112'>PUBDEV-6112</a>] - Fixed an NPE error that occurred on models StackedEnsemble in AutoML.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6587'>PUBDEV-6587</a>] - Improve the error message for rbind failures that resulted when rbinding datasets with long categorical levels. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6693'>PUBDEV-6693</a>] - In Flow, the scoring history deviance graph no longer displays if a custom distribution is not set.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6709'>PUBDEV-6709</a>] - pr_auc() now works correctly in the Python client.
+</li>
+</ul>
+
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6255'>PUBDEV-6255</a>] - Added support for Target Encoding MOJOs. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6593'>PUBDEV-6593</a>] - Added support for Target Encoding transformation of data without a response column.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6640'>PUBDEV-6640</a>] - Added TargetEncoderBuilder (estimator) and TargetEncoderModel (transformer). 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6682'>PUBDEV-6682</a>] - Added detailed MOJO metrics for DRF, Isolation Forest, and GLM MOJO models.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6684'>PUBDEV-6684</a>] - Added AUCPR to the list of available stopping_metric options. 
+</li>
+</ul>
+
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6436'>PUBDEV-6436</a>] - In Flow, users can now upload a MOJO, and a generic model will automatically be created from it. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6681'>PUBDEV-6681</a>] - Removed duplicated code for obtaining logs in Java. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6685'>PUBDEV-6685</a>] - Improved error handling in the downloadLogs method. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6690'>PUBDEV-6690</a>] - Disabled autocomplete on the Flow login form.
+</li>
+</ul>
+                                                                                            
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6674'>PUBDEV-6674</a>] - Added an entry for upload_custom_metric in the Parameters Appendix.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6678'>PUBDEV-6678</a>] - Added list of parameters that can be specified when building a Generic Model (MOJO import).
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6687'>PUBDEV-6687</a>] - Updated documentation for MOJO Import.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6698'>PUBDEV-6698</a>] - Added "aucpr" to the list of available stopping_metric options.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6706'>PUBDEV-6706</a>] - Added an entry for export_checkpoints_dir in the Parameters Appendix. 
+</li>
+</ul>
+
+
 ### Yau (3.26.0.1) - 7/15/2019
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yau/1/index.html</a>
