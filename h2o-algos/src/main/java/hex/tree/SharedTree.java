@@ -30,6 +30,9 @@ import java.util.List;
 import java.util.Random;
 
 public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends ModelBuilder<M,P,O> {
+
+  private static final boolean DEBUG_PUBDEV_6686 = Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.pubdev6686");
+
   public boolean shouldReorder(Vec v) {
     return _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.SortByResponse
            && v.cardinality() > _parms._nbins_cats;  // no need to sort categoricals with fewer than nbins_cats - they will be sorted in every leaf anyway
@@ -476,7 +479,27 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // Build a frame with just a single tree (& work & nid) columns, so the
       // nested MRTask ScoreBuildHistogram in ScoreBuildOneTree does not try
       // to close other tree's Vecs when run in parallel.
-      Frame fr2 = new Frame(Arrays.copyOf(fr._names,_ncols+1), Arrays.copyOf(vecs,_ncols+1)); //predictors, weights and the actual response
+      final String[] fr2cols = Arrays.copyOf(fr._names,_ncols+1);
+      final Vec[] fr2vecs = Arrays.copyOf(vecs,_ncols+1);
+      if (DEBUG_PUBDEV_6686) {
+        boolean hasNull = false;
+        for (Vec v : fr2vecs) {
+          if (v == null) {
+            hasNull = true;
+            break;
+          }
+        }
+        if (hasNull) {
+          StringBuilder sb = new StringBuilder();
+          for (int i = 0; i < fr2vecs.length; i++) {
+            sb.append(fr2cols[i]).append(":").append(fr2vecs[i] == null).append("; ");
+          }
+          Log.warn("A null Vec found in `fr2=" + fr._key + "`: " + sb.toString());
+          Log.warn("Training frame: " + _train._key + "; model: " + _result);
+          Log.warn("Params: " + _parms.toJsonString());
+        }
+      }
+      Frame fr2 = new Frame(fr2cols, fr2vecs); //predictors, weights and the actual response
       if (isSupervised() && fr2.find(_parms._response_column) == -1) {
         fr2.add(_parms._response_column, fr.vec(_parms._response_column));
       }
