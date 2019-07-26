@@ -1,5 +1,6 @@
 package water.api;
 
+import org.apache.commons.lang.exception.ExceptionUtils;
 import water.*;
 import water.api.schemas3.H2OErrorV3;
 import water.api.schemas3.H2OModelBuilderErrorV3;
@@ -311,6 +312,17 @@ public class RequestServer extends HttpServlet {
 
       resp.writeTo(response.getOutputStream());
 
+    } catch (Error e) {
+      try {
+        // Send the full stackTrack as message to the client directly. Default error response error in Jetty's ServletHandler
+        // is made inactive by ending the error, as the response is marked as committed.
+        response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, ExceptionUtils.getFullStackTrace(e));
+        // After the response is sent, the exceptions is re-thrown to finish the process as without this interception
+        throw e;
+      } catch (IOException ex) {
+        ServletUtils.setResponseStatus(response, 500);
+        Log.err(e);
+      }
     } catch (IOException e) {
       e.printStackTrace();
       ServletUtils.setResponseStatus(response, 500);
