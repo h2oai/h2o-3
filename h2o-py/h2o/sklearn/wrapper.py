@@ -11,6 +11,9 @@ try:
 except ImportError:
     from sklearn.utils.fixes import signature
 
+if can_use_numpy():
+    import numpy as np
+
 
 def mixin(obj, *mixins):
     """
@@ -89,37 +92,82 @@ def transformer(cls, name=None, module=None, default_params=None, mixins=None):
                           )
 
 
-def _to_h2o_frame(X, as_factor=False):
+def _to_h2o_frame(X, as_factor=False, **kwargs):
     if X is None or isinstance(X, H2OFrame):
         return X
-    # print("to H2OFrame")
     fr = H2OFrame(X)
     return fr.asfactor() if as_factor else fr
 
 
-def _to_numpy(fr):
+def _to_numpy(fr, **kwargs):
     """
     :param fr:
     :return:
     """
-    if not isinstance(fr, H2OFrame):
+    if fr is None:
         return fr
-    # print("to numpy")
-    df = fr.as_data_frame()
-    if can_use_pandas():
-        return df.values
-    elif can_use_numpy():
-        from numpy import array as np_array
-        return np_array(df)
-    else:
-        return df
+    arr = fr
+    if isinstance(fr, H2OFrame):
+        arr = fr.as_data_frame()
+        if can_use_pandas():
+            arr = arr.values
+    return (np.array(arr) if can_use_numpy() and isinstance(arr, list)
+            else arr)
 
 
-def params_as_h2o_frames(frame_params=('X', 'y'), target_param='y', result_conversion='auto'):
+def _vector_to_1d_array(fr, **kwargs):
+    return _to_numpy(fr.transpose().getrow())
+
+
+def _convert(converter, arg, arguments, **converter_args):
+    ori = arguments.get(arg, None)
+    new = converter(ori, **converter_args)
+    converted = new is not ori
+    arguments[arg] = new
+    return converted
+
+
+def _revert(converter,
+            result,
+            converted=False,
+            estimator_conversion=None,
+            decorator_conversion=None,
+            **converter_args):
+    """
+    sklearn toolkit produces all its results as numpy format by default.
+    However here, as we need to convert inputs to H2OFrames,
+    and as we may chain H2O transformers and estimators,
+    then we apply some detection logic to return results in the same format as input by default.
+    This can be overridden at decorator level for specific methods (e.g. transform)
+    or at estimator level for other cases (predict on a pipeline with H2O transformers and numpy inputs).
+    :param result:
+    :param converted:
+    :param estimator_conversion:
+    :param decorator_conversion:
+    :return:
+    """
+    do_convert = (
+            estimator_conversion is True
+            or (estimator_conversion in (None, 'auto')
+                and (decorator_conversion is True
+                     or (decorator_conversion in (None, 'auto') and converted)
+                     )
+                )
+    )
+    return converter(result, **converter_args) if do_convert else result
+
+
+def params_as_h2o_frames(frame_params=('X', 'y'),
+                         target_param='y',
+                         result_conversion='auto',
+                         converter=_to_h2o_frame,
+                         reverter=_to_numpy):
     """
     :param frame_params:
     :param target_param:
     :param result_conversion:
+    :param converter:
+    :param reverter:
     :return:
     """
     assert result_conversion in ('auto', True, False)
@@ -135,36 +183,6 @@ def params_as_h2o_frames(frame_params=('X', 'y'), target_param='y', result_conve
         assert any(arg in sig.parameters for arg in frame_params), \
             "@expect_h2o_frames decorator should be applied to methods taking at least one of {} parameters.".format(frame_params)
 
-        def convert(arg, arguments, **kwargs):
-            ori = arguments.get(arg, None)
-            new = _to_h2o_frame(ori, **kwargs)
-            converted = new is not ori
-            arguments[arg] = new
-            return converted
-
-        def revert(result, converted=False, conversion=None):
-            """
-            sklearn toolkit produces all its results as numpy format by default.
-            However here, as we need to convert inputs to H2OFrames,
-            and as we may chain H2O transformers and estimators,
-            then we apply some detection logic to return results in the same format as input by default.
-            This can be overridden at decorator level for specific methods (e.g. transform)
-            or at estimator level for other cases (predict on a pipeline with H2O transformers and numpy inputs).
-            :param result:
-            :param converted:
-            :param conversion:
-            :return:
-            """
-            do_convert = (
-                conversion is True
-                or (conversion in (None, 'auto')
-                    and (result_conversion is True
-                         or result_conversion == 'auto' and converted
-                         )
-                    )
-            )
-            return _to_numpy(result) if do_convert else result
-
         @wraps(fn)
         def wrapper(*args, **kwargs):
             """
@@ -176,21 +194,32 @@ def params_as_h2o_frames(frame_params=('X', 'y'), target_param='y', result_conve
             """
             _args = sig.bind(*args, **kwargs).arguments
             classifier = False
-            revert_conversion = None
+            estimator_conversion = None
+            self = {}
             if has_self:
                 self = _args.get('self', None)
                 if isinstance(self, BaseEstimatorMixin):
                     classifier = self.is_classifier()
-                    revert_conversion = self.data_conversion_mode()
-                print("entering {name} of {cls}".format(name=fn.__name__,
-                                                        cls=self.__class__.__name__))
+                    estimator_conversion = self._data_conversion_mode()
+
+            if hasattr(self, '_before_method') and callable(self._before_method):
+                self._before_method(fn=fn, input=_args)
+
             converted = False
             for fr in frame_params:
                 if fr in sig.parameters:
                     as_factor = classifier and fr == target_param
-                    converted = convert(fr, _args, as_factor=as_factor) or converted
+                    converted = _convert(converter, fr, _args, as_factor=as_factor) or converted
 
-            return revert(fn(**_args), converted=converted, conversion=revert_conversion)
+            result = fn(**_args)
+            result = _revert(reverter, result, converted=converted,
+                             estimator_conversion=estimator_conversion,
+                             decorator_conversion=result_conversion)
+
+            if hasattr(self, '_after_method') and callable(self._after_method):
+                self._after_method(fn=fn, output=result)
+
+            return result
 
         return wrapper
 
@@ -204,7 +233,7 @@ class BaseEstimatorMixin(object):
     def _is_classifier_distribution(self):
         return hasattr(self, 'distribution') and getattr(self, 'distribution') in self._classifier_distributions
 
-    def data_conversion_mode(self):
+    def _data_conversion_mode(self):
         return getattr(self, 'data_conversion', None) if hasattr(self, 'data_conversion') else None
 
     def is_classifier(self):
@@ -347,8 +376,8 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OClusterMixin):
         self._estimator = self._estimator_cls(**params)
         return self._estimator
 
-    def __str__(self):
-        return str(self._estimator) if self._estimator else super(BaseSklearnEstimator, self).__str__()
+    # def __str__(self):
+    #     return str(self._estimator) if self._estimator else super(BaseSklearnEstimator, self).__str__()
 
 
 
@@ -367,13 +396,31 @@ class H2OtoSklearnEstimator(BaseSklearnEstimator):
     def _predict(self, X):
         return self._estimator.predict(X)
 
-    @params_as_h2o_frames()
+    @params_as_h2o_frames(reverter=_vector_to_1d_array)
     def predict(self, X):
         return self._predict(X)[:, 0]
 
     @params_as_h2o_frames()
     def predict_proba(self, X):
-        return self._predict(X)[:, 1:]
+        if self.is_classifier():
+            return self._predict(X)[:, 1:]
+        raise AttributeError("No `predict_proba` method in {}".format(self.__class__.__name__))
+
+    def predict_log_proba(self, X):
+        if self.is_classifier() and can_use_numpy():
+            return np.log(self.predict_proba(X))
+        raise AttributeError("No `predict_log_proba` method in {}".format(self.__class__.__name__))
+
+    @params_as_h2o_frames()
+    def score(self, X, y=None, sample_weight=None):
+        if hasattr(self._estimator, 'score') and callable(self._estimator.score):
+            return self._estimator.score(X, y=y, sample_weight=sample_weight)
+        else:
+            parent = super(H2OtoSklearnEstimator, self)
+            if hasattr(parent, 'score') and callable(parent.score):
+                return parent.score(_to_numpy(X), y=_to_numpy(y), sample_weight=sample_weight)
+        raise AttributeError("No `score` method in {}".format(self.__class__.__name__))
+
 
 
 class H2OtoSklearnTransformer(BaseSklearnEstimator, TransformerMixin):
@@ -384,7 +431,7 @@ class H2OtoSklearnTransformer(BaseSklearnEstimator, TransformerMixin):
     @params_as_h2o_frames()
     def fit(self, X, y=None, **fit_params):
         self._make_estimator()
-        return self._estimator.fit(X, y, **fit_params)
+        return self._estimator.fit(X, y=y, **fit_params)
 
     @params_as_h2o_frames(result_conversion=False)
     def transform(self, X):
@@ -392,12 +439,14 @@ class H2OtoSklearnTransformer(BaseSklearnEstimator, TransformerMixin):
 
     @params_as_h2o_frames(result_conversion=False)
     def fit_transform(self, X, y=None, **fit_params):
-        if hasattr(self._estimator, 'fit_transform'):
+        if hasattr(self._estimator, 'fit_transform') and callable(self._estimator.fit_transform):
             self._make_estimator()
-            return self._estimator.fit_transform(X, y, **fit_params)
+            return self._estimator.fit_transform(X, y=y, **fit_params)
         else:
-            return super(H2OtoSklearnTransformer, self).fit_transform(X, y, **fit_params)
+            return super(H2OtoSklearnTransformer, self).fit_transform(X, y=y, **fit_params)
 
     @params_as_h2o_frames(result_conversion=False)
     def inverse_transform(self, X):
-        return self._estimator.inverse_transform(X)
+        if hasattr(self._estimator, 'inverse_transform') and callable(self._estimator.inverse_transform):
+            return self._estimator.inverse_transform(X)
+        raise AttributeError("No `inverse_transform` method in {}".format(self.__class__.__name__))
