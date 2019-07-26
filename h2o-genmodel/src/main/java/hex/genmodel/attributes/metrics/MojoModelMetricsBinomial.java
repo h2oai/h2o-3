@@ -2,7 +2,7 @@ package hex.genmodel.attributes.metrics;
 
 import hex.genmodel.attributes.Table;
 
-public class MojoModelMetricsBinomial extends MojoModelMetrics {
+public class MojoModelMetricsBinomial extends MojoModelMetricsSupervised {
   
   @SerializedName("AUC")
   public double _auc;

@@ -36,6 +36,8 @@ def partial_plot_test_with_user_splits():
     pdpOrig = gbm_model.partial_plot(data=data,cols=['AGE', 'RACE', 'DCAPS'],server=True, plot=True, save_to_file=filename)
     assert os.path.getsize(filename) > 0
     os.unlink(filename)
+    if os.path.isfile(filename):
+        os.remove(filename)
 
     pdpUserSplit = gbm_model.partial_plot(data=data,cols=['AGE', 'RACE', 'DCAPS'],server=True, plot=True,
                                           user_splits=user_splits)

@@ -668,12 +668,53 @@ public class GenericModelTest extends TestUtil {
         GenericModel genericModel = null;
         Frame trainingFrame = null;
         try {
-            // Create new DRF model
             trainingFrame = parse_test_file("./smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
             GLMModel.GLMParameters parms = new GLMModel.GLMParameters();
             parms._train = trainingFrame._key;
             parms._distribution = AUTO;
             parms._response_column = trainingFrame._names[1];
+
+            GLM job = new GLM(parms);
+            originalModel = job.trainModel().get();
+            final ByteArrayOutputStream originalModelMojo = new ByteArrayOutputStream();
+            final File originalModelMojoFile = File.createTempFile("mojo", "zip");
+            originalModel.getMojo().writeTo(originalModelMojo);
+            originalModel.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
+
+            mojo = importMojo(originalModelMojoFile.getAbsolutePath());
+
+            // Create Generic model from given imported MOJO
+            final GenericModelParameters genericModelParameters = new GenericModelParameters();
+            genericModelParameters._model_key = mojo;
+            final Generic generic = new Generic(genericModelParameters);
+            genericModel = generic.trainModel().get();
+
+            // Compare the two MOJOs byte-wise
+            ByteArrayOutputStream genericModelMojo = new ByteArrayOutputStream();
+            genericModel.getMojo().writeTo(genericModelMojo);
+            assertArrayEquals(genericModelMojo.toByteArray(), genericModelMojo.toByteArray());
+
+        } finally {
+            if(originalModel != null) originalModel.remove();
+            if (mojo != null) mojo.remove();
+            if (genericModel != null) genericModel.remove();
+            if (trainingFrame != null) trainingFrame.remove();
+        }
+    }
+
+    @Test
+    public void downloadable_mojo_glm_binomial() throws IOException {
+        GLMModel originalModel = null;
+        Key mojo = null;
+        GenericModel genericModel = null;
+        Frame trainingFrame = null;
+        try {
+            trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
+            GLMModel.GLMParameters parms = new GLMModel.GLMParameters();
+            parms._train = trainingFrame._key;
+            parms._distribution = AUTO;
+            parms._family = GLMModel.GLMParameters.Family.binomial;
+            parms._response_column = "IsDepDelayed";
 
             GLM job = new GLM(parms);
             originalModel = job.trainModel().get();

@@ -163,7 +163,12 @@ setMethod("show", "H2OModel", function(object) {
 
   # if glm, print the coefficeints
   cat("\n")
-  if( !is.null(m$coefficients_table) ) print(m$coefficients_table)
+  if( !is.null(m$coefficients_table) ){
+    print(m$coefficients_table)
+  } else if(o@algorithm == 'generic' && !is.null(m$training_metrics@metrics$`coefficients_table`)){
+    # In case of generic model, coefficient_table is part of the metrics object
+    print(m$training_metrics@metrics$`coefficients_table`)
+  }
 
   # metrics
   cat("\n")
@@ -247,7 +252,7 @@ setMethod("summary", "H2OModel", function(object, ...) {
   if( !is.null(tm$Gini)                                            )  cat("\nGini: (Extract with `h2o.gini`)", tm$Gini)
   if( !is.null(tm$null_deviance)                                   )  cat("\nNull Deviance: (Extract with `h2o.nulldeviance`)", tm$null_deviance)
   if( !is.null(tm$residual_deviance)                               )  cat("\nResidual Deviance: (Extract with `h2o.residual_deviance`)", tm$residual_deviance)
-  if(exists(o@algorithm) && o@algorithm == "glm") {
+  if(!is.null(o@algorithm) && o@algorithm %in% c("glm","gbm","drf","generic")) {
     if( !is.null(tm$r2) && !is.na(tm$r2)                           )  cat("\nR^2: (Extract with `h2o.r2`)", tm$r2)
   }
   if( !is.null(tm$AIC)                                             )  cat("\nAIC: (Extract with `h2o.aic`)", tm$AIC)
@@ -584,7 +589,7 @@ setMethod("show", "H2OBinomialMetrics", function(object) {
     cat("AUC:  ", object@metrics$AUC, "\n", sep="")
     cat("pr_auc:  ", object@metrics$pr_auc, "\n", sep="")
     cat("Gini:  ", object@metrics$Gini, "\n", sep="")
-    if(exists(object@algorithm) && object@algorithm == "glm") {
+    if(!is.null(object@algorithm) && object@algorithm %in% c("glm","gbm","drf","generic")) {
 
       if (!is.null(object@metrics$r2) && !is.na(object@metrics$r2)) cat("R^2:  ", object@metrics$r2, "\n", sep="")
       if (!is.null(object@metrics$null_deviance0)) cat("Null Deviance:  ", object@metrics$null_deviance,"\n", sep="")
@@ -655,7 +660,7 @@ setMethod("show", "H2ORegressionMetrics", function(object) {
   cat("MAE:  ", object@metrics$mae, "\n", sep="")
   cat("RMSLE:  ", object@metrics$rmsle, "\n", sep="")
   cat("Mean Residual Deviance :  ", h2o.mean_residual_deviance(object), "\n", sep="")
-  if(exists(object@algorithm) && object@algorithm == "glm") {
+  if(!is.null(object@algorithm) && object@algorithm %in% c("glm","gbm","drf","generic")) {
     if (!is.na(h2o.r2(object))) cat("R^2 :  ", h2o.r2(object), "\n", sep="")
     null_dev <- h2o.null_deviance(object)
     res_dev  <- h2o.residual_deviance(object)

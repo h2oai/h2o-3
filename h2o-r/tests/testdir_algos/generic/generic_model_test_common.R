@@ -29,5 +29,7 @@ compare_output <- function(original_output, generic_output, skipped_original, sk
   }
   print(original_output)
   print(generic_output)
+  print(length(original_output))
+  print(length(generic_output))
   expect_equal(TRUE, all.equal(original_output, generic_output))
 }
