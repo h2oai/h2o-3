@@ -764,7 +764,10 @@ class ModelBase(backwards_compatible(Keyed)):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in viewitems(tm): m[k] = None if v is None else v.auc()
+        for k, v in viewitems(tm):
+            if not(v == None) and not(is_type(v, h2o.model.metrics_base.H2OBinomialModelMetrics)):
+                raise H2OValueError("auc() is only available for Binomial classifiers.")
+            m[k] = None if v is None else v.auc()
         return list(m.values())[0] if len(m) == 1 else m
 
 
@@ -807,6 +810,28 @@ class ModelBase(backwards_compatible(Keyed)):
         for k, v in viewitems(tm): m[k] = None if v is None else v.gini()
         return list(m.values())[0] if len(m) == 1 else m
 
+    def pr_auc(self, train=False, valid=False, xval=False):
+        """
+        Get the pr_auc (Area Under PRECISION RECALL Curve).
+
+        If all are False (default), then return the training metric value.
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval".
+
+        :param bool train: If train is True, then return the pr_auc value for the training data.
+        :param bool valid: If valid is True, then return the pr_auc value for the validation data.
+        :param bool xval:  If xval is True, then return the pr_auc value for the validation data.
+
+        :returns: The pr_auc.
+        """
+        tm = ModelBase._get_metrics(self, train, valid, xval)
+        m = {}
+        for k, v in viewitems(tm): 
+            if not(v == None) and not(is_type(v, h2o.model.metrics_base.H2OBinomialModelMetrics)):
+                raise H2OValueError("pr_auc() is only available for Binomial classifiers.")
+            m[k] = None if v is None else v.pr_auc()
+        return list(m.values())[0] if len(m) == 1 else m
+    
     def download_pojo(self, path="", get_genmodel_jar=False, genmodel_name=""):
         """
         Download the POJO for this model to the directory specified by path.
