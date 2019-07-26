@@ -313,6 +313,25 @@ public class TargetEncoder {
       }
       return fr;
     }
+    
+    Frame imputeWithPosteriorForNALevelOrWithPrior(String teColumnName, Frame fr, int columnIndex, Frame encodingMapForCurrentTEColumn, double priorMean) {
+      int numberOfRowsInEncodingMap = (int) encodingMapForCurrentTEColumn.numRows();
+      String lastDomain = encodingMapForCurrentTEColumn.domains()[0][numberOfRowsInEncodingMap - 1];
+      boolean missingValuesWerePresent = lastDomain.equals(teColumnName + "_NA");
+
+      double numeratorForNALevel = encodingMapForCurrentTEColumn.vec(NUMERATOR_COL_NAME).at(numberOfRowsInEncodingMap - 1);
+      double denominatorForNALevel = encodingMapForCurrentTEColumn.vec(DENOMINATOR_COL_NAME).at(numberOfRowsInEncodingMap - 1);
+      double posteriorForNALevel = numeratorForNALevel / denominatorForNALevel;
+      double valueForImputation = missingValuesWerePresent ? posteriorForNALevel : priorMean;
+      Vec vecWithEncodings = fr.vec(columnIndex);
+      assert vecWithEncodings.get_type() == Vec.T_NUM : "Imputation of mean value is supported only for numerical vectors.";
+      long numberOfNAs = vecWithEncodings.naCnt();
+      if (numberOfNAs > 0) {
+        new FillNAWithDoubleValueTask(columnIndex, valueForImputation).doAll(fr);
+        Log.info(String.format("Frame with id = %s was imputed with posterior mean from NA level = %f ( %d rows were affected)", fr._key, valueForImputation, numberOfNAs));
+      }
+      return fr;
+    }
 
     double calculatePriorMean(Frame fr) {
         Vec numeratorVec = fr.vec(NUMERATOR_COL_NAME);
@@ -659,7 +678,8 @@ public class TargetEncoder {
                   // Note: In case of creating encoding map based on the holdout set we'd better use stratified sampling.
                   // Maybe even choose size of holdout taking into account size of the minimal set that represents all levels.
                   // Otherwise there are higher chances to get NA's for unseen categories.
-                  Frame imputedEncodingsFrameN = imputeWithMean(withAddedNoiseEncodingsFrameN, withAddedNoiseEncodingsFrameN.find(newEncodedColumnName), priorMeanFromTrainingDataset);
+                  Frame imputedEncodingsFrameN = imputeWithPosteriorForNALevelOrWithPrior(teColumnName, withAddedNoiseEncodingsFrameN, 
+                          withAddedNoiseEncodingsFrameN.find(newEncodedColumnName), groupedTargetEncodingMapForNone, priorMeanFromTrainingDataset);
 
                   removeNumeratorAndDenominatorColumns(imputedEncodingsFrameN);
 
