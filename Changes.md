@@ -9,18 +9,20 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/2/index.ht
 <h4>Bug</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6112'>PUBDEV-6112</a>] - Fixed an NPE error that occurred on models StackedEnsemble in AutoML. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6112'>PUBDEV-6112</a>] - Fixed an NPE error that occurred on models StackedEnsemble in AutoML.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6587'>PUBDEV-6587</a>] - Improve the error message for rbind failures that resulted when rbinding datasets with long categorical levels. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6587'>PUBDEV-6587</a>] - Improve the error message for rbind failures that resulted when rbinding datasets with long categorical levels. 
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6603'>PUBDEV-6603</a>] - Fixed an issue that caused H2OFrame.split_frame() to leak a _splitter object. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6693'>PUBDEV-6693</a>] - In Flow, the scoring history deviance graph no longer displays if a custom distribution is not set.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6709'>PUBDEV-6709</a>] - pr_auc() now works correctly in the Python client.
 </li>
 </ul>
 
 <h4>New Feature</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6213'>PUBDEV-6213</a>] - Added support for Broadcast Join in Target Encoding. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6213'>PUBDEV-6213</a>] - Added support for Broadcast Join in Target Encoding. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6255'>PUBDEV-6255</a>] - Added support for Target Encoding MOJOs. 
 </li>
