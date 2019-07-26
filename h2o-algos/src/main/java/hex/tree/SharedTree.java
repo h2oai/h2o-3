@@ -811,14 +811,16 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   protected TwoDimTable createScoringHistoryTable() {
     O out = _model._output;
     return createScoringHistoryTable(out, out._scored_train, out._scored_valid, _job,
-            out._training_time_ms, _parms._custom_metric_func != null);
+            out._training_time_ms, _parms._custom_metric_func != null, 
+            _parms._custom_distribution_func != null);
   }
 
   public static TwoDimTable createScoringHistoryTable(Model.Output _output,
                                                       ScoreKeeper[] _scored_train,
                                                       ScoreKeeper[] _scored_valid,
                                                       Job job, long[] _training_time_ms,
-                                                      boolean hasCustomMetric) {
+                                                      boolean hasCustomMetric, 
+                                                      boolean hasCustomDistribution) {
     List<String> colHeaders = new ArrayList<>();
     List<String> colTypes = new ArrayList<>();
     List<String> colFormat = new ArrayList<>();
@@ -828,7 +830,11 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     colHeaders.add("Training RMSE"); colTypes.add("double"); colFormat.add("%.5f");
     if (_output.getModelCategory() == ModelCategory.Regression) {
       colHeaders.add("Training MAE"); colTypes.add("double"); colFormat.add("%.5f");
-      colHeaders.add("Training Deviance"); colTypes.add("double"); colFormat.add("%.5f");
+      if (!hasCustomDistribution) {
+        colHeaders.add("Training Deviance");
+        colTypes.add("double");
+        colFormat.add("%.5f");
+      }
     }
     if (_output.isClassifier()) {
       colHeaders.add("Training LogLoss"); colTypes.add("double"); colFormat.add("%.5f");
@@ -849,7 +855,11 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       colHeaders.add("Validation RMSE"); colTypes.add("double"); colFormat.add("%.5f");
       if (_output.getModelCategory() == ModelCategory.Regression) {
         colHeaders.add("Validation MAE"); colTypes.add("double"); colFormat.add("%.5f");
-        colHeaders.add("Validation Deviance"); colTypes.add("double"); colFormat.add("%.5f");
+        if (!hasCustomDistribution) {
+          colHeaders.add("Validation Deviance");
+          colTypes.add("double");
+          colFormat.add("%.5f");
+        }
       }
       if (_output.isClassifier()) {
         colHeaders.add("Validation LogLoss"); colTypes.add("double"); colFormat.add("%.5f");
@@ -891,7 +901,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       table.set(row, col++, st._rmse);
       if (_output.getModelCategory() == ModelCategory.Regression) {
         table.set(row, col++, st._mae);
-        table.set(row, col++, st._mean_residual_deviance);
+        if (!hasCustomDistribution) {
+          table.set(row, col++, st._mean_residual_deviance);
+        }
       }
       if (_output.isClassifier()) table.set(row, col++, st._logloss);
       if (_output.getModelCategory() == ModelCategory.Binomial) {
@@ -907,7 +919,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         table.set(row, col++, st._rmse);
         if (_output.getModelCategory() == ModelCategory.Regression) {
           table.set(row, col++, st._mae);
-          table.set(row, col++, st._mean_residual_deviance);
+          if (!hasCustomDistribution) {
+            table.set(row, col++, st._mean_residual_deviance);
+          }
         }
         if (_output.isClassifier()) table.set(row, col++, st._logloss);
         if (_output.getModelCategory() == ModelCategory.Binomial) {
