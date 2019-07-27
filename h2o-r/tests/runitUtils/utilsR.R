@@ -820,7 +820,7 @@ function(response_type, num_rows=1000, num_cols=10, response_num=3, testrow = 10
 # Parameters:  denote factor range
 #----------------------------------------------------------------------
 random_dataset_enum_only <-
-function(numFactors, num_rows, num_cols) {
+function(numFactors, num_rows, num_cols, seed=12345) {
 
   random_frame <-
   h2o.createFrame(
@@ -834,7 +834,8 @@ function(numFactors, num_rows, num_cols) {
   time_fraction = 0,
   string_fraction = 0,
   factor = numFactors,
-  missing_fraction = runif(1, 0, 0.05)
+  missing_fraction = runif(1, 0, 0.05),
+  seed=seed
   )
 
   return(random_frame)
@@ -847,7 +848,7 @@ function(numFactors, num_rows, num_cols) {
 # Parameters:  denote factor range
 #----------------------------------------------------------------------
 random_dataset_numerics_only <-
-function(integerRange, num_rows, num_cols) {
+function(integerRange, num_rows, num_cols, seed=12345) {
 
   random_frame <-
   h2o.createFrame(
@@ -861,7 +862,8 @@ function(integerRange, num_rows, num_cols) {
   time_fraction = 0,
   string_fraction = 0,
   integer_range = integerRange,
-  missing_fraction = runif(1, 0, 0.05)
+  missing_fraction = runif(1, 0, 0.05),
+  seed=seed
   )
 
   return(random_frame)
