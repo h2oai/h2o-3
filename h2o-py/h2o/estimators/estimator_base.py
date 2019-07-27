@@ -394,7 +394,7 @@ class H2OEstimator(ModelBase):
         :returns: A dict of parameters
         """
         out = dict()
-        for key, value in self.parms.items():
+        for key, value in self._parms.items():
             if deep and isinstance(value, H2OEstimator):
                 deep_items = list(value.get_params().items())
                 out.update((key + "__" + k, val) for k, val in deep_items)
