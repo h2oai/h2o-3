@@ -4,17 +4,12 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import water.DKV;
-import water.Key;
-import water.Keyed;
-import water.TestUtil;
+import water.*;
 import water.fvec.Frame;
 import water.rapids.vals.ValFrame;
-import water.Scope;
 import water.util.Log;
 
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class GroupByTest extends TestUtil {
@@ -296,8 +291,11 @@ public class GroupByTest extends TestUtil {
   }
 
   private void chkDim( Frame fr, int col, int row ) {
-    Assert.assertEquals(col,fr.numCols());
-    Assert.assertEquals(row,fr.numRows());
+    String str = "Failure: expected column number %d, actual column number %d";
+    Assert.assertTrue(String.format("Expected column number: %d, actual column number: %d", col, fr.numCols()),
+            col==fr.numCols());
+    Assert.assertTrue(String.format("Expected row number: %d, actual row number: %d", row, fr.numRows()), 
+            row==fr.numRows());
   }
   private void chkFr( Frame fr, int col, int row, double exp ) { chkFr(fr,col,row,exp,Math.ulp(1)); }
   private void chkFr( Frame fr, int col, int row, double exp, double tol ) { 
