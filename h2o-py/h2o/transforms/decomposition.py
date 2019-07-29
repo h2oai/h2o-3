@@ -68,7 +68,7 @@ class H2OPCA(H2OEstimator):
 
         """
         super(H2OPCA, self).__init__()
-        self._parms = locals()  # must be executed first, even parent constructor below add things to local scope
+        self._parms = locals()
         self._parms = {k: v for k, v in self._parms.items() if k not in ('self', '__class__')}
 
         assert_is_type(pca_method, Enum("GramSVD", "Power", "GLRM", "Randomized"))

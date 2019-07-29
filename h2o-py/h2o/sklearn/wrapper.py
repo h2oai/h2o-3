@@ -1,7 +1,9 @@
 from collections import defaultdict, OrderedDict
 from functools import partial, update_wrapper, wraps
+import imp
+import sys
 
-from sklearn.base import is_classifier, is_regressor, BaseEstimator, ClassifierMixin, RegressorMixin, TransformerMixin
+from sklearn.base import is_classifier, is_regressor, BaseEstimator, TransformerMixin
 
 from .. import h2o, H2OFrame
 from ..utils.shared_utils import can_use_numpy, can_use_pandas
@@ -24,6 +26,18 @@ def mixin(obj, *mixins):
     """
     obj.__class__ = type(obj.__class__.__name__, (obj.__class__,)+tuple(mixins), dict())
     return obj
+
+
+def register_module(module_name):
+    if module_name not in sys.modules:
+        mod = imp.new_module(module_name)
+        sys.modules[module_name] = mod
+    return sys.modules[module_name]
+
+
+def register_class(cls):
+    module = register_module(cls.__module__)
+    setattr(module, cls.__name__, cls)
 
 
 def wrap_estimator(cls,
@@ -68,6 +82,7 @@ def wrap_estimator(cls,
         __init__=init,
     ))
     extended.__module__ = gen_class_module
+    register_class(extended)
     return extended
 
 
