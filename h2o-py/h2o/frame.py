@@ -1834,7 +1834,6 @@ class H2OFrame(Keyed):
                 # lower_boundary is 0.0
                 upper_boundary = boundaries[i]
                 tmp_slice = self[(tmp_runif <= upper_boundary), :]
-                print(tmp_slice.key)
             elif i == num_slices - 1:
                 lower_boundary = boundaries[i - 1]
                 # upper_boundary is 1.0
