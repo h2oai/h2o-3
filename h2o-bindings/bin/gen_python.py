@@ -202,6 +202,8 @@ def gen_module(schema, algo):
     yield "                setattr(self, pname, pvalue)"
     yield "            else:"
     yield '                raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))'
+    if algo=="svd":
+        yield "        self._parms['_rest_version'] = 99"
     if init_extra:
         yield "        " + reindent_block(init_extra, 8)
     yield ""
