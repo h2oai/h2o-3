@@ -1,7 +1,7 @@
 from collections import defaultdict, OrderedDict
 from functools import partial, update_wrapper, wraps
 
-from sklearn.base import is_classifier, is_regressor, BaseEstimator, TransformerMixin
+from sklearn.base import is_classifier, is_regressor, BaseEstimator, ClassifierMixin, RegressorMixin, TransformerMixin
 
 from .. import h2o, H2OFrame
 from ..utils.shared_utils import can_use_numpy, can_use_pandas
@@ -92,10 +92,12 @@ def transformer(cls, name=None, module=None, default_params=None, mixins=None):
                           )
 
 
-def _to_h2o_frame(X, as_factor=False, **kwargs):
+def _to_h2o_frame(X, as_factor=False, frame_params=None, **kwargs):
     if X is None or isinstance(X, H2OFrame):
         return X
-    fr = H2OFrame(X)
+    if not frame_params:
+        frame_params = {}
+    fr = H2OFrame(X, **frame_params)
     return fr.asfactor() if as_factor else fr
 
 
@@ -196,11 +198,13 @@ def params_as_h2o_frames(frame_params=('X', 'y'),
             classifier = False
             estimator_conversion = None
             self = {}
+            frame_info = None
             if has_self:
                 self = _args.get('self', None)
                 if isinstance(self, BaseEstimatorMixin):
                     classifier = self.is_classifier()
                     estimator_conversion = self._data_conversion_mode()
+                    frame_info = getattr(self, '_frame_params')
 
             if hasattr(self, '_before_method') and callable(self._before_method):
                 self._before_method(fn=fn, input=_args)
@@ -209,7 +213,8 @@ def params_as_h2o_frames(frame_params=('X', 'y'),
             for fr in frame_params:
                 if fr in sig.parameters:
                     as_factor = classifier and fr == target_param
-                    converted = _convert(converter, fr, _args, as_factor=as_factor) or converted
+                    frame_info = frame_info if fr != target_param else None
+                    converted = _convert(converter, fr, _args, as_factor=as_factor, frame_params=frame_info) or converted
 
             result = fn(**_args)
             result = _revert(reverter, result, converted=converted,
@@ -233,14 +238,17 @@ class BaseEstimatorMixin(object):
     def _is_classifier_distribution(self):
         return hasattr(self, 'distribution') and getattr(self, 'distribution') in self._classifier_distributions
 
+    def _is_regressor_distribution(self):
+        return hasattr(self, 'distribution') and getattr(self, 'distribution') not in (None,)+self._classifier_distributions
+
     def _data_conversion_mode(self):
-        return getattr(self, 'data_conversion', None) if hasattr(self, 'data_conversion') else None
+        return getattr(self, 'data_conversion', None)
 
     def is_classifier(self):
         return is_classifier(self) or self._is_classifier_distribution()
 
     def is_regressor(self):
-        return is_regressor(self)
+        return is_regressor(self) or self._is_regressor_distribution()
 
 
 class H2OClusterMixin(object):
@@ -313,6 +321,8 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OClusterMixin):
         self._estimator_param_names = estimator_params.keys()
         self.set_params(**estimator_params)
 
+        self._frame_params = None
+
         if init_cluster_args is None:
             init_cluster_args = {}
         self.init_cluster(**init_cluster_args)
@@ -376,6 +386,12 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OClusterMixin):
         self._estimator = self._estimator_cls(**params)
         return self._estimator
 
+    def _extract_frame_params(self, X):
+        self._frame_params = dict(
+            column_names=X.columns,
+            column_types=X.types,
+        )
+
     # def __str__(self):
     #     return str(self._estimator) if self._estimator else super(BaseSklearnEstimator, self).__str__()
 
@@ -388,6 +404,7 @@ class H2OtoSklearnEstimator(BaseSklearnEstimator):
 
     @params_as_h2o_frames()
     def fit(self, X, y=None, **fit_params):
+        self._extract_frame_params(X)
         self._make_estimator()
         training_frame = X if y is None else X.concat(y)
         self._estimator.train(y=-1, training_frame=training_frame, **fit_params)
@@ -398,7 +415,7 @@ class H2OtoSklearnEstimator(BaseSklearnEstimator):
 
     @params_as_h2o_frames(reverter=_vector_to_1d_array)
     def predict(self, X):
-        return self._predict(X)[:, 0]
+        return self._predict(X)
 
     @params_as_h2o_frames()
     def predict_proba(self, X):
@@ -416,9 +433,21 @@ class H2OtoSklearnEstimator(BaseSklearnEstimator):
         if hasattr(self._estimator, 'score') and callable(self._estimator.score):
             return self._estimator.score(X, y=y, sample_weight=sample_weight)
         else:
+            # delegate to default sklearn scoring methods
             parent = super(H2OtoSklearnEstimator, self)
+            delegate = None
             if hasattr(parent, 'score') and callable(parent.score):
-                return parent.score(_to_numpy(X), y=_to_numpy(y), sample_weight=sample_weight)
+                delegate = parent
+            # elif self.is_classifier():
+            #     mixin(self, ClassifierMixin)
+            #     delegate = super(H2OtoSklearnEstimator, self)
+            # elif self.is_regressor():
+            #     mixin(self, RegressorMixin)
+            #     delegate = super(H2OtoSklearnEstimator, self)
+            if delegate is not None:
+                # suboptimal: X may have been converted to H2O frame for nothing
+                #  however for now, it makes implementation simpler
+                return delegate.score(_to_numpy(X), y=_to_numpy(y), sample_weight=sample_weight)
         raise AttributeError("No `score` method in {}".format(self.__class__.__name__))
 
 
@@ -430,6 +459,7 @@ class H2OtoSklearnTransformer(BaseSklearnEstimator, TransformerMixin):
 
     @params_as_h2o_frames()
     def fit(self, X, y=None, **fit_params):
+        self._extract_frame_params(X)
         self._make_estimator()
         return self._estimator.fit(X, y=y, **fit_params)
 
