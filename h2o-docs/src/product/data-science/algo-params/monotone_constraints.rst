@@ -1,8 +1,8 @@
 ``monotone_constraints``
----------
+------------------------
 
 - Available in: GBM, XGBoost
-- Hyperparameter: yes
+- Hyperparameter: no
 
 Description
 ~~~~~~~~~~~
@@ -27,6 +27,7 @@ Example
 
 	#import the prostate dataset:
 	prostate = h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+	#wip
 	prostate$CAPSULE <- as.factor(prostate$CAPSULE)
 	response <- "CAPSULE"
 	prostate.gbm <- h2o.gbm(y=response, monotone_constraints=list(AGE = 1), seed=1234, training_frame=prostate)
@@ -40,6 +41,7 @@ Example
 
 	# import the prostate dataset:
 	prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+	#wip
 	prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()
 	response = "CAPSULE"
 	seed = 1234
