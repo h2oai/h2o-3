@@ -196,7 +196,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
             true, //all factor levels
             DataInfo.TransformType.NONE, //do not standardize
             DataInfo.TransformType.NONE, //do not standardize response
-            parms._missing_values_handling == XGBoostModel.XGBoostParameters.MissingValuesHandling.Skip, //whether to skip missing
+            false, //whether to skip missing
             false, // do not replace NAs in numeric cols with mean
             true,  // always add a bucket for missing values
             parms._weights_column != null, // observation weights
@@ -206,9 +206,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     // Checks and adjustments:
     // 1) observation weights (adjust mean/sigmas for predictors and response)
     // 2) NAs (check that there's enough rows left)
-    GLMTask.YMUTask ymt = new GLMTask.YMUTask(dinfo, nClasses,nClasses == 1, parms._missing_values_handling == XGBoostModel.XGBoostParameters.MissingValuesHandling.Skip, true, true).doAll(dinfo._adaptedFrame);
-    if (ymt.wsum() == 0 && parms._missing_values_handling == XGBoostModel.XGBoostParameters.MissingValuesHandling.Skip) 
-      throw new H2OIllegalArgumentException("No rows left in the dataset after filtering out rows with missing values. Ignore columns with many NAs or set missing_values_handling to 'MeanImputation'.");
+    GLMTask.YMUTask ymt = new GLMTask.YMUTask(dinfo, nClasses,nClasses == 1, false, true, true).doAll(dinfo._adaptedFrame);
     if (parms._weights_column != null && parms._offset_column != null) {
       Log.warn("Combination of offset and weights can lead to slight differences because Rollupstats aren't weighted - need to re-calculate weighted mean/sigma of the response including offset terms.");
     }
