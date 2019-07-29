@@ -118,7 +118,12 @@ def _to_numpy(fr, **kwargs):
 
 
 def _vector_to_1d_array(fr, **kwargs):
-    return _to_numpy(fr.transpose().getrow())
+    if fr.ncol == 1:
+        vec = fr.transpose().getrow()
+    else:
+        assert fr.nrow == 1, "Only vectors can be converted to 1d array."
+        vec = fr.getrow()
+    return _to_numpy(vec)
 
 
 def _convert(converter, arg, arguments, **converter_args):
@@ -447,7 +452,7 @@ class H2OtoSklearnEstimator(BaseSklearnEstimator):
             if delegate is not None:
                 # suboptimal: X may have been converted to H2O frame for nothing
                 #  however for now, it makes implementation simpler
-                return delegate.score(_to_numpy(X), y=_to_numpy(y), sample_weight=sample_weight)
+                return delegate.score(_to_numpy(X), y=(_vector_to_1d_array(y)), sample_weight=sample_weight)
         raise AttributeError("No `score` method in {}".format(self.__class__.__name__))
 
 
