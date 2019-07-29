@@ -55,9 +55,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public enum Booster {
       gbtree, gblinear, dart
     }
-    public enum MissingValuesHandling {
-      MeanImputation, Skip
-    }
     public enum DartSampleType {
       uniform, weighted
     }
@@ -73,7 +70,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
     // H2O GBM options
     public boolean _quiet_mode = true;
-    public MissingValuesHandling _missing_values_handling;
 
     public int _ntrees=50; // Number of trees in the final model. Grid Search, comma sep values:50,100,150,200
     public int _n_estimators;  // This doesn't seem to be used anywhere... (not in clients)
