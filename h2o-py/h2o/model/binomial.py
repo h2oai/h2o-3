@@ -788,18 +788,25 @@ class H2OBinomialModel(ModelBase):
 
         :examples:
 
-         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> r = cars[0].runif()
         >>> train = cars[r > .2]
         >>> valid = cars[r <=.2]
         >>> response_col = "economy_20mpg"
         >>> distribution = "bernoulli"
-        >>> predictors = ["displacement", "power", "weight", "acceleration", "year"]
+        >>> predictors = ["displacement", "power", "weight",
+        ...               "acceleration", "year"]
         >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
-        >>> gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, fold_assignment="Random")
-        >>> gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
-        >>> max_metric = gbm.find_threshold_by_max_metric(metric="f2", train=True)
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3,
+        ...                                    distribution=distribution,
+        ...                                    fold_assignment="Random")
+        >>> gbm.train(y=response_col,
+        ...           x=predictors,
+        ...           validation_frame=valid,
+        ...           training_frame=train)
+        >>> max_metric = gbm.find_threshold_by_max_metric(metric="f2",
+        ...                                               train=True)
         >>> max_metric
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
@@ -833,11 +840,18 @@ class H2OBinomialModel(ModelBase):
         >>> valid = cars[r <=.2]
         >>> response_col = "economy_20mpg"
         >>> distribution = "bernoulli"
-        >>> predictors = ["displacement", "power", "weight", "acceleration", "year"]
+        >>> predictors = ["displacement", "power", "weight",
+        ...               "acceleration", "year"]
         >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
-        >>> gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, fold_assignment="Random")
-        >>> gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
-        >>> idx_threshold = gbm.find_idx_by_threshold(threshold=0.39438, train=True)
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3,
+        ...                                    distribution=distribution,
+        ...                                    fold_assignment="Random")
+        >>> gbm.train(y=response_col,
+        ...           x=predictors,
+        ...           validation_frame=valid,
+        ...           training_frame=train)
+        >>> idx_threshold = gbm.find_idx_by_threshold(threshold=0.39438,
+        ...                                           train=True)
         >>> idx_threshold
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
