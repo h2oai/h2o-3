@@ -29,8 +29,6 @@ import java.util.Objects;
  */
 public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, GenericModelOutput> {
 
-    private static final Class[] SUPPORTED_MOJOS = new Class[]{GlmMojoModel.class, GlmMultinomialMojoModel.class,
-            GlmOrdinalMojoModel.class, GbmMojoModel.class, IsolationForestMojoModel.class, DrfMojoModel.class, KMeansMojoModel.class};
 
     public Generic(GenericModelParameters genericParameters){
         super(genericParameters);
@@ -84,10 +82,6 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
             try {
                 final MojoReaderBackend readerBackend = MojoReaderBackendFactory.createReaderBackend(mojoBytes.openStream(_job._key), MojoReaderBackendFactory.CachingStrategy.MEMORY);
                 mojoModel = ModelMojoReader.readFrom(readerBackend, true);
-
-                if(!ArrayUtils.isInstance(mojoModel, SUPPORTED_MOJOS)){
-                    throw new IllegalArgumentException(String.format("Unsupported MOJO model %s. ", mojoModel.getClass().getName()));
-                }
 
                 final GenericModelOutput genericModelOutput = new GenericModelOutput(mojoModel._modelDescriptor, mojoModel._modelAttributes);
                 final GenericModel genericModel = new GenericModel(_result, _parms, genericModelOutput, mojoModel, mojoBytes);
