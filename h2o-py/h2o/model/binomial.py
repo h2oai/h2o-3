@@ -607,6 +607,32 @@ class H2OBinomialModel(ModelBase):
         :param str timestep: A unit of measurement for the x-axis.
         :param str metric: A unit of measurement for the y-axis.
         :param bool server: if True, then generate the image inline (using matplotlib's "Agg" backend)
+
+        :examples:
+
+        >>> air = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"] = airlines["Year"].asfactor()
+        >>> airlines["Month"] = airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> myX = ["Origin", "Dest", "Distance", "UniqueCarrier",
+        ...        "Month", "DayofMonth", "DayOfWeek"]
+        >>> myY = "IsDepDelayed"
+        >>> train, valid = airlines.split_frame(ratios=[.8], seed=1234)
+        >>> air_gbm = H2OGradientBoostingEstimator(distribution="bernoulli",
+        ...                                        ntrees=100,
+        ...                                        max_depth=3,
+        ...                                        learn_rate=0.01)
+        >>> air_gbm.train(x=myX,
+        ...               y=myY,
+        ...               training_frame=train,
+        ...               validation_frame=valid)
+        >>> air_gbm.plot(type="roc", train=True, server=True)
+        >>> air_gbm.plot(type="roc", valid=True, server=True)
+        >>> perf = air_gbm.model_performance(air_test)
+        >>> perf.plot(type="roc", server=True)
+        >>> perf.plot
         """
         assert_is_type(metric, "AUTO", "logloss", "auc", "classification_error", "rmse")
         if self._model_json["algo"] in ("deeplearning", "deepwater", "xgboost", "drf", "gbm"):
@@ -759,6 +785,22 @@ class H2OBinomialModel(ModelBase):
         :param bool xval: If True, return the find threshold by max metric value for each of the cross-validated splits.
 
         :returns: The find threshold by max metric values for the specified key(s).
+
+        :examples:
+
+         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> r = cars[0].runif()
+        >>> train = cars[r > .2]
+        >>> valid = cars[r <=.2]
+        >>> response_col = "economy_20mpg"
+        >>> distribution = "bernoulli"
+        >>> predictors = ["displacement", "power", "weight", "acceleration", "year"]
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, fold_assignment="Random")
+        >>> gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
+        >>> max_metric = gbm.find_threshold_by_max_metric(metric="f2", train=True)
+        >>> max_metric
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
@@ -781,6 +823,22 @@ class H2OBinomialModel(ModelBase):
         :param bool xval: If True, return the find idx by threshold value for each of the cross-validated splits.
 
         :returns: The find idx by threshold values for the specified key(s).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> r = cars[0].runif()
+        >>> train = cars[r > .2]
+        >>> valid = cars[r <=.2]
+        >>> response_col = "economy_20mpg"
+        >>> distribution = "bernoulli"
+        >>> predictors = ["displacement", "power", "weight", "acceleration", "year"]
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, fold_assignment="Random")
+        >>> gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
+        >>> idx_threshold = gbm.find_idx_by_threshold(threshold=0.39438, train=True)
+        >>> idx_threshold
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
