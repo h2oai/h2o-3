@@ -2,6 +2,7 @@ from collections import defaultdict, OrderedDict
 from functools import partial, update_wrapper, wraps
 import imp
 import sys
+from weakref import ref
 
 from sklearn.base import is_classifier, is_regressor, BaseEstimator, TransformerMixin
 
@@ -64,7 +65,7 @@ def wrap_estimator(cls,
         yield "def init(self,"
         for k, v in default_params.items():
             yield "         {k}={v},".format(k=k, v=repr(v))
-        yield "         init_cluster_args=None,"
+        yield "         init_connection_args=None,"
         yield "         data_conversion='auto',"
         if is_generic:  # if generic
             yield "         estimator_type=None,"
@@ -133,12 +134,8 @@ def _to_numpy(fr, **kwargs):
 
 
 def _vector_to_1d_array(fr, **kwargs):
-    if fr.ncol == 1:
-        vec = fr.transpose().getrow()
-    else:
-        assert fr.nrow == 1, "Only vectors can be converted to 1d array."
-        vec = fr.getrow()
-    return _to_numpy(vec)
+    assert fr.ncol == 1 or fr.nrow == 1, "Only vectors can be converted to 1d array."
+    return _to_numpy(fr).reshape(-1)
 
 
 def _convert(converter, arg, arguments, **converter_args):
@@ -221,6 +218,8 @@ def params_as_h2o_frames(frame_params=('X', 'y'),
             frame_info = None
             if has_self:
                 self = _args.get('self', None)
+                if isinstance(self, H2OConnectionMonitorMixin):
+                    self.__enter__()
                 if isinstance(self, BaseEstimatorMixin):
                     classifier = self.is_classifier()
                     estimator_conversion = self._data_conversion_mode()
@@ -271,46 +270,95 @@ class BaseEstimatorMixin(object):
         return is_regressor(self) or self._is_regressor_distribution()
 
 
-class H2OClusterMixin(object):
+class H2OConnectionMonitorMixin(object):
     """ Mixin that automatically handles the connection to H2O backend"""
 
-    _h2o_components = []
+    _h2o_initialized_here = False
+    _h2o_components_refs = []
 
-    def init_cluster(self, show_progress=True, **kwargs):
+    @classmethod
+    def init_connection(cls, show_progress=True, **kwargs):
         """
-        initialize the H2O cluster if needed
+        initialize the H2O connection if needed
         and track the current instance to be able to automatically close the connection
         when there's no more instances in scope
         """
-        if not h2o.connection():
+        if not (h2o.connection() and h2o.connection().connected):
+            print("__init__")
             h2o.init(**kwargs)
+            cls._h2o_initialized_here = True
             if show_progress:
                 h2o.show_progress()
             else:
                 h2o.no_progress()
-        self._h2o_components.append(self)
 
-    def shutdown_cluster(self):
+    @classmethod
+    def close_connection(cls, force=False):
+        if (force or cls._h2o_initialized_here) and h2o.connection():
+            print("__close__")
+            if h2o.connection().local_server:
+                cls.shutdown_cluster()
+            else:
+                h2o.connection().close()
+        cls._h2o_initialized_here = False
+
+    @classmethod
+    def shutdown_cluster(cls):
         """
         force H2O cluster shutdown
         """
+        print("__shutdown__")
         if h2o.cluster():
+            local_server = h2o.connection() and h2o.connection().local_server
+            print("__cluster_shutdown__")
             h2o.cluster().shutdown()
+            if local_server:
+                print("__server_shutdown__")
+                local_server.shutdown()
 
-    def __del__(self):
+    @classmethod
+    def _add_component(cls, component):
+        has_component = next((cr() for cr in cls._h2o_components_refs if cr() is component), None)
+        if not has_component:
+            cls._h2o_components_refs.append(ref(component, cls._remove_component_ref))
+            return True
+        return False
+
+    @classmethod
+    def _remove_component(cls, component):
+        comp_ref = next((cr for cr in cls._h2o_components_refs if cr() is component), None)
+        if comp_ref:
+            cls._remove_component_ref(comp_ref)
+            return True
+        return False
+
+    @classmethod
+    def _remove_component_ref(cls, component_ref):
         """
         remove tracking reference to current h2o component
-        and close the connection if there's no more tracked component.
-        If the cluster was started locally, the backend should detect when the last session is closed
-         and it will shutdown by itself.
+        and close the connection (or the local server) if there's no more tracked component.
         """
-        if self in self._h2o_components:
-            self._h2o_components.remove(self)
-        if not self._h2o_components and h2o.connection():
-            h2o.connection().close()
+        # first removing possible refs to None
+        # cls._h2o_components_refs = [cr for cr in cls._h2o_components_refs if cr()]
+        if component_ref in cls._h2o_components_refs:
+            cls._h2o_components_refs.remove(component_ref)
+        if not cls._h2o_components_refs:
+            cls.close_connection()
+
+    def __enter__(self):
+        if self._add_component(self):
+            self.init_connection(**(getattr(self, '_init_connection_args') or {}))
+        return self
+
+    def __exit__(self, *args):
+        self._remove_component(self)
+
+    def __del__(self):
+        print("__del__")
+        self.__exit__()
 
 
-class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OClusterMixin):
+class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonitorMixin):
 
     # following params are necessary when sklearn is cloning the estimator,
     # but should not be passed to original H2O estimator
@@ -319,13 +367,13 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OClusterMixin):
     def __init__(self,
                  estimator_cls=None,
                  estimator_type=None,
-                 init_cluster_args=None,
+                 init_connection_args=None,
                  **estimator_params):
         """
         :param estimator_cls: the H2O Estimator class.
         :param estimator_type: if provided, must be one of ('classifier', 'regressor').
         :param data_conversion: if provided, must be one of ('auto', 'array', 'numpy', 'pandas', 'h2o')
-        :param init_cluster_args: the arguments passed to `h2o.init()` if there's no connection to H2O backend.
+        :param init_connection_args: the arguments passed to `h2o.init()` if there's no connection to H2O backend.
         :param estimator_params: the estimator/model parameters.
         """
         super(BaseSklearnEstimator, self).__init__()
@@ -342,10 +390,7 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OClusterMixin):
         self.set_params(**estimator_params)
 
         self._frame_params = None
-
-        if init_cluster_args is None:
-            init_cluster_args = {}
-        self.init_cluster(**init_cluster_args)
+        self._init_connection_args = init_connection_args
         # print(self)
 
 
@@ -435,7 +480,7 @@ class H2OtoSklearnEstimator(BaseSklearnEstimator):
 
     @params_as_h2o_frames(reverter=_vector_to_1d_array)
     def predict(self, X):
-        return self._predict(X)
+        return self._predict(X)[:, 0]
 
     @params_as_h2o_frames()
     def predict_proba(self, X):

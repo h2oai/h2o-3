@@ -445,6 +445,10 @@ class H2OConnection(backwards_compatible()):
 
 
     @property
+    def connected(self):
+        return self._stage > 0
+
+    @property
     def session_id(self):
         """
         Return the session id of the current connection.

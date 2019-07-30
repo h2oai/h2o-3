@@ -56,8 +56,7 @@ class Namespace:
     """
     @staticmethod
     def add(namespace, **kwargs):
-        for k, v in kwargs.items():
-            setattr(namespace, k, v)
+        namespace.__dict__.update(kwargs)
         return namespace
 
     def __init__(self, **kwargs):
@@ -518,7 +517,7 @@ def pyunit_exec(test_name):
     exec(pyunit_c, {})
 
 def standalone_test(test):
-    if not h2o.h2o.connection():
+    if not h2o.connection() or not h2o.connection().connected:
         h2o.init(strict_version_check=False)
 
     h2o.remove_all()
