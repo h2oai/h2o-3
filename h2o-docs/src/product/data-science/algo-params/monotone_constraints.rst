@@ -25,13 +25,16 @@ Example
 	library(h2o)
 	h2o.init()
 
-	#import the prostate dataset:
+	# import the prostate dataset:
 	prostate = h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
-	#wip
+	# convert the CAPSULE column to a factor
 	prostate$CAPSULE <- as.factor(prostate$CAPSULE)
 	response <- "CAPSULE"
-	#enforce a constraint
-	prostate.gbm <- h2o.gbm(y=response, monotone_constraints=list(AGE = 1), seed=1234, training_frame=prostate)
+	# train a model using the monotone_constraints option
+	prostate.gbm <- h2o.gbm(y=response, 
+                        	monotone_constraints=list(AGE = 1), 
+                        	seed=1234, 
+                        	training_frame=prostate)
 
 
    .. code-block:: python
@@ -42,11 +45,11 @@ Example
 
 	# import the prostate dataset:
 	prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
-	#wip
+	# convert the CAPSULE column to a factor
 	prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()
 	response = "CAPSULE"
 	seed = 1234
-	#enforce a constraint
+	# train a model using the monotone_constraints option
 	monotone_constraints={"AGE":1}
 	gbm_model = H2OGradientBoostingEstimator(seed=seed, monotone_constraints=monotone_constraints)
 	gbm_model.train(y=response, ignored_columns=["ID"], training_frame=prostate)
