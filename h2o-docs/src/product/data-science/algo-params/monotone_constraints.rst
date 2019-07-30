@@ -30,6 +30,7 @@ Example
 	#wip
 	prostate$CAPSULE <- as.factor(prostate$CAPSULE)
 	response <- "CAPSULE"
+	#enforce a constraint
 	prostate.gbm <- h2o.gbm(y=response, monotone_constraints=list(AGE = 1), seed=1234, training_frame=prostate)
 
 
@@ -45,6 +46,7 @@ Example
 	prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()
 	response = "CAPSULE"
 	seed = 1234
+	#enforce a constraint
 	monotone_constraints={"AGE":1}
 	gbm_model = H2OGradientBoostingEstimator(seed=seed, monotone_constraints=monotone_constraints)
 	gbm_model.train(y=response, ignored_columns=["ID"], training_frame=prostate)
