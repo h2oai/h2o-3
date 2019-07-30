@@ -69,13 +69,5 @@ public abstract class MojoModel extends GenModel {
   protected MojoModel(String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
   }
-
-  /**
-   * 
-   * @return True if the models is importable is a Generic model into H2O. Otherwise false.
-   */
-  public boolean isH2OImportable(){
-    return false; // False by default for all the models, has to be enabled selectively
-  }
   
 }

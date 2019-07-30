@@ -36,9 +36,4 @@ public class KMeansMojoModel extends MojoModel implements IClusteringModel {
     return _centers.length;
   }
 
-  @Override
-  public boolean isH2OImportable() {
-    return true;
-  }
-
 }

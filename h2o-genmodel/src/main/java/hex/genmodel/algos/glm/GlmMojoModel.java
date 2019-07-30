@@ -138,9 +138,4 @@ public class GlmMojoModel extends GlmMojoModelBase {
     @Override public double eval(double x) { return GenModel.GLM_tweedieInv(x, _tweedie_link_power); }
   }
 
-  @Override
-  public boolean isH2OImportable() {
-    return true;
-  }
-
 }

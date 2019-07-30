@@ -83,9 +83,5 @@ public final class DrfMojoModel extends SharedTreeMojoModelWithContributions imp
             return contribs;
         }
     }
-
-    @Override
-    public boolean isH2OImportable() {
-        return true;
-    }
+    
 }

@@ -33,10 +33,5 @@ public final class IsolationForestMojoModel extends SharedTreeMojoModel {
     return preds;
   }
 
-  @Override
-  public boolean isH2OImportable() {
-    return true;
-  }
-
 
 }
