@@ -74,9 +74,13 @@ class H2OMultinomialModel(ModelBase):
         ...           y=response_col,
         ...           training_frame=train,
         ...           validation_frame=valid)
-        >>> hit_ratio_table = gbm.hit_ratio_table(train=False, valid=False, xval=False)
+        >>> hit_ratio_table = gbm.hit_ratio_table(train=False,
+        ...                                       valid=False,
+        ...                                       xval=False) # <- Default: return training metrics
         >>> hit_ratio_table
-        >>> hit_ratio_table1 = gbm.hit_ratio_table(train=True, valid=True, xval=True)
+        >>> hit_ratio_table1 = gbm.hit_ratio_table(train=True,
+        ...                                        valid=True,
+        ...                                        xval=True)
         >>> hit_ratio_table1
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
@@ -116,7 +120,7 @@ class H2OMultinomialModel(ModelBase):
         ...           validation_frame=valid)
         >>> mean_per_class_error = gbm.mean_per_class_error(train=False,
         ...                                                 valid=False,
-        ...                                                 xval=False)
+        ...                                                 xval=False) # <- Default: return training metric
         >>> mean_per_class_error
         >>> mean_per_class_error1 = gbm.mean_per_class_error(train=True,
         ...                                                  valid=True,
@@ -134,10 +138,29 @@ class H2OMultinomialModel(ModelBase):
         Plots training set (and validation set if available) scoring history for an H2OMultinomialModel. The timestep
         and metric arguments are restricted to what is available in its scoring history.
 
-        :param timestep: A unit of measurement for the x-axis.
-        :param metric: A unit of measurement for the y-axis.
+        :param timestep: A unit of measurement for the x-axis. This can be AUTO, duration, or number_of_trees.
+        :param metric: A unit of measurement for the y-axis. This can be AUTO, logloss, classification_error, or rmse.
 
         :returns: A scoring history plot.
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["cylinders"] = cars["cylinders"].asfactor()
+        >>> r = cars[0].runif()
+        >>> train = cars[r > .2]
+        >>> valid = cars[r <= .2]
+        >>> response_col = "cylinders"
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> distribution = "multinomial"
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3,
+        ...                                    distribution=distribution)
+        >>> gbm.train(x=predictors,
+        ...           y=response_col,
+        ...           training_frame=train,
+        ...           validation_frame=valid)
+        >>> gbm.plot(metric=AUTO, timestep=AUTO)
         """
 
         if self._model_json["algo"] in ("deeplearning", "deepwater", "xgboost", "drf", "gbm"):
