@@ -79,4 +79,9 @@ public class GlmOrdinalMojoModel extends GlmMojoModelBase {
     preds[_nclasses] = 1-previousCDF;
     return preds;
   }
+
+  @Override
+  public boolean isH2OImportable() {
+    return true;
+  }
 }

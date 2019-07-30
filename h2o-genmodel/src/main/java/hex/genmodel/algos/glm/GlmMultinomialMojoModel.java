@@ -55,4 +55,9 @@ public class GlmMultinomialMojoModel extends GlmMojoModelBase {
     return preds;
   }
 
+  @Override
+  public boolean isH2OImportable() {
+    return true;
+  }
+
 }

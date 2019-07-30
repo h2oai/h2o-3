@@ -118,4 +118,9 @@ public final class GbmMojoModel extends SharedTreeMojoModelWithContributions imp
         return getDecisionPath(row);
     }
 
+    @Override
+    public boolean isH2OImportable() {
+        return true;
+    }
+
 }

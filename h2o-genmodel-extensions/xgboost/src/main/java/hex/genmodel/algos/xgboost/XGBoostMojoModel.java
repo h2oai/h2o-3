@@ -192,4 +192,9 @@ public abstract class XGBoostMojoModel extends MojoModel implements SharedTreeGr
     return sharedTreeGraph;
   }
 
+  @Override
+  public boolean isH2OImportable() {
+    return true;
+  }
+
 }
