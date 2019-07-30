@@ -108,9 +108,6 @@ class H2OFrame(Keyed):
             self._upload_python_object(python_obj, destination_frame, header, separator,
                                        column_names, column_types, na_strings, skipped_columns)
 
-    def __del__(self):
-        h2o.remove(self)
-
     @staticmethod
     def _expr(expr, cache=None):
         # TODO: merge this method with `__init__`
@@ -1851,6 +1848,7 @@ class H2OFrame(Keyed):
                 splits.append(tmp_slice)
 
             i += 1
+        h2o.remove(tmp_runif)
         del tmp_runif
         return splits
 
