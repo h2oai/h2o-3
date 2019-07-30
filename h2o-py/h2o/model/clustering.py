@@ -47,6 +47,22 @@ class H2OClusteringModel(ModelBase):
             cross-validated splits.
 
         :returns: The between cluster sum of squares values for the specified key(s).
+
+        :examples:
+
+        >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
+        >>> km = H2OKMeansEstimator(k=3, nfolds=3)
+        >>> km.train(x=list(range(4)), training_frame=iris)
+        >>> betweenss = km.betweenss(train=False,
+        ...                          valid=False,
+        ...                          xval=False) # <- Default: return training metrics
+        >>> assert isinstance(betweenss, float)
+        >>> betweenss
+        >>> betweenss3 = km.betweenss(train=False,
+        ...                           valid=False,
+        ...                           xval=True)
+        >>> assert isinstance(betweenss3, float)
+        >>> betweenss3
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
@@ -141,15 +157,35 @@ class H2OClusteringModel(ModelBase):
 
 
     def centers(self):
-        """The centers for the KMeans model."""
+        """The centers for the KMeans model.
+
+        :examples:
+
+        >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
+        >>> from h2o.estimators.kmeans import H2OKMeansEstimator
+        >>> km = H2OKMeansEstimator(k=3, nfolds=3)
+        >>> km.train(x=list(range(4)), training_frame=iris)
+        >>> km.centers()
+        """
         o = self._model_json["output"]
         cvals = o["centers"].cell_values
         centers = [list(cval[1:]) for cval in cvals]
         return centers
 
+        
+
 
     def centers_std(self):
-        """The standardized centers for the kmeans model."""
+        """The standardized centers for the kmeans model.
+
+        :examples:
+
+        >>> >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
+        >>> from h2o.estimators.kmeans import H2OKMeansEstimator
+        >>> km = H2OKMeansEstimator(k=3, nfolds=3)
+        >>> km.train(x=list(range(4)), training_frame=iris)
+        >>> km.centers_std()
+        """
         o = self._model_json["output"]
         cvals = o["centers_std"].cell_values
         centers_std = [list(cval[1:]) for cval in cvals]
