@@ -3507,26 +3507,31 @@ public class GBMTest extends TestUtil {
 
       // compare training metrics of both models
       if (model!=null && model2!=null) {
+        System.out.println("Compare training metrics of both models");
         assertEquals(
             ((ModelMetricsBinomial) model._output._training_metrics).logloss(),
             ((ModelMetricsBinomial) model2._output._training_metrics).logloss(), 2e-3);
 
+        System.out.println("Compare CV metrics of both models");
         // compare CV metrics of both models
         assertEquals(
             ((ModelMetricsBinomial) model._output._cross_validation_metrics).logloss(),
             ((ModelMetricsBinomial) model2._output._cross_validation_metrics).logloss(), 1e-3);
       }
-
+      
       // Build a POJO/MOJO, validate same results
       if (model2!=null)
+        System.out.println("Build a POJO/MOJO, validate same results - model2");
         Assert.assertTrue(model2.testJavaScoring(fr2,preds2,1e-15));
       if (model3!=null)
+        System.out.println("Build a POJO/MOJO, validate same results - model3");
         Assert.assertTrue(model3.testJavaScoring(fr3,preds3,1e-15));
 
       // compare training predictions of both models (just compare probs)
       if (preds!=null && preds2!=null) {
         preds.remove(0);
         preds2.remove(0);
+        System.out.println("Compare training predictions of both models (just compare probs)");
         assertIdenticalUpToRelTolerance(preds, preds2, 1e-2);
       }
     } finally {
