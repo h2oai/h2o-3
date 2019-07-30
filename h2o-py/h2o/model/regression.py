@@ -18,6 +18,24 @@ class H2ORegressionModel(ModelBase):
         :param timestep: A unit of measurement for the x-axis.
         :param metric: A unit of measurement for the y-axis.
         :returns: A scoring history plot.
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> r = cars[0].runif()
+        >>> train = cars[r > .2]
+        >>> valid = cars[r <= .2]
+        >>> response_col = "economy"
+        >>> distribution = "gaussian"
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3,
+        ...                                    distribution=distribution,
+        ...                                    fold_assignment="Random")
+        >>> gbm.train(x=predictors,
+        ...           y=response_col,
+        ...           training_frame=train,
+        ...           validation_frame=valid)
+        >>> gbm.plot(timestep="AUTO", metric="AUTO",)
         """
 
         if self._model_json["algo"] in ("deeplearning", "deepwater", "xgboost", "drf", "gbm"):
