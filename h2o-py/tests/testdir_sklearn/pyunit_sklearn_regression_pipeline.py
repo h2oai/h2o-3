@@ -1,6 +1,7 @@
 from __future__ import print_function
 import importlib, inspect, os, sys
 
+import numpy as np
 from sklearn.datasets import make_regression
 from sklearn.decomposition import PCA
 from sklearn.model_selection import train_test_split
@@ -39,8 +40,8 @@ def _ensure_connection_state(connected=True):
 
 
 def _get_data(format='numpy'):
-    X, y = make_regression(n_samples=1000, n_features=10, shuffle=seed)
-    X_train, X_test, y_train, y_test = train_test_split(X, y)
+    X, y = make_regression(n_samples=1000, n_features=10, random_state=seed)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=seed)
     data = ns(X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test)
     if format == 'h2o':
         for k, v in data.__dict__.items():
@@ -48,22 +49,57 @@ def _get_data(format='numpy'):
     return data
 
 
-
 def test_h2o_only_pipeline_with_h2o_frames():
-    # _ensure_connection_state(connected=True)
-    pass
+    _ensure_connection_state(connected=True)
+    pipeline = Pipeline([
+        ('standardize', H2OScaler(init_connection_args=init_connection_args)),
+        ('pca', H2OPCA(k=2, seed=seed)),
+        ('estimator', H2OGradientBoostingRegressor(seed=seed))
+    ])
+    data = _get_data(format='h2o')
+    assert isinstance(data.X_train, h2o.H2OFrame)
+    pipeline.fit(data.X_train, data.y_train)
+    preds = pipeline.predict(data.X_test)
+    assert isinstance(preds, h2o.H2OFrame)
+    assert preds.dim == [len(data.X_test), 1]
+    try:
+        pipeline.predict_proba(data.X_test)
+    except AttributeError as e:
+        assert "No `predict_proba` method" in str(e)
+
+    # this block shows how it should work in perfect world,
+    # but given that `h2o.scale` modified X_test inplace during predictions,
+    # and as it doesn't seem to be idempotent
+    # then the next calls to score actually predicts on different data!!!
+    score = pipeline.score(data.X_test, data.y_test)
+    assert isinstance(score, float)
+    skl_score = r2_score(data.y_test.as_data_frame().values, preds.as_data_frame().values)
+    assert abs(score - skl_score) > 1e-6, "great!, h2o.scale inplace modification of H2O frames has been fixed. "
+
+    # to get it working, we need to score a fresh H2OFrame
+    data = _get_data(format='h2o')
+    score = pipeline.score(data.X_test, data.y_test)
+    assert isinstance(score, float)
+    skl_score = r2_score(data.y_test.as_data_frame().values, preds.as_data_frame().values)
+    assert abs(score - skl_score) < 1e-6, "score={}, skl_score={}".format(score, skl_score)
 
 
 def test_h2o_only_pipeline_with_numpy_arrays():
     _ensure_connection_state(connected=False)
+    # Note that in normal situations (release build), init_connection_args can be omitted
+    # otherwise, it should be set to the first H2O element in the pipeline.
+    # Also note that in this specific case mixing numpy inputs with a fully H2O pipeline,
+    # the last estimator requires the `data_conversion=True` param in order to return numpy arrays in predictions.
     pipeline = Pipeline([
         ('standardize', H2OScaler(init_connection_args=init_connection_args)),
         ('pca', H2OPCA(k=2, seed=seed)),
-        ('estimator', H2OGradientBoostingRegressor(data_conversion=True, seed=seed))
+        ('estimator', H2OGradientBoostingRegressor(seed=seed, data_conversion=True))
     ])
     data = _get_data(format='numpy')
+    assert isinstance(data.X_train, np.ndarray)
     pipeline.fit(data.X_train, data.y_train)
     preds = pipeline.predict(data.X_test)
+    assert isinstance(preds, np.ndarray)
     assert preds.shape == (len(data.X_test),)
     try:
         pipeline.predict_proba(data.X_test)
@@ -77,14 +113,18 @@ def test_h2o_only_pipeline_with_numpy_arrays():
 
 def test_mixed_pipeline_with_numpy_arrays():
     _ensure_connection_state(connected=False)
+    # Note that in normal situations (release build), init_connection_args can be omitted
+    # otherwise, it should be set to the first H2O element in the pipeline
     pipeline = Pipeline([
         ('standardize', StandardScaler()),
         ('pca', PCA(n_components=2, random_state=seed)),
-        ('estimator', H2OGradientBoostingRegressor(init_connection_args=init_connection_args, seed=seed))
+        ('estimator', H2OGradientBoostingRegressor(seed=seed, init_connection_args=init_connection_args))
     ])
     data = _get_data(format='numpy')
+    assert isinstance(data.X_train, np.ndarray)
     pipeline.fit(data.X_train, data.y_train)
     preds = pipeline.predict(data.X_test)
+    assert isinstance(preds, np.ndarray)
     assert preds.shape == (len(data.X_test),)
     try:
         pipeline.predict_proba(data.X_test)

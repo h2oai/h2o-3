@@ -284,7 +284,6 @@ class H2OConnectionMonitorMixin(object):
         when there's no more instances in scope
         """
         if not (h2o.connection() and h2o.connection().connected):
-            print("__init__")
             h2o.init(**kwargs)
             cls._h2o_initialized_here = True
             if show_progress:
@@ -295,7 +294,6 @@ class H2OConnectionMonitorMixin(object):
     @classmethod
     def close_connection(cls, force=False):
         if (force or cls._h2o_initialized_here) and h2o.connection():
-            print("__close__")
             if h2o.connection().local_server:
                 cls.shutdown_cluster()
             else:
@@ -307,13 +305,10 @@ class H2OConnectionMonitorMixin(object):
         """
         force H2O cluster shutdown
         """
-        print("__shutdown__")
         if h2o.cluster():
             local_server = h2o.connection() and h2o.connection().local_server
-            print("__cluster_shutdown__")
             h2o.cluster().shutdown()
             if local_server:
-                print("__server_shutdown__")
                 local_server.shutdown()
 
     @classmethod
@@ -354,7 +349,6 @@ class H2OConnectionMonitorMixin(object):
         self._remove_component(self)
 
     def __del__(self):
-        print("__del__")
         self.__exit__()
 
 
@@ -391,7 +385,6 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
 
         self._frame_params = None
         self._init_connection_args = init_connection_args
-        # print(self)
 
 
     @classmethod
