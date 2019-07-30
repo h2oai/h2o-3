@@ -1,3 +1,5 @@
+import sys
+sys.path.insert(1,"../../")
 import h2o
 import tempfile
 import os
