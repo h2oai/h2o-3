@@ -5,6 +5,7 @@ from .model_base import ModelBase
 
 
 class H2OClusteringModel(ModelBase):
+    "For examples: from h2o.estimators.kmeans import H2OKMeansEstimator"
 
     def size(self, train=False, valid=False, xval=False):
         """
@@ -19,6 +20,20 @@ class H2OClusteringModel(ModelBase):
         :param bool xval: If True, return the cluster sizes for each of the cross-validated splits.
 
         :returns: The cluster sizes for the specified key(s).
+
+        :examples:
+
+        >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
+        >>> km = H2OKMeansEstimator(k=3, nfolds=3)
+        >>> km.train(x=list(range(4)), training_frame=iris)
+        >>> size = km.size(train=False,
+        ...                valid=False,
+        ...                xval=False) # <- Default: return training metrics
+        >>> size
+        >>> size1 = km.size(train=False,
+        ...                 valid=False,
+        ...                 xval=True)
+        >>> size1
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
@@ -28,7 +43,15 @@ class H2OClusteringModel(ModelBase):
 
 
     def num_iterations(self):
-        """Get the number of iterations it took to converge or reach max iterations."""
+        """Get the number of iterations it took to converge or reach max iterations.
+
+        :examples:
+
+        >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
+        >>> km = H2OKMeansEstimator(k=3, nfolds=3)
+        >>> km.train(x=list(range(4)), training_frame=iris)
+        >>> km.num_iterations()
+        """
         o = self._model_json["output"]
         return o["model_summary"]["number_of_iterations"][0]
 
@@ -84,6 +107,15 @@ class H2OClusteringModel(ModelBase):
         :param bool xval: If True, return the total sum of squares value for each of the cross-validated splits.
 
         :returns: The total sum of squares values for the specified key(s).
+
+        :examples:
+
+        >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
+        >>> km = H2OKMeansEstimator(k=3, nfolds=3)
+        >>> km.train(x=list(range(4)), training_frame=iris)
+        >>> totss = km.totss(train=False,
+        ...                 valid=False,
+        ...                 xval=False) # <- Default: return training metrics
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
@@ -106,6 +138,21 @@ class H2OClusteringModel(ModelBase):
             cross-validated splits.
 
         :returns: The total within cluster sum of squares values for the specified key(s).
+
+        :examples:
+
+        >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
+        >>> km = H2OKMeansEstimator(k=3, nfolds=3)
+        >>> km.train(x=list(range(4)), training_frame=iris)
+        >>> tot_withinss = km.tot_withinss(train=False,
+        ...                                valid=False,
+        ...                                xval=False) # <- Default: return training metrics
+        >>> assert isinstance(tot_withinss, float)
+        >>> tot_withinss
+        >>> tot_withinss2 = km.tot_withinss(train=True,
+        ...                                 valid=False,
+        ...                                 xval=True)
+        >>> tot_withinss2
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
@@ -127,6 +174,20 @@ class H2OClusteringModel(ModelBase):
         :param bool xval: If True, return the total sum of squares value for each of the cross-validated splits.
 
         :returns: The total sum of squares values for the specified key(s).
+
+        :examples:
+
+        >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
+        >>> km = H2OKMeansEstimator(k=3, nfolds=3)
+        >>> km.train(x=list(range(4)), training_frame=iris)
+        >>> withinss = km.withinss(train=False,
+        ...                        valid=False,
+        ...                        xval=False) # <- Default: return training metrics
+        >>> withinss
+        >>> withinss2 = km.withinss(train=True,
+        ...                         valid=True,
+        ...                         xval=True)
+        >>> withinss2
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
@@ -148,6 +209,20 @@ class H2OClusteringModel(ModelBase):
         :param bool xval: If True, return the centroid statistic for each of the cross-validated splits.
 
         :returns: The centroid statistics for the specified key(s).
+
+        :examples:
+
+        >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
+        >>> km = H2OKMeansEstimator(k=3, nfolds=3)
+        >>> km.train(x=list(range(4)), training_frame=iris)
+        >>> centroid_stats = km.centroid_stats(train=False,
+        ...                                    valid=False,
+        ...                                    xval=False) # <- Default: return training metrics
+        >>> centroid_stats
+        >>> centroid_stats1 = km.centroid_stats(train=True,
+        ...                                     valid=False,
+        ...                                     xval=False)
+        >>> centroid_stats1
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
@@ -162,7 +237,6 @@ class H2OClusteringModel(ModelBase):
         :examples:
 
         >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
-        >>> from h2o.estimators.kmeans import H2OKMeansEstimator
         >>> km = H2OKMeansEstimator(k=3, nfolds=3)
         >>> km.train(x=list(range(4)), training_frame=iris)
         >>> km.centers()
@@ -180,8 +254,7 @@ class H2OClusteringModel(ModelBase):
 
         :examples:
 
-        >>> >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
-        >>> from h2o.estimators.kmeans import H2OKMeansEstimator
+        >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
         >>> km = H2OKMeansEstimator(k=3, nfolds=3)
         >>> km.train(x=list(range(4)), training_frame=iris)
         >>> km.centers_std()
