@@ -160,7 +160,7 @@ class H2OMultinomialModel(ModelBase):
         ...           y=response_col,
         ...           training_frame=train,
         ...           validation_frame=valid)
-        >>> gbm.plot(metric="AUTO", "timestep=AUTO")
+        >>> gbm.plot(metric="AUTO", timestep="AUTO")
         """
 
         if self._model_json["algo"] in ("deeplearning", "deepwater", "xgboost", "drf", "gbm"):
