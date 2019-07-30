@@ -23,7 +23,7 @@ At a minimum, we recommend the following for compatibility with H2O:
 
 -  **Languages**: Scala, R, and Python are not required to use H2O unless you want to use H2O in those environments, but Java is always required. Supported versions include:
 
-   -  Java 7 or later
+   -  Java 8 or later
 
       - To build H2O or run H2O tests, the 64-bit JDK is required.
       - To run the H2O binary using either the command line, R, or Python packages, only 64-bit JRE is required.
@@ -359,7 +359,7 @@ REST APIs are generated immediately out of the code, allowing users to implement
 Java Users
 --------------
 
-H2O-3 is supported with Java 7 and later. For Java developers, the following resources will help you create your own custom app that uses H2O.
+H2O-3 is supported with Java 8 and later. For Java developers, the following resources will help you create your own custom app that uses H2O.
 
 -  `H2O Core Java Developer Documentation <../h2o-core/javadoc/index.html>`_: The definitive Java API guide
    for the core components of H2O.
@@ -810,7 +810,7 @@ Depending on your OS, select the appropriate installation method:
   The Dockerfile:
 
     -  obtains and updates the base image (Ubuntu 14.04)
-    -  installs Java 7
+    -  installs Java 8
     -  obtains and downloads the H2O build from H2O's S3 repository
     -  exposes ports 54321 and 54322 in preparation for launching H2O on those ports
 
