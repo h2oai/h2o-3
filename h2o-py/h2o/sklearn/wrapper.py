@@ -1,10 +1,11 @@
 from collections import defaultdict, OrderedDict
+import copy
 from functools import partial, update_wrapper, wraps
 import imp
 import sys
 from weakref import ref
 
-from sklearn.base import is_classifier, is_regressor, BaseEstimator, TransformerMixin
+from sklearn.base import is_classifier, is_regressor, BaseEstimator, TransformerMixin, ClassifierMixin, RegressorMixin
 
 from .. import h2o, H2OFrame
 from ..utils.shared_utils import can_use_numpy, can_use_pandas
@@ -27,6 +28,21 @@ def mixin(obj, *mixins):
     """
     obj.__class__ = type(obj.__class__.__name__, (obj.__class__,)+tuple(mixins), dict())
     return obj
+
+
+class Mixin(object):
+    """
+    Context manager used to temporarily add mixins to an object.
+    """
+
+    def __init__(self, obj, *mixins):
+        self._inst = mixin(copy.copy(obj), *mixins)  # no deepcopy necessary, we just want to ensure mixin methods are not added to original instance
+
+    def __enter__(self):
+        return self._inst
+
+    def __exit__(self, *args):
+        pass
 
 
 def register_module(module_name):
@@ -109,8 +125,11 @@ def transformer(cls, name=None, module=None, default_params=None, mixins=None):
 
 
 def _to_h2o_frame(X, as_factor=False, frame_params=None, **kwargs):
-    if X is None or isinstance(X, H2OFrame):
+    if X is None:
         return X
+    if isinstance(X, H2OFrame):
+        return X.asfactor() if as_factor else X
+
     if not frame_params:
         frame_params = {}
     fr = H2OFrame(X, **frame_params)
@@ -491,23 +510,22 @@ class H2OtoSklearnEstimator(BaseSklearnEstimator):
         if hasattr(self._estimator, 'score') and callable(self._estimator.score):
             return self._estimator.score(X, y=y, sample_weight=sample_weight)
         else:
-            # delegate to default sklearn scoring methods
-            parent = super(H2OtoSklearnEstimator, self)
-            delegate = None
-            if hasattr(parent, 'score') and callable(parent.score):
-                delegate = parent
-            # elif self.is_classifier():
-            #     mixin(self, ClassifierMixin)
-            #     delegate = super(H2OtoSklearnEstimator, self)
-            # elif self.is_regressor():
-            #     mixin(self, RegressorMixin)
-            #     delegate = super(H2OtoSklearnEstimator, self)
-            if delegate is not None:
+            def delegate_score(delegate):
                 # suboptimal: X may have been converted to H2O frame for nothing
                 #  however for now, it makes implementation simpler
                 return delegate.score(_to_numpy(X), y=(_vector_to_1d_array(y)), sample_weight=sample_weight)
-        raise AttributeError("No `score` method in {}".format(self.__class__.__name__))
 
+            # delegate to default sklearn scoring methods
+            parent = super(H2OtoSklearnEstimator, self)
+            if hasattr(parent, 'score') and callable(parent.score):
+                return delegate_score(parent)
+            elif self.is_classifier():
+                with Mixin(self, ClassifierMixin) as delegate:
+                    return delegate_score(delegate)
+            elif self.is_regressor():
+                with Mixin(self, RegressorMixin) as delegate:
+                    return delegate_score(delegate)
+        raise AttributeError("No `score` method in {}".format(self.__class__.__name__))
 
 
 class H2OtoSklearnTransformer(BaseSklearnEstimator, TransformerMixin):

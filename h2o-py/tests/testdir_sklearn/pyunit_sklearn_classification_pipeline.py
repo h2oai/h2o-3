@@ -2,15 +2,14 @@ from __future__ import print_function
 import importlib, inspect, os, sys
 
 import numpy as np
-from sklearn.datasets import make_regression
-from sklearn.decomposition import PCA
+from sklearn.datasets import make_classification
+from sklearn.decomposition import TruncatedSVD
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
 
 import h2o
-from h2o.sklearn import H2OGradientBoostingEstimator, H2OGradientBoostingRegressor, H2OScaler, H2OPCA
-from sklearn.metrics import r2_score
+from h2o.sklearn import H2OGradientBoostingEstimator, H2OGradientBoostingClassifier, H2OSVD
+from sklearn.metrics import accuracy_score
 from h2o.sklearn.wrapper import H2OConnectionMonitorMixin
 
 
@@ -30,7 +29,6 @@ init_connection_args = dict(strict_version_check=False, show_progress=True)
 
 scores = {}
 
-
 def _ensure_connection_state(connected=True):
     if connected:
         # if we need a connection beforehand, create it if needed
@@ -42,7 +40,7 @@ def _ensure_connection_state(connected=True):
 
 
 def _get_data(format='numpy'):
-    X, y = make_regression(n_samples=1000, n_features=10, n_informative=5, random_state=seed)
+    X, y = make_classification(n_samples=1000, n_features=10, n_informative=5, random_state=seed)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=seed)
     data = ns(X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test)
     if format == 'h2o':
@@ -54,9 +52,8 @@ def _get_data(format='numpy'):
 def test_h2o_only_pipeline_with_h2o_frames():
     _ensure_connection_state(connected=True)
     pipeline = Pipeline([
-        ('standardize', H2OScaler(init_connection_args=init_connection_args)),
-        ('pca', H2OPCA(k=2, seed=seed)),
-        ('estimator', H2OGradientBoostingRegressor(seed=seed))
+        ('svd', H2OSVD(nv=3, transform='DESCALE', seed=seed)),
+        ('estimator', H2OGradientBoostingClassifier(seed=seed))
     ])
     data = _get_data(format='h2o')
     assert isinstance(data.X_train, h2o.H2OFrame)
@@ -64,25 +61,11 @@ def test_h2o_only_pipeline_with_h2o_frames():
     preds = pipeline.predict(data.X_test)
     assert isinstance(preds, h2o.H2OFrame)
     assert preds.dim == [len(data.X_test), 1]
-    try:
-        pipeline.predict_proba(data.X_test)
-    except AttributeError as e:
-        assert "No `predict_proba` method" in str(e)
+    pipeline.predict_proba(data.X_test)
 
-    # this block shows how it should work in perfect world,
-    # but given that `h2o.scale` modified X_test inplace during predictions,
-    # and as it doesn't seem to be idempotent
-    # then the next calls to score actually predicts on different data!!!
     score = pipeline.score(data.X_test, data.y_test)
     assert isinstance(score, float)
-    skl_score = r2_score(data.y_test.as_data_frame().values, preds.as_data_frame().values)
-    assert abs(score - skl_score) > 1e-6, "great!, h2o.scale inplace modification of H2O frames has been fixed. "
-
-    # to get it working, we need to score a fresh H2OFrame
-    data = _get_data(format='h2o')
-    score = pipeline.score(data.X_test, data.y_test)
-    assert isinstance(score, float)
-    skl_score = r2_score(data.y_test.as_data_frame().values, preds.as_data_frame().values)
+    skl_score = accuracy_score(data.y_test.as_data_frame().values, preds.as_data_frame().values)
     assert abs(score - skl_score) < 1e-6, "score={}, skl_score={}".format(score, skl_score)
     scores['h2o_only_pipeline_with_h2o_frame'] = score
 
@@ -94,9 +77,8 @@ def test_h2o_only_pipeline_with_numpy_arrays():
     # Also note that in this specific case mixing numpy inputs with a fully H2O pipeline,
     # the last estimator requires the `data_conversion=True` param in order to return numpy arrays in predictions.
     pipeline = Pipeline([
-        ('standardize', H2OScaler(init_connection_args=init_connection_args)),
-        ('pca', H2OPCA(k=2, seed=seed)),
-        ('estimator', H2OGradientBoostingRegressor(seed=seed, data_conversion=True))
+        ('svd', H2OSVD(nv=3, transform='DESCALE', seed=seed, init_connection_args=init_connection_args)),
+        ('estimator', H2OGradientBoostingClassifier(seed=seed, data_conversion=True))
     ])
     data = _get_data(format='numpy')
     assert isinstance(data.X_train, np.ndarray)
@@ -104,13 +86,11 @@ def test_h2o_only_pipeline_with_numpy_arrays():
     preds = pipeline.predict(data.X_test)
     assert isinstance(preds, np.ndarray)
     assert preds.shape == (len(data.X_test),)
-    try:
-        pipeline.predict_proba(data.X_test)
-    except AttributeError as e:
-        assert "No `predict_proba` method" in str(e)
+    pipeline.predict_proba(data.X_test)
+
     score = pipeline.score(data.X_test, data.y_test)
     assert isinstance(score, float)
-    skl_score = r2_score(data.y_test, preds)
+    skl_score = accuracy_score(data.y_test, preds)
     assert abs(score - skl_score) < 1e-6
     scores['h2o_only_pipeline_with_numpy_arrays'] = score
 
@@ -120,9 +100,8 @@ def test_mixed_pipeline_with_numpy_arrays():
     # Note that in normal situations (release build), init_connection_args can be omitted
     # otherwise, it should be set to the first H2O element in the pipeline
     pipeline = Pipeline([
-        ('standardize', StandardScaler()),
-        ('pca', PCA(n_components=2, random_state=seed)),
-        ('estimator', H2OGradientBoostingRegressor(seed=seed, init_connection_args=init_connection_args))
+        ('svd', TruncatedSVD(n_components=3, random_state=seed)),
+        ('estimator', H2OGradientBoostingClassifier(seed=seed, init_connection_args=init_connection_args))
     ])
     data = _get_data(format='numpy')
     assert isinstance(data.X_train, np.ndarray)
@@ -130,13 +109,11 @@ def test_mixed_pipeline_with_numpy_arrays():
     preds = pipeline.predict(data.X_test)
     assert isinstance(preds, np.ndarray)
     assert preds.shape == (len(data.X_test),)
-    try:
-        pipeline.predict_proba(data.X_test)
-    except AttributeError as e:
-        assert "No `predict_proba` method" in str(e)
+    pipeline.predict_proba(data.X_test)
+
     score = pipeline.score(data.X_test, data.y_test)
     assert isinstance(score, float)
-    skl_score = r2_score(data.y_test, preds)
+    skl_score = accuracy_score(data.y_test, preds)
     assert abs(score - skl_score) < 1e-6
     scores['mixed_pipeline_with_numpy_arrays'] = score
 
@@ -146,9 +123,8 @@ def test_generic_estimator_with_distribution_param():
     # Note that in normal situations (release build), init_connection_args can be omitted
     # otherwise, it should be set to the first H2O element in the pipeline
     pipeline = Pipeline([
-        ('standardize', StandardScaler()),
-        ('pca', PCA(n_components=2, random_state=seed)),
-        ('estimator', H2OGradientBoostingEstimator(distribution='gaussian', seed=seed, init_connection_args=init_connection_args))
+        ('svd', TruncatedSVD(n_components=3, random_state=seed)),
+        ('estimator', H2OGradientBoostingEstimator(distribution='bernoulli', seed=seed, init_connection_args=init_connection_args))
     ])
     data = _get_data(format='numpy')
     assert isinstance(data.X_train, np.ndarray)
@@ -156,13 +132,11 @@ def test_generic_estimator_with_distribution_param():
     preds = pipeline.predict(data.X_test)
     assert isinstance(preds, np.ndarray)
     assert preds.shape == (len(data.X_test),)
-    try:
-        pipeline.predict_proba(data.X_test)
-    except AttributeError as e:
-        assert "No `predict_proba` method" in str(e)
+    pipeline.predict_proba(data.X_test)
+
     score = pipeline.score(data.X_test, data.y_test)
     assert isinstance(score, float)
-    skl_score = r2_score(data.y_test, preds)
+    skl_score = accuracy_score(data.y_test, preds)
     assert abs(score - skl_score) < 1e-6
     scores['generic_estimator_with_distribution_param'] = score
 
@@ -170,7 +144,7 @@ def test_generic_estimator_with_distribution_param():
 def _assert_test_scores_equivalent(lk, rk):
     if lk in scores and rk in scores:
         assert abs(scores[lk] - abs(scores[rk])) < 1e-6, \
-            "expected equivalent scores but got {lk}={lscore} and {rk}={rscore}" \
+            "expected equivalent scores but got {lk}={lscore} and {rk}={rscore}"\
                 .format(lk=lk, rk=rk, lscore=scores[lk], rscore=scores[rk])
     elif lk not in scores:
         print("no scores for {}".format(lk))
@@ -181,6 +155,7 @@ def _assert_test_scores_equivalent(lk, rk):
 def test_scores_are_equivalent():
     _assert_test_scores_equivalent('h2o_only_pipeline_with_h2o_frame', 'h2o_only_pipeline_with_numpy_arrays')
     _assert_test_scores_equivalent('mixed_pipeline_with_numpy_arrays', 'generic_estimator_with_distribution_param')
+
 
 pyunit_utils.run_tests([
     test_h2o_only_pipeline_with_h2o_frames,
