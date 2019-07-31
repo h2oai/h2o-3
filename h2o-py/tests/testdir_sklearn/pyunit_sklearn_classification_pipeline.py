@@ -29,6 +29,7 @@ init_connection_args = dict(strict_version_check=False, show_progress=True)
 
 scores = {}
 
+
 def _ensure_connection_state(connected=True):
     if connected:
         # if we need a connection beforehand, create it if needed
@@ -39,8 +40,8 @@ def _ensure_connection_state(connected=True):
 
 
 
-def _get_data(format='numpy'):
-    X, y = make_classification(n_samples=1000, n_features=10, n_informative=5, random_state=seed)
+def _get_data(format='numpy', n_classes=2):
+    X, y = make_classification(n_samples=1000, n_features=10, n_informative=5, n_classes=n_classes, random_state=seed)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=seed)
     data = ns(X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test)
     if format == 'h2o':
@@ -55,13 +56,14 @@ def test_h2o_only_pipeline_with_h2o_frames():
         ('svd', H2OSVD(nv=3, transform='DESCALE', seed=seed)),
         ('estimator', H2OGradientBoostingClassifier(seed=seed))
     ])
-    data = _get_data(format='h2o')
+    data = _get_data(format='h2o', n_classes=3)
     assert isinstance(data.X_train, h2o.H2OFrame)
     pipeline.fit(data.X_train, data.y_train)
     preds = pipeline.predict(data.X_test)
     assert isinstance(preds, h2o.H2OFrame)
     assert preds.dim == [len(data.X_test), 1]
-    pipeline.predict_proba(data.X_test)
+    probs = pipeline.predict_proba(data.X_test)
+    assert probs.dim == [len(data.X_test), 3]
 
     score = pipeline.score(data.X_test, data.y_test)
     assert isinstance(score, float)
@@ -80,13 +82,14 @@ def test_h2o_only_pipeline_with_numpy_arrays():
         ('svd', H2OSVD(nv=3, transform='DESCALE', seed=seed, init_connection_args=init_connection_args)),
         ('estimator', H2OGradientBoostingClassifier(seed=seed, data_conversion=True))
     ])
-    data = _get_data(format='numpy')
+    data = _get_data(format='numpy', n_classes=3)
     assert isinstance(data.X_train, np.ndarray)
     pipeline.fit(data.X_train, data.y_train)
     preds = pipeline.predict(data.X_test)
     assert isinstance(preds, np.ndarray)
     assert preds.shape == (len(data.X_test),)
-    pipeline.predict_proba(data.X_test)
+    probs = pipeline.predict_proba(data.X_test)
+    assert probs.shape == (len(data.X_test), 3)
 
     score = pipeline.score(data.X_test, data.y_test)
     assert isinstance(score, float)
@@ -109,7 +112,8 @@ def test_mixed_pipeline_with_numpy_arrays():
     preds = pipeline.predict(data.X_test)
     assert isinstance(preds, np.ndarray)
     assert preds.shape == (len(data.X_test),)
-    pipeline.predict_proba(data.X_test)
+    probs = pipeline.predict_proba(data.X_test)
+    assert probs.shape == (len(data.X_test), 2)
 
     score = pipeline.score(data.X_test, data.y_test)
     assert isinstance(score, float)
@@ -132,7 +136,8 @@ def test_generic_estimator_with_distribution_param():
     preds = pipeline.predict(data.X_test)
     assert isinstance(preds, np.ndarray)
     assert preds.shape == (len(data.X_test),)
-    pipeline.predict_proba(data.X_test)
+    probs = pipeline.predict_proba(data.X_test)
+    assert probs.shape == (len(data.X_test), 2)
 
     score = pipeline.score(data.X_test, data.y_test)
     assert isinstance(score, float)

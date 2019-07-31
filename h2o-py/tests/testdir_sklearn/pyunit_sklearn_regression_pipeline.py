@@ -108,6 +108,7 @@ def test_h2o_only_pipeline_with_numpy_arrays():
         pipeline.predict_proba(data.X_test)
     except AttributeError as e:
         assert "No `predict_proba` method" in str(e)
+
     score = pipeline.score(data.X_test, data.y_test)
     assert isinstance(score, float)
     skl_score = r2_score(data.y_test, preds)
@@ -134,6 +135,7 @@ def test_mixed_pipeline_with_numpy_arrays():
         pipeline.predict_proba(data.X_test)
     except AttributeError as e:
         assert "No `predict_proba` method" in str(e)
+
     score = pipeline.score(data.X_test, data.y_test)
     assert isinstance(score, float)
     skl_score = r2_score(data.y_test, preds)
@@ -160,6 +162,7 @@ def test_generic_estimator_with_distribution_param():
         pipeline.predict_proba(data.X_test)
     except AttributeError as e:
         assert "No `predict_proba` method" in str(e)
+
     score = pipeline.score(data.X_test, data.y_test)
     assert isinstance(score, float)
     skl_score = r2_score(data.y_test, preds)
