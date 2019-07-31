@@ -156,7 +156,7 @@ def _to_numpy(fr, **kwargs):
 
 
 def _vector_to_1d_array(fr, estimator=estimator, **kwargs):
-    if isinstance(estimator, BaseSklearnEstimator) and estimator._custom_params.get('predictions_col', 0) == 'all':
+    if isinstance(estimator, BaseEstimatorMixin) and estimator._get_custom_param('predictions_col', 0) == 'all':
         return _to_numpy(fr)
 
     assert fr.ncol == 1 or fr.nrow == 1, "Only vectors can be converted to 1d array."
@@ -225,7 +225,7 @@ def params_as_h2o_frames(frame_params=('X', 'y'),
         sig = signature(fn)
         has_self = 'self' in sig.parameters
         assert any(arg in sig.parameters for arg in frame_params), \
-            "@expect_h2o_frames decorator should be applied to methods taking at least one of {} parameters.".format(frame_params)
+            "@params_as_h2o_frames decorator should be applied to methods taking at least one of {} parameters.".format(frame_params)
 
         @wraps(fn)
         def wrapper(*args, **kwargs):
@@ -246,7 +246,7 @@ def params_as_h2o_frames(frame_params=('X', 'y'),
                     self.__enter__()
                 if isinstance(self, BaseEstimatorMixin):
                     classifier = self.is_classifier()
-                    frame_info = getattr(self, '_frame_params')
+                    frame_info = getattr(self, '_frame_params', None)
 
             if hasattr(self, '_before_method') and callable(self._before_method):
                 self._before_method(fn=fn, input=_args)
@@ -279,11 +279,16 @@ class BaseEstimatorMixin(object):
 
     _classifier_distributions = ('bernoulli', 'binomial', 'quasibinomial', 'multinomial')
 
+    def _get_custom_param(self, name, default=None):
+        return self._custom_params.get(name, default) if hasattr(self, '_custom_params') else default
+
     def _is_classifier_distribution(self):
-        return hasattr(self, 'distribution') and getattr(self, 'distribution') in self._classifier_distributions
+        distribution_prop = self._get_custom_param('distribution_param', 'distribution')
+        return hasattr(self, distribution_prop) and getattr(self, distribution_prop) in self._classifier_distributions
 
     def _is_regressor_distribution(self):
-        return hasattr(self, 'distribution') and getattr(self, 'distribution') not in (None,)+self._classifier_distributions
+        distribution_prop = self._get_custom_param('distribution_param', 'distribution')
+        return hasattr(self, distribution_prop) and getattr(self, distribution_prop) not in (None,)+self._classifier_distributions
 
     def is_classifier(self):
         return is_classifier(self) or self._is_classifier_distribution()
@@ -394,9 +399,12 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
         :param estimator_params: the estimator/model parameters.
         """
         super(BaseSklearnEstimator, self).__init__()
+        self._custom_params = custom_params or {}
+
         assert estimator_type in (None, 'classifier', 'regressor')
         self._estimator = None
         self._estimator_cls = estimator_cls
+        estimator_type = self._get_custom_param('default_estimator_type', estimator_type)
         if estimator_type:
             self._estimator_type = estimator_type
 
@@ -406,7 +414,6 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
         self._estimator_param_names = estimator_params.keys()
         self.set_params(**estimator_params)
 
-        self._custom_params = custom_params or {}
         self._frame_params = None
         self._init_connection_args = init_connection_args
 
@@ -497,14 +504,14 @@ class H2OtoSklearnEstimator(BaseSklearnEstimator):
 
     @params_as_h2o_frames(reverter=_vector_to_1d_array)
     def predict(self, X):
-        pred_col = self._custom_params.get('predictions_col', 0)
+        pred_col = self._get_custom_param('predictions_col', 0)
         preds = self._predict(X)
         return preds if pred_col == 'all' else preds[:, pred_col]
 
     @params_as_h2o_frames()
     def predict_proba(self, X):
-        if self.is_classifier() and self._custom_params.get('predict_proba', True):
-            pred_col = self._custom_params.get('predictions_col', 0)
+        if self.is_classifier() and self._get_custom_param('predict_proba', True):
+            pred_col = self._get_custom_param('predictions_col', 0)
             preds = self._predict(X)
             selector = [c for c in range(preds.ncol) if c != pred_col]
             return preds[:, selector]
@@ -519,7 +526,7 @@ class H2OtoSklearnEstimator(BaseSklearnEstimator):
     def score(self, X, y=None, sample_weight=None):
         if hasattr(self._estimator, 'score') and callable(self._estimator.score):
             return self._estimator.score(X, y=y, sample_weight=sample_weight)
-        elif self._custom_params.get('score', True):
+        elif self._get_custom_param('score', True):
             def delegate_score(delegate):
                 # suboptimal: X may have been converted to H2O frame for nothing
                 #  however for now, it makes implementation simpler

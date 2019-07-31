@@ -5,7 +5,7 @@ from itertools import chain
 import importlib, inspect, os, sys
 
 import numpy as np
-from sklearn.datasets import make_classification
+from sklearn.datasets import make_classification, make_regression
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 
@@ -38,9 +38,13 @@ def _ensure_connection_state(connected=True):
         H2OConnectionMonitorMixin.close_connection(force=True)
 
 
-
 def _get_data(format='numpy', n_classes=2):
-    X, y = make_classification(n_samples=100, n_features=10, n_informative=5, n_classes=n_classes, random_state=seed)
+    generator = make_classification if n_classes > 0 else make_regression
+    params = dict(n_samples=100, n_features=5, n_informative=n_classes or 2, random_state=seed)
+    if generator is make_classification:
+        params.update(n_classes=n_classes)
+
+    X, y = generator(**params)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=seed)
     data = ns(X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test)
     if format == 'h2o':
@@ -51,17 +55,37 @@ def _get_data(format='numpy', n_classes=2):
 
 def _get_default_args(estimator_cls):
     defaults = dict(
-        H2OCoxProportionalHazardsClassifier=dict(),
-        H2OGeneralizedLinearClassifier=dict(family='binomial', seed=seed),
+        H2OAggregatorEstimator=dict(),
+        H2OAutoEncoderEstimator=dict(),
+        H2OCoxProportionalHazardsEstimator=dict(),
+        H2OGenericEstimator=dict(),
+        H2OGeneralizedLinearEstimator=dict(family='binomial', seed=seed),
+        H2OGeneralizedLowRankEstimator=dict(k=2, seed=seed),
+        H2OIsolationForestEstimator=dict(seed=seed),
+        H2OKMeansEstimator=dict(seed=seed),
+        H2ONaiveBayesEstimator=dict(seed=seed),
+        H2OPrincipalComponentAnalysisEstimator=dict(k=2, seed=seed),
+        H2OSingularValueDecompositionEstimator=dict(seed=seed),
+        H2OSupportVectorMachineEstimator=dict(seed=seed),
+        H2OWord2vecEstimator=dict()
     )
-    return defaults.get(estimator_cls.__name__, dict(seed=seed))
+    return defaults.get(estimator_cls.__name__, dict(distribution='bernoulli', seed=seed))
 
 
 def _get_custom_behaviour(estimator_cls):
     custom = dict(
-        H2ODeepLearningClassifier=dict(scores_may_differ=True),
+        H2OAutoEncoderEstimator=dict(n_classes=0, preds_as_vector=False, predict_proba=False, score=False),
+        H2ODeepLearningEstimator=dict(scores_may_differ=True),
+        H2OGeneralizedLinearEstimator=dict(predict_proba=False),
+        H2OGeneralizedLowRankEstimator=dict(preds_as_vector=False, predict_proba=False, score=False),
+        H2OIsolationForestEstimator=dict(predict_proba=False, score=False),
+        H2OKMeansEstimator=dict(predict_proba=False, score=False),
+        H2OPrincipalComponentAnalysisEstimator=dict(preds_as_vector=False, predict_proba=False, score=False),
+        H2OSingularValueDecompositionEstimator=dict(preds_as_vector=False, predict_proba=False, score=False),
+        H2OWord2vecEstimator=dict(preds_as_vector=False, predict_proba=False, score=False),
     )
     return custom.get(estimator_cls.__name__, dict(seed=seed))
+
 
 
 def test_estimator_with_h2o_frames(estimator_cls):
@@ -69,7 +93,7 @@ def test_estimator_with_h2o_frames(estimator_cls):
     args = _get_default_args(estimator_cls)
     estimator = estimator_cls(**args)
 
-    data = _get_data(format='h2o', n_classes=2)
+    data = _get_data(format='h2o', n_classes=_get_custom_behaviour(estimator_cls).get('n_classes', 2))
     assert isinstance(data.X_train, h2o.H2OFrame)
     estimator.fit(data.X_train, data.y_train)
     preds = estimator.predict(data.X_test)
@@ -103,7 +127,7 @@ def test_estimator_with_numpy_arrays(estimator_cls):
     _ensure_connection_state(connected=False)
     estimator = estimator_cls(init_connection_args=init_connection_args, **_get_default_args(estimator_cls))
 
-    data = _get_data(format='numpy', n_classes=2)
+    data = _get_data(format='numpy', n_classes=_get_custom_behaviour(estimator_cls).get('n_classes', 2))
     assert isinstance(data.X_train, np.ndarray)
 
     with estimator:
@@ -170,11 +194,15 @@ def make_tests(classifier):
 
 
 failing = [
-    'H2OCoxProportionalHazardsClassifier',  # NPE at water.fvec.Frame.<init>(Frame.java:168) .... at hex.coxph.CoxPH$CollectTimes.collect(CoxPH.java:805)
-    'H2ODeepWaterClassifier',  # requires DW backend
-    'H2OStackedEnsembleClassifier',  # needs a separate test (requires models as parameters)
+    'H2OAggregatorEstimator',  # can't use predict with it: looks more like a transformer, maybe should be removed from sklearn API
+    'H2OCoxProportionalHazardsEstimator',  # NPE at water.fvec.Frame.<init>(Frame.java:168) .... at hex.coxph.CoxPH$CollectTimes.collect(CoxPH.java:805)
+    'H2ODeepWaterEstimator',  # requires DW backend
+    'H2OGenericEstimator',  # maybe should be removed from sklearn API
+    'H2OStackedEnsembleEstimator',  # needs a separate test (requires models as parameters)
+    'H2OSingularValueDecompositionEstimator', # H2OResponseError: Server error water.exceptions.H2ONotFoundArgumentException: Error: POST /3/ModelBuilders/svd not found
+    'H2OWord2vecEstimator',  # needs a separate test (requires pre_trained model as parameter)
 ]
-classifiers = [cls for name, cls in inspect.getmembers(h2o.sklearn, inspect.isclass)
-               if name.endswith('Classifier') and name not in ['H2OAutoMLClassifier']+failing]
-tests = chain.from_iterable([make_tests(c) for c in classifiers])
+estimators = [cls for name, cls in inspect.getmembers(h2o.sklearn, inspect.isclass)
+              if name.endswith('Estimator') and name not in ['H2OAutoMLEstimator'] + failing]
+tests = chain.from_iterable([make_tests(c) for c in estimators])
 pyunit_utils.run_tests(tests)

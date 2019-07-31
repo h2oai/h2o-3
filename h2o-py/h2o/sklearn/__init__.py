@@ -33,9 +33,10 @@ def _make_default_params(cls):
 
 def _get_custom_params(cls):
     custom = {}
-    if cls.__name__ in ['H2OGeneralizedLowRankEstimator']:
-        custom.update(predictions_col=-1)
+    # if cls.__name__ in ['H2OGeneralizedLowRankEstimator']:
+    #     custom.update(predictions_col=-1)
     if cls.__name__ in ['H2OAutoEncoderEstimator',
+                        'H2OGeneralizedLowRankEstimator',
                         'H2OPrincipalComponentAnalysisEstimator',
                         'H2OSingularValueDecompositionEstimator']:
         custom.update(predictions_col='all')
@@ -47,9 +48,17 @@ def _get_custom_params(cls):
                         'H2OSingularValueDecompositionEstimator']:
         custom.update(predict_proba=False)
     if cls.__name__ in ['H2OAutoEncoderEstimator',
+                        'H2OGeneralizedLowRankEstimator',
+                        'H2OIsolationForestEstimator',
+                        'H2OKMeansEstimator',
                         'H2OPrincipalComponentAnalysisEstimator',
                         'H2OSingularValueDecompositionEstimator']:
         custom.update(score=False)
+    if cls.__name__ in ['H2OGeneralizedLinearEstimator']:
+        custom.update(distribution_param='family')
+    if cls.__name__ in ['H2ONaiveBayesEstimator',
+                        'H2OSupportVectorMachineEstimator']:
+        custom.update(default_estimator_type='classifier')
     return custom or None
 
 
@@ -118,7 +127,8 @@ for mod in [automl, estimators]:
                         'H2OWord2vecEstimator',
                         ]:  # unsupervised and misc estimators
             gen_estimators.append(make_classifier(cls, submodule=submodule))
-            gen_estimators.append(make_regressor(cls, submodule=submodule))
+            if name not in ['H2ONaiveBayesEstimator']:
+                gen_estimators.append(make_regressor(cls, submodule=submodule))
 
 for mod in [transforms]:
     submodule = mod.__name__.split('.')[-1]
