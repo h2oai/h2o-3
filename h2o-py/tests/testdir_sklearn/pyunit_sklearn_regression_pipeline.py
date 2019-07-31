@@ -4,13 +4,13 @@ import importlib, inspect, os, sys
 import numpy as np
 from sklearn.datasets import make_regression
 from sklearn.decomposition import PCA
+from sklearn.metrics import r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 import h2o
 from h2o.sklearn import H2OGradientBoostingEstimator, H2OGradientBoostingRegressor, H2OScaler, H2OPCA
-from sklearn.metrics import r2_score
 from h2o.sklearn.wrapper import H2OConnectionMonitorMixin
 
 
@@ -54,7 +54,7 @@ def _get_data(format='numpy'):
 def test_h2o_only_pipeline_with_h2o_frames():
     _ensure_connection_state(connected=True)
     pipeline = Pipeline([
-        ('standardize', H2OScaler(init_connection_args=init_connection_args)),
+        ('standardize', H2OScaler()),
         ('pca', H2OPCA(k=2, seed=seed)),
         ('estimator', H2OGradientBoostingRegressor(seed=seed))
     ])

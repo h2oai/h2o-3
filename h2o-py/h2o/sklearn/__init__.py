@@ -6,7 +6,7 @@ from sklearn.base import ClassifierMixin, RegressorMixin
 from .. import automl
 from .. import estimators
 from .. import transforms
-from .wrapper import estimator, params_as_h2o_frames, register_module, transformer
+from .wrapper import estimator, params_as_h2o_frames, register_module, transformer, H2OConnectionMonitorMixin
 
 module = sys.modules[__name__]
 
@@ -65,6 +65,12 @@ def make_transformer(cls, name=None, submodule=None):
                        )
 
 
+def h2o_connection(**init_args):
+    conn_monitor = H2OConnectionMonitorMixin()
+    conn_monitor._init_connection_args = init_args
+    return conn_monitor
+
+
 gen_estimators = []
 for mod in [automl, estimators]:
     submodule = mod.__name__.split('.')[-1]
@@ -82,7 +88,7 @@ for mod in [transforms]:
             continue
         gen_estimators.append(make_transformer(cls, submodule=submodule))
 
-__all__ = set()
+__all__ = set('h2o_connection')
 # exposes all the generated estimators in current module for ease of use.
 # for clarity, it is still possible to import them from submodules
 for e in gen_estimators:

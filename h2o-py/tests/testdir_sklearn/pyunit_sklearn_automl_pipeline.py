@@ -3,12 +3,12 @@ import importlib, inspect, os, sys
 
 import numpy as np
 from sklearn.datasets import make_classification, make_regression
+from sklearn.metrics import accuracy_score, r2_score
 from sklearn.model_selection import train_test_split
-from sklearn.pipeline import make_pipeline, Pipeline
+from sklearn.pipeline import make_pipeline
 
 import h2o
 from h2o.sklearn import H2OAutoMLEstimator, H2OAutoMLClassifier, H2OAutoMLRegressor
-from sklearn.metrics import accuracy_score, log_loss, r2_score
 from h2o.sklearn.wrapper import H2OConnectionMonitorMixin
 
 
@@ -58,7 +58,7 @@ def _get_data(format='numpy', n_classes=2):
 def test_binomial_classification_with_h2o_frames():
     _ensure_connection_state(connected=True)
 
-    pipeline = make_pipeline(H2OAutoMLClassifier(seed=seed, init_connection_args=init_connection_args))
+    pipeline = make_pipeline(H2OAutoMLClassifier(seed=seed))
     pipeline.set_params(
         h2oautomlclassifier__max_models=max_models,
         h2oautomlclassifier__nfolds=3

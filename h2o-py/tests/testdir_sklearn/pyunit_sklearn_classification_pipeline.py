@@ -4,12 +4,12 @@ import importlib, inspect, os, sys
 import numpy as np
 from sklearn.datasets import make_classification
 from sklearn.decomposition import TruncatedSVD
+from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 
 import h2o
 from h2o.sklearn import H2OGradientBoostingEstimator, H2OGradientBoostingClassifier, H2OSVD
-from sklearn.metrics import accuracy_score
 from h2o.sklearn.wrapper import H2OConnectionMonitorMixin
 
 
