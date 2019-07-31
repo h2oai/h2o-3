@@ -64,6 +64,7 @@ def test_h2o_only_pipeline_with_h2o_frames():
     assert preds.dim == [len(data.X_test), 1]
     probs = pipeline.predict_proba(data.X_test)
     assert probs.dim == [len(data.X_test), 3]
+    assert np.allclose(np.sum(probs.as_data_frame().values, axis=1), 1.), "`predict_proba` didn't return probabilities"
 
     score = pipeline.score(data.X_test, data.y_test)
     assert isinstance(score, float)
@@ -90,6 +91,7 @@ def test_h2o_only_pipeline_with_numpy_arrays():
     assert preds.shape == (len(data.X_test),)
     probs = pipeline.predict_proba(data.X_test)
     assert probs.shape == (len(data.X_test), 3)
+    assert np.allclose(np.sum(probs, axis=1), 1.), "`predict_proba` didn't return probabilities"
 
     score = pipeline.score(data.X_test, data.y_test)
     assert isinstance(score, float)
@@ -114,6 +116,7 @@ def test_mixed_pipeline_with_numpy_arrays():
     assert preds.shape == (len(data.X_test),)
     probs = pipeline.predict_proba(data.X_test)
     assert probs.shape == (len(data.X_test), 2)
+    assert np.allclose(np.sum(probs, axis=1), 1.), "`predict_proba` didn't return probabilities"
 
     score = pipeline.score(data.X_test, data.y_test)
     assert isinstance(score, float)
@@ -138,6 +141,7 @@ def test_generic_estimator_with_distribution_param():
     assert preds.shape == (len(data.X_test),)
     probs = pipeline.predict_proba(data.X_test)
     assert probs.shape == (len(data.X_test), 2)
+    assert np.allclose(np.sum(probs, axis=1), 1.), "`predict_proba` didn't return probabilities"
 
     score = pipeline.score(data.X_test, data.y_test)
     assert isinstance(score, float)

@@ -31,12 +31,36 @@ def _make_default_params(cls):
     return None
 
 
+def _get_custom_params(cls):
+    custom = {}
+    if cls.__name__ in ['H2OGeneralizedLowRankEstimator']:
+        custom.update(predictions_col=-1)
+    if cls.__name__ in ['H2OAutoEncoderEstimator',
+                        'H2OPrincipalComponentAnalysisEstimator',
+                        'H2OSingularValueDecompositionEstimator']:
+        custom.update(predictions_col='all')
+    if cls.__name__ in ['H2OAutoEncoderEstimator',
+                        'H2OGeneralizedLowRankEstimator',
+                        'H2OIsolationForestEstimator',
+                        'H2OKMeansEstimator',
+                        'H2OPrincipalComponentAnalysisEstimator',
+                        'H2OSingularValueDecompositionEstimator']:
+        custom.update(predict_proba=False)
+    if cls.__name__ in ['H2OAutoEncoderEstimator',
+                        'H2OPrincipalComponentAnalysisEstimator',
+                        'H2OSingularValueDecompositionEstimator']:
+        custom.update(score=False)
+    return custom or None
+
+
 def make_estimator(cls, name=None, submodule=None):
     if name is None:
         name = cls.__name__.replace('Estimator', '') + 'Estimator'
     return estimator(cls, name=name, module=_register_submodule(submodule),
                      default_params=_make_default_params(cls),
-                     is_generic=True)
+                     is_generic=True,
+                     custom_params=_get_custom_params(cls),
+                     )
 
 
 def make_classifier(cls, name=None, submodule=None):
@@ -45,6 +69,8 @@ def make_classifier(cls, name=None, submodule=None):
     return estimator(cls, name=name, module=_register_submodule(submodule),
                      default_params=_make_default_params(cls),
                      mixins=(ClassifierMixin,),
+                     is_generic=False,
+                     custom_params=_get_custom_params(cls),
                      )
 
 
@@ -54,6 +80,8 @@ def make_regressor(cls, name=None, submodule=None):
     return estimator(cls, name=name, module=_register_submodule(submodule),
                      default_params=_make_default_params(cls),
                      mixins=(RegressorMixin,),
+                     is_generic=False,
+                     custom_params=_get_custom_params(cls),
                      )
 
 
@@ -62,6 +90,7 @@ def make_transformer(cls, name=None, submodule=None):
         name = cls.__name__
     return transformer(cls, name=name, module=_register_submodule(submodule),
                        default_params=_make_default_params(cls),
+                       custom_params=_get_custom_params(cls),
                        )
 
 
@@ -75,11 +104,21 @@ gen_estimators = []
 for mod in [automl, estimators]:
     submodule = mod.__name__.split('.')[-1]
     for name, cls in inspect.getmembers(mod, inspect.isclass):
-        if name in ['H2OEstimator']:
+        if name in ['H2OEstimator']:  # removing abstract estimators
             continue
         gen_estimators.append(make_estimator(cls, submodule=submodule))
-        gen_estimators.append(make_classifier(cls, submodule=submodule))
-        gen_estimators.append(make_regressor(cls, submodule=submodule))
+        if name not in ['H2OAggregatorEstimator',
+                        'H2OAutoEncoderEstimator',
+                        'H2OGeneralizedLowRankEstimator',
+                        'H2OGenericEstimator',
+                        'H2OIsolationForestEstimator',
+                        'H2OKMeansEstimator',
+                        'H2OPrincipalComponentAnalysisEstimator',
+                        'H2OSingularValueDecompositionEstimator',
+                        'H2OWord2vecEstimator',
+                        ]:  # unsupervised and misc estimators
+            gen_estimators.append(make_classifier(cls, submodule=submodule))
+            gen_estimators.append(make_regressor(cls, submodule=submodule))
 
 for mod in [transforms]:
     submodule = mod.__name__.split('.')[-1]

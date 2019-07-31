@@ -62,7 +62,8 @@ def wrap_estimator(cls,
                    name=None,
                    module=None,
                    default_params=None,
-                   is_generic=False):
+                   is_generic=True,
+                   custom_params=None):
     assert cls is not None
     assert isinstance(bases, tuple) and len(bases) > 0
     if default_params is None:
@@ -83,13 +84,14 @@ def wrap_estimator(cls,
             yield "         {k}={v},".format(k=k, v=repr(v))
         yield "         init_connection_args=None,"
         yield "         data_conversion='auto',"
-        if is_generic:  # if generic
+        if is_generic:  # if generic only
             yield "         estimator_type=None,"
         yield "         ):"
-        yield "    kwargs = locals()"
-        yield "    del kwargs['self']"
-        yield "    kwargs.update(estimator_cls=cls)"
-        yield "    super(self.__class__, self).__init__(**kwargs)"
+        yield "    base_args = locals()"
+        yield "    del base_args['self']"
+        yield "    base_args.update(estimator_cls=cls)"
+        yield "    base_args.update(custom_params=custom_params)"
+        yield "    super(self.__class__, self).__init__(**base_args)"
     init_code = '\n'.join(list(gen_init_code()))
     scope = locals()  # we can't create init in default scope, and we need to access some local variables
     exec(init_code, scope)
@@ -103,7 +105,7 @@ def wrap_estimator(cls,
     return extended
 
 
-def estimator(cls, name=None, module=None, default_params=None, mixins=None, is_generic=False):
+def estimator(cls, name=None, module=None, default_params=None, mixins=None, is_generic=True, custom_params=None):
     mixins = tuple(mixins) if mixins else ()
     return wrap_estimator(cls=cls,
                           bases=(H2OtoSklearnEstimator,) + mixins,
@@ -111,17 +113,18 @@ def estimator(cls, name=None, module=None, default_params=None, mixins=None, is_
                           module=module,
                           default_params=default_params,
                           is_generic=is_generic,
+                          custom_params=custom_params,
                           )
 
 
-def transformer(cls, name=None, module=None, default_params=None, mixins=None):
+def transformer(cls, name=None, module=None, default_params=None, mixins=None, custom_params=None):
     mixins = tuple(mixins) if mixins else ()
     return wrap_estimator(cls=cls,
                           bases=(H2OtoSklearnTransformer,) + mixins,
                           name=name,
                           module=module,
                           default_params=default_params,
-                          )
+                          custom_params=custom_params)
 
 
 def _to_h2o_frame(X, as_factor=False, frame_params=None, **kwargs):
@@ -152,7 +155,10 @@ def _to_numpy(fr, **kwargs):
             else arr)
 
 
-def _vector_to_1d_array(fr, **kwargs):
+def _vector_to_1d_array(fr, estimator=estimator, **kwargs):
+    if isinstance(estimator, BaseSklearnEstimator) and estimator._custom_params.get('predictions_col', 0) == 'all':
+        return _to_numpy(fr)
+
     assert fr.ncol == 1 or fr.nrow == 1, "Only vectors can be converted to 1d array."
     return _to_numpy(fr).reshape(-1)
 
@@ -168,8 +174,8 @@ def _convert(converter, arg, arguments, **converter_args):
 def _revert(converter,
             result,
             converted=False,
-            estimator_conversion=None,
-            decorator_conversion=None,
+            result_conversion=None,
+            estimator=None,
             **converter_args):
     """
     sklearn toolkit produces all its results as numpy format by default.
@@ -180,19 +186,19 @@ def _revert(converter,
     or at estimator level for other cases (predict on a pipeline with H2O transformers and numpy inputs).
     :param result:
     :param converted:
-    :param estimator_conversion:
-    :param decorator_conversion:
+    :param result_conversion:
     :return:
     """
+    estimator_conversion = getattr(estimator, 'data_conversion', None)
     do_convert = (
             estimator_conversion is True
             or (estimator_conversion in (None, 'auto')
-                and (decorator_conversion is True
-                     or (decorator_conversion in (None, 'auto') and converted)
+                and (result_conversion is True
+                     or (result_conversion in (None, 'auto') and converted)
                      )
                 )
     )
-    return converter(result, **converter_args) if do_convert else result
+    return converter(result, estimator=estimator, **converter_args) if do_convert else result
 
 
 def params_as_h2o_frames(frame_params=('X', 'y'),
@@ -232,7 +238,6 @@ def params_as_h2o_frames(frame_params=('X', 'y'),
             """
             _args = sig.bind(*args, **kwargs).arguments
             classifier = False
-            estimator_conversion = None
             self = {}
             frame_info = None
             if has_self:
@@ -241,7 +246,6 @@ def params_as_h2o_frames(frame_params=('X', 'y'),
                     self.__enter__()
                 if isinstance(self, BaseEstimatorMixin):
                     classifier = self.is_classifier()
-                    estimator_conversion = self._data_conversion_mode()
                     frame_info = getattr(self, '_frame_params')
 
             if hasattr(self, '_before_method') and callable(self._before_method):
@@ -252,12 +256,14 @@ def params_as_h2o_frames(frame_params=('X', 'y'),
                 if fr in sig.parameters:
                     as_factor = classifier and fr == target_param
                     frame_info = frame_info if fr != target_param else None
-                    converted = _convert(converter, fr, _args, as_factor=as_factor, frame_params=frame_info) or converted
+                    converted = _convert(converter, fr, _args,
+                                         as_factor=as_factor, frame_params=frame_info,
+                                         estimator=self) or converted
 
             result = fn(**_args)
             result = _revert(reverter, result, converted=converted,
-                             estimator_conversion=estimator_conversion,
-                             decorator_conversion=result_conversion)
+                             result_conversion=result_conversion,
+                             estimator=self)
 
             if hasattr(self, '_after_method') and callable(self._after_method):
                 self._after_method(fn=fn, output=result)
@@ -278,9 +284,6 @@ class BaseEstimatorMixin(object):
 
     def _is_regressor_distribution(self):
         return hasattr(self, 'distribution') and getattr(self, 'distribution') not in (None,)+self._classifier_distributions
-
-    def _data_conversion_mode(self):
-        return getattr(self, 'data_conversion', None)
 
     def is_classifier(self):
         return is_classifier(self) or self._is_classifier_distribution()
@@ -381,6 +384,7 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
                  estimator_cls=None,
                  estimator_type=None,
                  init_connection_args=None,
+                 custom_params=None,
                  **estimator_params):
         """
         :param estimator_cls: the H2O Estimator class.
@@ -402,6 +406,7 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
         self._estimator_param_names = estimator_params.keys()
         self.set_params(**estimator_params)
 
+        self._custom_params = custom_params or {}
         self._frame_params = None
         self._init_connection_args = init_connection_args
 
@@ -492,12 +497,17 @@ class H2OtoSklearnEstimator(BaseSklearnEstimator):
 
     @params_as_h2o_frames(reverter=_vector_to_1d_array)
     def predict(self, X):
-        return self._predict(X)[:, 0]
+        pred_col = self._custom_params.get('predictions_col', 0)
+        preds = self._predict(X)
+        return preds if pred_col == 'all' else preds[:, pred_col]
 
     @params_as_h2o_frames()
     def predict_proba(self, X):
-        if self.is_classifier():
-            return self._predict(X)[:, 1:]
+        if self.is_classifier() and self._custom_params.get('predict_proba', True):
+            pred_col = self._custom_params.get('predictions_col', 0)
+            preds = self._predict(X)
+            selector = [c for c in range(preds.ncol) if c != pred_col]
+            return preds[:, selector]
         raise AttributeError("No `predict_proba` method in {}".format(self.__class__.__name__))
 
     def predict_log_proba(self, X):
@@ -509,7 +519,7 @@ class H2OtoSklearnEstimator(BaseSklearnEstimator):
     def score(self, X, y=None, sample_weight=None):
         if hasattr(self._estimator, 'score') and callable(self._estimator.score):
             return self._estimator.score(X, y=y, sample_weight=sample_weight)
-        else:
+        elif self._custom_params.get('score', True):
             def delegate_score(delegate):
                 # suboptimal: X may have been converted to H2O frame for nothing
                 #  however for now, it makes implementation simpler
