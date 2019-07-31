@@ -183,7 +183,10 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     checkMaxSupportedMojoVersion();
     readModelData();
     if (readModelDescriptor) {
-      _model._modelDescriptor = new ModelDescriptorBuilder(_model).build();
+      final String algoName = readkv("algo");
+      final String algoFullName = readkv("algorithm"); // The key'algo' contains the shortcut, 'algorithm' is the long version
+      _model._modelDescriptor = new ModelDescriptorBuilder(_model, algoName, algoFullName)
+              .build();
     }
     _model._modelAttributes = readModelSpecificAttributes();
   }
