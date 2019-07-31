@@ -102,7 +102,7 @@ tar cvf h2o_${PROJECT_VERSION}.tar h2o
 gzip h2o_${PROJECT_VERSION}.tar
 rm -fr h2o
 cd ../..
-md5sum target/Rjar/h2o.jar | sed -r 's/(.{31}).*/\1/' > target/Rjar/h2o.jar.md5
+md5sum target/Rjar/h2o.jar | sed -r 's/(.{32}).*/\1/' > target/Rjar/h2o.jar.md5
 
 # Add Python dist to target.
 mkdir -p target/Python
