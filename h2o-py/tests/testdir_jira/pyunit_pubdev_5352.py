@@ -1,3 +1,5 @@
+import sys
+sys.path.insert(1,"../../")
 import h2o
 from h2o.estimators.random_forest import H2ORandomForestEstimator
 from tests import pyunit_utils

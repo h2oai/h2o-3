@@ -1848,6 +1848,8 @@ class H2OFrame(Keyed):
                 splits.append(tmp_slice)
 
             i += 1
+        for split in splits:
+            split.refresh() # Force the split now (otherwise done lazily) to immediately delete tmp_runif
         h2o.remove(tmp_runif)
         del tmp_runif
         return splits
