@@ -86,6 +86,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/min_split_improvement
    data-science/algo-params/missing_values_handling
    data-science/algo-params/model_id
+   data-science/algo-params/monotone_constraints
    data-science/algo-params/mtries
    data-science/algo-params/nbins
    data-science/algo-params/nbins_cats
