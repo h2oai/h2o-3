@@ -35,8 +35,8 @@ class H2OAutoEncoderModel(ModelBase):
         >>> ae_model.train(x=predictors,training_frame=train)
         >>> test_rec_error = ae_model.anomaly(test)
         >>> test_rec_error
-        >>> test_recon = ae_model.predict(test)
-        >>> test_recon
+        >>> test_rec_error_features = ae_model.anomaly(test, per_feature=True)
+        >>> test_rec_error_features
         """
         if test_data is None or test_data.nrow == 0: raise ValueError("Must specify test data")
         j = h2o.api("POST /3/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
