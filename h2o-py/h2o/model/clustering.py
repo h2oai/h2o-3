@@ -116,6 +116,7 @@ class H2OClusteringModel(ModelBase):
         >>> totss = km.totss(train=False,
         ...                 valid=False,
         ...                 xval=False) # <- Default: return training metrics
+        >>> totss
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
@@ -147,7 +148,6 @@ class H2OClusteringModel(ModelBase):
         >>> tot_withinss = km.tot_withinss(train=False,
         ...                                valid=False,
         ...                                xval=False) # <- Default: return training metrics
-        >>> assert isinstance(tot_withinss, float)
         >>> tot_withinss
         >>> tot_withinss2 = km.tot_withinss(train=True,
         ...                                 valid=False,
