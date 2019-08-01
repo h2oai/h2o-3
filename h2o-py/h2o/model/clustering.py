@@ -79,12 +79,10 @@ class H2OClusteringModel(ModelBase):
         >>> betweenss = km.betweenss(train=False,
         ...                          valid=False,
         ...                          xval=False) # <- Default: return training metrics
-        >>> assert isinstance(betweenss, float)
         >>> betweenss
         >>> betweenss3 = km.betweenss(train=False,
         ...                           valid=False,
         ...                           xval=True)
-        >>> assert isinstance(betweenss3, float)
         >>> betweenss3
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
