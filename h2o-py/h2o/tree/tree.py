@@ -4,7 +4,11 @@ from h2o.estimators import H2OXGBoostEstimator
 
 class H2OTree():
     """
-    Represents a model of a Tree built by one of H2O's algorithms (GBM, Random Forest).
+    Represents a model of a Tree built by one of H2O's algorithms (GBM, Random Forest, XGBoost, Isolation Forest).
+
+    :param model: The model this tree is related to.
+    :param tree_number: An integer representing the order in which the tree has been built in the model.
+    :param tree_class: A string representing the name of the tree's class. The number of tree classes equals the number of levels in categorical response column. As there is exactly one class per categorical level, the name of the tree's class is equal to the corresponding categorical level of the response column. In case of regression and binomial models, the name of the categorical level is ignored and can be omitted, as there is exactly one tree built in both cases.
     """
 
     def __init__(self, model, tree_number, tree_class=None):
