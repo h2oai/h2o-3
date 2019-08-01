@@ -2638,6 +2638,8 @@ round <- function(x, digits=0) {
 #' @param x An H2OFrame object.
 #' @param center either a \code{logical} value or numeric vector of length equal to the number of columns of x.
 #' @param scale either a \code{logical} value or numeric vector of length equal to the number of columns of x.
+#' @param inplace a \code{logical} values indicating whether directly overwrite original data (disabled by default).
+#'        Exposed for backwards compatibility (prior versions of this functions were always doing an inplace update). 
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -2646,14 +2648,41 @@ round <- function(x, digits=0) {
 #' summary(iris_hf)
 #'
 #' # Scale and center all the numeric columns in iris data set
-#' scale(iris_hf[, 1:4])
+#' iris_scaled <- h2o.scale(iris_hf[, 1:4])
 #' }
 #' @export
-h2o.scale <- function(x, center = TRUE, scale = TRUE) .newExpr("scale", chk.H2OFrame(x), center, scale)
+h2o.scale <- function(x, center = TRUE, scale = TRUE, inplace = FALSE) {
+  scale_fun <- if (inplace) "scale_inplace" else "scale"
+  result <- .newExpr(scale_fun, chk.H2OFrame(x), center, scale)
+  if (inplace) {
+    result <- .eval.frame(result)
+  }
+  return(result)
+}
 
-#' @rdname h2o.scale
+#'
+#' Scaling and Centering of an H2OFrame
+#'
+#' Centers and/or scales the columns of an H2O dataset.
+#'
+#' @name scale
+#' @param x An H2OFrame object.
+#' @param center either a \code{logical} value or numeric vector of length equal to the number of columns of x.
+#' @param scale either a \code{logical} value or numeric vector of length equal to the number of columns of x.
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' iris_hf <- as.h2o(iris)
+#' summary(iris_hf)
+#'
+#' # Scale and center all the numeric columns in iris data set
+#' iris_scaled <- scale(iris_hf[, 1:4])
+#' }
 #' @export
-scale.H2OFrame <- h2o.scale
+scale.H2OFrame <- function(x, center = TRUE, scale = TRUE) {
+  h2o.scale(x, center = center, scale = scale, inplace = FALSE)
+}
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Below takes H2O primitives that do not start with "h2o.*" and appends "h2o.*" to ensure all H2O primitives exist
