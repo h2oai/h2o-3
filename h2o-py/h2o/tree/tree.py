@@ -360,13 +360,13 @@ class H2OTree():
                                                                                             self._tree_number,
                                                                                             self._tree_class)
     def show(self):
-        print(self.__str__())
-        """
+        """Summarizes the H2OTree.
+
         :examples:
 
-        >>>from h2o.tree import H2OTree
-        >>> airlines = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/AirlinesTrain.csv")
+        >>> from h2o.tree import H2OTree
         >>> from h2o.estimators import H2OGradientBoostingEstimator
+        >>> airlines = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/AirlinesTrain.csv")
         >>> gbm = H2OGradientBoostingEstimator(ntrees=1)
         >>> gbm.train(x=["Origin", "Dest"],
         ...           y="IsDepDelayed",
@@ -374,6 +374,7 @@ class H2OTree():
         >>> tree = H2OTree(gbm, 0 , "NO")
         >>> tree.show()
         """
+        print(self.__str__())
 
 
 class H2ONode():
