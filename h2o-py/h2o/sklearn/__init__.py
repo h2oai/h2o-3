@@ -109,31 +109,41 @@ def h2o_connection(**init_args):
     return conn_monitor
 
 
+_excluded_estimators = (  # e.g. abstract classes
+    'H2OEstimator',
+    'H2OTransformer',
+)
+_generic_only_estimators = (  # e.g. unsupervised and misc estimators
+    'H2OAggregatorEstimator',
+    'H2OAutoEncoderEstimator',
+    'H2OGeneralizedLowRankEstimator',
+    'H2OGenericEstimator',
+    'H2OIsolationForestEstimator',
+    'H2OKMeansEstimator',
+    'H2OPrincipalComponentAnalysisEstimator',
+    'H2OSingularValueDecompositionEstimator',
+    'H2OWord2vecEstimator',
+)
+_classifier_only_estimators = ('H2ONaiveBayesEstimator',)
+_regressor_only_estimators = ()
+
 gen_estimators = []
 for mod in [automl, estimators]:
     submodule = mod.__name__.split('.')[-1]
     for name, cls in inspect.getmembers(mod, inspect.isclass):
-        if name in ['H2OEstimator']:  # removing abstract estimators
+        if name in _excluded_estimators:
             continue
         gen_estimators.append(make_estimator(cls, submodule=submodule))
-        if name not in ['H2OAggregatorEstimator',
-                        'H2OAutoEncoderEstimator',
-                        'H2OGeneralizedLowRankEstimator',
-                        'H2OGenericEstimator',
-                        'H2OIsolationForestEstimator',
-                        'H2OKMeansEstimator',
-                        'H2OPrincipalComponentAnalysisEstimator',
-                        'H2OSingularValueDecompositionEstimator',
-                        'H2OWord2vecEstimator',
-                        ]:  # unsupervised and misc estimators
-            gen_estimators.append(make_classifier(cls, submodule=submodule))
-            if name not in ['H2ONaiveBayesEstimator']:
+        if name not in _generic_only_estimators:
+            if name not in _regressor_only_estimators:
+                gen_estimators.append(make_classifier(cls, submodule=submodule))
+            if name not in _classifier_only_estimators:
                 gen_estimators.append(make_regressor(cls, submodule=submodule))
 
 for mod in [transforms]:
     submodule = mod.__name__.split('.')[-1]
     for name, cls in inspect.getmembers(mod, inspect.isclass):
-        if name in ['H2OTransformer']:
+        if name in _excluded_estimators:
             continue
         gen_estimators.append(make_transformer(cls, submodule=submodule))
 

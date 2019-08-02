@@ -12,8 +12,24 @@ sklearn_transformer_methods = ['fit', 'fit_transform', 'transform', 'inverse_tra
 
 
 def _make_estimator_names(cls_name):
+    mod = importlib.import_module('h2o.sklearn')
+    suffixes = ['Estimator', 'Classifier', 'Regressor']
+    if cls_name in mod._excluded_estimators:
+        return []
+    elif cls_name in mod._generic_only_estimators:
+        suffixes = ['Estimator']
+    elif cls_name in mod._classifier_only_estimators:
+        suffixes = ['Estimator', 'Classifier']
+    elif cls_name in mod._regressor_only_estimators:
+        suffixes = ['Estimator', 'Regressor']
     return map(lambda suffix: cls_name.replace('Estimator', '')+suffix,
-               ['Estimator', 'Classifier', 'Regressor'])
+               suffixes)
+
+def _make_transformer_names(cls_name):
+    mod = importlib.import_module('h2o.sklearn')
+    if cls_name in mod._excluded_estimators:
+        return []
+    return [cls_name]
 
 
 def _has_method(cls, name):
@@ -39,28 +55,27 @@ def test_automl_estimators_exposed_in_h2o_sklearn_automl_module():
 def test_algos_estimators_exposed_in_h2o_sklearn_estimators_module():
     import h2o.estimators
     mod = importlib.import_module('h2o.sklearn.estimators')
-    class_names = [name for name, _ in inspect.getmembers(h2o.estimators, inspect.isclass)
-                   if name not in ['H2OEstimator']]
+    class_names = [name for name, _ in inspect.getmembers(h2o.estimators, inspect.isclass)]
     for cl_name in class_names:
         for name in _make_estimator_names(cl_name):
             cls = getattr(mod, name, None)
             assert cls, "Class {} is missing in module {}".format(name, mod)
             for meth in sklearn_estimator_methods:
                 assert _has_method(cls, meth), "Class {} is missing method {}".format(name, meth)
-        _check_exposed_in_h2o_sklearn_module(cls)
+            _check_exposed_in_h2o_sklearn_module(cls)
 
 
 def test_transformers_exposed_in_h2o_sklean_transforms_module():
     import h2o.transforms
     mod = importlib.import_module('h2o.sklearn.transforms')
-    class_names = [name for name, _ in inspect.getmembers(h2o.transforms, inspect.isclass)
-                   if name not in ['H2OTransformer']]
-    for name in class_names:
-        cls = getattr(mod, name, None)
-        assert cls, "Class {} is missing in module {}".format(name, mod)
-        for meth in sklearn_transformer_methods:
-            assert _has_method(cls, meth), "Class {} is missing method {}".format(name, meth)
-        _check_exposed_in_h2o_sklearn_module(cls)
+    class_names = [name for name, _ in inspect.getmembers(h2o.transforms, inspect.isclass)]
+    for cl_name in class_names:
+        for name in _make_transformer_names(cl_name):
+            cls = getattr(mod, name, None)
+            assert cls, "Class {} is missing in module {}".format(name, mod)
+            for meth in sklearn_transformer_methods:
+                assert _has_method(cls, meth), "Class {} is missing method {}".format(name, meth)
+            _check_exposed_in_h2o_sklearn_module(cls)
 
 
 pyunit_utils.run_tests([
