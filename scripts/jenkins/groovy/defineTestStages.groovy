@@ -32,6 +32,10 @@ def call(final pipelineContext) {
       component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
+      stageName: 'Py3.7 Smoke', target: 'test-py-smoke', pythonVersion: '3.7',timeoutValue: 8,
+      component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
       stageName: 'R3.5 Smoke', target: 'test-r-smoke', rVersion: '3.5.3',timeoutValue: 8,
       component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
@@ -157,10 +161,22 @@ def call(final pipelineContext) {
     [
       stageName: 'MOJO Compatibility (Java 7)', target: 'test-mojo-compatibility',
       archiveFiles: false, timeoutValue: 20, hasJUnit: false, pythonVersion: '3.6', javaVersion: 7,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA, // only run when Java changes (R/Py cannot affect mojo) 
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA, // only run when Java changes (R/Py cannot affect mojo)
       imageSpecifier: "mojocompat",
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
-    ]
+    ],
+    [
+      stageName: 'Py3.7 Small', target: 'test-pyunit-small', pythonVersion: '3.7',
+      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.7 Small AutoML', target: 'test-pyunit-small-automl', pythonVersion: '3.7',
+      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.7 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.7',
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
   ]
 
   def BENCHMARK_STAGES = [
