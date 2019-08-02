@@ -36,7 +36,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
                 setattr(self, pname, pvalue)
             else:
                 raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
-        self._parms['_rest_version'] = 99
+        self._parms["_rest_version"] = 99
 
     @property
     def training_frame(self):

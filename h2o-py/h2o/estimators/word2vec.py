@@ -220,7 +220,6 @@ class H2OWord2vecEstimator(H2OEstimator):
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
 
-
     def _requires_training_frame(self):
         """
         Determines if Word2Vec algorithm requires a training frame.
