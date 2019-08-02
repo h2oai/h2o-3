@@ -187,6 +187,24 @@ public class FrameUtilsTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testEnumLimitedEncoding() {
+    Scope.enter();
+    try {
+      Frame fr = parse_test_file("./smalldata/prostate/prostate.csv");
+      Scope.track(fr);
+      fr.toCategoricalCol("AGE");
+      
+      Frame enc = FrameUtils.categoricalEncoder(
+              fr, new String[]{}, Model.Parameters.CategoricalEncodingScheme.EnumLimited, null, 5);
+      Scope.track(enc);
+      
+      assertArrayEquals(new String[] {"70", "68", "65", "71", "66", "other"}, enc.vec("AGE.top_5_levels").domain());
+    } finally {
+      Scope.exit();
+    }
+  }
+  
   // I want to test and make sure the CalculateWeightMeanSTD will calculate the correct weighted mean and STD
   // for a column of a dataset using another column as the weight column.  Note that the weighted
   @Test
