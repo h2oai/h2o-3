@@ -29,7 +29,10 @@ class PythonTypeTranslatorForCheck(bi.TypeTranslator):
         self.make_enum = lambda schema, values: \
             "Enum(%s)" % ", ".join(stringify(v) for v in values) if values else schema
 
+
 type_adapter1 = PythonTypeTranslatorForCheck()
+
+
 def translate_type_for_check(h2o_type, values=None):
     schema = h2o_type.replace("[]", "")
     return type_adapter1.translate(h2o_type, schema, values)
@@ -57,7 +60,10 @@ class PythonTypeTranslatorForDoc(bi.TypeTranslator):
         self.make_enum = lambda schema, values: \
             "Enum[%s]" % ", ".join(stringify(v) for v in values) if values else schema
 
+
 type_adapter2 = PythonTypeTranslatorForDoc()
+
+
 def translate_type_for_doc(h2o_type, values=None):
     schema = h2o_type.replace("[]", "")
     return type_adapter2.translate(h2o_type, schema, values)
@@ -69,11 +75,13 @@ def normalize_enum_constant(s):
     if s.isupper(): return s.lower()
     return "".join(ch if ch.islower() else "_" + ch.lower() for ch in s).strip("_")
 
+
 def stringify(v):
     if v == "Infinity": return u'∞'
     if isinstance(v, str_type): return '"%s"' % v
     if isinstance(v, float): return '%.10g' % v
     return str(v)
+
 
 def reindent_block(string, new_indent):
     if not string: return ""
@@ -184,7 +192,7 @@ def gen_module(schema, algo):
     yield "        self._parms = {}"
     yield "        names_list = {%s}" % bi.wrap(", ".join('"%s"' % p for p in param_names),
                                                 indent=(" " * 22), indent_first=False)
-    if(algo == "generic"):
+    if algo == "generic":
         yield '        if(all(kwargs.get(name, None) is None for name in [ "model_key", "path"])):'
         yield '                raise H2OValueError("At least one of [\\"model_key\\", \\"path\\"] is required.")'
     yield '        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")'
@@ -202,7 +210,7 @@ def gen_module(schema, algo):
     yield "                setattr(self, pname, pvalue)"
     yield "            else:"
     yield '                raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))'
-    if algo=="svd":
+    if algo == "svd":
         yield "        self._parms['_rest_version'] = 99"
     if init_extra:
         yield "        " + reindent_block(init_extra, 8)
@@ -229,20 +237,13 @@ def gen_module(schema, algo):
             else:
                 extrahelp += "  (default: ``%s``)." % stringify(param["default_value"])
 
-        if (pname == "offset_column" or pname == "distribution") and algo == "drf":
-            yield "    @property"
-            yield "    def %s(self):" % pname
-            yield '        """'
-            yield "        [Deprecated] %s" % bi.wrap(param["help"], indent=(" " * 8), indent_first=False)
-            yield ""
-            yield "        %s" % bi.wrap(extrahelp, indent=(" " * 8), indent_first=False)
-        else:
-            yield "    @property"
-            yield "    def %s(self):" % pname
-            yield '        """'
-            yield "        %s" % bi.wrap(param["help"], indent=(" " * 8), indent_first=False)
-            yield ""
-            yield "        %s" % bi.wrap(extrahelp, indent=(" " * 8), indent_first=False)
+        deprecated = (algo == 'drf' and pname in ['offset_column', 'distribution'])
+        yield "    @property"
+        yield "    def %s(self):" % pname
+        yield '        """'
+        yield "        %s%s" % ("[Deprecated] " if deprecated else "", bi.wrap(param["help"], indent=(" " * 8), indent_first=False))
+        yield ""
+        yield "        %s" % bi.wrap(extrahelp, indent=(" " * 8), indent_first=False)
         if pname == "metalearner_params":
             yield "        Example: metalearner_gbm_params = {'max_depth': 2, 'col_sample_rate': 0.3}"
         yield '        """'
@@ -317,9 +318,11 @@ def algo_to_classname(algo):
     if algo == "psvm": return "H2OSupportVectorMachineEstimator"
     return "H2O" + algo.capitalize() + "Estimator"
 
+
 def extra_imports_for(algo):
     if algo == "glm" or algo == "deepwater" or algo == "xgboost":
         return "import h2o"
+
 
 def help_preamble_for(algo):
     if algo == "coxph":
@@ -372,6 +375,7 @@ def help_preamble_for(algo):
             tree path is expected to be shorter than paths of regular observations.
         """
 
+
 def help_epilogue_for(algo):
     if algo == "deeplearning":
         return """Examples
@@ -414,6 +418,7 @@ def help_epilogue_for(algo):
             coefficients, normalized coefficients, residual/null deviance, aic, and a host of model metrics including
             MSE, AUC (for logistic regression), degrees of freedom, and confusion matrices."""
 
+
 def init_extra_for(algo):
     if algo == "deeplearning":
         return "if isinstance(self, H2OAutoEncoderEstimator): self._parms['autoencoder'] = True"
@@ -423,6 +428,7 @@ def init_extra_for(algo):
         return """self._parms["_rest_version"] = 99"""
     if algo == "aggregator":
         return """self._parms["_rest_version"] = 99"""
+
 
 def class_extra_for(algo):
     if algo == "aggregator":
@@ -692,7 +698,7 @@ def gen_init(modules):
         yield "from .%s import %s" % (module, clz)
     yield ""
     yield "__all__ = ("
-    yield bi.wrap(", ".join(module_strs), indent="    ")
+    yield bi.wrap(", ".join(module_strs), indent=" "*4)
     yield ")"
 
 
@@ -720,7 +726,6 @@ def gen_models_docs(modules):
             yield "    :show-inheritance:"
             yield "    :members:"
             yield ""
-
 
 
 # ----------------------------------------------------------------------------------------------------------------------
