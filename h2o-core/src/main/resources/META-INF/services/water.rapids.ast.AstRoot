@@ -16,6 +16,7 @@ water.rapids.ast.prims.time.AstHour
 water.rapids.ast.prims.reducers.AstMinNa
 water.rapids.ast.prims.assign.AstTmpAssign
 water.rapids.ast.prims.mungers.AstScale
+water.rapids.ast.prims.mungers.AstScale.AstScaleInPlace
 water.rapids.ast.prims.mungers.AstMerge
 water.rapids.ast.prims.mungers.AstSetLevel
 water.rapids.ast.prims.math.AstAcos

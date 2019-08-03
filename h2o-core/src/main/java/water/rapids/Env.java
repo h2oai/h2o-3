@@ -245,6 +245,7 @@ public class Env extends Iced {
     init(new AstRename());
     init(new AstRowSlice());
     init(new AstScale());
+    init(new AstScale.AstScaleInPlace());
     init(new AstSetDomain());
     init(new AstSetLevel());
     init(new AstPivot());
