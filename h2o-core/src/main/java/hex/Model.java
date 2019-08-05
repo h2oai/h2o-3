@@ -1744,11 +1744,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
   }
 
-  protected interface BigScorePredict {
+  public interface BigScorePredict {
     BigScoreChunkPredict initMap(final Frame fr, final Chunk chks[]);
   }
 
-  protected interface BigScoreChunkPredict extends AutoCloseable {
+  public interface BigScoreChunkPredict extends AutoCloseable {
     double[] score0(Chunk chks[], double offset, int row_in_chunk, double[] tmp, double[] preds);
     @Override
     void close();
