@@ -220,7 +220,7 @@ Transfer the MOJO file into the /tmp folder of this instance before launching. I
 Run following bash script as "userdata" to transfer your MOJO into the instance before you launch the instance. Be sure you change the ``mojofile`` path below.
 
 .. code::
-   
+
    #cloud-boothook
    #!/bin/bash
    export mojofile="s3://yourbucket/yourmojo.zip"

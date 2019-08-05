@@ -6,7 +6,9 @@ Support Vector Machine (SVM)
 Introduction
 ~~~~~~~~~~~~
 
-In machine learning, support vector machines are supervised learning models with associated learning algorithms that analyze data used for classification and regression analysis. Given a set of training examples, each marked as belonging to one or the other of two categories, an SVM training algorithm builds a model that assigns new examples to one category or the other.
+In machine learning, support vector machines are supervised learning models with associated learning algorithms that analyze data used for classification and regression analysis. Given a set of training examples, each marked as belonging to one or the other of two categories, an SVM training algorithm builds a model that assigns new examples to one category or the other. 
+
+H2O’s implementation of support vector machine follows the `PSVM:Parallelizing Support Vector Machineson Distributed Computers <http://papers.nips.cc/paper/3202-parallelizing-support-vector-machines-on-distributed-computers.pdf>`__ specification and can be used to solve binary classification problems only.
 
 Defining an SVM Model
 ~~~~~~~~~~~~~~~~~~~~~
@@ -62,7 +64,7 @@ Defining an SVM Model
 SVM Algorithm
 ~~~~~~~~~~~~~
 
-H2O's implementation of support vector machine follows the algorithm specified by Edward Y. Chang and others (refer to the reference below for more information). This implementation can be used to solve binary classification problems. In this configuration, SVM can be formulated as a quadratic optimization problem:
+As mentioned previously, H2O's implementation of support vector machine follows the PSVM algorithm specified by Edward Y. Chang and others. This implementation can be used to solve binary classification problems. In this configuration, SVM can be formulated as a quadratic optimization problem:
 
 :math:`\min{\frac{1}{2}\|\mathbf{w}\|^2 + C\sum_{i=1}^n\xi_i}` s.t. :math:`1 - y_i(\mathbf{w}^T\phi(\mathbf{x}_i) + b) \leq \xi_i, \xi_i > 0`
 
