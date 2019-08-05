@@ -412,10 +412,11 @@ class H2OConnectionMonitorMixin(object):
         :param force: if True, the connection is closed regardless of its origin.
         """
         if (force or cls._h2o_initialized_here) and h2o.connection():
-            if h2o.connection().local_server:
-                cls.shutdown_cluster()
-            else:
-                h2o.connection().close()
+            # if h2o.connection().local_server:
+            #     cls.shutdown_cluster()
+            # else:
+            #     h2o.connection().close()
+            pass
         cls._h2o_initialized_here = False
 
     @classmethod
