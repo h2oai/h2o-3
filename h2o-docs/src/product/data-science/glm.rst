@@ -175,7 +175,6 @@ Classification and Regression
 
 GLM can produce two categories of models: classification and regression. Logistic regression is the GLM performing binary classification.
 
-
 Handling of Categorical Variables
 '''''''''''''''''''''''''''''''''
 
