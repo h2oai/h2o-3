@@ -5,23 +5,18 @@ import biz.k11i.xgboost.gbm.GBTree;
 import biz.k11i.xgboost.gbm.GradBooster;
 import biz.k11i.xgboost.tree.RegTree;
 import biz.k11i.xgboost.tree.RegTreeNode;
-import biz.k11i.xgboost.util.FVec;
 import hex.*;
-import hex.genmodel.GenModel;
 import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.SharedTreeGraphConverter;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
-import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
-import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.algos.xgboost.XGBoostNativeMojoModel;
 import hex.genmodel.utils.DistributionFamily;
+import hex.tree.xgboost.predict.*;
 import hex.tree.xgboost.util.PredictConfiguration;
 import ml.dmlc.xgboost4j.java.*;
 import water.*;
-import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
@@ -472,150 +467,11 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   private BigScorePredict setupBigScorePredictNative(DataInfo di) {
     BoosterParms boosterParms = XGBoostModel.createParams(_parms, _output.nclasses(), di.coefNames());
-    return new XGBoostBigScorePredict(di, boosterParms);
+    return new XGBoostBigScorePredict(model_info, _parms, _output, di, boosterParms, defaultThreshold());
   }
 
   private BigScorePredict setupBigScorePredictJava(DataInfo di) {
     return new XGBoostJavaBigScorePredict(di, _output, defaultThreshold(), model_info()._boosterBytes);
-  }
-
-  private class XGBoostBigScorePredict implements BigScorePredict {
-    private final DataInfo _dataInfo;
-    private final BoosterParms _boosterParms;
-
-    private XGBoostBigScorePredict(DataInfo dataInfo, BoosterParms boosterParms) {
-      _dataInfo = dataInfo;
-      _boosterParms = boosterParms;
-    }
-
-    @Override
-    public BigScoreChunkPredict initMap(Frame fr, Chunk[] chks) {
-      float[][] preds = scoreChunk(fr, chks);
-      return new XGBoostBigScoreChunkPredict(_output.nclasses(), preds, defaultThreshold());
-    }
-
-    private float[][] scoreChunk(Frame fr, Chunk[] chks) {
-      return XGBoostScoreTask.scoreChunk(model_info(), _dataInfo, _parms, _boosterParms, _output, fr, chks);
-    }
-  }
-
-  private static class XGBoostBigScoreChunkPredict implements BigScoreChunkPredict {
-    private final int _nclasses;
-    private final float[][] _preds;
-    private final double _threshold;
-
-    private XGBoostBigScoreChunkPredict(int nclasses, float[][] preds, double threshold) {
-      _nclasses = nclasses;
-      _preds = preds;
-      _threshold = threshold;
-    }
-
-    @Override
-    public double[] score0(Chunk[] chks, double offset, int row_in_chunk, double[] tmp, double[] preds) {
-      for (int i = 0; i < tmp.length; i++) {
-        tmp[i] = chks[i].atd(row_in_chunk);
-      }
-      return XGBoostMojoModel.toPreds(tmp, _preds[row_in_chunk], preds, _nclasses, null, _threshold);
-    }
-
-    @Override
-    public void close() {}
-  }
-
-  private class XGBoostJavaBigScorePredict implements BigScorePredict {
-    private final DataInfo _di;
-    private final XGBoostOutput _output;
-    private final double _threshold;
-    private final Predictor _predictor;
-
-    XGBoostJavaBigScorePredict(DataInfo di, XGBoostOutput output, double threshold, byte[] boosterBytes) {
-      _di = di;
-      _output = output;
-      _threshold = threshold;
-      _predictor = PredictorFactory.makePredictor(boosterBytes);
-    }
-
-    @Override
-    public BigScoreChunkPredict initMap(Frame fr, Chunk[] chks) {
-      return new XGboostJavaBigScoreChunkPredict(_di, _output, _threshold, _predictor);
-    }
-
-  }
-
-  private static class XGboostJavaBigScoreChunkPredict implements BigScoreChunkPredict {
-    private final XGBoostOutput _output;
-    private final double _threshold;
-    private final Predictor _predictor;
-    private final MutableOneHotEncoderFVec _row;
-
-    public XGboostJavaBigScoreChunkPredict(DataInfo di, XGBoostOutput output, double threshold, Predictor predictor) {
-      _output = output;
-      _threshold = threshold;
-      _predictor = predictor;
-      _row = new MutableOneHotEncoderFVec(di, _output._sparse);
-    }
-
-    @Override
-    public double[] score0(Chunk[] chks, double offset, int row_in_chunk, double[] tmp, double[] preds) {
-      if (offset != 0) throw new UnsupportedOperationException("Unsupported: offset != 0");
-
-      assert _output.nfeatures() == tmp.length;
-      for (int i = 0; i < tmp.length; i++) {
-        tmp[i] = chks[i].atd(row_in_chunk);
-      }
-
-      _row.setInput(tmp);
-
-      float[] out = _predictor.predict(_row);
-
-      return XGBoostMojoModel.toPreds(tmp, out, preds, _output.nclasses(), _output._priorClassDist, _threshold);
-    }
-
-    @Override
-    public void close() {}
-  }
-
-  private static class MutableOneHotEncoderFVec implements FVec {
-    private final DataInfo _di;
-    private final boolean _treatsZeroAsNA;
-    private final int[] _catMap;
-    private final int[] _catValues;
-    private final float[] _numValues;
-    private final float _notHot;
-
-    MutableOneHotEncoderFVec(DataInfo di, boolean treatsZeroAsNA) {
-      _di = di;
-      _catValues = new int[_di._cats];
-      _treatsZeroAsNA = treatsZeroAsNA;
-      _notHot = _treatsZeroAsNA ? Float.NaN : 0;
-      if (_di._catOffsets == null) {
-        _catMap = new int[0];
-      } else {
-        _catMap = new int[_di._catOffsets[_di._cats]];
-        for (int c = 0; c < _di._cats; c++) {
-          for (int j = _di._catOffsets[c]; j < _di._catOffsets[c+1]; j++)
-            _catMap[j] = c;
-        }
-      }
-      _numValues = new float[_di._nums];
-    }
-
-    void setInput(double[] input) {
-      GenModel.setCats(input, _catValues, _di._cats, _di._catOffsets, _di._useAllFactorLevels);
-      for (int i = 0; i < _numValues.length; i++) {
-        float val = (float) input[_di._cats + i];
-        _numValues[i] = _treatsZeroAsNA && (val == 0) ? Float.NaN : val;
-      }
-    }
-
-    @Override
-    public final float fvalue(int index) {
-      if (index >= _catMap.length)
-        return _numValues[index - _catMap.length];
-
-      final boolean isHot = _catValues[_catMap[index]] == index;
-      return isHot ? 1 : _notHot;
-    }
   }
 
   @Override
@@ -637,71 +493,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   }
   
   private MRTask<?> makePredictContribTask(DataInfo di, boolean approx) {
-    return approx ? new PredictContribApproxTask(di) : new PredictTreeSHAPTask(di);
-  }
-
-  private class PredictTreeSHAPTask extends MRTask<PredictTreeSHAPTask> {
-    private final DataInfo _di;
-
-    private transient XGBoostJavaMojoModel _mojo; 
-
-    private PredictTreeSHAPTask(DataInfo di) {
-      _di = di;
-    }
-
-    @Override
-    protected void setupLocal() {
-      _mojo = new XGBoostJavaMojoModel(model_info()._boosterBytes, 
-              _output._names, _output._domains, _output.responseName(), true);
-    }
-
-    @Override
-    public void map(Chunk chks[], NewChunk[] nc) {
-      MutableOneHotEncoderFVec rowFVec = new MutableOneHotEncoderFVec(_di, _output._sparse);
-
-      double[] input = MemoryManager.malloc8d(chks.length);
-      float[] contribs = MemoryManager.malloc4f(nc.length);
-
-      Object workspace = _mojo.makeContributionsWorkspace();
-
-      for (int row = 0; row < chks[0]._len; row++) {
-        for (int i = 0; i < chks.length; i++) {
-          input[i] = chks[i].atd(row);
-        }
-        for (int i = 0; i < contribs.length; i++) {
-          contribs[i] = 0;
-        }
-        rowFVec.setInput(input);
-
-        // calculate Shapley values
-        _mojo.calculateContributions(rowFVec, contribs, workspace);
-
-        for (int i = 0; i < nc.length; i++) {
-          nc[i].addNum(contribs[i]);
-        }
-      }
-    }
-
-  }
-  
-  private class PredictContribApproxTask extends MRTask<PredictContribApproxTask> {
-    private final BoosterParms _boosterParms;
-
-    private PredictContribApproxTask(DataInfo di) {
-      _boosterParms = XGBoostModel.createParams(_parms, _output.nclasses(), di.coefNames());
-    }
-
-    @Override
-    public void map(Chunk chks[], NewChunk[] nc) {
-      XGBoostModelInfo modelInfo = model_info();
-      DataInfo dataInfo = modelInfo.scoringInfo(false);
-      float[][] contrib = XGBoostScoreTask.scoreChunkContribApprox(modelInfo, dataInfo, _parms, _boosterParms, _output, _fr, chks);
-      for (float[] rowContrib : contrib) {
-        for (int j = 0; j < rowContrib.length; j++) {
-          nc[j].addNum(rowContrib[j]);
-        }
-      }
-    }
+    return approx ? new PredictContribApproxTask(_parms, model_info, _output, di) : new PredictTreeSHAPTask(di, model_info(), _output);
   }
 
   private void setDataInfoToOutput(DataInfo dinfo) {
