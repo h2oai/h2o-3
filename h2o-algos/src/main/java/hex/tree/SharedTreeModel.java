@@ -364,18 +364,14 @@ public abstract class SharedTreeModel<
 
   private static class AssignLeafNodeIdTask extends AssignLeafNodeTaskBase {
     private final Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _auxTreeKeys;
-    private final int _nclasses;
-    private transient BufStringDecisionPathTracker _tr;
 
     private AssignLeafNodeIdTask(SharedTreeOutput output) {
       super(output);
       _auxTreeKeys = output._treeKeysAux;
-      _nclasses = output.nclasses();
     }
 
     @Override
     protected void initMap() {
-      _tr = new BufStringDecisionPathTracker();
     }
 
     @Override
