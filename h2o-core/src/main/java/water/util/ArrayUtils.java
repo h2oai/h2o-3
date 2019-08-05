@@ -29,6 +29,12 @@ public class ArrayUtils {
     for( int d : from ) result += d;
     return result;
   }
+  public static long suml(final int[] from) {
+    long result = 0;
+    for( int d : from ) result += d;
+    return result;
+  }
+
   public static float sum(final float[] from) {
     float result = 0;
     for (float d: from) result += d;
