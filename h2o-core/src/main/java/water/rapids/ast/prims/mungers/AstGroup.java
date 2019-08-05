@@ -586,7 +586,23 @@ public class AstGroup extends AstPrimitive {
     // parallel map calls.
     @Override
     public void reduce(GBTaskAggsPerNode t) {
-      if (_gss != t._gss) reduce(t._gss);
+      if (_gss != t._gss) {
+        // this means we got the result from another node
+        // it is easy to partition the result into distinct subsets - we don't have to worry about collisions
+        // => no need to synchronize (but for now we do use atomic_op anyway), we just parallelize the merge
+        int otherSize = t._gss.size();
+        if (otherSize == 0)
+          return;
+        G[] otherGroups = t._gss.toArray(new G[otherSize]);
+        final int subGroupSize = otherSize > H2O.ARGS.nthreads ? 
+                (int) Math.ceil((double) otherSize / H2O.ARGS.nthreads) : otherSize;
+        MergeGroupsFun f = new MergeGroupsFun(_aggs, _gss, otherGroups, subGroupSize);
+        if (subGroupSize == otherSize) {
+          f.map(0); // not worth parallelizing, execute directly
+        } else {
+          H2O.submitTask(new LocalMR(f, H2O.ARGS.nthreads)).join();
+        }
+      }
     }
 
     // Non-blocking race-safe update of the shared per-node groups hashtable
@@ -603,6 +619,32 @@ public class AstGroup extends AstPrimitive {
     @Override
     IcedHashSet<G> getGroups() {
       return _gss;
+    }
+  }
+
+  private static class MergeGroupsFun extends MrFun<MergeGroupsFun> {
+    private final AGG[] _aggs;
+    private final transient IcedHashSet<G> _gss;
+    private final transient G[] _other;
+    private final int _size;
+
+    MergeGroupsFun(AGG[] aggs, IcedHashSet<G> gss, G[] other, int size) {
+      _aggs = aggs;
+      _gss = gss;
+      _other = other;
+      _size = size;
+    }
+
+    @Override
+    protected void map(final int subGroupId) {
+      for (int g = subGroupId * _size; g < (subGroupId + 1) * _size && g < _other.length; g++) {
+        G rg = _other[g];
+        G lg;
+        if ((lg = _gss.addIfAbsent(rg)) != null) {
+          for (int i = 0; i < _aggs.length; i++)
+            _aggs[i].atomic_op(lg._dss, lg._ns, i, rg._dss[i], rg._ns[i]); // Need to atomically merge groups here
+        }
+      }
     }
   }
 
