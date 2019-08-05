@@ -3,6 +3,10 @@
 //
 description = "H2O GenModel"
 
+// MOJO has to stay Java 1.7 compatible! 
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
 apply from: "$rootDir/gradle/dataCheck.gradle"
 
 javadoc {
