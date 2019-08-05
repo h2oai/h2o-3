@@ -69,15 +69,6 @@ def test_h2o_only_pipeline_with_h2o_frames():
     except AttributeError as e:
         assert "No `predict_proba` method" in str(e)
 
-    # this block shows how it should work in perfect world,
-    # but given that `h2o.scale` modified X_test inplace during predictions,
-    # and as it doesn't seem to be idempotent
-    # then the next calls to score actually predicts on different data!!!
-    score = pipeline.score(data.X_test, data.y_test)
-    assert isinstance(score, float)
-    skl_score = r2_score(data.y_test.as_data_frame().values, preds.as_data_frame().values)
-    assert abs(score - skl_score) > 1e-6, "great!, h2o.scale inplace modification of H2O frames has been fixed. "
-
     # to get it working, we need to score a fresh H2OFrame
     data = _get_data(format='h2o')
     score = pipeline.score(data.X_test, data.y_test)
