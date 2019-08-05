@@ -1,3 +1,31 @@
+"""
+The `h2o.sklearn` module exposes H2O estimators that try to be fully-compliant with sklearn estimators.
+Those are just wrappers on top of the original H2O estimators and transformers available in the following modules:
+ - `h2o.automl`.
+ - `h2o.estimators`.
+ - `h2o.transforms`.
+On top of their original counterparts, the `sklearn` estimators add the following features:
+ - `sklearn` class name semantic: estimators used for classification are named `___Classifier`,
+ those for regression are named `___Regressor`, and generic estimators are named `___Estimator`.
+ - full support of the `sklearn` API: `fit`, `transform`, `fit_transform`, `inverse_transform`,
+ `predict`, `predict_proba`, `predict_log_proba`, `score`.
+ Some of those methods are of course enabled only when it makes sense.
+ - support for various input data types: in addition to the `h2o.H2OFrame` required by original H2O estimators,
+  those wrappers accept lists, numpy arrays, pandas.Dataframe.
+ - automatic conversion of return data types for methods like `predict` based on the input type:
+    - `H2OFrame` -> `H2OFrame`
+    - `numpy` -> `numpy`
+    - `pandas` -> `numpy` (same behaviour) as `sklearn` estimators.
+ - minimize data conversions in `sklearn` Pipeline contexts.
+ - automatic handling of the connection with the H2O backend.
+ - full support for `get_params`, `set_params`: all params are exposed (not only the ones already set).
+ - feature discovery for ALL estimators thanks to auto-completion for constructor params in Jupyter/iPython context.
+
+ Please note that for advanced usage, although those estimators work in `sklearn` pipelines and search algorithms,
+ they may create a memory overhead due to the duplication of data when using `sklearn` cross-validation for example.
+ Therefore this API is mainly recommended for exploration or as a quick introduction to H2O-3.
+"""
+
 import inspect
 import sys
 
@@ -26,12 +54,21 @@ def _register_submodule(name=None):
 
 
 def _make_default_params(cls):
+    """
+    :param cls: the original h2o estimator class.
+    :return: a dictionary representing the default estimator params
+    that will be used to generate the constructor for the sklearn wrapper.
+    """
     if hasattr(cls, 'param_names'):  # for subclasses of H2OEstimator
         return {k: None for k in cls.param_names}
     return None
 
 
 def _get_custom_params(cls):
+    """
+    :param cls: the original h2o estimator class.
+    :return: a dictionary of params used to customize the behaviour of the sklearn wrapper.
+    """
     custom = {}
     # if cls.__name__ in ['H2OGeneralizedLowRankEstimator']:
     #     custom.update(predictions_col=-1)
@@ -39,26 +76,26 @@ def _get_custom_params(cls):
                         'H2OGeneralizedLowRankEstimator',
                         'H2OPrincipalComponentAnalysisEstimator',
                         'H2OSingularValueDecompositionEstimator']:
-        custom.update(predictions_col='all')
+        custom.update(predictions_col='all')  # `predict` will return all columns (instead of a vector by default).
     if cls.__name__ in ['H2OAutoEncoderEstimator',
                         'H2OGeneralizedLowRankEstimator',
                         'H2OIsolationForestEstimator',
                         'H2OKMeansEstimator',
                         'H2OPrincipalComponentAnalysisEstimator',
                         'H2OSingularValueDecompositionEstimator']:
-        custom.update(predict_proba=False)
+        custom.update(predict_proba=False)  # disables `predict_proba` method.
     if cls.__name__ in ['H2OAutoEncoderEstimator',
                         'H2OGeneralizedLowRankEstimator',
                         'H2OIsolationForestEstimator',
                         'H2OKMeansEstimator',
                         'H2OPrincipalComponentAnalysisEstimator',
                         'H2OSingularValueDecompositionEstimator']:
-        custom.update(score=False)
+        custom.update(score=False)  # disables `score` method.
     if cls.__name__ in ['H2OGeneralizedLinearEstimator']:
-        custom.update(distribution_param='family')
+        custom.update(distribution_param='family')  # use algo `family` param to identify distribution (default is `distribution`).
     if cls.__name__ in ['H2ONaiveBayesEstimator',
                         'H2OSupportVectorMachineEstimator']:
-        custom.update(default_estimator_type='classifier')
+        custom.update(default_estimator_type='classifier')  #  makes the generic sklearn estimator a `classifier` by default.
     return custom or None
 
 
@@ -104,10 +141,24 @@ def make_transformer(cls, name=None, submodule=None):
 
 
 def h2o_connection(**init_args):
+    """
+    A context manager that can be used to create and close a connection to the H2O backend when required.
+
+    :param init_args: custom arguments used to create the H2O connection if necessary.
+        See :func:`h2o.init` for the list of available arguments.
+    :return: a context manager providing a connection to the H2O backend.
+    :example:
+
+    >>> pipeline = Pipeline(...)  # pipeline using h2o.sklearn estimators
+    ... with h2o_connection():
+    ...     pipeline.fit(...)
+    """
     conn_monitor = H2OConnectionMonitorMixin()
     conn_monitor._init_connection_args = init_args
     return conn_monitor
 
+
+# Exceptions and generation of wrappers for standard H2O estimators #
 
 _excluded_estimators = (  # e.g. abstract classes
     'H2OEstimator',
