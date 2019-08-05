@@ -80,8 +80,8 @@ def _get_custom_behaviour(estimator_cls):
         H2OGeneralizedLowRankEstimator=dict(preds_as_vector=False, predict_proba=False, score=False),
         H2OIsolationForestEstimator=dict(predict_proba=False, score=False),
         H2OKMeansEstimator=dict(predict_proba=False, score=False),
-        H2OPrincipalComponentAnalysisEstimator=dict(preds_as_vector=False, predict_proba=False, score=False),
-        H2OSingularValueDecompositionEstimator=dict(preds_as_vector=False, predict_proba=False, score=False),
+        H2OPrincipalComponentAnalysisEstimator=dict(requires_target=False, preds_as_vector=False, predict_proba=False, score=False),
+        H2OSingularValueDecompositionEstimator=dict(requires_target=False, preds_as_vector=False, predict_proba=False, score=False),
         H2OWord2vecEstimator=dict(preds_as_vector=False, predict_proba=False, score=False),
     )
     return custom.get(estimator_cls.__name__, dict(seed=seed))
@@ -95,7 +95,8 @@ def test_estimator_with_h2o_frames(estimator_cls):
 
     data = _get_data(format='h2o', n_classes=_get_custom_behaviour(estimator_cls).get('n_classes', 2))
     assert isinstance(data.X_train, h2o.H2OFrame)
-    estimator.fit(data.X_train, data.y_train)
+    requires_target = _get_custom_behaviour(estimator_cls).get('requires_target', True)
+    estimator.fit(data.X_train, data.y_train if requires_target else None)
     preds = estimator.predict(data.X_test)
     print(preds)
     assert isinstance(preds, h2o.H2OFrame)
@@ -131,7 +132,8 @@ def test_estimator_with_numpy_arrays(estimator_cls):
     assert isinstance(data.X_train, np.ndarray)
 
     with estimator:
-        estimator.fit(data.X_train, data.y_train)
+        requires_target = _get_custom_behaviour(estimator_cls).get('requires_target', True)
+        estimator.fit(data.X_train, data.y_train if requires_target else None)
         preds = estimator.predict(data.X_test)
         print(preds)
         assert isinstance(preds, np.ndarray)
