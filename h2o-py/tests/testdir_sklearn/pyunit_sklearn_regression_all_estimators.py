@@ -162,7 +162,6 @@ failing = [
     'H2OCoxProportionalHazardsRegressor',  # doesn't support regression?
     'H2ODeepWaterRegressor',  # requires DW backend
     'H2OStackedEnsembleRegressor',  # needs a separate test (requires models as parameters),
-    'H2OSupportVectorMachineRegressor',  # doc says that our SVM estimator also supports regression, but it seems to require categorical target
 ]
 regressors = [cls for name, cls in inspect.getmembers(h2o.sklearn, inspect.isclass)
               if name.endswith('Regressor') and name not in ['H2OAutoMLRegressor']+failing]

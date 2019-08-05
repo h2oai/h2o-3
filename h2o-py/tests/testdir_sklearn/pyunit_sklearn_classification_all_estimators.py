@@ -170,7 +170,6 @@ def make_tests(classifier):
 
 
 failing = [
-    'H2OCoxProportionalHazardsClassifier',  # NPE at water.fvec.Frame.<init>(Frame.java:168) .... at hex.coxph.CoxPH$CollectTimes.collect(CoxPH.java:805)
     'H2ODeepWaterClassifier',  # requires DW backend
     'H2OStackedEnsembleClassifier',  # needs a separate test (requires models as parameters)
 ]

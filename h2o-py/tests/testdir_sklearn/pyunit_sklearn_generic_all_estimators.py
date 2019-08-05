@@ -199,7 +199,6 @@ failing = [
     'H2ODeepWaterEstimator',  # requires DW backend
     'H2OGenericEstimator',  # maybe should be removed from sklearn API
     'H2OStackedEnsembleEstimator',  # needs a separate test (requires models as parameters)
-    'H2OSingularValueDecompositionEstimator', # H2OResponseError: Server error water.exceptions.H2ONotFoundArgumentException: Error: POST /3/ModelBuilders/svd not found
     'H2OWord2vecEstimator',  # needs a separate test (requires pre_trained model as parameter)
 ]
 estimators = [cls for name, cls in inspect.getmembers(h2o.sklearn, inspect.isclass)

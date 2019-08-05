@@ -124,8 +124,9 @@ _generic_only_estimators = (  # e.g. unsupervised and misc estimators
     'H2OSingularValueDecompositionEstimator',
     'H2OWord2vecEstimator',
 )
-_classifier_only_estimators = ('H2ONaiveBayesEstimator',)
-_regressor_only_estimators = ()
+_classifier_only_estimators = ('H2ONaiveBayesEstimator',
+                               'H2OSupportVectorMachineEstimator',)
+_regressor_only_estimators = ('H2OCoxProportionalHazardsEstimator',)
 
 gen_estimators = []
 for mod in [automl, estimators]:
