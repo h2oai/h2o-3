@@ -14,6 +14,7 @@ import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import hex.tree.isofor.IsolationForest;
 import hex.tree.isofor.IsolationForestModel;
+import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.Test;
 import water.*;
@@ -528,26 +529,25 @@ public class GenericModelTest extends TestUtil {
             parms._distribution = AUTO;
             parms._response_column = trainingFrame._names[1];
             parms._ntrees = 1;
+            parms._seed = 0XFEED;
 
             GBM job = new GBM(parms);
             gbm = job.trainModel().get();
-            final ByteArrayOutputStream originalModelMojo = new ByteArrayOutputStream();
             final File originalModelMojoFile = File.createTempFile("mojo", "zip");
-            gbm.getMojo().writeTo(originalModelMojo);
             gbm.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
 
             mojo = importMojo(originalModelMojoFile.getAbsolutePath());
-            
+
             // Create Generic model from given imported MOJO
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
             genericModel = generic.trainModel().get();
-            
+
             // Compare the two MOJOs byte-wise
-            ByteArrayOutputStream genericModelMojo = new ByteArrayOutputStream();
-            genericModel.getMojo().writeTo(genericModelMojo);
-            assertArrayEquals(genericModelMojo.toByteArray(), genericModelMojo.toByteArray());
+            final File genericModelMojoFile = File.createTempFile("mojo", "zip");
+            genericModel.getMojo().writeTo(new FileOutputStream(genericModelMojoFile));
+            assertArrayEquals(FileUtils.readFileToByteArray(originalModelMojoFile), FileUtils.readFileToByteArray(genericModelMojoFile));
             
         } finally {
             if(gbm != null) gbm.remove();
@@ -580,9 +580,7 @@ public class GenericModelTest extends TestUtil {
 
             DRF job = new DRF(parms);
             originalModel = job.trainModel().get();
-            final ByteArrayOutputStream originalModelMojo = new ByteArrayOutputStream();
             final File originalModelMojoFile = File.createTempFile("mojo", "zip");
-            originalModel.getMojo().writeTo(originalModelMojo);
             originalModel.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
 
             mojo = importMojo(originalModelMojoFile.getAbsolutePath());
@@ -594,9 +592,9 @@ public class GenericModelTest extends TestUtil {
             genericModel = generic.trainModel().get();
 
             // Compare the two MOJOs byte-wise
-            ByteArrayOutputStream genericModelMojo = new ByteArrayOutputStream();
-            genericModel.getMojo().writeTo(genericModelMojo);
-            assertArrayEquals(genericModelMojo.toByteArray(), genericModelMojo.toByteArray());
+            final File genericModelMojoFile = File.createTempFile("mojo", "zip");
+            genericModel.getMojo().writeTo(new FileOutputStream(genericModelMojoFile));
+            assertArrayEquals(FileUtils.readFileToByteArray(originalModelMojoFile), FileUtils.readFileToByteArray(genericModelMojoFile));
 
         } finally {
             if(originalModel != null) originalModel.remove();
@@ -629,9 +627,7 @@ public class GenericModelTest extends TestUtil {
 
             IsolationForest job = new IsolationForest(parms);
             originalModel = job.trainModel().get();
-            final ByteArrayOutputStream originalModelMojo = new ByteArrayOutputStream();
             final File originalModelMojoFile = File.createTempFile("mojo", "zip");
-            originalModel.getMojo().writeTo(originalModelMojo);
             originalModel.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
 
             mojo = importMojo(originalModelMojoFile.getAbsolutePath());
@@ -643,9 +639,9 @@ public class GenericModelTest extends TestUtil {
             genericModel = generic.trainModel().get();
 
             // Compare the two MOJOs byte-wise
-            ByteArrayOutputStream genericModelMojo = new ByteArrayOutputStream();
-            genericModel.getMojo().writeTo(genericModelMojo);
-            assertArrayEquals(genericModelMojo.toByteArray(), genericModelMojo.toByteArray());
+            final File genericModelMojoFile = File.createTempFile("mojo", "zip");
+            genericModel.getMojo().writeTo(new FileOutputStream(genericModelMojoFile));
+            assertArrayEquals(FileUtils.readFileToByteArray(originalModelMojoFile), FileUtils.readFileToByteArray(genericModelMojoFile));
 
         } finally {
             if(originalModel != null) originalModel.remove();
@@ -676,9 +672,7 @@ public class GenericModelTest extends TestUtil {
 
             GLM job = new GLM(parms);
             originalModel = job.trainModel().get();
-            final ByteArrayOutputStream originalModelMojo = new ByteArrayOutputStream();
             final File originalModelMojoFile = File.createTempFile("mojo", "zip");
-            originalModel.getMojo().writeTo(originalModelMojo);
             originalModel.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
 
             mojo = importMojo(originalModelMojoFile.getAbsolutePath());
@@ -690,9 +684,9 @@ public class GenericModelTest extends TestUtil {
             genericModel = generic.trainModel().get();
 
             // Compare the two MOJOs byte-wise
-            ByteArrayOutputStream genericModelMojo = new ByteArrayOutputStream();
-            genericModel.getMojo().writeTo(genericModelMojo);
-            assertArrayEquals(genericModelMojo.toByteArray(), genericModelMojo.toByteArray());
+            final File genericModelMojoFile = File.createTempFile("mojo", "zip");
+            genericModel.getMojo().writeTo(new FileOutputStream(genericModelMojoFile));
+            assertArrayEquals(FileUtils.readFileToByteArray(originalModelMojoFile), FileUtils.readFileToByteArray(genericModelMojoFile));
 
         } finally {
             if(originalModel != null) originalModel.remove();
@@ -718,9 +712,7 @@ public class GenericModelTest extends TestUtil {
 
             GLM job = new GLM(parms);
             originalModel = job.trainModel().get();
-            final ByteArrayOutputStream originalModelMojo = new ByteArrayOutputStream();
             final File originalModelMojoFile = File.createTempFile("mojo", "zip");
-            originalModel.getMojo().writeTo(originalModelMojo);
             originalModel.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
 
             mojo = importMojo(originalModelMojoFile.getAbsolutePath());
@@ -732,9 +724,9 @@ public class GenericModelTest extends TestUtil {
             genericModel = generic.trainModel().get();
 
             // Compare the two MOJOs byte-wise
-            ByteArrayOutputStream genericModelMojo = new ByteArrayOutputStream();
-            genericModel.getMojo().writeTo(genericModelMojo);
-            assertArrayEquals(genericModelMojo.toByteArray(), genericModelMojo.toByteArray());
+            final File genericModelMojoFile = File.createTempFile("mojo", "zip");
+            genericModel.getMojo().writeTo(new FileOutputStream(genericModelMojoFile));
+            assertArrayEquals(FileUtils.readFileToByteArray(originalModelMojoFile), FileUtils.readFileToByteArray(genericModelMojoFile));
 
         } finally {
             if(originalModel != null) originalModel.remove();
