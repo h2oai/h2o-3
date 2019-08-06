@@ -19,13 +19,32 @@ class H2OAssembly(object):
     Sample usage:
 
     >>> iris = h2o.load_dataset("iris")
-    >>> assembly = H2OAssembly(steps=[
-    ... ("col_select",       H2OColSelect(["Sepal.Length", "Petal.Length", "Species"])),
-    ... ("cos_Sepal.Length", H2OColOp(op=H2OFrame.cos, col="Sepal.Length", inplace=True)),
-    ... ("str_cnt_Species",  H2OColOp(op=H2OFrame.countmatches, col="Species",
-    ...                               inplace=False, pattern="s"))
-    ... ])
+    >>> from h2o.assembly import *
+    >>> from h2o.transforms.preprocessing import *
+    >>> assembly = H2OAssembly(steps=[("col_select",
+    ...                                H2OColSelect(["Sepal.Length", "Petal.Length", "Species"])),
+    ...                               ("cos_Sepal.Length",
+    ...                                H2OColOp(op=H2OFrame.cos, col="Sepal.Length", inplace=True)),
+    ...                               ("str_cnt_Species",
+    ...                                H2OColOp(op=H2OFrame.countmatches,
+    ...                                col="Species",
+    ...                                inplace=False, pattern="s"))])
     >>> result = assembly.fit(iris)  # fit the assembly and perform the munging operations
+    >>> result
+     Sepal.Length    Petal.Length     Species     Species0
+    --------------  --------------  -----------  ----------
+       0.377978           1.4       Iris-setosa       3
+       0.186512           1.4       Iris-setosa       3
+      -0.0123887          1.3       Iris-setosa       3
+      -0.112153           1.5       Iris-setosa       3
+       0.283662           1.4       Iris-setosa       3
+       0.634693           1.7       Iris-setosa       3
+      -0.112153           1.4       Iris-setosa       3
+       0.283662           1.5       Iris-setosa       3
+      -0.307333           1.4       Iris-setosa       3
+       0.186512           1.5       Iris-setosa       3
+    [150 rows x 4 columns]
+
 
     In this example, we first load the iris frame.  Next, the following data munging operations are performed on the
     iris frame
@@ -61,15 +80,105 @@ class H2OAssembly(object):
 
     # static properties pointing to H2OFrame methods
     divide = H2OFrame.__truediv__
+    """
+    :examples:
+
+    >>> python_list1 = [[4,4,4,4],[4,4,4,4]]
+    >>> python_list2 = [[2,2,2,2], [2,2,2,2]]
+    >>> frame1 = h2o.H2OFrame(python_obj=python_list1)
+    >>> frame2 = h2o.H2OFrame(python_obj=python_list2)
+    >>> H2OAssembly.divide(frame1, frame2)
+    """
     plus = H2OFrame.__add__
+    """
+    :examples:
+
+    >>> python_list1 = [[4,4,4,4],[4,4,4,4]]
+    >>> python_list2 = [[2,2,2,2], [2,2,2,2]]
+    >>> frame1 = h2o.H2OFrame(python_obj=python_list1)
+    >>> frame2 = h2o.H2OFrame(python_obj=python_list2)
+    >>> H2OAssembly.plus(frame1, frame2)
+    """
     multiply = H2OFrame.__mul__
+    """
+    :examples:
+
+    >>> python_list1 = [[4,4,4,4],[4,4,4,4]]
+    >>> python_list2 = [[2,2,2,2], [2,2,2,2]]
+    >>> frame1 = h2o.H2OFrame(python_obj=python_list1)
+    >>> frame2 = h2o.H2OFrame(python_obj=python_list2)
+    >>> H2OAssembly.multiply(frame1, frame2)
+    """
     minus = H2OFrame.__sub__
+    """
+    :examples:
+
+    >>> python_list1 = [[4,4,4,4],[4,4,4,4]]
+    >>> python_list2 = [[2,2,2,2], [2,2,2,2]]
+    >>> frame1 = h2o.H2OFrame(python_obj=python_list1)
+    >>> frame2 = h2o.H2OFrame(python_obj=python_list2)
+    >>> H2OAssembly.minus(frame1, frame2)
+    """
     less_than = H2OFrame.__lt__
+    """
+    :examples:
+
+    >>> python_list1 = [[4,4,4,4],[4,4,4,4]]
+    >>> python_list2 = [[2,2,2,2], [2,2,2,2]]
+    >>> frame1 = h2o.H2OFrame(python_obj=python_list1)
+    >>> frame2 = h2o.H2OFrame(python_obj=python_list2)
+    >>> H2OAssembly.less_than(frame1, frame2)
+    """
     less_than_equal = H2OFrame.__le__
+    """
+    :examples:
+
+    >>> python_list1 = [[4,4,4,4],[4,4,4,4]]
+    >>> python_list2 = [[2,2,2,2], [2,2,2,2]]
+    >>> frame1 = h2o.H2OFrame(python_obj=python_list1)
+    >>> frame2 = h2o.H2OFrame(python_obj=python_list2)
+    >>> H2OAssembly.less_than_equal(frame1, frame2)
+    """
     equal_equal = H2OFrame.__eq__
+    """
+    :examples:
+
+    >>> python_list1 = [[4,4,4,4],[4,4,4,4]]
+    >>> python_list2 = [[2,2,2,2], [2,2,2,2]]
+    >>> frame1 = h2o.H2OFrame(python_obj=python_list1)
+    >>> frame2 = h2o.H2OFrame(python_obj=python_list2)
+    >>> H2OAssembly.equal_equal(frame1, frame2)
+    """
     not_equal = H2OFrame.__ne__
+    """
+    :examples:
+
+    >>> python_list1 = [[4,4,4,4],[4,4,4,4]]
+    >>> python_list2 = [[2,2,2,2], [2,2,2,2]]
+    >>> frame1 = h2o.H2OFrame(python_obj=python_list1)
+    >>> frame2 = h2o.H2OFrame(python_obj=python_list2)
+    >>> H2OAssembly.not_equal(frame1, frame2)
+    """
     greater_than = H2OFrame.__gt__
+    """
+    :examples:
+
+    >>> python_list1 = [[4,4,4,4],[4,4,4,4]]
+    >>> python_list2 = [[2,2,2,2], [2,2,2,2]]
+    >>> frame1 = h2o.H2OFrame(python_obj=python_list1)
+    >>> frame2 = h2o.H2OFrame(python_obj=python_list2)
+    >>> H2OAssembly.greater_than(frame1, frame2)
+    """
     greater_than_equal = H2OFrame.__ge__
+    """
+    :examples:
+
+    >>> python_list1 = [[4,4,4,4],[4,4,4,4]]
+    >>> python_list2 = [[2,2,2,2], [2,2,2,2]]
+    >>> frame1 = h2o.H2OFrame(python_obj=python_list1)
+    >>> frame2 = h2o.H2OFrame(python_obj=python_list2)
+    >>> H2OAssembly.greater_than_equal(frame1, frame2)
+    """
 
 
     def __init__(self, steps):
@@ -134,6 +243,27 @@ class H2OAssembly(object):
 
         :param fr: H2OFrame where munging operations are to be performed on.
         :return: H2OFrame after munging operations are completed.
+
+        :examples:
+
+        >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
+        >>> from h2o.assembly import *
+        >>> from h2o.transforms.preprocessing import *
+        >>> col_types = ["numeric","numeric","numeric","numeric","string"]
+        >>> assembly = H2OAssembly(steps=[("col_select",
+        ...                        H2OColSelect(["sepal_len", "petal_len", "class"])),
+        ...                       ("cos_sep_len",
+        ...                        H2OColOp(op=H2OFrame.cos,
+        ...                        col="sepal_len",
+        ...                        inplace=True)),
+        ...                       ("str_cnt_species",
+        ...                        H2OColOp(op=H2OFrame.countmatches,
+        ...                        col="class",
+        ...                        inplace=False,
+        ...                        patterns="s"))])
+        >>> fr = iris, col_types
+        >>> result = assembly.fit(fr)
+
         """
         assert_is_type(fr, H2OFrame)
         steps = "[%s]" % ",".join(quoted(step[1].to_rest(step[0]).replace('"', "'")) for step in self.steps)
