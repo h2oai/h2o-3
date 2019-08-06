@@ -252,13 +252,7 @@ def generate_proxy(classname, endpoints):
         required_param_strs = []
         for field in e["input_params"]:
             fname = field["name"]
-            if field["is_path_param"]:
-                ftype = "Path"
-            else:
-                if e["http_method"] == "GET":
-                    ftype = "Query"
-                else:
-                    ftype = "Field"
+            ftype = "Path" if field["is_path_param"] else "Field"
             ptype = translate_type(field["type"], field["schema_name"])
             if ptype.endswith("KeyV3") or ptype == "ColSpecifierV3": ptype = "String"
             if ptype.endswith("KeyV3[]"): ptype = "String[]"

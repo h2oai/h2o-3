@@ -3,7 +3,6 @@ package water.bindings.examples.retrofit;
 import water.bindings.H2oApi;
 import water.bindings.pojos.*;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
 
@@ -90,13 +89,6 @@ public class GBM_Example {
         assert model.output.getClass() == GBMModelOutputV3.class;
         assert model.parameters.getClass() == GBMParametersV3.class;
 
-        // STEP 9 (optional): export model as binary
-        ModelExportV3 modelExport = new ModelExportV3();
-        modelExport.modelId = model_key;
-
-        File binaryModelFile = File.createTempFile("model", ".h2o");
-        modelExport.dir = File.createTempFile("model", ".h2o").getPath();
-        binaryModelFile.deleteOnExit();
 
         // STEP 8: predict!
         ModelMetricsListSchemaV3 predict_params = new ModelMetricsListSchemaV3();
