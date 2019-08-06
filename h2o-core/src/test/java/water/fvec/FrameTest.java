@@ -1,5 +1,6 @@
 package water.fvec;
 
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -314,6 +315,31 @@ public class FrameTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testMissingVecError() {
+    Assume.assumeTrue(Frame.class.desiredAssertionStatus());
+
+    Vec missingVec = Vec.makeCon(Math.PI, 4);
+    missingVec.remove();
+    assertNull(DKV.get(missingVec._key));
+    
+    String msg1 = null;
+    try {
+      new Frame(null, new String[]{"testMissingVec"}, new Vec[]{missingVec});
+    } catch (AssertionError ae) {
+      msg1 = ae.getMessage();
+    }
+    assertEquals(" null vec: " + missingVec._key + "; name: testMissingVec", msg1);
+
+    String msg2 = null;
+    try {
+      new Frame(null, null, new Vec[]{missingVec});
+    } catch (AssertionError ae) {
+      msg2 = ae.getMessage();
+    }
+    assertEquals(" null vec: " + missingVec._key + "; index: 0", msg2);
+  } 
+  
   @Test
   public void testPubDev6673() {
     checkToCSV(false, false);

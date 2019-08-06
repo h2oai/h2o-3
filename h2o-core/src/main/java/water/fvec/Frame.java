@@ -166,8 +166,8 @@ public class Frame extends Lockable<Frame> {
 
     // Require all Vecs already be installed in the K/V store
     for( Vec vec : vecs ) DKV.prefetch(vec._key);
-    for( Vec vec : vecs ) {
-      assert DKV.get(vec._key) != null : " null vec: "+vec._key;
+    for( int i = 0; i < vecs.length; i++ ) {
+      assert DKV.get(vecs[i]._key) != null : " null vec: " + vecs[i]._key + "; " + (names != null ? "name: " + names[i] : "index: " + i);
     }
 
     // Always require names
