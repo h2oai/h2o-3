@@ -397,8 +397,13 @@ class H2OConnectionMonitorMixin(object):
         :param: bool show_progress: if True (default) the H2O progress bars are always rendered.
         """
         if not (h2o.connection() and h2o.connection().connected):
-            h2o.init(**kwargs)
-            cls._h2o_initialized_here = True
+            try:
+                cls._h2o_initialized_here = True
+                h2o.init(**kwargs)
+            except:
+                cls.close_connection()  # ensure that the connection is properly closed on error
+                raise
+
             if show_progress:
                 h2o.show_progress()
             else:
@@ -412,11 +417,10 @@ class H2OConnectionMonitorMixin(object):
         :param force: if True, the connection is closed regardless of its origin.
         """
         if (force or cls._h2o_initialized_here) and h2o.connection():
-            # if h2o.connection().local_server:
-            #     cls.shutdown_cluster()
-            # else:
-            #     h2o.connection().close()
-            pass
+            if h2o.connection().local_server:
+                cls.shutdown_cluster()
+            else:
+                h2o.connection().close()
         cls._h2o_initialized_here = False
 
     @classmethod
@@ -462,8 +466,12 @@ class H2OConnectionMonitorMixin(object):
             cls.close_connection()
 
     def __enter__(self):
-        if self._add_component(self):
-            self.init_connection(**(getattr(self, '_init_connection_args') or {}))
+        try:
+            if self._add_component(self):
+                self.init_connection(**(getattr(self, '_init_connection_args') or {}))
+        except:
+            self.__exit__()
+            raise
         return self
 
     def __exit__(self, *args):

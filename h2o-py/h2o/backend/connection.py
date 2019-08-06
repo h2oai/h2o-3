@@ -439,7 +439,7 @@ class H2OConnection(backwards_compatible()):
                 self.request("DELETE /4/sessions/%s" % self._session_id)
                 self._print("H2O session %s closed." % self._session_id)
             except Exception:
-                pass
+                self._print("H2O session %s was not closed properly." % self._session_id)
             self._session_id = None
         self._stage = -1
 
