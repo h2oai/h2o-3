@@ -529,7 +529,6 @@ public class GenericModelTest extends TestUtil {
             parms._distribution = AUTO;
             parms._response_column = trainingFrame._names[1];
             parms._ntrees = 1;
-            parms._seed = 0XFEED;
 
             GBM job = new GBM(parms);
             gbm = job.trainModel().get();
