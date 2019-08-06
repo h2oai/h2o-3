@@ -47,7 +47,7 @@ if ("true".equals(System.getenv("H2O_BUILD_GRPC"))) {
 apply plugin: 'scala-cross-build'
 
 scalaCrossCompile {
-  targetVersions "2.10.4", "2.11.7"
+  targetVersions "2.10.7", "2.11.12"
   include 'h2o-scala'
 }
 
