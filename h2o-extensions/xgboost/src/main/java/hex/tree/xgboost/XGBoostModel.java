@@ -34,7 +34,7 @@ import static hex.tree.xgboost.XGBoost.makeDataInfo;
 import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
 
 public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParameters, XGBoostOutput> 
-        implements SharedTreeGraphConverter, Model.Contributions {
+        implements SharedTreeGraphConverter, Model.LeafNodeAssignment, Model.Contributions {
 
   private XGBoostModelInfo model_info;
 
@@ -494,6 +494,16 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   
   private MRTask<?> makePredictContribTask(DataInfo di, boolean approx) {
     return approx ? new PredictContribApproxTask(_parms, model_info, _output, di) : new PredictTreeSHAPTask(di, model_info(), _output);
+  }
+
+  @Override
+  public Frame scoreLeafNodeAssignment(
+      Frame frame, LeafNodeAssignmentType type, Key<Frame> destination_key
+  ) {
+    AssignLeafNodeTask task = AssignLeafNodeTask.make(model_info.dataInfo(), _output, model_info._boosterBytes, type);
+    Frame adaptFrm = new Frame(frame);
+    adaptTestForTrain(adaptFrm, true, false);
+    return task.execute(adaptFrm, destination_key);
   }
 
   private void setDataInfoToOutput(DataInfo dinfo) {
