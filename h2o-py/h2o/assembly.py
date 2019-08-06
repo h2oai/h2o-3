@@ -209,6 +209,24 @@ class H2OAssembly(object):
         :param path:  (str) path of POJO.
         :param get_jar: (bool) Whether to also download the h2o-genmodel.jar file needed to compile the POJO
         :return: None
+
+        :examples:
+
+        >>> from h2o.assembly import *
+        >>> from h2o.transforms.preprocessing import *
+        >>> iris = h2o.load_dataset("iris")
+        >>> assembly = H2OAssembly(steps=[("col_select",
+        ...                                H2OColSelect(["Sepal.Length",
+        ...                                "Petal.Length", "Species"])),
+        ...                               ("cos_Sepal.Length",
+        ...                                H2OColOp(op=H2OFrame.cos,
+        ...                                col="Sepal.Length", inplace=True)),
+        ...                               ("str_cnt_Species",
+        ...                                H2OColOp(op=H2OFrame.countmatches,
+        ...                                col="Species", inplace=False,
+        ...                                pattern="s"))])
+        >>> result = assembly.fit(iris)
+        >>> assembly.to_pojo(pojo_name="iris_pojo", path='', get_jar=False)
         """
         assert_is_type(pojo_name, str)
         assert_is_type(path, str)
@@ -246,23 +264,21 @@ class H2OAssembly(object):
 
         :examples:
 
-        >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
-        >>> from h2o.assembly import *
-        >>> from h2o.transforms.preprocessing import *
-        >>> col_types = ["numeric","numeric","numeric","numeric","string"]
+        >>> iris = h2o.load_dataset("iris")
         >>> assembly = H2OAssembly(steps=[("col_select",
-        ...                        H2OColSelect(["sepal_len", "petal_len", "class"])),
-        ...                       ("cos_sep_len",
+        ...                        H2OColSelect(["Sepal.Length",
+        ...                        "Petal.Length", "Species"])),
+        ...                       ("cos_Sepal.Length",
         ...                        H2OColOp(op=H2OFrame.cos,
-        ...                        col="sepal_len",
+        ...                        col="Sepal.Length",
         ...                        inplace=True)),
-        ...                       ("str_cnt_species",
+        ...                       ("str_cnt_Species",
         ...                        H2OColOp(op=H2OFrame.countmatches,
-        ...                        col="class",
+        ...                        col="Species",
         ...                        inplace=False,
-        ...                        patterns="s"))])
-        >>> fr = iris, col_types
-        >>> result = assembly.fit(fr)
+        ...                        pattern="s"))])
+        >>> fit = assembly.fit(iris)
+        >>> fit
 
         """
         assert_is_type(fr, H2OFrame)
