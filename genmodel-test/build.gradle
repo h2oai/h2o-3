@@ -1,0 +1,21 @@
+plugins {
+    id 'java'
+}
+
+description = "H2O module for testing h2o-genmodel module"
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testCompile project(":h2o-core")
+    testCompile project(':h2o-core').sourceSets.test.output
+    testCompile project(":h2o-algos")
+    testCompile project(":h2o-genmodel")
+
+    testCompile project(path: ":h2o-core", configuration: "testArchives")
+    testRuntimeOnly project(":${defaultWebserverModule}")
+    
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}

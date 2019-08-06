@@ -33,6 +33,31 @@ public class ModelJsonReader {
     }
 
     /**
+     *  Extracts model parameters from serialized into JSON H2O's model 
+     * @param modelJson Full JSON representation of a model
+     * @param parametersPath Path in the given JSON to the array of parameters
+     * @return array of {@link ModelParameter} or null, if parameters were not found in JSON
+     */
+    public static ModelParameter[] readModelParameters(final JsonObject modelJson, final String parametersPath) {
+        Objects.requireNonNull(modelJson);
+        JsonElement modelParametersJsonElement = findInJson(modelJson, parametersPath);
+        if (modelParametersJsonElement.isJsonNull()) {
+            System.out.println(String.format("Failed to extract element '%s' MojoModel dump.", parametersPath));
+            return null;
+        }
+        final JsonArray arrayOfParametersJson = modelParametersJsonElement.getAsJsonArray();
+        ModelParameter[] modelParameters = new ModelParameter[arrayOfParametersJson.size()]; 
+        int idx = 0;
+        for(JsonElement parameter : arrayOfParametersJson) {
+            ModelParameter mp = new ModelParameter();
+            fillObject(mp, parameter, "");
+            modelParameters[idx] = mp;
+            idx++;
+        }
+        return modelParameters;
+    }
+
+    /**
      * Extracts a Table from H2O's model serialized into JSON.
      *
      * @param modelJson Full JSON representation of a model
@@ -128,15 +153,20 @@ public class ModelJsonReader {
         Objects.requireNonNull(object);
         Objects.requireNonNull(elementPath);
 
-        final JsonElement jsonSourceObject = findInJson(from, elementPath);
+        JsonElement jsonSourceElement;
+        if(elementPath.equals("")) {
+            jsonSourceElement = from;
+        } else {
+            jsonSourceElement = findInJson(from, elementPath);
 
-        if (jsonSourceObject instanceof JsonNull) {
-            System.out.println(String.format("Element '%s' not found in JSON. Skipping. Object '%s' is not populated by values.",
-                    elementPath, object.getClass().getName()));
-            return;
+            if (jsonSourceElement instanceof JsonNull) {
+                System.out.println(String.format("Element '%s' not found in JSON. Skipping. Object '%s' is not populated by values.",
+                        elementPath, object.getClass().getName()));
+                return;
+            }
         }
 
-        final JsonObject jsonSourceObj = jsonSourceObject.getAsJsonObject();
+        final JsonObject jsonSourceObj = jsonSourceElement.getAsJsonObject();
 
         final Class<?> aClass = object.getClass();
         final Field[] declaredFields = aClass.getFields();
@@ -159,31 +189,94 @@ public class ModelJsonReader {
                 field.setAccessible(true);
                 assert field.isAccessible();
                 Object value = null;
-                if (type.isAssignableFrom(double.class) || type.isAssignableFrom(Double.class)) {
-                    final JsonElement jsonElement = jsonSourceObj.get(fieldName);
-                    if (jsonElement != null && !jsonElement.isJsonNull()) value = jsonElement.getAsDouble();
+                final JsonElement jsonElement = jsonSourceObj.get(fieldName);
+                boolean notNullCondition = jsonElement != null && !jsonElement.isJsonNull();
+                if (type.isAssignableFrom(Object.class)) {
+                    if (notNullCondition) {
+                        try {
+                            JsonElement typeJElement = jsonSourceObj.get("type");
+                            if (typeJElement != null && !typeJElement.isJsonNull()) {
+                                String typeOfObject = typeJElement.getAsString();
+
+                                if (typeOfObject.equals("boolean")) {
+                                    value = jsonElement.getAsBoolean();
+                                } else if (typeOfObject.equals("int")) {
+                                    value = jsonElement.getAsInt();
+                                } else if (typeOfObject.equals("double")) {
+                                    value = jsonElement.getAsDouble();
+                                } else if (typeOfObject.equals("float")) {
+                                    value = jsonElement.getAsFloat();
+                                } else if (typeOfObject.equals("long")) {
+                                    value = jsonElement.getAsLong();
+                                } else if (typeOfObject.equals("enum")) {
+                                    value = jsonElement.getAsString();
+                                } else if (typeOfObject.startsWith("Key")) {
+                                    value = readKey(jsonElement);
+                                } else if (typeOfObject.equals("VecSpecifier")) {
+                                    value = readVecSpecifier(jsonElement);
+                                } else if (typeOfObject.equals("string[]")) {
+                                    value = readStringArray(jsonElement);
+                                } else {
+                                    throw new IllegalStateException("Unhandled type encountered during parsing of the Json");
+                                } 
+                            }
+                        } catch (Exception ex) {
+                            System.out.println(String.format("Field '%s' could not be set as type " + jsonSourceObj.get("type") + ". Ignoring.", fieldName)); 
+                        }
+                    }
+                } else if (type.isAssignableFrom(double.class) || type.isAssignableFrom(Double.class)) {
+                    if (notNullCondition) value = jsonElement.getAsDouble();
                 } else if (type.isAssignableFrom(int.class) || type.isAssignableFrom(Integer.class)) {
-                    final JsonElement jsonElement = jsonSourceObj.get(fieldName);
-                    if (jsonElement != null && !jsonElement.isJsonNull()) value = jsonElement.getAsInt();
+                    if (notNullCondition) value = jsonElement.getAsInt();
                 } else if (type.isAssignableFrom(long.class) || type.isAssignableFrom(Long.class)) {
-                    final JsonElement jsonElement = jsonSourceObj.get(fieldName);
-                    if (jsonElement != null && !jsonElement.isJsonNull()) value = jsonElement.getAsLong();
+                    if (notNullCondition) value = jsonElement.getAsLong();
                 } else if (type.isAssignableFrom(String.class)) {
-                    final JsonElement jsonElement = jsonSourceObj.get(fieldName);
-                    if (jsonElement != null && !jsonElement.isJsonNull()) value = jsonElement.getAsString();
+                    if (notNullCondition) value = jsonElement.getAsString();
+                } else if (type.isAssignableFrom(boolean.class) || type.isAssignableFrom(Boolean.class)) {
+                    if (notNullCondition) value = jsonElement.getAsBoolean();
                 } else if (type.isAssignableFrom(Table.class)) {
-                    final JsonElement jsonElement = jsonSourceObj.get(fieldName);
-                    if (jsonElement != null && !jsonElement.isJsonNull()) value = readTable(jsonElement.getAsJsonObject(),  serializedName != null ? serializedName.insideElementPath() : "");
+                    if (notNullCondition) value = readTable(jsonElement.getAsJsonObject(),  serializedName != null ? serializedName.insideElementPath() : ""); // Would break if we don't use serializedName
                 }
                 if (value != null) field.set(object, value);
             } catch (IllegalAccessException e) {
                 System.out.println(String.format("Field '%s' could not be accessed. Ignoring.", fieldName));
+            } catch (NumberFormatException e) {
+                System.out.println(String.format("Field '%s' could not be set as NumberFormatException happened during extraction fromJSON. Ignoring.", fieldName));
             } catch (ClassCastException | UnsupportedOperationException e) {
                 System.out.println(String.format("Field '%s' could not be casted to '%s'. Ignoring.", fieldName, type.toString()));
             }
         }
 
 
+    }
+
+    private static Key readKey(JsonElement jsonElement) {
+        Key key = new Key();
+        fillObject(key, jsonElement.getAsJsonObject(), "");
+        return key;
+    }
+    
+    private static VecSpecifier readVecSpecifier(JsonElement jsonElement) {
+        VecSpecifier vecSpecifier = new VecSpecifier();
+        JsonObject jsonObject = jsonElement.getAsJsonObject();
+        fillObject(vecSpecifier, jsonObject, "");
+        vecSpecifier._is_member_of_frames = readStringArray(jsonObject.get("is_member_of_frames"));
+        return vecSpecifier;
+    }
+
+    private static String[] readStringArray(JsonElement jsonElement) {
+        if(jsonElement == null || jsonElement.isJsonNull()) {
+            return null;
+        } else {
+            JsonArray is_member_of_frames = jsonElement.getAsJsonArray();
+            String[] isMemberOfFrames = new String[is_member_of_frames.size()];
+            int index = 0;
+            for (JsonElement elem : is_member_of_frames) {
+                isMemberOfFrames[index] = elem.getAsString();
+                index++;
+            }
+            return isMemberOfFrames;
+        }
     }
 
 

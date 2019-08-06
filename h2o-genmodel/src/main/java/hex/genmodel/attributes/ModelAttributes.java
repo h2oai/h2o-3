@@ -5,6 +5,7 @@ import hex.genmodel.MojoModel;
 import hex.genmodel.algos.glm.GlmMojoModel;
 import hex.genmodel.algos.glm.GlmMultinomialMojoModel;
 import hex.genmodel.algos.glm.GlmOrdinalMojoModel;
+import hex.genmodel.annotations.ModelPojo;
 import hex.genmodel.attributes.metrics.*;
 
 import java.io.Serializable;
@@ -20,11 +21,11 @@ public class ModelAttributes implements Serializable {
   private final MojoModelMetrics _validation_metrics;
   private final MojoModelMetrics _cross_validation_metrics;
   private final Table _cross_validation_metrics_summary;
+  private final ModelParameter[] _modelParameters;
 
   public ModelAttributes(MojoModel model, final JsonObject modelJson) {
     _modelSummary = ModelJsonReader.readTable(modelJson, "output.model_summary");
     _scoring_history = ModelJsonReader.readTable(modelJson, "output.scoring_history");
-
 
     if (ModelJsonReader.elementExists(modelJson, "output.training_metrics")) {
       _trainingMetrics = determineModelMetricsType(model);
@@ -44,6 +45,8 @@ public class ModelAttributes implements Serializable {
       _cross_validation_metrics = null;
       _cross_validation_metrics_summary = null;
     }
+    
+    _modelParameters = ModelJsonReader.readModelParameters(modelJson, "parameters");
   }
 
   private static MojoModelMetrics determineModelMetricsType(final MojoModel mojoModel) {

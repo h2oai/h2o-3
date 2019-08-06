@@ -95,3 +95,5 @@ if (System.getProperty("user.name").equals("jenkins")
     }
   }
 }
+include 'genmodel-test'
+
