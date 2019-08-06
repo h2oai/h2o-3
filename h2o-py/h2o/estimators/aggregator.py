@@ -203,7 +203,6 @@ class H2OAggregatorEstimator(H2OEstimator):
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
 
-
     @property
     def aggregated_frame(self):
         if (self._model_json is not None and

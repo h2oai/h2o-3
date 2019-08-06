@@ -9,8 +9,9 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
+from h2o.utils.typechecks import assert_is_type, Enum, numeric
 from h2o.utils.shared_utils import quoted
-from h2o.utils.typechecks import assert_is_type, Enum, numeric, is_type
+from h2o.utils.typechecks import is_type
 import json
 import ast
 
@@ -24,26 +25,26 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     supervised learning method that finds the optimal combination of a collection of prediction
     algorithms.This method supports regression and binary classification.
 
-    Examples
-    --------
-      >>> import h2o
-      >>> h2o.init()
-      >>> from h2o.estimators.random_forest import H2ORandomForestEstimator
-      >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
-      >>> from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
-      >>> col_types = ["numeric", "numeric", "numeric", "enum", "enum", "numeric", "numeric", "numeric", "numeric"]
-      >>> data = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate.csv", col_types=col_types)
-      >>> train, test = data.split_frame(ratios=[.8], seed=1)
-      >>> x = ["CAPSULE","GLEASON","RACE","DPROS","DCAPS","PSA","VOL"]
-      >>> y = "AGE"
-      >>> nfolds = 5
-      >>> my_gbm = H2OGradientBoostingEstimator(nfolds=nfolds, fold_assignment="Modulo", keep_cross_validation_predictions=True)
-      >>> my_gbm.train(x=x, y=y, training_frame=train)
-      >>> my_rf = H2ORandomForestEstimator(nfolds=nfolds, fold_assignment="Modulo", keep_cross_validation_predictions=True)
-      >>> my_rf.train(x=x, y=y, training_frame=train)
-      >>> stack = H2OStackedEnsembleEstimator(model_id="my_ensemble", training_frame=train, validation_frame=test, base_models=[my_gbm.model_id, my_rf.model_id])
-      >>> stack.train(x=x, y=y, training_frame=train, validation_frame=test)
-      >>> stack.model_performance()
+    :examples:
+
+    >>> import h2o
+    >>> h2o.init()
+    >>> from h2o.estimators.random_forest import H2ORandomForestEstimator
+    >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+    >>> from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
+    >>> col_types = ["numeric", "numeric", "numeric", "enum", "enum", "numeric", "numeric", "numeric", "numeric"]
+    >>> data = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate.csv", col_types=col_types)
+    >>> train, test = data.split_frame(ratios=[.8], seed=1)
+    >>> x = ["CAPSULE","GLEASON","RACE","DPROS","DCAPS","PSA","VOL"]
+    >>> y = "AGE"
+    >>> nfolds = 5
+    >>> my_gbm = H2OGradientBoostingEstimator(nfolds=nfolds, fold_assignment="Modulo", keep_cross_validation_predictions=True)
+    >>> my_gbm.train(x=x, y=y, training_frame=train)
+    >>> my_rf = H2ORandomForestEstimator(nfolds=nfolds, fold_assignment="Modulo", keep_cross_validation_predictions=True)
+    >>> my_rf.train(x=x, y=y, training_frame=train)
+    >>> stack = H2OStackedEnsembleEstimator(model_id="my_ensemble", training_frame=train, validation_frame=test, base_models=[my_gbm.model_id, my_rf.model_id])
+    >>> stack.train(x=x, y=y, training_frame=train, validation_frame=test)
+    >>> stack.model_performance()
     """
 
     algo = "stackedensemble"
@@ -216,7 +217,10 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         Parameters for metalearner algorithm
 
         Type: ``dict``  (default: ``None``).
-        Example: metalearner_gbm_params = {'max_depth': 2, 'col_sample_rate': 0.3}
+
+        :examples:
+
+        >>> metalearner_params = {'max_depth': 2, 'col_sample_rate': 0.3}
         """
         if self._parms.get("metalearner_params") != None:
             metalearner_params_dict =  ast.literal_eval(self._parms.get("metalearner_params"))
@@ -284,28 +288,27 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
 
-
-    # Print the metalearner of an H2OStackedEnsembleEstimator.
     def metalearner(self):
+        """Print the metalearner of an H2OStackedEnsembleEstimator."""
         model = self._model_json["output"]
         if "metalearner" in model and model["metalearner"] is not None:
             return model["metalearner"]
-        print("No metalearner for this model")  
+        print("No metalearner for this model")
 
-    #Fetch the levelone_frame_id for an H2OStackedEnsembleEstimator.   
     def levelone_frame_id(self):
+        """Fetch the levelone_frame_id for an H2OStackedEnsembleEstimator."""
         model = self._model_json["output"]
         if "levelone_frame_id" in model and model["levelone_frame_id"] is not None:
             return model["levelone_frame_id"]
-        print("No levelone_frame_id for this model")         
+        print("No levelone_frame_id for this model")
 
     def stacking_strategy(self):
         model = self._model_json["output"]
         if "stacking_strategy" in model and model["stacking_strategy"] is not None:
             return model["stacking_strategy"]
-        print("No stacking strategy for this model")  
+        print("No stacking strategy for this model")
 
-    # Override train method to support blending 
+    # Override train method to support blending
     def train(self, x=None, y=None, training_frame=None, blending_frame=None, **kwargs):
         blending_frame = H2OFrame._validate(blending_frame, 'blending_frame', required=False)
 
@@ -315,6 +318,6 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
             if self.metalearner_fold_column is not None:
                 parms['ignored_columns'].remove(quoted(self.metalearner_fold_column))
 
-        super(self.__class__, self)._train(x, y, training_frame, 
-                                           extend_parms_fn=extend_parms, 
+        super(self.__class__, self)._train(x, y, training_frame,
+                                           extend_parms_fn=extend_parms,
                                            **kwargs)

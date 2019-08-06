@@ -66,7 +66,6 @@ class H2OGenericEstimator(H2OEstimator):
         self._parms["path"] = path
 
 
-
     def _requires_training_frame(self):
         """
         Determines if Generic model requires a training frame.

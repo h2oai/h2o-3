@@ -843,7 +843,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         self._parms["custom_metric_func"] = custom_metric_func
 
 
-
     @property
     def Lambda(self):
         """DEPRECATED. Use ``self.lambda_`` instead"""

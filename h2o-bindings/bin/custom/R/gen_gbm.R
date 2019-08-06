@@ -1,13 +1,13 @@
 
-header = "
+doc_header <- "
 my header
 "
 
-doc_class = "
+doc_class <- "
 more doc
 "
 
-doc_property1 = "
+doc_property1 <- "
 doc for property1
 "
 

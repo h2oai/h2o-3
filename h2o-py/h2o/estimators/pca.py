@@ -283,7 +283,6 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
 
-
     def init_for_pipeline(self):
         """
         Returns H2OPCA object which implements fit and transform method to be used in sklearn.Pipeline properly.

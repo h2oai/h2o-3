@@ -298,7 +298,6 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
 
-
     def _additional_used_columns(self, parms):
         """
         :return: Start and stop column if specified.
