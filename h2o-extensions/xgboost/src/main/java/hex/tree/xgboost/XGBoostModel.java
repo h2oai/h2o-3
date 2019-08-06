@@ -500,7 +500,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   public Frame scoreLeafNodeAssignment(
       Frame frame, LeafNodeAssignmentType type, Key<Frame> destination_key
   ) {
-    AssignLeafNodeTask task = AssignLeafNodeTask.make(model_info.dataInfo(), _output, model_info._boosterBytes, type);
+    AssignLeafNodeTask task = AssignLeafNodeTask.make(model_info.scoringInfo(false), _output, model_info._boosterBytes, type);
     Frame adaptFrm = new Frame(frame);
     adaptTestForTrain(adaptFrm, true, false);
     return task.execute(adaptFrm, destination_key);
