@@ -1,3 +1,10 @@
+class_init_setparams = """
+elif pname == 'pre_trained':
+    setattr(self, pname, pvalue)
+    self._determine_vec_size();
+    setattr(self, 'vec_size', self.vec_size)
+"""
+
 class_extras = """
 def _requires_training_frame(self):
     \"""

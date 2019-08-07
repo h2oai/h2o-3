@@ -138,11 +138,11 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
 
     @base_models.setter
     def base_models(self, base_models):
-         if is_type(base_models,[H2OEstimator]):
+        if is_type(base_models, [H2OEstimator]):
             base_models = [b.model_id for b in base_models]
             self._parms["base_models"] = base_models
-         else:
-            assert_is_type(base_models, None, [str])
+        else:
+            assert_is_type(base_models, None, [H2OEstimator])
             self._parms["base_models"] = base_models
 
 
@@ -216,7 +216,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         """
         Parameters for metalearner algorithm
 
-        Type: ``dict``  (default: ``None``).
+        Type: ``dict``.
 
         :examples:
 
@@ -237,7 +237,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         if metalearner_params is not None and metalearner_params != "":
             for k in metalearner_params:
                 if ("[" and "]") not in str(metalearner_params[k]):
-                    metalearner_params[k]=[metalearner_params[k]]
+                    metalearner_params[k] = [metalearner_params[k]]
             self._parms["metalearner_params"] = str(json.dumps(metalearner_params))
         else:
             self._parms["metalearner_params"] = None

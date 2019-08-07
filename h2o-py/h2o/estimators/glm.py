@@ -374,6 +374,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @alpha.setter
     def alpha(self, alpha):
+        # For `alpha` and `lambda` the server reports type float[], while in practice simple floats are also ok
         assert_is_type(alpha, None, numeric, [numeric])
         self._parms["alpha"] = alpha
 

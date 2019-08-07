@@ -1412,7 +1412,7 @@ class H2OAutoEncoderEstimator(H2ODeepLearningEstimator):
     """
     :examples:
 
-    >>> import h4o as ml
+    >>> import h2o as ml
     >>> from h2o.estimators.deeplearning import H2OAutoEncoderEstimator
     >>> ml.init()
     >>> rows = [[1,2,3,4,0]*50, [2,1,2,4,1]*50, [2,1,4,2,1]*50, [0,1,2,34,1]*50, [2,3,4,1,0]*50]

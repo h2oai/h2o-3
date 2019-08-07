@@ -25,9 +25,11 @@ class PythonTypeTranslatorForCheck(bi.TypeTranslator):
         self.make_array = lambda vtype: "dict" if vtype == "dict" else "[%s]" % vtype
         self.make_array2 = lambda vtype: "[[%s]]" % vtype
         self.make_map = lambda ktype, vtype: "{%s: %s}" % (ktype, vtype)
-        self.make_key = lambda itype, schema: "H2OFrame" if schema == "Key<Frame>" else "str"
-        self.make_enum = lambda schema, values: \
-            "Enum(%s)" % ", ".join(stringify(v) for v in values) if values else schema
+        self.make_key = lambda itype, schema: ("H2OFrame" if schema == "Key<Frame>"
+                                               else "H2OEstimator" if schema == "Key<Model>"
+                                               else "str")
+        self.make_enum = lambda schema, values: ("Enum(%s)" % ", ".join(stringify(v) for v in values) if values
+                                                 else schema)
 
 
 type_adapter1 = PythonTypeTranslatorForCheck()
@@ -56,9 +58,10 @@ class PythonTypeTranslatorForDoc(bi.TypeTranslator):
         self.make_array = lambda vtype: "dict" if vtype == "dict" else "List[%s]" % vtype
         self.make_array2 = lambda vtype: "List[List[%s]]" % vtype
         self.make_map = lambda ktype, vtype: "Dict[%s, %s]" % (ktype, vtype)
-        self.make_key = lambda itype, schema: "H2OFrame" if schema == "Key<Frame>" else "str"
-        self.make_enum = lambda schema, values: \
-            "Enum[%s]" % ", ".join(stringify(v) for v in values) if values else schema
+        self.make_key = lambda itype, schema: ("H2OFrame" if schema == "Key<Frame>"
+                                               else "str")
+        self.make_enum = lambda schema, values: ("Enum[%s]" % ", ".join(stringify(v) for v in values) if values
+                                                 else schema)
 
 
 type_adapter2 = PythonTypeTranslatorForDoc()
@@ -118,13 +121,22 @@ reserved_words = {
 #   Generate per-model classes
 # ----------------------------------------------------------------------------------------------------------------------
 def gen_module(schema, algo):
+    """
+    Ideally we should be able to avoid logic specific to algos in this file.
+    Instead, customizations are externalized in ./python/gen_{algo}.py files.
+    Logic that is specific to python types (e.g. H2OFrame, enums as list...) should however stay here
+    as the type translation is done in this file.
+    """
     classname = algo_to_classname(algo)
     extra_imports = get_customizations_for(algo, 'imports')
     class_doc = get_customizations_for(algo, 'class_doc')
     class_examples = get_customizations_for(algo, 'class_examples')
+    class_init_validation = get_customizations_for(algo, 'class_init_validation')
+    class_init_setparams = get_customizations_for(algo, 'class_init_setparams')
     class_init_extra = get_customizations_for(algo, 'class_init_extra')
     class_extras = get_customizations_for(algo, 'class_extras')
     module_extras = get_customizations_for(algo, 'module_extras')
+    properties = get_customizations_for(algo, 'properties', {})
 
     param_names = []
     for param in schema["parameters"]:
@@ -135,17 +147,23 @@ def gen_module(schema, algo):
                 param["default_value"] = normalize_enum_constant(param["default_value"])
         else:
             enum_values = None
+
         pname = param["name"]
-        if (pname==u'distribution') and (not(algo==u'glm') and not(algo==u'gbm')):    # quasibinomial only in glm, gbm
-            enum_values.remove(u'quasibinomial')
-        if (pname==u'distribution') and (not(algo==u'glm')):    # ordinal only in glm
-            enum_values.remove(u'ordinal')
-        if (pname==u'distribution') and (not(algo==u'gbm')):    # custom only in gbm
-            enum_values.remove(u'custom')
-        if (pname==u'stopping_metric') and (not(algo==u'isolationforest')):    # anomaly_score only in Isolation Forest
-            enum_values.remove(u'anomaly_score')
-        if (pname == u'stopping_metric') and (algo == u'isolationforest'):
-            enum_values = [u'AUTO', u'anomaly_score']
+        update_param = get_customizations_for(algo, 'update_param')
+        if callable(update_param):
+            param, enum_values = update_param(pname, param, enum_values)
+        else:
+            # could be done with update_param in each algo, cf. example in python/gen_isolationforest.py or python/gen_drf.py
+            # but let's leave it here for now: besides I suspect that this is not fully up-to-date.
+            if (pname==u'distribution') and (not(algo==u'glm') and not(algo==u'gbm')):    # quasibinomial only in glm, gbm
+                enum_values.remove(u'quasibinomial')
+            if (pname==u'distribution') and (not(algo==u'glm')):    # ordinal only in glm
+                enum_values.remove(u'ordinal')
+            if (pname==u'distribution') and (not(algo==u'gbm')):    # custom only in gbm
+                enum_values.remove(u'custom')
+            if (pname==u'stopping_metric') and (not(algo==u'isolationforest')):    # anomaly_score only in Isolation Forest
+                enum_values.remove(u'anomaly_score')
+
         if pname in reserved_words: pname += "_"
         param_names.append(pname)
         param["pname"] = pname
@@ -188,19 +206,15 @@ def gen_module(schema, algo):
     yield "        self._parms = {}"
     yield "        names_list = {%s}" % bi.wrap(", ".join('"%s"' % p for p in param_names),
                                                 indent=(" " * 22), indent_first=False)
-    if algo == "generic":
-        yield '        if(all(kwargs.get(name, None) is None for name in [ "model_key", "path"])):'
-        yield '                raise H2OValueError("At least one of [\\"model_key\\", \\"path\\"] is required.")'
+    if class_init_validation:
+        yield "        %s" % reindent_block(class_init_validation, 8)
     yield '        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")'
     yield "        for pname, pvalue in kwargs.items():"
     yield "            if pname == 'model_id':"
     yield "                self._id = pvalue"
     yield '                self._parms["model_id"] = pvalue'
-    if algo == 'word2vec':
-        yield '            elif pname == \'pre_trained\':'
-        yield '                setattr(self, pname, pvalue)'
-        yield '                self._determine_vec_size();'
-        yield '                setattr(self, \'vec_size\', self.vec_size)'
+    if class_init_setparams:
+        yield "            %s" % reindent_block(class_init_setparams, 12)
     yield "            elif pname in names_list:"
     yield "                # Using setattr(...) will invoke type-checking of the arguments"
     yield "                setattr(self, pname, pvalue)"
@@ -219,17 +233,11 @@ def gen_module(schema, algo):
             vals = param["dtype"][5:-1].split(", ")
             property_doc = "One of: " + ", ".join("``%s``" % v for v in vals)
         else:
-            if pname == "metalearner_params":
-                property_doc = "Type: ``dict``"
-            else:
-                property_doc = "Type: ``%s``" % param["dtype"]
+            property_doc = "Type: ``%s``" % param["dtype"]
         if param["default_value"] is None:
             property_doc += "."
         else:
-            if pname == "metalearner_params":
-                property_doc += "  (default: ``None``)."
-            else:
-                property_doc += "  (default: ``%s``)." % stringify(param["default_value"])
+            property_doc += "  (default: ``%s``)." % stringify(param["default_value"])
 
         deprecated = pname in get_customizations_for(algo, 'deprecated_attributes', [])
         yield "    @property"
@@ -238,7 +246,7 @@ def gen_module(schema, algo):
         yield "        %s%s" % ("[Deprecated] " if deprecated else "", bi.wrap(param["help"], indent=(" " * 8), indent_first=False))
         yield ""
         yield "        %s" % bi.wrap(property_doc, indent=(" " * 8), indent_first=False)
-        property_doc = get_customizations_for(algo, "property_"+pname+"_doc")
+        property_doc = get_customizations_for(algo, "property_"+pname+"_doc", )
         if property_doc:
             yield ""
             yield "        %s" % reindent_block(property_doc, 8)
@@ -249,50 +257,30 @@ def gen_module(schema, algo):
             yield ""
             yield "        %s" % reindent_block(property_examples, 8)
         yield '        """'
-
-        if pname != "metalearner_params":
-            yield "        return self._parms.get(\"%s\")" % sname
+        property_getter = properties.get(pname, {}).get('getter')  # check gen_stackedensemble.py for an example
+        if property_getter:
+            yield "        %s" % reindent_block(property_getter.format(**locals()), 8)
         else:
-            yield "        if self._parms.get(\"%s\") != None:" % sname
-            yield "            metalearner_params_dict =  ast.literal_eval(self._parms.get(\"%s\"))" % sname
-            yield "            for k in metalearner_params_dict:"
-            yield "                if len(metalearner_params_dict[k]) == 1: #single parameter"
-            yield "                    metalearner_params_dict[k] = metalearner_params_dict[k][0]"
-            yield "            return metalearner_params_dict"
-            yield "        else:"
-            yield "            return self._parms.get(\"%s\")" % sname
+            yield "        return self._parms.get(\"%s\")" % sname
+
         yield ""
         yield "    @%s.setter" % pname
         yield "    def %s(self, %s):" % (pname, pname)
-        if pname in {"initial_weights", "initial_biases"}:
-            yield "        assert_is_type(%s, None, [H2OFrame, None])" % pname
-        elif pname in {"alpha", "lambda_"} and ptype == "[numeric]":
-            # For `alpha` and `lambda` the server reports type float[], while in practice simple floats are also ok
-            yield "        assert_is_type(%s, None, numeric, [numeric])" % pname
-        elif pname in {"checkpoint", "pretrained_autoencoder"}:
-            yield "        assert_is_type(%s, None, str, H2OEstimator)" % pname
-        elif pname in {"base_models"}:
-            yield "         if is_type(base_models,[H2OEstimator]):"
-            yield      "            %s = [b.model_id for b in %s]" % (pname,pname)
-            yield      "            self._parms[\"%s\"] = %s" % (sname, pname)
-            yield "         else:"
-            yield "            assert_is_type(%s, None, %s)" % (pname, ptype)
-            yield "            self._parms[\"%s\"] = %s" % (sname, pname)
-        elif pname in {"metalearner_params"}:
-            yield "        assert_is_type(%s, None, %s)" % (pname, "dict")
-            yield '        if %s is not None and %s != "":' % (pname, pname)
-            yield "            for k in %s:" % (pname)
-            yield '                if ("[" and "]") not in str(metalearner_params[k]):'
-            yield "                    metalearner_params[k]=[metalearner_params[k]]"
-            yield "            self._parms[\"%s\"] = str(json.dumps(%s))" % (sname, pname)
-            yield "        else:"
-            yield "            self._parms[\"%s\"] = None" % (sname)
-        elif ptype == "H2OFrame":
-            yield "        self._parms[\"%s\"] = H2OFrame._validate(%s, '%s')" % (sname, pname, pname)
+        property_setter = properties.get(pname, {}).get('setter')  # check gen_stackedensemble.py for an example
+        if property_setter:
+            yield "        %s" % reindent_block(property_setter.format(**locals()), 8)
         else:
-            yield "        assert_is_type(%s, None, %s)" % (pname, ptype)
-        if pname not in {"base_models", "metalearner_params"} and ptype != "H2OFrame":
-            yield "        self._parms[\"%s\"] = %s" % (sname, pname)
+            # special types validation
+            if ptype == "H2OEstimator":
+                yield "        assert_is_type(%s, None, str, %s)" % (pname, ptype)
+            elif ptype == "H2OFrame":
+                yield "        self._parms[\"%s\"] = H2OFrame._validate(%s, '%s')" % (sname, pname, pname)
+            else:
+                # default validation
+                yield "        assert_is_type(%s, None, %s)" % (pname, ptype)
+            if ptype != "H2OFrame":
+                # default assignment
+                yield "        self._parms[\"%s\"] = %s" % (sname, pname)
         yield ""
         yield ""
     if class_extras:

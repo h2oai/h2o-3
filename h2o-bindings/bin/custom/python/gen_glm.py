@@ -63,3 +63,19 @@ def makeGLMModel(model, coefs, threshold=.5):
     m._resolve_model(model_json["model_id"]["name"], model_json)
     return m
 """
+
+properties = dict(
+    alpha=dict(
+        setter="""
+# For `alpha` and `lambda` the server reports type float[], while in practice simple floats are also ok
+assert_is_type({pname}, None, numeric, [numeric])
+self._parms["{sname}"] = {pname}
+"""
+    ),
+    lambda_=dict(
+        setter="""
+assert_is_type({pname}, None, numeric, [numeric])
+self._parms["{sname}"] = {pname}
+"""
+    ),
+)

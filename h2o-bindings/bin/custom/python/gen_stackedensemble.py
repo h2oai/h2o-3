@@ -1,3 +1,10 @@
+def update_param(name, param, values):
+    if name == 'metalearner_params':
+        param['type'] = 'KeyValue'
+        param['default_value'] = None
+    return param, values
+
+
 imports = """
 from h2o.utils.shared_utils import quoted
 from h2o.utils.typechecks import is_type
@@ -76,3 +83,39 @@ def train(self, x=None, y=None, training_frame=None, blending_frame=None, **kwar
 property_metalearner_params_examples = """
 >>> metalearner_params = {'max_depth': 2, 'col_sample_rate': 0.3}
 """
+
+properties = dict(
+    base_models=dict(
+        setter="""
+if is_type(base_models, [H2OEstimator]):
+    {pname} = [b.model_id for b in {pname}]
+    self._parms["{sname}"] = {pname}
+else:
+    assert_is_type({pname}, None, {ptype})
+    self._parms["{sname}"] = {pname}
+"""
+    ),
+
+    metalearner_params=dict(
+        getter="""
+if self._parms.get("{sname}") != None:
+    metalearner_params_dict =  ast.literal_eval(self._parms.get("{sname}"))
+    for k in metalearner_params_dict:
+        if len(metalearner_params_dict[k]) == 1: #single parameter
+            metalearner_params_dict[k] = metalearner_params_dict[k][0]
+    return metalearner_params_dict
+else:
+    return self._parms.get("{sname}")
+""",
+        setter="""
+assert_is_type({pname}, None, {ptype})
+if {pname} is not None and {pname} != "":
+    for k in {pname}:
+        if ("[" and "]") not in str(metalearner_params[k]):
+            metalearner_params[k] = [metalearner_params[k]]
+    self._parms["{sname}"] = str(json.dumps({pname}))
+else:
+    self._parms["{sname}"] = None
+"""
+    ),
+)
