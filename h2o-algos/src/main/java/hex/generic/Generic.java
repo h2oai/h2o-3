@@ -3,34 +3,30 @@ package hex.generic;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.genmodel.*;
-import hex.genmodel.algos.drf.DrfMojoModel;
-import hex.genmodel.algos.gbm.GbmMojoModel;
-import hex.genmodel.algos.glm.GlmMojoModel;
-import hex.genmodel.algos.glm.GlmMultinomialMojoModel;
-import hex.genmodel.algos.glm.GlmOrdinalMojoModel;
-import hex.genmodel.algos.isofor.IsolationForestMojoModel;
-import hex.genmodel.algos.kmeans.KMeansMojoModel;
-import water.DKV;
 import water.H2O;
 import water.Key;
-import water.Scope;
 import water.fvec.ByteVec;
 import water.fvec.Frame;
-import water.util.ArrayUtils;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Generic model able to do scoring with any underlying model deserializable into a format known by the {@link GenericModel}.
  * Only H2O Mojos are currently supported.
  */
 public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, GenericModelOutput> {
+    
+    private static final Set<String> ALLOWED_MOJO_ALGOS;
+    static{
+        ALLOWED_MOJO_ALGOS = new HashSet<>();
+        ALLOWED_MOJO_ALGOS.add("gbm");
+        ALLOWED_MOJO_ALGOS.add("glm");
+        ALLOWED_MOJO_ALGOS.add("xgboost");
+        ALLOWED_MOJO_ALGOS.add("isolationforest");
+        ALLOWED_MOJO_ALGOS.add("drf");
+    }
 
-    private static final Class[] SUPPORTED_MOJOS = new Class[]{GlmMojoModel.class, GlmMultinomialMojoModel.class,
-            GlmOrdinalMojoModel.class, GbmMojoModel.class, IsolationForestMojoModel.class, DrfMojoModel.class, KMeansMojoModel.class};
 
     public Generic(GenericModelParameters genericParameters){
         super(genericParameters);
@@ -84,9 +80,9 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
             try {
                 final MojoReaderBackend readerBackend = MojoReaderBackendFactory.createReaderBackend(mojoBytes.openStream(_job._key), MojoReaderBackendFactory.CachingStrategy.MEMORY);
                 mojoModel = ModelMojoReader.readFrom(readerBackend, true);
-
-                if(!ArrayUtils.isInstance(mojoModel, SUPPORTED_MOJOS)){
-                    throw new IllegalArgumentException(String.format("Unsupported MOJO model %s. ", mojoModel.getClass().getName()));
+                
+                if(!ALLOWED_MOJO_ALGOS.contains(mojoModel._modelDescriptor.algoName().toLowerCase())){
+                    throw new IllegalArgumentException(String.format("Unsupported MOJO model '%s'. ", mojoModel._modelDescriptor.algoName()));
                 }
 
                 final GenericModelOutput genericModelOutput = new GenericModelOutput(mojoModel._modelDescriptor, mojoModel._modelAttributes);
