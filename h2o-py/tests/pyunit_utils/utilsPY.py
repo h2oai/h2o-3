@@ -518,7 +518,9 @@ def pyunit_exec(test_name):
 
 def standalone_test(test):
     if not h2o.connection() or not h2o.connection().connected:
+        print("Creating connection for test %s" % test.__name__)
         h2o.init(strict_version_check=False)
+        print("New session: %s" % h2o.connection().session_id)
 
     h2o.remove_all()
 

@@ -1,7 +1,6 @@
 from __future__ import print_function
 from collections import defaultdict
 from functools import partial
-from itertools import chain
 import importlib, inspect, os, sys
 
 import numpy as np
@@ -58,6 +57,7 @@ def _get_default_args(estimator_cls):
         H2OAggregatorEstimator=dict(),
         H2OAutoEncoderEstimator=dict(),
         H2OCoxProportionalHazardsEstimator=dict(),
+        H2ODeepLearningEstimator=dict(seed=seed, reproducible=True),
         H2OGenericEstimator=dict(),
         H2OGeneralizedLinearEstimator=dict(family='binomial', seed=seed),
         H2OGeneralizedLowRankEstimator=dict(k=2, seed=seed),
@@ -75,7 +75,7 @@ def _get_default_args(estimator_cls):
 def _get_custom_behaviour(estimator_cls):
     custom = dict(
         H2OAutoEncoderEstimator=dict(n_classes=0, preds_as_vector=False, predict_proba=False, score=False),
-        H2ODeepLearningEstimator=dict(scores_may_differ=True),
+        # H2ODeepLearningEstimator=dict(scores_may_differ=True),
         H2OGeneralizedLinearEstimator=dict(predict_proba=False),
         H2OGeneralizedLowRankEstimator=dict(preds_as_vector=False, predict_proba=False, score=False),
         H2OIsolationForestEstimator=dict(predict_proba=False, score=False),
@@ -188,11 +188,11 @@ def make_test(test, classifier):
 
 
 def make_tests(classifier):
-    return map(lambda test: make_test(test, classifier), [
+    return list(map(lambda test: make_test(test, classifier), [
         test_estimator_with_h2o_frames,
         test_estimator_with_numpy_arrays,
         test_scores_are_equivalent
-    ])
+    ]))
 
 
 failing = [
@@ -205,5 +205,4 @@ failing = [
 ]
 estimators = [cls for name, cls in inspect.getmembers(h2o.sklearn, inspect.isclass)
               if name.endswith('Estimator') and name not in ['H2OAutoMLEstimator'] + failing]
-tests = chain.from_iterable([make_tests(c) for c in estimators])
-pyunit_utils.run_tests(tests)
+pyunit_utils.run_tests([make_tests(c) for c in estimators])

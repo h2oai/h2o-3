@@ -21,6 +21,7 @@ import sys
 import tempfile
 import time
 from warnings import warn
+from weakref import ref
 
 import requests
 from requests.auth import AuthBase
@@ -324,10 +325,18 @@ class H2OConnection(backwards_compatible()):
             # If a server is unable to respond within 1s, it should be considered a bug. However we disable this
             # setting for now, for no good reason other than to ignore all those bugs :(
             conn._timeout = None
-            # This is a good one! On the surface it registers a callback to be invoked when the script is about
-            # to finish, but it also has a side effect in that the reference to current connection will be held
-            # by the ``atexit`` service till the end -- which means it will never be garbage-collected.
-            atexit.register(lambda: conn.close())
+
+            # create a weakref to prevent the atexit callback from keeping hard ref
+            # to the connection even after manual close.
+            conn_ref = ref(conn)
+
+            def exit_close():
+                con = conn_ref()
+                if con and con.connected:
+                    print("Closing connection %s at exit" % con.session_id)
+                    con.close()
+
+            atexit.register(exit_close)
         except Exception:
             # Reset _session_id so that we know the connection was not initialized properly.
             conn._stage = 0
@@ -438,8 +447,9 @@ class H2OConnection(backwards_compatible()):
                 if self._timeout is None: self._timeout = 1
                 self.request("DELETE /4/sessions/%s" % self._session_id)
                 self._print("H2O session %s closed." % self._session_id)
-            except Exception:
+            except Exception as e:
                 self._print("H2O session %s was not closed properly." % self._session_id)
+                self._log_end_exception(e)
             self._session_id = None
         self._stage = -1
 

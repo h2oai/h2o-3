@@ -1,7 +1,6 @@
 from __future__ import print_function
 from collections import defaultdict
 from functools import partial
-from itertools import chain
 import importlib, inspect, os, sys
 
 import numpy as np
@@ -52,6 +51,7 @@ def _get_data(format='numpy'):
 def _get_default_args(estimator_cls):
     defaults = dict(
         H2OCoxProportionalHazardsRegressor=dict(),
+        H2ODeepLearningRegressor=dict(seed=seed, reproducible=True),
         H2OGeneralizedLinearRegressor=dict(family='gaussian', seed=seed),
     )
     return defaults.get(estimator_cls.__name__, dict(seed=seed))
@@ -59,7 +59,7 @@ def _get_default_args(estimator_cls):
 
 def _get_custom_behaviour(estimator_cls):
     custom = dict(
-        H2ODeepLearningRegressor=dict(scores_may_differ=True),
+        # H2ODeepLearningRegressor=dict(scores_may_differ=True),
     )
     return custom.get(estimator_cls.__name__, dict(seed=seed))
 
@@ -165,5 +165,4 @@ failing = [
 ]
 regressors = [cls for name, cls in inspect.getmembers(h2o.sklearn, inspect.isclass)
               if name.endswith('Regressor') and name not in ['H2OAutoMLRegressor']+failing]
-tests = chain.from_iterable([make_tests(c) for c in regressors])
-pyunit_utils.run_tests(tests)
+pyunit_utils.run_tests([make_tests(c) for c in regressors])

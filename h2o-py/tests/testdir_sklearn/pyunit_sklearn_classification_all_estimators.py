@@ -1,7 +1,6 @@
 from __future__ import print_function
 from collections import defaultdict
 from functools import partial
-from itertools import chain
 import importlib, inspect, os, sys
 
 import numpy as np
@@ -52,6 +51,7 @@ def _get_data(format='numpy', n_classes=2):
 def _get_default_args(estimator_cls):
     defaults = dict(
         H2OCoxProportionalHazardsClassifier=dict(),
+        H2ODeepLearningClassifier=dict(seed=seed, reproducible=True),
         H2OGeneralizedLinearClassifier=dict(family='binomial', seed=seed),
     )
     return defaults.get(estimator_cls.__name__, dict(seed=seed))
@@ -59,7 +59,7 @@ def _get_default_args(estimator_cls):
 
 def _get_custom_behaviour(estimator_cls):
     custom = dict(
-        H2ODeepLearningClassifier=dict(scores_may_differ=True),
+        # H2ODeepLearningClassifier=dict(scores_may_differ=True),
     )
     return custom.get(estimator_cls.__name__, dict(seed=seed))
 
@@ -162,11 +162,11 @@ def make_test(test, classifier):
 
 
 def make_tests(classifier):
-    return map(lambda test: make_test(test, classifier), [
+    return list(map(lambda test: make_test(test, classifier), [
         test_estimator_with_h2o_frames,
         test_estimator_with_numpy_arrays,
         test_scores_are_equivalent
-    ])
+    ]))
 
 
 failing = [
@@ -175,5 +175,4 @@ failing = [
 ]
 classifiers = [cls for name, cls in inspect.getmembers(h2o.sklearn, inspect.isclass)
                if name.endswith('Classifier') and name not in ['H2OAutoMLClassifier']+failing]
-tests = chain.from_iterable([make_tests(c) for c in classifiers])
-pyunit_utils.run_tests(tests)
+pyunit_utils.run_tests([make_tests(c) for c in classifiers])

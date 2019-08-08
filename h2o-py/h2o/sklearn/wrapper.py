@@ -373,7 +373,7 @@ class H2OConnectionMonitorMixin(object):
     This mixin can also be used as a Python context manager to obtain a connection to the H2O backend.
     """
 
-    _h2o_initialized_here = False
+    _h2o_connection_ref = None
     """
     True iff one component inheriting from this mixin had to create the connection to the backend.
     False if the connection was created upfront.
@@ -396,10 +396,15 @@ class H2OConnectionMonitorMixin(object):
 
         :param: bool show_progress: if True (default) the H2O progress bars are always rendered.
         """
+        print("Checking connection from %s" % cls.__name__)
         if not (h2o.connection() and h2o.connection().connected):
             try:
-                cls._h2o_initialized_here = True
+                print("Creating connection from %s" % cls.__name__)
                 h2o.init(**kwargs)
+                conn = h2o.connection()
+                cls._h2o_connection_ref = ref(conn)
+                print("New session: %s" % conn.session_id)
+                conn.start_logging()
             except:
                 cls.close_connection()  # ensure that the connection is properly closed on error
                 raise
@@ -416,12 +421,19 @@ class H2OConnectionMonitorMixin(object):
 
         :param force: if True, the connection is closed regardless of its origin.
         """
-        if (force or cls._h2o_initialized_here) and h2o.connection():
+        conn = h2o.connection()
+        if conn and (force or cls._is_current_connection(conn)):
             if h2o.connection().local_server:
+                print("Shutting down cluster from %s" % cls.__name__)
                 cls.shutdown_cluster()
             else:
-                h2o.connection().close()
-        cls._h2o_initialized_here = False
+                print("Closing connection %s from %s" % (conn.session_id, cls.__name__))
+                conn.close()
+        cls._h2o_connection_ref = None
+
+    @classmethod
+    def _is_current_connection(cls, conn):
+        return conn and cls._h2o_connection_ref and conn is cls._h2o_connection_ref()
 
     @classmethod
     def shutdown_cluster(cls):
@@ -463,6 +475,7 @@ class H2OConnectionMonitorMixin(object):
         if component_ref in cls._h2o_components_refs:
             cls._h2o_components_refs.remove(component_ref)
         if not cls._h2o_components_refs:
+            print("no more components, closing connection")
             cls.close_connection()
 
     def __enter__(self):
