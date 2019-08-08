@@ -221,6 +221,8 @@ class BuildConfig {
   }
 
   String getStageImage(final stageConfig) {
+    if (stageConfig.imageSpecifier)
+      return getDevImageReference(stageConfig.imageSpecifier)
     def component = stageConfig.component
     if (component == COMPONENT_ANY) {
       if (stageConfig.additionalTestPackages.contains(COMPONENT_PY)) {
@@ -256,6 +258,10 @@ class BuildConfig {
     return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-${imageComponentName}-${version}:${DEFAULT_IMAGE_VERSION_TAG}"
   }
 
+  String getDevImageReference(final specifier) {
+    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-${specifier}:${DEFAULT_IMAGE_VERSION_TAG}"
+  }
+  
   String getXGBNodeLabelForEnvironment(final Map xgbEnv) {
     switch (xgbEnv.targetName) {
       case XGB_TARGET_GPU:
