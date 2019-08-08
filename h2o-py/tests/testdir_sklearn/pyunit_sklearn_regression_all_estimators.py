@@ -151,11 +151,11 @@ def make_test(test, classifier):
 
 
 def make_tests(classifier):
-    return map(lambda test: make_test(test, classifier), [
+    return list(map(lambda test: make_test(test, classifier), [
         test_estimator_with_h2o_frames,
         test_estimator_with_numpy_arrays,
         test_scores_are_equivalent
-    ])
+    ]))
 
 
 failing = [

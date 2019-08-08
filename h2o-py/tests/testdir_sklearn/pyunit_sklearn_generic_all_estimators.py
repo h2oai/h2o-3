@@ -57,7 +57,7 @@ def _get_default_args(estimator_cls):
         H2OAggregatorEstimator=dict(),
         H2OAutoEncoderEstimator=dict(),
         H2OCoxProportionalHazardsEstimator=dict(),
-        H2ODeepLearningEstimator=dict(seed=seed, reproducible=True),
+        H2ODeepLearningEstimator=dict(distribution='bernoulli', seed=seed, reproducible=True),
         H2OGenericEstimator=dict(),
         H2OGeneralizedLinearEstimator=dict(family='binomial', seed=seed),
         H2OGeneralizedLowRankEstimator=dict(k=2, seed=seed),
