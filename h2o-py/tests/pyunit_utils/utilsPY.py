@@ -3752,6 +3752,19 @@ def random_dataset_enums_only(nrow, ncol, factorL=10, misFrac=0.01, randSeed=Non
                           seed=randSeed, **fractions)
     return df
 
+def random_dataset_binary_only(nrow, ncol, factorL=10, misFrac=0.01, randSeed=None):
+    """Create and return a random dataset."""
+    fractions = dict()
+    fractions["real_fraction"] = 0  # Right now we are dropping string columns, so no point in having them.
+    fractions["categorical_fraction"] = 0
+    fractions["integer_fraction"] = 0
+    fractions["time_fraction"] = 0
+    fractions["string_fraction"] = 0  # Right now we are dropping string columns, so no point in having them.
+    fractions["binary_fraction"] = 1
+
+    df = h2o.create_frame(rows=nrow, cols=ncol, missing_fraction=misFrac, has_response=False, factors=factorL,
+                          seed=randSeed, **fractions)
+    return df
 # generate random dataset of ncolumns of enums only, copied from Pasha
 def random_dataset_int_only(nrow, ncol, rangeR=10, misFrac=0.01, randSeed=None):
     """Create and return a random dataset."""

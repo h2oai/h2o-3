@@ -214,9 +214,10 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         idxs[i] = i;
       IcedHashMap<AstGroup.G, String> groups = AstGroup.doGroups(sf, idxs, AstGroup.aggNRows());
       groups: for (AstGroup.G g : groups.keySet()) {
-        for (double val : g._gs)
-          if (Double.isNaN(val))
+        for (byte[] val : g._gsB) {
+          if (val==null)
             continue groups;
+        }
         outMapping.put(g, new IcedInt(outMapping.size()));
       }
     }

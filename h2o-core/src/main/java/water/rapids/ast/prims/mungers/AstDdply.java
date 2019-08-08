@@ -59,9 +59,11 @@ public class AstDdply extends AstPrimitive {
       @Override
       public int compare(AstGroup.G g1, AstGroup.G g2) {
         for (int i : ordCols) {
-          if (Double.isNaN(g1._gs[i]) && !Double.isNaN(g2._gs[i])) return -1;
-          if (!Double.isNaN(g1._gs[i]) && Double.isNaN(g2._gs[i])) return 1;
-          if (g1._gs[i] != g2._gs[i]) return g1._gs[i] < g2._gs[i] ? -1 : 1;
+          double g1gsb = AstGroup.convertByte2Double(g1._gsB[i]);
+          double g2gsb = AstGroup.convertByte2Double(g2._gsB[i]);
+          if (Double.isNaN(g1gsb) && !Double.isNaN(g2gsb)) return -1;
+          if (!Double.isNaN(g1gsb) && Double.isNaN(g2gsb)) return 1;
+          if (g1gsb != g2gsb) return g1gsb < g2gsb ? -1 : 1;
         }
         return 0;
       }
@@ -103,8 +105,8 @@ public class AstDdply extends AstPrimitive {
         for (int i = 0; i < c[0]._len; ++i) {
           AstGroup.G g = grps[i + start];  // One Group per row
           int j;
-          for (j = 0; j < g._gs.length; j++) // The Group Key, as a row
-            ncs[j].addNum(g._gs[j]);
+          for (j = 0; j < g._gsB.length; j++) // The Group Key, as a row
+            ncs[j].addNum(AstGroup.convertByte2Double(g._gsB[j]));
           double[] res = remoteTasks[i + start]._result;
           for (int a = 0; a < res0.length; a++)
             ncs[j++].addNum(res[a]);

@@ -1,17 +1,18 @@
 package water;
 
-import java.io.*;
-import java.lang.reflect.Array;
-import java.net.*;
-import java.nio.*;
-import java.nio.channels.*;
-import java.util.ArrayList;
-import java.util.Random;
-
 import water.network.SocketChannelUtils;
 import water.util.Log;
 import water.util.StringUtils;
 import water.util.TwoDimTable;
+
+import java.io.*;
+import java.lang.reflect.Array;
+import java.net.DatagramPacket;
+import java.net.InetAddress;
+import java.nio.*;
+import java.nio.channels.*;
+import java.util.ArrayList;
+import java.util.Random;
 
 import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
 

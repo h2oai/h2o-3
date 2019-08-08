@@ -51,7 +51,7 @@ public class AstUnique extends AstPrimitive {
         @Override
         public void map(Chunk c) {
           int start = (int) c.start();
-          for (int i = 0; i < c._len; ++i) c.set(i, uniq[i + start]._gs[0]);
+          for (int i = 0; i < c._len; ++i) c.set(i, AstGroup.convertByte2Double(uniq[i + start]._gsB[0]));
         }
       }.doAll(v);
     }

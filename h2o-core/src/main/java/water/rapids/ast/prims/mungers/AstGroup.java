@@ -1,7 +1,10 @@
 package water.rapids.ast.prims.mungers;
 
 import water.*;
-import water.fvec.*;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.Merge;
 import water.rapids.Val;
@@ -16,6 +19,7 @@ import water.util.IcedHashMap;
 import water.util.Log;
 
 import java.util.Arrays;
+import java.io.FileOutputStream;
 
 /**
  * GroupBy
@@ -80,7 +84,7 @@ public class AstGroup extends AstPrimitive {
         return ds[0] / n;
       }
     },
-    sum() {
+    sum() { // no need for ns
       @Override
       public void op(double[] d0s, double d1) {
         d0s[0] += d1;
@@ -96,7 +100,7 @@ public class AstGroup extends AstPrimitive {
         return ds[0];
       }
     },
-    sumSquares() {
+    sumSquares() {  // no need for ns
       @Override
       public void op(double[] d0s, double d1) {
         d0s[0] += d1 * d1;
@@ -160,7 +164,7 @@ public class AstGroup extends AstPrimitive {
         return new double[2]; /* 0 -> sum_squares; 1 -> sum*/
       }
     },
-    min() {
+    min() { // no need for ns
       @Override
       public void op(double[] d0s, double d1) {
         d0s[0] = Math.min(d0s[0], d1);
@@ -181,7 +185,7 @@ public class AstGroup extends AstPrimitive {
         return new double[]{Double.MAX_VALUE};
       }
     },
-    max() {
+    max() { // no need for ns
       @Override
       public void op(double[] d0s, double d1) {
         d0s[0] = Math.max(d0s[0], d1);
@@ -319,8 +323,9 @@ public class AstGroup extends AstPrimitive {
         for (int i = 0; i < c[0]._len; ++i) {
           G g = grps[i + start];  // One Group per row
           int j;
-          for (j = 0; j < g._gs.length; j++) // The Group Key, as a row
-            ncs[j].addNum(g._gs[j]);
+          for (j = 0; j < g._gsB.length; j++) { // The Group Key, as a row
+            ncs[j].addNum(convertByte2Double(g._gsB[j]));
+          }
           for (int a = 0; a < aggs.length; a++) {
             if ((medianCount >=0) && g.medianR._isMedian[a])
               ncs[j++].addNum(g.medianR._medians[a]);
@@ -343,9 +348,7 @@ public class AstGroup extends AstPrimitive {
     }
     return fcnames;
   }
-
-
-
+  
   // Count of aggregates; knock off the first 4 ASTs (GB data [group-by] [order-by]...), then count by triples.
   private int countNumberOfAggregates(Frame fr, int numberOfColumns, AstRoot asts[]) {
     int validGroupByCols = 0;
@@ -392,13 +395,15 @@ public class AstGroup extends AstPrimitive {
         @Override
         public int compare(G g1, G g2) {
           for (int i = 0; i < gbCols.length; i++) {
-            if (Double.isNaN(g1._gs[i]) && !Double.isNaN(g2._gs[i])) return -1;
-            if (!Double.isNaN(g1._gs[i]) && Double.isNaN(g2._gs[i])) return 1;
-            if (g1._gs[i] != g2._gs[i]) return g1._gs[i] < g2._gs[i] ? -1 : 1;
+            double g1gs = convertByte2Double(g1._gsB[i]);
+            double g2gs = convertByte2Double(g2._gsB[i]);
+            if (Double.isNaN(g1gs) && !Double.isNaN(g2gs)) return -1;
+            if (!Double.isNaN(g1gs) && Double.isNaN(g2gs)) return 1;
+            if (g1gs != g2gs) return g1gs < g2gs ? -1 : 1;
           }
           return 0;
         }
-
+        
         // I do not believe sort() calls equals() at this time, so no need to implement
         @Override
         public boolean equals(Object o) {
@@ -407,6 +412,16 @@ public class AstGroup extends AstPrimitive {
       });
   }
 
+  public static double convertByte2Double(byte[] val) {
+    double convertVal = Double.NaN;
+    if (!(val==null)) {
+      int byteLength = val.length;
+      convertVal = byteLength==1?1.0*(new AutoBuffer(val).get1()):(byteLength==4
+              ?1.0*(new AutoBuffer(val).get4()):new AutoBuffer(val).get8d());
+    }
+    return convertVal;
+  }
+  
   private int calculateMediansForGRPS(Frame fr, int[] gbCols, AGG[] aggs, IcedHashMap<G, String> gss, G[] grps) {
     // median action exists, we do the following three things:
     // 1. Find out how many columns over all groups we need to perform median on
@@ -673,16 +688,12 @@ public class AstGroup extends AstPrimitive {
   // long) that defines the Group.  Also contains an array of doubles for the
   // aggregate results, one per aggregate.
   public static class G extends Iced {
-    public final double[] _gs;  // Group Key: Array is final; contents change with the "fill"
+//    public final double[] _gs;  // Group Key: Array is final; contents change with the "fill"
+    public final byte[][] _gsB;
     int _hash;           // Hash is not final; changes with the "fill"
 
     public final double _dss[][];      // Aggregates: usually sum or sum*2
     public final long _ns[];         // row counts per aggregate, varies by NA handling and column
-/*    int[] _medianCols;    // record which columns in reference to data frame
-    double[] _medians;
-    boolean[] _isMedian;
-    int[] _newChunkCols;  // record which columns in newChunk to store group
-    public NAHandling[] _na;*/
     public MedianResult medianR = null;
 
     public G(int ncols, AGG[] aggs) {
@@ -690,7 +701,7 @@ public class AstGroup extends AstPrimitive {
     }
 
     public G(int ncols, AGG[] aggs, boolean hasMedian) {
-      _gs = new double[ncols];
+      _gsB = new byte[ncols][];
       int len = aggs == null ? 0 : aggs.length;
       _dss = new double[len][];
       _ns = new long[len];
@@ -709,24 +720,39 @@ public class AstGroup extends AstPrimitive {
       }
     }
 
+    public byte[] convertRowVal2ByteArr(Chunk chk, int row) {
+      byte[] returnVal = null;
+      if (!Double.isNaN(chk.atd(row))) { // null for NaN entry for _gsB[c]
+        if (chk.vec().isBinary()) {
+          returnVal = new AutoBuffer().put1((int) chk.at8(row)).buf();
+        } else if (chk.vec().isCategorical()) {
+          returnVal = new AutoBuffer().put4((int) chk.at8(row)).buf();
+        } else {
+          returnVal = new AutoBuffer().put8d(chk.atd(row)).buf();
+        }
+      }
+      return returnVal;
+    }
     public G fill(int row, Chunk chks[]) {
-      for (int c = 0; c < chks.length; c++) // For all selection cols
-        _gs[c] = chks[c].atd(row); // Load into working array
+      for (int c = 0; c < chks.length; c++) { // For all selection cols
+        _gsB[c] = convertRowVal2ByteArr(chks[c], row);
+      }
       _hash = hash();
       return this;
     }
 
     public G fill(int row, Chunk chks[], int cols[]) {
-      for (int c = 0; c < cols.length; c++) // For all selection cols
-        _gs[c] = chks[cols[c]].atd(row); // Load into working array
+      for (int c = 0; c < cols.length; c++) {// For all selection cols
+        _gsB[c] = convertRowVal2ByteArr(chks[cols[c]], row);
+      }
       _hash = hash();
       return this;
     }
 
     protected int hash() {
       long h = 0;                 // hash is sum of field bits
-      for (double d : _gs) h += Double.doubleToRawLongBits(d);
-      // Doubles are lousy hashes; mix up the bits some
+   //   long hb = 0;
+      for (byte[] val:_gsB) h += convertByte2Double(val);
       h ^= (h >>> 20) ^ (h >>> 12);
       h ^= (h >>> 7) ^ (h >>> 4);
       return (int) ((h ^ (h >> 32)) & 0x7FFFFFFF);
@@ -734,7 +760,23 @@ public class AstGroup extends AstPrimitive {
 
     @Override
     public boolean equals(Object o) {
-      return o instanceof G && Arrays.equals(_gs, ((G) o)._gs);
+      int ncols = _gsB.length;
+      int ncolso = ((G) o)._gsB.length;
+      boolean gsbEquals = ((ncols==ncolso) && (o instanceof G));
+      if (gsbEquals) {
+        for (int index=0; index<ncols; index++) {
+          boolean nullgsB = _gsB[index]==null;
+          boolean nullogsB = ((G) o)._gsB[index]==null;
+          
+          if ((nullgsB && !nullogsB) || (!nullgsB && nullogsB) || !((nullgsB && nullogsB) || 
+                  Arrays.equals(_gsB[index], ((G) o)._gsB[index]))) {
+            return false;
+          }
+        }
+      } else {
+        return false;
+      }
+      return true;
     }
 
     @Override
@@ -744,7 +786,11 @@ public class AstGroup extends AstPrimitive {
 
     @Override
     public String toString() {
-      return Arrays.toString(_gs);
+      int gsLength = _gsB.length;
+      double[] gsDouble = new double[gsLength];
+      for (int index= 0; index<gsLength; index++)
+        gsDouble[index] = convertByte2Double(_gsB[index]);
+      return Arrays.toString(gsDouble);
     }
   }
 
