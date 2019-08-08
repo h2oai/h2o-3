@@ -1,8 +1,6 @@
-class_init_extra = """
-self._parms["_rest_version"] = 99
-"""
-
-class_extras = """
+extensions = dict(
+    __init__="""self._parms["_rest_version"] = 99""",
+    __class__="""
 @property
 def aggregated_frame(self):
     if (self._model_json is not None and
@@ -10,4 +8,4 @@ def aggregated_frame(self):
         out_frame_name = self._model_json["output"]["output_frame"]["name"]
         return H2OFrame.get_frame(out_frame_name)
 """
-
+)

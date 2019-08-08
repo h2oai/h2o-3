@@ -1,18 +1,6 @@
-imports = """import h2o"""
-
-class_doc = """
-Fits a generalized linear model, specified by a response variable, a set of predictors, and a
-description of the error distribution.
-
-A subclass of :class:`ModelBase` is returned. The specific subclass depends on the machine learning task
-at hand (if it's binomial classification, then an H2OBinomialModel is returned, if it's regression then a
-H2ORegressionModel is returned). The default print-out of the models is shown, but further GLM-specific
-information can be queried out of the object. Upon completion of the GLM, the resulting object has
-coefficients, normalized coefficients, residual/null deviance, aic, and a host of model metrics including
-MSE, AUC (for logistic regression), degrees of freedom, and confusion matrices.
-"""
-
-class_extras = """
+extensions = dict(
+    __imports__="""import h2o""",
+    __class__="""
 @property
 def Lambda(self):
     \"""DEPRECATED. Use ``self.lambda_`` instead\"""
@@ -63,8 +51,9 @@ def makeGLMModel(model, coefs, threshold=.5):
     m._resolve_model(model_json["model_id"]["name"], model_json)
     return m
 """
+)
 
-properties = dict(
+overrides = dict(
     alpha=dict(
         setter="""
 # For `alpha` and `lambda` the server reports type float[], while in practice simple floats are also ok
@@ -78,4 +67,18 @@ assert_is_type({pname}, None, numeric, [numeric])
 self._parms["{sname}"] = {pname}
 """
     ),
+)
+
+doc = dict(
+    __class__="""
+Fits a generalized linear model, specified by a response variable, a set of predictors, and a
+description of the error distribution.
+
+A subclass of :class:`ModelBase` is returned. The specific subclass depends on the machine learning task
+at hand (if it's binomial classification, then an H2OBinomialModel is returned, if it's regression then a
+H2ORegressionModel is returned). The default print-out of the models is shown, but further GLM-specific
+information can be queried out of the object. Upon completion of the GLM, the resulting object has
+coefficients, normalized coefficients, residual/null deviance, aic, and a host of model metrics including
+MSE, AUC (for logistic regression), degrees of freedom, and confusion matrices.
+"""
 )

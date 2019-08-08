@@ -16,7 +16,7 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
     """
     Cox Proportional Hazards
 
-    Trains a Cox Proportional Hazards Model (CoxPH) on an H2O dataset
+    Trains a Cox Proportional Hazards Model (CoxPH) on an H2O dataset.
     """
 
     algo = "coxph"

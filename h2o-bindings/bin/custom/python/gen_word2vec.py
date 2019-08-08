@@ -1,11 +1,11 @@
-class_init_setparams = """
+extensions = dict(
+    __init__setparams="""
 elif pname == 'pre_trained':
     setattr(self, pname, pvalue)
     self._determine_vec_size();
     setattr(self, 'vec_size', self.vec_size)
-"""
-
-class_extras = """
+""",
+    __class__="""
 def _requires_training_frame(self):
     \"""
     Determines if Word2Vec algorithm requires a training frame.
@@ -39,4 +39,5 @@ def _determine_vec_size(self):
                             self.pre_trained.frame_id)
 
     self.vec_size = self.pre_trained.dim[1] - 1;
-"""
+""",
+)

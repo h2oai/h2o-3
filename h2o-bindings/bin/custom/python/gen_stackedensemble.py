@@ -5,46 +5,17 @@ def update_param(name, param, values):
     return param, values
 
 
-imports = """
+extensions = dict(
+    __imports__="""
 from h2o.utils.shared_utils import quoted
 from h2o.utils.typechecks import is_type
 import json
 import ast
-"""
-
-class_doc = """
-Builds a stacked ensemble (aka "super learner") machine learning method that uses two
-or more H2O learning algorithms to improve predictive performance. It is a loss-based
-supervised learning method that finds the optimal combination of a collection of prediction
-algorithms.This method supports regression and binary classification.
-"""
-
-class_examples = """
->>> import h2o
->>> h2o.init()
->>> from h2o.estimators.random_forest import H2ORandomForestEstimator
->>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
->>> from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
->>> col_types = ["numeric", "numeric", "numeric", "enum", "enum", "numeric", "numeric", "numeric", "numeric"]
->>> data = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate.csv", col_types=col_types)
->>> train, test = data.split_frame(ratios=[.8], seed=1)
->>> x = ["CAPSULE","GLEASON","RACE","DPROS","DCAPS","PSA","VOL"]
->>> y = "AGE"
->>> nfolds = 5
->>> my_gbm = H2OGradientBoostingEstimator(nfolds=nfolds, fold_assignment="Modulo", keep_cross_validation_predictions=True)
->>> my_gbm.train(x=x, y=y, training_frame=train)
->>> my_rf = H2ORandomForestEstimator(nfolds=nfolds, fold_assignment="Modulo", keep_cross_validation_predictions=True)
->>> my_rf.train(x=x, y=y, training_frame=train)
->>> stack = H2OStackedEnsembleEstimator(model_id="my_ensemble", training_frame=train, validation_frame=test, base_models=[my_gbm.model_id, my_rf.model_id])
->>> stack.train(x=x, y=y, training_frame=train, validation_frame=test)
->>> stack.model_performance()
-"""
-
-class_init_extra = """
+""",
+    __init__="""
 self._parms["_rest_version"] = 99
-"""
-
-class_extras = """
+""",
+    __class__="""
 def metalearner(self):
     \"""Print the metalearner of an H2OStackedEnsembleEstimator.\"""
     model = self._model_json["output"]
@@ -79,12 +50,9 @@ def train(self, x=None, y=None, training_frame=None, blending_frame=None, **kwar
                                        extend_parms_fn=extend_parms,
                                        **kwargs)
 """
+)
 
-property_metalearner_params_examples = """
->>> metalearner_params = {'max_depth': 2, 'col_sample_rate': 0.3}
-"""
-
-properties = dict(
+overrides = dict(
     base_models=dict(
         setter="""
 if is_type(base_models, [H2OEstimator]):
@@ -118,4 +86,41 @@ else:
     self._parms["{sname}"] = None
 """
     ),
+)
+
+
+doc = dict(
+    __class__="""
+Builds a stacked ensemble (aka "super learner") machine learning method that uses two
+or more H2O learning algorithms to improve predictive performance. It is a loss-based
+supervised learning method that finds the optimal combination of a collection of prediction
+algorithms.This method supports regression and binary classification.
+""",
+)
+
+
+examples = dict(
+    __class__="""
+>>> import h2o
+>>> h2o.init()
+>>> from h2o.estimators.random_forest import H2ORandomForestEstimator
+>>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+>>> from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
+>>> col_types = ["numeric", "numeric", "numeric", "enum", "enum", "numeric", "numeric", "numeric", "numeric"]
+>>> data = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate.csv", col_types=col_types)
+>>> train, test = data.split_frame(ratios=[.8], seed=1)
+>>> x = ["CAPSULE","GLEASON","RACE","DPROS","DCAPS","PSA","VOL"]
+>>> y = "AGE"
+>>> nfolds = 5
+>>> my_gbm = H2OGradientBoostingEstimator(nfolds=nfolds, fold_assignment="Modulo", keep_cross_validation_predictions=True)
+>>> my_gbm.train(x=x, y=y, training_frame=train)
+>>> my_rf = H2ORandomForestEstimator(nfolds=nfolds, fold_assignment="Modulo", keep_cross_validation_predictions=True)
+>>> my_rf.train(x=x, y=y, training_frame=train)
+>>> stack = H2OStackedEnsembleEstimator(model_id="my_ensemble", training_frame=train, validation_frame=test, base_models=[my_gbm.model_id, my_rf.model_id])
+>>> stack.train(x=x, y=y, training_frame=train, validation_frame=test)
+>>> stack.model_performance()
+""",
+    metalearner_params="""
+    >>> metalearner_params = {'max_depth': 2, 'col_sample_rate': 0.3}
+""",
 )

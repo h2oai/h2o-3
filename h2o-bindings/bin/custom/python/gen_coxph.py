@@ -1,8 +1,5 @@
-class_doc = """
-Trains a Cox Proportional Hazards Model (CoxPH) on an H2O dataset
-"""
-
-class_extras = """
+extensions = dict(
+    __class__="""
 def _additional_used_columns(self, parms):
     \"""
     :return: Start and stop column if specified.
@@ -13,3 +10,10 @@ def _additional_used_columns(self, parms):
             result.append(parms[col])
     return result
 """
+)
+
+doc = dict(
+    __class__="""
+Trains a Cox Proportional Hazards Model (CoxPH) on an H2O dataset.
+"""
+)

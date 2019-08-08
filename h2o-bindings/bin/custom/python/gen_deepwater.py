@@ -1,11 +1,6 @@
-imports = """import h2o"""
-
-class_doc = """
-Build a Deep Learning model using multiple native GPU backends
-Builds a deep neural network on an H2OFrame containing various data sources
-"""
-
-class_extras = """
+extensions = dict(
+    __imports__="""import h2o""",
+    __class__="""
 @staticmethod
 def available():
     \"""
@@ -20,3 +15,12 @@ def available():
     else:
         return True
 """
+)
+
+doc = dict(
+    __class__="""
+Build a Deep Learning model using multiple native GPU backends
+Builds a deep neural network on an H2OFrame containing various data sources
+"""
+)
+

@@ -1,10 +1,9 @@
-class_init_validation = """
+extensions = dict(
+    __init__validation="""
 if all(kwargs.get(name, None) is None for name in ["model_key", "path"]):
     raise H2OValueError('At least one of ["model_key", "path"] is required.')
-"""
-
-
-class_extras = """
+""",
+    __class__="""
 def _requires_training_frame(self):
     \"""
     Determines if Generic model requires a training frame.
@@ -25,3 +24,4 @@ def from_file(file=str):
     
     return model
 """
+)

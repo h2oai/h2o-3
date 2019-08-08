@@ -6,4 +6,4 @@ def update_param(name, param, values):
     return param, values
 
 
-deprecated_attributes = ['offset_column', 'distribution']
+deprecated = ['offset_column', 'distribution']

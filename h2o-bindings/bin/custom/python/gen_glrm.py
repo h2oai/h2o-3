@@ -1,6 +1,11 @@
-class_doc = """Builds a generalized low rank model of a H2O dataset."""
+doc = dict(
+    __class__="""
+Builds a generalized low rank model of a H2O dataset.
+"""
+)
 
-class_init_extra = """
+extensions = dict(
+    __init__="""
 self._parms["_rest_version"] = 3
 """
-
+)

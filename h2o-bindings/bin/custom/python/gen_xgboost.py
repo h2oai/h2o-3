@@ -1,8 +1,6 @@
-imports = """import h2o"""
-
-class_doc = """Builds a eXtreme Gradient Boosting model using the native XGBoost backend."""
-
-class_extras = """
+extensions = dict(
+    __imports__="""import h2o""",
+    __class__="""
 @staticmethod
 def available():
     \"""
@@ -15,3 +13,10 @@ def available():
     else:
         return True
 """
+)
+
+doc = dict(
+    __class__="""
+Builds a eXtreme Gradient Boosting model using the native XGBoost backend.
+""",
+)

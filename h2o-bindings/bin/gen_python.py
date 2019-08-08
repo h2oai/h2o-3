@@ -128,15 +128,14 @@ def gen_module(schema, algo):
     as the type translation is done in this file.
     """
     classname = algo_to_classname(algo)
-    extra_imports = get_customizations_for(algo, 'imports')
-    class_doc = get_customizations_for(algo, 'class_doc')
-    class_examples = get_customizations_for(algo, 'class_examples')
-    class_init_validation = get_customizations_for(algo, 'class_init_validation')
-    class_init_setparams = get_customizations_for(algo, 'class_init_setparams')
-    class_init_extra = get_customizations_for(algo, 'class_init_extra')
-    class_extras = get_customizations_for(algo, 'class_extras')
-    module_extras = get_customizations_for(algo, 'module_extras')
-    properties = get_customizations_for(algo, 'properties', {})
+    extra_imports = get_customizations_for(algo, 'extensions.__imports__')
+    class_doc = get_customizations_for(algo, 'doc.__class__')
+    class_examples = get_customizations_for(algo, 'examples.__class__')
+    class_init_validation = get_customizations_for(algo, 'extensions.__init__validation')
+    class_init_setparams = get_customizations_for(algo, 'extensions.__init__setparams')
+    class_init_extra = get_customizations_for(algo, 'extensions.__init__')
+    class_extras = get_customizations_for(algo, 'extensions.__class__')
+    module_extras = get_customizations_for(algo, 'extensions.__module__')
 
     param_names = []
     for param in schema["parameters"]:
@@ -239,25 +238,25 @@ def gen_module(schema, algo):
         else:
             property_doc += "  (default: ``%s``)." % stringify(param["default_value"])
 
-        deprecated = pname in get_customizations_for(algo, 'deprecated_attributes', [])
+        deprecated = pname in get_customizations_for(algo, 'deprecated', [])
         yield "    @property"
         yield "    def %s(self):" % pname
         yield '        """'
         yield "        %s%s" % ("[Deprecated] " if deprecated else "", bi.wrap(param["help"], indent=(" " * 8), indent_first=False))
         yield ""
         yield "        %s" % bi.wrap(property_doc, indent=(" " * 8), indent_first=False)
-        property_doc = get_customizations_for(algo, "property_"+pname+"_doc", )
+        property_doc = get_customizations_for(algo, "doc.{}".format(pname))
         if property_doc:
             yield ""
             yield "        %s" % reindent_block(property_doc, 8)
-        property_examples = get_customizations_for(algo, "property_"+pname+"_examples")
+        property_examples = get_customizations_for(algo, "examples.{}".format(pname))
         if property_examples:
             yield ""
             yield "        :examples:"
             yield ""
             yield "        %s" % reindent_block(property_examples, 8)
         yield '        """'
-        property_getter = properties.get(pname, {}).get('getter')  # check gen_stackedensemble.py for an example
+        property_getter = get_customizations_for(algo, "overrides.{}.getter".format(pname))  # check gen_stackedensemble.py for an example
         if property_getter:
             yield "        %s" % reindent_block(property_getter.format(**locals()), 8)
         else:
@@ -266,7 +265,7 @@ def gen_module(schema, algo):
         yield ""
         yield "    @%s.setter" % pname
         yield "    def %s(self, %s):" % (pname, pname)
-        property_setter = properties.get(pname, {}).get('setter')  # check gen_stackedensemble.py for an example
+        property_setter = get_customizations_for(algo, "overrides.{}.setter".format(pname))  # check gen_stackedensemble.py for an example
         if property_setter:
             yield "        %s" % reindent_block(property_setter.format(**locals()), 8)
         else:
@@ -368,10 +367,16 @@ def get_customizations_for(algo, property=None, default=None):
         _gen_customizations.update({algo: customizations})
 
     customizations = _gen_customizations[algo]
-    if property is None:
-        return customizations
+    if property:
+        tokens = property.split('.')
+        value = customizations
+        for token in tokens:
+            value = value.get(token)
+            if value is None:
+                return default
+        return value
     else:
-        return customizations.get(property, default)
+        return customizations
 
 # ----------------------------------------------------------------------------------------------------------------------
 #   MAIN:
