@@ -81,6 +81,7 @@ ansiColor('xterm') {
         OPENJDK_VERSIONS.each {version ->
             componentImages += "dev-openjdk-${version}"
         }
+        componentImages += "dev-mojocompat"
         buildInParallel(pipelineContext, componentImages)
 
         buildInParallel(pipelineContext, ["dev-build-base"])
