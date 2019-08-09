@@ -202,8 +202,8 @@ public class TargetEncoderBuilderTest extends TestUtil {
       targetEncoderModel = builder.getTargetEncoderModel(); // TODO change the way of how we getting model after PUBDEV-6670. We should be able to get it from DKV with .trainModel().get()
       
       long seed = 1234;
-      byte strategy = TargetEncoder.DataLeakageHandlingStrategy.KFold;
-      Frame transformedTrainWithModelFromBuilder = targetEncoderModel.transform(fr, strategy, seed);
+      TargetEncoder.DataLeakageHandlingStrategy strategy = TargetEncoder.DataLeakageHandlingStrategy.KFold;
+      Frame transformedTrainWithModelFromBuilder = targetEncoderModel.transform(fr,  TargetEncoder.DataLeakageHandlingStrategy.KFold.getVal(), seed);
       Scope.track(transformedTrainWithModelFromBuilder);
       targetEncodingMapFromBuilder = targetEncoderModel._output._target_encoding_map;
       
@@ -218,7 +218,7 @@ public class TargetEncoderBuilderTest extends TestUtil {
 
       encodingMapFromTargetEncoder = tec.prepareEncodingMap(fr2, responseColumnName, foldColumnName);
 
-      Frame transformedTrainWithTargetEncoder = tec.applyTargetEncoding(fr2, responseColumnName, encodingMapFromTargetEncoder, strategy, foldColumnName, targetEncoderParameters._withBlending, true, seed);
+      Frame transformedTrainWithTargetEncoder = tec.applyTargetEncoding(fr2, responseColumnName, encodingMapFromTargetEncoder, strategy, foldColumnName, targetEncoderParameters._withBlending, seed);
      
       Scope.track(transformedTrainWithTargetEncoder);
       

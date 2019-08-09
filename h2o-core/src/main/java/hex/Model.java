@@ -1615,7 +1615,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @param predictFr
    * @return
    */
-  protected Frame postProcessPredictions(Frame adaptFrm, Frame predictFr, Job j) {
+  protected Frame postProcessPredictions(Frame adaptFrm, Frame predictFr, Job j) {  
     return predictFr;
   }
 
@@ -1803,6 +1803,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  re-used temp array, in the order the model expects.  The predictions are
    *  loaded into the re-used temp array, which is also returned.  */
   protected abstract double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]);
+  
+  protected Frame transform(final Frame input){
+    return  score(input);
+  }
 
   /**Override scoring logic for models that handle weight/offset**/
   protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/], double offset) {

@@ -1,6 +1,7 @@
 package ai.h2o.automl.targetencoding;
 
 import water.*;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.*;
 import water.fvec.task.FillNAWithLongValueTask;
 import water.fvec.task.FillNAWithDoubleValueTask;
@@ -57,11 +58,43 @@ public class TargetEncoder {
       this(columnNamesToEncode, new BlendingParams(20, 10));
     }
 
-    public static class DataLeakageHandlingStrategy {
-        public static final byte LeaveOneOut  =  0;
-        public static final byte KFold  =  1;
-        public static final byte None  =  2;
+  public enum DataLeakageHandlingStrategy {
+    LeaveOneOut((byte) 0),
+    KFold((byte) 1),
+    None((byte) 2);
+
+    /***
+     * The handling strategies of data leakage used to be represented as a simple byte. Transition to enum representation
+     * while keeping the old API requires introduction of a mapping method of the old values into values found in {@link DataLeakageHandlingStrategy}
+     * enum. This method does such mapping.
+     * 
+     * @param val Older byte representation of values in this enum
+     * @return Value from the {@link DataLeakageHandlingStrategy} enum corresponding to the older byte value. 
+     * @throws IllegalArgumentException When no value from the {@link DataLeakageHandlingStrategy} is mapped to given number.
+     */
+    public static DataLeakageHandlingStrategy fromVal(byte val) throws IllegalArgumentException {
+      switch (val) {
+        case 0:
+          return LeaveOneOut;
+        case 1:
+          return KFold;
+        case 2:
+          return None;
+        default:
+          throw new IllegalArgumentException(String.format("Unknown DataLeakageHandlingStrategy corresponding to value: '%s'", val));
+      }
     }
+
+    DataLeakageHandlingStrategy(byte val) {
+      this.val = val;
+    }
+
+    private final byte val;
+
+    public byte getVal() {
+      return val;
+    }
+  }
 
     /**
      * @param targetColumnName name of the target column
@@ -517,18 +550,16 @@ public class TargetEncoder {
      * @param foldColumnName column's name that contains fold number the row is belong to.
      * @param withBlendedAvg whether to apply blending or not.
      * @param noiseLevel amount of noise to add to the final encodings.
-     * @param imputeNAsWithNewCategory set to `true` to impute NAs with new category.
      * @param seed we might want to specify particular values for reproducibility in tests.
      * @return copy of the `data` frame with encodings
      */
     public Frame applyTargetEncoding(Frame data,
                                      String targetColumnName,
                                      Map<String, Frame> columnToEncodingMap,
-                                     byte dataLeakageHandlingStrategy,
+                                     DataLeakageHandlingStrategy dataLeakageHandlingStrategy,
                                      String foldColumnName,
                                      boolean withBlendedAvg,
                                      double noiseLevel,
-                                     boolean imputeNAsWithNewCategory,
                                      long seed) {
 
         if(noiseLevel < 0 )
@@ -559,7 +590,7 @@ public class TargetEncoder {
             int teColumnIndex = dataWithAllEncodings.find(teColumnName);
 
             switch (dataLeakageHandlingStrategy) {
-              case DataLeakageHandlingStrategy.KFold:
+              case KFold:
                 Frame holdoutEncodeMap = null;
                 Frame dataWithMergedAggregationsK = null;
                 try {
@@ -626,7 +657,7 @@ public class TargetEncoder {
                   if (holdoutEncodeMap != null) holdoutEncodeMap.delete();
                 }
                 break;
-              case DataLeakageHandlingStrategy.LeaveOneOut:
+              case LeaveOneOut:
                 Frame groupedTargetEncodingMap = null;
                 Frame dataWithMergedAggregationsL = null;
                 try {
@@ -659,7 +690,7 @@ public class TargetEncoder {
                 }
 
                 break;
-              case DataLeakageHandlingStrategy.None:
+              case None:
                 Frame groupedTargetEncodingMapForNone = null;
                 Frame dataWithMergedAggregationsN = null;
                 try {
@@ -743,10 +774,9 @@ public class TargetEncoder {
     public Frame applyTargetEncoding(Frame data,
                                      String targetColumnName,
                                      Map<String, Frame> targetEncodingMap,
-                                     byte dataLeakageHandlingStrategy,
+                                     DataLeakageHandlingStrategy dataLeakageHandlingStrategy,
                                      String foldColumn,
                                      boolean withBlendedAvg,
-                                     boolean imputeNAs,
                                      long seed) {
         double defaultNoiseLevel = 0.01;
         int targetIndex = data.find(targetColumnName);
@@ -756,29 +786,27 @@ public class TargetEncoder {
           Vec targetVec = data.vec(targetIndex);
           noiseLevel = targetVec.isNumeric() ? defaultNoiseLevel * (targetVec.max() - targetVec.min()) : defaultNoiseLevel;
         }
-        return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, foldColumn, withBlendedAvg, noiseLevel, true, seed);
+        return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, foldColumn, withBlendedAvg, noiseLevel, seed);
     }
 
     public Frame applyTargetEncoding(Frame data,
                                      String targetColumnName,
                                      Map<String, Frame> targetEncodingMap,
-                                     byte dataLeakageHandlingStrategy,
+                                     DataLeakageHandlingStrategy dataLeakageHandlingStrategy,
                                      boolean withBlendedAvg,
-                                     boolean imputeNAs,
                                      long seed) {
-        return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, null, withBlendedAvg, true, seed);
+      return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, null, withBlendedAvg, seed);
     }
 
     public Frame applyTargetEncoding(Frame data,
                                      String targetColumnName,
                                      Map<String, Frame> targetEncodingMap,
-                                     byte dataLeakageHandlingStrategy,
+                                     DataLeakageHandlingStrategy dataLeakageHandlingStrategy,
                                      boolean withBlendedAvg,
                                      double noiseLevel,
-                                     boolean imputeNAs,
                                      long seed) {
-        assert dataLeakageHandlingStrategy != DataLeakageHandlingStrategy.KFold : "Use another overloaded method for KFold dataLeakageHandlingStrategy.";
-        return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, null, withBlendedAvg, noiseLevel, true, seed);
+      assert !DataLeakageHandlingStrategy.KFold.equals(dataLeakageHandlingStrategy) : "Use another overloaded method for KFold dataLeakageHandlingStrategy.";
+        return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, null, withBlendedAvg, noiseLevel, seed);
     }
 
 }

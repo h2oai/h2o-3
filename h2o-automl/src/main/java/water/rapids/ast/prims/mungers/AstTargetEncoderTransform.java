@@ -40,7 +40,7 @@ public class AstTargetEncoderTransform extends AstBuiltin<AstTargetEncoderTransf
     Frame[] encodingMapFrames = getEncodingMapFrames(env, stk, asts);
     Frame frame = getFrameToTransform(env, stk, asts);
     String[] teColumnsToEncode = getTEColumns(env, stk, asts);
-    byte dataLeakageHandlingStrategy = getDataLeakageHandlingStrategy(env, stk, asts);
+    TargetEncoder.DataLeakageHandlingStrategy dataLeakageHandlingStrategy = TargetEncoder.DataLeakageHandlingStrategy.fromVal(getDataLeakageHandlingStrategy(env, stk, asts));
     String targetColumnName = getTargetColumnName(env, stk, asts);
     String foldColumnName = getFoldColumnName(env, stk, asts);
     boolean withBlending = getWithBlending(env, stk, asts);
@@ -57,10 +57,10 @@ public class AstTargetEncoderTransform extends AstBuiltin<AstTargetEncoderTransf
 
     if(noise == -1) {
       return new ValFrame(tec.applyTargetEncoding(frame, targetColumnName, encodingMap, dataLeakageHandlingStrategy,
-              foldColumnName, withBlending, withImputationForOriginalColumns, (long) seed));
+              foldColumnName, withImputationForOriginalColumns, (long) seed));
     } else {
       return new ValFrame(tec.applyTargetEncoding(frame, targetColumnName, encodingMap, dataLeakageHandlingStrategy,
-              foldColumnName, withBlending, noise, withImputationForOriginalColumns, (long) seed));
+              foldColumnName, withBlending, noise, (long) seed));
     }
   }
 
@@ -121,14 +121,14 @@ public class AstTargetEncoderTransform extends AstBuiltin<AstTargetEncoderTransf
   private byte getDataLeakageHandlingStrategy(Env env, Env.StackHelp stk, AstRoot asts[]) {
     String strategy = stk.track(asts[5].exec(env)).getStr();
     if(strategy.equals("kfold")){
-      return TargetEncoder.DataLeakageHandlingStrategy.KFold;
+      return TargetEncoder.DataLeakageHandlingStrategy.KFold.getVal();
     } else if (strategy.equals("loo")) {
-      return TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut;
+      return TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut.getVal();
     } else if(strategy.equals("loo")) {
-      return TargetEncoder.DataLeakageHandlingStrategy.None;
+      return TargetEncoder.DataLeakageHandlingStrategy.None.getVal();
     }
     else {
-      return TargetEncoder.DataLeakageHandlingStrategy.None;
+      return TargetEncoder.DataLeakageHandlingStrategy.None.getVal();
     }
   }
 

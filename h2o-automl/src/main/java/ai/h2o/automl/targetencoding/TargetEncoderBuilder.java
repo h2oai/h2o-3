@@ -6,6 +6,7 @@ import water.Scope;
 import water.fvec.Frame;
 import water.util.Log;
 
+import java.util.Arrays;
 import java.util.Map;
 
 public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, TargetEncoderModel.TargetEncoderParameters, TargetEncoderModel.TargetEncoderOutput> {
@@ -20,6 +21,22 @@ public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, Targe
   public TargetEncoderBuilder(TargetEncoderModel.TargetEncoderParameters parms) {
     super(parms);
     super.init(false);
+  }
+
+  public TargetEncoderBuilder(final boolean startupOnce) {
+    super(new TargetEncoderModel.TargetEncoderParameters(), startupOnce);
+  }
+
+  @Override
+  public void init(boolean expensive) {
+    super.init(expensive);
+
+    if (_parms._leakageHandlingStrategy == null || _parms._leakageHandlingStrategy.trim().isEmpty()) {
+      _parms._leakageHandlingStrategy = TargetEncoder.DataLeakageHandlingStrategy.None.name();
+    } else if (TargetEncoder.DataLeakageHandlingStrategy.valueOf(_parms._leakageHandlingStrategy) == null) {
+      throw new IllegalArgumentException(String.format("Unknown data leakage strategy: '%s'. Possible values are: %s.",
+              _parms._leakageHandlingStrategy, Arrays.toString(TargetEncoder.DataLeakageHandlingStrategy.values())));
+    }
   }
 
   private class TargetEncoderDriver extends Driver {
@@ -45,8 +62,8 @@ public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, Targe
       TargetEncoderModel.TargetEncoderOutput output = new TargetEncoderModel.TargetEncoderOutput(TargetEncoderBuilder.this, _targetEncodingMap, priorMean);
       _targetEncoderModel = new TargetEncoderModel(_job._result, _parms, output, tec);
 
-      // Note: For now we are not going to make TargetEncoderModel to be a real model. It should be treated as a wrapper for just getting a mojo.
-      // DKV.put(targetEncoderModel);
+      _targetEncoderModel.write_lock(_job);
+      _targetEncoderModel.unlock(_job);
     }
 
     private void disableIgnoreConstColsFeature() {
@@ -69,5 +86,15 @@ public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, Targe
   @Override
   public boolean isSupervised() {
     return true;
+  }
+
+  @Override
+  public BuilderVisibility builderVisibility() {
+    return BuilderVisibility.Beta;
+  }
+
+  @Override
+  public String getName() {
+    return "targetencoder";
   }
 }

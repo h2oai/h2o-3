@@ -22,6 +22,7 @@ from .psvm import H2OSupportVectorMachineEstimator
 from .random_forest import H2ORandomForestEstimator
 from .stackedensemble import H2OStackedEnsembleEstimator
 from .svd import H2OSingularValueDecompositionEstimator
+from .targetencoder import H2OTargetencoderEstimator
 from .word2vec import H2OWord2vecEstimator
 from .xgboost import H2OXGBoostEstimator
 
@@ -36,6 +37,7 @@ __all__ = (
     "H2ONaiveBayesEstimator", "H2OPrincipalComponentAnalysisEstimator", "H2OPrincipalComponentAnalysisEstimator",
     "H2OSupportVectorMachineEstimator", "H2OSupportVectorMachineEstimator", "H2ORandomForestEstimator",
     "H2ORandomForestEstimator", "H2OStackedEnsembleEstimator", "H2OStackedEnsembleEstimator",
-    "H2OSingularValueDecompositionEstimator", "H2OSingularValueDecompositionEstimator", "H2OWord2vecEstimator",
-    "H2OWord2vecEstimator", "H2OXGBoostEstimator", "H2OXGBoostEstimator"
+    "H2OSingularValueDecompositionEstimator", "H2OSingularValueDecompositionEstimator", "H2OTargetencoderEstimator",
+    "H2OTargetencoderEstimator", "H2OWord2vecEstimator", "H2OWord2vecEstimator", "H2OXGBoostEstimator",
+    "H2OXGBoostEstimator"
 )

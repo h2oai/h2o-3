@@ -77,4 +77,6 @@ public @interface API {
    * Identify grid-able parameter.
    */
   boolean gridable() default false;
+  
+  String mapsTo() default "";
 }

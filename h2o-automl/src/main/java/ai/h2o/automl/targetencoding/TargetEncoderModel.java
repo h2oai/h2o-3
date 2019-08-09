@@ -4,16 +4,17 @@ import hex.Model;
 import hex.ModelCategory;
 import hex.ModelMetrics;
 import hex.ModelMojoWriter;
-import water.Futures;
-import water.H2O;
-import water.Key;
+import water.*;
 import water.fvec.Frame;
+import water.udf.CFuncRef;
 import water.util.ArrayUtils;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderModel.TargetEncoderParameters, TargetEncoderModel.TargetEncoderOutput> {
+
+  protected static final String ALGO_NAME = "TargetEncoder";
 
   private final transient TargetEncoder _targetEncoder;
 
@@ -31,7 +32,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     
     @Override
     public String algoName() {
-      return "TargetEncoder";
+      return ALGO_NAME;
     }
 
     @Override
@@ -53,6 +54,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     public BlendingParams _blendingParams = new BlendingParams(10, 20);
     public String[] _columnNamesToEncode;
     public String _teFoldColumnName;
+    public String _leakageHandlingStrategy;
   }
 
   public static class TargetEncoderOutput extends Model.Output {
@@ -109,21 +111,46 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
    * Transform with noise 
    */
   public Frame transform(Frame data, byte strategy, double noiseLevel, long seed){
-    return _targetEncoder.applyTargetEncoding(data, _parms._response_column, this._output._target_encoding_map, strategy,
-            _parms._teFoldColumnName, _parms._withBlending, noiseLevel, true, seed);
+    final TargetEncoder.DataLeakageHandlingStrategy leakageHandlingStrategy = TargetEncoder.DataLeakageHandlingStrategy.fromVal(strategy);
+    return _targetEncoder.applyTargetEncoding(data, _parms._response_column, this._output._target_encoding_map, leakageHandlingStrategy,
+            _parms._teFoldColumnName, _parms._withBlending, noiseLevel, seed);
   }
 
   /**
    * Transform with default noise of 0.01 
    */
   public Frame transform(Frame data, byte strategy, long seed){
-    return _targetEncoder.applyTargetEncoding(data, _parms._response_column, this._output._target_encoding_map, strategy,
-            _parms._teFoldColumnName, _parms._withBlending, true, seed);
+
+    final TargetEncoder.DataLeakageHandlingStrategy leakageHandlingStrategy = TargetEncoder.DataLeakageHandlingStrategy.fromVal(strategy);
+    return _targetEncoder.applyTargetEncoding(data, _parms._response_column, this._output._target_encoding_map, leakageHandlingStrategy,
+            _parms._teFoldColumnName, _parms._withBlending, seed);
   }
   
   @Override
+  public Frame score(Frame fr) throws IllegalArgumentException {
+    return super.score(fr);
+  }
+
+  @Override
   protected double[] score0(double data[], double preds[]){
     throw new UnsupportedOperationException("TargetEncoderModel doesn't support scoring. Use `transform()` instead.");
+  }
+
+  @Override
+  protected Frame transform(final Frame input) {
+    throw new UnsupportedOperationException("TargetEncoderModel doesn't support scoring. Use `transform()` instead.");
+  }
+
+  @Override
+  public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
+    final TargetEncoder.DataLeakageHandlingStrategy leakageHandlingStrategy = TargetEncoder.DataLeakageHandlingStrategy.valueOf(_parms._leakageHandlingStrategy);
+    final Frame transform = _targetEncoder.applyTargetEncoding(fr, _parms._response_column, this._output._target_encoding_map, leakageHandlingStrategy,
+            _parms._teFoldColumnName, _parms._withBlending, _parms._seed);
+
+    final Frame frame = new Frame(Key.<Frame>make(destination_key), transform.names(), transform.vecs());
+    DKV.put(frame);
+    DKV.remove(transform._key);
+    return frame;
   }
 
   @Override

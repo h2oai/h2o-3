@@ -20,7 +20,7 @@ from h2o.utils.typechecks import assert_is_type, is_type, numeric, FunctionType
 from ..model.autoencoder import H2OAutoEncoderModel
 from ..model.binomial import H2OBinomialModel
 from ..model.clustering import H2OClusteringModel
-from ..model.dim_reduction import H2ODimReductionModel
+from ..model.dim_reduction import H2ODimReductionModel, H2OTargetEncodermetrics
 from ..model.metrics_base import (H2OBinomialModelMetrics, H2OClusteringModelMetrics, H2ORegressionModelMetrics,
                                   H2OMultinomialModelMetrics, H2OAutoEncoderModelMetrics, H2ODimReductionModelMetrics,
                                   H2OWordEmbeddingModelMetrics, H2OOrdinalModelMetrics, H2OAnomalyDetectionModelMetrics,
@@ -463,6 +463,9 @@ class H2OEstimator(ModelBase):
         elif model_type == "CoxPH":
             metrics_class = H2OCoxPHModelMetrics
             model_class = H2OCoxPHModel
+        elif model_type == "TargetEncoder":
+            metrics_class = H2OTargetEncodermetrics
+            model_class = h2o.estimators.H2OTargetencoderEstimator
         else:
             raise NotImplementedError(model_type)
         return [metrics_class, model_class]
