@@ -1,5 +1,5 @@
 ARG FROM_VERSION
-FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.6:${FROM_VERSION}
+FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.6${GPU_SUFFIX}:${FROM_VERSION}
 
 # Install Java 7 (and make it default) next to the Java contained in the Python 3.6 image
 ENV JAVA_VERSION='1.7.0'
