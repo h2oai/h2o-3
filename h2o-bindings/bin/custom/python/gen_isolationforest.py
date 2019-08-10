@@ -1,7 +1,9 @@
-def update_param(name, param, values):
+def update_param(name, param):
     if name == 'stopping_metric':
-        values = ['AUTO', 'anomaly_score']
-    return param, values
+        param['values'] = ['AUTO', 'anomaly_score']
+        return param
+    return None  # param untouched
+
 
 
 doc = dict(

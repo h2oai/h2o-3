@@ -1,3 +1,10 @@
+def update_param(name, param):
+    if name == 'distribution':
+        param['values'].remove('ordinal')
+        return param
+    return None  # param untouched
+
+
 doc = dict(
     __class__="""
 Builds gradient boosted trees on a parsed data set, for regression or classification.

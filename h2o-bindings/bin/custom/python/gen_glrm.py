@@ -3,9 +3,3 @@ doc = dict(
 Builds a generalized low rank model of a H2O dataset.
 """
 )
-
-extensions = dict(
-    __init__="""
-self._parms["_rest_version"] = 3
-"""
-)

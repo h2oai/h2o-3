@@ -1,8 +1,12 @@
-def update_param(name, param, values):
+rest_api_version = 99
+
+
+def update_param(name, param):
     if name == 'metalearner_params':
         param['type'] = 'KeyValue'
         param['default_value'] = None
-    return param, values
+        return param
+    return None  # param untouched
 
 
 extensions = dict(
@@ -11,9 +15,6 @@ from h2o.utils.shared_utils import quoted
 from h2o.utils.typechecks import is_type
 import json
 import ast
-""",
-    __init__="""
-self._parms["_rest_version"] = 99
 """,
     __class__="""
 def metalearner(self):

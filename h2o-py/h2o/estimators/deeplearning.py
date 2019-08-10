@@ -66,7 +66,6 @@ class H2ODeepLearningEstimator(H2OEstimator):
                 setattr(self, pname, pvalue)
             else:
                 raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
-        if isinstance(self, H2OAutoEncoderEstimator): self._parms['autoencoder'] = True
 
     @property
     def training_frame(self):
@@ -1421,4 +1420,6 @@ class H2OAutoEncoderEstimator(H2ODeepLearningEstimator):
     >>> model = H2OAutoEncoderEstimator()
     >>> model.train(x=range(4), training_frame=fr)
     """
-    pass
+    def init(self, **kwargs):
+        super(H2OAutoEncoderEstimator, self).__init__(**kwargs)
+        self._parms['autoencoder'] = True

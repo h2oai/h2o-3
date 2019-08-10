@@ -2,23 +2,24 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details) 
 #'
 # -------------------------- H2O Stacked Ensemble -------------------------- #
-#' 
+#'
 #' Builds a Stacked Ensemble
 #' 
 #' Build a stacked ensemble (aka. Super Learner) using the H2O base
 #' learning algorithms specified by the user.
-#' 
+#'
 #' @param x (Optional). A vector containing the names or indices of the predictor variables to use in building the model.
-#'           If x is missing, then all columns except y are used.  Training frame is used only to compute ensemble training metrics. 
-#' @param y The name or column index of the response variable in the data. The response must be either a numeric or a
-#'        categorical/factor variable. If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
-#' @param model_id Destination id for this model; auto-generated if not specified.
+#'        If x is missing, then all columns except y are used.  Training frame is used only to compute ensemble training metrics.
+#' @param y The name or column index of the response variable in the data. 
+#'        The response must be either a numeric or a categorical/factor variable. 
+#'        If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
 #' @param training_frame Id of the training data frame.
+#' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param validation_frame Id of the validation data frame.
 #' @param blending_frame Frame used to compute the predictions that serve as the training frame for the metalearner (triggers blending
 #'        mode if provided)
 #' @param base_models List of models (or model ids) to ensemble/stack together. If not using blending frame, then models must have
-#'        been cross-validated using nfolds > 1, and folds must be identical across models. Defaults to [].
+#'        been cross-validated using nfolds > 1, and folds must be identical across models.
 #' @param metalearner_algorithm Type of algorithm to use as the metalearner. Options include 'AUTO' (GLM with non negative weights; if
 #'        validation_frame is present, a lambda search is performed), 'glm' (GLM with default parameters), 'gbm' (GBM
 #'        with default parameters), 'drf' (Random Forest with default parameters), or 'deeplearning' (Deep Learning with
@@ -29,18 +30,19 @@
 #'        currently set to Random). The 'Stratified' option will stratify the folds based on the response variable, for
 #'        classification problems. Must be one of: "AUTO", "Random", "Modulo", "Stratified".
 #' @param metalearner_fold_column Column with cross-validation fold index assignment per observation for cross-validation of the metalearner.
-#' @param metalearner_params Parameters for metalearner algorithm Defaults to NULL.
-#' @param seed Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number)
-#'        Defaults to -1 (time-based random number).
+#' @param metalearner_params Parameters for metalearner algorithm
+#' @param seed Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number).
 #' @param keep_levelone_frame \code{Logical}. Keep level one frame used for metalearner training. Defaults to FALSE.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @examples
-#' 
+#' \dontrun{
 #' # See example R code here:
 #' # http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/stacked-ensembles.html
-#' 
+#' }
 #' @export
-h2o.stackedEnsemble <- function(x, y, training_frame,
+h2o.stackedEnsemble <- function(x,
+                                y,
+                                training_frame,
                                 model_id = NULL,
                                 validation_frame = NULL,
                                 blending_frame = NULL,
@@ -52,13 +54,13 @@ h2o.stackedEnsemble <- function(x, y, training_frame,
                                 metalearner_params = NULL,
                                 seed = -1,
                                 keep_levelone_frame = FALSE,
-                                export_checkpoints_dir = NULL
-                                ) 
+                                export_checkpoints_dir = NULL)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
-  validation_frame <- .validate.H2OFrame(validation_frame)
-  blending_frame <- .validate.H2OFrame(blending_frame)
+  validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
+  blending_frame <- .validate.H2OFrame(blending_frame, required=FALSE)
+
   # Validate other required args
   # If x is missing, then assume user wants to use all columns as features.
   if (missing(x)) {
@@ -69,33 +71,33 @@ h2o.stackedEnsemble <- function(x, y, training_frame,
      }
   }
 
-  # Handle other args
-  # Parameter list to send to model builder
-  parms <- list()
-  parms$training_frame <- training_frame
-  args <- .verify_dataxy(training_frame, x, y)
-  parms$response_column <- args$y
+  # Validate other args
+  # Get the base models from model IDs (if any) that will be used for constructing model summary
+  if(!is.list(base_models) && is.vector(x)) {
+     base_models <- as.list(base_models)
+  }
+  baselearners <- lapply(base_models, function(base_model) {
+    if (is.character(base_model))
+      base_model <- h2o.getModel(base_model)
+    base_model
+  })
 
- # Get the base models from model IDs (if any) that will be used for constructing model summary
- if(!is.list(base_models) && is.vector(x)) {
-    base_models <- as.list(base_models)
- }
- baselearners <- lapply(base_models, function(base_model) {
-   if (is.character(base_model))
-     base_model <- h2o.getModel(base_model)
-   base_model
- })
- # Get base model IDs that will be passed to REST API later
- if (length(base_models) == 0) stop('base_models is empty')
+  # Get base model IDs that will be passed to REST API later
+  if (length(base_models) == 0) stop('base_models is empty')
+
   # If base_models contains models instead of ids, replace with model id
   for (i in 1:length(base_models)) {
     if (inherits(base_models[[i]], 'H2OModel')) {
       base_models[[i]] <- base_models[[i]]@model_id
     }
   }
- 
-  if (!missing(metalearner_params))
-      parms$metalearner_params <- as.character(toJSON(metalearner_params, pretty = TRUE))
+
+  # Build parameter list to send to model builder
+  parms <- list()
+  parms$training_frame <- training_frame
+  args <- .verify_dataxy(training_frame, x, y)
+  parms$response_column <- args$y
+
   if (!missing(model_id))
     parms$model_id <- model_id
   if (!missing(validation_frame))
@@ -118,27 +120,27 @@ h2o.stackedEnsemble <- function(x, y, training_frame,
     parms$keep_levelone_frame <- keep_levelone_frame
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+
+  if (!missing(metalearner_params))
+      parms$metalearner_params <- as.character(toJSON(metalearner_params, pretty = TRUE))
+
   # Error check and build model
-  model <- .h2o.modelJob('stackedensemble', parms, h2oRestApiVersion = 99)
+  model <- .h2o.modelJob('stackedensemble', parms, h2oRestApiVersion=99, verbose=FALSE)
+
   # Convert metalearner_params back to list if not NULL
   if (!missing(metalearner_params)) {
       model@parameters$metalearner_params <- list(fromJSON(model@parameters$metalearner_params))[[1]] #Need the `[[ ]]` to avoid a nested list
   }
-
   model@model$model_summary <- capture.output({
 
-    print_ln <- function(...) cat(..., sep = "
-")
+    print_ln <- function(...) cat(..., sep = "\n")
 
     print_ln(paste0("Number of Base Models: ", length(baselearners)))
-    print_ln("
-Base Models (count by algorithm type):")
+    print_ln("\nBase Models (count by algorithm type):")
     print(table(unlist(lapply(baselearners, function(baselearner) baselearner@algorithm))))
 
 
-    print_ln("
-Metalearner:
-")
+    print_ln("\nMetalearner:\n")
     print_ln(paste0(
       "Metalearner algorithm: ",
       ifelse(length(metalearner_algorithm) > 1, "glm", metalearner_algorithm)))
@@ -159,6 +161,5 @@ Metalearner:
 
   })
   class(model@model$model_summary) <- "h2o.stackedEnsemble.summary"
-        
   return(model)
 }

@@ -40,7 +40,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
                 setattr(self, pname, pvalue)
             else:
                 raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
-        self._parms["_rest_version"] = 3
 
     @property
     def training_frame(self):
