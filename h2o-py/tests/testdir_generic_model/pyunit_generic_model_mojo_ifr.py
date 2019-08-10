@@ -23,11 +23,14 @@ def mojo_model_ifr_test():
     with Capturing() as generic_output:
         model.show()
 
+    original_output_as_str = str(original_output)
+    generic_output_without_model_parameters_as_str = str(generic_output).split(', \'Model parameters', 1)[0]+']'
+
     strip_part = "'Model Summary: '"
     algo_name = 'ModelMetricsAnomaly: isolationforest'
     generic_algo_name = 'ModelMetricsAnomaly: generic'
 
-    compare_output(str(original_output), str(generic_output), strip_part, algo_name, generic_algo_name)
+    compare_output(original_output_as_str, generic_output_without_model_parameters_as_str, strip_part, algo_name, generic_algo_name)
     predictions = model.predict(airlines)
     assert predictions is not None
     assert predictions.nrows == 24421

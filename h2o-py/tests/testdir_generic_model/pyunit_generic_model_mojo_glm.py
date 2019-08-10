@@ -23,7 +23,10 @@ def test(x, y, output_test, strip_part, algo_name, generic_algo_name, family):
     with Capturing() as generic_output:
         generic_mojo_model_from_file.show()
 
-    output_test(str(original_output), str(generic_output), strip_part, algo_name, generic_algo_name)
+    original_output_as_str = str(original_output)
+    generic_output_without_model_parameters_as_str = str(generic_output).split(', \'Model parameters', 1)[0]+']'
+    
+    output_test(original_output_as_str, generic_output_without_model_parameters_as_str, strip_part, algo_name, generic_algo_name)
     predictions = generic_mojo_model_from_file.predict(airlines)
     assert predictions is not None
     assert predictions.nrows == 24421

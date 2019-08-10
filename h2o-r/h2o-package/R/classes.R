@@ -179,6 +179,12 @@ setMethod("show", "H2OModel", function(object) {
   if( !is.null(model.parts$xm) ) print(model.parts$xm)
   cat("\n")
   if( !is.null(model.parts$xms) ) print(model.parts$xms)
+    
+  # model's parameters
+  has_model_params <- !is.null(m$model_parameters)
+  if( has_model_params ) {
+      print(m$model_parameters)
+  }
 })
 
 #'

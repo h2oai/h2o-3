@@ -90,7 +90,7 @@ class H2OTwoDimTable(object):
         return self
 
 
-    def show(self, header=True):
+    def show(self, header=True, nrows=20):
         """Print the contents of this table."""
         # if h2o.can_use_pandas():
         #  import pandas
@@ -105,7 +105,7 @@ class H2OTwoDimTable(object):
         nr = 0
         if _is_list_of_lists(table): nr = len(
             table)  # only set if we truly have multiple rows... not just one long row :)
-        if nr > 20:  # create a truncated view of the table, first/last 5 rows
+        if nr > nrows:  # create a truncated view of the table, first/last 5 rows
             trunc_table = []
             trunc_table += [v for v in table[:5]]
             trunc_table.append(["---"] * len(table[0]))
@@ -113,7 +113,7 @@ class H2OTwoDimTable(object):
             table = trunc_table
 
         H2ODisplay(table, self._col_header, numalign="left", stralign="left")
-        if nr > 20 and can_use_pandas(): print('\nSee the whole table with table.as_data_frame()')
+        if nr > nrows and can_use_pandas(): print('\nSee the whole table with table.as_data_frame()')
 
 
     def __repr__(self):

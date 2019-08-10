@@ -126,4 +126,12 @@ public class ModelAttributes implements Serializable {
   public Table getCrossValidationMetricsSummary() {
     return _cross_validation_metrics_summary;
   }
+
+  /**
+   * 
+   * @return An array of {@link ModelParameter} instances if available in Json object, otherwise null.
+   */
+  public ModelParameter[] getModelParameters() {
+    return _modelParameters;
+  }
 }

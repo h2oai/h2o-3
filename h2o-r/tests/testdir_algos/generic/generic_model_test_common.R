@@ -27,9 +27,20 @@ compare_output <- function(original_output, generic_output, skipped_original, sk
   if(length(removed_generic) > 0){
     generic_output <- generic_output[-removed_generic]
   }
+  print("Printout for original output")  
   print(original_output)
+  print("Printout for generic output")
   print(generic_output)
+    
+  print("Original output's length")
   print(length(original_output))
+  print("Generic output's length")
   print(length(generic_output))
+    
   expect_equal(TRUE, all.equal(original_output, generic_output))
+}
+
+drop_model_parameters_from_printout <- function(printout_of_the_model){
+  index_of_mp <- which(printout_of_the_model == "Model parameters: ")[1]
+  generic_output <- head(printout_of_the_model,n=index_of_mp - 1)
 }

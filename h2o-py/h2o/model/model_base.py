@@ -447,6 +447,9 @@ class ModelBase(backwards_compatible(Keyed)):
             model["scoring_history"].show()
         if "variable_importances" in model and model["variable_importances"]:
             model["variable_importances"].show()
+        if "model_parameters" in model and model["model_parameters"]:
+            mps = model["model_parameters"]
+            mps.show(nrows=len(mps._cell_values))
 
 
     def varimp(self, use_pandas=False):

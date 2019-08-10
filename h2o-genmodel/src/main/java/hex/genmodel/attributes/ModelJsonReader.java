@@ -210,18 +210,24 @@ public class ModelJsonReader {
                                     value = jsonElement.getAsLong();
                                 } else if (typeOfObject.equals("enum")) {
                                     value = jsonElement.getAsString();
-                                } else if (typeOfObject.startsWith("Key")) {
+                                } else if (typeOfObject.equals("Key<Model>") || typeOfObject.equals("Key<Frame>")) {
                                     value = readKey(jsonElement);
+                                } else if (typeOfObject.equals("KeyValue[]")) {
+                                    value = readKeyValueArray(jsonElement);
                                 } else if (typeOfObject.equals("VecSpecifier")) {
                                     value = readVecSpecifier(jsonElement);
                                 } else if (typeOfObject.equals("string[]")) {
                                     value = readStringArray(jsonElement);
+                                } else if (typeOfObject.equals("double[]")) {
+                                    value = readDoubleArray(jsonElement);
+                                } else if (typeOfObject.equals("float[]")) {
+                                    value = readFloatArray(jsonElement);
                                 } else {
-                                    throw new IllegalStateException("Unhandled type encountered during parsing of the Json");
+                                    throw new IllegalStateException("Unknown type " + jsonSourceObj.get("type") + " encountered during parsing of the Json");
                                 } 
                             }
                         } catch (Exception ex) {
-                            System.out.println(String.format("Field '%s' could not be set as type " + jsonSourceObj.get("type") + ". Ignoring.", fieldName)); 
+                            System.out.println(String.format("Field '%s' could not be set. Reason: %s. Ignoring.", fieldName, ex.getMessage())); 
                         }
                     }
                 } else if (type.isAssignableFrom(double.class) || type.isAssignableFrom(Double.class)) {
@@ -236,6 +242,8 @@ public class ModelJsonReader {
                     if (notNullCondition) value = jsonElement.getAsBoolean();
                 } else if (type.isAssignableFrom(Table.class)) {
                     if (notNullCondition) value = readTable(jsonElement.getAsJsonObject(),  serializedName != null ? serializedName.insideElementPath() : ""); // Would break if we don't use serializedName
+                } else if (type.isAssignableFrom(String[].class)) {
+                    if (notNullCondition) value = readStringArray(jsonElement);
                 }
                 if (value != null) field.set(object, value);
             } catch (IllegalAccessException e) {
@@ -276,6 +284,53 @@ public class ModelJsonReader {
                 index++;
             }
             return isMemberOfFrames;
+        }
+    }
+    
+    private static double[] readDoubleArray(JsonElement jsonElement) {
+        if(jsonElement == null || jsonElement.isJsonNull()) {
+            return null;
+        } else {
+            JsonArray jsonArray = jsonElement.getAsJsonArray();
+            double[] doubleArray = new double[jsonArray.size()];
+            int index = 0;
+            for (JsonElement elem : jsonArray) {
+                doubleArray[index] = elem.getAsDouble();
+                index++;
+            }
+            return doubleArray;
+        }
+    }
+    
+    private static float[] readFloatArray(JsonElement jsonElement) {
+        if(jsonElement == null || jsonElement.isJsonNull()) {
+            return null;
+        } else {
+            JsonArray jsonArray = jsonElement.getAsJsonArray();
+            float[] floatArray = new float[jsonArray.size()];
+            int index = 0;
+            for (JsonElement elem : jsonArray) {
+                floatArray[index] = elem.getAsFloat();
+                index++;
+            }
+            return floatArray;
+        }
+    }
+    
+    private static KeyValue[] readKeyValueArray(JsonElement jsonElement) {
+        if(jsonElement == null || jsonElement.isJsonNull()) {
+            return null;
+        } else {
+            JsonArray keyValuesJsonArray = jsonElement.getAsJsonArray();
+            KeyValue[] keyValues = new KeyValue[keyValuesJsonArray.size()];
+            int index = 0;
+            for (JsonElement elem : keyValuesJsonArray) {
+                KeyValue kv = new KeyValue();
+                fillObject(kv, elem, "");
+                keyValues[index] = kv;
+                index++;
+            }
+            return keyValues;
         }
     }
 

@@ -1,4 +1,5 @@
-source("generic_model_test_common.R")
+# source("generic_model_test_common.R")
+source("./h2o-r/tests/testdir_algos/generic/generic_model_test_common.R")
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 
@@ -14,7 +15,10 @@ test.model.generic.gbm <- function() {
     print(generic_model)
     
     original_output <- capture.output(print(original_model))
+    
     generic_output <- capture.output(print(generic_model))
+    generic_output <- drop_model_parameters_from_printout(generic_output)
+    
     compare_output(original_output, generic_output,
                    c("Extract .+ frame","H2OBinomialModel: gbm", "Model ID", "H2OBinomialMetrics: gbm"),
                    c("H2OBinomialModel: generic", "Model ID", "H2OBinomialMetrics: generic"))
@@ -36,7 +40,10 @@ test.model.generic.gbm <- function() {
     print(generic_model)
     
     original_output <- capture.output(print(original_model))
+    
     generic_output <- capture.output(print(generic_model))
+    generic_output <- drop_model_parameters_from_printout(generic_output)
+    
     compare_output(original_output, generic_output,
                    c("Extract .+ frame","H2ORegressionModel: gbm", "Model ID", "H2ORegressionMetrics: gbm"),
                    c("H2ORegressionMetrics: generic", "Model ID", "H2ORegressionModel: generic"))
@@ -52,7 +59,10 @@ test.model.generic.gbm <- function() {
     print(generic_model)
     
     original_output <- capture.output(print(original_model))
+    
     generic_output <- capture.output(print(generic_model))
+    generic_output <- drop_model_parameters_from_printout(generic_output)
+    
     compare_output(original_output, generic_output,
                    c("Extract .+ frame", "H2OMultinomialModel: gbm", "Model ID", "H2OMultinomialMetrics: gbm"),
                    c("H2OMultinomialModel: generic", "Model ID", "H2OMultinomialMetrics: generic"))

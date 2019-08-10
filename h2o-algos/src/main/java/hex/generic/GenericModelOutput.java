@@ -2,6 +2,7 @@ package hex.generic;
 
 import hex.*;
 import hex.genmodel.attributes.*;
+import hex.genmodel.attributes.KeyValue;
 import hex.genmodel.attributes.metrics.*;
 import hex.genmodel.descriptor.ModelDescriptor;
 import hex.tree.isofor.ModelMetricsAnomaly;
@@ -9,6 +10,7 @@ import water.util.Log;
 import water.util.TwoDimTable;
 
 import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -17,6 +19,7 @@ public class GenericModelOutput extends Model.Output {
     final ModelCategory _modelCategory;
     final int _nfeatures;
     TwoDimTable _variable_importances;
+    TwoDimTable _model_parameters;
 
 
     public GenericModelOutput(final ModelDescriptor modelDescriptor, final ModelAttributes modelAttributes) {
@@ -39,6 +42,10 @@ public class GenericModelOutput extends Model.Output {
         } else {
             _variable_importances = null;
         }
+        if(modelAttributes != null) {
+            _model_parameters = convertModelParameters(modelAttributes.getModelParameters());
+        }
+        
         convertMetrics(modelAttributes, modelDescriptor);
         _scoring_history = convertTable(modelAttributes.getScoringHistory());
 
@@ -234,6 +241,58 @@ public class GenericModelOutput extends Model.Output {
         return target;
     }
 
+    private static TwoDimTable convertModelParameters(final ModelParameter[] modelParameters) {
+        if(modelParameters == null) return null;
+        
+        String[] parameterNames = new String[modelParameters.length];
+        String[][] actualValStr = new String[modelParameters.length][1];
+        double[][] actualValDouble = new double[modelParameters.length][1];
+        for(int i = 0; i < modelParameters.length; i++) {
+            parameterNames[i] = modelParameters[i]._name;
+            Object actualValue = modelParameters[i].actual_value;
+            String strReprForActualValue;
+            if(actualValue instanceof String[]) {
+                strReprForActualValue = Arrays.toString((String[])actualValue);
+            } else if(actualValue instanceof Double[]) {
+                strReprForActualValue = Arrays.toString((Double[])actualValue);
+            } else if(actualValue instanceof Float[]) {
+                strReprForActualValue = Arrays.toString((Float[])actualValue);
+            } else if(actualValue instanceof VecSpecifier) {
+                strReprForActualValue = ((VecSpecifier) actualValue)._column_name;
+            } else if(actualValue instanceof Key) {
+                strReprForActualValue = ((Key) actualValue)._name;
+            } else if(actualValue instanceof KeyValue[]) {
+                KeyValue[] keyValues = (KeyValue[]) actualValue;
+                StringBuilder sb = new StringBuilder();
+                for(int kvidx = 0; kvidx < keyValues.length; i++) {
+                    sb.append(keyValues[kvidx]._key).append(":").append(keyValues[kvidx]._value); 
+                    kvidx++;
+                }
+                strReprForActualValue = sb.toString();
+            } else if(actualValue == null) {
+                strReprForActualValue = "null";
+            } else {
+                strReprForActualValue = actualValue.toString();
+            }
+            actualValStr[i][0] = strReprForActualValue;
+            actualValDouble[i] = null;
+        }
+
+        final TwoDimTable table = new TwoDimTable(
+                "Model parameters",
+                null,
+                parameterNames,
+                new String[]{ "actual_value"},
+                new String[]{ "string"},
+                new String[]{"%s"},
+                "Parameter",
+                actualValStr,  
+                actualValDouble
+                
+        );
+        return table;
+    }
+    
     private static TwoDimTable convertVariableImportances(final VariableImportances variableImportances) {
         if(variableImportances == null) return null;
 

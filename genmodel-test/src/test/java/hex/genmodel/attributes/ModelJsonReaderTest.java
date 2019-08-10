@@ -1,6 +1,7 @@
 package hex.genmodel.attributes;
 
 import com.google.gson.JsonObject;
+import hex.KeyValue;
 import hex.Model;
 import hex.ScoreKeeper;
 import hex.generic.Generic;
@@ -16,6 +17,7 @@ import org.junit.Test;
 import water.*;
 import water.Key;
 import water.fvec.Frame;
+import water.util.ArrayUtils;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -31,7 +33,7 @@ public class ModelJsonReaderTest extends TestUtil {
   }
 
   @Test
-  public void readGFMModelParameters() throws IOException{
+  public void readGFMModelParametersForClassificationCase() throws IOException{
     Scope.enter();
     GBMModel gbm = null;
     try {
@@ -39,6 +41,7 @@ public class ModelJsonReaderTest extends TestUtil {
       Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
       Scope.track(fr);
       asFactor(fr, responseColumn);
+      printOutColumnsMetadata(fr);
       
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
       parms._train = fr._key;
@@ -46,6 +49,7 @@ public class ModelJsonReaderTest extends TestUtil {
       parms._score_tree_interval = 10;
       parms._ntrees = 1000;
       parms._max_depth = 5;
+      parms._nfolds = 3;
       parms._build_tree_one_node = true;
       parms._distribution = DistributionFamily.multinomial;
       parms._stopping_tolerance = 0.001;
@@ -53,6 +57,10 @@ public class ModelJsonReaderTest extends TestUtil {
       parms._stopping_rounds = 5;
       String[] ignoredColumns = {"embarked"};
       parms._ignored_columns = ignoredColumns;
+      parms._sample_rate_per_class = new double[]{0.5, 0.5};
+      parms._class_sampling_factors = new float[]{0.5f, 0.5f};
+      parms._calibration_frame = fr._key;
+      parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
 
       GBM modelBuilder = new GBM(parms);
       gbm = modelBuilder.trainModel().get();
@@ -71,7 +79,22 @@ public class ModelJsonReaderTest extends TestUtil {
       assertEquals(parms._distribution.toString(), findParameterByName("distribution", modelParameters).actual_value);
       assertEquals(parms._response_column, ((VecSpecifier) findParameterByName("response_column", modelParameters).actual_value)._column_name);
       assertEquals(parms._build_tree_one_node, findParameterByName("build_tree_one_node", modelParameters).actual_value);
-      assertArrayEquals(ignoredColumns, (String[]) findParameterByName("ignored_columns", modelParameters).actual_value);
+      
+      ModelParameter catEncodingParameter = findParameterByName("categorical_encoding", modelParameters);
+      String[] expectedCatEncodingValues = ArrayUtils.toString(Model.Parameters.CategoricalEncodingScheme.values());
+      Arrays.sort(expectedCatEncodingValues);
+      Arrays.sort(catEncodingParameter.values);
+      assertArrayEquals(expectedCatEncodingValues, catEncodingParameter.values);
+
+      ModelParameter ignoredColumnsParameter = findParameterByName("ignored_columns", modelParameters);
+      assertArrayEquals(ignoredColumns, (String[]) ignoredColumnsParameter.actual_value);
+      assertArrayEquals(new String[]{"training_frame", "validation_frame"}, ignoredColumnsParameter.is_member_of_frames);
+      assertArrayEquals(new String[]{"response_column", "weights_column", "offset_column", "fold_column"}, ignoredColumnsParameter.is_mutually_exclusive_with);
+      
+      assertArrayEquals(parms._sample_rate_per_class, (double[]) findParameterByName("sample_rate_per_class", modelParameters).actual_value, 1e-5);
+      assertEquals(parms._calibration_frame.toString(), ((hex.genmodel.attributes.Key) findParameterByName("calibration_frame", modelParameters).actual_value)._name);
+      assertEquals(parms._fold_assignment.toString(), findParameterByName("fold_assignment", modelParameters).actual_value);
+
 
     } finally {
       if (gbm != null) gbm.delete();
@@ -80,16 +103,43 @@ public class ModelJsonReaderTest extends TestUtil {
 
   }
 
-  private ModelParameter[] getMojosModelParameters(Model gbm, File mojoFile) throws IOException {
+  @Test
+  public void readGFMModelParametersForRegressionCase() throws IOException{
+    Scope.enter();
+    GBMModel gbm = null;
+    try {
+      String responseColumn = "survived";
+      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      Scope.track(fr);
 
-    String path = mojoFile.getPath();
-    gbm.getMojo().writeTo(new FileOutputStream(path));
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = fr._key;
+      parms._response_column = responseColumn;
+      parms._distribution = DistributionFamily.gaussian;
+      parms._stopping_metric = ScoreKeeper.StoppingMetric.RMSE;
+      parms._monotone_constraints = new KeyValue[] {new KeyValue("age", -1)};
 
-    final MojoReaderBackend readerBackend = MojoReaderBackendFactory.createReaderBackend(new FileInputStream(mojoFile), MojoReaderBackendFactory.CachingStrategy.MEMORY);
+      GBM modelBuilder = new GBM(parms);
+      gbm = modelBuilder.trainModel().get();
 
-    final JsonObject modelJson = ModelJsonReader.parseModelJson(readerBackend);
+      File gbmMojoFile =  File.createTempFile("mojo", "zip");
 
-    return ModelJsonReader.readModelParameters(modelJson, "parameters");
+      ModelParameter[] modelParameters = getMojosModelParameters(gbm, gbmMojoFile);
+
+      // Actual values
+      hex.genmodel.attributes.KeyValue[] monotoneConstraintsFromMojo = (hex.genmodel.attributes.KeyValue[]) findParameterByName("monotone_constraints", modelParameters).actual_value;
+      int idx = 0;
+      for(hex.genmodel.attributes.KeyValue kv : monotoneConstraintsFromMojo) {
+        assertEquals(parms._monotone_constraints[idx].getKey(), kv._key);
+        assertEquals(parms._monotone_constraints[idx].getValue(), kv._value, 1e-5);
+        idx++;
+      }
+
+    } finally {
+      if (gbm != null) gbm.delete();
+      Scope.exit();
+    }
+
   }
 
   @Test
@@ -148,7 +198,20 @@ public class ModelJsonReaderTest extends TestUtil {
       Scope.exit();
     }
   }
-  
+
+  private ModelParameter[] getMojosModelParameters(Model gbm, File mojoFile) throws IOException {
+
+    String path = mojoFile.getPath();
+    gbm.getMojo().writeTo(new FileOutputStream(path));
+
+    final MojoReaderBackend readerBackend = MojoReaderBackendFactory.createReaderBackend(new FileInputStream(mojoFile), MojoReaderBackendFactory.CachingStrategy.MEMORY);
+
+    final JsonObject modelJson = ModelJsonReader.parseModelJson(readerBackend);
+
+    return ModelJsonReader.readModelParameters(modelJson, "parameters");
+  }
+
+
   private ModelParameter findParameterByName(String name, ModelParameter[] modelParameters) {
     ModelParameter matchingParam = null;
     for( ModelParameter parameter: modelParameters) {
