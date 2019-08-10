@@ -1,3 +1,10 @@
+def update_param(name, param):
+    if name == 'distribution':
+        param['values'].remove('custom')
+        return param
+    return None  # param untouched
+
+
 extensions = dict(
     __imports__="""import h2o""",
     __class__="""

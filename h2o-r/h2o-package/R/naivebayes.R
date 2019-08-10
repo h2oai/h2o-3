@@ -2,7 +2,7 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details) 
 #'
 # -------------------------- Naive Bayes Model in H2O -------------------------- #
-#' 
+#'
 #' Compute naive Bayes probabilities on an H2O dataset.
 #' 
 #' The naive Bayes classifier assumes independence between predictor variables conditional
@@ -11,14 +11,16 @@
 #' every row in the training dataset that contains at least one NA will be skipped completely.
 #' If the test dataset has missing values, then those predictors are omitted in the probability
 #' calculation during prediction.
-#' 
+#'
 #' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing, then all columns except y are used.
-#' @param y The name or column index of the response variable in the data. The response must be either a numeric or a
-#'        categorical/factor variable. If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
+#' @param y The name or column index of the response variable in the data. 
+#'        The response must be either a numeric or a categorical/factor variable. 
+#'        If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
+#' @param training_frame Id of the training data frame.
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
-#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
+#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will
 #'        stratify the folds based on the response variable, for classification problems. Must be one of: "AUTO",
@@ -27,7 +29,6 @@
 #' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to TRUE.
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to FALSE.
 #' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to FALSE.
-#' @param training_frame Id of the training data frame.
 #' @param validation_frame Id of the validation data frame.
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
@@ -40,23 +41,15 @@
 #' @param max_hit_ratio_k Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
 #'        Defaults to 0.
 #' @param laplace Laplace smoothing parameter Defaults to 0.
-#' @param threshold This argument is deprecated, use `min_sdev` instead. The minimum standard deviation to use for observations without enough data. 
-#'                  Must be at least 1e-10.
-#' @param min_sdev The minimum standard deviation to use for observations without enough data. 
-#'                  Must be at least 1e-10.
-#' @param eps This argument is deprecated, use `eps_sdev` instead. A threshold cutoff to deal with numeric instability, must be positive.
+#' @param min_sdev The minimum standard deviation to use for observations without enough data.
+#'        Must be at least 1e-10.
 #' @param eps_sdev A threshold cutoff to deal with numeric instability, must be positive.
 #' @param min_prob Min. probability to use for observations with not enough data.
 #' @param eps_prob Cutoff below which probability is replaced with min_prob.
 #' @param compute_metrics \code{Logical}. Compute metrics on training data Defaults to TRUE.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
-#' @details The naive Bayes classifier assumes independence between predictor variables conditional         on the
-#'          response, and a Gaussian distribution of numeric predictors with mean and standard         deviation
-#'          computed from the training dataset. When building a naive Bayes classifier,         every row in the
-#'          training dataset that contains at least one NA will be skipped completely.         If the test dataset has
-#'          missing values, then those predictors are omitted in the probability         calculation during prediction.
-#' @return Returns an object of class \linkS4class{H2OBinomialModel} if the response has two categorical levels,
+#' @return an object of class \linkS4class{H2OBinomialModel} if the response has two categorical levels,
 #'         and \linkS4class{H2OMultinomialModel} otherwise.
 #' @examples
 #' \dontrun{
@@ -66,7 +59,9 @@
 #' h2o.naiveBayes(x = 2:17, y = 1, training_frame = votes, laplace = 3)
 #' }
 #' @export
-h2o.naiveBayes <- function(x, y, training_frame,
+h2o.naiveBayes <- function(x,
+                           y,
+                           training_frame,
                            model_id = NULL,
                            nfolds = 0,
                            seed = -1,
@@ -91,12 +86,13 @@ h2o.naiveBayes <- function(x, y, training_frame,
                            eps_prob = 0,
                            compute_metrics = TRUE,
                            max_runtime_secs = 0,
-                           export_checkpoints_dir = NULL
-                           ) 
+                           export_checkpoints_dir = NULL)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
-  validation_frame <- .validate.H2OFrame(validation_frame)
+  validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
+
+  # Validate other required args
   # If x is missing, then assume user wants to use all columns as features.
   if (missing(x)) {
      if (is.numeric(y)) {
@@ -105,14 +101,17 @@ h2o.naiveBayes <- function(x, y, training_frame,
          x <- setdiff(colnames(training_frame), y)
      }
   }
- .naivebayes.map <- c("x" = "ignored_columns", "y" = "response_column", 
-                      "threshold" = "min_sdev", "eps" = "eps_sdev")
 
-  # Handle other args
-  # Parameter list to send to model builder
+  # Validate other args
+  .naivebayes.map <- c("x" = "ignored_columns", "y" = "response_column", 
+                       "threshold" = "min_sdev", "eps" = "eps_sdev")
+
+  # Build parameter list to send to model builder
   parms <- list()
   parms$training_frame <- training_frame
   args <- .verify_dataxy(training_frame, x, y)
+  if( !missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
+  if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
   if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
@@ -149,26 +148,29 @@ h2o.naiveBayes <- function(x, y, training_frame,
     parms$max_hit_ratio_k <- max_hit_ratio_k
   if (!missing(laplace))
     parms$laplace <- laplace
- if (!missing(threshold))
-   warning("argument 'threshold' is deprecated; use 'min_sdev' instead.")
-   parms$min_sdev <- threshold
   if (!missing(min_sdev))
     parms$min_sdev <- min_sdev
- if (!missing(eps))
-   warning("argument 'eps' is deprecated; use 'eps_sdev' instead.")
-   parms$eps_sdev <- eps
   if (!missing(eps_sdev))
     parms$eps_sdev <- eps_sdev
- if (!missing(min_prob))
-   parms$min_prob <- min_prob
- if (!missing(eps_prob))
-   parms$eps_prob <- eps_prob
+  if (!missing(min_prob))
+    parms$min_prob <- min_prob
+  if (!missing(eps_prob))
+    parms$eps_prob <- eps_prob
   if (!missing(compute_metrics))
     parms$compute_metrics <- compute_metrics
   if (!missing(max_runtime_secs))
     parms$max_runtime_secs <- max_runtime_secs
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+
+  if (!missing(threshold))
+    warning("argument 'threshold' is deprecated; use 'min_sdev' instead.")
+    parms$min_sdev <- threshold
+  if (!missing(eps))
+    warning("argument 'eps' is deprecated; use 'eps_sdev' instead.")
+    parms$eps_sdev <- eps
+
   # Error check and build model
-  .h2o.modelJob('naivebayes', parms, h2oRestApiVersion = 3) 
+  model <- .h2o.modelJob('naivebayes', parms, h2oRestApiVersion=3, verbose=FALSE)
+  return(model)
 }

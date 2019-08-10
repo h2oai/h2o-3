@@ -1,10 +1,20 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 from __future__ import unicode_literals
+from copy import deepcopy
+from functools import partial
+import sys
+
 import bindings as bi
-import inspect, os, sys
+from custom import get_customizations_for, reformat_block
+
 PY3 = sys.version_info[0] == 3
 str_type = str if PY3 else (str, unicode)
+get_customizations_for = partial(get_customizations_for, 'python')
+
+
+def get_customizations_or_defaults_for(algo, prop, default=None):
+    return get_customizations_for(algo, prop, get_customizations_for('defaults', prop, default))
 
 
 # We specify these not as real types, but as parameter annotations in the docstrings
@@ -86,26 +96,6 @@ def stringify(v):
     return str(v)
 
 
-def reindent_block(string, new_indent):
-    if not string: return ""
-    add_indent = " " * new_indent
-    lines = string.split("\n")
-    if len(lines) == 1:
-        return lines[0].strip()
-    line0_indent = len(lines[0]) - len(lines[0].lstrip())
-    line1_indent = len(lines[1]) - len(lines[1].lstrip())
-    remove_indent = max(line0_indent, line1_indent)
-    out = ""
-    for line in lines:
-        dedented_line = line.lstrip()
-        if dedented_line:
-            extra_indent = " " * (len(line) - len(dedented_line) - remove_indent)
-            out += add_indent + extra_indent + dedented_line + "\n"
-        else:
-            out += "\n"
-    return out.strip()
-
-
 # This is the list of all reserved keywords in Python. It is a syntax error to use any of them as an object's property.
 # Currently we have only "lambda" in GLM as a violator, but keeping the whole list here just to be future-proof.
 # For all such violating properties, we name the accessor with an underscore at the end (eg. lambda_), but at the same
@@ -128,46 +118,55 @@ def gen_module(schema, algo):
     as the type translation is done in this file.
     """
     classname = algo_to_classname(algo)
+    rest_api_version = get_customizations_for(algo, 'rest_api_version')
     extra_imports = get_customizations_for(algo, 'extensions.__imports__')
     class_doc = get_customizations_for(algo, 'doc.__class__')
     class_examples = get_customizations_for(algo, 'examples.__class__')
     class_init_validation = get_customizations_for(algo, 'extensions.__init__validation')
     class_init_setparams = get_customizations_for(algo, 'extensions.__init__setparams')
-    class_init_extra = get_customizations_for(algo, 'extensions.__init__')
     class_extras = get_customizations_for(algo, 'extensions.__class__')
     module_extras = get_customizations_for(algo, 'extensions.__module__')
 
+    update_param_defaults = get_customizations_for('defaults', 'update_param')
+    update_param = get_customizations_for(algo, 'update_param')
+
+    def extend_schema_params(param):
+        pname = param.get('name')
+        param = deepcopy(param)
+        updates = None
+        for update_fn in [update_param, update_param_defaults]:
+            if callable(update_fn):
+                updates = update_fn(pname, param)
+            if updates is not None:
+                param = updates
+                break
+        # return param if isinstance(param, (list, tuple)) else [param]  # always return array to support deprecated aliases
+        return param
+
+    extended_params = [extend_schema_params(p) for p in schema['parameters']]
+
     param_names = []
-    for param in schema["parameters"]:
-        assert (param["type"][:4] == "enum") == bool(param["values"]), "Values are expected for enum types only"
-        if param["values"]:
-            enum_values = [normalize_enum_constant(p) for p in param["values"]]
-            if param["default_value"]:
-                param["default_value"] = normalize_enum_constant(param["default_value"])
+    for param in extended_params:
+        pname = param.get('name')
+        ptype = param.get('type')
+        pvalues = param.get('values')
+        pdefault = param.get('default_value')
+
+        assert (ptype[:4] == 'enum') == bool(pvalues), "Values are expected for enum types only"
+        if pvalues:
+            enum_values = [normalize_enum_constant(p) for p in pvalues]
+            if pdefault:
+                pdefault = normalize_enum_constant(pdefault)
         else:
             enum_values = None
 
-        pname = param["name"]
-        update_param = get_customizations_for(algo, 'update_param')
-        if callable(update_param):
-            param, enum_values = update_param(pname, param, enum_values)
-        else:
-            # could be done with update_param in each algo, cf. example in python/gen_isolationforest.py or python/gen_drf.py
-            # but let's leave it here for now: besides I suspect that this is not fully up-to-date.
-            if (pname==u'distribution') and (not(algo==u'glm') and not(algo==u'gbm')):    # quasibinomial only in glm, gbm
-                enum_values.remove(u'quasibinomial')
-            if (pname==u'distribution') and (not(algo==u'glm')):    # ordinal only in glm
-                enum_values.remove(u'ordinal')
-            if (pname==u'distribution') and (not(algo==u'gbm')):    # custom only in gbm
-                enum_values.remove(u'custom')
-            if (pname==u'stopping_metric') and (not(algo==u'isolationforest')):    # anomaly_score only in Isolation Forest
-                enum_values.remove(u'anomaly_score')
-
-        if pname in reserved_words: pname += "_"
+        if pname in reserved_words:
+            pname += "_"
         param_names.append(pname)
-        param["pname"] = pname
-        param["ptype"] = translate_type_for_check(param["type"], enum_values)
-        param["dtype"] = translate_type_for_doc(param["type"], enum_values)
+        param['pname'] = pname
+        param['default_value'] = pdefault
+        param['ptype'] = translate_type_for_check(ptype, enum_values)
+        param['dtype'] = translate_type_for_doc(ptype, enum_values)
 
     yield "#!/usr/bin/env python"
     yield "# -*- encoding: utf-8 -*-"
@@ -182,7 +181,7 @@ def gen_module(schema, algo):
     yield "from h2o.frame import H2OFrame"
     yield "from h2o.utils.typechecks import assert_is_type, Enum, numeric"
     if extra_imports:
-        yield reindent_block(extra_imports, 0)
+        yield reformat_block(extra_imports)
     yield ""
     yield ""
     yield "class %s(H2OEstimator):" % classname
@@ -190,75 +189,77 @@ def gen_module(schema, algo):
     yield "    " + schema["algo_full_name"]
     yield ""
     if class_doc:
-        yield "    %s" % reindent_block(class_doc, 4)
+        yield reformat_block(class_doc, 4)
     if class_examples:
         yield ""
         yield "    :examples:"
         yield ""
-        yield "    %s" % reindent_block(class_examples, 4)
+        yield reformat_block(class_examples, 4)
     yield '    """'
     yield ""
     yield '    algo = "%s"' % algo
     yield ""
     yield "    def __init__(self, **kwargs):"
+    # TODO: generate __init__ docstring with all params (also generate exact signature to support auto-completion)
     yield "        super(%s, self).__init__()" % classname
     yield "        self._parms = {}"
     yield "        names_list = {%s}" % bi.wrap(", ".join('"%s"' % p for p in param_names),
                                                 indent=(" " * 22), indent_first=False)
     if class_init_validation:
-        yield "        %s" % reindent_block(class_init_validation, 8)
+        yield reformat_block(class_init_validation, 8)
     yield '        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")'
     yield "        for pname, pvalue in kwargs.items():"
     yield "            if pname == 'model_id':"
     yield "                self._id = pvalue"
     yield '                self._parms["model_id"] = pvalue'
     if class_init_setparams:
-        yield "            %s" % reindent_block(class_init_setparams, 12)
+        yield reformat_block(class_init_setparams, 12)
     yield "            elif pname in names_list:"
     yield "                # Using setattr(...) will invoke type-checking of the arguments"
     yield "                setattr(self, pname, pvalue)"
     yield "            else:"
     yield '                raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))'
-    if class_init_extra:
-        yield "        " + reindent_block(class_init_extra, 8)
+    if rest_api_version:
+        yield '        self._parms["_rest_version"] = %s' % rest_api_version
     yield ""
-    for param in schema["parameters"]:
-        pname = param["pname"]
-        ptype = param["ptype"]
-        if pname == "model_id": continue  # The getter is already defined in ModelBase
-        sname = pname[:-1] if pname[-1] == '_' else pname
+    for param in extended_params:
+        pname = param.get('pname')
+        if pname == "model_id":
+            continue  # The getter is already defined in ModelBase
 
-        if param["dtype"].startswith("Enum"):
-            vals = param["dtype"][5:-1].split(", ")
+        sname = pname[:-1] if pname[-1] == '_' else pname
+        ptype = param.get('ptype')
+        dtype = param.get('dtype')
+        pdefault = param.get('default_value')
+
+        if dtype.startswith("Enum"):
+            vals = dtype[5:-1].split(", ")
             property_doc = "One of: " + ", ".join("``%s``" % v for v in vals)
         else:
-            property_doc = "Type: ``%s``" % param["dtype"]
-        if param["default_value"] is None:
-            property_doc += "."
-        else:
-            property_doc += "  (default: ``%s``)." % stringify(param["default_value"])
+            property_doc = "Type: ``%s``" % dtype
+        property_doc += ("." if pdefault is None else "  (default: ``%s``)." % stringify(pdefault))
 
         deprecated = pname in get_customizations_for(algo, 'deprecated', [])
         yield "    @property"
         yield "    def %s(self):" % pname
         yield '        """'
-        yield "        %s%s" % ("[Deprecated] " if deprecated else "", bi.wrap(param["help"], indent=(" " * 8), indent_first=False))
+        yield bi.wrap("%s%s" % ("[Deprecated] " if deprecated else "", param.get('help')), indent=8*' ')  # we need to wrap only for text coming from server
         yield ""
-        yield "        %s" % bi.wrap(property_doc, indent=(" " * 8), indent_first=False)
-        property_doc = get_customizations_for(algo, "doc.{}".format(pname))
-        if property_doc:
+        yield bi.wrap(property_doc, indent=8*' ')
+        custom_property_doc = get_customizations_for(algo, "doc.{}".format(pname))
+        if custom_property_doc:
             yield ""
-            yield "        %s" % reindent_block(property_doc, 8)
+            yield reformat_block(custom_property_doc, 8)
         property_examples = get_customizations_for(algo, "examples.{}".format(pname))
         if property_examples:
             yield ""
             yield "        :examples:"
             yield ""
-            yield "        %s" % reindent_block(property_examples, 8)
+            yield reformat_block(property_examples, 8)
         yield '        """'
         property_getter = get_customizations_for(algo, "overrides.{}.getter".format(pname))  # check gen_stackedensemble.py for an example
         if property_getter:
-            yield "        %s" % reindent_block(property_getter.format(**locals()), 8)
+            yield reformat_block(property_getter.format(**locals()), 8)
         else:
             yield "        return self._parms.get(\"%s\")" % sname
 
@@ -267,7 +268,7 @@ def gen_module(schema, algo):
         yield "    def %s(self, %s):" % (pname, pname)
         property_setter = get_customizations_for(algo, "overrides.{}.setter".format(pname))  # check gen_stackedensemble.py for an example
         if property_setter:
-            yield "        %s" % reindent_block(property_setter.format(**locals()), 8)
+            yield reformat_block(property_setter.format(**locals()), 8)
         else:
             # special types validation
             if ptype == "H2OEstimator":
@@ -283,10 +284,10 @@ def gen_module(schema, algo):
         yield ""
         yield ""
     if class_extras:
-        yield "    " + reindent_block(class_extras, 4)
+        yield reformat_block(class_extras, 4)
     if module_extras:
         yield ""
-        yield reindent_block(module_extras, 0)
+        yield reformat_block(module_extras)
 
 
 def algo_to_classname(algo):
@@ -353,30 +354,6 @@ def gen_models_docs(modules):
             yield "    :members:"
             yield ""
 
-
-_gen_customizations = dict()
-
-
-def get_customizations_for(algo, property=None, default=None):
-    if algo not in _gen_customizations:
-        custom_file = os.path.join(os.path.dirname(__file__), 'custom', 'python', 'gen_'+algo.lower()+'.py')
-        customizations = dict()
-        if os.path.isfile(custom_file):
-            with open(custom_file) as f:
-                exec(f.read(), customizations)
-        _gen_customizations.update({algo: customizations})
-
-    customizations = _gen_customizations[algo]
-    if property:
-        tokens = property.split('.')
-        value = customizations
-        for token in tokens:
-            value = value.get(token)
-            if value is None:
-                return default
-        return value
-    else:
-        return customizations
 
 # ----------------------------------------------------------------------------------------------------------------------
 #   MAIN:

@@ -2,12 +2,12 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details) 
 #'
 # -------------------------- KMeans Model in H2O -------------------------- #
-#' 
+#'
 #' Performs k-means clustering on an H2O dataset
-#' 
+#'
+#' @param training_frame Id of the training data frame.
 #' @param x A vector containing the \code{character} names of the predictors in the model.
 #' @param model_id Destination id for this model; auto-generated if not specified.
-#' @param training_frame Id of the training data frame.
 #' @param validation_frame Id of the validation data frame.
 #' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
 #' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to TRUE.
@@ -29,17 +29,15 @@
 #' @param max_iterations Maximum training iterations (if estimate_k is enabled, then this is for each inner Lloyds iteration) Defaults
 #'        to 10.
 #' @param standardize \code{Logical}. Standardize columns before computing distances Defaults to TRUE.
-#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
+#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
 #' @param init Initialization mode Must be one of: "Random", "PlusPlus", "Furthest", "User". Defaults to Furthest.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
-#' @return Returns an object of class \linkS4class{H2OClusteringModel}.
-#' @seealso \code{\link{h2o.cluster_sizes}}, \code{\link{h2o.totss}}, \code{\link{h2o.num_iterations}},
-#'          \code{\link{h2o.betweenss}}, \code{\link{h2o.tot_withinss}}, \code{\link{h2o.withinss}},
-#'          \code{\link{h2o.centersSTD}}, \code{\link{h2o.centers}}
+#' @return an object of class \linkS4class{H2OClusteringModel}.
+#' @seealso \code{\link{h2o.cluster_sizes}}, \code{\link{h2o.totss}}, \code{\link{h2o.num_iterations}}, \code{\link{h2o.betweenss}}, \code{\link{h2o.tot_withinss}}, \code{\link{h2o.withinss}}, \code{\link{h2o.centersSTD}}, \code{\link{h2o.centers}}
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -49,7 +47,8 @@
 #' h2o.kmeans(training_frame = prostate, k = 10, x = c("AGE", "RACE", "VOL", "GLEASON"))
 #' }
 #' @export
-h2o.kmeans <- function(training_frame, x,
+h2o.kmeans <- function(training_frame,
+                       x,
                        model_id = NULL,
                        validation_frame = NULL,
                        nfolds = 0,
@@ -69,23 +68,21 @@ h2o.kmeans <- function(training_frame, x,
                        init = c("Random", "PlusPlus", "Furthest", "User"),
                        max_runtime_secs = 0,
                        categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
-                       export_checkpoints_dir = NULL
-                       ) 
+                       export_checkpoints_dir = NULL)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
-  validation_frame <- .validate.H2OFrame(validation_frame)
+  validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
 
-  # Handle other args
-  # Parameter list to send to model builder
+  # Build parameter list to send to model builder
   parms <- list()
-  parms$training_frame <- training_frame
   if(!missing(x)){
     parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore
     if(!missing(fold_column)){
       parms$ignored_columns <- setdiff(parms$ignored_columns, fold_column)
     }
   }
+
   if (!missing(model_id))
     parms$model_id <- model_id
   if (!missing(validation_frame))
@@ -134,27 +131,27 @@ h2o.kmeans <- function(training_frame, x,
     } else {
       warning(paste0("Parameter init must equal 'User' when user_points is set. Ignoring init = '", init, "'. Setting init = 'User'."))
     }
-
     parms[["init"]] <- "User"
-  # Convert user-specified starting points to H2OFrame
-  if( is.data.frame(user_points) || is.matrix(user_points) || is.list(user_points) ) {
-    if( !is.data.frame(user_points) && !is.matrix(user_points) ) user_points <- t(as.data.frame(user_points))
-    user_points <- as.h2o(user_points)
-  }
-  parms[["user_points"]] <- user_points
-  # Set k
-  if( !(missing(k)) && k!=as.integer(nrow(user_points)) ) {
-    warning("Parameter k is not equal to the number of user-specified starting points. Ignoring k. Using specified starting points.")
-  }
-  parms[["k"]] <- as.numeric(nrow(user_points))
 
+    # Convert user-specified starting points to H2OFrame
+    if( is.data.frame(user_points) || is.matrix(user_points) || is.list(user_points) ) {
+      if( !is.data.frame(user_points) && !is.matrix(user_points) ) user_points <- t(as.data.frame(user_points))
+      user_points <- as.h2o(user_points)
+    }
+    parms[["user_points"]] <- user_points
+
+    # Set k
+    if( !(missing(k)) && k!=as.integer(nrow(user_points)) ) {
+      warning("Parameter k is not equal to the number of user-specified starting points. Ignoring k. Using specified starting points.")
+    }
+    parms[["k"]] <- as.numeric(nrow(user_points))
   } else if ( is.character(init) ) { # Furthest, Random, PlusPlus{
     parms[["user_points"]] <- NULL
-
   } else{
     stop ("argument init must be set to Furthest, Random, PlusPlus, or a valid set of user-defined starting points.")
   }
-        
+
   # Error check and build model
-  .h2o.modelJob('kmeans', parms, h2oRestApiVersion = 3) 
+  model <- .h2o.modelJob('kmeans', parms, h2oRestApiVersion=3, verbose=FALSE)
+  return(model)
 }

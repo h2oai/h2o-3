@@ -2,17 +2,18 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details) 
 #'
 # -------------------------- Random Forest Model in H2O -------------------------- #
-#' 
+#'
 #' Build a Random Forest model
 #' 
 #' Builds a Random Forest model on an H2OFrame.
-#' 
+#'
 #' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing, then all columns except y are used.
-#' @param y The name or column index of the response variable in the data. The response must be either a numeric or a
-#'        categorical/factor variable. If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
-#' @param model_id Destination id for this model; auto-generated if not specified.
+#' @param y The name or column index of the response variable in the data. 
+#'        The response must be either a numeric or a categorical/factor variable. 
+#'        If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
 #' @param training_frame Id of the training data frame.
+#' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param validation_frame Id of the validation data frame.
 #' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
 #' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to TRUE.
@@ -61,7 +62,7 @@
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.001.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
-#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
+#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
 #' @param build_tree_one_node \code{Logical}. Run on one node only; no network overhead but fewer cpus used.  Suitable for small datasets.
 #'        Defaults to FALSE.
@@ -88,11 +89,13 @@
 #' @param check_constant_response \code{Logical}. Check if response column is constant. If enabled, then an exception is thrown if the response
 #'        column is a constant value.If disabled, then model will train regardless of the response column being a
 #'        constant value or not. Defaults to TRUE.
-#' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree for GBM, DRF, & XGBoost. Metrics per epoch for Deep Learning). Defaults to FALSE.
+#' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
 #' @export
-h2o.randomForest <- function(x, y, training_frame,
+h2o.randomForest <- function(x,
+                             y,
+                             training_frame,
                              model_id = NULL,
                              validation_frame = NULL,
                              nfolds = 0,
@@ -139,12 +142,13 @@ h2o.randomForest <- function(x, y, training_frame,
                              custom_metric_func = NULL,
                              export_checkpoints_dir = NULL,
                              check_constant_response = TRUE,
-                             verbose = FALSE 
-                             ) 
+                             verbose = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
-  validation_frame <- .validate.H2OFrame(validation_frame)
+  validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
+
+  # Validate other required args
   # If x is missing, then assume user wants to use all columns as features.
   if (missing(x)) {
      if (is.numeric(y)) {
@@ -154,8 +158,7 @@ h2o.randomForest <- function(x, y, training_frame,
      }
   }
 
-  # Handle other args
-  # Parameter list to send to model builder
+  # Build parameter list to send to model builder
   parms <- list()
   parms$training_frame <- training_frame
   args <- .verify_dataxy(training_frame, x, y)
@@ -188,8 +191,7 @@ h2o.randomForest <- function(x, y, training_frame,
   if (!missing(ignore_const_cols))
     parms$ignore_const_cols <- ignore_const_cols
   if (!missing(offset_column))
-    warning("Argument offset_column is deprecated and has no use for Random Forest.")
-    parms$offset_column <- NULL
+    parms$offset_column <- offset_column
   if (!missing(weights_column))
     parms$weights_column <- weights_column
   if (!missing(balance_classes))
@@ -251,14 +253,22 @@ h2o.randomForest <- function(x, y, training_frame,
   if (!missing(calibration_frame))
     parms$calibration_frame <- calibration_frame
   if (!missing(distribution))
-    warning("Argument distribution is deprecated and has no use for Random Forest.")
-    parms$distribution <- 'AUTO'
+    parms$distribution <- distribution
   if (!missing(custom_metric_func))
     parms$custom_metric_func <- custom_metric_func
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
   if (!missing(check_constant_response))
     parms$check_constant_response <- check_constant_response
+
+  if (!missing(distribution))
+    warning("Argument distribution is deprecated and has no use for Random Forest.")
+    parms$distribution <- 'AUTO'
+  if (!missing(offset_column))
+    warning("Argument offset_column is deprecated and has no use for Random Forest.")
+    parms$offset_column <- NULL
+
   # Error check and build model
-  .h2o.modelJob('drf', parms, h2oRestApiVersion = 3, verbose=verbose) 
+  model <- .h2o.modelJob('drf', parms, h2oRestApiVersion=3, verbose=verbose)
+  return(model)
 }

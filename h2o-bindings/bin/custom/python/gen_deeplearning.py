@@ -1,8 +1,5 @@
 
 extensions = dict(
-    __init__="""
-if isinstance(self, H2OAutoEncoderEstimator): self._parms['autoencoder'] = True
-""",
     __module__="""
 class H2OAutoEncoderEstimator(H2ODeepLearningEstimator):
     \"""
@@ -17,7 +14,9 @@ class H2OAutoEncoderEstimator(H2ODeepLearningEstimator):
     >>> model = H2OAutoEncoderEstimator()
     >>> model.train(x=range(4), training_frame=fr)
     \"""
-    pass
+    def init(self, **kwargs):
+        super(H2OAutoEncoderEstimator, self).__init__(**kwargs)
+        self._parms['autoencoder'] = True
 """
 )
 

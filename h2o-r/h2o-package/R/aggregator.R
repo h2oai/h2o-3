@@ -2,14 +2,14 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details) 
 #'
 # -------------------------- H2O Aggregator Model -------------------------- #
-#' 
+#'
 #' Build an Aggregated Frame
 #' 
 #' Builds an Aggregated Frame of an H2OFrame.
-#' 
+#'
+#' @param training_frame Id of the training data frame.
 #' @param x A vector containing the \code{character} names of the predictors in the model.
 #' @param model_id Destination id for this model; auto-generated if not specified.
-#' @param training_frame Id of the training data frame.
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
 #' @param target_num_exemplars Targeted number of exemplars Defaults to 5000.
 #' @param rel_tol_num_exemplars Relative tolerance for number of exemplars (e.g, 0.5 is +/- 50 percents) Defaults to 0.5.
@@ -26,17 +26,18 @@
 #' library(h2o)
 #' h2o.init()
 #' df <- h2o.createFrame(rows=100, cols=5, categorical_fraction=0.6, integer_fraction=0,
-#' binary_fraction=0, real_range=100, integer_range=100, missing_fraction=0)
+#'                       binary_fraction=0, real_range=100, integer_range=100, missing_fraction=0)
 #' target_num_exemplars=1000
 #' rel_tol_num_exemplars=0.5
 #' encoding="Eigen"
 #' agg <- h2o.aggregator(training_frame=df,
-#' target_num_exemplars=target_num_exemplars,
-#' rel_tol_num_exemplars=rel_tol_num_exemplars,
-#' categorical_encoding=encoding)
+#'                      target_num_exemplars=target_num_exemplars,
+#'                      rel_tol_num_exemplars=rel_tol_num_exemplars,
+#'                      categorical_encoding=encoding)
 #' }
 #' @export
-h2o.aggregator <- function(training_frame, x,
+h2o.aggregator <- function(training_frame,
+                           x,
                            model_id = NULL,
                            ignore_const_cols = TRUE,
                            target_num_exemplars = 5000,
@@ -45,20 +46,21 @@ h2o.aggregator <- function(training_frame, x,
                            categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                            save_mapping_frame = FALSE,
                            num_iteration_without_new_exemplar = 500,
-                           export_checkpoints_dir = NULL
-                           ) 
+                           export_checkpoints_dir = NULL)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
 
-  # Handle other args
-  # Parameter list to send to model builder
+  # Build parameter list to send to model builder
   parms <- list()
   parms$training_frame <- training_frame
   if(!missing(x))
     parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore
+
   if (!missing(model_id))
     parms$model_id <- model_id
+  if (!missing(ignored_columns))
+    parms$ignored_columns <- ignored_columns
   if (!missing(ignore_const_cols))
     parms$ignore_const_cols <- ignore_const_cols
   if (!missing(target_num_exemplars))
@@ -76,11 +78,13 @@ h2o.aggregator <- function(training_frame, x,
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
 
-  m <- .h2o.modelJob('aggregator', parms, h2oRestApiVersion=99)
-  m@model$aggregated_frame_id <- m@model$output_frame$name
-  m
+  # Error check and build model
+  model <- .h2o.modelJob('aggregator', parms, h2oRestApiVersion=99, verbose=FALSE)
+
+  model@model$aggregated_frame_id <- model@model$output_frame$name
+  return(model)
 }
-        
+
 
 #' Retrieve an aggregated frame from an Aggregator model
 #'
@@ -105,7 +109,7 @@ h2o.aggregator <- function(training_frame, x,
 #' }
 #' @export
 h2o.aggregated_frame <- function(model) {
-key <- model@model$aggregated_frame_id
-h2o.getFrame(key)
+  key <- model@model$aggregated_frame_id
+  h2o.getFrame(key)
 }
 

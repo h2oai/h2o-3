@@ -2,14 +2,14 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details) 
 #'
 # -------------------------- Generalized Low Rank Model -------------------------- #
-#' 
+#'
 #' Generalized low rank decomposition of an H2O data frame
 #' 
 #' Builds a generalized low rank decomposition of an H2O data frame
-#' 
+#'
+#' @param training_frame Id of the training data frame.
 #' @param cols (Optional) A vector containing the data columns on which k-means operates.
 #' @param model_id Destination id for this model; auto-generated if not specified.
-#' @param training_frame Id of the training data frame.
 #' @param validation_frame Id of the validation data frame.
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
@@ -34,7 +34,7 @@
 #' @param max_updates Maximum number of updates, defaults to 2*max_iterations Defaults to 2000.
 #' @param init_step_size Initial step size Defaults to 1.
 #' @param min_step_size Minimum step size Defaults to 0.0001.
-#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
+#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
 #' @param init Initialization mode Must be one of: "Random", "SVD", "PlusPlus", "User". Defaults to PlusPlus.
 #' @param svd_method Method for computing SVD during initialization (Caution: Randomized is currently experimental and unstable)
@@ -46,9 +46,9 @@
 #' @param recover_svd \code{Logical}. Recover singular values and eigenvectors of XY Defaults to FALSE.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
-#' @return Returns an object of class \linkS4class{H2ODimReductionModel}.
+#' @return an object of class \linkS4class{H2ODimReductionModel}.
 #' @seealso \code{\link{h2o.kmeans}, \link{h2o.svd}}, \code{\link{h2o.prcomp}}
-#' @references M. Udell, C. Horn, R. Zadeh, S. Boyd (2014). {Generalized Low Rank Models}[http://arxiv.org/abs/1410.0342]. Unpublished manuscript, Stanford Electrical Engineering Department
+#' @references M. Udell, C. Horn, R. Zadeh, S. Boyd (2014). {Generalized Low Rank Models}[http://arxiv.org/abs/1410.0342]. Unpublished manuscript, Stanford Electrical Engineering Department.
 #'             N. Halko, P.G. Martinsson, J.A. Tropp. {Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions}[http://arxiv.org/abs/0909.4061]. SIAM Rev., Survey and Review section, Vol. 53, num. 2, pp. 217-288, June 2011.
 #' @examples
 #' \dontrun{
@@ -57,10 +57,11 @@
 #' australia_path <- system.file("extdata", "australia.csv", package = "h2o")
 #' australia <- h2o.uploadFile(path = australia_path)
 #' h2o.glrm(training_frame = australia, k = 5, loss = "Quadratic", regularization_x = "L1",
-#' gamma_x = 0.5, gamma_y = 0, max_iterations = 1000)
+#'          gamma_x = 0.5, gamma_y = 0, max_iterations = 1000)
 #' }
 #' @export
-h2o.glrm <- function(training_frame, cols = NULL,
+h2o.glrm <- function(training_frame,
+                     cols = NULL,
                      model_id = NULL,
                      validation_frame = NULL,
                      ignore_const_cols = TRUE,
@@ -90,19 +91,18 @@ h2o.glrm <- function(training_frame, cols = NULL,
                      impute_original = FALSE,
                      recover_svd = FALSE,
                      max_runtime_secs = 0,
-                     export_checkpoints_dir = NULL
-                     ) 
+                     export_checkpoints_dir = NULL)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
-  validation_frame <- .validate.H2OFrame(validation_frame)
+  validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
 
-  # Handle other args
-  # Parameter list to send to model builder
+  # Build parameter list to send to model builder
   parms <- list()
   parms$training_frame <- training_frame
- if(!missing(cols))
- parms$ignored_columns <- .verify_datacols(training_frame, cols)$cols_ignore
+  if(!missing(cols))
+    parms$ignored_columns <- .verify_datacols(training_frame, cols)$cols_ignore  
+
   if (!missing(model_id))
     parms$model_id <- model_id
   if (!missing(validation_frame))
@@ -171,43 +171,45 @@ h2o.glrm <- function(training_frame, cols = NULL,
 
   # Check if user_y is an acceptable set of user-specified starting points
   if( is.data.frame(user_y) || is.matrix(user_y) || is.list(user_y) || is.H2OFrame(user_y) ) {
-  # Convert user-specified starting points to H2OFrame
-  if( is.data.frame(user_y) || is.matrix(user_y) || is.list(user_y) ) {
-    if( !is.data.frame(user_y) && !is.matrix(user_y) ) user_y <- t(as.data.frame(user_y))
-    user_y <- as.h2o(user_y)
-  }
-  parms[["user_y"]] <- user_y
+    # Convert user-specified starting points to H2OFrame
+    if( is.data.frame(user_y) || is.matrix(user_y) || is.list(user_y) ) {
+      if( !is.data.frame(user_y) && !is.matrix(user_y) ) user_y <- t(as.data.frame(user_y))
+      user_y <- as.h2o(user_y)
+    }
+    parms[["user_y"]] <- user_y
 
-  # Set k
-  if( !(missing(k)) && k!=as.integer(nrow(user_y)) ) {
-    warning("Argument k is not equal to the number of rows in user-specified Y. Ignoring k. Using specified Y.")
-  }
-  parms[["k"]] <- as.numeric(nrow(user_y))
+    # Set k
+    if( !(missing(k)) && k!=as.integer(nrow(user_y)) ) {
+      warning("Argument k is not equal to the number of rows in user-specified Y. Ignoring k. Using specified Y.")
+    }
+    parms[["k"]] <- as.numeric(nrow(user_y))
   # } else if( is.null(user_y) ) {
   #  if(!missing(init) && parms[["init"]] == "User")
   #    warning("Initializing Y to a standard Gaussian random matrix.")
   # } else
   } else if( !is.null(user_y) )
-  stop("Argument user_y must either be null or a valid user-defined starting Y matrix.")
+    stop("Argument user_y must either be null or a valid user-defined starting Y matrix.")
 
   # Check if user_x is an acceptable set of user-specified starting points
   if( is.data.frame(user_x) || is.matrix(user_x) || is.list(user_x) || is.H2OFrame(user_x) ) {
-  # Convert user-specified starting points to H2OFrame
-  if( is.data.frame(user_x) || is.matrix(user_x) || is.list(user_x) ) {
-    if( !is.data.frame(user_x) && !is.matrix(user_x) ) user_x <- t(as.data.frame(user_x))
-    user_x <- as.h2o(user_x)
-  }
-  parms[["user_x"]] <- user_x
+    # Convert user-specified starting points to H2OFrame
+    if( is.data.frame(user_x) || is.matrix(user_x) || is.list(user_x) ) {
+      if( !is.data.frame(user_x) && !is.matrix(user_x) ) user_x <- t(as.data.frame(user_x))
+      user_x <- as.h2o(user_x)
+    }
+    parms[["user_x"]] <- user_x
   # } else if( is.null(user_x) ) {
   #  if(!missing(init) && parms[["init"]] == "User")
   #    warning("Initializing X to a standard Gaussian random matrix.")
   # } else
   } else if( !is.null(user_x) )
-  stop("Argument user_x must either be null or a valid user-defined starting X matrix.")
-        
+    stop("Argument user_x must either be null or a valid user-defined starting X matrix.")
+
   # Error check and build model
-  .h2o.modelJob('glrm', parms, h2oRestApiVersion = 3) 
+  model <- .h2o.modelJob('glrm', parms, h2oRestApiVersion=3, verbose=FALSE)
+  return(model)
 }
+
 
 #' Reconstruct Training Data via H2O GLRM Model
 #'
@@ -237,10 +239,10 @@ h2o.glrm <- function(training_frame, cols = NULL,
 #' }
 #' @export
 h2o.reconstruct <- function(object, data, reverse_transform=FALSE) {
-url <- paste0('Predictions/models/', object@model_id, '/frames/',h2o.getId(data))
-res <- .h2o.__remoteSend(url, method = "POST", reconstruct_train=TRUE, reverse_transform=reverse_transform)
-key <- res$model_metrics[[1L]]$predictions$frame_id$name
-h2o.getFrame(key)
+  url <- paste0('Predictions/models/', object@model_id, '/frames/',h2o.getId(data))
+  res <- .h2o.__remoteSend(url, method = "POST", reconstruct_train=TRUE, reverse_transform=reverse_transform)
+  key <- res$model_metrics[[1L]]$predictions$frame_id$name
+  h2o.getFrame(key)
 }
 
 #' Convert Archetypes to Features from H2O GLRM Model
@@ -269,9 +271,9 @@ h2o.getFrame(key)
 #' }
 #' @export
 h2o.proj_archetypes <- function(object, data, reverse_transform=FALSE) {
-url <- paste0('Predictions/models/', object@model_id, '/frames/',h2o.getId(data))
-res <- .h2o.__remoteSend(url, method = "POST", project_archetypes=TRUE, reverse_transform=reverse_transform)
-key <- res$model_metrics[[1L]]$predictions$frame_id$name
-h2o.getFrame(key)
+  url <- paste0('Predictions/models/', object@model_id, '/frames/',h2o.getId(data))
+  res <- .h2o.__remoteSend(url, method = "POST", project_archetypes=TRUE, reverse_transform=reverse_transform)
+  key <- res$model_metrics[[1L]]$predictions$frame_id$name
+  h2o.getFrame(key)
 }
 
