@@ -9,10 +9,10 @@ javadoc {
   options.overview = "src/main/java/overview.html" // relative to source root
 
   doLast {
-     copy {
-       from "src/main/java/doc-files"
-       into "$buildDir/docs/javadoc/doc-files"
-     }
+    copy {
+      from "src/main/java/doc-files"
+      into "$buildDir/docs/javadoc/doc-files"
+    }
   }
 }
 
@@ -27,6 +27,8 @@ dependencies {
   testCompile "junit:junit:${junitVersion}"
   compile "net.sf.opencsv:opencsv:2.3"
   compile "com.google.code.gson:gson:2.6.2"
+  compile "guru.nidi:graphviz-java:0.9.0"
+  compile "org.slf4j:slf4j-log4j12:1.7.10"
   compile "ai.h2o:h2o-tree-api:0.3.7"
   // DeepWater dependencies - users will need to provide excluded & compileOnly dependencies
   compile("ai.h2o:deepwater-backend-api:1.0.4") {
