@@ -34,7 +34,7 @@ public class ModelJsonReaderTest extends TestUtil {
   }
 
   @Test
-  public void readGFMModelParametersForClassificationCase() throws IOException{
+  public void readGBMModelParametersForClassificationCase() throws IOException{
     Scope.enter();
     GBMModel gbm = null;
     try {
@@ -95,7 +95,18 @@ public class ModelJsonReaderTest extends TestUtil {
       assertArrayEquals(parms._sample_rate_per_class, (double[]) findParameterByName("sample_rate_per_class", modelParameters).actual_value, 1e-5);
       assertEquals(parms._calibration_frame.toString(), ((Key) findParameterByName("calibration_frame", modelParameters).actual_value)._name);
       assertEquals(parms._fold_assignment.toString(), findParameterByName("fold_assignment", modelParameters).actual_value);
-
+      
+      // Default values
+      GBMModel.GBMParameters defaultParms = new GBMModel.GBMParameters();
+      assertEquals(defaultParms._max_depth, (int) findParameterByName("max_depth", modelParameters).default_value);
+      assertEquals(defaultParms._ntrees, (int) findParameterByName("ntrees", modelParameters).default_value);
+      assertEquals(defaultParms._score_tree_interval, (int) findParameterByName("score_tree_interval", modelParameters).default_value);
+      assertEquals(defaultParms._stopping_rounds, (int) findParameterByName("stopping_rounds", modelParameters).default_value);
+      assertEquals(defaultParms._stopping_tolerance, (double) findParameterByName("stopping_tolerance", modelParameters).default_value, 1e-5);
+      assertEquals(defaultParms._stopping_metric.toString(), findParameterByName("stopping_metric", modelParameters).default_value);
+      assertEquals(defaultParms._distribution.toString(), findParameterByName("distribution", modelParameters).default_value);
+      assertEquals(defaultParms._response_column, findParameterByName("response_column", modelParameters).default_value);
+      assertEquals(defaultParms._build_tree_one_node, findParameterByName("build_tree_one_node", modelParameters).default_value);
 
     } finally {
       if (gbm != null) gbm.delete();
@@ -105,7 +116,7 @@ public class ModelJsonReaderTest extends TestUtil {
   }
 
   @Test
-  public void readGFMModelParametersForRegressionCase() throws IOException{
+  public void readGBMModelParametersForRegressionCase() throws IOException{
     Scope.enter();
     GBMModel gbm = null;
     try {
