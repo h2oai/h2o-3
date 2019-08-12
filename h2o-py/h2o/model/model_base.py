@@ -1205,7 +1205,7 @@ class ModelBase(backwards_compatible(Keyed)):
             print("Numpy not found.  Cannot plot 2D partial plots.")
         ycol = colPairs[1]
         nBins = nbins
-        if not(user_cols==None) and (ycol in user_cols):
+        if user_cols is not None and ycol in user_cols:
             ind = user_cols.index(ycol)
             nBins = user_num_splits[ind]
         nrow = int(len(x)/nBins)

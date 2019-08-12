@@ -20,13 +20,15 @@ def partial_plot_test_with_no_user_splits_no_1DPDP():
     gbm_model.train(x=x, y=y, training_frame=data)
 
     # pdp without weight or NA
-    fn = "pdp_simple.png"
-    gbm_model.partial_plot(data=data, server=True, plot=True, 
-        col_pairs_2dpdp=[['AGE', 'PSA'],['AGE', 'RACE']],   
-        save_to_file="pdp_simple.png")
-
-    if os.path.isfile(fn):
-        os.remove(fn)
+    pdp2dOnly = gbm_model.partial_plot(data=data, server=True, plot=False, 
+        col_pairs_2dpdp=[['AGE', 'PSA'],['AGE', 'RACE']])
+    pdp1D2D = gbm_model.partial_plot(data=data, cols=['AGE', 'RACE', 'DCAPS'], server=True, plot=False,
+                                              col_pairs_2dpdp=[['AGE', 'PSA'], ['AGE', 'RACE']])
+    # compare results 2D pdp 
+    pyunit_utils.assert_H2OTwoDimTable_equal_upto(pdp2dOnly[0], pdp1D2D[3],
+                                                  pdp2dOnly[0].col_header, tolerance=1e-10)
+    pyunit_utils.assert_H2OTwoDimTable_equal_upto(pdp2dOnly[1], pdp1D2D[4],
+                                                  pdp2dOnly[1].col_header, tolerance=1e-10)
         
 if __name__ == "__main__":
     pyunit_utils.standalone_test(partial_plot_test_with_no_user_splits_no_1DPDP)
