@@ -960,11 +960,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         self._parms["gpu_id"] = gpu_id
 
 
+
+    # Ask the H2O server whether a XGBoost model can be built (depends on availability of native backends)
     @staticmethod
     def available():
         """
-        Ask the H2O server whether a XGBoost model can be built (depends on availability of native backends).
-        :return: True if a XGBoost model can be built, or False otherwise.
+        Returns True if a XGBoost model can be built, or False otherwise.
         """
         if "XGBoost" not in h2o.cluster().list_core_extensions():
             print("Cannot build an XGBoost model - no backend found.")
