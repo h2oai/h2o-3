@@ -1,7 +1,6 @@
 package hex.genmodel.attributes;
 
 import com.google.gson.JsonObject;
-import hex.KeyValue;
 import hex.Model;
 import hex.ScoreKeeper;
 import hex.generic.Generic;
@@ -15,11 +14,13 @@ import hex.tree.gbm.GBMModel;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
-import water.Key;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -92,7 +93,7 @@ public class ModelJsonReaderTest extends TestUtil {
       assertArrayEquals(new String[]{"response_column", "weights_column", "offset_column", "fold_column"}, ignoredColumnsParameter.is_mutually_exclusive_with);
       
       assertArrayEquals(parms._sample_rate_per_class, (double[]) findParameterByName("sample_rate_per_class", modelParameters).actual_value, 1e-5);
-      assertEquals(parms._calibration_frame.toString(), ((hex.genmodel.attributes.Key) findParameterByName("calibration_frame", modelParameters).actual_value)._name);
+      assertEquals(parms._calibration_frame.toString(), ((Key) findParameterByName("calibration_frame", modelParameters).actual_value)._name);
       assertEquals(parms._fold_assignment.toString(), findParameterByName("fold_assignment", modelParameters).actual_value);
 
 
@@ -117,7 +118,7 @@ public class ModelJsonReaderTest extends TestUtil {
       parms._response_column = responseColumn;
       parms._distribution = DistributionFamily.gaussian;
       parms._stopping_metric = ScoreKeeper.StoppingMetric.RMSE;
-      parms._monotone_constraints = new KeyValue[] {new KeyValue("age", -1)};
+      parms._monotone_constraints = new hex.KeyValue[] {new hex.KeyValue("age", -1)};
 
       GBM modelBuilder = new GBM(parms);
       gbm = modelBuilder.trainModel().get();
@@ -127,9 +128,9 @@ public class ModelJsonReaderTest extends TestUtil {
       ModelParameter[] modelParameters = getMojosModelParameters(gbm, gbmMojoFile);
 
       // Actual values
-      hex.genmodel.attributes.KeyValue[] monotoneConstraintsFromMojo = (hex.genmodel.attributes.KeyValue[]) findParameterByName("monotone_constraints", modelParameters).actual_value;
+      KeyValue[] monotoneConstraintsFromMojo = (KeyValue[]) findParameterByName("monotone_constraints", modelParameters).actual_value;
       int idx = 0;
-      for(hex.genmodel.attributes.KeyValue kv : monotoneConstraintsFromMojo) {
+      for(KeyValue kv : monotoneConstraintsFromMojo) {
         assertEquals(parms._monotone_constraints[idx].getKey(), kv._key);
         assertEquals(parms._monotone_constraints[idx].getValue(), kv._value, 1e-5);
         idx++;
@@ -146,7 +147,7 @@ public class ModelJsonReaderTest extends TestUtil {
   public void readGenericModelParameters() throws IOException{
     Scope.enter();
     GBMModel gbm = null;
-    Key mojo = null;
+    water.Key mojo = null;
     GenericModel genericModel = null;
     try {
       String responseColumn = "survived";
@@ -220,7 +221,7 @@ public class ModelJsonReaderTest extends TestUtil {
     return matchingParam;
   }
 
-  private Key<Frame> importMojo(final String mojoAbsolutePath) {
+  private water.Key<Frame> importMojo(final String mojoAbsolutePath) {
     final ArrayList<String> keys = new ArrayList<>(1);
     H2O.getPM().importFiles(mojoAbsolutePath, "", new ArrayList<String>(), keys, new ArrayList<String>(),
             new ArrayList<String>());
@@ -249,8 +250,8 @@ public class ModelJsonReaderTest extends TestUtil {
       VecSpecifier vecSpecifierMP2 = (VecSpecifier) obj2;
       defaultValuesAreEqual = vecSpecifierMP1._column_name.equals(vecSpecifierMP2._column_name) && 
               Arrays.equals(vecSpecifierMP1._is_member_of_frames, vecSpecifierMP2._is_member_of_frames);
-    } else if(obj1 instanceof hex.genmodel.attributes.Key ) {
-      defaultValuesAreEqual = ((hex.genmodel.attributes.Key )obj1)._name.equals(((hex.genmodel.attributes.Key )obj2)._name);
+    } else if(obj1 instanceof Key ) {
+      defaultValuesAreEqual = ((Key )obj1)._name.equals(((Key )obj2)._name);
     } else if(obj1 instanceof String[]) {
       defaultValuesAreEqual = Arrays.equals((String[]) obj1, (String[]) obj2);
     } else if(obj1 == null && obj2 == null) {
