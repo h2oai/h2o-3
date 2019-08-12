@@ -3,12 +3,14 @@ extensions = dict(
     skip_default_set_params_for=['training_frame', 'ignored_columns', 'response_column', 'max_confusion_matrix_size',
                                  'distribution', 'offset_column'],
     set_params="""
-if (!missing(distribution))
+if (!missing(distribution)) {
   warning("Argument distribution is deprecated and has no use for Random Forest.")
   parms$distribution <- 'AUTO'
-if (!missing(offset_column))
+}
+if (!missing(offset_column)) {
   warning("Argument offset_column is deprecated and has no use for Random Forest.")
   parms$offset_column <- NULL
+}
 """
 )
 
