@@ -627,7 +627,7 @@ H2O-3 supports TreeSHAP for DRF, GBM, and XGBoost. For these problems, the ``pre
         
 **Note**: Multinomial classification models are currently not supported.
 
-Using the previous example, run the following to predict contributions:
+Using the previous example, run the following to predict contributions. An .ipynb demo is available here: https://github.com/h2oai/h2o-3/tree/master/h2o-py/demos/predict_contributionsShap.ipynb
 
 .. example-code::
    .. code-block:: r
