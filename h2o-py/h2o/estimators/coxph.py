@@ -16,7 +16,7 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
     """
     Cox Proportional Hazards
 
-    Trains a Cox Proportional Hazards Model (CoxPH) on an H2O dataset.
+    Trains a Cox Proportional Hazards Model (CoxPH) on an H2O dataset
     """
 
     algo = "coxph"
@@ -296,6 +296,7 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
     def export_checkpoints_dir(self, export_checkpoints_dir):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
+
 
 
     def _additional_used_columns(self, parms):
