@@ -2,41 +2,43 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details) 
 #'
 # -------------------------- generic -------------------------- #
-#' 
+#'
 #' Imports a generic model into H2O. Such model can be used then used for scoring and obtaining
 #' additional information about the model. The imported model has to be supported by H2O.
-#' 
+#'
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param model_key Key to the self-contained model archive already uploaded to H2O.
 #' @param path Path to file with self-contained model archive.
 #' @examples
 #' \dontrun{
-#' # library(h2o)
-#' # h2o.init()
+#' library(h2o)
+#' h2o.init()
 #' 
-#' # generic_model <- h2o.genericModel("/path/to/model.zip")
-#' # predictions <- h2o.predict(generic_model, dataset)
+#' generic_model <- h2o.genericModel("/path/to/model.zip")
+#' predictions <- h2o.predict(generic_model, dataset)
 #' }
 #' @export
-h2o.generic <- function(
-                        model_id = NULL,
+h2o.generic <- function(model_id = NULL,
                         model_key = NULL,
-                        path = NULL
-                        ) 
+                        path = NULL)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
+
+  # Validate other required args
   # Required args: either model_key or path
   if (is.null(model_key) && is.null(path)) stop("argument 'model_key' or 'path' must be provided")
 
-  # Handle other args
-  # Parameter list to send to model builder
+  # Build parameter list to send to model builder
   parms <- list()
+
   if (!missing(model_id))
     parms$model_id <- model_id
   if (!missing(model_key))
     parms$model_key <- model_key
   if (!missing(path))
     parms$path <- path
+
   # Error check and build model
-  .h2o.modelJob('generic', parms, h2oRestApiVersion = 3) 
+  model <- .h2o.modelJob('generic', parms, h2oRestApiVersion=3, verbose=FALSE)
+  return(model)
 }

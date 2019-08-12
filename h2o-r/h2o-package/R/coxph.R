@@ -2,14 +2,14 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details) 
 #'
 # -------------------------- coxph -------------------------- #
-#' 
+#'
 #' Trains a Cox Proportional Hazards Model (CoxPH) on an H2O dataset
-#' 
+#'
 #' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing, then all columns except event_column, start_column and stop_column are used.
 #' @param event_column The name of binary data column in the training frame indicating the occurrence of an event.
-#' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param training_frame Id of the training data frame.
+#' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param start_column Start Time Column.
 #' @param stop_column Stop Time Column.
 #' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
@@ -31,7 +31,9 @@
 #'        FALSE.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @export
-h2o.coxph <- function(x, event_column, training_frame,
+h2o.coxph <- function(x,
+                      event_column,
+                      training_frame,
                       model_id = NULL,
                       start_column = NULL,
                       stop_column = NULL,
@@ -46,11 +48,12 @@ h2o.coxph <- function(x, event_column, training_frame,
                       interaction_pairs = NULL,
                       interactions_only = NULL,
                       use_all_factor_levels = FALSE,
-                      export_checkpoints_dir = NULL
-                      ) 
+                      export_checkpoints_dir = NULL)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
+
+  # Validate other required args
   # If x is missing, then assume user wants to use all columns as features.
   if (missing(x)) {
      if (is.numeric(event_column)) {
@@ -60,20 +63,21 @@ h2o.coxph <- function(x, event_column, training_frame,
      }
   }
 
-  # Handle other args
+  # Validate other args
   if (is.null(interactions_only) && (! is.null(interactions) || ! is.null(interaction_pairs))) {
-     used <- unique(c(interactions, unlist(sapply(interaction_pairs, function(x) {x[1]})), unlist(sapply(interaction_pairs, function(x) {x[2]}))))
-     interactions_only <- setdiff(used, x)
-     x <- c(x, interactions_only)
+    used <- unique(c(interactions, unlist(sapply(interaction_pairs, function(x) {x[1]})), unlist(sapply(interaction_pairs, function(x) {x[2]}))))
+    interactions_only <- setdiff(used, x)
+    x <- c(x, interactions_only)
   }
   if (! is.null(stratify_by)) {
-     stratify_by_only <- setdiff(stratify_by, x)
-     x <- c(x, stratify_by_only)
+    stratify_by_only <- setdiff(stratify_by, x)
+    x <- c(x, stratify_by_only)
   }
   if(!is.character(stop_column) && !is.numeric(stop_column)) {
-     stop('argument "stop_column" must be a column name or an index')
+    stop('argument "stop_column" must be a column name or an index')
   }
-  # Parameter list to send to model builder
+
+  # Build parameter list to send to model builder
   parms <- list()
   parms$training_frame <- training_frame
   args <- .verify_dataxy(training_frame, x, event_column)
@@ -114,6 +118,8 @@ h2o.coxph <- function(x, event_column, training_frame,
     parms$use_all_factor_levels <- use_all_factor_levels
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+
   # Error check and build model
-  .h2o.modelJob('coxph', parms, h2oRestApiVersion = 3) 
+  model <- .h2o.modelJob('coxph', parms, h2oRestApiVersion=3, verbose=FALSE)
+  return(model)
 }

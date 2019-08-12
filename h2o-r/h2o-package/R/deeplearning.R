@@ -2,17 +2,18 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details) 
 #'
 # -------------------------- Deep Learning - Neural Network -------------------------- #
-#' 
+#'
 #' Build a Deep Neural Network model using CPUs
 #' 
 #' Builds a feed-forward multilayer artificial neural network on an H2OFrame.
-#' 
+#'
 #' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing, then all columns except y are used.
-#' @param y The name or column index of the response variable in the data. The response must be either a numeric or a
-#'        categorical/factor variable. If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
-#' @param model_id Destination id for this model; auto-generated if not specified.
+#' @param y The name or column index of the response variable in the data. 
+#'        The response must be either a numeric or a categorical/factor variable. 
+#'        If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
 #' @param training_frame Id of the training data frame.
+#' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param validation_frame Id of the validation data frame.
 #' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
 #' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to TRUE.
@@ -49,13 +50,13 @@
 #'        scaled input data. Defaults to TRUE.
 #' @param activation Activation function. Must be one of: "Tanh", "TanhWithDropout", "Rectifier", "RectifierWithDropout", "Maxout",
 #'        "MaxoutWithDropout". Defaults to Rectifier.
-#' @param hidden Hidden layer sizes (e.g. [100, 100]). Defaults to [200, 200].
+#' @param hidden Hidden layer sizes (e.g. [100, 100]). Defaults to c(200, 200).
 #' @param epochs How many times the dataset should be iterated (streamed), can be fractional. Defaults to 10.
 #' @param train_samples_per_iteration Number of training samples (globally) per MapReduce iteration. Special values are 0: one epoch, -1: all
 #'        available data (e.g., replicated training data), -2: automatic. Defaults to -2.
 #' @param target_ratio_comm_to_comp Target ratio of communication overhead to computation. Only for multi-node operation and
 #'        train_samples_per_iteration = -2 (auto-tuning). Defaults to 0.05.
-#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
+#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Note: only reproducible when running single threaded.
 #'        Defaults to -1 (time-based random number).
 #' @param adaptive_rate \code{Logical}. Adaptive learning rate. Defaults to TRUE.
@@ -137,7 +138,7 @@
 #' @param elastic_averaging_moving_rate Elastic averaging moving rate (only if elastic averaging is enabled). Defaults to 0.9.
 #' @param elastic_averaging_regularization Elastic averaging regularization strength (only if elastic averaging is enabled). Defaults to 0.001.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
-#' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree for GBM, DRF, & XGBoost. Metrics per epoch for Deep Learning). Defaults to FALSE.
+#' @param verbose \code{Logical}. Print scoring history to the console (Metrics per epoch). Defaults to FALSE.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
 #' @examples
 #' \dontrun{
@@ -150,7 +151,9 @@
 #' predictions <- h2o.predict(iris_dl, iris_hf)
 #' }
 #' @export
-h2o.deeplearning <- function(x, y, training_frame,
+h2o.deeplearning <- function(x,
+                             y,
+                             training_frame,
                              model_id = NULL,
                              validation_frame = NULL,
                              nfolds = 0,
@@ -236,12 +239,13 @@ h2o.deeplearning <- function(x, y, training_frame,
                              elastic_averaging_moving_rate = 0.9,
                              elastic_averaging_regularization = 0.001,
                              export_checkpoints_dir = NULL,
-                             verbose = FALSE 
-                             ) 
+                             verbose = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
-  validation_frame <- .validate.H2OFrame(validation_frame)
+  validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
+
+  # Validate other required args
   # If x is missing, then assume user wants to use all columns as features.
   if (missing(x)) {
      if (is.numeric(y)) {
@@ -251,8 +255,7 @@ h2o.deeplearning <- function(x, y, training_frame,
      }
   }
 
-  # Handle other args
-  # Parameter list to send to model builder
+  # Build parameter list to send to model builder
   parms <- list()
   parms$training_frame <- training_frame
   args <- .verify_dataxy(training_frame, x, y, autoencoder)
@@ -437,9 +440,12 @@ h2o.deeplearning <- function(x, y, training_frame,
     parms$elastic_averaging_regularization <- elastic_averaging_regularization
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+
   # Error check and build model
-  .h2o.modelJob('deeplearning', parms, h2oRestApiVersion = 3, verbose=verbose) 
+  model <- .h2o.modelJob('deeplearning', parms, h2oRestApiVersion=3, verbose=verbose)
+  return(model)
 }
+
 
 #' Anomaly Detection via H2O Deep Learning Model
 #'
@@ -468,9 +474,9 @@ h2o.deeplearning <- function(x, y, training_frame,
 #' }
 #' @export
 h2o.anomaly <- function(object, data, per_feature=FALSE) {
-url <- paste0('Predictions/models/', object@model_id, '/frames/',h2o.getId(data))
-res <- .h2o.__remoteSend(url, method = "POST", reconstruction_error=TRUE, reconstruction_error_per_feature=per_feature)
-key <- res$model_metrics[[1L]]$predictions$frame_id$name
-h2o.getFrame(key)
+  url <- paste0('Predictions/models/', object@model_id, '/frames/',h2o.getId(data))
+  res <- .h2o.__remoteSend(url, method = "POST", reconstruction_error=TRUE, reconstruction_error_per_feature=per_feature)
+  key <- res$model_metrics[[1L]]$predictions$frame_id$name
+  h2o.getFrame(key)
 }
 
