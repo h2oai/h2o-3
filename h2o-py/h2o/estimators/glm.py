@@ -599,7 +599,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def link(self):
         """
-
+        Link function.
 
         One of: ``"family_default"``, ``"identity"``, ``"logit"``, ``"log"``, ``"inverse"``, ``"tweedie"``, ``"ologit"``
         (default: ``"family_default"``).
