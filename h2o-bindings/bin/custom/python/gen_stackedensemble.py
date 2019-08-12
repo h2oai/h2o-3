@@ -9,6 +9,42 @@ def update_param(name, param):
     return None  # param untouched
 
 
+def class_extensions():
+    def metalearner(self):
+        """Print the metalearner of an H2OStackedEnsembleEstimator."""
+        model = self._model_json["output"]
+        if "metalearner" in model and model["metalearner"] is not None:
+            return model["metalearner"]
+        print("No metalearner for this model")
+
+    def levelone_frame_id(self):
+        """Fetch the levelone_frame_id for an H2OStackedEnsembleEstimator."""
+        model = self._model_json["output"]
+        if "levelone_frame_id" in model and model["levelone_frame_id"] is not None:
+            return model["levelone_frame_id"]
+        print("No levelone_frame_id for this model")
+
+    def stacking_strategy(self):
+        model = self._model_json["output"]
+        if "stacking_strategy" in model and model["stacking_strategy"] is not None:
+            return model["stacking_strategy"]
+        print("No stacking strategy for this model")
+
+    # Override train method to support blending
+    def train(self, x=None, y=None, training_frame=None, blending_frame=None, **kwargs):
+        blending_frame = H2OFrame._validate(blending_frame, 'blending_frame', required=False)
+
+        def extend_parms(parms):
+            if blending_frame is not None:
+                parms['blending_frame'] = blending_frame
+            if self.metalearner_fold_column is not None:
+                parms['ignored_columns'].remove(quoted(self.metalearner_fold_column))
+
+        super(self.__class__, self)._train(x, y, training_frame,
+                                           extend_parms_fn=extend_parms,
+                                           **kwargs)
+
+
 extensions = dict(
     __imports__="""
 from h2o.utils.shared_utils import quoted
@@ -16,41 +52,7 @@ from h2o.utils.typechecks import is_type
 import json
 import ast
 """,
-    __class__="""
-def metalearner(self):
-    \"""Print the metalearner of an H2OStackedEnsembleEstimator.\"""
-    model = self._model_json["output"]
-    if "metalearner" in model and model["metalearner"] is not None:
-        return model["metalearner"]
-    print("No metalearner for this model")
-
-def levelone_frame_id(self):
-    \"""Fetch the levelone_frame_id for an H2OStackedEnsembleEstimator.\"""
-    model = self._model_json["output"]
-    if "levelone_frame_id" in model and model["levelone_frame_id"] is not None:
-        return model["levelone_frame_id"]
-    print("No levelone_frame_id for this model")
-
-def stacking_strategy(self):
-    model = self._model_json["output"]
-    if "stacking_strategy" in model and model["stacking_strategy"] is not None:
-        return model["stacking_strategy"]
-    print("No stacking strategy for this model")
-
-# Override train method to support blending
-def train(self, x=None, y=None, training_frame=None, blending_frame=None, **kwargs):
-    blending_frame = H2OFrame._validate(blending_frame, 'blending_frame', required=False)
-
-    def extend_parms(parms):
-        if blending_frame is not None:
-            parms['blending_frame'] = blending_frame
-        if self.metalearner_fold_column is not None:
-            parms['ignored_columns'].remove(quoted(self.metalearner_fold_column))
-
-    super(self.__class__, self)._train(x, y, training_frame,
-                                       extend_parms_fn=extend_parms,
-                                       **kwargs)
-"""
+    __class__=class_extensions
 )
 
 overrides = dict(
