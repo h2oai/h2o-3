@@ -58,11 +58,11 @@ import ast
 overrides = dict(
     base_models=dict(
         setter="""
-if is_type(base_models, [H2OEstimator]):
+if is_type(base_models, {ptype}):
     {pname} = [b.model_id for b in {pname}]
     self._parms["{sname}"] = {pname}
 else:
-    assert_is_type({pname}, None, {ptype})
+    assert_is_type({pname}, None, [str])
     self._parms["{sname}"] = {pname}
 """
     ),

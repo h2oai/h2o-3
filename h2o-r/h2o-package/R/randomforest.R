@@ -257,12 +257,14 @@ h2o.randomForest <- function(x,
   if (!missing(check_constant_response))
     parms$check_constant_response <- check_constant_response
 
-  if (!missing(distribution))
+  if (!missing(distribution)) {
     warning("Argument distribution is deprecated and has no use for Random Forest.")
     parms$distribution <- 'AUTO'
-  if (!missing(offset_column))
+  }
+  if (!missing(offset_column)) {
     warning("Argument offset_column is deprecated and has no use for Random Forest.")
     parms$offset_column <- NULL
+  }
 
   # Error check and build model
   model <- .h2o.modelJob('drf', parms, h2oRestApiVersion=3, verbose=verbose)

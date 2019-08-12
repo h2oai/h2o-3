@@ -76,6 +76,8 @@
 #'        indicates: If lambda_search is set to False and lambda is equal to zero, the default value of gradient_epsilon
 #'        is equal to .000001, otherwise the default value is .0001. If lambda_search is set to True, the conditional
 #'        values above are 1E-8 and 1E-6 respectively. Defaults to -1.
+#' @param link Link function. Must be one of: "family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit".
+#'        Defaults to family_default.
 #' @param prior Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
 #'        of response does not reflect reality. Defaults to -1.
 #' @param lambda_min_ratio Minimum lambda used in lambda search, specified as a ratio of lambda_max (the smallest lambda that drives all
@@ -109,7 +111,9 @@
 #'         including MSE, AUC (for logistic regression), degrees of freedom, and confusion matrices. Please refer to the
 #'         more in-depth GLM documentation available here:
 #'         \url{https://h2o-release.s3.amazonaws.com/h2o-dev/rel-shannon/2/docs-website/h2o-docs/index.html#Data+Science+Algorithms-GLM}
-#' @seealso \code{\link{predict.H2OModel}} for prediction, \code{\link{h2o.mse}}, \code{\link{h2o.auc}}, \code{\link{h2o.confusionMatrix}}, \code{\link{h2o.performance}}, \code{\link{h2o.giniCoef}}, \code{\link{h2o.logloss}}, \code{\link{h2o.varimp}}, \code{\link{h2o.scoreHistory}}
+#' @seealso \code{\link{predict.H2OModel}} for prediction, \code{\link{h2o.mse}}, \code{\link{h2o.auc}},
+#'          \code{\link{h2o.confusionMatrix}}, \code{\link{h2o.performance}}, \code{\link{h2o.giniCoef}},
+#'          \code{\link{h2o.logloss}}, \code{\link{h2o.varimp}}, \code{\link{h2o.scoreHistory}}
 #' @examples
 #' \dontrun{
 #' h2o.init()
@@ -129,7 +133,9 @@
 #' # GLM variable importance
 #' # Also see:
 #' #   https://github.com/h2oai/h2o/blob/master/R/tests/testdir_demos/runit_demo_VI_all_algos.R
-#' bank = h2o.importFile(path = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/demos/bank-additional-full.csv")
+#' bank = h2o.importFile(
+#'   path="https://s3.amazonaws.com/h2o-public-test-data/smalldata/demos/bank-additional-full.csv"
+#' )
 #' predictors = 1:20
 #' target="y"
 #' glm = h2o.glm(x=predictors, y=target, training_frame=bank, family="binomial", standardize=TRUE,
