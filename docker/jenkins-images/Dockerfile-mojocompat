@@ -12,5 +12,5 @@ RUN \
     chmod a+w /usr/lib/jvm/
 
 ENV \
-  JAVA_HOME=/usr/lib/jvm/java-${INSTALL_JAVA_VERSION}-openjdk-amd64/ \
-  PATH=/usr/lib/jvm/java-${INSTALL_JAVA_VERSION}-openjdk-amd64/bin:${PATH}
+  JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64/ \
+  PATH=/usr/lib/jvm/java-7-openjdk-amd64/bin:${PATH}
