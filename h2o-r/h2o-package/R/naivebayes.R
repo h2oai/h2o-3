@@ -41,8 +41,11 @@
 #' @param max_hit_ratio_k Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
 #'        Defaults to 0.
 #' @param laplace Laplace smoothing parameter Defaults to 0.
+#' @param threshold This argument is deprecated, use `min_sdev` instead. The minimum standard deviation to use for observations without enough data.
+#'        Must be at least 1e-10.
 #' @param min_sdev The minimum standard deviation to use for observations without enough data.
 #'        Must be at least 1e-10.
+#' @param eps This argument is deprecated, use `eps_sdev` instead. A threshold cutoff to deal with numeric instability, must be positive.
 #' @param eps_sdev A threshold cutoff to deal with numeric instability, must be positive.
 #' @param min_prob Min. probability to use for observations with not enough data.
 #' @param eps_prob Cutoff below which probability is replaced with min_prob.
@@ -161,12 +164,14 @@ h2o.naiveBayes <- function(x,
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
 
-  if (!missing(threshold) && missing(min_sdev))
+  if (!missing(threshold) && missing(min_sdev)) {
     warning("argument 'threshold' is deprecated; use 'min_sdev' instead.")
     parms$min_sdev <- threshold
-  if (!missing(eps) && missing(eps_sdev))
+  }
+  if (!missing(eps) && missing(eps_sdev)) {
     warning("argument 'eps' is deprecated; use 'eps_sdev' instead.")
     parms$eps_sdev <- eps
+  }
 
   # Error check and build model
   model <- .h2o.modelJob('naivebayes', parms, h2oRestApiVersion=3, verbose=FALSE)

@@ -28,12 +28,14 @@ parms$response_column <- args$y
     skip_default_set_params_for=['training_frame', 'ignored_columns', 'response_column', 'max_confusion_matrix_size',
                                  'threshold', 'eps'],
     set_params="""
-if (!missing(threshold) && missing(min_sdev))
+if (!missing(threshold) && missing(min_sdev)) {
   warning("argument 'threshold' is deprecated; use 'min_sdev' instead.")
   parms$min_sdev <- threshold
-if (!missing(eps) && missing(eps_sdev))
+}
+if (!missing(eps) && missing(eps_sdev)) {
   warning("argument 'eps' is deprecated; use 'eps_sdev' instead.")
   parms$eps_sdev <- eps
+}
 """
 )
 
