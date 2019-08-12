@@ -431,7 +431,7 @@ ifeq ($(wildcard ../mojoland),)
 endif
 	cd ../mojoland && ./gradlew clean
 	cd ../mojoland && ./gradlew build
-	cd ../mojoland/mojo-py && python in_mojo_veritas.py
+	cd ../mojoland/mojo-py && H2O_JAVA_HOME="$$JAVA_HOME_8" python in_mojo_veritas.py
 
 check-leaks:
 	-grep -H -R --include "*.log" --include "*.out" --include "out.*" --exclude leak-check.out -E "`cat tests/leakCheckKeywords | tr '\n' '|' | sed 's/|\s*$$//'`" 2>&1 > leak-check.out

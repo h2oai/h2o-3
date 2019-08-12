@@ -207,9 +207,11 @@ def call(final pipelineContext) {
       archiveAdditionalFiles: ['r-generated-docs.zip'], installRPackage: false
     ],
     [
-      stageName: 'MOJO Compatibility', target: 'test-mojo-compatibility',
-      archiveFiles: false, timeoutValue: 20, pythonVersion: '3.6', hasJUnit: false,
-      component: pipelineContext.getBuildConfig().COMPONENT_ANY, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
+      stageName: 'MOJO Compatibility (Java 7)', target: 'test-mojo-compatibility',
+      archiveFiles: false, timeoutValue: 20, hasJUnit: false, pythonVersion: '3.6', javaVersion: 7,
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA, // only run when Java changes (R/Py cannot affect mojo) 
+      imageSpecifier: "mojocompat",
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
     ]
   ]
 
@@ -574,6 +576,7 @@ private void executeInParallel(final jobs, final pipelineContext) {
           archiveFiles = c['archiveFiles']
           activatePythonEnv = c['activatePythonEnv']
 	      customDockerArgs = c['customDockerArgs']
+          imageSpecifier = c['imageSpecifier']
         }
       }
     ]
@@ -637,14 +640,13 @@ private void invokeStage(final pipelineContext, final body) {
         } else {
           boolean healthCheckPassed = false
           int attempt = 0
-          String nodeLabel = config.nodeLabel
           try {
             while (!healthCheckPassed) {
               attempt += 1
               if (attempt > HEALTH_CHECK_RETRIES) {
                 error "Too many attempts to pass initial health check"
               }
-              nodeLabel = pipelineContext.getHealthChecker().getHealthyNodesLabel(config.nodeLabel)
+              String nodeLabel = pipelineContext.getHealthChecker().getHealthyNodesLabel(config.nodeLabel)
               echo "######### NodeLabel: ${nodeLabel} #########"
               node(nodeLabel) {
                 echo "###### Unstash scripts. ######"

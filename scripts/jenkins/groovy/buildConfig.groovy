@@ -14,7 +14,7 @@ class BuildConfig {
   private static final String DEFAULT_HADOOP_IMAGE_NAME_PREFIX = 'dev-build-hadoop-gradle'
   private static final String DEFAULT_RELEASE_IMAGE_NAME_PREFIX = 'dev-release-gradle'
 
-  public static final int DEFAULT_IMAGE_VERSION_TAG = 14
+  public static final int DEFAULT_IMAGE_VERSION_TAG = 16
   public static final String AWSCLI_IMAGE = DOCKER_REGISTRY + '/opsh2oai/awscli'
   public static final String S3CMD_IMAGE = DOCKER_REGISTRY + '/opsh2oai/s3cmd'
 
@@ -221,6 +221,8 @@ class BuildConfig {
   }
 
   String getStageImage(final stageConfig) {
+    if (stageConfig.imageSpecifier)
+      return getDevImageReference(stageConfig.imageSpecifier)
     def component = stageConfig.component
     if (component == COMPONENT_ANY) {
       if (stageConfig.additionalTestPackages.contains(COMPONENT_PY)) {
@@ -256,6 +258,10 @@ class BuildConfig {
     return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-${imageComponentName}-${version}:${DEFAULT_IMAGE_VERSION_TAG}"
   }
 
+  String getDevImageReference(final specifier) {
+    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-${specifier}:${DEFAULT_IMAGE_VERSION_TAG}"
+  }
+  
   String getXGBNodeLabelForEnvironment(final Map xgbEnv) {
     switch (xgbEnv.targetName) {
       case XGB_TARGET_GPU:
