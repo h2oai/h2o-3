@@ -2,6 +2,7 @@ extensions = dict(
     required_params=['training_frame', 'x'],
     validate_required_params="",
     set_required_params="""
+parms$training_frame <- training_frame
 if(!missing(x)){
   parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore
   if(!missing(fold_column)){

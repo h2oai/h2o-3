@@ -110,8 +110,6 @@ h2o.naiveBayes <- function(x,
   parms <- list()
   parms$training_frame <- training_frame
   args <- .verify_dataxy(training_frame, x, y)
-  if( !missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
-  if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
   if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
@@ -163,10 +161,10 @@ h2o.naiveBayes <- function(x,
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
 
-  if (!missing(threshold))
+  if (!missing(threshold) && missing(min_sdev))
     warning("argument 'threshold' is deprecated; use 'min_sdev' instead.")
     parms$min_sdev <- threshold
-  if (!missing(eps))
+  if (!missing(eps) && missing(eps_sdev))
     warning("argument 'eps' is deprecated; use 'eps_sdev' instead.")
     parms$eps_sdev <- eps
 

@@ -59,8 +59,6 @@ h2o.aggregator <- function(training_frame,
 
   if (!missing(model_id))
     parms$model_id <- model_id
-  if (!missing(ignored_columns))
-    parms$ignored_columns <- ignored_columns
   if (!missing(ignore_const_cols))
     parms$ignore_const_cols <- ignore_const_cols
   if (!missing(target_num_exemplars))

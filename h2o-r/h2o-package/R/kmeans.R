@@ -76,6 +76,7 @@ h2o.kmeans <- function(training_frame,
 
   # Build parameter list to send to model builder
   parms <- list()
+  parms$training_frame <- training_frame
   if(!missing(x)){
     parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore
     if(!missing(fold_column)){
