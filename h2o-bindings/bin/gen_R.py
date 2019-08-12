@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 from __future__ import unicode_literals
+from collections import OrderedDict as odict
 from copy import deepcopy
 from functools import partial
 import sys
@@ -30,8 +31,8 @@ def gen_module(schema, algo, module):
     doc_references = get_customizations_for(algo, 'doc.references')
     doc_examples = get_customizations_for(algo, 'doc.examples')
 
-    required_params = get_customizations_or_defaults_for(algo, 'extensions.required_params', {})
-    extra_params = get_customizations_or_defaults_for(algo, 'extensions.extra_params', {})
+    required_params = get_customizations_or_defaults_for(algo, 'extensions.required_params', [])
+    extra_params = get_customizations_or_defaults_for(algo, 'extensions.extra_params', [])
     model_name = algo_to_modelname(algo)
 
     update_param_defaults = get_customizations_for('defaults', 'update_param')
@@ -47,7 +48,12 @@ def gen_module(schema, algo, module):
     yield "#'"
 
     # start doc for signature
-    schema_params = {p['name']: p for p in schema['parameters']}
+    required_params = odict([(p[0] if isinstance(p, tuple) else p, p[1] if isinstance(p, tuple) else None)
+                            for p in required_params])
+    schema_params = odict([(p['name'], p)
+                           for p in schema['parameters']])
+    extra_params = odict([(p[0] if isinstance(p, tuple) else p, p[1] if isinstance(p, tuple) else None)
+                          for p in extra_params])
     all_params = list(required_params.keys()) + list(schema_params.keys()) + list(extra_params.keys())
 
     def get_schema_params(pname):
@@ -120,12 +126,13 @@ def gen_module(schema, algo, module):
         yield "  # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object"
         yield reformat_block(validate_frames, indent=2)
     else:
-        frames = get_customizations_or_defaults_for(algo, 'extensions.frame_params', {})
+        frames = get_customizations_or_defaults_for(algo, 'extensions.frame_params', [])
         if frames:
             yield "  # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object"
-        for frame, required in frames.items():
+        for frame in frames:
             if frame in sig_pnames:
-                yield "  {frame} <- .validate.H2OFrame({frame}, required={required})".format(frame=frame, required=str(required).upper())
+                required_val = str(frame in required_params).upper()
+                yield "  {frame} <- .validate.H2OFrame({frame}, required={required})".format(frame=frame, required=required_val)
 
     validate_required_params = get_customizations_or_defaults_for(algo, 'extensions.validate_required_params')
     if validate_required_params:

@@ -1,5 +1,5 @@
 extensions = dict(
-    extra_params=dict(verbose='FALSE'),
+    extra_params=[('verbose', 'FALSE')],
     skip_set_default_params=['distribution', 'offset_column'],
     set_params="""
 if (!missing(distribution))

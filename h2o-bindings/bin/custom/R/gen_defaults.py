@@ -12,8 +12,8 @@ def update_param(name, param):
 
 
 extensions = dict(
-    required_params=dict(x=None, y=None, training_frame=None),
-    frame_params=dict(training_frame=True, validation_frame=False),
+    required_params=['x', 'y', 'training_frame'],
+    frame_params=['training_frame', 'validation_frame'],
     validate_required_params="""
 # If x is missing, then assume user wants to use all columns as features.
 if (missing(x)) {

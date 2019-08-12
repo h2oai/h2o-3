@@ -1,5 +1,5 @@
 extensions = dict(
-    extra_params=dict(verbose='FALSE'),
+    extra_params=[('verbose', 'FALSE')],
     set_required_params="""
 parms$training_frame <- training_frame
 args <- .verify_dataxy(training_frame, x, y, autoencoder)

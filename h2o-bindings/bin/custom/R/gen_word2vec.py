@@ -1,5 +1,5 @@
 extensions = dict(
-    required_params=dict(training_frame="NULL"),
+    required_params=[('training_frame', "NULL")],
     validate_frames="""
 # training_frame is required if pre_trained frame is not specified
 if (missing(pre_trained) && missing(training_frame)) stop(\"argument \'training_frame\' is missing, with no default\")

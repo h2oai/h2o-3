@@ -1,5 +1,5 @@
 extensions = dict(
-    required_params=dict(),  # empty to override defaults in gen_defaults
+    required_params=[],  # empty to override defaults in gen_defaults
     validate_required_params="""
 # Required args: either model_key or path
 if (is.null(model_key) && is.null(path)) stop("argument 'model_key' or 'path' must be provided")

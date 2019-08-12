@@ -6,7 +6,7 @@ def update_param(name, param):
 
 
 extensions = dict(
-    extra_params=dict(verbose='FALSE'),
+    extra_params=[('verbose', 'FALSE')],
     validate_params="""
 # Required maps for different names params, including deprecated params
 .gbm.map <- c("x" = "ignored_columns",

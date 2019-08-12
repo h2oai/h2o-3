@@ -1,5 +1,5 @@
 extensions = dict(
-    extra_params=dict(verbose='FALSE'),
+    extra_params=[('verbose', 'FALSE')],
     module="""
 #' Determines whether an XGBoost model can be built
 #'

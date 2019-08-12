@@ -1,5 +1,5 @@
 extensions = dict(
-    required_params=dict(x=None, event_column=None, training_frame=None),
+    required_params=['x', 'event_column', 'training_frame'],
     validate_required_params="""
 # If x is missing, then assume user wants to use all columns as features.
 if (missing(x)) {
