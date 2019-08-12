@@ -243,7 +243,6 @@ public class PrintMojo {
     g.printDot(os, maxLevelsToPrintPerEdge, detail, optionalTitle, pTreeOptions);
     if (outputPngName != null) {
       try (FileInputStream is = new FileInputStream(dotSourceFilePath.toFile())) {
-        Graphviz.useEngine(new GraphvizJdkEngine());
         MutableGraph gr = Parser.read(is);
         Graphviz.fromGraph(gr).render(Format.PNG).toFile(new File(outputPngName));
       }
