@@ -2,17 +2,18 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details) 
 #'
 # -------------------------- XGBoost -------------------------- #
-#' 
+#'
 #' Build an eXtreme Gradient Boosting model
 #' 
 #' Builds a eXtreme Gradient Boosting model using the native XGBoost backend.
-#' 
+#'
 #' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing, then all columns except y are used.
-#' @param y The name or column index of the response variable in the data. The response must be either a numeric or a
-#'        categorical/factor variable. If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
-#' @param model_id Destination id for this model; auto-generated if not specified.
+#' @param y The name or column index of the response variable in the data. 
+#'        The response must be either a numeric or a categorical/factor variable. 
+#'        If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
 #' @param training_frame Id of the training data frame.
+#' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param validation_frame Id of the validation data frame.
 #' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
 #' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to TRUE.
@@ -40,7 +41,7 @@
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.001.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
-#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
+#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
 #' @param distribution Distribution function Must be one of: "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma",
 #'        "tweedie", "laplace", "quantile", "huber". Defaults to AUTO.
@@ -91,9 +92,11 @@
 #' @param backend Backend. By default (auto), a GPU is used if available. Must be one of: "auto", "gpu", "cpu". Defaults to
 #'        auto.
 #' @param gpu_id Which GPU to use.  Defaults to 0.
-#' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree for GBM, DRF, & XGBoost. Metrics per epoch for Deep Learning). Defaults to FALSE.
+#' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
 #' @export
-h2o.xgboost <- function(x, y, training_frame,
+h2o.xgboost <- function(x,
+                        y,
+                        training_frame,
                         model_id = NULL,
                         validation_frame = NULL,
                         nfolds = 0,
@@ -152,12 +155,13 @@ h2o.xgboost <- function(x, y, training_frame,
                         dmatrix_type = c("auto", "dense", "sparse"),
                         backend = c("auto", "gpu", "cpu"),
                         gpu_id = 0,
-                        verbose = FALSE 
-                        ) 
+                        verbose = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
-  validation_frame <- .validate.H2OFrame(validation_frame)
+  validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
+
+  # Validate other required args
   # If x is missing, then assume user wants to use all columns as features.
   if (missing(x)) {
      if (is.numeric(y)) {
@@ -167,8 +171,7 @@ h2o.xgboost <- function(x, y, training_frame,
      }
   }
 
-  # Handle other args
-  # Parameter list to send to model builder
+  # Build parameter list to send to model builder
   parms <- list()
   parms$training_frame <- training_frame
   args <- .verify_dataxy(training_frame, x, y)
@@ -294,9 +297,12 @@ h2o.xgboost <- function(x, y, training_frame,
     parms$backend <- backend
   if (!missing(gpu_id))
     parms$gpu_id <- gpu_id
+
   # Error check and build model
-  .h2o.modelJob('xgboost', parms, h2oRestApiVersion = 3, verbose=verbose) 
+  model <- .h2o.modelJob('xgboost', parms, h2oRestApiVersion=3, verbose=verbose)
+  return(model)
 }
+
 
 #' Determines whether an XGBoost model can be built
 #'
@@ -304,11 +310,11 @@ h2o.xgboost <- function(x, y, training_frame,
 #' Returns True if a XGBoost model can be built, or False otherwise.
 #' @export
 h2o.xgboost.available <- function() {
-if (!("XGBoost" %in% h2o.list_core_extensions())) {
-print("Cannot build a XGboost model - no backend found.")
-return(FALSE)
-} else {
-return(TRUE)
-}
+    if (!("XGBoost" %in% h2o.list_core_extensions())) {
+        print("Cannot build a XGboost model - no backend found.")
+        return(FALSE)
+    } else {
+        return(TRUE)
+    }
 }
 
