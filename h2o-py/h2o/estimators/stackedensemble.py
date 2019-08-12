@@ -142,7 +142,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
             base_models = [b.model_id for b in base_models]
             self._parms["base_models"] = base_models
         else:
-            assert_is_type(base_models, None, [H2OEstimator])
+            assert_is_type(base_models, None, [str])
             self._parms["base_models"] = base_models
 
 
