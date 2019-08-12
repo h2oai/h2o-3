@@ -26,3 +26,6 @@ def compare_output(original, generic, strip_part, algo_name, generic_algo_name):
     generic = generic[generic.find(strip_part):].replace(generic_algo_name, '').strip()
     assert generic == original
 
+
+def drop_model_parameters_from_printout(printout_of_the_model):
+    return printout_of_the_model.split(', \'Model parameters', 1)[0]+']'

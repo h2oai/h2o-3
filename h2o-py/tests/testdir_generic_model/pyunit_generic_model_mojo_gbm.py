@@ -5,6 +5,7 @@ import os
 from h2o.estimators import H2OGradientBoostingEstimator, H2OGenericEstimator
 from tests import pyunit_utils
 from tests.testdir_generic_model import Capturing, compare_output
+from tests.testdir_generic_model.common import drop_model_parameters_from_printout
 
 
 def test(x, y, output_test, strip_part, algo_name, generic_algo_name):
@@ -27,7 +28,7 @@ def test(x, y, output_test, strip_part, algo_name, generic_algo_name):
         generic_mojo_model.show()
 
     original_output_as_str = str(original_output)
-    generic_output_without_model_parameters_as_str = str(generic_output).split(', \'Model parameters', 1)[0]+']'
+    generic_output_without_model_parameters_as_str = drop_model_parameters_from_printout(str(generic_output))
     output_test(original_output_as_str, generic_output_without_model_parameters_as_str, strip_part, algo_name, generic_algo_name)
     
     predictions = generic_mojo_model.predict(airlines)
@@ -37,6 +38,8 @@ def test(x, y, output_test, strip_part, algo_name, generic_algo_name):
     assert len(generic_mojo_model._model_json["output"]["variable_importances"]._cell_values) > 0
     assert generic_mojo_model._model_json["output"]["model_summary"] is not None
     assert len(generic_mojo_model._model_json["output"]["model_summary"]._cell_values) > 0
+    assert generic_mojo_model.model_parameters() is not None
+    assert len(generic_mojo_model.model_parameters()._cell_values) > 0
     
     # Test constructor generating the model from existing MOJO file
     generic_mojo_model_from_file = H2OGenericEstimator.from_file(original_model_filename)
@@ -48,6 +51,8 @@ def test(x, y, output_test, strip_part, algo_name, generic_algo_name):
     assert len(generic_mojo_model_from_file._model_json["output"]["variable_importances"]._cell_values) > 0
     assert generic_mojo_model_from_file._model_json["output"]["model_summary"] is not None
     assert len(generic_mojo_model_from_file._model_json["output"]["model_summary"]._cell_values) > 0
+    assert generic_mojo_model_from_file.model_parameters() is not None
+    assert len(generic_mojo_model_from_file.model_parameters()._cell_values) > 0
     
     generic_mojo_filename = tempfile.mkdtemp("zip", "genericMojo")
     generic_mojo_filename = generic_mojo_model_from_file.download_mojo(path=generic_mojo_filename)

@@ -4,6 +4,7 @@ import os
 from h2o.estimators import H2ORandomForestEstimator, H2OGenericEstimator
 from tests import pyunit_utils
 from tests.testdir_generic_model import compare_output, Capturing
+from tests.testdir_generic_model.common import drop_model_parameters_from_printout
 
 
 def test(x, y, output_test, strip_part, algo_name, generic_algo_name):
@@ -24,7 +25,10 @@ def test(x, y, output_test, strip_part, algo_name, generic_algo_name):
     with Capturing() as generic_output:
         model.show()
 
-    output_test(str(original_output), str(generic_output), strip_part, algo_name, generic_algo_name)
+    original_output_as_str = str(original_output)
+    generic_output_without_model_parameters_as_str = drop_model_parameters_from_printout(str(generic_output))
+    
+    output_test(original_output_as_str, generic_output_without_model_parameters_as_str, strip_part, algo_name, generic_algo_name)
     predictions = model.predict(airlines)
     assert predictions is not None
     assert predictions.nrows == 24421
@@ -32,8 +36,10 @@ def test(x, y, output_test, strip_part, algo_name, generic_algo_name):
     assert len(model._model_json["output"]["variable_importances"]._cell_values) > 0
     assert model._model_json["output"]["model_summary"] is not None
     assert len(model._model_json["output"]["model_summary"]._cell_values) > 0
+    assert model.model_parameters() is not None
+    assert len(model.model_parameters()._cell_values) > 0
 
-    generic_mojo_filename = tempfile.mkdtemp("zip", "genericMojo");
+    generic_mojo_filename = tempfile.mkdtemp("zip", "genericMojo")
     generic_mojo_filename = model.download_mojo(path=generic_mojo_filename)
     assert os.path.getsize(generic_mojo_filename) == os.path.getsize(original_model_filename)
 
