@@ -8,7 +8,6 @@ parms$training_frame <- training_frame
 if(!missing(x))
   parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore
 """,
-    skip_default_set_params_for=['training_frame', 'response_column'],
     with_model="""
 model@model$aggregated_frame_id <- model@model$output_frame$name
 """,

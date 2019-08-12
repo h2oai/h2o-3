@@ -1,4 +1,5 @@
 from collections import defaultdict
+import linecache
 import os
 
 _gen_customizations = defaultdict(dict)
@@ -11,7 +12,12 @@ def get_customizations_for(language, algo, property=None, default=None):
         customizations = dict()
         if os.path.isfile(custom_file):
             with open(custom_file) as f:
-                exec(f.read(), customizations)
+                # linecache and compile are necessary only if we want to inspect code later
+                # otherwise the following statement is enough:
+                # exec(f.read(), customizations)
+                linecache.updatecache(f.name)
+                code = compile(f.read(), f.name, 'exec')
+                exec(code, customizations)
         lang_customizations.update({algo: customizations})
 
     customizations = lang_customizations[algo]

@@ -23,6 +23,7 @@ def get_customizations_or_defaults_for(algo, prop, default=None):
 
 
 def gen_module(schema, algo, module):
+    # print(str(schema))
     rest_api_version = get_customizations_for(algo, 'rest_api_version', 3)
 
     doc_preamble = get_customizations_for(algo, 'doc.preamble')
@@ -68,17 +69,22 @@ def gen_module(schema, algo, module):
         return param if isinstance(param, (list, tuple)) else [param]  # always return array to support deprecated aliases
 
 
-    pdoc_done = []
+    tag = "@param"
+    pdocs = odict()
     for pname in all_params:
-        tag = "@param"
-        if pname in pdoc_done:  # avoid duplicates (esp. if already included in required_params)
+        if pname in pdocs:  # avoid duplicates (esp. if already included in required_params)
             continue
-        pdoc = get_customizations_or_defaults_for(algo, 'doc.params.'+pname)
-        pdocs = [pdoc] if pdoc else [get_help(param, indent=len(tag)+4) for param in get_schema_params(pname)]
-        for pdoc in pdocs:
-            if pdoc:
-                yield reformat_block("%s %s %s" % (tag, pname, pdoc.lstrip('\n')), indent=len(tag)+1, indent_first=False, prefix="#' ")
-                pdoc_done.append(pname)
+        if pname in schema_params:
+            for param in get_schema_params(pname):  # retrieve potential aliases
+                pname = param.get('name')
+                if pname:
+                    pdocs[pname] = get_customizations_or_defaults_for(algo, 'doc.params.'+pname, get_help(param, indent=len(tag)+4))
+        else:
+            pdocs[pname] = get_customizations_or_defaults_for(algo, 'doc.params.'+pname)
+
+    for pname, pdoc in pdocs.items():
+        if pdoc:
+            yield reformat_block("%s %s %s" % (tag, pname, pdoc.lstrip('\n')), indent=len(tag)+1, indent_first=False, prefix="#' ")
 
     if doc_returns:
         tag = "@return"

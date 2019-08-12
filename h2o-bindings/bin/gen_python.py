@@ -3,6 +3,7 @@
 from __future__ import unicode_literals
 from copy import deepcopy
 from functools import partial
+from inspect import getsource
 import sys
 
 import bindings as bi
@@ -15,6 +16,16 @@ get_customizations_for = partial(get_customizations_for, 'python')
 
 def get_customizations_or_defaults_for(algo, prop, default=None):
     return get_customizations_for(algo, prop, get_customizations_for('defaults', prop, default))
+
+
+def code_as_str(code):
+    if code is None:
+        return None
+    if isinstance(code, str):
+        return code
+    if callable(code):
+        return '\n'.join(getsource(code).splitlines()[1:])
+    raise AssertionError("`code` param should be a string or a function definition")
 
 
 # We specify these not as real types, but as parameter annotations in the docstrings
@@ -284,10 +295,10 @@ def gen_module(schema, algo):
         yield ""
         yield ""
     if class_extras:
-        yield reformat_block(class_extras, 4)
+        yield reformat_block(code_as_str(class_extras), 4)
     if module_extras:
         yield ""
-        yield reformat_block(module_extras)
+        yield reformat_block(code_as_str(module_extras))
 
 
 def algo_to_classname(algo):

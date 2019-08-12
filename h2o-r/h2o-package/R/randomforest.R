@@ -190,8 +190,6 @@ h2o.randomForest <- function(x,
     parms$fold_column <- fold_column
   if (!missing(ignore_const_cols))
     parms$ignore_const_cols <- ignore_const_cols
-  if (!missing(offset_column))
-    parms$offset_column <- offset_column
   if (!missing(weights_column))
     parms$weights_column <- weights_column
   if (!missing(balance_classes))
@@ -252,8 +250,6 @@ h2o.randomForest <- function(x,
     parms$calibrate_model <- calibrate_model
   if (!missing(calibration_frame))
     parms$calibration_frame <- calibration_frame
-  if (!missing(distribution))
-    parms$distribution <- distribution
   if (!missing(custom_metric_func))
     parms$custom_metric_func <- custom_metric_func
   if (!missing(export_checkpoints_dir))
