@@ -9,7 +9,6 @@ import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.SharedTreeGraphConverter;
-import org.apache.log4j.BasicConfigurator;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -35,11 +34,6 @@ public class PrintMojo {
   private static final String tmpOutputFileName = "tmpOutputFileName.gv";
 
   public static void main(String[] args) {
-    // Provide configuration for graphviz logging
-    BasicConfigurator.configure();
-    // Select a way to process dot files
-    Graphviz.useEngine(new GraphvizJdkEngine());
-
     // Parse command line arguments
     PrintMojo main = new PrintMojo();
     main.parseArgs(args);
@@ -249,6 +243,7 @@ public class PrintMojo {
     g.printDot(os, maxLevelsToPrintPerEdge, detail, optionalTitle, pTreeOptions);
     if (outputPngName != null) {
       try (FileInputStream is = new FileInputStream(dotSourceFilePath.toFile())) {
+        Graphviz.useEngine(new GraphvizJdkEngine());
         MutableGraph gr = Parser.read(is);
         Graphviz.fromGraph(gr).render(Format.PNG).toFile(new File(outputPngName));
       }
