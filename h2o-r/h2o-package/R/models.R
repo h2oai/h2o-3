@@ -3336,7 +3336,7 @@ row_index=-1) {
   parms$add_missing_na <- include_na
   parms$row_index = row_index
 
-  if (length(user_splits) == 0) {
+  if (is.null(user_splits) || length(user_splits) == 0) {
     parms$user_cols <- NULL
     parms$user_splits <- NULL
     parms$num_user_splits <- NULL
