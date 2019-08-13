@@ -269,6 +269,10 @@ def call(final pipelineContext) {
   // Stages executed in addition to MASTER_STAGES, used for nightly builds.
   def NIGHTLY_STAGES = [
     [
+      stageName: 'Java 13 Smoke', target: 'test-junit-13-smoke-jenkins', javaVersion: 13, timeoutValue: 20,
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
+    ],
+    [
       stageName: 'Py2.7 Single Node', target: 'test-pyunit-single-node', pythonVersion: '2.7',
       timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
