@@ -1818,10 +1818,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  loaded into the re-used temp array, which is also returned.  */
   protected abstract double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]);
   
-  protected Frame transform(final Frame input){
-    return  score(input);
-  }
-
   /**Override scoring logic for models that handle weight/offset**/
   protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/], double offset) {
     assert (offset == 0) : "Override this method for non-trivial offset!";
