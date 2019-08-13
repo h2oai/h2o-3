@@ -14,10 +14,10 @@ Imports a generic model into H2O. Such model can be used then used for scoring a
 additional information about the model. The imported model has to be supported by H2O.
 """,
     examples="""
-library(h2o)
-h2o.init()
+# library(h2o)
+# h2o.init()
 
-generic_model <- h2o.genericModel("/path/to/model.zip")
-predictions <- h2o.predict(generic_model, dataset)
+# generic_model <- h2o.genericModel("/path/to/model.zip")
+# predictions <- h2o.predict(generic_model, dataset)
 """
 )

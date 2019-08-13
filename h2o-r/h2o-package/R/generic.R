@@ -11,11 +11,11 @@
 #' @param path Path to file with self-contained model archive.
 #' @examples
 #' \dontrun{
-#' library(h2o)
-#' h2o.init()
+#' # library(h2o)
+#' # h2o.init()
 #' 
-#' generic_model <- h2o.genericModel("/path/to/model.zip")
-#' predictions <- h2o.predict(generic_model, dataset)
+#' # generic_model <- h2o.genericModel("/path/to/model.zip")
+#' # predictions <- h2o.predict(generic_model, dataset)
 #' }
 #' @export
 h2o.generic <- function(model_id = NULL,
