@@ -931,7 +931,7 @@ public class TargetEncodingTest extends TestUtil {
       Map<String, Frame> encodingMap = tec.prepareEncodingMap(fr, "y", null);
       Scope.track(encodingMap.get(teColumnName));
 
-      Frame encoded = tec.applyTargetEncoding(frameWithoutResponse, "y", encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, false,false, 1234);
+      Frame encoded = tec.applyTargetEncoding(frameWithoutResponse, "y", encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, false,true, 1234);
       Scope.track(encoded);
     } finally {
       Scope.exit();

@@ -247,7 +247,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
 
     Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, foldColumnName);
 
-    Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, true, 0.0, false, 1234);
+    Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, true, 0.0, true, 1234);
 
     Vec encodedVec = resultWithEncoding.vec(4);
 
