@@ -64,17 +64,17 @@ public class TargetEncodingAirlinesBenchmark extends TestUtil {
       int seedForGBM = 1234;
 
       if (withNoiseOnlyForTraining) {
-        trainEncoded = tec.applyTargetEncoding(airlinesTrainWithTEH, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, withBlendedAvg, seed);
+        trainEncoded = tec.applyTargetEncoding(airlinesTrainWithTEH, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, withBlendedAvg, false, seed);
       } else {
-        trainEncoded = tec.applyTargetEncoding(airlinesTrainWithTEH, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, withBlendedAvg, 0, seed);
+        trainEncoded = tec.applyTargetEncoding(airlinesTrainWithTEH, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, withBlendedAvg, 0, false, seed);
       }
 
       // Applying encoding to the valid set
-      Frame validEncoded = tec.applyTargetEncoding(airlinesValid, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName, withBlendedAvg, 0, seed);
+      Frame validEncoded = tec.applyTargetEncoding(airlinesValid, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName, withBlendedAvg, 0, false, seed);
 
 
       // Applying encoding to the test set
-      Frame testEncoded = tec.applyTargetEncoding(airlinesTestFrame, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName, withBlendedAvg, 0, seed);
+      Frame testEncoded = tec.applyTargetEncoding(airlinesTestFrame, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName, withBlendedAvg, 0, false, seed);
       printOutColumnsMetadata(testEncoded);
       testEncoded = tec.ensureTargetColumnIsBinaryCategorical(testEncoded, targetColumnName);
 
@@ -159,13 +159,13 @@ public class TargetEncodingAirlinesBenchmark extends TestUtil {
       Map<String, Frame> encodingMap = tec.prepareEncodingMap(airlinesTEHoldout, targetColumnName, null);
 
       // Apply encoding to the training set
-      Frame trainEncoded = tec.applyTargetEncoding(airlinesTrainWithoutTEH, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, withBlendedAvg, 0,  1234);
+      Frame trainEncoded = tec.applyTargetEncoding(airlinesTrainWithoutTEH, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, withBlendedAvg, 0, true, 1234);
 
       // Applying encoding to the valid set
-      Frame validEncoded = tec.applyTargetEncoding(airlinesValid, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, withBlendedAvg, 0, 1234);
+      Frame validEncoded = tec.applyTargetEncoding(airlinesValid, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, withBlendedAvg, 0, true, 1234);
 
       // Applying encoding to the test set
-      Frame testEncoded = tec.applyTargetEncoding(airlinesTestFrame, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, withBlendedAvg, 0,  1234);
+      Frame testEncoded = tec.applyTargetEncoding(airlinesTestFrame, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, withBlendedAvg, 0, true, 1234);
       //We do it manually just to be able to measure metrics in the end. TargetEncoder should not be aware of target column for test dataset.
       testEncoded = tec.ensureTargetColumnIsBinaryCategorical(testEncoded, targetColumnName);
       Scope.track(trainEncoded, validEncoded, testEncoded);

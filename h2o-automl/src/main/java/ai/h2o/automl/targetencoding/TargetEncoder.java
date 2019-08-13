@@ -545,6 +545,7 @@ public class TargetEncoder {
                                    String foldColumnName,
                                    boolean withBlendedAvg,
                                    double noiseLevel,
+                                   boolean imputeNAsWithNewCategory,
                                    long seed) {
       return applyTargetEncoding(data, targetColumnName, columnToEncodingMap, dataLeakageHandlingStrategy, foldColumnName, withBlendedAvg,
               noiseLevel, seed, null);
@@ -795,9 +796,10 @@ public class TargetEncoder {
                                    DataLeakageHandlingStrategy dataLeakageHandlingStrategy,
                                    String foldColumn,
                                    boolean withBlendedAvg,
+                                   boolean imputeNAsWithNewCategory,
                                    long seed) {
   return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, foldColumn,
-          withBlendedAvg, seed, null);
+          withBlendedAvg, seed, imputeNAsWithNewCategory, null);
   }
     // Overloaded for the case when user had not specified the noise parameter
     public Frame applyTargetEncoding(Frame data,
@@ -807,6 +809,7 @@ public class TargetEncoder {
                                      String foldColumn,
                                      boolean withBlendedAvg,
                                      long seed,
+                                     boolean imputeNAsWithNewCategory,
                                      final Key<Frame> encodedColumnName) {
         double defaultNoiseLevel = 0.01;
         int targetIndex = data.find(targetColumnName);
@@ -825,8 +828,10 @@ public class TargetEncoder {
                                      Map<String, Frame> targetEncodingMap,
                                      DataLeakageHandlingStrategy dataLeakageHandlingStrategy,
                                      boolean withBlendedAvg,
+                                     boolean imputeNAsWithNewCategory,
                                      long seed) {
-      return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, null, withBlendedAvg, seed);
+      return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, null,
+              withBlendedAvg, imputeNAsWithNewCategory, seed);
     }
 
     public Frame applyTargetEncoding(Frame data,
@@ -835,9 +840,11 @@ public class TargetEncoder {
                                      DataLeakageHandlingStrategy dataLeakageHandlingStrategy,
                                      boolean withBlendedAvg,
                                      double noiseLevel,
+                                     boolean imputeNAsWithNewCategory,
                                      long seed) {
       assert !DataLeakageHandlingStrategy.KFold.equals(dataLeakageHandlingStrategy) : "Use another overloaded method for KFold dataLeakageHandlingStrategy.";
-        return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, null, withBlendedAvg, noiseLevel, seed);
+      return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, null,
+              withBlendedAvg, noiseLevel, imputeNAsWithNewCategory, seed);
     }
 
 }

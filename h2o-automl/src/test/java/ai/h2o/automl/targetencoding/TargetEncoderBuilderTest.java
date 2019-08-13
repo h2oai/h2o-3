@@ -218,7 +218,7 @@ public class TargetEncoderBuilderTest extends TestUtil {
 
       encodingMapFromTargetEncoder = tec.prepareEncodingMap(fr2, responseColumnName, foldColumnName);
 
-      Frame transformedTrainWithTargetEncoder = tec.applyTargetEncoding(fr2, responseColumnName, encodingMapFromTargetEncoder, strategy, foldColumnName, targetEncoderParameters._withBlending, seed);
+      Frame transformedTrainWithTargetEncoder = tec.applyTargetEncoding(fr2, responseColumnName, encodingMapFromTargetEncoder, strategy, foldColumnName, targetEncoderParameters._withBlending,false, seed);
      
       Scope.track(transformedTrainWithTargetEncoder);
       

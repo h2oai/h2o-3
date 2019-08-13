@@ -113,7 +113,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
   public Frame transform(Frame data, byte strategy, double noiseLevel, long seed){
     final TargetEncoder.DataLeakageHandlingStrategy leakageHandlingStrategy = TargetEncoder.DataLeakageHandlingStrategy.fromVal(strategy);
     return _targetEncoder.applyTargetEncoding(data, _parms._response_column, this._output._target_encoding_map, leakageHandlingStrategy,
-            _parms._teFoldColumnName, _parms._withBlending, noiseLevel, seed);
+            _parms._teFoldColumnName, _parms._withBlending, noiseLevel,false, seed);
   }
 
   /**
@@ -123,7 +123,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
 
     final TargetEncoder.DataLeakageHandlingStrategy leakageHandlingStrategy = TargetEncoder.DataLeakageHandlingStrategy.fromVal(strategy);
     return _targetEncoder.applyTargetEncoding(data, _parms._response_column, this._output._target_encoding_map, leakageHandlingStrategy,
-            _parms._teFoldColumnName, _parms._withBlending, seed);
+            _parms._teFoldColumnName, _parms._withBlending,false, seed);
   }
   
   @Override
@@ -140,7 +140,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
     final TargetEncoder.DataLeakageHandlingStrategy leakageHandlingStrategy = TargetEncoder.DataLeakageHandlingStrategy.valueOf(_parms._leakageHandlingStrategy);
     return _targetEncoder.applyTargetEncoding(fr, _parms._response_column, this._output._target_encoding_map, leakageHandlingStrategy,
-            _parms._teFoldColumnName, _parms._withBlending, _parms._seed, Key.<Frame>make(destination_key));
+            _parms._teFoldColumnName, _parms._withBlending, _parms._seed,false, Key.<Frame>make(destination_key));
   }
   
 

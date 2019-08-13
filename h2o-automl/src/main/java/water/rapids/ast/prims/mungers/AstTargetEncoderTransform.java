@@ -57,10 +57,10 @@ public class AstTargetEncoderTransform extends AstBuiltin<AstTargetEncoderTransf
 
     if(noise == -1) {
       return new ValFrame(tec.applyTargetEncoding(frame, targetColumnName, encodingMap, dataLeakageHandlingStrategy,
-              foldColumnName, withImputationForOriginalColumns, (long) seed));
+              foldColumnName, withImputationForOriginalColumns,false, (long) seed));
     } else {
       return new ValFrame(tec.applyTargetEncoding(frame, targetColumnName, encodingMap, dataLeakageHandlingStrategy,
-              foldColumnName, withBlending, noise, (long) seed));
+              foldColumnName, withBlending, noise, false,(long) seed));
     }
   }
 
