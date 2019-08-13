@@ -1,21 +1,21 @@
 package hex.genmodel.attributes;
 
 import com.google.gson.JsonObject;
-import hex.genmodel.MojoModel;
+import hex.genmodel.algos.tree.SharedTreeMojoModel;
 
 
 public class SharedTreeModelAttributes extends ModelAttributes {
 
   private final VariableImportances _variableImportances;
 
-  public SharedTreeModelAttributes(JsonObject modelJson, MojoModel model) {
+  public <M extends SharedTreeMojoModel> SharedTreeModelAttributes(JsonObject modelJson, M model) {
     super(model, modelJson);
-    _variableImportances = extractVariableImportances(modelJson, model);
+    _variableImportances = extractVariableImportances(modelJson);
 
   }
 
 
-  protected VariableImportances extractVariableImportances(final JsonObject modelJson, final MojoModel model) {
+  private VariableImportances extractVariableImportances(final JsonObject modelJson) {
     final Table table = ModelJsonReader.readTable(modelJson, "output.variable_importances");
     if (table == null) return null;
     final double[] relativeVarimps = new double[table.rows()];
