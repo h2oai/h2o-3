@@ -53,10 +53,13 @@ class Mixin(object):
         self._inst = mixin(copy.copy(obj), *mixins)  # no deepcopy necessary, we just want to ensure mixin methods are not added to original instance
 
     def __enter__(self):
+        if hasattr(self._inst, '__enter__'):
+            return self._inst.__enter__()
         return self._inst
 
     def __exit__(self, *args):
-        pass
+        if hasattr(self._inst, '__exit__'):
+            self._inst.__exit__()
 
 
 def register_module(module_name):
@@ -402,8 +405,8 @@ class H2OConnectionMonitorMixin(object):
                 print("Creating connection from %s" % cls.__name__)
                 h2o.init(**kwargs)
                 conn = h2o.connection()
-                cls._h2o_connection_ref = ref(conn)
-                print("New session: %s" % conn.session_id)
+                H2OConnectionMonitorMixin._h2o_connection_ref = ref(conn)
+                print("New connection: %s" % conn)
                 conn.start_logging()
             except:
                 cls.close_connection()  # ensure that the connection is properly closed on error
@@ -427,13 +430,13 @@ class H2OConnectionMonitorMixin(object):
                 print("Shutting down cluster from %s" % cls.__name__)
                 cls.shutdown_cluster()
             else:
-                print("Closing connection %s from %s" % (conn.session_id, cls.__name__))
+                print("Closing connection %s from %s" % (conn, cls.__name__))
                 conn.close()
-        cls._h2o_connection_ref = None
+        H2OConnectionMonitorMixin._h2o_connection_ref = None
 
-    @classmethod
-    def _is_current_connection(cls, conn):
-        return conn and cls._h2o_connection_ref and conn is cls._h2o_connection_ref()
+    @staticmethod
+    def _is_current_connection(conn):
+        return conn and H2OConnectionMonitorMixin._h2o_connection_ref and conn is H2OConnectionMonitorMixin._h2o_connection_ref()
 
     @classmethod
     def shutdown_cluster(cls):
@@ -448,17 +451,17 @@ class H2OConnectionMonitorMixin(object):
 
     @classmethod
     def _add_component(cls, component):
-        """track the given component by keeping a weak reference and registering a callback executed on the component destruction."""
-        has_component = next((cr() for cr in cls._h2o_components_refs if cr() is component), None)
+        """Track the given component by keeping a weak reference and registering a callback executed on the component destruction."""
+        has_component = next((cr() for cr in H2OConnectionMonitorMixin._h2o_components_refs if cr() is component), None)
         if not has_component:
-            cls._h2o_components_refs.append(ref(component, cls._remove_component_ref))
+            H2OConnectionMonitorMixin._h2o_components_refs.append(ref(component, cls._remove_component_ref))
             return True
         return False
 
     @classmethod
     def _remove_component(cls, component):
-        """removes the weak reference of the given component"""
-        comp_ref = next((cr for cr in cls._h2o_components_refs if cr() is component), None)
+        """Remove the weak reference of the given component"""
+        comp_ref = next((cr for cr in H2OConnectionMonitorMixin._h2o_components_refs if cr() is component), None)
         if comp_ref:
             cls._remove_component_ref(comp_ref)
             return True
@@ -472,23 +475,30 @@ class H2OConnectionMonitorMixin(object):
         """
         # first removing possible refs to None
         # cls._h2o_components_refs = [cr for cr in cls._h2o_components_refs if cr()]
-        if component_ref in cls._h2o_components_refs:
-            cls._h2o_components_refs.remove(component_ref)
-        if not cls._h2o_components_refs:
+        if component_ref in H2OConnectionMonitorMixin._h2o_components_refs:
+            H2OConnectionMonitorMixin._h2o_components_refs.remove(component_ref)
+        print(str(H2OConnectionMonitorMixin._h2o_components_refs))
+        if not H2OConnectionMonitorMixin._h2o_components_refs:
             print("no more components, closing connection")
             cls.close_connection()
 
     def __enter__(self):
         try:
+            print(str(H2OConnectionMonitorMixin._h2o_components_refs))
+            print("__enter__ %s" % self.__class__.__name__)
             if self._add_component(self):
                 self.init_connection(**(getattr(self, '_init_connection_args') or {}))
+            print(str(H2OConnectionMonitorMixin._h2o_components_refs))
         except:
             self.__exit__()
             raise
         return self
 
     def __exit__(self, *args):
+        print(str(H2OConnectionMonitorMixin._h2o_components_refs))
+        print("__exit__ %s" % self.__class__.__name__)
         self._remove_component(self)
+        print(str(H2OConnectionMonitorMixin._h2o_components_refs))
 
     def __del__(self):
         self.__exit__()
