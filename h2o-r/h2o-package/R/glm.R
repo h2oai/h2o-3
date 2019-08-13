@@ -109,7 +109,9 @@
 #'         including MSE, AUC (for logistic regression), degrees of freedom, and confusion matrices. Please refer to the
 #'         more in-depth GLM documentation available here:
 #'         \url{https://h2o-release.s3.amazonaws.com/h2o-dev/rel-shannon/2/docs-website/h2o-docs/index.html#Data+Science+Algorithms-GLM}
-#' @seealso \code{\link{predict.H2OModel}} for prediction, \code{\link{h2o.mse}}, \code{\link{h2o.auc}}, \code{\link{h2o.confusionMatrix}}, \code{\link{h2o.performance}}, \code{\link{h2o.giniCoef}}, \code{\link{h2o.logloss}}, \code{\link{h2o.varimp}}, \code{\link{h2o.scoreHistory}}
+#' @seealso \code{\link{predict.H2OModel}} for prediction, \code{\link{h2o.mse}}, \code{\link{h2o.auc}},
+#'          \code{\link{h2o.confusionMatrix}}, \code{\link{h2o.performance}}, \code{\link{h2o.giniCoef}},
+#'          \code{\link{h2o.logloss}}, \code{\link{h2o.varimp}}, \code{\link{h2o.scoreHistory}}
 #' @examples
 #' \dontrun{
 #' h2o.init()
@@ -129,7 +131,9 @@
 #' # GLM variable importance
 #' # Also see:
 #' #   https://github.com/h2oai/h2o/blob/master/R/tests/testdir_demos/runit_demo_VI_all_algos.R
-#' bank = h2o.importFile(path = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/demos/bank-additional-full.csv")
+#' bank = h2o.importFile(
+#'   path="https://s3.amazonaws.com/h2o-public-test-data/smalldata/demos/bank-additional-full.csv"
+#' )
 #' predictors = 1:20
 #' target="y"
 #' glm = h2o.glm(x=predictors, y=target, training_frame=bank, family="binomial", standardize=TRUE,
