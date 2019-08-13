@@ -538,6 +538,18 @@ public class TargetEncoder {
       }
     }
 
+  public Frame applyTargetEncoding(Frame data,
+                                   String targetColumnName,
+                                   Map<String, Frame> columnToEncodingMap,
+                                   DataLeakageHandlingStrategy dataLeakageHandlingStrategy,
+                                   String foldColumnName,
+                                   boolean withBlendedAvg,
+                                   double noiseLevel,
+                                   long seed) {
+      return applyTargetEncoding(data, targetColumnName, columnToEncodingMap, dataLeakageHandlingStrategy, foldColumnName, withBlendedAvg,
+              noiseLevel, seed, null);
+  }
+
     /**
      * Core method for applying pre-calculated encodings to the dataset. There are multiple overloaded methods that we will
      * probably be able to get rid off if we are not going to expose Java API for TE.
@@ -560,15 +572,20 @@ public class TargetEncoder {
                                      String foldColumnName,
                                      boolean withBlendedAvg,
                                      double noiseLevel,
-                                     long seed) {
+                                     long seed,
+                                     Key<Frame> encodedFrameKey) {
 
         if(noiseLevel < 0 )
             throw new IllegalStateException("`_noiseLevel` must be non-negative");
 
         Frame dataWithAllEncodings = null;
         try {
+          
+          if(encodedFrameKey == null){
+            encodedFrameKey = Key.make();
+          }
 
-          dataWithAllEncodings = data.deepCopy(Key.make().toString());
+          dataWithAllEncodings = data.deepCopy(encodedFrameKey.toString());
           DKV.put(dataWithAllEncodings);
 
           // Note: for KFold strategy we don't need targetColumnName so that we can exclude values from 
@@ -722,7 +739,9 @@ public class TargetEncoder {
                 }
             }
           }
-
+          
+          DKV.put(encodedFrameKey, dataWithAllEncodings);
+          dataWithAllEncodings._key = encodedFrameKey;
           return dataWithAllEncodings;
         } catch (Exception ex) {
           if (dataWithAllEncodings != null) dataWithAllEncodings.delete();
@@ -770,6 +789,16 @@ public class TargetEncoder {
         }
     }
 
+  public Frame applyTargetEncoding(Frame data,
+                                   String targetColumnName,
+                                   Map<String, Frame> targetEncodingMap,
+                                   DataLeakageHandlingStrategy dataLeakageHandlingStrategy,
+                                   String foldColumn,
+                                   boolean withBlendedAvg,
+                                   long seed) {
+  return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, foldColumn,
+          withBlendedAvg, seed, null);
+  }
     // Overloaded for the case when user had not specified the noise parameter
     public Frame applyTargetEncoding(Frame data,
                                      String targetColumnName,
@@ -777,7 +806,8 @@ public class TargetEncoder {
                                      DataLeakageHandlingStrategy dataLeakageHandlingStrategy,
                                      String foldColumn,
                                      boolean withBlendedAvg,
-                                     long seed) {
+                                     long seed,
+                                     final Key<Frame> encodedColumnName) {
         double defaultNoiseLevel = 0.01;
         int targetIndex = data.find(targetColumnName);
         double   noiseLevel = 0.0;
@@ -786,7 +816,8 @@ public class TargetEncoder {
           Vec targetVec = data.vec(targetIndex);
           noiseLevel = targetVec.isNumeric() ? defaultNoiseLevel * (targetVec.max() - targetVec.min()) : defaultNoiseLevel;
         }
-        return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, foldColumn, withBlendedAvg, noiseLevel, seed);
+        return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, foldColumn,
+                withBlendedAvg, noiseLevel, seed, encodedColumnName);
     }
 
     public Frame applyTargetEncoding(Frame data,

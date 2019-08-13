@@ -22,12 +22,13 @@ def test_target_encoding_fit_method():
     
     te = H2OTargetencoderEstimator(encoded_columns = teColumns, target_column = targetColumnName)
     te.train(x = teColumns, y = targetColumnName, training_frame = trainingFrame)
-    print(te)
     transformed = te.predict(trainingFrame)
     
     assert transformed is not None
+    print(transformed.names)
     assert transformed.ncols == trainingFrame.ncols + len(teColumns)
-    print(transformed)
+    for te_col in teColumns:
+        assert te_col + "_te" in transformed.names
 
 testList = [
     test_target_encoding_fit_method

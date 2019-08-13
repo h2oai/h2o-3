@@ -53,6 +53,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   protected ScoringInfo[] scoringInfo;
   public IcedHashMap<Key, String> _toDelete = new IcedHashMap<>();
 
+  public enum Type {
+    PREDICTIVE, DATA_TRANSFORMING
+  }
+
   public static Model[] fetchAll() {
     final Key[] modelKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
       @Override
@@ -127,6 +131,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   public final boolean isSupervised() { return _output.isSupervised(); }
+
+  /**
+   * Returns type of the underlying model implementations. By default, all models are considereted to be predictive,
+   * unless stated otherwise by the specific implementation.
+   *
+   * @return An instance of {@link Type}. Never null.
+   */
+  public Model.Type getModelType() {
+    return Type.PREDICTIVE;
+  }
 
   public boolean havePojo() {
     return ModelBuilder.havePojo(_parms.algoName());

@@ -144,14 +144,10 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
   @Override
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
     final TargetEncoder.DataLeakageHandlingStrategy leakageHandlingStrategy = TargetEncoder.DataLeakageHandlingStrategy.valueOf(_parms._leakageHandlingStrategy);
-    final Frame transform = _targetEncoder.applyTargetEncoding(fr, _parms._response_column, this._output._target_encoding_map, leakageHandlingStrategy,
-            _parms._teFoldColumnName, _parms._withBlending, _parms._seed);
-
-    final Frame frame = new Frame(Key.<Frame>make(destination_key), transform.names(), transform.vecs());
-    DKV.put(frame);
-    DKV.remove(transform._key);
-    return frame;
+    return _targetEncoder.applyTargetEncoding(fr, _parms._response_column, this._output._target_encoding_map, leakageHandlingStrategy,
+            _parms._teFoldColumnName, _parms._withBlending, _parms._seed, Key.<Frame>make(destination_key));
   }
+  
 
   @Override
   public ModelMojoWriter getMojo() {
@@ -163,5 +159,10 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     TargetEncoderFrameHelper.encodingMapCleanUp(_output._target_encoding_map);
     _output._teColumnNameToIdx.clear();
     return super.remove_impl(fs, cascade);
+  }
+
+  @Override
+  public Model.Type getModelType() {
+    return Type.DATA_TRANSFORMING;
   }
 }
