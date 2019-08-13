@@ -926,12 +926,12 @@ class ModelBase(backwards_compatible(Keyed)):
         scoring_history = self.scoring_history()
         # Separate functionality for GLM since its output is different from other algos
         if self._model_json["algo"] == "glm":
-            # GLM has only one timestep option, which is `iteration`
-            timestep = "iteration"
+            # GLM has only one timestep option, which is `iterations`
+            timestep = "iterations"
             if metric == "AUTO":
-                metric = "log_likelihood"
-            elif metric not in ("log_likelihood", "objective"):
-                raise H2OValueError("for GLM, metric must be one of: log_likelihood, objective")
+                metric = "negative_log_likelihood"
+            elif metric not in ("negative_log_likelihood", "objective"):
+                raise H2OValueError("for GLM, metric must be one of: negative_log_likelihood, objective")
             plt.xlabel(timestep)
             plt.ylabel(metric)
             plt.title("Validation Scoring History")
