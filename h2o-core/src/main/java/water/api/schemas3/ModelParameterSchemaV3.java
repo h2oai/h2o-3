@@ -49,10 +49,10 @@ public class ModelParameterSchemaV3 extends SchemaV3<Iced, ModelParameterSchemaV
   @API(help="list of valid values for use by the front-end", direction=API.Direction.OUTPUT)
   public String[] values;
 
-  @API(help="For Vec-type fields this is the set of other Vec-type fields which must contain mutually exclusive values; for example, for a SupervisedModel the response_column must be mutually exclusive with the weights_column")
+  @API(help="For Vec-type fields this is the set of Frame-type fields which must contain the named column; for example, for a SupervisedModel the response_column must be in both the training_frame and (if it's set) the validation_frame")
   public String[] is_member_of_frames;
 
-  @API(help="For Vec-type fields this is the set of Frame-type fields which must contain the named column; for example, for a SupervisedModel the response_column must be in both the training_frame and (if it's set) the validation_frame")
+  @API(help="For Vec-type fields this is the set of other Vec-type fields which must contain mutually exclusive values; for example, for a SupervisedModel the response_column must be mutually exclusive with the weights_column")
   public String[] is_mutually_exclusive_with;
 
   @API(help="Parameter can be used in grid call", direction=API.Direction.OUTPUT)
