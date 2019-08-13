@@ -16,21 +16,22 @@ def test(x, y, output_test, strip_part, algo_name, generic_algo_name, family):
         glm.show()
     original_model_filename = tempfile.mkdtemp()
     original_model_filename = glm.download_mojo(original_model_filename)
-      
-    model = H2OGenericEstimator.from_file(original_model_filename)
-    assert model is not None
-    print(model)
+
+    generic_mojo_model_from_file = H2OGenericEstimator.from_file(original_model_filename)
+    assert generic_mojo_model_from_file is not None
+    print(generic_mojo_model_from_file)
     with Capturing() as generic_output:
-        model.show()
+        generic_mojo_model_from_file.show()
+
     output_test(str(original_output), str(generic_output), strip_part, algo_name, generic_algo_name)
-    predictions = model.predict(airlines)
+    predictions = generic_mojo_model_from_file.predict(airlines)
     assert predictions is not None
     assert predictions.nrows == 24421
-    assert model._model_json["output"]["model_summary"] is not None
-    assert len(model._model_json["output"]["model_summary"]._cell_values) > 0
+    assert generic_mojo_model_from_file._model_json["output"]["model_summary"] is not None
+    assert len(generic_mojo_model_from_file._model_json["output"]["model_summary"]._cell_values) > 0
 
     generic_mojo_filename = tempfile.mkdtemp("zip", "genericMojo");
-    generic_mojo_filename = model.download_mojo(path=generic_mojo_filename)
+    generic_mojo_filename = generic_mojo_model_from_file.download_mojo(path=generic_mojo_filename)
     assert os.path.getsize(generic_mojo_filename) == os.path.getsize(original_model_filename)
 
 def mojo_model_test_binomial():
