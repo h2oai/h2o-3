@@ -15,6 +15,8 @@ test.model.generic.gbm <- function() {
     
     original_output <- capture.output(print(original_model))
     generic_output <- capture.output(print(generic_model))
+    generic_output <- drop_model_parameters_from_printout(generic_output)
+    
     compare_output(original_output, generic_output,
                    c("Extract .+ frame","H2OBinomialModel: xgboost", "Model ID", "H2OBinomialMetrics: xgboost"),
                    c("H2OBinomialModel: generic", "Model ID", "H2OBinomialMetrics: generic"))
@@ -37,6 +39,8 @@ test.model.generic.gbm <- function() {
     
     original_output <- capture.output(print(original_model))
     generic_output <- capture.output(print(generic_model))
+    generic_output <- drop_model_parameters_from_printout(generic_output)
+    
     compare_output(original_output, generic_output,
                    c("Extract .+ frame","H2ORegressionModel: xgboost", "Model ID", "H2ORegressionMetrics: xgboost"),
                    c("H2ORegressionMetrics: generic", "Model ID", "H2ORegressionModel: generic"))
@@ -53,6 +57,8 @@ test.model.generic.gbm <- function() {
     
     original_output <- capture.output(print(original_model))
     generic_output <- capture.output(print(generic_model))
+    generic_output <- drop_model_parameters_from_printout(generic_output)
+    
     compare_output(original_output, generic_output,
                    c("Extract .+ frame", "H2OMultinomialModel: xgboost", "Model ID", "H2OMultinomialMetrics: xgboost"),
                    c("H2OMultinomialModel: generic", "Model ID", "H2OMultinomialMetrics: generic"))
