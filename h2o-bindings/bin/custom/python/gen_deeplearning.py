@@ -12,7 +12,7 @@ def module_extensions():
         >>> model = H2OAutoEncoderEstimator()
         >>> model.train(x=range(4), training_frame=fr)
         """
-        def init(self, **kwargs):
+        def __init__(self, **kwargs):
             super(H2OAutoEncoderEstimator, self).__init__(**kwargs)
             self._parms['autoencoder'] = True
 
