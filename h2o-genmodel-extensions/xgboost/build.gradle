@@ -2,6 +2,10 @@ apply plugin: 'com.github.johnrengelman.shadow'
 
 description = "H2O GenModel XGBoost support"
 
+// MOJO has to stay Java 1.7 compatible! 
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
 dependencies {
     compile project(":h2o-genmodel")
 
