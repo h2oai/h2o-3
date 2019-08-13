@@ -741,6 +741,7 @@ public class TargetEncoder {
             }
           }
           
+          DKV.remove(dataWithAllEncodings._key);
           DKV.put(encodedFrameKey, dataWithAllEncodings);
           dataWithAllEncodings._key = encodedFrameKey;
           return dataWithAllEncodings;

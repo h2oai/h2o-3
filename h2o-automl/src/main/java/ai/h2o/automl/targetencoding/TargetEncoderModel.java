@@ -127,11 +127,6 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
   }
   
   @Override
-  public Frame score(Frame fr) throws IllegalArgumentException {
-    return super.score(fr);
-  }
-
-  @Override
   protected double[] score0(double data[], double preds[]){
     throw new UnsupportedOperationException("TargetEncoderModel doesn't support scoring. Use `transform()` instead.");
   }
