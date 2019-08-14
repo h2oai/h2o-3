@@ -198,6 +198,23 @@ class H2OAssembly(object):
 
     @property
     def names(self):
+        """
+        :examples:
+
+        >>> iris = h2o.load_dataset("iris")
+        >>> from h2o.assembly import *
+        >>> from h2o.transforms.preprocessing import *
+        >>> assembly = H2OAssembly(steps=[("col_select",
+        ...                                H2OColSelect(["Sepal.Length", "Petal.Length", "Species"])),
+        ...                               ("cos_Sepal.Length",
+        ...                                H2OColOp(op=H2OFrame.cos, col="Sepal.Length", inplace=True)),
+        ...                               ("str_cnt_Species",
+        ...                                H2OColOp(op=H2OFrame.countmatches,
+        ...                                col="Species",
+        ...                                inplace=False, pattern="s"))])
+        >>> result = assembly.fit(iris)
+        >>> result.names
+        """
         return list(zip(*self.steps))[0][:-1]
 
 
