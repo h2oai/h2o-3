@@ -75,6 +75,18 @@ def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_ce
     :param verbose: Set to False to disable printing connection status messages.
     :param connection_conf: Connection configuration object encapsulating connection parameters.
     :returns: the new :class:`H2OConnection` object.
+
+    :examples:
+
+    >>> python
+    >>> import h2o
+    >>> ipA = "127.0.0.1"
+    >>> portN = "54321"
+    >>> urlS = "http://127.0.0.1:54321"
+    >>> connect_type=h2o.connect(ip=ipA, port=portN, verbose=True)
+    # or
+    >>> connect_type2 = h2o.connect(url=urlS, https=True, verbose=True)
+
     """
     global h2oconn
     if config:
@@ -98,6 +110,11 @@ def api(endpoint, data=None, json=None, filename=None, save_to=None):
 
     This function is mostly for internal purposes, but may occasionally be useful for direct access to
     the backend H2O server. It has same parameters as :meth:`H2OConnection.request <h2o.backend.H2OConnection.request>`.
+
+    :examples:
+
+    >>> res = h2o.api("GET /3/NetworkTest")
+    >>> res["table"].show()
     """
     # type checks are performed in H2OConnection class
     _check_connection()
@@ -106,7 +123,13 @@ def api(endpoint, data=None, json=None, filename=None, save_to=None):
 
 
 def connection():
-    """Return the current :class:`H2OConnection` handler."""
+    """Return the current :class:`H2OConnection` handler.
+
+    :examples:
+
+    >>> temp = h2o.connection()
+    >>> temp
+    """
     return h2oconn
 
 
@@ -176,6 +199,12 @@ def init(url=None, ip=None, port=None, name=None, https=None, insecure=None, use
     :param extra_classpath: List of paths to libraries that should be included on the Java classpath when starting H2O from Python.
     :param kwargs: (all other deprecated attributes)
     :param jvm_custom_args: Customer, user-defined argument's for the JVM H2O is instantiated in. Ignored if there is an instance of H2O already running and the client connects to it.
+
+    :examples:
+
+    >>> python
+    >>> import h2o
+    >>> h2o.init()
     """
     global h2oconn
     assert_is_type(url, str, None)
@@ -290,6 +319,11 @@ def lazy_import(path, pattern=None):
     :param pattern: Character string containing a regular expression to match file(s) in the folder.
     :returns: either a :class:`H2OFrame` with the content of the provided file, or a list of such frames if
         importing multiple files.
+
+    :examples:
+
+    >>> iris = h2o.lazy_import("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+    
     """
     assert_is_type(path, str, [str])
     assert_is_type(pattern, str, None)
@@ -340,7 +374,8 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
     :returns: a new :class:`H2OFrame` instance.
 
     :examples:
-        >>> frame = h2o.upload_file("/path/to/local/data")
+    
+    >>> iris_df = h2o.upload_file("~/Desktop/repos/h2o-3/smalldata/iris/iris.csv")
     """
     coltype = U(None, "unknown", "uuid", "string", "float", "real", "double", "int", "numeric",
                 "categorical", "factor", "enum", "time")
@@ -404,11 +439,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     :returns: a new :class:`H2OFrame` instance.
 
     :examples:
-        >>> # Single file import
-        >>> iris = import_file("h2o-3/smalldata/iris.csv")
-        >>> # Return all files in the folder iris/ matching the regex r"iris_.*\.csv"
-        >>> iris_pattern = h2o.import_file(path = "h2o-3/smalldata/iris",
-        ...                                pattern = "iris_.*\.csv")
+        >>> birds = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/birds.csv")
     """
     coltype = U(None, "unknown", "uuid", "string", "float", "real", "double", "int", "numeric",
                 "categorical", "factor", "enum", "time")
@@ -596,6 +627,24 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     :param custom_non_data_line_markers: If a line in imported file starts with any character in given string it will NOT be imported. Empty string means all lines are imported, None means that default behaviour for given format will be used
 
     :returns: a dictionary containing parse parameters guessed by the H2O backend.
+
+    :examples:
+
+    >>> col_headers = ["ID","CAPSULE","AGE","RACE",
+    ...                "DPROS","DCAPS","PSA","VOL","GLEASON"]
+    >>> col_types=['enum','enum','numeric','enum',
+    ...            'enum','enum','numeric','numeric','numeric']
+    >>> hex_key = "training_data.hex"
+    >>> fraw = h2o.import_file(("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip"),
+    ...                         parse=False)
+    >>> setup = h2o.parse_setup(fraw,
+    ...                         destination_frame=hex_key,
+    ...                         header=1,
+    ...                         separator=',',
+    ...                         column_names=col_headers,
+    ...                         column_types=col_types,
+    ...                         na_strings=["NA"])
+    >>> setup
     """
     coltype = U(None, "unknown", "uuid", "string", "float", "real", "double", "int", "numeric",
                 "categorical", "factor", "enum", "time")
@@ -736,6 +785,15 @@ def parse_raw(setup, id=None, first_line_is_header=0):
     :param first_line_is_header: -1, 0, 1 if the first line is to be used as the header
 
     :returns: an :class:`H2OFrame` object.
+
+    :examples:
+
+    >>> fraw = h2o.import_file(("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip"),
+    ...                         parse=False)
+    >>> fhex = h2o.parse_raw(h2o.parse_setup(fraw),
+    ...                      id='prostate.csv',
+    ...                      first_line_is_header=0)
+    >>> fhex.summary()
     """
     assert_is_type(setup, dict)
     assert_is_type(id, str, None)
@@ -758,6 +816,15 @@ def assign(data, xid):
     :param data: an H2OFrame whose id should be changed
     :param xid: new id for the frame.
     :returns: the passed frame.
+
+    :examples:
+
+    >>> old_name = "prostate.csv"
+    >>> new_name = "newProstate.csv"
+    >>> training_data = h2o.import_file(("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip"),
+    ...                                  destination_frame=old_name)
+    >>> temp=h2o.assign(training_data, new_name)
+
     """
     assert_is_type(data, H2OFrame)
     assert_is_type(xid, str)
@@ -776,6 +843,13 @@ def deep_copy(data, xid):
     :param data: an H2OFrame to be cloned
     :param xid: (internal) id to be assigned to the new frame.
     :returns: new :class:`H2OFrame` which is the clone of the passed frame.
+
+    :examples:
+
+    >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+    >>> new_name = "new_frame"
+    >>> training_copy = h2o.deep_copy(training_data, new_name)
+    >>> training_copy
     """
     assert_is_type(data, H2OFrame)
     assert_is_type(xid, str)
@@ -795,6 +869,25 @@ def get_model(model_id):
     :param model_id: The model identification in H2O
 
     :returns: Model object, a subclass of H2OEstimator
+
+    :examples:
+
+    >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+    >>> airlines["Year"]= airlines["Year"].asfactor()
+    >>> airlines["Month"]= airlines["Month"].asfactor()
+    >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+    >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+    >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+    >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+    ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+    >>> response = "IsDepDelayed"
+    >>> model = H2OGeneralizedLinearEstimator(family="binomial",
+    ...                                       alpha=0,
+    ...                                       Lambda=1e-5)
+    >>> model.train(x=predictors,
+    ...             y=response,
+    ...             training_frame=airlines)
+    >>> model2 = h2o.get_model(model.model_id)
     """
     assert_is_type(model_id, str)
     model_json = api("GET /3/Models/%s" % model_id)["models"][0]
@@ -831,6 +924,30 @@ def get_grid(grid_id):
     :param grid_id: The grid identification in h2o
 
     :returns: an :class:`H2OGridSearch` instance.
+
+    :examples:
+
+    >>> from h2o.grid.grid_search import H2OGridSearch
+    >>> from h2o.estimators import H2OGradientBoostingEstimator
+    >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+    >>> x = ["DayofMonth", "Month"]
+    >>> hyper_parameters = {'learn_rate':[0.1,0.2],
+    ...                     'max_depth':[2,3],
+    ...                     'ntrees':[5,10]}
+    >>> search_crit = {'strategy': "RandomDiscrete",
+    ...                'max_models': 5,
+    ...                'seed' : 1234,
+    ...                'stopping_metric' : "AUTO",
+    ...                'stopping_tolerance': 1e-2}
+    >>> air_grid = H2OGridSearch(H2OGradientBoostingEstimator,
+    ...                          hyper_params=hyper_parameters,
+    ...                          search_criteria=search_crit)
+    >>> air_grid.train(x=x,
+    ...                y="IsDepDelayed",
+    ...                training_frame=airlines,
+    ...                distribution="bernoulli")
+    >>> fetched_grid = h2o.get_grid(str(air_grid.grid_id))
+    >>> fetched_grid
     """
     assert_is_type(grid_id, str)
     grid_json = api("GET /99/Grids/%s" % grid_id)
@@ -860,6 +977,13 @@ def get_frame(frame_id, **kwargs):
 
     :param str frame_id: id of the frame to retrieve.
     :returns: an :class:`H2OFrame` object
+
+    :examples:
+
+    >>> from h2o.frame import H2OFrame
+    >>> frame1 = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+    >>> frame2 = h2o.get_frame(frame1.frame_id)
+    
     """
     assert_is_type(frame_id, str)
     return H2OFrame.get_frame(frame_id, **kwargs)
@@ -870,21 +994,58 @@ def no_progress():
     Disable the progress bar from flushing to stdout.
 
     The completed progress bar is printed when a job is complete so as to demarcate a log file.
+
+    :examples:
+
+    >>> h2o.no_progress()
+    >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+    >>> x = ["DayofMonth", "Month"]
+    >>> model = H2OGeneralizedLinearEstimator(family="binomial",
+    ...                                       alpha=0,
+    ...                                       Lambda=1e-5)
+    >>> model.train(x=x, y="IsDepDelayed", training_frame=airlines)  
     """
     H2OJob.__PROGRESS_BAR__ = False
 
 
 def show_progress():
-    """Enable the progress bar (it is enabled by default)."""
+    """Enable the progress bar (it is enabled by default).
+
+    :examples:
+
+    >>> h2o.no_progress()
+    >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+    >>> x = ["DayofMonth", "Month"]
+    >>> model = H2OGeneralizedLinearEstimator(family="binomial",
+    ...                                       alpha=0,
+    ...                                       Lambda=1e-5)
+    >>> model.train(x=x, y="IsDepDelayed", training_frame=airlines)
+    >>> h2o.show_progress()
+    >>> model.train(x=x, y="IsDepDelayed", training_frame=airlines)
+    """
     H2OJob.__PROGRESS_BAR__ = True
 
 
 def enable_expr_optimizations(flag):
-    """Enable expression tree local optimizations."""
+    """Enable expression tree local optimizations.
+
+    :examples:
+
+    >>> h2o.enable_expr_optimizations(True)
+    """
     ExprNode.__ENABLE_EXPR_OPTIMIZATIONS__ = flag
 
 
 def is_expr_optimizations_enabled():
+    """
+
+    :examples:
+
+    >>> h2o.enable_expr_optimizations(True)
+    >>> h2o.is_expr_optimizations_enabled()
+    >>> h2o.enable_expr_optimizations(False)
+    >>> h2o.is_expr_optimizations_enabled()
+    """
     return ExprNode.__ENABLE_EXPR_OPTIMIZATIONS__
 
 
@@ -899,6 +1060,10 @@ def log_and_echo(message=""):
     Sends a message to H2O for logging. Generally used for debugging purposes.
 
     :param message: message to write to the log.
+
+    :examples:
+
+    >>> ret = h2o.log_and_echo("Testing h2o.log_and_echo")
     """
     assert_is_type(message, str)
     api("POST /3/LogAndEcho", data={"message": str(message)})
@@ -911,6 +1076,13 @@ def remove(x, cascade=True):
     :param x: H2OFrame, H2OEstimator, or string, or a list of those things: the object(s) or unique id(s)
         pointing to the object(s) to be removed.
     :param cascade: boolean, if set to TRUE (default), the object dependencies (e.g. submodels) are also removed.
+
+    :examples:
+
+    >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+    >>> h2o.remove(airlines)
+    >>> airlines
+    # Should receive error: "This H2OFrame has been removed."
     """
     item_type = U(str, Keyed)
     assert_is_type(x, item_type, [item_type])
@@ -936,7 +1108,18 @@ def remove_all(retained=None):
     Removes all objects from H2O with possibility to specify models and frames to retain.
     Retained keys must be keys of models and frames only. For models retained, training and validation frames are retained as well.
     Cross validation models of a retained model are NOT retained automatically, those must be specified explicitely.
-    :param retained: Keys of models and frames to retain 
+    :param retained: Keys of models and frames to retain
+
+    :examples:
+
+    >>> from h2o.estimators import H2OGradientBoostingEstimator
+    >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+    >>> gbm = H2OGradientBoostingEstimator(ntrees = 1)
+    >>> gbm.train(x = ["Origin", "Dest"],
+    ...           y = "IsDepDelayed",
+    ...           training_frame=airlines)
+    >>> h2o.remove_all([airlines.frame_id,
+    ...                 gbm.model_id])
     """
 
     params = {"retained_keys": retained}
@@ -950,13 +1133,24 @@ def rapids(expr):
     :param expr: The rapids expression (ascii string).
 
     :returns: The JSON response (as a python dictionary) of the Rapids execution.
+
+    :examples:
+
+    >>> rapidTime = h2o.rapids("(getTimeZone)")["string"]
+    >>> print(str(rapidTime))
     """
     assert_is_type(expr, str)
     return ExprNode.rapids(expr)
 
 
 def ls():
-    """List keys on an H2O Cluster."""
+    """List keys on an H2O Cluster.
+
+    :examples:
+
+    >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+    >>> h2o.ls()
+    """
     return H2OFrame._expr(expr=ExprNode("ls")).as_data_frame(use_pandas=True)
 
 
@@ -967,6 +1161,12 @@ def frame(frame_id):
     :param frame_id: the key of a Frame in H2O.
 
     :returns: dict containing the frame meta-information.
+
+    :examples:
+
+    >>> training_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+    >>> frame_summary = h2o.frame(training_data.frame_id)
+    >>> frame_summary
     """
     assert_is_type(frame_id, str)
     return api("GET /3/Frames/%s" % frame_id)
@@ -977,6 +1177,11 @@ def frames():
     Retrieve all the Frames.
 
     :returns: Meta information on the frames
+
+    :examples:
+
+    >>> arrestsH2O = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/USArrests.csv")
+    >>> h2o.frames()
     """
     return api("GET /3/Frames")
 
@@ -990,6 +1195,17 @@ def download_pojo(model, path="", get_jar=True, jar_name=""):
     :param get_jar: retrieve the h2o-genmodel.jar also (will be saved to the same folder ``path``).
     :param jar_name: Custom name of genmodel jar.
     :returns: location of the downloaded POJO file.
+
+    :examples:
+
+    >>> h2o_df = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+    >>> h2o_df['CAPSULE'] = h2o_df['CAPSULE'].asfactor()
+    >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+    >>> binomial_fit = H2OGeneralizedLinearEstimator(family = "binomial")
+    >>> binomial_fit.train(y = "CAPSULE",
+    ...                    x = ["AGE", "RACE", "PSA", "GLEASON"],
+    ...                    training_frame = h2o_df)
+    >>> h2o.download_pojo(binomial_fit, path='', get_jar=False)
     """
     assert_is_type(model, ModelBase)
     assert_is_type(path, str)
@@ -1021,6 +1237,13 @@ def download_csv(data, filename):
 
     :param data: an H2OFrame object to be downloaded.
     :param filename: name for the CSV file where the data should be saved to.
+
+    :examples:
+
+    >>> iris = h2o.load_dataset("iris")
+    >>> h2o.download_csv(iris, "iris_delete.csv")
+    >>> iris2 = h2o.import_file("iris_delete.csv")
+    >>> iris2 = h2o.import_file("iris_delete.csv")
     """
     assert_is_type(data, H2OFrame)
     assert_is_type(filename, str)
@@ -1084,7 +1307,14 @@ def save_model(model, path="", force=False):
     :returns: the path of the saved model
 
     :examples:
-        >>> path = h2o.save_model(my_model, dir=my_path)
+        
+    >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+    >>> h2o_df = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+    >>> my_model = H2OGeneralizedLinearEstimator(family = "binomial")
+    >>> my_model.train(y = "CAPSULE",
+    ...                x = ["AGE", "RACE", "PSA", "GLEASON"],
+    ...                training_frame = h2o_df)
+    >>> h2o.save_model(my_model, path='', force=True)
     """
     assert_is_type(model, ModelBase)
     assert_is_type(path, str)
@@ -1102,8 +1332,19 @@ def load_model(path):
     :returns: an :class:`H2OEstimator` object
 
     :examples:
-        >>> path = h2o.save_model(my_model, dir=my_path)
-        >>> h2o.load_model(path)
+
+    >>> training_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+    >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+    ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+    >>> response = "IsDepDelayed"
+    >>> model = H2OGeneralizedLinearEstimator(family="binomial",
+    ...                                       alpha=0,
+    ...                                       Lambda=1e-5)
+    >>> model.train(x=predictors,
+    ...             y=response,
+    ...             training_frame=training_data)
+    >>> h2o.save_model(model, path='', force=True)
+    >>> h2o.load_model(model)
     """
     assert_is_type(path, str)
     res = api("POST /99/Models.bin/%s" % "", data={"dir": path})
@@ -1124,6 +1365,21 @@ def export_file(frame, path, force=False, sep=",", compression=None, parts=1):
         specify your desired maximum number of part files. Path needs to be a directory
         when exporting to multiple files, also that directory must be empty.
         Default is ``parts = 1``, which is to export to a single file.
+
+    :examples:
+
+    >>> h2o_df = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate.csv")
+    >>> h2o_df['CAPSULE'] = h2o_df['CAPSULE'].asfactor()
+    >>> rand_vec = h2o_df.runif(1234)
+    >>> train = h2o_df[rand_vec <= 0.8]
+    >>> valid = h2o_df[(rand_vec > 0.8) & (rand_vec <= 0.9)]
+    >>> test = h2o_df[rand_vec > 0.9]
+    >>> binomial_fit = H2OGeneralizedLinearEstimator(family = "binomial")
+    >>> binomial_fit.train(y = "CAPSULE",
+    ...                    x = ["AGE", "RACE", "PSA", "GLEASON"],
+    ...                    training_frame = train, validation_frame = valid)
+    >>> pred = binomial_fit.predict(test)
+    >>> h2o.export_file(pred, "/tmp/pred.csv", force = True)
     """
     assert_is_type(frame, H2OFrame)
     assert_is_type(path, str)
@@ -1137,7 +1393,15 @@ def export_file(frame, path, force=False, sep=",", compression=None, parts=1):
 
 
 def cluster():
-    """Return :class:`H2OCluster` object describing the backend H2O cluster."""
+    """Return :class:`H2OCluster` object describing the backend H2O cluster.
+
+    :examples:
+
+    >>> python
+    >>> import h2o
+    >>> h2o.init()
+    >>> h2o.cluster()
+    """
     return h2oconn.cluster if h2oconn else None
 
 
@@ -1182,6 +1446,39 @@ def create_frame(frame_id=None, rows=10000, cols=10, randomize=True,
     :param seed_for_column_types: a seed used to generate random column types when ``randomize`` is True.
 
     :returns: an :class:`H2OFrame` object
+
+    :examples:
+
+    >>> dataset_params = {}
+    >>> dataset_params['rows'] = random.sample(list(range(50,150)),1)[0]
+    >>> dataset_params['cols'] = random.sample(list(range(3,6)),1)[0]
+    >>> dataset_params['categorical_fraction'] = round(random.random(),1)
+    >>> left_over = (1 - dataset_params['categorical_fraction'])
+    >>> dataset_params['integer_fraction'] =
+    ... round(left_over - round(random.uniform(0,left_over),1),1)
+    >>> if dataset_params['integer_fraction'] +
+    ... dataset_params['categorical_fraction'] == 1:
+    ...     if dataset_params['integer_fraction'] >
+    ...     dataset_params['categorical_fraction']:
+    ...             dataset_params['integer_fraction'] =
+    ...             dataset_params['integer_fraction'] - 0.1
+    ...     else:   
+    ...             dataset_params['categorical_fraction'] =
+    ...             dataset_params['categorical_fraction'] - 0.1
+    >>> dataset_params['missing_fraction'] = random.uniform(0,0.5)
+    >>> dataset_params['has_response'] = False
+    >>> dataset_params['randomize'] = True
+    >>> dataset_params['factors'] = random.randint(2,5)
+    >>> print("Dataset parameters: {0}".format(dataset_params))
+    >>> distribution = random.sample(['bernoulli','multinomial',
+    ...                               'gaussian','poisson','gamma'], 1)[0]
+    >>> if   distribution == 'bernoulli': dataset_params['response_factors'] = 2
+    ... elif distribution == 'gaussian':  dataset_params['response_factors'] = 1
+    ... elif distribution == 'multinomial': dataset_params['response_factors'] = random.randint(3,5)
+    ... else:
+    ...     dataset_params['has_response'] = False
+    >>> print("Distribution: {0}".format(distribution))
+    >>> train = h2o.create_frame(**dataset_params)
     """
     t_fraction = U(None, BoundNumeric(0, 1))
     assert_is_type(frame_id, str, None)
@@ -1290,6 +1587,27 @@ def interaction(data, factors, pairwise, max_factors, min_occurrence, destinatio
     :param destination_frame: a string indicating the destination key. If empty, this will be auto-generated by H2O.
 
     :returns: :class:`H2OFrame`
+
+    :examples:
+
+    >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+    >>> iris = iris.cbind(iris[4] == "Iris-setosa")
+    >>> iris[5] = iris[5].asfactor()
+    >>> iris.set_name(5,"C6")
+    >>> iris = iris.cbind(iris[4] == "Iris-virginica")
+    >>> iris[6] = iris[6].asfactor()
+    >>> iris.set_name(6, name="C7")
+    >>> two_way_interactions = h2o.interaction(iris,
+    ...                                        factors=[4,5,6],
+    ...                                        pairwise=True,
+    ...                                        max_factors=10000,
+    ...                                        min_occurrence=1)
+    >>> from h2o.utils.typechecks import assert_is_type
+    >>> assert_is_type(two_way_interactions, H2OFrame)
+    >>> levels1 = two_way_interactions.levels()[0]
+    >>> levels2 = two_way_interactions.levels()[1]
+    >>> levels3 = two_way_interactions.levels()[2]
+    >>> two_way_interactions
     """
     assert_is_type(data, H2OFrame)
     assert_is_type(factors, [str, int])
@@ -1324,6 +1642,17 @@ def as_list(data, use_pandas=True, header=True):
     :param header: If True, return column names as first element in list
 
     :returns: List of lists (Rows x Columns).
+
+    :examples:
+
+    >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+    >>> from h2o.utils.typechecks import assert_is_type
+    >>> res1 = h2o.as_list(iris, use_pandas=False)
+    >>> assert_is_type(res1, list)
+    >>> res1 = list(zip(*res1))
+    >>> assert abs(float(res1[0][9]) - 4.4) < 1e-10 and abs(float(res1[1][9]) - 2.9) < 1e-10 and \
+    ...     abs(float(res1[2][9]) - 1.4) < 1e-10, "incorrect values"
+    >>> res1
     """
     assert_is_type(data, H2OFrame)
     assert_is_type(use_pandas, bool)
@@ -1358,7 +1687,12 @@ def demo(funcname, interactive=True, echo=True, test=False):
 
 
 def load_dataset(relative_path):
-    """Imports a data file within the 'h2o_data' folder."""
+    """Imports a data file within the 'h2o_data' folder.
+
+    :examples:
+
+    >>> fr = h2o.load_dataset("iris")
+    """
     assert_is_type(relative_path, str)
     h2o_dir = os.path.split(__file__)[0]
     for possible_file in [os.path.join(h2o_dir, relative_path),
@@ -1378,6 +1712,33 @@ def make_metrics(predicted, actual, domain=None, distribution=None):
     :param H2OFrame actuals: an H2OFrame containing actual values.
     :param domain: list of response factors for classification.
     :param distribution: distribution for regression.
+
+    :examples:
+
+    >>> fr = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+    >>> fr["CAPSULE"] = fr["CAPSULE"].asfactor()
+    >>> fr["RACE"] = fr["RACE"].asfactor()
+    >>> response = "AGE"
+    >>> predictors = list(set(fr.names) - {"ID", response})
+    >>> for distr in ["gaussian", "poisson", "laplace", "gamma"]:
+    ...     print("distribution: %s" % distr)
+    ...     model = H2OGradientBoostingEstimator(distribution=distr,
+    ...                                          ntrees=2,
+    ...                                          max_depth=3,
+    ...                                          min_rows=1,
+    ...                                          learn_rate=0.1,
+    ...                                          nbins=20)
+    ...     model.train(x=predictors,
+    ...                 y=response,
+    ...                 training_frame=fr)
+    ...     predicted = h2o.assign(model.predict(fr), "pred")
+    ...     actual = fr[response]
+    ...     m0 = model.model_performance(train=True)
+    ...     m1 = h2o.make_metrics(predicted, actual, distribution=distr)
+    ...     m2 = h2o.make_metrics(predicted, actual)
+    >>> print(m0)
+    >>> print(m1)
+    >>> print(m2)
     """
     assert_is_type(predicted, H2OFrame)
     assert_is_type(actual, H2OFrame)
@@ -1395,6 +1756,13 @@ def make_metrics(predicted, actual, domain=None, distribution=None):
 def flow():
     """
     Open H2O Flow in your browser.
+
+    :examples:
+
+    >>> python
+    >>> import h2o
+    >>> h2o.init()
+    >>> h2o.flow()
 
     """
     webbrowser.open(connection().base_url, new = 1)
@@ -1480,9 +1848,6 @@ def upload_custom_metric(func, func_file="metrics.py", func_name=None, class_nam
         >>>
         >>>     def metric(self, l):
         >>>         return l[0] / l[1]
-        >>>
-        >>>
-        >>> h2o.upload_custom_metric(CustomMaeFunc, func_name="mae")
         >>>
         >>> custom_func_str = '''class CustomMaeFunc:
         >>>     def map(self, pred, act, w, o, model):
@@ -1625,8 +1990,21 @@ class {}Wrapper({}, DistributionFunc, object):
 def import_mojo(mojo_path):
     """
     Imports an existing MOJO model as an H2O model.
+    
     :param mojo_path: Path to the MOJO archive on the H2O's filesystem
     :return: An H2OGenericEstimator instance embedding given MOJO
+
+    :examples:
+
+    >>> from h2o.estimators import H2OGradientBoostingEstimator
+    >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+    >>> model = H2OGradientBoostingEstimator(ntrees = 1)
+    >>> model.train(x = ["Origin", "Dest"],
+    ...             y = "IsDepDelayed",
+    ...             training_frame=airlines)
+    >>> original_model_filename = tempfile.mkdtemp()
+    >>> original_model_filename = model.download_mojo(original_model_filename)
+    >>> mojo_model = h2o.import_mojo(original_model_filename)
     """
     if mojo_path == None:
         raise TypeError("MOJO path may not be None")
@@ -1638,8 +2016,21 @@ def import_mojo(mojo_path):
 def upload_mojo(mojo_path):
     """
     Uploads an existing MOJO model from local filesystem into H2O and imports it as an H2O Generic Model. 
+
     :param mojo_path:  Path to the MOJO archive on the user's local filesystem
     :return: An H2OGenericEstimator instance embedding given MOJO
+
+    :examples:
+
+    >>> >>> from h2o.estimators import H2OGradientBoostingEstimator
+    >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+    >>> model = H2OGradientBoostingEstimator(ntrees = 1)
+    >>> model.train(x = ["Origin", "Dest"],
+    ...             y = "IsDepDelayed",
+    ...             training_frame=airlines)
+    >>> original_model_filename = tempfile.mkdtemp()
+    >>> original_model_filename = model.download_mojo(original_model_filename)
+    >>> mojo_model = h2o.upload_mojo(original_model_filename)
     """
     response = api("POST /3/PostFile", filename=mojo_path)
     frame_key = response["destination_frame"]
