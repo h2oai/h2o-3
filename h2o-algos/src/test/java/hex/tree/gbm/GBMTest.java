@@ -3507,6 +3507,11 @@ public class GBMTest extends TestUtil {
 
       // compare training metrics of both models
       if (model!=null && model2!=null) {
+        System.out.println("Compare training metrics of both distributions.");
+        assertEquals(
+                ((ModelMetricsBinomial) model._output._training_metrics).logloss(),
+                ((ModelMetricsBinomial) model2._output._training_metrics).logloss(), 2e-3);
+        
         System.out.println("Compare CV metrics of both distributions.");
         // compare CV metrics of both models
         assertEquals(
