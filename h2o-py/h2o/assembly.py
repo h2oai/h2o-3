@@ -81,16 +81,24 @@ class H2OAssembly(object):
     # static properties pointing to H2OFrame methods
     divide = H2OFrame.__truediv__
     """
-    :examples:
+    Divides one frame from the other.
+    
+    :examples: 
 
     >>> python_list1 = [[4,4,4,4],[4,4,4,4]]
     >>> python_list2 = [[2,2,2,2], [2,2,2,2]]
     >>> frame1 = h2o.H2OFrame(python_obj=python_list1)
     >>> frame2 = h2o.H2OFrame(python_obj=python_list2)
     >>> H2OAssembly.divide(frame1, frame2)
+       C1    C2    C3    C4
+      ----  ----  ----  ----
+       2     2     2     2
+       2     2     2     2
     """
     plus = H2OFrame.__add__
     """
+    Adds the frames together.
+
     :examples:
 
     >>> python_list1 = [[4,4,4,4],[4,4,4,4]]
@@ -98,9 +106,15 @@ class H2OAssembly(object):
     >>> frame1 = h2o.H2OFrame(python_obj=python_list1)
     >>> frame2 = h2o.H2OFrame(python_obj=python_list2)
     >>> H2OAssembly.plus(frame1, frame2)
+         C1    C2    C3    C4
+        ----  ----  ----  ----
+         6     6     6     6
+         6     6     6     6
     """
     multiply = H2OFrame.__mul__
     """
+    Multiplies the frames together.
+    
     :examples:
 
     >>> python_list1 = [[4,4,4,4],[4,4,4,4]]
@@ -108,9 +122,15 @@ class H2OAssembly(object):
     >>> frame1 = h2o.H2OFrame(python_obj=python_list1)
     >>> frame2 = h2o.H2OFrame(python_obj=python_list2)
     >>> H2OAssembly.multiply(frame1, frame2)
+        C1    C2    C3    C4
+       ----  ----  ----  ----
+        8     8     8     8
+        8     8     8     8
     """
     minus = H2OFrame.__sub__
     """
+    Subtracts one frame from the other.
+
     :examples:
 
     >>> python_list1 = [[4,4,4,4],[4,4,4,4]]
@@ -118,9 +138,15 @@ class H2OAssembly(object):
     >>> frame1 = h2o.H2OFrame(python_obj=python_list1)
     >>> frame2 = h2o.H2OFrame(python_obj=python_list2)
     >>> H2OAssembly.minus(frame1, frame2)
+        C1    C2    C3    C4
+       ----  ----  ----  ----
+        2     2     2     2
+        2     2     2     2
     """
     less_than = H2OFrame.__lt__
     """
+    Measures whether one frame is less than the other. Boolean response (0/1 = no/yes).
+
     :examples:
 
     >>> python_list1 = [[4,4,4,4],[4,4,4,4]]
@@ -128,9 +154,15 @@ class H2OAssembly(object):
     >>> frame1 = h2o.H2OFrame(python_obj=python_list1)
     >>> frame2 = h2o.H2OFrame(python_obj=python_list2)
     >>> H2OAssembly.less_than(frame1, frame2)
+         C1    C2    C3    C4
+        ----  ----  ----  ----
+          0     0     0     0
+          0     0     0     0
     """
     less_than_equal = H2OFrame.__le__
     """
+    Measures whether one frame is less than or equal to the other. Boolean response (0/1 = no/yes).
+    
     :examples:
 
     >>> python_list1 = [[4,4,4,4],[4,4,4,4]]
@@ -138,9 +170,15 @@ class H2OAssembly(object):
     >>> frame1 = h2o.H2OFrame(python_obj=python_list1)
     >>> frame2 = h2o.H2OFrame(python_obj=python_list2)
     >>> H2OAssembly.less_than_equal(frame1, frame2)
+         C1    C2    C3    C4
+        ----  ----  ----  ----
+         0     0     0     0
+         0     0     0     0
     """
     equal_equal = H2OFrame.__eq__
     """
+    Measures whether the frames are equal. Boolean response (0/1 = no/yes).
+
     :examples:
 
     >>> python_list1 = [[4,4,4,4],[4,4,4,4]]
@@ -148,9 +186,15 @@ class H2OAssembly(object):
     >>> frame1 = h2o.H2OFrame(python_obj=python_list1)
     >>> frame2 = h2o.H2OFrame(python_obj=python_list2)
     >>> H2OAssembly.equal_equal(frame1, frame2)
+        C1    C2    C3    C4
+       ----  ----  ----  ----
+         0     0     0     0
+         0     0     0     0
     """
     not_equal = H2OFrame.__ne__
     """
+    Measures whether the frames are not equal. Boolean response (0/1 = no/yes).
+
     :examples:
 
     >>> python_list1 = [[4,4,4,4],[4,4,4,4]]
@@ -158,9 +202,15 @@ class H2OAssembly(object):
     >>> frame1 = h2o.H2OFrame(python_obj=python_list1)
     >>> frame2 = h2o.H2OFrame(python_obj=python_list2)
     >>> H2OAssembly.not_equal(frame1, frame2)
+        C1    C2    C3    C4
+       ----  ----  ----  ----
+         1     1     1     1
+         1     1     1     1
     """
     greater_than = H2OFrame.__gt__
     """
+    Measures whether one frame is greater than the other. Boolean response (0/1 = no/yes).
+
     :examples:
 
     >>> python_list1 = [[4,4,4,4],[4,4,4,4]]
@@ -168,9 +218,15 @@ class H2OAssembly(object):
     >>> frame1 = h2o.H2OFrame(python_obj=python_list1)
     >>> frame2 = h2o.H2OFrame(python_obj=python_list2)
     >>> H2OAssembly.greater_than(frame1, frame2)
+        C1    C2    C3    C4
+       ----  ----  ----  ----
+         1     1     1     1
+         1     1     1     1
     """
     greater_than_equal = H2OFrame.__ge__
     """
+    Measures whether one frame is greater than or equal to the other. Boolean response (0/1 = no/yes).
+
     :examples:
 
     >>> python_list1 = [[4,4,4,4],[4,4,4,4]]
@@ -178,6 +234,10 @@ class H2OAssembly(object):
     >>> frame1 = h2o.H2OFrame(python_obj=python_list1)
     >>> frame2 = h2o.H2OFrame(python_obj=python_list2)
     >>> H2OAssembly.greater_than_equal(frame1, frame2)
+         C1    C2    C3    C4
+        ----  ----  ----  ----
+         1     1     1     1
+         1     1     1     1
     """
 
 
@@ -199,6 +259,8 @@ class H2OAssembly(object):
     @property
     def names(self):
         """
+        Returns the specified column names.
+
         :examples:
 
         >>> iris = h2o.load_dataset("iris")
@@ -214,6 +276,7 @@ class H2OAssembly(object):
         ...                                inplace=False, pattern="s"))])
         >>> result = assembly.fit(iris)
         >>> result.names
+        [u'Sepal.Length', u'Petal.Length', u'Species', u'Species0']
         """
         return list(zip(*self.steps))[0][:-1]
 
