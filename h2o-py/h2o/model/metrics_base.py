@@ -764,5 +764,5 @@ class H2OCoxPHModelMetrics(MetricsBase):
 class H2OTargetEncodermetrics(MetricsBase):
 
     def __init__(self, metric_json, on=None, algo=""):
-        super(H2OCoxPHModelMetrics, self).__init__(metric_json, on, algo)
+        super(H2OTargetEncodermetrics, self).__init__(metric_json, on, algo)
 
