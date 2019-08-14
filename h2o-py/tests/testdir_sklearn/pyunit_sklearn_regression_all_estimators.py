@@ -1,7 +1,7 @@
 from __future__ import print_function
 from collections import defaultdict
 from functools import partial
-import importlib, inspect, os, sys
+import gc, inspect, os, sys
 
 import numpy as np
 from sklearn.datasets import make_regression
@@ -26,16 +26,6 @@ seed = 2019
 init_connection_args = dict(strict_version_check=False, show_progress=True)
 
 scores = defaultdict(dict)
-
-
-def _ensure_connection_state(connected=True):
-    if connected:
-        # if we need a connection beforehand, create it if needed
-        H2OConnectionMonitorMixin.init_connection(init_connection_args)
-    else:
-        # if we want to start afresh, close everything first
-        H2OConnectionMonitorMixin.close_connection(force=True)
-
 
 
 def _get_data(format='numpy'):
@@ -66,7 +56,6 @@ def _get_custom_behaviour(estimator_cls):
 
 
 def test_estimator_with_h2o_frames(estimator_cls):
-    _ensure_connection_state(connected=True)
     args = _get_default_args(estimator_cls)
     estimator = estimator_cls(**args)
 
@@ -95,7 +84,6 @@ def test_estimator_with_h2o_frames(estimator_cls):
 
 
 def test_estimator_with_numpy_arrays(estimator_cls):
-    _ensure_connection_state(connected=False)
     estimator = estimator_cls(init_connection_args=init_connection_args, **_get_default_args(estimator_cls))
 
     data = _get_data(format='numpy')

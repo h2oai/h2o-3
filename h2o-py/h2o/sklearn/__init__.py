@@ -34,7 +34,7 @@ from sklearn.base import ClassifierMixin, RegressorMixin
 from .. import automl
 from .. import estimators
 from .. import transforms
-from .wrapper import estimator, params_as_h2o_frames, register_module, transformer, H2OConnectionMonitorMixin
+from .wrapper import estimator, params_as_h2o_frames, register_module, transformer, H2OConnectionMonitorMixin, H2OEstimatorAsTransformerMixin
 
 module = sys.modules[__name__]
 
@@ -93,10 +93,19 @@ def _get_custom_params(cls):
         custom.update(score=False)  # disables `score` method.
     if cls.__name__ in ['H2OGeneralizedLinearEstimator']:
         custom.update(distribution_param='family')  # use algo `family` param to identify distribution (default is `distribution`).
+    # if cls.__name__ in ['H2OAggregatorEstimator']:
+    #     custom.update(transform=lambda self: self.aggregated_frame())
     if cls.__name__ in ['H2ONaiveBayesEstimator',
                         'H2OSupportVectorMachineEstimator']:
         custom.update(default_estimator_type='classifier')  #  makes the generic sklearn estimator a `classifier` by default.
     return custom or None
+
+
+def _is_hybrid_estimator_transformer(cls):
+    return cls.__name__ in ['H2OAggregatorEstimator',
+                            'H2OGeneralizedLowRankEstimator',
+                            'H2OPrincipalComponentAnalysisEstimator',
+                            'H2OSingularValueDecompositionEstimator']
 
 
 def make_estimator(cls, name=None, submodule=None):
@@ -104,6 +113,7 @@ def make_estimator(cls, name=None, submodule=None):
         name = cls.__name__.replace('Estimator', '') + 'Estimator'
     return estimator(cls, name=name, module=_register_submodule(submodule),
                      default_params=_make_default_params(cls),
+                     mixins=(H2OEstimatorAsTransformerMixin,) if _is_hybrid_estimator_transformer(cls) else None,
                      is_generic=True,
                      custom_params=_get_custom_params(cls),
                      )

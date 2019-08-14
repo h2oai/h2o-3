@@ -761,6 +761,7 @@ class Test(object):
         self.output_file_name = \
             os.path.join(self.output_dir, test_short_dir_with_no_slashes + self.test_name + ".out.txt")
         f = open(self.output_file_name, "w")
+        print("Running test %s against server %s:%s" % (self.test_name, self.ip, self.port))
         self.child = subprocess.Popen(args=cmd, stdout=f, stderr=subprocess.STDOUT, cwd=self.test_dir)
         self.pid = self.child.pid
 

@@ -5,7 +5,7 @@ from builtins import range
 from past.builtins import basestring
 from functools import reduce
 from scipy.sparse import csr_matrix
-import sys, os
+import sys, os, gc
 import pandas as pd
 
 try:        # works with python 2.7 not 3

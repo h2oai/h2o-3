@@ -390,24 +390,24 @@ class H2OConnectionMonitorMixin(object):
     """
 
     @classmethod
-    def init_connection(cls, show_progress=True, **kwargs):
+    def init_connection(cls, auto_close=True, show_progress=True, **kwargs):
         """
         Initialize the H2O connection if needed and track the current instance
-        to be able to automatically close the connection when there's no more estimator components in scope
+        to be able to automatically close the connection when there's no more components in scope
         that require this connection.
         See :func:`h2o.init` for the list of allowed parameters.
 
+        :param: bool auto_close: if True (default) the H2O connection (and possibly the local server if started for this connection)
+        are automatically closed once there's no more components in scope requiring this connection.
         :param: bool show_progress: if True (default) the H2O progress bars are always rendered.
         """
-        print("Checking connection from %s" % cls.__name__)
         if not (h2o.connection() and h2o.connection().connected):
             try:
-                print("Creating connection from %s" % cls.__name__)
                 h2o.init(**kwargs)
                 conn = h2o.connection()
-                H2OConnectionMonitorMixin._h2o_connection_ref = ref(conn)
-                print("New connection: %s" % conn)
-                conn.start_logging()
+                if auto_close:
+                    H2OConnectionMonitorMixin._h2o_connection_ref = ref(conn)
+                # conn.start_logging()
             except:
                 cls.close_connection()  # ensure that the connection is properly closed on error
                 raise
@@ -427,10 +427,8 @@ class H2OConnectionMonitorMixin(object):
         conn = h2o.connection()
         if conn and (force or cls._is_current_connection(conn)):
             if h2o.connection().local_server:
-                print("Shutting down cluster from %s" % cls.__name__)
                 cls.shutdown_cluster()
             else:
-                print("Closing connection %s from %s" % (conn, cls.__name__))
                 conn.close()
         H2OConnectionMonitorMixin._h2o_connection_ref = None
 
@@ -477,28 +475,20 @@ class H2OConnectionMonitorMixin(object):
         # cls._h2o_components_refs = [cr for cr in cls._h2o_components_refs if cr()]
         if component_ref in H2OConnectionMonitorMixin._h2o_components_refs:
             H2OConnectionMonitorMixin._h2o_components_refs.remove(component_ref)
-        print(str(H2OConnectionMonitorMixin._h2o_components_refs))
         if not H2OConnectionMonitorMixin._h2o_components_refs:
-            print("no more components, closing connection")
             cls.close_connection()
 
     def __enter__(self):
         try:
-            print(str(H2OConnectionMonitorMixin._h2o_components_refs))
-            print("__enter__ %s" % self.__class__.__name__)
             if self._add_component(self):
                 self.init_connection(**(getattr(self, '_init_connection_args') or {}))
-            print(str(H2OConnectionMonitorMixin._h2o_components_refs))
         except:
             self.__exit__()
             raise
         return self
 
     def __exit__(self, *args):
-        print(str(H2OConnectionMonitorMixin._h2o_components_refs))
-        print("__exit__ %s" % self.__class__.__name__)
         self._remove_component(self)
-        print(str(H2OConnectionMonitorMixin._h2o_components_refs))
 
     def __del__(self):
         self.__exit__()
@@ -795,3 +785,19 @@ class H2OtoSklearnTransformer(BaseSklearnEstimator, TransformerMixin):
         if hasattr(self._estimator, 'inverse_transform') and callable(self._estimator.inverse_transform):
             return self._estimator.inverse_transform(X)
         raise AttributeError("No `inverse_transform` method in {}".format(self.__class__.__name__))
+
+
+
+class H2OEstimatorAsTransformerMixin(BaseSklearnEstimator, TransformerMixin):
+
+    @params_as_h2o_frames(result_conversion=False)
+    def transform(self, X):
+        """Transform the data on the fitted model.
+
+        :param iterable X: data to transform (array-like or :class:`h2o.H2OFrame`).
+        :return: transformed data (:class:`h2o.H2OFrame` by default).
+        """
+        custom_transform = self._get_custom_param('transform')
+        if custom_transform:
+            return custom_transform(self, X)
+        return self._predict(X)

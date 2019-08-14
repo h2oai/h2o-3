@@ -1,7 +1,7 @@
 from __future__ import print_function
 from collections import defaultdict
 from functools import partial
-import importlib, inspect, os, sys
+import gc, inspect, os, sys
 
 import numpy as np
 from sklearn.datasets import make_classification, make_regression
@@ -26,15 +26,6 @@ seed = 2019
 init_connection_args = dict(strict_version_check=False, show_progress=True)
 
 scores = defaultdict(dict)
-
-
-def _ensure_connection_state(connected=True):
-    if connected:
-        # if we need a connection beforehand, create it if needed
-        H2OConnectionMonitorMixin.init_connection(init_connection_args)
-    else:
-        # if we want to start afresh, close everything first
-        H2OConnectionMonitorMixin.close_connection(force=True)
 
 
 def _get_data(format='numpy', n_classes=2):
@@ -77,7 +68,7 @@ def _get_custom_behaviour(estimator_cls):
         H2OAutoEncoderEstimator=dict(n_classes=0, preds_as_vector=False, predict_proba=False, score=False),
         # H2ODeepLearningEstimator=dict(scores_may_differ=True),
         H2OGeneralizedLinearEstimator=dict(predict_proba=False),
-        H2OGeneralizedLowRankEstimator=dict(preds_as_vector=False, predict_proba=False, score=False),
+        H2OGeneralizedLowRankEstimator=dict(preds_as_vector=False, predict_proba=False, score=False, transform=True),
         H2OIsolationForestEstimator=dict(predict_proba=False, score=False),
         H2OKMeansEstimator=dict(predict_proba=False, score=False),
         H2OPrincipalComponentAnalysisEstimator=dict(requires_target=False, preds_as_vector=False, predict_proba=False, score=False),
@@ -89,7 +80,6 @@ def _get_custom_behaviour(estimator_cls):
 
 
 def test_estimator_with_h2o_frames(estimator_cls):
-    _ensure_connection_state(connected=True)
     args = _get_default_args(estimator_cls)
     estimator = estimator_cls(**args)
 
@@ -125,7 +115,6 @@ def test_estimator_with_h2o_frames(estimator_cls):
 
 
 def test_estimator_with_numpy_arrays(estimator_cls):
-    _ensure_connection_state(connected=False)
     estimator = estimator_cls(init_connection_args=init_connection_args, **_get_default_args(estimator_cls))
 
     data = _get_data(format='numpy', n_classes=_get_custom_behaviour(estimator_cls).get('n_classes', 2))

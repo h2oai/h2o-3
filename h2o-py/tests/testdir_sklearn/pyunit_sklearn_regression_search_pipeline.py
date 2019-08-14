@@ -33,16 +33,6 @@ init_connection_args = dict(strict_version_check=False, show_progress=True)
 scores = {}
 
 
-def _ensure_connection_state(connected=True):
-    if connected:
-        # if we need a connection beforehand, create it if needed
-        H2OConnectionMonitorMixin.init_connection(init_connection_args)
-    else:
-        # if we want to start afresh, close everything first
-        H2OConnectionMonitorMixin.close_connection(force=True)
-
-
-
 def _get_data(format='numpy'):
     X, y = make_regression(n_samples=1000, n_features=10, n_informative=5, random_state=seed)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=seed)
@@ -54,8 +44,6 @@ def _get_data(format='numpy'):
 
 
 def test_h2o_only_pipeline_with_h2o_frames():
-    _ensure_connection_state(connected=True)
-
     pipeline = Pipeline([
         ('svd', H2OSVD(seed=seed)),
         ('estimator', H2OGradientBoostingRegressor(seed=seed))
@@ -99,8 +87,6 @@ def test_h2o_only_pipeline_with_h2o_frames():
 
 
 def test_h2o_only_pipeline_with_numpy_arrays():
-    _ensure_connection_state(connected=False)
-
     # Note that in normal situations (release build), init_connection_args can be omitted
     # otherwise, it should be set to the first H2O element in the pipeline.
     # Also note that in this specific case mixing numpy inputs with a fully H2O pipeline,
@@ -152,7 +138,6 @@ def test_h2o_only_pipeline_with_numpy_arrays():
 
 
 def test_mixed_pipeline_with_numpy_arrays():
-    _ensure_connection_state(connected=False)
     # Note that in normal situations (release build), init_connection_args can be omitted
     # otherwise, it should be set to the first H2O element in the pipeline
     with h2o_connection(**init_connection_args):

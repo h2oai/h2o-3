@@ -30,16 +30,6 @@ max_models = 3
 scores = {}
 
 
-def _ensure_connection_state(connected=True):
-    if connected:
-        # if we need a connection beforehand, create it if needed
-        H2OConnectionMonitorMixin.init_connection(init_connection_args)
-    else:
-        # if we want to start afresh, close everything first
-        H2OConnectionMonitorMixin.close_connection(force=True)
-
-
-
 def _get_data(format='numpy', n_classes=2):
     generator = make_classification if n_classes > 0 else make_regression
     params = dict(n_samples=100, n_features=5, n_informative=n_classes or 2, random_state=seed)
@@ -56,8 +46,6 @@ def _get_data(format='numpy', n_classes=2):
 
 
 def test_binomial_classification_with_h2o_frames():
-    _ensure_connection_state(connected=True)
-
     pipeline = make_pipeline(H2OAutoMLClassifier(seed=seed))
     pipeline.set_params(
         h2oautomlclassifier__max_models=max_models,
@@ -83,8 +71,6 @@ def test_binomial_classification_with_h2o_frames():
 
 
 def test_multinomial_classification_with_numpy_frames():
-    _ensure_connection_state(connected=False)
-
     pipeline = make_pipeline(H2OAutoMLClassifier(seed=seed, init_connection_args=init_connection_args))
     pipeline.set_params(
         h2oautomlclassifier__max_models=max_models,
@@ -111,8 +97,6 @@ def test_multinomial_classification_with_numpy_frames():
 
 
 def test_regression_with_numpy_frames():
-    _ensure_connection_state(connected=False)
-
     pipeline = make_pipeline(H2OAutoMLRegressor(seed=seed, init_connection_args=init_connection_args))
     pipeline.set_params(
         h2oautomlregressor__max_models=max_models,
@@ -140,8 +124,6 @@ def test_regression_with_numpy_frames():
 
 
 def test_generic_estimator_for_classification():
-    _ensure_connection_state(connected=False)
-
     pipeline = make_pipeline(H2OAutoMLEstimator(estimator_type='classifier', seed=seed,
                                                 init_connection_args=init_connection_args))
     pipeline.set_params(
@@ -171,8 +153,6 @@ def test_generic_estimator_for_classification():
 
 
 def test_generic_estimator_for_regression():
-    _ensure_connection_state(connected=False)
-
     pipeline = make_pipeline(H2OAutoMLEstimator(estimator_type='regressor', seed=seed,
                                                 init_connection_args=init_connection_args))
     pipeline.set_params(
