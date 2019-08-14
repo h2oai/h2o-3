@@ -3504,8 +3504,7 @@ public class GBMTest extends TestUtil {
         Log.info(preds2.toTwoDimTable());
       if (preds3!=null)
         Log.info(preds3.toTwoDimTable());
-
-      // compare training metrics of both models
+      
       if (model!=null && model2!=null) {
         System.out.println("Compare training metrics of both distributions.");
         assertEquals(
@@ -3513,7 +3512,6 @@ public class GBMTest extends TestUtil {
                 ((ModelMetricsBinomial) model2._output._training_metrics).logloss(), 2e-3);
         
         System.out.println("Compare CV metrics of both distributions.");
-        // compare CV metrics of both models
         assertEquals(
             ((ModelMetricsBinomial) model._output._cross_validation_metrics).logloss(),
             ((ModelMetricsBinomial) model2._output._cross_validation_metrics).logloss(), 1e-3);
