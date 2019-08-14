@@ -1267,7 +1267,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           return;
         }
         if(_response != null && computePriorClassDistribution()) {
-          if (isClassifier() && isSupervised() && _parms._distribution != DistributionFamily.quasibinomial) {
+          if (isClassifier() && isSupervised()) {
             MRUtils.ClassDist cdmt =
                 _weights != null ? new MRUtils.ClassDist(nclasses()).doAll(_response, _weights) : new MRUtils.ClassDist(nclasses()).doAll(_response);
             _distribution = cdmt.dist();

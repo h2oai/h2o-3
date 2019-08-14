@@ -116,14 +116,20 @@ public class MRUtils {
     @Override public void map(Chunk ys) {
       _ys = new double[_nclass];
       for( int i=0; i<ys._len; i++ )
-        if (!ys.isNA(i))
-          _ys[(int) ys.at8(i)]++;
+        if (!ys.isNA(i)) {
+          // PUBDEV-6697 quasibinomial GBM can have different domains than {0, 1}, for example {0, 2} or {0, 42}
+          int index = ys.at8(i) >= _ys.length ? 1 : (int) ys.at8(i);
+          _ys[index]++;
+        }
     }
     @Override public void map(Chunk ys, Chunk ws) {
       _ys = new double[_nclass];
       for( int i=0; i<ys._len; i++ )
-        if (!ys.isNA(i))
-          _ys[(int) ys.at8(i)] += ws.atd(i);
+        if (!ys.isNA(i)) {
+          // PUBDEV-6697 quasibinomial GBM can have different domains than {0, 1}, for example {0, 2} or {0, 42}
+          int index = ys.at8(i) >= _ys.length ? 1 : (int) ys.at8(i);
+          _ys[index] += ws.atd(i);
+        }
     }
     @Override public void reduce( ClassDist that ) { ArrayUtils.add(_ys,that._ys); }
   }
