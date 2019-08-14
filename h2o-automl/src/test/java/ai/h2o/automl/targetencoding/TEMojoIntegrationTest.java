@@ -57,11 +57,12 @@ public class TEMojoIntegrationTest extends TestUtil {
 
       Scope.track(fr);
 
-      String[] teColumns = {"home.dest", "embarked"};
+      Frame.VecSpecifier[] teColumns = {new Frame.VecSpecifier(fr._key, "home.dest"),
+              new Frame.VecSpecifier(fr._key, "embarked")};
 
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
-      targetEncoderParameters._withBlending = false;
-      targetEncoderParameters._columnNamesToEncode = teColumns;
+      targetEncoderParameters._blending = false;
+      targetEncoderParameters._encoded_columns = teColumns;
       targetEncoderParameters._ignore_const_cols = false; // Why ignore_const_column ignores `name` column? bad naming
       targetEncoderParameters.setTrain(fr._key);
       targetEncoderParameters._response_column = responseColumnName;
@@ -155,11 +156,12 @@ public class TEMojoIntegrationTest extends TestUtil {
         fr.swap(swapIdx1, swapIdx2);
         DKV.put(fr);
 
-        String[] teColumns = {"home.dest", "embarked"};
+        Frame.VecSpecifier[] teColumns = {new Frame.VecSpecifier(fr._key, "home.dest"),
+                new Frame.VecSpecifier(fr._key, "embarked")};
 
         TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
-        targetEncoderParameters._withBlending = false;
-        targetEncoderParameters._columnNamesToEncode = teColumns;
+        targetEncoderParameters._blending = false;
+        targetEncoderParameters._encoded_columns = teColumns;
         targetEncoderParameters._ignore_const_cols = false; // Why ignore_const_column ignores `name` column? bad naming
         targetEncoderParameters.setTrain(fr._key);
         targetEncoderParameters._response_column = responseColumnName;
@@ -248,11 +250,12 @@ public class TEMojoIntegrationTest extends TestUtil {
 
       Scope.track(fr);
 
-      String[] teColumns = {"home.dest", "embarked"};
+      Frame.VecSpecifier[] teColumns = {new Frame.VecSpecifier(fr._key, "home.dest"),
+              new Frame.VecSpecifier(fr._key, "embarked")};
 
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
-      targetEncoderParameters._withBlending = false;
-      targetEncoderParameters._columnNamesToEncode = teColumns;
+      targetEncoderParameters._blending = false;
+      targetEncoderParameters._encoded_columns = teColumns;
       targetEncoderParameters.setTrain(fr._key);
       targetEncoderParameters._ignore_const_cols = false;
       targetEncoderParameters._teFoldColumnName = foldColumnName;
@@ -329,15 +332,16 @@ public class TEMojoIntegrationTest extends TestUtil {
       asFactor(fr, responseColumnName);
       Scope.track(fr);
 
-      String[] teColumns = {"home.dest", "embarked"};
+      Frame.VecSpecifier[] teColumns = {new Frame.VecSpecifier(fr._key, "home.dest"),
+              new Frame.VecSpecifier(fr._key, "embarked")};
 
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
 
-      targetEncoderParameters._columnNamesToEncode = teColumns;
+      targetEncoderParameters._encoded_columns = teColumns;
 
       // Enable blending
-      targetEncoderParameters._withBlending = true;
-      targetEncoderParameters._blendingParams = new BlendingParams(5, 1);
+      targetEncoderParameters._blending = true;
+      targetEncoderParameters._blending_parameters = new BlendingParams(5, 1);
 
       targetEncoderParameters._ignore_const_cols = false;
       targetEncoderParameters.setTrain(fr._key);
@@ -361,9 +365,9 @@ public class TEMojoIntegrationTest extends TestUtil {
 
       TargetEncoderMojoModel loadedMojoModel = (TargetEncoderMojoModel) MojoModel.load(mojoFile.getPath());
 
-      assertEquals(targetEncoderParameters._withBlending, loadedMojoModel._withBlending);
-      assertEquals(targetEncoderParameters._blendingParams.getK(), loadedMojoModel._inflectionPoint, 1e-5);
-      assertEquals(targetEncoderParameters._blendingParams.getF(), loadedMojoModel._smoothing, 1e-5);
+      assertEquals(targetEncoderParameters._blending, loadedMojoModel._withBlending);
+      assertEquals(targetEncoderParameters._blending_parameters.getK(), loadedMojoModel._inflectionPoint, 1e-5);
+      assertEquals(targetEncoderParameters._blending_parameters.getF(), loadedMojoModel._smoothing, 1e-5);
 
       teModelWrapper = new EasyPredictModelWrapper(loadedMojoModel); // TODO why we store GenModel even though we pass MojoModel?
 
@@ -405,7 +409,7 @@ public class TEMojoIntegrationTest extends TestUtil {
       int[] encodingComponentsForHomeDest = homeDestEncodingMap.get(homeDestIndex);
       double posteriorMean = (double) encodingComponentsForHomeDest[0] / encodingComponentsForHomeDest[1];
 
-      double expectedLambda = TargetEncoderMojoModel.computeLambda(encodingComponentsForHomeDest[1], targetEncoderParameters._blendingParams.getK(), targetEncoderParameters._blendingParams.getF());
+      double expectedLambda = TargetEncoderMojoModel.computeLambda(encodingComponentsForHomeDest[1], targetEncoderParameters._blending_parameters.getK(), targetEncoderParameters._blending_parameters.getF());
 
       double expectedBlendedEncodingForHomeDest = TargetEncoderMojoModel.computeBlendedEncoding(expectedLambda, posteriorMean, expectedPriorMean);
 
@@ -434,15 +438,15 @@ public class TEMojoIntegrationTest extends TestUtil {
       asFactor(fr, responseColumnName);
       Scope.track(fr);
 
-      String[] teColumns = {"home.dest"};
+      Frame.VecSpecifier[] teColumns = {new Frame.VecSpecifier(fr._key, "home.dest")};
 
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
 
-      targetEncoderParameters._columnNamesToEncode = teColumns;
+      targetEncoderParameters._encoded_columns = teColumns;
 
       // Enable blending
-      targetEncoderParameters._withBlending = true;
-      targetEncoderParameters._blendingParams = new BlendingParams(5, 1);
+      targetEncoderParameters._blending = true;
+      targetEncoderParameters._blending_parameters = new BlendingParams(5, 1);
 
       targetEncoderParameters._ignore_const_cols = false;
       targetEncoderParameters.setTrain(fr._key);
@@ -518,13 +522,14 @@ public class TEMojoIntegrationTest extends TestUtil {
       asFactor(fr, responseColumnName);
       Scope.track(fr);
 
-      String[] teColumns = {"home.dest", "embarked"};
+      Frame.VecSpecifier[] teColumns = {new Frame.VecSpecifier(fr._key, "home.dest"),
+              new Frame.VecSpecifier(fr._key, "embarked")};
 
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
 
-      targetEncoderParameters._columnNamesToEncode = teColumns;
-      targetEncoderParameters._withBlending = true;
-      targetEncoderParameters._blendingParams = new BlendingParams(5, 1);
+      targetEncoderParameters._encoded_columns = teColumns;
+      targetEncoderParameters._blending = true;
+      targetEncoderParameters._blending_parameters = new BlendingParams(5, 1);
 
       targetEncoderParameters._ignore_const_cols = false;
       targetEncoderParameters.setTrain(fr._key);
@@ -564,11 +569,12 @@ public class TEMojoIntegrationTest extends TestUtil {
 
       Scope.track(fr);
 
-      String[] teColumns = {"home.dest", "embarked"};
+      Frame.VecSpecifier[] teColumns = {new Frame.VecSpecifier(fr._key, "home.dest"),
+              new Frame.VecSpecifier(fr._key, "embarked")};
 
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
-      targetEncoderParameters._withBlending = false;
-      targetEncoderParameters._columnNamesToEncode = teColumns;
+      targetEncoderParameters._blending = false;
+      targetEncoderParameters._encoded_columns = teColumns;
       targetEncoderParameters._ignore_const_cols = false; // Why ignore_const_column ignores `name` column? bad naming
       targetEncoderParameters.setTrain(fr._key);
       targetEncoderParameters._response_column = responseColumnName;

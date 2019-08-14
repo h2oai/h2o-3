@@ -3,22 +3,26 @@
 #'
 # -------------------------- targetencoder -------------------------- #
 #' @param x A vector containing the \code{character} names of the predictors in the model.
-#' @param blending \code{Logical}. Is blending used ? True if blending is used, false if not. False by default.. Defaults to
-#'        FALSE.
+#' @param blending \code{Logical}. Is blending used ? True if blending is used, false if not. True by default. Defaults to FALSE.
 #' @param encoded_columns Columnds to encode.
 #' @param target_column Target column for the encoding
-#' @param blending_parameters Parameters used for blending (if enabled). Blending is to be enabled separaterly using the 'blending'
-#'        parameter.
+#' @param k Parameter 'f' used for blending (if enabled). Blending is to be enabled separaterly using the 'blending'
+#'        parameter. Defaults to 0.
+#' @param f Parameter 'k' used for blending (if enabled). Blending is to be enabled separaterly using the 'blending'
+#'        parameter. Defaults to 0.
 #' @param data_leakage_handling Data leakage handling strategy. Default to None.
 #' @param model_id Destination id for this model; auto-generated if not specified.
+#' @param fold_column Column with cross-validation fold index assignment per observation.
 #' @export
 h2o.targetencoder <- function(training_frame, x,
                               blending = FALSE,
                               encoded_columns = NULL,
                               target_column = NULL,
-                              blending_parameters = NULL,
+                              k = 0,
+                              f = 0,
                               data_leakage_handling = NULL,
-                              model_id = NULL
+                              model_id = NULL,
+                              fold_column = NULL
                               ) 
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -40,12 +44,16 @@ h2o.targetencoder <- function(training_frame, x,
     parms$encoded_columns <- encoded_columns
   if (!missing(target_column))
     parms$target_column <- target_column
-  if (!missing(blending_parameters))
-    parms$blending_parameters <- blending_parameters
+  if (!missing(k))
+    parms$k <- k
+  if (!missing(f))
+    parms$f <- f
   if (!missing(data_leakage_handling))
     parms$data_leakage_handling <- data_leakage_handling
   if (!missing(model_id))
     parms$model_id <- model_id
+  if (!missing(fold_column))
+    parms$fold_column <- fold_column
   # Error check and build model
   .h2o.modelJob('targetencoder', parms, h2oRestApiVersion = 3) 
 }

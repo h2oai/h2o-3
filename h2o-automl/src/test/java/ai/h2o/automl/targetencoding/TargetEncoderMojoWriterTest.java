@@ -32,13 +32,14 @@ public class TargetEncoderMojoWriterTest extends TestUtil {
     try {
       Scope.track(trainFrame);
       TargetEncoderModel.TargetEncoderParameters p = new TargetEncoderModel.TargetEncoderParameters();
-      String[] teColumns = {"home.dest", "embarked"};
+      Frame.VecSpecifier[] teColumns = {new Frame.VecSpecifier(trainFrame._key, "home.dest"),
+              new Frame.VecSpecifier(trainFrame._key, "embarked")};
       String responseColumnName = "survived";
 
       asFactor(trainFrame, responseColumnName);
 
-      p._withBlending = false;
-      p._columnNamesToEncode = teColumns;
+      p._blending = false;
+      p._encoded_columns = teColumns;
       p.setTrain(trainFrame._key);
       p._response_column = responseColumnName;
 

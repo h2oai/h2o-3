@@ -41,6 +41,7 @@ class PythonTypeTranslatorForCheck(bi.TypeTranslator):
         self.types["Polymorphic"] = "object"
         self.types["Object"] = "object"
         self.types["VecSpecifier"] = "str"
+        self.types["BlendingParams"] = "dict"
         self.types["StringPair"] = "tuple"
         self.types["KeyValue"] = "dict"
         self.make_array = lambda vtype: "dict" if vtype == "dict" else "[%s]" % vtype
@@ -74,6 +75,7 @@ class PythonTypeTranslatorForDoc(bi.TypeTranslator):
         self.types["Polymorphic"] = "object"
         self.types["Object"] = "object"
         self.types["VecSpecifier"] = "str"
+        self.types["BlendingParams"] = "dict"
         self.types["StringPair"] = "tuple"
         self.types["KeyValue"] = "dict"
         self.make_array = lambda vtype: "dict" if vtype == "dict" else "List[%s]" % vtype

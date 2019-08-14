@@ -1,7 +1,6 @@
 package water.util;
 
 import water.*;
-import water.api.API;
 import water.api.Schema;
 import water.api.SchemaServer;
 import water.api.schemas3.FrameV3;
@@ -105,15 +104,9 @@ public class PojoUtils {
     Field[] orig_fields = Weaver.getWovenFields(origin.getClass());
 
     for (Field orig_field : orig_fields) {
-      final String origin_name = orig_field.getName();
-      final String dest_name;
-      final API apiAnnotation = orig_field.getAnnotation(API.class);
-      
-      if (apiAnnotation == null || apiAnnotation.mapsTo().isEmpty()) {
-        dest_name = field_naming.toDest(origin_name);
-      } else {
-        dest_name = apiAnnotation.mapsTo();
-      }
+      String origin_name = orig_field.getName();
+
+      String dest_name = field_naming.toDest(origin_name);
 
       if (skip_fields != null && (ArrayUtils.contains(skip_fields, origin_name) || ArrayUtils.contains(skip_fields, dest_name)))
         continue;

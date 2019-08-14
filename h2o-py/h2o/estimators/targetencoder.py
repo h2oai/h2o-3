@@ -23,8 +23,8 @@ class H2OTargetencoderEstimator(H2OEstimator):
     def __init__(self, **kwargs):
         super(H2OTargetencoderEstimator, self).__init__()
         self._parms = {}
-        names_list = {"blending", "encoded_columns", "target_column", "blending_parameters", "data_leakage_handling",
-                      "model_id"}
+        names_list = {"blending", "encoded_columns", "target_column", "k", "f", "data_leakage_handling", "model_id",
+                      "fold_column"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -39,7 +39,7 @@ class H2OTargetencoderEstimator(H2OEstimator):
     @property
     def blending(self):
         """
-        Is blending used ? True if blending is used, false if not. False by default..
+        Is blending used ? True if blending is used, false if not. True by default.
 
         Type: ``bool``  (default: ``False``).
         """
@@ -82,18 +82,35 @@ class H2OTargetencoderEstimator(H2OEstimator):
 
 
     @property
-    def blending_parameters(self):
+    def k(self):
         """
-        Parameters used for blending (if enabled). Blending is to be enabled separaterly using the 'blending' parameter.
+        Parameter 'f' used for blending (if enabled). Blending is to be enabled separaterly using the 'blending'
+        parameter.
 
-        Type: ``BlendingParams``.
+        Type: ``float``  (default: ``0``).
         """
-        return self._parms.get("blending_parameters")
+        return self._parms.get("k")
 
-    @blending_parameters.setter
-    def blending_parameters(self, blending_parameters):
-        assert_is_type(blending_parameters, None, BlendingParams)
-        self._parms["blending_parameters"] = blending_parameters
+    @k.setter
+    def k(self, k):
+        assert_is_type(k, None, numeric)
+        self._parms["k"] = k
+
+
+    @property
+    def f(self):
+        """
+        Parameter 'k' used for blending (if enabled). Blending is to be enabled separaterly using the 'blending'
+        parameter.
+
+        Type: ``float``  (default: ``0``).
+        """
+        return self._parms.get("f")
+
+    @f.setter
+    def f(self, f):
+        assert_is_type(f, None, numeric)
+        self._parms["f"] = f
 
 
     @property
@@ -109,5 +126,20 @@ class H2OTargetencoderEstimator(H2OEstimator):
     def data_leakage_handling(self, data_leakage_handling):
         assert_is_type(data_leakage_handling, None, str)
         self._parms["data_leakage_handling"] = data_leakage_handling
+
+
+    @property
+    def fold_column(self):
+        """
+        Column with cross-validation fold index assignment per observation.
+
+        Type: ``str``.
+        """
+        return self._parms.get("fold_column")
+
+    @fold_column.setter
+    def fold_column(self, fold_column):
+        assert_is_type(fold_column, None, str)
+        self._parms["fold_column"] = fold_column
 
 

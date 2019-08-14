@@ -37,10 +37,10 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
   private void writeTargetEncodingInfo() throws IOException {
     TargetEncoderModel.TargetEncoderOutput output = ((TargetEncoderModel) model)._output;
     TargetEncoderModel.TargetEncoderParameters teParams = output._teParams;
-    writekv("with_blending", teParams._withBlending);
-    if(teParams._withBlending) {
-      writekv("inflection_point", teParams._blendingParams.getK());
-      writekv("smoothing", teParams._blendingParams.getF());
+    writekv("with_blending", teParams._blending);
+    if(teParams._blending) {
+      writekv("inflection_point", teParams._blending_parameters.getK());
+      writekv("smoothing", teParams._blending_parameters.getF());
     }
     writekv("priorMean", output._priorMean);
 
@@ -87,7 +87,7 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
    * For transforming (making predictions) non-training data we don't need `te folds` in our encoding maps 
    */
   private void ifNeededRegroupEncodingMapsByFoldColumn(TargetEncoderModel.TargetEncoderOutput targetEncoderOutput, Map<String, Frame> targetEncodingMapOnFrames) {
-    String teFoldColumnName = targetEncoderOutput._teParams._teFoldColumnName;
+    String teFoldColumnName = targetEncoderOutput._teParams._fold_column;
     if(teFoldColumnName != null) {
       try {
         for (Map.Entry<String, Frame> encodingMapEntry : targetEncodingMapOnFrames.entrySet()) {

@@ -1,7 +1,6 @@
 package ai.h2o.automl.targetencoding;
 
 import org.apache.commons.lang.ArrayUtils;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import water.Scope;
@@ -28,9 +27,9 @@ public class TargetEncoderModelTest extends TestUtil{
       Scope.track(testFrame);
 
       TargetEncoderModel.TargetEncoderParameters parameters = new TargetEncoderModel.TargetEncoderParameters();
-      parameters._leakageHandlingStrategy = TargetEncoder.DataLeakageHandlingStrategy.None.toString();
-      parameters._blendingParams = new BlendingParams(0.3,0.7);
-      parameters._columnNamesToEncode = new String[]{"Origin"};
+      parameters._data_leakage_handling = TargetEncoder.DataLeakageHandlingStrategy.None.toString();
+      parameters._blending_parameters = new BlendingParams(0.3,0.7);
+      parameters._encoded_columns = new Frame.VecSpecifier[]{new Frame.VecSpecifier(trainingFrame._key, "Origin")};
       parameters._response_column = "IsDepDelayed";
       parameters._train = trainingFrame._key;
       parameters._seed = 0XFEED;
@@ -44,8 +43,8 @@ public class TargetEncoderModelTest extends TestUtil{
       Scope.track(transformedFrame);
       
       assertNotNull(transformedFrame);
-      assertEquals(trainingFrame.numCols() + parameters._columnNamesToEncode.length, transformedFrame.numCols());
-      final int encodedColumnIndex = ArrayUtils.indexOf(transformedFrame.names(), parameters._columnNamesToEncode[0] + "_te");
+      assertEquals(trainingFrame.numCols() + parameters._encoded_columns.length, transformedFrame.numCols());
+      final int encodedColumnIndex = ArrayUtils.indexOf(transformedFrame.names(), parameters._encoded_columns[0] + "_te");
       assertNotEquals(-1, encodedColumnIndex);
       assertTrue(transformedFrame.vec(encodedColumnIndex).isNumeric());
     } finally {

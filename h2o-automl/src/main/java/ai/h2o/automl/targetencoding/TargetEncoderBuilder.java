@@ -31,23 +31,23 @@ public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, Targe
   public void init(boolean expensive) {
     super.init(expensive);
 
-    if (_parms._leakageHandlingStrategy == null || _parms._leakageHandlingStrategy.trim().isEmpty()) {
-      _parms._leakageHandlingStrategy = TargetEncoder.DataLeakageHandlingStrategy.None.name();
-    } else if (TargetEncoder.DataLeakageHandlingStrategy.valueOf(_parms._leakageHandlingStrategy) == null) {
+    if (_parms._data_leakage_handling == null || _parms._data_leakage_handling.trim().isEmpty()) {
+      _parms._data_leakage_handling = TargetEncoder.DataLeakageHandlingStrategy.None.name();
+    } else if (TargetEncoder.DataLeakageHandlingStrategy.valueOf(_parms._data_leakage_handling) == null) {
       throw new IllegalArgumentException(String.format("Unknown data leakage strategy: '%s'. Possible values are: %s.",
-              _parms._leakageHandlingStrategy, Arrays.toString(TargetEncoder.DataLeakageHandlingStrategy.values())));
+              _parms._data_leakage_handling, Arrays.toString(TargetEncoder.DataLeakageHandlingStrategy.values())));
     }
   }
 
   private class TargetEncoderDriver extends Driver {
     @Override
     public void computeImpl() {
-      
-      TargetEncoder tec = new TargetEncoder(_parms._columnNamesToEncode, _parms._blendingParams);
+      final String[] encoded_columns = Frame.VecSpecifier.vecNames(_parms._encoded_columns);
+      TargetEncoder tec = new TargetEncoder(encoded_columns, _parms._blending_parameters);
 
       Scope.untrack(train().keys());
 
-      Map<String, Frame> _targetEncodingMap = tec.prepareEncodingMap(train(), _parms._response_column, _parms._teFoldColumnName);
+      Map<String, Frame> _targetEncodingMap = tec.prepareEncodingMap(train(), _parms._response_column, _parms._fold_column);
 
       // Mean could be computed from any encoding map as response column is shared
       double priorMean = tec.calculatePriorMean(_targetEncodingMap.entrySet().iterator().next().getValue());

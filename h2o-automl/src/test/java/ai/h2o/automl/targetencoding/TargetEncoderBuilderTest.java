@@ -36,11 +36,12 @@ public class TargetEncoderBuilderTest extends TestUtil {
       asFactor(fr, responseColumnName);
 
       BlendingParams params = new BlendingParams(3, 1);
-      String[] teColumns = {"home.dest", "embarked"};
+      Frame.VecSpecifier[] teColumns = {new Frame.VecSpecifier(fr._key, "home.dest"), 
+      new Frame.VecSpecifier(fr._key, "embarked")};
 
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
-      targetEncoderParameters._withBlending = false;
-      targetEncoderParameters._columnNamesToEncode = teColumns;
+      targetEncoderParameters._blending = false;
+      targetEncoderParameters._encoded_columns = teColumns;
       targetEncoderParameters.setTrain(fr._key);
       targetEncoderParameters._response_column = responseColumnName;
 
@@ -50,7 +51,7 @@ public class TargetEncoderBuilderTest extends TestUtil {
       targetEncoderModel = builder.getTargetEncoderModel(); // TODO change the way of how we getting model after PUBDEV-6670. We should be able to get it from DKV with .trainModel().get()
        
       // Let's create encoding map by TargetEncoder directly
-      TargetEncoder tec = new TargetEncoder(teColumns, params);
+      TargetEncoder tec = new TargetEncoder(Frame.VecSpecifier.vecNames(teColumns), params);
 
       Frame fr2 = parse_test_file("./smalldata/gbm_test/titanic.csv");
       asFactor(fr2, responseColumnName);
@@ -87,11 +88,12 @@ public class TargetEncoderBuilderTest extends TestUtil {
               .withDataForCol(2, ar("yes", "no"))
               .build();
 
-      String[] teColumns = {"home.dest", "embarked"};
+      Frame.VecSpecifier[] teColumns = {new Frame.VecSpecifier(fr._key, "home.dest"),
+              new Frame.VecSpecifier(fr._key, "embarked")};
 
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
-      targetEncoderParameters._withBlending = false;
-      targetEncoderParameters._columnNamesToEncode = teColumns;
+      targetEncoderParameters._blending = false;
+      targetEncoderParameters._encoded_columns = teColumns;
       targetEncoderParameters.setTrain(fr._key);
       targetEncoderParameters._response_column = responseColumnName;
       targetEncoderParameters._ignore_const_cols = false;
@@ -131,11 +133,12 @@ public class TargetEncoderBuilderTest extends TestUtil {
       asFactor(fr, responseColumnName);
 
       BlendingParams params = new BlendingParams(3, 1);
-      String[] teColumns = {"home.dest", "embarked"};
+      Frame.VecSpecifier[] teColumns = {new Frame.VecSpecifier(fr._key, "home.dest"),
+              new Frame.VecSpecifier(fr._key, "embarked")};
 
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
-      targetEncoderParameters._withBlending = false;
-      targetEncoderParameters._columnNamesToEncode = teColumns;
+      targetEncoderParameters._blending = false;
+      targetEncoderParameters._encoded_columns = teColumns;
       targetEncoderParameters._teFoldColumnName = foldColumnName;
       targetEncoderParameters.setTrain(fr._key);
       targetEncoderParameters._response_column = responseColumnName;
@@ -147,7 +150,7 @@ public class TargetEncoderBuilderTest extends TestUtil {
 
       //Stage 2: 
       // Let's create encoding map by TargetEncoder directly
-      TargetEncoder tec = new TargetEncoder(teColumns, params);
+      TargetEncoder tec = new TargetEncoder(Frame.VecSpecifier.vecNames(teColumns), params);
 
       Frame fr2 = parse_test_file("./smalldata/gbm_test/titanic.csv");
       addKFoldColumn(fr2, foldColumnName, 5, 1234L);
@@ -187,11 +190,12 @@ public class TargetEncoderBuilderTest extends TestUtil {
       asFactor(fr, responseColumnName);
 
       BlendingParams params = new BlendingParams(3, 1);
-      String[] teColumns = {"home.dest", "embarked"};
+      Frame.VecSpecifier[] teColumns = {new Frame.VecSpecifier(fr._key, "home.dest"),
+              new Frame.VecSpecifier(fr._key, "embarked")};
 
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
-      targetEncoderParameters._withBlending = false;
-      targetEncoderParameters._columnNamesToEncode = teColumns;
+      targetEncoderParameters._blending = false;
+      targetEncoderParameters._encoded_columns = teColumns;
       targetEncoderParameters._teFoldColumnName = foldColumnName;
       targetEncoderParameters.setTrain(fr._key);
       targetEncoderParameters._response_column = responseColumnName;
@@ -209,7 +213,7 @@ public class TargetEncoderBuilderTest extends TestUtil {
       
       //Stage 2: 
       // Let's create encoding map by TargetEncoder directly and transform with it
-      TargetEncoder tec = new TargetEncoder(teColumns, params);
+      TargetEncoder tec = new TargetEncoder(Frame.VecSpecifier.vecNames(teColumns), params);
 
       Frame fr2 = parse_test_file("./smalldata/gbm_test/titanic.csv");
       addKFoldColumn(fr2, foldColumnName, 5, 1234L);
@@ -218,7 +222,7 @@ public class TargetEncoderBuilderTest extends TestUtil {
 
       encodingMapFromTargetEncoder = tec.prepareEncodingMap(fr2, responseColumnName, foldColumnName);
 
-      Frame transformedTrainWithTargetEncoder = tec.applyTargetEncoding(fr2, responseColumnName, encodingMapFromTargetEncoder, strategy, foldColumnName, targetEncoderParameters._withBlending,false, seed);
+      Frame transformedTrainWithTargetEncoder = tec.applyTargetEncoding(fr2, responseColumnName, encodingMapFromTargetEncoder, strategy, foldColumnName, targetEncoderParameters._blending,false, seed);
      
       Scope.track(transformedTrainWithTargetEncoder);
       

@@ -8,7 +8,6 @@ import water.*;
 import water.fvec.Frame;
 import water.udf.CFuncRef;
 import water.util.ArrayUtils;
-import water.util.Log;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -51,11 +50,11 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       return 0;
     }
     
-    public Boolean _withBlending = true;
-    public BlendingParams _blendingParams = new BlendingParams(10, 20);
-    public String[] _columnNamesToEncode;
-    public String _teFoldColumnName;
-    public String _leakageHandlingStrategy;
+    public Boolean _blending = false;
+    public BlendingParams _blending_parameters;
+    public Frame.VecSpecifier[] _encoded_columns;
+    public String _data_leakage_handling;
+    public Frame.VecSpecifier _target_column;
   }
 
   public static class TargetEncoderOutput extends Model.Output {
@@ -92,15 +91,15 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       Map<String, Integer> teColumnNameToIdx = new HashMap<>();
       String[] names = teParams.train().names().clone();
       String[] features = ArrayUtils.remove(names, teParams._response_column);
-      for(String teColumn : teParams._columnNamesToEncode) {
-        teColumnNameToIdx.put(teColumn, ArrayUtils.find(features, teColumn)); 
+      for(Frame.VecSpecifier teColumn : teParams._encoded_columns) {
+        teColumnNameToIdx.put(teColumn._column_name, ArrayUtils.find(features, teColumn)); 
       }
       return teColumnNameToIdx;
     }
 
     @Override
     public int nfeatures() {
-      return super.nfeatures() - (_teParams._teFoldColumnName == null ? 0 : 1);
+      return super.nfeatures() - (_teParams._fold_column == null ? 0 : 1);
     }
 
     @Override public ModelCategory getModelCategory() {
@@ -114,7 +113,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
   public Frame transform(Frame data, byte strategy, double noiseLevel, long seed){
     final TargetEncoder.DataLeakageHandlingStrategy leakageHandlingStrategy = TargetEncoder.DataLeakageHandlingStrategy.fromVal(strategy);
     return _targetEncoder.applyTargetEncoding(data, _parms._response_column, this._output._target_encoding_map, leakageHandlingStrategy,
-            _parms._teFoldColumnName, _parms._withBlending, noiseLevel,false, seed);
+            _parms._fold_column, _parms._blending, noiseLevel,false, seed);
   }
 
   /**
@@ -124,7 +123,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
 
     final TargetEncoder.DataLeakageHandlingStrategy leakageHandlingStrategy = TargetEncoder.DataLeakageHandlingStrategy.fromVal(strategy);
     return _targetEncoder.applyTargetEncoding(data, _parms._response_column, this._output._target_encoding_map, leakageHandlingStrategy,
-            _parms._teFoldColumnName, _parms._withBlending,false, seed);
+            _parms._fold_column, _parms._blending,false, seed);
   }
   
   @Override
@@ -134,9 +133,9 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
 
   @Override
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
-    final TargetEncoder.DataLeakageHandlingStrategy leakageHandlingStrategy = TargetEncoder.DataLeakageHandlingStrategy.valueOf(_parms._leakageHandlingStrategy);
+    final TargetEncoder.DataLeakageHandlingStrategy leakageHandlingStrategy = TargetEncoder.DataLeakageHandlingStrategy.valueOf(_parms._data_leakage_handling);
     return _targetEncoder.applyTargetEncoding(fr, _parms._response_column, this._output._target_encoding_map, leakageHandlingStrategy,
-            _parms._teFoldColumnName, _parms._withBlending, _parms._seed,false, Key.<Frame>make(destination_key));
+            _parms._fold_column, _parms._blending, _parms._seed,false, Key.<Frame>make(destination_key));
   }
   
 
