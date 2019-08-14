@@ -27,7 +27,10 @@ dependencies {
   testCompile "junit:junit:${junitVersion}"
   compile "net.sf.opencsv:opencsv:2.3"
   compile "com.google.code.gson:gson:2.6.2"
-  compile "guru.nidi:graphviz-java:0.9.0"
+  compile ("guru.nidi:graphviz-java:0.9.0"){
+    exclude group: 'org.slf4j'
+  }
+  compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.27'
   compile "ai.h2o:h2o-tree-api:0.3.7"
   // DeepWater dependencies - users will need to provide excluded & compileOnly dependencies
   compile("ai.h2o:deepwater-backend-api:1.0.4") {
