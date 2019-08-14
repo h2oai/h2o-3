@@ -27,7 +27,6 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
                       "ignore_const_cols", "hyper_param", "kernel_type", "gamma", "rank_ratio", "positive_weight",
                       "negative_weight", "disable_training_metrics", "sv_threshold", "fact_threshold",
                       "feasible_threshold", "surrogate_gap_threshold", "mu_factor", "max_iterations", "seed"}
-        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue

@@ -29,7 +29,6 @@ class H2OKMeansEstimator(H2OEstimator):
                       "fold_column", "ignored_columns", "ignore_const_cols", "score_each_iteration", "k", "estimate_k",
                       "user_points", "max_iterations", "standardize", "seed", "init", "max_runtime_secs",
                       "categorical_encoding", "export_checkpoints_dir"}
-        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue

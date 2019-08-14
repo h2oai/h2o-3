@@ -41,7 +41,6 @@ class H2ODeepWaterEstimator(H2OEstimator):
                       "network_definition_file", "network_parameters_file", "mean_image_file",
                       "export_native_parameters_prefix", "activation", "hidden", "input_dropout_ratio",
                       "hidden_dropout_ratios", "problem_type", "export_checkpoints_dir"}
-        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue

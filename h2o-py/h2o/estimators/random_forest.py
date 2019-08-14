@@ -35,7 +35,6 @@ class H2ORandomForestEstimator(H2OEstimator):
                       "col_sample_rate_change_per_level", "col_sample_rate_per_tree", "min_split_improvement",
                       "histogram_type", "categorical_encoding", "calibrate_model", "calibration_frame", "distribution",
                       "custom_metric_func", "export_checkpoints_dir", "check_constant_response"}
-        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue

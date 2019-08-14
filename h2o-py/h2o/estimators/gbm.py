@@ -41,7 +41,6 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                       "histogram_type", "max_abs_leafnode_pred", "pred_noise_bandwidth", "categorical_encoding",
                       "calibrate_model", "calibration_frame", "custom_metric_func", "custom_distribution_func",
                       "export_checkpoints_dir", "monotone_constraints", "check_constant_response"}
-        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue

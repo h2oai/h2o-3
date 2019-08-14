@@ -27,7 +27,6 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
                       "score_each_iteration", "transform", "pca_method", "pca_impl", "k", "max_iterations",
                       "use_all_factor_levels", "compute_metrics", "impute_missing", "seed", "max_runtime_secs",
                       "export_checkpoints_dir"}
-        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue

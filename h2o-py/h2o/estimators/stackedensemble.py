@@ -56,7 +56,6 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
                       "base_models", "metalearner_algorithm", "metalearner_nfolds", "metalearner_fold_assignment",
                       "metalearner_fold_column", "metalearner_params", "seed", "keep_levelone_frame",
                       "export_checkpoints_dir"}
-        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue

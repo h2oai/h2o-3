@@ -37,7 +37,6 @@ class H2OXGBoostEstimator(H2OEstimator):
                       "nthread", "max_bins", "max_leaves", "min_sum_hessian_in_leaf", "min_data_in_leaf", "sample_type",
                       "normalize_type", "rate_drop", "one_drop", "skip_drop", "tree_method", "grow_policy", "booster",
                       "reg_lambda", "reg_alpha", "dmatrix_type", "backend", "gpu_id"}
-        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue

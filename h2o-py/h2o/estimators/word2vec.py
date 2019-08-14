@@ -26,7 +26,6 @@ class H2OWord2vecEstimator(H2OEstimator):
         names_list = {"model_id", "training_frame", "min_word_freq", "word_model", "norm_model", "vec_size",
                       "window_size", "sent_sample_rate", "init_learning_rate", "epochs", "pre_trained",
                       "max_runtime_secs", "export_checkpoints_dir"}
-        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue

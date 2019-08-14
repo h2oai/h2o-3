@@ -56,7 +56,6 @@ class H2ODeepLearningEstimator(H2OEstimator):
                       "average_activation", "sparsity_beta", "max_categorical_features", "reproducible",
                       "export_weights_and_biases", "mini_batch_size", "categorical_encoding", "elastic_averaging",
                       "elastic_averaging_moving_rate", "elastic_averaging_regularization", "export_checkpoints_dir"}
-        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue

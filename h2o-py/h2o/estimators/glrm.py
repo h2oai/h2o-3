@@ -30,7 +30,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
                       "gamma_y", "max_iterations", "max_updates", "init_step_size", "min_step_size", "seed", "init",
                       "svd_method", "user_y", "user_x", "expand_user_y", "impute_original", "recover_svd",
                       "max_runtime_secs", "export_checkpoints_dir"}
-        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue

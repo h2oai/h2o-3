@@ -218,7 +218,6 @@ def gen_module(schema, algo):
                                                 indent=(" " * 22), indent_first=False)
     if class_init_validation:
         yield reformat_block(class_init_validation, 8)
-    yield '        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")'
     yield "        for pname, pvalue in kwargs.items():"
     yield "            if pname == 'model_id':"
     yield "                self._id = pvalue"

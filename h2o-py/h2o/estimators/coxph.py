@@ -28,7 +28,6 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
                       "weights_column", "offset_column", "stratify_by", "ties", "init", "lre_min", "max_iterations",
                       "interactions", "interaction_pairs", "interactions_only", "use_all_factor_levels",
                       "export_checkpoints_dir"}
-        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue
