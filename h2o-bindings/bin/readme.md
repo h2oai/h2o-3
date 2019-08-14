@@ -141,6 +141,41 @@ def module_extensions():
 extensions = dict(
     __module__=module_extensions
 )
+
+doc = dict(
+    __class__="""
+Build a Deep Neural Network model using CPUs
+Builds a feed-forward multilayer artificial neural network on an H2OFrame
+"""
+)
+
+examples = dict(
+    __class__="""
+>>> import h2o
+>>> from h2o.estimators.deeplearning import H2ODeepLearningEstimator
+>>> h2o.connect()
+>>> rows = [[1,2,3,4,0], [2,1,2,4,1], [2,1,4,2,1], [0,1,2,34,1], [2,3,4,1,0]] * 50
+>>> fr = h2o.H2OFrame(rows)
+>>> fr[4] = fr[4].asfactor()
+>>> model = H2ODeepLearningEstimator()
+>>> model.train(x=range(4), y=4, training_frame=fr)
+""",
+    training_frame="""
+>>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+>>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+>>> predictors = ["displacement","power","weight","acceleration","year"]
+>>> response = "economy_20mpg"
+>>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+>>> cars_gbm = H2ODeepLearningEstimator(seed = 1234)
+>>> cars_gbm.train(x = predictors,
+...                y = response,
+...                training_frame = train,
+...                validation_frame = valid)
+>>> cars_gbm.auc(valid=True)
+""",
+)
+
+
 ```
 the name of the function doesn't matter, it is just loaded by the `gen_python.py` generator, which extracts it's source code, and removes the first line, which is the function signature.
 
