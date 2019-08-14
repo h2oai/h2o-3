@@ -10,7 +10,7 @@ import java.util.List;
 public class TargetEncoderV3 extends ModelBuilderSchema<TargetEncoderBuilder, TargetEncoderV3, TargetEncoderV3.TargetEncoderParametersV3> {
   public static class TargetEncoderParametersV3 extends ModelParametersSchemaV3<TargetEncoderModel.TargetEncoderParameters, TargetEncoderParametersV3> {
     
-    @API(help = "Is blending used ? True by default.", mapsTo = "_withBlending")
+    @API(help = "Is blending used ? True if blending is used, false if not. False by default..", mapsTo = "_withBlending")
     public boolean blending;
     
     @API(help = "Columnds to encode.", mapsTo = "_columnNamesToEncode")

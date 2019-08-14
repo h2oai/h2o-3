@@ -3,7 +3,8 @@
 #'
 # -------------------------- targetencoder -------------------------- #
 #' @param x A vector containing the \code{character} names of the predictors in the model.
-#' @param blending \code{Logical}. Is blending used ? True by default. Defaults to FALSE.
+#' @param blending \code{Logical}. Is blending used ? True if blending is used, false if not. False by default.. Defaults to
+#'        FALSE.
 #' @param encoded_columns Columnds to encode.
 #' @param target_column Target column for the encoding
 #' @param blending_parameters Parameters used for blending (if enabled). Blending is to be enabled separaterly using the 'blending'

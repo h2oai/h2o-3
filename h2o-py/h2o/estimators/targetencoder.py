@@ -39,7 +39,7 @@ class H2OTargetencoderEstimator(H2OEstimator):
     @property
     def blending(self):
         """
-        Is blending used ? True by default.
+        Is blending used ? True if blending is used, false if not. False by default..
 
         Type: ``bool``  (default: ``False``).
         """
