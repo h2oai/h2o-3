@@ -1,14 +1,14 @@
 package hex.genmodel.attributes;
 
 import com.google.gson.JsonObject;
-import hex.genmodel.algos.tree.SharedTreeMojoModel;
+import hex.genmodel.MojoModel;
 
 
 public class SharedTreeModelAttributes extends ModelAttributes {
 
   private final VariableImportances _variableImportances;
 
-  public <M extends SharedTreeMojoModel> SharedTreeModelAttributes(JsonObject modelJson, M model) {
+  public SharedTreeModelAttributes(JsonObject modelJson, MojoModel model) {
     super(model, modelJson);
     _variableImportances = extractVariableImportances(modelJson);
 
