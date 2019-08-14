@@ -1,6 +1,7 @@
 package hex.schemas;
 
 import ai.h2o.automl.targetencoding.BlendingParams;
+import ai.h2o.automl.targetencoding.TargetEncoder;
 import ai.h2o.automl.targetencoding.TargetEncoderBuilder;
 import ai.h2o.automl.targetencoding.TargetEncoderModel;
 import water.api.API;
@@ -27,8 +28,8 @@ public class TargetEncoderV3 extends ModelBuilderSchema<TargetEncoderBuilder, Ta
     @API(help = "Parameter 'k' used for blending (if enabled). Blending is to be enabled separaterly using the 'blending' parameter.")
     public double f;
 
-    @API(help = "Data leakage handling strategy. Default to None.")
-    public String data_leakage_handling;
+    @API(help = "Data leakage handling strategy. Default to None.", values = {"None", "KFold", "LeaveOneOut"})
+    public TargetEncoder.DataLeakageHandlingStrategy data_leakage_handling;
   
     @Override
     public String[] fields() {

@@ -118,13 +118,13 @@ class H2OTargetencoderEstimator(H2OEstimator):
         """
         Data leakage handling strategy. Default to None.
 
-        Type: ``str``.
+        One of: ``"none"``, ``"k_fold"``, ``"leave_one_out"``.
         """
         return self._parms.get("data_leakage_handling")
 
     @data_leakage_handling.setter
     def data_leakage_handling(self, data_leakage_handling):
-        assert_is_type(data_leakage_handling, None, str)
+        assert_is_type(data_leakage_handling, None, Enum("none", "k_fold", "leave_one_out"))
         self._parms["data_leakage_handling"] = data_leakage_handling
 
 

@@ -10,7 +10,7 @@
 #'        parameter. Defaults to 0.
 #' @param f Parameter 'k' used for blending (if enabled). Blending is to be enabled separaterly using the 'blending'
 #'        parameter. Defaults to 0.
-#' @param data_leakage_handling Data leakage handling strategy. Default to None.
+#' @param data_leakage_handling Data leakage handling strategy. Default to None. Must be one of: "None", "KFold", "LeaveOneOut".
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param fold_column Column with cross-validation fold index assignment per observation.
 #' @export
@@ -20,7 +20,7 @@ h2o.targetencoder <- function(training_frame, x,
                               target_column = NULL,
                               k = 0,
                               f = 0,
-                              data_leakage_handling = NULL,
+                              data_leakage_handling = c("None", "KFold", "LeaveOneOut"),
                               model_id = NULL,
                               fold_column = NULL
                               ) 
