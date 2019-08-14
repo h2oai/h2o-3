@@ -24,8 +24,8 @@ class H2OGenericEstimator(H2OEstimator):
         super(H2OGenericEstimator, self).__init__()
         self._parms = {}
         names_list = {"model_id", "model_key", "path"}
-        if(all(kwargs.get(name, None) is None for name in [ "model_key", "path"])):
-                raise H2OValueError("At least one of [\"model_key\", \"path\"] is required.")
+        if all(kwargs.get(name, None) is None for name in ["model_key", "path"]):
+            raise H2OValueError('At least one of ["model_key", "path"] is required.')
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -64,7 +64,6 @@ class H2OGenericEstimator(H2OEstimator):
     def path(self, path):
         assert_is_type(path, None, str)
         self._parms["path"] = path
-
 
 
     def _requires_training_frame(self):

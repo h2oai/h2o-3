@@ -2,17 +2,18 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details) 
 #'
 # -------------------------- Support Vector Machine -------------------------- #
-#' 
+#'
 #' Trains a Support Vector Machine model on an H2O dataset
 #' 
 #' Alpha version. Supports only binomial classification problems. 
-#' 
+#'
 #' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing, then all columns except y are used.
-#' @param y The name or column index of the response variable in the data. The response must be either a numeric or a
-#'        categorical/factor variable. If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
-#' @param model_id Destination id for this model; auto-generated if not specified.
+#' @param y The name or column index of the response variable in the data. 
+#'        The response must be either a numeric or a categorical/factor variable. 
+#'        If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
 #' @param training_frame Id of the training data frame.
+#' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param validation_frame Id of the validation data frame.
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
 #' @param hyper_param Penalty parameter C of the error term Defaults to 1.
@@ -29,10 +30,12 @@
 #' @param surrogate_gap_threshold Feasibility criterion of the surrogate duality gap (eta) Defaults to 0.001.
 #' @param mu_factor Increasing factor mu Defaults to 10.
 #' @param max_iterations Maximum number of iteration of the algorithm Defaults to 200.
-#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
+#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
 #' @export
-h2o.psvm <- function(x, y, training_frame,
+h2o.psvm <- function(x,
+                     y,
+                     training_frame,
                      model_id = NULL,
                      validation_frame = NULL,
                      ignore_const_cols = TRUE,
@@ -49,12 +52,13 @@ h2o.psvm <- function(x, y, training_frame,
                      surrogate_gap_threshold = 0.001,
                      mu_factor = 10,
                      max_iterations = 200,
-                     seed = -1
-                     ) 
+                     seed = -1)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
-  validation_frame <- .validate.H2OFrame(validation_frame)
+  validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
+
+  # Validate other required args
   # If x is missing, then assume user wants to use all columns as features.
   if (missing(x)) {
      if (is.numeric(y)) {
@@ -64,8 +68,7 @@ h2o.psvm <- function(x, y, training_frame,
      }
   }
 
-  # Handle other args
-  # Parameter list to send to model builder
+  # Build parameter list to send to model builder
   parms <- list()
   parms$training_frame <- training_frame
   args <- .verify_dataxy(training_frame, x, y)
@@ -106,6 +109,8 @@ h2o.psvm <- function(x, y, training_frame,
     parms$max_iterations <- max_iterations
   if (!missing(seed))
     parms$seed <- seed
+
   # Error check and build model
-  .h2o.modelJob('psvm', parms, h2oRestApiVersion = 3) 
+  model <- .h2o.modelJob('psvm', parms, h2oRestApiVersion=3, verbose=FALSE)
+  return(model)
 }

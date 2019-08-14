@@ -141,7 +141,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help="Likelihood divider in objective value computation, default is 1/nobs")
     public double obj_reg;
 
-    @API(help = "", level = Level.secondary, values = {"family_default", "identity", "logit", "log", "inverse",
+    @API(help = "Link function.", level = Level.secondary, values = {"family_default", "identity", "logit", "log", "inverse",
             "tweedie", "ologit"}) //"oprobit", "ologlog": will be supported.
     public GLMParameters.Link link;
 
