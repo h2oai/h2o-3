@@ -1017,11 +1017,12 @@ class H2ODeepWaterEstimator(H2OEstimator):
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
 
-
-    # Ask the H2O server whether a Deep Water model can be built (depends on availability of native backends)
     @staticmethod
     def available():
-        """Returns True if a deep water model can be built, or False otherwise."""
+        """
+        Ask the H2O server whether a Deep Water model can be built (depends on availability of native backends).
+        :return: True if a deep water model can be built, or False otherwise.
+        """
         builder_json = h2o.api("GET /3/ModelBuilders", data={"algo": "deepwater"})
         visibility = builder_json["model_builders"]["deepwater"]["visibility"]
         if visibility == "Experimental":

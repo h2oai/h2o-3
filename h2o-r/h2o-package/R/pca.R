@@ -2,15 +2,15 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details) 
 #'
 # -------------------------- Principal Components Analysis -------------------------- #
-#' 
+#'
 #' Principal component analysis of an H2O data frame
 #' 
 #' Principal components analysis of an H2O data frame using the power method
 #' to calculate the singular value decomposition of the Gram matrix.
-#' 
+#'
+#' @param training_frame Id of the training data frame.
 #' @param x A vector containing the \code{character} names of the predictors in the model.
 #' @param model_id Destination id for this model; auto-generated if not specified.
-#' @param training_frame Id of the training data frame.
 #' @param validation_frame Id of the validation data frame.
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
@@ -32,11 +32,11 @@
 #' @param use_all_factor_levels \code{Logical}. Whether first factor level is included in each categorical expansion Defaults to FALSE.
 #' @param compute_metrics \code{Logical}. Whether to compute metrics on the training data Defaults to TRUE.
 #' @param impute_missing \code{Logical}. Whether to impute missing entries with the column mean Defaults to FALSE.
-#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
+#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
-#' @return Returns an object of class \linkS4class{H2ODimReductionModel}.
+#' @return an object of class \linkS4class{H2ODimReductionModel}.
 #' @seealso \code{\link{h2o.svd}}, \code{\link{h2o.glrm}}
 #' @references N. Halko, P.G. Martinsson, J.A. Tropp. {Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions}[http://arxiv.org/abs/0909.4061]. SIAM Rev., Survey and Review section, Vol. 53, num. 2, pp. 217-288, June 2011.
 #' @examples
@@ -48,7 +48,8 @@
 #' h2o.prcomp(training_frame = australia, k = 8, transform = "STANDARDIZE")
 #' }
 #' @export
-h2o.prcomp <- function(training_frame, x,
+h2o.prcomp <- function(training_frame,
+                       x,
                        model_id = NULL,
                        validation_frame = NULL,
                        ignore_const_cols = TRUE,
@@ -63,19 +64,18 @@ h2o.prcomp <- function(training_frame, x,
                        impute_missing = FALSE,
                        seed = -1,
                        max_runtime_secs = 0,
-                       export_checkpoints_dir = NULL
-                       ) 
+                       export_checkpoints_dir = NULL)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
-  validation_frame <- .validate.H2OFrame(validation_frame)
+  validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
 
-  # Handle other args
-  # Parameter list to send to model builder
+  # Build parameter list to send to model builder
   parms <- list()
   parms$training_frame <- training_frame
   if(!missing(x))
     parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore
+
   if (!missing(model_id))
     parms$model_id <- model_id
   if (!missing(validation_frame))
@@ -106,6 +106,8 @@ h2o.prcomp <- function(training_frame, x,
     parms$max_runtime_secs <- max_runtime_secs
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+
   # Error check and build model
-  .h2o.modelJob('pca', parms, h2oRestApiVersion = 3) 
+  model <- .h2o.modelJob('pca', parms, h2oRestApiVersion=3, verbose=FALSE)
+  return(model)
 }
