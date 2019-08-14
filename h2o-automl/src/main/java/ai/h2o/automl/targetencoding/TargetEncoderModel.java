@@ -8,6 +8,7 @@ import water.*;
 import water.fvec.Frame;
 import water.udf.CFuncRef;
 import water.util.ArrayUtils;
+import water.util.Log;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -133,6 +134,11 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
 
   @Override
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
+    final String[] warnings = adaptTestForTrain(fr, true, false);
+    if (warnings.length != 0) {
+      Log.warn(String.format("Could not adapt encoded frame. Errors: %s", org.apache.commons.lang.ArrayUtils.toString(warnings)));
+    }
+
     final TargetEncoder.DataLeakageHandlingStrategy leakageHandlingStrategy = TargetEncoder.DataLeakageHandlingStrategy.valueOf(_parms._leakageHandlingStrategy);
     return _targetEncoder.applyTargetEncoding(fr, _parms._response_column, this._output._target_encoding_map, leakageHandlingStrategy,
             _parms._teFoldColumnName, _parms._withBlending, _parms._seed,false, Key.<Frame>make(destination_key));
