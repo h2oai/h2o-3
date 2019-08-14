@@ -3434,14 +3434,6 @@ public class GBMTest extends TestUtil {
       Scope.exit();
     }
   }
-  
-  @Test public void testQuasibinomialMulti(){
-    for (int i = 0; i < 100; i++){
-      System.out.println("_______ test number: " +i );
-      testQuasibinomial();
-    }
-  }
-
 
   // PUBDEV-3482
   @Test public void testQuasibinomial(){

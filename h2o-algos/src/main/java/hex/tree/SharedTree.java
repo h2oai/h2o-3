@@ -322,7 +322,7 @@ public abstract class SharedTree<
         final int [] cons = new int[_nclass];
         for( int i=0; i<_nclass; i++ ) {
           names[i] = "NIDs_" + domain[i];
-          cons[i] = isSupervised() &&  _model._output._distribution[i]==0 ? -1 : 0;
+          cons[i] = isSupervised() && _model._output._distribution[i] == 0 ? -1 : 0;
         }
         Vec [] vs = templateVec().makeVolatileInts(cons);
         _train.add(names, vs);
