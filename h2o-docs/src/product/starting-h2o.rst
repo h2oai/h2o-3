@@ -90,10 +90,17 @@ Use the ``h2o.init()`` function to initialize H2O. This function accepts the fol
 - ``start_h2o``: If False, do not attempt to start an H2O server when a connection to an existing one failed.
 - ``nthreads``: "Number of threads" option when launching a new H2O server.
 - ``ice_root``: The directory for temporary files for the new H2O server.
+- ``log_dir``: Directory for H2O logs to be stored if a new instance is started. Ignored if connecting to an existing node.
+- ``log_level``: The logger level for H2O if a new instance is started. One of TRACE,DEBUG,INFO,WARN,ERRR,FATA. Default is INFO. Ignored if connecting to an existing node.
 - ``enable_assertions``: Enable assertions in Java for the new H2O server.
 - ``max_mem_size``: Maximum memory to use for the new H2O server. Integer input will be evaluated as gigabytes.  Other units can be specified by passing in a string (e.g. "160M" for 160 megabytes).
 - ``min_mem_size``: Minimum memory to use for the new H2O server. Integer input will be evaluated as gigabytes.  Other units can be specified by passing in a string (e.g. "160M" for 160 megabytes).
 - ``strict_version_check``: If True, an error will be raised if the client and server versions don't match.
+- ``ignore_config``: Indicates whether a processing of a .h2oconfig file should be conducted or not. Default value is False.
+- ``extra_classpath``: List of paths to libraries that should be included on the Java classpath when starting H2O from Python.
+- ``kwargs``: (all other deprecated attributes)
+- ``jvm_custom_args``: Customer, user-defined argument’s for the JVM H2O is instantiated in. Ignored if there is an instance of H2O already running and the client connects to it.
+- ``bind_to_localhost``: A flag indicating whether access to the H2O instance should be restricted to the local machine (default) or if it can be reached from other computers on the network.
 
 Example
 ~~~~~~~
