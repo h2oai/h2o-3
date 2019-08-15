@@ -16,6 +16,8 @@ class H2OAssembly(object):
     """
     H2OAssembly class can be used to specify multiple frame operations in one place.
 
+    :returns: a new H2OFrame
+
     Sample usage:
 
     >>> iris = h2o.load_dataset("iris")
