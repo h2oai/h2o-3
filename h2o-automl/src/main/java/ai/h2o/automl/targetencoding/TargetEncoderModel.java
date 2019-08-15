@@ -8,6 +8,7 @@ import water.*;
 import water.fvec.Frame;
 import water.udf.CFuncRef;
 import water.util.ArrayUtils;
+import water.util.TwoDimTable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -69,6 +70,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       super(b);
       _target_encoding_map = teMap;
       _parms = b._parms;
+      _model_summary = constructSummary();
 
       column_name_to_idx = createColumnNameToIndexMap(_parms);
       _column_name_to_missing_val_presence = createMissingValuesPresenceMap();
@@ -85,6 +87,21 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       }
       
       return presenceOfNAMap;
+    }
+    
+    private TwoDimTable constructSummary(){
+      TwoDimTable summary = new TwoDimTable("Target Encoder model summary.", "Summary for target encoder model", new String[_names.length],
+              new String[]{"Original name", "Encoded column name"}, new String[]{"string", "string"}, null, null);
+
+      for (int i = 0; i < _names.length; i++) {
+        final String originalColName = _names[i];
+        if(originalColName.equals(responseName())) continue;
+        
+        summary.set(i, 0, originalColName);
+        summary.set(i, 1, originalColName + TargetEncoder.ENCODED_COLUMN_POSTFIX);
+      }
+
+      return summary;
     }
     
     private Map<String, Integer> createColumnNameToIndexMap(TargetEncoderParameters teParams) {
