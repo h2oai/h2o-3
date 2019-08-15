@@ -81,6 +81,7 @@ Use the ``h2o.init()`` function to initialize H2O. This function accepts the fol
 - ``url``: Full URL of the server to connect to. (This can be used instead of ``ip`` + ``port`` + ``https``.)
 - ``ip``: The ip address (or host name) of the server where H2O is running.
 - ``port``: Port number that H2O service is listening to.
+- ``name``: Cluster name. If None while connecting to an existing cluster it will not check the cluster name. If set then will connect only if the target cluster name matches. If no instance is found and decides to start a local one then this will be used as the cluster name or a random one will be generated if set to None.
 - ``https``: Set to True to connect via https:// instead of http://.
 - ``insecure``: When using https, setting this to True will disable SSL certificates verification.
 - ``username``: The username to log in with when using basic authentication.
