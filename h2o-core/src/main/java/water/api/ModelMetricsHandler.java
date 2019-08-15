@@ -367,19 +367,11 @@ class ModelMetricsHandler extends Handler {
       if (parms._exemplar_index >= 0) {
         parms._predictions_name = "members_" + parms._model._key.toString() + "_for_exemplar_" + parms._exemplar_index;
       } else {
-        switch (parms._model.getModelType()) {
-          case PREDICTIVE:
-          parms._predictions_name = "predictions" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
-            break;
-          case DATA_TRANSFORMING:
-            parms._predictions_name = "transformation" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
-            break;
-        }
-        
+        parms._predictions_name = "transformation" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
       }
     }
 
-    final Job<Frame> j = new Job(Key.make(parms._predictions_name), Frame.class.getName(), "prediction");
+    final Job<Frame> j = new Job(Key.make(parms._predictions_name), Frame.class.getName(), "transformation");
 
 
     H2O.H2OCountedCompleter work = new H2O.H2OCountedCompleter() {

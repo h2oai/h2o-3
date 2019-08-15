@@ -150,9 +150,4 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     _output._teColumnNameToIdx.clear();
     return super.remove_impl(fs, cascade);
   }
-
-  @Override
-  public Model.Type getModelType() {
-    return Type.DATA_TRANSFORMING;
-  }
 }
