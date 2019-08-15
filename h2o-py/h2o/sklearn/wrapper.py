@@ -633,8 +633,12 @@ class H2OtoSklearnEstimator(BaseSklearnEstimator):
     def _fit(self, X, y=None, **fit_params):
         self._extract_frame_params(X)
         self._make_estimator()
-        training_frame = X if y is None else X.concat(y)
-        self._estimator.train(y=-1, training_frame=training_frame, **fit_params)
+        if self._get_custom_param('_fit'):
+            self._get_custom_param('_fit')(self, X, y=y, **fit_params)
+        else:
+            training_frame = X if y is None else X.concat(y)
+            target = None if y is None else -1
+            self._estimator.train(y=target, training_frame=training_frame, **fit_params)
         return self
 
     def _predict(self, X):
@@ -839,5 +843,8 @@ class H2OEstimatorTransformSupport(BaseSklearnEstimator, TransformerMixin):
         :param iterable X: data to transform (array-like or :class:`h2o.H2OFrame`).
         :return: transformed data (:class:`h2o.H2OFrame` by default ).
         """
-        return self._predict(X)
+        if self._get_custom_param('_transform'):
+            return self._get_custom_param('_transform')(self, X)
+        else:
+            return self._predict(X)
 

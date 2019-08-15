@@ -27,6 +27,7 @@ On top of their original counterparts, the `sklearn` estimators add the followin
 """
 
 import inspect
+from operator import attrgetter
 import sys
 
 from sklearn.base import ClassifierMixin, RegressorMixin
@@ -82,14 +83,19 @@ def _get_custom_params(cls):
         custom.update(predictions_col='all')  # `predict` will return all columns (instead of a vector by default).
     if cls.__name__ in ['H2OGeneralizedLinearEstimator']:
         custom.update(distribution_param='family')  # use algo `family` param to identify distribution (default is `distribution`).
-    if cls.__name__ in ['H2OAggregatorEstimator']:
-        custom.update(
-            _fit=_noop,
-            # _transform=
-        )
     if cls.__name__ in ['H2ONaiveBayesEstimator',
                         'H2OSupportVectorMachineEstimator']:
         custom.update(default_estimator_type='classifier')  #  makes the generic sklearn estimator a `classifier` by default.
+
+    if cls.__name__ in ['H2OAggregatorEstimator']:
+        def _transform(self, X):
+            self._estimator.train(training_frame=X)
+            return self._estimator.aggregated_frame
+        custom.update(
+            _fit=_noop,
+            # _transform=attrgetter('aggregated_frame'),
+            _transform=_transform
+        )
     return custom or None
 
 

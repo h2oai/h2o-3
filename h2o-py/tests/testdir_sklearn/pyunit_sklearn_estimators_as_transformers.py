@@ -56,6 +56,7 @@ def _get_default_args(estimator_cls):
 def _get_custom_behaviour(estimator_cls):
     train_size = 100 * 0.75  # cf. _get_data
     custom = dict(
+        H2OAggregatorEstimator=dict(predict=False, result_shape=(train_size, 5+1)),
         H2OGeneralizedLowRankEstimator=dict(results_may_differ=True,
                                             idempotent=False,
                                             result_shape=(train_size, 5)),  # (n_samples, n_features)
@@ -101,10 +102,11 @@ def test_estimator_with_numpy_arrays(estimator_cls):
         assert res.dim == list(_get_custom_behaviour(estimator_cls).get('result_shape'))
         results[estimator_cls].update(with_numpy_arrays_in=res.as_data_frame().values)
 
-        res_pred = estimator.predict(data.X_train)
-        print(res_pred[:10])
-        assert isinstance(res_pred, np.ndarray)
-        assert np.allclose(res.as_data_frame().values, res_pred)
+        if _get_custom_behaviour(estimator_cls).get('predict', True):
+            res_pred = estimator.predict(data.X_train)
+            print(res_pred[:10])
+            assert isinstance(res_pred, np.ndarray)
+            assert np.allclose(res.as_data_frame().values, res_pred)
 
         res_ft = estimator.fit_transform(data.X_train)
         print(res_ft)
@@ -148,9 +150,10 @@ def test_estimator_with_numpy_arrays_as_result(estimator_cls):
             else:
                 raise e
 
-        res_fp = estimator.fit_predict(data.X_train)
-        assert isinstance(res_fp, np.ndarray)
-        assert np.allclose(res_ft, res_fp)
+        if _get_custom_behaviour(estimator_cls).get('predict', True):
+            res_fp = estimator.fit_predict(data.X_train)
+            assert isinstance(res_fp, np.ndarray)
+            assert np.allclose(res_ft, res_fp)
 
 
 def test_results_are_equivalent(estimator_cls):
@@ -191,7 +194,7 @@ def make_tests(transformer):
 
 
 transformers = [
-    # 'H2OAggregatorEstimator',
+    'H2OAggregatorEstimator',
     'H2OGeneralizedLowRankEstimator',
     'H2OPrincipalComponentAnalysisEstimator',
     'H2OSingularValueDecompositionEstimator'
