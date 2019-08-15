@@ -53,10 +53,6 @@ def test_h2o_only_pipeline_with_h2o_frames():
     preds = pipeline.predict(data.X_test)
     assert isinstance(preds, h2o.H2OFrame)
     assert preds.dim == [len(data.X_test), 1]
-    try:
-        pipeline.predict_proba(data.X_test)
-    except AttributeError as e:
-        assert "No `predict_proba` method" in str(e)
 
     # to get it working, we need to score a fresh H2OFrame
     data = _get_data(format='h2o')
@@ -83,10 +79,6 @@ def test_h2o_only_pipeline_with_numpy_arrays():
     preds = pipeline.predict(data.X_test)
     assert isinstance(preds, np.ndarray)
     assert preds.shape == (len(data.X_test),)
-    try:
-        pipeline.predict_proba(data.X_test)
-    except AttributeError as e:
-        assert "No `predict_proba` method" in str(e)
 
     score = pipeline.score(data.X_test, data.y_test)
     assert isinstance(score, float)
@@ -109,10 +101,6 @@ def test_mixed_pipeline_with_numpy_arrays():
     preds = pipeline.predict(data.X_test)
     assert isinstance(preds, np.ndarray)
     assert preds.shape == (len(data.X_test),)
-    try:
-        pipeline.predict_proba(data.X_test)
-    except AttributeError as e:
-        assert "No `predict_proba` method" in str(e)
 
     score = pipeline.score(data.X_test, data.y_test)
     assert isinstance(score, float)
@@ -135,10 +123,6 @@ def test_generic_estimator_with_distribution_param():
     preds = pipeline.predict(data.X_test)
     assert isinstance(preds, np.ndarray)
     assert preds.shape == (len(data.X_test),)
-    try:
-        pipeline.predict_proba(data.X_test)
-    except AttributeError as e:
-        assert "No `predict_proba` method" in str(e)
 
     score = pipeline.score(data.X_test, data.y_test)
     assert isinstance(score, float)

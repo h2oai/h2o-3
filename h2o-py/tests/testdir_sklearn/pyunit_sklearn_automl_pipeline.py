@@ -112,10 +112,6 @@ def test_regression_with_numpy_frames():
     preds = pipeline.predict(data.X_test)
     assert isinstance(preds, np.ndarray)
     assert preds.shape == (len(data.X_test),)
-    try:
-        pipeline.predict_proba(data.X_test)
-    except AttributeError as e:
-        assert "No `predict_proba` method" in str(e)
 
     score = pipeline.score(data.X_test, data.y_test)
     assert isinstance(score, float)
@@ -169,10 +165,6 @@ def test_generic_estimator_for_regression():
     preds = pipeline.predict(data.X_test)
     assert isinstance(preds, np.ndarray)
     assert preds.shape == (len(data.X_test),)
-    try:
-        pipeline.predict_proba(data.X_test)
-    except AttributeError as e:
-        assert "No `predict_proba` method" in str(e)
 
     score = pipeline.score(data.X_test, data.y_test)
     assert isinstance(score, float)

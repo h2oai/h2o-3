@@ -676,61 +676,6 @@ class H2OtoSklearnEstimator(BaseSklearnEstimator):
         pred_col = self._get_custom_param('predictions_col', 0)
         return preds if pred_col == 'all' else preds[:, pred_col]
 
-    @params_as_h2o_frames()
-    def predict_proba(self, X):
-        """Predicts on the data.
-
-        :param iterable X: data to predict on (array-like or :class:`h2o.H2OFrame`).
-        :return: the predictions probabilities, shape=[n_samples, n_classes] (array-like or :class:`h2o.H2OFrame`).
-        """
-        if self.is_classifier() and self._get_custom_param('predict_proba', True):
-            preds = self._predict(X)
-            pred_col = self._get_custom_param('predictions_col', 0)
-            selector = [c for c in range(preds.ncol) if c != pred_col]
-            return preds[:, selector]
-        raise AttributeError("No `predict_proba` method in {}".format(self.__class__.__name__))
-
-    def predict_log_proba(self, X):
-        """Predicts on the data.
-
-        :param iterable X: data to predict on (array-like or :class:`h2o.H2OFrame`).
-        :return: the predictions log-probabilities, shape=[n_samples, n_classes] (array-like or :class:`h2o.H2OFrame`).
-        """
-        if self.is_classifier() and can_use_numpy():
-            return np.log(self.predict_proba(X))
-        raise AttributeError("No `predict_log_proba` method in {}".format(self.__class__.__name__))
-
-    @params_as_h2o_frames()
-    def score(self, X, y=None, sample_weight=None):
-        """Predicts on the data and score the predictions using by default:
-            - :func:`sklearn.metrics.accuracy_score` for classification estimators.
-            - :func:`sklearn.metrics.r2_score` for regression estimators.
-
-        :param iterable X: data to predict on (array-like or :class:`h2o.H2OFrame`).
-        :param iterable y: true target values used for scoring (array-like or :class:`h2o.H2OFrame`) (default is None).
-        :param sample_weight: passed to the score function.
-        :return:
-        """
-        if hasattr(self._estimator, 'score') and callable(self._estimator.score):
-            return self._estimator.score(X, y=y, sample_weight=sample_weight)
-        elif self._get_custom_param('score', True):
-            def delegate_score(delegate):
-                # suboptimal: X may have been converted to H2O frame for nothing
-                #  however for now, it makes implementation simpler
-                return delegate.score(_to_numpy(X), y=(_vector_to_1d_array(y)), sample_weight=sample_weight)
-
-            # delegate to default sklearn scoring methods
-            parent = super(H2OtoSklearnEstimator, self)
-            if hasattr(parent, 'score') and callable(parent.score):
-                return delegate_score(parent)
-            elif self.is_classifier():
-                with Mixin(self, ClassifierMixin) as delegate:
-                    return delegate_score(delegate)
-            elif self.is_regressor():
-                with Mixin(self, RegressorMixin) as delegate:
-                    return delegate_score(delegate)
-        raise AttributeError("No `score` method in {}".format(self.__class__.__name__))
-
 
 class H2OtoSklearnTransformer(BaseSklearnEstimator, TransformerMixin):
     """
@@ -802,11 +747,71 @@ class H2OtoSklearnTransformer(BaseSklearnEstimator, TransformerMixin):
         """
         if hasattr(self._estimator, 'inverse_transform') and callable(self._estimator.inverse_transform):
             return self._estimator.inverse_transform(X)
-        raise AttributeError("No `inverse_transform` method in {}".format(self.__class__.__name__))
+        raise AttributeError("{} does not support 'inverse_transform'.".format(self.__class__.__name__))
 
 
 
-class H2OEstimatorAsTransformerMixin(BaseSklearnEstimator, TransformerMixin):
+class H2OEstimatorPredictProbabilitiesSupport(BaseEstimatorMixin):
+
+    @params_as_h2o_frames()
+    def predict_proba(self, X):
+        """Predicts on the data.
+
+        :param iterable X: data to predict on (array-like or :class:`h2o.H2OFrame`).
+        :return: the predictions probabilities, shape=[n_samples, n_classes] (array-like or :class:`h2o.H2OFrame`).
+        """
+        if self.is_classifier():
+            preds = self._predict(X)
+            pred_col = self._get_custom_param('predictions_col', 0)
+            selector = [c for c in range(preds.ncol) if c != pred_col]
+            return preds[:, selector]
+        raise AttributeError("{} attribute 'predict_proba' is supported only for classification.".format(self.__class__.__name__))
+
+    def predict_log_proba(self, X):
+        """Predicts on the data.
+
+        :param iterable X: data to predict on (array-like or :class:`h2o.H2OFrame`).
+        :return: the predictions log-probabilities, shape=[n_samples, n_classes] (array-like or :class:`h2o.H2OFrame`).
+        """
+        if self.is_classifier() and can_use_numpy():
+            return np.log(self.predict_proba(X))
+        raise AttributeError("{} attribute 'predict_proba' is supported only for classification.".format(self.__class__.__name__))
+
+
+class H2OEstimatorScoreSupport(BaseEstimatorMixin):
+
+    @params_as_h2o_frames()
+    def score(self, X, y=None, sample_weight=None):
+        """Predicts on the data and score the predictions using by default:
+            - :func:`sklearn.metrics.accuracy_score` for classification estimators.
+            - :func:`sklearn.metrics.r2_score` for regression estimators.
+
+        :param iterable X: data to predict on (array-like or :class:`h2o.H2OFrame`).
+        :param iterable y: true target values used for scoring (array-like or :class:`h2o.H2OFrame`) (default is None).
+        :param sample_weight: passed to the score function.
+        :return:
+        """
+        if hasattr(self._estimator, 'score') and callable(self._estimator.score):
+            return self._estimator.score(X, y=y, sample_weight=sample_weight)
+
+        def delegate_score(delegate):
+            # suboptimal: X may have been converted to H2O frame for nothing
+            #  however for now, it makes implementation simpler
+            return delegate.score(_to_numpy(X), y=(_vector_to_1d_array(y)), sample_weight=sample_weight)
+
+        # delegate to default sklearn scoring methods
+        parent = super(H2OEstimatorScoreSupport, self)
+        if hasattr(parent, 'score') and callable(parent.score):
+            return delegate_score(parent)
+        elif self.is_classifier():
+            with Mixin(self, ClassifierMixin) as delegate:
+                return delegate_score(delegate)
+        elif self.is_regressor():
+            with Mixin(self, RegressorMixin) as delegate:
+                return delegate_score(delegate)
+
+
+class H2OEstimatorTransformSupport(BaseSklearnEstimator, TransformerMixin):
 
     @params_as_h2o_frames(result_conversion=False)
     def fit_transform(self, X, y=None, **fit_params):
@@ -834,7 +839,5 @@ class H2OEstimatorAsTransformerMixin(BaseSklearnEstimator, TransformerMixin):
         :param iterable X: data to transform (array-like or :class:`h2o.H2OFrame`).
         :return: transformed data (:class:`h2o.H2OFrame` by default ).
         """
-        custom_transform = self._get_custom_param('transform')
-        if custom_transform:
-            return custom_transform(self, X)
         return self._predict(X)
+

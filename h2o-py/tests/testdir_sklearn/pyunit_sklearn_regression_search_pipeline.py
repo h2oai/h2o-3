@@ -74,10 +74,6 @@ def test_h2o_only_pipeline_with_h2o_frames():
     preds = search.predict(data.X_test)
     assert isinstance(preds, h2o.H2OFrame)
     assert preds.dim == [len(data.X_test), 1]
-    try:
-        search.predict_proba(data.X_test)
-    except AttributeError as e:
-        assert "No `predict_proba` method" in str(e)
 
     score = search.score(data.X_test, data.y_test)
     assert isinstance(score, float)
@@ -125,10 +121,6 @@ def test_h2o_only_pipeline_with_numpy_arrays():
         preds = search.predict(data.X_test)
         assert isinstance(preds, np.ndarray)
         assert preds.shape == (len(data.X_test),)
-        try:
-            search.predict_proba(data.X_test)
-        except AttributeError as e:
-            assert "No `predict_proba` method" in str(e)
 
         score = search.score(data.X_test, data.y_test)
         assert isinstance(score, float)
@@ -167,10 +159,6 @@ def test_mixed_pipeline_with_numpy_arrays():
         preds = search.predict(data.X_test)
         assert isinstance(preds, np.ndarray)
         assert preds.shape == (len(data.X_test),)
-        try:
-            search.predict_proba(data.X_test)
-        except AttributeError as e:
-            assert "No `predict_proba` method" in str(e)
 
         score = search.score(data.X_test, data.y_test)
         assert isinstance(score, float)

@@ -4,8 +4,7 @@ import importlib, inspect, os, sys
 sys.path.insert(1, os.path.join("..",".."))
 from tests import pyunit_utils
 
-sklearn_estimator_methods = ['fit', 'predict', 'predict_proba', 'predict_log_proba', 'score',
-                             'get_params', 'set_params']
+sklearn_estimator_methods = ['fit', 'predict', 'fit_predict', 'get_params', 'set_params']
 
 sklearn_transformer_methods = ['fit', 'fit_transform', 'transform', 'inverse_transform',
                                'get_params', 'set_params']
@@ -47,7 +46,7 @@ def test_automl_estimators_exposed_in_h2o_sklearn_automl_module():
     for name in _make_estimator_names('H2OAutoML'):
         cls = getattr(mod, name, None)
         assert cls, "Class {} is missing in module {}".format(name, mod)
-        for meth in sklearn_estimator_methods:
+        for meth in sklearn_estimator_methods + ['score']:
             assert _has_method(cls, meth), "Class {} is missing method {}".format(name, meth)
         _check_exposed_in_h2o_sklearn_module(cls)
 
@@ -62,6 +61,14 @@ def test_algos_estimators_exposed_in_h2o_sklearn_estimators_module():
             assert cls, "Class {} is missing in module {}".format(name, mod)
             for meth in sklearn_estimator_methods:
                 assert _has_method(cls, meth), "Class {} is missing method {}".format(name, meth)
+            if name.endswith('Classifier') or name.endswith('Regressor'):
+                meth = 'score'
+                assert _has_method(cls, meth), "Class {} is missing method {}".format(name, meth)
+                for meth in ['predict_proba', 'predict_log_proba']:
+                    if name.endswith('Classifier'):
+                        assert _has_method(cls, meth), "Class {} is missing method {}".format(name, meth)
+                    else:
+                        assert not _has_method(cls, meth), "Class {} should not have method {}".format(name, meth)
             _check_exposed_in_h2o_sklearn_module(cls)
 
 

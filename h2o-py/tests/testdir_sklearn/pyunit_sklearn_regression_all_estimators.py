@@ -70,17 +70,11 @@ def test_estimator_with_h2o_frames(estimator_cls):
     else:
         assert preds.dim[0] == len(data.X_test)
 
-    try:
-        estimator.predict_proba(data.X_test)
-    except AttributeError as e:
-        assert "No `predict_proba` method" in str(e)
-
-    if _get_custom_behaviour(estimator_cls).get('score', True):
-        score = estimator.score(data.X_test, data.y_test)
-        assert isinstance(score, float)
-        skl_score = r2_score(data.y_test.as_data_frame().values, preds.as_data_frame().values)
-        assert abs(score - skl_score) < 1e-6, "score={}, skl_score={}".format(score, skl_score)
-        scores[estimator_cls].update(with_h2o_frames=score)
+    score = estimator.score(data.X_test, data.y_test)
+    assert isinstance(score, float)
+    skl_score = r2_score(data.y_test.as_data_frame().values, preds.as_data_frame().values)
+    assert abs(score - skl_score) < 1e-6, "score={}, skl_score={}".format(score, skl_score)
+    scores[estimator_cls].update(with_h2o_frames=score)
 
 
 def test_estimator_with_numpy_arrays(estimator_cls):
@@ -99,17 +93,11 @@ def test_estimator_with_numpy_arrays(estimator_cls):
         else:
             assert preds.shape[0] == len(data.X_test)
 
-        try:
-            estimator.predict_proba(data.X_test)
-        except AttributeError as e:
-            assert "No `predict_proba` method" in str(e)
-
-        if _get_custom_behaviour(estimator_cls).get('score', True):
-            score = estimator.score(data.X_test, data.y_test)
-            assert isinstance(score, float)
-            skl_score = r2_score(data.y_test, preds)
-            assert abs(score - skl_score) < 1e-6
-            scores[estimator_cls].update(with_numpy_arrays=score)
+        score = estimator.score(data.X_test, data.y_test)
+        assert isinstance(score, float)
+        skl_score = r2_score(data.y_test, preds)
+        assert abs(score - skl_score) < 1e-6
+        scores[estimator_cls].update(with_numpy_arrays=score)
 
 
 def test_scores_are_equivalent(estimator_cls):
