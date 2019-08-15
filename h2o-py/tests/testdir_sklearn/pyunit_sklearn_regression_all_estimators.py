@@ -51,7 +51,7 @@ def _get_custom_behaviour(estimator_cls):
     custom = dict(
         # H2ODeepLearningRegressor=dict(scores_may_differ=True),
     )
-    return custom.get(estimator_cls.__name__, dict(seed=seed))
+    return custom.get(estimator_cls.__name__, dict())
 
 
 

@@ -51,7 +51,7 @@ def _get_custom_behaviour(estimator_cls):
     custom = dict(
         # H2ODeepLearningClassifier=dict(scores_may_differ=True),
     )
-    return custom.get(estimator_cls.__name__, dict(seed=seed))
+    return custom.get(estimator_cls.__name__, dict())
 
 
 def test_estimator_with_h2o_frames(estimator_cls):

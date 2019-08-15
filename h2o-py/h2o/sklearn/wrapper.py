@@ -214,11 +214,11 @@ def _vector_to_1d_array(fr, estimator=estimator, **kwargs):
     Converts the given frame (expected to be a vector frame) to a 1-dimensional numpy array.
     This default behaviour can be avoided using custom hooks: see implementation details.
     """
-    if isinstance(estimator, BaseEstimatorMixin) and estimator._get_custom_param('predictions_col', 0) == 'all':
-        return _to_numpy(fr)
+    if isinstance(estimator, BaseEstimatorMixin) and estimator._get_custom_param('predictions_col') == 'all':
+        return _to_numpy(fr, **kwargs)
 
     assert fr.ncol == 1 or fr.nrow == 1, "Only vectors can be converted to 1d array."
-    return _to_numpy(fr).reshape(-1)
+    return _to_numpy(fr, **kwargs).reshape(-1)
 
 
 def _convert(converter, arg, arguments, **converter_args):
@@ -613,6 +613,12 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
     # def __str__(self):
     #     return str(self._estimator) if self._estimator else super(BaseSklearnEstimator, self).__str__()
 
+    def show(self):
+        if hasattr(self._estimator, 'show') and callable(self._estimator.show):
+            self._estimator.show()
+        else:
+            print(self)
+
 
 
 class H2OtoSklearnEstimator(BaseSklearnEstimator):
@@ -666,8 +672,8 @@ class H2OtoSklearnEstimator(BaseSklearnEstimator):
         :param iterable X: data to predict on (array-like or :class:`h2o.H2OFrame`).
         :return: the predictions (array-like or :class:`h2o.H2OFrame`).
         """
-        pred_col = self._get_custom_param('predictions_col', 0)
         preds = self._predict(X)
+        pred_col = self._get_custom_param('predictions_col', 0)
         return preds if pred_col == 'all' else preds[:, pred_col]
 
     @params_as_h2o_frames()
@@ -678,8 +684,8 @@ class H2OtoSklearnEstimator(BaseSklearnEstimator):
         :return: the predictions probabilities, shape=[n_samples, n_classes] (array-like or :class:`h2o.H2OFrame`).
         """
         if self.is_classifier() and self._get_custom_param('predict_proba', True):
-            pred_col = self._get_custom_param('predictions_col', 0)
             preds = self._predict(X)
+            pred_col = self._get_custom_param('predictions_col', 0)
             selector = [c for c in range(preds.ncol) if c != pred_col]
             return preds[:, selector]
         raise AttributeError("No `predict_proba` method in {}".format(self.__class__.__name__))
@@ -755,6 +761,10 @@ class H2OtoSklearnTransformer(BaseSklearnEstimator, TransformerMixin):
     def transform(self, X):
         """Transform the data on the fitted model.
 
+        Note that it doesn't convert result back to numpy by default as it is intended to be chained
+        with another H2O transformer or estimator.
+        The transformer should be instantiated with `data_conversion=True` to always obtain numpy objects as results.
+
         :param iterable X: data to transform (array-like or :class:`h2o.H2OFrame`).
         :return: transformed data (:class:`h2o.H2OFrame` by default).
         """
@@ -763,6 +773,10 @@ class H2OtoSklearnTransformer(BaseSklearnEstimator, TransformerMixin):
     @params_as_h2o_frames(result_conversion=False)
     def fit_transform(self, X, y=None, **fit_params):
         """Fit the model and apply transform on the fitted model.
+
+        Note that it doesn't convert result back to numpy by default as it is intended to be chained
+        with another H2O transformer or estimator.
+        The transformer should be instantiated with `data_conversion=True` to always obtain numpy objects as results.
 
         :param iterable X: training data (array-like or :class:`h2o.H2OFrame`).
         :param iterable y: training target (array-like or :class:`h2o.H2OFrame`) (default is None).
@@ -779,6 +793,10 @@ class H2OtoSklearnTransformer(BaseSklearnEstimator, TransformerMixin):
     def inverse_transform(self, X):
         """Apply reverse transformation.
 
+        Note that it doesn't convert result back to numpy by default as it is intended to be chained
+        with another H2O transformer or estimator.
+        The transformer should be instantiated with `data_conversion=True` to always obtain numpy objects as results.
+
         :param iterable X: data to transform (array-like or :class:`h2o.H2OFrame`).
         :return: transformed data (:class:`h2o.H2OFrame` by default).
         """
@@ -791,11 +809,30 @@ class H2OtoSklearnTransformer(BaseSklearnEstimator, TransformerMixin):
 class H2OEstimatorAsTransformerMixin(BaseSklearnEstimator, TransformerMixin):
 
     @params_as_h2o_frames(result_conversion=False)
+    def fit_transform(self, X, y=None, **fit_params):
+        """Fit the model and apply transform on the fitted model.
+
+        Note that it doesn't convert result back to numpy by default as it is intended to be chained
+        with another H2O transformer or estimator.
+        The transformer should be instantiated with `data_conversion=True` to always obtain numpy objects as results.
+
+        :param iterable X: training data (array-like or :class:`h2o.H2OFrame`).
+        :param iterable y: training target (array-like or :class:`h2o.H2OFrame`) (default is None).
+        :param fit_params: parameters passed to the underlying `train` method of the :class:`h2o.estimators.H2OEstimator`.
+        :return: transformed data (:class:`h2o.H2OFrame` by default).
+        """
+        return self._fit(X, y=y, **fit_params).transform(X)
+
+    @params_as_h2o_frames(result_conversion=False)
     def transform(self, X):
         """Transform the data on the fitted model.
 
+        Note that it doesn't convert result back to numpy by default as it is intended to be chained
+        with another H2O transformer or estimator.
+        The transformer should be instantiated with `data_conversion=True` to always obtain numpy objects as results.
+
         :param iterable X: data to transform (array-like or :class:`h2o.H2OFrame`).
-        :return: transformed data (:class:`h2o.H2OFrame` by default).
+        :return: transformed data (:class:`h2o.H2OFrame` by default ).
         """
         custom_transform = self._get_custom_param('transform')
         if custom_transform:

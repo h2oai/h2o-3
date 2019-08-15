@@ -75,7 +75,7 @@ def _get_custom_behaviour(estimator_cls):
         H2OSingularValueDecompositionEstimator=dict(requires_target=False, preds_as_vector=False, predict_proba=False, score=False),
         H2OWord2vecEstimator=dict(preds_as_vector=False, predict_proba=False, score=False),
     )
-    return custom.get(estimator_cls.__name__, dict(seed=seed))
+    return custom.get(estimator_cls.__name__, dict())
 
 
 
@@ -130,6 +130,8 @@ def test_estimator_with_numpy_arrays(estimator_cls):
             assert preds.shape == (len(data.X_test),), "got {}".format(preds.shape)
         else:
             assert preds.shape[0] == len(data.X_test)
+
+        # print(estimator.fit_predict(data.X_train, data.y_train if requires_target else None))
 
         if _get_custom_behaviour(estimator_cls).get('predict_proba', True):
             probs = estimator.predict_proba(data.X_test)
