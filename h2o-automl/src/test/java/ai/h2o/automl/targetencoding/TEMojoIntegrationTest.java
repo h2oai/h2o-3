@@ -401,7 +401,7 @@ public class TEMojoIntegrationTest extends TestUtil {
       EncodingMap homeDestEncodingMap = encodingMapConvertedFromFrame.get(teColumn);
 
       // Checking that priorMean was written and loaded properly
-      assertEquals(targetEncoderModel._output._priorMean, loadedMojoModel._priorMean, 1e-5);
+      assertEquals(targetEncoderModel._output._prior_mean, loadedMojoModel._priorMean, 1e-5);
       double expectedPriorMean = loadedMojoModel._priorMean;
 
       // Checking that encodings from Mojo model and manually computed ones are equal
@@ -545,7 +545,7 @@ public class TEMojoIntegrationTest extends TestUtil {
 
       assertEquals(0, targetEncoderModel._output._target_encoding_map.get("embarked").byteSize());
       assertEquals(0, targetEncoderModel._output._target_encoding_map.get("home.dest").byteSize());
-      assertEquals(0, targetEncoderModel._output._teColumnNameToIdx.size());
+      assertEquals(0, targetEncoderModel._output.column_name_to_idx.size());
     } finally {
       Scope.exit();
     }

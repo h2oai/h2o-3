@@ -60,19 +60,19 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
   public static class TargetEncoderOutput extends Model.Output {
     
     public transient Map<String, Frame> _target_encoding_map;
-    public TargetEncoderParameters _teParams;
-    public transient Map<String, Integer> _teColumnNameToIdx;
-    public transient Map<String, Integer> _teColumnNameToMissingValuesPresence;
-    public double _priorMean;
+    public TargetEncoderParameters _parms;
+    public transient Map<String, Integer> column_name_to_idx;
+    public transient Map<String, Integer> _column_name_to_missing_val_presence;
+    public double _prior_mean;
     
     public TargetEncoderOutput(TargetEncoderBuilder b, Map<String, Frame> teMap, double priorMean) {
       super(b);
       _target_encoding_map = teMap;
-      _teParams = b._parms;
+      _parms = b._parms;
 
-      _teColumnNameToIdx = createColumnNameToIndexMap(_teParams);
-      _teColumnNameToMissingValuesPresence = createMissingValuesPresenceMap();
-      _priorMean = priorMean;
+      column_name_to_idx = createColumnNameToIndexMap(_parms);
+      _column_name_to_missing_val_presence = createMissingValuesPresenceMap();
+      _prior_mean = priorMean;
     }
 
     private Map<String, Integer> createMissingValuesPresenceMap() {
@@ -81,7 +81,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       for(Map.Entry<String, Frame> entry : _target_encoding_map.entrySet()) {
         String teColumn = entry.getKey();
         Frame frameWithEncodings = entry.getValue();
-        presenceOfNAMap.put(teColumn, _teParams.train().vec(teColumn).cardinality() < frameWithEncodings.vec(teColumn).cardinality() ? 1 : 0);
+        presenceOfNAMap.put(teColumn, _parms.train().vec(teColumn).cardinality() < frameWithEncodings.vec(teColumn).cardinality() ? 1 : 0);
       }
       
       return presenceOfNAMap;
@@ -99,7 +99,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
 
     @Override
     public int nfeatures() {
-      return super.nfeatures() - (_teParams._fold_column == null ? 0 : 1);
+      return super.nfeatures() - (_parms._fold_column == null ? 0 : 1);
     }
 
     @Override public ModelCategory getModelCategory() {
@@ -147,7 +147,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
   @Override
   protected Futures remove_impl(Futures fs, boolean cascade) {
     TargetEncoderFrameHelper.encodingMapCleanUp(_output._target_encoding_map);
-    _output._teColumnNameToIdx.clear();
+    _output.column_name_to_idx.clear();
     return super.remove_impl(fs, cascade);
   }
 }

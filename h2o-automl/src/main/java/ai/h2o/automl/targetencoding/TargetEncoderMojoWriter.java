@@ -36,23 +36,23 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
    */
   private void writeTargetEncodingInfo() throws IOException {
     TargetEncoderModel.TargetEncoderOutput output = ((TargetEncoderModel) model)._output;
-    TargetEncoderModel.TargetEncoderParameters teParams = output._teParams;
+    TargetEncoderModel.TargetEncoderParameters teParams = output._parms;
     writekv("with_blending", teParams._blending);
     if(teParams._blending) {
       writekv("inflection_point", teParams._blending_parameters.getK());
       writekv("smoothing", teParams._blending_parameters.getF());
     }
-    writekv("priorMean", output._priorMean);
+    writekv("priorMean", output._prior_mean);
 
     // Maybe we can use index of the column instead of its name in all the encoding maps. Check whether we need name somewhere.
-    Map<String, Integer> teColumnNameToIdx = output._teColumnNameToIdx;
+    Map<String, Integer> teColumnNameToIdx = output.column_name_to_idx;
     startWritingTextFile("feature_engineering/target_encoding/te_column_name_to_idx_map.ini");
     for(Map.Entry<String, Integer> entry: teColumnNameToIdx.entrySet()) {
       writelnkv(entry.getKey(), entry.getValue().toString()); 
     }
     finishWritingTextFile();
 
-    Map<String, Integer> _teColumnNameToMissingValuesPresence = output._teColumnNameToMissingValuesPresence;
+    Map<String, Integer> _teColumnNameToMissingValuesPresence = output._column_name_to_missing_val_presence;
     startWritingTextFile("feature_engineering/target_encoding/te_column_name_to_missing_values_presence.ini");
     for(Map.Entry<String, Integer> entry: _teColumnNameToMissingValuesPresence.entrySet()) {
       writelnkv(entry.getKey(), entry.getValue().toString());
@@ -87,7 +87,7 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
    * For transforming (making predictions) non-training data we don't need `te folds` in our encoding maps 
    */
   private void ifNeededRegroupEncodingMapsByFoldColumn(TargetEncoderModel.TargetEncoderOutput targetEncoderOutput, Map<String, Frame> targetEncodingMapOnFrames) {
-    String teFoldColumnName = targetEncoderOutput._teParams._fold_column;
+    String teFoldColumnName = targetEncoderOutput._parms._fold_column;
     if(teFoldColumnName != null) {
       try {
         for (Map.Entry<String, Frame> encodingMapEntry : targetEncodingMapOnFrames.entrySet()) {

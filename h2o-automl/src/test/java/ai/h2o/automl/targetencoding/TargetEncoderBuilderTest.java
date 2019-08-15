@@ -103,7 +103,7 @@ public class TargetEncoderBuilderTest extends TestUtil {
       builder.trainModel().get(); // Waiting for training to be finished
       targetEncoderModel = builder.getTargetEncoderModel(); // TODO change the way of how we getting model after PUBDEV-6670. We should be able to get it from DKV with .trainModel().get()
 
-      Map<String, Integer> teColumnNameToMissingValuesPresence = targetEncoderModel._output._teColumnNameToMissingValuesPresence;
+      Map<String, Integer> teColumnNameToMissingValuesPresence = targetEncoderModel._output._column_name_to_missing_val_presence;
       assertTrue(teColumnNameToMissingValuesPresence.get("home.dest") == 0);
       assertTrue(teColumnNameToMissingValuesPresence.get("embarked") == 1);
     } finally {
