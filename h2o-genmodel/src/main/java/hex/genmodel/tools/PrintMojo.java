@@ -244,6 +244,8 @@ public class PrintMojo {
       try (FileInputStream is = new FileInputStream(dotSourceFilePath.toFile())) {
         MutableGraph gr = Parser.read(is);
         Graphviz.fromGraph(gr).render(Format.PNG).toFile(new File(outputPngName));
+      } finally {
+        Graphviz.releaseEngine();
       }
     }
   }
