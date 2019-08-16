@@ -1689,14 +1689,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
       i++;
     }
-
+    MathUtils.SimpleStats simpleStats = new MathUtils.SimpleStats(numMetrics);
     for (i=0;i<N;++i)
-      stats.add(vals[i],1);
+      simpleStats.add(vals[i],1);
     for (i=0;i<numMetrics;++i) {
-      table.set(i, 0, (float)stats.mean()[i]);
-      table.set(i, 1, (float)stats.sigma()[i]);
+      table.set(i, 0, (float)simpleStats.mean()[i]);
+      table.set(i, 1, (float)simpleStats.sigma()[i]);
     }
-
     Log.info(table);
     return table;
   }
