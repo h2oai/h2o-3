@@ -38,8 +38,8 @@ def test(x, y, output_test, strip_part, algo_name, generic_algo_name):
     assert len(generic_mojo_model._model_json["output"]["variable_importances"]._cell_values) > 0
     assert generic_mojo_model._model_json["output"]["model_summary"] is not None
     assert len(generic_mojo_model._model_json["output"]["model_summary"]._cell_values) > 0
-    assert generic_mojo_model.model_parameters() is not None
-    assert len(generic_mojo_model.model_parameters()._cell_values) > 0
+    assert generic_mojo_model._parms is not None
+    assert len(generic_mojo_model._parms._cell_values) > 0
     
     # Test constructor generating the model from existing MOJO file
     generic_mojo_model_from_file = H2OGenericEstimator.from_file(original_model_filename)
@@ -51,8 +51,8 @@ def test(x, y, output_test, strip_part, algo_name, generic_algo_name):
     assert len(generic_mojo_model_from_file._model_json["output"]["variable_importances"]._cell_values) > 0
     assert generic_mojo_model_from_file._model_json["output"]["model_summary"] is not None
     assert len(generic_mojo_model_from_file._model_json["output"]["model_summary"]._cell_values) > 0
-    assert generic_mojo_model_from_file.model_parameters() is not None
-    assert len(generic_mojo_model_from_file.model_parameters()._cell_values) > 0
+    assert generic_mojo_model_from_file._parms is not None
+    assert len(generic_mojo_model_from_file._parms._cell_values) > 0
     
     generic_mojo_filename = tempfile.mkdtemp("zip", "genericMojo")
     generic_mojo_filename = generic_mojo_model_from_file.download_mojo(path=generic_mojo_filename)

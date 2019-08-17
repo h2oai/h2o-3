@@ -40,5 +40,17 @@ h2o.generic <- function(model_id = NULL,
 
   # Error check and build model
   model <- .h2o.modelJob('generic', parms, h2oRestApiVersion=3, verbose=FALSE)
+    
+  # Exposing model's parameters represented as TwoDimTable as list
+  m <- .model.parts(model)$m
+  if(!is.null(m$model_parameters)) {
+    model_parameters.df <- m$model_parameters[,c('parameter', 'actual_value')]
+    model_parameters_df.list <- as.list(model_parameters.df)
+    
+    # zipping two lists of parameters' names and actual values
+    zipped_lists <- mapply(function(x, y) c(x, y), model_parameters_df.list[[1]], model_parameters_df.list[[2]], SIMPLIFY = FALSE , USE.NAMES = TRUE)
+    model@parameters <- zipped_lists
+  }
+    
   return(model)
 }

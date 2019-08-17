@@ -36,8 +36,8 @@ def test(x, y, output_test, strip_part, algo_name, generic_algo_name):
     assert len(model._model_json["output"]["variable_importances"]._cell_values) > 0
     assert model._model_json["output"]["model_summary"] is not None
     assert len(model._model_json["output"]["model_summary"]._cell_values) > 0
-    assert model.model_parameters() is not None
-    assert len(model.model_parameters()._cell_values) > 0
+    assert model._parms is not None
+    assert len(model._parms._cell_values) > 0
 
     generic_mojo_filename = tempfile.mkdtemp("zip", "genericMojo")
     generic_mojo_filename = model.download_mojo(path=generic_mojo_filename)

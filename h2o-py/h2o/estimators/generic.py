@@ -30,12 +30,19 @@ class H2OGenericEstimator(H2OEstimator):
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue
-                self._parms["model_id"] = pvalue
             elif pname in names_list:
                 # Using setattr(...) will invoke type-checking of the arguments
                 setattr(self, pname, pvalue)
             else:
                 raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
+
+    def train(self, x=None, y=None, training_frame=None, offset_column=None, fold_column=None, weights_column=None,
+              validation_frame=None, max_runtime_secs=None, ignored_columns=None, model_id=None, verbose=False):
+        super(H2OGenericEstimator, self).train(x, y, training_frame, offset_column, fold_column, weights_column, validation_frame,
+                      max_runtime_secs, ignored_columns, model_id, verbose)
+        model = self._model_json["output"]
+        if "model_parameters" in model and model["model_parameters"]:
+            self._parms = model["model_parameters"]
 
     @property
     def model_key(self):

@@ -39,8 +39,8 @@ def mojo_model_ifr_test():
     assert model._model_json["output"]["variable_importances"] is None
     assert model._model_json["output"]["model_summary"] is not None
     assert len(model._model_json["output"]["model_summary"]._cell_values) > 0
-    assert model.model_parameters() is not None
-    assert len(model.model_parameters()._cell_values) > 0
+    assert model._parms is not None
+    assert len(model._parms._cell_values) > 0
 
     generic_mojo_filename = tempfile.mkdtemp("zip", "genericMojo")
     generic_mojo_filename = model.download_mojo(path=generic_mojo_filename)

@@ -410,18 +410,6 @@ class ModelBase(backwards_compatible(Keyed)):
         print("No model summary for this model")
 
 
-    def model_parameters(self):
-        """
-        Retrieve original model's parameters.
-        
-        :returns: Model parameters as an H2OTwoDimTable
-        """
-        model = self._model_json["output"]
-        if "model_parameters" in model and model["model_parameters"]:
-            return model["model_parameters"]
-        print("No model parameters for this model")
-
-
     def show(self):
         """Print innards of model, without regards to type."""
         if self._future:
