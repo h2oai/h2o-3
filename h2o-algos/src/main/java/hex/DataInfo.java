@@ -61,6 +61,9 @@ public class DataInfo extends Keyed<DataInfo> {
   public int[] catNAFill() {return _catNAFill;}
   public int catNAFill(int cid) {return _catNAFill[cid];}
 
+  public double[] numNAFill() {return _numNAFill; }
+  public double numNAFill(int nid) {return _numNAFill[nid];}
+  
   public void setCatNAFill(int[] catNAFill) {
     _catNAFill = catNAFill;
   }
@@ -111,6 +114,7 @@ public class DataInfo extends Keyed<DataInfo> {
   public int [] _catOffsets;   // offset column indices for the 1-hot expanded values (includes enum-enum interaction)
   public boolean [] _catMissing;  // bucket for missing levels
   private int [] _catNAFill;    // majority class of each categorical col (or last bucket if _catMissing[i] is true)
+  public double[] _numNAFill;
   public int [] _permutation; // permutation matrix mapping input col indices to adaptedFrame
   public double [] _normMul;  // scale the predictor column by this value
   public double [] _normSub;  // subtract from the predictor this value
@@ -300,6 +304,7 @@ public class DataInfo extends Keyed<DataInfo> {
       else
         _numMeans[meanIdx++]=v.mean();
     }
+    _numNAFill = _numMeans;
     for(int i = names.length-nResponses - (weight?1:0) - (offset?1:0) - (fold?1:0); i < names.length; ++i) {
       names[i] = train._names[i];
       tvecs2[i] = train.vec(i);
@@ -541,8 +546,11 @@ public class DataInfo extends Keyed<DataInfo> {
     DataInfo dinfo = new DataInfo(this,f,normMul,normSub,catLvls,intLvls,catModes,cols);
     dinfo._nums=f.numCols()-dinfo._cats - dinfo._responses - (dinfo._offset?1:0) - (dinfo._weights?1:0) - (dinfo._fold?1:0);
     dinfo._numMeans=new double[nnums];
-    for(int k=id; k < (id+nnums);++k )
-      dinfo._numMeans[k-id] = _numMeans[cols[k]-off];
+    dinfo._numNAFill=new double[nnums];
+    for(int k=id; k < (id+nnums);++k ) {
+      dinfo._numMeans[k - id] = _numMeans[cols[k] - off];
+      dinfo._numNAFill[k - id] = _numNAFill[cols[k] - off];
+    }
     return dinfo;
   }
 
@@ -1077,7 +1085,7 @@ public class DataInfo extends Keyed<DataInfo> {
           double d=0;
           if( offset==interactionOffset ) d=chunks[_cats + i].atd(rid);
           if( Double.isNaN(d) )
-            d = _numMeans[numValsIdx];
+            d = _numNAFill[numValsIdx];
           if( _normMul != null && _normSub != null )
             d = (d - _normSub[numValsIdx]) * _normMul[numValsIdx];
           row.numVals[numValsIdx++]=d;
@@ -1085,7 +1093,7 @@ public class DataInfo extends Keyed<DataInfo> {
       } else {
         double d = chunks[_cats + i].atd(rid); // can be NA if skipMissing() == false
         if (Double.isNaN(d))
-          d = _numMeans[numValsIdx];
+          d = _numNAFill[numValsIdx];
         if (_normMul != null && _normSub != null)
           d = (d - _normSub[numValsIdx]) * _normMul[numValsIdx];
         row.numVals[numValsIdx++] = d;
@@ -1209,7 +1217,7 @@ public class DataInfo extends Keyed<DataInfo> {
             if( c.atd(r)==0 ) continue;
             double d = c.atd(r);
             if( Double.isNaN(d) )
-              d = _numMeans[interactionOffset+cidVirtualOffset];  // FIXME: if this produces a "true" NA then should sub with mean? with?
+              d = _numNAFill[interactionOffset+cidVirtualOffset];  // FIXME: if this produces a "true" NA then should sub with mean? with?
             if (_normMul != null)
               d *= _normMul[interactionOffset+cidVirtualOffset];
             row.addNum(numStart()+interactionOffset+cidVirtualOffset, d);
@@ -1226,7 +1234,7 @@ public class DataInfo extends Keyed<DataInfo> {
           if (row.predictors_bad) continue;
           double d = c.atd(r);
           if (Double.isNaN(d))
-            d = _numMeans[cid];
+            d = _numNAFill[cid];
           if (_normMul != null)
             d *= _normMul[interactionOffset];
           row.addNum(numStart()+interactionOffset,d);

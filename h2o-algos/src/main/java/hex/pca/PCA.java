@@ -299,6 +299,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           // fixed the std and mean of dinfo to that of the frame before removing NA rows
           dinfo._normMul = tinfo._normMul;
           dinfo._numMeans = tinfo._numMeans;
+          dinfo._numNAFill = dinfo._numMeans; // NAs will be imputed with means
           dinfo._normSub = tinfo._normSub;
         }
 

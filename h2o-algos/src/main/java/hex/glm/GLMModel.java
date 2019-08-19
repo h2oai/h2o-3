@@ -1279,7 +1279,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         for(int i = 0; i < _output._dinfo._nums; ++i) {
           double d = data[coff+i];
           if(!_output._dinfo._skipMissing && Double.isNaN(d))
-            d = _output._dinfo._numMeans[i];
+            d = _output._dinfo._numNAFill[i];
           e += d*b[boff+i];
         }
         if(e > maxRow) maxRow = e;
@@ -1329,7 +1329,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       for (int i = 0; i < _output._dinfo._nums && !Double.isNaN(eta); ++i) {
         double d = data[ncats + i];
         if (!_output._dinfo._skipMissing && Double.isNaN(d))
-          d = _output._dinfo._numMeans[i];
+          d = _output._dinfo._numNAFill[i];
         eta += b[numStart + i] * d;
       }
       double mu = _parms.linkInv(eta);
@@ -1353,7 +1353,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       @Override
       public void generate(JCodeSB out) {
         JCodeGen.toClassWithArray(out, "public static", "BETA", beta_internal()); // "The Coefficients"
-        JCodeGen.toClassWithArray(out, "static", "NUM_MEANS", _output._dinfo._numMeans,"Imputed numeric values");
+        JCodeGen.toClassWithArray(out, "static", "NUM_MEANS", _output._dinfo._numNAFill,"Imputed numeric values");
         JCodeGen.toClassWithArray(out, "static", "CAT_MODES", _output._dinfo.catNAFill(),"Imputed categorical values.");
         JCodeGen.toStaticVar(out, "CATOFFS", dinfo()._catOffsets, "Categorical Offsets");
       }

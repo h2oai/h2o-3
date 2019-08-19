@@ -29,7 +29,7 @@ public class GLMMojoWriter extends ModelMojoWriter<GLMModel, GLMModel.GLMParamet
     boolean imputeMeans = model._parms._missing_values_handling.equals(MissingValuesHandling.MeanImputation);
     writekv("mean_imputation", imputeMeans);
     if (imputeMeans) {
-      writekv("num_means", model._output._dinfo._numMeans);
+      writekv("num_means", model.dinfo().numNAFill());
       writekv("cat_modes", model.dinfo().catNAFill());
     }
 

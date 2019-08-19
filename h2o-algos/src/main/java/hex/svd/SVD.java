@@ -572,6 +572,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           // fixed the std and mean of dinfo to that of the frame before removing NA rows
           dinfo._normMul = tinfo._normMul;
           dinfo._numMeans = tinfo._numMeans;
+          dinfo._numNAFill = dinfo._numMeans; // NAs will be imputed with means
           dinfo._normSub = tinfo._normSub;
         }
         // Save adapted frame info for scoring later
@@ -866,6 +867,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       dinfo._normMul = Arrays.copyOf(_glrmModel._output._normMul, _glrmModel._output._normMul.length);
       dinfo._permutation = Arrays.copyOf(_glrmModel._output._permutation, _glrmModel._output._permutation.length);
       dinfo._numMeans = Arrays.copyOf(dinfo._normSub, dinfo._normSub.length);
+      dinfo._numNAFill = dinfo._numMeans; // NAs will be imputed with means
       dinfo._nums = _glrmModel._output._nnums;
       dinfo._cats = _glrmModel._output._ncats;
       dinfo._catOffsets = Arrays.copyOf(_glrmModel._output._catOffsets, _glrmModel._output._catOffsets.length);
