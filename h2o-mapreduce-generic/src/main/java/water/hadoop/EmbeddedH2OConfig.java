@@ -9,6 +9,8 @@ import java.net.Socket;
 
 class EmbeddedH2OConfig extends water.init.AbstractEmbeddedH2OConfig {
 
+  private static final int FETCH_FILE_RETRYS = Integer.parseInt(System.getProperty("sys.ai.h2o.hadoop.callback.retrys", "3")); 
+
   private volatile String _driverCallbackIp;
   private volatile int _driverCallbackPort = -1;
   private volatile int _mapperCallbackPort = -1;
@@ -49,10 +51,14 @@ class EmbeddedH2OConfig extends water.init.AbstractEmbeddedH2OConfig {
     }
   }
 
+  void setEmbeddedWebServerInfo(String ip, int port) {
+    _embeddedWebServerIp = ip;
+    _embeddedWebServerPort = port;
+  }
+  
   @Override
   public void notifyAboutEmbeddedWebServerIpPort(InetAddress ip, int port) {
-    _embeddedWebServerIp = ip.getHostAddress();
-    _embeddedWebServerPort = port;
+    setEmbeddedWebServerInfo(ip.getHostAddress(), port);
 
     try {
       MapperToDriverMessage msg = new MapperToDriverMessage();
@@ -77,21 +83,33 @@ class EmbeddedH2OConfig extends water.init.AbstractEmbeddedH2OConfig {
   @Override
   public String fetchFlatfile() throws Exception {
     System.out.println("EmbeddedH2OConfig: fetchFlatfile called");
-    MapperToDriverMessage msg = new MapperToDriverMessage();
-    msg.setMessageFetchFlatfile(_embeddedWebServerIp, _embeddedWebServerPort);
-    Socket s = new Socket(_driverCallbackIp, _driverCallbackPort);
-    msg.write(s);
-    DriverToMapperMessage msg2 = new DriverToMapperMessage();
-    msg2.read(s);
-    char type = msg2.getType();
+    DriverToMapperMessage response = null;
+    for (int i = 0; i < FETCH_FILE_RETRYS; i++) {
+      try {
+        System.out.println("EmbeddedH2OConfig: Attempting to fetch flatfile (attempt #" + i + ")");
+        MapperToDriverMessage msg = new MapperToDriverMessage();
+        msg.setMessageFetchFlatfile(_embeddedWebServerIp, _embeddedWebServerPort);
+        Socket s = new Socket(_driverCallbackIp, _driverCallbackPort);
+        msg.write(s);
+        response = new DriverToMapperMessage();
+        response.read(s);
+        s.close();
+        break;
+      } catch (IOException ioex) {
+        if (i + 1 == FETCH_FILE_RETRYS)
+          throw ioex;
+        reportFetchfileAttemptFailure(ioex, i);
+      }
+    }
+    assert response != null;
+    char type = response.getType();
     if (type != DriverToMapperMessage.TYPE_FETCH_FLATFILE_RESPONSE) {
       int typeAsInt = (int)type & 0xff;
       String str = "DriverToMapperMessage type unrecognized (" + typeAsInt + ")";
       Log.err(str);
       throw new Exception(str);
     }
-    s.close();
-    String flatfile = msg2.getFlatfile();
+    String flatfile = response.getFlatfile();
     System.out.println("EmbeddedH2OConfig: fetchFlatfile returned");
     System.out.println("------------------------------------------------------------");
     System.out.println(flatfile);
@@ -99,6 +117,11 @@ class EmbeddedH2OConfig extends water.init.AbstractEmbeddedH2OConfig {
     return flatfile;
   }
 
+  protected void reportFetchfileAttemptFailure(IOException ioex, int attempt) throws IOException {
+    System.out.println("EmbeddedH2OConfig: Attempt #" + attempt + " to fetch flatfile failed");
+    ioex.printStackTrace();
+  }
+  
   @Override
   public void notifyAboutCloudSize(InetAddress ip, int port, InetAddress leaderIp, int leaderPort, int size) {
     _embeddedWebServerIp = ip.getHostAddress();
