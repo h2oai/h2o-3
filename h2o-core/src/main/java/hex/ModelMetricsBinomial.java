@@ -63,6 +63,13 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     double[][] cm = _auc.defaultCM();
     return cm == null ? null : new ConfusionMatrix(cm, _domain);
   }
+  
+  @Override public ConfusionMatrix cm(AUC2.ThresholdCriterion criterion) {
+    if( _auc == null ) return null;
+    double[][] cm = _auc.cmByCriterion(criterion);
+    return cm == null ? null : new ConfusionMatrix(cm, _domain);
+  }
+  
   public GainsLift gainsLift() { return _gainsLift; }
 
   // expose simple metrics criteria for sorting

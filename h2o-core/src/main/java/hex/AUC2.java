@@ -279,6 +279,12 @@ public class AUC2 extends Iced {
 
   /** @return the default CM, or null for an empty AUC */
   public double[/*actual*/][/*predicted*/] defaultCM( ) { return _max_idx == -1 ? null : buildCM(_max_idx); }
+  
+  /** @return the CM that corresponds to a bin's index which brings max value for a given {@code criterion} */
+  public double[/*actual*/][/*predicted*/] cmByCriterion( ThresholdCriterion criterion) {
+    int maxIdx = criterion.max_criterion_idx(this);
+    return buildCM(maxIdx); 
+  }
   /** @return the default threshold; threshold that maximizes the default criterion */
   public double defaultThreshold( ) { return _max_idx == -1 ? 0.5 : _ths[_max_idx]; }
   /** @return the error of the default CM */
