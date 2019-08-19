@@ -139,11 +139,8 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     
     // Constructing confusion matrix based on criterion
     ConfusionMatrix cm;
-    AUC2.ThresholdCriterion criterionAsEnum = null;
-    try {
-      criterionAsEnum = AUC2.ThresholdCriterion.valueOf(criterion);
-    } catch (Exception ex) {
-    }
+
+    AUC2.ThresholdCriterion criterionAsEnum = AUC2.ThresholdCriterion.fromString(criterion);
     if(criterionAsEnum != null)
       cm = mm.cm(criterionAsEnum);
     else

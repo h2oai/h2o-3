@@ -111,6 +111,15 @@ public class AUC2 extends Iced {
       return mx;
     }
     public static final ThresholdCriterion[] VALUES = values();
+
+    public static AUC2.ThresholdCriterion fromString(String strRepr) {
+      for (ThresholdCriterion tc : ThresholdCriterion.values()) {
+        if (tc.toString().equalsIgnoreCase(strRepr)) {
+          return tc;
+        }
+      }
+      return null;
+    }
   } // public enum ThresholdCriterion
 
   public double threshold( int idx ) { return _ths[idx]; }
