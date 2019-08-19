@@ -442,7 +442,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _parms._use_all_factor_levels = true;
       if (_parms._link == Link.family_default)
         _parms._link = _parms._family.defaultLink;
-      _dinfo = new DataInfo(_train.clone(), _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, _parms.missingValuesHandling() == MissingValuesHandling.Skip, _parms.missingValuesHandling() == MissingValuesHandling.MeanImputation, null, false, hasWeightCol(), hasOffsetCol(), hasFoldCol(), _parms.interactionSpec());
+      _dinfo = new DataInfo(_train.clone(), _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, _parms.missingValuesHandling() == MissingValuesHandling.Skip, _parms.missingValuesHandling() == MissingValuesHandling.MeanImputation, new DataInfo.MeanImputer(), false, hasWeightCol(), hasOffsetCol(), hasFoldCol(), _parms.interactionSpec());
 
       if (_parms._max_iterations == -1) { // fill in default max iterations
         int numclasses = (_parms._family == Family.multinomial)||(_parms._family == Family.ordinal)?nclasses():1;

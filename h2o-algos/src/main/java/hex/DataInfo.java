@@ -162,6 +162,10 @@ public class DataInfo extends Keyed<DataInfo> {
     this(train,valid,nResponses,useAllFactorLevels,predictor_transform,response_transform,skipMissing,imputeMissing,missingBucket,weight,offset,fold,null);
   }
 
+  public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold, Model.InteractionSpec interactions) {
+    this(train, valid, nResponses, useAllFactorLevels, predictor_transform, response_transform, skipMissing, imputeMissing, new MeanImputer(), missingBucket, weight, offset, fold, interactions);
+  }
+
   /**
    *
    * The train/valid Frame instances are sorted by categorical (themselves sorted by
@@ -182,7 +186,7 @@ public class DataInfo extends Keyed<DataInfo> {
    *    A. As a list of pairs of column indices.
    *    B. As a list of pairs of column indices with limited enums.
    */
-  public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold, Model.InteractionSpec interactions) {
+  public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, Imputer imputer, boolean missingBucket, boolean weight, boolean offset, boolean fold, Model.InteractionSpec interactions) {
     super(Key.<DataInfo>make());
     assert predictor_transform != null;
     assert response_transform != null;
@@ -272,7 +276,10 @@ public class DataInfo extends Keyed<DataInfo> {
       }
       else
         _catOffsets[i+1] = (len += v.domain().length - (useAllFactorLevels?0:1) + (missingBucket? 1 : 0)); //missing values turn into a new factor level
-      _catNAFill[i] = imputeMissing?imputeCat(train.vec(cats[i]),_useAllFactorLevels):_catMissing[i]?v.domain().length - (_useAllFactorLevels || isInteractionVec(i)?0:1):-100;
+      _catNAFill[i] = imputeMissing ? 
+              imputer.imputeCat(names[i], train.vec(cats[i]), _useAllFactorLevels)
+              :
+              _catMissing[i] ? v.domain().length - (_useAllFactorLevels || isInteractionVec(i)?0:1) : -100;
       _permutation[i] = cats[i];
     }
     _numOffsets = MemoryManager.malloc4(nnums+1);
@@ -290,21 +297,27 @@ public class DataInfo extends Keyed<DataInfo> {
       _permutation[i+ncats] = nums[i];
     }
     _numMeans = new double[numNums()];
-    int meanIdx=0;
+    _numNAFill = new double[numNums()];
+    int numIdx=0;
     for(int i=0;i<nnums;++i) {
+      String name = train.name(nums[i]);
       Vec v = train.vec(nums[i]);
       if( v instanceof InteractionWrappedVec ) {
         InteractionWrappedVec iwv = (InteractionWrappedVec)v;
-        double[] means = iwv.getMeans();
         int start = iwv._useAllFactorLevels?0:1;
-        int length   = iwv.expandedLength();
-        System.arraycopy(means,start,_numMeans,meanIdx,length);
-        meanIdx+=length;
+        int length = iwv.expandedLength();
+        double[] means = iwv.getMeans();
+        System.arraycopy(means,start,_numMeans,numIdx,length);
+        double[] naFill = imputer.imputeInteraction(name, iwv, means);
+        System.arraycopy(naFill,start,_numNAFill,numIdx,length);
+        numIdx+=length;
       }
-      else
-        _numMeans[meanIdx++]=v.mean();
+      else {
+        _numMeans[numIdx] = v.mean();
+        _numNAFill[numIdx] = imputer.imputeNum(name, v);
+        numIdx++;
+      }
     }
-    _numNAFill = _numMeans;
     for(int i = names.length-nResponses - (weight?1:0) - (offset?1:0) - (fold?1:0); i < names.length; ++i) {
       names[i] = train._names[i];
       tvecs2[i] = train.vec(i);
@@ -1320,4 +1333,25 @@ public class DataInfo extends Keyed<DataInfo> {
     return res;
   }
 
+  public interface Imputer {
+    int imputeCat(String name, Vec v, boolean useAllFactorLevels);
+    double imputeNum(String name, Vec v);
+    double[] imputeInteraction(String name, InteractionWrappedVec iv, double[] means);
+  }
+
+  public static class MeanImputer implements Imputer {
+    @Override
+    public int imputeCat(String name, Vec v, boolean useAllFactorLevels) {
+      return DataInfo.imputeCat(v, useAllFactorLevels);
+    }
+    @Override
+    public double imputeNum(String name, Vec v) {
+      return v.mean();
+    }
+    @Override
+    public double[] imputeInteraction(String name, InteractionWrappedVec iv, double[] means) {
+      return means;
+    }
+  }
+  
 }
