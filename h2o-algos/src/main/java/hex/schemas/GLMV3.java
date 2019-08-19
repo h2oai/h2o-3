@@ -1,6 +1,5 @@
 package hex.schemas;
 
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.glm.GLM;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Solver;
@@ -115,7 +114,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     public boolean standardize;
 
     @API(help = "Handling of missing values. Either MeanImputation or Skip.", values = { "MeanImputation", "Skip" }, level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
-    public DeepLearningParameters.MissingValuesHandling missing_values_handling;
+    public GLMParameters.MissingValuesHandling missing_values_handling;
 
     @API(help = "Restrict coefficients (not intercept) to be non-negative")
     public boolean non_negative;

@@ -3,7 +3,7 @@ package hex.glm;
 import hex.*;
 import hex.DataInfo.TransformType;
 import hex.api.MakeGLMModelHandler;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
+import hex.deeplearning.DeepLearningModel;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Link;
 import org.apache.commons.math3.distribution.NormalDistribution;
@@ -19,6 +19,7 @@ import water.udf.CFuncRef;
 import water.util.*;
 import water.util.ArrayUtils;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.NoSuchElementException;
@@ -181,6 +182,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   public static class GLMParameters extends Model.Parameters {
 
+    public enum MissingValuesHandling {
+      MeanImputation, Skip
+    }
+
     public String algoName() { return "GLM"; }
     public String fullName() { return "Generalized Linear Modeling"; }
     public String javaName() { return GLMModel.class.getName(); }
@@ -196,7 +201,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double _invTheta;
     public double [] _alpha = null;
     public double [] _lambda = null;
-    public MissingValuesHandling _missing_values_handling = MissingValuesHandling.MeanImputation;
+    // Has to be Serializable for backwards compatibility (used to be DeepLearningModel.MissingValuesHandling)
+    public Serializable _missing_values_handling = MissingValuesHandling.MeanImputation;
     public double _prior = -1;
     public boolean _lambda_search = false;
     public int _nlambdas = -1;
@@ -220,7 +226,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public int _max_active_predictors = -1;
     public boolean _stdOverride; // standardization override by beta constraints
     final static NormalDistribution _dprobit = new NormalDistribution(0,1);  // get the normal distribution
-
+    
     public void validate(GLM glm) {
       if (_solver.equals(Solver.COORDINATE_DESCENT_NAIVE) && _family.equals(Family.multinomial))
         throw H2O.unimpl("Naive coordinate descent is not supported for multinomial.");
@@ -330,8 +336,14 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
             H2O.fail();
         }
       }
+      if (_missing_values_handling != null) {
+        if (!(_missing_values_handling instanceof DeepLearningModel.DeepLearningParameters.MissingValuesHandling) &&
+                !(_missing_values_handling instanceof MissingValuesHandling)) {
+          throw new IllegalArgumentException("Missing values handling should be specified as an instance of " + MissingValuesHandling.class.getName());
+        }
+      }
     }
-
+    
     public GLMParameters() {
       this(Family.gaussian, Link.family_default);
       assert _link == Link.family_default;
@@ -525,6 +537,20 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       return InteractionSpec.create(_interactions, _interaction_pairs);
     }
 
+    public MissingValuesHandling missingValuesHandling() {
+      if (_missing_values_handling instanceof MissingValuesHandling)
+        return (MissingValuesHandling) _missing_values_handling;
+      assert _missing_values_handling instanceof DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
+      switch ((DeepLearningModel.DeepLearningParameters.MissingValuesHandling) _missing_values_handling) {
+        case MeanImputation:
+          return MissingValuesHandling.MeanImputation;
+        case Skip:
+          return MissingValuesHandling.Skip;
+        default:
+          throw new IllegalStateException("Unsupported missing values handling value: " + _missing_values_handling);
+      }
+    }
+    
   } // GLMParameters
 
   public static class GLMWeights {
@@ -1359,7 +1385,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       }
     });
     body.ip("final double [] b = BETA.VALUES;").nl();
-    if(_parms._missing_values_handling == MissingValuesHandling.MeanImputation){
+    if(_parms._missing_values_handling == GLMParameters.MissingValuesHandling.MeanImputation){
       body.ip("for(int i = 0; i < " + _output._dinfo._cats + "; ++i) if(Double.isNaN(data[i])) data[i] = CAT_MODES.VALUES[i];").nl();
       body.ip("for(int i = 0; i < " + _output._dinfo._nums + "; ++i) if(Double.isNaN(data[i + " + _output._dinfo._cats + "])) data[i+" + _output._dinfo._cats + "] = NUM_MEANS.VALUES[i];").nl();
     }
