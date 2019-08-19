@@ -14,6 +14,7 @@ Use this option to specify a custom distribution function, which can then be use
 **Notes**: 
 
 - This option is only supported in the Python client.
+- Demos for the custom distribution and custom loss functions are located at https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/custom_loss_function_demo.ipynb.
 - Additional information is located at https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/dev/custom_functions.md. 
 
 Related Parameters
