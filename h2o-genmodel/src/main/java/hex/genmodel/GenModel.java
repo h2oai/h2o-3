@@ -549,7 +549,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   public String getHeader() { return null; }
 
   // Helper for DeepWater and XGBoost Native (models that require explicit one-hot encoding on the fly)
-  static public void setInput(final double[] from, float[] to, int _nums, int _cats, int[] _catOffsets, double[] _normMul, double[] _normSub, boolean useAllFactorLevels, boolean replaceMissingWithZero) {
+  public static synchronized void setInput(final double[] from, float[] to, int _nums, int _cats, int[] _catOffsets, double[] _normMul, double[] _normSub, boolean useAllFactorLevels, boolean replaceMissingWithZero) {
     double[] nums = new double[_nums]; // a bit wasteful - reallocated each time
     int[] cats = new int[_cats]; // a bit wasteful - reallocated each time
 
@@ -565,7 +565,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   }
 
   // Helper for Deeplearning, note: we assume nums and cats are allocated already and being re-used
-  static public void setInput(final double[] from, double[] to, double[] nums, int[] cats, int _nums, int _cats,
+  public static void setInput(final double[] from, double[] to, double[] nums, int[] cats, int _nums, int _cats,
                               int[] _catOffsets, double[] _normMul, double[] _normSub, boolean useAllFactorLevels, boolean replaceMissingWithZero) {
     setCats(from, nums, cats, _cats, _catOffsets, _normMul, _normSub, useAllFactorLevels);
 
@@ -579,7 +579,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   }
 
   // Helper for XGBoost Java
-  static public void setCats(final double[] from, double[] nums, int[] cats, int _cats, int[] _catOffsets,
+  public static void setCats(final double[] from, double[] nums, int[] cats, int _cats, int[] _catOffsets,
                              double[] _normMul, double[] _normSub, boolean useAllFactorLevels) {
 
     setCats(from, cats, _cats, _catOffsets, useAllFactorLevels);
@@ -594,7 +594,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     }
   }
 
-  static public void setCats(final double[] from, int[] to, int cats, int[] catOffsets, boolean useAllFactorLevels) {
+  public static void setCats(final double[] from, int[] to, int cats, int[] catOffsets, boolean useAllFactorLevels) {
     for (int i = 0; i < cats; ++i) {
       if (Double.isNaN(from[i])) {
         to[i] = (catOffsets[i + 1] - 1); //use the extra level for NAs made during training
