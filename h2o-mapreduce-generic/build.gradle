@@ -16,4 +16,6 @@ dependencies {
   compile(project(':h2o-app')) {
     exclude module: "${defaultWebserverModule}"
   }
+  testCompile "junit:junit:${junitVersion}"
+  testCompile "org.apache.hadoop:hadoop-client:2.6.0-cdh5.10.0"
 }

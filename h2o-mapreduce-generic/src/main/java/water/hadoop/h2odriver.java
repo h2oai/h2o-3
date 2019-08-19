@@ -48,11 +48,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -477,7 +473,7 @@ public class h2odriver extends Configured implements Tool {
             clusterHasNodeWithLocalhostIp = true;
           }
           numNodesStarted.incrementAndGet();
-          _cm.registerNode(msg.getEmbeddedWebServerIp(), msg.getEmbeddedWebServerPort(), _s);
+          _cm.registerNode(msg.getEmbeddedWebServerIp(), msg.getEmbeddedWebServerPort(), msg.getAttempt(), _s);
         }
         else if (type == MapperToDriverMessage.TYPE_CLOUD_SIZE) {
           _s.close();
@@ -528,36 +524,54 @@ public class h2odriver extends Configured implements Tool {
    */
   class CallbackManager extends Thread {
     private ServerSocket _ss;
+    private int _numNodes;
 
     // Nodes and socks
-    private final HashSet<String> _dupChecker = new HashSet<String>();
-    private final ArrayList<String> _nodes = new ArrayList<String>();
-    private final ArrayList<Socket> _socks = new ArrayList<Socket>();
+    private final HashMap<String, Integer> _dupChecker = new HashMap<>();
+    final ArrayList<String> _nodes = new ArrayList<>();
+    final ArrayList<Socket> _socks = new ArrayList<>();
 
-    public void setServerSocket (ServerSocket value) {
-      _ss = value;
+    CallbackManager(ServerSocket ss, int numNodes) {
+      _ss = ss;
+      _numNodes = numNodes;
     }
 
-    public void registerNode (String ip, int port, Socket s) {
+    public void registerNode (String ip, int port, int attempt, Socket s) {
       synchronized (_dupChecker) {
         String entry = ip + ":" + port;
 
-        if (_dupChecker.contains(entry)) {
-          // This is bad.
-          System.out.println("ERROR: Duplicate node registered (" + entry + "), exiting");
-          System.exit(1);
+        if (_dupChecker.containsKey(entry)) {
+          int prevAttempt = _dupChecker.get(entry);
+          if (prevAttempt == attempt) {
+            // This is bad.
+            fatalError("Duplicate node registered (" + entry + "), exiting");
+          } else if (prevAttempt > attempt) {
+            // Suspicious, we are receiving attempts out-of-order, stick with the latest attempt.
+            System.out.println("WARNING: Received out-of-order node registration attempt (" + entry + "): " +
+                    "#attempt=" + attempt + " (previous was #" + prevAttempt + ").");
+          } else { // prevAttempt < attempt
+            _dupChecker.put(entry, attempt);
+            int old = _nodes.indexOf(entry);
+            if (old < 0) {
+              fatalError("Inconsistency found: old node entry for a repeated register node attempt doesn't exist, entry: " + entry);
+            }
+            assert entry.equals(_nodes.get(old));
+            // inject a fresh socket
+            _socks.set(old, s);
+          }
+        } else {
+          _dupChecker.put(entry, attempt);
+          _nodes.add(entry);
+          _socks.add(s);
         }
 
-        _dupChecker.add(entry);
-        _nodes.add(entry);
-        _socks.add(s);
-        if (_nodes.size() != numNodes) {
+        if (_nodes.size() != _numNodes) {
           return;
         }
 
         System.out.println("Sending flatfiles to nodes...");
 
-        assert (_nodes.size() == numNodes);
+        assert (_nodes.size() == _numNodes);
         assert (_nodes.size() == _socks.size());
 
         // Build the flatfile and send it to all nodes.
@@ -592,6 +606,11 @@ public class h2odriver extends Configured implements Tool {
       }
     }
 
+    protected void fatalError(String message) {
+      System.out.println("ERROR: " + message);
+      System.exit(1);
+    }
+    
     @Override
     public void run() {
       while (true) {
@@ -1441,8 +1460,7 @@ public class h2odriver extends Configured implements Tool {
     }
     driverCallbackSocket = bindCallbackSocket();
     int actualDriverCallbackPort = driverCallbackSocket.getLocalPort();
-    CallbackManager cm = new CallbackManager();
-    cm.setServerSocket(driverCallbackSocket);
+    CallbackManager cm = new CallbackManager(driverCallbackSocket, numNodes);
     cm.start();
     System.out.println("Using mapper->driver callback IP address and port: " + driverCallbackPublicIp + ":" + actualDriverCallbackPort + 
             (!driverCallbackBindIp.equals(driverCallbackPublicIp) ? " (internal callback address: " + driverCallbackBindIp + ":" + actualDriverCallbackPort + ")" : ""));

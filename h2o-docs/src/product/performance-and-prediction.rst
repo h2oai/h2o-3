@@ -621,18 +621,17 @@ Predict Contributions
 
 In H2O-3, each returned H2OFrame has a specific shape (#rows, #features + 1). This includes a feature contribution column for each input feature, with the last column being the model bias (same value for each row). The sum of the feature contributions and the bias term is equal to the raw prediction of the model. Raw prediction of tree-based model is the sum of the predictions of the individual trees before the inverse link function is applied to get the actual prediction. For Gaussian distribution, the sum of the contributions is equal to the model prediction. 
 
-H2O-3 supports TreeSHAP for DRF, GBM, and XGBoost. For these problems, the ``predict_contributions`` returns a new H2OFrame with the predicted feature contributions - SHAP (SHapley Additive exPlanation) values on an H2O model.
-        
+H2O-3 supports TreeSHAP for DRF, GBM, and XGBoost. For these problems, the ``predict_contributions`` returns a new H2OFrame with the predicted feature contributions - SHAP (SHapley Additive exPlanation) values on an H2O model. If you have SHAP installed, then raphical representations can be retrieved in Python using `SHAP functions <https://shap.readthedocs.io/en/latest/#>`__. (Note that retrieving graphs via R is not yet supported.) An .ipynb demo showing this example is also available `here <https://github.com/h2oai/h2o-3/tree/master/h2o-py/demos/predict_contributionsShap.ipynb>`__.
+
 **Note**: Multinomial classification models are currently not supported.
 
-Using the previous example, run the following to predict contributions:
 
 .. example-code::
    .. code-block:: r
   
     # Predict the contributions using the GBM model and test data.
-    predict_contributions <- h2o.predict_contributions(model, prostate.test)
-    predict_contributions
+    contributions <- h2o.predict_contributions(model, prostate.test)
+    contributions
 
     AGE        RACE       PSA        GLEASON    BiasTerm
     ---------  ---------- ---------  ---------  ----------
@@ -649,8 +648,8 @@ Using the previous example, run the following to predict contributions:
    .. code-block:: python
 
     # Predict the contributions using the GBM model and test data.
-    predict_contributions = model.predict_contributions(test)
-    predict_contributions
+    contributions = model.predict_contributions(test)
+    contributions
 
     AGE          RACE        PSA        GLEASON    BiasTerm
     -----------  ----------  ---------  ---------  ----------
@@ -666,6 +665,31 @@ Using the previous example, run the following to predict contributions:
     -0.901466     0.0216657   0.453894  -2.39536    -0.581522
 
     [58 rows x 5 columns]
+
+    # Import required packages for running SHAP commands
+    import shap
+
+    # Load JS visualization code
+    shap.initjs()
+
+    # Convert the H2OFrame to use with SHAP's visualization functions
+    contributions_matrix = contributions.as_data_frame().as_matrix()
+
+    # Calculate SHAP values for all features
+    shap_values = contributions_matrix[:,0:4]
+
+    # Expected values is the last returned column
+    expected_value = contributions_matrix[:,4].min()
+
+    # Visualize the training set predictions
+    X=["AGE","RACE","PSA","GLEASON"]
+    shap.force_plot(expected_value, shap_values, X)
+
+    # Summarize the effects of all the features
+    shap.summary_plot(shap_values, X)
+
+    # View the same summary as a bar chart
+    shap.summary_plot(shap_values, X, plot_type="bar")
 
 
 Predict Stage Probabilities
