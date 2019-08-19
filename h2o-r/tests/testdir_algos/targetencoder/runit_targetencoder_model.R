@@ -15,6 +15,8 @@ test.model.targetencoder <- function() {
     fold_column = "pclass", data_leakage_handling = "KFold")
     encoded_data <- h2o.transform(target_encoder, data) # For now, there is only the predict method
     expect_false(is.null(encoded_data))
+    encoded_data_predict <- h2o.predict(target_encoder, data)
+    expect_equal(encoded_data, encoded_data_predict)
     
     mojo_name <- h2o.download_mojo(model = target_encoder, path = tempdir())
     mojo_path <- paste0(tempdir(),"/",mojo_name)
