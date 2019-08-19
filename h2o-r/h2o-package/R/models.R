@@ -472,6 +472,31 @@ predict.H2OModel <- function(object, newdata, ...) {
 
 #' Predict on an H2O Model
 #'
+#' Obtains predictions from various fitted H2O model objects.
+#'
+#' This method dispatches on the type of H2O model to select the correct
+#' prediction/scoring algorithm.
+#' The order of the rows in the results is the same as the order in which the
+#' data was loaded, even if some rows fail (for example, due to missing
+#' values or unseen factor levels).
+#'
+#' @param object a fitted \linkS4class{H2OModel} object for which prediction is
+#'        desired
+#' @param newdata An H2OFrame object in which to look for
+#'        variables with which to predict.
+#' @param ... additional arguments to pass on.
+#' @return Returns an H2OFrame object with probabilites and
+#'         default predictions.
+#' @seealso \code{\link{h2o.deeplearning}}, \code{\link{h2o.gbm}},
+#'          \code{\link{h2o.glm}}, \code{\link{h2o.randomForest}} for model
+#'          generation in h2o.
+#' @export
+predict.H2OModel <- function(object, newdata, ...) {
+  h2o.predict.H2OModel(object, newdata, ...)
+}
+
+#' Predict on an H2O Model
+#'
 #' @param object a fitted model object for which prediction is desired.
 #' @param newdata An H2OFrame object in which to look for
 #'        variables with which to predict.
@@ -482,6 +507,73 @@ predict.H2OModel <- function(object, newdata, ...) {
 h2o.predict <- function(object, newdata, ...){
   UseMethod("h2o.predict", object)
 }
+
+#'
+#' Transform words (or sequences of words) to vectors using a word2vec model.
+#'
+#' @param word2vec A word2vec model.
+#' @param words An H2OFrame made of a single column containing source words.
+#' @param aggregate_method Specifies how to aggregate sequences of words. If method is `NONE`
+#'    then no aggregation is performed and each input word is mapped to a single word-vector.
+#'    If method is 'AVERAGE' then input is treated as sequences of words delimited by NA.
+#'    Each word of a sequences is internally mapped to a vector and vectors belonging to
+#'    the same sentence are averaged and returned in the result.
+#' @examples
+#' \dontrun{
+#' h2o.init()
+#'
+#' # Build a dummy word2vec model
+#' data <- as.character(as.h2o(c("a", "b", "a")))
+#' w2v_model <- h2o.word2vec(data, sent_sample_rate = 0, min_word_freq = 0, epochs = 1, vec_size = 2)
+#'
+#' # Transform words to vectors without aggregation
+#' sentences <- as.character(as.h2o(c("b", "c", "a", NA, "b")))
+#' h2o.transform(w2v_model, sentences) # -> 5 rows total, 2 rows NA ("c" is not in the vocabulary)
+#'
+#' # Transform words to vectors and return average vector for each sentence
+#' h2o.transform(w2v_model, sentences, aggregate_method = "AVERAGE") # -> 2 rows
+#' }
+#' @export
+h2o.transform <- function(model,..., data = NULL) {
+  if (!is(model, "H2OModel")){
+    stop("The argument 'model' must be a H2OModel")
+  }
+  
+  args <- list(...)
+  
+  if (model@algorithm != "word2vec"){
+    if(is.null(data) && is(args[[1]], "H2OFrame")){
+      data <- args[[1]]
+    }
+    return(h2o.predict(object = model,newdata = data))
+  }
+  
+  # Word2Vec used to used `transform` method. To retain compatibility with the older "word2vec-only" method, the following code called the original method.
+  
+  if(length(args) >2){
+    stop("Too many arguments given for word2vec model. Expected up to 2 arguments: words and aggregate_method (optional).")
+  }
+  
+  if(!is.null(args$words)){
+  words <- args$words
+  } else if(length(args) > 0){
+    words <- args[[1]]
+  } else{
+    words <- NULL
+  }
+  
+  if(!is.null(args$aggregate_method)){
+    aggregate_method <- args$aggregate_method
+  } else if (length(args) == 2){
+    aggregate_method <- args[[2]]
+  } else{
+    aggregate_method <- "NONE"
+    }
+  
+  return(h2o.transform_word2vec(model, words = words, aggregate_method = aggregate_method))
+}
+
+
 
 #'
 #' @rdname predict.H2OModel
