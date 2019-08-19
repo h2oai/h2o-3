@@ -71,7 +71,18 @@ public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, Targe
       Log.info("We don't want to ignore any columns during target encoding transformation therefore `_ignore_const_cols` parameter was set to `false`");
     }
   }
-  
+
+  /**
+   * Never do traditional cross-validation for Target Encoder Model. The {@link TargetEncoder} class handles
+   * fold column on it's own.
+   *
+   * @return Always false
+   */
+  @Override
+  public boolean nFoldCV() {
+    return false;
+  }
+
   @Override
   protected Driver trainModelImpl() {
     // We can use Model.Parameters to configure Target Encoder
@@ -91,6 +102,11 @@ public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, Targe
   @Override
   public BuilderVisibility builderVisibility() {
     return BuilderVisibility.Beta;
+  }
+
+  @Override
+  public boolean haveMojo() {
+    return true;
   }
 
   @Override
