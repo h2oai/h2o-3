@@ -22,10 +22,10 @@ public class TargetEncoderV3 extends ModelBuilderSchema<TargetEncoderBuilder, Ta
     @API(help = "Target column for the encoding")
     public FrameV3.ColSpecifierV3 target_column;
     
-    @API(help = "Parameter 'f' used for blending (if enabled). Blending is to be enabled separaterly using the 'blending' parameter.")
+    @API(help = "Parameter 'k' used for blending (if enabled). Blending is to be enabled separately using the 'blending' parameter.")
     public double k;
 
-    @API(help = "Parameter 'k' used for blending (if enabled). Blending is to be enabled separaterly using the 'blending' parameter.")
+    @API(help = "Parameter 'f' used for blending (if enabled). Blending is to be enabled separately using the 'blending' parameter.")
     public double f;
 
     @API(help = "Data leakage handling strategy. Default to None.", values = {"None", "KFold", "LeaveOneOut"})
