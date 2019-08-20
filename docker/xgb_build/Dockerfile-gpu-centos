@@ -1,0 +1,72 @@
+ARG FROM_IMAGE=nvidia/cuda:8.0-devel-centos7
+FROM ${FROM_IMAGE}
+MAINTAINER h2oai "h2o.ai"
+
+ARG JENKINS_UID='2117'
+ARG JENKINS_GID='2117'
+ARG H2O_BRANCH='h2o3'
+ARG PYTHON_VERSIONS='2.7,3.5,3.6'
+
+RUN \
+    curl -s https://repos.fedorapeople.org/repos/dchen/apache-maven/epel-apache-maven.repo | sed 's/\$releasever/6/g' > /etc/yum.repos.d/epel-apache-maven.repo && \
+    yum install -y centos-release-scl && \
+    yum install -y devtoolset-4-toolchain python27 python33-python-virtualenv zip java-1.8.0-openjdk-devel apache-maven wget git unzip make
+
+# Install all Python versions
+COPY scripts/install_python_version_centos /usr/sbin/
+RUN \
+    chmod a+x /usr/sbin/install_python_version_centos && \
+    sync && \
+    /usr/sbin/install_python_version_centos
+
+RUN \
+    # Check that gcc is of correct version
+    source scl_source enable devtoolset-4 && \
+    if [ "$(gcc --version | head -1)" != 'gcc (GCC) 5.3.1 20160406 (Red Hat 5.3.1-6)' ]; then exit 1; fi && \
+    # Install CMake
+    wget http://www.cmake.org/files/v3.5/cmake-3.5.2.tar.gz && \
+    tar -xvzf cmake-3.5.2.tar.gz && \
+    cd cmake-3.5.2/ && \
+    ./configure && \
+    make && \
+    make install && \
+    cd .. && \
+    rm -rf cmake-3.5.2 && \
+    if [ "$(cmake --version | head -1)" != 'cmake version 3.5.2' ]; then exit 1; fi
+
+# Add the Jenkins user
+RUN \
+    groupadd -g ${JENKINS_GID} jenkins && \
+    useradd jenkins -m -u ${JENKINS_UID} -g jenkins
+
+# Install deps and build Python 3.7
+RUN \
+    yum install -y xz libffi-devel bzip2-devel ncurses-devel gdbm-devel xz-devel sqlite-devel readline-devel zlib-devel libuuid-devel && \
+    yum groupinstall -y 'Development Tools' && \
+    cd /usr/src && \
+    curl -LO 'https://www.openssl.org/source/openssl-1.1.0h.tar.gz' && \
+    tar -xf openssl-1.1.0h.tar.gz && \
+    cd openssl-1.1.0h && \
+    ./config shared --prefix=/usr/local/openssl11 --openssldir=/usr/local/openssl11 && \
+    make && \
+    make install && \
+    cd .. && \
+    rm -rf openssl-1.1.0h* && \
+    curl -LO 'https://www.python.org/ftp/python/3.7.0/Python-3.7.0.tar.xz' && \
+    tar -xf Python-3.7.0.tar.xz
+
+COPY scripts/Setup.dist.patched /usr/src/Python-3.7.0/Modules/Setup.dist
+
+# Install Python 3.7
+RUN \
+    cd /usr/src/Python-3.7.0 && \
+    LDFLAGS="-Wl,-rpath=/usr/local/openssl11/lib" ./configure --prefix=/usr/local/python37 --with-openssl=/usr/local/openssl11 --with-system-ffi && \
+    make altinstall && \
+    ln -s /usr/local/python37/bin/*3.7* /usr/local/bin && \
+    cd .. && \
+    rm -rf Python-3.7.0* && \
+    source /opt/rh/python27/enable && \
+    virtualenv --python=python3.7 /envs/xgb-env-py3.7 && \
+    . /envs/xgb-env-py3.7/bin/activate && \
+    pip install pip wheel setuptools --upgrade && \
+    deactivate
