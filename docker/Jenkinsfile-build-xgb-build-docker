@@ -20,6 +20,7 @@ properties(
 // define list of OSs for which to build the docker image,
 // for each OS there must by a ci/docker/Dockerfile-gpu-<OS>
 final List<String> IMAGES_MAP = ['centos', 'ubuntu']
+final String IMAGE_TAG = "2"
 // base of the image name
 final String IMAGE_NAME = "${params.registry}/opsh2oai/h2o-3-xgboost-build"
 
@@ -78,7 +79,7 @@ parallel(IMAGES_MAP.collect { image ->
                             unstash 'jdk-zip'
                             sh """                                
                                 docker build \
-                                    -t ${IMAGE_NAME}-${image}  \
+                                    -t ${IMAGE_NAME}-${image}:${IMAGE_TAG}  \
                                     -f xgb_build/Dockerfile-gpu-${image} \
                                     .
                                 """
@@ -101,9 +102,9 @@ parallel(IMAGES_MAP.collect { image ->
                             withCredentials([usernamePassword(credentialsId: "${params.registry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
                                 sh """
                                     docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD ${params.dockerRegistry}
-                                    docker push ${IMAGE_NAME}-${image}
+                                    docker push ${IMAGE_NAME}-${image}:${IMAGE_TAG}
                                 """
-                                echo "###### Docker image ${IMAGE_NAME}-${image} built and pushed. ######"
+                                echo "###### Docker image ${IMAGE_NAME}-${image}:${IMAGE_TAG} built and pushed. ######"
                             }
 
                             pipelineContext.getBuildSummary().markStageSuccessful(this, publishStageName)
