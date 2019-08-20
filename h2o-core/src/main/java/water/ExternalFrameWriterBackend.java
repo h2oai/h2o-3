@@ -10,16 +10,17 @@ import static water.ExternalFrameUtils.*;
 
 /**
  * This class contains methods used on the H2O backend to store incoming data as H2O Frame
+ * from non-H2O environment
  */
 final class ExternalFrameWriterBackend {
-  
+
   static void initFrame(ByteChannel sock, AutoBuffer ab) throws IOException {
     String frameKey = ab.getStr();
     String[] names = ab.getAStr();
     ChunkUtils.initFrame(frameKey, names);
     notifyRequestFinished(sock, ExternalBackendRequestType.INIT_FRAME.getByte());
   }
-  
+
   static void finalizeFrame(ByteChannel sock, AutoBuffer ab) throws IOException {
     String keyName = ab.getStr();
     long[] rowsPerChunk = ab.getA8();
@@ -29,10 +30,6 @@ final class ExternalFrameWriterBackend {
     notifyRequestFinished(sock, ExternalBackendRequestType.FINALIZE_FRAME.getByte());
   }
   
-    /**
-     * Handle writing to the chunk from non-h2o environment
-     * @param ab {@link AutoBuffer} containing information necessary for preparing backend for writing
-     */
     static void writeToChunk(ByteChannel sock, AutoBuffer ab) throws IOException {
         String frameKey = ab.getStr();
         byte[] expectedTypes = ab.getA1();
