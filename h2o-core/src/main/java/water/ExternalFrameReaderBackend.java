@@ -89,7 +89,6 @@ final class ExternalFrameReaderBackend {
                 }
             }
         }
-        ab.put1(ExternalFrameHandler.CONFIRM_READING_DONE);
         writeToChannel(ab, channel);
     }
 }
