@@ -25,7 +25,7 @@ import static water.util.ArrayUtils.join;
 public class ExternalFrameWriterClientTest extends TestUtil {
     @BeforeClass()
     public static void setup() {
-        stall_till_cloudsize(1);
+        stall_till_cloudsize(3);
     }
 
     @Test
