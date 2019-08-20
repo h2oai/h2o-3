@@ -52,13 +52,7 @@ final class ExternalFrameHandler {
      *  the connection has been reused for sending more data or not
      * */
     static final byte INIT_BYTE = 42;
-
-    /**
-     * Byte used for signaling that reading from h2o frame has finished.
-     */
-    static final byte CONFIRM_READING_DONE = 1;
-
-
+    
     /**
      * Method which receives the {@link ByteChannel} and {@link AutoBuffer} and dispatches the request for further processing
      */
@@ -69,7 +63,7 @@ final class ExternalFrameHandler {
                 ExternalFrameWriterBackend.writeToChunk(sock, ab);
                 break;
             case DOWNLOAD_FRAME:
-                ExternalFrameReaderBackend.handleReadingFromChunk(sock, ab);
+                ExternalFrameReaderBackend.readFromChunk(sock, ab);
             case INIT_FRAME:
                 ExternalFrameWriterBackend.initFrame(sock, ab);
                 break;
