@@ -112,7 +112,6 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   public double mse() { return _MSE; }
   public double rmse() { return Math.sqrt(_MSE);}
   public ConfusionMatrix cm() { return null; }
-  public ConfusionMatrix cm(AUC2.ThresholdCriterion criterion) { return null; }
   public float[] hr() { return null; }
   public AUC2 auc_obj() { return null; }
 
@@ -139,10 +138,15 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     
     // Constructing confusion matrix based on criterion
     ConfusionMatrix cm;
-
-    AUC2.ThresholdCriterion criterionAsEnum = AUC2.ThresholdCriterion.fromString(criterion);
-    if(criterionAsEnum != null)
-      cm = mm.cm(criterionAsEnum);
+    if(mm instanceof ModelMetricsBinomial) {
+      AUC2.ThresholdCriterion criterionAsEnum = AUC2.ThresholdCriterion.fromString(criterion);
+      if(criterionAsEnum != null) {
+        ModelMetricsBinomial mmb = (ModelMetricsBinomial) mm;
+        cm = mmb.cm(criterionAsEnum);
+      }
+      else
+        cm = mm.cm();
+    }
     else
       cm = mm.cm();
     

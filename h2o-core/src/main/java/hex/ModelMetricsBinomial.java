@@ -64,7 +64,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     return cm == null ? null : new ConfusionMatrix(cm, _domain);
   }
   
-  @Override public ConfusionMatrix cm(AUC2.ThresholdCriterion criterion) {
+  public ConfusionMatrix cm(AUC2.ThresholdCriterion criterion) {
     if( _auc == null ) return null;
     double[][] cm = _auc.cmByCriterion(criterion);
     return cm == null ? null : new ConfusionMatrix(cm, _domain);
