@@ -2,6 +2,7 @@ package hex.api;
 
 import hex.ModelBuilder;
 import hex.psvm.PSVM;
+import hex.targetencoding.TargetEncoderBuilder;
 import hex.tree.TreeHandler;
 import water.api.AlgoAbstractRegister;
 import water.api.RestApiContext;
@@ -29,6 +30,7 @@ public class RegisterAlgos extends AlgoAbstractRegister {
             new hex.ensemble    .StackedEnsemble(true),
             new hex.coxph       .CoxPH       (true),
             new hex.generic     .Generic     (true),
+            new TargetEncoderBuilder(true),
             new PSVM(true)        
     };
 

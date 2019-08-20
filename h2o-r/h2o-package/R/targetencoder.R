@@ -6,9 +6,9 @@
 #' @param blending \code{Logical}. Is blending used ? True if blending is used, false if not. True by default. Defaults to FALSE.
 #' @param encoded_columns Columnds to encode.
 #' @param target_column Target column for the encoding
-#' @param k Parameter 'f' used for blending (if enabled). Blending is to be enabled separaterly using the 'blending'
+#' @param k Parameter 'k' used for blending (if enabled). Blending is to be enabled separately using the 'blending'
 #'        parameter. Defaults to 0.
-#' @param f Parameter 'k' used for blending (if enabled). Blending is to be enabled separaterly using the 'blending'
+#' @param f Parameter 'f' used for blending (if enabled). Blending is to be enabled separately using the 'blending'
 #'        parameter. Defaults to 0.
 #' @param data_leakage_handling Data leakage handling strategy. Default to None. Must be one of: "None", "KFold", "LeaveOneOut".
 #' @param model_id Destination id for this model; auto-generated if not specified.

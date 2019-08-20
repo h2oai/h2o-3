@@ -9,7 +9,3 @@ water.automl.api.schemas3.LeaderboardsV99
 water.automl.api.schemas3.LeaderboardV99
 water.automl.api.schemas3.EventLogEntryV99
 water.automl.api.schemas3.EventLogV99
-hex.schemas.TargetEncoderModelV3
-hex.schemas.TargetEncoderV3
-hex.schemas.TargetEncoderModelOutputV3
-hex.schemas.TargetEncoderV3$TargetEncoderParametersV3

@@ -1,1 +1,3 @@
 water.rapids.prims.word2vec.AstWord2VecToFrame
+water.rapids.prims.mungers.mungers.AstTargetEncoderFit
+water.rapids.prims.mungers.mungers.AstTargetEncoderTransform

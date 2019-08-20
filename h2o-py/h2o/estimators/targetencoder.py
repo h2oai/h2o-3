@@ -84,7 +84,7 @@ class H2OTargetencoderEstimator(H2OEstimator):
     @property
     def k(self):
         """
-        Parameter 'f' used for blending (if enabled). Blending is to be enabled separaterly using the 'blending'
+        Parameter 'k' used for blending (if enabled). Blending is to be enabled separately using the 'blending'
         parameter.
 
         Type: ``float``  (default: ``0``).
@@ -100,7 +100,7 @@ class H2OTargetencoderEstimator(H2OEstimator):
     @property
     def f(self):
         """
-        Parameter 'k' used for blending (if enabled). Blending is to be enabled separaterly using the 'blending'
+        Parameter 'f' used for blending (if enabled). Blending is to be enabled separately using the 'blending'
         parameter.
 
         Type: ``float``  (default: ``0``).

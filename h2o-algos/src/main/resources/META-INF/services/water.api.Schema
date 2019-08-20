@@ -90,3 +90,7 @@ water.api.ModelMetricsAnomalyV3
 water.api.ModelMetricsGLRMV99
 water.api.ModelMetricsPCAV3
 water.api.ModelMetricsSVDV99
+hex.schemas.TargetEncoderModelV3
+hex.schemas.TargetEncoderV3
+hex.schemas.TargetEncoderModelOutputV3
+hex.schemas.TargetEncoderV3$TargetEncoderParametersV3
