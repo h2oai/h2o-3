@@ -17,7 +17,7 @@ final class ExternalFrameWriterBackend {
     String frameKey = ab.getStr();
     String[] names = ab.getAStr();
     ChunkUtils.initFrame(frameKey, names);
-    notifyClientRequestIsDone(sock, ExternalBackendRequestType.INIT_FRAME.getByte());
+    notifyRequestFinished(sock, ExternalBackendRequestType.INIT_FRAME.getByte());
   }
   
   static void finalizeFrame(ByteChannel sock, AutoBuffer ab) throws IOException {
@@ -26,11 +26,11 @@ final class ExternalFrameWriterBackend {
     byte[] colTypes = ab.getA1();
     String[][] colDomains = ab.getAAStr();
     ChunkUtils.finalizeFrame(keyName, rowsPerChunk, colTypes, colDomains);
-    notifyClientRequestIsDone(sock, ExternalBackendRequestType.FINALIZE_FRAME.getByte());
+    notifyRequestFinished(sock, ExternalBackendRequestType.FINALIZE_FRAME.getByte());
   }
   
     /**
-     * Internal method use on the h2o backend side to handle writing to the chunk from non-h2o environment
+     * Handle writing to the chunk from non-h2o environment
      * @param ab {@link AutoBuffer} containing information necessary for preparing backend for writing
      */
     static void writeToChunk(ByteChannel sock, AutoBuffer ab) throws IOException {
@@ -88,7 +88,7 @@ final class ExternalFrameWriterBackend {
             currentRowIdx++;
         }
         ChunkUtils.closeNewChunks(nchnk);
-        notifyClientRequestIsDone(sock, ExternalBackendRequestType.WRITE_TO_CHUNK.getByte());
+        notifyRequestFinished(sock, ExternalBackendRequestType.WRITE_TO_CHUNK.getByte());
     }
 
     private static void storeVector(AutoBuffer ab, NewChunk[] nchnk, int maxVecSize, int startPos){
@@ -159,7 +159,7 @@ final class ExternalFrameWriterBackend {
         }
     }
 
-  private static void notifyClientRequestIsDone(ByteChannel sock, byte confirmation) throws IOException {
+  private static void notifyRequestFinished(ByteChannel sock, byte confirmation) throws IOException {
     AutoBuffer outputAb = new AutoBuffer();
     outputAb.put1(confirmation);
     writeToChannel(outputAb, sock);
