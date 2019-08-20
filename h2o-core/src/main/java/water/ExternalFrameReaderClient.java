@@ -182,7 +182,7 @@ final public class ExternalFrameReaderClient {
     private AutoBuffer initAndGetAb() throws IOException {
         AutoBuffer sentAb = new AutoBuffer();
         sentAb.put1(ExternalFrameHandler.INIT_BYTE);
-        sentAb.put1(ExternalFrameHandler.DOWNLOAD_FRAME);
+        sentAb.put1(ExternalBackendRequestType.DOWNLOAD_FRAME.getByte());
         sentAb.putStr(frameKey);
         sentAb.putInt(chunkIdx);
         sentAb.putA1(expectedTypes);
