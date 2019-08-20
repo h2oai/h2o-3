@@ -13,7 +13,7 @@ RUN \
     yum install -y devtoolset-4-toolchain python27 python33-python-virtualenv zip java-1.8.0-openjdk-devel apache-maven wget git unzip make
 
 # Install all Python versions
-COPY scripts/install_python_version_centos /usr/sbin/
+COPY xgb_build/scripts/install_python_version_centos /usr/sbin/
 RUN \
     chmod a+x /usr/sbin/install_python_version_centos && \
     sync && \
@@ -55,7 +55,7 @@ RUN \
     curl -LO 'https://www.python.org/ftp/python/3.7.0/Python-3.7.0.tar.xz' && \
     tar -xf Python-3.7.0.tar.xz
 
-COPY scripts/Setup.dist.patched /usr/src/Python-3.7.0/Modules/Setup.dist
+COPY xgb_build/scripts/Setup.dist.patched /usr/src/Python-3.7.0/Modules/Setup.dist
 
 # Install Python 3.7
 RUN \

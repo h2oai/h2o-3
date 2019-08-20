@@ -9,7 +9,7 @@ properties(
     [
         buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '25')),
         parameters([
-                string(name: 'gitBranch', defaultValue: 'h2o3', description: 'Branch to load the Dockerfile from.'),
+                string(name: 'gitBranch', defaultValue: 'master', description: 'Branch to load the Dockerfile from.'),
                 string(name: 'registry', defaultValue: 'harbor.h2o.ai', description: 'Docker registry to push images to'),
                 booleanParam(name: 'publish', defaultValue: true, description: 'If true, publish the docker image'),
                 booleanParam(name: 'noCache', defaultValue: false, description: 'If true, build the docker image using the --no-cache flag')
@@ -99,7 +99,7 @@ parallel(IMAGES_MAP.collectEntries { image ->
 
                             withCredentials([usernamePassword(credentialsId: "${params.registry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
                                 sh """
-                                    docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD ${params.dockerRegistry}
+                                    docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD ${params.registry}
                                     docker push ${IMAGE_NAME}-${image}:${IMAGE_TAG}
                                 """
                                 echo "###### Docker image ${IMAGE_NAME}-${image}:${IMAGE_TAG} built and pushed. ######"
