@@ -97,12 +97,7 @@ final public class ExternalFrameWriterClient {
    * @param chunkId       chunk index
    * @param totalNumRows  total number of rows which is about to be sent
    */
-  public void createChunk(
-      String frameKey,
-      byte[] expectedTypes,
-      int chunkId,
-      int totalNumRows,
-      int[] maxVecSizes) {
+  public void createChunk(String frameKey, byte[] expectedTypes, int chunkId, int totalNumRows, int[] maxVecSizes) throws IOException {
     ab.put1(ExternalFrameHandler.INIT_BYTE);
     ab.put1(ExternalBackendRequestType.WRITE_TO_CHUNK.getByte());
     ab.putStr(frameKey);
@@ -113,6 +108,7 @@ final public class ExternalFrameWriterClient {
     ab.putA4(maxVecSizes);
     ab.putInt(totalNumRows);
     ab.putInt(chunkId);
+    writeToChannel(ab, channel);
   }
   
   public void finalizeFrame(String keyName, long[] rowsPerChunk, byte[] colTypes, String[][] domains)
