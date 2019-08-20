@@ -157,8 +157,8 @@ final class ExternalFrameWriterBackend {
     }
 
   private static void notifyRequestFinished(ByteChannel sock, byte confirmation) throws IOException {
-    AutoBuffer outputAb = new AutoBuffer();
-    outputAb.put1(confirmation);
-    writeToChannel(outputAb, sock);
+    AutoBuffer ab = new AutoBuffer();
+    ab.put1(confirmation);
+    writeToChannel(ab, sock);
   }
 }
