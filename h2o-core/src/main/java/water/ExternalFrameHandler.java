@@ -69,7 +69,7 @@ final class ExternalFrameHandler {
                 ExternalFrameWriterBackend.writeToChunk(sock, ab);
                 break;
             case DOWNLOAD_FRAME:
-                ExternalFrameReaderBackend.handleReadingFromChunk(sock, ab);
+                ExternalFrameReaderBackend.readFromChunk(sock, ab);
             case INIT_FRAME:
                 ExternalFrameWriterBackend.initFrame(sock, ab);
                 break;
