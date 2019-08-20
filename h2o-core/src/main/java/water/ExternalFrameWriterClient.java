@@ -1,7 +1,5 @@
 package water;
 
-import water.util.Log;
-
 import java.io.IOException;
 import java.nio.channels.ByteChannel;
 import java.sql.Timestamp;
@@ -12,8 +10,8 @@ import static water.ExternalFrameUtils.writeToChannel;
 
 /**
  * <p>
- *   This class is used to create and write data to H2O Frames from
- *   non-H2O environments, such as Spark Executors.
+ * This class is used to create and write data to H2O Frames from
+ * non-H2O environments, such as Spark Executors.
  * </p>
  *
  * <strong>Example usage of this class:</strong></br>
@@ -29,20 +27,22 @@ import static water.ExternalFrameUtils.writeToChannel;
  * 
  * writer.initFrame("frameName", columns)
  * writer.createChunk("frameName", expectedTypes, chunkIdx, numOfRowsToBeWritten);
- * writer.createChunk("frameName", expectedTypes, nextChunkIdx, nextNumOfRowsToBeWritten);
  * </pre>
  * </p>
  *
  *
- * <p>
- * Then we can write the data:
- * <pre>{@code
+ * <p> Then we can write the data:
+ * <pre>
+ * {@code
  * int rowsWritten = 0;
  * while(rowsWritten < totalNumOfRows){
- *  writer.sendBool(true);
- *  writer.sendInt(657);
+ *     writer.sendBool(true);
+ *     writer.sendInt(657);
+ *     rowsWritten++;
+ *   }
  * }
- * }
+ * </pre>
+ * </p>
  * 
  * <p> At last, finalize the frame
  * <pre>
