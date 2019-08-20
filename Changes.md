@@ -2,6 +2,15 @@
 
 ## H2O
 
+### Yau (3.26.0.3) - 8/22/2019
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yau/3/index.html</a>
+
+
+
+
+
+
 ### Yau (3.26.0.2) - 7/26/2019
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yau/2/index.html</a>
