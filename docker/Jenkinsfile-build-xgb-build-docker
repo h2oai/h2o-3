@@ -45,15 +45,14 @@ node (NODE_LABEL) {
                 </ul>
             """)
 
-            pipelineContext.getUtils().stashFiles(this, DOCKER_STASH, 'docker/xgb_build/**,docker/xgb/common/sbin/*')
             dir('docker') {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'AWS S3 Credentials', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
                     docker.image('harbor.h2o.ai/opsh2oai/s3cmd').inside("-e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}") {
                         sh "s3cmd -f get s3://artifacts.h2o.ai/releases/oracle/jdk-8/x64-linux/jdk1.8.0_171.zip"
                     }
                 }
-                stash name: 'jdk-zip'
             }
+            pipelineContext.getUtils().stashFiles(this, DOCKER_STASH, 'docker/xgb_build/**,docker/xgb/common/sbin/*,docker/jdk1.8.0_171.zip')
 
             pipelineContext.getBuildSummary().markStageSuccessful(this, stageName)
         } catch (Exception e) {
@@ -76,7 +75,6 @@ parallel(IMAGES_MAP.collectEntries { image ->
                         pipelineContext.getUtils().unstashFiles(this, DOCKER_STASH)
 
                         dir('docker') {
-                            unstash 'jdk-zip'
                             sh """                                
                                 docker build \
                                     -t ${IMAGE_NAME}-${image}:${IMAGE_TAG}  \
