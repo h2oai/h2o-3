@@ -63,7 +63,7 @@ node (NODE_LABEL) {
     }
 }
 
-parallel(IMAGES_MAP.collect { image ->
+parallel(IMAGES_MAP.collectEntries { image ->
     [
         "Build $image image", {
             node(pipelineContext.getBuildConfig().getDefaultNodeLabel()) {
