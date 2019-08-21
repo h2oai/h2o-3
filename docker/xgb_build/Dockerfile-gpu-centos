@@ -1,5 +1,4 @@
-ARG FROM_IMAGE=nvidia/cuda:8.0-devel-centos7
-FROM ${FROM_IMAGE}
+FROM nvidia/cuda:8.0-devel-centos7
 MAINTAINER h2oai "h2o.ai"
 
 ARG JENKINS_UID='2117'
@@ -24,15 +23,15 @@ RUN \
     source scl_source enable devtoolset-4 && \
     if [ "$(gcc --version | head -1)" != 'gcc (GCC) 5.3.1 20160406 (Red Hat 5.3.1-6)' ]; then exit 1; fi && \
     # Install CMake
-    wget http://www.cmake.org/files/v3.5/cmake-3.5.2.tar.gz && \
-    tar -xvzf cmake-3.5.2.tar.gz && \
-    cd cmake-3.5.2/ && \
+    wget http://www.cmake.org/files/v3.12/cmake-3.12.3.tar.gz && \
+    tar -xvzf cmake-3.12.3.tar.gz && \
+    cd cmake-3.12.3/ && \
     ./configure && \
     make && \
     make install && \
     cd .. && \
-    rm -rf cmake-3.5.2 && \
-    if [ "$(cmake --version | head -1)" != 'cmake version 3.5.2' ]; then exit 1; fi
+    rm -rf cmake-3.12.3 && \
+    if [ "$(cmake --version | head -1)" != 'cmake version 3.12.3' ]; then exit 1; fi
 
 # Add the Jenkins user
 RUN \
