@@ -428,6 +428,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           error("_family", "Invalid distribution: " + _parms._distribution);
       }
     }
+    if ((_parms._plug_values != null) && (_parms.missingValuesHandling() != MissingValuesHandling.PlugValues)) {
+      error("_missing_values_handling", "When plug values are provided - Missing Values Handling needs to be explicitly set to PlugValues.");
+    }
+    if (_parms._plug_values == null && _parms.missingValuesHandling() == MissingValuesHandling.PlugValues) {
+      error("_missing_values_handling", "No plug values frame provided for Missing Values Handling = PlugValues.");
+    }
     if (expensive) {
       if (error_count() > 0) return;
       if (_parms._alpha == null)
@@ -443,6 +449,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _parms._use_all_factor_levels = true;
       if (_parms._link == Link.family_default)
         _parms._link = _parms._family.defaultLink;
+      if (_parms._plug_values != null) {
+        Frame plugValues = _parms._plug_values.get();
+        if (plugValues == null) {
+          error("_plug_values", "Supplied plug values frame with key=`" + _parms._plug_values + "` doesn't exist.");
+        } else if (plugValues.numRows() != 1) {
+          error("_plug_values", "Plug values frame needs to have exactly 1 row.");
+        }
+      }
       _dinfo = new DataInfo(_train.clone(), _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, 
               _parms.missingValuesHandling() == MissingValuesHandling.Skip, 
               _parms.missingValuesHandling() == MissingValuesHandling.MeanImputation || _parms.missingValuesHandling() == MissingValuesHandling.PlugValues,
