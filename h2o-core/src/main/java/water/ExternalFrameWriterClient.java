@@ -24,7 +24,7 @@ import static water.ExternalFrameUtils.writeToChannel;
  * byte[] expectedBytes = ExternalFrameUtils.prepareExpectedTypes(new Class[]{Boolean.class, Integer.class});
  * ByteChannel channel = ExternalFrameUtils.getConnection("ip:port");
  * ExternalFrameWriter writer = new ExternalFrameWriter(channel);
- * 
+ *
  * writer.initFrame("frameName", columns)
  * writer.createChunk("frameName", expectedTypes, chunkIdx, numOfRowsToBeWritten);
  * </pre>
@@ -43,7 +43,7 @@ import static water.ExternalFrameUtils.writeToChannel;
  * }
  * </pre>
  * </p>
- * 
+ *
  * <p> At last, finalize the frame
  * <pre>
  * writer.finalizeFrame("frameName, rowsPerChunk, colTypes, domains);
@@ -110,7 +110,7 @@ final public class ExternalFrameWriterClient {
     ab.putInt(chunkId);
     writeToChannel(ab, channel);
   }
-  
+
   public void finalizeFrame(String keyName, long[] rowsPerChunk, byte[] colTypes, String[][] domains)
       throws IOException, ExternalFrameConfirmationException {
     byte requestType = ExternalBackendRequestType.FINALIZE_FRAME.getByte();
@@ -196,7 +196,7 @@ final public class ExternalFrameWriterClient {
     increaseCurrentColIdx();
   }
 
-  public int getNumberOfWrittenRows(){
+  public int getNumberOfWrittenRows() {
     return currentRowIdx;
   }
 
