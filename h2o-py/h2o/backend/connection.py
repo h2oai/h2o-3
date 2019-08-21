@@ -21,6 +21,7 @@ import sys
 import tempfile
 import time
 from warnings import warn
+import socket
 
 import requests
 from requests.auth import AuthBase
@@ -315,6 +316,18 @@ class H2OConnection(backwards_compatible()):
                 if name.lower() == scheme + "_proxy":
                     warn("Proxy is defined in the environment: %s. "
                          "This may interfere with your H2O Connection." % name)
+                    
+            local_if_host = socket.gethostbyname(socket.gethostname()) # Local interface
+            if ("localhost" in conn._base_url
+                or "127.0.0.1" in conn._base_url
+                or local_if_host in conn._base_url):
+                # Empty list will cause requests library to respect the default behavior.
+                # Thus a non-existing proxy is inserted.
+
+                conn._proxies = {
+                    "http": None,
+                    "https": None,
+                }
 
         try:
             retries = 20 if server else 5
@@ -333,7 +346,6 @@ class H2OConnection(backwards_compatible()):
             conn._stage = 0
             raise
         return conn
-
 
     def request(self, endpoint, data=None, json=None, filename=None, save_to=None):
         """
@@ -399,13 +411,10 @@ class H2OConnection(backwards_compatible()):
 
             headers = {"User-Agent": "H2O Python client/" + sys.version.replace("\n", ""),
                        "X-Cluster": self._cluster_id,
-                       "Cookie": self._cookies}
-            session = requests.Session()
-            session.trust_env = False
-            resp = session.request(method=method, url=url, data=data, json=json, files=files, params=params,
+                       "Cookie": self._cookies}                
+            resp = requests.request(method=method, url=url, data=data, json=json, files=files, params=params,
                                     headers=headers, timeout=self._timeout, stream=stream,
                                     auth=self._auth, verify=self._verify_ssl_cert, proxies=self._proxies)
-            session.close()
             self._log_end_transaction(start_time, resp)
             return self._process_response(resp, save_to)
 
@@ -478,8 +487,7 @@ class H2OConnection(backwards_compatible()):
     @property
     def proxy(self):
         """URL of the proxy server used for the connection (or None if there is no proxy)."""
-        if self._proxies is None: return None
-        return self._proxies.values()[0]
+        return self._proxies
 
     @property
     def local_server(self):
