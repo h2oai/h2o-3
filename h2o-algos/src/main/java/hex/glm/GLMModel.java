@@ -183,7 +183,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public static class GLMParameters extends Model.Parameters {
 
     public enum MissingValuesHandling {
-      MeanImputation, Skip
+      MeanImputation, PlugValues, Skip
     }
 
     public String algoName() { return "GLM"; }
@@ -222,6 +222,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public StringPair[] _interaction_pairs=null;
     public boolean _early_stopping = true;
     public Key<Frame> _beta_constraints = null;
+    public Key<Frame> _plug_values = null;
     // internal parameter, handle with care. GLM will stop when there is more than this number of active predictors (after strong rule screening)
     public int _max_active_predictors = -1;
     public boolean _stdOverride; // standardization override by beta constraints
@@ -548,6 +549,17 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           return MissingValuesHandling.Skip;
         default:
           throw new IllegalStateException("Unsupported missing values handling value: " + _missing_values_handling);
+      }
+    }
+
+    public DataInfo.Imputer makeImputer() {
+      if (missingValuesHandling() == MissingValuesHandling.PlugValues) {
+        if (_plug_values == null || _plug_values.get() == null) {
+          throw new IllegalStateException("Plug values frame needs to be specified when Missing Value Handling = PlugValues.");
+        }
+        return new GLM.PlugValuesImputer(_plug_values.get());
+      } else { // mean/mode imputation and skip (even skip needs an imputer right now! PUBDEV-6809)
+        return new DataInfo.MeanImputer();
       }
     }
     

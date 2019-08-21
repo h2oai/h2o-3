@@ -29,6 +29,7 @@ import org.joda.time.format.DateTimeFormatter;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
+import water.fvec.InteractionWrappedVec;
 import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.util.*;
@@ -442,7 +443,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _parms._use_all_factor_levels = true;
       if (_parms._link == Link.family_default)
         _parms._link = _parms._family.defaultLink;
-      _dinfo = new DataInfo(_train.clone(), _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, _parms.missingValuesHandling() == MissingValuesHandling.Skip, _parms.missingValuesHandling() == MissingValuesHandling.MeanImputation, new DataInfo.MeanImputer(), false, hasWeightCol(), hasOffsetCol(), hasFoldCol(), _parms.interactionSpec());
+      _dinfo = new DataInfo(_train.clone(), _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, 
+              _parms.missingValuesHandling() == MissingValuesHandling.Skip, 
+              _parms.missingValuesHandling() == MissingValuesHandling.MeanImputation || _parms.missingValuesHandling() == MissingValuesHandling.PlugValues,
+              _parms.makeImputer(), 
+              false, hasWeightCol(), hasOffsetCol(), hasFoldCol(), _parms.interactionSpec());
 
       if (_parms._max_iterations == -1) { // fill in default max iterations
         int numclasses = (_parms._family == Family.multinomial)||(_parms._family == Family.ordinal)?nclasses():1;
@@ -2217,5 +2222,63 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
   }
 
+  static class PlugValuesImputer implements DataInfo.Imputer {
+    private final Frame _plug_vals;
+
+    public PlugValuesImputer(Frame plugValues) {
+      _plug_vals = plugValues;
+    }
+
+    @Override
+    public int imputeCat(String name, Vec v, boolean useAllFactorLevels) {
+      String[] domain = v.domain();
+      Vec pvec = pvec(name);
+      String value;
+      if (pvec.isCategorical()) {
+        value = pvec.domain()[(int) pvec.at(0)];
+      } else if (pvec.isString()) {
+        value = pvec.stringAt(0);
+      } else {
+        throw new IllegalStateException("Plug value for a categorical column `" + name + "` cannot by of type " + pvec.get_type_str() + "!");
+      }
+      int valueIndex = ArrayUtils.find(domain, value);
+      if (valueIndex < 0) {
+        throw new IllegalStateException("Plug value `" + value + "` of column `" + name + "` is not a member of the column's domain!");
+      }
+      return valueIndex;
+    }
+
+    @Override
+    public double imputeNum(String name, Vec v) {
+      Vec pvec = pvec(name);
+      if (v.isNumeric() || v.isTime()) {
+        return pvec.at(0);
+      } else {
+        throw new IllegalStateException("Plug value for a column `" + name + "` of type " + v.get_type_str() + " cannot by of type " + pvec.get_type_str() + "!");
+      }
+    }
+
+    @Override
+    public double[] imputeInteraction(String name, InteractionWrappedVec iv, double[] means) {
+      if (iv.isNumericInteraction()) {
+        return new double[]{imputeNum(name, iv)};
+      }
+      assert iv.v1Domain() == null || iv.v2Domain() == null; // case when both vecs are categorical is handled by imputeCat
+      String[] domain = iv.v1Domain() != null ? iv.v1Domain() : iv.v2Domain();
+      double[] vals = new double[domain.length];
+      for (int i = 0; i < domain.length; i++) {
+        vals[i] = pvec(name + "." + domain[i]).at(0);
+      }
+      return vals;
+    }
+
+    private Vec pvec(String name) {
+      Vec pvec = _plug_vals.vec(name);
+      if (pvec == null) {
+        throw new IllegalStateException("Plug value for column `" + name + "` is not defined!");
+      }
+      return pvec;
+    }
+  }
 
 }
