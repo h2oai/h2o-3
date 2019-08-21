@@ -55,7 +55,9 @@ public class TargetEncoderV3 extends ModelBuilderSchema<TargetEncoderBuilder, Ta
     public TargetEncoderModel.TargetEncoderParameters fillImpl(TargetEncoderModel.TargetEncoderParameters impl) {
       super.fillImpl(impl);
       impl._blending_parameters = new BlendingParams(k,f);
-      impl._response_column = target_column.column_name;
+      if(response_column == null && target_column != null) {
+        impl._response_column = target_column.column_name;
+      }
       return impl;
     }
   }
