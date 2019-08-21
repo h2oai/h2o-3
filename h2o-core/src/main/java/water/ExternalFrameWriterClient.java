@@ -127,7 +127,7 @@ final public class ExternalFrameWriterClient {
     public void close() throws IOException {
         channel.close();
     }
-    
+
     public void sendBoolean(boolean data) throws IOException, ExternalFrameConfirmationException {
         ExternalFrameUtils.sendBoolean(ab, channel, data);
         increaseCurrentColIdx();
@@ -194,6 +194,10 @@ final public class ExternalFrameWriterClient {
     ExternalFrameUtils.sendBoolean(ab, channel, ExternalFrameUtils.VECTOR_IS_DENSE);
     ExternalFrameUtils.sendDoubleArray(ab, channel, values);
     increaseCurrentColIdx();
+  }
+
+  public int getNumberOfWrittenRows(){
+    return currentRowIdx;
   }
 
   private void waitForRequestToFinish(int timeout, byte confirmation) throws ExternalFrameConfirmationException {
