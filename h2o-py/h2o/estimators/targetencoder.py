@@ -24,7 +24,7 @@ class H2OTargetencoderEstimator(H2OEstimator):
         super(H2OTargetencoderEstimator, self).__init__()
         self._parms = {}
         names_list = {"blending", "encoded_columns", "target_column", "k", "f", "data_leakage_handling", "model_id",
-                      "fold_column"}
+                      "training_frame", "fold_column"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -126,6 +126,20 @@ class H2OTargetencoderEstimator(H2OEstimator):
     def data_leakage_handling(self, data_leakage_handling):
         assert_is_type(data_leakage_handling, None, Enum("none", "k_fold", "leave_one_out"))
         self._parms["data_leakage_handling"] = data_leakage_handling
+
+
+    @property
+    def training_frame(self):
+        """
+        Id of the training data frame.
+
+        Type: ``H2OFrame``.
+        """
+        return self._parms.get("training_frame")
+
+    @training_frame.setter
+    def training_frame(self, training_frame):
+        self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
 
 
     @property
