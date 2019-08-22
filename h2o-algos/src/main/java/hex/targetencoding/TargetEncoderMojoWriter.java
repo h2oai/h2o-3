@@ -11,6 +11,10 @@ import java.util.Map;
 
 public class TargetEncoderMojoWriter extends ModelMojoWriter {
 
+  @SuppressWarnings("unused")  // Called through reflection in ModelBuildersHandler
+  public TargetEncoderMojoWriter() {
+  }
+
   public TargetEncoderMojoWriter(Model model) {
     super(model);
   }

@@ -36,6 +36,7 @@ public class TargetEncoderV3 extends ModelBuilderSchema<TargetEncoderBuilder, Ta
     public String[] fields() {
       final List<String> params = extractDeclaredApiParameters(getClass());
       params.add("model_id");
+      params.add("training_frame");
       params.add("fold_column");
   
       return params.toArray(new String[0]);

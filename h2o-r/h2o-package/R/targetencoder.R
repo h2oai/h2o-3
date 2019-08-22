@@ -2,6 +2,9 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details) 
 #'
 # -------------------------- targetencoder -------------------------- #
+#' 
+#' Transformation of a categorical variable with a mean value of the target variable
+#' 
 #' @param x A vector containing the \code{character} names of the predictors in the model.
 #' @param blending \code{Logical}. Is blending used ? True if blending is used, false if not. True by default. Defaults to FALSE.
 #' @param encoded_columns Columnds to encode.
@@ -12,7 +15,16 @@
 #'        parameter. Defaults to 0.
 #' @param data_leakage_handling Data leakage handling strategy. Default to None. Must be one of: "None", "KFold", "LeaveOneOut".
 #' @param model_id Destination id for this model; auto-generated if not specified.
+#' @param training_frame Id of the training data frame.
 #' @param fold_column Column with cross-validation fold index assignment per observation.
+#' @examples
+#' \dontrun{
+#' # library(h2o)
+#' # h2o.init()
+#' 
+#' # encoder = H2OTargetencoderEstimator(encoded_columns = columns, target_column = target_column_name, k = 0.7, f = 0.3, data_leakage_handling = "none")
+#' # transformed_data = encoder.transform(encoded_frame)
+#' }
 #' @export
 h2o.targetencoder <- function(training_frame, x,
                               blending = FALSE,

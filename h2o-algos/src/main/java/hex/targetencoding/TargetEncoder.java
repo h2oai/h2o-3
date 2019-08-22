@@ -26,7 +26,7 @@ import static hex.targetencoding.TargetEncoderFrameHelper.*;
  *      2) Multi-class classification (not supported yet)
  *      3) Regression (not supported yet)
  *
- * In order to differentiate between abovementioned types of problems at hand and enable algorithm to do encodings correctly
+ * In order to differentiate between above-mentioned types of problems at hand and enable algorithm to do encodings correctly
  * user should explicitly set corresponding type for a response column:
  *      1) Binary classification: response column should be of a categorical type with cardinality = 2
  *      2) Multi-class: response column should be of a categorical type with cardinality > 2
