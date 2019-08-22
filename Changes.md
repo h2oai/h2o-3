@@ -6,8 +6,98 @@
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yau/3/index.html</a>
 
+<h4>Bug</h4>
 
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6143'>PUBDEV-6143</a>] - Fixed an issue that caused an H2OResponseError after initialization of H2OSingularValueDecompositionEstimator.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6319'>PUBDEV-6319</a>] - AstGroup is no longer inconsistent after running it multiple times. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6413'>PUBDEV-6413</a>] - Fixed an issue that caused a mismatch between manual standard deviation and reported standard deviation for cross validation scores. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6603'>PUBDEV-6603</a>] - H2OFrame.split_frame() no longer leaks a _splitter object.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6615'>PUBDEV-6615</a>] - DeepLearning MOJOs are now thread-safe. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6719'>PUBDEV-6719</a>] - h2o.scale no longer modifies a frame in place. Instead, it now returns a new frame.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6732'>PUBDEV-6732</a>] - Users can export a model using java-rest-bindings.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6753'>PUBDEV-6753</a>] - Sorted grid search results by F2, F0point5 now correctly match the corresponding model metric.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6756'>PUBDEV-6756</a>] - Fixed an issue that caused XGBoost cox2 benchmark to fail with an NPE.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6770'>PUBDEV-6770</a>] - Tables with long titles now displaying properly for users who have installed Pandas.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6782'>PUBDEV-6782</a>] - ModelParametersSchemaV3 now displays the correct help messages.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6785'>PUBDEV-6785</a>] - Fixed an issue that caused the MRTask to fail due to race-condition in creating a new Frame. Note that this issue only occurred when assertions were enabled.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6789'>PUBDEV-6789</a>] - Fixed an issue that caused GLM plots to fail in the Python client.
+</li>
+</ul>
 
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5504'>PUBDEV-5504</a>] - Added another mode to treat missing values: plug values. This value must be given by the user. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6715'>PUBDEV-6715</a>] - Improve integration of the H2O Python client with Sklearn. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6739'>PUBDEV-6739</a>] - Imported MOJOS models now show parameters of the original model. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6805'>PUBDEV-6805</a>] - Implemented a re-try mechanism for requesting the flatfile on Hadoop.
+</li>
+</ul>
+
+<h4>Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6597'>PUBDEV-6597</a>] - Added Flow support for 2D partial plots.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6784'>PUBDEV-6784</a>] - In Flow, fixed issues with the NPM audit report.
+</li>
+</ul>
+
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6263'>PUBDEV-6263</a>] - Proxy is now bypassed when H2O is started on localhost from the R or Python clients. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6567'>PUBDEV-6567</a>] - Added support for predict_leaf_node_assignment() in XGBoost.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6718'>PUBDEV-6718</a>] - In Isolation Forest, improved documentation for aggregate depth and split ratios and described how these two values are calculated. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6724'>PUBDEV-6724</a>] - Removed MissingValuesHandling from XGBoost.
+</li>
+</ul>
+
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6703'>PUBDEV-6703</a>] - Added links to custom distribution and custom loss function demos.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6727'>PUBDEV-6727</a>] - Removed Java 7 from list of supported Java versions.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6733'>PUBDEV-6733</a>] - Added Shapley example to predict_contributions documentation.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6744'>PUBDEV-6744</a>] - Added H2ONode, H2OLeafNode, and H2OSplitNode to the Python client documentation.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6750'>PUBDEV-6750</a>] - In XGBoost, removed "enum" from the list of available categorical_encoding options.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6760'>PUBDEV-6760</a>] - In GLM improved the documentation for handling of categorical values.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6771'>PUBDEV-6771</a>] - Added predict_leaf_node_assignment to list of supported parameters in XGBoost.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6790'>PUBDEV-6790</a>] - The Python client documentation for PSVM now indicates that it can be used for classification only. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6791'>PUBDEV-6791</a>] - The User Guide now includes all options that can be specified when running h2o.init() from the Python client.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6792'>PUBDEV-6792</a>] - Added bind_to_localhost to list of paramters for h2o.init() in the Python client docs.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6816'>PUBDEV-6816</a>] - Added plug_values to list of supported parameters in GLM. (STILL OPEN)
+</li>
+</ul>
 
 
 
