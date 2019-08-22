@@ -18,4 +18,4 @@ jobs:
       with:
         java-version: 1.8
     - name: Build h2o-genmodel with Gradle
-      run: ./gradlew gw :h2o-genmodel:build
+      run: ./gradlew :h2o-genmodel:build
