@@ -47,7 +47,7 @@ public class TargetEncoderMojoWriterTest extends TestUtil {
 
       builder.trainModel().get(); // Waiting for training to be finished
       targetEncoderModel = builder.getTargetEncoderModel(); // TODO change the way of how we getting model after PUBDEV-6670. We should be able to get it from DKV with .trainModel().get()
-
+      Scope.track_generic(targetEncoderModel);
       File mojoFile = folder.newFile(fileNameForMojo);
       
       try (FileOutputStream modelOutput = new FileOutputStream(mojoFile)){

@@ -44,7 +44,7 @@ public class TargetEncoderModelTest extends TestUtil{
       
       assertNotNull(transformedFrame);
       assertEquals(trainingFrame.numCols() + parameters._encoded_columns.length, transformedFrame.numCols());
-      final int encodedColumnIndex = ArrayUtils.indexOf(transformedFrame.names(), parameters._encoded_columns[0] + "_te");
+      final int encodedColumnIndex = ArrayUtils.indexOf(transformedFrame.names(), parameters._encoded_columns[0]._column_name + "_te");
       assertNotEquals(-1, encodedColumnIndex);
       assertTrue(transformedFrame.vec(encodedColumnIndex).isNumeric());
     } finally {

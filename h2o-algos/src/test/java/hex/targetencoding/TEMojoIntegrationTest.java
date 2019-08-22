@@ -283,7 +283,6 @@ public class TEMojoIntegrationTest extends TestUtil {
       RowData rowToPredictFor = new RowData();
       String homeDestFactorValue = "Montreal  PQ / Chesterville  ON";
       String embarkedFactorValue = "S";
-
       rowToPredictFor.put("home.dest", homeDestFactorValue);
       rowToPredictFor.put("sex", "female");
       rowToPredictFor.put("age", "2.0");

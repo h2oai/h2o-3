@@ -112,14 +112,9 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       String[] names = teParams.train().names().clone();
       String[] features = ArrayUtils.remove(names, teParams._response_column);
       for(Frame.VecSpecifier teColumn : teParams._encoded_columns) {
-        teColumnNameToIdx.put(teColumn._column_name, ArrayUtils.find(features, teColumn)); 
+        teColumnNameToIdx.put(teColumn._column_name, ArrayUtils.find(features, teColumn._column_name)); 
       }
       return teColumnNameToIdx;
-    }
-
-    @Override
-    public int nfeatures() {
-      return super.nfeatures() - (_parms._fold_column == null ? 0 : 1);
     }
 
     @Override public ModelCategory getModelCategory() {
