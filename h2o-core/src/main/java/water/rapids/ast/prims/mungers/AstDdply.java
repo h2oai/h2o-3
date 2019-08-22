@@ -9,7 +9,6 @@ import water.rapids.vals.ValFrame;
 import water.util.*;
 
 import java.util.Arrays;
-import java.util.Collection;
 
 /**
  * Ddply
@@ -48,8 +47,8 @@ public class AstDdply extends AstPrimitive {
     AstFunction scope = env._scope;  // Current execution scope; needed to lookup variables
 
     // Pass 1: Find all the groups (and count rows-per-group)
-    IcedHashMap<AstGroup.G, AstGroup.G> gss = AstGroup.doGroups(fr, gbCols, AstGroup.aggNRows());
-    final AstGroup.G[] grps = gss.values().toArray(new AstGroup.G[gss.size()]);
+    IcedHashSet<AstGroup.G> gss = AstGroup.doGroups(fr, gbCols, AstGroup.aggNRows());
+    final AstGroup.G[] grps = gss.toArray(new AstGroup.G[gss.size()]);
 
     // apply an ORDER by here...
     final int[] ordCols = new AstNumList(0, gbCols.length).expand4();
@@ -122,10 +121,10 @@ public class AstDdply extends AstPrimitive {
   // Chunk layout, except each Chunk will be the filter rows numbers; a list
   // of the Chunk-relative row-numbers for that group in an original data Chunk.
   private static class BuildGroup extends MRTask<BuildGroup> {
-    final IcedHashMap<AstGroup.G, AstGroup.G> _gss;
+    final IcedHashSet<AstGroup.G> _gss;
     final int[] _gbCols;
 
-    BuildGroup(int[] gbCols, IcedHashMap<AstGroup.G, AstGroup.G> gss) {
+    BuildGroup(int[] gbCols, IcedHashSet<AstGroup.G> gss) {
       _gbCols = gbCols;
       _gss = gss;
     }
