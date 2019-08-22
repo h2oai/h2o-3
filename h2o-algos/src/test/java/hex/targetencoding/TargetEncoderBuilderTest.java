@@ -222,8 +222,8 @@ public class TargetEncoderBuilderTest extends TestUtil {
 
       encodingMapFromTargetEncoder = tec.prepareEncodingMap(fr2, responseColumnName, foldColumnName);
 
-      Frame transformedTrainWithTargetEncoder = tec.applyTargetEncoding(fr2, responseColumnName, encodingMapFromTargetEncoder, strategy, foldColumnName, targetEncoderParameters._blending,false, seed);
-     
+      Frame transformedTrainWithTargetEncoder = tec.applyTargetEncoding(fr2, responseColumnName, encodingMapFromTargetEncoder, strategy, foldColumnName, targetEncoderParameters._blending, false, seed);
+
       Scope.track(transformedTrainWithTargetEncoder);
       
       assertTrue("Transformed by `TargetEncoderModel` and `TargetEncoder` train frames should be identical", isBitIdentical(transformedTrainWithModelFromBuilder, transformedTrainWithTargetEncoder));

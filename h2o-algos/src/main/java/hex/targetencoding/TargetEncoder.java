@@ -11,6 +11,7 @@ import water.rapids.Merge;
 import water.rapids.Rapids;
 import water.rapids.Val;
 import water.rapids.ast.prims.mungers.AstGroup;
+import water.util.IcedHashMapGeneric;
 import water.util.Log;
 
 import java.util.*;
@@ -108,10 +109,10 @@ public class TargetEncoder {
      */
     //TODO do we need to do this preparation before as a separate phase? because we are grouping twice.
     //TODO At least it seems that way in the case of KFold. But even if we need to preprocess for other types of TE calculations... we should not affect KFOLD case anyway.
-    public Map<String, Frame> prepareEncodingMap(Frame data,
-                                                 String targetColumnName,
-                                                 String foldColumnName,
-                                                 boolean imputeNAsWithNewCategory) {
+    public IcedHashMapGeneric<String, Frame> prepareEncodingMap(Frame data,
+                                                                String targetColumnName,
+                                                                String foldColumnName,
+                                                                boolean imputeNAsWithNewCategory) {
 
         // Validate input data. Not sure whether we should check some of these.
         // It will become clear when we decide if TE is going to be exposed to user or only integrated into AutoML's pipeline
@@ -139,7 +140,7 @@ public class TargetEncoder {
 
           dataWithEncodedTarget = ensureTargetColumnIsBinaryCategorical(dataWithoutNAsForTarget, targetColumnName);
 
-          Map<String, Frame> columnToEncodingMap = new HashMap<>();
+          IcedHashMapGeneric<String, Frame> columnToEncodingMap = new IcedHashMapGeneric<>();
 
           for (String teColumnName : _columnNamesToEncode) { // TODO maybe we can do it in parallel
             Frame teColumnFrame = null;
@@ -195,7 +196,7 @@ public class TargetEncoder {
     }
 
 
-  public Map<String, Frame> prepareEncodingMap(Frame data, String targetColumnName, String foldColumnName) {
+  public IcedHashMapGeneric<String, Frame> prepareEncodingMap(Frame data, String targetColumnName, String foldColumnName) {
     // Making imputation to be our only strategy since otherwise current implementation of merge will return unexpected results.
     boolean imputeNAsWithNewCategory = true;
     return prepareEncodingMap( data, targetColumnName, foldColumnName, imputeNAsWithNewCategory);

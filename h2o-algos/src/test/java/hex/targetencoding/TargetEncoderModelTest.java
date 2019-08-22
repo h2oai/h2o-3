@@ -8,7 +8,6 @@ import water.TestUtil;
 import water.fvec.Frame;
 
 import static org.junit.Assert.*;
-import static water.TestUtil.parse_test_file;
 
 public class TargetEncoderModelTest extends TestUtil{
 

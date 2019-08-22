@@ -3,7 +3,6 @@ package hex.targetencoding;
 import hex.Model;
 import hex.ModelCategory;
 import hex.ModelMetrics;
-import hex.ModelMojoWriter;
 import water.Futures;
 import water.H2O;
 import water.Job;
@@ -11,9 +10,10 @@ import water.Key;
 import water.fvec.Frame;
 import water.udf.CFuncRef;
 import water.util.ArrayUtils;
+import water.util.IcedHashMap;
+import water.util.IcedHashMapGeneric;
 import water.util.TwoDimTable;
 
-import java.util.HashMap;
 import java.util.Map;
 
 public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderModel.TargetEncoderParameters, TargetEncoderModel.TargetEncoderOutput> {
@@ -63,13 +63,13 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
 
   public static class TargetEncoderOutput extends Model.Output {
     
-    public transient Map<String, Frame> _target_encoding_map;
+    public IcedHashMapGeneric<String, Frame> _target_encoding_map;
     public TargetEncoderParameters _parms;
-    public transient Map<String, Integer> column_name_to_idx;
-    public transient Map<String, Integer> _column_name_to_missing_val_presence;
+    public IcedHashMapGeneric<String, Integer> column_name_to_idx;
+    public IcedHashMapGeneric<String, Integer> _column_name_to_missing_val_presence;
     public double _prior_mean;
     
-    public TargetEncoderOutput(TargetEncoderBuilder b, Map<String, Frame> teMap, double priorMean) {
+    public TargetEncoderOutput(TargetEncoderBuilder b, IcedHashMapGeneric<String, Frame> teMap, double priorMean) {
       super(b);
       _target_encoding_map = teMap;
       _parms = b._parms;
@@ -80,9 +80,9 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       _prior_mean = priorMean;
     }
 
-    private Map<String, Integer> createMissingValuesPresenceMap() {
+    private IcedHashMapGeneric<String, Integer> createMissingValuesPresenceMap() {
 
-      Map<String, Integer> presenceOfNAMap = new HashMap<>();
+      IcedHashMapGeneric<String, Integer> presenceOfNAMap = new IcedHashMapGeneric<>();
       for(Map.Entry<String, Frame> entry : _target_encoding_map.entrySet()) {
         String teColumn = entry.getKey();
         Frame frameWithEncodings = entry.getValue();
@@ -107,8 +107,8 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       return summary;
     }
     
-    private Map<String, Integer> createColumnNameToIndexMap(TargetEncoderParameters teParams) {
-      Map<String, Integer> teColumnNameToIdx = new HashMap<>();
+    private IcedHashMapGeneric<String, Integer> createColumnNameToIndexMap(TargetEncoderParameters teParams) {
+      IcedHashMapGeneric<String, Integer> teColumnNameToIdx = new IcedHashMapGeneric<>();
       String[] names = teParams.train().names().clone();
       String[] features = ArrayUtils.remove(names, teParams._response_column);
       for(Frame.VecSpecifier teColumn : teParams._encoded_columns) {

@@ -40,7 +40,7 @@ public class AstTargetEncoderTransform extends AstBuiltin<AstTargetEncoderTransf
     Frame[] encodingMapFrames = getEncodingMapFrames(env, stk, asts);
     Frame frame = getFrameToTransform(env, stk, asts);
     String[] teColumnsToEncode = getTEColumns(env, stk, asts);
-    TargetEncoder.DataLeakageHandlingStrategy dataLeakageHandlingStrategy = TargetEncoder.DataLeakageHandlingStrategy.fromVal(getDataLeakageHandlingStrategy(env, stk, asts));
+    TargetEncoder.DataLeakageHandlingStrategy dataLeakageHandlingStrategy = getDataLeakageHandlingStrategy(env, stk, asts);
     String targetColumnName = getTargetColumnName(env, stk, asts);
     String foldColumnName = getFoldColumnName(env, stk, asts);
     boolean withBlending = getWithBlending(env, stk, asts);
@@ -118,17 +118,17 @@ public class AstTargetEncoderTransform extends AstBuiltin<AstTargetEncoderTransf
     return getArgAsStrings(env, stk, asts[4]);
   }
 
-  private byte getDataLeakageHandlingStrategy(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  private TargetEncoder.DataLeakageHandlingStrategy getDataLeakageHandlingStrategy(Env env, Env.StackHelp stk, AstRoot asts[]) {
     String strategy = stk.track(asts[5].exec(env)).getStr();
     if(strategy.equals("kfold")){
-      return TargetEncoder.DataLeakageHandlingStrategy.KFold.getVal();
+      return TargetEncoder.DataLeakageHandlingStrategy.KFold;
     } else if (strategy.equals("loo")) {
-      return TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut.getVal();
+      return TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut;
     } else if(strategy.equals("loo")) {
-      return TargetEncoder.DataLeakageHandlingStrategy.None.getVal();
+      return TargetEncoder.DataLeakageHandlingStrategy.None;
     }
     else {
-      return TargetEncoder.DataLeakageHandlingStrategy.None.getVal();
+      return TargetEncoder.DataLeakageHandlingStrategy.None;
     }
   }
 

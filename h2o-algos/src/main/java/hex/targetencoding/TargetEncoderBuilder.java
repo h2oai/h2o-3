@@ -4,6 +4,8 @@ import hex.ModelBuilder;
 import hex.ModelCategory;
 import water.Scope;
 import water.fvec.Frame;
+import water.util.IcedHashMap;
+import water.util.IcedHashMapGeneric;
 import water.util.Log;
 
 import java.util.Arrays;
@@ -47,7 +49,7 @@ public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, Targe
 
       Scope.untrack(train().keys());
 
-      Map<String, Frame> _targetEncodingMap = tec.prepareEncodingMap(train(), _parms._response_column, _parms._fold_column);
+      IcedHashMapGeneric<String, Frame> _targetEncodingMap = tec.prepareEncodingMap(train(), _parms._response_column, _parms._fold_column);
 
       // Mean could be computed from any encoding map as response column is shared
       double priorMean = tec.calculatePriorMean(_targetEncodingMap.entrySet().iterator().next().getValue());
@@ -58,7 +60,6 @@ public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, Targe
       }
 
       disableIgnoreConstColsFeature();
-
       TargetEncoderModel.TargetEncoderOutput output = new TargetEncoderModel.TargetEncoderOutput(TargetEncoderBuilder.this, _targetEncodingMap, priorMean);
       _targetEncoderModel = new TargetEncoderModel(_job._result, _parms, output, tec);
 

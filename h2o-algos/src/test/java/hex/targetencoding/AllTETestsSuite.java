@@ -9,6 +9,7 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
         TargetEncodingTest.class,
+        TargetEncoderModelTest.class,
         TargetEncodingKFoldStrategyTest.class,
         TargetEncodingLeaveOneOutStrategyTest.class,
         TargetEncodingNoneStrategyTest.class,
