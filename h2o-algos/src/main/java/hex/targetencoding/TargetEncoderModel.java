@@ -10,7 +10,6 @@ import water.Key;
 import water.fvec.Frame;
 import water.udf.CFuncRef;
 import water.util.ArrayUtils;
-import water.util.IcedHashMap;
 import water.util.IcedHashMapGeneric;
 import water.util.TwoDimTable;
 
@@ -54,7 +53,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       return 0;
     }
     
-    public Boolean _blending = false;
+    public boolean _blending = false;
     public BlendingParams _blending_parameters;
     public Frame.VecSpecifier[] _encoded_columns;
     public String _data_leakage_handling;
