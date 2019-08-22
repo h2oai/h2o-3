@@ -103,7 +103,7 @@ Defining a GLM Model
 
 -  `missing_values_handling <algo-params/missing_values_handling.html>`__: Specify how to handle missing values (Skip or MeanImputation).
 
--  `plug_values <plug_values.html>`__: 
+-  `plug_values <algo-params/plug_values.html>`__: This option is used to specify a method of treating missing values. Whereas other options mean-impute rows or skip them entirely, Plug Values allow you to specify values of your own choosing in the form of a single row frame that contains the desired values—these will be used to impute the missing values of the training / validation frame when used in conjunction with the ``missing_values_handling`` function.
 
 -  `compute_p_values <algo-params/compute_p_values.html>`__: Request computation of p-values. Only applicable with no penalty (lambda = 0 and no beta constraints). Setting remove_collinear_columns is recommended. H2O will return an error if p-values are requested and there are collinear columns and remove_collinear_columns flag is not enabled. Note that this option is not available for ``family="multinomial"`` or ``family="ordinal"``. 
 

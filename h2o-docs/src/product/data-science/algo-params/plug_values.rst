@@ -1,5 +1,5 @@
 ``plug_values``
----------
+---------------
 
 - Available in: GLM
 - Hyperparameter: yes
@@ -7,9 +7,7 @@
 Description
 ~~~~~~~~~~~
 
-Plug Values (a single row frame containing values that will be used to impute missing values of the training/validation frame, use with conjunction missing_values_handling = PlugValues)
-
-This option is used to specify one method of treating missing values. 
+This option is used to specify a method of treating missing values. Whereas other options mean-impute rows or skip them entirely, Plug Values allow you to specify values of your own choosing in the form of a single row frame that contains the desired values—these will be used to impute the missing values of the training / validation frame when used in conjunction with the ``missing_values_handling`` function.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
@@ -29,5 +27,4 @@ Example
    .. code-block:: python
 
 	import h2o
-	from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 	h2o.init()
