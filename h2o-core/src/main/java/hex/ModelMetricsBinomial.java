@@ -160,7 +160,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       boolean quasibinomial = (m!=null && m._parms._distribution == DistributionFamily.quasibinomial);
       if (quasibinomial) {
         if (yact[0] != 0)
-          iact = 1;  // actual response index needed for confusion matrix, AUC, etc.
+          iact = _domain[0].equals(String.valueOf((int) yact[0])) ? 0 : 1;  // actual response index needed for confusion matrix, AUC, etc.
         _wY += w * yact[0];
         _wYY += w * yact[0] * yact[0];
         // Compute error

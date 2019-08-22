@@ -72,6 +72,7 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
   }
 
   public static class GBMOutput extends SharedTreeModel.SharedTreeOutput {
+    public String[] _quasibinomialDomains;
     boolean _quasibinomial;
     int _nclasses;
     public int nclasses() {
@@ -85,8 +86,9 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
     @Override
     public String[] classNames() {
       String [] res = super.classNames();
-      if(res == null && _quasibinomial)
-        return new String[]{"0", "1"};
+      if(_quasibinomial){
+        return _quasibinomialDomains;
+      }
       return res;
     }
   }

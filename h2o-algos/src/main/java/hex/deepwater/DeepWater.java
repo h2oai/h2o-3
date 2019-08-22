@@ -262,7 +262,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
           Vec l = train.lastVec();
           Vec w = train.vec(model._output.weightsName());
           MRUtils.ClassDist cd = new MRUtils.ClassDist(l);
-          model._output._modelClassDist = _weights != null ? cd.doAll(l, w).rel_dist() : cd.doAll(l).rel_dist();
+          model._output._modelClassDist = _weights != null ? cd.doAll(l, w).relDist() : cd.doAll(l).relDist();
         }
         model.training_rows = train.numRows();
         model.actual_train_samples_per_iteration =

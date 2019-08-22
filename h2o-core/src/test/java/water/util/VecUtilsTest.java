@@ -55,4 +55,74 @@ public class VecUtilsTest extends TestUtil {
       if (frame != null) frame.remove();
     }
   }
+
+  @Test
+  public void collectIntegerDomainKnownSize() {
+    int length = 10000000;
+    String[] data = new String[length];
+    for (int i = 0; i < length; i++){
+      data[i] = "0";
+    }
+    data[999] = "1";
+    
+    Frame frame = null;
+    try {
+      frame = new TestFrameBuilder().withColNames("C1")
+              .withName("testFrame")
+              .withVecTypes(Vec.T_CAT)
+              .withDataForCol(0, data)
+              .build();
+      Assert.assertNotNull(frame);
+
+      long start = System.currentTimeMillis();
+      final long[] levels = new VecUtils.CollectIntegerDomain().doAll(frame.vec(0)).domain();
+      long elapsedTimeMillis = System.currentTimeMillis()-start;
+
+      start = System.currentTimeMillis();
+      final long[] levelsKnownSize = new VecUtils.CollectIntegerDomainKnownSize(2).doAll(frame.vec(0)).domain();
+      long elapsedTimeMillisKnownSize = System.currentTimeMillis()-start;
+      
+      Assert.assertArrayEquals(levels, new long[]{0, 1});
+      Assert.assertArrayEquals(levels, levelsKnownSize);
+      Assert.assertTrue(elapsedTimeMillis > elapsedTimeMillisKnownSize);
+      
+    } finally {
+      if (frame != null) frame.remove();
+    }
+  }
+
+  @Test
+  public void collectIntegerDomainKnownSizeInteger() {
+    int length = 10000000;
+    long[] data = new long[length];
+    for (int i = 0; i < length; i++){
+      data[i] = 0;
+    }
+    data[999] = 1;
+
+    Frame frame = null;
+    try {
+      frame = new TestFrameBuilder().withColNames("C1")
+              .withName("testFrame")
+              .withVecTypes(Vec.T_NUM)
+              .withDataForCol(0, data)
+              .build();
+      Assert.assertNotNull(frame);
+
+      long start = System.currentTimeMillis();
+      final long[] levels = new VecUtils.CollectIntegerDomain().doAll(frame.vec(0)).domain();
+      long elapsedTimeMillis = System.currentTimeMillis()-start;
+
+      start = System.currentTimeMillis();
+      final long[] levelsKnownSize = new VecUtils.CollectIntegerDomainKnownSize(2).doAll(frame.vec(0)).domain();
+      long elapsedTimeMillisKnownSize = System.currentTimeMillis()-start;
+
+      Assert.assertArrayEquals(levels, new long[]{0, 1});
+      Assert.assertArrayEquals(levels, levelsKnownSize);
+      Assert.assertTrue(elapsedTimeMillis > elapsedTimeMillisKnownSize);
+
+    } finally {
+      if (frame != null) frame.remove();
+    }
+  }
 }

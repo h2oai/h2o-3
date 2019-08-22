@@ -508,6 +508,90 @@ public class VecUtils {
     }
   }
 
+  /** Collect numeric domain of given {@link Vec}
+   *  A map-reduce task to collect up the unique values of an integer {@link Vec} 
+   *  and returned as the domain for the {@link Vec}.
+   *  If he size of domain is known this approach is faster because it stops when it finds all domains.
+   * */
+  public static class CollectIntegerDomainKnownSize extends MRTask<CollectIntegerDomainKnownSize> {
+    
+    transient NonBlockingHashMapLong<String> _uniques;
+    final int _size;
+    
+    public CollectIntegerDomainKnownSize(int size){
+      this._size = size;
+    }
+    
+    @Override protected void setupLocal() { _uniques = new NonBlockingHashMapLong<>(); }
+    
+    @Override public void map(Chunk ys) {
+      if(_uniques.size() < _size) {
+        for (int row = 0; row < ys._len; row++) {
+          if (!ys.isNA(row)) {
+            _uniques.put(ys.at8(row), "");
+            if(_uniques.size() == _size){
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    @Override public void reduce(CollectIntegerDomainKnownSize mrt) {
+      if( _uniques != mrt._uniques ) _uniques.putAll(mrt._uniques);
+    }
+
+    public final AutoBuffer write_impl( AutoBuffer ab ) {
+      return ab.putA8(_uniques==null ? null : _uniques.keySetLong());
+    }
+
+    public final CollectIntegerDomainKnownSize read_impl(AutoBuffer ab ) {
+      long ls[] = ab.getA8();
+      assert _uniques == null || _uniques.size()==0; // Only receiving into an empty (shared) NBHM
+      _uniques = new NonBlockingHashMapLong<>();
+      if( ls != null ) {
+        for (long l : ls) {
+          _uniques.put(l, "");
+          if(_uniques.size() == _size){
+            break;
+          }
+        }
+      }
+      return this;
+    }
+    
+    @Override public final void copyOver(CollectIntegerDomainKnownSize that) {
+      _uniques = that._uniques;
+    }
+
+    /** Returns exact numeric domain of given {@link Vec} computed by this task.
+     * The domain is always sorted. Hence:
+     *    domain()[0] - minimal domain value
+     *    domain()[domain().length-1] - maximal domain value
+     */
+    public long[] domain() {
+      long[] dom = _uniques.keySetLong();
+      Arrays.sort(dom);
+      return dom;
+    }
+
+    /**
+     * Convert exact numeric domain to string domain of given {@link Vec} computed by this task.
+     * The domain is always sorted. Hence:
+     *      domain()[0] - minimal domain value
+     *      domain()[domain().length-1] - maximal domain value
+     * @return string domain
+     */
+    public String[] stringDomain(){
+      long[] dom = domain();
+      String[] stringDom = new String[dom.length];
+      for (int i = 0; i<dom.length; i++){
+        stringDom[i] = String.valueOf(dom[i]);
+      }
+      return stringDom;
+    }
+  }
+
   /**
    * Create a new categorical {@link Vec} with deduplicated domains from a categorical {@link Vec}.
    * 

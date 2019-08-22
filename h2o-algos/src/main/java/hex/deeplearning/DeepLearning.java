@@ -367,7 +367,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
           Vec l = train.lastVec();
           Vec w = train.vec(model._output.weightsName());
           MRUtils.ClassDist cd = new MRUtils.ClassDist(l);
-          model._output._modelClassDist = _weights != null ? cd.doAll(l, w).rel_dist() : cd.doAll(l).rel_dist();
+          model._output._modelClassDist = _weights != null ? cd.doAll(l, w).relDist() : cd.doAll(l).relDist();
         }
         model.training_rows = train.numRows();
         if (_weights != null && _weights.min()==0 && _weights.max()==1 && _weights.isInt()) {

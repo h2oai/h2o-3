@@ -1266,12 +1266,22 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           error("_response_column", "Response column parameter not set.");
           return;
         }
+        String[] quasiDomains = null;
         if(_response != null && computePriorClassDistribution()) {
           if (isClassifier() && isSupervised()) {
-            MRUtils.ClassDist cdmt =
-                _weights != null ? new MRUtils.ClassDist(nclasses()).doAll(_response, _weights) : new MRUtils.ClassDist(nclasses()).doAll(_response);
-            _distribution = cdmt.dist();
-            _priorClassDist = cdmt.rel_dist();
+            if(_parms._distribution == DistributionFamily.quasibinomial){
+              quasiDomains = new VecUtils.CollectIntegerDomainKnownSize(2).doAll(_response).stringDomain();
+              MRUtils.ClassDistQuasibinomial cdmt =
+                      _weights != null ? new MRUtils.ClassDistQuasibinomial(quasiDomains).doAll(_response, _weights) : new MRUtils.ClassDistQuasibinomial(quasiDomains).doAll(_response);
+              _distribution = cdmt.dist();
+              _priorClassDist = cdmt.relDist();
+            } else {
+              MRUtils.ClassDist cdmt =
+                      _weights != null ? new MRUtils.ClassDist(nclasses()).doAll(_response, _weights) : new MRUtils.ClassDist(nclasses()).doAll(_response);
+              _distribution = cdmt.dist();
+              _priorClassDist = cdmt.relDist();
+              
+            }
           } else {                    // Regression; only 1 "class"
             _distribution = new double[]{ (_weights != null ? _weights.mean() : 1.0) * train().numRows() };
             _priorClassDist = new double[]{1.0f};
@@ -1562,10 +1572,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   public void checkDistributions() {
-    if (_parms._distribution == DistributionFamily.quasibinomial) {
-      if (_response.min() != 0)
-        error("_response", "For quasibinomial distribution, response must have a low value of 0 (negative class), but instead has min value of " + _response.min() + ".");
-    } else if (_parms._distribution == DistributionFamily.poisson) {
+    if (_parms._distribution == DistributionFamily.poisson) {
       if (_response.min() < 0)
         error("_response", "Response must be non-negative for Poisson distribution.");
     } else if (_parms._distribution == DistributionFamily.gamma) {
