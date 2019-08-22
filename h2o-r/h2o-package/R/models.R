@@ -114,6 +114,8 @@ NULL
     if (params$stopping_metric=="r2")
       stop("r2 cannot be used as an early stopping_metric yet.  Check this JIRA https://0xdata.atlassian.net/browse/PUBDEV-5381 for progress.")
   }
+  if (algo=="pca" && is.null(params$k)) # make sure to set k=1 for default for pca
+    params$k=1
   job <- .h2o.startModelJob(algo, params, h2oRestApiVersion)
   h2o.getFutureModel(job, verbose = verbose)
 }

@@ -79,6 +79,36 @@ public class PCATest extends TestUtil {
     }
   }
 
+  @Test public void testPCAwithNoK() throws InterruptedException, ExecutionException {
+    // Results with original training frame
+    Scope.enter();
+    PCAModel modelNok = null;
+    PCAModel modelK = null;
+    Frame train = null, score = null, scoreK = null;
+    try {
+      train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
+      Scope.track(train);
+      pcaParameters._train = train._key;
+      pcaParameters._transform = DataInfo.TransformType.NONE;
+      pcaParameters._pca_method = PCAParameters.Method.GramSVD;
+      pcaParameters._seed = 12345;
+      modelNok = new PCA(pcaParameters).trainModel().get();
+      Scope.track_generic(modelNok);
+      score = modelNok.score(train);
+      Scope.track(score);
+      
+      pcaParameters._k=1;
+      modelK = new PCA(pcaParameters).trainModel().get();
+      Scope.track_generic(modelK);
+      scoreK = modelK.score(train);
+      Scope.track(scoreK);
+      isBitIdentical(score, scoreK);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+
   @Test public void testIrisSplitScoring() throws InterruptedException, ExecutionException {
     PCAModel model = null;
     Frame fr = null, fr2= null;
