@@ -22,7 +22,8 @@
 #' # library(h2o)
 #' # h2o.init()
 #' 
-#' # encoder = H2OTargetencoderEstimator(encoded_columns = columns, target_column = target_column_name, k = 0.7, f = 0.3, data_leakage_handling = "none")
+#' # encoder = H2OTargetencoderEstimator(encoded_columns = columns, target_column = target_column_name,
+#' # k = 0.7, f = 0.3, data_leakage_handling = "none")
 #' # transformed_data = encoder.transform(encoded_frame)
 #' }
 #' @export
