@@ -1,4 +1,4 @@
-name: Java CI (JUnit Smoke Tests & h2o-genmodel)
+name: Java CI (h2o-genmodel)
 
 on:
   push:
@@ -19,7 +19,3 @@ jobs:
         java-version: 1.8
     - name: Build h2o-genmodel with Gradle
       run: ./gradlew :h2o-genmodel:build
-    - name: Run JUnit Smoke Tests
-      run: make -f scripts/jenkins/Makefile.jenkins test-junit-smoke
-      
-      
