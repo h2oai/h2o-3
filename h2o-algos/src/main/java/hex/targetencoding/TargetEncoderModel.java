@@ -20,7 +20,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
 
   protected static final String ALGO_NAME = "TargetEncoder";
 
-  private final transient TargetEncoder _targetEncoder;
+  private final TargetEncoder _targetEncoder;
 
   public TargetEncoderModel(Key<TargetEncoderModel> selfKey, TargetEncoderParameters parms, TargetEncoderOutput output, TargetEncoder tec) {
     super(selfKey, parms, output);

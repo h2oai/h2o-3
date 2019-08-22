@@ -35,7 +35,7 @@ import static hex.targetencoding.TargetEncoderFrameHelper.*;
  *
  * Usage: see TargetEncodingTitanicBenchmark.java
  */
-public class TargetEncoder {
+public class TargetEncoder extends Iced<TargetEncoder>{
 
     public static final String ENCODED_COLUMN_POSTFIX = "_te";
 
