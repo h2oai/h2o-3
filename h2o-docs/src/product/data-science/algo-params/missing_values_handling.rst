@@ -17,7 +17,7 @@ The fewer the NA values in your training data, the better. Always check degrees 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
-- None
+- `plug_values <plug_values.html>`__
 
 Example
 ~~~~~~~
