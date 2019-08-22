@@ -472,31 +472,6 @@ predict.H2OModel <- function(object, newdata, ...) {
 
 #' Predict on an H2O Model
 #'
-#' Obtains predictions from various fitted H2O model objects.
-#'
-#' This method dispatches on the type of H2O model to select the correct
-#' prediction/scoring algorithm.
-#' The order of the rows in the results is the same as the order in which the
-#' data was loaded, even if some rows fail (for example, due to missing
-#' values or unseen factor levels).
-#'
-#' @param object a fitted \linkS4class{H2OModel} object for which prediction is
-#'        desired
-#' @param newdata An H2OFrame object in which to look for
-#'        variables with which to predict.
-#' @param ... additional arguments to pass on.
-#' @return Returns an H2OFrame object with probabilites and
-#'         default predictions.
-#' @seealso \code{\link{h2o.deeplearning}}, \code{\link{h2o.gbm}},
-#'          \code{\link{h2o.glm}}, \code{\link{h2o.randomForest}} for model
-#'          generation in h2o.
-#' @export
-predict.H2OModel <- function(object, newdata, ...) {
-  h2o.predict.H2OModel(object, newdata, ...)
-}
-
-#' Predict on an H2O Model
-#'
 #' @param object a fitted model object for which prediction is desired.
 #' @param newdata An H2OFrame object in which to look for
 #'        variables with which to predict.
@@ -509,15 +484,14 @@ h2o.predict <- function(object, newdata, ...){
 }
 
 #'
-#' Transform words (or sequences of words) to vectors using a word2vec model.
-#'
-#' @param word2vec A word2vec model.
-#' @param words An H2OFrame made of a single column containing source words.
-#' @param aggregate_method Specifies how to aggregate sequences of words. If method is `NONE`
-#'    then no aggregation is performed and each input word is mapped to a single word-vector.
-#'    If method is 'AVERAGE' then input is treated as sequences of words delimited by NA.
-#'    Each word of a sequences is internally mapped to a vector and vectors belonging to
-#'    the same sentence are averaged and returned in the result.
+#' Orders a trained Model to perform transformation operation on given data.
+#' Strategy of the transformation depends on the model trained.
+#' 
+#' For predictive models, calling this function has the same effect as calling `h2o.predict`.
+#' 
+#' @param model Model to perform the transformation with.
+#' @param ... Arguments for compatibility with older Word2Vec-related functionality. Acceptable names are 'words' and 'aggregate_method'. See `h2o.transform_word2vec` function.
+#' @param data Data to perform the transformation on - data to be transformed.
 #' @examples
 #' \dontrun{
 #' h2o.init()

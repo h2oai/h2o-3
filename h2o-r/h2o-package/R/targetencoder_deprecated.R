@@ -21,7 +21,6 @@
 #' @export
 h2o.target_encode_fit <- function(frame, x, y, fold_column = NULL)
 {
-    .Deprecated("h2o.targetencoder")
     # Handling `x` parameter
     if (is.numeric(unlist(x))) {
         x <- lapply(x, function(i) colnames(frame)[i])
@@ -84,7 +83,6 @@ h2o.target_encode_transform <- function(frame, x, y, target_encode_map, holdout_
                                         fold_column = NULL, blended_avg = TRUE, inflection_point = 10, smoothing = 20,
                                         noise = -1, seed = -1)
 {
-    .Deprecated("h2o.targetencoder")
     # Handling `x` parameter
     if (is.numeric(unlist(x))) {
         x <- lapply(x, function(i) colnames(frame)[i])
