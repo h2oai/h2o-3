@@ -701,9 +701,12 @@ def help_extra_params_for(algo):
         return None
     else:  #Aggregator, PCA, SVD, K-Means: can this be grouped in with the others?  why are only character names supported?
         return """#' @param x A vector containing the \code{character} names of the predictors in the model."""
-    if algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes", "stackedensemble", "psvm"]:
+    if algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
         return x_string + "\n" + """#' @param y The name or column index of the response variable in the data. The response must be either a numeric or a
             #'        categorical/factor variable. If the response is numeric, then a regression model will be trained, otherwise it will train a classification model."""
+    elif algo == "psvm":
+        return x_string + "\n" + """#' @param y The name or column index of the response variable in the data. The response must be either a binary
+            #'        categorical/factor variable or a numeric variable with values -1/1 (for compatibility with SVMlight format)."""
 
 
 def help_extra_checks_for(algo):
