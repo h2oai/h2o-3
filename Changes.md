@@ -42,9 +42,9 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/3/index.ht
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5504'>PUBDEV-5504</a>] - Added another mode to treat missing values: plug values. This value must be given by the user. (STILL OPEN)
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6715'>PUBDEV-6715</a>] - Improve integration of the H2O Python client with Sklearn. (STILL OPEN)
-</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6739'>PUBDEV-6739</a>] - Imported MOJOS models now show parameters of the original model. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6776'>PUBDEV-6776</a>] - Introduced a transform operation with Target Encoding model, enabling the creationg of an entire transformation pipeline. (STILL OPEN)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6805'>PUBDEV-6805</a>] - Implemented a re-try mechanism for requesting the flatfile on Hadoop.
 </li>
@@ -54,6 +54,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/3/index.ht
 
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6597'>PUBDEV-6597</a>] - Added Flow support for 2D partial plots.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6697'>PUBDEV-6697</a>] - Fixed implementation of quasibinomail in GBM. (STILL OPEN)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6784'>PUBDEV-6784</a>] - In Flow, fixed issues with the NPM audit report.
 </li>
