@@ -7,7 +7,7 @@
 Description
 ~~~~~~~~~~~
 
-This option is used to specify a method of treating missing values. Whereas other options mean-impute rows or skip them entirely, Plug Values allow you to specify values of your own choosing in the form of a single row frame that contains the desired values—these will be used to impute the missing values of the training / validation frame when used in conjunction with the ``missing_values_handling`` function.
+When ``missing_values_handling=plug_values``, this option is used to specify a frame containing values that will be used to impute missing values. Whereas other options mean-impute rows or skip them entirely, plug values allow you to specify values of your own choosing in the form of a single row frame that contains the desired value.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
