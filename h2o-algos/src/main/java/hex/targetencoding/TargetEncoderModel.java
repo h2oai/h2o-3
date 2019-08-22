@@ -155,7 +155,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
   
 
   @Override
-  public ModelMojoWriter getMojo() {
+  public TargetEncoderMojoWriter getMojo() {
     return new TargetEncoderMojoWriter(this);
   }
 
