@@ -2,7 +2,7 @@
 
 ## H2O
 
-### Yau (3.26.0.3) - 8/22/2019
+### Yau (3.26.0.3) - 8/23/2019
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yau/3/index.html</a>
 
@@ -11,7 +11,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/3/index.ht
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6143'>PUBDEV-6143</a>] - Fixed an issue that caused an H2OResponseError after initialization of H2OSingularValueDecompositionEstimator.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6319'>PUBDEV-6319</a>] - AstGroup is no longer inconsistent after running it multiple times. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6319'>PUBDEV-6319</a>] - AstGroup is no longer inconsistent after running it multiple times.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6413'>PUBDEV-6413</a>] - Fixed an issue that caused a mismatch between manual standard deviation and reported standard deviation for cross validation scores. 
 </li>
@@ -40,9 +40,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/3/index.ht
 <h4>New Feature</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5504'>PUBDEV-5504</a>] - Added another mode to treat missing values: plug values. This value must be given by the user. (STILL OPEN)
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6739'>PUBDEV-6739</a>] - Imported MOJOS models now show parameters of the original model. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5504'>PUBDEV-5504</a>] - Added another mode to treat missing values: plug values. This value must be given by the user. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6776'>PUBDEV-6776</a>] - Introduced a transform operation with Target Encoding model, enabling the creationg of an entire transformation pipeline. (STILL OPEN)
 </li>
@@ -55,8 +53,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/3/index.ht
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6597'>PUBDEV-6597</a>] - Added Flow support for 2D partial plots.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6697'>PUBDEV-6697</a>] - Fixed implementation of quasibinomail in GBM. (STILL OPEN)
-</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6784'>PUBDEV-6784</a>] - In Flow, fixed issues with the NPM audit report.
 </li>
 </ul>
@@ -64,11 +60,9 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/3/index.ht
 <h4>Improvement</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6263'>PUBDEV-6263</a>] - Proxy is now bypassed when H2O is started on localhost from the R or Python clients. (STILL OPEN)
-</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6567'>PUBDEV-6567</a>] - Added support for predict_leaf_node_assignment() in XGBoost.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6718'>PUBDEV-6718</a>] - In Isolation Forest, improved documentation for aggregate depth and split ratios and described how these two values are calculated. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6718'>PUBDEV-6718</a>] - In Isolation Forest, improved documentation for aggregate depth and split ratios and described how these two values are calculated.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6724'>PUBDEV-6724</a>] - Removed MissingValuesHandling from XGBoost.
 </li>
@@ -91,7 +85,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/3/index.ht
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6771'>PUBDEV-6771</a>] - Added predict_leaf_node_assignment to list of supported parameters in XGBoost.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6790'>PUBDEV-6790</a>] - The Python client documentation for PSVM now indicates that it can be used for classification only. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6790'>PUBDEV-6790</a>] - The documentation for PSVM now indicates that it can be used for classification only.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6791'>PUBDEV-6791</a>] - The User Guide now includes all options that can be specified when running h2o.init() from the Python client.
 </li>
