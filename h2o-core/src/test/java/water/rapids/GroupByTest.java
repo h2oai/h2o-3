@@ -258,7 +258,6 @@ public class GroupByTest extends TestUtil {
   }
   
   @Test
-  @Ignore // demonstrates issue PUBDEV-6319 - yet to be fixed
   public void testPubDev6319() {
     Scope.enter();
     try {
