@@ -17,8 +17,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/3/index.ht
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6603'>PUBDEV-6603</a>] - H2OFrame.split_frame() no longer leaks a _splitter object.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6615'>PUBDEV-6615</a>] - DeepLearning MOJOs are now thread-safe. (STILL OPEN)
-</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6719'>PUBDEV-6719</a>] - h2o.scale no longer modifies a frame in place. Instead, it now returns a new frame.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6732'>PUBDEV-6732</a>] - Users can export a model using java-rest-bindings.
@@ -41,8 +39,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/3/index.ht
 
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5504'>PUBDEV-5504</a>] - Added another mode to treat missing values: plug values. This value must be given by the user. 
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6776'>PUBDEV-6776</a>] - Introduced a transform operation with Target Encoding model, enabling the creationg of an entire transformation pipeline. (STILL OPEN)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6805'>PUBDEV-6805</a>] - Implemented a re-try mechanism for requesting the flatfile on Hadoop.
 </li>
@@ -91,7 +87,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/3/index.ht
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6792'>PUBDEV-6792</a>] - Added bind_to_localhost to list of paramters for h2o.init() in the Python client docs.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6816'>PUBDEV-6816</a>] - Added plug_values to list of supported parameters in GLM. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6816'>PUBDEV-6816</a>] - Updated GLM parameters. "PlugValues" can now be specified for missing_values_handling, and when specified, a new `plug_values` option is available.  
 </li>
 </ul>
 
