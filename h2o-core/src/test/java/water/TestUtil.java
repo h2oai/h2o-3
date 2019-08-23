@@ -395,20 +395,6 @@ public class TestUtil extends Iced {
     return ParseDataset.parse(outputKey, new Key[]{nfs._key}, true, guessedSetup);
   }
 
-  protected Frame parse_test_file( Key outputKey, String fname, boolean guessSetup) {
-    return parse_test_file(outputKey, fname, guessSetup, null);
-  }
-
-  protected Frame parse_test_file( Key outputKey, String fname, boolean guessSetup, int[] skippedColumns) {
-    NFSFileVec nfs = makeNfsFileVec(fname);
-    ParseSetup guessParseSetup = ParseSetup.guessSetup(new Key[]{nfs._key},false,1);
-    if (skippedColumns != null) {
-      guessParseSetup.setSkippedColumns(skippedColumns);
-      guessParseSetup.setParseColumnIndices(guessParseSetup.getNumberColumns(), skippedColumns);
-    }
-    return ParseDataset.parse(outputKey, new Key[]{nfs._key}, true, ParseSetup.guessSetup(new Key[]{nfs._key},false,1));
-  }
-
   protected Frame parse_test_file( String fname, String na_string, int check_header, byte[] column_types) {
     return parse_test_file(fname, na_string, check_header, column_types, null, null);
   }

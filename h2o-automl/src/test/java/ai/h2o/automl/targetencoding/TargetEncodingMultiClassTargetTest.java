@@ -82,7 +82,7 @@ public class TargetEncodingMultiClassTargetTest extends TestUtil {
       } catch(InterruptedException ex) {
 
       }
-      parsedFrame = parse_test_file(Key.make("parsed"), tmpName, true);
+      parsedFrame = parse_test_file(Key.make("parsed"), tmpName);
 
       printOutColumnsMeta(parsedFrame);
       asFactor(parsedFrame, targetColumnName);

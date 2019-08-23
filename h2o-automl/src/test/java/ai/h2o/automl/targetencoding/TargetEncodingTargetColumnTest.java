@@ -139,7 +139,7 @@ public class TargetEncodingTargetColumnTest extends TestUtil {
       } catch(InterruptedException ex) {
 
       }
-      parsedFrame = parse_test_file(Key.make("parsed"), tmpName, true);
+      parsedFrame = parse_test_file(Key.make("parsed"), tmpName);
 
       String[] teColumns = {"ColA"};
       TargetEncoder tec = new TargetEncoder(teColumns);

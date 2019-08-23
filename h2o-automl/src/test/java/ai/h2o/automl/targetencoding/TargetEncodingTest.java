@@ -514,7 +514,7 @@ public class TargetEncodingTest extends TestUtil {
         Job export = Frame.export(fr, tmpName, fr._key.toString(), true, 1);
         export.get();
 
-        reimportedFrame = parse_test_file(Key.make("parsed"), tmpName, true);
+        reimportedFrame = parse_test_file(Key.make("parsed"), tmpName);
 
         String[] teColumns = {"ColA"};
         String targetColumnName = "ColB";
