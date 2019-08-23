@@ -22,20 +22,20 @@ def grid_f0point5_metrics():
     model0_f0point5_valid = best_gbm_f0point5.F0point5(valid=True)
     print(model0_f0point5_valid)
     errorMsg = "Expected that metric value from sorted_metric_table is equal to corresponding metric for the model"
-    assert str(model0_f0point5_valid[0][1]) == sorted_metric_table_f0point5['f0point5'][0], errorMsg
+    assert float(model0_f0point5_valid[0][1]) == float(sorted_metric_table_f0point5['f0point5'][0]), errorMsg
 
     print("Model 1:")
     best_gbm_f0point5_1 = gbm_gridper_f0point5.models[1]
     model1_f0point5_valid = best_gbm_f0point5_1.F0point5(valid=True)
     print(model1_f0point5_valid)
-    assert str(model1_f0point5_valid[0][1]) == sorted_metric_table_f0point5['f0point5'][1], errorMsg
+    assert float(model1_f0point5_valid[0][1]) == float(sorted_metric_table_f0point5['f0point5'][1]), errorMsg
 
 
     print("Model 2:")
     best_gbm_f0point5_2 = gbm_gridper_f0point5.models[2]
     model2_f0point5_valid = best_gbm_f0point5_2.F0point5(valid=True)
     print(model2_f0point5_valid)
-    assert str(model2_f0point5_valid[0][1]) == sorted_metric_table_f0point5['f0point5'][2], errorMsg
+    assert float(model2_f0point5_valid[0][1]) == float(sorted_metric_table_f0point5['f0point5'][2]), errorMsg
 
 
 def grid_f2_metrics():
@@ -53,20 +53,20 @@ def grid_f2_metrics():
     print(model0_f2_valid)
     
     errorMsg = "Expected that metric value from sorted_metric_table is equal to corresponding metric for the model"
-    assert str(model0_f2_valid[0][1]) == sorted_metric_table_f2['f2'][0], errorMsg
+    assert float(model0_f2_valid[0][1]) == float(sorted_metric_table_f2['f2'][0]), errorMsg
 
     print("Model 1:")
     best_gbm_f2_1 = gbm_gridper_f2.models[1]
     model1_f2_valid = best_gbm_f2_1.F2(valid=True)
     print(model1_f2_valid)
-    assert str(model1_f2_valid[0][1]) == sorted_metric_table_f2['f2'][1], errorMsg
+    assert float(model1_f2_valid[0][1]) == float(sorted_metric_table_f2['f2'][1]), errorMsg
 
 
     print("Model 2:")
     best_gbm_f2_2 = gbm_gridper_f2.models[2]
     model2_f2_valid = best_gbm_f2_2.F2(valid=True)
     print(model2_f2_valid)
-    assert str(model2_f2_valid[0][1]) == sorted_metric_table_f2['f2'][2], errorMsg
+    assert float(model2_f2_valid[0][1]) == float(sorted_metric_table_f2['f2'][2]), errorMsg
     
 
 def train_grid():
