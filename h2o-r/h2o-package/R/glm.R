@@ -55,8 +55,10 @@
 #'        the value of nlamdas is set to 30 (fewer lambdas are needed for ridge regression) otherwise it is set to 100.
 #'        Defaults to -1.
 #' @param standardize \code{Logical}. Standardize numeric columns to have zero mean and unit variance Defaults to TRUE.
-#' @param missing_values_handling Handling of missing values. Either MeanImputation or Skip. Must be one of: "MeanImputation", "Skip". Defaults
-#'        to MeanImputation.
+#' @param missing_values_handling Handling of missing values. Either MeanImputation, Skip or PlugValues. Must be one of: "MeanImputation",
+#'        "Skip", "PlugValues". Defaults to MeanImputation.
+#' @param plug_values Plug Values (a single row frame containing values that will be used to impute missing values of the
+#'        training/validation frame, use with conjunction missing_values_handling = PlugValues)
 #' @param compute_p_values \code{Logical}. Request p-values computation, p-values work only with IRLSM solver and no regularization
 #'        Defaults to FALSE.
 #' @param remove_collinear_columns \code{Logical}. In case of linearly dependent columns, remove some of the dependent columns Defaults to FALSE.
@@ -165,7 +167,8 @@ h2o.glm <- function(x, y, training_frame,
                     early_stopping = TRUE,
                     nlambdas = -1,
                     standardize = TRUE,
-                    missing_values_handling = c("MeanImputation", "Skip"),
+                    missing_values_handling = c("MeanImputation", "Skip", "PlugValues"),
+                    plug_values = NULL,
                     compute_p_values = FALSE,
                     remove_collinear_columns = FALSE,
                     intercept = TRUE,
@@ -270,6 +273,8 @@ h2o.glm <- function(x, y, training_frame,
     parms$nlambdas <- nlambdas
   if (!missing(standardize))
     parms$standardize <- standardize
+  if (!missing(plug_values))
+    parms$plug_values <- plug_values
   if (!missing(compute_p_values))
     parms$compute_p_values <- compute_p_values
   if (!missing(remove_collinear_columns))
