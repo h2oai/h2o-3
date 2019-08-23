@@ -3,6 +3,7 @@ package hex.api;
 import hex.ModelBuilder;
 import hex.psvm.PSVM;
 import hex.targetencoding.TargetEncoderBuilder;
+import hex.targetencoding.TargetEncoderHandler;
 import hex.tree.TreeHandler;
 import water.api.AlgoAbstractRegister;
 import water.api.RestApiContext;
@@ -67,6 +68,9 @@ public class RegisterAlgos extends AlgoAbstractRegister {
             "Test only" );
 
     context.registerEndpoint("get_tree", "GET /3/Tree", TreeHandler.class, "getTree", "Obtain a traverseable representation of a specific tree");
+    
+    context.registerEndpoint("target_encoder_transform", "GET /3/TargetEncoderTransform", TargetEncoderHandler.class, "transform",
+            "Transform using give TargetEncoderModel");
   }
 
   @Override

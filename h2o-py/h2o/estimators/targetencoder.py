@@ -10,6 +10,7 @@ from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
 from h2o.utils.typechecks import assert_is_type, Enum, numeric
+import h2o
 
 
 class H2OTargetencoderEstimator(H2OEstimator):
@@ -157,3 +158,29 @@ class H2OTargetencoderEstimator(H2OEstimator):
         self._parms["fold_column"] = fold_column
 
 
+
+    def transform(self, frame, data_leakage_handling="None", noise=-1, seed=-1):
+        """
+        Deprecated API. Please use H2OTargetencoderEstimator instead.
+
+        Apply transformation to `te_columns` based on the encoding maps generated during `trains()` method call.
+
+        :param frame frame: to which frame we are applying target encoding transformations.
+        :param str data_leakage_handling: Supported options:
+
+        1) "KFold" - encodings for a fold are generated based on out-of-fold data.
+        2) "LeaveOneOut" - leave one out. Current row's response value is subtracted from the pre-calculated per-level frequencies.
+        3) "None" - we do not holdout anything. Using whole frame for training
+
+        :param float noise: the amount of random noise added to the target encoding.  This helps prevent overfitting. Defaults to 0.01 * range of y.
+        :param int seed: a random seed used to generate draws from the uniform distribution for random noise. Defaults to -1.
+
+        :example:
+        >>> targetEncoder = TargetEncoder(x=te_columns, y=responseColumnName, blended_avg=True, inflection_point=10, smoothing=20)
+                            >>> encodedTrain = targetEncoder.transform(frame=trainFrame, data_leakage_handling="kfold", seed=1234, is_train_or_valid=True)
+        """
+        output = h2o.api("GET /3/TargetEncoderTransform", data={'model': self.model_id, 'frame': frame.key,
+                                                                'data_leakage_handling': data_leakage_handling,
+                                                                'noise': noise,
+                                                                'seed': seed})
+        return h2o.get_frame(output["name"])

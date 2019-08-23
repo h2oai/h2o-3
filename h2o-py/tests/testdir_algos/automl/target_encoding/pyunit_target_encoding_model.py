@@ -25,7 +25,7 @@ def test_target_encoding_fit_method():
     te = H2OTargetencoderEstimator(encoded_columns = teColumns, target_column = targetColumnName, k = 0.7, f = 0.3, data_leakage_handling = "none")
     te.train(training_frame = trainingFrame)
     print(te)
-    transformed = te.transform(trainingFrame)
+    transformed = te.transform(frame = trainingFrame)
     
     assert transformed is not None
     print(transformed.names)
@@ -36,10 +36,10 @@ def test_target_encoding_fit_method():
     assert transformed.nrows == 1309
     
     # Test fold_column proper handling + kfold data leakage strategy defined
-    te = H2OTargetencoderEstimator(k=0.7, f=0.3, data_leakage_handling="kfold")
+    te = H2OTargetencoderEstimator(k=0.7, f=0.3)
     te.train(training_frame=trainingFrame, fold_column="pclass", target_column=targetColumnName,
              encoded_columns=teColumns)
-    transformed = te.transform(trainingFrame)
+    transformed = te.transform(trainingFrame, data_leakage_handling="kfold", seed = 1234)
 
     te.train(training_frame=trainingFrame, fold_column="pclass", target_column=targetColumnName,
              encoded_columns=teColumns)

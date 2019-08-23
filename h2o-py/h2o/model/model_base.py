@@ -209,9 +209,6 @@ class ModelBase(backwards_compatible(Keyed)):
                     data={"feature_frequencies": True})
         return h2o.get_frame(j["predictions_frame"]["name"])
     
-    def transform(self, transformed_data, custom_metrics = None, custom_metric_func = None):
-        return self.predict(transformed_data, custom_metrics, custom_metric_func)
-
     def predict(self, test_data, custom_metric = None, custom_metric_func = None):
         """
         Predict on a dataset.
