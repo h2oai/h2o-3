@@ -1,11 +1,8 @@
 package hex.mojo;
 
 import hex.genmodel.tools.PredictCsv;
-import hex.tree.PrintMojoTreeTest;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
-import hex.tree.isofor.IsolationForest;
-import hex.tree.isofor.IsolationForestModel;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -14,7 +11,7 @@ import org.junit.rules.TemporaryFolder;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.util.FileUtils;
+import water.fvec.NFSFileVec;
 
 
 import java.io.ByteArrayOutputStream;
@@ -34,14 +31,14 @@ public class PredictCsvTest {
   private SecurityManager originalSecurityManager;
 
   @Before
-  public void setUp() throws Exception {
+  public void setUp() {
     TestUtil.stall_till_cloudsize(1);
     originalSecurityManager = System.getSecurityManager();
     System.setSecurityManager(new PreventExitSecurityManager());
   }
 
   @After
-  public void tearDown() throws Exception {
+  public void tearDown() {
     System.setSecurityManager(originalSecurityManager);
   }
 
@@ -71,7 +68,7 @@ public class PredictCsvTest {
       System.setOut(printStream);
       try {
         PredictCsv.main(new String[]{"--mojo", modelFile.getAbsolutePath(),
-                "--input", FileUtils.getFile("smalldata/iris/iris_test.csv").getAbsolutePath(),
+                "--input", TestUtil.makeNfsFileVec("smalldata/iris/iris_test.csv").getPath(),
                 "--output", outputFile.getAbsolutePath()});
         fail("Expected PredictCSV to exit");
       } catch (PreventedExitException e) {
