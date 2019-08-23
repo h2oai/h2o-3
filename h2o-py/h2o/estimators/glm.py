@@ -39,11 +39,12 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                       "ignored_columns", "ignore_const_cols", "score_each_iteration", "offset_column", "weights_column",
                       "family", "tweedie_variance_power", "tweedie_link_power", "theta", "solver", "alpha", "lambda_",
                       "lambda_search", "early_stopping", "nlambdas", "standardize", "missing_values_handling",
-                      "compute_p_values", "remove_collinear_columns", "intercept", "non_negative", "max_iterations",
-                      "objective_epsilon", "beta_epsilon", "gradient_epsilon", "link", "prior", "lambda_min_ratio",
-                      "beta_constraints", "max_active_predictors", "interactions", "interaction_pairs", "obj_reg",
-                      "export_checkpoints_dir", "balance_classes", "class_sampling_factors", "max_after_balance_size",
-                      "max_confusion_matrix_size", "max_hit_ratio_k", "max_runtime_secs", "custom_metric_func"}
+                      "plug_values", "compute_p_values", "remove_collinear_columns", "intercept", "non_negative",
+                      "max_iterations", "objective_epsilon", "beta_epsilon", "gradient_epsilon", "link", "prior",
+                      "lambda_min_ratio", "beta_constraints", "max_active_predictors", "interactions",
+                      "interaction_pairs", "obj_reg", "export_checkpoints_dir", "balance_classes",
+                      "class_sampling_factors", "max_after_balance_size", "max_confusion_matrix_size",
+                      "max_hit_ratio_k", "max_runtime_secs", "custom_metric_func"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -458,16 +459,31 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def missing_values_handling(self):
         """
-        Handling of missing values. Either MeanImputation or Skip.
+        Handling of missing values. Either MeanImputation, Skip or PlugValues.
 
-        One of: ``"mean_imputation"``, ``"skip"``  (default: ``"mean_imputation"``).
+        One of: ``"mean_imputation"``, ``"skip"``, ``"plug_values"``  (default: ``"mean_imputation"``).
         """
         return self._parms.get("missing_values_handling")
 
     @missing_values_handling.setter
     def missing_values_handling(self, missing_values_handling):
-        assert_is_type(missing_values_handling, None, Enum("mean_imputation", "skip"))
+        assert_is_type(missing_values_handling, None, Enum("mean_imputation", "skip", "plug_values"))
         self._parms["missing_values_handling"] = missing_values_handling
+
+
+    @property
+    def plug_values(self):
+        """
+        Plug Values (a single row frame containing values that will be used to impute missing values of the
+        training/validation frame, use with conjunction missing_values_handling = PlugValues)
+
+        Type: ``H2OFrame``.
+        """
+        return self._parms.get("plug_values")
+
+    @plug_values.setter
+    def plug_values(self, plug_values):
+        self._parms["plug_values"] = H2OFrame._validate(plug_values, 'plug_values')
 
 
     @property

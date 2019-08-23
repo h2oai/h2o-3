@@ -134,7 +134,7 @@ public class GLMBasicTestRegression extends TestUtil {
     parms._objective_epsilon = 0;
     parms._gradient_epsilon = 1e-10;
     parms._max_iterations = 1000;
-    parms._missing_values_handling = DeepLearningModel.DeepLearningParameters.MissingValuesHandling.Skip;
+    parms._missing_values_handling = GLMModel.GLMParameters.MissingValuesHandling.Skip;
     try {
       model1 = new GLM(parms).trainModel().get();
       for(int i = 0; i < model1._output._coefficient_names.length; ++i)
@@ -500,7 +500,7 @@ public class GLMBasicTestRegression extends TestUtil {
     parms._response_column = "Infections";
     parms._compute_p_values = true;
     parms._objective_epsilon = 0;
-    parms._missing_values_handling = DeepLearningModel.DeepLearningParameters.MissingValuesHandling.Skip;
+    parms._missing_values_handling = GLMModel.GLMParameters.MissingValuesHandling.Skip;
 
     GLMModel model = null;
     Frame predict = null;
@@ -572,7 +572,7 @@ public class GLMBasicTestRegression extends TestUtil {
     parms._response_column = "Claims";
     parms._compute_p_values = true;
     parms._objective_epsilon = 0;
-    parms._missing_values_handling = DeepLearningModel.DeepLearningParameters.MissingValuesHandling.Skip;
+    parms._missing_values_handling = GLMModel.GLMParameters.MissingValuesHandling.Skip;
 
     GLMModel model = null;
     Frame predict = null;
@@ -653,7 +653,7 @@ public class GLMBasicTestRegression extends TestUtil {
     params._train = _prostateTrain._key;
     params._compute_p_values = true;
     params._lambda = new double[]{0};
-    params._missing_values_handling = DeepLearningModel.DeepLearningParameters.MissingValuesHandling.Skip;
+    params._missing_values_handling = GLMModel.GLMParameters.MissingValuesHandling.Skip;
     try {
       params._solver = Solver.L_BFGS;
       new GLM(params).trainModel().get();
