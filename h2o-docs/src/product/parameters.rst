@@ -100,7 +100,6 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/offset_column
    data-science/algo-params/pca_impl
    data-science/algo-params/pca_method
-   data-science/algo-params/plug_values
    data-science/algo-params/pred_noise_bandwidth
    data-science/algo-params/prior
    data-science/algo-params/quantile_alpha
