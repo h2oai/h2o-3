@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.URL;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -355,6 +356,9 @@ public class TestUtil extends Iced {
 
   public static NFSFileVec makeNfsFileVec(String fname) {
     try {
+      if (runWithoutLocalFiles()) {
+        downloadTestFileFromS3(fname);
+      }
       return NFSFileVec.make(fname);
     } catch (IOException ioe) {
       fail(ioe.getMessage());
@@ -362,6 +366,26 @@ public class TestUtil extends Iced {
     }
   }
 
+  private static boolean runWithoutLocalFiles() {
+    return Boolean.getBoolean("H2O_JUNIT_ALLOW_NO_SMALLDATA");
+  }
+  
+  private static void downloadTestFileFromS3(String fname) throws IOException {
+    if (fname.startsWith("./"))
+      fname = fname.substring(2);
+    File f = new File(fname);
+    if (! f.exists()) {
+      f.getParentFile().mkdirs();
+      File tmpFile = File.createTempFile(f.getName(), "tmp", f.getParentFile());
+      org.apache.commons.io.FileUtils.copyURLToFile(
+              new URL("https://h2o-public-test-data.s3.amazonaws.com/" + fname),
+              tmpFile, 1000, 2000);
+      if (! tmpFile.renameTo(f)) {
+        Log.warn("Couldn't download " + fname + " from S3.");
+      }
+    }
+  }
+  
   public static Frame parse_test_file( Key outputKey, String fname) {
     return parse_test_file(outputKey, fname, new int[]{});
   }
