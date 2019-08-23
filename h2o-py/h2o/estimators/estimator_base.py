@@ -139,6 +139,8 @@ class H2OEstimator(ModelBase):
         if verbose and algo not in ["drf", "gbm", "deeplearning", "xgboost"]:
             raise H2OValueError("Verbose should only be set to True for drf, gbm, deeplearning, and xgboost models")
         parms = self._parms.copy()
+        if algo=="pca" and "k" not in parms.keys():
+            parms["k"] = 1
         if "__class__" in parms:  # FIXME: hackt for PY3
             del parms["__class__"]
         is_auto_encoder = bool(parms.get("autoencoder"))
