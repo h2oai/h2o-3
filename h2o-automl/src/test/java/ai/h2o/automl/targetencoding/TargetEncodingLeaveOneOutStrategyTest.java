@@ -57,7 +57,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
       Job export = Frame.export(fr, tmpName, fr._key.toString(), true, 1);
       export.get();
 
-      reimportedFrame = parse_test_file(Key.make("parsed"), tmpName, true);
+      reimportedFrame = parse_test_file(Key.make("parsed"), tmpName);
       printOutFrameAsTable(reimportedFrame);
 
       String[] teColumns = {teColumnName};

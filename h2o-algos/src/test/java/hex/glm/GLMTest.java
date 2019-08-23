@@ -1089,7 +1089,7 @@ public class GLMTest  extends TestUtil {
   public void testAirlines() {
     GLMModel model1 = null, model2 = null, model3 = null, model4 = null;
     Frame frMM = parse_test_file(Key.make("AirlinesMM"), "smalldata/airlines/AirlinesTrainMM.csv.zip");
-    Frame frG = parse_test_file(Key.make("gram"), "smalldata/airlines/gram_std.csv", true);
+    Frame frG = parse_test_file(Key.make("gram"), "smalldata/airlines/gram_std.csv");
     Vec xy = frG.remove("xy");
     frMM.remove("C1").remove();
     Vec v;
