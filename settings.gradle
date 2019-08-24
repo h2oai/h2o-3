@@ -34,6 +34,7 @@ include 'h2o-jetty-8'
 include 'h2o-jetty-9'
 include 'h2o-ext-jython-cfunc'
 include 'h2o-ext-mojo-pipeline'
+include 'h2o-ext-target-encoder'
 
 // GRPC support
 if ("true".equals(System.getenv("H2O_BUILD_GRPC"))) {
