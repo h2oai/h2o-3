@@ -42,6 +42,7 @@ cd /home/hadoop/h2o
 wget http://h2o-release.s3.amazonaws.com/h2o/rel-${var.h2o_codename}/${var.h2o_fix_version}/h2o-${var.h2o_main_version}.${var.h2o_fix_version}-hdp2.6.zip
 unzip -o h2o*.zip 1> /dev/null & wait
 aws s3 cp ${format("s3://%s/realm.properties", aws_s3_bucket.h2o_bucket.bucket)} realm.properties
+keytool -genkey -keyalg RSA -keystore h2o.jks -keypass h2oh2o -storepass h2oh2o -keysize 2048 -dname "CN=Jonh Smith, OU=H2O, O=H2O.ai, L=Mountain View, S=California, C=US"
 
 EOF
 }
@@ -92,8 +93,8 @@ resource "aws_emr_cluster" "h2o-cluster" {
     name   = "Start H2O"
 
     hadoop_jar_step {
-      jar  = "/home/hadoop/h2o/h2o-3.26.0.2-hdp2.6/h2odriver.jar"
-      args = ["-n", "${var.aws_core_instance_count}", "-mapperXmx", "4g", "-proxy", "-hash_login", "-login_conf", "/home/hadoop/h2o/realm.properties", "-form_auth"]
+      jar  = "/home/hadoop/h2o/h2o-${var.h2o_main_version}.${var.h2o_fix_version}-hdp2.6/h2odriver.jar"
+      args = ["-n", "${var.aws_core_instance_count}", "-mapperXmx", "4g", "-proxy", "-hash_login", "-login_conf", "/home/hadoop/h2o/realm.properties", "-form_auth", "-port", "54321", "-jks", "/home/hadoop/h2o/h2o.jks"]
     }
   }
 
