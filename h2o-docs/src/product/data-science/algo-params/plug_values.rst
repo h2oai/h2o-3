@@ -20,11 +20,80 @@ Example
 .. example-code::
    .. code-block:: r
 
-	library(h2o)
-	h2o.init()
+      library(h2o)
+      h2o.init()
+      # import the cars dataset:
+      cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+      cars$name <- NULL
 
+      glm1 <- h2o.glm(training_frame = cars, y = "cylinders")
+      means <- h2o.mean(cars, na.rm = TRUE, return_frame = TRUE)
+
+      glm2 <- h2o.glm(training_frame = cars, y = "cylinders", missing_values_handling="PlugValues", plug_values=means)
+
+      # determine if the coefficients are equal
+      h2o.coef(glm1)
+          Intercept       economy  displacement         power        weight 
+       2.8316269982  0.0043748133  0.0141242460 -0.0030047140  0.0001410077 
+       acceleration          year economy_20mpg 
+      -0.0146035179  0.0017987846 -0.3754994243
+      
+      h2o.coef(glm2)
+          Intercept       economy  displacement         power        weight 
+       2.8316269982  0.0043748133  0.0141242460 -0.0030047140  0.0001410077 
+       acceleration          year economy_20mpg 
+      -0.0146035179  0.0017987846 -0.3754994243
 
    .. code-block:: python
 
-	import h2o
-	h2o.init()
+      import h2o
+      from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+      from h2o import H2OFrame
+      from h2o.expr import ExprNode
+      h2o.init()
+
+      # import the cars dataset:
+      cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+      cars = cars.drop(0)
+
+      glm_means = H2OGeneralizedLinearEstimator(seed=42)
+      glm_means.train(training_frame=cars, y="cylinders")
+
+      means = cars.mean()
+      means = H2OFrame._expr(ExprNode("mean", cars, True, 0))
+
+
+      glm_plugs1 = H2OGeneralizedLinearEstimator(seed=42,
+                                                 missing_values_handling="PlugValues",
+                                                 plug_values=means)
+      glm_plugs1.train(training_frame=cars, y="cylinders")
+      
+      assert glm_means.coef() == glm_plugs1.coef()
+
+      not_means = 0.1 + (means * 0.5)
+
+      glm_plugs2 = H2OGeneralizedLinearEstimator(seed=42,
+                                                 missing_values_handling="PlugValues",
+                                                 plug_values=not_means)
+      glm_plugs2.train(training_frame=cars, y="cylinders")
+
+      # confirm that plug values are not being ignored
+      assert glm_means.coef() != glm_plugs2.coef()
+
+      # standardize the dataset manually
+      cars = cars.scale()
+
+      glm_plugs3 = H2OGeneralizedLinearEstimator(seed=42, 
+                                                 missing_values_handling="PlugValues",
+                                                 plug_values=not_means,
+                                                 standardize=False)
+      glm_plugs3.train(training_frame=cars, y="cylinders")
+
+      cars.impute(values=not_means.getrow())
+      
+      glm_plugs4 = H2OGeneralizedLinearEstimator(seed=42, standardize=False)
+      glm_plugs4.train(training_frame=cars, y="cylinders")
+
+      assert glm_plugs3.coef() == glm_plugs4.coef()
+      glm_means.coef() == glm_plugs1.coef()
+
