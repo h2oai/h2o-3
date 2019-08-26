@@ -142,13 +142,17 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
     @API(help="Percentile values, matching the default percentiles", direction=API.Direction.OUTPUT)
     public double[] percentiles;
 
+    @API(help="Number of rows in this column.", direction=API.Direction.OUTPUT)
+    public long num_rows;
+    
     transient Vec _vec;
 
     ColV3(String name, Vec vec, long off, int len, boolean is_full_column) {
       label = name;
 
+      num_rows = vec.length();
       missing_count = vec.naCnt();
-      zero_count = vec.length() - vec.nzCnt() - missing_count;
+      zero_count = num_rows - vec.nzCnt() - missing_count;
       positive_infinity_count = vec.pinfs();
       negative_infinity_count = vec.ninfs();
       mins = vec.mins();
