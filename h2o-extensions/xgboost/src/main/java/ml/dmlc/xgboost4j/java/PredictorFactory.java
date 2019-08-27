@@ -5,7 +5,7 @@ import biz.k11i.xgboost.config.PredictorConfiguration;
 import biz.k11i.xgboost.tree.RegTree;
 import biz.k11i.xgboost.tree.RegTreeFactory;
 import biz.k11i.xgboost.util.ModelReader;
-import water.util.Log;
+import hex.genmodel.algos.xgboost.XGBoostJavaObjFunRegistration;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -13,11 +13,18 @@ import java.io.InputStream;
 import java.nio.ByteOrder;
 
 public class PredictorFactory {
-
+  
+  static {
+    XGBoostJavaObjFunRegistration.register();
+  }
+  
   public static Predictor makePredictor(byte[] boosterBytes) {
+    return makePredictor(boosterBytes, true);
+  }
+
+  public static Predictor makePredictor(byte[] boosterBytes, boolean scoringOnly) {
     PredictorConfiguration.Builder bldr = PredictorConfiguration.builder();
-    if (unsafeTreesSupported()) {
-      Log.warn("XGBoost Predictor is using EXPERIMENTAL scoring implementation!");
+    if (scoringOnly && unsafeTreesSupported()) {
       bldr.regTreeFactory(UnsafeRegTreeFactory.INSTANCE);
     }
     PredictorConfiguration cfg = bldr.build();

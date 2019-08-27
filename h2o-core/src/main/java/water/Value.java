@@ -280,7 +280,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   public boolean isLockable() { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof Lockable; }
   /** Check if the Value's POJO is a {@link Vec} subtype.  Does not require the POJO.
    *  @return True if the Value's POJO is a {@link Vec} subtype. */
-  public boolean isVec()      { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof Vec; }
+  public boolean isVec() { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof Vec; }
   /** Check if the Value's POJO is a {@link hex.Model} subtype.  Does not require the POJO.
    *  @return True if the Value's POJO is a {@link hex.Model} subtype. */
   public boolean isModel()    { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof hex.Model; }

@@ -1,9 +1,7 @@
 package water.api;
 
-import water.Futures;
-import water.H2O;
-import water.Job;
-import water.MRTask;
+import water.*;
+import water.api.schemas3.KeyV3;
 import water.api.schemas3.RemoveAllV3;
 import water.util.Log;
 
@@ -12,7 +10,6 @@ import water.util.Log;
 public class RemoveAllHandler extends Handler {
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public RemoveAllV3 remove(int version, RemoveAllV3 u) {
-    Log.info("Removing all objects");
     Futures fs = new Futures();
     // Cancel and remove leftover running jobs
     for( Job j : Job.jobs() ) { j.stop_requested(); j.remove(fs); }
@@ -23,14 +20,46 @@ public class RemoveAllHandler extends Handler {
       RapidsHandler.SESSIONS.clear();
     }
     fs.blockForPending();
+
+    if (u.retained_keys != null && u.retained_keys.length != 0) {
+      retainKeys(u.retained_keys);
+    } else {
+      clearAll();
+    }
+    Log.info("Finished removing objects");
+    return u;
+  }
+
+
+  private void clearAll() {
+    Log.info("Removing all objects");
     // Bulk brainless key removal.  Completely wipes all Keys without regard.
-    new MRTask(H2O.MIN_HI_PRIORITY){
-      @Override public void setupLocal() {  H2O.raw_clear();  water.fvec.Vec.ESPC.clear(); }
+    new MRTask(H2O.MIN_HI_PRIORITY) {
+      @Override
+      public void setupLocal() {
+        H2O.raw_clear();
+        water.fvec.Vec.ESPC.clear();
+      }
     }.doAllNodes();
     // Wipe the backing store without regard as well
     H2O.getPM().getIce().cleanUp();
     H2O.updateNotIdle();
-    Log.info("Finished removing objects");
-    return u;
+  }
+
+  private void retainKeys(final KeyV3[] retained_keys) {
+    Log.info(String.format("Removing all objects, except for %d provided key(s)", retained_keys.length));
+    final Key[] retainedKeys;
+    if (retained_keys == null) {
+      retainedKeys = new Key[0];
+    } else {
+      retainedKeys = new Key[retained_keys.length];
+      for (int i = 0; i < retainedKeys.length; i++) {
+        if (retained_keys[i] == null) throw new IllegalArgumentException("An attempt to retain a 'null' key detected. Cleaning operation aborted.");
+        retainedKeys[i] = retained_keys[i].key();
+      }
+    }
+
+    DKVManager.retain(retainedKeys);
+
   }
 }

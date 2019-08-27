@@ -12,7 +12,7 @@ This option specifies the number of randomly sampled observations used to train 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
-- none
+- None
 
 Example
 ~~~~~~~

@@ -16,6 +16,7 @@
 %\input{common/conf_listings_colorized.tex}  % Work in progress....  Use this for online/pdf version
 
 \usepackage{url}
+\usepackage{float}
 \def\UrlBreaks{\do\/\do-\do_}
 
 \begin{document}
@@ -200,7 +201,7 @@ H2O's GLM algorithm fits generalized linear models to the data by maximizing the
 H2O's GLM fits the model by solving the following likelihood optimization with parameter regularization:
  $$\max_{\beta,\beta_0} \mbox{  ( GLM Log-likelihood }  - \mbox{Regularization Penalty )} .$$
 
-The elastic net regularization penalty is the weighted sum of the $\ell_1$ and $\ell_2$ norms of the coefficients vector. It is defined as $$\lambda P_{\alpha}(\beta) = \lambda \left(\alpha \| \beta \|_1 + \frac{1}{2} (1- \alpha) \| \beta \|_2^2 \right),$$ with no penalty on the intercept term. It is implemented by subtracting $\lambda P_{\alpha}(\beta)$ from the optimized likelihood. This induces sparsity in the solution and shrinks the coefficients by imposing a penalty on their size. 
+The elastic net regularization penalty is the weighted sum of the $\ell_1$ and $\ell_2$ norms of the coefficients vector. It is defined as $$\lambda P_{\alpha}(\beta) = \lambda \left(\alpha \| \beta \|_1 + \frac{1}{2} (1- \alpha) \| \beta \|_2^2 \right),$$ with no penalty on the intercept term. It is implemented by subtracting $\lambda P_{\alpha}(\beta)$ from the optimized likelihood. This induces sparsity in the solution and shrinks the coefficients by imposing a penalty on their size. Note that maximizing the log-likelihood function with the negative regularization penalty is equivalent to minimizing the negative log-likelihood function with the regularization penalty. In the actual H2O-3 GLM code, we choose to minimize the negative log-likelihood function with the regularization penalty term.
 
 These properties are beneficial because they reduce the variance in the predictions and make the model more interpretable by selecting a subset of the given variables. For a specific $\alpha$ value, the algorithm can compute models for a single value of the tuning parameter $\lambda$ or the full regularization path as in the glmnet package for R (refer to \citetalias{glmnet}).
 
@@ -501,7 +502,7 @@ argument.
 
 \subsubsection{Tweedie Models}
 
-Tweedie distributions are a family of distributions which include gamma, normal, Poisson and their combination. It is especially useful for modeling positive continuous variables with exact zeros. The variance of the Tweedie distribution is proportional to the $p$-th power of the mean $var(y_i)=\phi \mu_i^p$. 
+Tweedie distributions are a family of distributions which include gamma, normal, Poisson and their combinations. Tweedie distributions are especially useful for modeling positive continuous variables with exact zeros. The variance of the Tweedie distribution is proportional to the $p$-th power of the mean $var(y_i)=\phi \mu_i^p$, where $\phi$ is the dispersion of the parameter and $p$ is the variance power.
 
 The Tweedie distribution is parametrized by variance power $p$. It is defined for all $p$ values except in the $(0,1)$ interval, and has the following distributions as special cases.
 
@@ -521,29 +522,36 @@ The Tweedie distribution is parametrized by variance power $p$. It is defined fo
 \waterExampleInPython
 \lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_tweedie_example.py}
 
-The normal and Poisson examples have already been covered in the previous sections. For $p>1$, the model likelihood to maximize has the form: 
-$$  \max_{\beta,\beta_0} \ \sum_{i=1}^N \log(a(y_i,\phi)) + \left( \frac{1}{\phi}\left( \frac{y_i\mu_i^{1-p}}{1-p} - \kappa(\mu_i,p) \right)  \right) -\lambda  \left(  \alpha \| \beta \|_1 + \frac{1}{2}(1-\alpha)\| \beta \|_2^2  \right), $$
-where $\kappa(\mu,p) = \mu^{2-p}/(2-p)$ for $p \neq 2$ and $\kappa(\mu,p) = \log(\mu)$ for $p=2$ and where the function $a(y_i,\phi)$ is evaluated using series expansion, since it does not have an analytical solution. The link function in the GLM representation of the Tweedie distribution defaults to $g(\mu) = \mu^{q} = \eta = X\beta$ with $q=1-p$. The link power $q$ can be set to other values, including $q=0$ which is interpreted as $\log(\mu)=\eta$. 
-%
-%have the form of the distribution \\
-%link function can be taken as $\mu^{1-p}$ when p is not equal to 1\\
-%giving: link $\mu=g^{-1}(\eta)$ or $\eta=X\beta = g(\mu)$ \\
-%satisfies being the identity when p=0 cause $\eta = \mu^1$\\
-%for p=2 satisfies the inverse link $\eta = \mu^-1$\\
-%for $p=3$ satisfies the link which is the $inverse^2$ for the inverse gaussian.\\
-%so when write the distribution for the tweedie we can replace $\mu$ by Ginverse of eta and we will have Xbeta in the expression. 
-%Apart from the special cases, the density of the distribution does not have an analytic expression. The model likelihood to maximize is
+The model likelihood to maximize has the form:
 
-The corresponding deviance when $p \neq 1$ and $p\neq 2$ is equal to:
-$$D = 2\sum_{i}^N \frac{y_{i}(y_{i}^{1-p} - \hat{y}_{i}^{1-p})}{(1-p)} - \frac{(y_{i}^{2-p} - \hat{y}_{i}^{2-p})}{(2-p)} $$\\
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.5]{../../../product/images/model_log_likelihood_tweedie.png}
+\end{figure}
 
-%\waterExampleInR
-%This example loads the Insurance data from the HDtweedie library, imports it into H2O and runs a tweedie model that predicts the aggregate claim loss (in thousand dollars) based on 56 predictors including the car type, job class etc.
-%\lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_tweedie_example.R}
+where the function $a(y_i,\phi)$ is evaluated using an infinite series expansion and does not have an analytical solution. However, because $\phi$ is an unknown constant, $\sum_{i=1}^N\text{log}(a(y_i,\phi))$ is a constant and will be ignored. Hence, the final objective function to minimize with the penalty term is:
 
-%\waterExampleInPython
-%\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_tweedie_example.py}
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.5]{../../../product/images/minimize_penalty.png}
+\end{figure}
 
+The link function in the GLM representation of the Tweedie distribution defaults to:
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.5]{../../../product/images/link_function_tweedie.png}
+\end{figure}
+
+And $q = 1 - p$. The link power $q$ can be set to other values as well.
+
+The corresponding deviance is equal to:
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.5]{../../../product/images/tweedie_deviance.png}
+\end{figure}
+   
 \subsubsection{Negative Binomial Models}
 
 Negative binomial regression is a generalization of Poisson regression that loosens the restrictive assumption that the variance is equal to the mean. Instead, the variance of negative binomial is a function of its mean and parameter $\theta$, the dispersion parameter. 
@@ -1354,7 +1362,7 @@ H2O supports binomial models only; any extra levels in the test response will ge
 \item {\textbf{inverse}}: gaussian, gamma
 \item {\textbf{tweedie}}: tweedie
 \item {\textbf{multinomial}} (family\_default): multinomial 
-\item {\textbf{ordinal}}: ologit, oprobit, and ologlog
+\item {\textbf{ordinal}}: ologit
 	\end{itemize}
 \item \texttt{tweedie\_variance\_power}: A numeric specifying the power for the variance function when \texttt{family = "tweedie"}.  Default is 0.
 \item \texttt{tweedie\_link\_power}: A numeric specifying the power for the link function when \texttt{family = "tweedie"}.  Default is 1.

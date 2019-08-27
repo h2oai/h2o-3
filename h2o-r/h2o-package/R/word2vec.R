@@ -2,11 +2,11 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details) 
 #'
 # -------------------------- word2vec -------------------------- #
-#' 
+#'
 #' Trains a word2vec model on a String column of an H2O data frame
-#' 
-#' @param model_id Destination id for this model; auto-generated if not specified.
+#'
 #' @param training_frame Id of the training data frame.
+#' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param min_word_freq This will discard words that appear less than <int> times Defaults to 5.
 #' @param word_model Use the Skip-Gram model Must be one of: "SkipGram". Defaults to SkipGram.
 #' @param norm_model Use Hierarchical Softmax Must be one of: "HSM". Defaults to HSM.
@@ -32,25 +32,15 @@ h2o.word2vec <- function(training_frame = NULL,
                          epochs = 5,
                          pre_trained = NULL,
                          max_runtime_secs = 0,
-                         export_checkpoints_dir = NULL
-                         ) 
+                         export_checkpoints_dir = NULL)
 {
-
+  # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   # training_frame is required if pre_trained frame is not specified
   if (missing(pre_trained) && missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
-  # training_frame must be a key or an H2OFrame object
-  if (!missing(training_frame) && !is.H2OFrame(training_frame))
-    tryCatch(training_frame <- h2o.getFrame(training_frame),
-             error = function(err) {
-               stop("argument 'training_frame' must be a valid H2OFrame or key")
-             })
-  # pre_trained must be a key or an H2OFrame object
-  if (!missing(pre_trained) && !is.H2OFrame(pre_trained))
-    tryCatch(pre_trained <- h2o.getFrame(pre_trained),
-             error = function(err) {
-               stop("argument 'pre_trained' must be a valid H2OFrame or key")
-             })
-  # Parameter list to send to model builder
+  training_frame <- .validate.H2OFrame(training_frame)
+  pre_trained <- .validate.H2OFrame(pre_trained)
+
+  # Build parameter list to send to model builder
   parms <- list()
   parms$training_frame <- training_frame
 
@@ -78,6 +68,8 @@ h2o.word2vec <- function(training_frame = NULL,
     parms$max_runtime_secs <- max_runtime_secs
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+
   # Error check and build model
-  .h2o.modelJob('word2vec', parms, h2oRestApiVersion = 3) 
+  model <- .h2o.modelJob('word2vec', parms, h2oRestApiVersion=3, verbose=FALSE)
+  return(model)
 }

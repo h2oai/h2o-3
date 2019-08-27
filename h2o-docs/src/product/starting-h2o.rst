@@ -81,6 +81,7 @@ Use the ``h2o.init()`` function to initialize H2O. This function accepts the fol
 - ``url``: Full URL of the server to connect to. (This can be used instead of ``ip`` + ``port`` + ``https``.)
 - ``ip``: The ip address (or host name) of the server where H2O is running.
 - ``port``: Port number that H2O service is listening to.
+- ``name``: Cluster name. If None while connecting to an existing cluster it will not check the cluster name. If set then will connect only if the target cluster name matches. If no instance is found and decides to start a local one then this will be used as the cluster name or a random one will be generated if set to None.
 - ``https``: Set to True to connect via https:// instead of http://.
 - ``insecure``: When using https, setting this to True will disable SSL certificates verification.
 - ``username``: The username to log in with when using basic authentication.
@@ -90,10 +91,17 @@ Use the ``h2o.init()`` function to initialize H2O. This function accepts the fol
 - ``start_h2o``: If False, do not attempt to start an H2O server when a connection to an existing one failed.
 - ``nthreads``: "Number of threads" option when launching a new H2O server.
 - ``ice_root``: The directory for temporary files for the new H2O server.
+- ``log_dir``: Directory for H2O logs to be stored if a new instance is started. Ignored if connecting to an existing node.
+- ``log_level``: The logger level for H2O if a new instance is started. One of TRACE,DEBUG,INFO,WARN,ERRR,FATA. Default is INFO. Ignored if connecting to an existing node.
 - ``enable_assertions``: Enable assertions in Java for the new H2O server.
 - ``max_mem_size``: Maximum memory to use for the new H2O server. Integer input will be evaluated as gigabytes.  Other units can be specified by passing in a string (e.g. "160M" for 160 megabytes).
 - ``min_mem_size``: Minimum memory to use for the new H2O server. Integer input will be evaluated as gigabytes.  Other units can be specified by passing in a string (e.g. "160M" for 160 megabytes).
 - ``strict_version_check``: If True, an error will be raised if the client and server versions don't match.
+- ``ignore_config``: Indicates whether a processing of a .h2oconfig file should be conducted or not. Default value is False.
+- ``extra_classpath``: List of paths to libraries that should be included on the Java classpath when starting H2O from Python.
+- ``kwargs``: (all other deprecated attributes)
+- ``jvm_custom_args``: Customer, user-defined argument’s for the JVM H2O is instantiated in. Ignored if there is an instance of H2O already running and the client connects to it.
+- ``bind_to_localhost``: A flag indicating whether access to the H2O instance should be restricted to the local machine (default) or if it can be reached from other computers on the network.
 
 Example
 ~~~~~~~
@@ -277,6 +285,7 @@ Authentication Options
 
 -  ``-jks <filename>``: Specify a Java keystore file.
 -  ``-jks_pass <password>``: Specify the Java keystore password.
+-  ``-jks_alias <alias>``: Optional, use if the keystore has multiple certificates and you want to use a specific one.
 -  ``-hash_login``: Specify to use Jetty HashLoginService. This defaults to False.
 -  ``-ldap_login``: Specify to use Jetty LdapLoginService. This defaults to False.
 -  ``-kerberos_login``: Specify to use Kerberos LoginService. This defaults to False.
@@ -402,3 +411,10 @@ On Spark
 --------
 
 Refer to the `Getting Started with Sparkling Water <welcome.html#getting-started-with-sparkling-water>`__ section for information on how to launch H2O on Spark. 
+
+Best Practices
+--------------
+
+- Use ``h2o.importFile`` instead of ``h2o.uploadFile`` if possible.
+- Set the correct cluster size for your given dataset size. The rule of thumb is to use at least 4 times the size of your data. For example, if the dataset is 10GB, you should allocate at least 40GB of memory.
+

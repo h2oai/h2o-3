@@ -23,9 +23,9 @@ public class SubsetVec extends WrappedVec {
     return new SubsetChunk(crows,this,masterVec());
   }
 
-  @Override public Futures remove_impl(Futures fs) {
-    Keyed.remove(_subsetRowsKey,fs);
-    return fs;
+  @Override public Futures remove_impl(Futures fs, boolean cascade) {
+    Keyed.remove(_subsetRowsKey, fs, true);
+    return super.remove_impl(fs, cascade);
   }
 
   /** Write out K/V pairs */

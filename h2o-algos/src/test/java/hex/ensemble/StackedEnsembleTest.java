@@ -4,6 +4,7 @@ import hex.GLMHelper;
 import hex.Model;
 import hex.ModelMetrics;
 import hex.SplitFrame;
+import hex.ensemble.Metalearner.Algorithm;
 import hex.ensemble.StackedEnsembleModel.StackedEnsembleParameters;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLM;
@@ -17,21 +18,28 @@ import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
+import water.util.Log;
 
 import java.util.*;
 
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 public class StackedEnsembleTest extends TestUtil {
 
     @BeforeClass public static void stall() { stall_till_cloudsize(1); }
+
+  @Rule
+  public ExpectedException expectedException = ExpectedException.none();
 
     private abstract class PrepData { abstract int prep(Frame fr); }
 
@@ -44,7 +52,7 @@ public class StackedEnsembleTest extends TestUtil {
         basicEnsemble("./smalldata/junit/cars.csv",
             null,
             new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
-            false, DistributionFamily.gaussian, Metalearner.Algorithm.AUTO, false);
+            false, DistributionFamily.gaussian, Algorithm.AUTO, false);
 
         basicEnsemble("./smalldata/airlines/allyears2k_headers.zip",
                 null,
@@ -52,19 +60,19 @@ public class StackedEnsembleTest extends TestUtil {
                     for( String s : ignored_aircols ) fr.remove(s).remove();
                     return fr.find("IsArrDelayed"); }
                 },
-                false, DistributionFamily.bernoulli, Metalearner.Algorithm.AUTO, false);
+                false, DistributionFamily.bernoulli, Algorithm.AUTO, false);
 
         basicEnsemble("./smalldata/iris/iris_wheader.csv",
                 null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) {return fr.find("class"); }
                 },
-                false, DistributionFamily.multinomial, Metalearner.Algorithm.AUTO, false);
+                false, DistributionFamily.multinomial, Algorithm.AUTO, false);
 
         basicEnsemble("./smalldata/logreg/prostate_train.csv",
                 "./smalldata/logreg/prostate_test.csv",
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) { return fr.find("CAPSULE"); }
                 },
-                false, DistributionFamily.bernoulli, Metalearner.Algorithm.AUTO, false);
+                false, DistributionFamily.bernoulli, Algorithm.AUTO, false);
     }
 
 
@@ -73,7 +81,7 @@ public class StackedEnsembleTest extends TestUtil {
         basicEnsemble("./smalldata/junit/cars.csv",
                 null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
-                false, DistributionFamily.gaussian, Metalearner.Algorithm.gbm, false);
+                false, DistributionFamily.gaussian, Algorithm.gbm, false);
 
         basicEnsemble("./smalldata/airlines/allyears2k_headers.zip",
                 null,
@@ -81,19 +89,19 @@ public class StackedEnsembleTest extends TestUtil {
                     for( String s : ignored_aircols ) fr.remove(s).remove();
                     return fr.find("IsArrDelayed"); }
                 },
-                false, DistributionFamily.bernoulli, Metalearner.Algorithm.gbm, false);
+                false, DistributionFamily.bernoulli, Algorithm.gbm, false);
 
         basicEnsemble("./smalldata/iris/iris_wheader.csv",
                 null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) {return fr.find("class"); }
                 },
-                false, DistributionFamily.multinomial, Metalearner.Algorithm.gbm, false);
+                false, DistributionFamily.multinomial, Algorithm.gbm, false);
 
         basicEnsemble("./smalldata/logreg/prostate_train.csv",
                 "./smalldata/logreg/prostate_test.csv",
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) { return fr.find("CAPSULE"); }
                 },
-                false, DistributionFamily.bernoulli, Metalearner.Algorithm.gbm, false);
+                false, DistributionFamily.bernoulli, Algorithm.gbm, false);
     }
 
     @Test public void testBasicEnsembleDRFMetalearner() {
@@ -101,7 +109,7 @@ public class StackedEnsembleTest extends TestUtil {
         basicEnsemble("./smalldata/junit/cars.csv",
                 null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
-                false, DistributionFamily.gaussian, Metalearner.Algorithm.drf, false);
+                false, DistributionFamily.gaussian, Algorithm.drf, false);
 
         basicEnsemble("./smalldata/airlines/allyears2k_headers.zip",
                 null,
@@ -109,19 +117,19 @@ public class StackedEnsembleTest extends TestUtil {
                     for( String s : ignored_aircols ) fr.remove(s).remove();
                     return fr.find("IsArrDelayed"); }
                 },
-                false, DistributionFamily.bernoulli, Metalearner.Algorithm.drf, false);
+                false, DistributionFamily.bernoulli, Algorithm.drf, false);
 
         basicEnsemble("./smalldata/iris/iris_wheader.csv",
                 null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) {return fr.find("class"); }
                 },
-                false, DistributionFamily.multinomial, Metalearner.Algorithm.drf, false);
+                false, DistributionFamily.multinomial, Algorithm.drf, false);
 
         basicEnsemble("./smalldata/logreg/prostate_train.csv",
                 "./smalldata/logreg/prostate_test.csv",
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) { return fr.find("CAPSULE"); }
                 },
-                false, DistributionFamily.bernoulli, Metalearner.Algorithm.drf, false);
+                false, DistributionFamily.bernoulli, Algorithm.drf, false);
     }
 
     @Test public void testBasicEnsembleDeepLearningMetalearner() {
@@ -129,7 +137,7 @@ public class StackedEnsembleTest extends TestUtil {
         basicEnsemble("./smalldata/junit/cars.csv",
                 null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
-                false, DistributionFamily.gaussian, Metalearner.Algorithm.deeplearning, false);
+                false, DistributionFamily.gaussian, Algorithm.deeplearning, false);
 
         basicEnsemble("./smalldata/airlines/allyears2k_headers.zip",
                 null,
@@ -137,19 +145,19 @@ public class StackedEnsembleTest extends TestUtil {
                     for( String s : ignored_aircols ) fr.remove(s).remove();
                     return fr.find("IsArrDelayed"); }
                 },
-                false, DistributionFamily.bernoulli, Metalearner.Algorithm.deeplearning, false);
+                false, DistributionFamily.bernoulli, Algorithm.deeplearning, false);
 
         basicEnsemble("./smalldata/iris/iris_wheader.csv",
                 null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) {return fr.find("class"); }
                 },
-                false, DistributionFamily.multinomial, Metalearner.Algorithm.deeplearning, false);
+                false, DistributionFamily.multinomial, Algorithm.deeplearning, false);
 
         basicEnsemble("./smalldata/logreg/prostate_train.csv",
                 "./smalldata/logreg/prostate_test.csv",
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) { return fr.find("CAPSULE"); }
                 },
-                false, DistributionFamily.bernoulli, Metalearner.Algorithm.deeplearning, false);
+                false, DistributionFamily.bernoulli, Algorithm.deeplearning, false);
     }
 
     
@@ -160,32 +168,32 @@ public class StackedEnsembleTest extends TestUtil {
         basicEnsemble("./smalldata/junit/cars.csv",
                 null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
-                false, DistributionFamily.gaussian, Metalearner.Algorithm.glm, false);
+                false, DistributionFamily.gaussian, Algorithm.glm, false);
 
         // Binomial tests
         basicEnsemble("./smalldata/junit/test_tree_minmax.csv",
                 null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) { return fr.find("response"); }
                 },
-                false, DistributionFamily.bernoulli, Metalearner.Algorithm.glm, false);
+                false, DistributionFamily.bernoulli, Algorithm.glm, false);
 
         basicEnsemble("./smalldata/logreg/prostate.csv",
                 null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("CAPSULE"); }
                 },
-                false, DistributionFamily.bernoulli, Metalearner.Algorithm.glm, false);
+                false, DistributionFamily.bernoulli, Algorithm.glm, false);
 
         basicEnsemble("./smalldata/logreg/prostate_train.csv",
                 "./smalldata/logreg/prostate_test.csv",
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) { return fr.find("CAPSULE"); }
                 },
-                false, DistributionFamily.bernoulli, Metalearner.Algorithm.glm, false);
+                false, DistributionFamily.bernoulli, Algorithm.glm, false);
 
         basicEnsemble("./smalldata/gbm_test/alphabet_cattest.csv",
                 null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) { return fr.find("y"); }
                 },
-                false, DistributionFamily.bernoulli, Metalearner.Algorithm.glm, false);
+                false, DistributionFamily.bernoulli, Algorithm.glm, false);
 
         basicEnsemble("./smalldata/airlines/allyears2k_headers.zip",
                 null,
@@ -193,27 +201,55 @@ public class StackedEnsembleTest extends TestUtil {
                     for( String s : ignored_aircols ) fr.remove(s).remove();
                     return fr.find("IsArrDelayed"); }
                 },
-                false, DistributionFamily.bernoulli, Metalearner.Algorithm.glm, false);
+                false, DistributionFamily.bernoulli, Algorithm.glm, false);
 
         // Multinomial tests
         basicEnsemble("./smalldata/logreg/prostate.csv",
                 null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("RACE"); }
                 },
-                false, DistributionFamily.multinomial, Metalearner.Algorithm.glm, false);
+                false, DistributionFamily.multinomial, Algorithm.glm, false);
 
         basicEnsemble("./smalldata/junit/cars.csv",
                 null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) { fr.remove("name").remove(); return fr.find("cylinders"); }
                 },
-                false, DistributionFamily.multinomial, Metalearner.Algorithm.glm, false);
+                false, DistributionFamily.multinomial, Algorithm.glm, false);
 
         basicEnsemble("./smalldata/iris/iris_wheader.csv",
                 null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) {return fr.find("class"); }
                 },
-                false, DistributionFamily.multinomial, Metalearner.Algorithm.glm, false);
+                false, DistributionFamily.multinomial, Algorithm.glm, false);
 
+    }
+    
+    
+    public static class Pubdev6157MRTask extends MRTask{
+      
+      private final int nclasses;
+
+      Pubdev6157MRTask(int nclasses) {
+        this.nclasses = nclasses;
+      }
+
+      @Override
+      public void map(Chunk[] cs, NewChunk[] ncs) {
+        Random r = new Random();
+        NewChunk predictor = ncs[0];
+        NewChunk response = ncs[1];
+        for (int i = 0; i < cs[0]._len; i++) {
+          long rowNum = (cs[0].start() + i);
+          predictor.addNum(r.nextDouble()); // noise
+          long respValue;
+          if (rowNum % 2 == 0) {
+            respValue = nclasses - 1;
+          } else {
+            respValue = rowNum % nclasses;
+          }
+          response.addNum(respValue); // more than 50% rows have last class as the response value
+        }
+      }
     }
 
     @Test
@@ -232,25 +268,8 @@ public class StackedEnsembleTest extends TestUtil {
             for (int i = 0; i < nclasses; i++)
                 domains[domains.length - 1][i] = "Level" + i; 
             
-            final Frame training = new MRTask() {
-                @Override
-                public void map(Chunk[] cs, NewChunk[] ncs) {
-                    Random r = new Random();
-                    NewChunk predictor = ncs[0];
-                    NewChunk response = ncs[1];
-                    for (int i = 0; i < cs[0]._len; i++) {
-                        long rowNum = (cs[0].start() + i);
-                        predictor.addNum(r.nextDouble()); // noise
-                        long respValue;
-                        if (rowNum % 2 == 0) {
-                            respValue = nclasses - 1;
-                        } else {
-                            respValue = rowNum % nclasses;
-                        }
-                        response.addNum(respValue); // more than 50% rows have last class as the response value
-                    }
-                }
-            }.doAll(types, v).outputFrame(Key.<Frame>make(), null, domains);
+            final Frame training = new Pubdev6157MRTask(nclasses)
+                    .doAll(types, v).outputFrame(Key.<Frame>make(), null, domains);
             Scope.track(training);
 
             GLMModel.GLMParameters parms = new GLMModel.GLMParameters();
@@ -280,7 +299,7 @@ public class StackedEnsembleTest extends TestUtil {
                     null,
                     new StackedEnsembleTest.PrepData() { int prep(Frame fr) {return fr.find("class"); }
                     },
-                    false, DistributionFamily.multinomial, Metalearner.Algorithm.glm, false);
+                    false, DistributionFamily.multinomial, Algorithm.glm, false);
         } finally {
             Scope.exit();
         }
@@ -290,7 +309,7 @@ public class StackedEnsembleTest extends TestUtil {
         basicEnsemble("./smalldata/junit/cars.csv",
             null,
             new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
-            false, DistributionFamily.gaussian, Metalearner.Algorithm.AUTO, true);
+            false, DistributionFamily.gaussian, Algorithm.AUTO, true);
 
         basicEnsemble("./smalldata/airlines/allyears2k_headers.zip",
             null,
@@ -298,19 +317,19 @@ public class StackedEnsembleTest extends TestUtil {
                 for( String s : ignored_aircols ) fr.remove(s).remove();
                 return fr.find("IsArrDelayed"); }
             },
-            false, DistributionFamily.bernoulli, Metalearner.Algorithm.AUTO, true);
+            false, DistributionFamily.bernoulli, Algorithm.AUTO, true);
 
         basicEnsemble("./smalldata/iris/iris_wheader.csv",
             null,
             new StackedEnsembleTest.PrepData() { int prep(Frame fr) {return fr.find("class"); }
             },
-            false, DistributionFamily.multinomial, Metalearner.Algorithm.AUTO, true);
+            false, DistributionFamily.multinomial, Algorithm.AUTO, true);
 
         basicEnsemble("./smalldata/logreg/prostate_train.csv",
             "./smalldata/logreg/prostate_test.csv",
             new StackedEnsembleTest.PrepData() { int prep(Frame fr) { return fr.find("CAPSULE"); }
             },
-            false, DistributionFamily.bernoulli, Metalearner.Algorithm.AUTO, true);
+            false, DistributionFamily.bernoulli, Algorithm.AUTO, true);
     }
 
     @Test
@@ -521,7 +540,7 @@ public class StackedEnsembleTest extends TestUtil {
         StackedEnsembleParameters seParams = new StackedEnsembleParameters();
         seParams._train = train._key;
         seParams._response_column = target;
-        seParams._base_models = ArrayUtils.append(grid.getModelKeys(), glm._key);
+        seParams._base_models = ArrayUtils.append(grid.getModelKeys(), (Key) glm._key);
         seParams._seed = seed;
         StackedEnsembleModel se = new StackedEnsemble(seParams).trainModel().get(); deletables.add(se);
 
@@ -625,7 +644,7 @@ public class StackedEnsembleTest extends TestUtil {
                                                                     StackedEnsembleTest.PrepData prep,
                                                                     boolean dupeTrainingFrameToValidationFrame,
                                                                     DistributionFamily family,
-                                                                    Metalearner.Algorithm metalearner_algo,
+                                                                    Algorithm metalearner_algo,
                                                                     boolean blending_mode) {
         Set<Frame> framesBefore = new HashSet<>();
         framesBefore.addAll(Arrays.asList( Frame.fetchAll()));
@@ -797,4 +816,286 @@ public class StackedEnsembleTest extends TestUtil {
             Scope.exit();
         }
     }
+
+
+    @Test public void test_SE_scoring_with_missing_response_column() {
+        for (Algorithm algo: Algorithm.values()) {
+            try {
+                test_SE_scoring_with_missing_response_column(algo);
+            } catch (Exception e) {
+                Log.err(e);
+                Assert.fail("StackedEnsemble scoring failed with algo "+algo+": "+e.getMessage());
+            }
+        }
+    }
+
+    private void test_SE_scoring_with_missing_response_column(Algorithm algo) {
+        // test for PUBDEV-6376
+        List<Lockable> deletables = new ArrayList<>();
+        try {
+            final int seed = 1;
+            final Frame train = parse_test_file("./smalldata/testng/prostate_train.csv"); deletables.add(train);
+            final Frame test = parse_test_file("./smalldata/testng/prostate_test.csv"); deletables.add(test);
+            final String target = "CAPSULE";
+            int target_idx = train.find(target);
+            train.replace(target_idx, train.vec(target_idx).toCategoricalVec()).remove();
+            DKV.put(train);
+            test.remove(target_idx).remove();
+            DKV.put(test);
+
+            //generate a few base models
+            GBMModel.GBMParameters params = new GBMModel.GBMParameters();
+            params._train = train._key;
+            params._response_column = target;
+            params._seed = seed;
+            params._keep_cross_validation_models = false;
+            params._keep_cross_validation_predictions = true;
+            params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+            params._nfolds = 5;
+
+            Job<Grid> gridSearch = GridSearch.startGridSearch(null, params, new HashMap<String, Object[]>() {{
+                put("_ntrees", new Integer[]{3, 5});
+                put("_learn_rate", new Double[]{0.1, 0.2});
+            }});
+            Grid grid = gridSearch.get(); deletables.add(grid);
+            Model[] gridModels = grid.getModels(); deletables.addAll(Arrays.asList(gridModels));
+            Assert.assertEquals(4, gridModels.length);
+
+            GLMModel.GLMParameters glm_params = new GLMModel.GLMParameters();
+            glm_params._train = train._key;
+            glm_params._response_column = target;
+            glm_params._family = GLMModel.GLMParameters.Family.binomial;
+            glm_params._seed = seed;
+            glm_params._keep_cross_validation_models = false;
+            glm_params._keep_cross_validation_predictions = true;
+            glm_params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+            glm_params._nfolds = 5;
+            glm_params._alpha = new double[]{0.1, 0.2, 0.4};
+            glm_params._lambda_search = true;
+            GLMModel glm = new GLM(glm_params).trainModel().get(); deletables.add(glm);
+            Frame glmPredictions = glm.score(test); deletables.add(glmPredictions);
+
+            StackedEnsembleParameters seParams = new StackedEnsembleParameters();
+            seParams._train = train._key;
+            seParams._response_column = target;
+            seParams._base_models = ArrayUtils.append(grid.getModelKeys());
+            seParams._metalearner_algorithm = algo;
+            seParams._seed = seed;
+            StackedEnsembleModel se = new StackedEnsemble(seParams).trainModel().get(); deletables.add(se);
+
+            // mainly ensuring that no exception is thrown due to unmet categorical in test dataset.
+            Frame predictions = se.score(test); deletables.add(predictions);
+            List<Double> allowedResponses = Arrays.asList(0.0, 1.0);
+            double lastPrediction = predictions.vec(0).at(test.vec(0).length() - 1);
+            Assert.assertTrue(allowedResponses.indexOf(lastPrediction) >= 0);
+        } finally {
+            for (Lockable l: deletables) {
+                if (l instanceof Model) ((Model)l).deleteCrossValidationPreds();
+                l.delete();
+            }
+        }
+
+    }
+
+  @Test
+  public void testMissingFoldColumn_trainingFrame() {
+    GBMModel gbmModel = null;
+    try {
+      Scope.enter();
+
+      final Frame trainingFrame = TestUtil.parse_test_file("./smalldata/iris/iris_wheader.csv");
+      Scope.track(trainingFrame);
+      final Frame partialFrame = TestUtil.parse_test_file("./smalldata/iris/iris_wheader.csv", new int[]{4}); // Missing fold column
+      Scope.track(partialFrame);
+
+      GBMModel.GBMParameters parameters = new GBMModel.GBMParameters();
+      parameters._train = trainingFrame._key;
+      parameters._fold_column = "class";
+      parameters._seed = 0xFEED;
+      parameters._response_column = "petal_len";
+      parameters._ntrees = 1;
+      parameters._keep_cross_validation_predictions = true;
+
+      GBM gbm = new GBM(parameters);
+      gbmModel = gbm.trainModel().get();
+      assertNotNull(gbmModel);
+      
+
+      final StackedEnsembleParameters seParams = new StackedEnsembleParameters();
+      seParams._train = partialFrame._key;
+      seParams._response_column = "petal_len";
+      seParams._metalearner_algorithm = Algorithm.AUTO;
+      seParams._base_models = new Key[]{gbmModel._key};
+      seParams._seed = 0xFEED;
+      seParams._metalearner_fold_column = "class";
+
+      expectedException.expect(IllegalArgumentException.class);
+      expectedException.expectMessage("Specified fold column 'class' not found in one of the supplied data frames. Available column names are: [sepal_len, sepal_wid, petal_wid, petal_len]");
+      final StackedEnsemble stackedEnsemble = new StackedEnsemble(seParams);
+      fail("Expected the Stack Ensemble Model never to be initialized successfully.");
+
+    } finally {
+      Scope.exit();
+      
+     
+      if(gbmModel != null){
+        gbmModel.deleteCrossValidationModels();
+        gbmModel.deleteCrossValidationPreds();
+        gbmModel.remove();
+      }
+    }
+  }
+
+  @Test
+  public void testMissingFoldColumn_validationFrame() {
+    GBMModel gbmModel = null;
+    try {
+      Scope.enter();
+
+      final Frame trainingFrame = TestUtil.parse_test_file("./smalldata/iris/iris_wheader.csv");
+      Scope.track(trainingFrame);
+      final Frame partialFrame = TestUtil.parse_test_file("./smalldata/iris/iris_wheader.csv", new int[]{4}); // Missing fold column
+      Scope.track(partialFrame);
+
+      GBMModel.GBMParameters parameters = new GBMModel.GBMParameters();
+      parameters._train = trainingFrame._key;
+      parameters._valid = trainingFrame._key;
+      parameters._fold_column = "class";
+      parameters._seed = 0xFEED;
+      parameters._response_column = "petal_len";
+      parameters._ntrees = 1;
+      parameters._keep_cross_validation_predictions = true;
+
+      GBM gbm = new GBM(parameters);
+      gbmModel = gbm.trainModel().get();
+      assertNotNull(gbmModel);
+
+
+      final StackedEnsembleParameters seParams = new StackedEnsembleParameters();
+      seParams._train = trainingFrame._key;
+      seParams._valid = partialFrame._key;
+      seParams._response_column = "petal_len";
+      seParams._metalearner_algorithm = Algorithm.AUTO;
+      seParams._base_models = new Key[]{gbmModel._key};
+      seParams._seed = 0xFEED;
+      seParams._metalearner_fold_column = "class";
+
+      expectedException.expect(IllegalArgumentException.class);
+      expectedException.expectMessage("Specified fold column 'class' not found in one of the supplied data frames. Available column names are: [sepal_len, sepal_wid, petal_len, petal_wid]");
+      final StackedEnsemble stackedEnsemble = new StackedEnsemble(seParams);
+      fail("Expected the Stack Ensemble Model never to be initialized successfully.");
+
+    } finally {
+      Scope.exit();
+
+
+      if(gbmModel != null){
+        gbmModel.deleteCrossValidationModels();
+        gbmModel.deleteCrossValidationPreds();
+        gbmModel.remove();
+      }
+    }
+  }
+
+  @Test
+  public void testMissingFoldColumn_blendingFrame() {
+    GBMModel gbmModel = null;
+    try {
+      Scope.enter();
+
+      final Frame trainingFrame = TestUtil.parse_test_file("./smalldata/iris/iris_wheader.csv");
+      Scope.track(trainingFrame);
+      final Frame partialFrame = TestUtil.parse_test_file("./smalldata/iris/iris_wheader.csv", new int[]{4}); // Missing fold column
+      Scope.track(partialFrame);
+
+      GBMModel.GBMParameters parameters = new GBMModel.GBMParameters();
+      parameters._train = trainingFrame._key;
+      parameters._fold_column = "class";
+      parameters._seed = 0xFEED;
+      parameters._response_column = "petal_len";
+      parameters._ntrees = 1;
+      parameters._keep_cross_validation_predictions = true;
+
+      GBM gbm = new GBM(parameters);
+      gbmModel = gbm.trainModel().get();
+      assertNotNull(gbmModel);
+
+
+      final StackedEnsembleParameters seParams = new StackedEnsembleParameters();
+      seParams._train = trainingFrame._key;
+      seParams._blending = partialFrame._key;
+      seParams._response_column = "petal_len";
+      seParams._metalearner_algorithm = Algorithm.AUTO;
+      seParams._base_models = new Key[]{gbmModel._key};
+      seParams._seed = 0xFEED;
+      seParams._metalearner_fold_column = "class";
+
+      expectedException.expect(IllegalArgumentException.class);
+      expectedException.expectMessage("Specified fold column 'class' not found in one of the supplied data frames. Available column names are: [sepal_len, sepal_wid, petal_len, petal_wid]");
+      final StackedEnsemble stackedEnsemble = new StackedEnsemble(seParams);
+      fail("Expected the Stack Ensemble Model never to be initialized successfully.");
+
+    } finally {
+      Scope.exit();
+
+
+      if(gbmModel != null){
+        gbmModel.deleteCrossValidationModels();
+        gbmModel.deleteCrossValidationPreds();
+        gbmModel.remove();
+      }
+    }
+  }
+
+  @Test
+  public void testInvalidFoldColumn_trainingFrame() {
+    GBMModel gbmModel = null;
+    try {
+      Scope.enter();
+
+      final Frame trainingFrame = TestUtil.parse_test_file("./smalldata/iris/iris_wheader.csv");
+      Scope.track(trainingFrame);
+
+      GBMModel.GBMParameters parameters = new GBMModel.GBMParameters();
+      parameters._train = trainingFrame._key;
+      parameters._fold_column = "class";
+      parameters._seed = 0xFEED;
+      parameters._response_column = "petal_len";
+      parameters._ntrees = 1;
+      parameters._keep_cross_validation_predictions = true;
+
+      GBM gbm = new GBM(parameters);
+      gbmModel = gbm.trainModel().get();
+      assertNotNull(gbmModel);
+
+      final Frame seTrain = new Frame(Key.<Frame>make(), trainingFrame.names(), trainingFrame.vecs());
+      Vec foldVec = seTrain.remove("class");
+      seTrain.add("class", foldVec.toStringVec());
+      DKV.put(seTrain);
+      Scope.track(seTrain);
+
+      final StackedEnsembleParameters seParams = new StackedEnsembleParameters();
+      seParams._train = seTrain._key;
+      seParams._response_column = "petal_len";
+      seParams._metalearner_algorithm = Algorithm.AUTO;
+      seParams._base_models = new Key[]{gbmModel._key};
+      seParams._seed = 0x5EED;
+      seParams._metalearner_fold_column = "class";
+
+      expectedException.expect(IllegalArgumentException.class);
+      expectedException.expectMessage("Specified fold column 'class' not found in one of the supplied data frames. Available column names are: [sepal_len, sepal_wid, petal_wid, petal_len]");
+
+      new StackedEnsemble(seParams);
+      fail("Expected the Stack Ensemble Model never to be initialized successfully.");
+    } finally {
+      Scope.exit();
+      if(gbmModel != null){
+        gbmModel.deleteCrossValidationModels();
+        gbmModel.deleteCrossValidationPreds();
+        gbmModel.remove();
+      }
+    }
+  }
+
+
 }

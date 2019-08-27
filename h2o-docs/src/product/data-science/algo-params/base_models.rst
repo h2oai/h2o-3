@@ -7,14 +7,14 @@
 Description
 ~~~~~~~~~~~
 
-H2O's Stacked Ensemble method is supervised ensemble machine learning algorithm that finds the optimal combination of a collection of prediction algorithms using a process called stacking (or Super Learning). The algorithm that learns the optimal combination of the base learners is called the metalearning algorithm or metalearner. 
+H2O's Stacked Ensemble method is a supervised ensemble machine learning algorithm that finds the optimal combination of a collection of prediction algorithms using a process called stacking (or Super Learning). The algorithm that learns the optimal combination of the base learners is called the metalearning algorithm or metalearner. 
 
 The ``base_models`` parameter is used to specify a list of models (or model IDs) that can be stacked together. Models must have been cross-validated (i.e., ``nfolds``>1 or ``fold_column`` was specified), they all must use the same cross-validation folds, and ``keep_cross_validation_predictions`` must have been set to ``True``. One way to guarantee identical folds across base models is to set ``fold_assignment = "Modulo"`` in all the base models. It is also possible to get identical folds by setting ``fold_assignment = "Random"`` when the same seed is used in all base models.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
-- none
+- None
 
 Example
 ~~~~~~~

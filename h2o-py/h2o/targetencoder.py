@@ -10,6 +10,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from h2o.expr import ExprNode
 from h2o.frame import H2OFrame
 from h2o.utils.typechecks import (assert_is_type)
+from h2o import get_frame
 import warnings
 
 __all__ = ("TargetEncoder", )
@@ -27,9 +28,20 @@ class TargetEncoder(object):
          2) Multi-class classification (not supported yet)
          3) Regression (not supported yet)
 
-    Sample usage:
+    :param List[str]-or-List[int] x: List of categorical column names or indices that we want apply target encoding to.
+    :param str-or-int y: the name or column index of the response variable in the data.
+    :param str-or-int fold_column: the name or column index of the fold column in the data.
+    :param boolean blending_avg: (deprecated) whether to perform blended average. Defaults to TRUE.
+    :param boolean blended_avg: whether to perform blended average. Defaults to TRUE.
+    :param double inflection_point: parameter for blending. Used to calculate `lambda`. Determines half of the minimal sample size
+        for which we completely trust the estimate based on the sample in the particular level of categorical variable. Default value is 10.
+    :param double smoothing: parameter for blending. Used to calculate `lambda`. Controls the rate of transition between
+        the particular level's posterior probability and the prior probability. For smoothing values approaching infinity it becomes a hard
+        threshold between the posterior and the prior probability. Default value is 20.
 
-    >>> targetEncoder = TargetEncoder(x=te_columns, y=responseColumnName, blended_avg=True, inflection_point=3, smoothing=1)
+    :examples:
+
+    >>> targetEncoder = TargetEncoder(x=te_columns, y=responseColumnName, blended_avg=True, inflection_point=10, smoothing=20)
     >>> targetEncoder.fit(trainFrame) 
     >>> encodedTrain = targetEncoder.transform(frame=trainFrame, holdout_type="kfold", seed=1234, is_train_or_valid=True)
     >>> encodedValid = targetEncoder.transform(frame=validFrame, holdout_type="none", noise=0.0, is_train_or_valid=True)
@@ -40,24 +52,14 @@ class TargetEncoder(object):
     # Construction
     #-------------------------------------------------------------------------------------------------------------------
 
-    def __init__(self, x=None, y=None, fold_column='', blended_avg=True, inflection_point=3, smoothing=1, **kwargs):
+    def __init__(self, x=None, y=None, fold_column='', blended_avg=True, inflection_point=10, smoothing=20, **kwargs):
 
         """
         Creates instance of the TargetEncoder class and setting parameters that will be used in both `train` and `transform` methods.
-
-        :param List[str] or List[int] x: List of categorical column names or indices that we want apply target encoding to.
-
-        :param str or int y: the name or column index of the response variable in the data.
-        :param str or int fold_column: the name or column index of the fold column in the data.
-        :param boolean blending_avg: (deprecated) whether to perform blended average. Defaults to TRUE.
-        :param boolean blended_avg: whether to perform blended average. Defaults to TRUE.
-        :param double inflection_point: parameter for blending. Used to calculate `lambda`. Determines half of the minimal sample size
-            for which we completely trust the estimate based on the sample in the particular level of categorical variable.
-        :param double smoothing: parameter for blending. Used to calculate `lambda`. Controls the rate of transition between
-            the particular level's posterior probability and the prior probability. For smoothing values approaching infinity it becomes a hard
-            threshold between the posterior and the prior probability.
-
         """
+
+        if(type(x) == str or type(x) == int):
+            x = [x]
         self._teColumns = x
         self._responseColumnName = y
         self._foldColumnName = fold_column
@@ -66,6 +68,12 @@ class TargetEncoder(object):
             self._blending = kwargs.get('blending_avg')
         else:
             self._blending = blended_avg
+          
+        if not inflection_point > 0:
+            raise ValueError("Parameter `inflection_point` should be greater than 0")
+        
+        if not smoothing > 0:
+            raise ValueError("Parameter `smoothing` should be greater than 0")
 
         self._inflectionPoint = inflection_point
         self._smoothing = smoothing
@@ -76,6 +84,10 @@ class TargetEncoder(object):
         Returns encoding map as an object that maps 'column_name' -> 'frame_with_encoding_map_for_this_column_name'
 
         :param frame frame: An H2OFrame object with which to create the target encoding map
+
+        :examples:
+        >>> targetEncoder = TargetEncoder(x=te_columns, y=responseColumnName, blended_avg=True, inflection_point=10, smoothing=20)
+        >>> targetEncoder.fit(trainFrame) 
         """
         self._teColumns = list(map(lambda i: frame.names[i], self._teColumns)) if all(isinstance(n, int) for n in self._teColumns) else self._teColumns
         self._responseColumnName = frame.names[self._responseColumnName] if isinstance(self._responseColumnName, int) else self._responseColumnName
@@ -101,14 +113,24 @@ class TargetEncoder(object):
                 
         :param float noise: the amount of random noise added to the target encoding.  This helps prevent overfitting. Defaults to 0.01 * range of y.
         :param int seed: a random seed used to generate draws from the uniform distribution for random noise. Defaults to -1.
+
+        :example:
+        >>> targetEncoder = TargetEncoder(x=te_columns, y=responseColumnName, blended_avg=True, inflection_point=10, smoothing=20)
+        >>> encodedTrain = targetEncoder.transform(frame=trainFrame, holdout_type="kfold", seed=1234, is_train_or_valid=True)
         """
         assert_is_type(holdout_type, "kfold", "loo", "none")
+        
+        if holdout_type == "kfold" and self._foldColumnName == '' :
+            raise ValueError("Attempt to use kfold strategy when encoding map was created without fold column being specified.")
+        if holdout_type == "none" and noise != 0 :
+            warnings.warn("Attempt to apply noise with holdout_type=`none` strategy", stacklevel=2)
 
-        # We need to make sure that frames are being sent in the same order
-        assert self._encodingMap.map_keys['string'] == self._teColumns
         encodingMapKeys = self._encodingMap.map_keys['string']
         encodingMapFramesKeys = list(map(lambda x: x['key']['name'], self._encodingMap.frames))
         return H2OFrame._expr(expr=ExprNode("target.encoder.transform", encodingMapKeys, encodingMapFramesKeys, frame, self._teColumns, holdout_type,
                                             self._responseColumnName, self._foldColumnName,
                                             self._blending, self._inflectionPoint, self._smoothing,
                                             noise, seed))
+
+    def encoding_map_frames(self):
+        return list(map(lambda x: get_frame(x['key']['name']), self._encodingMap.frames))

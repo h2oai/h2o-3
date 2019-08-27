@@ -20,6 +20,25 @@ class H2OMultinomialModel(ModelBase):
         Returns a confusion matrix based of H2O's default prediction threshold for a dataset.
 
         :param H2OFrame data: the frame with the prediction results for which the confusion matrix should be extracted.
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["cylinders"] = cars["cylinders"].asfactor()
+        >>> r = cars[0].runif()
+        >>> train = cars[r > .2]
+        >>> valid = cars[r <= .2]
+        >>> response_col = "cylinders"
+        >>> distribution = "multinomial"
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3,
+        ...                                    distribution=distribution)
+        >>> gbm.train(x=predictors,
+        ...           y=response_col,
+        ...           training_frame=train,
+        ...           validation_frame=valid)
+        >>> confusion_matrix = gbm.confusion_matrix(train)
+        >>> confusion_matrix
         """
         assert_is_type(data, H2OFrame)
         j = h2o.api("POST /3/Predictions/models/%s/frames/%s" % (self._id, data.frame_id))
@@ -38,6 +57,31 @@ class H2OMultinomialModel(ModelBase):
         :param valid: If valid is True, then return the hit ratio value for the validation data.
         :param xval:  If xval is True, then return the hit ratio value for the cross validation data.
         :return: The hit ratio for this regression model.
+
+        :example:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["cylinders"] = cars["cylinders"].asfactor()
+        >>> r = cars[0].runif()
+        >>> train = cars[r > .2]
+        >>> valid = cars[r <= .2]
+        >>> response_col = "cylinders"
+        >>> distribution = "multinomial"
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3,
+        ...                                    distribution=distribution)
+        >>> gbm.train(x=predictors,
+        ...           y=response_col,
+        ...           training_frame=train,
+        ...           validation_frame=valid)
+        >>> hit_ratio_table = gbm.hit_ratio_table(train=False,
+        ...                                       valid=False,
+        ...                                       xval=False) # <- Default: return training metrics
+        >>> hit_ratio_table
+        >>> hit_ratio_table1 = gbm.hit_ratio_table(train=True,
+        ...                                        valid=True,
+        ...                                        xval=True)
+        >>> hit_ratio_table1
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
@@ -58,6 +102,30 @@ class H2OMultinomialModel(ModelBase):
         :param bool xval:  If True, return the mean_per_class_error value for each of the cross-validated splits.
 
         :returns: The mean_per_class_error values for the specified key(s).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["cylinders"] = cars["cylinders"].asfactor()
+        >>> r = cars[0].runif()
+        >>> train = cars[r > .2]
+        >>> valid = cars[r <= .2]
+        >>> response_col = "cylinders"
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> distribution = "multinomial"
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution)
+        >>> gbm.train(x=predictors,
+        ...           y=response_col,
+        ...           training_frame=train,
+        ...           validation_frame=valid)
+        >>> mean_per_class_error = gbm.mean_per_class_error(train=False,
+        ...                                                 valid=False,
+        ...                                                 xval=False) # <- Default: return training metric
+        >>> mean_per_class_error
+        >>> mean_per_class_error1 = gbm.mean_per_class_error(train=True,
+        ...                                                  valid=True,
+        ...                                                  xval=True)
+        >>> mean_per_class_error1
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
@@ -70,10 +138,29 @@ class H2OMultinomialModel(ModelBase):
         Plots training set (and validation set if available) scoring history for an H2OMultinomialModel. The timestep
         and metric arguments are restricted to what is available in its scoring history.
 
-        :param timestep: A unit of measurement for the x-axis.
-        :param metric: A unit of measurement for the y-axis.
+        :param timestep: A unit of measurement for the x-axis. This can be AUTO, duration, or number_of_trees.
+        :param metric: A unit of measurement for the y-axis. This can be AUTO, logloss, classification_error, or rmse.
 
         :returns: A scoring history plot.
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["cylinders"] = cars["cylinders"].asfactor()
+        >>> r = cars[0].runif()
+        >>> train = cars[r > .2]
+        >>> valid = cars[r <= .2]
+        >>> response_col = "cylinders"
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> distribution = "multinomial"
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3,
+        ...                                    distribution=distribution)
+        >>> gbm.train(x=predictors,
+        ...           y=response_col,
+        ...           training_frame=train,
+        ...           validation_frame=valid)
+        >>> gbm.plot(metric="AUTO", timestep="AUTO")
         """
 
         if self._model_json["algo"] in ("deeplearning", "deepwater", "xgboost", "drf", "gbm"):

@@ -86,7 +86,7 @@ test-pyunit-small-automl: lookup-automl-tests
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 6 --jvm.xmx 3g --testlist .lookup.txt
 
 test-py-demos:
-	export NO_GCE_CHECK=True && cd h2o-py/demos/ && ../../scripts/run.py --wipeall --numclouds 4 --baseport 56789 --jvm.xmx 10g
+	export NO_GCE_CHECK=True && export MPLBACKEND=Agg && cd h2o-py/demos/ && ../../scripts/run.py --wipeall --numclouds 4 --baseport 56789 --jvm.xmx 10g
 
 test-pyunit-medium-large: lookup-hdfs-tests
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 1 --numnodes 5 --jvm.xmx 15g --excludelist .lookup.txt
@@ -101,7 +101,7 @@ test-r-smoke:
 	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --testlist ../../tests/runitSmokeTestList --numclouds 8 --jvm.xmx 3g
 
 test-r-init:
-	cd h2o-r/tests/testdir_jira && R -f h2o.init_test_HOQE-16.R
+	cd h2o-r/tests/testdir_jira && ADDITIONAL_TEST_JVM_OPTS="-Dsys.ai.h2o.debug.allowJavaVersions=7" R -f h2o.init_test_HOQE-16.R
 
 test-r-small: lookup-automl-tests lookup-hdfs-tests lookup-demos-tests
 	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --geterrs --numclouds 4 --jvm.xmx 4g --excludelist .lookup.txt
@@ -218,6 +218,8 @@ test-package-java:
 		h2o-genmodel/build/libs/h2o-genmodel-*.jar \
 		h2o-algos/src/ \
 		h2o-algos/build/libs/h2o-algos-*.jar \
+		h2o-automl/src/ \
+		h2o-automl/build/libs/h2o-automl-*.jar \
 		h2o-parsers/h2o-avro-parser/src/ \
 		h2o-parsers/h2o-avro-parser/build/libs/h2o-avro-parser-*.jar \
 		h2o-parsers/h2o-orc-parser/src/ \
@@ -230,8 +232,10 @@ test-package-java:
 		h2o-persist-hdfs/build/libs/h2o-persist-hdfs-*.jar \
 		h2o-persist-s3/src/ \
 		h2o-persist-s3/build/libs/h2o-persist-s3-*.jar \
-		h2o-extensions/xgboost/ \
-		h2o-genmodel-extensions/ \
+		h2o-extensions/xgboost/src/ \
+		h2o-extensions/xgboost/build/libs/h2o-ext-xgboost*.jar \
+		h2o-genmodel-extensions/xgboost/src/ \
+		h2o-genmodel-extensions/xgboost/build/libs/h2o-genmodel-ext-xgboost*.jar \
 		h2o-jaas-pam/build/libs/h2o-jaas-pam-*.jar \
 		h2o-scala/src/ \
 		h2o-scala/build/h2o-scala_2.*/libs/h2o-scala_2.*.jar \
@@ -260,7 +264,7 @@ test-junit-jenkins:
 	@$(MAKE) -f $(THIS_FILE) test-junit
 
 test-junit:
-	./gradlew test -x :h2o-ext-mojo-pipeline:test -x h2o-automl:test $$ADDITIONAL_GRADLE_OPTS
+	./gradlew test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode $$ADDITIONAL_GRADLE_OPTS
 
 test-junit-automl-jenkins:
 	$(call sed_test_scripts)
@@ -269,19 +273,33 @@ test-junit-automl-jenkins:
 test-junit-automl:
 	./gradlew h2o-automl:test $$ADDITIONAL_GRADLE_OPTS
 
+test-junit-xgb-multi-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-xgb-multi
+
+test-junit-xgb-multi:
+	./gradlew h2o-ext-xgboost:testMultiNode $$ADDITIONAL_GRADLE_OPTS
+
 test-junit-10-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-junit-10
 
 test-junit-10:
-	./gradlew test -x h2o-scala_2.11:test -x h2o-scala_2.10:test -x :h2o-ext-mojo-pipeline:test -x h2o-automl:test  $$ADDITIONAL_GRADLE_OPTS
+	./gradlew test -x h2o-scala_2.11:test -x h2o-scala_2.10:test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode $$ADDITIONAL_GRADLE_OPTS
 
 test-junit-11-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-junit-11
 
 test-junit-11:
-	./gradlew test -x h2o-scala_2.11:test -x h2o-scala_2.10:test -x :h2o-ext-mojo-pipeline:test -x h2o-automl:test $$ADDITIONAL_GRADLE_OPTS
+	./gradlew test -x h2o-scala_2.11:test -x h2o-scala_2.10:test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-12-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-12
+
+test-junit-12:
+	./gradlew test -x h2o-scala_2.11:test -x h2o-scala_2.10:test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode $$ADDITIONAL_GRADLE_OPTS
 
 test-junit-smoke-jenkins:
 	$(call sed_test_scripts)
@@ -295,7 +313,7 @@ test-junit-10-smoke-jenkins:
 	@$(MAKE) -f $(THIS_FILE) test-junit-10-smoke
 
 test-junit-7-smoke:
-	DOONLY=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew h2o-core:test h2o-algos:test h2o-scala_2.10:test h2o-scala_2.11:test -x h2o-algos:testMultiNode $$ADDITIONAL_GRADLE_OPTS
+	ADDITIONAL_TEST_JVM_OPTS="-Dsys.ai.h2o.debug.allowJavaVersions=7" DOONLY=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew h2o-core:test h2o-algos:test h2o-scala_2.10:test h2o-scala_2.11:test -x h2o-algos:testMultiNode $$ADDITIONAL_GRADLE_OPTS
 
 test-junit-7-smoke-jenkins:
 	$(call sed_test_scripts)
@@ -311,6 +329,20 @@ test-junit-11-smoke-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-junit-11-smoke
 
+test-junit-12-smoke:
+	DOONLY=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew h2o-core:test h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-12-smoke-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-12-smoke
+
+test-junit-13-smoke:
+	ADDITIONAL_TEST_JVM_OPTS="-Dsys.ai.h2o.debug.allowJavaVersions=13" DOONLY=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew h2o-core:test h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-13-smoke-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-13-smoke
+
 test-xgb-smoke-minimal-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-xgb-smoke-minimal
@@ -324,11 +356,11 @@ test-xgb-smoke-gpu-jenkins:
 	@$(MAKE) -f $(THIS_FILE) test-xgb-smoke-gpu
 
 test-xgb-smoke-minimal:
-	./gradlew h2o-ext-xgboost:test $$ADDITIONAL_GRADLE_OPTS
+	./gradlew h2o-ext-xgboost:test -x h2o-ext-xgboost:testMultiNode $$ADDITIONAL_GRADLE_OPTS
 	$(call check_xgb_backend,'xgboost4j_minimal')
 
 test-xgb-smoke-omp:
-	./gradlew h2o-ext-xgboost:test $$ADDITIONAL_GRADLE_OPTS
+	./gradlew h2o-ext-xgboost:test -x h2o-ext-xgboost:testMultiNode $$ADDITIONAL_GRADLE_OPTS
 	$(call check_xgb_backend,'xgboost4j_\(omp\|gpu\)')
 
 test-xgb-smoke-gpu:
@@ -352,8 +384,8 @@ test-package-hadoop:
 		scripts/jenkins/config/ \
 		h2o-hadoop-2/tests/python/ h2o-hadoop-2/h2o-*-assembly/build/libs/h2odriver.jar \
 		h2o-hadoop-3/tests/python/ h2o-hadoop-3/h2o-*-assembly/build/libs/h2odriver.jar \
-		h2o-hadoop-common/tests/python/ \
-		h2o-hive/tests/python h2o-hive/tests/R
+		h2o-hadoop-common/tests/python/ h2o-hadoop-common/tests/R/ \
+		h2o-hive/tests/python/ h2o-hive/tests/R/
 
 ifeq ($(HIVE_VERSION_MAJOR),3)
 test-hadoop-common-smoke-hive:
@@ -378,15 +410,15 @@ test-hadoop-3-smoke-hdp: test-hadoop-3-smoke-standalone test-hadoop-common-smoke
 test-hadoop-3-smoke-standalone: test-hadoop-common-smoke-standalone
 	cd h2o-hadoop-3/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
 
-test-kerberos-common:
+test-kerberos-common-standalone:
 	cd h2o-hadoop-common/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --kerb.principal $$KERB_PRINCIPAL
 
-test-kerberos-hadoop-2-standalone: test-kerberos-common
+test-kerberos-hadoop-2-standalone: test-kerberos-common-standalone
 	cd h2o-hadoop-2/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --kerb.principal $$KERB_PRINCIPAL
 
 test-kerberos-hadoop-2-hdp: test-hadoop-2-smoke-standalone test-hadoop-common-smoke-hive
 
-test-kerberos-hadoop-3-standalone: test-kerberos-common
+test-kerberos-hadoop-3-standalone: test-kerberos-common-standalone
 	cd h2o-hadoop-3/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --kerb.principal $$KERB_PRINCIPAL
 
 test-kerberos-hadoop-3-hdp: test-hadoop-3-smoke-standalone test-hadoop-common-smoke-hive
@@ -406,7 +438,7 @@ ifeq ($(wildcard ../mojoland),)
 endif
 	cd ../mojoland && ./gradlew clean
 	cd ../mojoland && ./gradlew build
-	cd ../mojoland/mojo-py && python in_mojo_veritas.py
+	cd ../mojoland/mojo-py && H2O_JAVA_HOME="$$JAVA_HOME_8" python in_mojo_veritas.py
 
 check-leaks:
 	-grep -H -R --include "*.log" --include "*.out" --include "out.*" --exclude leak-check.out -E "`cat tests/leakCheckKeywords | tr '\n' '|' | sed 's/|\s*$$//'`" 2>&1 > leak-check.out

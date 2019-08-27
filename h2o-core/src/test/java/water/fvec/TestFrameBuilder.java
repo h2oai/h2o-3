@@ -92,6 +92,23 @@ public class TestFrameBuilder {
 
 
   /**
+   * Sets the vectors types to a single, uniform value for each vector
+   *
+   * @param nvecs   Number of vectors in the frame
+   * @param vecType Uniform type of the vectors
+   */
+  public TestFrameBuilder withUniformVecTypes(final int nvecs, final byte vecType) {
+    byte[] vecTypes = new byte[nvecs];
+    for (int i = 0; i < nvecs; i++) {
+      vecTypes[i] = vecType;
+    }
+
+    this.vecTypes = vecTypes;
+    return this;
+  }
+
+
+  /**
    *  Genarate random double data for a particular column
    * @param column for which to set data
    * @param size size of randomly generated column
@@ -300,6 +317,9 @@ public class TestFrameBuilder {
             else
               nchunks[colIdx].addNA();
             break;
+          case Vec.T_BAD:
+            nchunks[colIdx].addNum(numericData.get(colIdx)[i]);
+            break;
           default:
             throw new UnsupportedOperationException("Unsupported Vector type for the builder");
 
@@ -326,6 +346,7 @@ public class TestFrameBuilder {
       switch (vecTypes[i]){
         case Vec.T_TIME:
         case Vec.T_NUM:
+        case Vec.T_BAD:
           if(numericData.get(i)==null){
             numericData.put(i, new double[0]); // init with no data as default
           }
@@ -394,6 +415,13 @@ public class TestFrameBuilder {
             numRows = stringData.get(colIdx).length;
           } else {
             throwIf(numRows != stringData.get(colIdx).length, "Columns have different number of elements");
+          }
+          break;
+        case Vec.T_BAD:
+          final double[] data = numericData.get(colIdx);
+          numRows = data.length;
+          for (int i = 0; i < data.length; i++) {
+            throwIf(!Double.isNaN(data[i]), "All elements in a bad column must be NAs.");
           }
           break;
         default:

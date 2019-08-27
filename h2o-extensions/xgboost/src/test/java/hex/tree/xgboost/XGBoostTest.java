@@ -7,7 +7,12 @@ import hex.genmodel.MojoReaderBackendFactory;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.algos.xgboost.XGBoostMojoReader;
 import hex.genmodel.algos.xgboost.XGBoostNativeMojoModel;
+import hex.genmodel.easy.EasyPredictModelWrapper;
+import hex.genmodel.easy.RowData;
+import hex.genmodel.easy.exception.PredictException;
+import hex.genmodel.easy.prediction.BinomialModelPrediction;
 import hex.genmodel.utils.DistributionFamily;
+import hex.tree.xgboost.util.FeatureScore;
 import ml.dmlc.xgboost4j.java.*;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoost;
@@ -28,6 +33,8 @@ import water.util.TwoDimTable;
 import java.io.*;
 import java.util.*;
 
+import static hex.genmodel.utils.DistributionFamily.bernoulli;
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.*;
 import static water.util.FileUtils.locateFile;
 
@@ -48,15 +55,17 @@ public class XGBoostTest extends TestUtil {
   public String confJavaPredict;
 
   @Rule
-  public ExpectedException thrown = ExpectedException.none();
+  public transient ExpectedException thrown = ExpectedException.none();
 
   @Rule
-  public TemporaryFolder tmp = new TemporaryFolder();
+  public transient TemporaryFolder tmp = new TemporaryFolder();
   
   @Before
   public void setupMojoJavaScoring() {
     System.setProperty("sys.ai.h2o.xgboost.scoring.java.enable", confMojoJavaScoring); // mojo scoring
-    System.setProperty("sys.ai.h2o.xgboost.predict.java.enable", confMojoJavaScoring); // in-h2o predict
+    System.setProperty("sys.ai.h2o.xgboost.predict.java.enable", confJavaPredict); // in-h2o predict
+
+    assertEquals(Boolean.valueOf(confMojoJavaScoring), XGBoostMojoReader.useJavaScoring(true, null)); // check that MOJO scoring config was applied
   }
 
   public static final class FrameMetadata {
@@ -241,16 +250,16 @@ public class XGBoostTest extends TestUtil {
     float[][] preds3 = booster.predict(trainMat.slice(new int[]{2}));
     float[][] preds4 = booster.predict(trainMat.slice(new int[]{0,1,2}));
 
-    Assert.assertTrue(preds1.length==1);
-    Assert.assertTrue(preds2.length==1);
-    Assert.assertTrue(preds3.length==1);
-    Assert.assertTrue(preds4.length==3);
+    assertEquals(preds1.length, 1);
+    assertEquals(1, preds2.length);
+    assertEquals(1, preds3.length);
+    assertEquals(3, preds4.length);
 
-    Assert.assertTrue(preds4[0][0]==preds1[0][0]);
-    Assert.assertTrue(preds4[1][0]==preds2[0][0]);
-    Assert.assertTrue(preds4[2][0]==preds3[0][0]);
-    Assert.assertTrue(preds4[0][0]!=preds4[1][0]);
-    Assert.assertTrue(preds4[0][0]!=preds4[2][0]);
+    assertEquals(preds4[0][0], preds1[0][0], 1e-10);
+    assertEquals(preds4[1][0], preds2[0][0], 1e-10);
+    assertEquals(preds4[2][0], preds3[0][0], 1e-10);
+    assertNotEquals(preds4[0][0], preds4[1][0], 1e-10);
+    assertNotEquals(preds4[0][0],preds4[2][0], 1e-10);
     Rabit.shutdown();
   }
 
@@ -284,13 +293,13 @@ public class XGBoostTest extends TestUtil {
     float[][] preds2 = booster.predict(new DMatrix(new float[]{3f,1f},1,2));
     float[][] preds3 = booster.predict(new DMatrix(new float[]{2f,3f},1,2));
 
-    Assert.assertTrue(preds1.length==1);
-    Assert.assertTrue(preds2.length==1);
-    Assert.assertTrue(preds3.length==1);
+    assertEquals(preds1.length, 1);
+    assertEquals(preds2.length, 1);
+    assertEquals(preds3.length, 1);
 
-    Assert.assertTrue(Math.abs(preds1[0][0]-1) < 1e-2);
-    Assert.assertTrue(Math.abs(preds2[0][0]-2) < 1e-2);
-    Assert.assertTrue(Math.abs(preds3[0][0]-3) < 1e-2);
+    assertTrue(Math.abs(preds1[0][0]-1) < 1e-2);
+    assertTrue(Math.abs(preds2[0][0]-2) < 1e-2);
+    assertTrue(Math.abs(preds3[0][0]-3) < 1e-2);
     Rabit.shutdown();
   }
 
@@ -316,8 +325,8 @@ public class XGBoostTest extends TestUtil {
 
     Booster booster = XGBoost.train(trainMat, params, 10, watches, null, null);
 
-    final Map<String, Integer> expected = booster.getFeatureScore(null);
-    final Map<String, XGBoostUtils.FeatureScore> actual = getExtFeatureScore(booster);
+    final Map<String, Integer> expected = booster.getFeatureScore((String) null);
+    final Map<String, FeatureScore> actual = getExtFeatureScore(booster);
 
     assertEquals(expected.keySet(), actual.keySet());
     for (String feature : expected.keySet()) {
@@ -328,8 +337,8 @@ public class XGBoostTest extends TestUtil {
     Booster booster2 = XGBoost.train(trainMat, params, 2, watches, null, null);
 
     // Check that gain(booster2) >= gain(booster1)
-    final Map<String, XGBoostUtils.FeatureScore> fs1 = getExtFeatureScore(booster1);
-    final Map<String, XGBoostUtils.FeatureScore> fs2 = getExtFeatureScore(booster2);
+    final Map<String, FeatureScore> fs1 = getExtFeatureScore(booster1);
+    final Map<String, FeatureScore> fs2 = getExtFeatureScore(booster2);
 
     for (String feature : fs2.keySet()) {
       assertTrue(fs2.get(feature)._gain > 0);
@@ -339,8 +348,8 @@ public class XGBoostTest extends TestUtil {
     Rabit.shutdown();
   }
 
-  private Map<String, XGBoostUtils.FeatureScore> getExtFeatureScore(Booster booster) throws XGBoostError {
-    String[] modelDump = booster.getModelDump(null, true);
+  private Map<String, FeatureScore> getExtFeatureScore(Booster booster) throws XGBoostError {
+    String[] modelDump = booster.getModelDump((String) null, true);
     return XGBoostUtils.parseFeatureScores(modelDump);
   }
 
@@ -405,7 +414,7 @@ public class XGBoostTest extends TestUtil {
   }
 
   @Test
-  public void checkpoint() throws XGBoostError, IOException {
+  public void checkpoint() throws XGBoostError {
     Map<String, String> rabitEnv = new HashMap<>();
     rabitEnv.put("DMLC_TASK_ID", "0");
     Rabit.init(rabitEnv);
@@ -474,16 +483,16 @@ public class XGBoostTest extends TestUtil {
       Log.info(model);
 
       FrameMetadata metadataAfter = new FrameMetadata(tfr);
-      Assert.assertEquals(metadataBefore, metadataAfter);
+      assertEquals(metadataBefore, metadataAfter);
 
       preds = model.score(testFrame);
-      Assert.assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
-      Assert.assertEquals(
+      assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
+      assertEquals(
               ((ModelMetricsBinomial)model._output._validation_metrics).auc(),
               ModelMetricsBinomial.make(preds.vec(2), testFrame.vec(response)).auc(),
               1e-5
       );
-      Assert.assertTrue(preds.anyVec().sigma() > 0);
+      assertTrue(preds.anyVec().sigma() > 0);
 
     } finally {
       Scope.exit();
@@ -537,16 +546,16 @@ public class XGBoostTest extends TestUtil {
       Log.info(model);
 
       FrameMetadata metadataAfter = new FrameMetadata(tfr);
-      Assert.assertEquals(metadataBefore, metadataAfter);
+      assertEquals(metadataBefore, metadataAfter);
 
       preds = model.score(testFrame);
-      Assert.assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
-      Assert.assertEquals(
+      assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
+      assertEquals(
               ((ModelMetricsBinomial)model._output._validation_metrics).auc(),
               ModelMetricsBinomial.make(preds.vec(2), testFrame.vec(response)).auc(),
               1e-5
       );
-      Assert.assertTrue(preds.anyVec().sigma() > 0);
+      assertTrue(preds.anyVec().sigma() > 0);
 
     } finally {
       Scope.exit();
@@ -643,16 +652,16 @@ public class XGBoostTest extends TestUtil {
       Log.info(model);
 
       FrameMetadata metadataAfter = new FrameMetadata(tfr);
-      Assert.assertEquals(metadataBefore, metadataAfter);
+      assertEquals(metadataBefore, metadataAfter);
 
       preds = model.score(testFrame);
-      Assert.assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
-      Assert.assertEquals(
+      assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
+      assertEquals(
               ((ModelMetricsRegression)model._output._validation_metrics).mae(),
               ModelMetricsRegression.make(preds.anyVec(), testFrame.vec(response), DistributionFamily.gaussian).mae(),
               1e-5
       );
-      Assert.assertTrue(preds.anyVec().sigma() > 0);
+      assertTrue(preds.anyVec().sigma() > 0);
 
     } finally {
       Scope.exit();
@@ -705,16 +714,16 @@ public class XGBoostTest extends TestUtil {
       Log.info(model);
 
       FrameMetadata metadataAfter = new FrameMetadata(tfr);
-      Assert.assertEquals(metadataBefore, metadataAfter);
+      assertEquals(metadataBefore, metadataAfter);
 
       preds = model.score(testFrame);
-      Assert.assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
-      Assert.assertEquals(
+      assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
+      assertEquals(
               ((ModelMetricsRegression)model._output._validation_metrics).mae(),
               ModelMetricsRegression.make(preds.anyVec(), testFrame.vec(response), DistributionFamily.gaussian).mae(),
               1e-5
       );
-      Assert.assertTrue(preds.anyVec().sigma() > 0);
+      assertTrue(preds.anyVec().sigma() > 0);
     } finally {
       Scope.exit();
       if (trainFrame!=null) trainFrame.remove();
@@ -770,6 +779,7 @@ public class XGBoostTest extends TestUtil {
       parms._train = tfr._key;
       parms._response_column = "AGE";
       parms._ignored_columns = new String[]{"ID"};
+      parms._backend = XGBoostModel.XGBoostParameters.Backend.cpu;
 
       model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
 
@@ -803,11 +813,11 @@ public class XGBoostTest extends TestUtil {
     try {
       Frame airlinesFrame = Scope.track(parse_test_file("./smalldata/testng/airlines.csv"));
       airlinesFrame.replace(0, airlinesFrame.vecs()[0].toCategoricalVec()).remove();
-      DKV.put(airlinesFrame);
 
       final Vec weightsVector = createRandomBinaryWeightsVec(airlinesFrame.numRows(), 10);
       final String weightsColumnName = "weights";
       airlinesFrame.add(weightsColumnName, weightsVector);
+      DKV.put(airlinesFrame);
 
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
@@ -854,11 +864,11 @@ public class XGBoostTest extends TestUtil {
       Frame prostateFrame = parse_test_file("./smalldata/prostate/prostate.csv");
       prostateFrame.replace(8, prostateFrame.vecs()[8].toCategoricalVec()).remove();   // Convert GLEASON to categorical
       Scope.track(prostateFrame);
-      DKV.put(prostateFrame);
 
       final Vec weightsVector = createRandomBinaryWeightsVec(prostateFrame.numRows(), 10);
       final String weightsColumnName = "weights";
       prostateFrame.add(weightsColumnName, weightsVector);
+      DKV.put(prostateFrame);
 
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
@@ -904,11 +914,11 @@ public class XGBoostTest extends TestUtil {
       Frame irisFrame = parse_test_file("./smalldata/extdata/iris.csv");
       irisFrame.replace(4, irisFrame.vecs()[4].toCategoricalVec()).remove();
       Scope.track(irisFrame);
-      DKV.put(irisFrame);
 
       final Vec weightsVector = createRandomBinaryWeightsVec(irisFrame.numRows(), 10);
       final String weightsColumnName = "weights";
       irisFrame.add(weightsColumnName, weightsVector);
+      DKV.put(irisFrame);
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
       parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
@@ -1027,11 +1037,11 @@ public class XGBoostTest extends TestUtil {
         Log.info(model);
 
         FrameMetadata metadataAfter = new FrameMetadata(tfr);
-        Assert.assertEquals(metadataBefore, metadataAfter);
+        assertEquals(metadataBefore, metadataAfter);
 
         preds = model.score(testFrame);
-        Assert.assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
-        Assert.assertTrue(preds.anyVec().sigma() > 0);
+        assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
+        assertTrue(preds.anyVec().sigma() > 0);
 
       } finally {
         if (trainFrame!=null) trainFrame.remove();
@@ -1067,18 +1077,19 @@ public class XGBoostTest extends TestUtil {
       parms._max_depth = 3;
       parms._train = tfr._key;
       parms._response_column = response;
+      parms._seed = 0xCAFEBABE;
 
       model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
       Log.info(model);
 
       FrameMetadata metadataAfter = new FrameMetadata(tfr);
-      Assert.assertEquals(metadataBefore, metadataAfter);
+      assertEquals(metadataBefore, metadataAfter);
 
       preds = model.score(tfr);
-      Assert.assertTrue(model.testJavaScoring(tfr, preds, 1e-6));
+      assertTrue(model.testJavaScoring(tfr, preds, 1e-6));
       preds.remove(0).remove();
-      Assert.assertTrue(preds.anyVec().sigma() > 0);
-      Assert.assertEquals(
+      assertTrue(preds.anyVec().sigma() > 0);
+      assertEquals(
               ((ModelMetricsMultinomial)model._output._training_metrics).logloss(),
               ModelMetricsMultinomial.make(preds, tfr.vec(response), tfr.vec(response).domain()).logloss(),
               1e-5
@@ -1097,7 +1108,7 @@ public class XGBoostTest extends TestUtil {
     parms._backend = XGBoostModel.XGBoostParameters.Backend.gpu;
     parms._grow_policy = XGBoostModel.XGBoostParameters.GrowPolicy.lossguide;
     Map<String, Object> expectedIncompats = Collections.singletonMap("grow_policy", (Object) XGBoostModel.XGBoostParameters.GrowPolicy.lossguide);
-    Assert.assertEquals(expectedIncompats, parms.gpuIncompatibleParams());
+    assertEquals(expectedIncompats, parms.gpuIncompatibleParams());
   }
 
   @Test
@@ -1129,10 +1140,10 @@ public class XGBoostTest extends TestUtil {
       try {
         XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
         Scope.track_generic(model);
-        Assert.fail("Thes parameter settings are not suppose to work!");
+        fail("Thes parameter settings are not suppose to work!");
       } catch (H2OModelBuilderIllegalArgumentException e) {
         String expected = "ERRR on field: _backend: GPU backend is not available for parameter setting 'grow_policy = lossguide'. Use CPU backend instead.\n";
-        Assert.assertTrue(e.getMessage().endsWith(expected));
+        assertTrue(e.getMessage().endsWith(expected));
       }
     } finally {
       Scope.exit();
@@ -1160,6 +1171,7 @@ public class XGBoostTest extends TestUtil {
       parms._max_depth = 3;
       parms._train = tfr._key;
       parms._response_column = response;
+      parms._seed = 0xCAFEBABE;
 
       // emulate LightGBM
       parms._tree_method = XGBoostModel.XGBoostParameters.TreeMethod.hist;
@@ -1169,13 +1181,13 @@ public class XGBoostTest extends TestUtil {
       Log.info(model);
 
       FrameMetadata metadataAfter = new FrameMetadata(tfr);
-      Assert.assertEquals(metadataBefore, metadataAfter);
+      assertEquals(metadataBefore, metadataAfter);
 
       preds = model.score(tfr);
-      Assert.assertTrue(model.testJavaScoring(tfr, preds, 1e-6));
+      assertTrue(model.testJavaScoring(tfr, preds, 1e-6));
       preds.remove(0).remove();
-      Assert.assertTrue(preds.anyVec().sigma() > 0);
-      Assert.assertEquals(
+      assertTrue(preds.anyVec().sigma() > 0);
+      assertEquals(
               ((ModelMetricsMultinomial)model._output._training_metrics).logloss(),
               ModelMetricsMultinomial.make(preds, tfr.vec(response), tfr.vec(response).domain()).logloss(),
               1e-5
@@ -1211,12 +1223,12 @@ public class XGBoostTest extends TestUtil {
       Log.info(model);
 
       FrameMetadata metadataAfter = new FrameMetadata(tfr);
-      Assert.assertEquals(metadataBefore, metadataAfter);
+      assertEquals(metadataBefore, metadataAfter);
 
       preds = model.score(tfr);
-      Assert.assertTrue(model.testJavaScoring(tfr, preds, 1e-6));
-      Assert.assertTrue(preds.vec(2).sigma() > 0);
-      Assert.assertEquals(
+      assertTrue(model.testJavaScoring(tfr, preds, 1e-6));
+      assertTrue(preds.vec(2).sigma() > 0);
+      assertEquals(
               ((ModelMetricsBinomial)model._output._training_metrics).logloss(),
               ModelMetricsBinomial.make(preds.vec(2), tfr.vec(response), tfr.vec(response).domain()).logloss(),
               1e-5
@@ -1255,25 +1267,25 @@ public class XGBoostTest extends TestUtil {
         parms._ignored_columns = new String[]{"ID"};
 
         model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
-        Assert.assertNotNull("Train metrics are not null", model._output._training_metrics);
-        Assert.assertNotNull("Validation metrics are not null", model._output._validation_metrics);
-        Assert.assertEquals("Initial model output metrics contains 2 model metrics",
+        assertNotNull("Train metrics are not null", model._output._training_metrics);
+        assertNotNull("Validation metrics are not null", model._output._validation_metrics);
+        assertEquals("Initial model output metrics contains 2 model metrics",
                             2, model._output.getModelMetrics().length);
         for(String name : model._output._names){
-          Assert.assertNotEquals(parms._ignored_columns[0], name);
+          assertNotEquals(parms._ignored_columns[0], name);
         }
 
         model.score(testFrame).remove();
-        Assert.assertEquals("After scoring on test data, model output metrics contains 2 model metrics",
+        assertEquals("After scoring on test data, model output metrics contains 2 model metrics",
                             2, model._output.getModelMetrics().length);
 
         model.score(validFrame).remove();
-        Assert.assertEquals("After scoring on unseen data, model output metrics contains 3 model metrics",
+        assertEquals("After scoring on unseen data, model output metrics contains 3 model metrics",
                             3, model._output.getModelMetrics().length);
 
 
         FrameMetadata metadataAfter = new FrameMetadata(tfr);
-        Assert.assertEquals(metadataBefore, metadataAfter);
+        assertEquals(metadataBefore, metadataAfter);
 
       } finally {
         if (trainFrame!=null) trainFrame.remove();
@@ -1380,11 +1392,9 @@ public class XGBoostTest extends TestUtil {
     }
   }
 
-
-
   @Test
-  public void testMojoBoosterDump() throws IOException {
-    Assume.assumeTrue(! XGBoostMojoReader.useJavaScoring());
+  public void testMojoBoosterDump() throws IOException { 
+    Assume.assumeFalse(XGBoostMojoReader.useJavaScoring(true, null));
     Scope.enter();
     try {
       Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
@@ -1422,7 +1432,7 @@ public class XGBoostTest extends TestUtil {
     try {
       final String response = "cylinders";
 
-      Frame f = parse_test_file("smalldata/junit/cars.csv");
+      Frame f = parse_test_file("./smalldata/junit/cars.csv");
       f.replace(f.find(response), f.vecs()[f.find(response)].toCategoricalVec()).remove();
       DKV.put(Scope.track(f));
 
@@ -1453,8 +1463,7 @@ public class XGBoostTest extends TestUtil {
     Scope.enter();
     try {
       final String response = "power (hp)";
-
-      Frame f = parse_test_file("smalldata/junit/cars.csv");
+      Frame f = parse_test_file("./smalldata/junit/cars.csv");
       f.replace(f.find(response), f.vecs()[f.find("cylinders")].toNumericVec()).remove();
       DKV.put(Scope.track(f));
 
@@ -1462,9 +1471,10 @@ public class XGBoostTest extends TestUtil {
       parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
       parms._response_column = response;
       parms._train = f._key;
-      parms._ignored_columns = new String[]{"name"};
+      parms._ignored_columns = new String[] { "name" };
       parms._seed = 42;
       parms._reg_lambda = 0;
+      parms._tree_method = XGBoostModel.XGBoostParameters.TreeMethod.hist;
 
       XGBoostModel.XGBoostParameters noConstrParams = (XGBoostModel.XGBoostParameters) parms.clone();
       XGBoostModel noConstrModel = new hex.tree.xgboost.XGBoost(noConstrParams).trainModel().get();
@@ -1473,7 +1483,7 @@ public class XGBoostTest extends TestUtil {
       assertTrue(ArrayUtils.contains(noConstrModel._output._varimp._names, "cylinders"));
 
       XGBoostModel.XGBoostParameters constrParams = (XGBoostModel.XGBoostParameters) parms.clone();
-      constrParams._monotone_constraints = new KeyValue[] {new KeyValue("cylinders", -1)};
+      constrParams._monotone_constraints = new KeyValue[] { new KeyValue("cylinders", -1) };
       XGBoostModel constrModel = new hex.tree.xgboost.XGBoost(constrParams).trainModel().get();
       Scope.track_generic(constrModel);
 
@@ -1529,7 +1539,7 @@ public class XGBoostTest extends TestUtil {
   }
 
   @Test
-  public void testScoreContributions() throws IOException, XGBoostError {
+  public void testScoreApproxContributions() throws IOException, XGBoostError {
     Scope.enter();
     try {
       Frame tfr = Scope.track(parse_test_file("./smalldata/junit/weather.csv"));
@@ -1553,26 +1563,13 @@ public class XGBoostTest extends TestUtil {
       Scope.track_generic(model);
       Log.info(model);
 
-      Frame contributions = model.scoreContributions(tfr, Key.<Frame>make());
+      Frame contributions = model.scoreContributions(tfr, Key.<Frame>make(), true);
       Scope.track(contributions);
 
       assertEquals("BiasTerm", contributions.names()[contributions.names().length - 1]);
       
       // basic sanity check - contributions should sum-up to predictions
-      Frame predsFromContributions = new MRTask() {
-        @Override
-        public void map(Chunk[] cs, NewChunk nc) {
-          for (int i = 0; i < cs[0]._len; i++) {
-            float sum = 0;
-            for (Chunk c : cs)
-              sum += c.atd(i);
-            nc.addNum(sigmoid(sum));
-          }
-        }
-        private float sigmoid(float x) {
-          return (1f / (1f + (float) Math.exp(-x)));
-        }
-      }.doAll(Vec.T_NUM, contributions).outputFrame();
+      Frame predsFromContributions = new CalcContribsTask().doAll(Vec.T_NUM, contributions).outputFrame();
       Frame expectedPreds = model.score(tfr);
       Scope.track(expectedPreds);
       assertVecEquals(expectedPreds.vec(2), predsFromContributions.vec(0), 1e-6);
@@ -1590,19 +1587,130 @@ public class XGBoostTest extends TestUtil {
       
       // finally check the contributions
       assertEquals(expectedContribs.length, contributions.numRows());
-      new MRTask() {
-        @Override
-        public void map(Chunk[] cs) {
-          for (int i = 0; i < cs[0]._len; i++) {
-            for (int j = 0; j < cs.length; j++) {
-              float contrib = (float) cs[j].atd(i);
-              int row = (int) cs[0].start() + i;
-              assertEquals("Contribution in row=" + row + " on position=" + j + " should match.", 
-                      expectedContribs[row][j], contrib, 1e-6);
-            }
-          }
+      new CheckContribsTask(expectedContribs).doAll(contributions).outputFrame();
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  private static class CalcContribsTask extends MRTask<CalcContribsTask> {
+    @Override
+    public void map(Chunk[] cs, NewChunk nc) {
+      for (int i = 0; i < cs[0]._len; i++) {
+        float sum = 0;
+        for (Chunk c : cs)
+          sum += c.atd(i);
+        nc.addNum(sigmoid(sum));
+      }
+    }
+    private float sigmoid(float x) {
+      return (1f / (1f + (float) Math.exp(-x)));
+    }
+  }
+  
+  private static class CheckContribsTask extends MRTask<CheckContribsTask> {
+    private final float[][] _expectedContribs;
+
+    private CheckContribsTask(float[][] expectedContribs) {
+      _expectedContribs = expectedContribs;
+    }
+
+    @Override
+    public void map(Chunk[] cs) {
+      for (int i = 0; i < cs[0]._len; i++) {
+        for (int j = 0; j < cs.length; j++) {
+          float contrib = (float) cs[j].atd(i);
+          int row = (int) cs[0].start() + i;
+          assertEquals("Contribution in row=" + row + " on position=" + j + " should match.",
+                  _expectedContribs[row][j], contrib, 1e-6);
         }
-      }.doAll(contributions).outputFrame();
+      }
+    }
+  }
+  
+  @Test
+  public void testScoringWithUnseenCategoricals() {
+    try {
+      Scope.enter();
+      final Frame training = new TestFrameBuilder()
+              .withName("trainFrame")
+              .withColNames("y", "x1", "x2")
+              .withVecTypes(Vec.T_NUM, Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ard(0, 0, 2, 3, 4, 5.6, 7))
+              .withDataForCol(1, ar("A", "B", "C", "E", "F", "I", "J"))
+              .withDataForCol(2, ar("A", "B,", "A", "C", "A", "B", "A"))
+              .withChunkLayout(2, 2, 2, 1)
+              .build();
+      Scope.track(training);
+
+      final Frame test = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("y", "x1", "x2")
+              .withVecTypes(Vec.T_NUM, Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ard(0, 0, 2, 3, 4, 5.6, 7))
+              .withDataForCol(1, ar("X", "Y", "U", "W", "W", "Z", "Q"))
+              .withDataForCol(2, ar("X", "Y,", "U", "W", "W", "Z", "Q"))
+              .withChunkLayout(2, 2, 2, 1)
+              .build();
+      Scope.track(test);
+      
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.sparse;
+      parms._response_column = "y";
+      parms._train = training._key;
+      parms._seed = 42;
+      parms._ntrees = 5;
+
+      XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      Scope.track_generic(model);
+
+      Frame preds = model.score(test);
+      Scope.track(preds);
+      assertEquals(test.numRows(), preds.numRows());
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testScoreContributionsBernoulli() throws IOException, PredictException {
+    Assume.assumeTrue("true".equalsIgnoreCase(confMojoJavaScoring));
+    try {
+      Scope.enter();
+      Frame fr = Scope.track(parse_test_file("smalldata/junit/titanic_alt.csv"));
+      fr.replace(fr.find("survived"), fr.vec("survived").toCategoricalVec());
+      DKV.put(fr);
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._train = fr._key;
+      parms._distribution = bernoulli;
+      parms._response_column = "survived";
+      parms._ntrees = 5;
+      parms._max_depth = 4;
+      parms._min_rows = 1;
+      parms._learn_rate = .2f;
+      parms._score_each_iteration = true;
+      parms._seed = 42;
+
+      hex.tree.xgboost.XGBoost job = new hex.tree.xgboost.XGBoost(parms);
+      XGBoostModel model = job.trainModel().get();
+      Scope.track_generic(model);
+
+      Frame contributions = model.scoreContributions(fr, Key.<Frame>make("contributions_titanic"));
+      Scope.track(contributions);
+
+      MojoModel mojo = model.toMojo();
+
+      EasyPredictModelWrapper.Config cfg = new EasyPredictModelWrapper.Config()
+              .setModel(mojo)
+              .setEnableContributions(true);
+      EasyPredictModelWrapper wrapper = new EasyPredictModelWrapper(cfg);
+
+      for (long row = 0; row < fr.numRows(); row++) {
+        RowData rd = toRowData(fr, model._output._names, row);
+        BinomialModelPrediction pr = wrapper.predictBinomial(rd);
+        assertArrayEquals("Contributions should match, row=" + row, 
+                toNumericRow(contributions, row), ArrayUtils.toDouble(pr.contributions), 0);
+      }
     } finally {
       Scope.exit();
     }
@@ -1624,26 +1732,36 @@ public class XGBoostTest extends TestUtil {
             new ByteArrayInputStream(os.toByteArray()), MojoReaderBackendFactory.CachingStrategy.MEMORY);
     return (XGBoostMojoModel) MojoModel.load(mojoReaderBackend);
   }
-
+  
   private static <T extends ModelMetricsSupervised> void checkMetrics(final T expectedMM, final T actualMM) {
-    assertEquals(expectedMM.rmse(), actualMM.rmse(), 1e-20);
-    assertEquals(expectedMM._sigma, actualMM._sigma, 1e-20);
-    assertEquals(expectedMM._nobs, actualMM._nobs, 1e-20);
+    double precision = 1e-8;
+    boolean doCheckCM = true;
+    if (H2O.getCloudSize() >= 2) {
+      precision = 5e-2; // results are non-deterministic
+      doCheckCM = false; // CM can be about 5% different values
+    }
+    assertEquals(expectedMM.rmse(), actualMM.rmse(), precision);
+    assertEquals(expectedMM._sigma, actualMM._sigma, precision);
+    assertEquals(expectedMM._nobs, actualMM._nobs, precision);
     if (expectedMM instanceof ModelMetricsBinomial) {
       final ModelMetricsBinomial mmbExp = (ModelMetricsBinomial) expectedMM;
       final ModelMetricsBinomial mmbAct = (ModelMetricsBinomial) actualMM;
-      assertEquals(mmbExp.logloss(), mmbExp.logloss(), 1e-20);
-      assertEquals(mmbExp.auc(), mmbAct.auc(), 1e-20);
-      assertEquals(mmbExp.mean_per_class_error(), mmbAct.mean_per_class_error(), 1e-20);
-      checkConfusionMatrix(mmbExp.cm(), mmbAct.cm());
+      assertEquals(mmbExp.logloss(), mmbExp.logloss(), precision);
+      assertEquals(mmbExp.auc(), mmbAct.auc(), precision);
+      assertEquals(mmbExp.mean_per_class_error(), mmbAct.mean_per_class_error(), precision);
+      if (doCheckCM) {
+        checkConfusionMatrix(mmbExp.cm(), mmbAct.cm());
+      }
     } else if (expectedMM instanceof ModelMetricsMultinomial) {
       final ModelMetricsMultinomial mmmExp = (ModelMetricsMultinomial) expectedMM;
       final ModelMetricsMultinomial mmmAct = (ModelMetricsMultinomial) actualMM;
-      assertEquals(mmmExp.logloss(), mmmAct.logloss(), 1e-20);
-      assertEquals(mmmExp.mean_per_class_error(), mmmAct.mean_per_class_error(), 1e-20);
-      checkConfusionMatrix(mmmExp.cm(), mmmAct.cm());
+      assertEquals(mmmExp.logloss(), mmmAct.logloss(), precision);
+      assertEquals(mmmExp.mean_per_class_error(), mmmAct.mean_per_class_error(), precision);
+      if (doCheckCM) {
+        checkConfusionMatrix(mmmExp.cm(), mmmAct.cm());
+      }
     }
-    assertArrayEquals(expectedMM.hr(), actualMM.hr(), 1e-20F);
+    assertArrayEquals(expectedMM.hr(), actualMM.hr(), (float) precision);
     assertArrayEquals(expectedMM._domain, actualMM._domain);
   }
 

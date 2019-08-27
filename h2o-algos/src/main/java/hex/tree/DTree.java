@@ -140,7 +140,8 @@ public class DTree extends Iced {
     public Split(int col, int bin, DHistogram.NASplitDir nasplit, IcedBitSet bs, byte equal, double se, double se0, double se1, double n0, double n1, double p0, double p1, double tree_p0, double tree_p1) {
       assert(nasplit!= DHistogram.NASplitDir.None);
       assert(equal!=1); //no longer done
-      assert se > se0+se1 || se==Double.MAX_VALUE; // No point in splitting unless error goes down
+      // FIXME: Disabled for testing PUBDEV-6495:
+      // assert se > se0+se1 || se==Double.MAX_VALUE; // No point in splitting unless error goes down
       assert(col>=0);
       assert(bin>=0);
       _col = col;  _bin = bin; _nasplit = nasplit; _bs = bs;  _equal = equal;  _se = se;
@@ -152,6 +153,9 @@ public class DTree extends Iced {
     public final double se() { return _se0+_se1; }
     public final int   col() { return _col; }
     public final int   bin() { return _bin; }
+    public final DHistogram.NASplitDir naSplitDir() { return _nasplit; }
+    public final double n0() { return _n0; }
+    public final double n1() { return _n1; }
 
     // Split-at dividing point.  Don't use the step*bin+bmin, due to roundoff
     // error we can have that point be slightly higher or lower than the bin
@@ -795,14 +799,14 @@ public class DTree extends Iced {
     return new CompressedTree(ab.buf(), _seed,tid,cls);
   }
 
-  private static Split findBestSplitPoint(DHistogram hs, int col, double min_rows,
-                                          int constraint, double min, double max, boolean useBounds) {
+  static Split findBestSplitPoint(DHistogram hs, int col, double min_rows,
+                                  int constraint, double min, double max, boolean useBounds) {
     if(hs._vals == null) {
       if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": histogram not filled yet.");
       return null; // TODO: there are empty leafs?
     }
     final int nbins = hs.nbins();
-    assert nbins > 1;
+    assert nbins >= 1;
 
     final boolean hasPreds = hs.hasPreds();
     final boolean hasDenom = hs.hasDenominator();
@@ -1095,7 +1099,13 @@ public class DTree extends Iced {
         if (SharedTree.DEV_DEBUG)
           Log.info("minimum constraint violated in the left split of " + hs._name + ": left node will predict minimum bound: " + min);
         tree_p0 = min;
-        best_seL = pr1lo[best];
+        if (nasplit == DHistogram.NASplitDir.NAvsREST) {
+          best_seL = pr1hi[0];
+        } else if (nasplit == DHistogram.NASplitDir.NALeft) {
+          best_seL = pr1lo[best] + hs.seP1NA();
+        } else {
+          best_seL = pr1lo[best];
+        }
       }
       if (tree_p1 < min) {
         if (! useBounds) {
@@ -1106,7 +1116,13 @@ public class DTree extends Iced {
         if (SharedTree.DEV_DEBUG)
           Log.info("minimum constraint violated in the right split of " + hs._name + ": right node will predict minimum bound: " + min);
         tree_p1 = min;
-        best_seR = pr1hi[best];
+        if (nasplit == DHistogram.NASplitDir.NAvsREST) {
+          best_seR = hs.seP1NA();
+        } else if (nasplit == DHistogram.NASplitDir.NARight) {
+          best_seR = pr1hi[best] + hs.seP1NA();
+        } else {
+          best_seR = pr1hi[best];
+        }
       }
     }
     if (!Double.isNaN(max)) {
@@ -1119,7 +1135,13 @@ public class DTree extends Iced {
         if (SharedTree.DEV_DEBUG)
           Log.info("maximum constraint violated in the left split of " + hs._name + ": left node will predict maximum bound: " + max);
         tree_p0 = max;
-        best_seL = pr2lo[best];
+        if (nasplit == DHistogram.NASplitDir.NAvsREST) {
+          best_seL = pr2hi[0];
+        } else if (nasplit == DHistogram.NASplitDir.NALeft) {
+          best_seL = pr2lo[best] + hs.seP2NA();
+        } else {
+          best_seL = pr2lo[best];
+        }
       }
       if (tree_p1 > max) {
         if (! useBounds) {
@@ -1130,7 +1152,13 @@ public class DTree extends Iced {
         if (SharedTree.DEV_DEBUG)
           Log.info("maximum constraint violated in the right split of " + hs._name + ": right node will predict maximum bound: " + max);
         tree_p1 = max;
-        best_seR = pr2hi[best];
+        if (nasplit == DHistogram.NASplitDir.NAvsREST) {
+          best_seR = hs.seP2NA();
+        } else if (nasplit == DHistogram.NASplitDir.NARight) {
+          best_seR = pr2hi[best] + hs.seP2NA();
+        } else {
+          best_seR = pr2hi[best];
+        }
       }
     }
 
@@ -1138,6 +1166,12 @@ public class DTree extends Iced {
       if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": not enough relative improvement: " + (1-(best_seL + best_seR) / seBefore) + "\n" + hs);
       return null;
     }
+
+    if( MathUtils.equalsWithinOneSmallUlp((float) tree_p0,(float) tree_p1) ) {
+      if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": Predictions for left/right are the same.");
+      return null;
+    }
+
 
     // For categorical (unordered) predictors, we sorted the bins by average
     // prediction then found the optimal split on sorted bins

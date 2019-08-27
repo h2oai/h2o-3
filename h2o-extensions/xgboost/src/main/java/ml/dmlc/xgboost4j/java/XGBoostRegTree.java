@@ -1,7 +1,6 @@
 package ml.dmlc.xgboost4j.java;
 
 import biz.k11i.xgboost.tree.RegTree;
-import biz.k11i.xgboost.tree.RegTreeImpl;
 import biz.k11i.xgboost.tree.RegTreeNode;
 import biz.k11i.xgboost.util.FVec;
 import biz.k11i.xgboost.util.ModelReader;
@@ -31,15 +30,13 @@ public class XGBoostRegTree implements RegTree {
     reader.skip(numNodes * STATS_SIZE);
   }
 
-  /**
-   * Retrieves nodes from root to leaf and returns leaf index.
-   *
-   * @param feat    feature vector
-   * @param root_id starting root index
-   * @return leaf index
-   */
   @Override
-  public int getLeafIndex(FVec feat, int root_id) {
+  public int getLeafIndex(FVec feat) {
+    throw new UnsupportedOperationException("Leaf node id assignment is currently not supported");
+  }
+
+  @Override
+  public void getLeafPath(FVec fVec, StringBuilder stringBuilder) {
     throw new UnsupportedOperationException("Leaf node id assignment is currently not supported");
   }
 

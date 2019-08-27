@@ -10,3 +10,6 @@ NOHUP_FILE="$NOHUP_DIR/$(date +%Y-%m-%d).out"
 mkdir $NOHUP_DIR -p
 BENCH_CMD="nohup $GRADLE :h2o-algos:jmh >$NOHUP_FILE"
 $BENCH_CMD
+
+# run only one benchmark
+# BENCH_CMD="nohup $GRADLE :h2o-algos:jmh -PubenchIncludeOnly=path.to.benchmark >$NOHUP_FILE"

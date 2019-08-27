@@ -1,11 +1,11 @@
 package water.util;
 
-import edu.emory.mathcs.jtransforms.dct.DoubleDCT_1D;
-import edu.emory.mathcs.jtransforms.dct.DoubleDCT_2D;
-import edu.emory.mathcs.jtransforms.dct.DoubleDCT_3D;
-import edu.emory.mathcs.utils.ConcurrencyUtils;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
+import org.jtransforms.dct.DoubleDCT_1D;
+import org.jtransforms.dct.DoubleDCT_2D;
+import org.jtransforms.dct.DoubleDCT_3D;
+import pl.edu.icm.jlargearrays.ConcurrencyUtils;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
@@ -165,6 +165,70 @@ public class MathUtils {
 
     public boolean isSparse(int col) {return _nzCnt[col] < _nobs;}
   }
+
+  public static final class SimpleStats extends Iced {
+    double[] _wsums;
+    double[] _xsumsqs;
+    double[] _xsums;
+    double[] _var;
+    double[] _sd;
+    double[] _mean;
+
+    public SimpleStats(int n) {
+      _xsumsqs = MemoryManager.malloc8d(n);
+      _xsums = MemoryManager.malloc8d(n);
+      _wsums = MemoryManager.malloc8d(n);
+    }
+
+    public void add(double x, double w, int i) {
+      if(!Double.isNaN(x) && w!=0) {
+        _xsums[i] += x*w;
+        _xsumsqs[i] += x*x*w;
+        _wsums[i] = _wsums[i] + w;
+      }
+    }
+
+    public void add(double[] x, double w) {
+      for (int i = 0; i < x.length; ++i)
+        add(x[i], w, i);
+    }
+    
+    private double[] variance(double[] res) {
+      if (_mean == null) mean();  // calculate mean if it is not done already
+      for (int i = 0; i < res.length; ++i) {
+        double v1 = _wsums[i];
+        double oneOv1M1 = 1.0/(v1-1);
+        res[i] = (v1 == 0 || v1==1)?0:(_xsumsqs[i]-v1*_mean[i]*_mean[i])*oneOv1M1;
+      }
+      return _var=res;
+    }
+
+    public double[] mean() {
+      if (_mean!=null) return _mean;
+      int len = _xsums.length;
+      _mean = MemoryManager.malloc8d(len);
+      for (int index=0; index<len; index++) {
+        _mean[index] = _xsums[index]/_wsums[index];
+      }
+      return _mean;
+    }
+
+    public double variance(int i){return variance()[i];}
+    public double[] variance() {
+      if (_var != null) return _var;
+      return _var = variance(MemoryManager.malloc8d(_mean.length));
+    }
+    public double sigma(int i){return sigma()[i];}
+    public double[] sigma() {
+      if(_sd != null) return _sd;
+      double[] res = variance().clone();
+      for (int i = 0; i < res.length; ++i)
+        res[i] = Math.sqrt(res[i]);
+      return _sd = res;
+    }
+  }
+
+  
   /** Fast approximate sqrt
    *  @return sqrt(x) with up to 5% relative error */
   public static double approxSqrt(double x) {
@@ -694,4 +758,19 @@ public class MathUtils {
     return Math.min(MAXLL, -Math.log(1.0-err));
   }
   final static double MAXLL = -Math.log(1e-15); //34.53878
+  
+  public static double[][] arrayTranspose(double[][] arr) {
+    assert arr!=null:"null array";
+    assert arr[0] != null:"null array";
+    int length1 = arr.length;
+    int length2 = arr[0].length;
+    double[][] transposed = new double[length2][];
+    
+    for (int ind1 = 0; ind1 < length2; ind1++) {
+      for (int ind2 = 0; ind2 < length1; ind2++) {
+        transposed[ind1][ind2] = arr[ind2][ind1];
+      }
+    }
+    return transposed;
+  }
 }

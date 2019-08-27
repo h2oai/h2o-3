@@ -31,7 +31,8 @@ class H2OIsolationForestEstimator(H2OEstimator):
         names_list = {"model_id", "training_frame", "score_each_iteration", "score_tree_interval", "ignored_columns",
                       "ignore_const_cols", "ntrees", "max_depth", "min_rows", "max_runtime_secs", "seed",
                       "build_tree_one_node", "mtries", "sample_size", "sample_rate", "col_sample_rate_change_per_level",
-                      "col_sample_rate_per_tree", "categorical_encoding", "export_checkpoints_dir"}
+                      "col_sample_rate_per_tree", "categorical_encoding", "stopping_rounds", "stopping_metric",
+                      "stopping_tolerance", "export_checkpoints_dir"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -54,8 +55,7 @@ class H2OIsolationForestEstimator(H2OEstimator):
 
     @training_frame.setter
     def training_frame(self, training_frame):
-        assert_is_type(training_frame, None, H2OFrame)
-        self._parms["training_frame"] = training_frame
+        self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
 
 
     @property
@@ -300,6 +300,54 @@ class H2OIsolationForestEstimator(H2OEstimator):
     def categorical_encoding(self, categorical_encoding):
         assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"))
         self._parms["categorical_encoding"] = categorical_encoding
+
+
+    @property
+    def stopping_rounds(self):
+        """
+        Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
+        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
+
+        Type: ``int``  (default: ``0``).
+        """
+        return self._parms.get("stopping_rounds")
+
+    @stopping_rounds.setter
+    def stopping_rounds(self, stopping_rounds):
+        assert_is_type(stopping_rounds, None, int)
+        self._parms["stopping_rounds"] = stopping_rounds
+
+
+    @property
+    def stopping_metric(self):
+        """
+        Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and anonomaly_score
+        for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
+        client.
+
+        One of: ``"auto"``, ``"anomaly_score"``  (default: ``"auto"``).
+        """
+        return self._parms.get("stopping_metric")
+
+    @stopping_metric.setter
+    def stopping_metric(self, stopping_metric):
+        assert_is_type(stopping_metric, None, Enum("auto", "anomaly_score"))
+        self._parms["stopping_metric"] = stopping_metric
+
+
+    @property
+    def stopping_tolerance(self):
+        """
+        Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
+
+        Type: ``float``  (default: ``0.01``).
+        """
+        return self._parms.get("stopping_tolerance")
+
+    @stopping_tolerance.setter
+    def stopping_tolerance(self, stopping_tolerance):
+        assert_is_type(stopping_tolerance, None, numeric)
+        self._parms["stopping_tolerance"] = stopping_tolerance
 
 
     @property

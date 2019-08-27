@@ -24,8 +24,7 @@ import water.fvec.Vec;
 import water.test.util.GridTestUtils;
 import water.util.ArrayUtils;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static water.util.ArrayUtils.interval;
 
 public class DRFGridTest extends TestUtil {
@@ -64,9 +63,10 @@ public class DRFGridTest extends TestUtil {
       // Get the Grid for this modeling class and frame
       Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms);
       grid = (Grid<DRFModel.DRFParameters>) gs.get();
+      final Grid.SearchFailure failures = grid.getFailures();
       // Make sure number of produced models match size of specified hyper space
       Assert.assertEquals("Size of grid should match to size of hyper space", hyperSpaceSize,
-                          grid.getModelCount() + grid.getFailureCount());
+                          grid.getModelCount() + failures.getFailureCount());
       //
       // Make sure that names of used parameters match
       //
@@ -93,7 +93,7 @@ public class DRFGridTest extends TestUtil {
                                       usedModelParams);
       // Verify model failure
       Map<String, Set<Object>> failedHyperParams = GridTestUtils.initMap(hyperParamNames);
-      for (Model.Parameters failedParams : grid.getFailedParameters()) {
+      for (Model.Parameters failedParams : failures.getFailedParameters()) {
         GridTestUtils.extractParams(failedHyperParams, failedParams, hyperParamNames);
       }
       hyperParms.put("_sample_rate", illegalSampleRateOpts);
@@ -248,8 +248,9 @@ public class DRFGridTest extends TestUtil {
       Model[] ms = grid.getModels();
       int numModels = ms.length;
       System.out.println("Grid consists of " + numModels + " models");
+      final Grid.SearchFailure failures = grid.getFailures();
       assertEquals("Number of models should match hyper space size", numModels,
-                   ntreesDim * maxDepthDim * sampleRateDim * mtriesDim + grid.getFailureCount());
+                   ntreesDim * maxDepthDim * sampleRateDim * mtriesDim + failures.getFailureCount());
 
       // Pick a random model from the grid
       HashMap<String, Object[]> randomHyperParms = new HashMap<>();

@@ -11,12 +11,6 @@ By default, interactions between predictor columns are expanded and computed on 
 
 Note that adding a list of interactions to a model changes the interpretation of all of the coefficients. For example, a typical predictor has the form ‘response ~ terms’ where ‘response’ is the (numeric) response vector, and ‘terms’ is a series of terms that specify a linear predictor for ‘response’. For ‘binomial’ and ‘quasibinomial’ families in GLM, the response can also be specified as a ‘factor’ (when the first level denotes failure and all other levels denote success) or as a two-column matrix with the columns giving the numbers of successes and failures. 
 
-An ``interactions`` specification of the form ‘first + second’ computes all of the terms in ‘first’ together with all the terms in ‘second’ with any duplicates removed.
-
-An ``interactions`` specification of the form ‘first:second’ indicates the the set of terms obtained by taking the interactions of all terms in ‘first’ with all terms in ‘second’. 
-
-An ``interactions`` specification ‘first*second’ indicates the cross of ‘first’ and ‘second’. This is the same as ‘first + second + first:second’. The terms in the formula will be re-ordered so that main effects come first followed by the interactions, then all second-order, all third-order and so on.
-
 Interactions can be specified between two categorical columns, between two numeric columns, or between a mix of categorical and numerical columns. When entered, all pairwise combinations of predictor column indices will be computed for that list. 
 
 Related Parameters

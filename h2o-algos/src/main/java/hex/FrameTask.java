@@ -70,6 +70,8 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
   // mini-batch version - for DL only for now
   protected void processRow(long gid, DataInfo.Row r, int mb){throw new RuntimeException("should've been overridden!");}
 
+  protected boolean skipRow(long gid) { return false; }
+
   /**
    * Mini-Batch update of model parameters
    * @param seed
@@ -187,13 +189,17 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
         }
         assert(r >= 0 && r<=nrows);
 
+        seed = offset + rep * nrows + r;
+        if (skipRow(seed)) {
+          num_skipped_rows++;
+          continue;
+        }
         row = _sparse ? rows[r] : _dinfo.extractDenseRow(chunks, r, row);
         if(row.isBad() || row.weight == 0) {
           num_skipped_rows++;
           continue;
         } else {
           assert(row.weight > 0); //check that we never process a row that was held out via row.weight = 0
-          seed = offset + rep * nrows + r;
           if (outputs != null && outputs.length > 0) {
             assert(miniBatchSize==0);
             processRow(seed, row, outputs);

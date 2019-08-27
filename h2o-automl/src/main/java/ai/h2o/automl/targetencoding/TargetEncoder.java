@@ -4,8 +4,6 @@ import water.*;
 import water.fvec.*;
 import water.fvec.task.FillNAWithLongValueTask;
 import water.fvec.task.FillNAWithDoubleValueTask;
-import water.rapids.Rapids;
-import water.rapids.Val;
 import water.rapids.ast.prims.mungers.AstGroup;
 import water.util.Log;
 
@@ -31,10 +29,10 @@ import java.util.*;
  * Usage: see TargetEncodingTitanicBenchmark.java
  */
 public class TargetEncoder {
-
+  
     public static String NUMERATOR_COL_NAME = "numerator";
     public static String DENOMINATOR_COL_NAME = "denominator";
-    
+
     private BlendingParams _blendingParams;
     private String[] _columnNamesToEncode;
 
@@ -140,28 +138,21 @@ public class TargetEncoder {
       AstGroup.AGG[] aggs = new AstGroup.AGG[2];
 
       AstGroup.NAHandling na = AstGroup.NAHandling.ALL;
-      aggs[0] = new AstGroup.AGG(AstGroup.FCN.sum, targetIndex, na, (int) fr.vec(targetIndex).max() + 1);
-      aggs[1] = new AstGroup.AGG(AstGroup.FCN.nrow, targetIndex, na, (int) fr.vec(targetIndex).max() + 1);
+      aggs[0] = new AstGroup.AGG(AstGroup.FCN.sum, targetIndex, na, -1);
+      aggs[1] = new AstGroup.AGG(AstGroup.FCN.nrow, targetIndex, na, -1);
 
-      Frame result = new AstGroup().performGroupingWithAggregations(fr, groupByColumns, aggs, -1).getFrame();
+      Frame result = new AstGroup().performGroupingWithAggregations(fr, groupByColumns, aggs).getFrame();
       return register(result);
     }
 
     Frame ensureTargetColumnIsBinaryCategorical(Frame data, String targetColumnName) {
-        int targetIndex = data.find(targetColumnName);
-        if (data.vec(targetIndex).isCategorical()){
-            Vec targetVec = data.vec(targetIndex);
-            if(targetVec.cardinality() == 2) {
-                return data;
-            }
-            else {
-                throw new IllegalStateException("`target` must be a binary vector. We do not support multi-class target case for now");
-            }
-        }
-        else {
+        Vec targetVec = data.vec(targetColumnName);
+        if (!targetVec.isCategorical())
           throw new IllegalStateException("`target` must be a binary categorical vector. We do not support multi-class and continuos target case for now");
-        }
-    };
+        if (targetVec.cardinality() != 2)
+          throw new IllegalStateException("`target` must be a binary vector. We do not support multi-class target case for now");
+        return data;
+    }
 
 
   public Map<String, Frame> prepareEncodingMap(Frame data, String targetColumnName, String foldColumnName) {
@@ -189,13 +180,25 @@ public class TargetEncoder {
       int columnIndex = data.find(teColumnName);
       Vec currentVec = data.vec(columnIndex);
       int indexForNACategory = currentVec.cardinality(); // Warn: Cardinality returns int but it could be larger than it for big datasets
-      new FillNAWithLongValueTask(columnIndex, indexForNACategory).doAll(data);
-      String[] oldDomain = currentVec.domain();
-      String[] newDomain = new String[indexForNACategory + 1];
-      System.arraycopy(oldDomain, 0, newDomain, 0, oldDomain.length);
-      newDomain[indexForNACategory] = strToImpute;
-      currentVec.setDomain(newDomain);
+      FillNAWithLongValueTask task = new FillNAWithLongValueTask(columnIndex, indexForNACategory);
+      task.doAll(data);
+      if(task._imputationHappened) {
+        String[] oldDomain = currentVec.domain();
+        String[] newDomain = new String[indexForNACategory + 1];
+        System.arraycopy(oldDomain, 0, newDomain, 0, oldDomain.length);
+        newDomain[indexForNACategory] = strToImpute;
+        updateDomainGlobally(data, teColumnName, newDomain);
+      }
       return data;
+    }
+    
+    private void updateDomainGlobally(Frame fr, String teColumnName, String[] domain) {
+      Lockable lock = fr.write_lock();
+      Vec updatedVec = fr.vec(teColumnName);
+      updatedVec.setDomain(domain);
+      DKV.put(updatedVec);
+      fr.update();
+      lock.unlock();
     }
 
     Frame getOutOfFoldData(Frame encodingMap, String foldColumnName, long currentFoldValue)  {
@@ -226,19 +229,19 @@ public class TargetEncoder {
         return true;
     }
 
-    Frame groupByTEColumnAndAggregate(Frame data, int teColumnIndex) {
+    static Frame groupByTEColumnAndAggregate(Frame data, int teColumnIndex) {
       int numeratorColumnIndex = data.find(NUMERATOR_COL_NAME);
       int denominatorColumnIndex = data.find(DENOMINATOR_COL_NAME);
       AstGroup.AGG[] aggs = new AstGroup.AGG[2];
 
       AstGroup.NAHandling na = AstGroup.NAHandling.ALL;
-      aggs[0] = new AstGroup.AGG(AstGroup.FCN.sum, numeratorColumnIndex, na, (int) data.vec(numeratorColumnIndex).max() + 1);
-      aggs[1] = new AstGroup.AGG(AstGroup.FCN.sum, denominatorColumnIndex, na, (int) data.vec(denominatorColumnIndex).max() + 1);
+      aggs[0] = new AstGroup.AGG(AstGroup.FCN.sum, numeratorColumnIndex, na, -1);
+      aggs[1] = new AstGroup.AGG(AstGroup.FCN.sum, denominatorColumnIndex, na, -1);
 
-      Frame result = new AstGroup().performGroupingWithAggregations(data, new int[]{teColumnIndex}, aggs, -1).getFrame();
+      Frame result = new AstGroup().performGroupingWithAggregations(data, new int[]{teColumnIndex}, aggs).getFrame();
       return register(result);
     }
-
+    
     Frame mergeByTEAndFoldColumns(Frame leftFrame, Frame holdoutEncodeMap, int teColumnIndexOriginal, int foldColumnIndexOriginal, int teColumnIndex) {
       addNumeratorAndDenominatorTo(leftFrame);
 
@@ -249,7 +252,7 @@ public class TargetEncoder {
     Frame mergeByTEColumn(Frame leftFrame, Frame holdoutEncodeMap, int teColumnIndexOriginal, int teColumnIndex) {
       addNumeratorAndDenominatorTo(leftFrame);
       return BroadcastJoinForTargetEncoder.join(leftFrame, new int[]{teColumnIndexOriginal}, -1, holdoutEncodeMap, new int[]{teColumnIndex}, -1);
-      }
+    }
   
     private void addNumeratorAndDenominatorTo(Frame leftFrame) {
       Vec emptyNumerator = leftFrame.anyVec().makeCon(0);
@@ -268,6 +271,25 @@ public class TargetEncoder {
       }
       return fr;
     }
+    
+    Frame imputeWithPosteriorForNALevelOrWithPrior(String teColumnName, Frame fr, int columnIndex, Frame encodingMapForCurrentTEColumn, double priorMean) {
+      int numberOfRowsInEncodingMap = (int) encodingMapForCurrentTEColumn.numRows();
+      String lastDomain = encodingMapForCurrentTEColumn.domains()[0][numberOfRowsInEncodingMap - 1];
+      boolean missingValuesWerePresent = lastDomain.equals(teColumnName + "_NA");
+
+      double numeratorForNALevel = encodingMapForCurrentTEColumn.vec(NUMERATOR_COL_NAME).at(numberOfRowsInEncodingMap - 1);
+      double denominatorForNALevel = encodingMapForCurrentTEColumn.vec(DENOMINATOR_COL_NAME).at(numberOfRowsInEncodingMap - 1);
+      double posteriorForNALevel = numeratorForNALevel / denominatorForNALevel;
+      double valueForImputation = missingValuesWerePresent ? posteriorForNALevel : priorMean;
+      Vec vecWithEncodings = fr.vec(columnIndex);
+      assert vecWithEncodings.get_type() == Vec.T_NUM : "Imputation of mean value is supported only for numerical vectors.";
+      long numberOfNAs = vecWithEncodings.naCnt();
+      if (numberOfNAs > 0) {
+        new FillNAWithDoubleValueTask(columnIndex, valueForImputation).doAll(fr);
+        Log.info(String.format("Frame with id = %s was imputed with posterior mean from NA level = %f ( %d rows were affected)", fr._key, valueForImputation, numberOfNAs));
+      }
+      return fr;
+    }
 
     double calculatePriorMean(Frame fr) {
         Vec numeratorVec = fr.vec(NUMERATOR_COL_NAME);
@@ -275,7 +297,7 @@ public class TargetEncoder {
         return numeratorVec.mean() / denominatorVec.mean();
     }
 
-    Frame calculateAndAppendBlendedTEEncoding(Frame fr, Frame encodingMap, String targetColumnName, String appendedColumnName) {
+    Frame calculateAndAppendBlendedTEEncoding(Frame fr, Frame encodingMap, String appendedColumnName) {
       int numeratorIndex = fr.find(NUMERATOR_COL_NAME);
       int denominatorIndex = fr.find(DENOMINATOR_COL_NAME);
 
@@ -313,7 +335,7 @@ public class TargetEncoder {
           if (num.isNA(i) || den.isNA(i))
             encodings.setNA(i);
           else if (den.at8(i) == 0) {
-            Log.info("Denominator is zero. Imputing with _priorMean = " + _priorMean);
+            Log.info("Denominator is zero for column index = " + _encodingsIdx + ". Imputing with _priorMean = " + _priorMean);
             encodings.set(i, _priorMean);
           } else {
             double numberOfRowsInCurrentCategory = den.atd(i);
@@ -326,7 +348,7 @@ public class TargetEncoder {
       }
     }
 
-    Frame calculateAndAppendTEEncoding(Frame fr, Frame encodingMap, String targetColumnName, String appendedColumnName) {
+    Frame calculateAndAppendTEEncoding(Frame fr, Frame encodingMap, String appendedColumnName) {
       int numeratorIndex = fr.find(NUMERATOR_COL_NAME);
       int denominatorIndex = fr.find(DENOMINATOR_COL_NAME);
 
@@ -479,7 +501,12 @@ public class TargetEncoder {
           dataWithAllEncodings = data.deepCopy(Key.make().toString());
           DKV.put(dataWithAllEncodings);
 
-          ensureTargetColumnIsBinaryCategorical(dataWithAllEncodings, targetColumnName);
+          // Note: for KFold strategy we don't need targetColumnName so that we can exclude values from 
+          // current fold - as everything is already precomputed and stored in encoding map.
+          // This is not the case with LeaveOneOut when we need to subtract current row's value and for that 
+          // we need to make sure that response column is provided and is a binary categorical column.
+          if(dataLeakageHandlingStrategy == DataLeakageHandlingStrategy.LeaveOneOut)
+            ensureTargetColumnIsBinaryCategorical(dataWithAllEncodings, targetColumnName);
 
           for (String teColumnName : _columnNamesToEncode) {
 
@@ -537,8 +564,8 @@ public class TargetEncoder {
                   
                   dataWithMergedAggregationsK = mergeByTEAndFoldColumns(dataWithAllEncodings, holdoutEncodeMap, teColumnIndex, foldColumnIndex, teColumnIndexInEncodingMap);
                   
-                  Frame withEncodingsFrameK = calculateEncoding(dataWithMergedAggregationsK, encodingMapForCurrentTEColumn, targetColumnName, newEncodedColumnName, withBlendedAvg);
-
+                  Frame withEncodingsFrameK = calculateEncoding(dataWithMergedAggregationsK, encodingMapForCurrentTEColumn, newEncodedColumnName, withBlendedAvg);
+                  
                   Frame withAddedNoiseEncodingsFrameK = applyNoise(withEncodingsFrameK, newEncodedColumnName, noiseLevel, seed);
 
                   // Cases when we can introduce NA's:
@@ -564,14 +591,14 @@ public class TargetEncoder {
                 try {
                   foldColumnIsInEncodingMapCheck(foldColumnName, encodingMapForCurrentTEColumn);
 
-                  groupedTargetEncodingMap = groupingIgnoringFordColumn(foldColumnName, encodingMapForCurrentTEColumn, teColumnName);
+                  groupedTargetEncodingMap = groupingIgnoringFoldColumn(foldColumnName, encodingMapForCurrentTEColumn, teColumnName);
 
                   int teColumnIndexInGroupedEncodingMap = groupedTargetEncodingMap.find(teColumnName);
                   dataWithMergedAggregationsL = mergeByTEColumn(dataWithAllEncodings, groupedTargetEncodingMap, teColumnIndex, teColumnIndexInGroupedEncodingMap);
 
                   Frame subtractedFrameL = subtractTargetValueForLOO(dataWithMergedAggregationsL, targetColumnName);
 
-                  Frame withEncodingsFrameL = calculateEncoding(subtractedFrameL, groupedTargetEncodingMap, targetColumnName, newEncodedColumnName, withBlendedAvg); // do we really need to pass groupedTargetEncodingMap again?
+                  Frame withEncodingsFrameL = calculateEncoding(subtractedFrameL, groupedTargetEncodingMap, newEncodedColumnName, withBlendedAvg); // do we really need to pass groupedTargetEncodingMap again?
 
                   Frame withAddedNoiseEncodingsFrameL = applyNoise(withEncodingsFrameL, newEncodedColumnName, noiseLevel, seed);
 
@@ -582,7 +609,6 @@ public class TargetEncoder {
                   removeNumeratorAndDenominatorColumns(imputedEncodingsFrameL);
 
                   dataWithAllEncodings = imputedEncodingsFrameL;
-
                 } catch (Exception ex) {
                   if (dataWithMergedAggregationsL != null) dataWithMergedAggregationsL.delete();
                   throw ex;
@@ -596,21 +622,22 @@ public class TargetEncoder {
                 Frame dataWithMergedAggregationsN = null;
                 try {
                   foldColumnIsInEncodingMapCheck(foldColumnName, encodingMapForCurrentTEColumn);
-                  groupedTargetEncodingMapForNone = groupingIgnoringFordColumn(foldColumnName, encodingMapForCurrentTEColumn, teColumnName);
+                  groupedTargetEncodingMapForNone = groupingIgnoringFoldColumn(foldColumnName, encodingMapForCurrentTEColumn, teColumnName);
                   int teColumnIndexInGroupedEncodingMapNone = groupedTargetEncodingMapForNone.find(teColumnName);
 //                  String prefix = UUID.randomUUID().toString().substring(0, 5);
 //                  Frame.exportToCSV(dataWithAllEncodings, "dataWithAllEncodings_" + dataWithAllEncodings.numRows() + "_" + prefix +".csv", dataWithAllEncodings._key.toString(), true, 1).get();
 
                   dataWithMergedAggregationsN = mergeByTEColumn(dataWithAllEncodings, groupedTargetEncodingMapForNone, teColumnIndex, teColumnIndexInGroupedEncodingMapNone);
 
-                  Frame withEncodingsFrameN = calculateEncoding(dataWithMergedAggregationsN, groupedTargetEncodingMapForNone, targetColumnName, newEncodedColumnName, withBlendedAvg);
+                  Frame withEncodingsFrameN = calculateEncoding(dataWithMergedAggregationsN, groupedTargetEncodingMapForNone, newEncodedColumnName, withBlendedAvg);
 
                   Frame withAddedNoiseEncodingsFrameN = applyNoise(withEncodingsFrameN, newEncodedColumnName, noiseLevel, seed);
                   // In cases when encoding has not seen some levels we will impute NAs with mean computed from training set. Mean is a dataleakage btw.
                   // Note: In case of creating encoding map based on the holdout set we'd better use stratified sampling.
                   // Maybe even choose size of holdout taking into account size of the minimal set that represents all levels.
                   // Otherwise there are higher chances to get NA's for unseen categories.
-                  Frame imputedEncodingsFrameN = imputeWithMean(withAddedNoiseEncodingsFrameN, withAddedNoiseEncodingsFrameN.find(newEncodedColumnName), priorMeanFromTrainingDataset);
+                  Frame imputedEncodingsFrameN = imputeWithPosteriorForNALevelOrWithPrior(teColumnName, withAddedNoiseEncodingsFrameN, 
+                          withAddedNoiseEncodingsFrameN.find(newEncodedColumnName), groupedTargetEncodingMapForNone, priorMeanFromTrainingDataset);
 
                   removeNumeratorAndDenominatorColumns(imputedEncodingsFrameN);
 
@@ -632,11 +659,11 @@ public class TargetEncoder {
         }
     }
 
-    Frame calculateEncoding(Frame preparedFrame, Frame encodingMap, String targetColumnName, String newEncodedColumnName, boolean withBlendedAvg) {
+    Frame calculateEncoding(Frame preparedFrame, Frame encodingMap, String newEncodedColumnName, boolean withBlendedAvg) {
         if (withBlendedAvg) {
-            return calculateAndAppendBlendedTEEncoding(preparedFrame, encodingMap, targetColumnName, newEncodedColumnName);
+            return calculateAndAppendBlendedTEEncoding(preparedFrame, encodingMap, newEncodedColumnName);
         } else {
-            return calculateAndAppendTEEncoding(preparedFrame, encodingMap, targetColumnName, newEncodedColumnName);
+            return calculateAndAppendTEEncoding(preparedFrame, encodingMap, newEncodedColumnName);
         }
     }
 
@@ -657,7 +684,7 @@ public class TargetEncoder {
         }
     }
 
-    Frame groupingIgnoringFordColumn(String foldColumnName, Frame targetEncodingMap, String teColumnName) {
+    public static Frame groupingIgnoringFoldColumn(String foldColumnName, Frame targetEncodingMap, String teColumnName) {
         if (foldColumnName != null) {
             int teColumnIndex = targetEncodingMap.find(teColumnName);
 
@@ -683,8 +710,12 @@ public class TargetEncoder {
                                      long seed) {
         double defaultNoiseLevel = 0.01;
         int targetIndex = data.find(targetColumnName);
-        Vec targetVec = data.vec(targetIndex);
-        double   noiseLevel = targetVec.isNumeric()  ?   defaultNoiseLevel * (targetVec.max() - targetVec.min()) : defaultNoiseLevel;
+        double   noiseLevel = 0.0;
+        // When noise is not provided and there is no response column in the `data` frame -> no noise will be added to transformations
+        if(targetIndex != -1) {
+          Vec targetVec = data.vec(targetIndex);
+          noiseLevel = targetVec.isNumeric() ? defaultNoiseLevel * (targetVec.max() - targetVec.min()) : defaultNoiseLevel;
+        }
         return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, foldColumn, withBlendedAvg, noiseLevel, true, seed);
     }
 

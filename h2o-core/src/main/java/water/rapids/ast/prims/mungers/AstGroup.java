@@ -12,7 +12,7 @@ import water.rapids.ast.params.AstNumList;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValFun;
 import water.util.ArrayUtils;
-import water.util.IcedHashMap;
+import water.util.IcedHashSet;
 import water.util.Log;
 
 import java.util.Arrays;
@@ -33,8 +33,18 @@ import java.util.Arrays;
  * The returned column(s).
  */
 public class AstGroup extends AstPrimitive {
+
+  private final boolean _per_node_aggregates;
+
+  public AstGroup() {
+    this(true);
+  }
+
+  public AstGroup(boolean perNodeAggregates) {
+    _per_node_aggregates = perNodeAggregates;
+  }
+
   public enum NAHandling {ALL, RM, IGNORE}
-  public int _numberOfMedianActionsNeeded = -1;
 
   // Functions handled by GroupBy
   public enum FCN {
@@ -274,23 +284,31 @@ public class AstGroup extends AstPrimitive {
 
     final AGG[] aggs = constructAggregates(fr, validAggregatesCount, env, asts);
 
-    return performGroupingWithAggregations(fr, gbCols, aggs, _numberOfMedianActionsNeeded);
+    return performGroupingWithAggregations(fr, gbCols, aggs);
   }
 
-  public ValFrame performGroupingWithAggregations(Frame fr, int[] gbCols, AGG[] aggs, int medianCount) {
-    IcedHashMap<G, String> gss = doGroups(fr, gbCols, aggs, medianCount);
-    final G[] grps = gss.keySet().toArray(new G[gss.size()]);
+  public ValFrame performGroupingWithAggregations(Frame fr, int[] gbCols, AGG[] aggs) {
+    final boolean hasMedian = hasMedian(aggs);
+    final IcedHashSet<G> gss = doGroups(fr, gbCols, aggs, hasMedian, _per_node_aggregates);
+    final G[] grps = gss.toArray(new G[gss.size()]);
 
     applyOrdering(gbCols, grps);
 
-    calculateMediansForGRPS(fr, gbCols, aggs, gss, grps);
+    final int medianActionsNeeded = hasMedian ? calculateMediansForGRPS(fr, gbCols, aggs, gss, grps) : -1;
 
-    MRTask mrFill = prepareMRFillTask(grps, aggs, medianCount);
+    MRTask mrFill = prepareMRFillTask(grps, aggs, medianActionsNeeded);
 
     String[] fcNames = prepareFCNames(fr, aggs);
 
     Frame f = buildOutput(gbCols, aggs.length, fr, fcNames, grps.length, mrFill);
     return new ValFrame(f);
+  }
+
+  private static boolean hasMedian(AGG[] aggs) {
+    for (AGG agg : aggs) 
+      if (FCN.median.equals(agg._fcn))
+        return true;
+    return false;
   }
 
   private MRTask prepareMRFillTask(final G[] grps, final AGG[] aggs, final int medianCount) {
@@ -304,8 +322,8 @@ public class AstGroup extends AstPrimitive {
           for (j = 0; j < g._gs.length; j++) // The Group Key, as a row
             ncs[j].addNum(g._gs[j]);
           for (int a = 0; a < aggs.length; a++) {
-            if ((medianCount >=0) && g._isMedian[a])
-              ncs[j++].addNum(g._medians[a]);
+            if ((medianCount >=0) && g.medianR._isMedian[a])
+              ncs[j++].addNum(g.medianR._medians[a]);
             else
               ncs[j++].addNum(aggs[a]._fcn.postPass(g._dss[a], g._ns[a]));
           }
@@ -361,8 +379,6 @@ public class AstGroup extends AstPrimitive {
       NAHandling na = NAHandling.valueOf(asts[idx + 2].exec(env).getStr().toUpperCase());
       if (!fr.vec(agg_col).isString())
         aggs[countCols++] = new AGG(fcn, agg_col, na, (int) fr.vec(agg_col).max() + 1);
-      if (fcn == FCN.median)
-        _numberOfMedianActionsNeeded = 0;
     }
     return aggs;
   }
@@ -391,24 +407,23 @@ public class AstGroup extends AstPrimitive {
       });
   }
 
-  private void calculateMediansForGRPS(Frame fr, int[] gbCols, AGG[] aggs, IcedHashMap<G, String> gss, G[] grps) {
+  private int calculateMediansForGRPS(Frame fr, int[] gbCols, AGG[] aggs, IcedHashSet<G> gss, G[] grps) {
     // median action exists, we do the following three things:
     // 1. Find out how many columns over all groups we need to perform median on
     // 2. Assign an index to the NewChunk that we will be storing the data for each median column for each group
     // 3. Fill out the NewChunk for each column of each group
-    if (_numberOfMedianActionsNeeded >= 0) {
-      for (G g : grps) {
-        for (int index = 0; index < g._isMedian.length; index++) {
-          if (g._isMedian[index]) {
-            g._newChunkCols[index] = _numberOfMedianActionsNeeded++;
-          }
+    int numberOfMedianActionsNeeded = 0;
+    for (G g : grps) {
+      for (int index = 0; index < g.medianR._isMedian.length; index++) {
+        if (g.medianR._isMedian[index]) {
+          g.medianR._newChunkCols[index] = numberOfMedianActionsNeeded++;
         }
       }
-
-      BuildGroup buildMedians = new BuildGroup(gbCols, aggs, gss, grps, _numberOfMedianActionsNeeded);
-      Vec[] groupChunks = buildMedians.doAll(_numberOfMedianActionsNeeded, Vec.T_NUM, fr).close();
-      buildMedians.calcMedian(groupChunks);
     }
+    BuildGroup buildMedians = new BuildGroup(gbCols, aggs, gss, grps, numberOfMedianActionsNeeded);
+    Vec[] groupChunks = buildMedians.doAll(numberOfMedianActionsNeeded, Vec.T_NUM, fr).close();
+    buildMedians.calcMedian(groupChunks);
+    return numberOfMedianActionsNeeded;
   }
 
   // Argument check helper
@@ -428,18 +443,25 @@ public class AstGroup extends AstPrimitive {
   // Do all the grouping work.  Find groups in frame 'fr', grouped according to
   // the selected 'gbCols' columns, and for each group compute aggregrate
   // results using 'aggs'.  Return an array of groups, with the aggregate results.
-  public static IcedHashMap<G, String> doGroups(Frame fr, int[] gbCols, AGG[] aggs) {
-    return doGroups(fr, gbCols, aggs, -1);
+  public static IcedHashSet<G> doGroups(Frame fr, int[] gbCols, AGG[] aggs) {
+    return doGroups(fr, gbCols, aggs, false, true);
   }
 
-  public static IcedHashMap<G, String> doGroups(Frame fr, int[] gbCols, AGG[] aggs, int medianCount) {
+  private static IcedHashSet<G> doGroups(Frame fr, int[] gbCols, AGG[] aggs, boolean hasMedian, boolean perNodeAggregates) {
     // do the group by work now
     long start = System.currentTimeMillis();
-    GBTask p1 = new GBTask(gbCols, aggs, medianCount).doAll(fr);
+    GBTask<?> p1 = makeGBTask(perNodeAggregates, gbCols, aggs, hasMedian).doAll(fr);
     Log.info("Group By Task done in " + (System.currentTimeMillis() - start) / 1000. + " (s)");
-    return p1._gss;
+    return p1.getGroups();
   }
 
+  private static GBTask<? extends GBTask> makeGBTask(boolean perNodeAggregates, int[] gbCols, AGG[] aggs, boolean hasMedian) {
+    if (perNodeAggregates)
+      return new GBTaskAggsPerNode(gbCols, aggs, hasMedian);
+    else
+      return new GBTaskAggsPerMap(gbCols, aggs, hasMedian);
+  }
+  
   // Utility for AstDdply; return a single aggregate for counting rows-per-group
   public static AGG[] aggNRows() {
     return new AGG[]{new AGG(FCN.nrow, 0, NAHandling.IGNORE, 0)};
@@ -509,36 +531,148 @@ public class AstGroup extends AstPrimitive {
     }
   }
 
+  private static abstract class GBTask<E extends MRTask<E>> extends MRTask<E> {
+    final int[] _gbCols; // Columns used to define group
+    final AGG[] _aggs;   // Aggregate descriptions
+    final boolean _hasMedian;
 
+    GBTask(int[] gbCols, AGG[] aggs, boolean hasMedian) {
+      _gbCols = gbCols;
+      _aggs = aggs;
+      _hasMedian = hasMedian;
+    }
+    
+    abstract IcedHashSet<G> getGroups();
+    
+  } 
+  
   // --------------------------------------------------------------------------
   // Main worker MRTask.  Makes 1 pass over the data, and accumulates both all
   // groups and all aggregates
-  public static class GBTask extends MRTask<GBTask> {
-    IcedHashMap<G, String> _gss; // each thread will have its own IcedHashMap
-    private final int[] _gbCols; // Columns used to define group
-    private final AGG[] _aggs;   // Aggregate descriptions
-    private final int _medianCounts;
+  // This version merges discovered groups into a per-node aggregates map - it
+  // more memory efficient but it seems to suffer from a race condition 
+  // (bug PUBDEV-6319).
+  private static class GBTaskAggsPerNode extends GBTask<GBTaskAggsPerNode> {
+    final IcedHashSet<G> _gss; // Shared per-node, common, racy
 
-
-    GBTask(int[] gbCols, AGG[] aggs, int medianCounts) {
-      _gbCols = gbCols;
-      _aggs = aggs;
-      _medianCounts = medianCounts;
+    GBTaskAggsPerNode(int[] gbCols, AGG[] aggs, boolean hasMedian) {
+      super(gbCols, aggs, hasMedian);
+      _gss = new IcedHashSet<>();
     }
 
     @Override
     public void map(Chunk[] cs) {
       // Groups found in this Chunk
-      _gss = new IcedHashMap<>();
-      G gWork = new G(_gbCols.length, _aggs, _medianCounts); // Working Group
+      IcedHashSet<G> gs = new IcedHashSet<>();
+      G gWork = new G(_gbCols.length, _aggs, _hasMedian); // Working Group
       G gOld;                   // Existing Group to be filled in
       for (int row = 0; row < cs[0]._len; row++) {
         // Find the Group being worked on
         gWork.fill(row, cs, _gbCols);            // Fill the worker Group for the hashtable lookup
-        if (_gss.putIfAbsent(gWork, "") == null) { // Insert if not absent (note: no race, no need for atomic)
+        if (gs.addIfAbsent(gWork) == null) { // Insert if not absent (note: no race, no need for atomic)
           gOld = gWork;                          // Inserted 'gWork' into table
-          gWork = new G(_gbCols.length, _aggs, _medianCounts);   // need entirely new G
-        } else gOld = _gss.getk(gWork);            // Else get existing group
+          gWork = new G(_gbCols.length, _aggs, _hasMedian);   // need entirely new G
+        } else gOld = gs.get(gWork);            // Else get existing group
+
+        for (int i = 0; i < _aggs.length; i++) // Accumulate aggregate reductions
+          _aggs[i].op(gOld._dss, gOld._ns, i, cs[_aggs[i]._col].atd(row));
+      }
+      // This is a racy update into the node-local shared table of groups
+      reduce(gs);               // Atomically merge Group stats
+    }
+
+    // Racy update on a subtle path: reduction is always single-threaded, but
+    // the shared global hashtable being reduced into is ALSO being written by
+    // parallel map calls.
+    @Override
+    public void reduce(GBTaskAggsPerNode t) {
+      if (_gss != t._gss) {
+        // this means we got the result from another node
+        // it is easy to partition the result into distinct subsets - we don't have to worry about collisions
+        // => no need to synchronize (but for now we do use atomic_op anyway), we just parallelize the merge
+        int otherSize = t._gss.size();
+        if (otherSize == 0)
+          return;
+        G[] otherGroups = t._gss.toArray(new G[otherSize]);
+        final int subGroupSize = otherSize > H2O.ARGS.nthreads ? 
+                (int) Math.ceil((double) otherSize / H2O.ARGS.nthreads) : otherSize;
+        MergeGroupsFun f = new MergeGroupsFun(_aggs, _gss, otherGroups, subGroupSize);
+        if (subGroupSize == otherSize) {
+          f.map(0); // not worth parallelizing, execute directly
+        } else {
+          H2O.submitTask(new LocalMR(f, H2O.ARGS.nthreads)).join();
+        }
+      }
+    }
+
+    // Non-blocking race-safe update of the shared per-node groups hashtable
+    private void reduce(IcedHashSet<G> r) {
+      for (G rg : r) {
+        G lg;
+        if ((lg = _gss.addIfAbsent(rg)) != null) {
+          for (int i = 0; i < _aggs.length; i++)
+            _aggs[i].atomic_op(lg._dss, lg._ns, i, rg._dss[i], rg._ns[i]); // Need to atomically merge groups here
+        }
+      }
+    }
+
+    @Override
+    IcedHashSet<G> getGroups() {
+      return _gss;
+    }
+  }
+
+  private static class MergeGroupsFun extends MrFun<MergeGroupsFun> {
+    private final AGG[] _aggs;
+    private final transient IcedHashSet<G> _gss;
+    private final transient G[] _other;
+    private final int _size;
+
+    MergeGroupsFun(AGG[] aggs, IcedHashSet<G> gss, G[] other, int size) {
+      _aggs = aggs;
+      _gss = gss;
+      _other = other;
+      _size = size;
+    }
+
+    @Override
+    protected void map(final int subGroupId) {
+      for (int g = subGroupId * _size; g < (subGroupId + 1) * _size && g < _other.length; g++) {
+        G rg = _other[g];
+        G lg;
+        if ((lg = _gss.addIfAbsent(rg)) != null) {
+          for (int i = 0; i < _aggs.length; i++)
+            _aggs[i].atomic_op(lg._dss, lg._ns, i, rg._dss[i], rg._ns[i]); // Need to atomically merge groups here
+        }
+      }
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // "Safe" alternative of GBTaskAggsPerNode - instead of maintaining
+  // a node-global map of aggregates, it creates aggregates per chunk
+  // and uses reduce to reduce results of map into a single aggregated.
+  // Consumes more memory but doesn't suffer from bug PUBDEV-6319.
+  public static class GBTaskAggsPerMap extends GBTask<GBTaskAggsPerMap> {
+    IcedHashSet<G> _gss; // each map will have its own IcedHashMap
+
+    GBTaskAggsPerMap(int[] gbCols, AGG[] aggs, boolean hasMedian) {
+      super(gbCols, aggs, hasMedian);
+    }
+
+    @Override
+    public void map(Chunk[] cs) {
+      // Groups found in this Chunk
+      _gss = new IcedHashSet<>();
+      G gWork = new G(_gbCols.length, _aggs, _hasMedian); // Working Group
+      G gOld;                   // Existing Group to be filled in
+      for (int row = 0; row < cs[0]._len; row++) {
+        // Find the Group being worked on
+        gWork.fill(row, cs, _gbCols);            // Fill the worker Group for the hashtable lookup
+        if (_gss.addIfAbsent(gWork) == null) { // Insert if not absent (note: no race, no need for atomic)
+          gOld = gWork;                          // Inserted 'gWork' into table
+          gWork = new G(_gbCols.length, _aggs, _hasMedian);   // need entirely new G
+        } else gOld = _gss.get(gWork);            // Else get existing group
 
         for (int i = 0; i < _aggs.length; i++) // Accumulate aggregate reductions
           _aggs[i].op(gOld._dss, gOld._ns, i, cs[_aggs[i]._col].atd(row));
@@ -547,58 +681,73 @@ public class AstGroup extends AstPrimitive {
 
     // combine IcedHashMap from all threads here.
     @Override
-    public void reduce(GBTask t) {
-      if (_gss != t._gss) {
-        for (G rg : t._gss.keySet()) {
-          if (_gss.putIfAbsent(rg, "") != null) {
-            G lg = _gss.getk(rg);
-            for (int i = 0; i < _aggs.length; i++)
-              _aggs[i].atomic_op(lg._dss, lg._ns, i, rg._dss[i], rg._ns[i]); // Need to atomically merge groups here
-          }
+    public void reduce(GBTaskAggsPerMap t) {
+      for (G rg : t._gss) {
+        if (_gss.addIfAbsent(rg) != null) {
+          G lg = _gss.get(rg);
+          for (int i = 0; i < _aggs.length; i++)
+            _aggs[i].atomic_op(lg._dss, lg._ns, i, rg._dss[i], rg._ns[i]); // Need to atomically merge groups here
         }
       }
     }
+
+    @Override
+    IcedHashSet<G> getGroups() {
+      return _gss;
+    }
   }
 
+  public static class MedianResult extends Iced {
+    int[] _medianCols;
+    double[] _medians;
+    boolean[] _isMedian;
+    int[] _newChunkCols;
+    public NAHandling[] _na;
+    
+    public MedianResult(int len) {
+      _medianCols = new int[len];
+      _medians = new double[len];
+      _isMedian = new boolean[len];
+      _newChunkCols = new int[len];
+      _na = new NAHandling[len];
+    }
+  }
   // Groups!  Contains a Group Key - an array of doubles (often just 1 entry
   // long) that defines the Group.  Also contains an array of doubles for the
   // aggregate results, one per aggregate.
-  public static class G extends Iced {
+  public static class G extends Iced<G> {
     public final double[] _gs;  // Group Key: Array is final; contents change with the "fill"
     int _hash;           // Hash is not final; changes with the "fill"
 
     public final double _dss[][];      // Aggregates: usually sum or sum*2
     public final long _ns[];         // row counts per aggregate, varies by NA handling and column
-    int[] _medianCols;    // record which columns in reference to data frame
+/*    int[] _medianCols;    // record which columns in reference to data frame
     double[] _medians;
     boolean[] _isMedian;
     int[] _newChunkCols;  // record which columns in newChunk to store group
-    public NAHandling[] _na;
+    public NAHandling[] _na;*/
+    public MedianResult medianR = null;
 
     public G(int ncols, AGG[] aggs) {
-      this(ncols, aggs, -1);
+      this(ncols, aggs, false);
     }
 
-    public G(int ncols, AGG[] aggs, int medianCounts) {
+    public G(int ncols, AGG[] aggs, boolean hasMedian) {
       _gs = new double[ncols];
       int len = aggs == null ? 0 : aggs.length;
       _dss = new double[len][];
       _ns = new long[len];
 
-      if (medianCounts >= 0) {
-        _medianCols = new int[len];
-        _medians = new double[len];
-        _isMedian = new boolean[len];
-        _newChunkCols = new int[len];
-        _na = new NAHandling[len];
+      if (hasMedian) {
+        medianR = new MedianResult(len);
       }
 
       for (int i = 0; i < len; i++) {
         _dss[i] = aggs[i].initVal();
-        if ((medianCounts >= 0) && (aggs[i]._fcn.toString().equals("median"))) { // for median function only
-          _medianCols[i] = aggs[i]._col;    // which column in the data set to aggregate on
-          _isMedian[i] = true;
-          _na[i] = aggs[i]._na;
+        if (hasMedian && (aggs[i]._fcn.toString().equals("median"))) { // for median function only
+          medianR._medianCols[i] = aggs[i]._col;    // which column in the data set to aggregate on
+          medianR._isMedian[i] = true;
+          medianR._na[i] = aggs[i]._na;
         }
       }
     }
@@ -650,11 +799,11 @@ public class AstGroup extends AstPrimitive {
     final int[] _gbCols;
     private final AGG[] _aggs;   // Aggregate descriptions
     private final int _medianCols;
-    IcedHashMap<G, String> _gss;
+    IcedHashSet<G> _gss;
     private G[] _grps;
 
 
-    BuildGroup(int[] gbCols, AGG[] aggs, IcedHashMap<G, String> gss, G[] grps, int medianCols) {
+    BuildGroup(int[] gbCols, AGG[] aggs, IcedHashSet<G> gss, G[] grps, int medianCols) {
       _gbCols = gbCols;
       _aggs = aggs;
       _gss = gss;
@@ -664,17 +813,17 @@ public class AstGroup extends AstPrimitive {
 
     @Override
     public void map(Chunk[] cs, NewChunk[] ncs) {
-      G gWork = new G(_gbCols.length, _aggs, _medianCols); // Working Group
+      G gWork = new G(_gbCols.length, _aggs, _medianCols > 0); // Working Group
       G gOld;
 
       for (int row = 0; row < cs[0]._len; row++) {  // for each
         gWork.fill(row, cs, _gbCols);
-        gOld = _gss.getk(gWork);
-        for (int i = 0; i < gOld._isMedian.length; i++) { // Accumulate aggregate reductions
-          if (gOld._isMedian[i]) {  // median action required on column and group
-            double d1 = cs[gOld._medianCols[i]].atd(row);
-            if (!Double.isNaN(d1) || gOld._na[i] != NAHandling.RM)
-              ncs[gOld._newChunkCols[i]].addNum(d1);  // build up dataset for each group
+        gOld = _gss.get(gWork);
+        for (int i = 0; i < gOld.medianR._isMedian.length; i++) { // Accumulate aggregate reductions
+          if (gOld.medianR._isMedian[i]) {  // median action required on column and group
+            double d1 = cs[gOld.medianR._medianCols[i]].atd(row);
+            if (!Double.isNaN(d1) || gOld.medianR._na[i] != NAHandling.RM)
+              ncs[gOld.medianR._newChunkCols[i]].addNum(d1);  // build up dataset for each group
           }
         }
       }
@@ -688,10 +837,10 @@ public class AstGroup extends AstPrimitive {
       int cCount = 0;
       Vec[] tempVgrps = new Vec[_medianCols];
       for (G oneG : _grps) {
-        for (int index = 0; index < oneG._isMedian.length; index++) {
-          if (oneG._isMedian[index]) {  // median action is needed
+        for (int index = 0; index < oneG.medianR._isMedian.length; index++) {
+          if (oneG.medianR._isMedian[index]) {  // median action is needed
             // make a frame out of the NewChunk vector
-            tempVgrps[cCount++] = _appendables[oneG._newChunkCols[index]].close(_appendables[oneG._newChunkCols[index]].compute_rowLayout(), fs);
+            tempVgrps[cCount++] = _appendables[oneG.medianR._newChunkCols[index]].close(_appendables[oneG.medianR._newChunkCols[index]].compute_rowLayout(), fs);
           }
         }
       }
@@ -702,8 +851,8 @@ public class AstGroup extends AstPrimitive {
     public void calcMedian(Vec[] tempVgrps) {
       int cCount = 0;
       for (G oneG : _grps) {
-        for (int index = 0; index < oneG._isMedian.length; index++) {
-          if (oneG._isMedian[index]) {
+        for (int index = 0; index < oneG.medianR._isMedian.length; index++) {
+          if (oneG.medianR._isMedian[index]) {
             Vec[] vgrps = new Vec[1];
             vgrps[0] = tempVgrps[cCount++];
             long totalRows = vgrps[0].length();
@@ -720,7 +869,7 @@ public class AstGroup extends AstPrimitive {
               tempFrame.delete();
               myFrame.delete();
             }
-            oneG._medians[index] = medianVal;
+            oneG.medianR._medians[index] = medianVal;
           }
         }
       }

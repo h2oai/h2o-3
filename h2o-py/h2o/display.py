@@ -22,8 +22,10 @@ class H2ODisplay(object):
 
     # True/False flag whether we are connected to a Jupyter notebook. Computed on the first use.
     _jupyter = None
+    # True/False flag whether we are connected to a Zeppelin note. Computed on the first use.
+    _zeppelin = None
 
-    def __init__(self, table=None, header=None, table_header=None, **kwargs):
+    def __init__(self, table=None, header=None, table_header=None, is_pandas=False, **kwargs):
         self.table_header = table_header
         self.header = header
         self.table = table
@@ -41,9 +43,12 @@ class H2ODisplay(object):
             print()
             print(self.table_header + ":")
             print()
-        if H2ODisplay._in_ipy():
+        if H2ODisplay._in_zep():
+            print("%html " + H2ODisplay._html_table(self.table, self.header))
+            self.do_print = False
+        elif H2ODisplay._in_ipy():
             from IPython.display import display
-            display(self)
+            display(table if is_pandas else self)
             self.do_print = False
         else:
             self.pprint()
@@ -69,6 +74,10 @@ class H2ODisplay(object):
         return ""
 
     @staticmethod
+    def prefer_pandas():
+        return H2ODisplay._in_ipy()
+
+    @staticmethod
     def _in_ipy():  # are we in ipy? then pretty print tables with _repr_html
         if H2ODisplay._jupyter is None:
             try:
@@ -79,6 +88,13 @@ class H2ODisplay(object):
             except ImportError:
                 H2ODisplay._jupyter = False
         return H2ODisplay._jupyter
+        
+    @staticmethod
+    def _in_zep():  # are we in zeppelin? then use zeppelin pretty print support
+        if H2ODisplay._zeppelin is None:
+            import os
+            H2ODisplay._zeppelin = H2ODisplay._in_ipy() and "ZEPPELIN_RUNNER" in os.environ
+        return H2ODisplay._zeppelin
 
     # some html table builder helper things
     @staticmethod

@@ -27,6 +27,7 @@ Supervised
    data-science/gbm
    data-science/naive-bayes
    data-science/stacked-ensembles
+   data-science/svm
    data-science/xgboost
 
 Unsupervised
@@ -48,3 +49,11 @@ Miscellaneous
    :maxdepth: 1
 
    data-science/word2vec
+
+MOJO Models
+--------------
+
+.. toctree::
+   :maxdepth: 1
+
+   data-science/mojo_import

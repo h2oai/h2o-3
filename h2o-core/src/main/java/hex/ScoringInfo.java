@@ -75,6 +75,7 @@ public class ScoringInfo extends Iced<ScoringInfo> {
       case deviance:          { return cross_validation ? scored_xval._mean_residual_deviance : validation ? scored_valid._mean_residual_deviance : scored_train._mean_residual_deviance; }
       case logloss:           { return cross_validation ? scored_xval._logloss : validation ? scored_valid._logloss : scored_train._logloss; }
       case misclassification: { return cross_validation ? scored_xval._classError : validation ? scored_valid._classError : scored_train._classError; }
+      case AUCPR: { return cross_validation ? scored_xval._pr_auc : validation ? scored_valid._pr_auc : scored_train._pr_auc; }
       case lift_top_group:    { return cross_validation ? scored_xval._lift : validation ? scored_valid._lift : scored_train._lift; }
       case mean_per_class_error: { return cross_validation ? scored_xval._mean_per_class_error : validation ? scored_valid._mean_per_class_error : scored_train._mean_per_class_error; }
 //      case r2: { return cross_validation ? scored_xval._r2 : validation ? scored_valid._r2 : scored_train._r2; }
@@ -91,16 +92,12 @@ public class ScoringInfo extends Iced<ScoringInfo> {
    * @param criterion scalar model metric / stopping criterion by which to sort
    * @return a Comparator on a stopping criterion / metric
    */
-  public static final Comparator<ScoringInfo> comparator(final ScoreKeeper.StoppingMetric criterion) {
+  public static Comparator<ScoringInfo> comparator(final ScoreKeeper.StoppingMetric criterion) {
+    final int direction = criterion.direction();
     return new Comparator<ScoringInfo>() {
       @Override
       public int compare(ScoringInfo o1, ScoringInfo o2) {
-        boolean moreIsBetter = ScoreKeeper.moreIsBetter(criterion);
-
-        if (!moreIsBetter)
-          return (int)Math.signum(o2.metric(criterion) - o1.metric(criterion));
-        else
-          return (int)Math.signum(o1.metric(criterion) - o2.metric(criterion));
+        return direction * (int)Math.signum(o1.metric(criterion) - o2.metric(criterion));
       }
     };
   }

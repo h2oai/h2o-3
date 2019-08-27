@@ -85,6 +85,8 @@ Defining a GLRM Model
 
 -  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Specify the maximum allowed runtime in seconds for model training. Use 0 to disable.
 
+-  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
+
 FAQ
 ~~~
 

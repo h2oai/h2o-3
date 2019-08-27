@@ -68,14 +68,17 @@ class MetricsBase(backwards_compatible()):
             print("WARNING: Model metrics cannot be calculated and metric_json is empty due to the absence of the response column in your dataset.")
             return
         metric_type = self._metric_json['__meta']['schema_type']
-        types_w_glm = ['ModelMetricsRegressionGLM', 'ModelMetricsBinomialGLM']
+        types_w_glm = ['ModelMetricsRegressionGLM', 'ModelMetricsRegressionGLMGeneric', 'ModelMetricsBinomialGLM',
+                       'ModelMetricsBinomialGLMGeneric']
         types_w_clustering = ['ModelMetricsClustering']
-        types_w_mult = ['ModelMetricsMultinomial']
-        types_w_ord = ['ModelMetricsOrdinal']
-        types_w_bin = ['ModelMetricsBinomial', 'ModelMetricsBinomialGLM']
-        types_w_r2 = ['ModelMetricsRegressionGLM']
-        types_w_mean_residual_deviance = ['ModelMetricsRegressionGLM', 'ModelMetricsRegression']
-        types_w_mean_absolute_error = ['ModelMetricsRegressionGLM', 'ModelMetricsRegression']
+        types_w_mult = ['ModelMetricsMultinomial', 'ModelMetricsMultinomialGeneric']
+        types_w_ord = ['ModelMetricsOrdinal', 'ModelMetricsOrdinalGeneric']
+        types_w_bin = ['ModelMetricsBinomial', 'ModelMetricsBinomialGeneric', 'ModelMetricsBinomialGLM', 'ModelMetricsBinomialGLMGeneric']
+        types_w_r2 = ['ModelMetricsRegressionGLM', 'ModelMetricsRegressionGLMGeneric']
+        types_w_mean_residual_deviance = ['ModelMetricsRegressionGLM', 'ModelMetricsRegressionGLMGeneric',
+                                          'ModelMetricsRegression', 'ModelMetricsRegressionGeneric']
+        types_w_mean_absolute_error = ['ModelMetricsRegressionGLM', 'ModelMetricsRegressionGLMGeneric',
+                                       'ModelMetricsRegression', 'ModelMetricsRegressionGeneric']
         types_w_logloss = types_w_bin + types_w_mult+types_w_ord
         types_w_dim = ["ModelMetricsGLRM"]
         types_w_anomaly = ['ModelMetricsAnomaly']
@@ -104,10 +107,10 @@ class MetricsBase(backwards_compatible()):
             print("Mean Residual Deviance: " + str(self.mean_residual_deviance()))
         if metric_type in types_w_logloss:
             print("LogLoss: " + str(self.logloss()))
-        if metric_type == 'ModelMetricsBinomial':
+        if metric_type in ['ModelMetricsBinomial', 'ModelMetricsBinomialGeneric']:
             # second element for first threshold is the actual mean per class error
             print("Mean Per-Class Error: %s" % self.mean_per_class_error()[0][1])
-        if metric_type == 'ModelMetricsMultinomial' or metric_type == 'ModelMetricsOrdinal':
+        if metric_type in types_w_mult or metric_type in ['ModelMetricsOrdinal', 'ModelMetricsOrdinalGeneric']:
             print("Mean Per-Class Error: " + str(self.mean_per_class_error()))
         if metric_type in types_w_glm:
             print("Null degrees of freedom: " + str(self.null_degrees_of_freedom()))
@@ -167,6 +170,7 @@ class MetricsBase(backwards_compatible()):
         return self._metric_json['AUC']
 
     def pr_auc(self):
+        """The area under the precision recall curve."""
         return self._metric_json['pr_auc']
 
 
@@ -323,6 +327,7 @@ class H2OOrdinalModelMetrics(MetricsBase):
         """Retrieve the Hit Ratios."""
         return self._metric_json['hit_ratio_table']
 
+
 class H2OBinomialModelMetrics(MetricsBase):
     """
     This class is essentially an API for the AUC object.
@@ -465,7 +470,7 @@ class H2OBinomialModelMetrics(MetricsBase):
         """
         :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the
             thresholds in this set of metrics will be used.
-        :returns: THe miss rate (same as False Negative Rate).
+        :returns: The miss rate (same as False Negative Rate).
         """
         return self.metric("fnr", thresholds=thresholds)
 
@@ -573,18 +578,29 @@ class H2OBinomialModelMetrics(MetricsBase):
         return self._metric_json["thresholds_and_metric_scores"]["tpr"]
 
 
+    #: metrics names allowed for confusion matrix
+    max_metrics = ('absolute_mcc', 'accuracy',
+                   'f0point5', 'f1', 'f2',
+                   'mean_per_class_accuracy', 'min_per_class_accuracy',
+                   'precision', 'recall', 'specificity',
+                   # 'fpr', 'fallout',                    # could be enabled maybe once PUBDEV-6366 is fixed
+                   # 'fnr', 'missrate', 'sensitivity',
+                   # 'tpr', 'recall',
+                   # 'tnr', 'specificity'
+                   )
+
     def confusion_matrix(self, metrics=None, thresholds=None):
         """
         Get the confusion matrix for the specified metric
 
-        :param metrics: A string (or list of strings) in {"min_per_class_accuracy", "absolute_mcc", "tnr", "fnr", "fpr",
-            "tpr", "precision", "accuracy", "f0point5", "f2", "f1","mean_per_class_accuracy"}
-        :param thresholds: A value (or list of values) between 0 and 1
+        :param metrics: A string (or list of strings) among metrics listed in :const:`max_metrics`. Defaults to 'f1'.
+        :param thresholds: A value (or list of values) between 0 and 1.
         :returns: a list of ConfusionMatrix objects (if there are more than one to return), or a single ConfusionMatrix
             (if there is only one).
         """
         # make lists out of metrics and thresholds arguments
-        if metrics is None and thresholds is None: metrics = ["f1"]
+        if metrics is None and thresholds is None:
+            metrics = ['f1']
 
         if isinstance(metrics, list):
             metrics_list = metrics
@@ -604,21 +620,19 @@ class H2OBinomialModelMetrics(MetricsBase):
         assert_is_type(thresholds_list, [numeric])
         assert_satisfies(thresholds_list, all(0 <= t <= 1 for t in thresholds_list))
 
-        if not all(m.lower() in ["min_per_class_accuracy", "absolute_mcc", "precision", "recall", "specificity",
-                                 "accuracy", "f0point5", "f2", "f1", "mean_per_class_accuracy"] for m in metrics_list):
-            raise ValueError(
-                "The only allowable metrics are min_per_class_accuracy, absolute_mcc, precision, accuracy, f0point5, "
-                "f2, f1, mean_per_class_accuracy")
+        if not all(m.lower() in H2OBinomialModelMetrics.max_metrics for m in metrics_list):
+            raise ValueError("The only allowable metrics are {}", ', '.join(H2OBinomialModelMetrics.max_metrics))
 
         # make one big list that combines the thresholds and metric-thresholds
         metrics_thresholds = [self.find_threshold_by_max_metric(m) for m in metrics_list]
         for mt in metrics_thresholds:
             thresholds_list.append(mt)
+        first_metrics_thresholds_offset = len(thresholds_list) - len(metrics_thresholds)
 
         thresh2d = self._metric_json['thresholds_and_metric_scores']
         actual_thresholds = [float(e[0]) for i, e in enumerate(thresh2d.cell_values)]
         cms = []
-        for t in thresholds_list:
+        for i, t in enumerate(thresholds_list):
             idx = self.find_idx_by_threshold(t)
             row = thresh2d.cell_values[idx]
             tns = row[11]
@@ -630,11 +644,10 @@ class H2OBinomialModelMetrics(MetricsBase):
             c0 = n - fps
             c1 = p - tps
             if t in metrics_thresholds:
-                m = metrics_list[metrics_thresholds.index(t)]
-                table_header = "Confusion Matrix (Act/Pred) for max " + m + " @ threshold = " + str(
-                    actual_thresholds[idx])
+                m = metrics_list[i - first_metrics_thresholds_offset]
+                table_header = "Confusion Matrix (Act/Pred) for max {} @ threshold = {}".format(m, actual_thresholds[idx])
             else:
-                table_header = "Confusion Matrix (Act/Pred) @ threshold = " + str(actual_thresholds[idx])
+                table_header = "Confusion Matrix (Act/Pred) @ threshold = {}".format(actual_thresholds[idx])
             cms.append(ConfusionMatrix(cm=[[c0, fps], [c1, tps]], domains=self._metric_json['domain'],
                                        table_header=table_header))
 
@@ -646,8 +659,7 @@ class H2OBinomialModelMetrics(MetricsBase):
 
     def find_threshold_by_max_metric(self, metric):
         """
-        :param metric: A string in {"min_per_class_accuracy", "absolute_mcc", "precision", "recall", "specificity",
-            "accuracy", "f0point5", "f2", "f1", "mean_per_class_accuracy"}.
+        :param metrics: A string among the metrics listed in :const:`max_metrics`.
         :returns: the threshold at which the given metric is maximal.
         """
         crit2d = self._metric_json['max_criteria_and_metric_scores']
@@ -670,9 +682,9 @@ class H2OBinomialModelMetrics(MetricsBase):
         thresh2d = self._metric_json['thresholds_and_metric_scores']
         for i, e in enumerate(thresh2d.cell_values):
             t = float(e[0])
-            if abs(t - threshold) < 0.00000001 * max(t, threshold):
+            if abs(t - threshold) < 1e-8 * max(t, threshold):
                 return i
-        if threshold >= 0 and threshold <= 1:
+        if 0 <= threshold <= 1:
             thresholds = [float(e[0]) for i, e in enumerate(thresh2d.cell_values)]
             threshold_diffs = [abs(t - threshold) for t in thresholds]
             closest_idx = threshold_diffs.index(min(threshold_diffs))
@@ -742,3 +754,10 @@ class H2OAnomalyDetectionModelMetrics(MetricsBase):
         if MetricsBase._has(self._metric_json, "mean_normalized_score"):
             return self._metric_json["mean_normalized_score"]
         return None
+
+
+class H2OCoxPHModelMetrics(MetricsBase):
+
+    def __init__(self, metric_json, on=None, algo=""):
+        super(H2OCoxPHModelMetrics, self).__init__(metric_json, on, algo)
+

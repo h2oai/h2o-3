@@ -127,6 +127,12 @@ class ModelMetricsHandler extends Handler {
     @API(help = "Predict the class probabilities at each stage (optional, only for GBM models)", json = false)
     public boolean predict_staged_proba;
 
+    @API(help = "Predict the feature contributions - Shapley values (optional, only for DRF, GBM and XGBoost models)", json = false)
+    public boolean predict_contributions;
+
+    @API(help = "Retrieve the feature frequencies on paths in trees in tree-based models (optional, only for GBM, DRF and Isolation Forest)", json = false)
+    public boolean feature_frequencies;
+
     @API(help = "Retrieve all members for a given exemplar (optional, only for Aggregator models)", json = false)
     public int exemplar_index;
 
@@ -334,7 +340,8 @@ class ModelMetricsHandler extends Handler {
   }
 
   /**
-   * Score a frame with the given model and return the metrics AND the prediction frame.
+   * Score a frame with the given model and return a Job that output a frame with predictions.
+   * Do *not* calculate ModelMetrics.
    */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public JobV3 predictAsync(int version, final ModelMetricsListSchemaV3 s) {
@@ -371,7 +378,7 @@ class ModelMetricsHandler extends Handler {
       @Override
       public void compute2() {
         if (s.deep_features_hidden_layer < 0 && s.deep_features_hidden_layer_name == null) {
-          parms._model.score(parms._frame, parms._predictions_name, j, true, CFuncRef.from(s.custom_metric_func));
+          parms._model.score(parms._frame, parms._predictions_name, j, false, CFuncRef.from(s.custom_metric_func));
         }
         else if (s.deep_features_hidden_layer_name != null){
           Frame predictions = null;
@@ -422,7 +429,7 @@ class ModelMetricsHandler extends Handler {
     Frame predictions;
     Frame deviances = null;
     if (!s.reconstruction_error && !s.reconstruction_error_per_feature && s.deep_features_hidden_layer < 0 &&
-        !s.project_archetypes && !s.reconstruct_train && !s.leaf_node_assignment && !s.predict_staged_proba && s.exemplar_index < 0) {
+        !s.project_archetypes && !s.reconstruct_train && !s.leaf_node_assignment && !s.predict_staged_proba && !s.predict_contributions && !s.feature_frequencies && s.exemplar_index < 0) {
       if (null == parms._predictions_name)
         parms._predictions_name = "predictions" + Key.make().toString().substring(0,5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
       String customMetricFunc = s.custom_metric_func;
@@ -473,10 +480,25 @@ class ModelMetricsHandler extends Handler {
           parms._predictions_name = "leaf_node_assignment" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
         Model.LeafNodeAssignment.LeafNodeAssignmentType type = null == s.leaf_node_assignment_type ? Model.LeafNodeAssignment.LeafNodeAssignmentType.Path : s.leaf_node_assignment_type;
         predictions = ((Model.LeafNodeAssignment) parms._model).scoreLeafNodeAssignment(parms._frame, type, Key.<Frame>make(parms._predictions_name));
+      } else if(s.feature_frequencies) {
+        assert(Model.FeatureFrequencies.class.isAssignableFrom(parms._model.getClass()));
+        if (null == parms._predictions_name)
+          parms._predictions_name = "feature_frequencies" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
+        predictions = ((Model.FeatureFrequencies) parms._model).scoreFeatureFrequencies(parms._frame, Key.<Frame>make(parms._predictions_name));
       } else if(s.predict_staged_proba) {
+        if (! (parms._model instanceof Model.StagedPredictions)) {
+          throw new H2OIllegalArgumentException("Model type " + parms._model._parms.algoName() + " doesn't support Staged Predictions.");
+        }
         if (null == parms._predictions_name)
           parms._predictions_name = "staged_proba_" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
         predictions = ((Model.StagedPredictions) parms._model).scoreStagedPredictions(parms._frame, Key.<Frame>make(parms._predictions_name));
+      } else if(s.predict_contributions) {
+        if (! (parms._model instanceof Model.Contributions)) {
+          throw new H2OIllegalArgumentException("Model type " + parms._model._parms.algoName() + " doesn't support calculating Feature Contributions.");
+        }
+        if (null == parms._predictions_name)
+          parms._predictions_name = "contributions_" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
+        predictions = ((Model.Contributions) parms._model).scoreContributions(parms._frame, Key.<Frame>make(parms._predictions_name));
       } else if(s.exemplar_index >= 0) {
         assert(Model.ExemplarMembers.class.isAssignableFrom(parms._model.getClass()));
         if (null == parms._predictions_name)

@@ -1,7 +1,7 @@
 ``blending_frame``
 ------------------
 
-- Available in: Stacked Ensembles
+- Available in: Stacked Ensembles, AutoML
 - Hyperparameter: no
 
 Description
@@ -14,7 +14,7 @@ The optional ``blending_frame`` parameter is used to specify a frame to be used 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
-- none
+- None
 
 Example
 ~~~~~~~

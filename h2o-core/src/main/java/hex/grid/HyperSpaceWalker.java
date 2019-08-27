@@ -466,7 +466,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     public boolean stopEarly(Model model, ScoringInfo[] sk) {
       return ScoreKeeper.stopEarly(ScoringInfo.scoreKeepers(sk),
                                    search_criteria().stopping_rounds(),
-                                   model._output.isClassifier(),
+                                    ScoreKeeper.ProblemType.forSupervised(model._output.isClassifier()),
                                    search_criteria().stopping_metric(),
                                    search_criteria().stopping_tolerance(), "grid's best", true);
     }
@@ -509,8 +509,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
               // ToDo: This implementation only works for sequential model building.
               if (_set_model_seed_from_search_seed) {
                 // set model seed = search_criteria.seed+(0, 1, 2,..., model number)
-                params._seed=((HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria) _search_criteria).seed()+
-                        (model_number++);
+                params._seed = _search_criteria.seed() + (model_number++);
               }
 
               // set max_runtime_secs

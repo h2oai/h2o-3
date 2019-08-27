@@ -139,6 +139,8 @@ reference:
       - h2o.hit_ratio_table
       - h2o.hour
       - h2o.ifelse
+      - h2o.import_hive_table
+      - h2o.import_mojo
       - h2o.import_sql_select
       - h2o.import_sql_table
       - h2o.importFile
@@ -213,6 +215,7 @@ reference:
       - h2o.prod 
       - h2o.proj_archetypes
       - h2o.pr_auc
+      - h2o.psvm
       - h2o.quantile
       - h2o.r2
       - h2o.randomForest
@@ -226,6 +229,7 @@ reference:
       - h2o.rep_len
       - h2o.residual_deviance 
       - h2o.residual_dof
+      - h2o.retain
       - h2o.rm 
       - h2o.rmse
       - h2o.rmsle
@@ -321,7 +325,8 @@ reference:
       - plot.H2OModel 
       - plot.H2OTabulate
       - predict.H2OAutoML 
-      - predict.H2OModel 
+      - predict.H2OModel
+      - predict_contributions.H2OModel 
       - predict_leaf_node_assignment.H2OModel
       - print.H2OFrame 
       - print.H2OTable 

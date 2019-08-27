@@ -15,7 +15,7 @@ where :math:`\lambda(t)` is the baseline hazard function shared by all observati
 
 This combination of a non-parametric baseline hazard function and a parametric risk score results in Cox proportional hazards models being described as *semi-parametric*. In addition, a simple rearrangement of terms shows that unlike generalized linear models, an intercept (constant) term in the risk score adds no value to the model fit, due to the inclusion of a baseline hazard function.
 
-`An R demo is available here <https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.word2vec.craigslistjobtitles.R>`__. This uses the CoxPH algorithm along with the craigslistJobTitles.csv dataset. 
+`An R demo is available here <https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.coxph.R>`__. This uses the CoxPH algorithm along with the WA\_Fn-UseC\_-Telco-Customer-Churn.csv dataset. 
 
 Defining a CoxPH Model
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -56,6 +56,7 @@ Defining a CoxPH Model
 
 -  `interaction_pairs <algo-params/interaction_pairs.html>`__: (Internal only.) When defining interactions, use this option to specify a list of pairwise column interactions (interactions between two variables). Note that this is different than ``interactions``, which will compute all pairwise combinations of specified columns. This option is disabled by default.
 
+-  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
 Cox Proportional Hazards Model Results
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

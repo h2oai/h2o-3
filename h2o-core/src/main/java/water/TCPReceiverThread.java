@@ -58,6 +58,7 @@ public class TCPReceiverThread extends Thread {
     boolean saw_error = false;
 
     while( true ) {
+      ByteChannel wrappedSocket = null;
       try {
         // Cleanup from any prior socket failures.  Rare unless we're really sick.
         if( errsock != null ) { // One time attempt a socket close
@@ -76,31 +77,31 @@ public class TCPReceiverThread extends Thread {
         }
         // Block for TCP connection and setup to read from it.
         SocketChannel sock = SOCK.accept();
+        InetAddress inetAddress = sock.socket().getInetAddress();
         ByteBuffer bb = ByteBuffer.allocate(6).order(ByteOrder.nativeOrder());
-        ByteChannel wrappedSocket = socketChannelFactory.serverChannel(sock);
+        wrappedSocket = socketChannelFactory.serverChannel(sock);
         bb.limit(bb.capacity());
         bb.position(0);
         while(bb.hasRemaining()) { // read first 8 bytes
           wrappedSocket.read(bb);
         }
         bb.flip();
-        int chanType = bb.get(); // 1 - small , 2 - big
+        int chanType = bb.get(); // 1 - small, 2 - big, 3 - external
         short timestamp = bb.getShort(); // read timestamp
+                                         // Note: timestamp was not part of the original protocol, was added in 3.22.0.1, #a33de44)
         int port = bb.getChar(); // read port
         int sentinel = (0xFF) & bb.get();
         if(sentinel != 0xef) {
-          if(H2O.SELF.getSecurityManager().securityEnabled) {
-            throw new IOException("Missing EOM sentinel when opening new SSL tcp channel.");
-          } else {
-            throw H2O.fail("missing eom sentinel when opening new tcp channel");
-          }
+          ListenerService.getInstance().report("protocol-failure", "handshake");
+          String channelType = H2O.SELF.getSecurityManager().securityEnabled ? "SSL TCP" : "TCP";
+          throw new IOException("Communication protocol failure (source: '" + inetAddress + "'): " +
+                          "Missing EOM sentinel when opening new " + channelType + " channel.");
         }
         // todo compare against current cloud, refuse the con if no match
 
 
         // Do H2O.Intern in corresponding case branch, we can't do H2O.intern here since it wouldn't work
         // with ExternalFrameHandling ( we don't send the same information there as with the other communication)
-        InetAddress inetAddress = sock.socket().getInetAddress();
         // Pass off the TCP connection to a separate reader thread
         switch( chanType ) {
         case TCP_SMALL:
@@ -113,11 +114,15 @@ public class TCPReceiverThread extends Thread {
           new ExternalFrameHandlerThread(wrappedSocket, new AutoBuffer(wrappedSocket)).start();
           break;
         default:
-          throw H2O.fail("unexpected channel type " + chanType + ", only know 1 - Small, 2 - Big and 3 - ExternalFrameHandling");
+          ListenerService.getInstance().report("protocol-failure", "channel-type", chanType);
+          throw new IOException("Communication protocol failure: Unexpected channel type " + chanType + ", only know 1 - Small, 2 - Big and 3 - ExternalFrameHandling");
         }
       } catch( java.nio.channels.AsynchronousCloseException ex ) {
         break;                  // Socket closed for shutdown
       } catch( Exception e ) {
+        if (wrappedSocket != null) {
+          try { wrappedSocket.close(); } catch (Exception e2) { Log.trace(e2); }
+        }
         e.printStackTrace();
         // On any error from anybody, close all sockets & re-open
         Log.err("IO error on TCP port "+H2O.H2O_PORT+": ",e);

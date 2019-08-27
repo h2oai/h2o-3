@@ -1,5 +1,8 @@
 package hex.genmodel;
 
+import hex.genmodel.attributes.ModelAttributes;
+import hex.genmodel.descriptor.ModelDescriptor;
+
 import java.io.*;
 
 
@@ -19,6 +22,8 @@ public abstract class MojoModel extends GenModel {
   public double[] _priorClassDistrib;
   public double[] _modelClassDistrib;
   public double _mojo_version;
+  public ModelDescriptor _modelDescriptor = null;
+  public ModelAttributes _modelAttributes = null;
 
   /**
    * Primary factory method for constructing MojoModel instances.
@@ -64,5 +69,5 @@ public abstract class MojoModel extends GenModel {
   protected MojoModel(String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
   }
-
+  
 }

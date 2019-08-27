@@ -28,7 +28,7 @@ public class AUC2 extends Iced {
   public final double[] _tps;     // True  Positives
   public final double[] _fps;     // False Positives
   public final double _p, _n;     // Actual trues, falses
-  public final double _auc, _gini, _pr_auc; // Actual AUC value
+  public double _auc, _gini, _pr_auc; // Actual AUC value
   public final int _max_idx;    // Threshold that maximizes the default criterion
 
   public static final ThresholdCriterion DEFAULT_CM = ThresholdCriterion.f1;
@@ -111,6 +111,15 @@ public class AUC2 extends Iced {
       return mx;
     }
     public static final ThresholdCriterion[] VALUES = values();
+
+    public static AUC2.ThresholdCriterion fromString(String strRepr) {
+      for (ThresholdCriterion tc : ThresholdCriterion.values()) {
+        if (tc.toString().equalsIgnoreCase(strRepr)) {
+          return tc;
+        }
+      }
+      return null;
+    }
   } // public enum ThresholdCriterion
 
   public double threshold( int idx ) { return _ths[idx]; }
@@ -139,9 +148,14 @@ public class AUC2 extends Iced {
   AUC2( int nBins, Vec probs, Vec actls ) { this(new AUC_Impl(nBins).doAll(probs,actls)._bldr); }
 
   public AUC2( AUCBuilder bldr ) {
+    this(bldr, true);
+  }
+  
+  private AUC2( AUCBuilder bldr, boolean trueProbabilities ) {
     // Copy result arrays into base object, shrinking to match actual bins
     _nBins = bldr._n;
     assert _nBins >= 1 : "Must have >= 1 bins for AUC calculation, but got " + _nBins;
+    assert trueProbabilities || bldr._ths[_nBins - 1] == 1 : "Bins need to contain pred = 1 when 0-1 probabilities are used"; 
     _ths = Arrays.copyOf(bldr._ths,_nBins);
     _tps = Arrays.copyOf(bldr._tps,_nBins);
     _fps = Arrays.copyOf(bldr._fps,_nBins);
@@ -160,10 +174,50 @@ public class AUC2 extends Iced {
       n += _fps[i]; _fps[i] = n;
     }
     _p = p;  _n = n;
-    _auc = compute_auc();
-    _pr_auc = pr_auc();
-    _gini = 2*_auc-1;
-    _max_idx = DEFAULT_CM.max_criterion_idx(this);
+    if (trueProbabilities) {
+      _auc = compute_auc();
+      _pr_auc = pr_auc();
+      _gini = 2 * _auc - 1;
+      _max_idx = DEFAULT_CM.max_criterion_idx(this);
+    } else {
+      _auc = Double.NaN;
+      _pr_auc = Double.NaN;
+      _gini = Double.NaN;
+      _max_idx = 0;
+    }
+  }
+
+  private AUC2( AUC2 auc, int idx) {
+    _nBins = 1;
+    _ths = new double[]{auc._ths[idx]};
+    _tps = new double[]{auc._tps[idx]};
+    _fps = new double[]{auc._fps[idx]};
+    _p = auc._p;
+    _n = auc._n;
+    _auc = auc._auc;
+    _pr_auc = auc._pr_auc;
+    _gini = auc._gini;
+    _max_idx = auc._max_idx >= 0 ? 0 : -1;
+  }
+
+  /**
+   * Subsets the AUC values to a single bin corresponding to the threshold that maximizes the default criterion.
+   * @return AUC2 instance if there is threshold that maximizes the default criterion, null otherwise
+   */
+  AUC2 restrictToMaxCriterion() {
+    return _max_idx >= 0 ? new AUC2(this, _max_idx) : null;
+  }
+
+  /**
+   * Creates an instance of AUC2 for classifiers that do not return probabilities, only 0-1.
+   * AUC, PR_AUC, and Gini index will be undefined in this case.
+   * @param bldr AUCBuilder
+   * @return instance of AUC2 restricted to a single bin, can be used to create a confusion matrix for the classifier
+   *         and allows to ThresholdCriterion to calculate metrics. 
+   */
+  public static AUC2 make01AUC(AUCBuilder bldr) {
+    bldr.perRow(1, 0, 0); // trick: add a dummy prediction with 0 weight to make sure we always have class 1
+    return new AUC2(bldr, false).restrictToMaxCriterion();
   }
 
   // empty AUC, helps avoid NPE in edge cases
@@ -175,6 +229,14 @@ public class AUC2 extends Iced {
     _max_idx = -1;
   }
 
+  /**
+   * Creates a dummy AUC2 instance with no metrics, meant to prevent possible NPEs
+   * @return a valid AUC2 instance
+   */
+  public static AUC2 emptyAUC() {
+    return new AUC2();
+  }
+  
   private boolean isEmpty() {
     return _nBins == 0;
   }
@@ -226,6 +288,12 @@ public class AUC2 extends Iced {
 
   /** @return the default CM, or null for an empty AUC */
   public double[/*actual*/][/*predicted*/] defaultCM( ) { return _max_idx == -1 ? null : buildCM(_max_idx); }
+  
+  /** @return the CM that corresponds to a bin's index which brings max value for a given {@code criterion} */
+  public double[/*actual*/][/*predicted*/] cmByCriterion( ThresholdCriterion criterion) {
+    int maxIdx = criterion.max_criterion_idx(this);
+    return buildCM(maxIdx); 
+  }
   /** @return the default threshold; threshold that maximizes the default criterion */
   public double defaultThreshold( ) { return _max_idx == -1 ? 0.5 : _ths[_max_idx]; }
   /** @return the error of the default CM */
@@ -279,6 +347,7 @@ public class AUC2 extends Iced {
       // if its a new histogram bin with 1 count.
       assert !Double.isNaN(pred);
       assert act==0 || act==1;  // Actual better be 0 or 1
+      assert !Double.isNaN(w) && !Double.isInfinite(w);
       int idx = Arrays.binarySearch(_ths,0,_n,pred);
       if( idx >= 0 ) {          // Found already in histogram; merge results
         if( act==0 ) _fps[idx]+=w; else _tps[idx]+=w; // One more count; no change in squared error
@@ -306,7 +375,7 @@ public class AUC2 extends Iced {
           double k = k(idx);
           if (act == 0) _fps[idx] += w; else _tps[idx] += w;
           _sqe[idx] = _sqe[idx] + compute_delta_error(pred, w, _ths[idx], k);
-          _ths[idx] = (_ths[idx] * k + pred * w) / (k + w);
+          _ths[idx] = combine_centers(_ths[idx], k, pred, w);
           return;
         }
       }
@@ -350,6 +419,7 @@ public class AUC2 extends Iced {
         if( self_is_larger ) x--; else y--;
       }
       _n += bldr._n;
+      _ssx = -1; // We no longer know what bin has the smallest error
 
       // Merge elements with least squared-error increase until we get fewer
       // than _nBins and no duplicates.  May require many merges.
@@ -357,6 +427,15 @@ public class AUC2 extends Iced {
         mergeOneBin();
     }
 
+    static double combine_centers(double ths1, double n1, double ths0, double n0) {
+      double center = (ths0 * n0 + ths1 * n1) / (n0 + n1);
+      if (Double.isNaN(center) || Double.isInfinite(center)) {
+        // use a simple average as a fallback
+        return (ths0 + ths1) / 2;
+      }
+      return center;
+    }
+    
     private void mergeOneBin( ) {
       // Too many bins; must merge bins.  Merge into bins with least total
       // squared error.  Horrible slowness linear arraycopy.
@@ -367,7 +446,7 @@ public class AUC2 extends Iced {
       double k0 = k(ssx);
       double k1 = k(ssx+1);
       _sqe[ssx] = _sqe[ssx]+_sqe[ssx+1]+compute_delta_error(_ths[ssx+1],k1,_ths[ssx],k0);
-      _ths[ssx] = (_ths[ssx]*k0 + _ths[ssx+1]*k1) / (k0+k1);
+      _ths[ssx] = combine_centers(_ths[ssx], k0, _ths[ssx+1], k1);
       _tps[ssx] += _tps[ssx+1];
       _fps[ssx] += _fps[ssx+1];
       // Slide over to crush the removed bin at index (ssx+1)
@@ -387,10 +466,25 @@ public class AUC2 extends Iced {
     // tried the original: merge bins with the least distance between bin
     // centers.  Same problem for sorted data.
     private int find_smallest() {
-      if( _ssx == -1 ) return (_ssx = find_smallest_impl());
+      if( _ssx == -1 ) {
+        _ssx = find_smallest_impl();
+        assert _ssx != -1 : toDebugString();
+      }
       return _ssx;
     }
+
+    private String toDebugString() {
+      return "_ssx = " + _ssx + 
+              "; n = " + _n +
+              "; ths = " + Arrays.toString(_ths) +
+              "; tps = " + Arrays.toString(_tps) +
+              "; fps = " + Arrays.toString(_fps) + 
+              "; sqe = " + Arrays.toString(_sqe);
+    }
+
     private int find_smallest_impl() {
+      if (_n == 1)
+        return 0;
       double minSQE = Double.MAX_VALUE;
       int minI = -1;
       int n = _n;
@@ -400,6 +494,19 @@ public class AUC2 extends Iced {
         double sqe = _sqe[i]+_sqe[i+1]+derr;
         if( sqe < minSQE ) {
           minI = i;  minSQE = sqe;
+        }
+      }
+      if (minI == -1) {
+        // we couldn't find any bins to merge based on SE (the math can be producing Double.Infinity or Double.NaN)
+        // revert to using a simple distance of the bin centers
+        minI = 0;
+        double minDist = _ths[1] - _ths[0];
+        for (int i = 1; i < n - 1; i++) {
+          double dist = _ths[i + 1] - _ths[i];
+          if (dist < minDist) {
+            minDist = dist;
+            minI = i;
+          }
         }
       }
       return minI;
@@ -421,6 +528,8 @@ public class AUC2 extends Iced {
       // variance here is junk), and also it's not statistically sane to have
       // a model which varies predictions by such a tiny change in thresholds.
       double delta = (float)ths1-(float)ths0;
+      if (delta == 0)
+        return 0;
       // Parallel equation drawn from:
       //  http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
       return delta*delta*n0*n1 / (n0+n1);

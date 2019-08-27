@@ -8,4 +8,7 @@ find $HIVE_HOME/lib | grep '.jar' | \
     grep -E 'hive-jdbc|hive-common|hive-exec|hive-service|hive-metastore|libfb303|libthrift' | \
     tr '\n' ':' > /opt/hive-jdbc-cp
 
+# hack for missing xerces classes in Hive classpath in hdp 2.3, 2.4, 2.5
+find $HADOOP_HOME -name "*xercesImpl.jar" | tr '\n' ':' >> /opt/hive-jdbc-cp
+
 ln -sf /usr/share/java/mysql-connector-java.jar ${HIVE_HOME}/lib/mysql-connector-java.jar

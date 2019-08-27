@@ -1,6 +1,5 @@
 package hex.tree.xgboost;
 
-import org.junit.Assert;
 import org.junit.Test;
 import water.H2O;
 

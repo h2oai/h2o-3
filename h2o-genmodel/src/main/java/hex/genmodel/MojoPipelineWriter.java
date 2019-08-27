@@ -1,6 +1,9 @@
 package hex.genmodel;
 
 import hex.ModelCategory;
+import hex.genmodel.descriptor.ModelDescriptor;
+import hex.genmodel.attributes.Table;
+import hex.genmodel.attributes.VariableImportances;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -128,6 +131,21 @@ public class MojoPipelineWriter extends AbstractMojoWriter {
     }
 
     @Override
+    public String offsetColumn() {
+      return _finalModel._offsetColumn;
+    }
+
+    @Override
+    public String weightsColumn() {
+      return null;
+    }
+
+    @Override
+    public String foldColumn() {
+      return null;
+    }
+
+    @Override
     public ModelCategory getModelCategory() {
       return _finalModel._category;
     }
@@ -140,6 +158,11 @@ public class MojoPipelineWriter extends AbstractMojoWriter {
     @Override
     public int nfeatures() {
       return isSupervised() ? columnNames().length - 1 : columnNames().length;
+    }
+
+    @Override
+    public String[] features() {
+      return Arrays.copyOf(columnNames(), nfeatures());
     }
 
     @Override

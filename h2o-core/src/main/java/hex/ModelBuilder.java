@@ -340,12 +340,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
                         @Override
                         public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
                           Log.warn("Model training job "+_job._description+" completed with exception: "+ex);
-                          if (_job._result != null) {
-                            try {
-                              _job._result.remove(); //ensure there's no incomplete model left for manipulation after crash or cancellation
-                            } catch (Exception logged) {
-                              Log.warn("Exception thrown when removing result from job "+ _job._description, logged);
-                            }
+                          try {
+                            Keyed.remove(_job._result); //ensure there's no incomplete model left for manipulation after crash or cancellation
+                          } catch (Exception logged) {
+                            Log.warn("Exception thrown when removing result from job "+ _job._description, logged);
                           }
                           return true;
                         }
@@ -497,7 +495,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           DKV.remove(mb._parms._train, fs);
           DKV.remove(mb._parms._valid, fs);
           DKV.remove(Key.make(mb.getPredictionKey()), fs);
-          mb._result.remove(fs);
+          Keyed.remove(mb._result, fs, true);
         }
         fs.blockForPending();
       }
@@ -1234,10 +1232,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           hide("_quantile_alpha", "Quantile (alpha) is only used for Quantile regression.");
         }
         if (expensive) checkDistributions();
-        _nclass = _response.isCategorical() ? _response.cardinality() : 1;
-        if (_parms._distribution == DistributionFamily.quasibinomial) {
-          _nclass = 2;
-        }
+        _nclass = init_getNClass();
         if (_parms._check_constant_response && _response.isConst()) {
           error("_response", "Response cannot be constant.");
         }
@@ -1356,8 +1351,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if (restructured)
         _train.restructure(_train.names(), vecs);
     }
-    assert (!expensive || _valid==null || Arrays.equals(_train._names, _valid._names) || _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.Binary);
-    if (_valid!=null && !Arrays.equals(_train._names, _valid._names) && _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.Binary) {
+    boolean names_may_differ = _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.Binary;
+    boolean names_differ = _valid !=null && !Arrays.equals(_train._names, _valid._names);
+    assert (!expensive || names_may_differ || !names_differ);
+    if (names_differ && names_may_differ) {
       for (String name : _train._names)
         assert(ArrayUtils.contains(_valid._names, name)) : "Internal error during categorical encoding: training column " + name + " not in validation frame with columns " + Arrays.toString(_valid._names);
     }
@@ -1380,13 +1377,16 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.deviance && !getClass().getSimpleName().contains("GLM")) {
           error("_stopping_metric", "Stopping metric cannot be deviance for classification.");
         }
-        if (nclasses()!=2 && _parms._stopping_metric == ScoreKeeper.StoppingMetric.AUC) {
-          error("_stopping_metric", "Stopping metric cannot be AUC for multinomial classification.");
+        if (nclasses()!=2 && (_parms._stopping_metric == ScoreKeeper.StoppingMetric.AUC || _parms._stopping_metric
+                == ScoreKeeper.StoppingMetric.AUCPR)) {
+          error("_stopping_metric", "Stopping metric cannot be AUC or AUCPR for multinomial " +
+                  "classification.");
         }
       } else {
         if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.misclassification ||
                 _parms._stopping_metric == ScoreKeeper.StoppingMetric.AUC ||
-                _parms._stopping_metric == ScoreKeeper.StoppingMetric.logloss)
+                _parms._stopping_metric == ScoreKeeper.StoppingMetric.logloss || _parms._stopping_metric
+                == ScoreKeeper.StoppingMetric.AUCPR)
         {
           error("_stopping_metric", "Stopping metric cannot be " + _parms._stopping_metric.toString() + " for regression.");
         }
@@ -1533,6 +1533,14 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   protected String getSysProperty(String name, String def) {
     return System.getProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + name, def);
+  }
+
+  protected int init_getNClass() {
+    int nclass = _response.isCategorical() ? _response.cardinality() : 1;
+    if (_parms._distribution == DistributionFamily.quasibinomial) {
+      nclass = 2;
+    }
+    return nclass;
   }
 
   public void checkDistributions() {
@@ -1704,14 +1712,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
       i++;
     }
-
+    MathUtils.SimpleStats simpleStats = new MathUtils.SimpleStats(numMetrics);
     for (i=0;i<N;++i)
-      stats.add(vals[i],1);
+      simpleStats.add(vals[i],1);
     for (i=0;i<numMetrics;++i) {
-      table.set(i, 0, (float)stats.mean()[i]);
-      table.set(i, 1, (float)stats.sigma()[i]);
+      table.set(i, 0, (float)simpleStats.mean()[i]);
+      table.set(i, 1, (float)simpleStats.sigma()[i]);
     }
-
     Log.info(table);
     return table;
   }

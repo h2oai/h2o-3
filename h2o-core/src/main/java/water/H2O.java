@@ -7,14 +7,11 @@ import jsr166y.ForkJoinWorkerThread;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
 import water.UDPRebooted.ShutdownTsk;
+import water.api.LogsHandler;
 import water.api.RequestServer;
 import water.exceptions.H2OFailException;
 import water.exceptions.H2OIllegalArgumentException;
-import water.init.AbstractBuildVersion;
-import water.init.AbstractEmbeddedH2OConfig;
-import water.init.JarHash;
-import water.init.NetworkInit;
-import water.init.NodePersistentStorage;
+import water.init.*;
 import water.nbhm.NonBlockingHashMap;
 import water.parser.DecryptionTool;
 import water.parser.ParserService;
@@ -23,30 +20,12 @@ import water.server.ServletUtils;
 import water.util.*;
 import water.webserver.iface.WebServer;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Field;
-import java.net.Inet4Address;
-import java.net.Inet6Address;
-import java.net.InetAddress;
-import java.net.MulticastSocket;
-import java.net.NetworkInterface;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.net.*;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -153,6 +132,9 @@ final public class H2O {
             "    -jks_pass <password>\n" +
             "          (Default is '" + DEFAULT_JKS_PASS + "')\n" +
             "\n" +
+            "    -jks_alias <alias>\n" +
+            "          (Optional, use if the keystore has multiple certificates and you want to use a specific one.)\n" +
+            "\n" +
             "    -hash_login\n" +
             "          Use Jetty HashLoginService\n" +
             "\n" +
@@ -231,6 +213,8 @@ final public class H2O {
     /** -jks_pass is Java KeyStore password; default is 'h2oh2o' */
     public String jks_pass = DEFAULT_JKS_PASS;
 
+    public String jks_alias = null;
+    
     /** -hash_login enables HashLoginService */
     public boolean hash_login = false;
 
@@ -294,8 +278,19 @@ final public class H2O {
 
     /** -context_path=jetty_context_path; the context path for jetty */
     public String context_path = "";
+
+    public KeyValueArg[] extra_headers = new KeyValueArg[0];
   }
 
+  public static class KeyValueArg {
+    public final String _key;
+    public final String _value;
+    private KeyValueArg(String key, String value) {
+      _key = key;
+      _value = value;
+    }
+  } 
+  
   /**
    * A class containing all of the arguments for H2O.
    */
@@ -608,6 +603,10 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         trgt.jks_pass = args[i];
       }
+      else if (s.matches("jks_alias")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.jks_alias = args[i];
+      }
       else if (s.matches("hash_login")) {
         trgt.hash_login = true;
       }
@@ -663,6 +662,12 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         trgt.features_level = ModelBuilder.BuilderVisibility.valueOfIgnoreCase(args[i]);
         Log.info(String.format("Limiting algorithms available to level: %s", trgt.features_level.name()));
+      } else if (s.matches("add_http_header")) {
+        i = s.incrementAndCheck(i, args);
+        String key = args[i];
+        i = s.incrementAndCheck(i, args);
+        String value = args[i];
+        trgt.extra_headers = ArrayUtils.append(trgt.extra_headers, new KeyValueArg(key, value));
       } else {
         parseFailed("Unknown argument (" + s + ")");
       }
@@ -1064,6 +1069,20 @@ final public class H2O {
   private static final ExtensionManager extManager = ExtensionManager.getInstance();
 
   /**
+   * Retrieves a value of an H2O system property
+   * @param name property name
+   * @param def default value
+   * @return value of the system property or default value if property was not defined
+   */
+  public static String getSysProperty(String name, String def) {
+    return System.getProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + name, def);
+  }
+
+  public static boolean getSysBoolProperty(String name, boolean def) {
+    return Boolean.parseBoolean(getSysProperty(name, String.valueOf(def)));
+  }
+
+  /**
    * Throw an exception that will cause the request to fail, but the cluster to continue.
    * @see #fail(String, Throwable)
    * @return never returns
@@ -1098,7 +1117,15 @@ final public class H2O {
     Log.fatal("Stacktrace: ");
     Log.fatal(Arrays.toString(Thread.currentThread().getStackTrace()));
 
-    H2O.shutdown(-1);
+    // H2O fail() exists because of coding errors - but what if usage of fail() was itself a coding error?
+    // Property "suppress.shutdown.on.failure" can be used in the case when someone is seeing shutdowns on production
+    // because a developer incorrectly used fail() instead of just throwing a (recoverable) exception
+    boolean suppressShutdown = getSysBoolProperty("suppress.shutdown.on.failure", false);
+    if (! suppressShutdown) {
+      H2O.shutdown(-1);
+    } else {
+      throw new IllegalStateException("Suppressed shutdown for failure: " + msg, cause);
+    }
 
     // unreachable
     return new H2OFailException(msg);
@@ -1265,6 +1292,10 @@ final public class H2O {
   public static <T extends RemoteRunnable> T runOnH2ONode(T runnable) {
     H2ONode node = H2O.ARGS.client ? H2O.CLOUD.leader() : H2O.SELF;
     return runOnH2ONode(node, runnable);
+  }
+
+  public static <T extends RemoteRunnable> T runOnLeaderNode(T runnable) {
+    return runOnH2ONode(H2O.CLOUD.leader(), runnable);
   }
 
   // package-private for unit tests
@@ -1569,16 +1600,7 @@ final public class H2O {
       Log.warn("");
     }
 
-    for (AbstractH2OExtension e : extManager.getCoreExtensions()) {
-      String n = e.getExtensionName() + " ";
-      AbstractBuildVersion abv = e.getBuildVersion();
-      Log.info(n + "Build git branch: ", abv.branchName());
-      Log.info(n + "Build git hash: ", abv.lastCommitHash());
-      Log.info(n + "Build git describe: ", abv.describe());
-      Log.info(n + "Build project version: ", abv.projectVersion());
-      Log.info(n + "Built by: ", abv.compiledBy());
-      Log.info(n + "Built on: ", abv.compiledOn());
-    }
+    Log.info("Found H2O Core extensions: " + extManager.getCoreExtensions());
     Log.info("Processed H2O arguments: ", Arrays.toString(arguments));
 
     Runtime runtime = Runtime.getRuntime();
@@ -1591,6 +1613,7 @@ final public class H2O {
     Log.info("OS version: "+System.getProperty("os.name")+" "+System.getProperty("os.version")+" ("+System.getProperty("os.arch")+")");
     long totalMemory = OSUtils.getTotalPhysicalMemory();
     Log.info ("Machine physical memory: " + (totalMemory==-1 ? "NA" : PrettyPrint.bytes(totalMemory)));
+    Log.info("Machine locale: " + Locale.getDefault());
   }
 
   /** Initializes the local node and the local cloud with itself as the only member. */
@@ -1787,13 +1810,13 @@ final public class H2O {
 
   public static void waitForCloudSize(int x, long ms) {
     long start = System.currentTimeMillis();
-    while( System.currentTimeMillis() - start < ms ) {
-      if( CLOUD.size() >= x && Paxos._commonKnowledge )
+    while (System.currentTimeMillis() - start < ms) {
+      if (CLOUD.size() >= x && Paxos._commonKnowledge)
         break;
-      try { Thread.sleep(100); } catch( InterruptedException ignore ) { }
+      try { Thread.sleep(100); } catch (InterruptedException ignore) {}
     }
-    if( H2O.CLOUD.size() < x )
-      throw new RuntimeException("Cloud size under " + x);
+    if (CLOUD.size() < x)
+      throw new RuntimeException("Cloud size " + CLOUD.size() + " under " + x);
   }
 
   public static int getCloudSize() {
@@ -1875,6 +1898,7 @@ final public class H2O {
     if( v != null ) v.removePersist();
   }
   public static void raw_clear() { STORE.clear(); }
+  
   public static boolean containsKey( Key key ) { return STORE.get(key) != null; }
   static Key getk( Key key ) { return STORE.getk(key); }
   public static Set<Key> localKeySet( ) { return STORE.keySet(); }
@@ -1947,8 +1971,8 @@ final public class H2O {
     // Notes: 
     // - make sure that the following whitelist is logically consistent with whitelist in R code - see function .h2o.check_java_version in connection.R
     // - upgrade of the javassist library should be considered when adding support for a new java version
-    if (JAVA_VERSION.isKnown() && !isUserEnabledJavaVersion() && (JAVA_VERSION.getMajor()<7 || JAVA_VERSION.getMajor()>11)) {
-      System.err.println("Only Java 7, 8, 9, 10 and 11 are supported, system version is " + System.getProperty("java.version"));
+    if (JAVA_VERSION.isKnown() && !isUserEnabledJavaVersion() && (JAVA_VERSION.getMajor()<8 || JAVA_VERSION.getMajor()>12)) {
+      System.err.println("Only Java 8, 9, 10, 11 and 12 are supported, system version is " + System.getProperty("java.version"));
       return true;
     }
     String vmName = System.getProperty("java.vm.name");
@@ -2263,49 +2287,20 @@ final public class H2O {
     return H2O.ARGS.decrypt_tool != null ? Key.<DecryptionTool>make(H2O.ARGS.decrypt_tool) : null;
   }
 
-  /**
-   * Select last 15 bytes from the jvm boot start time and return it as short. If the timestamp is 0, we increment it by
-   * 1 to be able to distinguish between client and node as -0 is the same as 0.
-   */
-  private static short truncateTimestamp(long jvmStartTime){
-    int bitMask = (1 << 15) - 1;
-    // select the lower 15 bits
-    short timestamp = (short) (jvmStartTime & bitMask);
-    // if the timestamp is 0 return 1 to be able to distinguish between positive and negative values
-    return timestamp == 0 ? 1 : timestamp;
+  public static URI downloadLogs(URI destinationDir, LogArchiveContainer logContainer) {
+    return LogsHandler.downloadLogs(destinationDir.toString(), logContainer);
   }
 
-
-  /**
-   * Calculate node timestamp from Current's node information. We use start of jvm boot time and information whether
-   * we are client or not. We combine these 2 information and create a char(2 bytes) with this info in a single variable.
-   */
-  static short calculateNodeTimestamp() {
-    return calculateNodeTimestamp(TimeLine.JVM_BOOT_MSEC, H2O.ARGS.client);
+  public static URI downloadLogs(URI destinationDir, String logContainer) {
+    return LogsHandler.downloadLogs(destinationDir.toString(), LogArchiveContainer.valueOf(logContainer));
   }
 
-  /**
-   * Calculate node timestamp from the provided information. We use start of jvm boot time and information whether
-   * we are client or not.
-   *
-   * The negative timestamp represents a client node, the positive one a regular H2O node
-   *
-   * @param bootTimestamp H2O node boot timestamp
-   * @param amIClient true if this node is client, otherwise false
-   */
-  static short calculateNodeTimestamp(long bootTimestamp, boolean amIClient) {
-    short timestamp = truncateTimestamp(bootTimestamp);
-    //if we are client, return negative timestamp, otherwise positive
-    return amIClient ? (short) -timestamp : timestamp;
+  public static URI downloadLogs(String destinationDir, LogArchiveContainer logContainer) {
+    return LogsHandler.downloadLogs(destinationDir, logContainer);
   }
-
-  /**
-   * Decodes whether the node is client or regular node from the timestamp
-   * @param timestamp timestamp
-   * @return true if timestamp is from client node, false otherwise
-   */
-  static boolean decodeIsClient(short timestamp) {
-    return timestamp < 0;
+  
+  public static URI downloadLogs(String destinationDir, String logContainer) {
+    return LogsHandler.downloadLogs(destinationDir, LogArchiveContainer.valueOf(logContainer));
   }
-
+  
 }

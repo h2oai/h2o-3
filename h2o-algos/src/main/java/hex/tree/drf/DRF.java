@@ -60,7 +60,9 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
         error("_mtries","Computed mtries should be -1 or -2 or in interval [1,"+ncols+"[ but it is " + _parms._mtries);
     }
     if (_parms._distribution == DistributionFamily.quasibinomial)
-      error("_distribution", "Quasibinomial is not supported for DRF in current H2O.");
+      error("_distribution", "Quasibinomial distribution is not supported for DRF in current H2O.");
+    if (_parms._distribution == DistributionFamily.custom)
+      error("_distribution", "Custom distribution is not supported for DRF in current H2O.");
     if (_parms._distribution == DistributionFamily.AUTO) {
       if (_nclass == 1) _parms._distribution = DistributionFamily.gaussian;
       if (_nclass >= 2) _parms._distribution = DistributionFamily.multinomial;
@@ -69,9 +71,6 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       warn("_sample_rate", "Sample rate is 100% and no validation dataset and no cross-validation. There are no out-of-bag data to compute error estimates on the training data!");
     if (hasOffsetCol())
       error("_offset_column", "Offsets are not yet supported for DRF.");
-    if (hasOffsetCol() && isClassifier()) {
-      error("_offset_column", "Offset is only supported for regression.");
-    }
   }
 
   // ----------------------

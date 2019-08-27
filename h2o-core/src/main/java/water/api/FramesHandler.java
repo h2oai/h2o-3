@@ -7,7 +7,6 @@ import water.exceptions.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
-import water.util.PrettyPrint;
 
 import java.util.*;
 
@@ -244,7 +243,8 @@ public class FramesHandler<I extends FramesHandler.Frames, S extends SchemaV3<I,
   public FramesV3 export(int version, FramesV3 s) {
     Frame fr = getFromDKV("key", s.frame_id.key());
     Log.info("ExportFiles processing (" + s.path + ")");
-    s.job = new JobV3(Frame.export(fr, s.path, s.frame_id.key().toString(), s.force, s.num_parts));
+    Frame.CSVStreamParams csvParms = new Frame.CSVStreamParams().setSeparator(s.separator);
+    s.job = new JobV3(Frame.export(fr, s.path, s.frame_id.key().toString(), s.force, s.num_parts, s.compression, csvParms));
     return s;
   }
 
@@ -289,7 +289,7 @@ public class FramesHandler<I extends FramesHandler.Frames, S extends SchemaV3<I,
     Futures fs = new Futures();
     for (Key key : keys) {
       try {
-        getFromDKV("(none)", key).delete(null, fs);
+        getFromDKV("(none)", key).delete(null, fs, true);
       } catch (IllegalArgumentException iae) {
         missing.add(key.toString());
       }

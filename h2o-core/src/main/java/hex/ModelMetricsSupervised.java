@@ -21,7 +21,7 @@ public class ModelMetricsSupervised extends ModelMetrics {
     return sb.toString();
   }
 
-  public final double r2() {
+  public double r2() { // TODO: Override for GLM Regression  - create new Generic & Generic V3 versions
     double var = _sigma*_sigma;
     return 1.0-_MSE /var;
   }

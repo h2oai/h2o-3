@@ -139,6 +139,7 @@ public class NetworkInit {
         H2O.exit(-1);
       }
     }
+    Log.notifyAboutNetworkingInitialized();
     boolean isIPv6 = H2O.SELF_ADDRESS instanceof Inet6Address; // Is IPv6 address was assigned to this node
     H2O.SELF = H2ONode.self(H2O.SELF_ADDRESS);
     if (!H2O.ARGS.disable_web) {
@@ -199,6 +200,7 @@ public class NetworkInit {
     final H2OHttpConfig config = new H2OHttpConfig();
     config.jks = args.jks;
     config.jks_pass = args.jks_pass;
+    config.jks_alias = args.jks_alias;
     config.loginType = parseLoginType(args);
     configureLoginType(config.loginType, args.login_conf);
     config.login_conf = args.login_conf;

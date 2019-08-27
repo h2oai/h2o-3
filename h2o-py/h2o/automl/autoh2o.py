@@ -1,12 +1,16 @@
 # -*- encoding: utf-8 -*-
-import h2o
-from h2o.exceptions import H2OValueError
-from h2o.job import H2OJob
-from h2o.frame import H2OFrame
-from h2o.utils.typechecks import assert_is_type, is_type
-from h2o.model.model_base import ModelBase
+import functools as ft
 
-class H2OAutoML(object):
+import h2o
+from h2o.base import Keyed
+from h2o.exceptions import H2OValueError
+from h2o.frame import H2OFrame
+from h2o.job import H2OJob
+from h2o.model.model_base import ModelBase
+from h2o.utils.typechecks import assert_is_type, is_type
+
+
+class H2OAutoML(Keyed):
     """
     Automatic Machine Learning
 
@@ -63,7 +67,8 @@ class H2OAutoML(object):
                  keep_cross_validation_models=False,
                  keep_cross_validation_fold_assignment=False,
                  sort_metric="AUTO",
-                 export_checkpoints_dir=None):
+                 export_checkpoints_dir=None,
+                 verbosity=None):
         """
         Create a new H2OAutoML instance.
         
@@ -115,6 +120,8 @@ class H2OAutoML(object):
           ``auc``, ``"logloss"``, ``"mean_per_class_error"``, ``"rmse"``, ``"mse"``.  For regression choose between ``"deviance"``, ``"rmse"``, 
           ``"mse"``, ``"mae"``, ``"rmlse"``. For multinomial classification choose between ``"mean_per_class_error"``, ``"logloss"``, ``"rmse"``, ``"mse"``.
         :param export_checkpoints_dir: Path to a directory where every model will be stored in binary form.
+        :param verbosity: Verbosity of the backend messages printed during training.
+            Available options are 'debug', 'info' or 'warn'. Defaults to None (disable live log).
         """
         # Check if H2O jar contains AutoML
         try:
@@ -228,6 +235,10 @@ class H2OAutoML(object):
         self._job = None
         self._leader_id = None
         self._leaderboard = None
+        self._verbosity = verbosity
+        self._event_log = None
+        self._training_info = None
+        self._state_json = None
         if sort_metric == "AUTO":
             self.sort_metric = None
         else:
@@ -237,9 +248,14 @@ class H2OAutoML(object):
             assert_is_type(export_checkpoints_dir, str)
             self.build_control["export_checkpoints_dir"] = export_checkpoints_dir
 
+
     #---------------------------------------------------------------------------
     # Basic properties
     #---------------------------------------------------------------------------
+    @property
+    def key(self):
+        return self.project_name
+
     @property
     def leader(self):
         """
@@ -275,11 +291,30 @@ class H2OAutoML(object):
         """
         return H2OFrame([]) if self._leaderboard is None else self._leaderboard
 
+    @property
+    def event_log(self):
+        """
+        retrieve the backend event log from an H2OAutoML object
+
+        :return: an H2OFrame with detailed events occurred during the AutoML training.
+        """
+        return H2OFrame([]) if self._event_log is None else self._event_log
+
+    @property
+    def training_info(self):
+        """
+        expose the name/value columns of `event_log` as a simple dictionary, for example `start_epoch`, `stop_epoch`, ...
+        See :func:`event_log` to obtain a description of those key/value pairs.
+
+        :return: a dictionary with event_log['name'] column as keys and event_log['value'] column as values.
+        """
+        return dict() if self._training_info is None else self._training_info
+
     #---------------------------------------------------------------------------
     # Training AutoML
     #---------------------------------------------------------------------------
-    def train(self, x = None, y = None, training_frame = None, fold_column = None, 
-              weights_column = None, validation_frame = None, leaderboard_frame = None, blending_frame = None):
+    def train(self, x=None, y=None, training_frame=None, fold_column=None,
+              weights_column=None, validation_frame=None, leaderboard_frame=None, blending_frame=None):
         """
         Begins an AutoML task, a background task that automatically builds a number of models
         with various algorithms and tracks their performance in a leaderboard. At any point 
@@ -312,6 +347,7 @@ class H2OAutoML(object):
         >>> # Launch an AutoML run
         >>> aml.train(y=y, training_frame=train)
         """
+        training_frame = H2OFrame._validate(training_frame, 'training_frame', required=True)
         ncols = training_frame.ncols
         names = training_frame.names
 
@@ -336,11 +372,7 @@ class H2OAutoML(object):
                 'response_column': y,
             }
 
-        if training_frame is None:
-            raise ValueError('The training frame is not set!')
-        else:
-            assert_is_type(training_frame, H2OFrame)
-            input_spec['training_frame'] = training_frame.frame_id
+        input_spec['training_frame'] = training_frame.frame_id
 
         if fold_column is not None:
             assert_is_type(fold_column,int,str)
@@ -351,15 +383,15 @@ class H2OAutoML(object):
             input_spec['weights_column'] = weights_column
 
         if validation_frame is not None:
-            assert_is_type(validation_frame, H2OFrame)
+            validation_frame = H2OFrame._validate(validation_frame, 'validation_frame')
             input_spec['validation_frame'] = validation_frame.frame_id
 
         if leaderboard_frame is not None:
-            assert_is_type(leaderboard_frame, H2OFrame)
+            leaderboard_frame = H2OFrame._validate(leaderboard_frame, 'leaderboard_frame')
             input_spec['leaderboard_frame'] = leaderboard_frame.frame_id
 
         if blending_frame is not None:
-            assert_is_type(blending_frame, H2OFrame)
+            blending_frame = H2OFrame._validate(blending_frame, 'blending_frame')
             input_spec['blending_frame'] = blending_frame.frame_id
 
         if self.sort_metric is not None:
@@ -394,12 +426,12 @@ class H2OAutoML(object):
             if ignored_columns is not None:
                 input_spec['ignored_columns'] = list(ignored_columns)
 
-        automl_build_params = dict(input_spec = input_spec)
+        automl_build_params = dict(input_spec=input_spec)
 
         # NOTE: if the user hasn't specified some block of parameters don't send them!
         # This lets the back end use the defaults.
         automl_build_params['build_control'] = self.build_control
-        automl_build_params['build_models']  = self.build_models
+        automl_build_params['build_models'] = self.build_models
 
         resp = h2o.api('POST /99/AutoMLBuilder', json=automl_build_params)
         if 'job' not in resp:
@@ -408,7 +440,12 @@ class H2OAutoML(object):
             return
 
         self._job = H2OJob(resp['job'], "AutoML")
-        self._job.poll()
+        poll_updates = ft.partial(self._poll_training_updates, verbosity=self._verbosity, state={})
+        try:
+            self._job.poll(poll_updates=poll_updates)
+        finally:
+            poll_updates(self._job, 1)
+
         self._fetch()
 
     #---------------------------------------------------------------------------
@@ -431,9 +468,12 @@ class H2OAutoML(object):
         >>> aml.predict(test)
 
         """
-        if self._fetch():
-            self._model = h2o.get_model(self._leader_id)
-            return self._model.predict(test_data)
+        leader = self.leader
+        if leader is None:
+            self._fetch()
+            leader = self.leader
+        if leader is not None:
+            return leader.predict(test_data)
         print("No model built yet...")
 
     #---------------------------------------------------------------------------
@@ -467,71 +507,106 @@ class H2OAutoML(object):
         return ModelBase.download_mojo(self.leader, path, get_genmodel_jar, genmodel_name)
 
     #-------------------------------------------------------------------------------------------------------------------
+    # Overrides
+    #-------------------------------------------------------------------------------------------------------------------
+    def detach(self):
+        self.project_name = None
+        h2o.remove(self.leaderboard)
+        h2o.remove(self.event_log)
+
+    #-------------------------------------------------------------------------------------------------------------------
     # Private
     #-------------------------------------------------------------------------------------------------------------------
     def _fetch(self):
-        res = h2o.api("GET /99/AutoML/" + self.project_name)
-        leaderboard_list = [key["name"] for key in res['leaderboard']['models']]
-
-        if leaderboard_list is not None and len(leaderboard_list) > 0:
-            self._leader_id = leaderboard_list[0]
-        else:
-            self._leader_id = None
-
-        # Intentionally mask the progress bar here since showing multiple progress bars is confusing to users.
-        # If any failure happens, revert back to user's original setting for progress and display the error message.
-        is_progress = H2OJob.__PROGRESS_BAR__
-        h2o.no_progress()
-        try:
-            # Parse leaderboard H2OTwoDimTable & return as an H2OFrame
-            leaderboard = h2o.H2OFrame(
-                res["leaderboard_table"].cell_values,
-                column_names=res["leaderboard_table"].col_header)
-        except Exception as ex:
-            raise ex
-        finally:
-            if is_progress is True:
-                h2o.show_progress()
-
-        self._leaderboard = leaderboard[1:]
+        state = H2OAutoML._fetch_state(self.project_name)
+        self._leader_id = state['leader_id']
+        self._leaderboard = state['leaderboard']
+        self._event_log = el = state['event_log']
+        self._training_info = { r[0]: r[1]
+                                for r in el[el['name'] != '', ['name', 'value']]
+                                           .as_data_frame(use_pandas=False, header=False)
+                              }
+        self._state_json = state['json']
         return self._leader_id is not None
 
-    def _get_params(self):
-        res = h2o.api("GET /99/AutoML/" + self.project_name)
-        return res
+    def _poll_training_updates(self, job, bar_progress=0, verbosity=None, state=None):
+        """
+        the callback function used to print verbose info when polling AutoML job.
+        """
+        levels = ['Debug', 'Info', 'Warn']
+        if verbosity is None or verbosity.capitalize() not in levels:
+            return
+
+        levels = levels[levels.index(verbosity.capitalize()):]
+        try:
+            if job.progress > state.get('last_job_progress', 0):
+                # print("\nbar_progress={}, job_progress={}".format(bar_progress, job.progress))
+                events = H2OAutoML._fetch_state(self.project_name, properties=['event_log'])['event_log']
+                events = events[events['level'].isin(levels), :]
+                last_nrows = state.get('last_events_nrows', 0)
+                if events.nrows > last_nrows:
+                    fr = events[last_nrows:, ['timestamp', 'message']].as_data_frame(use_pandas=False, header=False)
+                    print('')
+                    for r in fr:
+                        print("{}: {}".format(r[0], r[1]))
+                    print('')
+                    state['last_events_nrows'] = events.nrows
+            state['last_job_progress'] = job.progress
+        except Exception as e:
+            print("Failed polling AutoML progress log: {}".format(e))
+
+
+    @staticmethod
+    def _fetch_table(table, key=None, progress_bar=True):
+        try:
+            # Intentionally mask the progress bar here since showing multiple progress bars is confusing to users.
+            # If any failure happens, revert back to user's original setting for progress and display the error message.
+            ori_progress_state = H2OJob.__PROGRESS_BAR__
+            H2OJob.__PROGRESS_BAR__ = progress_bar
+            # Parse leaderboard H2OTwoDimTable & return as an H2OFrame
+            return h2o.H2OFrame(table.cell_values, destination_frame=key, column_names=table.col_header, column_types=table.col_types)
+        finally:
+            H2OJob.__PROGRESS_BAR__ = ori_progress_state
+
+    @staticmethod
+    def _fetch_state(project_name, properties=None):
+        state_json = h2o.api("GET /99/AutoML/%s" % project_name)
+        project_name = state_json["project_name"]
+
+        leaderboard_list = [key["name"] for key in state_json['leaderboard']['models']]
+        leader_id = leaderboard_list[0] if (leaderboard_list is not None and len(leaderboard_list) > 0) else None
+
+        should_fetch = lambda prop: properties is None or prop in properties
+
+        leader = None
+        if should_fetch('leader'):
+            leader = h2o.get_model(leader_id) if leader_id is not None else None
+
+        leaderboard = None
+        if should_fetch('leaderboard'):
+            leaderboard = H2OAutoML._fetch_table(state_json['leaderboard_table'], key=project_name+"_leaderboard", progress_bar=False)
+            leaderboard = h2o.assign(leaderboard[1:], project_name+"_leaderboard")  # removing index and reassign id to ensure persistence on backend
+
+        event_log = None
+        if should_fetch('event_log'):
+            event_log = H2OAutoML._fetch_table(state_json['event_log_table'], key=project_name+"_eventlog", progress_bar=False)
+            event_log = h2o.assign(event_log[1:], project_name+"_eventlog")  # removing index and reassign id to ensure persistence on backend
+
+        return dict(
+            project_name=project_name,
+            json=state_json,
+            leader_id=leader_id,
+            leader=leader,
+            leaderboard=leaderboard,
+            event_log=event_log,
+        )
+
 
 def get_automl(project_name):
     """
     Retrieve information about an AutoML instance.
 
     :param str project_name:  A string indicating the project_name of the automl instance to retrieve.
-    :returns: A dictionary containing the project_name, leader model, and leaderboard.
+    :returns: A dictionary containing the project_name, leader model, leaderboard, event_log.
     """
-    automl_json = h2o.api("GET /99/AutoML/%s" % project_name)
-    project_name = automl_json["project_name"]
-    leaderboard_list = [key["name"] for key in automl_json['leaderboard']['models']]
-
-    if leaderboard_list is not None and len(leaderboard_list) > 0:
-        leader_id = leaderboard_list[0]
-    else:
-        leader_id = None
-
-    leader = h2o.get_model(leader_id)
-    # Intentionally mask the progress bar here since showing multiple progress bars is confusing to users.
-    # If any failure happens, revert back to user's original setting for progress and display the error message.
-    is_progress = H2OJob.__PROGRESS_BAR__
-    h2o.no_progress()
-    try:
-        # Parse leaderboard H2OTwoDimTable & return as an H2OFrame
-        leaderboard = h2o.H2OFrame(
-            automl_json["leaderboard_table"].cell_values,
-            column_names=automl_json["leaderboard_table"].col_header)
-    except Exception as ex:
-        raise ex
-    finally:
-        if is_progress is True:
-            h2o.show_progress()
-
-    leaderboard = leaderboard[1:]
-    automl_dict = {'project_name': project_name, "leader": leader, "leaderboard": leaderboard}
-    return automl_dict
+    return H2OAutoML._fetch_state(project_name)

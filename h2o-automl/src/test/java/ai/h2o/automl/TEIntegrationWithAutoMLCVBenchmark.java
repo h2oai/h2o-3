@@ -124,7 +124,7 @@ public class TEIntegrationWithAutoMLCVBenchmark extends water.TestUtil {
             model.deleteCrossValidationPreds();
             model.deleteCrossValidationModels();
           }
-          aml.leaderboard().deleteWithChildren();
+          aml.leaderboard().remove();
           aml.delete();
         }
 
@@ -133,7 +133,7 @@ public class TEIntegrationWithAutoMLCVBenchmark extends water.TestUtil {
             model.deleteCrossValidationPreds();
             model.deleteCrossValidationModels();
           }
-          amlWithoutTE.leaderboard().deleteWithChildren();
+          amlWithoutTE.leaderboard().remove();
           amlWithoutTE.delete();
         }
 

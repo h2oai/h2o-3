@@ -38,7 +38,7 @@
 #' @note Users may wish to manually upgrade their package (rather than waiting until being prompted), which requires
 #' that they fully uninstall and reinstall the H2O package, and the H2O client package. You must unload packages running
 #' in the environment before upgrading. It's recommended that users restart R or R studio after upgrading
-#' @seealso \href{http://h2o-release.s3.amazonaws.com/h2o-dev/rel-shannon/2/docs-website/h2o-r/h2o_package.pdf}{H2O R package documentation} for more details. \code{\link{h2o.shutdown}} for shutting down from R.
+#' @seealso \href{http://docs.h2o.ai/h2o/latest-stable/h2o-r/h2o_package.pdf}{H2O R package documentation} for more details. \code{\link{h2o.shutdown}} for shutting down from R.
 #' @examples
 #' \dontrun{
 #' # Try to connect to a local H2O instance that is already running.
@@ -181,11 +181,13 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
         warnNthreads <- TRUE
         nthreads <- 2
       }
+      # Note: Logging to stdout and stderr in Windows only works for R version 3.0.2 or later!
       stdout <- .h2o.getTmpFile("stdout")
+      stderr <- .h2o.getTmpFile("stderr")
       .h2o.startJar(ip = ip, port = port, name = name, nthreads = nthreads,
                     max_memory = max_mem_size, min_memory = min_mem_size,
                     enable_assertions = enable_assertions, forceDL = forceDL, license = license,
-                    extra_classpath = extra_classpath, ice_root = ice_root, stdout = stdout,
+                    extra_classpath = extra_classpath, ice_root = ice_root, stdout = stdout, stderr = stderr,
                     log_dir = log_dir, log_level = log_level, context_path = context_path,
                     jvm_custom_args = jvm_custom_args, bind_to_localhost = bind_to_localhost)
 
@@ -198,13 +200,17 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
       }
 
       if (!h2o.clusterIsUp(conn = tmpConn)) {
-        cat(paste(readLines(stdout), collapse="\n"), "\n")
-        print(tmpConn@ip)
-        print(tmpConn@port)
         rv <- .h2o.doRawGET(conn = tmpConn, urlSuffix = "")
-        print(rv$curlError)
-        print(rv$httpStatusCode)
-        print(rv$curlErrorMessage)
+        if (rv$curlError) {
+          cat("Diagnostic HTTP Request:\n   ")
+            cat(sprintf("HTTP Status Code: %s\n", rv$httpStatusCode))
+            cat(sprintf("HTTP Error Message: %s\n", rv$curlErrorMessage))
+        }
+        cat(paste(readLines(stdout), collapse="\n"), "\n")
+        if (file.info(stderr)$size > 0) {
+          cat("Error Output:\n   ")
+          cat(paste(readLines(stderr), collapse="\n   "), "\n")
+        }
 
         stop("H2O failed to start, stopping execution.")
       }
@@ -395,7 +401,7 @@ h2o.shutdown <- function(prompt = TRUE) {
 #'
 #' @seealso \linkS4class{H2OConnection}, \code{\link{h2o.init}}
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' h2o.init()
 #' h2o.clusterStatus()
 #' }
@@ -517,11 +523,14 @@ h2o.clusterStatus <- function() {
 # This implementation is supposed to blacklist known unsupported versions.
 #
 .h2o.check_java_version <- function(jver = NULL) {
+  if(getOption("h2o.dev.javacheck.disable", default = FALSE)) {
+    return(NULL)
+  }
   if(any(grepl("GNU libgcj", jver))) {
     return("Sorry, GNU Java is not supported for H2O.")
   }
   # NOTE for developers: keep the following blacklist in logically consistent with whitelist in java code - see water.H2O.checkUnsupportedJava, near line 1849
-  if (any(grepl("^java version \"1\\.[1-6]\\.", jver))) {
+  if (any(grepl("^java version \"1\\.[1-7]\\.", jver))) {
     return(paste0("Your java is not supported: ", jver[1]))
   }
   return(NULL)
@@ -530,7 +539,7 @@ h2o.clusterStatus <- function() {
 .h2o.startJar <- function(ip = "localhost", port = 54321, name = NULL, nthreads = -1,
                           max_memory = NULL, min_memory = NULL,
                           enable_assertions = TRUE, forceDL = FALSE, license = NULL, extra_classpath = NULL,
-                          ice_root, stdout, log_dir, log_level, context_path, jvm_custom_args = NULL, 
+                          ice_root, stdout, stderr, log_dir, log_level, context_path, jvm_custom_args = NULL, 
                           bind_to_localhost) {
   command <- .h2o.checkJava()
 
@@ -544,8 +553,6 @@ h2o.clusterStatus <- function() {
     stop("`ice_root` must be specified for .h2o.startJar")
   }
 
-  # Note: Logging to stdout and stderr in Windows only works for R version 3.0.2 or later!
-  stderr <- .h2o.getTmpFile("stderr")
   write(Sys.getpid(), .h2o.getTmpFile("pid"), append = FALSE)   # Write PID to file to track if R started H2O
 
   jar_file <- .h2o.downloadJar(overwrite = forceDL)
@@ -629,14 +636,7 @@ h2o.clusterStatus <- function() {
   cat("\n")
 
   # Run the real h2o java command
-  rc = system2(command,
-               args=args,
-               stdout=stdout,
-               stderr=stderr,
-               wait=FALSE)
-  if (rc != 0L) {
-    stop(sprintf("Failed to exec %s with return code=%s", jar_file, as.character(rc)))
-  }
+  system2(command, args=args, stdout=stdout, stderr=stderr, wait=FALSE)
 }
 
 .h2o.getTmpFile <- function(type) {

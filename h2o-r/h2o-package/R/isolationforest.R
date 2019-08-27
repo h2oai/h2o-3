@@ -2,12 +2,12 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details) 
 #'
 # -------------------------- isolationforest -------------------------- #
-#' 
+#'
 #' Trains an Isolation Forest model
-#' 
+#'
+#' @param training_frame Id of the training data frame.
 #' @param x A vector containing the \code{character} names of the predictors in the model.
 #' @param model_id Destination id for this model; auto-generated if not specified.
-#' @param training_frame Id of the training data frame.
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
 #' @param score_tree_interval Score the model after every so many trees. Disabled if set to 0. Defaults to 0.
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
@@ -15,7 +15,7 @@
 #' @param max_depth Maximum tree depth. Defaults to 8.
 #' @param min_rows Fewest allowed (weighted) observations in a leaf. Defaults to 1.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
-#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
+#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
 #' @param build_tree_one_node \code{Logical}. Run on one node only; no network overhead but fewer cpus used.  Suitable for small datasets.
 #'        Defaults to FALSE.
@@ -30,9 +30,17 @@
 #' @param col_sample_rate_per_tree Column sample rate per tree (from 0.0 to 1.0) Defaults to 1.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
+#' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
+#'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 0.
+#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and
+#'        anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF
+#'        with the Python client. Must be one of: "AUTO", "anomaly_score". Defaults to AUTO.
+#' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
+#'        much) Defaults to 0.01.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @export
-h2o.isolationForest <- function(training_frame, x,
+h2o.isolationForest <- function(training_frame,
+                                x,
                                 model_id = NULL,
                                 score_each_iteration = FALSE,
                                 score_tree_interval = 0,
@@ -49,23 +57,20 @@ h2o.isolationForest <- function(training_frame, x,
                                 col_sample_rate_change_per_level = 1,
                                 col_sample_rate_per_tree = 1,
                                 categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
-                                export_checkpoints_dir = NULL
-                                ) 
+                                stopping_rounds = 0,
+                                stopping_metric = c("AUTO", "anomaly_score"),
+                                stopping_tolerance = 0.01,
+                                export_checkpoints_dir = NULL)
 {
+  # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
+  training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
 
-  # Required args: training_frame
-  if (missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
-  # Training_frame must be a key or an H2OFrame object
-  if (!is.H2OFrame(training_frame))
-     tryCatch(training_frame <- h2o.getFrame(training_frame),
-           error = function(err) {
-             stop("argument 'training_frame' must be a valid H2OFrame or key")
-           })
-  # Parameter list to send to model builder
+  # Build parameter list to send to model builder
   parms <- list()
   parms$training_frame <- training_frame
   if(!missing(x))
     parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore
+
   if (!missing(model_id))
     parms$model_id <- model_id
   if (!missing(score_each_iteration))
@@ -98,8 +103,16 @@ h2o.isolationForest <- function(training_frame, x,
     parms$col_sample_rate_per_tree <- col_sample_rate_per_tree
   if (!missing(categorical_encoding))
     parms$categorical_encoding <- categorical_encoding
+  if (!missing(stopping_rounds))
+    parms$stopping_rounds <- stopping_rounds
+  if (!missing(stopping_metric))
+    parms$stopping_metric <- stopping_metric
+  if (!missing(stopping_tolerance))
+    parms$stopping_tolerance <- stopping_tolerance
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+
   # Error check and build model
-  .h2o.modelJob('isolationforest', parms, h2oRestApiVersion = 3) 
+  model <- .h2o.modelJob('isolationforest', parms, h2oRestApiVersion=3, verbose=FALSE)
+  return(model)
 }

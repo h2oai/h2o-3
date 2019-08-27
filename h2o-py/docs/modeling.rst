@@ -7,6 +7,12 @@ Modeling In H2O
 Supervised
 ++++++++++
 
+:mod:`H2OCoxProportionalHazardsEstimator`
+-----------------------------------------
+.. autoclass:: h2o.estimators.coxph.H2OCoxProportionalHazardsEstimator
+    :show-inheritance:
+    :members:
+
 :mod:`H2ODeepLearningEstimator`
 -------------------------------
 .. autoclass:: h2o.estimators.deeplearning.H2ODeepLearningEstimator
@@ -34,6 +40,12 @@ Supervised
 :mod:`H2ONaiveBayesEstimator`
 -----------------------------
 .. autoclass:: h2o.estimators.naive_bayes.H2ONaiveBayesEstimator
+    :show-inheritance:
+    :members:
+
+:mod:`H2OSupportVectorMachineEstimator`
+---------------------------------------
+.. autoclass:: h2o.estimators.psvm.H2OSupportVectorMachineEstimator
     :show-inheritance:
     :members:
 
@@ -68,6 +80,12 @@ Unsupervised
 :mod:`H2OAutoEncoderEstimator`
 ------------------------------
 .. autoclass:: h2o.estimators.deeplearning.H2OAutoEncoderEstimator
+    :show-inheritance:
+    :members:
+
+:mod:`H2OGenericEstimator`
+--------------------------
+.. autoclass:: h2o.estimators.generic.H2OGenericEstimator
     :show-inheritance:
     :members:
 

@@ -18,7 +18,7 @@ import java.util.Arrays;
 public class ModelMetricsBinomial extends ModelMetricsSupervised {
   public final AUC2 _auc;
   public final double _logloss;
-  public final double _mean_per_class_error;
+  public double _mean_per_class_error;
   public final GainsLift _gainsLift;
 
   public ModelMetricsBinomial(Model model, Frame frame, long nobs, double mse, String[] domain,
@@ -63,6 +63,13 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     double[][] cm = _auc.defaultCM();
     return cm == null ? null : new ConfusionMatrix(cm, _domain);
   }
+  
+  public ConfusionMatrix cm(AUC2.ThresholdCriterion criterion) {
+    if( _auc == null ) return null;
+    double[][] cm = _auc.cmByCriterion(criterion);
+    return cm == null ? null : new ConfusionMatrix(cm, _domain);
+  }
+  
   public GainsLift gainsLift() { return _gainsLift; }
 
   // expose simple metrics criteria for sorting

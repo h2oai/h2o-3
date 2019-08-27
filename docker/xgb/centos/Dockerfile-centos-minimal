@@ -14,6 +14,7 @@ RUN \
     sync && \
     /usr/sbin/install_packages
 
+COPY jdk1.8.0_171.zip /usr/local/lib/
 RUN \
     chmod +x /usr/sbin/install_java && \
     sync && \

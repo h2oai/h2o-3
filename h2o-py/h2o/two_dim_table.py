@@ -38,6 +38,7 @@ class H2OTwoDimTable(object):
         self._table_header = table_header
         self._table_description = table_description
         self._col_header = col_header
+        self._col_types = col_types
         self._cell_values = cell_values or self._parse_values(raw_cell_values, col_types)
 
 
@@ -74,6 +75,12 @@ class H2OTwoDimTable(object):
         return self._col_header
 
 
+    @property
+    def col_types(self):
+        """Array of column types."""
+        return self._col_types
+
+
     def as_data_frame(self):
         """Convert to a python 'data frame'."""
         if can_use_pandas():
@@ -85,29 +92,32 @@ class H2OTwoDimTable(object):
 
     def show(self, header=True):
         """Print the contents of this table."""
-        # if h2o.can_use_pandas():
-        #  import pandas
-        #  pandas.options.display.max_rows = 20
-        #  print pandas.DataFrame(self._cell_values,columns=self._col_header)
-        #  return
+        print()
         if header and self._table_header:
             print(self._table_header + ":", end=' ')
             if self._table_description: print(self._table_description)
-        print()
-        table = copy.deepcopy(self._cell_values)
-        nr = 0
-        if _is_list_of_lists(table): nr = len(
-            table)  # only set if we truly have multiple rows... not just one long row :)
-        if nr > 20:  # create a truncated view of the table, first/last 5 rows
-            trunc_table = []
-            trunc_table += [v for v in table[:5]]
-            trunc_table.append(["---"] * len(table[0]))
-            trunc_table += [v for v in table[(nr - 5):]]
-            table = trunc_table
 
-        H2ODisplay(table, self._col_header, numalign="left", stralign="left")
+        (table, nr, is_pandas) = self._as_show_table()
+
+        H2ODisplay(table, is_pandas=is_pandas, header=self._col_header, numalign="left", stralign="left")
         if nr > 20 and can_use_pandas(): print('\nSee the whole table with table.as_data_frame()')
 
+    def _as_show_table(self):
+        if H2ODisplay.prefer_pandas() and can_use_pandas():
+            pd = self.as_data_frame()
+            return self.as_data_frame().head(20), pd.shape[0], True
+        else:
+            table = copy.deepcopy(self._cell_values)
+            nr = 0
+            if _is_list_of_lists(table): nr = len(
+                table)  # only set if we truly have multiple rows... not just one long row :)
+            if nr > 20:  # create a truncated view of the table, first/last 5 rows
+                trunc_table = []
+                trunc_table += [v for v in table[:5]]
+                trunc_table.append(["---"] * len(table[0]))
+                trunc_table += [v for v in table[(nr - 5):]]
+                table = trunc_table
+            return table, nr, False
 
     def __repr__(self):
         # FIXME: should return a string rather than printing it

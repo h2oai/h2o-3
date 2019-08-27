@@ -12,29 +12,46 @@ public abstract class Keyed<T extends Keyed> extends Iced<T> {
 
   // ---
   /** Remove this Keyed object, and all subparts; blocking. */
-  public final void remove( ) { remove(new Futures()).blockForPending(); }
+  public final void remove() {
+    remove(true);
+  }
+
+  /** Remove this Keyed object, including all subparts if cascade = true; blocking. */
+  public final void remove(boolean cascade) { remove(new Futures(), cascade).blockForPending(); }
   /** Remove this Keyed object, and all subparts.  */
   public final Futures remove( Futures fs ) {
+    return remove(fs, true);
+  }
+  /** Remove this Keyed object, including all subparts if cascade = true.  */
+  public final Futures remove( Futures fs, boolean cascade ) {
     if( _key != null ) DKV.remove(_key,fs);
-    return remove_impl(fs);
+    return remove_impl(fs, cascade);
   }
 
-  /** Override to remove subparts, but not self, of composite Keyed objects.  
+  /**
+   * @deprecated Better override {@link #remove_impl(Futures, boolean)} instead
+   */
+  @Deprecated
+  protected Futures remove_impl(Futures fs) { return fs; }
+
+  /** Override to remove subparts, but not self, of composite Keyed objects.
    *  Examples include {@link Vec} (removing associated {@link Chunk} keys)
    *  and {@link Frame} (removing associated {@link Vec} keys.) */
-  protected Futures remove_impl( Futures fs ) { return fs; }
+  protected Futures remove_impl(Futures fs, boolean cascade) { return remove_impl(fs); }
 
-  /** Remove this Keyed object, and all subparts; blocking. */
+  /** Removes the Keyed object associated to the key, and all subparts; blocking. */
   public static void remove( Key k ) {
+    if (k==null) return;
     Value val = DKV.get(k);
-    if( val==null ) return;
+    if (val==null) return;
     ((Keyed)val.get()).remove();
   }
-  /** Remove this Keyed object, and all subparts. */
-  public static void remove( Key k, Futures fs ) {
+  /** Remove the Keyed object associated to the key, and all subparts. */
+  public static Futures remove( Key k, Futures fs, boolean cascade) {
+    if (k==null) return fs;
     Value val = DKV.get(k);
-    if( val==null ) return;
-    ((Keyed)val.get()).remove(fs);
+    if (val==null) return fs;
+    return ((Keyed)val.get()).remove(fs, cascade);
   }
 
   // ---

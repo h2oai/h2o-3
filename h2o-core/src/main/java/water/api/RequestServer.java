@@ -1,56 +1,24 @@
 package water.api;
 
-import water.DKV;
-import water.H2O;
-import water.H2OError;
-import water.H2OModelBuilderError;
-import water.H2ONode;
-import water.RPC;
-import water.UDPRebooted;
+import org.apache.commons.lang.exception.ExceptionUtils;
+import water.*;
 import water.api.schemas3.H2OErrorV3;
 import water.api.schemas3.H2OModelBuilderErrorV3;
 import water.api.schemas99.AssemblyV99;
-import water.exceptions.H2OAbstractRuntimeException;
-import water.exceptions.H2OFailException;
-import water.exceptions.H2OIllegalArgumentException;
-import water.exceptions.H2OModelBuilderIllegalArgumentException;
-import water.exceptions.H2ONotFoundArgumentException;
+import water.exceptions.*;
 import water.init.NodePersistentStorage;
 import water.nbhm.NonBlockingHashMap;
 import water.rapids.Assembly;
 import water.server.ServletUtils;
-import water.util.GetLogsFromNode;
-import water.util.HttpResponseStatus;
-import water.util.IcedHashMapGeneric;
-import water.util.JCodeGen;
-import water.util.Log;
-import water.util.PojoUtils;
-import water.util.StringUtils;
+import water.util.*;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.MalformedURLException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 /**
  * This is a simple web server which accepts HTTP requests and routes them
@@ -344,6 +312,17 @@ public class RequestServer extends HttpServlet {
 
       resp.writeTo(response.getOutputStream());
 
+    } catch (Error e) {
+      try {
+        // Send the full stackTrack as message to the client directly. Default error response error in Jetty's ServletHandler
+        // is made inactive by ending the error, as the response is marked as committed.
+        response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, ExceptionUtils.getFullStackTrace(e));
+        // After the response is sent, the exceptions is re-thrown to finish the process as without this interception
+        throw e;
+      } catch (IOException ex) {
+        ServletUtils.setResponseStatus(response, 500);
+        Log.err(e);
+      }
     } catch (IOException e) {
       e.printStackTrace();
       ServletUtils.setResponseStatus(response, 500);
@@ -732,7 +711,14 @@ public class RequestServer extends HttpServlet {
       // url "/3/Foo/bar" => path ["", "GET", "Foo", "bar", "3"]
       String[] path = uri.getPath();
       if (path[2].equals("")) return redirectToFlow();
-      if (path[2].equals("Logs") && path[3].equals("download")) return downloadLogs();
+      if (path[2].equals("Logs") && path[3].equals("download")) {
+        // if archive type was specified path will look like ["", "GET", "Logs", "download", "<TYPE>", 3]
+        // if archive type was not specified it will be just ["", "GET", "Logs", "download", 3]
+        boolean containerTypeSpecified = path.length >= 6;
+        LogArchiveContainer container = containerTypeSpecified ? 
+                LogArchiveContainer.valueOf(path[4].toUpperCase()) : LogArchiveContainer.ZIP; // use ZIP as default
+        return LogsHandler.downloadLogsViaRestAPI(container);
+      }
       if (path[2].equals("NodePersistentStorage.bin") && path.length == 6) return downloadNps(path[3], path[4]);
     }
     return null;
@@ -813,118 +799,7 @@ public class RequestServer extends HttpServlet {
     res.addHeader("Content-Disposition", "attachment; filename=" + keyName + ".flow");
     return res;
   }
-
-  private static NanoResponse downloadLogs() {
-    Log.info("\nCollecting logs.");
-
-    H2ONode[] members = H2O.CLOUD.members();
-    byte[][] perNodeZipByteArray = new byte[members.length][];
-    byte[] clientNodeByteArray = null;
-
-    for (int i = 0; i < members.length; i++) {
-      byte[] bytes;
-
-      try {
-        // Skip nodes that aren't healthy, since they are likely to cause the entire process to hang.
-        if (members[i].isHealthy()) {
-          GetLogsFromNode g = new GetLogsFromNode();
-          g.nodeidx = i;
-          g.doIt();
-          bytes = g.bytes;
-        } else {
-          bytes = StringUtils.bytesOf("Node not healthy");
-        }
-      }
-      catch (Exception e) {
-        bytes = StringUtils.toBytes(e);
-      }
-      perNodeZipByteArray[i] = bytes;
-    }
-
-    if (H2O.ARGS.client) {
-      byte[] bytes;
-      try {
-        GetLogsFromNode g = new GetLogsFromNode();
-        g.nodeidx = -1;
-        g.doIt();
-        bytes = g.bytes;
-      }
-      catch (Exception e) {
-        bytes = StringUtils.toBytes(e);
-      }
-      clientNodeByteArray = bytes;
-    }
-
-    String outputFileStem = getOutputLogStem();
-    byte[] finalZipByteArray;
-    try {
-      finalZipByteArray = zipLogs(perNodeZipByteArray, clientNodeByteArray, outputFileStem);
-    }
-    catch (Exception e) {
-      finalZipByteArray = StringUtils.toBytes(e);
-    }
-
-    NanoResponse res = new NanoResponse(HTTP_OK, MIME_DEFAULT_BINARY, new ByteArrayInputStream(finalZipByteArray));
-    res.addHeader("Content-Length", Long.toString(finalZipByteArray.length));
-    res.addHeader("Content-Disposition", "attachment; filename=" + outputFileStem + ".zip");
-    return res;
-  }
-
-  private static String getOutputLogStem() {
-    String pattern = "yyyyMMdd_hhmmss";
-    SimpleDateFormat formatter = new SimpleDateFormat(pattern);
-    String now = formatter.format(new Date());
-    return "h2ologs_" + now;
-  }
-
-  private static byte[] zipLogs(byte[][] results, byte[] clientResult, String topDir) throws IOException {
-    int l = 0;
-    assert H2O.CLOUD._memary.length == results.length : "Unexpected change in the cloud!";
-    for (byte[] result : results) l += result.length;
-    ByteArrayOutputStream baos = new ByteArrayOutputStream(l);
-
-    // Add top-level directory.
-    ZipOutputStream zos = new ZipOutputStream(baos);
-    {
-      ZipEntry zde = new ZipEntry (topDir + File.separator);
-      zos.putNextEntry(zde);
-    }
-
-    try {
-      // Add zip directory from each cloud member.
-      for (int i =0; i<results.length; i++) {
-        String filename =
-            topDir + File.separator +
-                "node" + i + "_" +
-                H2O.CLOUD._memary[i].getIpPortString().replace(':', '_').replace('/', '_') +
-                ".zip";
-        ZipEntry ze = new ZipEntry(filename);
-        zos.putNextEntry(ze);
-        zos.write(results[i]);
-        zos.closeEntry();
-      }
-
-      // Add zip directory from the client node.  Name it 'driver' since that's what Sparking Water users see.
-      if (clientResult != null) {
-        String filename =
-            topDir + File.separator +
-                "driver.zip";
-        ZipEntry ze = new ZipEntry(filename);
-        zos.putNextEntry(ze);
-        zos.write(clientResult);
-        zos.closeEntry();
-      }
-
-      // Close the top-level directory.
-      zos.closeEntry();
-    } finally {
-      // Close the full zip file.
-      zos.close();
-    }
-
-    return baos.toByteArray();
-  }
-
+  
   // cache of all loaded resources
   @SuppressWarnings("MismatchedQueryAndUpdateOfCollection") // remove this once TO-DO below is addressed
   private static final NonBlockingHashMap<String,byte[]> _cache = new NonBlockingHashMap<>();

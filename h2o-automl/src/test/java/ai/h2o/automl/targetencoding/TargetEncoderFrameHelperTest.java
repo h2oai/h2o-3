@@ -1,6 +1,7 @@
 package ai.h2o.automl.targetencoding;
 
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
@@ -9,8 +10,13 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
+import water.util.IcedHashMap;
+import water.util.Log;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 import static ai.h2o.automl.AutoMLBenchmarkingHelper.getPreparedTitanicFrame;
 import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.*;
@@ -250,7 +256,7 @@ public class TargetEncoderFrameHelperTest extends TestUtil {
       Scope.exit();
     }
   }
-  
+
   @Test
   public void factorColumnTest() {
     Frame fr = null;
@@ -262,17 +268,89 @@ public class TargetEncoderFrameHelperTest extends TestUtil {
               .withVecTypes(Vec.T_NUM)
               .withDataForCol(0, ar(0, 1))
               .build();
-      
+
       colA = fr.vec("ColA");
       assertFalse(colA.isCategorical());
-      
+
       TargetEncoderFrameHelper.factorColumn(fr, "ColA");
-      
+
       colA = fr.vec("ColA");
       assertTrue(colA.isCategorical());
     } finally {
       if(fr!=null) fr.delete();
       if(colA!=null) colA.remove();
     }
+  }
+
+  private Map<String, Frame> getTEMapForTitanicDataset(boolean withFoldColumn) {
+    String foldColumnNameForTE = "te_fold_column";
+
+    Frame trainFrame = null;
+    try {
+      trainFrame = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      String responseColumnName = "survived";
+      asFactor(trainFrame, responseColumnName);
+
+      if(withFoldColumn) {
+        int nfolds = 5;
+        addKFoldColumn(trainFrame, foldColumnNameForTE, nfolds, 1234);
+      }
+
+      BlendingParams params = new BlendingParams(3, 1);
+      String[] teColumns = {"home.dest", "embarked"};
+      TargetEncoder targetEncoder = new TargetEncoder(teColumns, params);
+      Map<String, Frame> testEncodingMap = targetEncoder.prepareEncodingMap(trainFrame, responseColumnName, withFoldColumn ? foldColumnNameForTE: null);
+      return testEncodingMap;
+    } finally {
+      if(trainFrame != null) trainFrame.delete();
+    }
+  }
+
+  // Checking that dfork is faster. This is a proof that dfork in this particular scenario is faster.
+  @Ignore()
+  @Test public void conversion_of_frame_into_table_doAll_vs_dfork_performance_test() {
+    Map<String, Frame> encodingMap = getTEMapForTitanicDataset(false);
+
+    for (int i = 0; i < 10; i++) { // Number of columns with encoding maps will be 2+10
+      encodingMap.put(UUID.randomUUID().toString(), encodingMap.get("home.dest"));
+    }
+    int numberOfIterations = 50;
+
+    //doAll
+    long startTimeDoAll = System.currentTimeMillis();
+    for (int i = 0; i < numberOfIterations; i++) {
+
+      for (Map.Entry<String, Frame> entry : encodingMap.entrySet()) {
+        String key = entry.getKey();
+        Frame encodingsForParticularColumn = entry.getValue();
+        IcedHashMap<String, TEComponents> table = new FrameToTETableTask().doAll(encodingsForParticularColumn).getResult()._table;
+
+      }
+    }
+    long totalTimeDoAll = System.currentTimeMillis() - startTimeDoAll;
+    Log.info("Total time doAll:" + totalTimeDoAll);
+
+    //DFork
+    long startTimeDFork = System.currentTimeMillis();
+    for (int i = 0; i < numberOfIterations; i++) {
+      Map<String, FrameToTETableTask> tasks = new HashMap<>();
+
+      for (Map.Entry<String, Frame> entry : encodingMap.entrySet()) {
+        Frame encodingsForParticularColumn = entry.getValue();
+        FrameToTETableTask task = new FrameToTETableTask().dfork(encodingsForParticularColumn);
+
+        tasks.put(entry.getKey(), task);
+      }
+
+      for (Map.Entry<String, FrameToTETableTask> taskEntry : tasks.entrySet()) {
+        IcedHashMap<String, TEComponents> table = taskEntry.getValue().getResult()._table;
+      }
+    }
+    long totalTimeDFork = System.currentTimeMillis() - startTimeDFork;
+
+    TargetEncoderFrameHelper.encodingMapCleanUp(encodingMap);
+    Log.info("Total time dfork:" + totalTimeDFork);
+
+    assertTrue(totalTimeDFork < totalTimeDoAll);
   }
 }

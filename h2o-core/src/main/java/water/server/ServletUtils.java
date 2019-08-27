@@ -188,12 +188,15 @@ public class ServletUtils {
     response.setHeader("X-h2o-context-path", sanatizeContextPath(H2O.ARGS.context_path));
     // Security headers
     response.setHeader("X-Frame-Options", "deny");
-    response.setHeader("X-XSS-Protection", "X-XSS-Protection: 1; mode=block");
+    response.setHeader("X-XSS-Protection", "1; mode=block");
     response.setHeader("X-Content-Type-Options", "nosniff");
     response.setHeader("Content-Security-Policy", "default-src 'self' 'unsafe-eval' 'unsafe-inline'; img-src 'self' data:");
     // Note: ^^^ unsafe-eval/-inline are essential for Flow to work
     //           this will also kill the component "Star H2O on Github" in Flow - see HEXDEV-739
-
+    // Custom headers - using addHeader - can be multi-value and cannot overwrite the security headers
+    for (H2O.KeyValueArg header : H2O.ARGS.extra_headers) {
+      response.addHeader(header._key, header._value);
+    }
   }
 
   public static String sanatizeContextPath(String context_path) {

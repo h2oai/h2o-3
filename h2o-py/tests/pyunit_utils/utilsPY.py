@@ -7,7 +7,6 @@ from functools import reduce
 from scipy.sparse import csr_matrix
 import sys, os
 import pandas as pd
-from six import string_types
 
 try:        # works with python 2.7 not 3
     from StringIO import StringIO
@@ -45,7 +44,7 @@ import json
 import math
 from random import shuffle
 import scipy.special
-from h2o.utils.typechecks import assert_is_type
+from h2o.utils.typechecks import is_type
 import datetime
 import time # needed to randomly generate time
 import uuid # call uuid.uuid4() to generate unique uuid numbers
@@ -217,7 +216,8 @@ def np_comparison_check(h2o_data, np_data, num_elements):
  # perform h2o predict and mojo predict.  Frames containing h2o prediction is returned and mojo predict are
 # returned.
 
-def mojo_predict(model, tmpdir, mojoname, glrmReconstruct=False, get_leaf_node_assignment=False):
+def mojo_predict(model, tmpdir, mojoname, glrmReconstruct=False, get_leaf_node_assignment=False, glrmIterNumber=-1, zipFilePath=None):
+    
     """
     perform h2o predict and mojo predict.  Frames containing h2o prediction is returned and mojo predict are returned.
     It is assumed that the input data set is saved as in.csv in tmpdir directory.
@@ -234,6 +234,8 @@ def mojo_predict(model, tmpdir, mojoname, glrmReconstruct=False, get_leaf_node_a
     # load mojo and have it do predict
     outFileName = os.path.join(tmpdir, 'out_mojo.csv')
     mojoZip = os.path.join(tmpdir, mojoname) + ".zip"
+    if not(zipFilePath==None):
+        mojoZip = zipFilePath
     genJarDir = str.split(str(tmpdir),'/')
     genJarDir = '/'.join(genJarDir[0:genJarDir.index('h2o-py')])    # locate directory of genmodel.jar
 
@@ -247,6 +249,10 @@ def mojo_predict(model, tmpdir, mojoname, glrmReconstruct=False, get_leaf_node_a
 
     if glrmReconstruct:  # used for GLRM to grab the x coefficients (factors) instead of the predicted values
         java_cmd.append("--glrmReconstruct")
+    
+    if glrmIterNumber > 0:
+        java_cmd.append("--glrmIterNumber")
+        java_cmd.append(str(glrmIterNumber))
 
     p = subprocess.Popen(java_cmd, stdout=PIPE, stderr=STDOUT)
     o, e = p.communicate()
@@ -3484,7 +3490,8 @@ def compare_frames_local(f1, f2, prob=0.5, tol=1e-6, returnResult=False):
     :param returnResult:
     :return:
     '''
-    assert (f1.nrow==f2.nrow) and (f1.ncol==f2.ncol), "The two frames are of different sizes."
+    assert (f1.nrow==f2.nrow) and (f1.ncol==f2.ncol), "Frame 1 row {0}, col {1}.  Frame 2 row {2}, col {3}.  " \
+                                                      "They are different.".format(f1.nrow, f1.ncol, f2.nrow, f2.ncol)
     typeDict = f1.types
     frameNames = f1.names
 
@@ -3608,7 +3615,7 @@ def compare_frames_local_onecolumn_NA_enum(f1, f2, prob=0.5, tol=1e-6, returnRes
                             return False
                     else:
                         assert temp1[rowInd][colInd]==temp2[rowInd][colInd], "Failed frame values check at row {2} and column {3}! frame1 value: {0}, frame2 value: " \
-                                      "{1}".format(temp1[rowInd][colInd], temp1[rowInd][colInd], rowInd, colInd)
+                                      "{1}".format(temp1[rowInd][colInd], temp2[rowInd][colInd], rowInd, colInd)
 
     if returnResult:
         return True
@@ -3635,7 +3642,7 @@ def compare_frames_local_onecolumn_NA_string(f1, f2, prob=0.5, returnResult=Fals
                             return False
                     else:
                         assert temp1[rowInd][colInd]==temp2[rowInd][colInd], "Failed frame values check at row {2} and column {3}! frame1 value: {0}, frame2 value: " \
-                                                                         "{1}".format(temp1[rowInd][colInd], temp1[rowInd][colInd], rowInd, colInd)
+                                                                         "{1}".format(temp1[rowInd][colInd], temp2[rowInd][colInd], rowInd, colInd)
 
     if returnResult:
         return True
@@ -3772,6 +3779,21 @@ def random_dataset_numeric_only(nrow, ncol, integerR=100, misFrac=0.01, randSeed
     fractions["binary_fraction"] = 0
 
     df = h2o.create_frame(rows=nrow, cols=ncol, missing_fraction=misFrac, has_response=False, integer_range=integerR,
+                          seed=randSeed, **fractions)
+    return df
+
+# generate random dataset of ncolumns of integer and reals, copied from Pasha
+def random_dataset_real_only(nrow, ncol, realR=100, misFrac=0.01, randSeed=None):
+    """Create and return a random dataset."""
+    fractions = dict()
+    fractions["real_fraction"] = 1  # Right now we are dropping string columns, so no point in having them.
+    fractions["categorical_fraction"] = 0
+    fractions["integer_fraction"] = 0
+    fractions["time_fraction"] = 0
+    fractions["string_fraction"] = 0  # Right now we are dropping string columns, so no point in having them.
+    fractions["binary_fraction"] = 0
+
+    df = h2o.create_frame(rows=nrow, cols=ncol, missing_fraction=misFrac, has_response=False, integer_range=realR,
                           seed=randSeed, **fractions)
     return df
 
@@ -4048,7 +4070,7 @@ def manual_partial_dependence(model, dataframe, xlist, xname, weightV):
         cons = [xval]*nRows
         if xname in dataframe.names:
             dataframe=dataframe.drop(xname)
-        if not((isinstance(xval, string_types) and xval=='NA') or (isinstance(xval, float) and math.isnan(xval))):
+        if not((is_type(xval, str) and xval=='NA') or (isinstance(xval, float) and math.isnan(xval))):
             dataframe = dataframe.cbind(h2o.H2OFrame(cons))
             dataframe.set_name(nCols, xname)
 

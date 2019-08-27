@@ -1,5 +1,7 @@
 package hex.tree.gbm;
 
+import hex.Distribution;
+import hex.DistributionFactory;
 import hex.tree.SharedTreeMojoWriter;
 
 import java.io.IOException;
@@ -23,7 +25,9 @@ public class GbmMojoWriter extends SharedTreeMojoWriter<GBMModel, GBMModel.GBMPa
   @Override
   protected void writeModelData() throws IOException {
     super.writeModelData();
-    writekv("distribution", model._parms._distribution);
+    Distribution dist = DistributionFactory.getDistribution(model._parms);
+    writekv("distribution", dist._family);
+    writekv("link_function", dist._linkFunction.linkFunctionType);
     writekv("init_f", model._output._init_f);
     writekv("offset_column", "null");  // Not known yet
   }

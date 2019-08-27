@@ -9,6 +9,10 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
+import water.Job;
+import water.Key;
+import water.Scope;
+import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
@@ -67,7 +71,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
       TargetEncoder tec = new TargetEncoder(teColumns);
       targetEncodingMap = tec.prepareEncodingMap(reimportedFrame, targetColumnName, null);
 
-      result = tec.calculateAndAppendBlendedTEEncoding(reimportedFrame, targetEncodingMap.get(teColumnName), targetColumnName, "targetEncoded");
+      result = tec.calculateAndAppendBlendedTEEncoding(reimportedFrame, targetEncodingMap.get(teColumnName), targetColumnName);
 
       double globalMean = 2.0 / 3;
 
@@ -125,7 +129,6 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
 
     Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, false,0.0, false, 1234);
 
-    printOutFrameAsTable(resultWithEncoding);
     // For level `c` and `d` we got only one row... so after leave one out subtraction we get `0` for denominator. We need to use different formula(value) for the result.
     assertEquals(0.66666, resultWithEncoding.vec("ColA_te").at(2), 1e-5);
     assertEquals(0.66666, resultWithEncoding.vec("ColA_te").at(3), 1e-5);
@@ -136,30 +139,36 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
 
   @Test
   public void naValuesWithLOOStrategyTest() {
-    String teColumnName = "ColA";
-    String targetColumnName = "ColB";
-    fr = new TestFrameBuilder()
-            .withName("testFrame")
-            .withColNames(teColumnName, targetColumnName)
-            .withVecTypes(Vec.T_CAT, Vec.T_CAT)
-            .withDataForCol(0, ar("a", "b", null, null, null))
-            .withDataForCol(1, ar("2", "6", "6", "2", "6"))
-            .build();
+    Scope.enter();
+    Map<String, Frame> targetEncodingMap = null;
+    try {
+      String teColumnName = "ColA";
+      String targetColumnName = "ColB";
+      Frame fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames(teColumnName, targetColumnName)
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", null, null, null))
+              .withDataForCol(1, ar("2", "6", "6", "2", "6"))
+              .withChunkLayout(3, 2)
+              .build();
 
-    String[] teColumns = {teColumnName};
-    TargetEncoder tec = new TargetEncoder(teColumns);
+      String[] teColumns = {teColumnName};
+      TargetEncoder tec = new TargetEncoder(teColumns);
 
-    Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, null);
+      targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, null);
 
-    Frame resultWithEncodings = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, false,0.0, true, 1234);
+      Frame resultWithEncodings = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, false, 0.0, true, 1234);
+      Scope.track(resultWithEncodings);
+      
+      Vec expected = dvec(0.6, 0.6, 0.5, 1, 0.5);
+      Scope.track(expected);
+      assertVecEquals(expected, resultWithEncodings.vec("ColA_te"), 1e-5);
 
-    Vec expected = dvec(0.6, 0.6, 0.5, 1, 0.5);
-    printOutFrameAsTable(resultWithEncodings);
-    assertVecEquals(expected, resultWithEncodings.vec("ColA_te"), 1e-5);
-
-    expected.remove();
-    encodingMapCleanUp(targetEncodingMap);
-    resultWithEncodings.delete();
+    } finally {
+      if (targetEncodingMap != null) TargetEncoderFrameHelper.encodingMapCleanUp(targetEncodingMap);
+      Scope.exit();
+    }
   }
 
   @Test
@@ -323,7 +332,6 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
 
     Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumn, null);
 
-    printOutFrameAsTable(targetEncodingMap.get("ColA"));
     Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumn, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, false, 0, false, 1234);
 
     Vec expected = vec(1, 1, 1, 1, 0);
@@ -755,39 +763,46 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
     }
   }
   
-  // It is consistent
+  // TODO should be stored in most general TE related test 
   @Test
-  public void withoutTEConsistencyTest() {
+  public void modelBuilderFixtureConsistencyTest() {
     double lastResult = 0.0;
-    for (int attemptNumber = 0; attemptNumber < 300; attemptNumber++) {
+    for (int attemptNumber = 0; attemptNumber < 5; attemptNumber++) {
+      Scope.enter();
+      try {
+        String responseColumn = "survived";
+        Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+        Scope.track(fr);
+        asFactor(fr, responseColumn);
 
-      String responseColumn = "survived";
-      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
-      asFactor(fr, responseColumn);
+        Key[] keys = new Key[]{Key.<Frame>make("train_LOO"), Key.<Frame>make("valid_LOO"), Key.<Frame>make("test_LOO")};
+        Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(fr, keys, new double[]{0.7, 0.15, 0.15}, 42);
+        Frame trainSplit = splits[0];
+        Frame validSplit = splits[1];
+        Frame testSplit = splits[2];
+        Scope.track(trainSplit, validSplit, testSplit);
 
+        long builderSeed = 3456;
 
-      Key[] keys = new Key[]{Key.<Frame>make("train_LOO"), Key.<Frame>make("test_LOO")};
-      Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(fr, keys, new double[]{0.8, 0.2}, 42);
-      Frame trainSplit = splits[0];
-      Frame validSplit = splits[1];
-      Frame testSplit = splits[2];
+        ModelBuilder modelBuilder = TargetEncodingTestFixtures.modelBuilderGBMWithValidFrameFixture(trainSplit, validSplit, responseColumn, builderSeed);
+        modelBuilder.init(false);
 
-      long builderSeed = 3456;
+        Keyed model = modelBuilder.trainModel().get();
+        Scope.track_generic(model);
+        Model retrievedModel = DKV.getGet(model._key);
 
-      // TODO how come we are able to train model without validation frame if we don't use CV?
-      ModelBuilder modelBuilder = TargetEncodingTestFixtures.modelBuilderGBMWithValidFrameFixture(trainSplit, validSplit, responseColumn, builderSeed);
-      modelBuilder.init(false);
+        Frame score = retrievedModel.score(testSplit);
+        Scope.track(score);
+        hex.ModelMetricsBinomial mmb = hex.ModelMetricsBinomial.getFromDKV(retrievedModel, testSplit);
+        Scope.track_generic(mmb);
 
-      Keyed model = modelBuilder.trainModel().get();
-      Model retrievedModel = DKV.getGet(model._key);
-      retrievedModel.score(testSplit);
-      hex.ModelMetricsBinomial mmb = hex.ModelMetricsBinomial.getFromDKV(retrievedModel, testSplit);
-
-      if(lastResult == 0.0) lastResult = mmb.auc();
-      else {
-        assertEquals("Failed attempt number " + attemptNumber, lastResult, mmb.auc(), 1e-5);
+        if (lastResult == 0.0) lastResult = mmb.auc();
+        else {
+          assertEquals("Failed attempt number " + attemptNumber, lastResult, mmb.auc(), 1e-5);
+        }
+      } finally {
+        Scope.exit();
       }
-      fr.delete();
     }
   }
 

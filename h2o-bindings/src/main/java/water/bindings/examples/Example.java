@@ -108,6 +108,7 @@ public class Example {
                                                                   0,
                                                                   0,
                                                                   null,
+                                                                  null,
                                                                   null).execute().body();
             System.out.println("parseSetupBody: " + parseSetupBody);
 
@@ -131,6 +132,7 @@ public class Example {
                                                    parseSetupBody.chunkSize,
                                                    true,
                                                    true,
+                                                   null,
                                                    null, null).execute().body();
             System.out.println("parseBody: " + parseBody);
 
@@ -174,7 +176,7 @@ public class Example {
                                                                               null,
                                                                               false, false, -1, null,
                                                                               false, false, false, false, null,
-                                                                              false, -1, false, null, null).execute().body();
+                                                                              false, false, false, -1, false, null, null).execute().body();
             System.out.println("predictions: " + predictions);
 
         }

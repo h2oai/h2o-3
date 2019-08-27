@@ -860,7 +860,7 @@ class Test(object):
 
     def get_nopass(self, nopass):
         """
-        Some tests are known not to fail and even if they don't pass we don't want
+        Some tests are known to fail often and even if they don't pass we don't want
         to fail the overall regression PASS/FAIL status.
 
         :param nopass:
@@ -871,7 +871,7 @@ class Test(object):
 
     def get_nofeature(self, nopass):
         """
-        Some tests are known not to fail and even if they don't pass we don't want
+        Some tests are known to fail often and even if they don't pass we don't want
         to fail the overall regression PASS/FAIL status.
 
         :param nopass:

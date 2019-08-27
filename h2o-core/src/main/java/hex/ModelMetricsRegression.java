@@ -41,7 +41,11 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append(super.toString());
-    sb.append(" mean residual deviance: " + (float)_mean_residual_deviance + "\n");
+    if(!Double.isNaN(_mean_residual_deviance)) {
+      sb.append(" mean residual deviance: " + (float) _mean_residual_deviance + "\n");
+    } else {
+      sb.append(" mean residual deviance: N/A\n");
+    }
     sb.append(" mean absolute error: " + (float)_mean_absolute_error + "\n");
     sb.append(" root mean squared log error: " + (float)_root_mean_squared_log_error + "\n");
     return sb.toString();
@@ -77,7 +81,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
     public MetricBuilderRegression _mb;
     final Distribution _distribution;
     RegressionMetrics(DistributionFamily family) {
-      _distribution = family ==null ? new Distribution(DistributionFamily.gaussian) : new Distribution(family);
+      _distribution = family == null ? DistributionFactory.getDistribution(DistributionFamily.gaussian) : DistributionFactory.getDistribution(family);
     }
     @Override public void map(Chunk[] chks) {
       _mb = new MetricBuilderRegression(_distribution);
@@ -118,10 +122,16 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       _abserror += w*Math.abs(err);
       _rmslerror += w*err_msle;
       assert !Double.isNaN(_sumsqe);
-      if (m != null && m._parms._distribution != DistributionFamily.huber)
-        _sumdeviance += m.deviance(w, yact[0], ds[0]);
-      else if (_dist!=null)
-        _sumdeviance += _dist.deviance(w, yact[0], ds[0]);
+      
+      // Deviance method is not supported in custom distribution
+      if((m != null && m._parms._distribution != DistributionFamily.custom) || (_dist != null && _dist ._family != DistributionFamily.custom)) {
+        if (m != null && m._parms._distribution != DistributionFamily.huber) {
+          _sumdeviance += m.deviance(w, yact[0], ds[0]);
+        } else if (_dist != null) {
+          _sumdeviance += _dist.deviance(w, yact[0], ds[0]);
+        }
+      }
+      
       _count++;
       _wcount += w;
       _wY += w*yact[0];
@@ -158,8 +168,10 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
 
           meanResDeviance = new MeanResidualDeviance(_dist, preds.anyVec(), actual, weight).exec().meanResidualDeviance;
         }
-      } else {
+      } else if((m != null && m._parms._distribution != DistributionFamily.custom) || (_dist != null && _dist._family != DistributionFamily.custom) ) {
         meanResDeviance = _sumdeviance / _wcount; //mean residual deviance
+      } else {
+        meanResDeviance = Double.NaN;
       }
       ModelMetricsRegression mm = new ModelMetricsRegression(m, f, _count, mse, weightedSigma(), mae, rmsle, meanResDeviance, _customMetric);
       if (m!=null) m.addModelMetrics(mm);

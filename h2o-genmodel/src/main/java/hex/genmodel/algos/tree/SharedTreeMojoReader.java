@@ -1,12 +1,13 @@
 package hex.genmodel.algos.tree;
 
+import com.google.gson.JsonObject;
 import hex.genmodel.ModelMojoReader;
+import hex.genmodel.attributes.*;
 
 import java.io.IOException;
 
-/**
- */
 public abstract class SharedTreeMojoReader<M extends SharedTreeMojoModel> extends ModelMojoReader<M> {
+
 
   @Override
   protected void readModelData() throws IOException {
@@ -45,6 +46,17 @@ public abstract class SharedTreeMojoReader<M extends SharedTreeMojoModel> extend
       _model._calib_glm_beta = readkv("calib_glm_beta", new double[0]);
     }
 
+
     _model.postInit();
+  }
+
+  @Override
+  protected SharedTreeModelAttributes readModelSpecificAttributes() {
+    final JsonObject modelJson = ModelJsonReader.parseModelJson(_reader);
+    if(modelJson != null) {
+      return new SharedTreeModelAttributes(modelJson, _model);
+    } else {
+      return null;
+    }
   }
 }

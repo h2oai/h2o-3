@@ -1,9 +1,10 @@
 package water.util;
 
+import water.H2O;
+
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
-import water.H2O;
 
 public class RandomUtils {
   public enum RNGType { PCGRNG, MersenneTwisterRNG, JavaRNG, XorShiftRNG }

@@ -2,8 +2,8 @@ apply plugin: 'java'
 
 description = 'H2O Generic MapReduce Driver for Hadoop'
 
-sourceCompatibility = 1.7
-targetCompatibility = 1.7
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 compileJava {
   options.debug = true
@@ -16,4 +16,6 @@ dependencies {
   compile(project(':h2o-app')) {
     exclude module: "${defaultWebserverModule}"
   }
+  testCompile "junit:junit:${junitVersion}"
+  testCompile "org.apache.hadoop:hadoop-client:2.6.0-cdh5.10.0"
 }

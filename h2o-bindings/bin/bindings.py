@@ -181,15 +181,16 @@ def vprint(msg, pretty=False):
         print(msg)
 
 
-def wrap(msg, indent, indent_first=True):
+def wrap(msg, indent='', indent_first=True, width=120):
     """
-    Helper function that wraps msg to 120-chars page width. All lines (except maybe 1st) will be prefixed with
+    Helper function that wraps msg to {width}-chars page width. All lines (except maybe 1st) will be prefixed with
     string {indent}. First line is prefixed only if {indent_first} is True.
       :param msg: string to indent
       :param indent: string that will be used for indentation
       :param indent_first: if True then the first line will be indented as well, otherwise not
+      :param width: the width of the generated paragraphs.
     """
-    wrapper.width = 120
+    wrapper.width = width
     wrapper.initial_indent = indent
     wrapper.subsequent_indent = indent
     msg = wrapper.fill(msg)
@@ -345,7 +346,7 @@ def schemas_map(add_generics=False):
     m = {}
     for schema in schemas():
         if schema["name"].startswith('AutoML'): continue  # Generation code doesn't know how to deal with defaults for complex objects yet
-        if schema["name"].startswith('UserFeedback'): continue  # UserFeedback schema contains an AutoMLKeyV3
+        if schema["name"].startswith('EventLog'): continue  # EventLog schema contains an AutoMLKeyV3
         m[schema["name"]] = schema
 
     def find_field(fields, field_name):

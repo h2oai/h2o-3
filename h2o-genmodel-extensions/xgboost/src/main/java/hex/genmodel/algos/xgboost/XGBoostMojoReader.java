@@ -1,13 +1,15 @@
 package hex.genmodel.algos.xgboost;
 
+import com.google.gson.JsonObject;
 import hex.genmodel.ModelMojoReader;
+import hex.genmodel.attributes.ModelJsonReader;
+import hex.genmodel.attributes.SharedTreeModelAttributes;
 
 import java.io.IOException;
-import java.util.Arrays;
 
-/**
- */
 public class XGBoostMojoReader extends ModelMojoReader<XGBoostMojoModel> {
+  
+  public static final String SCORE_JAVA_PROP = "sys.ai.h2o.xgboost.scoring.java.enable";
 
   @Override
   public String getModelName() {
@@ -16,6 +18,8 @@ public class XGBoostMojoReader extends ModelMojoReader<XGBoostMojoModel> {
 
   @Override
   protected void readModelData() throws IOException {
+    _model._boosterType = readkv("booster");
+    _model._ntrees = readkv("ntrees", 0);
     _model._nums = readkv("nums");
     _model._cats = readkv("cats");
     _model._catOffsets = readkv("cat_offsets");
@@ -35,19 +39,40 @@ public class XGBoostMojoReader extends ModelMojoReader<XGBoostMojoModel> {
     } catch (IOException e) {
       throw new IllegalStateException("MOJO is corrupted: cannot read the serialized Booster", e);
     }
-    if (useJavaScoring()) {
+    Boolean mojoPreferredJavaScoring = readkv("use_java_scoring_by_default");
+    String booster = readkv("booster");
+    if (useJavaScoring(mojoPreferredJavaScoring, booster)) {
       return new XGBoostJavaMojoModel(boosterBytes, columns, domains, responseColumn);
     } else {
       return new XGBoostNativeMojoModel(boosterBytes, columns, domains, responseColumn);
     }
   }
 
-  public static boolean useJavaScoring() {
-    return Boolean.getBoolean("sys.ai.h2o.xgboost.scoring.java.enable");
+  public static boolean useJavaScoring(Boolean mojoPreferredJavaScoring, String booster) {
+    String javaScoringEnabled = System.getProperty(SCORE_JAVA_PROP);
+    if (javaScoringEnabled == null) {
+      if (mojoPreferredJavaScoring != null) {
+        return mojoPreferredJavaScoring;
+      } else {
+        return "gbtree".equals(booster);
+      }
+    } else {
+      return Boolean.valueOf(javaScoringEnabled);
+    }
   }
 
   @Override public String mojoVersion() {
     return "1.00";
+  }
+
+  @Override
+  protected XGBoostModelAttributes readModelSpecificAttributes() {
+    final JsonObject modelJson = ModelJsonReader.parseModelJson(_reader);
+    if(modelJson != null) {
+      return new XGBoostModelAttributes(modelJson, _model);
+    } else {
+      return null;
+    }
   }
 
 }

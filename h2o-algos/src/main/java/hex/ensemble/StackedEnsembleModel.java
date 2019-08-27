@@ -1,9 +1,6 @@
 package hex.ensemble;
 
-import hex.Distribution;
-import hex.Model;
-import hex.ModelCategory;
-import hex.ModelMetrics;
+import hex.*;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMModel;
 import hex.tree.drf.DRFModel;
@@ -162,6 +159,10 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       ModelMetrics lastComputedMetric = mms[mms.length - 1].get();
       ModelMetrics mmStackedEnsemble = lastComputedMetric.deepCloneWithDifferentModelAndFrame(this, fr);
       this.addModelMetrics(mmStackedEnsemble);
+      //now that we have the metric set on the SE model, removing the one we just computed on metalearner (otherwise it leaks in client mode)
+      for (Key<ModelMetrics> mm : metalearner._output.clearModelMetrics(true)) {
+        DKV.remove(mm);
+      }
     }
     Frame.deleteTempFrameAndItsNonSharedVecs(levelOneFrame, adaptFrm);
     return predictFr;
@@ -247,7 +248,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         Distribution distribution = ((Distribution)distributionField.get(aModel));
         DistributionFamily distributionFamily;
         if (null != distribution)
-          distributionFamily = distribution.distribution;
+          distributionFamily = distribution._family;
         else
           distributionFamily = aModel._parms._distribution;
 
@@ -370,15 +371,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       } else {
         // !beenHere: this is the first base_model
         this.modelCategory = aModel._output.getModelCategory();
-        this._dist = new Distribution(distributionFamily(aModel));
-        _output._domains = Arrays.copyOf(aModel._output._domains, aModel._output._domains.length);
-
-        // TODO: set _parms._train to aModel._parms.train()
-
-        _output.setNames(aModel._output._names, aModel._output._column_types);
-        this.names = new NonBlockingHashSet<>();
-        this.names.addAll(Arrays.asList(aModel._output._names));
-
+        this._dist = DistributionFactory.getDistribution(distributionFamily(aModel));
         responseColumn = aModel._parms._response_column;
 
         if (! responseColumn.equals(_parms._response_column))
@@ -406,20 +399,20 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         if (_output._levelone_frame_id != null && key.get() != null)
           Frame.deleteTempFrameAndItsNonSharedVecs(key.get(), _output._levelone_frame_id);
         else
-          key.remove();
+          Keyed.remove(key);
       }
       _output._base_model_predictions_keys = null;
     }
   }
 
-  @Override protected Futures remove_impl(Futures fs ) {
+  @Override protected Futures remove_impl(Futures fs, boolean cascade) {
     deleteBaseModelPredictions(); 
     if (_output._metalearner != null)
       _output._metalearner.remove(fs);
     if (_output._levelone_frame_id != null)
       _output._levelone_frame_id.remove(fs);
 
-    return super.remove_impl(fs);
+    return super.remove_impl(fs, cascade);
   }
 
   /** Write out models (base + metalearner) */
@@ -457,5 +450,9 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     _output._metalearner.deleteCrossValidationPreds();
   }
 
+  @Override
+  public void deleteCrossValidationFoldAssignment() {
+    _output._metalearner.deleteCrossValidationFoldAssignment();
+  }
 }
 

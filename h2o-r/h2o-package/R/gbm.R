@@ -2,20 +2,21 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details) 
 #'
 # -------------------------- Gradient Boosting Machine -------------------------- #
-#' 
+#'
 #' Build gradient boosted classification or regression trees
 #' 
 #' Builds gradient boosted classification trees and gradient boosted regression trees on a parsed data set.
 #' The default distribution function will guess the model type based on the response column type.
 #' In order to run properly, the response column must be an numeric for "gaussian" or an
 #' enum for "bernoulli" or "multinomial".
-#' 
+#'
 #' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing, then all columns except y are used.
-#' @param y The name or column index of the response variable in the data. The response must be either a numeric or a
-#'        categorical/factor variable. If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
-#' @param model_id Destination id for this model; auto-generated if not specified.
+#' @param y The name or column index of the response variable in the data. 
+#'        The response must be either a numeric or a categorical/factor variable. 
+#'        If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
 #' @param training_frame Id of the training data frame.
+#' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param validation_frame Id of the validation data frame.
 #' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
 #' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to TRUE.
@@ -56,21 +57,22 @@
 #'        exceeds this Defaults to 1.797693135e+308.
 #' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
 #'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 0.
-#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression). Note that custom
-#'        and custom_increasing can only be used in GBM and DRF with the Python client. Must be one of: "AUTO",
-#'        "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification",
-#'        "mean_per_class_error", "custom", "custom_increasing". Defaults to AUTO.
+#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and
+#'        anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF
+#'        with the Python client. Must be one of: "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC",
+#'        "lift_top_group", "misclassification", "AUCPR", "mean_per_class_error", "custom", "custom_increasing".
+#'        Defaults to AUTO.
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.001.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
-#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
+#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
 #' @param build_tree_one_node \code{Logical}. Run on one node only; no network overhead but fewer cpus used.  Suitable for small datasets.
 #'        Defaults to FALSE.
 #' @param learn_rate Learning rate (from 0.0 to 1.0) Defaults to 0.1.
 #' @param learn_rate_annealing Scale the learning rate by this factor after each tree (e.g., 0.99 or 0.999)  Defaults to 1.
 #' @param distribution Distribution function Must be one of: "AUTO", "bernoulli", "quasibinomial", "multinomial", "gaussian",
-#'        "poisson", "gamma", "tweedie", "laplace", "quantile", "huber". Defaults to AUTO.
+#'        "poisson", "gamma", "tweedie", "laplace", "quantile", "huber", "custom". Defaults to AUTO.
 #' @param quantile_alpha Desired quantile for Quantile regression, must be between 0 and 1. Defaults to 0.5.
 #' @param tweedie_power Tweedie power for Tweedie regression, must be between 1 and 2. Defaults to 1.5.
 #' @param huber_alpha Desired quantile for Huber/M-regression (threshold between quadratic and linear loss, must be between 0 and
@@ -92,16 +94,17 @@
 #'        accurate estimates of class probabilities. Defaults to FALSE.
 #' @param calibration_frame Calibration frame for Platt Scaling
 #' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
+#' @param custom_distribution_func Reference to custom distribution, format: `language:keyName=funcName`
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @param monotone_constraints A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a
 #'        decreasing constraint.
 #' @param check_constant_response \code{Logical}. Check if response column is constant. If enabled, then an exception is thrown if the response
 #'        column is a constant value.If disabled, then model will train regardless of the response column being a
 #'        constant value or not. Defaults to TRUE.
-#' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree for GBM, DRF, & XGBoost. Metrics per epoch for Deep Learning). Defaults to FALSE.
+#' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #' 
@@ -109,13 +112,15 @@
 #' australia_path <- system.file("extdata", "australia.csv", package = "h2o")
 #' australia <- h2o.uploadFile(path = australia_path)
 #' independent <- c("premax", "salmax","minairtemp", "maxairtemp", "maxsst",
-#' "maxsoilmoist", "Max_czcs")
+#'                  "maxsoilmoist", "Max_czcs")
 #' dependent <- "runoffnew"
 #' h2o.gbm(y = dependent, x = independent, training_frame = australia,
-#' ntrees = 3, max_depth = 3, min_rows = 2)
+#'         ntrees = 3, max_depth = 3, min_rows = 2)
 #' }
 #' @export
-h2o.gbm <- function(x, y, training_frame,
+h2o.gbm <- function(x,
+                    y,
+                    training_frame,
                     model_id = NULL,
                     validation_frame = NULL,
                     nfolds = 0,
@@ -141,14 +146,14 @@ h2o.gbm <- function(x, y, training_frame,
                     nbins_cats = 1024,
                     r2_stopping = 1.797693135e+308,
                     stopping_rounds = 0,
-                    stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
+                    stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "AUCPR", "mean_per_class_error", "custom", "custom_increasing"),
                     stopping_tolerance = 0.001,
                     max_runtime_secs = 0,
                     seed = -1,
                     build_tree_one_node = FALSE,
                     learn_rate = 0.1,
                     learn_rate_annealing = 1,
-                    distribution = c("AUTO", "bernoulli", "quasibinomial", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
+                    distribution = c("AUTO", "bernoulli", "quasibinomial", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber", "custom"),
                     quantile_alpha = 0.5,
                     tweedie_power = 1.5,
                     huber_alpha = 0.9,
@@ -166,12 +171,17 @@ h2o.gbm <- function(x, y, training_frame,
                     calibrate_model = FALSE,
                     calibration_frame = NULL,
                     custom_metric_func = NULL,
+                    custom_distribution_func = NULL,
                     export_checkpoints_dir = NULL,
                     monotone_constraints = NULL,
                     check_constant_response = TRUE,
-                    verbose = FALSE 
-                    ) 
+                    verbose = FALSE)
 {
+  # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
+  training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
+  validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
+
+  # Validate other required args
   # If x is missing, then assume user wants to use all columns as features.
   if (missing(x)) {
      if (is.numeric(y)) {
@@ -180,27 +190,13 @@ h2o.gbm <- function(x, y, training_frame,
          x <- setdiff(colnames(training_frame), y)
      }
   }
+
+  # Validate other args
   # Required maps for different names params, including deprecated params
   .gbm.map <- c("x" = "ignored_columns",
                 "y" = "response_column")
 
-  # Required args: training_frame
-  if (missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
-  # Training_frame must be a key or an H2OFrame object
-  if (!is.H2OFrame(training_frame))
-     tryCatch(training_frame <- h2o.getFrame(training_frame),
-           error = function(err) {
-             stop("argument 'training_frame' must be a valid H2OFrame or key")
-           })
-  # Validation_frame must be a key or an H2OFrame object
-  if (!is.null(validation_frame)) {
-     if (!is.H2OFrame(validation_frame))
-         tryCatch(validation_frame <- h2o.getFrame(validation_frame),
-             error = function(err) {
-                 stop("argument 'validation_frame' must be a valid H2OFrame or key")
-             })
-  }
-  # Parameter list to send to model builder
+  # Build parameter list to send to model builder
   parms <- list()
   parms$training_frame <- training_frame
   args <- .verify_dataxy(training_frame, x, y)
@@ -310,12 +306,16 @@ h2o.gbm <- function(x, y, training_frame,
     parms$calibration_frame <- calibration_frame
   if (!missing(custom_metric_func))
     parms$custom_metric_func <- custom_metric_func
+  if (!missing(custom_distribution_func))
+    parms$custom_distribution_func <- custom_distribution_func
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
   if (!missing(monotone_constraints))
     parms$monotone_constraints <- monotone_constraints
   if (!missing(check_constant_response))
     parms$check_constant_response <- check_constant_response
+
   # Error check and build model
-  .h2o.modelJob('gbm', parms, h2oRestApiVersion = 3, verbose=verbose) 
+  model <- .h2o.modelJob('gbm', parms, h2oRestApiVersion=3, verbose=verbose)
+  return(model)
 }

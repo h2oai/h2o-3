@@ -1,11 +1,8 @@
 package hex.deeplearning;
 
 
+import hex.*;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
-import hex.DataInfo;
-import hex.Distribution;
-import hex.FrameTask;
-import hex.ModelMetricsRegression;
 import hex.genmodel.utils.DistributionFamily;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -419,7 +416,7 @@ public class DeepLearningGradientCheck extends TestUtil {
           p._huber_alpha = rng.nextDouble()+0.1;
           p._tweedie_power = 1.01 + rng.nextDouble()*0.9;
           p._quantile_alpha = 0.05 + rng.nextDouble()*0.9;
-          Distribution d = new Distribution(p);
+          Distribution d = DistributionFactory.getDistribution(p);
           double f = (i+0.5)/N; // avoid issues at 0
           double grad = -2*d.negHalfGradient(y, f); //f in link space (model space)
           double w = rng.nextDouble()*10;

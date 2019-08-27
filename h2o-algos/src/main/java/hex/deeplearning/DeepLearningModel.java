@@ -176,8 +176,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       }
     }
     assert(get_params() != cp.model_info().get_params()); //make sure we have a clone
-    _dist = new Distribution(get_params());
-    assert(_dist.distribution != DistributionFamily.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
+    _dist = DistributionFactory.getDistribution(get_params());
+    assert(_dist._family != DistributionFamily.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
     actual_best_model_key = cp.actual_best_model_key;
     if (actual_best_model_key.get() == null) {
       DeepLearningModel best = IcedUtils.deepCopy(cp);
@@ -229,8 +229,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     Log.info("Building the model on " + dinfo.numNums() + " numeric features and " + dinfo.numCats() + " (one-hot encoded) categorical features.");
     model_info = new DeepLearningModelInfo(parms, destKey, dinfo, nClasses, train, valid);
     model_info_key = Key.make(H2O.SELF);
-    _dist = new Distribution(get_params());
-    assert(_dist.distribution != DistributionFamily.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
+    _dist = DistributionFactory.getDistribution(get_params());
+    assert(_dist._family != DistributionFamily.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
     actual_best_model_key = Key.make(H2O.SELF);
     if (parms._nfolds != 0) actual_best_model_key = null;
     if (!parms._autoencoder) {
@@ -508,7 +508,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
           stopped_early = true;
         }
         if (ScoreKeeper.stopEarly(ScoringInfo.scoreKeepers(scoring_history()),
-                get_params()._stopping_rounds, _output.isClassifier(), get_params()._stopping_metric, get_params()._stopping_tolerance, "model's last", true
+                get_params()._stopping_rounds, ScoreKeeper.ProblemType.forSupervised(_output.isClassifier()), get_params()._stopping_metric, get_params()._stopping_tolerance, "model's last", true
         )) {
           Log.info("Convergence detected based on simple moving average of the loss function for the past " + get_params()._stopping_rounds + " scoring events. Model building completed.");
           stopped_early = true;
@@ -929,15 +929,15 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     assert (bestModel.compareTo(this) <= 0);
   }
 
-  @Override protected Futures remove_impl(Futures fs) {
+  @Override protected Futures remove_impl(Futures fs, boolean cascade) {
     if (_output.weights != null && _output.biases != null) {
-      for (Key k : _output.weights) if (k!=null) k.remove(fs);
-      for (Key k : _output.biases) if (k!=null) k.remove(fs);
+      for (Key k : _output.weights) Keyed.remove(k, fs, true);
+      for (Key k : _output.biases) Keyed.remove(k, fs, true);
     }
     if (actual_best_model_key!=null) DKV.remove(actual_best_model_key);
     DKV.remove(model_info().data_info()._key, fs);
     deleteElasticAverageModels();
-    return super.remove_impl(fs);
+    return super.remove_impl(fs, cascade);
   }
 
   void deleteElasticAverageModels() {

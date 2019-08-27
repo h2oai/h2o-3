@@ -3,6 +3,7 @@ package water.fvec;
 import water.AutoBuffer;
 import water.Key;
 import water.DKV;
+import water.MRTask;
 import water.util.ArrayUtils;
 
 import java.util.Arrays;
@@ -38,13 +39,50 @@ public class CategoricalWrappedVec extends WrappedVec {
   /** Constructor just to generate the map and domain; used in tests or when
    *  mixing categorical columns */
   private CategoricalWrappedVec(Key key) { super(key, ESPC.rowLayout(key, new long[]{0}), null, null); }
-  public static int[] computeMap(String[] from, String[] to) {
+  private static CategoricalWrappedVec makeTransientVec(String[] from, String[] to) {
     Key key = Vec.newKey();
     CategoricalWrappedVec tmp = new CategoricalWrappedVec(key);
     tmp.computeMap(from, to, false);
-    return tmp._map;
+    return tmp;
+  }
+  public static int[] computeMap(String[] from, String[] to) {
+    return makeTransientVec(from, to)._map;
   }
 
+  /**
+   * Updates Vec's domain in-place (instead of creating a wrapper Vec)
+   * @param source source Vec
+   * @param toDomain target domain
+   * @return updated instance of Vec
+   */
+  public static Vec updateDomain(Vec source, String[] toDomain) {
+    CategoricalWrappedVec tv = makeTransientVec(source.domain(), toDomain);
+    new RemapTask(tv).doAll(source);
+    source.setDomain(tv.domain());
+    DKV.put(source);
+    return source;
+  }
+
+  private static class RemapTask extends MRTask<RemapTask> {
+    private final int[] _map;
+    private final int _p;
+
+    private RemapTask(CategoricalWrappedVec vec) {
+      _map = vec._map; _p = vec._p;
+    }
+
+    @Override
+    public void map(Chunk c) {
+      Chunk wc = new CategoricalWrappedChunk(c, c._vec, _map, _p);
+      assert wc._len == c._len;
+      for (int i = 0; i < wc._len; i++) {
+        if (c.isNA(i))
+          continue;;
+        c.set(i, wc.at8(i));
+      }
+    }
+  }
+  
   @Override public Chunk chunkForChunkIdx(int cidx) {
     return new CategoricalWrappedChunk(masterVec().chunkForChunkIdx(cidx), this);
   }
@@ -67,7 +105,7 @@ public class CategoricalWrappedVec extends WrappedVec {
    *  Extra values in the 'from' domain appear, in-order in the 'from' domain, at the end.
    *  @return mapping
    */
-  void computeMap( String[] from, String[] to, boolean fromIsBad ) {
+  private void computeMap( String[] from, String[] to, boolean fromIsBad ) {
     // Identity? Build the cheapo non-map
     if( from==to || Arrays.equals(from,to) ) {
       _map = ArrayUtils.seq(0,to.length);
@@ -147,9 +185,13 @@ public class CategoricalWrappedVec extends WrappedVec {
     final transient int   _p;
 
     CategoricalWrappedChunk(Chunk c, CategoricalWrappedVec vec) {
+      this(c, vec, vec._map, vec._p);
+    }
+
+    private CategoricalWrappedChunk(Chunk c, Vec vec, int[] map, int p) {
       _c  = c; set_len(_c._len);
       _start = _c._start; _vec = vec; _cidx = _c._cidx;
-      _map = vec._map; _p = vec._p;
+      _map = map; _p = p;
     }
 
     // Returns the mapped value.  {@code _map} covers all the values in the
@@ -188,10 +230,12 @@ public class CategoricalWrappedVec extends WrappedVec {
 
     public static AutoBuffer write_impl(CategoricalWrappedVec v,AutoBuffer bb) { throw water.H2O.fail(); }
     @Override protected final void initFromBytes () { throw water.H2O.fail(); }
-    @Override public boolean hasNA() { return false; }
+    @Override public boolean hasNA() { return _c.hasNA(); }
 
+    @Override
     public Chunk deepCopy() {
       return extractRows(new NewChunk(this),0,_c._len).compress();
     }
   }
+
 }

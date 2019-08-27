@@ -20,6 +20,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
     private final XGBoostOutput _output;
     private final XGBoostModel.XGBoostParameters _parms;
     private final BoosterParms _boosterParms;
+    private final boolean _isTrain;
     private final boolean _computeMetrics;
     private final int _weightsChunkId;
     private final Model _model;
@@ -38,6 +39,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
                                                       Key<Frame> destinationKey,
                                                       Frame data,
                                                       Frame originalData,
+                                                      boolean isTrain,
                                                       boolean computeMetrics,
                                                       Model m) {
         BoosterParms boosterParms = XGBoostModel.createParams(parms, output.nclasses(), sharedmodel.dataInfo().coefNames());
@@ -45,6 +47,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
                 output,
                 parms,
                 boosterParms,
+                isTrain,
                 computeMetrics,
                 data.find(parms._weights_column),
                 m).doAll(outputTypes(output), data);
@@ -106,6 +109,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
                              final XGBoostOutput output,
                              final XGBoostModel.XGBoostParameters parms,
                              final BoosterParms boosterParms,
+                             final boolean isTrain,
                              final boolean computeMetrics,
                              final int weightsChunkId,
                              final Model model) {
@@ -113,6 +117,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
         _output = output;
         _parms = parms;
         _boosterParms = boosterParms;
+        _isTrain = isTrain;
         _computeMetrics = computeMetrics;
         _weightsChunkId = weightsChunkId;
         _model = model;
@@ -142,7 +147,8 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
         float[] _labels;
     }
 
-    private static ScoreResult scoreChunkExt(final XGBoostModelInfo sharedmodel, final XGBoostModel.XGBoostParameters parms,
+    private static ScoreResult scoreChunkExt(final XGBoostModelInfo sharedmodel, final DataInfo dataInfo, 
+                                             final XGBoostModel.XGBoostParameters parms,
                                              final BoosterParms boosterParms, final XGBoostOutput output,
                                              final Frame fr, final Chunk[] cs,
                                              final OutputType outputType) {
@@ -155,11 +161,9 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
             Rabit.init(rabitEnv);
 
             data = XGBoostUtils.convertChunksToDMatrix(
-                    sharedmodel._dataInfoKey,
+                    dataInfo,
                     cs,
                     fr.find(parms._response_column),
-                    -1, // not used for preds
-                    fr.find(parms._fold_column),
                     output._sparse);
 
             // No local chunks for this frame
@@ -170,16 +174,21 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
             // Initialize Booster
             booster = sharedmodel.deserializeBooster();
             booster.setParams(boosterParms.get());
-
+            int treeLimit = 0;
+            if (parms._booster == XGBoostModel.XGBoostParameters.Booster.dart) {
+                // DART with treeLimit=0 returns non-deterministic random predictions
+                treeLimit = parms._ntrees;
+            }
+            
             // Predict
             ScoreResult result = new ScoreResult();
             switch (outputType) {
                 case PREDICT:
-                    result._preds = booster.predict(data);
+                    result._preds = booster.predict(data, false, treeLimit);
                     result._labels = data.getLabel();
                     break;
                 case PREDICT_CONTRIB_APPROX:
-                    result._preds = booster.predictContrib(data, 0);
+                    result._preds = booster.predictContrib(data, treeLimit);
                     break;
                 default:
                     throw new UnsupportedOperationException("Unsupported output type: " + outputType);
@@ -197,17 +206,19 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
         }
     }
 
-    public static float[][] scoreChunk(final XGBoostModelInfo sharedmodel, final XGBoostModel.XGBoostParameters parms,
+    public static float[][] scoreChunk(final XGBoostModelInfo sharedmodel, final DataInfo dataInfo,
+                                       final XGBoostModel.XGBoostParameters parms,
                                        final BoosterParms boosterParms, final XGBoostOutput output,
                                        final Frame fr, final Chunk[] cs) {
-        ScoreResult r = scoreChunkExt(sharedmodel, parms, boosterParms, output, fr, cs, OutputType.PREDICT);
+        ScoreResult r = scoreChunkExt(sharedmodel, dataInfo, parms, boosterParms, output, fr, cs, OutputType.PREDICT);
         return r == null ? new float[0][] : r._preds;
     }
 
-    public static float[][] scoreChunkContribApprox(final XGBoostModelInfo sharedmodel, final XGBoostModel.XGBoostParameters parms,
+    public static float[][] scoreChunkContribApprox(final XGBoostModelInfo sharedmodel, final DataInfo dataInfo,
+                                                    final XGBoostModel.XGBoostParameters parms,
                                                     final BoosterParms boosterParms, final XGBoostOutput output,
                                                     final Frame fr, final Chunk[] cs) {
-        ScoreResult r = scoreChunkExt(sharedmodel, parms, boosterParms, output, fr, cs, OutputType.PREDICT_CONTRIB_APPROX);
+        ScoreResult r = scoreChunkExt(sharedmodel, dataInfo, parms, boosterParms, output, fr, cs, OutputType.PREDICT_CONTRIB_APPROX);
         return r == null ? new float[0][] : r._preds;
     }
 
@@ -215,7 +226,8 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
     public void map(Chunk[] cs, NewChunk[] ncs) {
         _metricBuilder = _computeMetrics ? createMetricsBuilder(_output.nclasses(), _output.classNames()) : null;
 
-        final ScoreResult r = scoreChunkExt(_sharedmodel, _parms, _boosterParms, _output, _fr, cs, OutputType.PREDICT);
+        final DataInfo di = _sharedmodel.scoringInfo(_isTrain);
+        final ScoreResult r = scoreChunkExt(_sharedmodel, di, _parms, _boosterParms, _output, _fr, cs, OutputType.PREDICT);
 
         if (r == null)
             return;

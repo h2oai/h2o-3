@@ -1,6 +1,8 @@
 package ai.h2o.automl.targetencoding;
 
 import hex.Model;
+import hex.genmodel.algos.targetencoder.EncodingMap;
+import hex.genmodel.algos.targetencoder.EncodingMaps;
 import water.DKV;
 import water.H2O;
 import water.Key;
@@ -15,9 +17,11 @@ import water.rapids.Rapids;
 import water.rapids.Val;
 import water.rapids.ast.prims.advmath.AstKFold;
 import water.rapids.ast.prims.mungers.AstGroup;
+import water.util.IcedHashMap;
 
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Arrays;
 import java.util.Random;
 
 public class TargetEncoderFrameHelper {
@@ -47,21 +51,22 @@ public class TargetEncoderFrameHelper {
    * @return frame without rows with NAs in `columnIndex` column
    */
   static Frame filterOutNAsInColumn(Frame fr, int columnIndex) {
-    Frame noNaPredicateFrame = new IsNotNaTask().doAll(1, Vec.T_NUM, new Frame(fr.vec(columnIndex))).outputFrame();
+    Frame oneColumnFrame = new Frame(fr.vec(columnIndex));
+    Frame noNaPredicateFrame = new IsNotNaTask().doAll(1, Vec.T_NUM, oneColumnFrame).outputFrame();
     return selectByPredicate(fr, noNaPredicateFrame);
   }
 
   /**
    * @return frame with all the rows except for those whose value in the `columnIndex' column equals to `value`
    */
-  static public Frame filterNotByValue(Frame fr, int columnIndex, double value) {
+  public static Frame filterNotByValue(Frame fr, int columnIndex, double value) {
     return filterByValueBase(fr, columnIndex, value, true);
   }
 
   /**
    * @return frame with all the rows whose value in the `columnIndex' column equals to `value`
    */
-  static public Frame filterByValue(Frame fr,int columnIndex, double value) {
+  public static Frame filterByValue(Frame fr,int columnIndex, double value) {
     return filterByValueBase(fr, columnIndex, value,false);
   }
 
@@ -158,19 +163,19 @@ public class TargetEncoderFrameHelper {
    * @param nfolds number of folds
    * @param seed
    */
-  static public Frame addKFoldColumn(Frame frame, String name, int nfolds, long seed) {
+  public static Frame addKFoldColumn(Frame frame, String name, int nfolds, long seed) {
     Vec foldVec = frame.anyVec().makeZero();
     frame.add(name, AstKFold.kfoldColumn(foldVec, nfolds, seed == -1 ? new Random().nextLong() : seed));
     return frame;
   }
-  
+
   /**
    * @param frame
    * @param name name of the fold column
    * @param nfolds number of folds
    * @param seed
    */
-  static public Frame addKFoldColumn(Model.Parameters.FoldAssignmentScheme fold_assignment, Frame frame, String name, int nfolds, String responseColumnName,  long seed) {
+  static public Frame addKFoldColumn(Model.Parameters.FoldAssignmentScheme fold_assignment, Frame frame, String name, int nfolds, String responseColumnName, long seed) {
     Vec foldAssignments = null;
     switch(fold_assignment ) {
       case AUTO:
@@ -185,17 +190,53 @@ public class TargetEncoderFrameHelper {
     frame.add(name, foldAssignments);
     return frame;
   }
+  
+  static EncodingMaps convertEncodingMapFromFrameToMap(Map<String, Frame> encodingMap) {
+    EncodingMaps convertedEncodingMap = new EncodingMaps();
+    Map<String, FrameToTETableTask> tasks = new HashMap<>();
+
+    for (Map.Entry<String, Frame> entry : encodingMap.entrySet()) {
+
+      Frame encodingsForParticularColumn = entry.getValue();
+      FrameToTETableTask task = new FrameToTETableTask().doAll(encodingsForParticularColumn);
+      tasks.put(entry.getKey(), task);
+    }
+
+    for (Map.Entry<String, FrameToTETableTask> taskEntry : tasks.entrySet()) {
+      IcedHashMap<String, TEComponents> table = taskEntry.getValue().getResult()._table;
+      convertEncodingMapToGenModelFormat(convertedEncodingMap, taskEntry.getKey(), table);
+    }
+    
+    return convertedEncodingMap;
+  }
+
+  /**
+   * Note: We can't use the same class for {numerator, denominator} in both `h2o-genmodel` and `h2o-automl` as we need it to be extended 
+   * from Iced in `h2o-automl` to make it serializable to distribute MRTasks and we can't use this Iced class from `h2o-genmodel` module 
+   * as there is no dependency between modules in this direction 
+   * 
+   * @param convertedEncodingMap the Map we will put our converted encodings into
+   * @param encodingMap encoding map for `teColumn`
+   */
+  private static void convertEncodingMapToGenModelFormat(EncodingMaps convertedEncodingMap, String teColumn, IcedHashMap<String, TEComponents> encodingMap) {
+    Map<Integer, int[]> tableGenModelFormat = new HashMap<>();
+    for(Map.Entry<String, TEComponents> entry : encodingMap.entrySet()) {
+      TEComponents value = entry.getValue();
+      tableGenModelFormat.put(Integer.parseInt(entry.getKey()), new int[] {value.getNumerator(), value.getDenominator()});
+    }
+    convertedEncodingMap.put(teColumn, new EncodingMap(tableGenModelFormat));
+  }
 
   /**
    * @return Frame that is registered in DKV
    */
-  static public Frame register(Frame frame) {
+  public static Frame register(Frame frame) {
     frame._key = Key.make();
     DKV.put(frame);
     return frame;
   }
 
-  static public void encodingMapCleanUp(Map<String, Frame> encodingMap) {
+  public static void encodingMapCleanUp(Map<String, Frame> encodingMap) {
     for (Map.Entry<String, Frame> map : encodingMap.entrySet()) {
       map.getValue().delete();
     }

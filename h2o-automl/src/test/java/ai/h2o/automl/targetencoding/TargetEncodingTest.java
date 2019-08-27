@@ -508,8 +508,6 @@ public class TargetEncodingTest extends TestUtil {
             for (int i = 0; i < c._len; i++)
               nc.addNum(c.at8(i) * 2);
           }
-
-
         }
       }
     }
@@ -527,7 +525,6 @@ public class TargetEncodingTest extends TestUtil {
 
       new TestMutableTask(1).doAll(fr);
 
-//      printOutFrameAsTable(fr, false, fr.numRows());
       assertEquals(3, fr.numCols());
 
       Vec expected = vec(2, 4, 6);
@@ -587,7 +584,7 @@ public class TargetEncodingTest extends TestUtil {
 
         merged = tec.mergeByTEColumn(reimportedFrame, targetEncodingMap.get("ColA"), 0, 0);
 
-        resultWithEncoding = tec.calculateAndAppendBlendedTEEncoding(merged, targetEncodingMap.get("ColA"), "ColB", "targetEncoded");
+        resultWithEncoding = tec.calculateAndAppendBlendedTEEncoding(merged, targetEncodingMap.get("ColA"), "ColB_te");
 
         // k <- 20
         // f <- 10
@@ -608,7 +605,6 @@ public class TargetEncodingTest extends TestUtil {
         assertEquals(te1, resultWithEncoding.vec(4).at(0), 1e-5);
         assertEquals(te2, resultWithEncoding.vec(4).at(1), 1e-5);
         assertEquals(te3, resultWithEncoding.vec(4).at(2), 1e-5);
-
 
       } finally {
         new File(tmpName).delete();
@@ -1028,6 +1024,40 @@ public class TargetEncodingTest extends TestUtil {
   }
 
   @Test
+  public void transformFrameWithoutResponseColumn() {
+    Scope.enter();
+    try {
+      String teColumnName = "ColA";
+      fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames(teColumnName, "y")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", "b", "b"))
+              .withDataForCol(1, ar("2", "6", "6", "2"))
+              .build();
+
+      Frame frameWithoutResponse = new TestFrameBuilder()
+              .withName("testFrame2")
+              .withColNames(teColumnName)
+              .withVecTypes(Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", "b", "b"))
+              .build();
+
+      String[] teColumns = {teColumnName};
+      TargetEncoder tec = new TargetEncoder(teColumns);
+
+      Map<String, Frame> encodingMap = tec.prepareEncodingMap(fr, "y", null);
+      Scope.track(encodingMap.get(teColumnName));
+
+      Frame encoded = tec.applyTargetEncoding(frameWithoutResponse, "y", encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, false, true, 1234);
+      Scope.track(encoded);
+    } finally {
+      Scope.exit();
+    }
+
+  }
+
+  @Test
   public void addThenRemoveTest() {
     Frame fr = null;
     try {
@@ -1061,16 +1091,16 @@ public class TargetEncodingTest extends TestUtil {
               .build();
 
       Vec emptyNumerator = Vec.makeZero(fr.numRows());
-      
+
       assertFalse(fr.anyVec().isCompatibleWith(emptyNumerator));
-      
+
       fr.add("numerator", emptyNumerator);
-      
+
       //Here we expect having some espcs changed. Because emptyNumerator had different layout we created a new vector with a compatible layout. 
       // That is why in that case we need to remove original `emptyNumerator` themselves.
       Vec numeratorWIthCompatibleLayout = fr.vec("numerator");
       assertTrue(fr.anyVec().isCompatibleWith(numeratorWIthCompatibleLayout));
-      
+
       //Cleanup
       emptyNumerator.remove();
     } finally {
@@ -1078,7 +1108,7 @@ public class TargetEncodingTest extends TestUtil {
 
     }
   }
-  
+
   @Test
   public void vecIsBeingReusedIfWeMakeItCompatibleInAdvanceTest() {
     Frame fr = null;
@@ -1092,7 +1122,7 @@ public class TargetEncodingTest extends TestUtil {
               .build();
 
       Vec emptyNumerator = fr.anyVec().makeCon(0);
-      
+
       assertTrue(fr.anyVec().isCompatibleWith(emptyNumerator));
       fr.add("numerator", emptyNumerator);
       //We expect no key leakage as `numerator` vec is going to be deleted with `fr`
@@ -1102,7 +1132,7 @@ public class TargetEncodingTest extends TestUtil {
 
     }
   }
-  
+
   @Test
   public void addThenRemoveWithParsingFileTest() {
     Frame fr = null;
@@ -1119,7 +1149,7 @@ public class TargetEncodingTest extends TestUtil {
   }
 
   void addThenRemoveNumerator(Frame fr) {
-   Vec emptyNumerator = fr.anyVec().makeCon(0);
+    Vec emptyNumerator = fr.anyVec().makeCon(0);
     fr.add("numerator", emptyNumerator);
 
     Vec removedNumeratorNone = fr.remove("numerator");

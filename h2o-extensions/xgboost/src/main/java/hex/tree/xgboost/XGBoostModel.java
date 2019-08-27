@@ -5,37 +5,36 @@ import biz.k11i.xgboost.gbm.GBTree;
 import biz.k11i.xgboost.gbm.GradBooster;
 import biz.k11i.xgboost.tree.RegTree;
 import biz.k11i.xgboost.tree.RegTreeNode;
-import biz.k11i.xgboost.util.FVec;
 import hex.*;
-import hex.genmodel.GenModel;
 import hex.genmodel.algos.tree.SharedTreeGraph;
+import hex.genmodel.algos.tree.SharedTreeGraphConverter;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
-import hex.genmodel.algos.tree.SharedTreeGraphConverter;
-import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.algos.xgboost.XGBoostNativeMojoModel;
 import hex.genmodel.utils.DistributionFamily;
+import hex.tree.xgboost.predict.*;
+import hex.tree.xgboost.util.PredictConfiguration;
 import ml.dmlc.xgboost4j.java.*;
 import water.*;
-import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
-import hex.ModelMetrics;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import static hex.tree.xgboost.XGBoost.makeDataInfo;
 import static hex.genmodel.algos.xgboost.XGBoostMojoModel.ObjectiveType;
+import static hex.tree.xgboost.XGBoost.makeDataInfo;
+import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
 
 public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParameters, XGBoostOutput> 
-        implements SharedTreeGraphConverter, Model.Contributions {
+        implements SharedTreeGraphConverter, Model.LeafNodeAssignment, Model.Contributions {
 
   private XGBoostModelInfo model_info;
 
@@ -50,9 +49,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     }
     public enum Booster {
       gbtree, gblinear, dart
-    }
-    public enum MissingValuesHandling {
-      MeanImputation, Skip
     }
     public enum DartSampleType {
       uniform, weighted
@@ -69,7 +65,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
     // H2O GBM options
     public boolean _quiet_mode = true;
-    public MissingValuesHandling _missing_values_handling;
 
     public int _ntrees=50; // Number of trees in the final model. Grid Search, comma sep values:50,100,150,200
     public int _n_estimators;  // This doesn't seem to be used anywhere... (not in clients)
@@ -194,6 +189,30 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     model_info = new XGBoostModelInfo(parms, dinfo);
   }
 
+  // useful for debugging
+  @SuppressWarnings("unused")
+  public void dump(String format) {
+    File fmFile = null;
+    try {
+      Booster b = BoosterHelper.loadModel(new ByteArrayInputStream((this).model_info._boosterBytes));
+      fmFile = File.createTempFile("xgboost-feature-map", ".bin");
+      FileOutputStream os = new FileOutputStream(fmFile);
+      os.write(this.model_info._featureMap.getBytes());
+      os.close();
+      String fmFilePath = fmFile.getAbsolutePath();
+      String[] d = b.getModelDump(fmFilePath, true, format);
+      for (String l : d) {
+        System.out.println(l);
+      }
+    } catch (Exception e) {
+      Log.err(e);
+    } finally {
+      if (fmFile != null) {
+        fmFile.delete();
+      }
+    }
+  }
+
   public static BoosterParms createParams(XGBoostParameters p, int nClasses, String[] coefNames) {
     Map<String, Object> params = new HashMap<>();
 
@@ -269,12 +288,14 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       } else if (XGBoost.hasGPU(H2O.CLOUD.members()[0], p._gpu_id)) {
         Log.info("Using GPU backend (gpu_id: " + p._gpu_id + ").");
         params.put("gpu_id", p._gpu_id);
-        if (p._tree_method == XGBoostParameters.TreeMethod.exact) {
+        if (p._booster == XGBoostParameters.Booster.gblinear) {
+          Log.info("Using gpu_coord_descent updater."); 
+          params.put("updater", "gpu_coord_descent");
+        } else  if (p._tree_method == XGBoostParameters.TreeMethod.exact) {
           Log.info("Using grow_gpu (exact) updater.");
           params.put("tree_method", "exact");
           params.put("updater", "grow_gpu");
-        }
-        else {
+        } else {
           Log.info("Using grow_gpu_hist (approximate) updater.");
           params.put("max_bins", p._max_bins);
           params.put("tree_method", "exact");
@@ -365,16 +386,16 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   }
 
   private static int getMaxNThread() {
-    return Integer.getInteger(H2O.OptArgs.SYSTEM_PROP_PREFIX + "xgboost.nthread", H2O.ARGS.nthreads);
+    return Integer.getInteger(SYSTEM_PROP_PREFIX + "xgboost.nthread", H2O.ARGS.nthreads);
   }
 
   @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
-    ab.putKey(model_info._dataInfoKey);
+    ab.putKey(model_info.getDataInfoKey());
     return super.writeAll_impl(ab);
   }
 
   @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
-    ab.getKey(model_info._dataInfoKey, fs);
+    ab.getKey(model_info.getDataInfoKey(), fs);
     return super.readAll_impl(ab, fs);
   }
 
@@ -383,10 +404,10 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     return new XGBoostMojoWriter(this);
   }
 
-  private ModelMetrics makeMetrics(Frame data, Frame originalData, String description) {
+  private ModelMetrics makeMetrics(Frame data, Frame originalData, boolean isTrain, String description) {
     Log.debug("Making metrics: " + description);
     XGBoostScoreTask.XGBoostScoreTaskResult score = XGBoostScoreTask.runScoreTask(
-            model_info(), _output, _parms, null, data, originalData, true, this);
+            model_info(), _output, _parms, null, data, originalData, isTrain, true, this);
     score.preds.remove();
     return score.mm;
   }
@@ -398,13 +419,13 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
    * @param _valid validation data (optional, can be null)
    */
   final void doScoring(Frame _train, Frame _trainOrig, Frame _valid, Frame _validOrig) {
-    ModelMetrics mm = makeMetrics(_train, _trainOrig, "Metrics reported on training frame");
+    ModelMetrics mm = makeMetrics(_train, _trainOrig, true, "Metrics reported on training frame");
     _output._training_metrics = mm;
     _output._scored_train[_output._ntrees].fillFrom(mm);
     addModelMetrics(mm);
     // Optional validation part
     if (_valid!=null) {
-      mm = makeMetrics(_valid, _validOrig, "Metrics reported on validation frame");
+      mm = makeMetrics(_valid, _validOrig, false, "Metrics reported on validation frame");
       _output._validation_metrics = mm;
       _output._scored_valid[_output._ntrees].fillFrom(mm);
       addModelMetrics(mm);
@@ -423,13 +444,13 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   @Override // per row scoring is slow and should be avoided!
   public double[] score0(final double[] data, final double[] preds, final double offset) {
-    final DataInfo di = model_info._dataInfoKey.get();
+    final DataInfo di = model_info.dataInfo();
     assert di != null;
     final double threshold = defaultThreshold();
     Booster booster = null;
     try {
       booster = model_info.deserializeBooster();
-      return XGBoostNativeMojoModel.score0(data, offset, preds,
+      return XGBoostNativeMojoModel.score0(data, offset, preds, _parms._booster.toString(), _parms._ntrees,
               model_info.deserializeBooster(), di._nums, di._cats, di._catOffsets, di._useAllFactorLevels,
               _output.nclasses(), _output._priorClassDist, threshold, _output._sparse);
     } finally {
@@ -438,195 +459,51 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     }
   }
 
-  private boolean useJavaScoring() {
-    return Boolean.getBoolean("sys.ai.h2o.xgboost.predict.java.enable");
-  }
-
   @Override
   protected BigScorePredict setupBigScorePredict(BigScore bs) {
-    return useJavaScoring() ? setupBigScorePredictJava() : setupBigScorePredictNative();
+    DataInfo di = model_info().scoringInfo(false); // always for validation scoring info for scoring (we are not in the training phase)
+    return PredictConfiguration.useJavaScoring() ? setupBigScorePredictJava(di) : setupBigScorePredictNative(di);
   }
 
-  private BigScorePredict setupBigScorePredictNative() {
-    DataInfo di = model_info()._dataInfoKey.get();
-    assert di != null;
+  private BigScorePredict setupBigScorePredictNative(DataInfo di) {
     BoosterParms boosterParms = XGBoostModel.createParams(_parms, _output.nclasses(), di.coefNames());
-    return new XGBoostBigScorePredict(boosterParms);
+    return new XGBoostBigScorePredict(model_info, _parms, _output, di, boosterParms, defaultThreshold());
   }
 
-  private BigScorePredict setupBigScorePredictJava() {
-    final DataInfo di = model_info._dataInfoKey.get();
-    assert di != null;
+  private BigScorePredict setupBigScorePredictJava(DataInfo di) {
     return new XGBoostJavaBigScorePredict(di, _output, defaultThreshold(), model_info()._boosterBytes);
-  }
-
-  private class XGBoostBigScorePredict implements BigScorePredict {
-    private final BoosterParms _boosterParms;
-
-    private XGBoostBigScorePredict(BoosterParms boosterParms) {
-      _boosterParms = boosterParms;
-    }
-
-    @Override
-    public BigScoreChunkPredict initMap(Frame fr, Chunk[] chks) {
-      float[][] preds = scoreChunk(fr, chks);
-      return new XGBoostBigScoreChunkPredict(_output.nclasses(), preds, defaultThreshold());
-    }
-
-    private float[][] scoreChunk(Frame fr, Chunk[] chks) {
-      return XGBoostScoreTask.scoreChunk(model_info(), _parms, _boosterParms, _output, fr, chks);
-    }
-  }
-
-  private static class XGBoostBigScoreChunkPredict implements BigScoreChunkPredict {
-    private final int _nclasses;
-    private final float[][] _preds;
-    private final double _threshold;
-
-    private XGBoostBigScoreChunkPredict(int nclasses, float[][] preds, double threshold) {
-      _nclasses = nclasses;
-      _preds = preds;
-      _threshold = threshold;
-    }
-
-    @Override
-    public double[] score0(Chunk[] chks, double offset, int row_in_chunk, double[] tmp, double[] preds) {
-      for (int i = 0; i < tmp.length; i++) {
-        tmp[i] = chks[i].atd(row_in_chunk);
-      }
-      return XGBoostMojoModel.toPreds(tmp, _preds[row_in_chunk], preds, _nclasses, null, _threshold);
-    }
-
-    @Override
-    public void close() {}
-  }
-
-  private class XGBoostJavaBigScorePredict implements BigScorePredict {
-    private final DataInfo _di;
-    private final XGBoostOutput _output;
-    private final double _threshold;
-    private final Predictor _predictor;
-
-    XGBoostJavaBigScorePredict(DataInfo di, XGBoostOutput output, double threshold, byte[] boosterBytes) {
-      _di = di;
-      _output = output;
-      _threshold = threshold;
-      _predictor = PredictorFactory.makePredictor(boosterBytes);
-    }
-
-    @Override
-    public BigScoreChunkPredict initMap(Frame fr, Chunk[] chks) {
-      return new XGboostJavaBigScoreChunkPredict(_di, _output, _threshold, _predictor);
-    }
-
-  }
-
-  private static class XGboostJavaBigScoreChunkPredict implements BigScoreChunkPredict {
-    private final XGBoostOutput _output;
-    private final double _threshold;
-    private final Predictor _predictor;
-    private final MutableOneHotEncoderFVec _row;
-
-    public XGboostJavaBigScoreChunkPredict(DataInfo di, XGBoostOutput output, double threshold, Predictor predictor) {
-      _output = output;
-      _threshold = threshold;
-      _predictor = predictor;
-      _row = new MutableOneHotEncoderFVec(di, _output._sparse);
-    }
-
-    @Override
-    public double[] score0(Chunk[] chks, double offset, int row_in_chunk, double[] tmp, double[] preds) {
-      if (offset != 0) throw new UnsupportedOperationException("Unsupported: offset != 0");
-
-      assert _output.nfeatures() == tmp.length;
-      for (int i = 0; i < tmp.length; i++) {
-        tmp[i] = chks[i].atd(row_in_chunk);
-      }
-
-      _row.setInput(tmp);
-
-      float[] out = _predictor.predict(_row);
-
-      return XGBoostMojoModel.toPreds(tmp, out, preds, _output.nclasses(), _output._priorClassDist, _threshold);
-    }
-
-    @Override
-    public void close() {}
-  }
-
-  private static class MutableOneHotEncoderFVec implements FVec {
-    private final DataInfo _di;
-    private final boolean _treatsZeroAsNA;
-    private final int[] _catMap;
-    private final int[] _catValues;
-    private final float[] _numValues;
-    private final float _notHot;
-
-    MutableOneHotEncoderFVec(DataInfo di, boolean treatsZeroAsNA) {
-      _di = di;
-      _catValues = new int[_di._cats];
-      _treatsZeroAsNA = treatsZeroAsNA;
-      _notHot = _treatsZeroAsNA ? Float.NaN : 0;
-      if (_di._catOffsets == null) {
-        _catMap = new int[0];
-      } else {
-        _catMap = new int[_di._catOffsets[_di._cats]];
-        for (int c = 0; c < _di._cats; c++) {
-          for (int j = _di._catOffsets[c]; j < _di._catOffsets[c+1]; j++)
-            _catMap[j] = c;
-        }
-      }
-      _numValues = new float[_di._nums];
-    }
-
-    void setInput(double[] input) {
-      GenModel.setCats(input, _catValues, _di._cats, _di._catOffsets, _di._useAllFactorLevels);
-      for (int i = 0; i < _numValues.length; i++) {
-        float val = (float) input[_di._cats + i];
-        _numValues[i] = _treatsZeroAsNA && (val == 0) ? Float.NaN : val;
-      }
-    }
-
-    @Override
-    public final float fvalue(int index) {
-      if (index >= _catMap.length)
-        return _numValues[index - _catMap.length];
-
-      final boolean isHot = _catValues[_catMap[index]] == index;
-      return isHot ? 1 : _notHot;
-    }
   }
 
   @Override
   public Frame scoreContributions(Frame frame, Key<Frame> destination_key) {
+    return scoreContributions(frame, destination_key, false);
+  }
+
+  public Frame scoreContributions(Frame frame, Key<Frame> destination_key, boolean approx) {
     Frame adaptFrm = new Frame(frame);
     adaptTestForTrain(adaptFrm, true, false);
 
-    DataInfo di = model_info()._dataInfoKey.get();
+    DataInfo di = model_info().dataInfo();
     assert di != null;
     final String[] outputNames = ArrayUtils.append(di.coefNames(), "BiasTerm");
 
-    return new PredictContribApproxTask(di)
+    return makePredictContribTask(di, approx)
             .doAll(outputNames.length, Vec.T_NUM, adaptFrm)
             .outputFrame(destination_key, outputNames, null);
   }
+  
+  private MRTask<?> makePredictContribTask(DataInfo di, boolean approx) {
+    return approx ? new PredictContribApproxTask(_parms, model_info, _output, di) : new PredictTreeSHAPTask(di, model_info(), _output);
+  }
 
-  private class PredictContribApproxTask extends MRTask<PredictContribApproxTask> {
-    private final BoosterParms _boosterParms;
-
-    private PredictContribApproxTask(DataInfo di) {
-      _boosterParms = XGBoostModel.createParams(_parms, _output.nclasses(), di.coefNames());
-    }
-
-    @Override
-    public void map(Chunk chks[], NewChunk[] nc) {
-      float[][] contrib = XGBoostScoreTask.scoreChunkContribApprox(model_info(), _parms, _boosterParms, _output, _fr, chks);
-      for (float[] rowContrib : contrib) {
-        for (int j = 0; j < rowContrib.length; j++) {
-          nc[j].addNum(rowContrib[j]);
-        }
-      }
-    }
+  @Override
+  public Frame scoreLeafNodeAssignment(
+      Frame frame, LeafNodeAssignmentType type, Key<Frame> destination_key
+  ) {
+    AssignLeafNodeTask task = AssignLeafNodeTask.make(model_info.scoringInfo(false), _output, model_info._boosterBytes, type);
+    Frame adaptFrm = new Frame(frame);
+    adaptTestForTrain(adaptFrm, true, false);
+    return task.execute(adaptFrm, destination_key);
   }
 
   private void setDataInfoToOutput(DataInfo dinfo) {
@@ -641,15 +518,17 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   }
 
   @Override
-  protected Futures remove_impl(Futures fs) {
-    if (model_info()._dataInfoKey !=null)
-      model_info()._dataInfoKey.get().remove(fs);
-    return super.remove_impl(fs);
+  protected Futures remove_impl(Futures fs, boolean cascade) {
+    DataInfo di = model_info().dataInfo();
+    if (di != null) {
+      di.remove(fs);
+    }
+    return super.remove_impl(fs, cascade);
   }
 
   @Override
   public SharedTreeGraph convert(final int treeNumber, final String treeClassName) {
-    GradBooster booster = null;
+    GradBooster booster;
     try {
       booster = new Predictor(new ByteArrayInputStream(model_info._boosterBytes)).getBooster();
     } catch (IOException e) {
@@ -680,7 +559,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     SharedTreeGraph sharedTreeGraph = new SharedTreeGraph();
     final SharedTreeSubgraph sharedTreeSubgraph = sharedTreeGraph.makeSubgraph(_output._training_metrics._description);
 
-    final XGBoostUtils.FeatureProperties featureProperties = XGBoostUtils.assembleFeatureNames(model_info._dataInfoKey.get()); // XGBoost's usage of one-hot encoding assumed
+    final XGBoostUtils.FeatureProperties featureProperties = XGBoostUtils.assembleFeatureNames(model_info.dataInfo()); // XGBoost's usage of one-hot encoding assumed
     constructSubgraph(treeNodes, sharedTreeSubgraph.makeRootNode(), 0, sharedTreeSubgraph, featureProperties, true); // Root node is at index 0
     return sharedTreeGraph;
   }
@@ -703,14 +582,11 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     sharedTreeNode.setInclusiveNa(inclusiveNA);
     sharedTreeNode.setNodeNumber(nodeIndex);
 
-    if (xgBoostNode.getLeftChildIndex() != -1) {
+    if (!xgBoostNode.isLeaf()) {
       constructSubgraph(xgBoostNodes, sharedTreeSubgraph.makeLeftChildNode(sharedTreeNode),
-              xgBoostNode.getLeftChildIndex(), sharedTreeSubgraph, featureProperties, xgBoostNode.default_left());
-    }
-
-    if (xgBoostNode.getRightChildIndex() != -1) {
+          xgBoostNode.getLeftChildIndex(), sharedTreeSubgraph, featureProperties, xgBoostNode.default_left());
       constructSubgraph(xgBoostNodes, sharedTreeSubgraph.makeRightChildNode(sharedTreeNode),
-              xgBoostNode.getRightChildIndex(), sharedTreeSubgraph, featureProperties, !xgBoostNode.default_left());
+          xgBoostNode.getRightChildIndex(), sharedTreeSubgraph, featureProperties, !xgBoostNode.default_left());
     }
   }
 

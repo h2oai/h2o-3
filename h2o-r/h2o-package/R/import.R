@@ -55,9 +55,10 @@
 #' @param decrypt_tool (Optional) Specify a Decryption Tool (key-reference
 #'        acquired by calling \link{h2o.decryptionSetup}.
 #' @param skipped_columns a list of column indices to be skipped during parsing.
+#' @param custom_non_data_line_markers (Optional) If a line in imported file starts with any character in given string it will NOT be imported. Empty string means all lines are imported, NULL means that default behaviour for given format will be used
 #' @seealso \link{h2o.import_sql_select}, \link{h2o.import_sql_table}, \link{h2o.parseRaw}
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
 #' prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate = h2o.importFile(path = prostate_path)
@@ -76,16 +77,19 @@
 #' @name h2o.importFile
 #' @export
 h2o.importFile <- function(path, destination_frame = "", parse = TRUE, header=NA, sep = "", col.names=NULL,
-                           col.types=NULL, na.strings=NULL, decrypt_tool=NULL, skipped_columns=NULL) {
+                           col.types=NULL, na.strings=NULL, decrypt_tool=NULL, skipped_columns=NULL,
+                           custom_non_data_line_markers=NULL) {
   h2o.importFolder(path, pattern = "", destination_frame=destination_frame, parse, header, sep, col.names, col.types,
-                   na.strings=na.strings, decrypt_tool=decrypt_tool, skipped_columns=skipped_columns)
+                   na.strings=na.strings, decrypt_tool=decrypt_tool, skipped_columns=skipped_columns,
+                   custom_non_data_line_markers=custom_non_data_line_markers)
 }
 
 
 #' @rdname h2o.importFile
 #' @export
 h2o.importFolder <- function(path, pattern = "", destination_frame = "", parse = TRUE, header = NA, sep = "",
-                             col.names = NULL, col.types=NULL, na.strings=NULL, decrypt_tool=NULL, skipped_columns=NULL) {
+                             col.names = NULL, col.types=NULL, na.strings=NULL, decrypt_tool=NULL, skipped_columns=NULL,
+                             custom_non_data_line_markers=NULL) {
   if(!is.character(path) || is.na(path) || !nzchar(path)) stop("`path` must be a non-empty character string")
   if(!is.character(pattern) || length(pattern) != 1L || is.na(pattern)) stop("`pattern` must be a character string")
   .key.validate(destination_frame)
@@ -111,7 +115,7 @@ h2o.importFolder <- function(path, pattern = "", destination_frame = "", parse =
   } else {
     res <- .h2o.__remoteSend(.h2o.__IMPORT, path=path,pattern=pattern)
   }
-
+  
   if(length(res$fails) > 0L) {
     for(i in seq_len(length(res$fails)))
       cat(res$fails[[i]], "failed to import")
@@ -121,7 +125,8 @@ h2o.importFolder <- function(path, pattern = "", destination_frame = "", parse =
 if(parse) {
     srcKey <- res$destination_frames
     return( h2o.parseRaw(data=.newH2OFrame(op="ImportFolder",id=srcKey,-1,-1),pattern=pattern, destination_frame=destination_frame,
-            header=header, sep=sep, col.names=col.names, col.types=col.types, na.strings=na.strings, decrypt_tool=decrypt_tool, skipped_columns=skipped_columns) )
+            header=header, sep=sep, col.names=col.names, col.types=col.types, na.strings=na.strings, decrypt_tool=decrypt_tool,
+             skipped_columns=skipped_columns, custom_non_data_line_markers=custom_non_data_line_markers) )
 }
   myData <- lapply(res$destination_frames, function(x) .newH2OFrame( op="ImportFolder", id=x,-1,-1))  # do not gc, H2O handles these nfs:// vecs
   if(length(res$destination_frames) == 1L)
@@ -319,9 +324,8 @@ h2o.import_hive_table <- function(database, table, partitions = NULL, allow_mult
 #' can now be loaded using this method.)
 #'
 #' @param path The path of the H2O Model to be imported.
-#'        and port of the server running H2O.
 #' @return Returns a \linkS4class{H2OModel} object of the class corresponding to the type of model
-#'         built.
+#'         loaded.
 #' @seealso \code{\link{h2o.saveModel}, \linkS4class{H2OModel}}
 #' @examples
 #' \dontrun{

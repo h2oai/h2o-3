@@ -121,7 +121,7 @@
       postBody <- sub('\"\\{', '\\{',postBody)
       postBody <- sub('\\}\"', '\\}',postBody)
     }
-
+    
   .__curlError = FALSE
   .__curlErrorMessage = ""
   httpStatusCode = -1L
@@ -313,7 +313,6 @@
   if (missing(h2oRestApiVersion)) {
     h2oRestApiVersion = .h2o.__REST_API_VERSION
   }
-
   .h2o.doRawREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
                  parms = parms, method = method, fileUploadInfo,autoML=autoML, ...)
 }
@@ -583,7 +582,6 @@ print.H2OTable <- function(x, header=TRUE, ...) {
   }
 
   rawREST <- ""
-
   if( !is.null(timeout) ){
     rawREST <- .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = page, parms = .params, method = method, timeout = timeout)
   }else if(autoML == TRUE){
@@ -591,11 +589,18 @@ print.H2OTable <- function(x, header=TRUE, ...) {
   }else{
     rawREST <- .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = page, parms = .params, method = method)
   }
-
   if( raw ) rawREST
-  else      .h2o.fromJSON(jsonlite::fromJSON(rawREST,simplifyDataFrame=FALSE))
+  else {
+    res <- .h2o.fromJSON(jsonlite::fromJSON(rawREST,simplifyDataFrame=FALSE, bigint_as_char=TRUE))
+    if(getOption("h2o.warning.on.json.string.conversion", FALSE)) {
+      resToCompare <- .h2o.fromJSON(jsonlite::fromJSON(rawREST,simplifyDataFrame=FALSE))
+      if(!isTRUE(all.equal(res, resToCompare))){
+        warning("During parsing the JSON response from H2O API to R bindings a conversion from long to string has occurred.")
+      }
+    }
+    res
+  }
 }
-
 
 #-----------------------------------------------------------------------------------------------------------------------
 #   H2O Server Health & Info
@@ -744,6 +749,40 @@ h2o.clusterInfo <- function() {
   }
 }
 
+.h2o.translateJobType <- function(type) {
+    if (is.null(type)) {
+      return('Removed')
+    }
+    switch (type,
+      'Key<Frame>' = 'Frame',
+      'Key<Model>' = 'Model',
+      'Key<Grid>' = 'Grid',
+      'Key<PartialDependence>' = 'PartialDependence',
+      'Key<AutoML>' = 'Auto Model',
+      'Key<ScalaCodeResult>' = 'Scala Code Execution',
+      'Key<KeyedVoid>' = 'Void',
+      'Unknown'
+    )
+}
+
+#' Return list of jobs performed by the H2O cluster
+#' @export
+h2o.list_jobs <- function() {
+  myJobUrlSuffix <- paste0(.h2o.__JOBS)
+  rawResponse <- .h2o.doSafeGET(urlSuffix = myJobUrlSuffix)
+  jsonObject <- .h2o.fromJSON(jsonlite::fromJSON(rawResponse, simplifyDataFrame=FALSE))
+  df <- data.frame()
+  for (job in jsonObject$jobs) {
+    df <- rbind(df, data.frame(
+      type=.h2o.translateJobType(job$dest$type),
+      dest=job$dest$name,
+      description=job$description,
+      status=job$status
+    ))
+  }
+  df
+}
+
 #' Check H2O Server Health
 #'
 #' Warn if there are sick nodes.
@@ -814,7 +853,7 @@ h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
 #   Job Polling
 #-----------------------------------------------------------------------------------------------------------------------
 
-.h2o.__waitOnJob <- function(job_key, pollInterval = 1, verboseModelScoringHistory=FALSE) {
+.h2o.__waitOnJob <- function(job_key, pollInterval = 1, pollUpdates = NULL) {
   progressBar <- .h2o.is_progress()
   if (progressBar) pb <- txtProgressBar(style = 3L)
   keepRunning <- TRUE
@@ -876,15 +915,7 @@ h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
 
       if (keepRunning) {
         Sys.sleep(pollInterval)
-        if(verboseModelScoringHistory){
-          cat(paste0("\nScoring History for Model ",job$dest$name, " at ", Sys.time(),"\n"))
-          print(paste0("Model Build is ", job$progress*100, "% done..."))
-          if(!is.null(job$progress_msg)){
-            print(tail(h2o.getModel(job$dest$name)@model$scoring_history))
-          }else{
-            print("Scoring history is not available yet...") #Catch 404 with scoring history. Can occur when nfolds >=2
-          }
-        }
+        if (is.function(pollUpdates)) pollUpdates(job)
       } else {
         if (progressBar) {
           close(pb)
@@ -893,12 +924,12 @@ h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
       }
     }
   },
-    interrupt = function(x) {
-      url.suf <- paste0(.h2o.__JOBS,"/",job_key,"/cancel")
-      .h2o.doSafePOST(urlSuffix=url.suf)
-      message(paste0("\nJob ",job_key," was cancelled.\n"))
-      return()
-    })
+  interrupt = function(x) {
+    url.suf <- paste0(.h2o.__JOBS,"/",job_key,"/cancel")
+    .h2o.doSafePOST(urlSuffix=url.suf)
+    message(paste0("\nJob ",job_key," was cancelled.\n"))
+    return()
+  })
 }
 
 #------------------------------------ Utilities ------------------------------------#

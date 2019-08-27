@@ -29,7 +29,6 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   /** Name of the column with offsets (used for certain types of models). */
   public String _offsetColumn;
 
-
   public GenModel(String[] names, String[][] domains, String responseColumn) {
     _names = names;
     _domains = domains;
@@ -57,6 +56,11 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   /** Returns number of input features. */
   @Override public int nfeatures() {
     return _names.length;
+  }
+
+  /** Returns names of input features. */
+  @Override public String[] features() {
+    return Arrays.copyOf(_names, nfeatures());
   }
 
   /** Returns number of output classes for classifiers, 1 for regression models, and 0 for unsupervised models. */

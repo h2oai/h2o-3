@@ -4,16 +4,22 @@
 
 #Below is the test that will be implemented:
 
+options(h2o.dev.javacheck.disable = TRUE)
+
 library(h2o)
 
+#Sometimes we want to add extra system properties to JVM invocation (eg. allow running on unsupported Java version)
+jvm_custom_args = Sys.getenv("ADDITIONAL_TEST_JVM_OPTS")
+print(sprintf("ADDITIONAL_TEST_JVM_OPTS: %s", jvm_custom_args))
+
 #Call h2o.init() just in case instance is not running
-h2o.init()
+h2o.init(jvm_custom_args = jvm_custom_args)
 
 #First, we will shutdown any instance of h2o
 h2o.shutdown(prompt = FALSE)
 
 #Load up h2o and h2o.init()
-h2o.init()
+h2o.init(jvm_custom_args = jvm_custom_args)
 
 #Way to check if cluster is up and also get status:
 cluster_up = h2o.clusterIsUp()

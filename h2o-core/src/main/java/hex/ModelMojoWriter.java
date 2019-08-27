@@ -69,7 +69,7 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
    *    (extra model files written by the subclasses)
    * Each domain file is a plain text file with one line per category (not quoted).
    */
-  @Override public final void writeTo(OutputStream os) {
+  @Override public void writeTo(OutputStream os) {
     ZipOutputStream zos = new ZipOutputStream(os);
     try {
       writeTo(zos);

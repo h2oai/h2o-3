@@ -187,8 +187,9 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 -  `stopping_metric <algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping.
    The available options are:
-
-    - ``auto``: This defaults to ``logloss`` for classification, ``deviance`` for regression
+    
+    - ``auto``: This defaults to ``logloss`` for classification, ``deviance`` for regression, and ``anomaly_score`` for Isolation Forest. Note that custom and custom_increasing can only be used in GBM and DRF with the Python client. Must be one of: ``AUTO``, ``anomaly_score``. Defaults to ``AUTO``.
+    - ``anomaly_score`` (Isolation Forest only)
     - ``deviance``
     - ``logloss``
     - ``mse``
@@ -198,7 +199,10 @@ H2O Deep Learning models have many input parameters, many of which are only acce
     - ``auc``
     - ``lift_top_group``
     - ``misclassification``
+    - ``aucpr``
     - ``mean_per_class_error``
+    - ``custom`` (Python client only)
+    - ``custom_increasing`` (Python client only)
     
 -  `stopping_tolerance <algo-params/stopping_tolerance.html>`__: Specify the relative tolerance for the
    metric-based stopping to stop training if the improvement is less
@@ -263,7 +267,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 -  **elastic_averaging_regularization**: Specify the elastic averaging regularization strength. This option is only available if ``elastic_averaging=True``. 
 
--  **export_checkpoints_dir**: Optionally specify a path to a directory where every generated model will be stored when checkpointing models.
+-  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
 -  **verbose**: Print scoring history to the console. For Deep Learning, metrics are per epoch. This value defaults to FALSE.
 

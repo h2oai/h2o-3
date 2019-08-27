@@ -105,7 +105,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
 
   static DataInfo makeDataInfo(Frame train, Frame valid, DeepWaterParameters parms) {
     double x = 0.782347234;
-    boolean identityLink = new Distribution(parms).link(x) == x;
+    boolean identityLink = DistributionFactory.getDistribution(parms).link(x) == x;
     return new DataInfo(
         train,
         valid,
@@ -137,8 +137,8 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     assert(model_info._network != null);
     assert(model_info._modelparams != null);
     model_info.javaToNative();
-    _dist = new Distribution(get_params());
-    assert(_dist.distribution != DistributionFamily.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
+    _dist = DistributionFactory.getDistribution(get_params());
+    assert(_dist._family != DistributionFamily.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
     actual_best_model_key = cp.actual_best_model_key;
     if (actual_best_model_key.get() == null) {
       DeepWaterModel best = IcedUtils.deepCopy(cp);
@@ -232,8 +232,8 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     }
 
     // now, parms is get_params();
-    _dist = new Distribution(get_params());
-    assert(_dist.distribution != DistributionFamily.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
+    _dist = DistributionFactory.getDistribution(get_params());
+    assert(_dist._family != DistributionFamily.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
     actual_best_model_key = Key.make(H2O.SELF);
     if (get_params()._nfolds != 0) actual_best_model_key = null;
     if (!get_params()._autoencoder) {
@@ -460,7 +460,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
         if (keep_running && printme)
           Log.info(toString());
         if (ScoreKeeper.stopEarly(ScoringInfo.scoreKeepers(scoring_history()),
-                get_params()._stopping_rounds, _output.isClassifier(), get_params()._stopping_metric, get_params()._stopping_tolerance, "model's last", true
+                get_params()._stopping_rounds, ScoreKeeper.ProblemType.forSupervised(_output.isClassifier()), get_params()._stopping_metric, get_params()._stopping_tolerance, "model's last", true
         )) {
           Log.info("Convergence detected based on simple moving average of the loss function for the past " + get_params()._stopping_rounds + " scoring events. Model building completed.");
           stopped_early = true;
@@ -991,14 +991,14 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
   }
 
   @Override
-  protected Futures remove_impl(Futures fs) {
+  protected Futures remove_impl(Futures fs, boolean cascade) {
     cleanUpCache(fs);
     removeNativeState();
     if (actual_best_model_key!=null)
       DKV.remove(actual_best_model_key);
     if (model_info()._dataInfo !=null)
       model_info()._dataInfo.remove(fs);
-    return super.remove_impl(fs);
+    return super.remove_impl(fs, cascade);
   }
 
   void exportNativeModel(String path, int iteration) {

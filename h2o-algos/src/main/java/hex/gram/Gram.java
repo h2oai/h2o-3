@@ -158,10 +158,10 @@ public final class Gram extends Iced<Gram> {
    * QR computation:
    * QR is computed using Gram-Schmidt elimination, using Gram matrix instead of the underlying dataset.
    *
-   * Gram-schmidt decomposition can be computed as follows: (from "The Eelements of Statistical Learning")
+   * Gram-schmidt decomposition can be computed as follows: (from "The Eelements of Statistical Learning", Algorithm 3.1)
    * 1. set z0 = x0 = 1 (Intercept)
    * 2. for j = 1:p
-   *      for l = 1:j-1
+   *      for l = 0:j-1
    *        gamma_jl = dot(x_l,x_j)/dot(x_l,x_l)
    *      zj = xj - sum(gamma_j[l]*x_l)
    *      if(zj ~= 0) xj was redundant (collinear)
@@ -176,7 +176,7 @@ public final class Gram extends Iced<Gram> {
    * When doing that, we need to replace dot(xi,xk) with dot(xi,zk) for all i.
    * There are two cases,
    *   1)  dot(xk,xk) -> dot(zk,zk)
-   *       dot(xk - sum(gamma_l*x_l,xk - sum(gamma_l*x_l)
+   *       dot(xk - sum(gamma_l*x_l),xk - sum(gamma_l*x_l))
    *       = dot(xk,xk) - 2* sum(gamma_l*dot(x_i,x_k) + sum(gamma_l*sum(gamma_k*dot(x_l,x_k)))
    *       (can be simplified using the fact that dot(zi,zj) == 0 for i != j
    *   2)  dot(xi,xk) -> dot(xi,zk) for i != k

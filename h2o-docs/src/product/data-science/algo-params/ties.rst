@@ -25,7 +25,7 @@ Under Breslow's approximation, the partial likelihood and log partial likelihood
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
-none
+- None
 
 Example
 ~~~~~~~

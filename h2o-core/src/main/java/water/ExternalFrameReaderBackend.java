@@ -21,7 +21,7 @@ final class ExternalFrameReaderBackend {
      * @param channel socket channel originating from non-h2o node
      * @param initAb {@link AutoBuffer} containing information necessary for preparing backend for reading
      */
-    static void handleReadingFromChunk(ByteChannel channel, AutoBuffer initAb) throws IOException {
+    static void readFromChunk(ByteChannel channel, AutoBuffer initAb) throws IOException {
         // receive required information
         String frameKey = initAb.getStr();
         int chunkIdx = initAb.getInt();
@@ -89,7 +89,5 @@ final class ExternalFrameReaderBackend {
                 }
             }
         }
-        ab.put1(ExternalFrameHandler.CONFIRM_READING_DONE);
-        writeToChannel(ab, channel);
     }
 }

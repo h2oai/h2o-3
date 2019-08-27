@@ -131,11 +131,92 @@ testNoiseParameter <- function() {
 
 }
 
+testThatWarningWillBeShownIfWeAddNoiseForNoneStrategy <- function() {
+
+    data <- getTitanicData()
+    te_cols <- list("embarked")
+
+    data$fold <- h2o.kfold_column(data, nfolds = 5, seed = 1234)
+
+    encoding_map <- h2o.target_encode_fit(data, te_cols, "survived")
+
+    # Expect no warning
+    h2o.target_encode_transform(data, te_cols, "survived", encoding_map, blended_avg=FALSE, holdout_type = "none", noise = 0, seed = 1234)
+
+    Log.info("Expect that warning will be shown")
+    expect_warning(h2o.target_encode_transform(data, te_cols, "survived", encoding_map, blended_avg=FALSE, holdout_type = "none", noise = 0.1, seed = 1234))
+
+}
+
+testThatErrorWillBeThrownIfUserHasNotUsedFoldColumn <- function() {
+
+    data <- getTitanicData()
+    te_cols <- list("embarked")
+
+    data$fold <- h2o.kfold_column(data, nfolds = 5, seed = 1234)
+
+    encoding_map <- h2o.target_encode_fit(data, te_cols, "survived")
+
+    Log.info("Expect that error will be thrown as encoding map was not created with `fold_column` but there is an attempt to use `holdout_type` = 'kfold'")
+    expect_error(h2o.target_encode_transform(data, te_cols, "survived", encoding_map, blended_avg=FALSE, holdout_type = "kfold", fold_column="fold", noise = 0, seed = 1234))
+
+}
+
+testKFoldColumnNameIsSpecifiedWhenHoldoutTypeIsSetToKFold <- function() {
+
+    data <- getTitanicData()
+    te_cols <- list("embarked")
+
+    data$fold <- h2o.kfold_column(data, nfolds = 5, seed = 1234)
+
+    encoding_map <- h2o.target_encode_fit(data, te_cols, "survived", fold_column = "fold")
+
+    # No exception expected
+    h2o.target_encode_transform(data, te_cols, "survived", encoding_map, blended_avg=FALSE, holdout_type = "kfold", fold_column="fold", noise = 0, seed = 1234)
+    
+    Log.info("Expect that error will be thrown when kfold column name is not provided but holdout_type = `kfold` ")
+    expect_error(transformed_without_noise <- h2o.target_encode_transform(data, te_cols, "survived", encoding_map, blended_avg=TRUE,
+    holdout_type = "kfold", noise = 0, seed = 1234))
+}
+
+testBlendingParamsAreWithinValidRange <- function() {
+
+    data <- getTitanicData()
+    te_cols <- list("embarked")
+
+    encoding_map <- h2o.target_encode_fit(data, te_cols, "survived")
+
+    # No exception expected
+    h2o.target_encode_transform(data, te_cols, "survived", encoding_map, blended_avg=TRUE, holdout_type = "loo", inflection_point = 1, smoothin = 1, noise = 0, seed = 1234)
+    
+    Log.info("Expect that error will be thrown when `inflection_point` is not withing valid range")
+    expect_error(transformed_without_noise <- h2o.target_encode_transform(data, te_cols, "survived", encoding_map, blended_avg=TRUE, inflection_point = 0, smoothin = 1,
+    holdout_type = "loo", noise = 0, seed = 1234))
+    Log.info("Expect that error will be thrown when `smoothin` is not withing valid range")
+    expect_error(transformed_without_noise <- h2o.target_encode_transform(data, te_cols, "survived", encoding_map, blended_avg=TRUE, inflection_point = 1, smoothin = 0,
+    holdout_type = "loo", noise = 0, seed = 1234))
+}
+
+testDefaultParamsWillNotCauseErrorToBeThrown <- function() {
+
+    data <- getTitanicData()
+    te_cols <- list("embarked")
+
+    encoding_map <- h2o.target_encode_fit(data, te_cols, "survived")
+
+    # No exception expected
+    h2o.target_encode_transform(data, te_cols, "survived", encoding_map, holdout_type = "none")
+}
 
 doTestAndContinue("Test target encoding exposed from Java", test)
 doTestAndContinue("Test that target_encode_fit is also accepting te column as a string(not array with single element", testTEColumnAsString)
 doTestAndContinue("Test holdout_type validation", testHoldoutTypeValidation)
 doTestAndContinue("Test indexes to names conversion", testIndexesToNames)
 doTestAndContinue("Test noise parameter", testNoiseParameter)
+doTestAndContinue("Test warning will be shown when noise is used with `none` strategy", testThatWarningWillBeShownIfWeAddNoiseForNoneStrategy)
+doTestAndContinue("Test error is being thrown when encoding map does not contain fold column but there is an attempt to apply holdout_type = 'kfold' strategy", testThatErrorWillBeThrownIfUserHasNotUsedFoldColumn)
+doTestAndContinue("Test kfold column name is provided for holdout_type=`kfold`", testKFoldColumnNameIsSpecifiedWhenHoldoutTypeIsSetToKFold)
+doTestAndContinue("Test that setting blending parameters to values outside of the valid range will throw errors", testBlendingParamsAreWithinValidRange)
+doTestAndContinue("Test that using default values of optional parameters does not lead to errors", testDefaultParamsWillNotCauseErrorToBeThrown)
 PASS()
 

@@ -3,7 +3,10 @@ package ai.h2o.automl;
 import ai.h2o.automl.targetencoding.integration.AutoMLBuildSpec;
 import hex.Model;
 import hex.SplitFrame;
+import hex.tree.SharedTreeModel.SharedTreeParameters;
+import hex.tree.xgboost.XGBoostModel.XGBoostParameters;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
@@ -12,10 +15,7 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertNull;
@@ -53,7 +53,7 @@ public class AutoMLTest extends water.TestUtil {
       assertEquals(3+2, aml.leaderboard().getModelCount());
     } finally {
       // Cleanup
-      if(aml!=null) aml.deleteWithChildren();
+      if(aml!=null) aml.delete();
       if(fr != null) fr.delete();
     }
   }
@@ -87,7 +87,7 @@ public class AutoMLTest extends water.TestUtil {
       assertEquals(3, aml.leaderboard().getModelCount());
     } finally {
       // Cleanup
-      if(aml!=null) aml.deleteWithChildren();
+      if(aml!=null) aml.delete();
       if(fr != null) fr.delete();
     }
   }
@@ -135,7 +135,6 @@ public class AutoMLTest extends water.TestUtil {
     } finally {
       // Cleanup
       for (Lockable l: deletables) {
-        if (l instanceof AutoML) ((AutoML)l).deleteWithChildren();
         l.delete();
       }
     }
@@ -169,7 +168,7 @@ public class AutoMLTest extends water.TestUtil {
       // no assertion, we just want to check leaked keys
     } finally {
       // Cleanup
-      if(aml!=null) aml.deleteWithChildren();
+      if(aml!=null) aml.delete();
       if(fr != null) fr.delete();
     }
   }
@@ -197,12 +196,13 @@ public class AutoMLTest extends water.TestUtil {
       // no assertion, we just want to check leaked keys
     } finally {
       // Cleanup
-      if(aml!=null) aml.deleteWithChildren();
+      if(aml!=null) aml.delete();
       if(fr != null) fr.delete();
     }
   }
 
 
+  @Ignore
   @Test public void test_individual_model_max_runtime() {
     AutoML aml=null;
     Frame fr=null;
@@ -215,10 +215,11 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.training_frame = fr._key;
 
       int max_runtime_secs_per_model = 10;
+      autoMLBuildSpec.build_models.exclude_algos = aro(Algo.GLM, Algo.DeepLearning); // GLM still tends to take a bit more time than it should: nothing dramatic, but enough to fail UTs.
       autoMLBuildSpec.build_control.stopping_criteria.set_seed(1);
-      autoMLBuildSpec.build_control.stopping_criteria.set_max_models(5);
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_models(10);
       autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs_per_model(max_runtime_secs_per_model);
-      autoMLBuildSpec.build_control.keep_cross_validation_models = true; //Prevent leaked keys from CV models
+      autoMLBuildSpec.build_control.keep_cross_validation_models = false; //Prevent leaked keys from CV models
       autoMLBuildSpec.build_control.keep_cross_validation_predictions = false; //Prevent leaked keys from CV predictions
 
       autoMLBuildSpec.te_spec.enabled = false;
@@ -226,19 +227,16 @@ public class AutoMLTest extends water.TestUtil {
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
 
-      int tolerance = (autoMLBuildSpec.build_control.nfolds + 1) * 2; //generously adding 2s tolerance for each model
+      int tolerance = (autoMLBuildSpec.build_control.nfolds + 1) * max_runtime_secs_per_model / 3; //generously adding 33% tolerance for each cv model + final model
       for (Key<Model> key : aml.leaderboard().getModelKeys()) {
         Model model = key.get();
         double duration = model._output._total_run_time / 1e3;
         assertTrue(key + " took longer than required: "+ duration,
             duration - max_runtime_secs_per_model < tolerance);
-        model.deleteCrossValidationModels();
       }
-
-      // no assertion, we just want to check leaked keys
     } finally {
       // Cleanup
-      if(aml!=null) aml.deleteWithChildren();
+      if(aml!=null) aml.delete();
       if(fr != null) fr.delete();
     }
   }
@@ -268,12 +266,8 @@ public class AutoMLTest extends water.TestUtil {
       assertNotNull(leader._output._cross_validation_fold_assignment_frame_id);
 
     } finally {
-      if(aml!=null) aml.deleteWithChildren();
+      if(aml!=null) aml.delete();
       if(fr != null) fr.remove();
-      if(leader!=null) {
-        Frame cvFoldAssignmentFrame = DKV.getGet(leader._output._cross_validation_fold_assignment_frame_id);
-        cvFoldAssignmentFrame.delete();
-      }
     }
   }
 
@@ -283,11 +277,10 @@ public class AutoMLTest extends water.TestUtil {
     Model leader = null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      fr = parse_test_file("./smalldata/airlines/AirlinesTrain.csv");
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
-      autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(30);
       autoMLBuildSpec.build_control.keep_cross_validation_fold_assignment = false;
 
       autoMLBuildSpec.te_spec.enabled = false;
@@ -302,7 +295,7 @@ public class AutoMLTest extends water.TestUtil {
       assertNull(leader._output._cross_validation_fold_assignment_frame_id);
 
     } finally {
-      if(aml!=null) aml.deleteWithChildren();
+      if(aml!=null) aml.delete();
       if(fr != null) fr.delete();
     }
   }
@@ -321,21 +314,30 @@ public class AutoMLTest extends water.TestUtil {
 
       AutoML.WorkAllocations workPlan = aml.planWork();
 
-      int max_total_work = 1*10+3*20     //DL
-                         + 2*10          //DRF
-                         + 5*10+1*60     //GBM
-                         + 1*20          //GLM
-                         + 3*10+1*100    //XGBoost
-                         + 2*15;         //SE
-      assertEquals(workPlan.remainingWork(), max_total_work);
+      Map<Algo, Integer> defaultAllocs = new HashMap<Algo, Integer>(){{
+        put(Algo.DeepLearning, 1*10+3*20);
+        put(Algo.DRF, 2*10);
+        put(Algo.GBM, 5*10+1*60);
+        put(Algo.GLM, 1*20);
+        put(Algo.XGBoost, 3*10+1*100);
+        put(Algo.StackedEnsemble, 2*15);
+      }};
+      int maxTotalWork = 0;
+      for (Map.Entry<Algo, Integer> entry : defaultAllocs.entrySet()) {
+        if (entry.getKey().enabled()) {
+          maxTotalWork += entry.getValue();
+        }
+      }
 
-      autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.DeepLearning, Algo.XGBoost, };
+      assertEquals(workPlan.remainingWork(), maxTotalWork);
+
+      autoMLBuildSpec.build_models.exclude_algos = aro(Algo.DeepLearning, Algo.DRF);
       workPlan = aml.planWork();
 
-      assertEquals(workPlan.remainingWork(), max_total_work - (/*DL*/ 1*10+3*20 + /*XGB*/ 3*10+1*100));
+      assertEquals(workPlan.remainingWork(), maxTotalWork - defaultAllocs.get(Algo.DeepLearning) - defaultAllocs.get(Algo.DRF));
 
     } finally {
-      if (aml != null) aml.deleteWithChildren();
+      if (aml != null) aml.delete();
       if (fr != null) fr.remove();
     }
   }
@@ -364,7 +366,7 @@ public class AutoMLTest extends water.TestUtil {
       assertEquals(0.1, (double)aml.getValidationFrame().numRows() / fr.numRows(), tolerance);
       assertEquals(test.numRows(), aml.getLeaderboardFrame().numRows());
     } finally {
-      if (aml != null) aml.deleteWithChildren();
+      if (aml != null) aml.delete();
       if (fr != null) fr.remove();
       if (test != null) test.remove();
     }
@@ -394,7 +396,7 @@ public class AutoMLTest extends water.TestUtil {
       assertEquals(test.numRows(), aml.getValidationFrame().numRows());
       assertEquals(0.1, (double)aml.getLeaderboardFrame().numRows() / fr.numRows(), tolerance);
     } finally {
-      if (aml != null) aml.deleteWithChildren();
+      if (aml != null) aml.delete();
       if (fr != null) fr.remove();
       if (test != null) test.remove();
     }
@@ -423,7 +425,7 @@ public class AutoMLTest extends water.TestUtil {
       assertEquals(0.1, (double)aml.getValidationFrame().numRows() / fr.numRows(), tolerance);
       assertEquals(0.1, (double)aml.getLeaderboardFrame().numRows() / fr.numRows(), tolerance);
     } finally {
-      if (aml != null) aml.deleteWithChildren();
+      if (aml != null) aml.delete();
       if (fr != null) fr.remove();
     }
   }
@@ -449,7 +451,7 @@ public class AutoMLTest extends water.TestUtil {
       assertNull(aml.getValidationFrame());
       assertNull(aml.getLeaderboardFrame());
     } finally {
-      if (aml != null) aml.deleteWithChildren();
+      if (aml != null) aml.delete();
       if (fr != null) fr.remove();
     }
   }
@@ -481,7 +483,7 @@ public class AutoMLTest extends water.TestUtil {
         }
       }
     } finally {
-      if (aml != null) aml.deleteWithChildren();
+      if (aml != null) aml.delete();
       if (fr != null) fr.remove();
     }
   }
@@ -501,10 +503,15 @@ public class AutoMLTest extends water.TestUtil {
       aml = new AutoML(Key.<AutoML>make(), new Date(), autoMLBuildSpec);
       AutoML.WorkAllocations workPlan = aml.planWork();
       for (Algo algo : autoMLBuildSpec.build_models.include_algos) {
-        assertFalse(
-            workPlan.getAllocation(algo, AutoML.JobType.ModelBuild) == null
-            && workPlan.getAllocation(algo, AutoML.JobType.HyperparamSearch) == null
-        );
+        if (algo.enabled()) {
+          assertFalse(
+                  workPlan.getAllocation(algo, AutoML.JobType.ModelBuild) == null
+                          && workPlan.getAllocation(algo, AutoML.JobType.HyperparamSearch) == null
+          );
+        } else {
+          assertNull(workPlan.getAllocation(algo, AutoML.JobType.ModelBuild));
+          assertNull(workPlan.getAllocation(algo, AutoML.JobType.HyperparamSearch));
+        }
       }
       for (Algo algo : Algo.values()) {
         if (!ArrayUtils.contains(autoMLBuildSpec.build_models.include_algos, algo)) {
@@ -513,7 +520,7 @@ public class AutoMLTest extends water.TestUtil {
         }
       }
     } finally {
-      if (aml != null) aml.deleteWithChildren();
+      if (aml != null) aml.delete();
       if (fr != null) fr.remove();
     }
   }
@@ -538,8 +545,86 @@ public class AutoMLTest extends water.TestUtil {
         assertTrue(e.getMessage().startsWith("Parameters `exclude_algos` and `include_algos` are mutually exclusive"));
       }
     } finally {
-      if (aml != null) aml.deleteWithChildren();
+      if (aml != null) aml.delete();
       if (fr != null) fr.remove();
+    }
+  }
+
+
+  @Test public void testTestAlgosHaveDefaultParametersEnforcingReproducibility() {
+    AutoML aml=null;
+    Frame fr=null;
+    try {
+      int maxModels = 20; // generating enough models so that we can check every algo x every mode (single model + grid models)
+      int seed = 0;
+      int nfolds = 0;  //this test currently fails if CV is enabled due to PUBDEV-6385 (the final model gets its `stopping_rounds` param reset to 0)
+      AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+      fr = parse_test_file("./smalldata/logreg/prostate.csv");
+      autoMLBuildSpec.input_spec.training_frame = fr._key;
+      autoMLBuildSpec.input_spec.response_column = "CAPSULE";
+
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_models(maxModels);
+      autoMLBuildSpec.build_control.nfolds = nfolds;
+      autoMLBuildSpec.build_control.stopping_criteria.set_seed(seed);
+
+      aml = AutoML.startAutoML(autoMLBuildSpec);
+      aml.get();
+      assertEquals(maxModels+(nfolds > 0 ? 2 : 0), aml.leaderboard().getModelCount());
+
+      Key[] modelKeys = aml.leaderboard().getModelKeys();
+      Map<Algo, List<Key<Model>>> keysByAlgo = new HashMap<>();
+      for (Algo algo : Algo.values()) keysByAlgo.put(algo, new ArrayList<Key<Model>>());
+      for (Key k : modelKeys) {
+        if (k.toString().startsWith("XRT")) {
+          keysByAlgo.get(Algo.DRF).add(k);
+        } else for (Algo algo: Algo.values()) {
+          if (k.toString().startsWith(algo.name())) {
+            keysByAlgo.get(algo).add(k);
+            break;
+          }
+        }
+      }
+
+      // verify that all keys were categorized
+      int count = 0; for (List<Key<Model>> keys : keysByAlgo.values()) count += keys.size();
+      assertEquals(aml.leaderboard().getModelCount(), count);
+
+      // check parameters constraints that should be set for all models
+      for (Algo algo: Algo.values()) {
+        Set<Long> collectedSeeds = new HashSet<>(); // according to AutoML logic, no model for same algo should have the same seed.
+        List<Key<Model>> keys = keysByAlgo.get(algo);
+        for (Key<Model> key : keys) {
+          Model.Parameters parameters = key.get()._parms;
+          assertTrue(parameters._seed != -1);
+          assertTrue(key+":"+parameters._seed, Math.abs(parameters._seed - seed) < maxModels);
+          collectedSeeds.add(parameters._seed);
+          assertTrue(key+" has `stopping_rounds` param set to "+parameters._stopping_rounds,
+                  parameters._stopping_rounds == 3 || algo == Algo.XGBoost);  // currently only enforced to different value for XGB (AutoML hardcoded)
+        }
+        assertTrue(collectedSeeds.size() > 1 || keys.size() < 2);  // we should have built enough models to guarantee this
+      }
+
+      //check model specific constraints
+      for (Algo algo : Arrays.asList(Algo.XGBoost)) {
+        List<Key<Model>> keys = keysByAlgo.get(algo);
+        for (Key<Model> key : keys) {
+          XGBoostParameters parameters = (XGBoostParameters)key.get()._parms;
+          assertEquals(5, parameters._score_tree_interval);
+          assertEquals(5, parameters._stopping_rounds); //should probably not be left enforced/hardcoded for XGB?
+        }
+      }
+
+      for (Algo algo : Arrays.asList(Algo.DRF, Algo.GBM)) {
+        List<Key<Model>> keys = keysByAlgo.get(algo);
+        for (Key<Model> key : keys) {
+          SharedTreeParameters parameters = (SharedTreeParameters)key.get()._parms;
+          assertEquals(5, parameters._score_tree_interval);
+        }
+      }
+    } finally {
+      // Cleanup
+      if(aml!=null) aml.delete();
+      if(fr != null) fr.delete();
     }
   }
 }

@@ -23,7 +23,7 @@ At a minimum, we recommend the following for compatibility with H2O:
 
 -  **Languages**: Scala, R, and Python are not required to use H2O unless you want to use H2O in those environments, but Java is always required. Supported versions include:
 
-   -  Java 7 or later
+   -  Java 8 or later
 
       - To build H2O or run H2O tests, the 64-bit JDK is required.
       - To run the H2O binary using either the command line, R, or Python packages, only 64-bit JRE is required.
@@ -168,7 +168,7 @@ At this point, determine whether you want to complete this quick start in either
     h2o-3 user$ [sudo] pip install -U requests
     h2o-3 user$ [sudo] pip install -U tabulate
     h2o-3 user$ [sudo] pip install -U future
-    h2o-3 user$ [sudo] pip install -U six
+    h2o-3 user$ [sudo] pip install -U colorama
 
     # Start python
     h2o-3 user$ python
@@ -295,6 +295,17 @@ PySparkling documentation is available for `2.1 <http://docs.h2o.ai/sparkling-wa
 
 PySparkling can be installed by downloading and running the PySparkling shell or using ``pip``. PySparkling can also be installed from the PyPi repository. Follow the instructions on the `Download page <http://h2o.ai/download>`__ for Sparkling Water.
 
+RSparkling
+~~~~~~~~~~
+
+The rsparkling R package is an extension package for sparklyr that creates an R front-end for the Sparkling Water package from H2O. This provides an interface to H2O’s high performance, distributed machine learning algorithms on Spark using R.
+
+This package implements basic functionality (creating an H2OContext, showing the H2O Flow interface, and converting between Spark DataFrames and H2O Frames). The main purpose of this package is to provide a connector between sparklyr and H2O’s machine learning algorithms.
+
+The rsparkling package uses sparklyr for Spark job deployment and initialization of Sparkling Water. After that, users can use the regular H2O R package for modeling. 
+
+Refer to the `Sparkling Water User Guide <http://docs.h2o.ai/#sparkling-water>`__ for more information.
+
 Python Users
 --------------
 
@@ -348,7 +359,7 @@ REST APIs are generated immediately out of the code, allowing users to implement
 Java Users
 --------------
 
-H2O-3 is supported with Java 7 and later. For Java developers, the following resources will help you create your own custom app that uses H2O.
+H2O-3 is supported with Java 8 and later. For Java developers, the following resources will help you create your own custom app that uses H2O.
 
 -  `H2O Core Java Developer Documentation <../h2o-core/javadoc/index.html>`_: The definitive Java API guide
    for the core components of H2O.
@@ -419,6 +430,7 @@ Supported Versions
 -  CDH 5.14
 -  CDH 6.0
 -  CDH 6.1
+-  CDH 6.2
 -  HDP 2.2
 -  HDP 2.3
 -  HDP 2.4
@@ -726,6 +738,12 @@ Note how the HDFS nodes have been removed from the picture below for explanatory
 
   .. figure:: images/h2o-on-yarn-4.png
 
+Hadoop and AWS
+~~~~~~~~~~~~~~
+
+AWS access credential configuration is provided to H2O by the Hadoop environment itself. There are a number of Hadoop distributions, and each distribution supports different means/providers to configure access to AWS. It is considered best practice to follow you Hadoop provider's guide.
+
+Since Apache Hadoop 2.8, accessing multiple buckets with distinct credentials by means of the S3A protocol is possible. Please refer to the `Hadoop documentation <https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html>`__ for more information. Users of derived distributions are advised to follow the respective documentation of their distribution and the specific version they use.
 
 Docker Users
 ------------
@@ -792,7 +810,7 @@ Depending on your OS, select the appropriate installation method:
   The Dockerfile:
 
     -  obtains and updates the base image (Ubuntu 14.04)
-    -  installs Java 7
+    -  installs Java 8
     -  obtains and downloads the H2O build from H2O's S3 repository
     -  exposes ports 54321 and 54322 in preparation for launching H2O on those ports
 

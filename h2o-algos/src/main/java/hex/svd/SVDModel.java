@@ -96,12 +96,10 @@ public class SVDModel extends Model<SVDModel, SVDModel.SVDParameters, SVDModel.S
 
   public SVDModel(Key<SVDModel> selfKey, SVDParameters parms, SVDOutput output) { super(selfKey, parms, output); }
 
-  @Override protected Futures remove_impl( Futures fs ) {
-    if (null != _output._u_key)
-      _output._u_key.remove(fs);
-    if (null != _output._v_key)
-      _output._v_key.remove(fs);
-    return super.remove_impl(fs);
+  @Override protected Futures remove_impl(Futures fs, boolean cascade) {
+    Keyed.remove(_output._u_key, fs, true);
+    Keyed.remove(_output._v_key, fs, true);
+    return super.remove_impl(fs, cascade);
   }
 
   /** Write out K/V pairs */

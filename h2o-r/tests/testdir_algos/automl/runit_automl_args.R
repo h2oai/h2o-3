@@ -323,6 +323,7 @@ automl.args.test <- function() {
                             training_frame = ds$train,
                             nfolds = 3,
                             max_models = max_models,
+                            exclude_algos = c('XGBoost'),  # XGB doesn't support balance_classes
                             balance_classes = TRUE,
                             max_after_balance_size = 3.0,
                             class_sampling_factors = c(0.2, 1.4),
@@ -401,45 +402,6 @@ automl.args.test <- function() {
         expect_equal(base_model@model$cross_validation_fold_assignment_frame_id, NULL)
     }
 
-    test_max_runtime_secs <- function() {
-        print("Check that automl gets interrupted after `max_runtime_secs`")
-        ds <- import_dataset()
-        max_runtime_secs <- 60
-        cancel_tolerance_secs <- 6+5 # should be enough for most cases given job notification mechanism (adding 5 more ~=10% for SEs)
-        time <- system.time(aml <- h2o.automl(x=ds$x, y=ds$y,
-                            training_frame=ds$train,
-                            project_name="aml_max_runtime_secs",
-                            max_runtime_secs=max_runtime_secs)
-        )[['elapsed']]
-        print(paste("trained", length(get_partitioned_models(aml)$non_se), "models"))
-        expect_lte(abs(time - max_runtime_secs), cancel_tolerance_secs)
-        expect_equal(length(get_partitioned_models(aml)$se), 2)
-    }
-
-    test_max_runtime_secs_per_model <- function() {
-      print("Check that individual model get interrupted after `max_runtime_secs_per_model`")
-      # need a larger dataset to obtain significant differences in behaviour
-      train <- h2o.importFile(locate("smalldata/prostate/prostate_complete.csv.zip"), destination_frame="prostate_complete")
-      y <- 'CAPSULE'
-      x <- setdiff(names(train), y)
-      ds <- list(train=train, x=x, y=y)
-
-      max_runtime_secs <- 30
-      models_count <- list()
-      for (max_runtime_secs_per_model in c(0, 3, max_runtime_secs)) {
-        aml <- h2o.automl(x=ds$x, y=ds$y,
-                          training_frame=ds$train,
-                          seed=1,
-                          project_name=paste0("aml_max_runtime_secs_per_model_", max_runtime_secs_per_model),
-                          max_runtime_secs_per_model=max_runtime_secs_per_model,
-                          max_runtime_secs=max_runtime_secs)
-        models_count[paste0(max_runtime_secs_per_model)] = nrow(aml@leaderboard)
-      }
-      expect_lte(abs(models_count[[paste0(0)]] - models_count[[paste0(max_runtime_secs)]]), 1)
-      expect_gt(abs(models_count[[paste0(0)]] - models_count[[paste0(3)]]), 1)
-      # TODO: add assertions about single model timing once 'automl event_log' is available on client side
-    }
-
     test_max_models <- function() {
         print("Check that automl get interrupted after `max_models`")
         ds <- import_dataset()
@@ -451,6 +413,47 @@ automl.args.test <- function() {
         models <- get_partitioned_models(aml)
         expect_equal(length(models$non_se), max_models)
         expect_equal(length(models$se), 2)
+    }
+
+    test_frames_can_be_passed_as_keys <- function() {
+      print("Check that all AutoML frames can be passed as keys.")
+      ds <- import_dataset()
+
+      frames <- list(
+        list(training_frame='dummy'),
+        list(training_frame=ds$train, validation_frame='dummy'),
+        list(training_frame=ds$train, blending_frame='dummy'),
+        list(training_frame=ds$train, leaderboard_frame='dummy')
+      )
+      for (fr in frames) {
+        tryCatch({
+            h2o.automl(x=ds$x, y=ds$y,
+                        training_frame=fr$training_frame,
+                        validation_frame=fr$validation_frame,
+                        blending_frame=fr$blending_frame,
+                        leaderboard_frame=fr$leaderboard_frame,
+                        project_name="aml_frames_as_keys",
+                        max_models=max_models,
+                        nfolds=0)
+            stop("should have raised error due to wrong frame key")
+          },
+          error=function(err) {
+            dummy = names(fr[match("dummy", fr)])
+            expect_equal(conditionMessage(err), paste0("argument '",dummy,"' must be a valid H2OFrame or key"))
+          }
+        )
+      }
+
+      aml <- h2o.automl(x=ds$x, y=ds$y,
+                        training_frame=h2o.getId(ds$train),
+                        validation_frame=h2o.getId(ds$valid),
+                        blending_frame=h2o.getId(ds$valid),
+                        leaderboard_frame=h2o.getId(ds$test),
+                        project_name="aml_frames_as_keys",
+                        max_models=max_models,
+                        nfolds=0)
+
+      expect_gt(length(aml@leaderboard), 0)
     }
 
 
@@ -479,9 +482,8 @@ automl.args.test <- function() {
         test_keep_cv_fold_assignment_defaults_with_nfolds_gt_0,
         test_keep_cv_fold_assignment_TRUE_with_nfolds_gt_0,
         test_keep_cv_fold_assignment_TRUE_with_nfolds_eq_0,
-        test_max_runtime_secs,
-        test_max_runtime_secs_per_model,
-        test_max_models
+        test_max_models,
+        test_frames_can_be_passed_as_keys
     )
 }
 

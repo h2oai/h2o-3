@@ -6,13 +6,15 @@ import org.junit.Ignore;
 import org.junit.Test;
 import water.H2O.H2OCallback;
 import water.H2O.H2OCountedCompleter;
+import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.IcedInt;
 import water.util.IcedInt.AtomicIncrementAndGet;
 
-import static org.junit.Assert.assertTrue;
-
 import java.util.Arrays;
 import java.util.Random;
+
+import static org.junit.Assert.*;
 
 /**
  * Created by tomasnykodym on 10/5/15.

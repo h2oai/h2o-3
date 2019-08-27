@@ -68,8 +68,9 @@ public class KMeansGridTest extends TestUtil {
       Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms);
       grid = (Grid<KMeansModel.KMeansParameters>) gs.get();
       // Make sure number of produced models match size of specified hyper space
+      final Grid.SearchFailure failures = grid.getFailures();
       Assert.assertEquals("Size of grid should match to size of hyper space", hyperSpaceSize,
-                          grid.getModelCount() + grid.getFailureCount());
+                          grid.getModelCount() + failures.getFailureCount());
       //
       // Make sure that names of used parameters match
       //
@@ -96,7 +97,7 @@ public class KMeansGridTest extends TestUtil {
                                       usedModelParams);
       // Verify model failure
       Map<String, Set<Object>> failedHyperParams = GridTestUtils.initMap(hyperParamNames);;
-      for (Model.Parameters failedParams : grid.getFailedParameters()) {
+      for (Model.Parameters failedParams : failures.getFailedParameters()) {
         GridTestUtils.extractParams(failedHyperParams, (KMeansModel.KMeansParameters) failedParams, hyperParamNames);
       }
       hyperParms.put("_k", illegalKOpts);

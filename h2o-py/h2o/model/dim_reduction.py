@@ -18,7 +18,7 @@ class H2ODimReductionModel(ModelBase):
         """
         Return the Importance of components associcated with a pca model.
 
-        use_pandas: ``bool``  (default: ``False``).
+        :param bool use_pandas: If True, then the variable importances will be returned as a pandas data frame. (Default is False.)
         """
         model = self._model_json["output"]
         if "importance" in list(model.keys()) and model["importance"]:

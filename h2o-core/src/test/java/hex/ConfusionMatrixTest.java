@@ -239,7 +239,7 @@ public class ConfusionMatrixTest extends TestUtil {
     }
   }
 
-  private void assertCMEqual(String[] expectedDomain, double[][] expectedCM, ConfusionMatrix actualCM) {
+  public static void assertCMEqual(String[] expectedDomain, double[][] expectedCM, ConfusionMatrix actualCM) {
     Assert.assertArrayEquals("Expected domain differs",     expectedDomain,        actualCM._domain);
     double[][] acm = actualCM._cm;
     Assert.assertEquals("CM dimension differs", expectedCM.length, acm.length);

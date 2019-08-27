@@ -93,8 +93,7 @@ class H2ODeepWaterEstimator(H2OEstimator):
 
     @training_frame.setter
     def training_frame(self, training_frame):
-        assert_is_type(training_frame, None, H2OFrame)
-        self._parms["training_frame"] = training_frame
+        self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
 
 
     @property
@@ -108,8 +107,7 @@ class H2ODeepWaterEstimator(H2OEstimator):
 
     @validation_frame.setter
     def validation_frame(self, validation_frame):
-        assert_is_type(validation_frame, None, H2OFrame)
-        self._parms["validation_frame"] = validation_frame
+        self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
 
 
     @property
@@ -637,18 +635,19 @@ class H2ODeepWaterEstimator(H2OEstimator):
     @property
     def stopping_metric(self):
         """
-        Metric to use for early stopping (AUTO: logloss for classification, deviance for regression). Note that custom
-        and custom_increasing can only be used in GBM and DRF with the Python client.
+        Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and anonomaly_score
+        for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
+        client.
 
         One of: ``"auto"``, ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``,
-        ``"lift_top_group"``, ``"misclassification"``, ``"mean_per_class_error"``, ``"custom"``, ``"custom_increasing"``
-        (default: ``"auto"``).
+        ``"lift_top_group"``, ``"misclassification"``, ``"aucpr"``, ``"mean_per_class_error"``, ``"custom"``,
+        ``"custom_increasing"``  (default: ``"auto"``).
         """
         return self._parms.get("stopping_metric")
 
     @stopping_metric.setter
     def stopping_metric(self, stopping_metric):
-        assert_is_type(stopping_metric, None, Enum("auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"))
+        assert_is_type(stopping_metric, None, Enum("auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "lift_top_group", "misclassification", "aucpr", "mean_per_class_error", "custom", "custom_increasing"))
         self._parms["stopping_metric"] = stopping_metric
 
 
@@ -1018,11 +1017,12 @@ class H2ODeepWaterEstimator(H2OEstimator):
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
 
-
-    # Ask the H2O server whether a Deep Water model can be built (depends on availability of native backends)
     @staticmethod
     def available():
-        """Returns True if a deep water model can be built, or False otherwise."""
+        """
+        Ask the H2O server whether a Deep Water model can be built (depends on availability of native backends).
+        :return: True if a deep water model can be built, or False otherwise.
+        """
         builder_json = h2o.api("GET /3/ModelBuilders", data={"algo": "deepwater"})
         visibility = builder_json["model_builders"]["deepwater"]["visibility"]
         if visibility == "Experimental":

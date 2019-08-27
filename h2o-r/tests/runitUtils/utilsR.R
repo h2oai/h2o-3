@@ -848,12 +848,41 @@ function(integerRange, num_rows, num_cols) {
   binary_fraction = 0,
   time_fraction = 0,
   string_fraction = 0,
-  integer_ranger = integerRange,
+  integer_range = integerRange,
   missing_fraction = runif(1, 0, 0.05)
   )
 
   return(random_frame)
 }
+
+#----------------------------------------------------------------------
+# This function will generate a random dataset containing real columns only.
+# Copied from Pasha.
+#
+# Parameters:  denote factor range
+#----------------------------------------------------------------------
+random_dataset_real_only <-
+  function(num_rows, num_cols, realR=10, missingR=0.0, seed=12345) {
+    
+    random_frame <-
+      h2o.createFrame(
+        rows = num_rows,
+        cols = num_cols,
+        randomize = TRUE,
+        has_response = FALSE,
+        categorical_fraction = 0,
+        integer_fraction = 0,
+        binary_fraction = 0,
+        time_fraction = 0,
+        string_fraction = 0,
+        real_range = realR,
+        missing_fraction = missingR,
+        seed=seed
+      )
+    
+    return(random_frame)
+  }
+
 
 #----------------------------------------------------------------------
 # This function will generate a random neural network in the form of
@@ -926,7 +955,7 @@ assertCorrectSkipColumns <-
       if (cfullnames[ind] == cskipnames[skipcount]) {
         if ((skipcount %% columns_skipped) == 0) {
           # only tests half of the columns to save time
-          print("testing one column at a time....")
+          print(paste0("testing column ", ind))
           if (allFrameTypes[ind] == "uuid")
             continue
           for (rind in c(1:rowNum)) {
@@ -1002,6 +1031,7 @@ assertCorrectSkipColumns <-
               )
           }
         }
+          print(paste0("Done testing column ", ind))
           skipcount <- skipcount + 1
           if (skipcount > h2o.ncol(f2R))
             break
@@ -1111,7 +1141,7 @@ buildModelSaveMojoGLRM <- function(params) {
   return(list("model"=model, "dirName"=tmpdir_name))
 }
 
-mojoH2Opredict<-function(model, tmpdir_name, filename, get_leaf_node_assignment=FALSE, glrmReconstruct=FALSE) {
+mojoH2Opredict<-function(model, tmpdir_name, filename, get_leaf_node_assignment=FALSE, glrmReconstruct=FALSE, glrmIterNumber=-1) {
   newTest <- h2o.importFile(filename)
   predictions1 <- h2o.predict(model, newTest)
 
@@ -1149,6 +1179,10 @@ mojoH2Opredict<-function(model, tmpdir_name, filename, get_leaf_node_assignment=
 
   if (glrmReconstruct) {
     cmd <- paste(cmd, "--glrmReconstruct", sep=" ")
+  }
+  
+  if (glrmIterNumber >0) {
+    cmd <-paste(cmd, "--glrmIterNumber", glrmIterNumber, sep=" ")
   }
 
   safeSystem(cmd)  # perform mojo prediction

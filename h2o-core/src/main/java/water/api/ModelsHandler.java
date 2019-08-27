@@ -192,7 +192,7 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
     Futures fs = new Futures();
     for (Key key : keys) {
       try {
-        getFromDKV("(none)", key).delete(null, fs);
+        getFromDKV("(none)", key).delete(null, fs, true);
       } catch (IllegalArgumentException iae) {
         missing.add(key.toString());
       }
@@ -209,7 +209,7 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
       Model<?, ?, ?> model = Model.importBinaryModel(mimport.dir);
       s.models = new ModelSchemaV3[]{(ModelSchemaV3) SchemaServer.schema(version, model).fillFromImpl(model)};
     } catch (IOException | FSIOException e) {
-      throw new H2OIllegalArgumentException("dir", "importModel", mimport.dir);
+      throw new H2OIllegalArgumentException("dir", "importModel", e);
     }
     return s;
   }

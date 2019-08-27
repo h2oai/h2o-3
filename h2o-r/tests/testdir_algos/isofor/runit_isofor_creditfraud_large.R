@@ -26,6 +26,23 @@ test.IsolationForest.creditcardfraud <- function() {
     )
     print(h2o_cm)
 
+    ## In H2O with Early Stopping
+
+    h2o_early_isofor <- h2o.isolationForest(creditcardfraud, x = colnames(creditcardfraud)[1:30], 
+                                            ntrees = 1000, stopping_rounds = 3, score_tree_interval = 5,
+                                            seed = 1234)
+
+    h2o_early_anomaly_score <- h2o.predict(h2o_early_isofor, creditcardfraud)
+
+    h2o_early_anomaly_score$Class <- as.factor(creditcardfraud$Class)
+    h2o_early_anomaly_score_local <- as.data.frame(h2o_early_anomaly_score)
+
+    h2o_early_cm <- table(
+        h2oEarlyForest = h2o_early_anomaly_score_local$predict > quantile(h2o_early_anomaly_score_local$predict, p),
+        Actual = h2o_early_anomaly_score_local$Class == 1
+    )
+    print(h2o_early_cm)
+    
     ## With isofor
 
     creditcardfraud_local <- read.csv(ccf_path)
@@ -40,8 +57,18 @@ test.IsolationForest.creditcardfraud <- function() {
     )
     print(isofor_cm)
 
+    ## Compare results
+    
+    # H2O vs isofor
     expect_equal(
         h2o_cm[2,2] / (h2o_cm[1,2] + h2o_cm[2,2]),
+        isofor_cm[2,2] / (isofor_cm[1,2] + isofor_cm[2,2]),
+        tolerance = 0.05, scale = 1
+    )
+
+    # H2O (early stop) vs isofor
+    expect_equal(
+        h2o_early_cm[2,2] / (h2o_early_cm[1,2] + h2o_early_cm[2,2]),
         isofor_cm[2,2] / (isofor_cm[1,2] + isofor_cm[2,2]),
         tolerance = 0.05, scale = 1
     )

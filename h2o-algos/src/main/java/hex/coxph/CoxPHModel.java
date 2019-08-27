@@ -340,11 +340,11 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     throw new UnsupportedOperationException("CoxPHModel.score0 should never be called");
   }
 
-  protected Futures remove_impl( Futures fs ) {
+  protected Futures remove_impl(Futures fs, boolean cascade) {
     Frame varCumhaz2 = _output._var_cumhaz_2 != null ? _output._var_cumhaz_2.get() : null;
     if (varCumhaz2 != null)
       varCumhaz2.remove(fs);
-    super.remove_impl(fs);
+    super.remove_impl(fs, cascade);
     return fs;
   }
 

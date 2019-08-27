@@ -50,6 +50,10 @@ hex.schemas.KMeansModelV3$KMeansModelOutputV3
 hex.schemas.KMeansV3
 hex.schemas.KMeansV3$KMeansParametersV3
 hex.schemas.MakeGLMModelV3
+hex.schemas.GenericV3
+hex.schemas.GenericV3$GenericParametersV3
+hex.schemas.GenericModelV3
+hex.schemas.GenericModelV3$GenericModelOutputV3
 hex.schemas.NaiveBayesModelV3
 hex.schemas.NaiveBayesModelV3$NaiveBayesModelOutputV3
 hex.schemas.NaiveBayesV3
@@ -62,6 +66,10 @@ hex.schemas.SVDModelV99
 hex.schemas.SVDModelV99$SVDModelOutputV99
 hex.schemas.SVDV99
 hex.schemas.SVDV99$SVDParametersV99
+hex.schemas.PSVMModelV3
+hex.schemas.PSVMModelV3$PSVMModelOutputV3
+hex.schemas.PSVMV3
+hex.schemas.PSVMV3$PSVMParametersV3
 hex.schemas.SharedTreeModelV3
 hex.schemas.SharedTreeModelV3$SharedTreeModelOutputV3
 hex.schemas.SharedTreeV3

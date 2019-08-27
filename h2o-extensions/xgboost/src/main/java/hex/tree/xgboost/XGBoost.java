@@ -5,6 +5,7 @@ import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMTask;
 import hex.tree.TreeUtils;
 import hex.tree.xgboost.rabit.RabitTrackerH2O;
+import hex.tree.xgboost.util.FeatureScore;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
@@ -195,7 +196,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
             true, //all factor levels
             DataInfo.TransformType.NONE, //do not standardize
             DataInfo.TransformType.NONE, //do not standardize response
-            parms._missing_values_handling == XGBoostModel.XGBoostParameters.MissingValuesHandling.Skip, //whether to skip missing
+            false, //whether to skip missing
             false, // do not replace NAs in numeric cols with mean
             true,  // always add a bucket for missing values
             parms._weights_column != null, // observation weights
@@ -205,9 +206,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     // Checks and adjustments:
     // 1) observation weights (adjust mean/sigmas for predictors and response)
     // 2) NAs (check that there's enough rows left)
-    GLMTask.YMUTask ymt = new GLMTask.YMUTask(dinfo, nClasses,nClasses == 1, parms._missing_values_handling == XGBoostModel.XGBoostParameters.MissingValuesHandling.Skip, true, true).doAll(dinfo._adaptedFrame);
-    if (ymt.wsum() == 0 && parms._missing_values_handling == XGBoostModel.XGBoostParameters.MissingValuesHandling.Skip)
-      throw new H2OIllegalArgumentException("No rows left in the dataset after filtering out rows with missing values. Ignore columns with many NAs or set missing_values_handling to 'MeanImputation'.");
+    GLMTask.YMUTask ymt = new GLMTask.YMUTask(dinfo, nClasses,nClasses == 1, false, true, true).doAll(dinfo._adaptedFrame);
     if (parms._weights_column != null && parms._offset_column != null) {
       Log.warn("Combination of offset and weights can lead to slight differences because Rollupstats aren't weighted - need to re-calculate weighted mean/sigma of the response including offset terms.");
     }
@@ -219,23 +218,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     dinfo.coefNames(); // cache the coefficient names
     assert dinfo._coefNames != null;
     return dinfo;
-  }
-
-  public static byte[] getRawArray(Booster booster) {
-    if(null == booster) {
-      return null;
-    }
-
-    byte[] rawBooster;
-    try {
-      Map<String, String> localRabitEnv = new HashMap<>();
-      Rabit.init(localRabitEnv);
-      rawBooster = booster.toByteArray();
-      Rabit.shutdown();
-    } catch (XGBoostError xgBoostError) {
-      throw new IllegalStateException("Failed to initialize Rabit or serialize the booster.", xgBoostError);
-    }
-    return rawBooster;
   }
 
   // ----------------------
@@ -393,7 +375,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       for( int tid=0; tid< _parms._ntrees; tid++) {
         // During first iteration model contains 0 trees, then 1-tree, ...
         boolean scored = doScoring(model, boosterProvider, false);
-        if (scored && ScoreKeeper.stopEarly(model._output.scoreKeepers(), _parms._stopping_rounds, _nclass > 1, _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
+        if (scored && ScoreKeeper.stopEarly(model._output.scoreKeepers(), _parms._stopping_rounds, ScoreKeeper.ProblemType.forSupervised(_nclass > 1), _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
           Log.info("Early stopping triggered - stopping XGBoost training");
           break;
         }
@@ -485,13 +467,13 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         model.doScoring(_train, _parms.train(), _valid, _parms.valid());
         _timeLastScoreEnd = System.currentTimeMillis();
         XGBoostOutput out = model._output;
-        final Map<String, XGBoostUtils.FeatureScore> varimp;
+        final Map<String, FeatureScore> varimp;
         Booster booster = null;
         try {
           booster = model.model_info().deserializeBooster();
-          varimp = BoosterHelper.doWithLocalRabit(new BoosterHelper.BoosterOp<Map<String, XGBoostUtils.FeatureScore>>() {
+          varimp = BoosterHelper.doWithLocalRabit(new BoosterHelper.BoosterOp<Map<String, FeatureScore>>() {
             @Override
-            public Map<String, XGBoostUtils.FeatureScore> apply(Booster booster) throws XGBoostError {
+            public Map<String, FeatureScore> apply(Booster booster) throws XGBoostError {
               final String[] modelDump = booster.getModelDump(featureMapFileAbsolutePath, true);
               return XGBoostUtils.parseFeatureScores(modelDump);
             }
@@ -502,7 +484,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         }
         out._varimp = computeVarImp(varimp);
         out._model_summary = createModelSummaryTable(out._ntrees, null);
-        out._scoring_history = createScoringHistoryTable(out, model._output._scored_train, out._scored_valid, _job, out._training_time_ms, _parms._custom_metric_func != null);
+        out._scoring_history = createScoringHistoryTable(out, model._output._scored_train, out._scored_valid, _job, out._training_time_ms, _parms._custom_metric_func != null, false);
         if (out._varimp != null) {
           out._variable_importances = createVarImpTable(null, ArrayUtils.toDouble(out._varimp._varimp), out._varimp._names);
           out._variable_importances_cover = createVarImpTable("Cover", ArrayUtils.toDouble(out._varimp._covers), out._varimp._names);
@@ -522,7 +504,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
             new String[]{"Relative Importance", "Scaled Importance", "Percentage"});
   }
 
-  private static XgbVarImp computeVarImp(Map<String, XGBoostUtils.FeatureScore> varimp) {
+  private static XgbVarImp computeVarImp(Map<String, FeatureScore> varimp) {
     if (varimp.isEmpty())
       return null;
     float[] gains = new float[varimp.size()];
@@ -530,7 +512,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     int[] freqs = new int[varimp.size()];
     String[] names = new String[varimp.size()];
     int j = 0;
-    for (Map.Entry<String, XGBoostUtils.FeatureScore> it : varimp.entrySet()) {
+    for (Map.Entry<String, FeatureScore> it : varimp.entrySet()) {
       gains[j] = it.getValue()._gain;
       covers[j] = it.getValue()._cover;
       freqs[j] = it.getValue()._frequency;
@@ -563,6 +545,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
   }
 
+  private static volatile boolean DEFAULT_GPU_BLACKLISTED = false;
   private static Set<Integer> GPUS = new HashSet<>();
 
   static boolean hasGPU(H2ONode node, int gpu_id) {
@@ -592,8 +575,18 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
   }
 
+  private static boolean hasGPU(int gpu_id) {
+    if (gpu_id == 0 && DEFAULT_GPU_BLACKLISTED) // quick default path & no synchronization - if we already know we don't have the default GPU, let's not to find out again
+      return false;
+    boolean hasGPU = hasGPU_impl(gpu_id);
+    if (gpu_id == 0 && !hasGPU) {
+      DEFAULT_GPU_BLACKLISTED = true; // this can never change back
+    }
+    return hasGPU;
+  }
+
   // helper
-  static synchronized boolean hasGPU(int gpu_id) {
+  private static synchronized boolean hasGPU_impl(int gpu_id) {
     if (! XGBoostExtension.isGpuSupportEnabled()) {
       return false;
     }

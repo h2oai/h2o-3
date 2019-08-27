@@ -17,18 +17,16 @@ class ARFFParser extends CsvParser {
   private static final String TAG_ATTRIBUTE = "@ATTRIBUTE";
   private static final String NA = "?"; //standard NA in Arff format
   private static final byte GUESS_SEP = ParseSetup.GUESS_SEP;
-  private static final byte[] NON_DATA_LINE_MARKERS = {'%', '@'};
+  private static final byte[] NON_DATA_LINE_MARKERS_DEFAULT = {'%', '@'};
 
-  ARFFParser(ParseSetup ps, Key jobKey) { super(ps, jobKey); }
-
-  @Override
-  protected byte[] nonDataLineMarkers() {
-    return NON_DATA_LINE_MARKERS;
-  }
+  ARFFParser(ParseSetup ps, Key jobKey) { super(ps, NON_DATA_LINE_MARKERS_DEFAULT, jobKey); }
 
   /** Try to parse the bytes as ARFF format  */
-  static ParseSetup guessSetup(ByteVec bv, byte[] bits, byte sep, boolean singleQuotes, String[] columnNames, String[][] naStrings) {
+  static ParseSetup guessSetup(ByteVec bv, byte[] bits, byte sep, boolean singleQuotes, String[] columnNames, String[][] naStrings,
+                               byte[] nonDataLineMarkers) {
     if (columnNames != null) throw new UnsupportedOperationException("ARFFParser doesn't accept columnNames.");
+    if (nonDataLineMarkers == null)
+      nonDataLineMarkers = NON_DATA_LINE_MARKERS_DEFAULT;
 
     // Parse all lines starting with @ until EOF or @DATA
     boolean haveData = false;
@@ -87,7 +85,7 @@ class ARFFParser extends CsvParser {
         ++offset;
         // For Windoze, skip a trailing LF after CR
         if ((offset < bits.length) && (bits[offset] == CsvParser.CHAR_LF)) ++offset;
-        if (ArrayUtils.contains(NON_DATA_LINE_MARKERS, bits[lineStart])) continue;
+        if (ArrayUtils.contains(nonDataLineMarkers, bits[lineStart])) continue;
         if (lineEnd > lineStart) {
           String str = new String(bits, lineStart, lineEnd - lineStart).trim();
           if (!str.isEmpty()) datablock.add(str);
@@ -131,7 +129,7 @@ class ARFFParser extends CsvParser {
     naStrings = addDefaultNAs(naStrings, ncols);
 
     // Return the final setup
-    return new ParseSetup(ARFF_INFO, sep, singleQuotes, ParseSetup.NO_HEADER, ncols, labels, ctypes, domains, naStrings, data);
+    return new ParseSetup(ARFF_INFO, sep, singleQuotes, ParseSetup.NO_HEADER, ncols, labels, ctypes, domains, naStrings, data, nonDataLineMarkers);
   }
 
   private static String[][] addDefaultNAs(String[][] naStrings, int nCols) {

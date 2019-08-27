@@ -1,7 +1,6 @@
 
 import h2o
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
-from h2o.grid.grid_search import H2OGridSearch
 
 from tests import pyunit_utils
 

@@ -16,7 +16,7 @@ Note that in Naïve-Bayes, this option is only used for cross-validation and whe
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
-- none
+- None
 
 
 Example

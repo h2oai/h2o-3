@@ -63,6 +63,7 @@ def bernoulli_gbm():
   auc_h2o = gbm_perf.auc()
 
   #Log.info(paste("scikit AUC:", auc_sci, "\tH2O AUC:", auc_h2o))
+  print(auc_h2o, auc_sci)
   assert auc_h2o >= auc_sci, "h2o (auc) performance degradation, with respect to scikit"
 
 

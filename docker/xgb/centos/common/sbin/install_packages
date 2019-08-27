@@ -13,7 +13,7 @@ yum update -y libcurl
 rpm --rebuilddb
 yum install -y wget
 rpm --rebuilddb
-yum -y install gcc
+yum -y install gcc gcc-c++
 rpm --rebuilddb
 yum install -y shadow-utils.x86_64
 rpm --rebuilddb

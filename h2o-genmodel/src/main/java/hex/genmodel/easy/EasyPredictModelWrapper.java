@@ -3,26 +3,20 @@ package hex.genmodel.easy;
 import hex.ModelCategory;
 import hex.genmodel.GenModel;
 import hex.genmodel.IClusteringModel;
+import hex.genmodel.PredictContributions;
+import hex.genmodel.PredictContributionsFactory;
 import hex.genmodel.algos.deepwater.DeepwaterMojoModel;
+import hex.genmodel.algos.targetencoder.TargetEncoderMojoModel;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.algos.glrm.GlrmMojoModel;
 import hex.genmodel.algos.deeplearning.DeeplearningMojoModel;
 import hex.genmodel.algos.word2vec.WordEmbeddingModel;
 import hex.genmodel.easy.error.VoidErrorConsumer;
 import hex.genmodel.easy.exception.PredictException;
-import hex.genmodel.easy.exception.PredictNumberFormatException;
-import hex.genmodel.easy.exception.PredictUnknownCategoricalLevelException;
-import hex.genmodel.easy.exception.PredictUnknownTypeException;
 import hex.genmodel.easy.prediction.*;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 import java.io.*;
-import java.net.URL;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * An easy-to-use prediction wrapper for generated models.  Instantiate as follows.  The following two are equivalent.
@@ -45,6 +39,13 @@ import java.util.Map;
  *
  * Detection of unknown categoricals may be observed by registering an implementation of {@link ErrorConsumer}
  * in the process of {@link Config} creation.
+ * 
+ * Advanced scoring features are disabled by default for performance reasons. Configuration flags
+ * allow the user to output also
+ *  - leaf node assignment,
+ *  - GLRM reconstructed matrix,
+ *  - staged probabilities,
+ *  - prediction contributions (SHAP values).
  *
  * Deprecation note: Total number of unknown categorical variables is newly accessible by registering {@link hex.genmodel.easy.error.CountingErrorConsumer}.
  *
@@ -65,7 +66,11 @@ public class EasyPredictModelWrapper implements Serializable {
   private final boolean enableLeafAssignment;
   private final boolean enableGLRMReconstruct;  // if set true, will return the GLRM resconstructed value, A_hat=X*Y instead of just X
   private final boolean enableStagedProbabilities; // if set true, staged probabilities from tree agos are returned
+  private final boolean enableContributions; // if set to true, will return prediction contributions (SHAP values) - for GBM & XGBoost
+  private final int glrmIterNumber; // allow user to set GLRM mojo iteration number in constructing x.
 
+  private final PredictContributions predictContributions;
+  
   /**
    * Observer interface with methods corresponding to errors during the prediction.
    */
@@ -101,6 +106,8 @@ public class EasyPredictModelWrapper implements Serializable {
     private boolean enableLeafAssignment = false;  // default to false
     private boolean enableGLRMReconstrut = false;
     private boolean enableStagedProbabilities = false;
+    private boolean enableContributions = false;
+    private int glrmIterNumber = 100; // default set to 100
 
     /**
      * Specify model object to wrap.
@@ -150,6 +157,19 @@ public class EasyPredictModelWrapper implements Serializable {
       return this;
     }
 
+    public Config setGLRMIterNumber(int value) throws IOException {
+      if (model==null)
+        throw new IOException("Cannot set glrmIterNumber for a null model.  Call config.setModel() first.");
+
+      if (!(model instanceof GlrmMojoModel))
+        throw new IOException("glrmIterNumber  shall only be used with GlrmMojoModels.");
+      
+      if (value <= 0)
+        throw new IllegalArgumentException("GLRMIterNumber must be positive.");
+      glrmIterNumber = value;
+      return this;
+    }
+
     public Config setEnableStagedProbabilities (boolean val) throws IOException {
         if (val && (model==null))
             throw new IOException("enableStagedProbabilities cannot be set with null model.  Call setModel() first.");
@@ -163,10 +183,26 @@ public class EasyPredictModelWrapper implements Serializable {
 
     public boolean getEnableGLRMReconstrut() { return enableGLRMReconstrut; }
 
+    public Config setEnableContributions(boolean val) throws IOException {
+      if (val && (model==null))
+        throw new IOException("setEnableContributions cannot be set with null model.  Call setModel() first.");
+      if (val && !(model instanceof PredictContributionsFactory))
+        throw new IOException("setEnableContributions can be set to true only with DRF, GBM, or XGBoost models.");
+      if (val && (ModelCategory.Multinomial.equals(model.getModelCategory()))) {
+        throw new IOException("setEnableContributions is not yet supported for multinomial classification models.");
+      }
+      enableContributions = val;
+      return this;
+    }
+
+    public boolean getEnableContributions() { return enableContributions; }
+
     /**
      * @return Setting for unknown categorical levels handling
      */
     public boolean getConvertUnknownCategoricalLevelsToNa() { return convertUnknownCategoricalLevelsToNa; }
+
+    public int getGLRMIterNumber() { return glrmIterNumber; }
 
     /**
      * Specify the default action when a string value cannot be converted to
@@ -250,21 +286,21 @@ public class EasyPredictModelWrapper implements Serializable {
     enableLeafAssignment = config.getEnableLeafAssignment();
     enableGLRMReconstruct = config.getEnableGLRMReconstrut();
     enableStagedProbabilities = config.getEnableStagedProbabilities();
+    enableContributions = config.getEnableContributions();
+    glrmIterNumber = config.getGLRMIterNumber();
 
-    // Create map of input variable domain information.
-    // This contains the categorical string to numeric mapping.
-    domainMap = new HashMap<>();
-    for (int i = 0; i < m.getNumCols(); i++) {
-      String[] domainValues = m.getDomainValues(i);
-      if (domainValues != null) {
-        HashMap<String, Integer> m = new HashMap<>();
-        for (int j = 0; j < domainValues.length; j++) {
-          m.put(domainValues[j], j);
-        }
-
-        domainMap.put(i, m);
+    if (m instanceof GlrmMojoModel)
+      ((GlrmMojoModel)m)._iterNumber=glrmIterNumber;
+    if (enableContributions) {
+      if (!(m instanceof PredictContributionsFactory)) {
+        throw new IllegalStateException("Model " + m.getClass().getName() + " cannot be used to predict contributions.");
       }
+      predictContributions = ((PredictContributionsFactory) m).makeContributionsPredictor();
+    } else {
+      predictContributions = null;
     }
+    
+    domainMap = new DomainMapConstructor(m).create();
   }
 
   /**
@@ -310,6 +346,8 @@ public class EasyPredictModelWrapper implements Serializable {
         return predictDimReduction(data);
       case WordEmbedding:
         return predictWord2Vec(data);
+      case TargetEncoder:
+        return transformWithTargetEncoding(data);
       case AnomalyDetection:
         return predictAnomalyDetection(data);
 
@@ -498,6 +536,7 @@ public class EasyPredictModelWrapper implements Serializable {
    * @throws PredictException
    */
   public BinomialModelPrediction predictBinomial(RowData data, double offset) throws PredictException {
+
     double[] preds = preamble(ModelCategory.Binomial, data, offset);
 
     BinomialModelPrediction p = new BinomialModelPrediction();
@@ -523,7 +562,32 @@ public class EasyPredictModelWrapper implements Serializable {
         rawData = fillRawData(data, rawData);
         p.stageProbabilities = ((SharedTreeMojoModel) m).scoreStagedPredictions(rawData, preds.length);
     }
+    if (enableContributions) {
+      double[] rawData = nanArray(m.nfeatures());
+      rawData = fillRawData(data, rawData);
+      p.contributions = predictContributions.calculateContributions(rawData);
+    }
     return p;
+  }
+
+  /**
+   * Perform target encoding based on TargetEncoderMojoModel
+   * @param data RowData structure with data for which we want to produce transformations
+   * @return TargetEncoderPrediction with transformations ordered in accordance with corresponding categorical columns' indices in training data
+   * @throws PredictException
+   */
+  public TargetEncoderPrediction transformWithTargetEncoding(RowData data) throws PredictException{
+    if (! (m instanceof TargetEncoderMojoModel))
+      throw new PredictException("Model is not of the expected type, class = " + m.getClass().getSimpleName());
+
+    TargetEncoderMojoModel tem = (TargetEncoderMojoModel) this.m;
+    Set<String> teColumnNames = tem._teColumnNameToIdx.keySet();
+
+    double[] preds = new double[teColumnNames.size()];
+
+    TargetEncoderPrediction prediction = new TargetEncoderPrediction();
+    prediction.transformations = predict(data, 0, preds);
+    return prediction;
   }
 
   @SuppressWarnings("unused") // not used in this class directly, kept for backwards compatibility
@@ -701,6 +765,11 @@ public class EasyPredictModelWrapper implements Serializable {
         rawData = fillRawData(data, rawData);
         p.stageProbabilities = ((SharedTreeMojoModel) m).scoreStagedPredictions(rawData, preds.length);
     }
+    if (enableContributions) {
+      double[] rawData = nanArray(m.nfeatures());
+      rawData = fillRawData(data, rawData);
+      p.contributions = predictContributions.calculateContributions(rawData);
+    }
     return p;
   }
 
@@ -765,124 +834,8 @@ public class EasyPredictModelWrapper implements Serializable {
   }
 
   protected double[] fillRawData(RowData data, double[] rawData) throws PredictException {
-
-    // TODO: refactor
-    boolean isImage = m instanceof DeepwaterMojoModel && ((DeepwaterMojoModel) m)._problem_type.equals("image");
-    boolean isText  = m instanceof DeepwaterMojoModel && ((DeepwaterMojoModel) m)._problem_type.equals("text");
-
-    for (String dataColumnName : data.keySet()) {
-      Integer index = modelColumnNameToIndexMap.get(dataColumnName);
-
-      // Skip column names that are not known.
-      // Skip the "response" column which should not be included in `rawData`
-      if (index == null || index >= rawData.length) {
-        continue;
-      }
-
-      BufferedImage img = null;
-      String[] domainValues = m.getDomainValues(index);
-      if (domainValues == null) {
-        // Column is either numeric or a string (for images or text)
-        double value = Double.NaN;
-        Object o = data.get(dataColumnName);
-        if (o instanceof String) {
-          String s = ((String) o).trim();
-          // Url to an image given
-          if (isImage) {
-            boolean isURL = s.matches("^(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]");
-            try {
-              img = isURL? ImageIO.read(new URL(s)) : ImageIO.read(new File(s));
-            }
-            catch (IOException e) {
-              throw new PredictException("Couldn't read image from " + s);
-            }
-          } else if (isText) {
-            // TODO: use model-specific vectorization of text
-            throw new PredictException("MOJO scoring for text classification is not yet implemented.");
-          }
-          else {
-            // numeric
-            try {
-              value = Double.parseDouble(s);
-            } catch(NumberFormatException nfe) {
-              if (!convertInvalidNumbersToNa)
-                throw new PredictNumberFormatException("Unable to parse value: " + s + ", from column: "+ dataColumnName + ", as Double; " + nfe.getMessage());
-            }
-          }
-        } else if (o instanceof Double) {
-          value = (Double) o;
-        } else if (o instanceof byte[] && isImage) {
-          // Read the image from raw bytes
-          InputStream is = new ByteArrayInputStream((byte[]) o);
-          try {
-            img = ImageIO.read(is);
-          } catch (IOException e) {
-            throw new PredictException("Couldn't interpret raw bytes as an image.");
-          }
-        } else {
-          throw new PredictUnknownTypeException(
-                  "Unexpected object type " + o.getClass().getName() + " for numeric column " + dataColumnName);
-        }
-
-        if (isImage && img != null) {
-          DeepwaterMojoModel dwm = (DeepwaterMojoModel) m;
-          int W = dwm._width;
-          int H = dwm._height;
-          int C = dwm._channels;
-          float[] _destData = new float[W * H * C];
-          try {
-            GenModel.img2pixels(img, W, H, C, _destData, 0, dwm._meanImageData);
-          } catch (IOException e) {
-            e.printStackTrace();
-            throw new PredictException("Couldn't vectorize image.");
-          }
-          rawData = new double[_destData.length];
-          for (int i = 0; i < rawData.length; ++i)
-            rawData[i] = _destData[i];
-          return rawData;
-        }
-
-        if (Double.isNaN(value)) {
-          // If this point is reached, the original value remains NaN.
-          errorConsumer.dataTransformError(dataColumnName, o, "Given non-categorical value is unparseable, treating as NaN.");
-        }
-        rawData[index] = value;
-      }
-      else {
-        // Column has categorical value.
-        Object o = data.get(dataColumnName);
-        double value;
-        if (o instanceof String) {
-          String levelName = (String) o;
-          HashMap<String, Integer> columnDomainMap = domainMap.get(index);
-          Integer levelIndex = columnDomainMap.get(levelName);
-          if (levelIndex == null) {
-            levelIndex = columnDomainMap.get(dataColumnName + "." + levelName);
-          }
-          if (levelIndex == null) {
-            if (convertUnknownCategoricalLevelsToNa) {
-              value = Double.NaN;
-              errorConsumer.unseenCategorical(dataColumnName, o, "Previously unseen categorical level detected, marking as NaN.");
-            } else {
-              errorConsumer.dataTransformError(dataColumnName, o, "Unknown categorical level detected.");
-              throw new PredictUnknownCategoricalLevelException("Unknown categorical level (" + dataColumnName + "," + levelName + ")", dataColumnName, levelName);
-            }
-          }
-          else {
-            value = levelIndex;
-          }
-        } else if (o instanceof Double && Double.isNaN((double)o)) {
-            errorConsumer.dataTransformError(dataColumnName, o, "Missing factor value detected, setting to NaN");
-          value = (double)o; //Missing factor is the only Double value allowed
-        } else {
-          errorConsumer.dataTransformError(dataColumnName, o, "Unknown categorical variable type.");
-          throw new PredictUnknownTypeException(
-                  "Unexpected object type " + o.getClass().getName() + " for categorical column " + dataColumnName);
-        }
-        rawData[index] = value;
-      }
-    }
-    return rawData;
+    return new RowToRawDataConverter(m, modelColumnNameToIndexMap, domainMap, errorConsumer, convertUnknownCategoricalLevelsToNa, convertInvalidNumbersToNa)
+            .convert(data, rawData);
   }
 
   protected double[] predict(RowData data, double offset, double[] preds) throws PredictException {

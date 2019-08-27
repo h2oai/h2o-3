@@ -36,7 +36,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
 
   public final double _MSE;     // Mean Squared Error (Every model is assumed to have this, otherwise leave at NaN)
   public final long _nobs;
-
+  
   public ModelMetrics(Model model, Frame frame, long nobs, double MSE, String desc, CustomMetric customMetric) {
     super(buildKey(model, frame));
     withModelAndFrame(model, frame);
@@ -135,7 +135,22 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     Method method = null;
     Object obj = null;
     criterion = criterion.toLowerCase();
-    ConfusionMatrix cm = mm.cm();
+    
+    // Constructing confusion matrix based on criterion
+    ConfusionMatrix cm;
+    if(mm instanceof ModelMetricsBinomial) {
+      AUC2.ThresholdCriterion criterionAsEnum = AUC2.ThresholdCriterion.fromString(criterion);
+      if(criterionAsEnum != null) {
+        ModelMetricsBinomial mmb = (ModelMetricsBinomial) mm;
+        cm = mmb.cm(criterionAsEnum);
+      }
+      else
+        cm = mm.cm();
+    }
+    else
+      cm = mm.cm();
+    
+    // Getting (by reflection) method that corresponds to a given criterion
     try {
       method = mm.getClass().getMethod(criterion);
       obj = mm;

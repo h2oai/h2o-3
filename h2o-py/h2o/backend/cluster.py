@@ -263,7 +263,17 @@ class H2OCluster(object):
         res = h2o.api("GET /3/NetworkTest")
         res["table"].show()
 
-
+    def list_jobs(self):
+        """List all jobs performed by the cluster."""
+        res = h2o.api("GET /3/Jobs")
+        table = [["type"], ["dest"], ["description"], ["status"]]
+        for job in res["jobs"]:
+            job_dest = job["dest"]
+            table[0].append(self._translate_job_type(job_dest["type"]))
+            table[1].append(job_dest["name"])
+            table[2].append(job["description"])
+            table[3].append(job["status"])
+        return table
 
     def list_all_extensions(self):
         """List all available extensions on the h2o backend"""
@@ -315,6 +325,22 @@ class H2OCluster(object):
         res = h2o.api("GET /3/" + endpoint)["capabilities"]
         return [x["name"] for x in res]
 
+    def _translate_job_type(self, type):
+        if type is None:
+            return ('Removed')
+        type_mapping = dict([
+            ('Key<Frame>', 'Frame'),
+            ('Key<Model>', 'Model'),
+            ('Key<Grid>', 'Grid'),
+            ('Key<PartialDependence>', 'PartialDependence'),
+            ('Key<AutoML>', 'Auto Model'),
+            ('Key<ScalaCodeResult>', 'Scala Code Execution'),
+            ('Key<KeyedVoid>', 'Void')
+        ])
+        if type in type_mapping:
+            return type_mapping[type]
+        else:
+            return 'Unknown'
 
 _cloud_v3_valid_keys = {"is_client", "build_number", "cloud_name", "locked", "node_idx", "consensus", "branch_name",
                         "version", "cloud_uptime_millis", "cloud_internal_timezone", "datafile_parser_timezone", "cloud_healthy", "bad_nodes", "cloud_size", "skip_ticks",

@@ -1,6 +1,5 @@
 package water.api;
 
-import hex.ModelMetrics;
 import hex.tree.isofor.ModelMetricsAnomaly;
 import water.api.schemas3.ModelMetricsBaseV3;
 

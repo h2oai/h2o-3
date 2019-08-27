@@ -6,17 +6,17 @@ import traceback
 import warnings
 
 import h2o
+from h2o.base import Keyed
 from h2o.exceptions import H2OValueError
 from h2o.job import H2OJob
 from h2o.utils.backward_compatibility import backwards_compatible
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.compatibility import viewitems
 from h2o.utils.shared_utils import can_use_pandas
-from h2o.utils.typechecks import I, assert_is_type, assert_satisfies, Enum
-from six import string_types
+from h2o.utils.typechecks import I, assert_is_type, assert_satisfies, Enum, is_type
 
 
-class ModelBase(backwards_compatible()):
+class ModelBase(backwards_compatible(Keyed)):
     """Base class for all models."""
 
     def __init__(self):
@@ -38,6 +38,10 @@ class ModelBase(backwards_compatible()):
         self._end_time = None
         self._run_time = None
 
+
+    @property
+    def key(self):
+        return self._id
 
     @property
     def model_id(self):
@@ -141,7 +145,7 @@ class ModelBase(backwards_compatible()):
 
         :param H2OFrame test_data: Data on which to make predictions.
         :param Enum type: How to identify the leaf node. Nodes can be either identified by a path from to the root node
-        of the tree to the node or by H2O's internal node id. One of: ``"Path"``, ``"Node_ID"`` (default: ``"Path"``).
+            of the tree to the node or by H2O's internal node id. One of: ``"Path"``, ``"Node_ID"`` (default: ``"Path"``).
 
         :returns: A new H2OFrame of predictions.
         """
@@ -150,7 +154,6 @@ class ModelBase(backwards_compatible()):
         j = h2o.api("POST /3/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
                     data={"leaf_node_assignment": True, "leaf_node_assignment_type": type})
         return h2o.get_frame(j["predictions_frame"]["name"])
-
 
     def staged_predict_proba(self, test_data):
         """
@@ -170,6 +173,41 @@ class ModelBase(backwards_compatible()):
                     data={"predict_staged_proba": True})
         return h2o.get_frame(j["predictions_frame"]["name"])
 
+    def predict_contributions(self, test_data):
+        """
+        Predict feature contributions - SHAP values on an H2O Model (only GBM and XGBoost models).
+        
+        Returned H2OFrame has shape (#rows, #features + 1) - there is a feature contribution column for each input
+        feature, the last column is the model bias (same value for each row). The sum of the feature contributions
+        and the bias term is equal to the raw prediction of the model. Raw prediction of tree-based model is the sum 
+        of the predictions of the individual trees before before the inverse link function is applied to get the actual
+        prediction. For Gaussian distribution the sum of the contributions is equal to the model prediction. 
+
+        Note: Multinomial classification models are currently not supported.
+
+        :param H2OFrame test_data: Data on which to calculate contributions.
+
+        :returns: A new H2OFrame made of feature contributions.
+        """
+        if not isinstance(test_data, h2o.H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
+        j = h2o.api("POST /3/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
+                    data={"predict_contributions": True})
+        return h2o.get_frame(j["predictions_frame"]["name"])
+
+    def feature_frequencies(self, test_data):
+        """
+        Retrieve the number of occurrences of each feature for given observations 
+        on their respective paths in a tree ensemble model.
+        Available for GBM, Random Forest and Isolation Forest models.
+
+        :param H2OFrame test_data: Data on which to calculate feature frequencies.
+
+        :returns: A new H2OFrame made of feature contributions.
+        """
+        if not isinstance(test_data, h2o.H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
+        j = h2o.api("POST /3/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
+                    data={"feature_frequencies": True})
+        return h2o.get_frame(j["predictions_frame"]["name"])
 
     def predict(self, test_data, custom_metric = None, custom_metric_func = None):
         """
@@ -177,7 +215,7 @@ class ModelBase(backwards_compatible()):
 
         :param H2OFrame test_data: Data on which to make predictions.
         :param custom_metric:  custom evaluation function defined as class reference, the class get uploaded
-        into cluster
+            into the cluster
         :param custom_metric_func: custom evaluation function reference, e.g, result of upload_custom_metric
 
         :returns: A new H2OFrame of predictions.
@@ -225,6 +263,10 @@ class ModelBase(backwards_compatible()):
         return self.get_xval_models()
 
 
+    def detach(self):
+        self._id = None
+
+
     def deepfeatures(self, test_data, layer):
         """
         Return hidden layer details.
@@ -247,7 +289,7 @@ class ModelBase(backwards_compatible()):
         """
         Return the frame for the respective weight matrix.
 
-        :param: matrix_id: an integer, ranging from 0 to number of layers, that specifies the weight matrix to return.
+        :param matrix_id: an integer, ranging from 0 to number of layers, that specifies the weight matrix to return.
 
         :returns: an H2OFrame which represents the weight matrix identified by matrix_id
         """
@@ -385,10 +427,12 @@ class ModelBase(backwards_compatible()):
 
         print(self.__class__.__name__, ": ", self._model_json["algo_full_name"])
         print("Model Key: ", self._id)
-
-        self.summary()
-
         print()
+
+        summary = self.summary()
+        if summary:
+            print(summary)
+
         # training metrics
         tm = model["training_metrics"]
         if tm: tm.show()
@@ -409,7 +453,7 @@ class ModelBase(backwards_compatible()):
         """
         Pretty print the variable importances, or return them in a list.
 
-        :param use_pandas: If True, then the variable importances will be returned as a pandas data frame.
+        :param bool use_pandas: If True, then the variable importances will be returned as a pandas data frame.
 
         :returns: A list or Pandas DataFrame.
         """
@@ -720,7 +764,10 @@ class ModelBase(backwards_compatible()):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in viewitems(tm): m[k] = None if v is None else v.auc()
+        for k, v in viewitems(tm):
+            if not(v == None) and not(is_type(v, h2o.model.metrics_base.H2OBinomialModelMetrics)):
+                raise H2OValueError("auc() is only available for Binomial classifiers.")
+            m[k] = None if v is None else v.auc()
         return list(m.values())[0] if len(m) == 1 else m
 
 
@@ -763,6 +810,28 @@ class ModelBase(backwards_compatible()):
         for k, v in viewitems(tm): m[k] = None if v is None else v.gini()
         return list(m.values())[0] if len(m) == 1 else m
 
+    def pr_auc(self, train=False, valid=False, xval=False):
+        """
+        Get the pr_auc (Area Under PRECISION RECALL Curve).
+
+        If all are False (default), then return the training metric value.
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval".
+
+        :param bool train: If train is True, then return the pr_auc value for the training data.
+        :param bool valid: If valid is True, then return the pr_auc value for the validation data.
+        :param bool xval:  If xval is True, then return the pr_auc value for the validation data.
+
+        :returns: The pr_auc.
+        """
+        tm = ModelBase._get_metrics(self, train, valid, xval)
+        m = {}
+        for k, v in viewitems(tm): 
+            if not(v == None) and not(is_type(v, h2o.model.metrics_base.H2OBinomialModelMetrics)):
+                raise H2OValueError("pr_auc() is only available for Binomial classifiers.")
+            m[k] = None if v is None else v.pr_auc()
+        return list(m.values())[0] if len(m) == 1 else m
+    
     def download_pojo(self, path="", get_genmodel_jar=False, genmodel_name=""):
         """
         Download the POJO for this model to the directory specified by path.
@@ -771,7 +840,7 @@ class ModelBase(backwards_compatible()):
 
         :param path:  An absolute path to the directory where POJO should be saved.
         :param get_genmodel_jar: if True, then also download h2o-genmodel.jar and store it in folder ``path``.
-        :param genmodel_name Custom name of genmodel jar
+        :param genmodel_name: Custom name of genmodel jar
         :returns: name of the POJO file written.
         """
         assert_is_type(path, str)
@@ -786,7 +855,7 @@ class ModelBase(backwards_compatible()):
 
         :param path: the path where MOJO file should be saved.
         :param get_genmodel_jar: if True, then also download h2o-genmodel.jar and store it in folder ``path``.
-        :param genmodel_name Custom name of genmodel jar
+        :param genmodel_name: Custom name of genmodel jar
         :returns: name of the MOJO file written.
         """
         assert_is_type(path, str)
@@ -857,16 +926,17 @@ class ModelBase(backwards_compatible()):
         scoring_history = self.scoring_history()
         # Separate functionality for GLM since its output is different from other algos
         if self._model_json["algo"] == "glm":
-            # GLM has only one timestep option, which is `iteration`
-            timestep = "iteration"
+            # GLM has only one timestep option, which is `iterations`
+            timestep = "iterations"
             if metric == "AUTO":
-                metric = "log_likelihood"
-            elif metric not in ("log_likelihood", "objective"):
-                raise H2OValueError("for GLM, metric must be one of: log_likelihood, objective")
+                metric = "negative_log_likelihood"
+            elif metric not in ("negative_log_likelihood", "objective"):
+                raise H2OValueError("for GLM, metric must be one of: negative_log_likelihood, objective")
             plt.xlabel(timestep)
             plt.ylabel(metric)
             plt.title("Validation Scoring History")
-            plt.plot(scoring_history[timestep], scoring_history[metric])
+            style = "b-" if len(scoring_history[timestep]) > 1 else "bx"
+            plt.plot(scoring_history[timestep], scoring_history[metric], style)
 
         elif self._model_json["algo"] in ("deeplearning", "deepwater", "xgboost", "drf", "gbm"):
             # Set timestep
@@ -922,9 +992,9 @@ class ModelBase(backwards_compatible()):
         if not server: plt.show()
 
 
-    def partial_plot(self, data, cols, destination_key=None, nbins=20, weight_column=None,
+    def partial_plot(self, data, cols=None, destination_key=None, nbins=20, weight_column=None,
                      plot=True, plot_stddev = True, figsize=(7, 10), server=False, include_na=False, user_splits=None,
-                     save_to_file=None):
+                     col_pairs_2dpdp=None, save_to_file=None, row_index=None):
         """
         Create partial dependence plot which gives a graphical depiction of the marginal effect of a variable on the
         response. The effect of a variable is measured in change in the mean response.
@@ -937,31 +1007,58 @@ class ModelBase(backwards_compatible()):
         :param plot: A boolean specifying whether to plot partial dependence table.
         :param plot_stddev: A boolean specifying whether to add std err to partial dependence plot.
         :param figsize: Dimension/size of the returning plots, adjust to fit your output cells.
-        :param server: ?
+        :param server: Specify whether to activate matplotlib "server" mode. In this case, the plots are saved to a file instead of being rendered.
         :param include_na: A boolean specifying whether missing value should be included in the Feature values.
         :param user_splits: a dictionary containing column names as key and user defined split values as value in a list.
-        :param save_to_file Fully qualified name to an image file the resulting plot should be saved to, e.g. '/home/user/pdpplot.png'. The 'png' postfix might be omitted. If the file already exists, it will be overridden. Plot is only saved if plot = True.
+        :param col_pairs_2dpdp: list containing pairs of column names for 2D pdp
+        :param save_to_file: Fully qualified name to an image file the resulting plot should be saved to, e.g. '/home/user/pdpplot.png'. The 'png' postfix might be omitted. If the file already exists, it will be overridden. Plot is only saved if plot = True.
+        :param row_index: Row for which partial dependence will be calculated instead of the whole input frame.
         :returns: Plot and list of calculated mean response tables for each feature requested.
         """
-
         if not isinstance(data, h2o.H2OFrame): raise ValueError("data must be an instance of H2OFrame")
-        assert_is_type(cols, [str])
+        num_1dpdp = 0
+        num_2dpdp = 0
+        if not(cols==None):
+            assert_is_type(cols, [str])
+            num_1dpdp = len(cols)
+        if not(col_pairs_2dpdp==None):
+            assert_is_type(col_pairs_2dpdp, [[str, str]])
+            num_2dpdp=len(col_pairs_2dpdp)
+            
+        if (cols==None) and (col_pairs_2dpdp==None):
+            raise ValueError("must specify either cols or col_pairs_2dpd to generate partial dependency plots")
+            
         assert_is_type(destination_key, None, str)
         assert_is_type(nbins, int)
         assert_is_type(plot, bool)
         assert_is_type(figsize, (int, int))
 
         # Check cols specified exist in frame data
-        for xi in cols:
-            if xi not in data.names:
-                raise H2OValueError("Column %s does not exist in the training frame" % xi)
+        if not(cols==None):
+            for xi in cols:
+                if xi not in data.names:
+                    raise H2OValueError("Column %s does not exist in the training frame" % xi)
+        if not(col_pairs_2dpdp==None):
+            for oneP in col_pairs_2dpdp:
+                if oneP[0] not in data.names:
+                    raise H2OValueError("Column %s does not exist in the training frame" % oneP[0])
+                if oneP[1] not in data.names:
+                    raise H2OValueError("Column %s does not exist in the training frame" % oneP[1])
+                if oneP[0]==oneP[1]:
+                    raise H2OValueError("2D pdp must be with different columns.")
         if isinstance(weight_column, int) and not (weight_column == -1):
             raise H2OValueError("Weight column should be a column name in your data frame.")
         elif isinstance(weight_column, str): # index is a name
             if weight_column not in data.names:
                 raise H2OValueError("Column %s does not exist in the data frame" % weight_column)
             weight_column = data.names.index(weight_column)
-
+        
+        if row_index:
+            if not isinstance(row_index, int):
+                raise H2OValueError("Row index should be of type int.")
+        else:
+            row_index = -1
+        
         kwargs = {}
         kwargs["cols"] = cols
         kwargs["model_id"] = self.model_id
@@ -970,57 +1067,10 @@ class ModelBase(backwards_compatible()):
         kwargs["destination_key"] = destination_key
         kwargs["weight_column_index"] = weight_column
         kwargs["add_missing_na"] = include_na
+        kwargs["row_index"] = row_index
+        kwargs["col_pairs_2dpdp"] = col_pairs_2dpdp
 
-        # extract user defined split points from dict user_splits into an integer array of column indices
-        # and a double array of user define values for the corresponding columns
-        if not(user_splits == None):
-            if not(isinstance(user_splits, dict)):
-                raise H2OValueError("user_splits must be a Python dict.")
-            else:
-                if len(user_splits)>0: # do nothing with an empty dict
-                    user_cols = []
-                    user_values = []
-                    user_num_splits = []
-                    data_ncol = data.ncol
-                    column_names = data.names
-                    for colKey,val in user_splits.items():
-                        if isinstance(colKey, string_types) and colKey in column_names:
-                            user_cols.append(colKey)
-                        elif isinstance(colKey, int) and colKey < data_ncol:
-                            user_cols.append(column_names[colKey])
-                        else:
-                            raise H2OValueError("column names/indices used in user_splits are not valid.  They "
-                                                "should be chosen from the columns of your data set.")
-
-                        if data[colKey].isfactor()[0] or data[colKey].isnumeric()[0]: # replace enum string with actual value
-                            nVal = len(val)
-                            if data[colKey].isfactor()[0]:
-                                domains = data[colKey].levels()[0]
-
-                                numVal = [0]*nVal
-                                for ind in range(nVal):
-                                    if (val[ind] in domains):
-                                        numVal[ind] = domains.index(val[ind])
-                                    else:
-                                        raise H2OValueError("Illegal enum value {0} encountered.  To include missing"
-                                                        " values in your feature values, set include_na to "
-                                                        "True".format(val[ind]))
-
-                                user_values.extend(numVal)
-                            else:
-                                user_values.extend(val)
-                            user_num_splits.append(nVal)
-                        else:
-                            raise H2OValueError("Partial dependency plots are generated for numerical and categorical "
-                                                "columns only.")
-                    kwargs["user_cols"] = user_cols
-                    kwargs["user_splits"] = user_values
-                    kwargs["num_user_splits"] = user_num_splits
-                else:
-                    kwargs["user_cols"] = None
-                    kwargs["user_splits"] = None
-                    kwargs["num_user_splits"] = None
-
+        self.__generate_user_splits(user_splits, data, kwargs)
         json = H2OJob(h2o.api("POST /3/PartialDependence/", data=kwargs),  job_type="PartialDependencePlot").poll()
         json = h2o.api("GET /3/PartialDependence/%s" % json.dest_key)
 
@@ -1028,51 +1078,198 @@ class ModelBase(backwards_compatible()):
         pps = json["partial_dependence_data"]
 
         # Plot partial dependence plots using matplotlib
-        if plot:
-            plt = _get_matplotlib_pyplot(server)
-            if not plt: return
-
-            fig, axs = plt.subplots(len(cols), squeeze=False, figsize=figsize)
-            for i, pp in enumerate(pps):
-                # Check weather column was categorical or numeric
-                col = cols[i]
-                cat = data[col].isfactor()[0]
-                upper = [a + b for a, b in zip(pp[1], pp[2]) ]
-                lower = [a - b for a, b in zip(pp[1], pp[2]) ]
-                if cat:
-                    labels = pp[0]
-                    x = range(len(labels))
-                    y = pp[1]
-                    axs[i, 0].plot(x, y, "ro")
-                    if plot_stddev:
-                        axs[i, 0].plot(x, lower, 'b--')
-                        axs[i, 0].plot(x, upper, 'b--')
-                    axs[i, 0].set_ylim(min(lower) - 0.1*abs(min(lower)), max(upper) + 0.1*abs(max(upper)))
-                    axs[i, 0].set_xticks(x)
-                    axs[i, 0].set_xticklabels(labels)
-                    axs[i, 0].margins(0.2)
-                else:
-                    x = pp[0]
-                    y = pp[1]
-                    axs[i, 0].plot(x, y, "r-")
-                    if plot_stddev:
-                        axs[i, 0].plot(x, lower, 'b--')
-                        axs[i, 0].plot(x, upper, 'b--')
-                    axs[i, 0].set_xlim(min(x), max(x))
-                    axs[i, 0].set_ylim(min(lower) - 0.1*abs(min(lower)), max(upper) + 0.1*abs(max(upper)))
-
-                axs[i, 0].set_title("Partial Dependence Plot For {}".format(col))
-                axs[i, 0].set_xlabel(pp.col_header[0])
-                axs[i, 0].set_ylabel(pp.col_header[1])
-                axs[i, 0].xaxis.grid()
-                axs[i, 0].yaxis.grid()
-            if len(col) > 1:
-                fig.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
-            if(save_to_file is not None):
-                plt.savefig(save_to_file)
-
+        self.__generate_partial_plots(num_1dpdp, num_2dpdp, plot, server, pps, figsize, col_pairs_2dpdp, data, nbins,
+                                      kwargs["user_cols"], kwargs["num_user_splits"], plot_stddev, cols, save_to_file)
         return pps
 
+    def __generate_user_splits(self, user_splits, data, kwargs):
+        # extract user defined split points from dict user_splits into an integer array of column indices
+        # and a double array of user define values for the corresponding columns
+        if not(user_splits == None) and (len(user_splits) > 0):
+            if not(isinstance(user_splits, dict)):
+                raise H2OValueError("user_splits must be a Python dict.")
+            else:
+                user_cols = []
+                user_values = []
+                user_num_splits = []
+                data_ncol = data.ncol
+                column_names = data.names
+                for colKey,val in user_splits.items():
+                    if is_type(colKey, str) and colKey in column_names:
+                        user_cols.append(colKey)
+                    elif isinstance(colKey, int) and colKey < data_ncol:
+                        user_cols.append(column_names[colKey])
+                    else:
+                        raise H2OValueError("column names/indices used in user_splits are not valid.  They "
+                                                "should be chosen from the columns of your data set.")
+
+                    if data[colKey].isfactor()[0] or data[colKey].isnumeric()[0]: # replace enum string with actual value
+                        nVal = len(val)
+                        if data[colKey].isfactor()[0]:
+                            domains = data[colKey].levels()[0]
+
+                            numVal = [0]*nVal
+                            for ind in range(nVal):
+                                if (val[ind] in domains):
+                                    numVal[ind] = domains.index(val[ind])
+                                else:
+                                    raise H2OValueError("Illegal enum value {0} encountered.  To include missing"
+                                                            " values in your feature values, set include_na to "
+                                                            "True".format(val[ind]))
+
+                            user_values.extend(numVal)
+                        else:
+                            user_values.extend(val)
+                        user_num_splits.append(nVal)
+                    else:
+                        raise H2OValueError("Partial dependency plots are generated for numerical and categorical "
+                                                "columns only.")
+                kwargs["user_cols"] = user_cols
+                kwargs["user_splits"] = user_values
+                kwargs["num_user_splits"] = user_num_splits
+        else:
+            kwargs["user_cols"] = None
+            kwargs["user_splits"] = None
+            kwargs["num_user_splits"] = None
+
+    def __generate_partial_plots(self, num_1dpdp, num_2dpdp, plot, server, pps, figsize, col_pairs_2dpdp, data, nbins,
+                                 user_cols, user_num_splits, plot_stddev, cols, save_to_file):
+        # Plot partial dependence plots using matplotlib
+        totFig = num_1dpdp+num_2dpdp
+        if plot and totFig>0:     # plot 1d pdp for now
+            plt = _get_matplotlib_pyplot(server)
+            if not plt: return pps
+            import matplotlib.gridspec as gridspec
+            fig = plt.figure(figsize=figsize)
+            gxs = gridspec.GridSpec(totFig, 1)
+            if num_2dpdp>0: # 2d pdp requested
+                axes3D = _get_mplot3d_pyplot("2D partial plots")
+                cm = _get_matplotlib_cm("2D partial plots")
+            figPlotted = False  # indicated number of figures plotted
+            for i, pp in enumerate(pps):
+                if (i >= num_1dpdp): # plot 2D pdp
+                    if (axes3D==None) or (cm==None) or (plt==None):    # quit if cannot find toolbox
+                        break
+                    figPlotted = self.__plot_2dpdp(fig, col_pairs_2dpdp, gxs, num_1dpdp, data, pp, nbins, user_cols,
+                                                   user_num_splits, plot_stddev, cm, i)
+                else:  # plot 1D pdp
+                    figPlotted = self.__plot_1dpdp(cols, i, data, pp, fig, gxs, plot_stddev)
+
+            if figPlotted:
+                fig.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
+            else:
+                print("No partial plot is generated and/or saved.  You may be missing toolboxes like "
+                      "mpl_toolkits.mplot3d, matplotlib")
+            if (save_to_file is not None) and figPlotted: # only save when a figure is actually plotted
+                plt.savefig(save_to_file)
+
+    def __plot_2dpdp(self, fig, col_pairs_2dpdp, gxs, num_1dpdp, data, pp, nbins, user_cols, user_num_splits, plot_stddev, cm, i):
+        ax = fig.add_subplot(gxs[i], projection='3d')
+        colPairs = col_pairs_2dpdp[i-num_1dpdp]
+        x = self.__grabValues(pp, 0, data, colPairs[0], ax) # change to numpy 2d_array
+        y = self.__grabValues(pp, 1, data, colPairs[1], ax)
+        X,Y,Z = self.__predFor3D(x,y,pp[2], colPairs, nbins, user_cols, user_num_splits)
+
+        zupper = [a + b for a, b in zip(pp[2], pp[3]) ]  # pp[1] is mean, pp[2] is std
+        zlower = [a - b for a, b in zip(pp[2], pp[3]) ]
+        _,_,Zupper = self.__predFor3D(x,y,zupper, colPairs, nbins, user_cols, user_num_splits)
+        _,_,Zlower = self.__predFor3D(x,y,zlower, colPairs, nbins, user_cols, user_num_splits)
+        ax.plot_surface(X, Y, Z, cmap=cm.coolwarm,linewidth=1, antialiased=False, alpha=0.5, edgecolor='k')
+        if plot_stddev:
+            ax.plot_surface(X, Y, Zupper, cmap=cm.coolwarm,linewidth=0.2, antialiased=False, alpha=0.3, edgecolor='y')
+            ax.plot_surface(X, Y, Zlower, cmap=cm.coolwarm,linewidth=0.2, antialiased=False, alpha=0.3, edgecolor='g')
+        ax.set_xlabel(colPairs[0])
+        ax.set_xlim(min(x), max(x))
+        ax.set_ylabel(colPairs[1])
+        ax.set_ylim(min(y), max(y))
+        ax.set_zlim(min([min(zupper), min(zlower), min(pp[2])]), max([max(zupper), max(zlower), max(pp[2])]))
+        ax.set_zlabel('Partial dependence')
+        titles = '2D partial dependence plot for '+colPairs[0] + ' and '+colPairs[1]
+        ax.set_title(titles)
+        return True
+    
+    def __plot_1dpdp(self, cols, i, data, pp, fig, gxs, plot_stddev):
+        col = cols[i]
+        cat = data[col].isfactor()[0]
+        upper = [a + b for a, b in zip(pp[1], pp[2]) ]  # pp[1] is mean, pp[2] is std
+        lower = [a - b for a, b in zip(pp[1], pp[2]) ]
+        axs = fig.add_subplot(gxs[i])
+        self.__setAxs1D(axs, upper, lower, plot_stddev, cat, pp, 0, col)  # setup graph, axis, labels and ...
+        return True
+        
+    # change x, y, z to be 2-D numpy arrays in order to plot it.
+    # note that, x stays at one value for the duration of y value changes.
+    def __predFor3D(self, x, y, z, colPairs, nbins, user_cols, user_num_splits):
+        # deal with y axis first
+        np = _get_numpy("2D partial plots")
+        if np==None:
+            print("Numpy not found.  Cannot plot 2D partial plots.")
+        ycol = colPairs[1]
+        nBins = nbins
+        if user_cols is not None and ycol in user_cols:
+            ind = user_cols.index(ycol)
+            nBins = user_num_splits[ind]
+        nrow = int(len(x)/nBins)
+        X = np.transpose(np.array(x).reshape(nrow, nBins))
+        Y = np.transpose(np.array(y).reshape(nrow, nBins))
+        Z = np.transpose(np.array(z).reshape(nrow, nBins))
+        return X,Y,Z
+    
+    def __grabValues(self, pp, index, data, col, axs):
+        cat = data[col].isfactor()[0]
+        if cat:
+            labels = pp[index]
+            uniqueL =list(set(labels))
+            x = range(len(uniqueL))
+            xlab = [None]*len(uniqueL)
+            for ind in range(len(uniqueL)):
+                xlab[ind] = labels[labels.index(uniqueL[ind])]
+
+            # replace string enum labels with integer values
+            xext = [None]*len(labels)
+            for ind in range(len(labels)):
+                xext[ind] = labels.index(labels[ind])
+                
+            if index==0:    # x-axis
+                axs.set_xticks(x)
+                axs.set_xticklabels(xlab)
+            else:   # y-axis
+                axs.set_yticks(x)
+                axs.set_yticklabels(labels)
+            axs.margins(0.2) 
+
+            return xext
+        else:
+            return pp[index]
+        
+    def __setAxs1D(self, axs, upper, lower, plot_stddev, cat, pp, pp_start_index, col):
+        if cat:
+            labels = pp[pp_start_index]  # 1d pdp, this is 0
+            x = range(len(labels))
+            y = pp[pp_start_index+1]
+            axs.plot(x, y, "ro")
+            if plot_stddev:
+                axs.plot(x, lower, 'b--')
+                axs.plot(x, upper, 'b--')
+            axs.set_ylim(min(lower) - 0.1*abs(min(lower)), max(upper) + 0.1*abs(max(upper)))
+            axs.set_xticks(x)
+            axs.set_xticklabels(labels)
+            axs.margins(0.2)
+        else:
+            x = pp[pp_start_index]
+            y = pp[pp_start_index+1]
+            axs.plot(x, y, "r-")
+            if plot_stddev:
+                axs.plot(x, lower, 'b--')
+                axs.plot(x, upper, 'b--')
+            axs.set_xlim(min(x), max(x))
+            axs.set_ylim(min(lower) - 0.1*abs(min(lower)), max(upper) + 0.1*abs(max(upper)))
+    
+        axs.set_title("Partial Dependence Plot For {}".format(col))
+        axs.set_xlabel(pp.col_header[pp_start_index])
+        axs.set_ylabel(pp.col_header[pp_start_index+1])
+        axs.xaxis.grid()
+        axs.yaxis.grid()
 
     def varimp_plot(self, num_of_features=None, server=False):
         """
@@ -1375,3 +1572,29 @@ def _get_matplotlib_pyplot(server):
     except ImportError:
         print("`matplotlib` library is required for this function!")
         return None
+
+def _get_mplot3d_pyplot(functionName):
+    try:
+        # noinspection PyUnresolvedReferences
+        from mpl_toolkits.mplot3d import Axes3D
+        return Axes3D
+    except ImportError:
+        print("`mpl_toolkits.mplot3d` library is required for function {0}!".format(functionName))
+        return None
+
+def _get_numpy(functionName):
+    try:
+        import numpy as np
+        return np
+    except ImportError:
+        print("`numpy` library is required for function {0}!".format(functionName))
+        return None
+
+def _get_matplotlib_cm(functionName):
+    try:
+        from matplotlib import cm
+        return cm
+    except ImportError:
+        print('matplotlib library is required for 3D plots for function {0}'.format(functionName))
+        return None
+    

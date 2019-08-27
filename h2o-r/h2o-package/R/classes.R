@@ -97,6 +97,25 @@ setMethod("show", "H2OConnection", function(object) {
   cat("Key Count :", object@mutable$key_count,  "\n")
 })
 
+#' Virtual Keyed class
+#'
+#' Base class for all objects having a persistent representation on backend.
+#'
+#' @export
+setClass("Keyed", contains="VIRTUAL")
+#' Method on \code{Keyed} objects allowing to obtain their key.
+#'
+#' @param object A \code{Keyed} object
+#' @return the string key holding the persistent object.
+#' @export
+setGeneric("h2o.keyof", function(object) {
+  standardGeneric("h2o.keyof")
+})
+#' @rdname h2o.keyof
+setMethod("h2o.keyof", signature(object = "Keyed"), function(object) {
+  stop("`keyof` not implemented for this object type.")
+})
+
 #'
 #' The H2OModel object.
 #'
@@ -117,12 +136,15 @@ setMethod("show", "H2OConnection", function(object) {
 setClass("H2OModel",
          representation(model_id="character", algorithm="character", parameters="list", allparameters="list", have_pojo="logical", have_mojo="logical", model="list"),
          prototype(model_id=NA_character_),
-         contains="VIRTUAL")
+         contains=c("Keyed","VIRTUAL"))
 
 # TODO: make a more model-specific constructor
 .newH2OModel <- function(Class, model_id, ...) {
   new(Class, model_id=model_id, ...)
 }
+
+#' @rdname h2o.keyof
+setMethod("h2o.keyof", signature("H2OModel"), function(object) object@model_id)
 
 #' @rdname H2OModel-class
 #' @param object an \code{H2OModel} object.
@@ -141,7 +163,12 @@ setMethod("show", "H2OModel", function(object) {
 
   # if glm, print the coefficeints
   cat("\n")
-  if( !is.null(m$coefficients_table) ) print(m$coefficients_table)
+  if( !is.null(m$coefficients_table) ){
+    print(m$coefficients_table)
+  } else if(o@algorithm == 'generic' && !is.null(m$training_metrics@metrics$`coefficients_table`)){
+    # In case of generic model, coefficient_table is part of the metrics object
+    print(m$training_metrics@metrics$`coefficients_table`)
+  }
 
   # metrics
   cat("\n")
@@ -225,7 +252,7 @@ setMethod("summary", "H2OModel", function(object, ...) {
   if( !is.null(tm$Gini)                                            )  cat("\nGini: (Extract with `h2o.gini`)", tm$Gini)
   if( !is.null(tm$null_deviance)                                   )  cat("\nNull Deviance: (Extract with `h2o.nulldeviance`)", tm$null_deviance)
   if( !is.null(tm$residual_deviance)                               )  cat("\nResidual Deviance: (Extract with `h2o.residual_deviance`)", tm$residual_deviance)
-  if(exists(o@algorithm) && o@algorithm == "glm") {
+  if(!is.null(o@algorithm) && o@algorithm %in% c("glm","gbm","drf","xgboost","generic")) {
     if( !is.null(tm$r2) && !is.na(tm$r2)                           )  cat("\nR^2: (Extract with `h2o.r2`)", tm$r2)
   }
   if( !is.null(tm$AIC)                                             )  cat("\nAIC: (Extract with `h2o.aic`)", tm$AIC)
@@ -562,7 +589,7 @@ setMethod("show", "H2OBinomialMetrics", function(object) {
     cat("AUC:  ", object@metrics$AUC, "\n", sep="")
     cat("pr_auc:  ", object@metrics$pr_auc, "\n", sep="")
     cat("Gini:  ", object@metrics$Gini, "\n", sep="")
-    if(exists(object@algorithm) && object@algorithm == "glm") {
+    if(!is.null(object@algorithm) && object@algorithm %in% c("glm","gbm","drf","xgboost","generic")) {
 
       if (!is.null(object@metrics$r2) && !is.na(object@metrics$r2)) cat("R^2:  ", object@metrics$r2, "\n", sep="")
       if (!is.null(object@metrics$null_deviance0)) cat("Null Deviance:  ", object@metrics$null_deviance,"\n", sep="")
@@ -633,7 +660,7 @@ setMethod("show", "H2ORegressionMetrics", function(object) {
   cat("MAE:  ", object@metrics$mae, "\n", sep="")
   cat("RMSLE:  ", object@metrics$rmsle, "\n", sep="")
   cat("Mean Residual Deviance :  ", h2o.mean_residual_deviance(object), "\n", sep="")
-  if(exists(object@algorithm) && object@algorithm == "glm") {
+  if(!is.null(object@algorithm) && object@algorithm %in% c("glm","gbm","drf","xgboost","generic")) {
     if (!is.na(h2o.r2(object))) cat("R^2 :  ", h2o.r2(object), "\n", sep="")
     null_dev <- h2o.null_deviance(object)
     res_dev  <- h2o.residual_deviance(object)
@@ -815,7 +842,9 @@ setMethod("summary", "H2OGrid",
 #' This class represents an H2OFrame object
 #'
 #' @export
-setClass("H2OFrame", contains = "environment")
+setClass("H2OFrame", contains = c("Keyed", "environment"))
+#' @rdname h2o.keyof
+setMethod("h2o.keyof", signature("H2OFrame"), function(object) attr(object, "id"))
 
 #'
 #' The H2OAutoML class
@@ -825,4 +854,9 @@ setClass("H2OFrame", contains = "environment")
 #' @export
 setClass("H2OAutoML", slots = c(project_name = "character",
                                 leader = "H2OModel",
-                                leaderboard = "H2OFrame"))
+                                leaderboard = "H2OFrame",
+                                event_log = "H2OFrame",
+                                training_info = "list"),
+                      contains = "Keyed")
+#' @rdname h2o.keyof
+setMethod("h2o.keyof", signature("H2OAutoML"), function(object) object@project_name)

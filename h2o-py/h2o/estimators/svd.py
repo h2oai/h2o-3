@@ -36,6 +36,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
                 setattr(self, pname, pvalue)
             else:
                 raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
+        self._parms["_rest_version"] = 99
 
     @property
     def training_frame(self):
@@ -48,8 +49,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
 
     @training_frame.setter
     def training_frame(self, training_frame):
-        assert_is_type(training_frame, None, H2OFrame)
-        self._parms["training_frame"] = training_frame
+        self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
 
 
     @property
@@ -63,8 +63,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
 
     @validation_frame.setter
     def validation_frame(self, validation_frame):
-        assert_is_type(validation_frame, None, H2OFrame)
-        self._parms["validation_frame"] = validation_frame
+        self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
 
 
     @property
@@ -262,3 +261,16 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
 
+    def init_for_pipeline(self):
+        """
+        Returns H2OSVD object which implements fit and transform method to be used in sklearn.Pipeline properly.
+        All parameters defined in self.__params, should be input parameters in H2OSVD.__init__ method.
+
+        :returns: H2OSVD object
+        """
+        import inspect
+        from h2o.transforms.decomposition import H2OSVD
+        # check which parameters can be passed to H2OSVD init
+        var_names = list(dict(inspect.getmembers(H2OSVD.__init__.__code__))['co_varnames'])
+        parameters = {k: v for k, v in self._parms.items() if k in var_names}
+        return H2OSVD(**parameters)

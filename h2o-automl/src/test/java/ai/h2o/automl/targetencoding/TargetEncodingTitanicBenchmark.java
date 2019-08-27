@@ -4,11 +4,9 @@ import ai.h2o.automl.AutoMLBenchmarkingHelper;
 import hex.ModelMetricsBinomial;
 import hex.ScoreKeeper;
 import hex.genmodel.utils.DistributionFamily;
-import hex.splitframe.ShuffleSplitFrame;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import org.junit.*;
-import water.Key;
 import water.TestUtil;
 import water.Scope;
 import water.fvec.Frame;
@@ -20,6 +18,11 @@ import static ai.h2o.automl.AutoMLBenchmarkingHelper.getPreparedTitanicFrame;
 import static ai.h2o.automl.AutoMLBenchmarkingHelper.getScoreBasedOn;
 import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
 
+/*
+  Be aware that `smalldata/gbm_test/titanic_*.csv` files are not present in the repo. Replace with your own splits.
+  Note that this is a benchmark and we ignore tests from it as they should not affect builds
+ */
+@Ignore("Ignoring benchmark tests")
 public class TargetEncodingTitanicBenchmark extends TestUtil {
 
   @BeforeClass public static void setup() {

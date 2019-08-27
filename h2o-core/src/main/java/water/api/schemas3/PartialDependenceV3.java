@@ -17,6 +17,10 @@ public class PartialDependenceV3 extends SchemaV3<PartialDependence, PartialDepe
   public KeyV3.FrameKeyV3 frame_id;
 
   @SuppressWarnings("unused")
+  @API(help="Row Index", direction=API.Direction.INOUT)
+  public long row_index;
+  
+  @SuppressWarnings("unused")
   @API(help="Column(s)", direction=API.Direction.INOUT)
   public String[] cols;
 
@@ -47,6 +51,9 @@ public class PartialDependenceV3 extends SchemaV3<PartialDependence, PartialDepe
   @SuppressWarnings("unused")
   @API(help="Partial Dependence Data", direction=API.Direction.OUTPUT)
   public TwoDimTableV3[] partial_dependence_data;
+  
+  @API(help="lists of column name pairs to plot 2D pdp for", direction=API.Direction.INOUT)
+  public String[][] col_pairs_2dpdp;
 
   @API(help="Key to store the destination", direction=API.Direction.INPUT)
   public KeyV3.PartialDependenceKeyV3 destination_key;

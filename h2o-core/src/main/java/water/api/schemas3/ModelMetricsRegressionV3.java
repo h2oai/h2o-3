@@ -23,6 +23,7 @@ public class ModelMetricsRegressionV3<I extends ModelMetricsRegression, S extend
     r2 = modelMetrics.r2();
     mae = modelMetrics._mean_absolute_error;
     rmsle = modelMetrics._root_mean_squared_log_error;
+    mean_residual_deviance = modelMetrics._mean_residual_deviance;
     return (S) this;
   }
 }

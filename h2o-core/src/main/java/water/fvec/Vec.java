@@ -194,6 +194,15 @@ public class Vec extends Keyed<Vec> {
   /** Returns cardinality for categorical domain or -1 for other types. */
   public final int cardinality() { return isCategorical() ? _domain.length : -1; }
 
+  /**
+   * @return true iff the domain has been truncated (usually during encoding).
+   * @see CreateInteractions#makeDomain(java.util.Map, String[], String[])
+   */
+  public final boolean isDomainTruncated(int expectedCardinality) {
+    return cardinality() == expectedCardinality + 1
+            && CreateInteractions._other.equals(_domain[_domain.length -1]);
+  }
+
   // Vec internal type
   public static final byte T_BAD  =  0; // No none-NA rows (triple negative! all NAs or zero rows)
   public static final byte T_UUID =  1; // UUID
@@ -931,7 +940,7 @@ public class Vec extends Keyed<Vec> {
 
   /**
    * Marks the Vec as mutating. Vec needs to be marked as mutating whenever
-   * it is modified ({@link #preWriting()}) or removed ({@link #remove_impl(Futures)}).
+   * it is modified ({@link #preWriting()}) or removed ({@link Keyed#remove_impl(Futures, boolean)}).
    */
   private static void setMutating(Key rskey) {
     Value val = DKV.get(rskey);
@@ -1091,13 +1100,10 @@ public class Vec extends Keyed<Vec> {
     long cstart = c._start;             // Read once, since racily filled in
     Vec v = c._vec;
     int tcidx = c._cidx;
-    if( cstart == start && v != null && tcidx == cidx)
-      return c;                       // Already filled-in
-    if(!(cstart == -1 || v == null || tcidx == -1))
-      throw new RuntimeException("Was not filled in (everybody racily writes the same start value:  cstart = " + cstart + " v == null? " + (v == null) + " cidx = " + tcidx + ", chunk = " + c.getClass().getName());
-    assert cstart == -1 || v == null || tcidx == -1:" cstart = " + cstart + " v == null? " + (v == null) + " cidx = " + tcidx + ", chunk = " + c.getClass().getName(); // Was not filled in (everybody racily writes the same start value)
-    c._vec = this;             // Fields not filled in by unpacking from Value
-    c._start = start;          // Fields not filled in by unpacking from Value
+    if( cstart == start && v == this && tcidx == cidx)
+      return c;                         // Already filled-in
+    c._vec = this;                      // Fields not filled in by unpacking from Value
+    c._start = start;
     c._cidx = cidx;
     return c;
   }
@@ -1322,7 +1328,7 @@ public class Vec extends Keyed<Vec> {
   /** Remove associated Keys when this guy removes.  For Vecs, remove all
    *  associated Chunks.
    *  @return Passed in Futures for flow-coding  */
-  @Override public Futures remove_impl( Futures fs ) {
+  @Override public Futures remove_impl(Futures fs, boolean cascade) {
     bulk_remove(new Key[]{_key}, nChunks());
     return fs;
   }
@@ -1580,7 +1586,7 @@ public class Vec extends Keyed<Vec> {
     @Override protected long checksum_impl() { throw H2O.fail(); }
     // Fail to remove a VectorGroup unless you also remove all related Vecs,
     // Chunks, Rollups (and any Frame that uses them), etc.
-    @Override protected Futures remove_impl( Futures fs ) { throw H2O.fail(); }
+    @Override protected Futures remove_impl(Futures fs, boolean cascade) { throw H2O.fail(); }
     /** Write out K/V pairs */
     @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) { throw H2O.fail(); }
     @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) { throw H2O.unimpl(); }

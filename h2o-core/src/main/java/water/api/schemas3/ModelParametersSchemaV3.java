@@ -65,7 +65,7 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
   @API(help="Allow parallel training of cross-validation models", direction=API.Direction.INOUT, level = API.Level.expert)
   public boolean parallelize_cross_validation;
 
-  @API(help = "Distribution function", values = { "AUTO", "bernoulli", "quasibinomial", "ordinal", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber" }, level = API.Level.secondary, gridable = true)
+  @API(help = "Distribution function", values = { "AUTO", "bernoulli", "quasibinomial", "ordinal", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber", "custom" }, level = API.Level.secondary, gridable = true)
   public DistributionFamily distribution;
 
   @API(level = API.Level.secondary, direction = API.Direction.INPUT, gridable = true,
@@ -161,8 +161,11 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
   /**
    * Metric to use for convergence checking, only for _stopping_rounds > 0
    */
-//  @API(help = "Metric to use for early stopping (AUTO: logloss for classification, deviance for regression)", values = {"AUTO", "deviance", "logloss", "MSE", "RMSE","MAE","RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error", "r2"}, level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
-  @API(help = "Metric to use for early stopping (AUTO: logloss for classification, deviance for regression). Note that custom and custom_increasing can only be used in GBM and DRF with the Python client.", values = {"AUTO", "deviance", "logloss", "MSE", "RMSE","MAE","RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"}, level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+  @API(help = "Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and " +
+          "anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and " +
+          "DRF with the Python client.", values = {"AUTO", "deviance", "logloss", "MSE", "RMSE","MAE","RMSLE", "AUC", 
+          "lift_top_group", "misclassification", "AUCPR", "mean_per_class_error", "anomaly_score", "custom", 
+          "custom_increasing"}, level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
   public ScoreKeeper.StoppingMetric stopping_metric;
 
   @API(help = "Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
@@ -173,6 +176,12 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
    */
   @API(help = "Reference to custom evaluation function, format: `language:keyName=funcName`", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = false)
   public String custom_metric_func;
+
+  /*
+   * Custom distribution
+   */
+  @API(help = "Reference to custom distribution, format: `language:keyName=funcName`", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = false)
+  public String custom_distribution_func;
 
   @API(help = "Automatically export generated models to this directory.", level = API.Level.secondary, direction = API.Direction.INOUT)
   public String export_checkpoints_dir;

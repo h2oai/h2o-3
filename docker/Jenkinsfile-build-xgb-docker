@@ -4,13 +4,12 @@ final String NODE_LABEL = 'docker && !mr-0xc8'
 final String DOCKER_STASH = 'h2o-3-xgb-docker-stash'
 
 def pipelineContext = null
-def version = null
 
 properties(
     [
         parameters(
             [
-                string(defaultValue: 'mr/ita/214-xgb-smoke-tests', description: 'Branch to checkout', name: 'gitBranch'),
+                string(defaultValue: 'master', description: 'Branch to checkout', name: 'gitBranch'),
                 string(name: 'dockerRegistry', defaultValue: 'harbor.h2o.ai'),
             ]
         )
@@ -32,8 +31,6 @@ node (NODE_LABEL) {
             pipelineContext.getBuildSummary().addStageSummary(this, stageName, '')
             pipelineContext.getBuildSummary().setStageDetails(this, stageName, env.NODE_NAME, env.WORKSPACE)
 
-            version = pipelineContext.getBuildConfig().getXGBImageVersion()
-
             pipelineContext.getBuildSummary().addSection(this, 'docker-details', "<a href=\"${currentBuild.rawBuild.getAbsoluteUrl()}\" style=\"color: black;\">Details</a>", """
                 <ul>
                 <li><strong>Git Branch:</strong> ${env.BRANCH_NAME}</li>
@@ -41,7 +38,15 @@ node (NODE_LABEL) {
             """)
 
             pipelineContext.getUtils().stashFiles(this, DOCKER_STASH, 'docker/xgb/**,docker/scripts/*')
-
+            dir('docker') {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'AWS S3 Credentials', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                    docker.image('harbor.h2o.ai/opsh2oai/s3cmd').inside("-e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}") {
+                        sh "s3cmd -f get s3://artifacts.h2o.ai/releases/oracle/jdk-8/x64-linux/jdk1.8.0_171.zip"
+                    }
+                }
+                stash name: 'jdk-zip'
+            }
+            
             pipelineContext.getBuildSummary().markStageSuccessful(this, stageName)
         } catch (Exception e) {
             pipelineContext.getBuildSummary().markStageFailed(this, stageName)
@@ -63,16 +68,17 @@ parallel(pipelineContext.getBuildConfig().getSupportedXGBEnvironments().collectE
 
                             pipelineContext.getUtils().unstashFiles(this, DOCKER_STASH)
 
-                            sh """
-                                cd docker
-                                
+                            dir('docker') {
+                                unstash 'jdk-zip'
+                                sh """                                
                                 docker build \
                                     -t ${pipelineContext.getBuildConfig().getXGBImageForEnvironment(osName, xgbEnv)} \
                                     -f ${xgbEnv.dockerfile} \
                                     --build-arg FROM_IMAGE=${xgbEnv.fromImage} \
                                     --build-arg H2O_BRANCH=${params.gitBranch} \
                                     .
-                            """
+                                """
+                            }
 
                             pipelineContext.getBuildSummary().markStageSuccessful(this, buildStageName)
                         } catch (Exception e) {

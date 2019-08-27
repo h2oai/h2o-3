@@ -49,8 +49,7 @@ class H2OAggregatorEstimator(H2OEstimator):
 
     @training_frame.setter
     def training_frame(self, training_frame):
-        assert_is_type(training_frame, None, H2OFrame)
-        self._parms["training_frame"] = training_frame
+        self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
 
 
     @property
@@ -204,10 +203,9 @@ class H2OAggregatorEstimator(H2OEstimator):
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
 
-
     @property
     def aggregated_frame(self):
-        if (self._model_json is not None and
-            self._model_json.get("output", {}).get("output_frame", {}).get("name") is not None):
+        if (self._model_json is not None
+                and self._model_json.get("output", {}).get("output_frame", {}).get("name") is not None):
             out_frame_name = self._model_json["output"]["output_frame"]["name"]
             return H2OFrame.get_frame(out_frame_name)

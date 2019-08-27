@@ -11,21 +11,17 @@ import logging
 import os
 import warnings
 import webbrowser
-import types
 
-
-from h2o.backend import H2OConnection
-from h2o.backend import H2OConnectionConf
-from h2o.backend import H2OLocalServer
-from h2o.exceptions import H2OConnectionError, H2OValueError
-from h2o.utils.config import H2OConfigReader
-from h2o.utils.shared_utils import check_frame_id, deprecated, gen_header, py_tmp_key, quoted, urlopen
-from h2o.utils.typechecks import assert_is_type, assert_satisfies, BoundInt, BoundNumeric, I, is_type, numeric, U
+from .backend import H2OConnection
+from .backend import H2OConnectionConf
+from .backend import H2OLocalServer
+from .base import Keyed
 from .estimators.deeplearning import H2OAutoEncoderEstimator
 from .estimators.deeplearning import H2ODeepLearningEstimator
 from .estimators.deepwater import H2ODeepWaterEstimator
 from .estimators.estimator_base import H2OEstimator
 from .estimators.xgboost import H2OXGBoostEstimator
+from .estimators.generic import H2OGenericEstimator
 from .estimators.gbm import H2OGradientBoostingEstimator
 from .estimators.glm import H2OGeneralizedLinearEstimator
 from .estimators.glrm import H2OGeneralizedLowRankEstimator
@@ -36,15 +32,18 @@ from .estimators.random_forest import H2ORandomForestEstimator
 from .estimators.stackedensemble import H2OStackedEnsembleEstimator
 from .estimators.word2vec import H2OWord2vecEstimator
 from .estimators.isolation_forest import H2OIsolationForestEstimator
+from .exceptions import H2OConnectionError, H2OValueError
 from .expr import ExprNode
 from .frame import H2OFrame
 from .grid.grid_search import H2OGridSearch
 from .job import H2OJob
 from .model.model_base import ModelBase
 from .transforms.decomposition import H2OSVD
-from .utils.debugging import *  # NOQA
+from .utils.config import H2OConfigReader
 from .utils.compatibility import *  # NOQA
 from .utils.compatibility import PY3
+from .utils.shared_utils import check_frame_id, deprecated, gen_header, py_tmp_key, quoted, urlopen
+from .utils.typechecks import assert_is_type, assert_satisfies, BoundInt, BoundNumeric, I, is_type, numeric, U
 
 logging.basicConfig()
 
@@ -177,6 +176,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, insecure=None, use
     :param extra_classpath: List of paths to libraries that should be included on the Java classpath when starting H2O from Python.
     :param kwargs: (all other deprecated attributes)
     :param jvm_custom_args: Customer, user-defined argument's for the JVM H2O is instantiated in. Ignored if there is an instance of H2O already running and the client connects to it.
+    :param bind_to_localhost: A flag indicating whether access to the H2O instance should be restricted to the local machine (default) or if it can be reached from other computers on the network.
     """
     global h2oconn
     assert_is_type(url, str, None)
@@ -363,7 +363,7 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
 
 
 def import_file(path=None, destination_frame=None, parse=True, header=0, sep=None, col_names=None, col_types=None,
-                na_strings=None, pattern=None, skipped_columns=None):
+                na_strings=None, pattern=None, skipped_columns=None, custom_non_data_line_markers = None):
     """
     Import a dataset that is already on the cluster.
 
@@ -371,7 +371,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     cannot see the file, then an exception will be thrown by the H2O cluster. Does a parallel/distributed
     multi-threaded pull of the data. The main difference between this method and :func:`upload_file` is that
     the latter works with local files, whereas this method imports remote files (i.e. files local to the server).
-    If you running H2O server on your own maching, then both methods behave the same.
+    If you running H2O server on your own machine, then both methods behave the same.
 
     :param path: path(s) specifying the location of the data to import or a path to a directory of files to import
     :param destination_frame: The unique hex key assigned to the imported file. If none is given, a key will be
@@ -400,6 +400,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     :param pattern: Character string containing a regular expression to match file(s) in the folder if `path` is a
         directory.
     :param skipped_columns: an integer list of column indices to skip and not parsed into the final frame from the import file.
+    :param custom_non_data_line_markers: If a line in imported file starts with any character in given string it will NOT be imported. Empty string means all lines are imported, None means that default behaviour for given format will be used
 
     :returns: a new :class:`H2OFrame` instance.
 
@@ -431,7 +432,8 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     if not parse:
         return lazy_import(path, pattern)
     else:
-        return H2OFrame()._import_parse(path, pattern, destination_frame, header, sep, col_names, col_types, na_strings, skipped_columns)
+        return H2OFrame()._import_parse(path, pattern, destination_frame, header, sep, col_names, col_types, na_strings,
+                                        skipped_columns, custom_non_data_line_markers)
 
 
 def import_hive_table(database=None, table=None, partitions=None, allow_multi_format=False):
@@ -450,13 +452,14 @@ def import_hive_table(database=None, table=None, partitions=None, allow_multi_fo
 
     :examples:
         >>> my_citibike_data = h2o.import_hive_table("default", "table", [["2017", "01"], ["2017", "02"]])
-    """    
+    """
     assert_is_type(database, str, None)
     assert_is_type(table, str)
     assert_is_type(partitions, [[str]], None)
     p = { "database": database, "table": table, "partitions": partitions, "allow_multi_format": allow_multi_format }
     j = H2OJob(api("POST /3/ImportHiveTable", data=p), "Import Hive Table").poll()
     return get_frame(j.dest_key)
+
 
 def import_sql_table(connection_url, table, username, password, columns=None, optimize=True, fetch_mode=None):
     """
@@ -505,7 +508,7 @@ def import_sql_table(connection_url, table, username, password, columns=None, op
     return get_frame(j.dest_key)
 
 
-def import_sql_select(connection_url, select_query, username, password, optimize=True, 
+def import_sql_select(connection_url, select_query, username, password, optimize=True,
                       use_temp_table=None, temp_table_name=None, fetch_mode=None):
     """
     Import the SQL table that is the result of the specified SQL query to H2OFrame in memory.
@@ -555,7 +558,7 @@ def import_sql_select(connection_url, select_query, username, password, optimize
 
 
 def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, column_names=None,
-                column_types=None, na_strings=None, skipped_columns=None):
+                column_types=None, na_strings=None, skipped_columns=None, custom_non_data_line_markers=None):
     """
     Retrieve H2O's best guess as to what the structure of the data file is.
 
@@ -591,6 +594,7 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     :param na_strings: A list of strings, or a list of lists of strings (one list per column), or a dictionary
         of column names to strings which are to be interpreted as missing values.
     :param skipped_columns: an integer lists of column indices to skip and not parsed into the final frame from the import file.
+    :param custom_non_data_line_markers: If a line in imported file starts with any character in given string it will NOT be imported. Empty string means all lines are imported, None means that default behaviour for given format will be used
 
     :returns: a dictionary containing parse parameters guessed by the H2O backend.
     """
@@ -613,6 +617,9 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     kwargs = {"check_header": header, "source_frames": [quoted(frame_id) for frame_id in raw_frames]}
     if separator:
         kwargs["separator"] = ord(separator)
+
+    if custom_non_data_line_markers is not None:
+        kwargs["custom_non_data_line_markers"] = custom_non_data_line_markers;
 
     j = api("POST /3/ParseSetup", data=kwargs)
     if "warnings" in j and j["warnings"]:
@@ -714,6 +721,7 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
                 if (colidx < 0): raise ValueError("skipped column index cannot be negative")
                 j["skipped_columns"].append(colidx)
 
+
     # quote column names and column types also when not specified by user
     if j["column_names"]: j["column_names"] = list(map(quoted, j["column_names"]))
     j["column_types"] = list(map(quoted, j["column_types"]))
@@ -803,6 +811,7 @@ def get_model(model_id):
     elif algo == "deepwater":    m = H2ODeepWaterEstimator()
     elif algo == "xgboost":      m = H2OXGBoostEstimator()
     elif algo == "word2vec":     m = H2OWord2vecEstimator()
+    elif algo == "generic": m = H2OGenericEstimator()
     elif algo == "deeplearning":
         if model_json["output"]["model_category"] == "AutoEncoder":
             m = H2OAutoEncoderEstimator()
@@ -896,36 +905,43 @@ def log_and_echo(message=""):
     api("POST /3/LogAndEcho", data={"message": str(message)})
 
 
-def remove(x):
+def remove(x, cascade=True):
     """
     Remove object(s) from H2O.
 
     :param x: H2OFrame, H2OEstimator, or string, or a list of those things: the object(s) or unique id(s)
         pointing to the object(s) to be removed.
+    :param cascade: boolean, if set to TRUE (default), the object dependencies (e.g. submodels) are also removed.
     """
-    item_type = U(str, H2OFrame, H2OEstimator)
+    item_type = U(str, Keyed)
     assert_is_type(x, item_type, [item_type])
     if not isinstance(x, list): x = [x]
     for xi in x:
         if isinstance(xi, H2OFrame):
-            xi_id = xi._ex._cache._id  # String or None
-            if xi_id is None: return  # Lazy frame, never evaluated, nothing in cluster
-            rapids("(rm {})".format(xi_id))
-            xi._ex = None
-        elif isinstance(xi, H2OEstimator):
-            api("DELETE /3/DKV/%s" % xi.model_id)
-            xi._id = None
+            if xi.key is None: return  # Lazy frame, never evaluated, nothing in cluster
+            rapids("(rm {})".format(xi.key))
+            xi.detach()
+        elif isinstance(xi, Keyed):
+            api("DELETE /3/DKV/%s" % xi.key, data=dict(cascade=cascade))
+            xi.detach()
         else:
             # string may be a Frame key name part of a rapids session... need to call rm thru rapids here
             try:
                 rapids("(rm {})".format(xi))
             except:
-                api("DELETE /3/DKV/%s" % xi)
+                api("DELETE /3/DKV/%s" % xi, data=dict(cascade=cascade))
 
 
-def remove_all():
-    """Remove all objects from H2O."""
-    api("DELETE /3/DKV")
+def remove_all(retained=None):
+    """
+    Removes all objects from H2O with possibility to specify models and frames to retain.
+    Retained keys must be keys of models and frames only. For models retained, training and validation frames are retained as well.
+    Cross validation models of a retained model are NOT retained automatically, those must be specified explicitely.
+    :param retained: Keys of models and frames to retain 
+    """
+
+    params = {"retained_keys": retained}
+    api(endpoint="DELETE /3/DKV", data=params)
 
 
 def rapids(expr):
@@ -1014,23 +1030,28 @@ def download_csv(data, filename):
         f.write(urlopen()(url).read())
 
 
-def download_all_logs(dirname=".", filename=None):
+def download_all_logs(dirname=".", filename=None, container=None):
     """
     Download H2O log files to disk.
 
     :param dirname: a character string indicating the directory that the log file should be saved in.
-    :param filename: a string indicating the name that the CSV file should be. Note that the saved format is .zip, so the file name must include the .zip extension.
-
+    :param filename: a string indicating the name that the CSV file should be.
+                     Note that the default container format is .zip, so the file name must include the .zip extension.
+    :param container: a string indicating how to archive the logs, choice of "ZIP" (default) and "LOG"
+                      ZIP: individual log files archived in a ZIP package
+                      LOG: all log files will be concatenated together in one text file
     :returns: path of logs written in a zip file.
 
-    :examples: The following code will save the zip file `'autoh2o_log.zip'` in a directory that is one down from where you are currently working into a directory called `your_directory_name`. (Please note that `your_directory_name` should be replaced with the name of the directory that you've created and that already exists.)
+    :examples: The following code will save the zip file `'h2o_log.zip'` in a directory that is one down from where you are currently working into a directory called `your_directory_name`. (Please note that `your_directory_name` should be replaced with the name of the directory that you've created and that already exists.)
 
-        >>> h2o.download_all_logs(dirname='./your_directory_name/', filename = 'autoh2o_log.zip')
+        >>> h2o.download_all_logs(dirname='./your_directory_name/', filename = 'h2o_log.zip')
 
     """
     assert_is_type(dirname, str)
     assert_is_type(filename, str, None)
-    url = "%s/3/Logs/download" % h2oconn.base_url
+    assert_is_type(container, "ZIP", "LOG", None)
+    type = "/%s" % container if container else ""
+    url = "%s/3/Logs/download%s" % (h2oconn.base_url, type)
     opener = urlopen()
     response = opener(url)
 
@@ -1090,13 +1111,14 @@ def load_model(path):
     return get_model(res["models"][0]["model_id"]["name"])
 
 
-def export_file(frame, path, force=False, parts=1):
+def export_file(frame, path, force=False, sep=",", compression=None, parts=1):
     """
     Export a given H2OFrame to a path on the machine this python session is currently connected to.
 
     :param frame: the Frame to save to disk.
     :param path: the path to the save point on disk.
     :param force: if True, overwrite any preexisting file with the same path
+    :param compression: how to compress the exported dataset (default none; gzip, bzip2 and snappy available)
     :param parts: enables export to multiple 'part' files instead of just a single file.
         Convenient for large datasets that take too long to store in a single file.
         Use parts=-1 to instruct H2O to determine the optimal number of part files or
@@ -1106,9 +1128,12 @@ def export_file(frame, path, force=False, parts=1):
     """
     assert_is_type(frame, H2OFrame)
     assert_is_type(path, str)
+    assert_is_type(sep, I(str, lambda s: len(s) == 1))
     assert_is_type(force, bool)
     assert_is_type(parts, int)
-    H2OJob(api("POST /3/Frames/%s/export" % (frame.frame_id), data={"path": path, "num_parts": parts, "force": force}),
+    assert_is_type(compression, str, None)
+    H2OJob(api("POST /3/Frames/%s/export" % (frame.frame_id), 
+               data={"path": path, "num_parts": parts, "force": force, "compression": compression, "separator": ord(sep)}),
            "Export File").poll()
 
 
@@ -1397,6 +1422,17 @@ def _create_zip_file(dest_filename, *content_list):
     return dest_filename
 
 
+def _inspect_methods_separately(obj):
+    import inspect
+    class_def = "class {}:\n".format(obj.__name__)
+    for name, member in inspect.getmembers(obj):
+        if inspect.ismethod(member):
+            class_def += inspect.getsource(member)
+        elif inspect.isfunction(member):
+            class_def += inspect.getsource(member)
+    return class_def
+
+
 def _default_source_provider(obj):
     import inspect
     # First try to get source code via inspect
@@ -1409,28 +1445,58 @@ def _default_source_provider(obj):
         # (1) get IPython history and find class definition, or
         # (2) compose body of class from methods, since it is still possible to get
         #     method body
-        class_def = "class {}:\n".format(obj.__name__)
-        for name, member in inspect.getmembers(obj):
-            if inspect.ismethod(member):
-                class_def += inspect.getsource(member)
-        return class_def
+        return _inspect_methods_separately(obj)
+
+
+def _default_custom_distribution_source_provider(obj):
+    from h2o.utils.distributions import CustomDistributionGeneric
+    if CustomDistributionGeneric in obj.mro():
+        return _inspect_methods_separately(obj)
+    else:
+        return _default_source_provider(obj)
+    
 
 def upload_custom_metric(func, func_file="metrics.py", func_name=None, class_name=None, source_provider=None):
     """
     Upload given metrics function into H2O cluster.
 
     The metrics can have different representation:
-      - method
-      - class: needs to inherit from water.udf.CFunc2 and implement method apply(actual, predict)
-      returning double
+      - class: needs to implement map(pred, act, weight, offset, model), reduce(l, r) and metric(l) methods
       - string: the same as in class case, but the class is given as a string
 
-    :param func:  metrics representation: string, class, function
+    :param func:  metric representation: string, class
     :param func_file:  internal name of file to save given metrics representation
     :param func_name:  name for h2o key under which the given metric is saved
-    :param class_name: name of class wrapping the metrics function
+    :param class_name: name of class wrapping the metrics function (when supplied as string)
     :param source_provider: a function which provides a source code for given function
     :return: reference to uploaded metrics function
+
+    :examples:
+        >>> class CustomMaeFunc:
+        >>>     def map(self, pred, act, w, o, model):
+        >>>         return [abs(act[0] - pred[0]), 1]
+        >>>
+        >>>     def reduce(self, l, r):
+        >>>         return [l[0] + r[0], l[1] + r[1]]
+        >>>
+        >>>     def metric(self, l):
+        >>>         return l[0] / l[1]
+        >>>
+        >>>
+        >>> h2o.upload_custom_metric(CustomMaeFunc, func_name="mae")
+        >>>
+        >>> custom_func_str = '''class CustomMaeFunc:
+        >>>     def map(self, pred, act, w, o, model):
+        >>>         return [abs(act[0] - pred[0]), 1]
+        >>>
+        >>>     def reduce(self, l, r):
+        >>>         return [l[0] + r[0], l[1] + r[1]]
+        >>>
+        >>>     def metric(self, l):
+        >>>         return l[0] / l[1]'''
+        >>>
+        >>>
+        >>> h2o.upload_custom_metric(custom_func_str, class_name="CustomMaeFunc", func_name="mae")
     """
     import tempfile
     import inspect
@@ -1467,8 +1533,9 @@ class {}Wrapper({}, MetricFunc, object):
         assert_satisfies(class_name, class_name is not None,
                          "The argument class_name is missing! " +
                          "It needs to reference the class in given string!")
+        code = _CFUNC_CODE_TEMPLATE.format(func, class_name, class_name)
         derived_func_name = "metrics_{}".format(class_name)
-        code = str
+        class_name = "{}.{}Wrapper".format(module_name, class_name)
     else:
         assert_satisfies(func, inspect.isclass(func), "The parameter `func` should be str or class")
         for method in ['map', 'reduce', 'metric']:
@@ -1491,6 +1558,96 @@ class {}Wrapper({}, MetricFunc, object):
     dest_key = _put_key(func_arch_file, dest_key=func_name)
     # Reference
     return "python:{}={}".format(dest_key, class_name)
+
+
+def upload_custom_distribution(func, func_file="distributions.py", func_name=None, class_name=None, source_provider=None):
+    import tempfile
+    import inspect
+
+    # Use default source provider
+    if not source_provider:
+        source_provider = _default_custom_distribution_source_provider
+
+    # The template wraps given metrics representation
+    _CFUNC_CODE_TEMPLATE = """# Generated code
+import water.udf.CDistributionFunc as DistributionFunc
+
+# User given metric function as a class implementing
+# 4 methods defined by interface CDistributionFunc
+{}
+
+# Generated user distribution which satisfies the interface
+# of Java DistributionFunc
+class {}Wrapper({}, DistributionFunc, object):
+    pass
+
+"""
+
+    assert_satisfies(func, inspect.isclass(func) or isinstance(func, str),
+                     "The argument func needs to be string or class !")
+    assert_satisfies(func_file, func_file is not None,
+                     "The argument func_file is missing!")
+    assert_satisfies(func_file, func_file.endswith('.py'),
+                     "The argument func_file needs to end with '.py'")
+    code = None
+    derived_func_name = None
+    module_name = func_file[:-3]
+    if isinstance(func, str):
+        assert_satisfies(class_name, class_name is not None,
+                         "The argument class_name is missing! " +
+                         "It needs to reference the class in given string!")
+        code = _CFUNC_CODE_TEMPLATE.format(func, class_name, class_name)
+        derived_func_name = "distributions_{}".format(class_name)
+        class_name = "{}.{}Wrapper".format(module_name, class_name)
+    else:
+        assert_satisfies(func, inspect.isclass(func), "The parameter `func` should be str or class")
+        for method in ['link', 'init', 'gamma', 'gradient']:
+            assert_satisfies(func, method in dir(func), "The class `func` needs to define method `{}`".format(method))
+
+        assert_satisfies(class_name, class_name is None,
+                         "If class is specified then class_name parameter needs to be None")
+
+        class_name = "{}.{}Wrapper".format(module_name, func.__name__)
+        derived_func_name = "distributions_{}".format(func.__name__)
+        code = _CFUNC_CODE_TEMPLATE.format(source_provider(func), func.__name__, func.__name__)
+
+    # If the func name is not given, use whatever we can derived from given definition
+    if not func_name:
+        func_name = derived_func_name
+    # Saved into jar file
+    tmpdir = tempfile.mkdtemp(prefix="h2o-func")
+    func_arch_file = _create_zip_file("{}/func.jar".format(tmpdir), (func_file, code))
+    # Upload into K/V
+    dest_key = _put_key(func_arch_file, dest_key=func_name)
+    # Reference
+    return "python:{}={}".format(dest_key, class_name)
+
+
+def import_mojo(mojo_path):
+    """
+    Imports an existing MOJO model as an H2O model.
+    :param mojo_path: Path to the MOJO archive on the H2O's filesystem
+    :return: An H2OGenericEstimator instance embedding given MOJO
+    """
+    if mojo_path == None:
+        raise TypeError("MOJO path may not be None")
+    mojo_estimator = H2OGenericEstimator.from_file(mojo_path)
+    print(mojo_estimator)
+    return mojo_estimator
+
+
+def upload_mojo(mojo_path):
+    """
+    Uploads an existing MOJO model from local filesystem into H2O and imports it as an H2O Generic Model. 
+    :param mojo_path:  Path to the MOJO archive on the user's local filesystem
+    :return: An H2OGenericEstimator instance embedding given MOJO
+    """
+    response = api("POST /3/PostFile", filename=mojo_path)
+    frame_key = response["destination_frame"]
+    mojo_estimator = H2OGenericEstimator(model_key = get_frame(frame_key))
+    mojo_estimator.train()
+    print(mojo_estimator)
+    return mojo_estimator
 
 
 #-----------------------------------------------------------------------------------------------------------------------

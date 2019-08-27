@@ -169,6 +169,19 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
+dev-mojocompat: dev-python-3.6
+endif
+dev-mojocompat:
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-mojocompat$(GPU_SUFFIX):$(VERSION) \
+		-f jenkins-images/Dockerfile-mojocompat \
+		--build-arg GPU_SUFFIX=$(GPU_SUFFIX) \
+		--build-arg FROM_VERSION=$(VERSION) \
+		.
+ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
+	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-mojocompat$(GPU_SUFFIX):$(VERSION)
+endif
+
+ifneq ($(CI), 1)
 dev-python-%: dev-python-base
 endif
 dev-python-%:

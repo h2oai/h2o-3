@@ -2,6 +2,7 @@ package hex.deeplearning;
 
 import hex.DataInfo;
 import hex.Distribution;
+import hex.DistributionFactory;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import water.H2O;
 import water.MemoryManager;
@@ -135,7 +136,7 @@ public abstract class Neurons {
     params._hidden_dropout_ratios = minfo.get_params()._hidden_dropout_ratios;
     params._rate *= Math.pow(params._rate_decay, index-1);
     params._distribution = minfo.get_params()._distribution;
-    _dist = new Distribution(params);
+    _dist = DistributionFactory.getDistribution(params);
     _a = new Storage.DenseVector[params._mini_batch_size];
     for (int mb=0;mb<_a.length;++mb) _a[mb] = new Storage.DenseVector(units);
     if (!(this instanceof Input)) {

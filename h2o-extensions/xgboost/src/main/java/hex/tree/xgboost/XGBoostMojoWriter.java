@@ -29,6 +29,9 @@ public class XGBoostMojoWriter extends ModelMojoWriter<XGBoostModel, XGBoostMode
     writekv("cat_offsets", model._output._catOffsets);
     writekv("use_all_factor_levels", model._output._useAllFactorLevels);
     writekv("sparse", model._output._sparse);
+    writekv("booster", model._parms._booster.toString());
+    writekv("ntrees", model._parms._ntrees);
     writeblob("feature_map", model.model_info().getFeatureMap().getBytes(Charset.forName("UTF-8")));
+    writekv("use_java_scoring_by_default", true);
   }
 }

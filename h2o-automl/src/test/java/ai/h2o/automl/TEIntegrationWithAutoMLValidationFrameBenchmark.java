@@ -152,10 +152,10 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
         
         
         if (aml != null) {
-          aml.leaderboard().deleteWithChildren();
+          aml.leaderboard().remove();
           aml.delete();
         }
-        if(leaderboardWithoutTE!=null) leaderboardWithoutTE.deleteWithChildren();
+        if(leaderboardWithoutTE!=null) leaderboardWithoutTE.remove();
         if (amlWithoutTE != null) amlWithoutTE.delete();
 
         if (frForWithoutTE != null) frForWithoutTE.delete();

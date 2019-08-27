@@ -30,6 +30,9 @@ import java.util.List;
 import java.util.Random;
 
 public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends ModelBuilder<M,P,O> {
+
+  private static final boolean DEBUG_PUBDEV_6686 = Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.pubdev6686");
+
   public boolean shouldReorder(Vec v) {
     return _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.SortByResponse
            && v.cardinality() > _parms._nbins_cats;  // no need to sort categoricals with fewer than nbins_cats - they will be sorted in every leaf anyway
@@ -211,17 +214,17 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         // Create a New Model or continuing from a checkpoint
         if (_parms.hasCheckpoint()) {
           // Get the model to continue
-          _model = DKV.get(_parms._checkpoint).<M>get().deepClone(_result);
+          M model = DKV.get(_parms._checkpoint).<M>get().deepClone(_result);
           // Override original parameters by new parameters
-          _model._parms = _parms;
+          model._parms = _parms;
           // We create a new model
-          _model.delete_and_lock(_job);
+          _model = model.delete_and_lock(_job);
         } else {                   // New Model
           // Compute the zero-tree error - guessing only the class distribution.
           // MSE is stddev squared when guessing for regression.
           // For classification, guess the largest class.
-          _model = makeModel(dest(), _parms);
-          _model.delete_and_lock(_job); // and clear & write-lock it (smashing any prior)
+          M model = makeModel(dest(), _parms);
+          _model = model.delete_and_lock(_job); // and clear & write-lock it (smashing any prior)
           _model._output._init_f = _initialPrediction;
         }
 
@@ -361,7 +364,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
       } finally {
         if( _model!=null ) _model.unlock(_job);
-        for (Key k : getGlobalQuantilesKeys()) if (k!=null) k.remove();
+        for (Key k : getGlobalQuantilesKeys()) Keyed.remove(k);
         if (_validWorkspace != null) {
           _validWorkspace.remove();
           _validWorkspace = null;
@@ -431,7 +434,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       for( int tid=0; tid< _ntrees; tid++) {
         // During first iteration model contains 0 trees, then 1-tree, ...
         boolean scored = doScoringAndSaveModel(false, oob, _parms._build_tree_one_node);
-        if (scored && ScoreKeeper.stopEarly(_model._output.scoreKeepers(), _parms._stopping_rounds, _nclass > 1, _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
+        if (scored && ScoreKeeper.stopEarly(_model._output.scoreKeepers(), _parms._stopping_rounds, getProblemType(), _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
           doScoringAndSaveModel(true, oob, _parms._build_tree_one_node);
           _job.update(_ntrees-_model._output._ntrees); //finish
           return;
@@ -454,6 +457,11 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     }
   }
 
+  protected ScoreKeeper.ProblemType getProblemType() {
+    assert isSupervised();
+    return ScoreKeeper.ProblemType.forSupervised(_nclass > 1);
+  }
+  
   // --------------------------------------------------------------------------
   // Build an entire layer of all K trees
   protected DHistogram[][][] buildLayer(final Frame fr, final int nbins, int nbins_cats, final DTree ktrees[], final int leafs[], final DHistogram hcs[][][], boolean build_tree_one_node) {
@@ -471,7 +479,27 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // Build a frame with just a single tree (& work & nid) columns, so the
       // nested MRTask ScoreBuildHistogram in ScoreBuildOneTree does not try
       // to close other tree's Vecs when run in parallel.
-      Frame fr2 = new Frame(Arrays.copyOf(fr._names,_ncols+1), Arrays.copyOf(vecs,_ncols+1)); //predictors, weights and the actual response
+      final String[] fr2cols = Arrays.copyOf(fr._names,_ncols+1);
+      final Vec[] fr2vecs = Arrays.copyOf(vecs,_ncols+1);
+      if (DEBUG_PUBDEV_6686) {
+        boolean hasNull = false;
+        for (Vec v : fr2vecs) {
+          if (v == null) {
+            hasNull = true;
+            break;
+          }
+        }
+        if (hasNull) {
+          StringBuilder sb = new StringBuilder();
+          for (int i = 0; i < fr2vecs.length; i++) {
+            sb.append(fr2cols[i]).append(":").append(fr2vecs[i] == null).append("; ");
+          }
+          Log.warn("A null Vec found in `fr2=" + fr._key + "`: " + sb.toString());
+          Log.warn("Training frame: " + _train._key + "; model: " + _result);
+          Log.warn("Params: " + _parms.toJsonString());
+        }
+      }
+      Frame fr2 = new Frame(fr2cols, fr2vecs); //predictors, weights and the actual response
       if (isSupervised() && fr2.find(_parms._response_column) == -1) {
         fr2.add(_parms._response_column, fr.vec(_parms._response_column));
       }
@@ -695,7 +723,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       updated = true;
 
       Log.info("============================================================== ");
-      SharedTreeModel.SharedTreeOutput out = _model._output;
+      O out = _model._output;
       _timeLastScoreStart = now;
 
       final boolean printout = (_parms._score_each_iteration || finalScoring || sinceLastScore > _parms._score_interval);
@@ -733,6 +761,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         out._varimp = new hex.VarImp(_improvPerVar, out._names);
         out._variable_importances = hex.ModelMetrics.calcVarImp(out._varimp);
       }
+      addCustomInfo(out);
       if (printout) {
         Log.info(_model.toString());
       }
@@ -781,6 +810,10 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     return updated;
   }
 
+  protected void addCustomInfo(O out) {
+    // nothing by default - can be overridden in subclasses
+  }
+
   static int counter = 0;
   // helper for debugging
   @SuppressWarnings("unused")
@@ -801,14 +834,16 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   protected TwoDimTable createScoringHistoryTable() {
     O out = _model._output;
     return createScoringHistoryTable(out, out._scored_train, out._scored_valid, _job,
-            out._training_time_ms, _parms._custom_metric_func != null);
+            out._training_time_ms, _parms._custom_metric_func != null, 
+            _parms._custom_distribution_func != null);
   }
 
   public static TwoDimTable createScoringHistoryTable(Model.Output _output,
                                                       ScoreKeeper[] _scored_train,
                                                       ScoreKeeper[] _scored_valid,
                                                       Job job, long[] _training_time_ms,
-                                                      boolean hasCustomMetric) {
+                                                      boolean hasCustomMetric, 
+                                                      boolean hasCustomDistribution) {
     List<String> colHeaders = new ArrayList<>();
     List<String> colTypes = new ArrayList<>();
     List<String> colFormat = new ArrayList<>();
@@ -818,7 +853,11 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     colHeaders.add("Training RMSE"); colTypes.add("double"); colFormat.add("%.5f");
     if (_output.getModelCategory() == ModelCategory.Regression) {
       colHeaders.add("Training MAE"); colTypes.add("double"); colFormat.add("%.5f");
-      colHeaders.add("Training Deviance"); colTypes.add("double"); colFormat.add("%.5f");
+      if (!hasCustomDistribution) {
+        colHeaders.add("Training Deviance");
+        colTypes.add("double");
+        colFormat.add("%.5f");
+      }
     }
     if (_output.isClassifier()) {
       colHeaders.add("Training LogLoss"); colTypes.add("double"); colFormat.add("%.5f");
@@ -839,7 +878,11 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       colHeaders.add("Validation RMSE"); colTypes.add("double"); colFormat.add("%.5f");
       if (_output.getModelCategory() == ModelCategory.Regression) {
         colHeaders.add("Validation MAE"); colTypes.add("double"); colFormat.add("%.5f");
-        colHeaders.add("Validation Deviance"); colTypes.add("double"); colFormat.add("%.5f");
+        if (!hasCustomDistribution) {
+          colHeaders.add("Validation Deviance");
+          colTypes.add("double");
+          colFormat.add("%.5f");
+        }
       }
       if (_output.isClassifier()) {
         colHeaders.add("Validation LogLoss"); colTypes.add("double"); colFormat.add("%.5f");
@@ -881,7 +924,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       table.set(row, col++, st._rmse);
       if (_output.getModelCategory() == ModelCategory.Regression) {
         table.set(row, col++, st._mae);
-        table.set(row, col++, st._mean_residual_deviance);
+        if (!hasCustomDistribution) {
+          table.set(row, col++, st._mean_residual_deviance);
+        }
       }
       if (_output.isClassifier()) table.set(row, col++, st._logloss);
       if (_output.getModelCategory() == ModelCategory.Binomial) {
@@ -897,7 +942,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         table.set(row, col++, st._rmse);
         if (_output.getModelCategory() == ModelCategory.Regression) {
           table.set(row, col++, st._mae);
-          table.set(row, col++, st._mean_residual_deviance);
+          if (!hasCustomDistribution) {
+            table.set(row, col++, st._mean_residual_deviance);
+          }
         }
         if (_output.isClassifier()) table.set(row, col++, st._logloss);
         if (_output.getModelCategory() == ModelCategory.Binomial) {
@@ -1011,7 +1058,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
    * @return initial value
    */
   protected double getInitialValue() {
-    return new InitialValue(_parms).doAll(
+    return new InitialValue(_parms, _nclass).doAll(
             _response,
             hasWeightCol() ? _weights : _response.makeCon(1),
             hasOffsetCol() ? _offset : _response.makeCon(0)
@@ -1020,16 +1067,28 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   // Helper MRTask to compute the initial value
   private static class InitialValue extends MRTask<InitialValue> {
-    public  InitialValue(Model.Parameters parms) { _dist = new Distribution(parms); }
-    final private Distribution _dist;
+    public  InitialValue(Model.Parameters parms, int nclass) {
+      _nclass = nclass;
+      _dist = DistributionFactory.getDistribution(parms);
+    }
+    
+    private Distribution _dist;
+    final private int _nclass;
     private double _num;
     private double _denom;
 
+    @Override
+    protected void setupLocal() {
+        super.setupLocal();
+        _dist.reset();
+    }
+
     public  double initialValue() {
-      if (_dist.distribution == DistributionFamily.multinomial)
-        return -0.5*new Distribution(DistributionFamily.bernoulli).link(_num/_denom);
+      if (_dist._family == DistributionFamily.multinomial || (_dist._family == DistributionFamily.custom && _nclass > 2))
+        return -0.5*DistributionFactory.getDistribution(DistributionFamily.bernoulli).link(_num/_denom);
       else return _dist.link(_num / _denom);
     }
+    
     @Override public void map(Chunk response, Chunk weight, Chunk offset) {
       for (int i=0;i<response._len;++i) {
         if (response.isNA(i)) continue;

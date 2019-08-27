@@ -66,8 +66,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @training_frame.setter
     def training_frame(self, training_frame):
-        assert_is_type(training_frame, None, H2OFrame)
-        self._parms["training_frame"] = training_frame
+        self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
 
 
     @property
@@ -81,8 +80,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @validation_frame.setter
     def validation_frame(self, validation_frame):
-        assert_is_type(validation_frame, None, H2OFrame)
-        self._parms["validation_frame"] = validation_frame
+        self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
 
 
     @property
@@ -376,6 +374,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @alpha.setter
     def alpha(self, alpha):
+        # For `alpha` and `lambda` the server reports type float[], while in practice simple floats are also ok
         assert_is_type(alpha, None, numeric, [numeric])
         self._parms["alpha"] = alpha
 
@@ -600,16 +599,16 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def link(self):
         """
-        
+        Link function.
 
-        One of: ``"family_default"``, ``"identity"``, ``"logit"``, ``"log"``, ``"inverse"``, ``"tweedie"``,
-        ``"ologit"``, ``"oprobit"``, ``"ologlog"``  (default: ``"family_default"``).
+        One of: ``"family_default"``, ``"identity"``, ``"logit"``, ``"log"``, ``"inverse"``, ``"tweedie"``, ``"ologit"``
+        (default: ``"family_default"``).
         """
         return self._parms.get("link")
 
     @link.setter
     def link(self, link):
-        assert_is_type(link, None, Enum("family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit", "oprobit", "ologlog"))
+        assert_is_type(link, None, Enum("family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"))
         self._parms["link"] = link
 
 
@@ -658,8 +657,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @beta_constraints.setter
     def beta_constraints(self, beta_constraints):
-        assert_is_type(beta_constraints, None, H2OFrame)
-        self._parms["beta_constraints"] = beta_constraints
+        self._parms["beta_constraints"] = H2OFrame._validate(beta_constraints, 'beta_constraints')
 
 
     @property
@@ -844,7 +842,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def custom_metric_func(self, custom_metric_func):
         assert_is_type(custom_metric_func, None, str)
         self._parms["custom_metric_func"] = custom_metric_func
-
 
 
     @property
