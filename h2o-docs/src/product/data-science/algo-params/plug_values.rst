@@ -27,11 +27,15 @@ Example
       cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
       cars$name <- NULL
 
-      # train GLM models
-      glm1 <- h2o.glm(training_frame = cars, y = "cylinders")
+      # create an H2O frame using the mean of the cars dataset
       means <- h2o.mean(cars, na.rm = TRUE, return_frame = TRUE)
 
-      glm2 <- h2o.glm(training_frame = cars, y = "cylinders", missing_values_handling="PlugValues", plug_values=means)
+      # train GLM models, configuring plug_values in the second
+      glm1 <- h2o.glm(training_frame = cars, y = "cylinders")
+      glm2 <- h2o.glm(training_frame = cars, 
+                      y = "cylinders", 
+                      missing_values_handling="PlugValues", 
+                      plug_values=means)
 
       # determine if the coefficients are equal
       h2o.coef(glm1)
@@ -58,15 +62,15 @@ Example
       cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
       cars = cars.drop(0)
 
-      # train a GLM
-      glm_means = H2OGeneralizedLinearEstimator(seed=42)
-      glm_means.train(training_frame=cars, y="cylinders")
-
       # create an H2O frame using the mean of the cars dataset
       means = cars.mean()
       means = H2OFrame._expr(ExprNode("mean", cars, True, 0))
 
-      # configure plug_values for the first model
+      # train a GLM
+      glm_means = H2OGeneralizedLinearEstimator(seed=42)
+      glm_means.train(training_frame=cars, y="cylinders")
+
+      # configure plug_values in a second model
       glm_plugs1 = H2OGeneralizedLinearEstimator(seed=42,
                                                  missing_values_handling="PlugValues",
                                                  plug_values=means)
