@@ -5,6 +5,7 @@ import org.junit.Test;
 import water.TestUtil;
 import water.api.schemas3.CloudV3;
 
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 
 public class CloudHandlerTest extends TestUtil {
@@ -19,6 +20,6 @@ public class CloudHandlerTest extends TestUtil {
     final CloudHandler cloudHandler = new CloudHandler();
     final CloudV3 status = cloudHandler.status(3, new CloudV3());
     assertNotNull(status);
-    assertNotNull(status.leader);
+    assertNotEquals(status.leader_idx, -1);
   }
 }

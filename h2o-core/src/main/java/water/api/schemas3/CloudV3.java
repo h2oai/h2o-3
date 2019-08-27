@@ -95,8 +95,8 @@ public class CloudV3 extends RequestSchemaV3<Iced, CloudV3> {
   @API(help="internal_security_enabled", direction=API.Direction.OUTPUT)
   public boolean internal_security_enabled;
 
-  @API(help="leader", direction=API.Direction.OUTPUT)
-  public NodeV3 leader;
+  @API(help="leader_idx", direction=API.Direction.OUTPUT)
+  public int leader_idx = -1;
   
   // Output fields one-per-JVM
   public static class NodeV3 extends SchemaV3<Iced, NodeV3> {
