@@ -16,7 +16,7 @@ from h2o.model.metrics_base import H2OBinomialModelMetrics
 base_metric_methods = ['aic', 'auc', 'gini', 'logloss', 'mae', 'mean_per_class_error', 'mean_residual_deviance', 'mse',
                        'nobs', 'pr_auc', 'r2', 'rmse', 'rmsle',
                        'residual_deviance', 'residual_degrees_of_freedom', 'null_deviance', 'null_degrees_of_freedom']
-max_metrics = list(H2OBinomialModelMetrics.max_metrics)
+max_metrics = list(H2OBinomialModelMetrics.maximizing_metrics)
 
 
 def pyunit_make_metrics():
@@ -109,8 +109,9 @@ def pyunit_make_metrics():
                                     'max_per_class_error', 'mean_per_class_error',
                                     'precision', 'recall', 'specificity', 'fallout', 'missrate', 'sensitivity',
                                     'fpr', 'fnr', 'tpr', 'tnr']
-    failing_binomial_metrics = ['max_per_class_error', 'recall', 'specificity', 'fallout', 'missrate', 'sensitivity',
-                                'fpr', 'fnr', 'tpr', 'tnr']
+    # failing_binomial_metrics = ['max_per_class_error', 'recall', 'specificity', 'fallout', 'missrate', 'sensitivity',
+    #                             'fpr', 'fnr', 'tpr', 'tnr']
+    failing_binomial_metrics = []
     for metric_method in (m for m in binomial_only_metric_methods if m not in failing_binomial_metrics):
         # FIXME: not sure that returning a 2d-array is justified when not passing any threshold
         m0mm = getattr(m0, metric_method)()[0]
