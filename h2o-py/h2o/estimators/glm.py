@@ -34,10 +34,10 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                    "fold_column", "response_column", "ignored_columns", "ignore_const_cols", "score_each_iteration",
                    "offset_column", "weights_column", "family", "tweedie_variance_power", "tweedie_link_power", "theta",
                    "solver", "alpha", "lambda_", "lambda_search", "early_stopping", "nlambdas", "standardize",
-                   "missing_values_handling", "compute_p_values", "remove_collinear_columns", "intercept",
-                   "non_negative", "max_iterations", "objective_epsilon", "beta_epsilon", "gradient_epsilon", "link",
-                   "prior", "lambda_min_ratio", "beta_constraints", "max_active_predictors", "interactions",
-                   "interaction_pairs", "obj_reg", "export_checkpoints_dir", "balance_classes",
+                   "missing_values_handling", "plug_values", "compute_p_values", "remove_collinear_columns",
+                   "intercept", "non_negative", "max_iterations", "objective_epsilon", "beta_epsilon",
+                   "gradient_epsilon", "link", "prior", "lambda_min_ratio", "beta_constraints", "max_active_predictors",
+                   "interactions", "interaction_pairs", "obj_reg", "export_checkpoints_dir", "balance_classes",
                    "class_sampling_factors", "max_after_balance_size", "max_confusion_matrix_size", "max_hit_ratio_k",
                    "max_runtime_secs", "custom_metric_func"}
 
