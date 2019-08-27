@@ -27,6 +27,7 @@ Example
       cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
       cars$name <- NULL
 
+      # train GLM models
       glm1 <- h2o.glm(training_frame = cars, y = "cylinders")
       means <- h2o.mean(cars, na.rm = TRUE, return_frame = TRUE)
 
@@ -65,8 +66,7 @@ Example
       means = cars.mean()
       means = H2OFrame._expr(ExprNode("mean", cars, True, 0))
 
-
-      # configure plug_values
+      # configure plug_values for the first model
       glm_plugs1 = H2OGeneralizedLinearEstimator(seed=42,
                                                  missing_values_handling="PlugValues",
                                                  plug_values=means)
@@ -74,8 +74,10 @@ Example
       
       glm_means.coef() == glm_plugs1.coef()
 
+      # pass the plug values to another GLM
       not_means = 0.1 + (means * 0.5)
 
+      #configure plug values for the second model
       glm_plugs2 = H2OGeneralizedLinearEstimator(seed=42,
                                                  missing_values_handling="PlugValues",
                                                  plug_values=not_means)
@@ -83,5 +85,4 @@ Example
 
       # confirm that plug values are not being ignored
       glm_means.coef() != glm_plugs2.coef()
-      glm_means.coef() == glm_plugs1.coef()
 
