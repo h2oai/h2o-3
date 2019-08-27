@@ -58,7 +58,7 @@ Example
       cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
       cars = cars.drop(0)
 
-      # train a GLM model
+      # train a GLM
       glm_means = H2OGeneralizedLinearEstimator(seed=42)
       glm_means.train(training_frame=cars, y="cylinders")
 
@@ -72,9 +72,10 @@ Example
                                                  plug_values=means)
       glm_plugs1.train(training_frame=cars, y="cylinders")
       
+      # check that the GLM coefficients are equal
       glm_means.coef() == glm_plugs1.coef()
 
-      # pass the plug values to another GLM
+      # modify the means to use with another GLM
       not_means = 0.1 + (means * 0.5)
 
       #configure plug values for the second model
