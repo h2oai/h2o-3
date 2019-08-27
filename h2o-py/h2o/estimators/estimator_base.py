@@ -395,6 +395,7 @@ class H2OEstimator(ModelBase):
         """
         out = dict()
         for key, value in self._parms.items():
+            if key.startswith('_'): continue  # skip internal params
             if deep and isinstance(value, H2OEstimator):
                 deep_items = list(value.get_params().items())
                 out.update((key + "__" + k, val) for k, val in deep_items)
