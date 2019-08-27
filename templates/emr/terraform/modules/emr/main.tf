@@ -61,8 +61,8 @@ resource "aws_emr_cluster" "h2o-cluster" {
 
   ec2_attributes {
     subnet_id = "${data.aws_subnet.main.id}"
-    emr_managed_master_security_group = "${aws_security_group.slave.id}"
-    emr_managed_slave_security_group = "${aws_security_group.master.id}"
+    emr_managed_master_security_group = "${aws_security_group.master.id}"
+    emr_managed_slave_security_group = "${aws_security_group.slave.id}"
     instance_profile = "${aws_iam_instance_profile.emr_ec2_instance_profile.arn}"
   }
 
