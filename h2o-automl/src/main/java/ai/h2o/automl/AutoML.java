@@ -303,10 +303,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   private void handleCVParameters(AutoMLBuildSpec buildSpec) {
-    if (null != buildSpec.input_spec.fold_column && 5 != buildSpec.build_control.nfolds) {
-      eventLog().warn(Stage.Workflow, "Cannot specify fold_column and a non-default nfolds value at the same time.");
-      buildSpec.build_control.nfolds = 0;
-    }
     if (null != buildSpec.input_spec.fold_column) {
       eventLog().warn(Stage.Workflow, "Custom fold column, " + buildSpec.input_spec.fold_column + ", will be used. nfolds value will be ignored.");
       buildSpec.build_control.nfolds = 0; //reset nfolds to Model default
