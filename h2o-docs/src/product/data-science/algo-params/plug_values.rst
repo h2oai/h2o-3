@@ -78,7 +78,7 @@ Example
       # modify the means to use with another GLM
       not_means = 0.1 + (means * 0.5)
 
-      #configure plug values for the second model
+      # configure plug values for the second model
       glm_plugs2 = H2OGeneralizedLinearEstimator(seed=42,
                                                  missing_values_handling="PlugValues",
                                                  plug_values=not_means)
