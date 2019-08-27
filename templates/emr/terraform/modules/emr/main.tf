@@ -49,7 +49,20 @@ resource "aws_s3_bucket_object" "login_conf" {
   key = "realm.properties"
   acl = "private"
   content = <<EOF
-hadoop: hadoop123
+ldaploginmodule {
+    org.eclipse.jetty.plus.jaas.spi.LdapLoginModule required
+    debug="true"
+    useLdaps="false"
+    contextFactory="com.sun.jndi.ldap.LdapCtxFactory"
+    hostname="ldap.jumpcloud.com"
+    port="389"
+    userIdAttribute="uid"
+    bindDn="uid=root,ou=Users,o=5d65ae3675169a4a9130f75b,dc=jumpcloud,dc=com"
+    bindPassword="password"
+    authenticationMethod="simple"
+    forceBindingLogin="true"
+    userBaseDn="ou=Users,o=5d65ae3675169a4a9130f75b,dc=jumpcloud,dc=com";
+};
 EOF
 }
 
@@ -90,7 +103,7 @@ resource "aws_emr_cluster" "h2o-cluster" {
 
     hadoop_jar_step {
       jar  = "/home/hadoop/h2o/h2o-${var.h2o_main_version}.${var.h2o_fix_version}-hdp2.6/h2odriver.jar"
-      args = ["-n", "${var.aws_core_instance_count}", "-mapperXmx", "4g", "-proxy", "-hash_login", "-login_conf", "/home/hadoop/h2o/realm.properties", "-form_auth", "-port", "54321", "-jks", "/home/hadoop/h2o/h2o.jks"]
+      args = ["-n", "${var.aws_core_instance_count}", "-mapperXmx", "4g", "-proxy", "-ldap_login", "-login_conf", "/home/hadoop/h2o/realm.properties", "-form_auth", "-port", "54321", "-jks", "/home/hadoop/h2o/h2o.jks", "-user_name", "root"]
     }
   }
 
