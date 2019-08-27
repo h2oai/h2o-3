@@ -185,12 +185,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   public static AutoML makeAutoML(Key<AutoML> key, Date startTime, AutoMLBuildSpec buildSpec) {
 
-    AutoML autoML = new AutoML(key, startTime, buildSpec);
-
-    if (null == autoML.trainingFrame)
-      throw new H2OIllegalArgumentException("No training data has been specified, either as a path or a key.");
-
-    return autoML;
+    return new AutoML(key, startTime, buildSpec);
   }
 
   @Override
@@ -267,34 +262,54 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
               .setNamedValue("creation_epoch", this.startTime, EventLogEntry.epochFormat);
 
       workAllocations = planWork();
+      
+      handleCVParameters(buildSpec);
 
-      if (null != buildSpec.input_spec.fold_column) {
-        eventLog().warn(Stage.Workflow, "Custom fold column, " + buildSpec.input_spec.fold_column + ", will be used. nfolds value will be ignored.");
-        buildSpec.build_control.nfolds = 0; //reset nfolds to Model default
-      }
-
-      eventLog().info(Stage.Workflow, "Build control seed: " + buildSpec.build_control.stopping_criteria.seed() +
-          (buildSpec.build_control.stopping_criteria.seed() == -1 ? " (random)" : ""));
+      handleReproducibilityParameters(buildSpec);
 
       handleDatafileParameters(buildSpec);
 
-    if (this.buildSpec.build_control.stopping_criteria.stopping_tolerance() == AUTO_STOPPING_TOLERANCE) {
-      this.buildSpec.build_control.stopping_criteria.set_default_stopping_tolerance_for_frame(this.trainingFrame);
-      eventLog().info(Stage.Workflow, "Setting stopping tolerance adaptively based on the training frame: " +
-              this.buildSpec.build_control.stopping_criteria.stopping_tolerance());
-    } else {
-      eventLog().info(Stage.Workflow, "Stopping tolerance set by the user: " + this.buildSpec.build_control.stopping_criteria.stopping_tolerance());
-      double default_tolerance = AutoMLBuildSpec.AutoMLStoppingCriteria.default_stopping_tolerance_for_frame(this.trainingFrame);
-      if (this.buildSpec.build_control.stopping_criteria.stopping_tolerance() < 0.7 * default_tolerance){
-        eventLog().warn(Stage.Workflow, "Stopping tolerance set by the user is < 70% of the recommended default of " + default_tolerance + ", so models may take a long time to converge or may not converge at all.");
-      }
-    }
+      handleEarlyStoppingParameters(buildSpec);
 
-      String sort_metric = buildSpec.input_spec.sort_metric == null ? null : buildSpec.input_spec.sort_metric.toLowerCase();
-      leaderboard = Leaderboard.getOrMake(projectName(), eventLog, this.leaderboardFrame, sort_metric);
+      initLeaderboard(buildSpec);
     } catch (Exception e) {
       delete(); //cleanup potentially leaked keys
       throw e;
+    }
+  }
+
+  private void initLeaderboard(AutoMLBuildSpec buildSpec) {
+    String sort_metric = buildSpec.input_spec.sort_metric == null ? null : buildSpec.input_spec.sort_metric.toLowerCase();
+    leaderboard = Leaderboard.getOrMake(projectName(), eventLog, this.leaderboardFrame, sort_metric);
+  }
+
+  private void handleReproducibilityParameters(AutoMLBuildSpec buildSpec) {
+    eventLog().info(Stage.Workflow, "Build control seed: " + buildSpec.build_control.stopping_criteria.seed() +
+            (buildSpec.build_control.stopping_criteria.seed() == -1 ? " (random)" : ""));
+  }
+
+  private void handleEarlyStoppingParameters(AutoMLBuildSpec buildSpec) {
+    if (buildSpec.build_control.stopping_criteria.stopping_tolerance() == AUTO_STOPPING_TOLERANCE) {
+      buildSpec.build_control.stopping_criteria.set_default_stopping_tolerance_for_frame(this.trainingFrame);
+      eventLog().info(Stage.Workflow, "Setting stopping tolerance adaptively based on the training frame: " +
+              buildSpec.build_control.stopping_criteria.stopping_tolerance());
+    } else {
+      eventLog().info(Stage.Workflow, "Stopping tolerance set by the user: " + buildSpec.build_control.stopping_criteria.stopping_tolerance());
+      double default_tolerance = AutoMLBuildSpec.AutoMLStoppingCriteria.default_stopping_tolerance_for_frame(this.trainingFrame);
+      if (buildSpec.build_control.stopping_criteria.stopping_tolerance() < 0.7 * default_tolerance){
+        eventLog().warn(Stage.Workflow, "Stopping tolerance set by the user is < 70% of the recommended default of " + default_tolerance + ", so models may take a long time to converge or may not converge at all.");
+      }
+    }
+  }
+
+  private void handleCVParameters(AutoMLBuildSpec buildSpec) {
+    if (null != buildSpec.input_spec.fold_column && 5 != buildSpec.build_control.nfolds) {
+      eventLog().warn(Stage.Workflow, "Cannot specify fold_column and a non-default nfolds value at the same time.");
+      buildSpec.build_control.nfolds = 0;
+    }
+    if (null != buildSpec.input_spec.fold_column) {
+      eventLog().warn(Stage.Workflow, "Custom fold column, " + buildSpec.input_spec.fold_column + ", will be used. nfolds value will be ignored.");
+      buildSpec.build_control.nfolds = 0; //reset nfolds to Model default
     }
   }
 
@@ -495,6 +510,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     this.validationFrame = DKV.getGet(buildSpec.input_spec.validation_frame);
     this.blendingFrame = DKV.getGet(buildSpec.input_spec.blending_frame);
     this.leaderboardFrame = DKV.getGet(buildSpec.input_spec.leaderboard_frame);
+
+    if (null == this.origTrainingFrame)
+      throw new H2OIllegalArgumentException("No training data has been specified, either as a path or a key.");
 
     Map<String, Frame> compatible_frames = new LinkedHashMap(){{
       put("training", origTrainingFrame);
