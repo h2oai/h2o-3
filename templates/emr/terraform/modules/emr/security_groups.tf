@@ -3,9 +3,9 @@ resource "aws_security_group" "master" {
   vpc_id = "${data.aws_vpc.main.id}"
   revoke_rules_on_delete = true
   ingress {
-    from_port = 0
-    to_port = 0
-    protocol = "-1"
+    from_port = 54321
+    to_port = 54321
+    protocol = "tcp"
     cidr_blocks = [
       "0.0.0.0/0"]
   }
