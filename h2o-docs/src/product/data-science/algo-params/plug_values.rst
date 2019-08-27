@@ -7,7 +7,7 @@
 Description
 ~~~~~~~~~~~
 
-When ``missing_values_handling=PlugValues``, this option is used to specify a frame containing values that will be used to impute missing values. Whereas other options mean-impute rows or skip them entirely, plug values allow you to specify values of your own choosing in the form of a single row frame that contains the desired value.
+When ``missing_values_handling="PlugValues"``, this option is used to specify a frame containing values that will be used to impute missing values. Whereas other options mean-impute rows or skip them entirely, plug values allow you to specify values of your own choosing in the form of a single row frame that contains the desired value.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
@@ -22,6 +22,7 @@ Example
 
       library(h2o)
       h2o.init()
+      
       # import the cars dataset:
       cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
       cars$name <- NULL
@@ -56,19 +57,22 @@ Example
       cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
       cars = cars.drop(0)
 
+      # train a GLM model
       glm_means = H2OGeneralizedLinearEstimator(seed=42)
       glm_means.train(training_frame=cars, y="cylinders")
 
+      # create an H2O frame using the mean of the cars dataset
       means = cars.mean()
       means = H2OFrame._expr(ExprNode("mean", cars, True, 0))
 
 
+      # configure plug_values
       glm_plugs1 = H2OGeneralizedLinearEstimator(seed=42,
                                                  missing_values_handling="PlugValues",
                                                  plug_values=means)
       glm_plugs1.train(training_frame=cars, y="cylinders")
       
-      assert glm_means.coef() == glm_plugs1.coef()
+      glm_means.coef() == glm_plugs1.coef()
 
       not_means = 0.1 + (means * 0.5)
 
@@ -78,22 +82,6 @@ Example
       glm_plugs2.train(training_frame=cars, y="cylinders")
 
       # confirm that plug values are not being ignored
-      assert glm_means.coef() != glm_plugs2.coef()
-
-      # standardize the dataset manually
-      cars = cars.scale()
-
-      glm_plugs3 = H2OGeneralizedLinearEstimator(seed=42, 
-                                                 missing_values_handling="PlugValues",
-                                                 plug_values=not_means,
-                                                 standardize=False)
-      glm_plugs3.train(training_frame=cars, y="cylinders")
-
-      cars.impute(values=not_means.getrow())
-      
-      glm_plugs4 = H2OGeneralizedLinearEstimator(seed=42, standardize=False)
-      glm_plugs4.train(training_frame=cars, y="cylinders")
-
-      assert glm_plugs3.coef() == glm_plugs4.coef()
+      glm_means.coef() != glm_plugs2.coef()
       glm_means.coef() == glm_plugs1.coef()
 
