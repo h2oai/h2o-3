@@ -40,7 +40,8 @@ public class TargetEncodingNoneStrategyTest extends TestUtil {
 
     Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, foldColumn);
 
-    Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumn, false, 0, false, 1234);
+    Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.None,
+            foldColumn, false, 0, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
 
     Vec vec = resultWithEncoding.vec(4);
     Vec expected = dvec(0.5, 0.5, 1, 1, 1);
@@ -73,7 +74,8 @@ public class TargetEncodingNoneStrategyTest extends TestUtil {
 
     printOutFrameAsTable(targetEncodingMap.get(teColumnName));
     //If we do not pass noise_level as parameter then it will be calculated according to the type of target column. For categorical target column it defaults to 1e-2
-    Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumn, false, false, 1234);
+    Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.None,
+            foldColumn, false, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
 
     printOutFrameAsTable(resultWithEncoding);
     double expectedDifferenceDueToNoise = 1e-2;
@@ -112,7 +114,8 @@ public class TargetEncodingNoneStrategyTest extends TestUtil {
 
     Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(holdout, targetColumnName, null);
 
-    Frame resultWithEncoding = tec.applyTargetEncoding(training, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, false, 0, false, 1234);
+    Frame resultWithEncoding = tec.applyTargetEncoding(training, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.None,
+            false, 0, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
 
     printOutFrameAsTable(resultWithEncoding);
 
@@ -149,7 +152,8 @@ public class TargetEncodingNoneStrategyTest extends TestUtil {
 
     Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, foldColumn);
 
-    Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumn, false, 0, false, 1234);
+    Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.None,
+            foldColumn, false, 0, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
 
     Vec expected = dvec(0.5, 1, 0.5, 1, 1);
     assertVecEquals(expected, resultWithEncoding.vec(4), 1e-5);

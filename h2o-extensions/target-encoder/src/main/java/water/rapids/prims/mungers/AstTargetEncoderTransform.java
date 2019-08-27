@@ -45,22 +45,22 @@ public class AstTargetEncoderTransform extends AstBuiltin<AstTargetEncoderTransf
     String foldColumnName = getFoldColumnName(env, stk, asts);
     boolean withBlending = getWithBlending(env, stk, asts);
 
-    BlendingParams params = withBlending ? getBlendingParams(env, stk, asts) : null;
+    BlendingParams blendingParams = withBlending ? getBlendingParams(env, stk, asts) : null;
 
     double noise = getNoise(env, stk, asts);
     double seed = getSeed(env, stk, asts);
     boolean withImputationForOriginalColumns = true;
 
-    TargetEncoder tec = params == null ? new TargetEncoder(teColumnsToEncode) : new TargetEncoder(teColumnsToEncode, params);
+    TargetEncoder tec = blendingParams == null ? new TargetEncoder(teColumnsToEncode) : new TargetEncoder(teColumnsToEncode);
 
     Map<String, Frame> encodingMap = reconstructEncodingMap(encodingMapKeys, encodingMapFrames);
 
     if(noise == -1) {
       return new ValFrame(tec.applyTargetEncoding(frame, targetColumnName, encodingMap, dataLeakageHandlingStrategy,
-              foldColumnName, withImputationForOriginalColumns, withImputationForOriginalColumns, (long) seed));
+              foldColumnName, withImputationForOriginalColumns, withImputationForOriginalColumns, blendingParams, (long) seed));
     } else {
       return new ValFrame(tec.applyTargetEncoding(frame, targetColumnName, encodingMap, dataLeakageHandlingStrategy,
-              foldColumnName, withBlending, noise, withImputationForOriginalColumns, (long) seed));
+              foldColumnName, withBlending, noise, withImputationForOriginalColumns, blendingParams, (long) seed));
     }
   }
 

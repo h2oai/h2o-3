@@ -520,7 +520,7 @@ public class TargetEncodingTest extends TestUtil {
 
         merged = tec.mergeByTEColumn(reimportedFrame, targetEncodingMap.get("ColA"), 0, 0);
 
-        resultWithEncoding = tec.calculateAndAppendBlendedTEEncoding(merged, targetEncodingMap.get("ColA"), "ColB_te");
+        resultWithEncoding = tec.calculateAndAppendBlendedTEEncoding(merged, targetEncodingMap.get("ColA"), "ColB_te", TargetEncoder.DEFAULT_BLENDING_PARAMS);
 
 //      String[] dom = resultWithEncoding.vec(1).domain();
         // k <- 20
@@ -928,7 +928,8 @@ public class TargetEncodingTest extends TestUtil {
       Map<String, Frame> encodingMap = tec.prepareEncodingMap(fr, "y", null);
       Scope.track(encodingMap.get(teColumnName));
 
-      Frame encoded = tec.applyTargetEncoding(frameWithoutResponse, "y", encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, false,true, 1234);
+      Frame encoded = tec.applyTargetEncoding(frameWithoutResponse, "y", encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None,
+              false,true,TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
       Scope.track(encoded);
     } finally {
       Scope.exit();

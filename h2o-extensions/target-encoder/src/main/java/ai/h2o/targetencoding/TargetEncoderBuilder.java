@@ -44,7 +44,7 @@ public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, Targe
     @Override
     public void computeImpl() {
       final String[] encoded_columns = Frame.VecSpecifier.vecNames(_parms._encoded_columns);
-      TargetEncoder tec = new TargetEncoder(encoded_columns, _parms._blending_parameters);
+      TargetEncoder tec = new TargetEncoder(encoded_columns);
 
       Scope.untrack(train().keys());
 

@@ -1,7 +1,4 @@
 package hex.schemas;
-
-
-import ai.h2o.targetencoding.BlendingParams;
 import ai.h2o.targetencoding.TargetEncoder;
 import ai.h2o.targetencoding.TargetEncoderBuilder;
 import ai.h2o.targetencoding.TargetEncoderModel;
@@ -13,9 +10,6 @@ import java.util.List;
 
 public class TargetEncoderV3 extends ModelBuilderSchema<TargetEncoderBuilder, TargetEncoderV3, TargetEncoderV3.TargetEncoderParametersV3> {
   public static class TargetEncoderParametersV3 extends ModelParametersSchemaV3<TargetEncoderModel.TargetEncoderParameters, TargetEncoderParametersV3> {
-    
-    @API(help = "Is blending used ? True if blending is used, false if not. True by default.")
-    public boolean blending;
     
     @API(help = "Columnds to encode.")
     public FrameV3.ColSpecifierV3[] encoded_columns;
@@ -43,19 +37,8 @@ public class TargetEncoderV3 extends ModelBuilderSchema<TargetEncoderBuilder, Ta
     }
 
     @Override
-    public TargetEncoderParametersV3 fillFromImpl(TargetEncoderModel.TargetEncoderParameters impl) {
-      super.fillFromImpl(impl);
-      if(impl._blending_parameters != null) {
-        k = impl._blending_parameters.getK();
-        f = impl._blending_parameters.getF();
-      }
-      return this;
-    }
-
-    @Override
     public TargetEncoderModel.TargetEncoderParameters fillImpl(TargetEncoderModel.TargetEncoderParameters impl) {
       super.fillImpl(impl);
-      impl._blending_parameters = new BlendingParams(k,f);
       if(response_column == null && target_column != null) {
         impl._response_column = target_column.column_name;
       }

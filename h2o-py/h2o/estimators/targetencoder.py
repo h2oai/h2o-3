@@ -24,7 +24,7 @@ class H2OTargetencoderEstimator(H2OEstimator):
     def __init__(self, **kwargs):
         super(H2OTargetencoderEstimator, self).__init__()
         self._parms = {}
-        names_list = {"blending", "encoded_columns", "target_column", "k", "f", "data_leakage_handling", "model_id",
+        names_list = {"encoded_columns", "target_column", "k", "f", "data_leakage_handling", "model_id",
                       "training_frame", "fold_column"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
@@ -36,21 +36,6 @@ class H2OTargetencoderEstimator(H2OEstimator):
                 setattr(self, pname, pvalue)
             else:
                 raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
-
-    @property
-    def blending(self):
-        """
-        Is blending used ? True if blending is used, false if not. True by default.
-
-        Type: ``bool``  (default: ``False``).
-        """
-        return self._parms.get("blending")
-
-    @blending.setter
-    def blending(self, blending):
-        assert_is_type(blending, None, bool)
-        self._parms["blending"] = blending
-
 
     @property
     def encoded_columns(self):

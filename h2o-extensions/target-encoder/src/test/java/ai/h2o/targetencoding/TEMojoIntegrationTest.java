@@ -61,7 +61,6 @@ public class TEMojoIntegrationTest extends TestUtil {
               new Frame.VecSpecifier(fr._key, "embarked")};
 
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
-      targetEncoderParameters._blending = false;
       targetEncoderParameters._encoded_columns = teColumns;
       targetEncoderParameters._ignore_const_cols = false; // Why ignore_const_column ignores `name` column? bad naming
       targetEncoderParameters.setTrain(fr._key);
@@ -160,7 +159,6 @@ public class TEMojoIntegrationTest extends TestUtil {
                 new Frame.VecSpecifier(fr._key, "embarked")};
 
         TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
-        targetEncoderParameters._blending = false;
         targetEncoderParameters._encoded_columns = teColumns;
         targetEncoderParameters._ignore_const_cols = false; // Why ignore_const_column ignores `name` column? bad naming
         targetEncoderParameters.setTrain(fr._key);
@@ -254,7 +252,6 @@ public class TEMojoIntegrationTest extends TestUtil {
               new Frame.VecSpecifier(fr._key, "embarked")};
 
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
-      targetEncoderParameters._blending = false;
       targetEncoderParameters._encoded_columns = teColumns;
       targetEncoderParameters.setTrain(fr._key);
       targetEncoderParameters._ignore_const_cols = false;
@@ -338,9 +335,6 @@ public class TEMojoIntegrationTest extends TestUtil {
 
       targetEncoderParameters._encoded_columns = teColumns;
 
-      // Enable blending
-      targetEncoderParameters._blending = true;
-      targetEncoderParameters._blending_parameters = new BlendingParams(5, 1);
 
       targetEncoderParameters._ignore_const_cols = false;
       targetEncoderParameters.setTrain(fr._key);
@@ -363,10 +357,6 @@ public class TEMojoIntegrationTest extends TestUtil {
       EasyPredictModelWrapper teModelWrapper = null;
 
       TargetEncoderMojoModel loadedMojoModel = (TargetEncoderMojoModel) MojoModel.load(mojoFile.getPath());
-
-      assertEquals(targetEncoderParameters._blending, loadedMojoModel._withBlending);
-      assertEquals(targetEncoderParameters._blending_parameters.getK(), loadedMojoModel._inflectionPoint, 1e-5);
-      assertEquals(targetEncoderParameters._blending_parameters.getF(), loadedMojoModel._smoothing, 1e-5);
 
       teModelWrapper = new EasyPredictModelWrapper(loadedMojoModel); // TODO why we store GenModel even though we pass MojoModel?
 
@@ -484,8 +474,8 @@ public class TEMojoIntegrationTest extends TestUtil {
               .withDataForCol(0, ar((String)null))
               .build();
 
-      
-      Frame encodingsFromTargetEncoderModel = targetEncoderModel.transform(withNullFrame, noneHoldoutStrategy, 0.0, 1234);
+
+      Frame encodingsFromTargetEncoderModel = targetEncoderModel.transform(withNullFrame, noneHoldoutStrategy, 0.0, false,null, 1234);
       Scope.track(encodingsFromTargetEncoderModel);
       
       assertEquals(encodingsFromMojoModel[0], encodingsFromTargetEncoderModel.vec("home.dest_te").at(0), 1e-5);
@@ -498,7 +488,7 @@ public class TEMojoIntegrationTest extends TestUtil {
               .withDataForCol(0, ar("xxx"))
               .build();
 
-      Frame encodingsFromTEModelForUnseenLevel = targetEncoderModel.transform(withUnseenLevelFrame, noneHoldoutStrategy, 0.0, 1234);
+      Frame encodingsFromTEModelForUnseenLevel = targetEncoderModel.transform(withUnseenLevelFrame, noneHoldoutStrategy, 0.0,false, null, 1234);
       Scope.track(encodingsFromTEModelForUnseenLevel);
 
       assertEquals(encodingsFromMojoModel[0], encodingsFromTEModelForUnseenLevel.vec("home.dest_te").at(0), 1e-5);

@@ -119,7 +119,8 @@ public class TargetEncodingExceptionsHandlingTest extends TestUtil {
 
     try {
       resultWithEncoding = tecSpy.applyTargetEncoding(fr, targetColumnName, targetEncodingMap,
-              TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, false, 0, false, 1234);
+              TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, false, 0, false,
+              TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
       fail();
     } catch (IllegalStateException ex) {
       assertEquals("Fake exception", ex.getMessage());
@@ -155,7 +156,8 @@ public class TargetEncodingExceptionsHandlingTest extends TestUtil {
 
     try {
       resultWithEncoding = tecSpy.applyTargetEncoding(fr, targetColumnName, targetEncodingMap,
-              TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, false, 0, false, 1234);
+              TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, false, 0, false,
+              TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
       fail();
     } catch (IllegalStateException ex) {
       assertEquals("Fake exception", ex.getMessage());
@@ -191,7 +193,8 @@ public class TargetEncodingExceptionsHandlingTest extends TestUtil {
 
     try {
       resultWithEncoding = tecSpy.applyTargetEncoding(fr, targetColumnName, targetEncodingMap,
-              TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, false, 0, false, 1234);
+              TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, false,
+              0, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
       fail();
     } catch (IllegalStateException ex) {
       assertEquals("Fake exception", ex.getMessage());
@@ -228,7 +231,8 @@ public class TargetEncodingExceptionsHandlingTest extends TestUtil {
 
     try {
       resultWithEncoding = tecSpy.applyTargetEncoding(fr, targetColumnName, targetEncodingMap,
-              TargetEncoder.DataLeakageHandlingStrategy.None, false, 0, false, 1234);
+              TargetEncoder.DataLeakageHandlingStrategy.None, false,
+              0, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
       fail();
     } catch (IllegalStateException ex) {
       assertEquals("Fake exception", ex.getMessage());

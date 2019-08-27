@@ -41,30 +41,23 @@ import static ai.h2o.targetencoding.TargetEncoderFrameHelper.*;
 public class TargetEncoder extends Iced<TargetEncoder>{
 
     public static final String ENCODED_COLUMN_POSTFIX = "_te";
+    public static final BlendingParams DEFAULT_BLENDING_PARAMS = new BlendingParams(20, 10);
 
     public static String NUMERATOR_COL_NAME = "numerator";
     public static String DENOMINATOR_COL_NAME = "denominator";
 
-    private BlendingParams _blendingParams;
-    private String[] _columnNamesToEncode;
+    private final String[] _columnNamesToEncode;
 
   /**
    *
    * @param columnNamesToEncode names of columns to apply target encoding to
-   * @param blendingParams
    */
-    public TargetEncoder (String[] columnNamesToEncode,
-                          BlendingParams blendingParams) {
+  public TargetEncoder(String[] columnNamesToEncode) {
 
       if(columnNamesToEncode == null || columnNamesToEncode.length == 0)
         throw new IllegalStateException("Argument 'columnsToEncode' is not defined or empty");
 
       _columnNamesToEncode = columnNamesToEncode;
-      _blendingParams = blendingParams;
-    }
-
-    public TargetEncoder (String[] columnNamesToEncode) {
-      this(columnNamesToEncode, new BlendingParams(20, 10));
     }
 
   public enum DataLeakageHandlingStrategy {
@@ -378,7 +371,7 @@ public class TargetEncoder extends Iced<TargetEncoder>{
         return numeratorVec.mean() / denominatorVec.mean();
     }
 
-    Frame calculateAndAppendBlendedTEEncoding(Frame fr, Frame encodingMap, String appendedColumnName) {
+    Frame calculateAndAppendBlendedTEEncoding(Frame fr, Frame encodingMap, String appendedColumnName, final BlendingParams blendingParams) {
       int numeratorIndex = fr.find(NUMERATOR_COL_NAME);
       int denominatorIndex = fr.find(DENOMINATOR_COL_NAME);
 
@@ -388,7 +381,7 @@ public class TargetEncoder extends Iced<TargetEncoder>{
       Vec zeroVec = fr.anyVec().makeCon(0);
       fr.add(appendedColumnName, zeroVec);
       int encodingsColumnIdx = fr.find(appendedColumnName);
-      new CalcEncodingsWithBlending(numeratorIndex, denominatorIndex, globalMeanForTargetClass, _blendingParams, encodingsColumnIdx).doAll(fr);
+      new CalcEncodingsWithBlending(numeratorIndex, denominatorIndex, globalMeanForTargetClass, blendingParams, encodingsColumnIdx).doAll(fr);
       return fr;
     }
 
@@ -555,9 +548,10 @@ public class TargetEncoder extends Iced<TargetEncoder>{
                                    boolean withBlendedAvg,
                                    double noiseLevel,
                                    boolean imputeNAsWithNewCategory,
+                                   final BlendingParams blendingParams,
                                    long seed) {
       return applyTargetEncoding(data, targetColumnName, columnToEncodingMap, dataLeakageHandlingStrategy, foldColumnName, withBlendedAvg,
-              noiseLevel, seed, null);
+              noiseLevel, seed, null, blendingParams);
   }
 
     /**
@@ -570,7 +564,7 @@ public class TargetEncoder extends Iced<TargetEncoder>{
      * @param columnToEncodingMap map of the prepared encodings with the keys being the names of the columns.
      * @param dataLeakageHandlingStrategy see TargetEncoding.DataLeakageHandlingStrategy //TODO use common interface for stronger type safety.
      * @param foldColumnName column's name that contains fold number the row is belong to.
-     * @param withBlendedAvg whether to apply blending or not.
+     * @param useBlending whether to apply blending or not.
      * @param noiseLevel amount of noise to add to the final encodings.
      * @param seed we might want to specify particular values for reproducibility in tests.
      * @return copy of the `data` frame with encodings
@@ -580,10 +574,11 @@ public class TargetEncoder extends Iced<TargetEncoder>{
                                      Map<String, Frame> columnToEncodingMap,
                                      DataLeakageHandlingStrategy dataLeakageHandlingStrategy,
                                      String foldColumnName,
-                                     boolean withBlendedAvg,
+                                     boolean useBlending,
                                      double noiseLevel,
                                      long seed,
-                                     Key<Frame> encodedFrameKey) {
+                                     Key<Frame> encodedFrameKey,
+                                     final BlendingParams blendingParams) {
 
         if(noiseLevel < 0 )
             throw new IllegalStateException("`_noiseLevel` must be non-negative");
@@ -660,8 +655,8 @@ public class TargetEncoder extends Iced<TargetEncoder>{
                   // End of the preparation phase
 
                   dataWithMergedAggregationsK = mergeByTEAndFoldColumns(dataWithAllEncodings, holdoutEncodeMap, teColumnIndex, foldColumnIndex, teColumnIndexInEncodingMap);
-                  
-                  Frame withEncodingsFrameK = calculateEncoding(dataWithMergedAggregationsK, encodingMapForCurrentTEColumn, newEncodedColumnName, withBlendedAvg);
+
+                  Frame withEncodingsFrameK = calculateEncoding(dataWithMergedAggregationsK, encodingMapForCurrentTEColumn, newEncodedColumnName, useBlending, blendingParams);
 
                   Frame withAddedNoiseEncodingsFrameK = applyNoise(withEncodingsFrameK, newEncodedColumnName, noiseLevel, seed);
 
@@ -697,7 +692,7 @@ public class TargetEncoder extends Iced<TargetEncoder>{
 
                   Frame subtractedFrameL = subtractTargetValueForLOO(dataWithMergedAggregationsL, targetColumnName);
 
-                  Frame withEncodingsFrameL = calculateEncoding(subtractedFrameL, groupedTargetEncodingMap, newEncodedColumnName, withBlendedAvg); // do we really need to pass groupedTargetEncodingMap again?
+                  Frame withEncodingsFrameL = calculateEncoding(subtractedFrameL, groupedTargetEncodingMap, newEncodedColumnName, useBlending, blendingParams); // do we really need to pass groupedTargetEncodingMap again?
 
                   Frame withAddedNoiseEncodingsFrameL = applyNoise(withEncodingsFrameL, newEncodedColumnName, noiseLevel, seed);
 
@@ -726,7 +721,7 @@ public class TargetEncoder extends Iced<TargetEncoder>{
                   int teColumnIndexInGroupedEncodingMapNone = groupedTargetEncodingMapForNone.find(teColumnName);
                   dataWithMergedAggregationsN = mergeByTEColumn(dataWithAllEncodings, groupedTargetEncodingMapForNone, teColumnIndex, teColumnIndexInGroupedEncodingMapNone);
 
-                  Frame withEncodingsFrameN = calculateEncoding(dataWithMergedAggregationsN, groupedTargetEncodingMapForNone, newEncodedColumnName, withBlendedAvg);
+                  Frame withEncodingsFrameN = calculateEncoding(dataWithMergedAggregationsN, groupedTargetEncodingMapForNone, newEncodedColumnName, useBlending, blendingParams);
 
                   Frame withAddedNoiseEncodingsFrameN = applyNoise(withEncodingsFrameN, newEncodedColumnName, noiseLevel, seed);
                   // In cases when encoding has not seen some levels we will impute NAs with mean computed from training set. Mean is a dataleakage btw.
@@ -760,9 +755,9 @@ public class TargetEncoder extends Iced<TargetEncoder>{
         }
     }
 
-    Frame calculateEncoding(Frame preparedFrame, Frame encodingMap, String newEncodedColumnName, boolean withBlendedAvg) {
+    Frame calculateEncoding(Frame preparedFrame, Frame encodingMap, String newEncodedColumnName, boolean withBlendedAvg, final BlendingParams blendingParams) {
         if (withBlendedAvg) {
-            return calculateAndAppendBlendedTEEncoding(preparedFrame, encodingMap, newEncodedColumnName);
+            return calculateAndAppendBlendedTEEncoding(preparedFrame, encodingMap, newEncodedColumnName, blendingParams);
         } else {
             return calculateAndAppendTEEncoding(preparedFrame, encodingMap, newEncodedColumnName);
         }
@@ -807,9 +802,10 @@ public class TargetEncoder extends Iced<TargetEncoder>{
                                    String foldColumn,
                                    boolean withBlendedAvg,
                                    boolean imputeNAsWithNewCategory,
+                                   final BlendingParams blendingParams,
                                    long seed) {
   return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, foldColumn,
-          withBlendedAvg, seed, imputeNAsWithNewCategory, null);
+          withBlendedAvg, seed, imputeNAsWithNewCategory, null, blendingParams);
   }
     // Overloaded for the case when user had not specified the noise parameter
     public Frame applyTargetEncoding(Frame data,
@@ -820,7 +816,8 @@ public class TargetEncoder extends Iced<TargetEncoder>{
                                      boolean withBlendedAvg,
                                      long seed,
                                      boolean imputeNAsWithNewCategory,
-                                     final Key<Frame> encodedColumnName) {
+                                     final Key<Frame> encodedColumnName,
+                                     final BlendingParams blendingParams) {
         double defaultNoiseLevel = 0.01;
         int targetIndex = data.find(targetColumnName);
         double   noiseLevel = 0.0;
@@ -830,7 +827,7 @@ public class TargetEncoder extends Iced<TargetEncoder>{
           noiseLevel = targetVec.isNumeric() ? defaultNoiseLevel * (targetVec.max() - targetVec.min()) : defaultNoiseLevel;
         }
         return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, foldColumn,
-                withBlendedAvg, noiseLevel, seed, encodedColumnName);
+                withBlendedAvg, noiseLevel, seed, encodedColumnName, blendingParams);
     }
 
     public Frame applyTargetEncoding(Frame data,
@@ -839,9 +836,10 @@ public class TargetEncoder extends Iced<TargetEncoder>{
                                      DataLeakageHandlingStrategy dataLeakageHandlingStrategy,
                                      boolean withBlendedAvg,
                                      boolean imputeNAsWithNewCategory,
+                                     final BlendingParams blendingParams,
                                      long seed) {
       return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, null,
-              withBlendedAvg, imputeNAsWithNewCategory, seed);
+              withBlendedAvg, imputeNAsWithNewCategory, blendingParams, seed);
     }
 
     public Frame applyTargetEncoding(Frame data,
@@ -851,10 +849,11 @@ public class TargetEncoder extends Iced<TargetEncoder>{
                                      boolean withBlendedAvg,
                                      double noiseLevel,
                                      boolean imputeNAsWithNewCategory,
+                                     final BlendingParams blendingParams,
                                      long seed) {
       assert !DataLeakageHandlingStrategy.KFold.equals(dataLeakageHandlingStrategy) : "Use another overloaded method for KFold dataLeakageHandlingStrategy.";
       return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, null,
-              withBlendedAvg, noiseLevel, imputeNAsWithNewCategory, seed);
+              withBlendedAvg, noiseLevel, imputeNAsWithNewCategory, blendingParams, seed);
     }
 
 }

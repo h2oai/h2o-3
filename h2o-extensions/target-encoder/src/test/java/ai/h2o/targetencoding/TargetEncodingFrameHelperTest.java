@@ -236,9 +236,8 @@ public class TargetEncodingFrameHelperTest extends TestUtil {
         addKFoldColumn(trainFrame, foldColumnNameForTE, nfolds, 1234);
       }
 
-      BlendingParams params = new BlendingParams(3, 1);
       String[] teColumns = {"home.dest", "embarked"};
-      TargetEncoder targetEncoder = new TargetEncoder(teColumns, params);
+      TargetEncoder targetEncoder = new TargetEncoder(teColumns);
       Map<String, Frame> testEncodingMap = targetEncoder.prepareEncodingMap(trainFrame, responseColumnName, withFoldColumn ? foldColumnNameForTE: null);
       return testEncodingMap;
     } finally {

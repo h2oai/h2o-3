@@ -51,7 +51,7 @@ public class TargetEncoderBuilderTest extends TestUtil {
       targetEncoderModel = builder.getTargetEncoderModel(); // TODO change the way of how we getting model after PUBDEV-6670. We should be able to get it from DKV with .trainModel().get()
        
       // Let's create encoding map by TargetEncoder directly
-      TargetEncoder tec = new TargetEncoder(Frame.VecSpecifier.vecNames(teColumns), params);
+      TargetEncoder tec = new TargetEncoder(Frame.VecSpecifier.vecNames(teColumns));
 
       Frame fr2 = parse_test_file("./smalldata/gbm_test/titanic.csv");
       asFactor(fr2, responseColumnName);
@@ -150,7 +150,7 @@ public class TargetEncoderBuilderTest extends TestUtil {
 
       //Stage 2: 
       // Let's create encoding map by TargetEncoder directly
-      TargetEncoder tec = new TargetEncoder(Frame.VecSpecifier.vecNames(teColumns), params);
+      TargetEncoder tec = new TargetEncoder(Frame.VecSpecifier.vecNames(teColumns));
 
       Frame fr2 = parse_test_file("./smalldata/gbm_test/titanic.csv");
       addKFoldColumn(fr2, foldColumnName, 5, 1234L);
@@ -170,7 +170,6 @@ public class TargetEncoderBuilderTest extends TestUtil {
     }
   }
 
-  @Ignore("Enable when TargetEncoderModel is a full fledged model: PUBDEV-6670")
   @Test
   public void transform_KFold_scenario(){
 
@@ -207,13 +206,13 @@ public class TargetEncoderBuilderTest extends TestUtil {
       
       long seed = 1234;
       TargetEncoder.DataLeakageHandlingStrategy strategy = TargetEncoder.DataLeakageHandlingStrategy.KFold;
-      Frame transformedTrainWithModelFromBuilder = targetEncoderModel.transform(fr,  TargetEncoder.DataLeakageHandlingStrategy.KFold.getVal(), seed);
+      Frame transformedTrainWithModelFromBuilder = targetEncoderModel.transform(fr,  TargetEncoder.DataLeakageHandlingStrategy.KFold.getVal(),false, params, seed);
       Scope.track(transformedTrainWithModelFromBuilder);
       targetEncodingMapFromBuilder = targetEncoderModel._output._target_encoding_map;
       
       //Stage 2: 
       // Let's create encoding map by TargetEncoder directly and transform with it
-      TargetEncoder tec = new TargetEncoder(Frame.VecSpecifier.vecNames(teColumns), params);
+      TargetEncoder tec = new TargetEncoder(Frame.VecSpecifier.vecNames(teColumns));
 
       Frame fr2 = parse_test_file("./smalldata/gbm_test/titanic.csv");
       addKFoldColumn(fr2, foldColumnName, 5, 1234L);
@@ -222,7 +221,7 @@ public class TargetEncoderBuilderTest extends TestUtil {
 
       encodingMapFromTargetEncoder = tec.prepareEncodingMap(fr2, responseColumnName, foldColumnName);
 
-      Frame transformedTrainWithTargetEncoder = tec.applyTargetEncoding(fr2, responseColumnName, encodingMapFromTargetEncoder, strategy, foldColumnName, targetEncoderParameters._blending, false, seed);
+      Frame transformedTrainWithTargetEncoder = tec.applyTargetEncoding(fr2, responseColumnName, encodingMapFromTargetEncoder, strategy, foldColumnName, targetEncoderParameters._blending, false,params, seed);
 
       Scope.track(transformedTrainWithTargetEncoder);
       

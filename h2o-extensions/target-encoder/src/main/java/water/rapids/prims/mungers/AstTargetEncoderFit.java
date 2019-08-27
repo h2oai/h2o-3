@@ -44,10 +44,7 @@ public class AstTargetEncoderFit extends AstBuiltin<AstTargetEncoderFit> {
     String foldColumnName = getFoldColumnName(env, stk, asts);
     boolean withImputationForOriginalColumns = true; // Default fo now
 
-    // We won't actually use this instance here.  Because we will instantiate another instance of TargetEncoder in the second `transform`  call
-    BlendingParams params = new BlendingParams(3, 1);
-
-    TargetEncoder tec = new TargetEncoder(teColumnsToEncode, params);
+    TargetEncoder tec = new TargetEncoder(teColumnsToEncode);
 
     Map<String, Frame> encodingMap = tec.prepareEncodingMap(trainFrame, targetColumnName, foldColumnName, withImputationForOriginalColumns);
 

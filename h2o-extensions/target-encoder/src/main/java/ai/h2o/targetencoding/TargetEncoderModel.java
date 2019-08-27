@@ -32,6 +32,11 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
   }
 
   public static class TargetEncoderParameters extends Model.Parameters {
+    public boolean _blending = false;
+    public BlendingParams _blending_parameters;
+    public Frame.VecSpecifier[] _encoded_columns;
+    public String _data_leakage_handling;
+    public Frame.VecSpecifier _target_column;
     
     @Override
     public String algoName() {
@@ -53,11 +58,6 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       return 0;
     }
     
-    public boolean _blending = false;
-    public BlendingParams _blending_parameters;
-    public Frame.VecSpecifier[] _encoded_columns;
-    public String _data_leakage_handling;
-    public Frame.VecSpecifier _target_column;
   }
 
   public static class TargetEncoderOutput extends Model.Output {
@@ -122,22 +122,41 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
   }
 
   /**
-   * Transform with noise 
+   * Transform with noise
+   * @param data Data to transform
+   * @param strategy A byte value corresponding to {@link ai.h2o.targetencoding.TargetEncoder.DataLeakageHandlingStrategy}
+   * @param noiseLevel Level of noise applied
+   * @param useBlending If false, blending is not used when the TE map is applied.If true, blending with corresponding blending parameters are used.
+   * @param blendingParams Parameters for blending. If null, blending parameters from models parameters are loaded. 
+   *                       If those are not set, DEFAULT_BLENDING_PARAMS from TargetEncoder class are used.
+   * @param seed
+   * @return An instance of {@link Frame} with transformed data, registered in DKV.
    */
-  public Frame transform(Frame data, byte strategy, double noiseLevel, long seed){
+  public Frame transform(Frame data, byte strategy, double noiseLevel, final boolean useBlending, BlendingParams blendingParams,
+                         long seed) {
+    if(blendingParams == null) blendingParams = _parms._blending_parameters != null ? _parms._blending_parameters : TargetEncoder.DEFAULT_BLENDING_PARAMS;
+    
     final TargetEncoder.DataLeakageHandlingStrategy leakageHandlingStrategy = TargetEncoder.DataLeakageHandlingStrategy.fromVal(strategy);
     return _targetEncoder.applyTargetEncoding(data, _parms._response_column, this._output._target_encoding_map, leakageHandlingStrategy,
-            _parms._fold_column, _parms._blending, noiseLevel,false, seed);
+            _parms._fold_column, useBlending, noiseLevel, false, blendingParams, seed);
   }
 
   /**
    * Transform with default noise of 0.01 
+   * @param data Data to transform
+   * @param strategy A byte value corresponding to {@link ai.h2o.targetencoding.TargetEncoder.DataLeakageHandlingStrategy}
+   * @param useBlending If false, blending is not used when the TE map is applied.If true, blending with corresponding blending parameters are used.
+   * @param blendingParams Parameters for blending. If null, blending parameters from models parameters are loaded. 
+   *                       If those are not set, DEFAULT_BLENDING_PARAMS from TargetEncoder class are used.
+   * @param seed
+   * @return An instance of {@link Frame} with transformed data, registered in DKV.
    */
-  public Frame transform(Frame data, byte strategy, long seed){
-
+  public Frame transform(Frame data, byte strategy, final boolean useBlending, BlendingParams blendingParams, long seed) {
+    if(blendingParams == null) blendingParams = _parms._blending_parameters != null ? _parms._blending_parameters : TargetEncoder.DEFAULT_BLENDING_PARAMS;
+    
     final TargetEncoder.DataLeakageHandlingStrategy leakageHandlingStrategy = TargetEncoder.DataLeakageHandlingStrategy.fromVal(strategy);
     return _targetEncoder.applyTargetEncoding(data, _parms._response_column, this._output._target_encoding_map, leakageHandlingStrategy,
-            _parms._fold_column, _parms._blending,false, seed);
+            _parms._fold_column, useBlending, false, blendingParams, seed);
   }
   
   @Override
@@ -148,8 +167,10 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
   @Override
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
     final TargetEncoder.DataLeakageHandlingStrategy leakageHandlingStrategy = TargetEncoder.DataLeakageHandlingStrategy.valueOf(_parms._data_leakage_handling);
+    final BlendingParams blendingParams = _parms._blending_parameters != null ? _parms._blending_parameters : TargetEncoder.DEFAULT_BLENDING_PARAMS;
+    
     return _targetEncoder.applyTargetEncoding(fr, _parms._response_column, this._output._target_encoding_map, leakageHandlingStrategy,
-            _parms._fold_column, _parms._blending, _parms._seed,false, Key.<Frame>make(destination_key));
+            _parms._fold_column, _parms._blending, _parms._seed,false, Key.<Frame>make(destination_key), blendingParams);
   }
   
 

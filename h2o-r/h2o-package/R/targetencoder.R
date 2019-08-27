@@ -6,7 +6,6 @@
 #' Transformation of a categorical variable with a mean value of the target variable
 #' 
 #' @param x A vector containing the \code{character} names of the predictors in the model.
-#' @param blending \code{Logical}. Is blending used ? True if blending is used, false if not. True by default. Defaults to FALSE.
 #' @param encoded_columns Columnds to encode.
 #' @param target_column Target column for the encoding
 #' @param k Parameter 'k' used for blending (if enabled). Blending is to be enabled separately using the 'blending'
@@ -28,7 +27,6 @@
 #' }
 #' @export
 h2o.targetencoder <- function(training_frame, x,
-                              blending = FALSE,
                               encoded_columns = NULL,
                               target_column = NULL,
                               k = 0,
@@ -51,8 +49,6 @@ h2o.targetencoder <- function(training_frame, x,
      parms$encoded_columns <- x
  }
  parms$response_column <- target_column
-  if (!missing(blending))
-    parms$blending <- blending
   if (!missing(encoded_columns))
     parms$encoded_columns <- encoded_columns
   if (!missing(target_column))
