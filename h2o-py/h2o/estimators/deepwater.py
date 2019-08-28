@@ -41,7 +41,6 @@ class H2ODeepWaterEstimator(H2OEstimator):
                       "network_definition_file", "network_parameters_file", "mean_image_file",
                       "export_native_parameters_prefix", "activation", "hidden", "input_dropout_ratio",
                       "hidden_dropout_ratios", "problem_type", "export_checkpoints_dir"}
-        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue
@@ -1017,11 +1016,12 @@ class H2ODeepWaterEstimator(H2OEstimator):
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
 
-
-    # Ask the H2O server whether a Deep Water model can be built (depends on availability of native backends)
     @staticmethod
     def available():
-        """Returns True if a deep water model can be built, or False otherwise."""
+        """
+        Ask the H2O server whether a Deep Water model can be built (depends on availability of native backends).
+        :return: True if a deep water model can be built, or False otherwise.
+        """
         builder_json = h2o.api("GET /3/ModelBuilders", data={"algo": "deepwater"})
         visibility = builder_json["model_builders"]["deepwater"]["visibility"]
         if visibility == "Experimental":

@@ -375,6 +375,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @alpha.setter
     def alpha(self, alpha):
+        # For `alpha` and `lambda` the server reports type float[], while in practice simple floats are also ok
         assert_is_type(alpha, None, numeric, [numeric])
         self._parms["alpha"] = alpha
 
@@ -614,7 +615,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def link(self):
         """
-        
+        Link function.
 
         One of: ``"family_default"``, ``"identity"``, ``"logit"``, ``"log"``, ``"inverse"``, ``"tweedie"``, ``"ologit"``
         (default: ``"family_default"``).
@@ -857,7 +858,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def custom_metric_func(self, custom_metric_func):
         assert_is_type(custom_metric_func, None, str)
         self._parms["custom_metric_func"] = custom_metric_func
-
 
 
     @property

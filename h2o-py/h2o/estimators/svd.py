@@ -26,7 +26,6 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         names_list = {"model_id", "training_frame", "validation_frame", "ignored_columns", "ignore_const_cols",
                       "score_each_iteration", "transform", "svd_method", "nv", "max_iterations", "seed", "keep_u",
                       "u_name", "use_all_factor_levels", "max_runtime_secs", "export_checkpoints_dir"}
-        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue
@@ -36,7 +35,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
                 setattr(self, pname, pvalue)
             else:
                 raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
-        self._parms['_rest_version'] = 99
+        self._parms["_rest_version"] = 99
 
     @property
     def training_frame(self):
@@ -259,7 +258,6 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
     def export_checkpoints_dir(self, export_checkpoints_dir):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
-
 
 
     def init_for_pipeline(self):

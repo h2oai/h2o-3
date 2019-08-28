@@ -37,7 +37,6 @@ class H2OXGBoostEstimator(H2OEstimator):
                       "nthread", "max_bins", "max_leaves", "min_sum_hessian_in_leaf", "min_data_in_leaf", "sample_type",
                       "normalize_type", "rate_drop", "one_drop", "skip_drop", "tree_method", "grow_policy", "booster",
                       "reg_lambda", "reg_alpha", "dmatrix_type", "backend", "gpu_id"}
-        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue
@@ -960,12 +959,11 @@ class H2OXGBoostEstimator(H2OEstimator):
         self._parms["gpu_id"] = gpu_id
 
 
-
-    # Ask the H2O server whether a XGBoost model can be built (depends on availability of native backends)
     @staticmethod
     def available():
         """
-        Returns True if a XGBoost model can be built, or False otherwise.
+        Ask the H2O server whether a XGBoost model can be built (depends on availability of native backends).
+        :return: True if a XGBoost model can be built, or False otherwise.
         """
         if "XGBoost" not in h2o.cluster().list_core_extensions():
             print("Cannot build an XGBoost model - no backend found.")
