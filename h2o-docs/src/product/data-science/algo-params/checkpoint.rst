@@ -1,7 +1,7 @@
 ``checkpoint``
 --------------
 
-- Available in: GBM, DRF, Deep Learning
+- Available in: GBM, DRF, XGBoost, Deep Learning
 - Hyperparameter: no
 
 Description
@@ -11,7 +11,7 @@ In real-world scenarios, data can change. For example, you may have a model curr
 
 The ``checkpoint`` option allows you to specify a model key associated with a previously trained model. This will build a new model as a continuation of a previously generated model. If this is not specified, then the algorithm will start training a new model instead of continuing building a previous model. 
 
-When setting parameters that continue to build on a previous model, specifically ``ntrees`` (in GBM/DRF) or ``epochs`` (in Deep Learning), specify the total amount of training that you want if you had started from scratch, not the number of additional epochs or trees you want. Note that this means the ``ntrees`` or ``epochs`` parameter for the checkpointed model must always be greater than the original value. For example:
+When setting parameters that continue to build on a previous model, specifically ``ntrees`` (in GBM/DRF/XGBoost) or ``epochs`` (in Deep Learning), specify the total amount of training that you want if you had started from scratch, not the number of additional epochs or trees you want. Note that this means the ``ntrees`` or ``epochs`` parameter for the checkpointed model must always be greater than the original value. For example:
 
 - If the first model builds 1 tree, and you want your new model to build 50 trees, then the continuation model (using checkpointing) would specify ``ntrees=50``. This gives you a total of 50 trees including 49 new ones. 
 - If your original model included 20 trees, and you specify ``ntrees=50`` for the continuation model, then the new model will  add 30 trees to the model, again giving you a total of 50 trees.
@@ -26,7 +26,7 @@ When setting parameters that continue to build on a previous model, specifically
 
 The following options cannot be modified when rebuilding a model using ``checkpoint``:
 
- **GBM/DRF Options**
+ **GBM/DRF/XGBoost Options**
 
 	- build_tree_one_node
 	- max_depth

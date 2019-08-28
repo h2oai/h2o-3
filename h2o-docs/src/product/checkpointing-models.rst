@@ -3,9 +3,9 @@ Checkpointing Models
 
 In real-world scenarios, data can change. For example, you may have a model currently in production that was built using 1 million records. At a later date, you may receive several hundred thousand more records. Rather than building a new model from scratch, you can use the ``checkpoint`` option to create a new model based on the existing model. 
 
-The ``checkpoint`` option is available for DRF, GBM, and Deep Learning algorithms. This allows you to specify a model key associated with a previously trained model. This will build a new model as a continuation of a previously generated model. If this is not specified, then the algorithm will start training a new model instead of continuing building a previous model. 
+The ``checkpoint`` option is available for DRF, GBM, XGBoost, and Deep Learning algorithms. This allows you to specify a model key associated with a previously trained model. This will build a new model as a continuation of a previously generated model. If this is not specified, then the algorithm will start training a new model instead of continuing building a previous model. 
 
-When setting parameters that continue to build on a previous model, specifically ``ntrees`` (in GBM/DRF) or ``epochs`` (in Deep Learning), specify the total amount of training that you want if you had started from scratch, not the number of additional epochs or trees you want. Note that this means the ``ntrees`` or ``epochs`` parameter for the checkpointed model must always be greater than the original value. For example:
+When setting parameters that continue to build on a previous model, specifically ``ntrees`` (in GBM/DRF/XGBoost) or ``epochs`` (in Deep Learning), specify the total amount of training that you want if you had started from scratch, not the number of additional epochs or trees you want. Note that this means the ``ntrees`` or ``epochs`` parameter for the checkpointed model must always be greater than the original value. For example:
 
 - If the first model builds 1 tree, and you want your new model to build 50 trees, then the continuation model (using checkpointing) would specify ``ntrees=50``. This gives you a total of 50 trees including 49 new ones. 
 - If your original model included 20 trees, and you specify ``ntrees=50`` for the continuation model, then the new model will  add 30 trees to the model, again giving you a total of 50 trees.
@@ -28,7 +28,7 @@ In Deep Learning, ``checkpoint`` can be used to continue training on the same da
 
 To resume model training, use checkpoint model keys (``model_id``) to incrementally train a specific model using more iterations, more data, different data, and so forth. To further train the initial model, use it (or its key) as a checkpoint argument for a new model.
 
-To get the best possible model in a general multi-node setup, we recommend building a model with ``train_samples_per_iteration=-2`` (default, auto-tuning) and saving it to disk so that youâll have at least one saved model.
+To get the best possible model in a general multi-node setup, we recommend building a model with ``train_samples_per_iteration=-2`` (default, auto-tuning) and saving it to disk so that you'll have at least one saved model.
 
 To improve this initial model, start from the previous model and add iterations by building another model, specifying ``checkpoint=previous_model_id``, and changing ``train_samples_per_iteration``, ``target_ratio_comm_to_comp``, or other parameters. Many parameters can be changed between checkpoints, especially those that affect regularization or performance tuning.
 
@@ -642,3 +642,46 @@ The following example demonstrates how to build a gradient boosting model that w
 
     print('Validation Logloss for GBM with Checkpointing: ' + str(round(gbm_nocv_checkpoint.logloss(valid=True), 3)))
     Validation Logloss for GBM with Checkpointing: 0.331
+
+    Checkpoint with XGBoost
+    -----------------------
+
+    In XGBoost, checkpoint can be used to continue training on a previously generated model rather than rebuilding the model from scratch. For example, you may train a model with 50 trees and wonder what the model would look like if you trained 10 more.
+
+    **Note**: The following parameters cannot be modified during checkpointing:
+
+    - build_tree_one_node
+    - max_depth
+    - min_rows
+    - nbins
+    - nbins_cats
+    - nbins_top_level
+    - sample_rate
+
+    The following example demonstrates how to build a gradient boosting model that will later be used for checkpointing. This checkpoint example shows how to continue training on an existing model. We do not recommend using GBM to train on new data. This example uses the cars dataset, which classifies whether or not a car is economical based on the car's displacement, power, weight, and acceleration, and the year it was made.
+
+    .. example-code::
+      .. code-block:: python
+
+        from h2o.estimators.xgboost import H2OXGBoostEstimator
+
+        milsong_train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/milsongs/milsongs-train.csv.gz")
+        milsong_valid = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/milsongs/milsongs-test.csv.gz")
+        distribution = "gaussian"
+
+        # build first model
+        ntrees1 = 2
+        max_depth1 = 2
+        min_rows1 = 10
+        model1 = H2OXGBoostEstimator(ntrees=ntrees1, max_depth=max_depth1, min_rows=min_rows1, distribution=distribution)
+        model1.train(x=list(range(1,milsong_train.ncol)), y=0, training_frame=milsong_train, validation_frame=milsong_valid)
+
+        # save the model, then load the model
+        h2o.save_model(model1, path='', force=True)
+        model_reloaded = h2o.load_model('/Users/htillman/XGBoost_model_python_1566996589903_4')
+
+        # continue building the model
+        ntrees2 = ntrees1 + 1
+        max_depth2 = max_depth1
+        min_rows2 = min_rows1
+        model2 = H2OXGBoostEstimator(ntrees=ntrees2, max_depth=max_depth2, min_rows=min_rows2, distribution=distribution, checkpoint=model_reloaded)
