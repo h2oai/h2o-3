@@ -934,7 +934,6 @@ class H2OFrame(Keyed):
         >>> for i in range(999):
         ...     A[i, i + 1] = -3
         ...     A[i + 1, i] = -2
-        ... 
         >>> fr = h2o.H2OFrame(A)
         >>> assert fr.shape == (1000, 1000)
         >>> means = fr.mean().getrow()
@@ -3651,6 +3650,17 @@ class H2OFrame(Keyed):
 
         :param str path_to_words: Path to file that contains a line-separated list of strings considered valid.
         :returns: An H2OFrame with the number of substrings that are contained in the given word list.
+
+        :examples:
+
+        >>> path = "https://raw.githubusercontent.com/dwyl/english-words/master/words.txt"
+        # test empty strings
+        >>> string = h2o.H2OFrame.from_python([''],
+        ...                                   column_types=['string'])
+        >>> enum = h2o.H2OFrame.from_python([''],
+        ...                                 column_types=['enum'])
+        >>> string.num_valid_substrings(path)[0,0] == 0
+        >>> enum.num_valid_substrings(path)[0,0] == 0
         """
         assert_is_type(path_to_words, str)
         fr = H2OFrame._expr(expr=ExprNode("num_valid_substrings", self, path_to_words))
@@ -3820,6 +3830,31 @@ class H2OFrame(Keyed):
         :param yresp: response column, can be column index or name
         :param h2oXGBoostModel: H2OXGboost model that are built with the same H2OFrame as input earlier
         :return: DMatrix that can be an input to a native XGBoost model
+
+        :examples:
+
+        >>> import xgboost as xgb
+        >>> from h2o.estimators.xgboost import *
+        >>> data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/adult_data_modified.csv")
+        >>> data[14] = data[14].asfactor()
+        >>> myX = list(range(0, 13))
+        >>> y='income'
+        >>> h2oParamsD = {"ntrees":30, "max_depth":4, "seed":2,
+        ...               "learn_rate":0.7,"col_sample_rate_per_tree" : 0.9,
+        ...               "min_rows" : 5, "score_tree_interval": 30+1,
+        ...               "tree_method": "exact", "backend":"cpu"}
+        >>> h2oModelD = H2OXGBoostEstimator(**h2oParamsD)
+        >>> h2oModelD.train(x=myX, y=y, training_frame=data)
+        >>> h2oPredictD = h2oModelD.predict(data)
+        >>> nativeXGBoostParam = h2oModelD.convert_H2OXGBoostParams_2_XGBoostParams()
+        >>> nativeXGBoostInput = data.convert_H2OFrame_2_DMatrix(myX,
+        ...                                                      y,
+        ...                                                      h2oModelD)
+        >>> nativeModel = xgb.train(params=nativeXGBoostParam[0],
+        ...                         dtrain=nativeXGBoostInput,
+        ...                         num_boost_round=nativeXGBoostParam[1])
+        >>> nativePred = nativeModel.predict(data=nativeXGBoostInput,
+        ...                                  ntree_limit=nativeXGBoostParam[1])
         '''
         import xgboost as xgb
         import pandas as pd
@@ -3970,79 +4005,16 @@ class H2OFrame(Keyed):
           specified by the group_by_cols.
 
         :examples:
-         >>> #THIS EXAMPLE IS BROKEN :(
-         >>> #If the input frame is train:
-         >>> ID Group_by_column        num data Column_to_arrange_by       num_1 fdata
-         >>> 12               1   2941.552    1                    3  -3177.9077     1
-         >>> 12               1   2941.552    1                    5 -13311.8247     1
-         >>> 12               2 -22722.174    1                    3  -3177.9077     1
-         >>> 12               2 -22722.174    1                    5 -13311.8247     1
-         >>> 13               3 -12776.884    1                    5 -18421.6171     0
-         >>> 13               3 -12776.884    1                    4  28080.1607     0
-         >>> 13               1  -6049.830    1                    5 -18421.6171     0
-         >>> 13               1  -6049.830    1                    4  28080.1607     0
-         >>> 15               3 -16995.346    1                    1  -9781.6373     0
-         >>> 16               1 -10003.593    0                    3 -61284.6900     0
-         >>> 16               3  26052.495    1                    3 -61284.6900     0
-         >>> 16               3 -22905.288    0                    3 -61284.6900     0
-         >>> 17               2 -13465.496    1                    2  12094.4851     1
-         >>> 17               2 -13465.496    1                    3 -11772.1338     1
-         >>> 17               2 -13465.496    1                    3   -415.1114     0
-         >>> 17               2  -3329.619    1                    2  12094.4851     1
-         >>> 17               2  -3329.619    1                    3 -11772.1338     1
-         >>> 17               2  -3329.619    1                    3   -415.1114     0
-         >>> 
-         >>> #If the following commands are issued:
-         >>> rankedF1 = h2o.rank_within_group_by(train, ["Group_by_column"], ["Column_to_arrange_by"], 
-         >>>                                     [TRUE])
-         >>> rankedF1.summary()
-         >>> 
-         >>> #The returned frame rankedF1 will look like this:
-         >>> ID Group_by_column        num fdata Column_to_arrange_by       num_1 fdata.1 New_Rank_column
-         >>> 12               1   2941.552     1                    3  -3177.9077       1               1
-         >>> 13               1  -6049.830     0                    4  28080.1607       0               3
-         >>> 12               1   2941.552     1                    5 -13311.8247       1               4
-         >>> 13               1  -6049.830     0                    5 -18421.6171       0               5
-         >>> 17               2 -13465.496     0                    2  12094.4851       1               1
-         >>> 17               2  -3329.619     0                    2  12094.4851       1               2
-         >>> 12               2 -22722.174     1                    3  -3177.9077       1               3
-         >>> 17               2 -13465.496     0                    3 -11772.1338       1               4
-         >>> 17               2 -13465.496     0                    3   -415.1114       0               5
-         >>> 17               2  -3329.619     0                    3 -11772.1338       1               6
-         >>> 17               2  -3329.619     0                    3   -415.1114       0               7
-         >>> 12               2 -22722.174     1                    5 -13311.8247       1               8
-         >>> 15               3 -16995.346     1                    1  -9781.6373       0               1
-         >>> 16               3  26052.495     0                    3 -61284.6900       0               2
-         >>> 16               3 -22905.288     1                    3 -61284.6900       0               3
-         >>> 13               3 -12776.884     1                    4  28080.1607       0               4
-         >>> 13               3 -12776.884     1                    5 -18421.6171       0               5
-         >>> 
-         >>> #If the following commands are issued:
-         >>> rankedF1 = h2o.rank_within_group_by(train, ["Group_by_column"], ["Column_to_arrange_by"], 
-         >>>                                     [TRUE], sort_cols_sorted=True)
-         >>> h2o.summary(rankedF1)
-         >>> 
-         >>> # The returned frame will be sorted according to sort_cols and hence look like this instead:
-         >>> ID Group_by_column        num fdata Column_to_arrange_by       num_1 fdata.1 New_Rank_column
-         >>> 15               3 -16995.346     1                    1  -9781.6373       0               1
-         >>> 17               2 -13465.496     0                    2  12094.4851       1               1
-         >>> 17               2  -3329.619     0                    2  12094.4851       1               2
-         >>> 12               1   2941.552     1                    3  -3177.9077       1               1
-         >>> 12               2 -22722.174     1                    3  -3177.9077       1               3
-         >>> 16               1 -10003.593     0                    3 -61284.6900       0               2
-         >>> 16               3  26052.495     0                    3 -61284.6900       0               2
-         >>> 16               3 -22905.288     1                    3 -61284.6900       0               3
-         >>> 17               2 -13465.496     0                    3 -11772.1338       1               4
-         >>> 17               2 -13465.496     0                    3   -415.1114       0               5
-         >>> 17               2  -3329.619     0                    3 -11772.1338       1               6
-         >>> 17               2  -3329.619     0                    3   -415.1114       0               7
-         >>> 13               3 -12776.884     1                    4  28080.1607       0               4
-         >>> 13               1  -6049.830     0                    4  28080.1607       0               3
-         >>> 12               1   2941.552     1                    5 -13311.8247       1               4
-         >>> 12               2 -22722.174     1                    5 -13311.8247       1               8
-         >>> 13               3 -12776.884     1                    5 -18421.6171       0               5
-         >>> 13               1  -6049.830     0                    5 -18421.6171       0               5
 
+        >>> air = h2o.import_file("https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv")
+        # slice out all but the following five columns
+        >>> df = air[:, ["ArrDelay", "DepDelay", "Origin", "Dest", "Distance"]]
+        # group by "Distance" and sort by "Origin"
+        >>> ranked1 = df.rank_within_group_by(group_by_cols="Distance", sort_cols="Origin")
+        # group by "ArrDelay" and sort by "Origin"
+        >>> ranked2 = df.rank_within_group_by(group_by_cols="ArrDelay", sort_cols="Origin")
+        # group by "DepDelay" and sort by "Dest"
+        >>> ranked3 = df.rank_within_group_by(group_by_cols="DepDelay", sort_cols="Dest")
         """
         assert_is_type(group_by_cols, str, int, [str, int])
         if type(group_by_cols) != list: group_by_cols = [group_by_cols]
@@ -4155,7 +4127,7 @@ class H2OFrame(Keyed):
         >>> import numpy as np
         >>> from random import randint
         >>> dataFrame = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/jira/TopBottomNRep4.csv.zip")
-        >>> topAnswer = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/Bottom20Per.csv.zip")
+        >>> bottomAnswer = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/Bottom20Per.csv.zip")
         >>> nPercentages = [1,2,3,4]
         >>> frameNames = dataFrame.names
         >>> tolerance=1e-12
