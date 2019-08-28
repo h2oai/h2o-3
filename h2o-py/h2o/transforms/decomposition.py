@@ -1,8 +1,7 @@
 from ..estimators.estimator_base import H2OEstimator
-from h2o.utils.typechecks import Enum
-from h2o.utils.typechecks import assert_is_type
 from h2o.frame import H2OFrame
-from h2o.utils.typechecks import assert_is_type, Enum, numeric
+from h2o.utils.typechecks import assert_is_type, Enum
+
 
 
 class H2OPCA(H2OEstimator):
@@ -70,7 +69,7 @@ class H2OPCA(H2OEstimator):
         """
         super(H2OPCA, self).__init__()
         self._parms = locals()
-        self._parms = {k: v for k, v in self._parms.items() if k != "self"}
+        self._parms = {k: v for k, v in self._parms.items() if k not in ('self', '__class__')}
 
         assert_is_type(pca_method, Enum("GramSVD", "Power", "GLRM", "Randomized"))
         self._parms["pca_method"] = pca_method

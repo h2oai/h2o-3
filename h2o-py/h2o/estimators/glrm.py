@@ -20,22 +20,22 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     """
 
     algo = "glrm"
+    param_names = {"model_id", "training_frame", "validation_frame", "ignored_columns", "ignore_const_cols",
+                   "score_each_iteration", "loading_name", "transform", "k", "loss", "loss_by_col", "loss_by_col_idx",
+                   "multi_loss", "period", "regularization_x", "regularization_y", "gamma_x", "gamma_y",
+                   "max_iterations", "max_updates", "init_step_size", "min_step_size", "seed", "init", "svd_method",
+                   "user_y", "user_x", "expand_user_y", "impute_original", "recover_svd", "max_runtime_secs",
+                   "export_checkpoints_dir"}
 
     def __init__(self, **kwargs):
         super(H2OGeneralizedLowRankEstimator, self).__init__()
         self._parms = {}
-        names_list = {"model_id", "training_frame", "validation_frame", "ignored_columns", "ignore_const_cols",
-                      "score_each_iteration", "loading_name", "transform", "k", "loss", "loss_by_col",
-                      "loss_by_col_idx", "multi_loss", "period", "regularization_x", "regularization_y", "gamma_x",
-                      "gamma_y", "max_iterations", "max_updates", "init_step_size", "min_step_size", "seed", "init",
-                      "svd_method", "user_y", "user_x", "expand_user_y", "impute_original", "recover_svd",
-                      "max_runtime_secs", "export_checkpoints_dir"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue
                 self._parms["model_id"] = pvalue
-            elif pname in names_list:
+            elif pname in self.param_names:
                 # Using setattr(...) will invoke type-checking of the arguments
                 setattr(self, pname, pvalue)
             else:

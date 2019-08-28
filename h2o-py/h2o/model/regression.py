@@ -124,8 +124,8 @@ def h2o_r2_score(y_actual, y_predicted, weights=1.):
     :returns: R-squared (best is 1.0, lower is worse).
     """
     ModelBase._check_targets(y_actual, y_predicted)
-    numerator = (weights * (y_actual - y_predicted) ** 2).sum()
-    denominator = (weights * (y_actual - _colmean(y_actual)) ** 2).sum()
+    numerator = (weights * (y_actual - y_predicted) ** 2).sum().flatten()
+    denominator = (weights * (y_actual - _colmean(y_actual)) ** 2).sum().flatten()
 
     if denominator == 0.0:
         return 1. if numerator == 0. else 0.  # 0/0 => 1, else 0

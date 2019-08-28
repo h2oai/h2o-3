@@ -5,7 +5,7 @@ from builtins import range
 from past.builtins import basestring
 from functools import reduce
 from scipy.sparse import csr_matrix
-import sys, os
+import sys, os, gc
 import pandas as pd
 
 try:        # works with python 2.7 not 3
@@ -56,8 +56,7 @@ class Namespace:
     """
     @staticmethod
     def add(namespace, **kwargs):
-        for k, v in kwargs.items():
-            setattr(namespace, k, v)
+        namespace.__dict__.update(kwargs)
         return namespace
 
     def __init__(self, **kwargs):
@@ -518,8 +517,10 @@ def pyunit_exec(test_name):
     exec(pyunit_c, {})
 
 def standalone_test(test):
-    if not h2o.h2o.connection():
+    if not h2o.connection() or not h2o.connection().connected:
+        print("Creating connection for test %s" % test.__name__)
         h2o.init(strict_version_check=False)
+        print("New session: %s" % h2o.connection().session_id)
 
     h2o.remove_all()
 

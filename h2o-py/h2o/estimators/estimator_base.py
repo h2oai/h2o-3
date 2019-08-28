@@ -245,9 +245,9 @@ class H2OEstimator(ModelBase):
         # internal hook allowing subclasses to extend train parms 
         if extend_parms_fn is not None:
             extend_parms_fn(parms)
-            
+
         parms = {k: H2OEstimator._keyify_if_h2oframe(parms[k]) for k in parms}
-        if ("stopping_metric" in parms.keys()) and ("r2" in parms["stopping_metric"]):
+        if "r2" in (parms.get('stopping_metric') or []):
             raise H2OValueError("r2 cannot be used as an early stopping_metric yet.  Check this JIRA https://0xdata.atlassian.net/browse/PUBDEV-5381 for progress.")
         rest_ver = parms.pop("_rest_version") if "_rest_version" in parms else 3
 
@@ -354,6 +354,7 @@ class H2OEstimator(ModelBase):
 
 
     #------ Scikit-learn Interface Methods -------
+
     def fit(self, X, y=None, **params):
         """
         Fit an H2O model as part of a scikit-learn pipeline or grid search.
@@ -393,7 +394,8 @@ class H2OEstimator(ModelBase):
         :returns: A dict of parameters
         """
         out = dict()
-        for key, value in self.parms.items():
+        for key, value in self._parms.items():
+            if key.startswith('_'): continue  # skip internal params
             if deep and isinstance(value, H2OEstimator):
                 deep_items = list(value.get_params().items())
                 out.update((key + "__" + k, val) for k, val in deep_items)
