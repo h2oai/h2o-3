@@ -16,7 +16,7 @@ class H2OBinomialModel(ModelBase):
         If more than one options is set to True, then return a dictionary of metrics where
         the keys are "train", "valid", and "xval".
 
-        :param thresholds: If None, then the thresholds in this set of metrics will be used.
+        :param thresholds: If None, then the threshold maximizing the metric will be used.
         :param bool train: If True, return the F1 value for the training data.
         :param bool valid: If True, return the F1 value for the validation data.
         :param bool xval: If True, return the F1 value for each of the cross-validated splits.
@@ -45,7 +45,7 @@ class H2OBinomialModel(ModelBase):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param thresholds: If None, then the thresholds in this set of metrics will be used.
+        :param thresholds: If None, then the threshold maximizing the metric will be used.
         :param bool train: If True, return the F2 value for the training data.
         :param bool valid: If True, return the F2 value for the validation data.
         :param bool xval: If True, return the F2 value for each of the cross-validated splits.
@@ -63,7 +63,7 @@ class H2OBinomialModel(ModelBase):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param thresholds: If None, then the thresholds in this set of metrics will be used.
+        :param thresholds: If None, then the threshold maximizing the metric will be used.
         :param bool train: If True, return the F0.5 value for the training data.
         :param bool valid: If True, return the F0.5 value for the validation data.
         :param bool xval: If True, return the F0.5 value for each of the cross-validated splits.
@@ -81,7 +81,7 @@ class H2OBinomialModel(ModelBase):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param thresholds: If None, then the thresholds in this set of metrics will be used.
+        :param thresholds: If None, then the threshold maximizing the metric will be used.
         :param bool train: If True, return the accuracy value for the training data.
         :param bool valid: If True, return the accuracy value for the validation data.
         :param bool xval: If True, return the accuracy value for each of the cross-validated splits.
@@ -99,7 +99,7 @@ class H2OBinomialModel(ModelBase):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param thresholds: If None, then the thresholds in this set of metrics will be used.
+        :param thresholds: If None, then the threshold minimizing the error will be used.
         :param bool train: If True, return the error value for the training data.
         :param bool valid: If True, return the error value for the validation data.
         :param bool xval: If True, return the error value for each of the cross-validated splits.
@@ -117,7 +117,7 @@ class H2OBinomialModel(ModelBase):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param thresholds: If None, then the thresholds in this set of metrics will be used.
+        :param thresholds: If None, then the threshold maximizing the metric will be used.
         :param bool train: If True, return the precision value for the training data.
         :param bool valid: If True, return the precision value for the validation data.
         :param bool xval: If True, return the precision value for each of the cross-validated splits.
@@ -135,7 +135,7 @@ class H2OBinomialModel(ModelBase):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param thresholds: If None, then the thresholds in this set of metrics will be used.
+        :param thresholds: If None, then the threshold maximizing the metric will be used.
         :param bool train: If True, return the TPR value for the training data.
         :param bool valid: If True, return the TPR value for the validation data.
         :param bool xval: If True, return the TPR value for each of the cross-validated splits.
@@ -153,7 +153,7 @@ class H2OBinomialModel(ModelBase):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param thresholds: If None, then the thresholds in this set of metrics will be used.
+        :param thresholds: If None, then the threshold maximizing the metric will be used.
         :param bool train: If True, return the TNR value for the training data.
         :param bool valid: If True, return the TNR value for the validation data.
         :param bool xval: If True, return the TNR value for each of the cross-validated splits.
@@ -171,7 +171,7 @@ class H2OBinomialModel(ModelBase):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param thresholds: If None, then the thresholds in this set of metrics will be used.
+        :param thresholds: If None, then the threshold maximizing the metric will be used.
         :param bool train: If True, return the FNR value for the training data.
         :param bool valid: If True, return the FNR value for the validation data.
         :param bool xval: If True, return the FNR value for each of the cross-validated splits.
@@ -189,7 +189,7 @@ class H2OBinomialModel(ModelBase):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param thresholds: If None, then the thresholds in this set of metrics will be used.
+        :param thresholds: If None, then the threshold maximizing the metric will be used.
         :param bool train: If True, return the FPR value for the training data.
         :param bool valid: If True, return the FPR value for the validation data.
         :param bool xval: If True, return the FPR value for each of the cross-validated splits.
@@ -207,7 +207,7 @@ class H2OBinomialModel(ModelBase):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param thresholds: If None, then the thresholds in this set of metrics will be used.
+        :param thresholds: If None, then the threshold maximizing the metric will be used.
         :param bool train: If True, return the recall value for the training data.
         :param bool valid: If True, return the recall value for the validation data.
         :param bool xval: If True, return the recall value for each of the cross-validated splits.
@@ -225,7 +225,7 @@ class H2OBinomialModel(ModelBase):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param thresholds: If None, then the thresholds in this set of metrics will be used.
+        :param thresholds: If None, then the threshold maximizing the metric will be used.
         :param bool train: If True, return the sensitivity value for the training data.
         :param bool valid: If True, return the sensitivity value for the validation data.
         :param bool xval: If True, return the sensitivity value for each of the cross-validated splits.
@@ -243,7 +243,7 @@ class H2OBinomialModel(ModelBase):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param thresholds: If None, then the thresholds in this set of metrics will be used.
+        :param thresholds: If None, then the threshold maximizing the metric will be used.
         :param bool train: If True, return the fallout value for the training data.
         :param bool valid: If True, return the fallout value for the validation data.
         :param bool xval: If True, return the fallout value for each of the cross-validated splits.
@@ -261,7 +261,7 @@ class H2OBinomialModel(ModelBase):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param thresholds: If None, then the thresholds in this set of metrics will be used.
+        :param thresholds: If None, then the threshold maximizing the metric will be used.
         :param bool train: If True, return the miss rate value for the training data.
         :param bool valid: If True, return the miss rate value for the validation data.
         :param bool xval: If True, return the miss rate value for each of the cross-validated splits.
@@ -279,7 +279,7 @@ class H2OBinomialModel(ModelBase):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param thresholds: If None, then the thresholds in this set of metrics will be used.
+        :param thresholds: If None, then the threshold maximizing the metric will be used.
         :param bool train: If True, return the specificity value for the training data.
         :param bool valid: If True, return the specificity value for the validation data.
         :param bool xval: If True, return the specificity value for each of the cross-validated splits.
@@ -297,7 +297,7 @@ class H2OBinomialModel(ModelBase):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param thresholds: If None, then the thresholds in this set of metrics will be used.
+        :param thresholds: If None, then the threshold maximizing the metric will be used.
         :param bool train: If True, return the MCC value for the training data.
         :param bool valid: If True, return the MCC value for the validation data.
         :param bool xval: If True, return the MCC value for each of the cross-validated splits.
@@ -315,7 +315,7 @@ class H2OBinomialModel(ModelBase):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param thresholds: If None, then the thresholds in this set of metrics will be used.
+        :param thresholds: If None, then the threshold minimizing the error will be used.
         :param bool train: If True, return the max per class error value for the training data.
         :param bool valid: If True, return the max per class error value for the validation data.
         :param bool xval: If True, return the max per class error value for each of the cross-validated splits.
@@ -333,7 +333,7 @@ class H2OBinomialModel(ModelBase):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param thresholds: If None, then the thresholds in this set of metrics will be used.
+        :param thresholds: If None, then the threshold minimizing the error will be used.
         :param bool train: If True, return the mean per class error value for the training data.
         :param bool valid: If True, return the mean per class error value for the validation data.
         :param bool xval: If True, return the mean per class error value for each of the cross-validated splits.
@@ -352,7 +352,7 @@ class H2OBinomialModel(ModelBase):
         "valid", and "xval".
 
         :param str metric: name of the metric to retrieve.
-        :param thresholds: If None, then the thresholds in this set of metrics will be used.
+        :param thresholds: If None, then the threshold maximizing the metric will be used (or minimizing it if the metric is an error).
         :param bool train: If True, return the metric value for the training data.
         :param bool valid: If True, return the metric value for the validation data.
         :param bool xval: If True, return the metric value for each of the cross-validated splits.
@@ -430,9 +430,10 @@ class H2OBinomialModel(ModelBase):
         If more than one options is set to True, then return a dictionary of metrics where the
         keys are "train", "valid", and "xval"
 
-        :param metrics: One or more of ``"min_per_class_accuracy"``, ``"absolute_mcc"``, ``"tnr"``, ``"fnr"``,
-            ``"fpr"``, ``"tpr"``, ``"precision"``, ``"accuracy"``, ``"f0point5"``, ``"f2"``, ``"f1"``.
-        :param thresholds: If None, then the thresholds in this set of metrics will be used.
+        :param metrics: A string (or list of strings) among metrics listed in :const:`H2OBinomialModelMetrics.maximizing_metrics`.
+            Defaults to 'f1'.
+        :param thresholds: A value (or list of values) between 0 and 1.
+            If None, then the thresholds maximizing each provided metric will be used.
         :param bool train: If True, return the confusion matrix value for the training data.
         :param bool valid: If True, return the confusion matrix value for the validation data.
         :param bool xval: If True, return the confusion matrix value for each of the cross-validated splits.
@@ -450,7 +451,7 @@ class H2OBinomialModel(ModelBase):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param str metric: The metric to search for.
+        :param str metric: A metric among the metrics listed in :const:`H2OBinomialModelMetrics.maximizing_metrics`.
         :param bool train: If True, return the find threshold by max metric value for the training data.
         :param bool valid: If True, return the find threshold by max metric value for the validation data.
         :param bool xval: If True, return the find threshold by max metric value for each of the cross-validated splits.

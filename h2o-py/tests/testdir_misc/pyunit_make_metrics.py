@@ -79,6 +79,10 @@ def pyunit_make_metrics():
     print("m2:")
     print(m2)
 
+    assert m0.accuracy()[0][1] + m0.error()[0][1] == 1
+    assert m1.accuracy()[0][1] + m1.error()[0][1] == 1
+    assert m2.accuracy()[0][1] + m2.error()[0][1] == 1
+
     # Testing base metric methods
     # FIXME: check the same failures for other ModelMetrics impl. and then fix'emall or move them out of base class...
     base_metrics_methods_failing_on_H2OBinomialModelMetrics = ['aic', 'mae', 'mean_per_class_error', 'mean_residual_deviance', 'rmsle']

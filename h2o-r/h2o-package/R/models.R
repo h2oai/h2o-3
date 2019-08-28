@@ -1937,7 +1937,9 @@ h2o.hit_ratio_table <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #'
 #' @param object An \linkS4class{H2OModelMetrics} object of the correct type.
 #' @param thresholds (Optional) A value or a list of values between 0.0 and 1.0.
-#' @param metric (Optional) A specified paramter to retrieve.
+#'        If not set, then the threshold maximizing the metric will be used.
+#' @param metric (Optional) the metric to retrieve.
+#'        If not set, then all provided thresholds (or all computed thresholds if no thresholds were provided) will be used.
 #' @return Returns either a single value, or a list of values.
 #' @seealso \code{\link{h2o.auc}} for AUC, \code{\link{h2o.giniCoef}} for the
 #'          GINI coefficient, and \code{\link{h2o.mse}} for MSE. See
@@ -1964,7 +1966,7 @@ h2o.metric <- function(object, thresholds, metric) {
       if(missing(metric)) {
         object@metrics$thresholds_and_metric_scores
       } else {
-        h2o_metric <- ifelse(metric %in% names(.h2o.metrics_aliases), .h2o.metrics_aliases[metric], metric)
+        h2o_metric <- sapply(metric, function(m) ifelse(m %in% names(.h2o.metrics_aliases), .h2o.metrics_aliases[m], m))
         object@metrics$thresholds_and_metric_scores[, c("threshold", h2o_metric)]
       }
     }
@@ -2001,7 +2003,7 @@ h2o.accuracy <- function(object, thresholds){
 #' @rdname h2o.metric
 #' @export
 h2o.error <- function(object, thresholds){
-  h2o.metric(object, thresholds, "error")
+  1.0-h2o.metric(object, thresholds, "accuracy")
 }
 
 #' @rdname h2o.metric
