@@ -1,4 +1,4 @@
-package ai.h2o.automl.targetencoding;
+package ai.h2o.targetencoding;
 
 import org.junit.BeforeClass;
 import org.junit.Rule;
