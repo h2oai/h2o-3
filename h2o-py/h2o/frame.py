@@ -3823,7 +3823,8 @@ class H2OFrame(Keyed):
         nativeModel = xgb.train(params=nativeParams[0], dtrain=nativeDMatrix, num_boost_round=nativeParams[1])
         nativePredict = nativeModel.predict(data=nativeDMatrix, ntree_limit=nativeParams[1].
 
-        5. Compare the predictions h2oPredict from H2OXGBoost, nativePredict from native XGBoost.
+        5. Compare the predictions h2oPredict from H2OXGBoost, nativePredict from native 
+        XGBoost.
 
         :param h2oFrame: H2OFrame to be converted to DMatrix for native XGBoost
         :param predictors: List of predictor columns, can be column names or indices
