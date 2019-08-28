@@ -109,10 +109,7 @@ def pyunit_make_metrics():
                                     'max_per_class_error', 'mean_per_class_error',
                                     'precision', 'recall', 'specificity', 'fallout', 'missrate', 'sensitivity',
                                     'fpr', 'fnr', 'tpr', 'tnr']
-    # failing_binomial_metrics = ['max_per_class_error', 'recall', 'specificity', 'fallout', 'missrate', 'sensitivity',
-    #                             'fpr', 'fnr', 'tpr', 'tnr']
-    failing_binomial_metrics = []
-    for metric_method in (m for m in binomial_only_metric_methods if m not in failing_binomial_metrics):
+    for metric_method in (m for m in binomial_only_metric_methods):
         # FIXME: not sure that returning a 2d-array is justified when not passing any threshold
         m0mm = getattr(m0, metric_method)()[0]
         m1mm = getattr(m1, metric_method)()[0]
@@ -121,15 +118,6 @@ def pyunit_make_metrics():
             "{} is different for model_performance and make_metrics on [0, 1] domain".format(metric_method)
         assert m1mm == m2mm or abs(m1mm[1] - m2mm[1]) < 1e-5, \
             "{} is different for make_metrics on [0, 1] domain and make_metrics without domain".format(metric_method)
-
-    failures = 0
-    for metric_method in failing_binomial_metrics:
-        for m in [m0, m1, m2]:
-            try:
-                assert isinstance(getattr(m, metric_method)()[0][1], float)
-            except:
-                failures += 1
-    assert failures == 3 * len(failing_binomial_metrics)
 
     # Testing confusion matrix
     cm0 = m0.confusion_matrix(metrics=max_metrics)

@@ -1961,7 +1961,12 @@ h2o.metric <- function(object, thresholds, metric) {
   if(is(object, "H2OBinomialMetrics")){
     if(!missing(thresholds)) lapply(thresholds, function(t,object,metric) h2o.find_row_by_threshold(object, t)[, metric], object, metric)
     else {
-     if(missing(metric)) object@metrics$thresholds_and_metric_scores else object@metrics$thresholds_and_metric_scores[, c("threshold", metric)]
+      if(missing(metric)) {
+        object@metrics$thresholds_and_metric_scores
+      } else {
+        h2o_metric <- ifelse(metric %in% names(.h2o.metrics_aliases), .h2o.metrics_aliases[metric], metric)
+        object@metrics$thresholds_and_metric_scores[, c("threshold", h2o_metric)]
+      }
     }
   }
   else{
@@ -2086,7 +2091,8 @@ h2o.specificity <- function(object, thresholds){
 h2o.find_threshold_by_max_metric <- function(object, metric) {
   if(!is(object, "H2OBinomialMetrics")) stop(paste0("No ", metric, " for ",class(object)))
   max_metrics <- object@metrics$max_criteria_and_metric_scores
-  max_metrics[match(paste0("max ",metric),max_metrics$metric),"threshold"]
+  h2o_metric <- ifelse(metric %in% names(.h2o.metrics_aliases), .h2o.metrics_aliases[metric], metric)
+  max_metrics[match(paste0("max ", h2o_metric), max_metrics$metric), "threshold"]
 }
 
 #' Find the threshold, give the max metric. No duplicate thresholds allowed
@@ -2676,16 +2682,17 @@ setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata, valid=FAL
   h2o.confusionMatrix(metrics, ...)
 })
 
-
-.h2o.max_metrics <- c('absolute_mcc', 'accuracy',
-                      'f0point5', 'f1', 'f2',
-                      'mean_per_class_accuracy', 'min_per_class_accuracy',
-                      'precision', 'recall', 'specificity'
-                      # 'fpr', 'fallout',                    # could be enabled maybe once PUBDEV-6366 is fixed
-                      # 'fnr', 'missrate', 'sensitivity',
-                      # 'tpr', 'recall',
-                      # 'tnr', 'specificity'
-                      )
+.h2o.metrics_aliases <- list(
+    fallout='fpr',
+    missrate='fnr',
+    recall='tpr',
+    sensitivity='fnr',
+    specificity='tnr'
+)
+.h2o.maximizing_metrics <- c('absolute_mcc', 'accuracy', 'precision',
+                             'f0point5', 'f1', 'f2',
+                             'mean_per_class_accuracy', 'min_per_class_accuracy',
+                             'fpr', 'fnr', 'tpr', 'tnr', names(.h2o.metrics_aliases))
 
 #' @rdname h2o.confusionMatrix
 #' @export
@@ -2714,8 +2721,8 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds=
   # error check the metrics_list and thresholds_list
   if( !all(sapply(thresholds_list, f <- function(x) is.numeric(x) && x >= 0 && x <= 1)) )
     stop("All thresholds must be numbers between 0 and 1 (inclusive).")
-  if( !all(sapply(metrics_list, f <- function(x) x %in% .h2o.max_metrics)) )
-      stop(paste("The only allowable metrics are ", paste(.h2o.max_metrics, collapse=', ')))
+  if( !all(sapply(metrics_list, f <- function(x) x %in% .h2o.maximizing_metrics)) )
+      stop(paste("The only allowable metrics are ", paste(.h2o.maximizing_metrics, collapse=', ')))
 
   # make one big list that combines the thresholds and metric-thresholds
   metrics_thresholds = lapply(metrics_list, f <- function(x) h2o.find_threshold_by_max_metric(object, x))

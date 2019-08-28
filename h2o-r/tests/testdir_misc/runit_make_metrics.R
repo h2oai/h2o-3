@@ -70,18 +70,18 @@ makeMetrics <- function() {
     expect_true(abs(h2o.mean_per_class_error(m1)-h2o.mean_per_class_error(m2))<1e-5)
 
     # Testing confusion matrix
-    cm0 <- h2o.confusionMatrix(m0, metrics=as.list(.h2o.max_metrics))
-    expect_equal(length(cm0), length(.h2o.max_metrics))
+    cm0 <- h2o.confusionMatrix(m0, metrics=as.list(.h2o.maximizing_metrics))
+    expect_equal(length(cm0), length(.h2o.maximizing_metrics))
     headers <- lapply(cm0, function(cm) attr(cm, 'header'))
-    expect_true(all(lapply(.h2o.max_metrics, function(m) any(grepl(m, headers)))),
+    expect_true(all(sapply(.h2o.maximizing_metrics, function(m) any(grepl(m, headers)))),
                 info="got duplicate CM headers, although all metrics are different")
 
-    cm0t = h2o.confusionMatrix(m0, metrics=as.list(.h2o.max_metrics), thresholds=list(.3, .6))
-    expect_equal(length(cm0t), 2 + length(.h2o.max_metrics))
+    cm0t = h2o.confusionMatrix(m0, metrics=as.list(.h2o.maximizing_metrics), thresholds=list(.3, .6))
+    expect_equal(length(cm0t), 2 + length(.h2o.maximizing_metrics))
     headers <- lapply(cm0t, function(cm) attr(cm, 'header'))
-    expect_equal(sum(unlist(lapply(headers, function(h) !any(unlist(lapply(.h2o.max_metrics, function(m) grepl(m, h))))))), 2,
+    expect_equal(sum(unlist(lapply(headers, function(h) !any(sapply(.h2o.maximizing_metrics, function(m) grepl(m, h)))))), 2,
                  info="missing or duplicate headers without metric (thresholds only CMs)")
-    expect_true(all(lapply(.h2o.max_metrics, function(m) any(grepl(m, headers)))),
+    expect_true(all(sapply(.h2o.maximizing_metrics, function(m) any(grepl(m, headers)))),
                 info="got duplicate CM headers, although all metrics are different")
 
     ## MULTINOMIAL
