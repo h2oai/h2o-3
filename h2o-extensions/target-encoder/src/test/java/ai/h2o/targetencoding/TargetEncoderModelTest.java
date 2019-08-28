@@ -26,7 +26,7 @@ public class TargetEncoderModelTest extends TestUtil{
       Scope.track(testFrame);
 
       TargetEncoderModel.TargetEncoderParameters parameters = new TargetEncoderModel.TargetEncoderParameters();
-      parameters._data_leakage_handling = TargetEncoder.DataLeakageHandlingStrategy.None.toString();
+      parameters._data_leakage_handling = TargetEncoder.DataLeakageHandlingStrategy.None;
       parameters._blending_parameters = new BlendingParams(0.3,0.7);
       parameters._blending = true;
       parameters._encoded_columns = new Frame.VecSpecifier[]{new Frame.VecSpecifier(trainingFrame._key, "Origin")};
@@ -62,7 +62,7 @@ public class TargetEncoderModelTest extends TestUtil{
       Scope.track(testFrame);
 
       TargetEncoderModel.TargetEncoderParameters parameters = new TargetEncoderModel.TargetEncoderParameters();
-      parameters._data_leakage_handling = TargetEncoder.DataLeakageHandlingStrategy.None.toString();
+      parameters._data_leakage_handling = TargetEncoder.DataLeakageHandlingStrategy.None;
       parameters._blending_parameters = null; // Explicitly set to null, default parameters should be used
       parameters._blending = true;
       parameters._encoded_columns = new Frame.VecSpecifier[]{new Frame.VecSpecifier(trainingFrame._key, "Origin")};

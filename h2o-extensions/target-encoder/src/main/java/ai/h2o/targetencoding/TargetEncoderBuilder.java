@@ -31,13 +31,6 @@ public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, Targe
   @Override
   public void init(boolean expensive) {
     super.init(expensive);
-
-    if (_parms._data_leakage_handling == null || _parms._data_leakage_handling.trim().isEmpty()) {
-      _parms._data_leakage_handling = TargetEncoder.DataLeakageHandlingStrategy.None.name();
-    } else if (TargetEncoder.DataLeakageHandlingStrategy.valueOf(_parms._data_leakage_handling) == null) {
-      throw new IllegalArgumentException(String.format("Unknown data leakage strategy: '%s'. Possible values are: %s.",
-              _parms._data_leakage_handling, Arrays.toString(TargetEncoder.DataLeakageHandlingStrategy.values())));
-    }
   }
 
   private class TargetEncoderDriver extends Driver {

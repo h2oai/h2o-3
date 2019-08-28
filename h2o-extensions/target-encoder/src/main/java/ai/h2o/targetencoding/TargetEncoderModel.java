@@ -35,7 +35,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     public boolean _blending = false;
     public BlendingParams _blending_parameters;
     public Frame.VecSpecifier[] _encoded_columns;
-    public String _data_leakage_handling;
+    public TargetEncoder.DataLeakageHandlingStrategy _data_leakage_handling;
     public Frame.VecSpecifier _target_column;
     
     @Override
@@ -166,8 +166,9 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
 
   @Override
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
-    final TargetEncoder.DataLeakageHandlingStrategy leakageHandlingStrategy = TargetEncoder.DataLeakageHandlingStrategy.valueOf(_parms._data_leakage_handling);
     final BlendingParams blendingParams = _parms._blending_parameters != null ? _parms._blending_parameters : TargetEncoder.DEFAULT_BLENDING_PARAMS;
+    final TargetEncoder.DataLeakageHandlingStrategy leakageHandlingStrategy = 
+            _parms._data_leakage_handling != null ? _parms._data_leakage_handling : TargetEncoder.DataLeakageHandlingStrategy.None;
     
     return _targetEncoder.applyTargetEncoding(fr, _parms._response_column, this._output._target_encoding_map, leakageHandlingStrategy,
             _parms._fold_column, _parms._blending, _parms._seed,false, Key.<Frame>make(destination_key), blendingParams);

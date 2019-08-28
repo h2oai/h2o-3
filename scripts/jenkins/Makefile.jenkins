@@ -234,7 +234,6 @@ test-package-java:
 		h2o-persist-s3/build/libs/h2o-persist-s3-*.jar \
 		h2o-extensions/xgboost/src/ \
 		h2o-extensions/xgboost/build/libs/h2o-ext-xgboost*.jar \
-		h2o-extensions/target-encoder/build/libs/h2o-ext-target-encoder*.jar \
 		h2o-genmodel-extensions/xgboost/src/ \
 		h2o-genmodel-extensions/xgboost/build/libs/h2o-genmodel-ext-xgboost*.jar \
 		h2o-jaas-pam/build/libs/h2o-jaas-pam-*.jar \
@@ -246,6 +245,8 @@ test-package-java:
 		h2o-jetty-8/build/libs/h2o-jetty-8-*.jar \
 		h2o-jetty-9/src/ \
 		h2o-jetty-9/build/libs/h2o-jetty-9-*.jar \
+		h2o-extensions/target-encoder/src/ \
+		h2o-extensions/target-encoder/build/libs/h2o-ext-target-encoder*.jar \
 		scripts/run.py py/ scripts/test-xgb-gpu-smoke.sh \
 		sort_crash.csv tests/doOnlyJunitSmokeTestList \
 		jacoco/*.jar

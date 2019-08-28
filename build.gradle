@@ -76,6 +76,7 @@ ext {
       project(':h2o-ext-xgboost'),
       project(':h2o-ext-krbstandalone'),
       project(':h2o-ext-mojo-pipeline'),
+      project(':h2o-ext-target-encoder'),
       project(':h2o-webserver-iface'),
       project(':h2o-jetty-8'),
       project(':h2o-jetty-9'),

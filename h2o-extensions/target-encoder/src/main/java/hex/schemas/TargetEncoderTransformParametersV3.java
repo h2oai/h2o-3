@@ -26,9 +26,4 @@ public class TargetEncoderTransformParametersV3 extends SchemaV3<TargetEncoderTr
   @API(help = "Smoothing")
   public double smoothing;
 
-  @Override
-  public TargetEncoderTransformParameters fillImpl(TargetEncoderTransformParameters impl) {
-    super.fillImpl(impl);
-    return impl;
-  }
 }
