@@ -6,6 +6,7 @@ import hex.glm.GLMTask;
 import hex.tree.TreeUtils;
 import hex.tree.xgboost.rabit.RabitTrackerH2O;
 import hex.tree.xgboost.util.FeatureScore;
+import hex.util.CheckpointUtils;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
@@ -86,6 +87,13 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       }
       if(!new XGBoostExtensionCheck().doAllNodes().enabled) {
         error("XGBoost", "XGBoost is not available on all nodes!");
+      }
+    }
+
+    if (_parms.hasCheckpoint()) {  // Asking to continue from checkpoint?
+      Value cv = DKV.get(_parms._checkpoint);
+      if (cv != null) { // Look for prior model
+        CheckpointUtils.getAndValidateCheckpointModel(this, XGBoostModel.XGBoostParameters.CHECKPOINT_NON_MODIFIABLE_FIELDS, cv);
       }
     }
 
@@ -249,8 +257,15 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
 
     final void buildModelImpl() {
-      XGBoostModel model = new XGBoostModel(_result, _parms, new XGBoostOutput(XGBoost.this), _train, _valid);
-      model.write_lock(_job);
+      final XGBoostModel model;
+      if (_parms.hasCheckpoint()) {
+        XGBoostModel checkpoint = DKV.get(_parms._checkpoint).<XGBoostModel>get().clone().deepClone(_result);
+        checkpoint._parms = _parms;
+        model = checkpoint.delete_and_lock(_job);
+      } else {
+        model = new XGBoostModel(_result, _parms, new XGBoostOutput(XGBoost.this), _train, _valid);
+        model.write_lock(_job);
+      }
 
       if (_parms._dmatrix_type == XGBoostModel.XGBoostParameters.DMatrixType.sparse) {
         model._output._sparse = true;

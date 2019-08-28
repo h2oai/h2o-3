@@ -109,6 +109,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     String[] getMostImportantFeatures(int n);
   }
 
+  public interface GetNTrees {
+    int getNTrees();
+  }
+
   /**
    * Default threshold for assigning class labels to the target class (for binomial models)
    * @return threshold in 0...1
