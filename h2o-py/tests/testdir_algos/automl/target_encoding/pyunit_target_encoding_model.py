@@ -22,8 +22,8 @@ def test_target_encoding_fit_method():
     trainingFrame[targetColumnName] = trainingFrame[targetColumnName].asfactor()
     trainingFrame[foldColumnName] = trainingFrame.kfold_column(n_folds=5, seed=1234)
     
-    te = H2OTargetencoderEstimator(encoded_columns = teColumns, target_column = targetColumnName, k = 0.7, f = 0.3, data_leakage_handling = "none")
-    te.train(training_frame = trainingFrame)
+    te = H2OTargetencoderEstimator(k = 0.7, f = 0.3, data_leakage_handling = "none")
+    te.train(training_frame = trainingFrame, encoded_columns = teColumns, target_column = targetColumnName)
     print(te)
     transformed = te.transform(frame = trainingFrame)
     
