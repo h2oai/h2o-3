@@ -578,7 +578,8 @@ public class TargetEncoder extends Iced<TargetEncoder>{
                                      double noiseLevel,
                                      long seed,
                                      Key<Frame> encodedFrameKey,
-                                     final BlendingParams blendingParams) {
+                                     BlendingParams blendingParams) {
+      if (blendingParams == null) blendingParams = DEFAULT_BLENDING_PARAMS;
 
         if(noiseLevel < 0 )
             throw new IllegalStateException("`_noiseLevel` must be non-negative");
