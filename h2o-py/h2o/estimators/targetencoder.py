@@ -26,7 +26,6 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         self._parms = {}
         names_list = {"encoded_columns", "target_column", "k", "f", "data_leakage_handling", "model_id",
                       "training_frame", "fold_column"}
-        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue
@@ -143,14 +142,12 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         self._parms["fold_column"] = fold_column
 
 
-
     def transform(self, frame, data_leakage_handling="None", noise=-1, seed=-1):
         """
-        Deprecated API. Please use H2OTargetencoderEstimator instead.
 
         Apply transformation to `te_columns` based on the encoding maps generated during `trains()` method call.
 
-        :param frame frame: to which frame we are applying target encoding transformations.
+        :param H2OFrame frame: to which frame we are applying target encoding transformations.
         :param str data_leakage_handling: Supported options:
 
         1) "KFold" - encodings for a fold are generated based on out-of-fold data.
@@ -161,8 +158,8 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         :param int seed: a random seed used to generate draws from the uniform distribution for random noise. Defaults to -1.
 
         :example:
-        >>> targetEncoder = TargetEncoder(x=te_columns, y=responseColumnName, blended_avg=True, inflection_point=10, smoothing=20)
-                            >>> encodedTrain = targetEncoder.transform(frame=trainFrame, data_leakage_handling="kfold", seed=1234, is_train_or_valid=True)
+        >>> targetEncoder = TargetEncoder(encoded_columns=te_columns, target_column=responseColumnName, blended_avg=True, inflection_point=10, smoothing=20)
+                            >>> encodedTrain = targetEncoder.transform(frame=trainFrame, data_leakage_handling="None", seed=1234, is_train_or_valid=True)
         """
         output = h2o.api("GET /3/TargetEncoderTransform", data={'model': self.model_id, 'frame': frame.key,
                                                                 'data_leakage_handling': data_leakage_handling,
@@ -171,7 +168,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         return h2o.get_frame(output["name"])
 
     def train(self, x = None, y = None,fold_column = None, training_frame = None, encoded_columns = None,
-        target_column = None):
+                  target_column = None):
 
         if (y is None):
             y = target_column

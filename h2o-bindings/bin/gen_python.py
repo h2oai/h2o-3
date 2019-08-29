@@ -318,6 +318,7 @@ def algo_to_classname(algo):
     if algo == "stackedensemble": return "H2OStackedEnsembleEstimator"
     if algo == "isolationforest": return "H2OIsolationForestEstimator"
     if algo == "psvm": return "H2OSupportVectorMachineEstimator"
+    if algo == "targetencoder": return "H2OTargetEncoderEstimator"
     return "H2O" + algo.capitalize() + "Estimator"
 
 
