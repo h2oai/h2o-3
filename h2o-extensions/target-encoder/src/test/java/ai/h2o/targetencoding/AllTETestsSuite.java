@@ -17,7 +17,9 @@ import org.junit.runners.Suite;
         TargetEncodingTargetColumnTest.class,
         TargetEncodingExceptionsHandlingTest.class,
         TargetEncodingFrameHelperTest.class,
-        TargetEncodingImmutabilityTest.class
+        TargetEncodingImmutabilityTest.class,
+        TEMojoIntegrationTest.class,
+        TargetEncoderMojoWriterTest.class
 })
 
 public class AllTETestsSuite {

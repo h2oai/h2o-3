@@ -332,10 +332,9 @@ public class TEMojoIntegrationTest extends TestUtil {
               new Frame.VecSpecifier(fr._key, "embarked")};
 
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
-
+      targetEncoderParameters._blending = true;
+      targetEncoderParameters._blending_parameters = TargetEncoder.DEFAULT_BLENDING_PARAMS;
       targetEncoderParameters._encoded_columns = teColumns;
-
-
       targetEncoderParameters._ignore_const_cols = false;
       targetEncoderParameters.setTrain(fr._key);
       targetEncoderParameters._response_column = responseColumnName;
@@ -397,7 +396,6 @@ public class TEMojoIntegrationTest extends TestUtil {
       int homeDestIndex = ArrayUtils.find(fr.vec(teColumn).domain(), homeDestFactorValue);
       int[] encodingComponentsForHomeDest = homeDestEncodingMap.get(homeDestIndex);
       double posteriorMean = (double) encodingComponentsForHomeDest[0] / encodingComponentsForHomeDest[1];
-
       double expectedLambda = TargetEncoderMojoModel.computeLambda(encodingComponentsForHomeDest[1], targetEncoderParameters._blending_parameters.getK(), targetEncoderParameters._blending_parameters.getF());
 
       double expectedBlendedEncodingForHomeDest = TargetEncoderMojoModel.computeBlendedEncoding(expectedLambda, posteriorMean, expectedPriorMean);
