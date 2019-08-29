@@ -13,7 +13,7 @@ from h2o.utils.typechecks import assert_is_type, Enum, numeric
 import h2o
 
 
-class H2OTargetencoderEstimator(H2OEstimator):
+class H2OTargetEncoderEstimator(H2OEstimator):
     """
     TargetEncoder
 
@@ -22,7 +22,7 @@ class H2OTargetencoderEstimator(H2OEstimator):
     algo = "targetencoder"
 
     def __init__(self, **kwargs):
-        super(H2OTargetencoderEstimator, self).__init__()
+        super(H2OTargetEncoderEstimator, self).__init__()
         self._parms = {}
         names_list = {"encoded_columns", "target_column", "k", "f", "data_leakage_handling", "model_id",
                       "training_frame", "fold_column"}

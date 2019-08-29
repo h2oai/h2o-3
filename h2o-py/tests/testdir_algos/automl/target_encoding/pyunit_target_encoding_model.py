@@ -5,7 +5,7 @@ import tempfile
 sys.path.insert(1, os.path.join("..","..","..",".."))
 import h2o
 from tests import pyunit_utils
-from h2o.estimators import H2OTargetencoderEstimator
+from h2o.estimators import H2OTargetEncoderEstimator
 
 """
 This test is used to check Rapids wrapper for java TargetEncoder
@@ -22,7 +22,7 @@ def test_target_encoding_fit_method():
     trainingFrame[targetColumnName] = trainingFrame[targetColumnName].asfactor()
     trainingFrame[foldColumnName] = trainingFrame.kfold_column(n_folds=5, seed=1234)
     
-    te = H2OTargetencoderEstimator(k = 0.7, f = 0.3, data_leakage_handling = "none")
+    te = H2OTargetEncoderEstimator(k = 0.7, f = 0.3, data_leakage_handling = "none")
     te.train(training_frame = trainingFrame, encoded_columns = teColumns, target_column = targetColumnName)
     print(te)
     transformed = te.transform(frame = trainingFrame)
@@ -36,7 +36,7 @@ def test_target_encoding_fit_method():
     assert transformed.nrows == 1309
     
     # Test fold_column proper handling + kfold data leakage strategy defined
-    te = H2OTargetencoderEstimator(k=0.7, f=0.3)
+    te = H2OTargetEncoderEstimator(k=0.7, f=0.3)
     te.train(training_frame=trainingFrame, fold_column="pclass", target_column=targetColumnName,
              encoded_columns=teColumns)
     transformed = te.transform(trainingFrame, data_leakage_handling="kfold", seed = 1234)

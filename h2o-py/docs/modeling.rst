@@ -61,9 +61,9 @@ Supervised
     :show-inheritance:
     :members:
 
-:mod:`H2OTargetencoderEstimator`
+:mod:`H2OTargetEncoderEstimator`
 --------------------------------
-.. autoclass:: h2o.estimators.targetencoder.H2OTargetencoderEstimator
+.. autoclass:: h2o.estimators.targetencoder.H2OTargetEncoderEstimator
     :show-inheritance:
     :members:
 

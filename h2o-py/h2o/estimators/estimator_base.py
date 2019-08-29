@@ -465,7 +465,7 @@ class H2OEstimator(ModelBase):
             model_class = H2OCoxPHModel
         elif model_type == "TargetEncoder":
             metrics_class = H2OTargetEncoderMetrics
-            model_class = h2o.estimators.H2OTargetencoderEstimator
+            model_class = h2o.estimators.H2OTargetEncoderEstimator
         else:
             raise NotImplementedError(model_type)
         return [metrics_class, model_class]
