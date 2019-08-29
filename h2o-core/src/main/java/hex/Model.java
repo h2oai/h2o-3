@@ -53,6 +53,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   protected ScoringInfo[] scoringInfo;
   public IcedHashMap<Key, String> _toDelete = new IcedHashMap<>();
 
+
   public static Model[] fetchAll() {
     final Key[] modelKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
       @Override
@@ -1615,7 +1616,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @param predictFr
    * @return
    */
-  protected Frame postProcessPredictions(Frame adaptFrm, Frame predictFr, Job j) {
+  protected Frame postProcessPredictions(Frame adaptFrm, Frame predictFr, Job j) {  
     return predictFr;
   }
 
@@ -1803,7 +1804,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  re-used temp array, in the order the model expects.  The predictions are
    *  loaded into the re-used temp array, which is also returned.  */
   protected abstract double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]);
-
+  
   /**Override scoring logic for models that handle weight/offset**/
   protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/], double offset) {
     assert (offset == 0) : "Override this method for non-trivial offset!";

@@ -208,7 +208,7 @@ class ModelBase(backwards_compatible(Keyed)):
         j = h2o.api("POST /3/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
                     data={"feature_frequencies": True})
         return h2o.get_frame(j["predictions_frame"]["name"])
-
+    
     def predict(self, test_data, custom_metric = None, custom_metric_func = None):
         """
         Predict on a dataset.

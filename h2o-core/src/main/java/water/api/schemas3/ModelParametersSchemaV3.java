@@ -292,4 +292,22 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
     ab.putJSONA("parameters", metadata);
     return ab;
   }
+
+  /**
+   * 
+   * @param schemaClass   A schema class to extract {@link API} annotated parameters 
+   * @param <X> A generic type for a {@link Class} object representing a class extending {@link ModelParametersSchemaV3}. 
+   * @return
+   */
+  protected static <X extends Class<? extends ModelParametersSchemaV3>> List<String> extractDeclaredApiParameters(X schemaClass){
+    final Field[] declaredFields = schemaClass.getDeclaredFields();
+    
+    final List<String> paramsList = new ArrayList<>(declaredFields.length);
+    for (Field field : declaredFields){
+      if(!field.isAnnotationPresent(API.class)) continue;
+      paramsList.add(field.getName());
+    }
+    
+    return paramsList;
+  }
 }
