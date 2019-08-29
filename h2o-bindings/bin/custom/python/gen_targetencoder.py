@@ -1,7 +1,3 @@
-import h2o
-
-
-
 def class_extensions():
     def transform(self, frame, data_leakage_handling="None", noise=-1, seed=-1):
         """
