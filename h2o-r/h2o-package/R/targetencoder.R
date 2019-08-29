@@ -20,10 +20,13 @@
 #' \dontrun{
 #' # library(h2o)
 #' # h2o.init()
-#' 
-#' # encoder = H2OTargetencoderEstimator(encoded_columns = columns, target_column = target_column_name,
-#' # k = 0.7, f = 0.3, data_leakage_handling = "none")
-#' # transformed_data = encoder.transform(encoded_frame)
+#' #
+#' # Create a target encoder
+#' # target_encoder <- h2o.targetencoder(training_frame = data, encoded_columns= encoded_columns,
+#' # target_column = "survived", fold_column = "pclass", data_leakage_handling = "KFold")
+#' #
+#' # Apply the Target Encoder transformation
+#' # encoded_data <- h2o.transform(target_encoder, data)
 #' }
 #' @export
 h2o.targetencoder <- function(training_frame, x,
