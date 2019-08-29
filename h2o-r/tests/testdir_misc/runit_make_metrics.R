@@ -57,6 +57,38 @@ makeMetrics <- function() {
     m2 <- h2o.performance(model)
     print(m2)
 
+    acc0 <- h2o.accuracy(m0)
+    expect_true(is.data.frame(acc0))
+    expect_equal(dim(acc0), c(nrow(m0@metrics$thresholds_and_metric_scores), 2))
+    expect_equal(names(acc0), c('threshold', 'accuracy'))
+
+    acc0_t <- h2o.accuracy(m0, thresholds=c(0.2, 0.3, 0.4))
+    expect_true(is.list(acc0_t))
+    expect_equal(length(acc0_t), 3)
+
+    acc0_max <- h2o.accuracy(m0, thresholds='max')
+    expect_true(is.list(acc0_max))
+    expect_equal(length(acc0_max), 1)
+
+    all_m0 <- h2o.metric(m0)
+    expect_true(is.data.frame(all_m0))
+    expect_equal(all_m0, m0@metrics$thresholds_and_metric_scores)
+
+    all_m0_t <- h2o.metric(m0, thresholds=c(0.2, 0.3, 0.4))
+    expect_true(is.list(all_m0_t))
+    expect_equal(length(all_m0_t), 3)
+    expect_equal(dim(all_m0_t[[1]]), c(1, ncol(m0@metrics$thresholds_and_metric_scores) - 2))
+
+    all_max <- h2o.metric(m0, thresholds='max')
+    expect_true(is.data.frame(all_max))
+    expect_equal(all_max, m0@metrics$max_criteria_and_metric_scores)
+
+  # print("******* accuracy *******")
+  # print(h2o.accuracy(m0))
+  # print("******* error *******")
+  #   print(h2o.error(m0))
+  #   expect_equal(h2o.accuracy(m0)['accuracy']+h2o.error(m0), 1.0, tolerance = 1e-6)
+
     expect_true(abs(h2o.auc(m0)-h2o.auc(m1))<1e-5)
     expect_true(abs(h2o.mse(m0)-h2o.mse(m1))<1e-5)
     expect_true(abs(h2o.rmse(m0)-h2o.rmse(m1))<1e-5)

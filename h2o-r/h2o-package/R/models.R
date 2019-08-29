@@ -1937,9 +1937,10 @@ h2o.hit_ratio_table <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #'
 #' @param object An \linkS4class{H2OModelMetrics} object of the correct type.
 #' @param thresholds (Optional) A value or a list of values between 0.0 and 1.0.
-#'        If not set, then the threshold maximizing the metric will be used.
+#'        If not set, then all thresholds will be returned.
+#'        If "max", then the threshold maximizing the metric will be used.
 #' @param metric (Optional) the metric to retrieve.
-#'        If not set, then all provided thresholds (or all computed thresholds if no thresholds were provided) will be used.
+#'        If not set, then all metrics will be returned.
 #' @return Returns either a single value, or a list of values.
 #' @seealso \code{\link{h2o.auc}} for AUC, \code{\link{h2o.giniCoef}} for the
 #'          GINI coefficient, and \code{\link{h2o.mse}} for MSE. See
@@ -1959,19 +1960,31 @@ h2o.hit_ratio_table <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' }
 #' @export
 h2o.metric <- function(object, thresholds, metric) {
-  if(!is(object, "H2OModelMetrics")) stop(paste0("No ", metric, " for ",class(object)," .Should be a H2OModelMetrics object!"))
-  if(is(object, "H2OBinomialMetrics")){
-    if(!missing(thresholds)) lapply(thresholds, function(t,object,metric) h2o.find_row_by_threshold(object, t)[, metric], object, metric)
-    else {
-      if(missing(metric)) {
-        object@metrics$thresholds_and_metric_scores
+  if (!is(object, "H2OModelMetrics")) stop(paste0("No ", metric, " for ",class(object)," .Should be a H2OModelMetrics object!"))
+  if (is(object, "H2OBinomialMetrics")){
+    avail_metrics <- names(object@metrics$thresholds_and_metric_scores)
+    avail_metrics <- avail_metrics[!(avail_metrics %in% c('threshold', 'idx'))]
+    if (missing(thresholds)) {
+      if (missing(metric)) {
+        metrics <- object@metrics$thresholds_and_metric_scores
       } else {
-        h2o_metric <- sapply(metric, function(m) ifelse(m %in% names(.h2o.metrics_aliases), .h2o.metrics_aliases[m], m))
-        object@metrics$thresholds_and_metric_scores[, c("threshold", h2o_metric)]
+        h2o_metric <- sapply(metric, function(m) ifelse(m %in% avail_metrics, m, ifelse(m %in% names(.h2o.metrics_aliases), .h2o.metrics_aliases[m], m)))
+        metrics <- object@metrics$thresholds_and_metric_scores[, c("threshold", h2o_metric)]
       }
+    } else if (thresholds == 'max' && missing(metric)) {
+      metrics <- object@metrics$max_criteria_and_metric_scores
+    } else {
+      if (missing(metric)) {
+        h2o_metric <- avail_metrics
+      } else {
+        h2o_metric <- unlist(lapply(metric, function(m) ifelse(m %in% avail_metrics, m, ifelse(m %in% names(.h2o.metrics_aliases), .h2o.metrics_aliases[m], m))))
+      }
+      if (thresholds == 'max') thresholds <- h2o.find_threshold_by_max_metric(object, h2o_metric)
+      metrics <- lapply(thresholds, function(t,o,m) h2o.find_row_by_threshold(o, t)[, m], object, h2o_metric)
     }
+    return(metrics)
   }
-  else{
+  else {
     stop(paste0("No ", metric, " for ",class(object)))
   }
 }
@@ -2093,7 +2106,7 @@ h2o.specificity <- function(object, thresholds){
 h2o.find_threshold_by_max_metric <- function(object, metric) {
   if(!is(object, "H2OBinomialMetrics")) stop(paste0("No ", metric, " for ",class(object)))
   max_metrics <- object@metrics$max_criteria_and_metric_scores
-  h2o_metric <- ifelse(metric %in% names(.h2o.metrics_aliases), .h2o.metrics_aliases[metric], metric)
+  h2o_metric <- sapply(metric, function(m) ifelse(m %in% names(.h2o.metrics_aliases), .h2o.metrics_aliases[m], m))
   max_metrics[match(paste0("max ", h2o_metric), max_metrics$metric), "threshold"]
 }
 

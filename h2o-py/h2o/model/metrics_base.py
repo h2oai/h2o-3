@@ -521,19 +521,26 @@ class H2OBinomialModelMetrics(MetricsBase):
         :param str metric: A metric among :const:`maximizing_metrics`.
         :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
             If None, then the threshold maximizing the metric will be used.
+            If 'all', then all stored thresholds are used and returned with the matching metric.
         :returns: The set of metrics for the list of thresholds.
         """
-        assert_is_type(thresholds, None, [numeric])
+        assert_is_type(thresholds, None, 'all', [numeric])
         if metric not in H2OBinomialModelMetrics.maximizing_metrics:
             raise ValueError("The only allowable metrics are {}".format(', '.join(H2OBinomialModelMetrics.maximizing_metrics)))
         h2o_metric = (H2OBinomialModelMetrics.metrics_aliases[metric] if metric in H2OBinomialModelMetrics.metrics_aliases
                       else metric)
-        if not thresholds: thresholds = [self.find_threshold_by_max_metric(h2o_metric)]
-        thresh2d = self._metric_json['thresholds_and_metric_scores']
+        if not thresholds:
+            thresholds = [self.find_threshold_by_max_metric(h2o_metric)]
+        elif thresholds == 'all':
+            thresholds = None
         metrics = []
-        for t in thresholds:
-            idx = self.find_idx_by_threshold(t)
-            metrics.append([t, thresh2d[h2o_metric][idx]])
+        thresh2d = self._metric_json['thresholds_and_metric_scores']
+        if thresholds is None:  # fast path to return all thresholds: skipping find_idx logic
+            metrics = [list(t) for t in zip(thresh2d['threshold'], thresh2d[h2o_metric])]
+        else:
+            for t in thresholds:
+                idx = self.find_idx_by_threshold(t)
+                metrics.append([t, thresh2d[h2o_metric][idx]])
         return metrics
 
 
