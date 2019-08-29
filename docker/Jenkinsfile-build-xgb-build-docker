@@ -1,24 +1,32 @@
 #! /usr/bin/groovy
 
 final String NODE_LABEL = 'docker && !mr-0xc8'
-final String DOCKER_STASH = 'h2o-3-xgb-docker-stash'
+final String DOCKER_STASH = 'h2o-3-xgb-build-docker-stash'
 
 def pipelineContext = null
 
 properties(
     [
-        parameters(
-            [
-                string(defaultValue: 'master', description: 'Branch to checkout', name: 'gitBranch'),
-                string(name: 'dockerRegistry', defaultValue: 'harbor.h2o.ai'),
-            ]
-        )
+        buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '25')),
+        parameters([
+                string(name: 'gitBranch', defaultValue: 'master', description: 'Branch to load the Dockerfile from.'),
+                string(name: 'registry', defaultValue: 'harbor.h2o.ai', description: 'Docker registry to push images to'),
+                booleanParam(name: 'publish', defaultValue: true, description: 'If true, publish the docker image'),
+                booleanParam(name: 'noCache', defaultValue: false, description: 'If true, build the docker image using the --no-cache flag')
+        ])
     ]
 )
 
+// define list of OSs for which to build the docker image,
+// for each OS there must by a ci/docker/Dockerfile-gpu-<OS>
+final List<String> IMAGES_MAP = ['centos', 'ubuntu']
+final String IMAGE_TAG = "2"
+// base of the image name
+final String IMAGE_NAME = "${params.registry}/opsh2oai/h2o-3-xgboost-build"
+
 node (NODE_LABEL) {
     final String stageName = 'Checkout and Prepare'
-    stage (stageName) {
+    stage(stageName) {
         def scmEnv = git credentialsId: 'c6bab81a-6bb5-4497-9ec9-285ef5db36ea',
                 poll: false,
                 url: 'https://github.com/h2oai/h2o-3',
@@ -44,8 +52,8 @@ node (NODE_LABEL) {
                     }
                 }
             }
-            pipelineContext.getUtils().stashFiles(this, DOCKER_STASH, 'docker/xgb/**,docker/scripts/*,docker/jdk1.8.0_171.zip')
-            
+            pipelineContext.getUtils().stashFiles(this, DOCKER_STASH, 'docker/xgb_build/**,docker/xgb/common/sbin/*,docker/jdk1.8.0_171.zip')
+
             pipelineContext.getBuildSummary().markStageSuccessful(this, stageName)
         } catch (Exception e) {
             pipelineContext.getBuildSummary().markStageFailed(this, stageName)
@@ -54,49 +62,47 @@ node (NODE_LABEL) {
     }
 }
 
-parallel(pipelineContext.getBuildConfig().getSupportedXGBEnvironments().collectEntries { osName, xgbEnvs ->
+parallel(IMAGES_MAP.collectEntries { image ->
     [
-        "Build Images for ${osName}", {
+        "Build $image image", {
             node(pipelineContext.getBuildConfig().getDefaultNodeLabel()) {
-                xgbEnvs.each {xgbEnv ->
-                    final String buildStageName = "Build ${xgbEnv.name}"
-                    stage(buildStageName) {
-                        try {
-                            pipelineContext.getBuildSummary().addStageSummary(this, buildStageName, '')
-                            pipelineContext.getBuildSummary().setStageDetails(this, buildStageName, env.NODE_NAME, env.WORKSPACE)
+                final String buildStageName = "Build $image"
+                stage(buildStageName) {
+                    try {
+                        pipelineContext.getBuildSummary().addStageSummary(this, buildStageName, '')
+                        pipelineContext.getBuildSummary().setStageDetails(this, buildStageName, env.NODE_NAME, env.WORKSPACE)
 
-                            pipelineContext.getUtils().unstashFiles(this, DOCKER_STASH)
+                        pipelineContext.getUtils().unstashFiles(this, DOCKER_STASH)
 
-                            dir('docker') {
-                                sh """
+                        dir('docker') {
+                            sh """                                
                                 docker build \
-                                    -t ${pipelineContext.getBuildConfig().getXGBImageForEnvironment(osName, xgbEnv)} \
-                                    -f ${xgbEnv.dockerfile} \
-                                    --build-arg FROM_IMAGE=${xgbEnv.fromImage} \
-                                    --build-arg H2O_BRANCH=${params.gitBranch} \
+                                    -t ${IMAGE_NAME}-${image}:${IMAGE_TAG}  \
+                                    -f xgb_build/Dockerfile-gpu-${image} \
                                     .
                                 """
-                            }
-
-                            pipelineContext.getBuildSummary().markStageSuccessful(this, buildStageName)
-                        } catch (Exception e) {
-                            pipelineContext.getBuildSummary().markStageFailed(this, buildStageName)
-                            throw e
                         }
-                    }
 
-                    final String publishStageName = "Publish ${xgbEnv.name}"
+                        pipelineContext.getBuildSummary().markStageSuccessful(this, buildStageName)
+                    } catch (Exception e) {
+                        pipelineContext.getBuildSummary().markStageFailed(this, buildStageName)
+                        throw e
+                    }
+                }
+
+                if (params.publish) {
+                    final String publishStageName = "Publish $image"
                     stage(publishStageName) {
                         try {
                             pipelineContext.getBuildSummary().addStageSummary(this, publishStageName, '')
                             pipelineContext.getBuildSummary().setStageDetails(this, publishStageName, env.NODE_NAME, env.WORKSPACE)
 
-                            withCredentials([usernamePassword(credentialsId: "${params.dockerRegistry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
+                            withCredentials([usernamePassword(credentialsId: "${params.registry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
                                 sh """
-                                    docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD ${params.dockerRegistry}
-                                    docker push ${pipelineContext.getBuildConfig().getXGBImageForEnvironment(osName, xgbEnv)}
+                                    docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD ${params.registry}
+                                    docker push ${IMAGE_NAME}-${image}:${IMAGE_TAG}
                                 """
-                                echo "###### Docker image ${pipelineContext.getBuildConfig().getXGBImageForEnvironment(osName, xgbEnv)} built and pushed. ######"
+                                echo "###### Docker image ${IMAGE_NAME}-${image}:${IMAGE_TAG} built and pushed. ######"
                             }
 
                             pipelineContext.getBuildSummary().markStageSuccessful(this, publishStageName)
