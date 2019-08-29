@@ -18,6 +18,12 @@ variable "aws_core_instance_count" {
 variable "aws_instance_type" {
   default = "m5.xlarge"
 }
+variable "h2o_mapper_xmx" {
+  default = "4g"
+}
+variable "h2o_user_name" {
+  default = "root"
+}
 variable "h2o_main_version" {
   default = "3.26.0"
 }
