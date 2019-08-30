@@ -16,11 +16,14 @@ public class TargetEncoderV3 extends ModelBuilderSchema<TargetEncoderBuilder, Ta
     
     @API(help = "Target column for the encoding")
     public FrameV3.ColSpecifierV3 target_column;
-    
-    @API(help = "Parameter 'k' used for blending (if enabled). Blending is to be enabled separately using the 'blending' parameter.")
+
+    @API(help = "Blending enabled/disabled")
+    public boolean blending;
+
+    @API(help = "Inflection point. Used for blending (if enabled). Blending is to be enabled separately using the 'blending' parameter.")
     public double k;
 
-    @API(help = "Parameter 'f' used for blending (if enabled). Blending is to be enabled separately using the 'blending' parameter.")
+    @API(help = "Smooothing. Used for blending (if enabled). Blending is to be enabled separately using the 'blending' parameter.")
     public double f;
 
     @API(help = "Data leakage handling strategy. Default to None.", values = {"None", "KFold", "LeaveOneOut"})
@@ -43,6 +46,21 @@ public class TargetEncoderV3 extends ModelBuilderSchema<TargetEncoderBuilder, Ta
         impl._response_column = target_column.column_name;
       }
       return impl;
+    }
+
+    @Override
+    public TargetEncoderParametersV3 fillFromImpl(TargetEncoderModel.TargetEncoderParameters impl) {
+      return fillFromImpl(impl, new String[0]);
+    }
+
+    @Override
+    protected TargetEncoderParametersV3 fillFromImpl(TargetEncoderModel.TargetEncoderParameters impl, String[] fieldsToSkip) {
+      final TargetEncoderParametersV3 teParamsV3 = super.fillFromImpl(impl, fieldsToSkip);
+      if (impl._blending_parameters != null) {
+        teParamsV3.f = impl._blending_parameters.getF();
+        teParamsV3.k = impl._blending_parameters.getK();
+      }
+      return teParamsV3;
     }
   }
 }
