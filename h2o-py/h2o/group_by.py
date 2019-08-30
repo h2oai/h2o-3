@@ -100,6 +100,7 @@ class GroupBy(object):
         >>> grouped = my_frame.group_by(by=["sepal_len", "sepal_wid"])
         >>> grouped.sum(col="sepal_len",
         ...             na="all").mean(col="class", na="all").min()
+        >>> grouped.get_frame()
         """
         return self._add_agg("min", col, na)
 
@@ -120,6 +121,7 @@ class GroupBy(object):
         >>> grouped = my_frame.group_by(by=["sepal_len", "sepal_wid"])
         >>> grouped.sum(col="sepal_len",
         ...             na="all").mean(col="class", na="all").max()
+        >>> grouped.get_frame()
         """
         return self._add_agg("max", col, na)
 
@@ -140,6 +142,7 @@ class GroupBy(object):
         >>> grouped = my_frame.group_by(by=["sepal_len", "sepal_wid"])
         >>> grouped.sum(col="sepal_len",
         ...             na="all").mean(col="class", na="all").max()
+        >>> grouped.get_frame()
         """
         return self._add_agg("mean", col, na)
 
@@ -157,6 +160,7 @@ class GroupBy(object):
         >>> grouped = my_frame.group_by(by=["sepal_len",
         ...                                 "sepal_wid"])
         >>> grouped.count
+        >>> grouped.get_frame()
         """
         return self._add_agg("nrow", None, na)
 
@@ -177,6 +181,7 @@ class GroupBy(object):
         >>> grouped = my_frame.group_by(by=["sepal_len", "sepal_wid"])
         >>> grouped.sum(col="sepal_len",
         ...             na="all").mean(col="class", na="all").max()
+        >>> grouped.get_frame()
         """
         return self._add_agg("sum", col, na)
 
@@ -197,6 +202,7 @@ class GroupBy(object):
         >>> grouped = my_frame.group_by(by=["sepal_len", "sepal_wid"])
         >>> grouped.sd(col="sepal_len",
         ...             na="all").mean(col="class", na="all").max()
+        >>> grouped.get_frame()
         """
         return self._add_agg("sdev", col, na)
 
@@ -217,6 +223,7 @@ class GroupBy(object):
         >>> grouped = my_frame.group_by(by=["sepal_len", "sepal_wid"])
         >>> grouped.var(col="sepal_len",
         ...             na="all").mean(col="class", na="all").max()
+        >>> grouped.get_frame()
         """
         return self._add_agg("var", col, na)
 
@@ -237,6 +244,7 @@ class GroupBy(object):
         >>> grouped = my_frame.group_by(by=["sepal_len", "sepal_wid"])
         >>> grouped.ss(col="sepal_len",
         ...             na="all").mean(col="class", na="all").max()
+        >>> grouped.get_frame()
         """
         return self._add_agg("sumSquares", col, na)
 
@@ -257,6 +265,7 @@ class GroupBy(object):
         >>> grouped = my_frame.group_by(by=["sepal_len", "sepal_wid"])
         >>> grouped.sum(col="sepal_len",
         ...             na="all").mode(col="class", na="all").max()
+        >>> grouped.get_frame()
         """
         return self._add_agg("mode", col, na)
 
@@ -277,6 +286,7 @@ class GroupBy(object):
         >>> grouped = my_frame.group_by(by=["sepal_len", "sepal_wid"])
         >>> grouped.sum(col="sepal_len",
         ...             na="all").median(col="class", na="all").max()
+        >>> grouped.get_frame()
         """
         return self._add_agg("median", col, na)
 
