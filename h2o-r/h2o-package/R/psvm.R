@@ -9,9 +9,8 @@
 #'
 #' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing, then all columns except y are used.
-#' @param y The name or column index of the response variable in the data. 
-#'        The response must be either a numeric or a categorical/factor variable. 
-#'        If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
+#' @param y The name or column index of the response variable in the data. The response must be either a binary
+#'        categorical/factor variable or a numeric variable with values -1/1 (for compatibility with SVMlight format).
 #' @param training_frame Id of the training data frame.
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param validation_frame Id of the validation data frame.

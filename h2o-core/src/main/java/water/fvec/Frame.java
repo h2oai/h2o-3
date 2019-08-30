@@ -435,6 +435,13 @@ public class Frame extends Lockable<Frame> {
     public Key<Frame> _frame;
     public String _column_name;
 
+    public VecSpecifier() {
+    }
+
+    public VecSpecifier(Key<Frame> frame, String column_name) {
+      _frame = frame;
+      _column_name = column_name;
+    }
 
     public Vec vec() {
       Value v = DKV.get(_frame);
@@ -442,6 +449,21 @@ public class Frame extends Lockable<Frame> {
       Frame f = v.get();
       if (null == f) return null;
       return f.vec(_column_name);
+    }
+
+    /**
+     * @param vecSpecifiers An Array of vectors specifiers to extract column names from. May not be null.
+     * @return An array of String with names of the columns represented by each given VecSpecifier. Possibly empty.
+     * @throws NullPointerException When vecSpecifiers argument is null.
+     */
+    public static String[] vecNames(final VecSpecifier[] vecSpecifiers) throws NullPointerException {
+      Objects.requireNonNull(vecSpecifiers);
+      final String[] vecNames = new String[vecSpecifiers.length];
+
+      for (int i = 0; i < vecSpecifiers.length; i++) {
+        vecNames[i] = vecSpecifiers[i]._column_name;
+      }
+      return vecNames;
     }
   }
 

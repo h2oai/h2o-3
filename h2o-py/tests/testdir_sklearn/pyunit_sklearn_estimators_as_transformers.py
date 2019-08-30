@@ -49,6 +49,7 @@ def _get_default_args(estimator_cls):
         H2OGeneralizedLowRankEstimator=dict(k=2, seed=seed),
         H2OPrincipalComponentAnalysisEstimator=dict(k=2, seed=seed),
         H2OSingularValueDecompositionEstimator=dict(nv=2, seed=seed),
+        H2OTargetEncoderEstimator=dict(),
     )
     return defaults.get(estimator_cls.__name__, dict(seed=seed))
 
@@ -62,6 +63,7 @@ def _get_custom_behaviour(estimator_cls):
                                             result_shape=(train_size, 5)),  # (n_samples, n_features)
         H2OPrincipalComponentAnalysisEstimator=dict(result_shape=(train_size, 2)),  # (n_samples, k)
         H2OSingularValueDecompositionEstimator=dict(result_shape=(train_size, 2)),  # (n_samples, nv)
+        H2OTargetEncoderEstimator=dict(result_shape=(train_size, 5+2)),
 
     )
     return custom.get(estimator_cls.__name__, dict())
@@ -197,7 +199,8 @@ transformers = [
     'H2OAggregatorEstimator',
     'H2OGeneralizedLowRankEstimator',
     'H2OPrincipalComponentAnalysisEstimator',
-    'H2OSingularValueDecompositionEstimator'
+    'H2OSingularValueDecompositionEstimator',
+    # 'H2OTargetEncoderEstimator'  # not ready yet
 ]
 estimators = [cls for name, cls in inspect.getmembers(h2o.sklearn, inspect.isclass) if name in transformers]
 pyunit_utils.run_tests([make_tests(c) for c in estimators])

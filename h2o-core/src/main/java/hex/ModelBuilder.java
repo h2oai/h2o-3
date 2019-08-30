@@ -91,7 +91,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *  default settings. */
   protected ModelBuilder(P parms, boolean startup_once) { this(parms,startup_once,"hex.schemas."); }
   protected ModelBuilder(P parms, boolean startup_once, String externalSchemaDirectory ) {
-    String base = getClass().getSimpleName().toLowerCase();
+    String base = getName();
     if (!startup_once)
       throw H2O.fail("Algorithm " + base + " registration issue. It can only be called at startup.");
     _job = null;
@@ -1698,6 +1698,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     Log.info(table);
     return table;
+  }
+
+  /**
+   * Overridable Model Builder name used in generated code, in case the name of the ModelBuilder class is not suitable.
+   *
+   * @return Name of the builder to be used in generated code
+   */
+  public String getName() {
+    return getClass().getSimpleName().toLowerCase();
   }
 
 }

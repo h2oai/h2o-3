@@ -58,6 +58,7 @@ def _get_default_args(estimator_cls):
         H2OPrincipalComponentAnalysisEstimator=dict(k=2, seed=seed),
         H2OSingularValueDecompositionEstimator=dict(seed=seed),
         H2OSupportVectorMachineEstimator=dict(seed=seed),
+        H2OTargetEncoderEstimator=dict(),
         H2OWord2vecEstimator=dict()
     )
     return defaults.get(estimator_cls.__name__, dict(distribution='bernoulli', seed=seed))
@@ -67,11 +68,12 @@ def _get_custom_behaviour(estimator_cls):
     custom = dict(
         H2OAutoEncoderEstimator=dict(n_classes=0, preds_as_vector=False, predict_proba=False, score=False),
         # H2ODeepLearningEstimator=dict(scores_may_differ=True),
-        H2OGeneralizedLowRankEstimator=dict(preds_as_vector=False, predict_proba=False, score=False, transform=True),
+        H2OGeneralizedLowRankEstimator=dict(preds_as_vector=False, predict_proba=False, score=False),
         H2OIsolationForestEstimator=dict(predict_proba=False, score=False),
         H2OKMeansEstimator=dict(predict_proba=False, score=False),
         H2OPrincipalComponentAnalysisEstimator=dict(requires_target=False, preds_as_vector=False, predict_proba=False, score=False),
         H2OSingularValueDecompositionEstimator=dict(requires_target=False, preds_as_vector=False, predict_proba=False, score=False),
+        H2OTargetEncoderEstimator=dict(preds_as_vector=False, predict_proba=False, score=False),
         H2OWord2vecEstimator=dict(preds_as_vector=False, predict_proba=False, score=False),
     )
     return custom.get(estimator_cls.__name__, dict())
@@ -189,6 +191,7 @@ failing = [
     'H2ODeepWaterEstimator',  # requires DW backend
     'H2OGenericEstimator',  # maybe should be removed from sklearn API
     'H2OStackedEnsembleEstimator',  # needs a separate test (requires models as parameters)
+    "H2OTargetEncoderEstimator", # needs dataset with categoricals to work + API polishing (use x, y with defaults)
     'H2OWord2vecEstimator',  # needs a separate test (requires pre_trained model as parameter)
 ]
 estimators = [cls for name, cls in inspect.getmembers(h2o.sklearn, inspect.isclass)

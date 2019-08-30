@@ -830,10 +830,14 @@ class H2OEstimatorTransformSupport(BaseSklearnEstimator, TransformerMixin):
         :param fit_params: parameters passed to the underlying `train` method of the :class:`h2o.estimators.H2OEstimator`.
         :return: transformed data (:class:`h2o.H2OFrame` by default).
         """
-        return self._fit(X, y=y, **fit_params).transform(X)
+        if hasattr(self._estimator, 'fit_transform') and callable(self._estimator.fit_transform):
+            self._make_estimator()
+            return self._estimator.fit_transform(X, y=y, **fit_params)
+        else:
+            return self._fit(X, y=y, **fit_params).transform(X)
 
     @params_as_h2o_frames(result_conversion=False)
-    def transform(self, X):
+    def transform(self, X, **transform_params):
         """Transform the data on the fitted model.
 
         Note that it doesn't convert result back to numpy by default as it is intended to be chained
@@ -841,10 +845,27 @@ class H2OEstimatorTransformSupport(BaseSklearnEstimator, TransformerMixin):
         The transformer should be instantiated with `data_conversion=True` to always obtain numpy objects as results.
 
         :param iterable X: data to transform (array-like or :class:`h2o.H2OFrame`).
+        :param transform_params: parameters passed to the underlying `transform` method of the :class:`h2o.estimators.H2OEstimator` (if supported).
         :return: transformed data (:class:`h2o.H2OFrame` by default ).
         """
         if self._get_custom_param('_transform'):
             return self._get_custom_param('_transform')(self, X)
+        elif hasattr(self._estimator, 'transform') and callable(self._estimator.transform):
+            return self._estimator.transform(X, **transform_params)
         else:
             return self._predict(X)
 
+    @params_as_h2o_frames(result_conversion=False)
+    def inverse_transform(self, X):
+        """Apply reverse transformation.
+
+        Note that it doesn't convert result back to numpy by default as it is intended to be chained
+        with another H2O transformer or estimator.
+        The transformer should be instantiated with `data_conversion=True` to always obtain numpy objects as results.
+
+        :param iterable X: data to transform (array-like or :class:`h2o.H2OFrame`).
+        :return: transformed data (:class:`h2o.H2OFrame` by default).
+        """
+        if hasattr(self._estimator, 'inverse_transform') and callable(self._estimator.inverse_transform):
+            return self._estimator.inverse_transform(X)
+        raise AttributeError("{} does not support 'inverse_transform'.".format(self.__class__.__name__))
