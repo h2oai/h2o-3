@@ -18,7 +18,7 @@ public class CallbackManagerTest {
   
   @Test
   public void testRegisterNode_retry() {
-    CallbackManager cm = new h2odriver().new CallbackManager(null, 5);
+    CallbackManager cm = new h2odriver().new CallbackManager(5);
 
     cm.registerNode("localhost", 54, 0, new Socket());
     Socket s = new Socket();
@@ -30,7 +30,7 @@ public class CallbackManagerTest {
 
   @Test
   public void testRegisterNode_outOfOrder() {
-    CallbackManager cm = new h2odriver().new CallbackManager(null, 5);
+    CallbackManager cm = new h2odriver().new CallbackManager(5);
 
     Socket s = new Socket();
     cm.registerNode("localhost", 54, 1, s);
@@ -42,7 +42,7 @@ public class CallbackManagerTest {
 
   @Test
   public void testRegisterNode_duplicate() {
-    CallbackManager cm = new h2odriver().new CallbackManager(null, 5) {
+    CallbackManager cm = new h2odriver().new CallbackManager(5) {
       @Override
       protected void fatalError(String message) {
         throw new IllegalStateException(message);
@@ -57,7 +57,7 @@ public class CallbackManagerTest {
 
   @Test
   public void testRegisterNode_inconsistent() {
-    CallbackManager cm = new h2odriver().new CallbackManager(null, 5) {
+    CallbackManager cm = new h2odriver().new CallbackManager(5) {
       @Override
       protected void fatalError(String message) {
         throw new IllegalStateException(message);
@@ -71,5 +71,51 @@ public class CallbackManagerTest {
     cm.registerNode("localhost", 54, 1, new Socket());
   }
 
+  @Test
+  public void testAnnounceCloudReadyNode_cloudingFinalized() throws Exception {
+    h2odriver driver = new h2odriver();
+    driver.clusterIsUp = false;
+    driver.clusterIp = "unknown";
+    driver.clusterPort = -1;
+
+    driver.new CallbackManager(1)
+            .announceCloudReadyNode("testClusterIp", 42);
+
+    assertTrue(driver.clusterIsUp);
+    assertEquals(driver.clusterIp, "testClusterIp");
+    assertEquals(driver.clusterPort, 42);
+  }
+
+  @Test
+  public void testAnnounceCloudReadyNode_cloudingNotFinalized() throws Exception {
+    h2odriver driver = new h2odriver();
+    driver.clusterIsUp = true;
+    driver.clusterIp = "testClusterIp";
+    driver.clusterPort = 42;
+
+    driver.new CallbackManager(2)
+            .announceCloudReadyNode("differentIp", 7);
+
+    // cluster info remains the same
+    assertTrue(driver.clusterIsUp);
+    assertEquals(driver.clusterIp, "testClusterIp");
+    assertEquals(driver.clusterPort, 42);
+  }
+
+  @Test
+  public void testAnnounceCloudReadyNode_cloudAlreadyUp() throws Exception {
+    h2odriver driver = new h2odriver();
+    driver.clusterIsUp = true;
+    driver.clusterIp = "testClusterIp";
+    driver.clusterPort = 42;
+
+    driver.new CallbackManager(1)
+            .announceCloudReadyNode("differentIp", 7);
+
+    // cluster info remains the same
+    assertTrue(driver.clusterIsUp);
+    assertEquals(driver.clusterIp, "testClusterIp");
+    assertEquals(driver.clusterPort, 42);
+  }
 
 }
