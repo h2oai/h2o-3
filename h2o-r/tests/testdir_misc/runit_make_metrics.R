@@ -83,11 +83,19 @@ makeMetrics <- function() {
     expect_true(is.data.frame(all_max))
     expect_equal(all_max, m0@metrics$max_criteria_and_metric_scores)
 
-  # print("******* accuracy *******")
-  # print(h2o.accuracy(m0))
-  # print("******* error *******")
-  #   print(h2o.error(m0))
-  #   expect_equal(h2o.accuracy(m0)['accuracy']+h2o.error(m0), 1.0, tolerance = 1e-6)
+    err0 <- h2o.error(m0)
+    expect_true(is.data.frame(err0))
+    expect_equal(names(err0), c('threshold', 'error'))
+    expect_equal(acc0['accuracy'] + err0['error'], data.frame(accuracy=rep(1.0, nrow(acc0))), tolerance = 1e-6)
+
+    err0_t <- h2o.error(m0, thresholds=c(0.2, 0.3, 0.4))
+    expect_true(is.list(err0_t))
+    expect_equal(mapply(`+`, acc0_t, err0_t), rep(1.0, 3))
+
+    err0_max <- h2o.error(m0, thresholds='max')
+    expect_true(is.list(err0_max))
+    expect_equal(acc0_max[[1]] + err0_max[[1]], 1.0)
+
 
     expect_true(abs(h2o.auc(m0)-h2o.auc(m1))<1e-5)
     expect_true(abs(h2o.mse(m0)-h2o.mse(m1))<1e-5)

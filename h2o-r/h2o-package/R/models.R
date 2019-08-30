@@ -1959,7 +1959,7 @@ h2o.hit_ratio_table <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' h2o.F1(perf)
 #' }
 #' @export
-h2o.metric <- function(object, thresholds, metric) {
+h2o.metric <- function(object, thresholds, metric, transform=NULL) {
   if (!is(object, "H2OModelMetrics")) stop(paste0("No ", metric, " for ",class(object)," .Should be a H2OModelMetrics object!"))
   if (is(object, "H2OBinomialMetrics")){
     avail_metrics <- names(object@metrics$thresholds_and_metric_scores)
@@ -1970,6 +1970,14 @@ h2o.metric <- function(object, thresholds, metric) {
       } else {
         h2o_metric <- sapply(metric, function(m) ifelse(m %in% avail_metrics, m, ifelse(m %in% names(.h2o.metrics_aliases), .h2o.metrics_aliases[m], m)))
         metrics <- object@metrics$thresholds_and_metric_scores[, c("threshold", h2o_metric)]
+        if (!missing(transform)) {
+          if ('op' %in% names(transform)) {
+            metrics[h2o_metric] <- transform$op(metrics[h2o_metric])
+          }
+          if ('name' %in% names(transform)) {
+            names(metrics) <- c("threshold", transform$name)
+          }
+        }
       }
     } else if (thresholds == 'max' && missing(metric)) {
       metrics <- object@metrics$max_criteria_and_metric_scores
@@ -1981,6 +1989,9 @@ h2o.metric <- function(object, thresholds, metric) {
       }
       if (thresholds == 'max') thresholds <- h2o.find_threshold_by_max_metric(object, h2o_metric)
       metrics <- lapply(thresholds, function(t,o,m) h2o.find_row_by_threshold(o, t)[, m], object, h2o_metric)
+      if (!missing(transform) && 'op' %in% names(transform)) {
+        metrics <- lapply(metrics, transform$op)
+      }
     }
     return(metrics)
   }
@@ -2016,13 +2027,13 @@ h2o.accuracy <- function(object, thresholds){
 #' @rdname h2o.metric
 #' @export
 h2o.error <- function(object, thresholds){
-  1.0-h2o.metric(object, thresholds, "accuracy")
+  h2o.metric(object, thresholds, "accuracy", transform=list(name="error", op=function(acc) 1 - acc))
 }
 
 #' @rdname h2o.metric
 #' @export
 h2o.maxPerClassError <- function(object, thresholds){
-  1.0-h2o.metric(object, thresholds, "min_per_class_accuracy")
+  h2o.metric(object, thresholds, "min_per_class_accuracy", transform=list(name="max_per_class_error", op=function(mpc_acc) 1 - mpc_acc))
 }
 
 #' @rdname h2o.metric
