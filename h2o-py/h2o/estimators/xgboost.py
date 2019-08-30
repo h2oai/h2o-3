@@ -37,7 +37,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def __init__(self, **kwargs):
         super(H2OXGBoostEstimator, self).__init__()
         self._parms = {}
-        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue

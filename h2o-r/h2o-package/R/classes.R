@@ -321,6 +321,9 @@ setClass("H2OWordEmbeddingModel", contains="H2OModel")
 #' @rdname H2OModel-class
 #' @export
 setClass("H2OAnomalyDetectionModel", contains="H2OModel")
+#' @rdname H2OModel-class
+#' @export
+setClass("H2OTargetEncoderModel", contains="H2OModel")
 
 #'
 #' The H2OCoxPHModel object.
@@ -737,6 +740,10 @@ setClass("H2OCoxPHMetrics", contains="H2OModelMetrics")
 #' @rdname H2OModelMetrics-class
 #' @export
 setClass("H2OAnomalyDetectionMetrics", contains="H2OModelMetrics")
+
+#' @rdname H2OModelMetrics-class
+#' @export
+setClass("H2OTargetEncoderMetrics", contains="H2OModelMetrics")
 
 #' H2O Future Model
 #'
