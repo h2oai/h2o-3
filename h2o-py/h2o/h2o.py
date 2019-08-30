@@ -481,7 +481,15 @@ def import_hive_table(database=None, table=None, partitions=None, allow_multi_fo
     :returns: an :class:`H2OFrame` containing data of the specified Hive table.
 
     :examples:
-        >>> my_citibike_data = h2o.import_hive_table("default", "table", [["2017", "01"], ["2017", "02"]])
+    
+    >>> basic_import = h2o.import_hive_table("default",
+    ...                                      "table_name")
+    >>> multi_format_enabled = h2o.import_hive_table("default",
+    ...                                              "table_name",
+    ...                                              allow_multi_format=True)
+    >>> with_partition_filter = h2o.import_hive_table("default",
+    ...                                               "table_name",
+    ...                                               [["2017", "02"]])
     """
     assert_is_type(database, str, None)
     assert_is_type(table, str)
