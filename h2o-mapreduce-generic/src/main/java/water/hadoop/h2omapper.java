@@ -5,13 +5,10 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.Mapper;
 import water.H2O;
+import water.init.AbstractEmbeddedH2OConfig;
 import water.util.Log;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -158,7 +155,7 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
     ServerSocket ss = new ServerSocket();
     InetSocketAddress sa = new InetSocketAddress("127.0.0.1", 0);
     ss.bind(sa);
-    int localPort = ss.getLocalPort();
+    final int localPort = ss.getLocalPort();
 
     List<String> argsList = new ArrayList<String>();
 
@@ -204,11 +201,11 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
     DelegationTokenRefresher.setup(conf, ice_root);
     String[] args = argsList.toArray(new String[0]);
     try {
-      EmbeddedH2OConfig _embeddedH2OConfig = new EmbeddedH2OConfig();
-      _embeddedH2OConfig.setDriverCallbackIp(driverIp);
-      _embeddedH2OConfig.setDriverCallbackPort(driverPort);
-      _embeddedH2OConfig.setMapperCallbackPort(localPort);
-      H2O.setEmbeddedH2OConfig(_embeddedH2OConfig);
+      AbstractEmbeddedH2OConfig config = new HdfsBasedClouding(3, 
+              "hdfs://mr-0xd6.0xdata.loc:8020/user/michalk/clouding", 
+              conf, 
+              status -> exit(localPort, status));
+      H2O.setEmbeddedH2OConfig(config);
       Log.POST(11, "After setEmbeddedH2OConfig");
       //-------------------------------------------------------------
       repairNullArgsAndWarnIfNecessary(args);
@@ -322,4 +319,38 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
       e.printStackTrace();
     }
   }
+
+  static void exit(int callbackPort, int status) {
+    Socket s = null;
+    try {
+      Thread.sleep(1000);
+      // Wait one second to deliver the message before exiting.
+      s = new Socket("127.0.0.1", callbackPort);
+      byte[] b = new byte[] { (byte) status };
+      OutputStream os = s.getOutputStream();
+      os.write(b);
+      os.flush();
+      s.close();
+      s = null;
+      System.out.println("EmbeddedH2OConfig: after write to mapperCallbackPort");
+
+      Thread.sleep(60 * 1000);
+      // Should never make it this far!
+    } catch (Exception e) {
+      System.out.println("EmbeddedH2OConfig: exit caught an exception 2");
+      e.printStackTrace();
+    } finally {
+      if (s != null) {
+        try {
+          s.close();
+        } catch (IOException e) {
+          // ignore
+        }
+      }
+    }
+
+    System.exit(111);
+
+  }
+
 }
