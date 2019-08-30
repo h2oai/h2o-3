@@ -102,7 +102,7 @@ pca_export <- function() {
   frame <- h2o.uploadFile(locate("smalldata/pca_test/USArrests.csv"))
   model <- h2o.prcomp(training_frame = frame, k = as.numeric(2))
   h2o.download_pojo(model, path = RESULT_DIR)
-  expect_error(model, MOJO)
+  h2o.download_mojo(model, path = RESULT_DIR) # no longer expecting error.  Fixed.
 }
 
 drf_export <- function() {
