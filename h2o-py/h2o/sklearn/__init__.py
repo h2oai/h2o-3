@@ -216,7 +216,7 @@ _generic_only_estimators = (  # e.g. unsupervised and misc estimators
     'H2OKMeansEstimator',
     'H2OPrincipalComponentAnalysisEstimator',
     'H2OSingularValueDecompositionEstimator',
-    'H2OTargetEncoderEstimator'
+    'H2OTargetEncoderEstimator',
     'H2OWord2vecEstimator',
 )
 _classifier_only_estimators = ('H2ONaiveBayesEstimator',
