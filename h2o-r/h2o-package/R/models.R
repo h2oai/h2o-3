@@ -1941,6 +1941,9 @@ h2o.hit_ratio_table <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #'        If "max", then the threshold maximizing the metric will be used.
 #' @param metric (Optional) the metric to retrieve.
 #'        If not set, then all metrics will be returned.
+#' @param transform (Optional) a list describing a transformer for the given metric, if any.
+#'        e.g. transform=list(op=foo_fn, name="foo") will rename the given metric to "foo"
+#'             and apply function foo_fn to the metric values.
 #' @return Returns either a single value, or a list of values.
 #' @seealso \code{\link{h2o.auc}} for AUC, \code{\link{h2o.giniCoef}} for the
 #'          GINI coefficient, and \code{\link{h2o.mse}} for MSE. See
