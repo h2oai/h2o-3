@@ -158,7 +158,7 @@ public class h2odriver extends Configured implements Tool {
   // All volatile fields represent a runtime state that might be touched by different threads
   volatile JobWrapper job = null;
   volatile CtrlCHandler ctrlc = null;
-  volatile CallbackManager cm = null;
+  volatile CloudingManager cm = null;
   // Modified while clouding-up
   volatile boolean clusterIsUp = false;
   volatile boolean clusterFailedToComeUp = false;
@@ -498,13 +498,69 @@ public class h2odriver extends Configured implements Tool {
     }
   }
 
+  abstract class CloudingManager extends Thread {
+    private final int _targetCloudSize; // desired number of nodes the cloud should eventually have
+    private volatile AtomicInteger _numNodesReportingFullCloudSize = new AtomicInteger(); // number of fully initialized nodes
+
+    CloudingManager(int targetCloudSize) {
+      _targetCloudSize = targetCloudSize;
+    }
+
+    void announceNewNode(String ip, int port) {
+      System.out.println("H2O node " + ip + ":" + port + " is joining the cluster");
+      if ("127.0.0.1".equals(ip)) {
+        clusterHasNodeWithLocalhostIp = true;
+      }
+      numNodesStarted.incrementAndGet();
+    }
+
+    void announceNodeCloudSize(String ip, int port, String leaderWebServerIp, int leaderWebServerPort, int cloudSize) throws Exception {
+      System.out.println("H2O node " + ip + ":" + port + " reports H2O cluster size " + cloudSize + " [leader is " + leaderWebServerIp + ":" + leaderWebServerIp + "]");
+      if (cloudSize == _targetCloudSize) {
+        announceCloudReadyNode(leaderWebServerIp, leaderWebServerPort);
+      }
+    }
+
+    // announces a node that has a complete information about the rest of the cloud
+    void announceCloudReadyNode(String leaderWebServerIp, int leaderWebServerPort) throws Exception {
+      // Do this under a synchronized block to avoid getting multiple cluster ready notification files.
+      synchronized (h2odriver.class) {
+        if (! clusterIsUp) {
+          int n = _numNodesReportingFullCloudSize.incrementAndGet();
+          if (n == _targetCloudSize) {
+            reportClusterReady(leaderWebServerIp, leaderWebServerPort);
+            clusterIsUp = true;
+          }
+        }
+      }
+    }
+
+    void announceFailedNode(String ip, int port, String hostAddress, int exitStatus) {
+      System.out.println("H2O node " + ip + ":" + port + (hostAddress != null ? " on host " + hostAddress : "") +
+              " exited with status " + exitStatus);
+      if (! clusterIsUp) {
+        clusterFailedToComeUp = true;
+      }
+    }
+
+    void setFlatfile(String flatfile) {
+      flatfileContent = flatfile;
+    }
+
+    final int targetCloudSize() {
+      return _targetCloudSize;
+    }
+
+    abstract void close() throws Exception;
+
+    abstract void setMapperParameters(Configuration conf);
+  }
+  
   /**
    * Start a long-running thread ready to handle Mapper->Driver messages.
    */
-  class CallbackManager extends Thread {
-    private final int _numNodes; // desired number of nodes the cloud should eventually have
+  class CallbackManager extends CloudingManager {
 
-    private volatile AtomicInteger _numNodesReportingFullCloudSize = new AtomicInteger(); // number of fully initialized nodes
     private volatile ServerSocket _ss;
 
     // Nodes and socks
@@ -512,8 +568,8 @@ public class h2odriver extends Configured implements Tool {
     final ArrayList<String> _nodes = new ArrayList<>();
     final ArrayList<Socket> _socks = new ArrayList<>();
 
-    CallbackManager(int numNodes) {
-      _numNodes = numNodes;
+    CallbackManager(int targetCloudSize) {
+      super(targetCloudSize);
     }
 
     void setMapperParameters(Configuration conf) {
@@ -538,7 +594,8 @@ public class h2odriver extends Configured implements Tool {
     protected ServerSocket bindCallbackSocket() throws IOException {
       return h2odriver.bindCallbackSocket();
     }
-    
+
+    @Override
     void close() throws Exception {
       ServerSocket ss = _ss;
       _ss = null;
@@ -546,13 +603,8 @@ public class h2odriver extends Configured implements Tool {
     }
     
     void registerNode(String ip, int port, int attempt, Socket s) {
-      final String entry = ip + ":" + port;
-      System.out.println("H2O node " + entry + " requested flatfile");
       synchronized (_dupChecker) {
-        if ("127.0.0.1".equals(ip)) {
-          clusterHasNodeWithLocalhostIp = true;
-        }
-
+        final String entry = ip + ":" + port;
         if (_dupChecker.containsKey(entry)) {
           int prevAttempt = _dupChecker.get(entry);
           if (prevAttempt == attempt) {
@@ -573,19 +625,19 @@ public class h2odriver extends Configured implements Tool {
             _socks.set(old, s);
           }
         } else {
-          numNodesStarted.incrementAndGet();
+          announceNewNode(ip, port);
           _dupChecker.put(entry, attempt);
           _nodes.add(entry);
           _socks.add(s);
         }
 
-        if (_nodes.size() != _numNodes) {
+        if (_nodes.size() != targetCloudSize()) {
           return;
         }
 
         System.out.println("Sending flatfiles to nodes...");
 
-        assert (_nodes.size() == _numNodes);
+        assert (_nodes.size() == targetCloudSize());
         assert (_nodes.size() == _socks.size());
 
         // Build the flatfile and send it to all nodes.
@@ -616,35 +668,7 @@ public class h2odriver extends Configured implements Tool {
         }
 
         // only set if everything went fine
-        flatfileContent = flatfile;
-      }
-    }
-
-    void announceNodeCloudSize(String ip, int port, String leaderWebServerIp, int leaderWebServerPort, int cloudSize) throws Exception {
-      System.out.println("H2O node " + ip + ":" + port + " reports H2O cluster size " + cloudSize + " [leader is " + leaderWebServerIp + ":" + leaderWebServerIp + "]");
-      if (cloudSize == _numNodes) {
-        announceCloudReadyNode(leaderWebServerIp, leaderWebServerPort);
-      }
-    }
-
-    // announces a node that has a complete information about the rest of the cloud
-    void announceCloudReadyNode(String leaderWebServerIp, int leaderWebServerPort) throws Exception {
-      // Do this under a synchronized block to avoid getting multiple cluster ready notification files.
-      synchronized (h2odriver.class) {
-        if (! clusterIsUp) {
-          int n = _numNodesReportingFullCloudSize.incrementAndGet();
-          if (n == _numNodes) {
-            reportClusterReady(leaderWebServerIp, leaderWebServerPort);
-            clusterIsUp = true;
-          }
-        }
-      }
-    }
-
-    void announceFailedNode(String ip, int port, String hostAddress, int exitStatus) {
-      System.out.println("H2O node " + ip + ":" + port + " on host " + hostAddress + " exited with status " + exitStatus);
-      if (! clusterIsUp) {
-        clusterFailedToComeUp = true;
+        setFlatfile(flatfile);
       }
     }
 
@@ -1349,10 +1373,10 @@ public class h2odriver extends Configured implements Tool {
 
     try {
       setShutdownRequested();
-      CallbackManager callbackManager = cm;
+      CloudingManager cloudingManager = cm;
       cm = null;
-      if (callbackManager != null) {
-        callbackManager.close();
+      if (cloudingManager != null) {
+        cloudingManager.close();
       }
     }
     catch (Exception e) {
