@@ -8,20 +8,20 @@ test.tempdir <- function() {
   data <- h2o.importFile(path = locate('smalldata/testng/airlines_train.csv'))
   cols <- c("Origin", "Distance")
   model <- h2o.gbm(x=cols, y = "IsDepDelayed", training_frame = data, validation_frame = data, nfolds = 3, ntrees = 1)
-  mojo_name = h2o.download_mojo(model = model,path = tempdir(), get_genmodel_jar = TRUE
-                                , genmodel_name = "genmodel.jar", genmodel_path = tempdir())
+  
+  tmpfolder <- paste0(tempdir(),'/', stringi::stri_rand_strings(1,20), '/')
+  dir.create(tmpfolder)
+  mojo_name = h2o.download_mojo(model = model,path = tmpfolder, get_genmodel_jar = TRUE
+                                , genmodel_name = "genmodel.jar", genmodel_path = tmpfolder)
+  
   frame = as.data.frame(data)
-  pred <- h2o.mojo_predict_df(frame = frame, mojo_zip_path = paste0(tempdir(),"/", mojo_name), genmodel_jar_path = paste0(tempdir(), "/", "genmodel.jar"))
+  pred <- h2o.mojo_predict_df(frame = frame, mojo_zip_path = paste0(tmpfolder, mojo_name), genmodel_jar_path = paste0(tmpfolder, "genmodel.jar"))
   
-  expect_true(file.exists(tempdir()))
-  expect_true(file.exists(paste0(tempdir(),"/","genmodel.jar")))
-  expect_true(file.exists(paste0(tempdir(), "/", mojo_name)))
+  expect_true(file.exists(tmpfolder))
+  expect_true(file.exists(paste0(tmpfolder,"genmodel.jar")))
+  expect_true(file.exists(paste0(tmpfolder, mojo_name)))
   
-  unlink(paste0(tempdir(),"/","genmodel.jar"))
-  unlink(paste0(tempdir(), "/", mojo_name))
-  
-  
-  
+  unlink(x = tmpfolder, recursive = TRUE)
 
 }
 
