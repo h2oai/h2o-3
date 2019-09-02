@@ -47,7 +47,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
   @Override public boolean isSupervised() { return false; }
 
   @Override public boolean havePojo() { return true; }
-  @Override public boolean haveMojo() { return false; }
+  @Override public boolean haveMojo() { return true; }
 
   @Override protected void checkMemoryFootPrint_impl() {
 
