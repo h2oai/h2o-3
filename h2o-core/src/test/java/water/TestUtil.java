@@ -1131,6 +1131,25 @@ public class TestUtil extends Iced {
     return true;
   }
 
+  public static final String[] ignoredColumns(final Frame frame, final String... usedColumns) {
+    final Set<String> usedColumnsSet = new HashSet<>(usedColumns.length);
+    for (String usedColumn : usedColumns) {
+      usedColumnsSet.add(usedColumn);
+    }
+    
+    final String[] names = frame.names();
+    final String[] ignoredcolumns = new String[names.length - usedColumns.length];
+
+    int ignoredColumnsPointer = 0;
+    for (String name : names) {
+      if (!usedColumnsSet.contains(name)) {
+        ignoredcolumns[ignoredColumnsPointer++] = name;
+      }
+    }
+
+    return ignoredcolumns;
+  }
+
   public static boolean compareFrames(final Frame f1, final Frame f2) throws IllegalStateException {
     return compareFrames(f1, f2, 0);
   }

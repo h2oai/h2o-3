@@ -22,7 +22,7 @@ import org.junit.runners.Suite;
         TargetEncoderMojoWriterTest.class
 })
 
-public class AllTETestsSuite {
+public class TargetEncoderTestSuite {
     // the class remains empty,
     // used only as a holder for the above annotations
 }

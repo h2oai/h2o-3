@@ -41,7 +41,7 @@ public class TargetEncoderBuilderTest extends TestUtil {
 
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
       targetEncoderParameters._blending = false;
-      targetEncoderParameters._encoded_columns = teColumns;
+      targetEncoderParameters._ignored_columns = ignoredColumns(fr, "home.dest", "embarked");
       targetEncoderParameters.setTrain(fr._key);
       targetEncoderParameters._response_column = responseColumnName;
 
@@ -93,7 +93,7 @@ public class TargetEncoderBuilderTest extends TestUtil {
 
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
       targetEncoderParameters._blending = false;
-      targetEncoderParameters._encoded_columns = teColumns;
+      targetEncoderParameters._ignored_columns = ignoredColumns(fr, "home.dest", "embarked");
       targetEncoderParameters.setTrain(fr._key);
       targetEncoderParameters._response_column = responseColumnName;
       targetEncoderParameters._ignore_const_cols = false;
@@ -138,7 +138,7 @@ public class TargetEncoderBuilderTest extends TestUtil {
 
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
       targetEncoderParameters._blending = false;
-      targetEncoderParameters._encoded_columns = teColumns;
+      targetEncoderParameters._ignored_columns = ignoredColumns(fr, "home.dest", "embarked");
       targetEncoderParameters._fold_column = foldColumnName;
       targetEncoderParameters.setTrain(fr._key);
       targetEncoderParameters._response_column = responseColumnName;
@@ -194,7 +194,7 @@ public class TargetEncoderBuilderTest extends TestUtil {
 
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
       targetEncoderParameters._blending = false;
-      targetEncoderParameters._encoded_columns = teColumns;
+      targetEncoderParameters._ignored_columns = ignoredColumns(fr, "home.dest", "embarked");
       targetEncoderParameters._fold_column = foldColumnName;
       targetEncoderParameters.setTrain(fr._key);
       targetEncoderParameters._response_column = responseColumnName;

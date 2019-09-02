@@ -4,11 +4,14 @@ import hex.ModelBuilder;
 import hex.ModelCategory;
 import water.Scope;
 import water.fvec.Frame;
+import water.util.ArrayUtils;
 import water.util.IcedHashMapGeneric;
 import water.util.Log;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, TargetEncoderModel.TargetEncoderParameters, TargetEncoderModel.TargetEncoderOutput> {
 
@@ -36,8 +39,9 @@ public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, Targe
   private class TargetEncoderDriver extends Driver {
     @Override
     public void computeImpl() {
-      final String[] encoded_columns = Frame.VecSpecifier.vecNames(_parms._encoded_columns);
-      TargetEncoder tec = new TargetEncoder(encoded_columns);
+      final String[] encodedColumns = encodedColumnsFromIgnored(_parms.train()._names, _parms._ignored_columns,
+              _parms._response_column, _parms._fold_column);
+      TargetEncoder tec = new TargetEncoder(encodedColumns);
 
       Scope.untrack(train().keys());
 
@@ -57,6 +61,31 @@ public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, Targe
 
       _targetEncoderModel.write_lock(_job);
       _targetEncoderModel.unlock(_job);
+    }
+
+
+    private String[] encodedColumnsFromIgnored(final String[] minued, final String[] subtrahend, final String responseName,
+                                                      final String foldColumnName) {
+      final Set<String> subtrahendSet = new HashSet(subtrahend.length + 1);
+      for (String name : subtrahend) {
+        subtrahendSet.add(name);
+      }
+
+      if (responseName != null) {
+        subtrahendSet.add(responseName);
+      }
+
+      if (foldColumnName != null) {
+        subtrahendSet.add(foldColumnName);
+      }
+
+      final Set<String> results = new HashSet<>();
+      for (String name : minued) {
+        if (!subtrahendSet.contains(name)) {
+          results.add(name);
+        }
+      }
+      return results.toArray(new String[0]);
     }
 
     private void disableIgnoreConstColsFeature() {

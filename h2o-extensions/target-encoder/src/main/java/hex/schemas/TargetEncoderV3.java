@@ -3,7 +3,6 @@ import ai.h2o.targetencoding.TargetEncoder;
 import ai.h2o.targetencoding.TargetEncoderBuilder;
 import ai.h2o.targetencoding.TargetEncoderModel;
 import water.api.API;
-import water.api.schemas3.FrameV3;
 import water.api.schemas3.ModelParametersSchemaV3;
 
 import java.util.List;
@@ -11,12 +10,6 @@ import java.util.List;
 public class TargetEncoderV3 extends ModelBuilderSchema<TargetEncoderBuilder, TargetEncoderV3, TargetEncoderV3.TargetEncoderParametersV3> {
   public static class TargetEncoderParametersV3 extends ModelParametersSchemaV3<TargetEncoderModel.TargetEncoderParameters, TargetEncoderParametersV3> {
     
-    @API(help = "Columnds to encode.")
-    public FrameV3.ColSpecifierV3[] encoded_columns;
-    
-    @API(help = "Target column for the encoding")
-    public FrameV3.ColSpecifierV3 target_column;
-
     @API(help = "Blending enabled/disabled")
     public boolean blending;
 
@@ -33,19 +26,11 @@ public class TargetEncoderV3 extends ModelBuilderSchema<TargetEncoderBuilder, Ta
     public String[] fields() {
       final List<String> params = extractDeclaredApiParameters(getClass());
       params.add("model_id");
+      params.add("ignored_columns");
       params.add("training_frame");
       params.add("fold_column");
   
       return params.toArray(new String[0]);
-    }
-
-    @Override
-    public TargetEncoderModel.TargetEncoderParameters fillImpl(TargetEncoderModel.TargetEncoderParameters impl) {
-      super.fillImpl(impl);
-      if(response_column == null && target_column != null) {
-        impl._response_column = target_column.column_name;
-      }
-      return impl;
     }
 
     @Override
