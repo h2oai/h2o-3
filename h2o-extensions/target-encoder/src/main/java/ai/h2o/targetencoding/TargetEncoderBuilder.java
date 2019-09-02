@@ -94,7 +94,7 @@ public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, Targe
 
   @Override
   public BuilderVisibility builderVisibility() {
-    return BuilderVisibility.Beta;
+    return BuilderVisibility.Stable;
   }
 
   @Override

@@ -5,6 +5,7 @@ import hex.genmodel.algos.deepwater.DeepwaterMojoReader;
 import hex.genmodel.algos.drf.DrfMojoReader;
 import hex.genmodel.algos.gbm.GbmMojoReader;
 import hex.genmodel.algos.glm.GlmMojoReader;
+import hex.genmodel.algos.pca.PCAMojoReader;
 import hex.genmodel.algos.glrm.GlrmMojoReader;
 import hex.genmodel.algos.isofor.IsolationForestMojoReader;
 import hex.genmodel.algos.kmeans.KMeansMojoReader;
@@ -95,7 +96,9 @@ public class ModelMojoFactory {
 
       case "MOJO Pipeline":
         return new MojoPipelineReader();
-
+      case "Principal Components Analysis":
+        return new PCAMojoReader();
+        
       default:
         // Try to load MOJO reader via service
         ModelMojoReader mmr = loadMojoReader(algo);

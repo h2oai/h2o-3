@@ -5,17 +5,18 @@ import hex.genmodel.GenModel;
 import hex.genmodel.IClusteringModel;
 import hex.genmodel.PredictContributions;
 import hex.genmodel.PredictContributionsFactory;
-import hex.genmodel.algos.deepwater.DeepwaterMojoModel;
+import hex.genmodel.algos.deeplearning.DeeplearningMojoModel;
+import hex.genmodel.algos.pca.PCAMojoModel;
+import hex.genmodel.algos.glrm.GlrmMojoModel;
 import hex.genmodel.algos.targetencoder.TargetEncoderMojoModel;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
-import hex.genmodel.algos.glrm.GlrmMojoModel;
-import hex.genmodel.algos.deeplearning.DeeplearningMojoModel;
 import hex.genmodel.algos.word2vec.WordEmbeddingModel;
 import hex.genmodel.easy.error.VoidErrorConsumer;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.*;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.Serializable;
 import java.util.*;
 
 /**
@@ -822,7 +823,8 @@ public class EasyPredictModelWrapper implements Serializable {
   }
   protected double[] preamble(ModelCategory c, RowData data, double offset) throws PredictException {
     validateModelCategory(c);
-    return predict(data, offset, new double[m.getPredsSize(c)]);
+    int predSize = (m instanceof PCAMojoModel)? ((PCAMojoModel) m)._k : m.getPredsSize(c);
+    return predict(data, offset, new double[predSize]);
   }
 
   private static double[] nanArray(int len) {

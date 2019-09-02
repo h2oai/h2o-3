@@ -20,8 +20,8 @@ class H2OTargetEncoderEstimator(H2OEstimator):
     """
 
     algo = "targetencoder"
-    param_names = {"encoded_columns", "target_column", "k", "f", "data_leakage_handling", "model_id", "training_frame",
-                   "fold_column"}
+    param_names = {"encoded_columns", "target_column", "blending", "k", "f", "data_leakage_handling", "model_id",
+                   "training_frame", "fold_column"}
 
     def __init__(self, **kwargs):
         super(H2OTargetEncoderEstimator, self).__init__()
@@ -67,12 +67,27 @@ class H2OTargetEncoderEstimator(H2OEstimator):
 
 
     @property
+    def blending(self):
+        """
+        Blending enabled/disabled
+
+        Type: ``bool``  (default: ``False``).
+        """
+        return self._parms.get("blending")
+
+    @blending.setter
+    def blending(self, blending):
+        assert_is_type(blending, None, bool)
+        self._parms["blending"] = blending
+
+
+    @property
     def k(self):
         """
-        Parameter 'k' used for blending (if enabled). Blending is to be enabled separately using the 'blending'
+        Inflection point. Used for blending (if enabled). Blending is to be enabled separately using the 'blending'
         parameter.
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``20``).
         """
         return self._parms.get("k")
 
@@ -85,10 +100,9 @@ class H2OTargetEncoderEstimator(H2OEstimator):
     @property
     def f(self):
         """
-        Parameter 'f' used for blending (if enabled). Blending is to be enabled separately using the 'blending'
-        parameter.
+        Smooothing. Used for blending (if enabled). Blending is to be enabled separately using the 'blending' parameter.
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``10``).
         """
         return self._parms.get("f")
 
@@ -103,7 +117,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         """
         Data leakage handling strategy. Default to None.
 
-        One of: ``"none"``, ``"k_fold"``, ``"leave_one_out"``.
+        One of: ``"none"``, ``"k_fold"``, ``"leave_one_out"``  (default: ``"none"``).
         """
         return self._parms.get("data_leakage_handling")
 

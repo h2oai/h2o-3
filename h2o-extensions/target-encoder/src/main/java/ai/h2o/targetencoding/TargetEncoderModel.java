@@ -33,9 +33,9 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
 
   public static class TargetEncoderParameters extends Model.Parameters {
     public boolean _blending = false;
-    public BlendingParams _blending_parameters;
+    public BlendingParams _blending_parameters = TargetEncoder.DEFAULT_BLENDING_PARAMS;
     public Frame.VecSpecifier[] _encoded_columns;
-    public TargetEncoder.DataLeakageHandlingStrategy _data_leakage_handling;
+    public TargetEncoder.DataLeakageHandlingStrategy _data_leakage_handling = TargetEncoder.DataLeakageHandlingStrategy.None;
     public Frame.VecSpecifier _target_column;
     
     @Override
