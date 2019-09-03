@@ -152,10 +152,10 @@ public class TEMojoIntegrationTest extends TestUtil {
                 new Frame.VecSpecifier(fr._key, "embarked")};
 
         TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
-        targetEncoderParameters._ignored_columns = ignoredColumns(fr, "home.dest", "embarked");
+        targetEncoderParameters._response_column = responseColumnName;
+        targetEncoderParameters._ignored_columns = ignoredColumns(fr, "home.dest", "embarked", targetEncoderParameters._response_column);
         targetEncoderParameters._ignore_const_cols = false; // Why ignore_const_column ignores `name` column? bad naming
         targetEncoderParameters.setTrain(fr._key);
-        targetEncoderParameters._response_column = responseColumnName;
 
         TargetEncoderBuilder targetEncoderBuilder = new TargetEncoderBuilder(targetEncoderParameters);
 
@@ -328,10 +328,10 @@ public class TEMojoIntegrationTest extends TestUtil {
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
       targetEncoderParameters._blending = true;
       targetEncoderParameters._blending_parameters = TargetEncoder.DEFAULT_BLENDING_PARAMS;
-      targetEncoderParameters._ignored_columns = ignoredColumns(fr, "home.dest", "embarked");
+      targetEncoderParameters._response_column = responseColumnName;
+      targetEncoderParameters._ignored_columns = ignoredColumns(fr, "home.dest", "embarked", targetEncoderParameters._response_column);
       targetEncoderParameters._ignore_const_cols = false;
       targetEncoderParameters.setTrain(fr._key);
-      targetEncoderParameters._response_column = responseColumnName;
 
       TargetEncoderBuilder job = new TargetEncoderBuilder(targetEncoderParameters);
 
@@ -419,19 +419,14 @@ public class TEMojoIntegrationTest extends TestUtil {
       asFactor(fr, responseColumnName);
       Scope.track(fr);
 
-      Frame.VecSpecifier[] teColumns = {new Frame.VecSpecifier(fr._key, "home.dest")};
-
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
-
-      targetEncoderParameters._ignored_columns = ignoredColumns(fr, "home.dest");
-
+      targetEncoderParameters._response_column = responseColumnName;
+      targetEncoderParameters._ignored_columns = ignoredColumns(fr, "home.dest", targetEncoderParameters._response_column);
       // Enable blending
       targetEncoderParameters._blending = true;
       targetEncoderParameters._blending_parameters = new BlendingParams(5, 1);
-
       targetEncoderParameters._ignore_const_cols = false;
       targetEncoderParameters.setTrain(fr._key);
-      targetEncoderParameters._response_column = responseColumnName;
 
       TargetEncoderBuilder job = new TargetEncoderBuilder(targetEncoderParameters);
 
@@ -503,18 +498,15 @@ public class TEMojoIntegrationTest extends TestUtil {
       asFactor(fr, responseColumnName);
       Scope.track(fr);
 
-      Frame.VecSpecifier[] teColumns = {new Frame.VecSpecifier(fr._key, "home.dest"),
-              new Frame.VecSpecifier(fr._key, "embarked")};
-
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
 
-      targetEncoderParameters._ignored_columns = ignoredColumns(fr, "home.dest", "embarked");
+      targetEncoderParameters._response_column = responseColumnName;
+      targetEncoderParameters._ignored_columns = ignoredColumns(fr, "home.dest", "embarked", targetEncoderParameters._response_column);
       targetEncoderParameters._blending = true;
       targetEncoderParameters._blending_parameters = new BlendingParams(5, 1);
 
       targetEncoderParameters._ignore_const_cols = false;
       targetEncoderParameters.setTrain(fr._key);
-      targetEncoderParameters._response_column = responseColumnName;
 
       TargetEncoderBuilder targetEncoderBuilder = new TargetEncoderBuilder(targetEncoderParameters);
 
@@ -526,7 +518,6 @@ public class TEMojoIntegrationTest extends TestUtil {
 
       assertEquals(0, targetEncoderModel._output._target_encoding_map.get("embarked").byteSize());
       assertEquals(0, targetEncoderModel._output._target_encoding_map.get("home.dest").byteSize());
-      assertEquals(0, targetEncoderModel._output.column_name_to_idx.size());
     } finally {
       Scope.exit();
     }
@@ -555,10 +546,10 @@ public class TEMojoIntegrationTest extends TestUtil {
 
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
       targetEncoderParameters._blending = false;
-      targetEncoderParameters._ignored_columns = ignoredColumns(fr, "home.dest", "embarked");
+      targetEncoderParameters._response_column = responseColumnName;
+      targetEncoderParameters._ignored_columns = ignoredColumns(fr, "home.dest", "embarked", responseColumnName);
       targetEncoderParameters._ignore_const_cols = false; // Why ignore_const_column ignores `name` column? bad naming
       targetEncoderParameters.setTrain(fr._key);
-      targetEncoderParameters._response_column = responseColumnName;
 
       TargetEncoderBuilder targetEncoderBuilder = new TargetEncoderBuilder(targetEncoderParameters);
 

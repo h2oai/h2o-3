@@ -9,7 +9,6 @@ import water.Job;
 import water.Key;
 import water.fvec.Frame;
 import water.udf.CFuncRef;
-import water.util.ArrayUtils;
 import water.util.IcedHashMapGeneric;
 import water.util.TwoDimTable;
 
@@ -62,7 +61,6 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     
     public IcedHashMapGeneric<String, Frame> _target_encoding_map;
     public TargetEncoderParameters _parms;
-    public IcedHashMapGeneric<String, Integer> column_name_to_idx;
     public IcedHashMapGeneric<String, Integer> _column_name_to_missing_val_presence;
     public double _prior_mean;
     
@@ -72,7 +70,6 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       _parms = b._parms;
       _model_summary = constructSummary();
 
-      column_name_to_idx = createColumnNameToIndexMap(_parms);
       _column_name_to_missing_val_presence = createMissingValuesPresenceMap();
       _prior_mean = priorMean;
     }
@@ -102,15 +99,6 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       }
 
       return summary;
-    }
-
-    private IcedHashMapGeneric<String, Integer> createColumnNameToIndexMap(TargetEncoderParameters teParams) {
-      IcedHashMapGeneric<String, Integer> teColumnNameToIdx = new IcedHashMapGeneric<>();
-      String[] features = ArrayUtils.remove(teParams.train().names().clone(), teParams._response_column);
-      for(String teColumn : _target_encoding_map.keySet()) {
-        teColumnNameToIdx.put(teColumn, ArrayUtils.find(features, teColumn));
-      }
-      return teColumnNameToIdx;
     }
 
     @Override public ModelCategory getModelCategory() {
@@ -180,7 +168,6 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
   @Override
   protected Futures remove_impl(Futures fs, boolean cascade) {
     TargetEncoderFrameHelper.encodingMapCleanUp(_output._target_encoding_map);
-    _output.column_name_to_idx.clear();
     return super.remove_impl(fs, cascade);
   }
 }
