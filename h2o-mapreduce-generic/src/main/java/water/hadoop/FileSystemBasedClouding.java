@@ -2,41 +2,37 @@ package water.hadoop;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
-import water.init.AbstractEmbeddedH2OConfig;
 
 import java.io.*;
 import java.net.InetAddress;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
-public class HdfsBasedClouding extends AbstractEmbeddedH2OConfig {
+public class FileSystemBasedClouding extends AbstractClouding {
 
   private InetAddress _self_ip;
   private int _self_port = -1;
   
-  private final int _n;
-  private final Path _path;
-  private final FileSystem _fs;
-  private final ExitEvent _exit_event;
+  private int _n;
+  private Path _path;
+  private FileSystem _fs;
 
-  private final Map<String, String> _nodes;
+  private final Map<String, URI> _nodes = new HashMap<>();
 
-  HdfsBasedClouding(int n, String path, Configuration conf, ExitEvent exitEvent) throws IOException {
-    _n = n;
-    _path = new Path(path);
+  void init(Configuration conf) throws IOException {
+    _n = conf.getInt(h2omapper.H2O_CLOUD_SIZE_KEY, -1);
+    _path = new Path(conf.get(h2omapper.H2O_CLOUDING_DIR_KEY));
     _fs = FileSystem.get(conf);
-    _nodes = new HashMap<>(_n);
-    _exit_event = exitEvent;
   }
 
   @Override
   public void notifyAboutCloudSize(InetAddress ip, int port, InetAddress leaderIp, int leaderPort, int size) {
     if (size != _n)
       return;
-    String leader = leaderIp.getHostName() + ":" + leaderPort;
     Path path = toNodePath(ip, port, "leader");
     try {
-      writeFile(path, leader);
+      writeFile(path, h2oUri(leaderIp, leaderPort).toString());
     } catch (IOException e) {
       e.printStackTrace();
       exit(162);
@@ -50,8 +46,7 @@ public class HdfsBasedClouding extends AbstractEmbeddedH2OConfig {
 
     Path nodePath = toNodePath(ip, port, "node");
     try {
-      String nodeInfo = ip.getHostAddress() + ":" + port;
-      writeFile(nodePath, nodeInfo);
+      writeFile(nodePath, h2oUri(ip, port).toString());
     } catch (IOException e) {
       e.printStackTrace();
       exit(160);
@@ -74,7 +69,8 @@ public class HdfsBasedClouding extends AbstractEmbeddedH2OConfig {
         }
         try (InputStream is = _fs.open(fs.getPath());
              BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
-          _nodes.put(name, br.readLine());
+          String node = br.readLine();
+          _nodes.put(name, URI.create(node));
         }
       }
       try {
@@ -84,8 +80,8 @@ public class HdfsBasedClouding extends AbstractEmbeddedH2OConfig {
       }
     }
     StringBuilder sb = new StringBuilder();
-    for (String node : _nodes.values()) {
-      sb.append(node);
+    for (URI node : _nodes.values()) {
+      sb.append(node.getHost()).append(':').append(node.getPort());
       sb.append('\n');
     }
     return sb.toString();
@@ -99,19 +95,25 @@ public class HdfsBasedClouding extends AbstractEmbeddedH2OConfig {
     } catch (Exception e) {
       e.printStackTrace();
     }
-    _exit_event.send(status);
+    invokeExit(status);
   }
 
   @Override
   public void print() {
-    
+    System.out.println("FileSystemBasedClouding print()");
+    System.out.println("    Clouding directory: " + ((_path != null) ? _path : "(null)"));
+    System.out.println("    Target cloud size: " + _n);
   }
-
+  
   private void writeFile(Path path, String content) throws IOException {
-    try (OutputStream os = _fs.create(path, false);
+    Path temp = new Path(path.getParent(), path.getName() + ".temp");
+    try (OutputStream os = _fs.create(temp, false);
          PrintWriter wr = new PrintWriter(os)) {
       wr.write(content);
       wr.write('\n');
+    }
+    if (! _fs.rename(temp, path)) {
+      throw new IOException("Failed to create file " + path + " (rename failed).");
     }
   }
   
@@ -130,5 +132,9 @@ public class HdfsBasedClouding extends AbstractEmbeddedH2OConfig {
       return name.endsWith(".exit");
     }
   }
+  
+  private static URI h2oUri(InetAddress ip, int port) {
+    return URI.create("h2o://" + ip.getHostName() + ":" + port);
+  } 
   
 }

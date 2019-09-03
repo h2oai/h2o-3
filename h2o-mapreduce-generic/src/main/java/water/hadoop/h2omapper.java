@@ -5,7 +5,6 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.Mapper;
 import water.H2O;
-import water.init.AbstractEmbeddedH2OConfig;
 import water.util.Log;
 
 import java.io.*;
@@ -23,8 +22,15 @@ import java.util.Properties;
  */
 public class h2omapper extends Mapper<Text, Text, Text, Text> {
 
+  public static final String H2O_CLOUDING_IMPL = "h2o.clouding.impl"; 
+
+  // for network-based clouding
   public static final String H2O_DRIVER_IP_KEY = "h2o.driver.ip";
   public static final String H2O_DRIVER_PORT_KEY = "h2o.driver.port";
+
+  // for filesystem-based clouding
+  public static final String H2O_CLOUDING_DIR_KEY = "h2o.clouding.dir";
+  public static final String H2O_CLOUD_SIZE_KEY = "h2o.clouding.cloud.size";
 
   public static final String H2O_AUTH_PRINCIPAL = "h2o.auth.principal";
   public static final String H2O_AUTH_KEYTAB = "h2o.auth.keytab";
@@ -148,10 +154,6 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
     // It is important to write to a directory that is in the container otherwise eg. logs can be overwriting each other
     String ice_root = System.getProperty("java.io.tmpdir");
 
-    String driverIp = conf.get(H2O_DRIVER_IP_KEY);
-    String driverPortString = conf.get(H2O_DRIVER_PORT_KEY);
-    int driverPort = Integer.parseInt(driverPortString);
-
     ServerSocket ss = new ServerSocket();
     InetSocketAddress sa = new InetSocketAddress("127.0.0.1", 0);
     ss.bind(sa);
@@ -201,10 +203,10 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
     DelegationTokenRefresher.setup(conf, ice_root);
     String[] args = argsList.toArray(new String[0]);
     try {
-      AbstractEmbeddedH2OConfig config = new HdfsBasedClouding(3, 
-              "hdfs://mr-0xd6.0xdata.loc:8020/user/michalk/clouding", 
-              conf, 
-              status -> exit(localPort, status));
+      String cloudingImpl = conf.get(H2O_CLOUDING_IMPL);
+      AbstractClouding config = (AbstractClouding) Class.forName(cloudingImpl).newInstance();
+      config.setMapperCallbackPort(localPort);
+      config.init(conf);
       H2O.setEmbeddedH2OConfig(config);
       Log.POST(11, "After setEmbeddedH2OConfig");
       //-------------------------------------------------------------

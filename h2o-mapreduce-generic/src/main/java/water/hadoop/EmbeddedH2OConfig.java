@@ -1,18 +1,18 @@
 package water.hadoop;
 
+import org.apache.hadoop.conf.Configuration;
 import water.util.Log;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 
-class EmbeddedH2OConfig extends water.init.AbstractEmbeddedH2OConfig {
+class EmbeddedH2OConfig extends AbstractClouding {
 
   private static final int FETCH_FILE_RETRYS = Integer.parseInt(System.getProperty("sys.ai.h2o.hadoop.callback.retrys", "3")); 
 
   private volatile String _driverCallbackIp;
   private volatile int _driverCallbackPort = -1;
-  private volatile int _mapperCallbackPort = -1;
   private volatile String _embeddedWebServerIp = "(Unknown)";
   private volatile int _embeddedWebServerPort = -1;
 
@@ -24,8 +24,10 @@ class EmbeddedH2OConfig extends water.init.AbstractEmbeddedH2OConfig {
     _driverCallbackPort = value;
   }
 
-  void setMapperCallbackPort(int value) {
-    _mapperCallbackPort = value;
+  @Override
+  void init(Configuration conf) {
+    _driverCallbackIp = conf.get(h2omapper.H2O_DRIVER_IP_KEY);
+    _driverCallbackPort = conf.getInt(h2omapper.H2O_DRIVER_PORT_KEY, -1);
   }
 
   private class BackgroundWriterThread extends Thread {
@@ -158,7 +160,7 @@ class EmbeddedH2OConfig extends water.init.AbstractEmbeddedH2OConfig {
       e.printStackTrace();
     }
     
-    h2omapper.exit(_mapperCallbackPort, status);
+    invokeExit(status);
   }
 
   @Override
