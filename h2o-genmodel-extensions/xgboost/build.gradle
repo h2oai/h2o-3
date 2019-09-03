@@ -7,7 +7,7 @@ sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
 ext {
-    xgboost4jVersion = "0.82.21"
+    xgboost4jVersion = "0.90.3"
 }
 
 dependencies {
@@ -29,7 +29,6 @@ dependencies {
     compile "ai.h2o:xgboost4j-linux-gpuv4:${xgboost4jVersion}"
     compile "ai.h2o:xgboost4j-linux-minimal:${xgboost4jVersion}"
     compile "ai.h2o:xgboost4j-osx-minimal:${xgboost4jVersion}"
-    compile "ai.h2o:xgboost4j-linux-ompv3:${xgboost4jVersion}"
     compileOnly 'com.esotericsoftware.kryo:kryo:2.21'
 
     testCompile 'com.esotericsoftware.kryo:kryo:2.21'
