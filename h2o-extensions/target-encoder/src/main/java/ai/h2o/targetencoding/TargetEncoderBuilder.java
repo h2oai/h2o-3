@@ -4,7 +4,6 @@ import hex.ModelBuilder;
 import hex.ModelCategory;
 import water.Scope;
 import water.fvec.Frame;
-import water.util.ArrayUtils;
 import water.util.IcedHashMapGeneric;
 import water.util.Log;
 
@@ -36,8 +35,8 @@ public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, Targe
   private class TargetEncoderDriver extends Driver {
     @Override
     public void computeImpl() {
-      final String[] encodedColumns = encodedColumnsFromIgnored(_parms.train(), _parms._ignored_columns,
-              _parms._response_column, _parms._fold_column);
+      final int numColsRemoved = hasFoldCol() ? 2 : 1; // Response is always at the last index, fold column is on the index before.
+      final String[] encodedColumns = Arrays.copyOf(train().names(), train().names().length - numColsRemoved);
       TargetEncoder tec = new TargetEncoder(encodedColumns);
 
       Scope.untrack(train().keys());
@@ -58,39 +57,6 @@ public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, Targe
 
       _targetEncoderModel.write_lock(_job);
       _targetEncoderModel.unlock(_job);
-    }
-
-
-    private String[] encodedColumnsFromIgnored(final Frame trainingFrame, final String[] subtrahend, final String responseName,
-                                               final String foldColumnName) {
-      // Ignore non-categorical columns by default
-      final ArrayList<String> minued = new ArrayList();
-      for (int i = 0; i < trainingFrame.numCols(); i++) {
-        if (trainingFrame.vec(i).isCategorical() && !trainingFrame.name(i).equals(responseName)) {
-          minued.add(trainingFrame.name(i));
-        }
-      }
-
-      final Set<String> subtrahendSet = new HashSet(subtrahend.length + 1);
-      for (String name : subtrahend) {
-        subtrahendSet.add(name);
-      }
-
-      if (responseName != null) {
-        subtrahendSet.add(responseName);
-      }
-
-      if (foldColumnName != null) {
-        subtrahendSet.add(foldColumnName);
-      }
-
-      final Set<String> results = new HashSet<>();
-      for (String name : minued) {
-        if (!subtrahendSet.contains(name)) {
-          results.add(name);
-        }
-      }
-      return results.toArray(new String[0]);
     }
 
     private void disableIgnoreConstColsFeature() {
