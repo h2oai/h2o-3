@@ -254,7 +254,10 @@ The list of limitations include:
     |Windows   | no              | no  | no  | NA             |
     +----------+-----------------+-----+-----+----------------+
 
-    **Note**: Minimal XGBoost configuration includes support for a single CPU.
+    **Notes**:
+
+    - Minimal XGBoost configuration includes support for a single CPU.
+    - Testing is done on Ubuntu 16 and CentOS 7 with GCC 5. These can be considered as being supported.
 
   3. Because we are using native XGBoost libraries that depend on OS/platform libraries, it is possible that on older operating systems, XGBoost will not be able to find all necessary binary dependencies, and will not be initialized and available.
 
