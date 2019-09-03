@@ -5,12 +5,12 @@
 #'
 #' Transformation of a categorical variable with a mean value of the target variable
 #'
-#' @param training_frame Id of the training data frame.
 #' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing, then all columns except y are used.
 #' @param y The name or column index of the response variable in the data. 
 #'        The response must be either a numeric or a categorical/factor variable. 
 #'        If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
+#' @param training_frame Id of the training data frame.
 #' @param blending \code{Logical}. Blending enabled/disabled Defaults to FALSE.
 #' @param k Inflection point. Used for blending (if enabled). Blending is to be enabled separately using the 'blending'
 #'        parameter. Defaults to 20.
@@ -33,9 +33,9 @@
 #' # encoded_data <- h2o.transform(target_encoder, data)
 #' }
 #' @export
-h2o.targetencoder <- function(training_frame,
-                              x,
+h2o.targetencoder <- function(x,
                               y,
+                              training_frame,
                               blending = FALSE,
                               k = 20,
                               f = 10,

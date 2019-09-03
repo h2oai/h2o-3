@@ -1,5 +1,4 @@
 extensions = dict(
-    required_params=['training_frame', "x", "y"],
     set_required_params="""
 args <- .verify_dataxy(training_frame, x, y)
 if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
