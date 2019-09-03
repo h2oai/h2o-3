@@ -49,9 +49,13 @@ public class EmbeddedH2OConfigTest {
 
   @Test
   public void testFetchFile() throws Exception {
-    new h2odriver()
-            .new CallbackManager(_open_server_socket, 1)
-            .start();
+    h2odriver.CallbackManager cm = new h2odriver().new CallbackManager(1) {
+      @Override
+      protected ServerSocket bindCallbackSocket() throws IOException {
+        return _open_server_socket;
+      }
+    };
+    cm.start();
 
     EmbeddedH2OConfig cfg = new SocketClosingEmbeddedH2OConfig();
     cfg.setDriverCallbackIp("127.0.0.1");
@@ -81,7 +85,7 @@ public class EmbeddedH2OConfigTest {
 
   private class SocketClosingEmbeddedH2OConfig extends EmbeddedH2OConfig {
     @Override
-    protected void reportFetchfileAttemptFailure(IOException ioex, int attempt) throws IOException {
+    protected void reportFetchfileAttemptFailure(IOException ioex, int attempt) {
       setDriverCallbackPort(_open_port);
     }
   }
