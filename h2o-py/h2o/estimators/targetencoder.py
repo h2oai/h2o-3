@@ -20,17 +20,17 @@ class H2OTargetEncoderEstimator(H2OEstimator):
     """
 
     algo = "targetencoder"
+    param_names = {"encoded_columns", "target_column", "blending", "k", "f", "data_leakage_handling", "model_id",
+                   "training_frame", "fold_column"}
 
     def __init__(self, **kwargs):
         super(H2OTargetEncoderEstimator, self).__init__()
         self._parms = {}
-        names_list = {"encoded_columns", "target_column", "blending", "k", "f", "data_leakage_handling", "model_id",
-                      "training_frame", "fold_column"}
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue
                 self._parms["model_id"] = pvalue
-            elif pname in names_list:
+            elif pname in self.param_names:
                 # Using setattr(...) will invoke type-checking of the arguments
                 setattr(self, pname, pvalue)
             else:
