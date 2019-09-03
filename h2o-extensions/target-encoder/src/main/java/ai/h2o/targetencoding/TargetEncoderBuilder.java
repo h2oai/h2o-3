@@ -8,10 +8,7 @@ import water.util.ArrayUtils;
 import water.util.IcedHashMapGeneric;
 import water.util.Log;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, TargetEncoderModel.TargetEncoderParameters, TargetEncoderModel.TargetEncoderOutput> {
 
@@ -39,7 +36,7 @@ public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, Targe
   private class TargetEncoderDriver extends Driver {
     @Override
     public void computeImpl() {
-      final String[] encodedColumns = encodedColumnsFromIgnored(_parms.train()._names, _parms._ignored_columns,
+      final String[] encodedColumns = encodedColumnsFromIgnored(_parms.train(), _parms._ignored_columns,
               _parms._response_column, _parms._fold_column);
       TargetEncoder tec = new TargetEncoder(encodedColumns);
 
@@ -64,8 +61,16 @@ public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, Targe
     }
 
 
-    private String[] encodedColumnsFromIgnored(final String[] minued, final String[] subtrahend, final String responseName,
-                                                      final String foldColumnName) {
+    private String[] encodedColumnsFromIgnored(final Frame trainingFrame, final String[] subtrahend, final String responseName,
+                                               final String foldColumnName) {
+      // Ignore non-categorical columns by default
+      final ArrayList<String> minued = new ArrayList();
+      for (int i = 0; i < trainingFrame.numCols(); i++) {
+        if (trainingFrame.vec(i).isCategorical() && !trainingFrame.name(i).equals(responseName)) {
+          minued.add(trainingFrame.name(i));
+        }
+      }
+
       final Set<String> subtrahendSet = new HashSet(subtrahend.length + 1);
       for (String name : subtrahend) {
         subtrahendSet.add(name);
