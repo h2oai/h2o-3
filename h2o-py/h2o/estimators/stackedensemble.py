@@ -48,19 +48,19 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     """
 
     algo = "stackedensemble"
+    param_names = {"model_id", "training_frame", "response_column", "validation_frame", "blending_frame", "base_models",
+                   "metalearner_algorithm", "metalearner_nfolds", "metalearner_fold_assignment",
+                   "metalearner_fold_column", "metalearner_params", "seed", "keep_levelone_frame",
+                   "export_checkpoints_dir"}
 
     def __init__(self, **kwargs):
         super(H2OStackedEnsembleEstimator, self).__init__()
         self._parms = {}
-        names_list = {"model_id", "training_frame", "response_column", "validation_frame", "blending_frame",
-                      "base_models", "metalearner_algorithm", "metalearner_nfolds", "metalearner_fold_assignment",
-                      "metalearner_fold_column", "metalearner_params", "seed", "keep_levelone_frame",
-                      "export_checkpoints_dir"}
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue
                 self._parms["model_id"] = pvalue
-            elif pname in names_list:
+            elif pname in self.param_names:
                 # Using setattr(...) will invoke type-checking of the arguments
                 setattr(self, pname, pvalue)
             else:
