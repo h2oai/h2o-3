@@ -19,7 +19,7 @@ public enum Algo {
     @Override
     boolean enabled() {
       return ExtensionManager.getInstance().isCoreExtensionEnabled(this.name())
-              && !(H2O.CLOUD.size() > 1 && !Boolean.parseBoolean(System.getProperty(DISTRIBUTED_XGBOOST_ENABLED, "false")));
+              && !(H2O.CLOUD.size() > 1 && !Boolean.parseBoolean(System.getProperty(DISTRIBUTED_XGBOOST_ENABLED, "true")));
     }
   },
   ;
