@@ -19,10 +19,11 @@ import org.junit.runners.Suite;
         TargetEncodingFrameHelperTest.class,
         TargetEncodingImmutabilityTest.class,
         TEMojoIntegrationTest.class,
+        TargetEncoderBuilderTest.class,
         TargetEncoderMojoWriterTest.class
 })
 
-public class AllTETestsSuite {
+public class TargetEncoderTestSuite {
     // the class remains empty,
     // used only as a holder for the above annotations
 }

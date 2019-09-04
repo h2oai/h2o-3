@@ -24,24 +24,6 @@ def class_extensions():
                                                                 'seed': seed})
         return h2o.get_frame(output["name"])
 
-    def train(self, x = None, y = None,fold_column = None, training_frame = None, encoded_columns = None,
-                  target_column = None):
-
-        if (y is None):
-            y = target_column
-        if(x is None):
-            x = encoded_columns
-
-        def extend_parms(parms):
-            if target_column is not None:
-                parms["target_column"] = target_column
-            if encoded_columns is not None:
-                parms["encoded_columns"] = encoded_columns
-            parms["encoded_columns"] = parms["encoded_columns"] if "encoded_columns" in parms else x
-
-        super(self.__class__, self)._train(x = x, y = y, training_frame = training_frame, fold_column = fold_column,
-                                           extend_parms_fn=extend_parms)
-
 
 extensions = dict(
     __imports__="""import h2o""",

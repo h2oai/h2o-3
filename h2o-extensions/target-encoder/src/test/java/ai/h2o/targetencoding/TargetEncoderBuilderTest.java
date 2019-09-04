@@ -1,7 +1,6 @@
 package ai.h2o.targetencoding;
 
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import water.Scope;
 import water.TestUtil;
@@ -41,14 +40,12 @@ public class TargetEncoderBuilderTest extends TestUtil {
 
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
       targetEncoderParameters._blending = false;
-      targetEncoderParameters._encoded_columns = teColumns;
-      targetEncoderParameters.setTrain(fr._key);
       targetEncoderParameters._response_column = responseColumnName;
+      targetEncoderParameters._ignored_columns = ignoredColumns(fr, "home.dest", "embarked", targetEncoderParameters._response_column);
+      targetEncoderParameters.setTrain(fr._key);
 
       TargetEncoderBuilder builder = new TargetEncoderBuilder(targetEncoderParameters);
-
-      builder.trainModel().get(); // Waiting for training to be finished
-      targetEncoderModel = builder.getTargetEncoderModel(); // TODO change the way of how we getting model after PUBDEV-6670. We should be able to get it from DKV with .trainModel().get()
+      targetEncoderModel = builder.trainModel().get();
        
       // Let's create encoding map by TargetEncoder directly
       TargetEncoder tec = new TargetEncoder(Frame.VecSpecifier.vecNames(teColumns));
@@ -58,9 +55,7 @@ public class TargetEncoderBuilderTest extends TestUtil {
       Scope.track(fr2);
 
       encodingMapFromTargetEncoder = tec.prepareEncodingMap(fr2, responseColumnName, null);
-
       targetEncodingMapFromBuilder = targetEncoderModel._output._target_encoding_map;
-
       areEncodingMapsIdentical(encodingMapFromTargetEncoder, targetEncodingMapFromBuilder);
 
     } finally {
@@ -93,15 +88,13 @@ public class TargetEncoderBuilderTest extends TestUtil {
 
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
       targetEncoderParameters._blending = false;
-      targetEncoderParameters._encoded_columns = teColumns;
-      targetEncoderParameters.setTrain(fr._key);
       targetEncoderParameters._response_column = responseColumnName;
+      targetEncoderParameters._ignored_columns = ignoredColumns(fr, "home.dest", "embarked", targetEncoderParameters._response_column);
+      targetEncoderParameters.setTrain(fr._key);
       targetEncoderParameters._ignore_const_cols = false;
 
       TargetEncoderBuilder builder = new TargetEncoderBuilder(targetEncoderParameters);
-
-      builder.trainModel().get(); // Waiting for training to be finished
-      targetEncoderModel = builder.getTargetEncoderModel(); // TODO change the way of how we getting model after PUBDEV-6670. We should be able to get it from DKV with .trainModel().get()
+      targetEncoderModel = builder.trainModel().get();
 
       Map<String, Integer> teColumnNameToMissingValuesPresence = targetEncoderModel._output._column_name_to_missing_val_presence;
       assertTrue(teColumnNameToMissingValuesPresence.get("home.dest") == 0);
@@ -138,15 +131,14 @@ public class TargetEncoderBuilderTest extends TestUtil {
 
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
       targetEncoderParameters._blending = false;
-      targetEncoderParameters._encoded_columns = teColumns;
-      targetEncoderParameters._fold_column = foldColumnName;
-      targetEncoderParameters.setTrain(fr._key);
       targetEncoderParameters._response_column = responseColumnName;
+      targetEncoderParameters._fold_column = foldColumnName;
+      targetEncoderParameters._ignored_columns = ignoredColumns(fr, "home.dest", "embarked", targetEncoderParameters._response_column,
+              targetEncoderParameters._fold_column);
+      targetEncoderParameters.setTrain(fr._key);
 
       TargetEncoderBuilder builder = new TargetEncoderBuilder(targetEncoderParameters);
-
-      builder.trainModel().get(); // Waiting for training to be finished
-      targetEncoderModel = builder.getTargetEncoderModel(); // TODO change the way of how we getting model after PUBDEV-6670. We should be able to get it from DKV with .trainModel().get()
+      targetEncoderModel = builder.trainModel().get();
 
       //Stage 2: 
       // Let's create encoding map by TargetEncoder directly
@@ -188,44 +180,36 @@ public class TargetEncoderBuilderTest extends TestUtil {
 
       asFactor(fr, responseColumnName);
 
-      BlendingParams params = new BlendingParams(3, 1);
-      Frame.VecSpecifier[] teColumns = {new Frame.VecSpecifier(fr._key, "home.dest"),
-              new Frame.VecSpecifier(fr._key, "embarked")};
-
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
       targetEncoderParameters._blending = false;
-      targetEncoderParameters._encoded_columns = teColumns;
-      targetEncoderParameters._fold_column = foldColumnName;
-      targetEncoderParameters.setTrain(fr._key);
       targetEncoderParameters._response_column = responseColumnName;
+      targetEncoderParameters._fold_column = foldColumnName;
+      targetEncoderParameters._seed = 1234;
+      targetEncoderParameters._ignored_columns = ignoredColumns(fr, "home.dest", "embarked", targetEncoderParameters._response_column,
+              targetEncoderParameters._fold_column);
+      targetEncoderParameters._train = fr._key;
 
       TargetEncoderBuilder builder = new TargetEncoderBuilder(targetEncoderParameters);
+      targetEncoderModel = builder.trainModel().get();
 
-      builder.trainModel().get(); // Waiting for training to be finished
-      targetEncoderModel = builder.getTargetEncoderModel(); // TODO change the way of how we getting model after PUBDEV-6670. We should be able to get it from DKV with .trainModel().get()
-      
-      long seed = 1234;
       TargetEncoder.DataLeakageHandlingStrategy strategy = TargetEncoder.DataLeakageHandlingStrategy.KFold;
-      Frame transformedTrainWithModelFromBuilder = targetEncoderModel.transform(fr,  TargetEncoder.DataLeakageHandlingStrategy.KFold.getVal(),false, params, seed);
+      Frame transformedTrainWithModelFromBuilder = targetEncoderModel.transform(fr, TargetEncoder.DataLeakageHandlingStrategy.KFold.getVal(),
+              false, null, targetEncoderParameters._seed);
       Scope.track(transformedTrainWithModelFromBuilder);
       targetEncodingMapFromBuilder = targetEncoderModel._output._target_encoding_map;
       
       //Stage 2: 
       // Let's create encoding map by TargetEncoder directly and transform with it
-      TargetEncoder tec = new TargetEncoder(Frame.VecSpecifier.vecNames(teColumns));
+      TargetEncoder tec = new TargetEncoder(new String[]{ "embarked", "home.dest"});
 
-      Frame fr2 = parse_test_file("./smalldata/gbm_test/titanic.csv");
-      addKFoldColumn(fr2, foldColumnName, 5, 1234L);
-      asFactor(fr2, responseColumnName);
-      Scope.track(fr2);
-
-      encodingMapFromTargetEncoder = tec.prepareEncodingMap(fr2, responseColumnName, foldColumnName);
-
-      Frame transformedTrainWithTargetEncoder = tec.applyTargetEncoding(fr2, responseColumnName, encodingMapFromTargetEncoder, strategy, foldColumnName, targetEncoderParameters._blending, false,params, seed);
+      encodingMapFromTargetEncoder = tec.prepareEncodingMap(fr, responseColumnName, foldColumnName, false);
+      Frame transformedTrainWithTargetEncoder = tec.applyTargetEncoding(fr, responseColumnName, encodingMapFromTargetEncoder,
+              strategy, foldColumnName, targetEncoderParameters._blending, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, targetEncoderParameters._seed);
 
       Scope.track(transformedTrainWithTargetEncoder);
-      
-      assertTrue("Transformed by `TargetEncoderModel` and `TargetEncoder` train frames should be identical", isBitIdentical(transformedTrainWithModelFromBuilder, transformedTrainWithTargetEncoder));
+
+      assertTrue("Transformed by `TargetEncoderModel` and `TargetEncoder` train frames should be identical",
+              isBitIdentical(transformedTrainWithModelFromBuilder, transformedTrainWithTargetEncoder));
 
     } finally {
       removeEncodingMaps(encodingMapFromTargetEncoder, targetEncodingMapFromBuilder);

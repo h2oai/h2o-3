@@ -3,7 +3,6 @@ package water.exceptions;
 import hex.Model;
 import hex.ModelBuilder;
 import water.H2OModelBuilderError;
-import water.util.IcedHashMap;
 import water.util.IcedHashMapGeneric;
 
 public class H2OModelBuilderIllegalArgumentException extends H2OIllegalArgumentException {

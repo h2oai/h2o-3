@@ -7,8 +7,7 @@ import water.fvec.Frame;
 import water.util.IcedHashMapGeneric;
 import water.util.Log;
 
-import java.util.Arrays;
-import java.util.Map;
+import java.util.*;
 
 public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, TargetEncoderModel.TargetEncoderParameters, TargetEncoderModel.TargetEncoderOutput> {
 
@@ -36,8 +35,9 @@ public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, Targe
   private class TargetEncoderDriver extends Driver {
     @Override
     public void computeImpl() {
-      final String[] encoded_columns = Frame.VecSpecifier.vecNames(_parms._encoded_columns);
-      TargetEncoder tec = new TargetEncoder(encoded_columns);
+      final int numColsRemoved = hasFoldCol() ? 2 : 1; // Response is always at the last index, fold column is on the index before.
+      final String[] encodedColumns = Arrays.copyOf(train().names(), train().names().length - numColsRemoved);
+      TargetEncoder tec = new TargetEncoder(encodedColumns);
 
       Scope.untrack(train().keys());
 
