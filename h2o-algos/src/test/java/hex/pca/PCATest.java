@@ -2,11 +2,14 @@ package hex.pca;
 
 import hex.DataInfo;
 import hex.SplitFrame;
+import hex.generic.Generic;
+import hex.generic.GenericModel;
+import hex.genmodel.MojoPipelineBuilder;
+import hex.kmeans.KMeans;
+import hex.kmeans.KMeansModel;
 import hex.pca.PCAModel.PCAParameters;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
@@ -20,12 +23,20 @@ import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import hex.CreateFrame;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
 import java.util.Random;
 
 import java.util.concurrent.ExecutionException;
 
 @RunWith(Parameterized.class)
 public class PCATest extends TestUtil {
+  
+  @Rule
+  public TemporaryFolder tmp = new TemporaryFolder();
+  
   public static final double TOLERANCE = 1e-6;
   private PCAParameters pcaParameters;
 
@@ -442,4 +453,59 @@ public class PCATest extends TestUtil {
       Scope.exit();
     }
   }
+
+  @Test
+  public void testPCAPipeline() throws IOException {
+    try {
+      Scope.enter();
+      Frame train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
+      Scope.track(train);
+
+      pcaParameters._train = train._key;
+      pcaParameters._k = 4;
+      pcaParameters._transform = DataInfo.TransformType.NONE;
+      pcaParameters._pca_method = PCAParameters.Method.GramSVD;
+
+      PCAModel pca = new PCA(pcaParameters).trainModel().get();
+      Scope.track_generic(pca);
+
+      Frame reduced = pca.score(train);
+      Scope.track(reduced);
+
+      KMeansModel.KMeansParameters kmeansParameters = new KMeansModel.KMeansParameters();
+      kmeansParameters._train = reduced._key;
+      kmeansParameters._k = 2;
+
+      KMeansModel kmeans = new KMeans(kmeansParameters).trainModel().get();
+      Scope.track_generic(kmeans);
+
+      Frame clusters = kmeans.score(reduced);
+      Scope.track(clusters);
+
+      URI pcaMojoUri = pca.exportMojo(tmp.newFolder("pca").getAbsolutePath() + "/pca.zip", false);
+      URI kmeansMojoUri = kmeans.exportMojo(tmp.newFolder("kmeans").getAbsolutePath() + "/kmeans.zip", false);
+      File pipelineFile = tmp.newFile("pipeline.zip");
+
+      new MojoPipelineBuilder()
+              .addModel("pca", new File(pcaMojoUri))
+              .addMapping("PC1", "pca", 0)
+              .addMapping("PC2", "pca", 1)
+              .addMapping("PC3", "pca", 2)
+              .addMapping("PC4", "pca", 3)
+              .addMainModel("kmeans", new File(kmeansMojoUri))
+              .buildPipeline(pipelineFile);
+
+      GenericModel pipelineModel = Generic.importMojoModel(pipelineFile.getAbsolutePath(), true);
+      Scope.track_generic(pipelineModel);
+      
+      Frame pipelinePreds = pipelineModel.score(train, null, null, false);
+      Scope.track(pipelinePreds);
+
+      assertVecEquals(clusters.vec(0), pipelinePreds.vec(0), 0);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+
 }
