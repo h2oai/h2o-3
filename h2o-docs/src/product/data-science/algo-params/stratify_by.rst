@@ -7,7 +7,7 @@
 Description
 ~~~~~~~~~~~
 
-This option allows you to set the initial values for the coefficients in the model. This value defaults to 0.
+Specify a list of columns to use for stratification.
 
 
 Related Parameters

@@ -1,5 +1,5 @@
 ``init`` (CoxPH)
-------------------------
+----------------
 
 - Available in: CoxPH
 - Hyperparameter: yes

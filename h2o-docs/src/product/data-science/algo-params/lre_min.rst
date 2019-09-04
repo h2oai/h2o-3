@@ -7,8 +7,7 @@
 Description
 ~~~~~~~~~~~
 
-This option allows you to set the initial values for the coefficients in the model. This value defaults to 0.
-
+A positive number to use as the minimum log-relative error (LRE) of subsequent log partial likelihood calculations to determine algorithmic convergence. This value defaults to 9.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
