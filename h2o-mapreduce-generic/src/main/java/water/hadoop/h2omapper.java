@@ -222,7 +222,7 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
     }
 
     Log.POST(14, "Waiting for exit");
-    // EmbeddedH2OConfig will send a one-byte exit status to this socket.
+    // NetworkBasedClouding will send a one-byte exit status to this socket.
     Socket sock = ss.accept();
     System.out.println("Wait for exit woke up from accept");
     byte[] b = new byte[1];
@@ -334,12 +334,12 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
       os.flush();
       s.close();
       s = null;
-      System.out.println("EmbeddedH2OConfig: after write to mapperCallbackPort");
+      System.out.println("NetworkBasedClouding: after write to mapperCallbackPort");
 
       Thread.sleep(60 * 1000);
       // Should never make it this far!
     } catch (Exception e) {
-      System.out.println("EmbeddedH2OConfig: exit caught an exception 2");
+      System.out.println("NetworkBasedClouding: exit caught an exception 2");
       e.printStackTrace();
     } finally {
       if (s != null) {
