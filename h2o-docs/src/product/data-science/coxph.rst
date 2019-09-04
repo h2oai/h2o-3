@@ -42,13 +42,13 @@ Defining a CoxPH Model
    
 	 **Note**: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__. 
 
--  **stratify_by**: A list of columns to use for stratification.
+-  `stratify_by <algo-params/stratify_by.html>`__: A list of columns to use for stratification.
 
 -  `ties <algo-params/ties.html>`__: The approximation method for handling ties in the partial likelihood. This can be either **efron** (default) or **breslow**). See the :ref:`coxph_model_details` section below for more information about these options.
 
--  **init**: (Optional) Initial values for the coefficients in the model. This value defaults to 0.
+-  `init <algo-params/init2.html>`__: (Optional) Initial values for the coefficients in the model. This value defaults to 0.
 
--  **lre_min**: A positive number to use as the minimum log-relative error (LRE) of subsequent log partial likelihood calculations to determine algorithmic convergence. The role this parameter plays in the stopping criteria of the model fitting algorithm is explained in the :ref:`coxph_algorithm` section below. This value defaults to 9.
+-  `lre_min <algo-params/lre_min.html>`__: A positive number to use as the minimum log-relative error (LRE) of subsequent log partial likelihood calculations to determine algorithmic convergence. The role this parameter plays in the stopping criteria of the model fitting algorithm is explained in the :ref:`coxph_algorithm` section below. This value defaults to 9.
 
 -  `max_iterations <algo-params/max_iterations.html>`__: A positive integer defining the maximum number of iterations during model training. The role this parameter plays in the stopping criteria of the model-fitting algorithm is explained in the :ref:`coxph_algorithm` section below. This value defaults to 20.
 
