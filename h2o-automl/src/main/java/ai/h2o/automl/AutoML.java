@@ -23,7 +23,6 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.nbhm.NonBlockingHashMap;
-import water.util.ArrayUtils;
 import water.util.Countdown;
 import water.util.Log;
 import water.util.PrettyPrint;
@@ -31,7 +30,6 @@ import water.util.fp.Predicate;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria.AUTO_STOPPING_TOLERANCE;
 
@@ -45,94 +43,6 @@ import static ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria.AUTO_STOPPING
  * will be the top performing models in the AutoML Leaderboard.
  */
 public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
-
-  static class WorkAllocations extends Iced<WorkAllocations> {
-
-    private static class Work extends Iced<Work> {
-      private Algo algo;
-      private int count;
-      private JobType type;
-      private int share;
-
-      Work(Algo algo, int count, JobType type, int share) {
-        this.algo = algo;
-        this.count = count;
-        this.type = type;
-        this.share = share;
-      }
-
-      int consume() {
-        return consume(1);
-      }
-
-      int consume(int amount) {
-        int c = Math.min(this.count, amount);
-        this.count -= c;
-        return c * this.share;
-      }
-
-      int consumeAll() {
-        return consume(Integer.MAX_VALUE);
-      }
-    }
-
-    private boolean canAllocate = true;
-    private Work[] allocations = new Work[0];
-
-    WorkAllocations allocate(Algo algo, int count, JobType type, int workShare) {
-      if (!canAllocate) throw new IllegalStateException("Can't allocate new work.");
-
-      allocations = ArrayUtils.append(allocations, new Work(algo, count, type, workShare));
-      return this;
-    }
-
-    void end() {
-      canAllocate = false;
-    }
-
-    void remove(Algo algo) {
-      List<Work> filtered = new ArrayList<>(allocations.length);
-      for (Work alloc : allocations) {
-        if (!algo.equals(alloc.algo)) {
-          filtered.add(alloc);
-        }
-      }
-      allocations = filtered.toArray(new Work[0]);
-    }
-
-    Work getAllocation(Algo algo, JobType workType) {
-      for (Work alloc : allocations) {
-        if (alloc.algo == algo && alloc.type == workType) return alloc;
-      }
-      return null;
-    }
-
-    private int sum(Work[] workItems) {
-      int tot = 0;
-      for (Work item : workItems) {
-        tot += (item.count * item.share);
-      }
-      return tot;
-    }
-
-    int remainingWork() {
-      return sum(allocations);
-    }
-
-    int remainingWork(Predicate<Work> predicate) {
-      List<Work> selected = predicate.filter(Arrays.asList(allocations));
-      return sum(selected.toArray(new Work[0]));
-    }
-
-    float remainingWorkRatio(Work work) {
-      return (float) work.share / remainingWork();
-    }
-
-    float remainingWorkRatio(Work work, Predicate<Work> predicate) {
-      return (float) work.share / remainingWork(predicate);
-    }
-
-  }
 
   private final static boolean verifyImmutability = true; // check that trainingFrame hasn't been messed with
   private final static SimpleDateFormat timestampFormatForKeys = new SimpleDateFormat("yyyyMMdd_HHmmss");
@@ -231,9 +141,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private Countdown runCountdown;
   private Job job;                  // the Job object for the build of this AutoML.
 
-  private transient List<Job> jobs; // subjobs
-
-  private AtomicInteger modelCount = new AtomicInteger();  // prepare for concurrency
+  private TrainingStepsExecutor trainingStepsExecutor;
   private Leaderboard leaderboard;
   private EventLog eventLog;
 
@@ -252,8 +160,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     super(key);
     this.startTime = startTime;
     this.buildSpec = buildSpec;
-    this.jobs = new ArrayList<>();
-    this.runCountdown = Countdown.fromSeconds(buildSpec.build_control.stopping_criteria.max_runtime_secs());
+    runCountdown = Countdown.fromSeconds(buildSpec.build_control.stopping_criteria.max_runtime_secs());
 
     try {
       eventLog = EventLog.make(this._key);
@@ -272,6 +179,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       handleEarlyStoppingParameters(buildSpec);
 
       initLeaderboard(buildSpec);
+
+      trainingStepsExecutor = new TrainingStepsExecutor(leaderboard, eventLog, runCountdown);
     } catch (Exception e) {
       delete(); //cleanup potentially leaked keys
       throw e;
@@ -353,6 +262,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   @Override
   public void run() {
     runCountdown.start();
+    trainingStepsExecutor.start();
     eventLog().info(Stage.Workflow, "AutoML build started: " + EventLogEntry.dateTimeFormat.format(runCountdown.start_time()))
             .setNamedValue("start_epoch", runCountdown.start_time(), EventLogEntry.epochFormat);
     learn();
@@ -361,15 +271,12 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   @Override
   public void stop() {
-    if (null == jobs) return; // already stopped
-    for (Job j : jobs) j.stop();
-    for (Job j : jobs) j.get(); // Hold until they all completely stop.
-    jobs = null;
-
+    if (null == trainingStepsExecutor) return; // already stopped
+    trainingStepsExecutor.stop();
     runCountdown.stop();
     eventLog().info(Stage.Workflow, "AutoML build stopped: " + EventLogEntry.dateTimeFormat.format(runCountdown.stop_time()))
             .setNamedValue("stop_epoch", runCountdown.stop_time(), EventLogEntry.epochFormat);
-    eventLog().info(Stage.Workflow, "AutoML build done: built " + modelCount + " models");
+    eventLog().info(Stage.Workflow, "AutoML build done: built " + trainingStepsExecutor.modelCount() + " models");
     eventLog().info(Stage.Workflow, "AutoML duration: "+ PrettyPrint.msecs(runCountdown.duration(), true))
             .setNamedValue("duration_secs", Math.round(runCountdown.duration() / 1000.));
 
@@ -437,7 +344,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   public int remainingModels() {
     if (buildSpec.build_control.stopping_criteria.max_models() == 0)
       return Integer.MAX_VALUE;
-    return buildSpec.build_control.stopping_criteria.max_models() - modelCount.get();
+    return buildSpec.build_control.stopping_criteria.max_models() - trainingStepsExecutor.modelCount();
   }
 
   @Override
@@ -579,94 +486,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   //*****************  Jobs Build / Configure / Run / Poll section (model agnostic, kind of...) *****************//
 
-
-  private void pollAndUpdateProgress(Stage stage, String name, WorkAllocations.Work work, Job parentJob, Job subJob) {
-    pollAndUpdateProgress(stage, name, work, parentJob, subJob, false);
-  }
-
-  private void pollAndUpdateProgress(Stage stage, String name, WorkAllocations.Work work, Job parentJob, Job subJob, boolean ignoreTimeout) {
-    if (null == subJob) {
-      if (null != parentJob) {
-        parentJob.update(work.consume(), "SKIPPED: " + name);
-        Log.info("AutoML skipping " + name);
-      }
-      return;
-    }
-    eventLog().debug(stage, name + " started");
-    jobs.add(subJob);
-
-    long lastWorkedSoFar = 0;
-    long lastTotalGridModelsBuilt = 0;
-
-    while (subJob.isRunning()) {
-      if (null != parentJob) {
-        if (parentJob.stop_requested()) {
-          eventLog().debug(stage, "AutoML job cancelled; skipping " + name);
-          subJob.stop();
-        }
-        if (!ignoreTimeout && runCountdown.timedOut()) {
-          eventLog().debug(stage, "AutoML: out of time; skipping " + name);
-          subJob.stop();
-        }
-      }
-      long workedSoFar = Math.round(subJob.progress() * work.share);
-
-      if (null != parentJob) {
-        parentJob.update(Math.round(workedSoFar - lastWorkedSoFar), name);
-      }
-
-      if (JobType.HyperparamSearch == work.type) {
-        Grid<?> grid = (Grid)subJob._result.get();
-        int totalGridModelsBuilt = grid.getModelCount();
-        if (totalGridModelsBuilt > lastTotalGridModelsBuilt) {
-          eventLog().debug(stage, "Built: " + totalGridModelsBuilt + " models for search: " + name);
-          this.addModels(grid.getModelKeys());
-          lastTotalGridModelsBuilt = totalGridModelsBuilt;
-        }
-      }
-
-      try {
-        Thread.sleep(1000);
-      }
-      catch (InterruptedException e) {
-        // keep going
-      }
-      lastWorkedSoFar = workedSoFar;
-    }
-
-    // pick up any stragglers:
-    if (JobType.HyperparamSearch == work.type) {
-      if (subJob.isCrashed()) {
-        eventLog().warn(stage, name + " failed: " + subJob.ex().toString());
-      } else if (subJob.get() == null) {
-        eventLog().info(stage, name + " cancelled");
-      } else {
-        Grid<?> grid = (Grid) subJob.get();
-        int totalGridModelsBuilt = grid.getModelCount();
-        if (totalGridModelsBuilt > lastTotalGridModelsBuilt) {
-          eventLog().debug(stage, "Built: " + totalGridModelsBuilt + " models for search: " + name);
-          this.addModels(grid.getModelKeys());
-        }
-        eventLog().debug(stage, name + " complete");
-      }
-    } else if (JobType.ModelBuild == work.type) {
-      if (subJob.isCrashed()) {
-        eventLog().warn(stage, name + " failed: " + subJob.ex().toString());
-      } else if (subJob.get() == null) {
-        eventLog().info(stage, name + " cancelled");
-      } else {
-        eventLog().debug(stage, name + " complete");
-        this.addModel((Model) subJob.get());
-      }
-    }
-
-    // add remaining work
-    if (null != parentJob) {
-      parentJob.update(work.share - lastWorkedSoFar);
-    }
-    work.consume();
-    jobs.remove(subJob);
-  }
 
   // These are per (possibly concurrent) AutoML run.
   // All created keys for a run use the unique AutoML run timestamp, so we can't have name collisions.
@@ -974,7 +793,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     key = modelKey(algo.name());
     xgBoostJob = trainModel(key, work, xgBoostParameters);
-    pollAndUpdateProgress(Stage.ModelTraining,  key.toString(), work, this.job(), xgBoostJob);
+    trainingStepsExecutor.submit(Stage.ModelTraining,  key.toString(), work, this.job(), xgBoostJob);
 
     //XGB 2 (deep)
     xgBoostParameters = (XGBoostParameters) commonXGBoostParameters.clone();
@@ -993,7 +812,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     key = modelKey(algo.name());
     xgBoostJob = trainModel(key, work, xgBoostParameters);
-    pollAndUpdateProgress(Stage.ModelTraining,  key.toString(), work, this.job(), xgBoostJob);
+    trainingStepsExecutor.submit(Stage.ModelTraining,  key.toString(), work, this.job(), xgBoostJob);
 
     //XGB 3 (shallow)
     xgBoostParameters = (XGBoostParameters) commonXGBoostParameters.clone();
@@ -1012,7 +831,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     key = modelKey(algo.name());
     xgBoostJob = trainModel(key, work, xgBoostParameters);
-    pollAndUpdateProgress(Stage.ModelTraining,  key.toString(), work, this.job(), xgBoostJob);
+    trainingStepsExecutor.submit(Stage.ModelTraining,  key.toString(), work, this.job(), xgBoostJob);
   }
 
 
@@ -1067,7 +886,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     searchParams.put("_reg_alpha", new Float[]{0.001f, 0.01f, 0.1f, 0.5f, 1f});
 
     Job<Grid> xgBoostSearchJob = hyperparameterSearch(gridKey, work, xgBoostParameters, searchParams);
-    pollAndUpdateProgress(Stage.ModelTraining, algo.name()+" hyperparameter search", work, this.job(), xgBoostSearchJob);
+    trainingStepsExecutor.submit(Stage.ModelTraining, algo.name()+" hyperparameter search", work, this.job(), xgBoostSearchJob);
   }
 
 
@@ -1080,7 +899,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     drfParameters._score_tree_interval = 5;
 
     Job randomForestJob = trainModel(null, work, drfParameters);
-    pollAndUpdateProgress(Stage.ModelTraining, "Default Random Forest build", work, this.job(), randomForestJob);
+    trainingStepsExecutor.submit(Stage.ModelTraining, "Default Random Forest build", work, this.job(), randomForestJob);
   }
 
 
@@ -1093,7 +912,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     drfParameters._score_tree_interval = 5;
 
     Job randomForestJob = trainModel(modelKey("XRT"), work, drfParameters);
-    pollAndUpdateProgress(Stage.ModelTraining, "Extremely Randomized Trees (XRT) Random Forest build", work, this.job(), randomForestJob);
+    trainingStepsExecutor.submit(Stage.ModelTraining, "Extremely Randomized Trees (XRT) Random Forest build", work, this.job(), randomForestJob);
   }
 
 
@@ -1122,7 +941,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     gbmParameters._min_rows = 1;
 
     gbmJob = trainModel(null, work, gbmParameters);
-    pollAndUpdateProgress(Stage.ModelTraining, "GBM 1", work, this.job(), gbmJob);
+    trainingStepsExecutor.submit(Stage.ModelTraining, "GBM 1", work, this.job(), gbmJob);
 
     // Default 2:
     gbmParameters = (GBMParameters) commonGBMParameters.clone();
@@ -1130,7 +949,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     gbmParameters._min_rows = 10;
 
     gbmJob = trainModel(null, work, gbmParameters);
-    pollAndUpdateProgress(Stage.ModelTraining, "GBM 2", work, this.job(), gbmJob);
+    trainingStepsExecutor.submit(Stage.ModelTraining, "GBM 2", work, this.job(), gbmJob);
 
     // Default 3:
     gbmParameters = (GBMParameters) commonGBMParameters.clone();
@@ -1138,7 +957,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     gbmParameters._min_rows = 10;
 
     gbmJob = trainModel(null, work, gbmParameters);
-    pollAndUpdateProgress(Stage.ModelTraining, "GBM 3", work, this.job(), gbmJob);
+    trainingStepsExecutor.submit(Stage.ModelTraining, "GBM 3", work, this.job(), gbmJob);
 
     // Default 4:
     gbmParameters = (GBMParameters) commonGBMParameters.clone();
@@ -1146,7 +965,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     gbmParameters._min_rows = 10;
 
     gbmJob = trainModel(null, work, gbmParameters);
-    pollAndUpdateProgress(Stage.ModelTraining, "GBM 4", work, this.job(), gbmJob);
+    trainingStepsExecutor.submit(Stage.ModelTraining, "GBM 4", work, this.job(), gbmJob);
 
     // Default 5:
     gbmParameters = (GBMParameters) commonGBMParameters.clone();
@@ -1154,7 +973,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     gbmParameters._min_rows = 100;
 
     gbmJob = trainModel(null, work, gbmParameters);
-    pollAndUpdateProgress(Stage.ModelTraining, "GBM 5", work, this.job(), gbmJob);
+    trainingStepsExecutor.submit(Stage.ModelTraining, "GBM 5", work, this.job(), gbmJob);
   }
 
 
@@ -1168,7 +987,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     deepLearningParameters._hidden = new int[]{ 10, 10, 10 };
 
     Job deepLearningJob = trainModel(null, work, deepLearningParameters);
-    pollAndUpdateProgress(Stage.ModelTraining, "Default Deep Learning build", work, this.job(), deepLearningJob);
+    trainingStepsExecutor.submit(Stage.ModelTraining, "Default Deep Learning build", work, this.job(), deepLearningJob);
   }
 
 
@@ -1193,7 +1012,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     });
 
     Job<Grid> glmJob = hyperparameterSearch(gridKey, work, glmParameters, searchParams);
-    pollAndUpdateProgress(Stage.ModelTraining, "GLM hyperparameter search", work, this.job(), glmJob);
+    trainingStepsExecutor.submit(Stage.ModelTraining, "GLM hyperparameter search", work, this.job(), glmJob);
   }
 
   void defaultSearchGBM(Key<Grid> gridKey) {
@@ -1216,7 +1035,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     searchParams.put("_min_split_improvement", new Double[]{1e-4, 1e-5});
 
     Job<Grid> gbmJob = hyperparameterSearch(gridKey, work, gbmParameters, searchParams);
-    pollAndUpdateProgress(Stage.ModelTraining, "GBM hyperparameter search", work, this.job(), gbmJob);
+    trainingStepsExecutor.submit(Stage.ModelTraining, "GBM hyperparameter search", work, this.job(), gbmJob);
   }
 
   void defaultSearchDL() {
@@ -1247,7 +1066,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     searchParams.put("_hidden_dropout_ratios", new Double[][] { { 0.0 }, { 0.1 }, { 0.2 }, { 0.3 }, { 0.4 }, { 0.5 } });
 
     Job<Grid>dlJob = hyperparameterSearch(gridKey, work, dlParameters, searchParams);
-    pollAndUpdateProgress(Stage.ModelTraining, "DeepLearning hyperparameter search 1", work, this.job(), dlJob);
+    trainingStepsExecutor.submit(Stage.ModelTraining, "DeepLearning hyperparameter search 1", work, this.job(), dlJob);
   }
 
   void defaultSearchDL2(Key<Grid> gridKey) {
@@ -1270,7 +1089,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     searchParams.put("_hidden_dropout_ratios", new Double[][] { { 0.0, 0.0 }, { 0.1, 0.1 }, { 0.2, 0.2 }, { 0.3, 0.3 }, { 0.4, 0.4 }, { 0.5, 0.5 } });
 
     Job<Grid>dlJob = hyperparameterSearch(gridKey, work, dlParameters, searchParams);
-    pollAndUpdateProgress(Stage.ModelTraining, "DeepLearning hyperparameter search 2", work, this.job(), dlJob);
+    trainingStepsExecutor.submit(Stage.ModelTraining, "DeepLearning hyperparameter search 2", work, this.job(), dlJob);
   }
 
   void defaultSearchDL3(Key<Grid> gridKey) {
@@ -1293,7 +1112,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     searchParams.put("_hidden_dropout_ratios", new Double[][] { { 0.0, 0.0, 0.0 }, { 0.1, 0.1, 0.1 }, { 0.2, 0.2, 0.2 }, { 0.3, 0.3, 0.3 }, { 0.4, 0.4, 0.4 }, { 0.5, 0.5, 0.5 } });
 
     Job<Grid>dlJob = hyperparameterSearch(gridKey, work, dlParameters, searchParams);
-    pollAndUpdateProgress(Stage.ModelTraining, "DeepLearning hyperparameter search 3", work, this.job(), dlJob);
+    trainingStepsExecutor.submit(Stage.ModelTraining, "DeepLearning hyperparameter search 3", work, this.job(), dlJob);
   }
 
   void defaultStackedEnsembles() {
@@ -1342,10 +1161,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
         bestModelKeys[i] = bestModelsOfEachType.get(i)._key;
 
       Job<StackedEnsembleModel> bestEnsembleJob = stack("StackedEnsemble_BestOfFamily", bestModelKeys, true);
-      pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build using top model from each algorithm type", seWork, this.job(), bestEnsembleJob, true);
+      trainingStepsExecutor.submit(Stage.ModelTraining, "StackedEnsemble build using top model from each algorithm type", seWork, this.job(), bestEnsembleJob, true);
 
       Job<StackedEnsembleModel> ensembleJob = stack("StackedEnsemble_AllModels", notEnsembles, false);
-      pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build using all AutoML models", seWork, this.job(), ensembleJob, true);
+      trainingStepsExecutor.submit(Stage.ModelTraining, "StackedEnsemble build using all AutoML models", seWork, this.job(), ensembleJob, true);
     }
   }
 
@@ -1379,23 +1198,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       for (Key<Grid> gridKey : gridKeys) Keyed.remove(gridKey, fs, true);
 
     return super.remove_impl(fs, cascade);
-  }
-
-  // If we have multiple AutoML engines running on the same project they will be updating the Leaderboard concurrently,
-  // so always use leaderboard() instead of the raw field, to get it from the DKV.
-  // Also, the leaderboard will reject duplicate models, so use the difference in Leaderboard length here.
-  private void addModels(final Key<Model>[] newModels) {
-    int before = leaderboard().getModelCount();
-    leaderboard().addModels(newModels);
-    int after = leaderboard().getModelCount();
-    modelCount.addAndGet(after - before);
-  }
-
-  private void addModel(final Model newModel) {
-    int before = leaderboard().getModelCount();
-    leaderboard().addModel(newModel);
-    int after = leaderboard().getModelCount();
-    modelCount.addAndGet(after - before);
   }
 
   private String getSortMetric() {

@@ -293,7 +293,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       aml = new AutoML(Key.<AutoML>make(), new Date(), autoMLBuildSpec);
 
-      AutoML.WorkAllocations workPlan = aml.planWork();
+      WorkAllocations workPlan = aml.planWork();
 
       Map<Algo, Integer> defaultAllocs = new HashMap<Algo, Integer>(){{
         put(Algo.DeepLearning, 1*10+3*20);
@@ -435,7 +435,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.DeepLearning, Algo.XGBoost, };
       aml = new AutoML(Key.<AutoML>make(), new Date(), autoMLBuildSpec);
-      AutoML.WorkAllocations workPlan = aml.planWork();
+      WorkAllocations workPlan = aml.planWork();
       for (Algo algo : autoMLBuildSpec.build_models.exclude_algos) {
         assertNull(workPlan.getAllocation(algo, AutoML.JobType.ModelBuild));
         assertNull(workPlan.getAllocation(algo, AutoML.JobType.HyperparamSearch));
@@ -464,7 +464,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_models.include_algos = new Algo[] {Algo.DeepLearning, Algo.XGBoost, };
       aml = new AutoML(Key.<AutoML>make(), new Date(), autoMLBuildSpec);
-      AutoML.WorkAllocations workPlan = aml.planWork();
+      WorkAllocations workPlan = aml.planWork();
       for (Algo algo : autoMLBuildSpec.build_models.include_algos) {
         if (algo.enabled()) {
           assertFalse(
