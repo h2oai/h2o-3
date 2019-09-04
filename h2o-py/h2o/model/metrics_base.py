@@ -12,7 +12,7 @@ import imp
 from h2o.model.confusion_matrix import ConfusionMatrix
 from h2o.utils.backward_compatibility import backwards_compatible
 from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.typechecks import assert_is_type, assert_satisfies, numeric
+from h2o.utils.typechecks import assert_is_type, assert_satisfies, is_type, numeric
 
 
 class MetricsBase(backwards_compatible()):
@@ -513,34 +513,53 @@ class H2OBinomialModelMetrics(MetricsBase):
 
     @staticmethod
     def _accuracy_to_error(accuracies):
-        return [[acc[0], 1 - acc[1]] for acc in accuracies]
+        errors = List()
+        errors.extend([acc[0], 1 - acc[1]] for acc in accuracies)
+        setattr(errors, 'value',
+                [1 - v for v in accuracies.value] if isinstance(accuracies.value, list)
+                else 1 - accuracies.value
+                )
+        return errors
 
 
     def metric(self, metric, thresholds=None):
         """
         :param str metric: A metric among :const:`maximizing_metrics`.
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+        :param thresholds: thresholds parameter must be a number or a list (i.e. [0.01, 0.5, 0.99]).
             If None, then the threshold maximizing the metric will be used.
             If 'all', then all stored thresholds are used and returned with the matching metric.
         :returns: The set of metrics for the list of thresholds.
+            The returned list has a 'value' property holding only
+            the metric value (if no threshold provided or if provided as a number),
+            or all the metric values (if thresholds provided as a list)
         """
-        assert_is_type(thresholds, None, 'all', [numeric])
+        assert_is_type(thresholds, None, 'all', numeric, [numeric])
         if metric not in H2OBinomialModelMetrics.maximizing_metrics:
             raise ValueError("The only allowable metrics are {}".format(', '.join(H2OBinomialModelMetrics.maximizing_metrics)))
+
         h2o_metric = (H2OBinomialModelMetrics.metrics_aliases[metric] if metric in H2OBinomialModelMetrics.metrics_aliases
                       else metric)
-        if not thresholds:
+        value_is_scalar = is_type(metric, str) and (thresholds is None or is_type(thresholds, numeric))
+        if thresholds is None:
             thresholds = [self.find_threshold_by_max_metric(h2o_metric)]
         elif thresholds == 'all':
             thresholds = None
-        metrics = []
+        elif is_type(thresholds, numeric):
+            thresholds = [thresholds]
+
+        metrics = List()
         thresh2d = self._metric_json['thresholds_and_metric_scores']
         if thresholds is None:  # fast path to return all thresholds: skipping find_idx logic
-            metrics = [list(t) for t in zip(thresh2d['threshold'], thresh2d[h2o_metric])]
+            metrics.extend(list(t) for t in zip(thresh2d['threshold'], thresh2d[h2o_metric]))
         else:
             for t in thresholds:
                 idx = self.find_idx_by_threshold(t)
                 metrics.append([t, thresh2d[h2o_metric][idx]])
+
+        setattr(metrics, 'value',
+                metrics[0][1] if value_is_scalar
+                else list(r[1] for r in metrics)
+                )
         return metrics
 
 
@@ -792,8 +811,12 @@ class H2OCoxPHModelMetrics(MetricsBase):
     def __init__(self, metric_json, on=None, algo=""):
         super(H2OCoxPHModelMetrics, self).__init__(metric_json, on, algo)
 
+
 class H2OTargetEncoderMetrics(MetricsBase):
 
     def __init__(self, metric_json, on=None, algo=""):
         super(H2OTargetEncoderMetrics, self).__init__(metric_json, on, algo)
 
+
+class List(list):
+    pass

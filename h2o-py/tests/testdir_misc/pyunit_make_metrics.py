@@ -82,6 +82,21 @@ def pyunit_make_metrics():
     assert m0.accuracy()[0][1] + m0.error()[0][1] == 1
     assert len(m0.accuracy(thresholds='all')) == len(m0.fprs)
 
+    assert m0.accuracy().value == m1.accuracy().value == m0.accuracy()[0][1]
+    assert m0.accuracy().value + m0.error().value == 1
+
+    assert isinstance(m0.accuracy(thresholds=0.4).value, float)
+    assert m0.accuracy(thresholds=0.4).value == m1.accuracy(thresholds=0.4).value == m0.accuracy(thresholds=0.4)[0][1]
+    assert m0.accuracy(thresholds=0.4).value + m0.error(thresholds=0.4).value == 1
+
+    assert isinstance(m0.accuracy(thresholds=[0.4]).value, list)
+    assert len(m0.accuracy(thresholds=[0.4]).value) == 1
+    assert m0.accuracy(thresholds=[0.4]).value[0] == m0.accuracy(thresholds=0.4).value
+
+    assert isinstance(m0.accuracy(thresholds=[0.4, 0.5]).value, list)
+    assert len(m0.accuracy(thresholds=[0.4, 0.5]).value) == 2
+    assert m0.accuracy(thresholds=[0.4, 0.5]).value == [m0.accuracy(thresholds=0.4).value, m0.accuracy(thresholds=0.5).value]
+
     # Testing base metric methods
     # FIXME: check the same failures for other ModelMetrics impl. and then fix'emall or move them out of base class...
     base_metrics_methods_failing_on_H2OBinomialModelMetrics = ['aic', 'mae', 'mean_per_class_error', 'mean_residual_deviance', 'rmsle']
