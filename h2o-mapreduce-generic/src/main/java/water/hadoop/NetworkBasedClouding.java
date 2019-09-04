@@ -25,7 +25,7 @@ class NetworkBasedClouding extends AbstractClouding {
   }
 
   @Override
-  void init(Configuration conf) {
+  public void init(Configuration conf) {
     _driverCallbackIp = conf.get(h2omapper.H2O_DRIVER_IP_KEY);
     _driverCallbackPort = conf.getInt(h2omapper.H2O_DRIVER_PORT_KEY, -1);
   }

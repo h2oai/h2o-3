@@ -1,7 +1,9 @@
-package water.hadoop;
+package water.hadoop.clouding.fs;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
+import water.hadoop.AbstractClouding;
+import water.hadoop.h2omapper;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -14,25 +16,25 @@ public class FileSystemBasedClouding extends AbstractClouding {
   private InetAddress _self_ip;
   private int _self_port = -1;
   
-  private int _n;
+  private int _cloudSize;
   private Path _path;
   private FileSystem _fs;
 
   private final Map<String, URI> _nodes = new HashMap<>();
 
-  void init(Configuration conf) throws IOException {
-    _n = conf.getInt(h2omapper.H2O_CLOUD_SIZE_KEY, -1);
+  public void init(Configuration conf) throws IOException {
+    _cloudSize = conf.getInt(h2omapper.H2O_CLOUD_SIZE_KEY, -1);
     _path = new Path(conf.get(h2omapper.H2O_CLOUDING_DIR_KEY));
     _fs = FileSystem.get(conf);
   }
 
   @Override
   public void notifyAboutCloudSize(InetAddress ip, int port, InetAddress leaderIp, int leaderPort, int size) {
-    if (size != _n)
+    if (size != _cloudSize)
       return;
     Path path = toNodePath(ip, port, "leader");
     try {
-      writeFile(path, h2oUri(leaderIp, leaderPort).toString());
+      writeFile(path, h2oUri(leaderIp, leaderPort));
     } catch (IOException e) {
       e.printStackTrace();
       exit(162);
@@ -46,7 +48,7 @@ public class FileSystemBasedClouding extends AbstractClouding {
 
     Path nodePath = toNodePath(ip, port, "node");
     try {
-      writeFile(nodePath, h2oUri(ip, port).toString());
+      writeFile(nodePath, h2oUri(ip, port));
     } catch (IOException e) {
       e.printStackTrace();
       exit(160);
@@ -60,7 +62,7 @@ public class FileSystemBasedClouding extends AbstractClouding {
 
   @Override
   public String fetchFlatfile() throws Exception {
-    while (_nodes.size() < _n) {
+    while (_nodes.size() < _cloudSize) {
       for (FileStatus fs : _fs.listStatus(_path, new NewNodesPathFilter())) {
         String name = fs.getPath().getName();
         if (name.endsWith(".exit")) {
@@ -73,11 +75,7 @@ public class FileSystemBasedClouding extends AbstractClouding {
           _nodes.put(name, URI.create(node));
         }
       }
-      try {
-        Thread.sleep(1000);
-      } catch (InterruptedException e) {
-        e.printStackTrace();
-      }
+      Thread.sleep(1000);
     }
     StringBuilder sb = new StringBuilder();
     for (URI node : _nodes.values()) {
@@ -102,15 +100,14 @@ public class FileSystemBasedClouding extends AbstractClouding {
   public void print() {
     System.out.println("FileSystemBasedClouding print()");
     System.out.println("    Clouding directory: " + ((_path != null) ? _path : "(null)"));
-    System.out.println("    Target cloud size: " + _n);
+    System.out.println("    Target cloud size: " + _cloudSize);
   }
-  
+
   private void writeFile(Path path, String content) throws IOException {
     Path temp = new Path(path.getParent(), path.getName() + ".temp");
     try (OutputStream os = _fs.create(temp, false);
          PrintWriter wr = new PrintWriter(os)) {
-      wr.write(content);
-      wr.write('\n');
+      wr.println(content);
     }
     if (! _fs.rename(temp, path)) {
       throw new IOException("Failed to create file " + path + " (rename failed).");
@@ -133,8 +130,8 @@ public class FileSystemBasedClouding extends AbstractClouding {
     }
   }
   
-  private static URI h2oUri(InetAddress ip, int port) {
-    return URI.create("h2o://" + ip.getHostName() + ":" + port);
+  private static String h2oUri(InetAddress ip, int port) {
+    return URI.create("h2o://" + ip.getHostName() + ":" + port).toString();
   } 
   
 }

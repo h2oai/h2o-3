@@ -1,4 +1,4 @@
-package water.hadoop;
+package water.hadoop.clouding.fs;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
@@ -8,6 +8,7 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -38,11 +39,16 @@ public class CloudingEventTest {
 
     FileSystem fs = FileSystem.get(new Configuration());
 
-    CloudingEvent event = new CloudingEvent();
-    event._f = fs;
-    event._path = new Path(f.getAbsolutePath());
+    CloudingEvent expected = new CloudingEvent(
+            CloudingEventType.NODE_CLOUDED,
+            System.currentTimeMillis(),
+            "192.168.0.17",
+            54321,
+            fs,
+            new Path(f.getAbsolutePath())
+    );
 
-    String payload = event.readPayload();
+    String payload = expected.readPayload();
     assertEquals("test-payload", payload);
   }
 
@@ -56,13 +62,14 @@ public class CloudingEventTest {
     
     CloudingEvent event = CloudingEvent.fromFileStatus(fileSystem, fileStatus);
 
-    CloudingEvent expected = new CloudingEvent();
-    expected._type = CloudingEventType.NODE_CLOUDED;
-    expected._path = path;
-    expected._port = 54321;
-    expected._ip = "192.168.0.17";
-    expected._timestamp = now;
-    expected._f = fileSystem;
+    CloudingEvent expected = new CloudingEvent(
+            CloudingEventType.NODE_CLOUDED,
+            now,
+            "192.168.0.17",
+            54321,
+            fileSystem,
+            path
+    );
     
     assertEquals(expected, event);
   }

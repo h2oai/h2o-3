@@ -19,6 +19,10 @@ import org.apache.hadoop.util.ToolRunner;
 import water.H2O;
 import water.H2OStarter;
 import water.ProxyStarter;
+import water.hadoop.clouding.fs.CloudingEvent;
+import water.hadoop.clouding.fs.CloudingEventType;
+import water.hadoop.clouding.fs.FileSystemBasedClouding;
+import water.hadoop.clouding.fs.FileSystemCloudingEventSource;
 import water.init.NetworkInit;
 import water.network.SecurityUtils;
 import water.util.ArrayUtils;
@@ -560,11 +564,11 @@ public class h2odriver extends Configured implements Tool {
 
   class FileSystemEventManager extends CloudingManager {
 
-    private volatile FSCloudingEventSource _event_source;
+    private volatile FileSystemCloudingEventSource _event_source;
 
     FileSystemEventManager(int targetCloudSize, Configuration conf, String cloudingDir) throws IOException {
       super(targetCloudSize);
-      _event_source = new FSCloudingEventSource(conf, cloudingDir);
+      _event_source = new FileSystemCloudingEventSource(conf, cloudingDir);
     }
 
     @Override
@@ -598,17 +602,20 @@ public class h2odriver extends Configured implements Tool {
       conf.setInt(h2omapper.H2O_CLOUD_SIZE_KEY, targetCloudSize());
     }
 
-    private void sleep() {
+    private boolean sleep() {
       try {
         Thread.sleep(1000);
       } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
         maybeLogException(e);
+        return false;
       }
+      return true;
     }
 
     @Override
     public void run() {
-      FSCloudingEventSource eventSource;
+      FileSystemCloudingEventSource eventSource;
       while (cloudingInProgress() && (eventSource = _event_source) != null) {
         try {
           for (CloudingEvent event : eventSource.fetchNewEvents()) {
@@ -622,14 +629,18 @@ public class h2odriver extends Configured implements Tool {
           close();
           return;
         }
-        sleep();
+        if (! sleep()) {
+          close();
+          return;
+        }
       }
     }
 
     boolean processEvent(CloudingEvent event) throws Exception {
-      switch (event._type) {
+      CloudingEventType type = event.getType();
+      switch (type) {
         case NODE_STARTED:
-          announceNewNode(event._ip, event._port);
+          announceNewNode(event.getIp(), event.getPort());
           break;
         case NODE_FAILED:
           int exitCode = 42;
@@ -638,14 +649,14 @@ public class h2odriver extends Configured implements Tool {
           } catch (Exception e) {
             e.printStackTrace();
           }
-          announceFailedNode(event._ip, event._port, null, exitCode);
+          announceFailedNode(event.getIp(), event.getPort(), null, exitCode);
           break;
         case NODE_CLOUDED:
           URI leader = URI.create(event.readPayload());
-          announceNodeCloudSize(event._ip, event._port, leader.getHost(), leader.getPort(), targetCloudSize());
+          announceNodeCloudSize(event.getIp(), event.getPort(), leader.getHost(), leader.getPort(), targetCloudSize());
           break;
       }
-      return event._type._fatal;
+      return type.isFatal();
     }
 
     private void maybeLogException(Exception e) {
