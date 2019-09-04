@@ -19,6 +19,7 @@ import org.junit.runners.Suite;
         TargetEncodingFrameHelperTest.class,
         TargetEncodingImmutabilityTest.class,
         TEMojoIntegrationTest.class,
+        TargetEncoderBuilderTest.class,
         TargetEncoderMojoWriterTest.class
 })
 
