@@ -929,7 +929,7 @@ class ModelBase(backwards_compatible(Keyed)):
             # GLM has only one timestep option, which is `iterations`
             timestep = "iterations"
             if metric == "AUTO":
-                metric = "negative_log_likelihood"
+                metric = "objective" # this includes the negative log likelihood and the penalties.
             elif metric not in ("negative_log_likelihood", "objective"):
                 raise H2OValueError("for GLM, metric must be one of: negative_log_likelihood, objective")
             plt.xlabel(timestep)
