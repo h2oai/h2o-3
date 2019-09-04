@@ -6,7 +6,6 @@ import hex.genmodel.IClusteringModel;
 import hex.genmodel.PredictContributions;
 import hex.genmodel.PredictContributionsFactory;
 import hex.genmodel.algos.deeplearning.DeeplearningMojoModel;
-import hex.genmodel.algos.pca.PCAMojoModel;
 import hex.genmodel.algos.glrm.GlrmMojoModel;
 import hex.genmodel.algos.targetencoder.TargetEncoderMojoModel;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
@@ -823,8 +822,8 @@ public class EasyPredictModelWrapper implements Serializable {
   }
   protected double[] preamble(ModelCategory c, RowData data, double offset) throws PredictException {
     validateModelCategory(c);
-    int predSize = (m instanceof PCAMojoModel)? ((PCAMojoModel) m)._k : m.getPredsSize(c);
-    return predict(data, offset, new double[predSize]);
+    final int predsSize = m.getPredsSize(c);
+    return predict(data, offset, new double[predsSize]);
   }
 
   private static double[] nanArray(int len) {

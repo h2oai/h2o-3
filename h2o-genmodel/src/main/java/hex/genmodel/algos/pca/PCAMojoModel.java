@@ -5,7 +5,6 @@ import hex.genmodel.MojoModel;
 public class PCAMojoModel extends MojoModel {
 
   double[][] _eigenvectors_raw;
-  public int[] _numLevels;
   public int [] _catOffsets;
   public int[] _permutation;
   public int _ncats;
@@ -48,4 +47,13 @@ public class PCAMojoModel extends MojoModel {
     }   
     return tpred;
   }
+
+  @Override public int getPredsSize() {
+    return _k;
+  }
+
+  @Override public int nclasses() {
+    return _k;
+  }
+
 }
