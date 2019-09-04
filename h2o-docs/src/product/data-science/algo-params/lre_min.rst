@@ -1,52 +1,19 @@
-``init``
---------
+``lre_min``
+-----------
 
-- Available in: GLRM, K-means
+- Available in: CoxPH
 - Hyperparameter: yes
 
 Description
 ~~~~~~~~~~~
 
-This option specifies the initialization mode used in K-Means. The options are Random, Furthest, PlusPlus, and User.
-
-- **Random**: Choose :math:`K` clusters from the set of :math:`N` observations at random so that each observation has an equal chance of being chosen.
-
-- **Furthest** (Default): 
-
-  a. Choose one center :math:`m_{1}` at random.
-
-  b. Calculate the difference between :math:`m_{1}` and each of the remaining :math:`N-1` observations :math:`x_{i}`. :math:`d(x_{i}, m_{1}) = ||(x_{i}-m_{1})||^2`
-
-  c. Choose :math:`m_{2}` to be the :math:`x_{i}` that maximizes :math:`d(x_{i}, m_{1})`.
-
-  d. Repeat until :math:`K` centers have been chosen.
-
-- **PlusPlus**: 
-
-  a. Choose one center :math:`m_{1}` at random.
-
-  b. Calculate the difference between :math:`m_{1}` and each of the remaining :math:`N-1` observations :math:`x_{i}`. :math:`d(x_{i}, m_{1}) = \|(x_{i}-m_{1})\|^2`
-
-  c. Let :math:`P(i)` be the probability of choosing :math:`x_{i}` as :math:`m_{2}`. Weight :math:`P(i)` by :math:`d(x_{i}, m_{1})` so that those :math:`x_{i}` furthest from :math:`m_{2}` have a higher probability of being selected than those :math:`x_{i}` close to :math:`m_{1}`.
-
-  d. Choose the next center :math:`m_{2}` by drawing at random according to the weighted probability distribution.
-   
-  e. Repeat until :math:`K` centers have been chosen. 
-
-- **User** initialization allows you to specify a file (using the ``user_points`` parameter) that includes a vector of initial cluster centers. 
-
-**Notes**: 
-
-- The user-specified points dataset must have the same number of columns as the training observations.
-- This option is ignored when ``estimate_k`` is enabled. In this case, the algorithm is deterministic. 
-- If this option is not specified but a user-points file is specified, then this value will default to ``user``.
+This option allows you to set the initial values for the coefficients in the model. This value defaults to 0.
 
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
-- `estimate_k <estimate_k.html>`__
-- `user_points <user_points.html>`__
+- None
 
 Example
 ~~~~~~~
