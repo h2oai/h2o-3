@@ -10,70 +10,81 @@ from h2o.estimators.xgboost import H2OXGBoostEstimator
 from h2o.exceptions import H2OResponseError
  
 def xgboost_checkpoint():
-
-  milsong_train = h2o.upload_file(pyunit_utils.locate("bigdata/laptop/milsongs/milsongs-train.csv.gz"))
-  milsong_valid = h2o.upload_file(pyunit_utils.locate("bigdata/laptop/milsongs/milsongs-test.csv.gz"))
+  train = h2o.upload_file(pyunit_utils.locate("smalldata/logreg/prostate_train.csv"))
+  valid = h2o.upload_file(pyunit_utils.locate("smalldata/logreg/prostate_test.csv"))
   distribution = "gaussian"
+  max_depth = 8
+  min_rows = 10
+  ntrees1 = 5
+  ntrees2 = ntrees1 * 2
 
   # build first model
-  ntrees1 = 2
-  max_depth1 = 2
-  min_rows1 = 10
-  print("ntrees model 1: {0}".format(ntrees1))
-  print("max_depth model 1: {0}".format(max_depth1))
-  print("min_rows model 1: {0}".format(min_rows1))
-
-
   model1 = H2OXGBoostEstimator(
-    ntrees=ntrees1,
-    max_depth=max_depth1,
-    min_rows=min_rows1,
-    distribution=distribution
+    ntrees=ntrees1, max_depth=max_depth, min_rows=min_rows, distribution=distribution
   )
   model1.train(
-    x=list(range(1,milsong_train.ncol)),
-    y=0,
-    training_frame=milsong_train,
-    validation_frame=milsong_valid)
+    x=list(range(1,train.ncol)), y=0, training_frame=train, validation_frame=valid
+  )
 
   # save the model, then load the model
-  path = pyunit_utils.locate("results")
-
-  assert os.path.isdir(path), "Expected save directory {0} to exist, but it does not.".format(path)
-  model_path = h2o.save_model(model1, path=path, force=True)
+  results_path = pyunit_utils.locate("results")
+  assert os.path.isdir(results_path), "Expected save directory {0} to exist, but it does not.".format(results_path)
+  model_path = h2o.save_model(model1, path=results_path, force=True)
 
   assert os.path.isfile(model_path), "Expected load file {0} to exist, but it does not.".format(model_path)
   restored_model = h2o.load_model(model_path)
 
   # continue building the model
-  ntrees2 = ntrees1 + 1
-  max_depth2 = max_depth1
-  min_rows2 = min_rows1
-  print("ntrees model 2: {0}".format(ntrees2))
-  print("max_depth model 2: {0}".format(max_depth2))
-  print("min_rows model 2: {0}".format(min_rows2))
-
   model2 = H2OXGBoostEstimator(
-    ntrees=ntrees1,
-    max_depth=max_depth2,
-    min_rows=min_rows2,
-    distribution=distribution,
-    checkpoint=restored_model.model_id)
+    ntrees=ntrees1, max_depth=max_depth, min_rows=min_rows, distribution=distribution,
+    checkpoint=restored_model.model_id
+  )
   try:
-      model2.train(
-        y=0, x=list(range(1,milsong_train.ncol)),
-        training_frame=milsong_train,
-        validation_frame=milsong_valid)
+    model2.train(
+      y=0, x=list(range(1,train.ncol)), training_frame=train, validation_frame=valid
+    )
   except H2OResponseError as e:
-    assert "_ntrees: If checkpoint is specified then requested ntrees must be higher than 3" in e.args[0].msg
+    assert "_ntrees: If checkpoint is specified then requested ntrees must be higher than 6" in e.args[0].msg
 
   model2.ntrees = ntrees2
   model2.train(
-    y=0, x=list(range(1,milsong_train.ncol)),
-    training_frame=milsong_train,
-    validation_frame=milsong_valid)
-    
+    y=0, x=list(range(1,train.ncol)), training_frame=train, validation_frame=valid
+  )  
   assert model2.ntrees == ntrees2
+  
+  # build the model all at once
+  model3 = H2OXGBoostEstimator(
+    ntrees=ntrees2, max_depth=max_depth, min_rows=min_rows, distribution=distribution
+  )
+  model3.train(
+    y=0, x=list(range(1,train.ncol)), training_frame=train, validation_frame=valid
+  )
+  predict2 = model2.predict(valid)
+  predict3 = model3.predict(valid)
+  
+  pyunit_utils.compare_frames_local(predict2, predict3)
+  
+  # build the model with partial data
+  parts = train.split_frame(ratios=[0.5], seed=0)
+  train_part1 = parts[0]
+  model4 = H2OXGBoostEstimator(
+    ntrees=ntrees1, max_depth=max_depth, min_rows=min_rows, distribution=distribution
+  )
+  model4.train(
+    y=0, x=list(range(1,train_part1.ncol)), training_frame=train_part1, validation_frame=valid
+  )
+  # and continue will all data
+  model5 = H2OXGBoostEstimator(
+    ntrees=ntrees2, max_depth=max_depth, min_rows=min_rows, distribution=distribution,
+    checkpoint=model4.model_id
+  )
+  model5.train(
+    y=0, x=list(range(1,train.ncol)), training_frame=train, validation_frame=valid
+  )
+  predict5 = model5.predict(valid)
+  
+  assert not pyunit_utils.compare_frames_local(predict2, predict5, returnResult=True), "Predictions should be different"
+
 
 if __name__ == "__main__":
   pyunit_utils.standalone_test(xgboost_checkpoint)
