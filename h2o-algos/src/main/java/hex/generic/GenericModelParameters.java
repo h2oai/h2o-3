@@ -15,7 +15,13 @@ public class GenericModelParameters extends Model.Parameters {
      * Key to the file with embedded model
      */
     public Key<Frame> _model_key;
-    
+
+    /**
+     * Skip the check for white-listed algorithms, this allows load any MOJO.
+     * Use at your own risk - unsupported.
+     */
+    public boolean _disable_algo_check;
+
     @Override
     public String algoName() {
         return "Generic";

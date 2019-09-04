@@ -7,6 +7,7 @@ import water.H2O;
 import water.Key;
 import water.fvec.ByteVec;
 import water.fvec.Frame;
+import water.util.Log;
 
 import java.io.IOException;
 import java.util.*;
@@ -81,17 +82,20 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
                 final MojoReaderBackend readerBackend = MojoReaderBackendFactory.createReaderBackend(mojoBytes.openStream(_job._key), MojoReaderBackendFactory.CachingStrategy.MEMORY);
                 mojoModel = ModelMojoReader.readFrom(readerBackend, true);
                 
-                if(!ALLOWED_MOJO_ALGOS.contains(mojoModel._modelDescriptor.algoName().toLowerCase())){
-                    throw new IllegalArgumentException(String.format("Unsupported MOJO model '%s'. ", mojoModel._modelDescriptor.algoName()));
+                if(! ALLOWED_MOJO_ALGOS.contains(mojoModel._modelDescriptor.algoName().toLowerCase())) {
+                    if (_parms._disable_algo_check)
+                        Log.warn(String.format("MOJO model '%s' is not supported but user disabled white-list check. Trying to load anyway.", mojoModel._modelDescriptor.algoName()));
+                    else
+                        throw new IllegalArgumentException(String.format("Unsupported MOJO model '%s'. ", mojoModel._modelDescriptor.algoName()));
                 }
 
                 final GenericModelOutput genericModelOutput = new GenericModelOutput(mojoModel._modelDescriptor, mojoModel._modelAttributes);
-                final GenericModel genericModel = new GenericModel(_result, _parms, genericModelOutput, mojoModel, mojoBytes);
+                final GenericModel genericModel = new GenericModel(_result, _parms, genericModelOutput, mojoModel, dataKey);
 
                 genericModel.write_lock(_job);
                 genericModel.unlock(_job);
             } catch (IOException e) {
-                throw new IllegalStateException("Unreachable MOJO file: " + mojoBytes._key, e);
+                throw new IllegalStateException("Unreachable MOJO file: " + dataKey, e);
             }
         }
     }
@@ -116,7 +120,7 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
      * @return An instance of {@link ByteVec} containing the bytes of an uploaded MOJO, if present. Or exception. Never returns null.
      * @throws IllegalArgumentException In case the supplied key is invalid (MOJO missing, empty key etc.)
      */
-    private final ByteVec getUploadedMojo(final Key<Frame> key) throws IllegalArgumentException {
+    private ByteVec getUploadedMojo(final Key<Frame> key) throws IllegalArgumentException {
         Objects.requireNonNull(key); // Nicer null pointer exception in case null key is accidentally provided
 
         Frame mojoFrame = key.get();
@@ -134,4 +138,19 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
     public BuilderVisibility builderVisibility() {
         return BuilderVisibility.Stable;
     }
+
+    /**
+     * Convenience method for importing MOJO into H2O.
+     * 
+     * @param location absolute path to MOJO file
+     * @param disableAlgoCheck if true skip the check of white-listed MOJO models, use at your own risk - some features might not work.
+     * @return instance of H2O Model wrapping a MOJO 
+     */
+    public static GenericModel importMojoModel(String location, boolean disableAlgoCheck) {
+        GenericModelParameters p = new GenericModelParameters();
+        p._path = location;
+        p._disable_algo_check = disableAlgoCheck;
+        return new Generic(p).trainModel().get();
+    }
+
 }
