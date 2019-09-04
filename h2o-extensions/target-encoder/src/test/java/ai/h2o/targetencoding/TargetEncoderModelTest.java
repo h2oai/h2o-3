@@ -87,4 +87,30 @@ public class TargetEncoderModelTest extends TestUtil{
       Scope.exit();
     }
   }
+
+  @Test
+  public void testTargetEncoderModel_dropNonCategoricalCols() {
+    try {
+      Scope.enter();
+      Frame trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
+      Scope.track(trainingFrame);
+
+      TargetEncoderModel.TargetEncoderParameters parameters = new TargetEncoderModel.TargetEncoderParameters();
+      parameters._data_leakage_handling = TargetEncoder.DataLeakageHandlingStrategy.None;
+      parameters._response_column = "IsDepDelayed";
+      parameters._ignored_columns = null;
+      parameters._train = trainingFrame._key;
+      parameters._seed = 0XFEED;
+
+
+      TargetEncoderBuilder job = new TargetEncoderBuilder(parameters);
+      final TargetEncoderModel targetEncoderModel = job.trainModel().get();
+      Scope.track_generic(targetEncoderModel);
+      // Check categorical colums for not being removed
+      assertArrayEquals(new String[]{"fYear", "fMonth", "fDayofMonth", "fDayOfWeek", "UniqueCarrier",
+              "Origin", "Dest", "IsDepDelayed"}, targetEncoderModel._output._names);
+    } finally {
+      Scope.exit();
+    }
+  }
 }

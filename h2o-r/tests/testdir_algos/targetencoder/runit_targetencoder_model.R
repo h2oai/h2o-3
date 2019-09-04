@@ -21,6 +21,19 @@ test.model.targetencoder <- function() {
     mojo_name <- h2o.download_mojo(model = target_encoder, path = tempdir())
     mojo_path <- paste0(tempdir(),"/",mojo_name)
     expect_true(file.exists(mojo_path))
+    
+    # No encoded columns (x) given
+    target_encoder <- h2o.targetencoder(training_frame = data, y = "survived")
+    encoded_data <- h2o.transform(target_encoder, data) # For now, there is only the predict method
+    
+    expected_columns <-
+        c(
+        "home.dest","embarked","cabin","sex","pclass","survived","name","age","sibsp","parch",
+        "ticket","fare","boat","body","sex_te", "cabin_te","embarked_te","home.dest_te" # 4 new encoded columns
+        )
+        print(h2o.colnames(encoded_data))
+        expect_true(all(h2o.colnames(encoded_data) == expected_columns))
+    
 }
 
 doTest("Target Encoder Model test", test.model.targetencoder )
