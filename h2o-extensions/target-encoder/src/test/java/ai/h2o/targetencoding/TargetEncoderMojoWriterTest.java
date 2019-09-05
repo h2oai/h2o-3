@@ -24,24 +24,22 @@ public class TargetEncoderMojoWriterTest extends TestUtil {
 
   @Test
   public void writeModelToZipFile() throws Exception{
-    Frame trainFrame = parse_test_file("./smalldata/gbm_test/titanic.csv");
 
     TargetEncoderModel targetEncoderModel = null;
     String fileNameForMojo = "test_mojo_te.zip";
-    Scope.enter();
     try {
+      Scope.enter();
+      Frame trainFrame = parse_test_file("./smalldata/gbm_test/titanic.csv");
       Scope.track(trainFrame);
       TargetEncoderModel.TargetEncoderParameters p = new TargetEncoderModel.TargetEncoderParameters();
-      Frame.VecSpecifier[] teColumns = {new Frame.VecSpecifier(trainFrame._key, "home.dest"),
-              new Frame.VecSpecifier(trainFrame._key, "embarked")};
       String responseColumnName = "survived";
 
       asFactor(trainFrame, responseColumnName);
 
       p._blending = false;
-      p._encoded_columns = teColumns;
-      p.setTrain(trainFrame._key);
       p._response_column = responseColumnName;
+      p._ignored_columns = ignoredColumns(trainFrame, "home.dest", "embarked", p._response_column);
+      p.setTrain(trainFrame._key);
 
       TargetEncoderBuilder builder = new TargetEncoderBuilder(p);
 

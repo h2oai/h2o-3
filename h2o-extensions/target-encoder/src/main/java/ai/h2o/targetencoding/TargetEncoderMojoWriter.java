@@ -47,15 +47,7 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter {
       writekv("smoothing", teParams._blending_parameters.getF());
     }
     writekv("priorMean", output._prior_mean);
-
-    // Maybe we can use index of the column instead of its name in all the encoding maps. Check whether we need name somewhere.
-    Map<String, Integer> teColumnNameToIdx = output.column_name_to_idx;
-    startWritingTextFile("feature_engineering/target_encoding/te_column_name_to_idx_map.ini");
-    for(Map.Entry<String, Integer> entry: teColumnNameToIdx.entrySet()) {
-      writelnkv(entry.getKey(), entry.getValue().toString()); 
-    }
-    finishWritingTextFile();
-
+    
     Map<String, Integer> _teColumnNameToMissingValuesPresence = output._column_name_to_missing_val_presence;
     startWritingTextFile("feature_engineering/target_encoding/te_column_name_to_missing_values_presence.ini");
     for(Map.Entry<String, Integer> entry: _teColumnNameToMissingValuesPresence.entrySet()) {

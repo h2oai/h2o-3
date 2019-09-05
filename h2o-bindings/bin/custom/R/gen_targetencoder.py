@@ -1,12 +1,9 @@
 extensions = dict(
-    required_params=['training_frame', "target_column", "encoded_columns"],  # empty to override defaults in gen_defaults,
-    validate_required_params="""
-    if(missing(training_frame)) stop("Training frame must be specified.")
-    if(missing(target_column)) stop("Target column must be specified.")
-    if(missing(encoded_columns)) stop("Encoded columns must be specified.")
-    """,
     set_required_params="""
-parms$response_column <- target_column
+args <- .verify_dataxy(training_frame, x, y)
+if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
+parms$ignored_columns <- args$x_ignore
+parms$response_column <- args$y
 parms$training_frame <- training_frame
     """
 )

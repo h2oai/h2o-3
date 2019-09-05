@@ -5,9 +5,12 @@
 #'
 #' Transformation of a categorical variable with a mean value of the target variable
 #'
+#' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
+#'        If x is missing, then all columns except y are used.
+#' @param y The name or column index of the response variable in the data. 
+#'        The response must be either a numeric or a categorical/factor variable. 
+#'        If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
 #' @param training_frame Id of the training data frame.
-#' @param target_column Target column for the encoding
-#' @param encoded_columns Columnds to encode.
 #' @param blending \code{Logical}. Blending enabled/disabled Defaults to FALSE.
 #' @param k Inflection point. Used for blending (if enabled). Blending is to be enabled separately using the 'blending'
 #'        parameter. Defaults to 20.
@@ -30,9 +33,9 @@
 #' # encoded_data <- h2o.transform(target_encoder, data)
 #' }
 #' @export
-h2o.targetencoder <- function(training_frame,
-                              target_column,
-                              encoded_columns,
+h2o.targetencoder <- function(x,
+                              y,
+                              training_frame,
                               blending = FALSE,
                               k = 20,
                               f = 10,
@@ -44,19 +47,23 @@ h2o.targetencoder <- function(training_frame,
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
 
   # Validate other required args
-  if(missing(training_frame)) stop("Training frame must be specified.")
-  if(missing(target_column)) stop("Target column must be specified.")
-  if(missing(encoded_columns)) stop("Encoded columns must be specified.")
+  # If x is missing, then assume user wants to use all columns as features.
+  if (missing(x)) {
+     if (is.numeric(y)) {
+         x <- setdiff(col(training_frame), y)
+     } else {
+         x <- setdiff(colnames(training_frame), y)
+     }
+  }
 
   # Build parameter list to send to model builder
   parms <- list()
-  parms$response_column <- target_column
+  args <- .verify_dataxy(training_frame, x, y)
+  if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
+  parms$ignored_columns <- args$x_ignore
+  parms$response_column <- args$y
   parms$training_frame <- training_frame
 
-  if (!missing(encoded_columns))
-    parms$encoded_columns <- encoded_columns
-  if (!missing(target_column))
-    parms$target_column <- target_column
   if (!missing(blending))
     parms$blending <- blending
   if (!missing(k))

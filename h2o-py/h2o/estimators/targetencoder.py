@@ -20,8 +20,8 @@ class H2OTargetEncoderEstimator(H2OEstimator):
     """
 
     algo = "targetencoder"
-    param_names = {"encoded_columns", "target_column", "blending", "k", "f", "data_leakage_handling", "model_id",
-                   "training_frame", "fold_column"}
+    param_names = {"blending", "k", "f", "data_leakage_handling", "model_id", "ignored_columns", "training_frame",
+                   "fold_column"}
 
     def __init__(self, **kwargs):
         super(H2OTargetEncoderEstimator, self).__init__()
@@ -35,36 +35,6 @@ class H2OTargetEncoderEstimator(H2OEstimator):
                 setattr(self, pname, pvalue)
             else:
                 raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
-
-    @property
-    def encoded_columns(self):
-        """
-        Columnds to encode.
-
-        Type: ``List[str]``.
-        """
-        return self._parms.get("encoded_columns")
-
-    @encoded_columns.setter
-    def encoded_columns(self, encoded_columns):
-        assert_is_type(encoded_columns, None, [str])
-        self._parms["encoded_columns"] = encoded_columns
-
-
-    @property
-    def target_column(self):
-        """
-        Target column for the encoding
-
-        Type: ``str``.
-        """
-        return self._parms.get("target_column")
-
-    @target_column.setter
-    def target_column(self, target_column):
-        assert_is_type(target_column, None, str)
-        self._parms["target_column"] = target_column
-
 
     @property
     def blending(self):
@@ -128,6 +98,21 @@ class H2OTargetEncoderEstimator(H2OEstimator):
 
 
     @property
+    def ignored_columns(self):
+        """
+        Names of columns to ignore for training.
+
+        Type: ``List[str]``.
+        """
+        return self._parms.get("ignored_columns")
+
+    @ignored_columns.setter
+    def ignored_columns(self, ignored_columns):
+        assert_is_type(ignored_columns, None, [str])
+        self._parms["ignored_columns"] = ignored_columns
+
+
+    @property
     def training_frame(self):
         """
         Id of the training data frame.
@@ -180,21 +165,3 @@ class H2OTargetEncoderEstimator(H2OEstimator):
                                                                 'noise': noise,
                                                                 'seed': seed})
         return h2o.get_frame(output["name"])
-
-    def train(self, x = None, y = None,fold_column = None, training_frame = None, encoded_columns = None,
-                  target_column = None):
-
-        if (y is None):
-            y = target_column
-        if(x is None):
-            x = encoded_columns
-
-        def extend_parms(parms):
-            if target_column is not None:
-                parms["target_column"] = target_column
-            if encoded_columns is not None:
-                parms["encoded_columns"] = encoded_columns
-            parms["encoded_columns"] = parms["encoded_columns"] if "encoded_columns" in parms else x
-
-        super(self.__class__, self)._train(x = x, y = y, training_frame = training_frame, fold_column = fold_column,
-                                           extend_parms_fn=extend_parms)
