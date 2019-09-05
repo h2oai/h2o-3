@@ -633,6 +633,7 @@ class H2OBinomialModelMetrics(MetricsBase):
     maximizing_metrics = ('absolute_mcc', 'accuracy', 'precision',
                           'f0point5', 'f1', 'f2',
                           'mean_per_class_accuracy', 'min_per_class_accuracy',
+                          'tns', 'fns', 'fps', 'tps',
                           'tnr', 'fnr', 'fpr', 'tpr') + tuple(metrics_aliases.keys())
 
     def confusion_matrix(self, metrics=None, thresholds=None):
