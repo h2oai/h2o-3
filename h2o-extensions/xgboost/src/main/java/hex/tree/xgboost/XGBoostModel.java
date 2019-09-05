@@ -40,7 +40,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   public XGBoostModelInfo model_info() { return model_info; }
 
-  public static class XGBoostParameters extends Model.Parameters {
+  public static class XGBoostParameters extends Model.Parameters implements Model.GetNTrees {
     public enum TreeMethod {
       auto, exact, approx, hist
     }
@@ -168,6 +168,15 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       }
       return constraints;
     }
+
+    @Override
+    public int getNTrees() {
+      return _ntrees;
+    }
+
+    static String[] CHECKPOINT_NON_MODIFIABLE_FIELDS = { 
+        "_tree_method", "_grow_policy", "_booster", "_sample_rate", "_max_depth", "_min_rows" 
+    };
 
   }
 
@@ -385,6 +394,17 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     return BoosterParms.fromMap(Collections.unmodifiableMap(params));
   }
 
+  /** Performs deep clone of given model.  */
+  protected XGBoostModel deepClone(Key<XGBoostModel> result) {
+    XGBoostModel newModel = IcedUtils.deepCopy(this);
+    newModel._key = result;
+    // Do not clone model metrics
+    newModel._output.clearModelMetrics(false);
+    newModel._output._training_metrics = null;
+    newModel._output._validation_metrics = null;
+    return newModel;
+  }
+  
   private static int getMaxNThread() {
     return Integer.getInteger(SYSTEM_PROP_PREFIX + "xgboost.nthread", H2O.ARGS.nthreads);
   }
