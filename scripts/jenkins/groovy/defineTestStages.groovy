@@ -159,7 +159,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Py3.6 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.5',
-      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      timeoutValue: 150, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
       stageName: 'R3.4 Medium-large', target: 'test-r-medium-large', rVersion: '3.4.1',
