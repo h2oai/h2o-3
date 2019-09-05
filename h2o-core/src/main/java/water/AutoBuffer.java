@@ -277,8 +277,7 @@ public final class AutoBuffer {
   private void checkVersion(String version) {
     final boolean ignoreVersion = Boolean.getBoolean(H2O_SYSTEM_SERIALIZATION_IGNORE_VERSION);
     if (! version.equals(H2O.ABV.projectVersion())) {
-      String msg = "Found version "+version+", but running version "+H2O.ABV.projectVersion()
-              + ". If you wish to import older model into a newer version of H2O, please refer to the MOJO import functionality.";
+      final String msg = H2O.technote(14,"Found version "+version+", but running version "+H2O.ABV.projectVersion() );
       if (ignoreVersion)
         Log.warn("Loading data from a different version! " + msg);
       else
