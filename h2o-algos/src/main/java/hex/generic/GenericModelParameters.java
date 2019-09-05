@@ -23,7 +23,7 @@ public class GenericModelParameters extends Model.Parameters {
 
     @Override
     public String fullName() {
-        return "MOJO Model";
+        return "Import MOJO Model";
     }
 
     @Override
