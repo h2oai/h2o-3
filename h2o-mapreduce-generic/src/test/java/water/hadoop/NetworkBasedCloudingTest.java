@@ -11,7 +11,7 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
-public class EmbeddedH2OConfigTest {
+public class NetworkBasedCloudingTest {
 
   private ServerSocket _blocked_server_socket;
   private int _blocked_port;
@@ -32,7 +32,7 @@ public class EmbeddedH2OConfigTest {
 
   @Test
   public void testFetchFile_failure() throws Exception {
-    ExCollectingEmbeddedH2OConfig cfg = new ExCollectingEmbeddedH2OConfig();
+    ExCollectingNetworkBasedClouding cfg = new ExCollectingNetworkBasedClouding();
     cfg.setDriverCallbackIp("127.0.0.1");
     cfg.setDriverCallbackPort(_blocked_port);
 
@@ -57,7 +57,7 @@ public class EmbeddedH2OConfigTest {
     };
     cm.start();
 
-    EmbeddedH2OConfig cfg = new SocketClosingEmbeddedH2OConfig();
+    NetworkBasedClouding cfg = new SocketClosingNetworkBasedClouding();
     cfg.setDriverCallbackIp("127.0.0.1");
     cfg.setDriverCallbackPort(_blocked_port);
     cfg.setEmbeddedWebServerInfo("h2o.ai", 600);
@@ -73,7 +73,7 @@ public class EmbeddedH2OConfigTest {
     }
   }
   
-  private static class ExCollectingEmbeddedH2OConfig extends EmbeddedH2OConfig {
+  private static class ExCollectingNetworkBasedClouding extends NetworkBasedClouding {
     private final List<IOException> exceptions = new LinkedList<>();
     @Override
     protected void reportFetchfileAttemptFailure(IOException ioex, int attempt) throws IOException {
@@ -83,7 +83,7 @@ public class EmbeddedH2OConfigTest {
     }
   }
 
-  private class SocketClosingEmbeddedH2OConfig extends EmbeddedH2OConfig {
+  private class SocketClosingNetworkBasedClouding extends NetworkBasedClouding {
     @Override
     protected void reportFetchfileAttemptFailure(IOException ioex, int attempt) {
       setDriverCallbackPort(_open_port);
