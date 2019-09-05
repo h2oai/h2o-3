@@ -4,6 +4,7 @@ import hex.ModelBuilder;
 import hex.ModelCategory;
 import water.Scope;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.IcedHashMapGeneric;
 import water.util.Log;
 
@@ -63,6 +64,16 @@ public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, Targe
       _parms._ignore_const_cols = false;
       Log.info("We don't want to ignore any columns during target encoding transformation therefore `_ignore_const_cols` parameter was set to `false`");
     }
+  }
+
+  @Override
+  protected void ignoreInvalidColumns(int npredictors, boolean expensive) {
+    new FilterCols(npredictors){
+      @Override
+      protected boolean filter(Vec v) {
+        return !v.isCategorical();
+      }
+    }.doIt(train(), "Removing non-categorical columns found in the list of encoded columns.", expensive);
   }
 
   /**
