@@ -14,7 +14,7 @@ from h2o.utils.typechecks import assert_is_type, Enum, numeric
 
 class H2OGenericEstimator(H2OEstimator):
     """
-    MOJO Model
+    Import MOJO Model
 
     """
 

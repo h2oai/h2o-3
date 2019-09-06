@@ -334,7 +334,7 @@ public class TargetEncoderMojoModelTest {
   // We test that order of transformation/predictions is determined by index of teColumn in the input data.
   @Test
   public void sortEncodingMapByIndex() {
-    TargetEncoderMojoModel targetEncoderMojoModel = new TargetEncoderMojoModel(null, null, null);
+    TargetEncoderMojoModel targetEncoderMojoModel = new TargetEncoderMojoModel(new String[0], new String[0][0], null);
     EncodingMaps encodingMaps = new EncodingMaps();
     EncodingMap encodingMapForCat1 = new EncodingMap();
     int factorValueForA = 0;
