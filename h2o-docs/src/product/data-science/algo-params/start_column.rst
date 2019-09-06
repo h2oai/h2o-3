@@ -67,7 +67,9 @@ Example
     heart = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
 
     # set the parameters
-    coxph = H2OCoxProportionalHazardsEstimator(start_column="start", stop_column="stop", ties="breslow")
+    coxph = H2OCoxProportionalHazardsEstimator(start_column="start", 
+                                               stop_column="stop", 
+                                               ties="breslow")
 
     # train your model
     coxph.train(x="age", y="event", training_frame=heart)
