@@ -2,7 +2,10 @@ package hex.generic;
 
 import hex.ModelBuilder;
 import hex.ModelCategory;
-import hex.genmodel.*;
+import hex.genmodel.ModelMojoReader;
+import hex.genmodel.MojoModel;
+import hex.genmodel.MojoReaderBackend;
+import hex.genmodel.MojoReaderBackendFactory;
 import water.H2O;
 import water.Key;
 import water.fvec.ByteVec;
@@ -100,7 +103,7 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
         }
     }
     
-    private Key importFile() {
+    private Key<Frame> importFile() {
         ArrayList<String> files = new ArrayList<>();
         ArrayList<String> keys = new ArrayList<>();
         ArrayList<String> fails = new ArrayList<>();
