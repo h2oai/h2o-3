@@ -1,5 +1,6 @@
 package ai.h2o.automl;
 
+import ai.h2o.automl.WorkAllocations.JobType;
 import hex.Model;
 import hex.SplitFrame;
 import hex.tree.SharedTreeModel.SharedTreeParameters;
@@ -437,14 +438,14 @@ public class AutoMLTest extends water.TestUtil {
       aml = new AutoML(Key.<AutoML>make(), new Date(), autoMLBuildSpec);
       WorkAllocations workPlan = aml.planWork();
       for (Algo algo : autoMLBuildSpec.build_models.exclude_algos) {
-        assertNull(workPlan.getAllocation(algo, AutoML.JobType.ModelBuild));
-        assertNull(workPlan.getAllocation(algo, AutoML.JobType.HyperparamSearch));
+        assertNull(workPlan.getAllocation(algo, JobType.ModelBuild));
+        assertNull(workPlan.getAllocation(algo, JobType.HyperparamSearch));
       }
       for (Algo algo : Algo.values()) {
         if (!ArrayUtils.contains(autoMLBuildSpec.build_models.exclude_algos, algo)) {
           assertFalse(
-              workPlan.getAllocation(algo, AutoML.JobType.ModelBuild) == null
-                  && workPlan.getAllocation(algo, AutoML.JobType.HyperparamSearch) == null
+              workPlan.getAllocation(algo, JobType.ModelBuild) == null
+                  && workPlan.getAllocation(algo, JobType.HyperparamSearch) == null
           );
         }
       }
@@ -468,18 +469,18 @@ public class AutoMLTest extends water.TestUtil {
       for (Algo algo : autoMLBuildSpec.build_models.include_algos) {
         if (algo.enabled()) {
           assertFalse(
-                  workPlan.getAllocation(algo, AutoML.JobType.ModelBuild) == null
-                          && workPlan.getAllocation(algo, AutoML.JobType.HyperparamSearch) == null
+                  workPlan.getAllocation(algo, JobType.ModelBuild) == null
+                          && workPlan.getAllocation(algo, JobType.HyperparamSearch) == null
           );
         } else {
-          assertNull(workPlan.getAllocation(algo, AutoML.JobType.ModelBuild));
-          assertNull(workPlan.getAllocation(algo, AutoML.JobType.HyperparamSearch));
+          assertNull(workPlan.getAllocation(algo, JobType.ModelBuild));
+          assertNull(workPlan.getAllocation(algo, JobType.HyperparamSearch));
         }
       }
       for (Algo algo : Algo.values()) {
         if (!ArrayUtils.contains(autoMLBuildSpec.build_models.include_algos, algo)) {
-          assertNull(workPlan.getAllocation(algo, AutoML.JobType.ModelBuild));
-          assertNull(workPlan.getAllocation(algo, AutoML.JobType.HyperparamSearch));
+          assertNull(workPlan.getAllocation(algo, JobType.ModelBuild));
+          assertNull(workPlan.getAllocation(algo, JobType.HyperparamSearch));
         }
       }
     } finally {

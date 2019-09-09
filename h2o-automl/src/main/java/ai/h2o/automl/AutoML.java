@@ -1,22 +1,10 @@
 package ai.h2o.automl;
 
 import ai.h2o.automl.EventLogEntry.Stage;
+import ai.h2o.automl.WorkAllocations.JobType;
 import hex.Model;
-import hex.ModelBuilder;
-import hex.ScoreKeeper.StoppingMetric;
-import hex.ensemble.StackedEnsembleModel;
-import hex.ensemble.StackedEnsembleModel.StackedEnsembleParameters;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
-import hex.genmodel.utils.DistributionFamily;
-import hex.glm.GLMModel.GLMParameters;
 import hex.grid.Grid;
-import hex.grid.GridSearch;
-import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
 import hex.splitframe.ShuffleSplitFrame;
-import hex.tree.SharedTreeModel.SharedTreeParameters;
-import hex.tree.drf.DRFModel.DRFParameters;
-import hex.tree.gbm.GBMModel.GBMParameters;
-import hex.tree.xgboost.XGBoostModel.XGBoostParameters;
 import water.*;
 import water.automl.api.schemas3.AutoMLV99;
 import water.exceptions.H2OIllegalArgumentException;
@@ -26,10 +14,10 @@ import water.nbhm.NonBlockingHashMap;
 import water.util.Countdown;
 import water.util.Log;
 import water.util.PrettyPrint;
-import water.util.fp.Predicate;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria.AUTO_STOPPING_TOLERANCE;
 
@@ -103,12 +91,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return AutoMLV99.AutoMLKeyV3.class;
   }
 
-  enum JobType {
-    Unknown,
-    ModelBuild,
-    HyperparamSearch
-  }
-
   private AutoMLBuildSpec buildSpec;     // all parameters for doing this AutoML build
   private Frame origTrainingFrame;       // untouched original training frame
 
@@ -125,22 +107,24 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   public Vec getFoldColumn() { return foldColumn; }
   public Vec getWeightsColumn() { return weightsColumn; }
 
-  private Frame trainingFrame;    // required training frame: can add and remove Vecs, but not mutate Vec data in place
-  private Frame validationFrame;  // optional validation frame; the training_frame is split automagically if it's not specified
-  private Frame blendingFrame;
-  private Frame leaderboardFrame; // optional test frame used for leaderboard scoring; if not specified, leaderboard will use xval metrics
+  Frame trainingFrame;    // required training frame: can add and remove Vecs, but not mutate Vec data in place
+  Frame validationFrame;  // optional validation frame; the training_frame is split automagically if it's not specified
+  Frame blendingFrame;
+  Frame leaderboardFrame; // optional test frame used for leaderboard scoring; if not specified, leaderboard will use xval metrics
 
-  private Vec responseColumn;
-  private Vec foldColumn;
-  private Vec weightsColumn;
+  Vec responseColumn;
+  Vec foldColumn;
+  Vec weightsColumn;
 
-  private Key<Grid> gridKeys[] = new Key[0];  // Grid key for the GridSearches
+  Key<Grid> gridKeys[] = new Key[0];  // Grid key for the GridSearches
 
-  private Date startTime;
-  private static Date lastStartTime; // protect against two runs with the same second in the timestamp; be careful about races
-  private Countdown runCountdown;
-  private Job job;                  // the Job object for the build of this AutoML.
+  Date startTime;
+  static Date lastStartTime; // protect against two runs with the same second in the timestamp; be careful about races
+  Countdown runCountdown;
+  Job job;                  // the Job object for the build of this AutoML.
+  WorkAllocations workAllocations;
 
+  private TrainingStepsRegistry trainingStepsRegistry;
   private TrainingStepsExecutor trainingStepsExecutor;
   private Leaderboard leaderboard;
   private EventLog eventLog;
@@ -149,8 +133,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private Vec[] originalTrainingFrameVecs;
   private String[] originalTrainingFrameNames;
   private long[] originalTrainingFrameChecksums;
-
-  private WorkAllocations workAllocations;
 
   public AutoML() {
     super(null);
@@ -180,6 +162,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
       initLeaderboard(buildSpec);
 
+      trainingStepsRegistry = new TrainingStepsRegistry(this);
       trainingStepsExecutor = new TrainingStepsExecutor(leaderboard, eventLog, runCountdown);
     } catch (Exception e) {
       delete(); //cleanup potentially leaked keys
@@ -240,6 +223,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
 
     WorkAllocations workAllocations = new WorkAllocations();
+    // todo: merge this with steps
     workAllocations.allocate(Algo.DeepLearning, 1, JobType.ModelBuild, 10)
             .allocate(Algo.DeepLearning, 3, JobType.HyperparamSearch, 20)
             .allocate(Algo.DRF, 2, JobType.ModelBuild, 10)
@@ -294,21 +278,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
   }
 
-  private void learn() {
-    defaultXGBoosts(false);
-    defaultSearchGLM(null);
-    defaultRandomForest();
-//    defaultXGBoosts(true);
-    defaultGBMs();
-    defaultDeepLearning();
-    defaultExtremelyRandomTrees();
-    defaultSearchXGBoost(null, false);
-//    defaultSearchXGBoost(null, true);
-    defaultSearchGBM(null);
-    defaultSearchDL();
-    defaultStackedEnsembles();
-  }
-
   /**
    * Holds until AutoML's job is completed, if a job exists.
    */
@@ -352,7 +321,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return !runCountdown.timedOut() && remainingModels() > 0;
   }
 
-  private boolean isCVEnabled() {
+  boolean isCVEnabled() {
     return this.buildSpec.build_control.nfolds != 0 || this.buildSpec.input_spec.fold_column != null;
   }
 
@@ -484,12 +453,20 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
 
-  //*****************  Jobs Build / Configure / Run / Poll section (model agnostic, kind of...) *****************//
+  //*****************  Training Jobs  *****************//
+
+  private void learn() {
+    for (TrainingStep step : trainingStepsRegistry.getOrderedSteps()) {
+        if (!exceededSearchLimits(step._description, step._ignoreConstraints)) {
+          trainingStepsExecutor.submit(step, job());
+        }
+    }
+  }
 
 
-  // These are per (possibly concurrent) AutoML run.
+  // There are per (possibly concurrent) AutoML run.
   // All created keys for a run use the unique AutoML run timestamp, so we can't have name collisions.
-  private int individualModelsTrained = 0;
+  AtomicInteger individualModelsTrained = new AtomicInteger();
   private NonBlockingHashMap<String, Integer> algoInstanceCounters = new NonBlockingHashMap<>();
   private NonBlockingHashMap<String, Integer> gridInstanceCounters = new NonBlockingHashMap<>();
 
@@ -503,669 +480,37 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
   }
 
-  private Key<Model> modelKey(String algoName) {
-    return modelKey(algoName, true);
-  }
-
-  private Key<Model> modelKey(String algoName, boolean with_counter) {
+  Key<Model> modelKey(String algoName, boolean with_counter) {
     String counterStr = with_counter ? "_" + nextInstanceCounter(algoName, algoInstanceCounters) : "";
     return Key.make(algoName + counterStr + "_AutoML_" + timestampFormatForKeys.format(this.startTime));
   }
 
-  Job<Model> trainModel(Key<Model> key, WorkAllocations.Work work, Model.Parameters parms) {
-    return trainModel(key, work, parms, false);
+  Key<Grid> gridKey(String algoName, boolean with_counter) {
+    String counterStr = with_counter ? "_" + nextInstanceCounter(algoName, gridInstanceCounters) : "";
+    return Key.make(algoName + "_grid_" + counterStr + "_AutoML_" + timestampFormatForKeys.format(this.startTime));
   }
 
-  /**
-   * @param key (optional) model key
-   * @param work  the allocated work item: used to check various executions limits and to distribute remaining work (time + models)
-   * @param parms the model builder params
-   * @param ignoreLimits (defaults to false) whether or not to ignore the max_models/max_runtime constraints
-   * @return a started training model
-   */
-  Job<Model> trainModel(Key<Model> key, WorkAllocations.Work work, Model.Parameters parms, boolean ignoreLimits) {
-    if (exceededSearchLimits(work, key == null ? null : key.toString(), ignoreLimits)) return null;
-
-    Algo algo = work.algo;
-    String algoName = ModelBuilder.algoName(algo.urlName());
-
-    if (null == key) key = modelKey(algoName);
-
-    Job<Model> job = new Job<>(key, ModelBuilder.javaName(algo.urlName()), algoName);
-    ModelBuilder builder = ModelBuilder.make(algo.urlName(), job, key);
-    Model.Parameters defaults = builder._parms;
-    builder._parms = parms;
-
-    setCommonModelBuilderParams(builder._parms);
-    setStoppingCriteria(builder._parms, defaults, true);
-
-    // override model's max_runtime_secs to ensure that the total max_runtime doesn't exceed expectations
-    if (ignoreLimits)
-      builder._parms._max_runtime_secs = 0;
-    else if (builder._parms._max_runtime_secs == 0)
-      builder._parms._max_runtime_secs = timeRemainingMs() / 1e3;
-    else
-      builder._parms._max_runtime_secs = Math.min(builder._parms._max_runtime_secs, timeRemainingMs() / 1e3);
-
-    builder.init(false);          // validate parameters
-
-    Log.debug("Training model: " + algoName + ", time remaining (ms): " + timeRemainingMs());
-    try {
-      return builder.trainModelOnH2ONode();
-    } catch (H2OIllegalArgumentException exception) {
-      eventLog().warn(Stage.ModelTraining, "Skipping training of model "+key+" due to exception: "+exception);
-      return null;
-    }
-  }
-
-  private Key<Grid> gridKey(String algoName) {
-    return Key.make(algoName + "_grid_" + nextInstanceCounter(algoName, gridInstanceCounters) + "_AutoML_" + timestampFormatForKeys.format(this.startTime));
-  }
-
-  private void addGridKey(Key<Grid> gridKey) {
+  void addGridKey(Key<Grid> gridKey) {
     gridKeys = Arrays.copyOf(gridKeys, gridKeys.length + 1);
     gridKeys[gridKeys.length - 1] = gridKey;
   }
 
-  /**
-   * Do a random hyperparameter search.  Caller must eventually do a <i>get()</i>
-   * on the returned Job to ensure that it's complete.
-   * @param gridKey optional grid key
-   * @param work  the allocated work item: used to check various executions limits and to distribute remaining work (time + models)
-   * @param baseParms ModelBuilder parameter values that are common across all models in the search
-   * @param searchParms hyperparameter search space
-   * @return the started hyperparameter search job
-   */
-  Job<Grid> hyperparameterSearch(
-      Key<Grid> gridKey, WorkAllocations.Work work, Model.Parameters baseParms, Map<String, Object[]> searchParms
-  ) {
-    if (exceededSearchLimits(work)) return null;
-
-    Algo algo = work.algo;
-
-    Model.Parameters defaults;
-    try {
-      defaults = baseParms.getClass().newInstance();
-    } catch (Exception e) {
-      eventLog().warn(Stage.ModelTraining, "Internal error doing hyperparameter search");
-      throw new H2OIllegalArgumentException("Hyperparameter search can't create a new instance of Model.Parameters subclass: " + baseParms.getClass());
-    }
-
-    setCommonModelBuilderParams(baseParms);
-    setStoppingCriteria(baseParms, defaults, false);
-
-    RandomDiscreteValueSearchCriteria searchCriteria = (RandomDiscreteValueSearchCriteria) buildSpec.build_control.stopping_criteria.getSearchCriteria().clone();
-    double maxAssignedTime = timeRemainingMs() * workAllocations.remainingWorkRatio(work) / 1e3;
-    // predicate can be removed if/when we decide to include SEs in the max_models limit
-    int maxAssignedModels = (int) Math.ceil(remainingModels() * workAllocations.remainingWorkRatio(work, new Predicate<WorkAllocations.Work>() {
-      @Override
-      public Boolean apply(WorkAllocations.Work work) {
-        return work.algo != Algo.StackedEnsemble;
-      }
-    }));
-
-    if (searchCriteria.max_runtime_secs() == 0)
-      searchCriteria.set_max_runtime_secs(maxAssignedTime);
-    else
-      searchCriteria.set_max_runtime_secs(Math.min(searchCriteria.max_runtime_secs(), maxAssignedTime));
-
-    if (searchCriteria.max_models() == 0)
-      searchCriteria.set_max_models(maxAssignedModels);
-    else
-      searchCriteria.set_max_models(Math.min(searchCriteria.max_models(), maxAssignedModels));
-
-    eventLog().info(Stage.ModelTraining, "AutoML: starting "+algo+" hyperparameter search");
-
-    if (null == gridKey) gridKey = gridKey(algo.name());
-    addGridKey(gridKey);
-    Log.debug("Hyperparameter search: "+algo.name()+", time remaining (ms): "+timeRemainingMs());
-    return GridSearch.startGridSearch(
-        gridKey,
-        baseParms,
-        searchParms,
-        new GridSearch.SimpleParametersBuilderFactory<>(),
-        searchCriteria
-    );
-  }
-
-  Job<StackedEnsembleModel> stack(String modelName, Key<Model>[] modelKeyArrays, boolean use_cache) {
-    WorkAllocations.Work work = workAllocations.getAllocation(Algo.StackedEnsemble, JobType.ModelBuild);
-    if (work == null) return null;
-
-    // Set up Stacked Ensemble
-    StackedEnsembleParameters stackedEnsembleParameters = new StackedEnsembleParameters();
-    stackedEnsembleParameters._base_models = modelKeyArrays;
-    stackedEnsembleParameters._valid = (getValidationFrame() == null ? null : getValidationFrame()._key);
-    stackedEnsembleParameters._blending = (getBlendingFrame() == null ? null : getBlendingFrame()._key);
-    stackedEnsembleParameters._keep_levelone_frame = true; //TODO Why is this true? Can be optionally turned off
-    stackedEnsembleParameters._keep_base_model_predictions = use_cache; //avoids recomputing some base predictions for each SE
-    // Add cross-validation args
-    stackedEnsembleParameters._metalearner_fold_column = buildSpec.input_spec.fold_column;
-    stackedEnsembleParameters._metalearner_nfolds = buildSpec.build_control.nfolds;
-
-    stackedEnsembleParameters.initMetalearnerParams();
-    stackedEnsembleParameters._metalearner_parameters._keep_cross_validation_models = buildSpec.build_control.keep_cross_validation_models;
-    stackedEnsembleParameters._metalearner_parameters._keep_cross_validation_predictions = buildSpec.build_control.keep_cross_validation_predictions;
-
-    Key modelKey = modelKey(modelName, false);
-    return trainModel(modelKey, work, stackedEnsembleParameters, true);
-  }
-
-  private void setCommonModelBuilderParams(Model.Parameters params) {
-    params._train = trainingFrame._key;
-    if (null != validationFrame)
-      params._valid = validationFrame._key;
-    params._response_column = buildSpec.input_spec.response_column;
-    params._ignored_columns = buildSpec.input_spec.ignored_columns;
-
-    // currently required, for the base_models, for stacking:
-    if (! (params instanceof StackedEnsembleParameters)) {
-      params._keep_cross_validation_predictions = getBlendingFrame() == null ? true : buildSpec.build_control.keep_cross_validation_predictions;
-
-      // TODO: StackedEnsemble doesn't support weights yet in score0
-      params._fold_column = buildSpec.input_spec.fold_column;
-      params._weights_column = buildSpec.input_spec.weights_column;
-
-      if (buildSpec.input_spec.fold_column == null) {
-        params._nfolds = buildSpec.build_control.nfolds;
-        if (buildSpec.build_control.nfolds > 1) {
-          // TODO: below allow the user to specify this (vs Modulo)
-          params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
-        }
-      }
-      if (buildSpec.build_control.balance_classes) {
-        params._balance_classes = buildSpec.build_control.balance_classes;
-        params._class_sampling_factors = buildSpec.build_control.class_sampling_factors;
-        params._max_after_balance_size = buildSpec.build_control.max_after_balance_size;
-      }
-      //TODO: add a check that gives an error when class_sampling_factors, max_after_balance_size is set and balance_classes = false
-    }
-
-    params._keep_cross_validation_models = buildSpec.build_control.keep_cross_validation_models;
-    params._keep_cross_validation_fold_assignment = buildSpec.build_control.nfolds != 0 && buildSpec.build_control.keep_cross_validation_fold_assignment;
-    params._export_checkpoints_dir = buildSpec.build_control.export_checkpoints_dir;
-  }
-
-  private void setStoppingCriteria(Model.Parameters parms, Model.Parameters defaults, boolean isIndividualModel) {
-    // If the caller hasn't set ModelBuilder stopping criteria, set it from our global criteria.
-
-    parms._max_runtime_secs = buildSpec.build_control.stopping_criteria.max_runtime_secs_per_model();
-
-    //FIXME: Do we really need to compare with defaults before setting the buildSpec value instead?
-    // This can create subtle bugs: e.g. if dev wanted to enforce a stopping criteria for a specific algo/model,
-    // he wouldn't be able to enforce the default value, that would always be overridden by buildSpec.
-    // We should instead provide hooks and ensure that properties are always set in the following order:
-    //  1. defaults, 2. user defined, 3. internal logic/algo specific based on the previous state (esp. handling of AUTO properties).
-
-    // If we have set a seed for the search and not for the individual model params
-    // then use a sequence starting with the same seed given for the model build.
-    // Don't use the same exact seed so that, e.g., if we build two GBMs they don't
-    // do the same row and column sampling.
-    // Leave it as is for Grids as HyperSpaceWalker has its own increment logic.
-    if (isIndividualModel && parms._seed == defaults._seed && buildSpec.build_control.stopping_criteria.seed() != -1)
-      parms._seed = buildSpec.build_control.stopping_criteria.seed() + individualModelsTrained++;
-
-    if (parms._stopping_metric == defaults._stopping_metric)
-      parms._stopping_metric = buildSpec.build_control.stopping_criteria.stopping_metric();
-
-    if (parms._stopping_metric == StoppingMetric.AUTO) {
-      String sort_metric = getSortMetric();
-      parms._stopping_metric = sort_metric == null ? StoppingMetric.AUTO
-                              : sort_metric.equals("auc") ? StoppingMetric.logloss
-                              : metricValueOf(sort_metric);
-    }
-
-    if (parms._stopping_rounds == defaults._stopping_rounds)
-      parms._stopping_rounds = buildSpec.build_control.stopping_criteria.stopping_rounds();
-
-    if (parms._stopping_tolerance == defaults._stopping_tolerance)
-      parms._stopping_tolerance = buildSpec.build_control.stopping_criteria.stopping_tolerance();
-  }
-
-  private boolean exceededSearchLimits(WorkAllocations.Work work) {
-    return exceededSearchLimits(work, null, false);
-  }
-
-  private boolean exceededSearchLimits(WorkAllocations.Work work, String algo_desc, boolean ignoreLimits) {
-    String fullName = algo_desc == null ? work.algo.toString() : work.algo+" ("+algo_desc+")";
+  private boolean exceededSearchLimits(String modelDesc, boolean ignoreLimits) {
     if (job.stop_requested()) {
-      eventLog().debug(Stage.ModelTraining, "AutoML: job cancelled; skipping "+fullName+" in "+work.type);
+      eventLog().debug(EventLogEntry.Stage.ModelTraining, "AutoML: job cancelled; skipping "+modelDesc);
       return true;
     }
 
     if (!ignoreLimits && runCountdown.timedOut()) {
-      eventLog().debug(Stage.ModelTraining, "AutoML: out of time; skipping "+fullName+" in "+work.type);
+      eventLog().debug(EventLogEntry.Stage.ModelTraining, "AutoML: out of time; skipping "+modelDesc);
       return true;
     }
 
     if (!ignoreLimits && remainingModels() <= 0) {
-      eventLog().debug(Stage.ModelTraining, "AutoML: hit the max_models limit; skipping "+fullName+" in "+work.type);
+      eventLog().debug(EventLogEntry.Stage.ModelTraining, "AutoML: hit the max_models limit; skipping "+modelDesc);
       return true;
     }
     return false;
-  }
-
-
-  //*****************  Default Models Section *****************//
-
-
-  void defaultXGBoosts(boolean emulateLightGBM) {
-    Algo algo = Algo.XGBoost;
-    WorkAllocations.Work work = workAllocations.getAllocation(algo, JobType.ModelBuild);
-    if (work == null) return;
-
-    XGBoostParameters commonXGBoostParameters = new XGBoostParameters();
-
-    Job xgBoostJob;
-    Key<Model> key;
-
-    if (emulateLightGBM) {
-      commonXGBoostParameters._tree_method = XGBoostParameters.TreeMethod.hist;
-      commonXGBoostParameters._grow_policy = XGBoostParameters.GrowPolicy.lossguide;
-    }
-
-    // setDistribution: no way to identify gaussian, poisson, laplace? using descriptive statistics?
-    commonXGBoostParameters._distribution = getResponseColumn().isBinary() && !(getResponseColumn().isNumeric()) ? DistributionFamily.bernoulli
-                    : getResponseColumn().isCategorical() ? DistributionFamily.multinomial
-                    : DistributionFamily.AUTO;
-
-    commonXGBoostParameters._score_tree_interval = 5;
-    commonXGBoostParameters._stopping_rounds = 5;
-
-    commonXGBoostParameters._ntrees = 10000;
-    commonXGBoostParameters._learn_rate = 0.05;
-//    commonXGBoostParameters._min_split_improvement = 0.01f;
-
-    //XGB 1 (medium depth)
-    XGBoostParameters xgBoostParameters = (XGBoostParameters) commonXGBoostParameters.clone();
-    xgBoostParameters._max_depth = 10;
-    xgBoostParameters._min_rows = 5;
-    xgBoostParameters._sample_rate = 0.6;
-    xgBoostParameters._col_sample_rate = 0.8;
-    xgBoostParameters._col_sample_rate_per_tree = 0.8;
-
-    if (emulateLightGBM) {
-      xgBoostParameters._max_leaves = 1 << xgBoostParameters._max_depth;
-      xgBoostParameters._max_depth = xgBoostParameters._max_depth * 2;
-//      xgBoostParameters._min_data_in_leaf = (float) xgBoostParameters._min_rows;
-      xgBoostParameters._min_sum_hessian_in_leaf = (float) xgBoostParameters._min_rows;
-    }
-
-    key = modelKey(algo.name());
-    xgBoostJob = trainModel(key, work, xgBoostParameters);
-    trainingStepsExecutor.submit(Stage.ModelTraining,  key.toString(), work, this.job(), xgBoostJob);
-
-    //XGB 2 (deep)
-    xgBoostParameters = (XGBoostParameters) commonXGBoostParameters.clone();
-    xgBoostParameters._max_depth = 20;
-    xgBoostParameters._min_rows = 10;
-    xgBoostParameters._sample_rate = 0.6;
-    xgBoostParameters._col_sample_rate = 0.8;
-    xgBoostParameters._col_sample_rate_per_tree = 0.8;
-
-    if (emulateLightGBM) {
-      xgBoostParameters._max_leaves = 1 << xgBoostParameters._max_depth;
-      xgBoostParameters._max_depth = xgBoostParameters._max_depth * 2;
-//      xgBoostParameters._min_data_in_leaf = (float) xgBoostParameters._min_rows;
-      xgBoostParameters._min_sum_hessian_in_leaf = (float) xgBoostParameters._min_rows;
-    }
-
-    key = modelKey(algo.name());
-    xgBoostJob = trainModel(key, work, xgBoostParameters);
-    trainingStepsExecutor.submit(Stage.ModelTraining,  key.toString(), work, this.job(), xgBoostJob);
-
-    //XGB 3 (shallow)
-    xgBoostParameters = (XGBoostParameters) commonXGBoostParameters.clone();
-    xgBoostParameters._max_depth = 5;
-    xgBoostParameters._min_rows = 3;
-    xgBoostParameters._sample_rate = 0.8;
-    xgBoostParameters._col_sample_rate = 0.8;
-    xgBoostParameters._col_sample_rate_per_tree = 0.8;
-
-    if (emulateLightGBM) {
-      xgBoostParameters._max_leaves = 1 << xgBoostParameters._max_depth;
-      xgBoostParameters._max_depth = xgBoostParameters._max_depth * 2;
-//      xgBoostParameters._min_data_in_leaf = (float) xgBoostParameters._min_rows;
-      xgBoostParameters._min_sum_hessian_in_leaf = (float) xgBoostParameters._min_rows;
-    }
-
-    key = modelKey(algo.name());
-    xgBoostJob = trainModel(key, work, xgBoostParameters);
-    trainingStepsExecutor.submit(Stage.ModelTraining,  key.toString(), work, this.job(), xgBoostJob);
-  }
-
-
-  void defaultSearchXGBoost(Key<Grid> gridKey, boolean emulateLightGBM) {
-    Algo algo = Algo.XGBoost;
-    WorkAllocations.Work work = workAllocations.getAllocation(algo, JobType.HyperparamSearch);
-    if (work == null) return;
-
-    XGBoostParameters xgBoostParameters = new XGBoostParameters();
-
-    if (emulateLightGBM) {
-       xgBoostParameters._tree_method = XGBoostParameters.TreeMethod.hist;
-      xgBoostParameters._grow_policy = XGBoostParameters.GrowPolicy.lossguide;
-    }
-
-    xgBoostParameters._distribution = getResponseColumn().isBinary() && !(getResponseColumn().isNumeric()) ? DistributionFamily.bernoulli
-            : getResponseColumn().isCategorical() ? DistributionFamily.multinomial
-            : DistributionFamily.AUTO;
-
-    xgBoostParameters._score_tree_interval = 5;
-    xgBoostParameters._stopping_rounds = 5;
-
-    xgBoostParameters._ntrees = 10000;
-    xgBoostParameters._learn_rate = 0.05;
-//    xgBoostParameters._min_split_improvement = 0.01f; //DAI default
-
-    Map<String, Object[]> searchParams = new HashMap<>();
-//    searchParams.put("_ntrees", new Integer[]{100, 1000, 10000}); // = _n_estimators
-
-    if (emulateLightGBM) {
-      searchParams.put("_max_leaves", new Integer[]{1<<5, 1<<10, 1<<15, 1<<20});
-      searchParams.put("_max_depth", new Integer[]{10, 20, 50});
-      searchParams.put("_min_sum_hessian_in_leaf", new Double[]{0.01, 0.1, 1.0, 3.0, 5.0, 10.0, 15.0, 20.0});
-    } else {
-      searchParams.put("_max_depth", new Integer[]{5, 10, 15, 20});
-      searchParams.put("_min_rows", new Double[]{0.01, 0.1, 1.0, 3.0, 5.0, 10.0, 15.0, 20.0});  // = _min_child_weight
-    }
-
-    searchParams.put("_sample_rate", new Double[]{0.6, 0.8, 1.0}); // = _subsample
-    searchParams.put("_col_sample_rate" , new Double[]{ 0.6, 0.8, 1.0}); // = _colsample_bylevel"
-    searchParams.put("_col_sample_rate_per_tree", new Double[]{ 0.7, 0.8, 0.9, 1.0}); // = _colsample_bytree: start higher to always use at least about 40% of columns
-//    searchParams.put("_learn_rate", new Double[]{0.01, 0.05, 0.08, 0.1, 0.15, 0.2, 0.3, 0.5, 0.8, 1.0}); // = _eta
-//    searchParams.put("_min_split_improvement", new Float[]{0.01f, 0.05f, 0.1f, 0.5f, 1f, 5f, 10f, 50f}); // = _gamma
-//    searchParams.put("_tree_method", new XGBoostParameters.TreeMethod[]{XGBoostParameters.TreeMethod.auto});
-    searchParams.put("_booster", new XGBoostParameters.Booster[]{ //gblinear crashes currently
-            XGBoostParameters.Booster.gbtree, //default, let's use it more often
-            XGBoostParameters.Booster.gbtree,
-            XGBoostParameters.Booster.dart
-    });
-
-    searchParams.put("_reg_lambda", new Float[]{0.001f, 0.01f, 0.1f, 1f, 10f, 100f});
-    searchParams.put("_reg_alpha", new Float[]{0.001f, 0.01f, 0.1f, 0.5f, 1f});
-
-    Job<Grid> xgBoostSearchJob = hyperparameterSearch(gridKey, work, xgBoostParameters, searchParams);
-    trainingStepsExecutor.submit(Stage.ModelTraining, algo.name()+" hyperparameter search", work, this.job(), xgBoostSearchJob);
-  }
-
-
-  void defaultRandomForest() {
-    Algo algo = Algo.DRF;
-    WorkAllocations.Work work = workAllocations.getAllocation(algo, JobType.ModelBuild);
-    if (work == null) return;
-
-    DRFParameters drfParameters = new DRFParameters();
-    drfParameters._score_tree_interval = 5;
-
-    Job randomForestJob = trainModel(null, work, drfParameters);
-    trainingStepsExecutor.submit(Stage.ModelTraining, "Default Random Forest build", work, this.job(), randomForestJob);
-  }
-
-
-  void defaultExtremelyRandomTrees() {
-    Algo algo = Algo.DRF;
-    WorkAllocations.Work work = workAllocations.getAllocation(algo, JobType.ModelBuild);
-    if (work == null) return;
-
-    DRFParameters drfParameters = new DRFParameters();
-    drfParameters._score_tree_interval = 5;
-
-    Job randomForestJob = trainModel(modelKey("XRT"), work, drfParameters);
-    trainingStepsExecutor.submit(Stage.ModelTraining, "Extremely Randomized Trees (XRT) Random Forest build", work, this.job(), randomForestJob);
-  }
-
-
-  /**
-   * Build Arno's magical 5 default GBMs.
-   */
-  void defaultGBMs() {
-    Algo algo = Algo.GBM;
-    WorkAllocations.Work work = workAllocations.getAllocation(algo, JobType.ModelBuild);
-    if (work == null) return;
-
-    Job gbmJob;
-
-    GBMParameters commonGBMParameters = new GBMParameters();
-    commonGBMParameters._score_tree_interval = 5;
-    commonGBMParameters._histogram_type = SharedTreeParameters.HistogramType.AUTO;
-
-    commonGBMParameters._ntrees = 1000;
-    commonGBMParameters._sample_rate = 0.8;
-    commonGBMParameters._col_sample_rate = 0.8;
-    commonGBMParameters._col_sample_rate_per_tree = 0.8;
-
-    // Default 1:
-    GBMParameters gbmParameters = (GBMParameters) commonGBMParameters.clone();
-    gbmParameters._max_depth = 6;
-    gbmParameters._min_rows = 1;
-
-    gbmJob = trainModel(null, work, gbmParameters);
-    trainingStepsExecutor.submit(Stage.ModelTraining, "GBM 1", work, this.job(), gbmJob);
-
-    // Default 2:
-    gbmParameters = (GBMParameters) commonGBMParameters.clone();
-    gbmParameters._max_depth = 7;
-    gbmParameters._min_rows = 10;
-
-    gbmJob = trainModel(null, work, gbmParameters);
-    trainingStepsExecutor.submit(Stage.ModelTraining, "GBM 2", work, this.job(), gbmJob);
-
-    // Default 3:
-    gbmParameters = (GBMParameters) commonGBMParameters.clone();
-    gbmParameters._max_depth = 8;
-    gbmParameters._min_rows = 10;
-
-    gbmJob = trainModel(null, work, gbmParameters);
-    trainingStepsExecutor.submit(Stage.ModelTraining, "GBM 3", work, this.job(), gbmJob);
-
-    // Default 4:
-    gbmParameters = (GBMParameters) commonGBMParameters.clone();
-    gbmParameters._max_depth = 10;
-    gbmParameters._min_rows = 10;
-
-    gbmJob = trainModel(null, work, gbmParameters);
-    trainingStepsExecutor.submit(Stage.ModelTraining, "GBM 4", work, this.job(), gbmJob);
-
-    // Default 5:
-    gbmParameters = (GBMParameters) commonGBMParameters.clone();
-    gbmParameters._max_depth = 15;
-    gbmParameters._min_rows = 100;
-
-    gbmJob = trainModel(null, work, gbmParameters);
-    trainingStepsExecutor.submit(Stage.ModelTraining, "GBM 5", work, this.job(), gbmJob);
-  }
-
-
-  void defaultDeepLearning() {
-    Algo algo = Algo.DeepLearning;
-    WorkAllocations.Work work = workAllocations.getAllocation(algo, JobType.ModelBuild);
-    if (work == null) return;
-
-    DeepLearningParameters deepLearningParameters = new DeepLearningParameters();
-    deepLearningParameters._stopping_tolerance = this.buildSpec.build_control.stopping_criteria.stopping_tolerance();
-    deepLearningParameters._hidden = new int[]{ 10, 10, 10 };
-
-    Job deepLearningJob = trainModel(null, work, deepLearningParameters);
-    trainingStepsExecutor.submit(Stage.ModelTraining, "Default Deep Learning build", work, this.job(), deepLearningJob);
-  }
-
-
-  void defaultSearchGLM(Key<Grid> gridKey) {
-    Algo algo = Algo.GLM;
-    WorkAllocations.Work work = workAllocations.getAllocation(algo, JobType.HyperparamSearch);
-    if (work == null) return;
-
-    GLMParameters glmParameters = new GLMParameters();
-    glmParameters._lambda_search = true;
-    glmParameters._family =
-            getResponseColumn().isBinary() && !(getResponseColumn().isNumeric()) ? GLMParameters.Family.binomial
-            : getResponseColumn().isCategorical() ? GLMParameters.Family.multinomial
-            : GLMParameters.Family.gaussian;  // TODO: other continuous distributions!
-
-    Map<String, Object[]> searchParams = new HashMap<>();
-    glmParameters._alpha = new double[] {0.0, 0.2, 0.4, 0.6, 0.8, 1.0};  // Note: standard GLM parameter is an array; don't use searchParams!
-    // NOTE: removed MissingValuesHandling.Skip for now because it's crashing.  See https://0xdata.atlassian.net/browse/PUBDEV-4974
-    searchParams.put("_missing_values_handling", new GLMParameters.MissingValuesHandling[] {
-            GLMParameters.MissingValuesHandling.MeanImputation,
-//            GLMParameters.MissingValuesHandling.Skip
-    });
-
-    Job<Grid> glmJob = hyperparameterSearch(gridKey, work, glmParameters, searchParams);
-    trainingStepsExecutor.submit(Stage.ModelTraining, "GLM hyperparameter search", work, this.job(), glmJob);
-  }
-
-  void defaultSearchGBM(Key<Grid> gridKey) {
-    Algo algo = Algo.GBM;
-    WorkAllocations.Work work = workAllocations.getAllocation(algo, JobType.HyperparamSearch);
-    if (work == null) return;
-
-    GBMParameters gbmParameters = new GBMParameters();
-    gbmParameters._score_tree_interval = 5;
-    gbmParameters._histogram_type = SharedTreeParameters.HistogramType.AUTO;
-
-    Map<String, Object[]> searchParams = new HashMap<>();
-    searchParams.put("_ntrees", new Integer[]{10000});
-    searchParams.put("_max_depth", new Integer[]{3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17});
-    searchParams.put("_min_rows", new Integer[]{1, 5, 10, 15, 30, 100});
-    searchParams.put("_learn_rate", new Double[]{0.001, 0.005, 0.008, 0.01, 0.05, 0.08, 0.1, 0.5, 0.8});
-    searchParams.put("_sample_rate", new Double[]{0.50, 0.60, 0.70, 0.80, 0.90, 1.00});
-    searchParams.put("_col_sample_rate", new Double[]{ 0.4, 0.7, 1.0});
-    searchParams.put("_col_sample_rate_per_tree", new Double[]{ 0.4, 0.7, 1.0});
-    searchParams.put("_min_split_improvement", new Double[]{1e-4, 1e-5});
-
-    Job<Grid> gbmJob = hyperparameterSearch(gridKey, work, gbmParameters, searchParams);
-    trainingStepsExecutor.submit(Stage.ModelTraining, "GBM hyperparameter search", work, this.job(), gbmJob);
-  }
-
-  void defaultSearchDL() {
-    Key<Grid> dlGridKey = gridKey(Algo.DeepLearning.name());
-//    Key<Grid> dlGridKey = null; //use this to name grids differently
-    defaultSearchDL1(dlGridKey);
-    defaultSearchDL2(dlGridKey);
-    defaultSearchDL3(dlGridKey);
-  }
-
-  void defaultSearchDL1(Key<Grid> gridKey) {
-    Algo algo = Algo.DeepLearning;
-    WorkAllocations.Work work = workAllocations.getAllocation(algo, JobType.HyperparamSearch);
-    if (work == null) return;
-
-    DeepLearningParameters dlParameters = new DeepLearningParameters();
-    dlParameters._epochs = 10000; // early stopping takes care of epochs - no need to tune!
-    dlParameters._adaptive_rate = true;
-    dlParameters._activation = DeepLearningParameters.Activation.RectifierWithDropout;
-
-    Map<String, Object[]> searchParams = new HashMap<>();
-    // common:
-    searchParams.put("_rho", new Double[] { 0.9, 0.95, 0.99 });
-    searchParams.put("_epsilon", new Double[] { 1e-6, 1e-7, 1e-8, 1e-9 });
-    searchParams.put("_input_dropout_ratio", new Double[] { 0.0, 0.05, 0.1, 0.15, 0.2 });
-    // unique:
-    searchParams.put("_hidden", new Integer[][] { {50}, {200}, {500} });
-    searchParams.put("_hidden_dropout_ratios", new Double[][] { { 0.0 }, { 0.1 }, { 0.2 }, { 0.3 }, { 0.4 }, { 0.5 } });
-
-    Job<Grid>dlJob = hyperparameterSearch(gridKey, work, dlParameters, searchParams);
-    trainingStepsExecutor.submit(Stage.ModelTraining, "DeepLearning hyperparameter search 1", work, this.job(), dlJob);
-  }
-
-  void defaultSearchDL2(Key<Grid> gridKey) {
-    Algo algo = Algo.DeepLearning;
-    WorkAllocations.Work work = workAllocations.getAllocation(algo, JobType.HyperparamSearch);
-    if (work == null) return;
-
-    DeepLearningParameters dlParameters = new DeepLearningParameters();
-    dlParameters._epochs = 10000; // early stopping takes care of epochs - no need to tune!
-    dlParameters._adaptive_rate = true;
-    dlParameters._activation = DeepLearningParameters.Activation.RectifierWithDropout;
-
-    Map<String, Object[]> searchParams = new HashMap<>();
-    // common:
-    searchParams.put("_rho", new Double[] { 0.9, 0.95, 0.99 });
-    searchParams.put("_epsilon", new Double[] { 1e-6, 1e-7, 1e-8, 1e-9 });
-    searchParams.put("_input_dropout_ratio", new Double[] { 0.0, 0.05, 0.1, 0.15, 0.2 });
-    // unique:
-    searchParams.put("_hidden", new Integer[][] { {50, 50}, {200, 200}, {500, 500} });
-    searchParams.put("_hidden_dropout_ratios", new Double[][] { { 0.0, 0.0 }, { 0.1, 0.1 }, { 0.2, 0.2 }, { 0.3, 0.3 }, { 0.4, 0.4 }, { 0.5, 0.5 } });
-
-    Job<Grid>dlJob = hyperparameterSearch(gridKey, work, dlParameters, searchParams);
-    trainingStepsExecutor.submit(Stage.ModelTraining, "DeepLearning hyperparameter search 2", work, this.job(), dlJob);
-  }
-
-  void defaultSearchDL3(Key<Grid> gridKey) {
-    Algo algo = Algo.DeepLearning;
-    WorkAllocations.Work work = workAllocations.getAllocation(algo, JobType.HyperparamSearch);
-    if (work == null) return;
-
-    DeepLearningParameters dlParameters = new DeepLearningParameters();
-    dlParameters._epochs = 10000; // early stopping takes care of epochs - no need to tune!
-    dlParameters._adaptive_rate = true;
-    dlParameters._activation = DeepLearningParameters.Activation.RectifierWithDropout;
-
-    Map<String, Object[]> searchParams = new HashMap<>();
-    // common:
-    searchParams.put("_rho", new Double[] { 0.9, 0.95, 0.99 });
-    searchParams.put("_epsilon", new Double[] { 1e-6, 1e-7, 1e-8, 1e-9 });
-    searchParams.put("_input_dropout_ratio", new Double[] { 0.0, 0.05, 0.1, 0.15, 0.2 });
-    // unique:
-    searchParams.put("_hidden", new Integer[][] { {50, 50, 50}, {200, 200, 200}, {500, 500, 500} });
-    searchParams.put("_hidden_dropout_ratios", new Double[][] { { 0.0, 0.0, 0.0 }, { 0.1, 0.1, 0.1 }, { 0.2, 0.2, 0.2 }, { 0.3, 0.3, 0.3 }, { 0.4, 0.4, 0.4 }, { 0.5, 0.5, 0.5 } });
-
-    Job<Grid>dlJob = hyperparameterSearch(gridKey, work, dlParameters, searchParams);
-    trainingStepsExecutor.submit(Stage.ModelTraining, "DeepLearning hyperparameter search 3", work, this.job(), dlJob);
-  }
-
-  void defaultStackedEnsembles() {
-    Model[] allModels = leaderboard().getModels();
-
-    WorkAllocations.Work seWork = workAllocations.getAllocation(Algo.StackedEnsemble, JobType.ModelBuild);
-    if (seWork == null) {
-      this.job.update(0, "StackedEnsemble builds skipped");
-      eventLog().info(Stage.ModelTraining, "StackedEnsemble builds skipped due to the exclude_algos option.");
-    } else if (allModels.length == 0) {
-      this.job.update(seWork.consumeAll(), "No models built; StackedEnsemble builds skipped");
-      eventLog().info(Stage.ModelTraining, "No models were built, due to timeouts or the exclude_algos option. StackedEnsemble builds skipped.");
-    } else if (allModels.length == 1) {
-      this.job.update(seWork.consumeAll(), "One model built; StackedEnsemble builds skipped");
-      eventLog().info(Stage.ModelTraining, "StackedEnsemble builds skipped since there is only one model built");
-    } else if (!isCVEnabled() && getBlendingFrame() == null) {
-      this.job.update(seWork.consumeAll(), "Cross-validation disabled by the user and no blending frame provided; StackedEnsemble build skipped");
-      eventLog().info(Stage.ModelTraining,"Cross-validation disabled by the user and no blending frame provided; StackedEnsemble build skipped");
-    } else {
-      // Also stack models from other AutoML runs, by using the Leaderboard! (but don't stack stacks)
-      int nonEnsembleCount = 0;
-      for (Model aModel : allModels)
-        if (!(aModel instanceof StackedEnsembleModel))
-          nonEnsembleCount++;
-
-      Key<Model>[] notEnsembles = new Key[nonEnsembleCount];
-      int notEnsembleIndex = 0;
-      for (Model aModel : allModels)
-        if (!(aModel instanceof StackedEnsembleModel))
-          notEnsembles[notEnsembleIndex++] = aModel._key;
-
-      // Set aside List<Model> for best models per model type. Meaning best GLM, GBM, DRF, XRT, and DL (5 models).
-      // This will give another ensemble that is smaller than the original which takes all models into consideration.
-      List<Model> bestModelsOfEachType = new ArrayList<>();
-      Set<String> typesOfGatheredModels = new HashSet<>();
-
-      for (Model aModel : allModels) {
-        String type = getModelType(aModel);
-        if (aModel instanceof StackedEnsembleModel || typesOfGatheredModels.contains(type)) continue;
-        typesOfGatheredModels.add(type);
-        bestModelsOfEachType.add(aModel);
-      }
-
-      Key<Model>[] bestModelKeys = new Key[bestModelsOfEachType.size()];
-      for (int i = 0; i < bestModelsOfEachType.size(); i++)
-        bestModelKeys[i] = bestModelsOfEachType.get(i)._key;
-
-      Job<StackedEnsembleModel> bestEnsembleJob = stack("StackedEnsemble_BestOfFamily", bestModelKeys, true);
-      trainingStepsExecutor.submit(Stage.ModelTraining, "StackedEnsemble build using top model from each algorithm type", seWork, this.job(), bestEnsembleJob, true);
-
-      Job<StackedEnsembleModel> ensembleJob = stack("StackedEnsemble_AllModels", notEnsembles, false);
-      trainingStepsExecutor.submit(Stage.ModelTraining, "StackedEnsemble build using all AutoML models", seWork, this.job(), ensembleJob, true);
-    }
   }
 
   //*****************  Clean Up + other utility functions *****************//
@@ -1198,27 +543,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       for (Key<Grid> gridKey : gridKeys) Keyed.remove(gridKey, fs, true);
 
     return super.remove_impl(fs, cascade);
-  }
-
-  private String getSortMetric() {
-    //ensures that the sort metric is always updated according to the defaults set by leaderboard
-    Leaderboard leaderboard = leaderboard();
-    return leaderboard == null ? null : leaderboard.sort_metric;
-  }
-
-  private static StoppingMetric metricValueOf(String name) {
-    if (name == null) return StoppingMetric.AUTO;
-    switch (name) {
-      case "mean_residual_deviance": return StoppingMetric.deviance;
-      default:
-        String[] attempts = { name, name.toUpperCase(), name.toLowerCase() };
-        for (String attempt : attempts) {
-          try {
-            return StoppingMetric.valueOf(attempt);
-          } catch (IllegalArgumentException ignored) { }
-        }
-        return StoppingMetric.AUTO;
-    }
   }
 
   private boolean possiblyVerifyImmutability() {
@@ -1270,10 +594,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
 
     return warning;
-  }
-
-  private String getModelType(Model m) {
-    return m._key.toString().startsWith("XRT_") ? "XRT" : m._parms.algoName();
   }
 
   private void cleanUpModelsCVPreds() {

@@ -1,5 +1,8 @@
 package ai.h2o.automl;
 
+import ai.h2o.automl.EventLogEntry.Stage;
+import ai.h2o.automl.WorkAllocations.JobType;
+import ai.h2o.automl.WorkAllocations.Work;
 import hex.Model;
 import hex.grid.Grid;
 import water.Iced;
@@ -11,6 +14,7 @@ import water.util.Log;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+
 
 class TrainingStepsExecutor extends Iced<TrainingStepsExecutor> {
 
@@ -43,46 +47,55 @@ class TrainingStepsExecutor extends Iced<TrainingStepsExecutor> {
         _jobs = null;
     }
 
-    void submit(EventLogEntry.Stage stage, String name, WorkAllocations.Work work, Job parentJob, Job subJob) {
-        submit(stage, name, work, parentJob, subJob, false);
+    //TODO
+    void skip(String name, Work work, Job parentJob) {
+        if (null != parentJob) {
+            parentJob.update(work.consume(), "SKIPPED: " + name);
+            Log.info("AutoML; skipping " + name);
+        }
     }
 
-    void submit(EventLogEntry.Stage stage, String name, WorkAllocations.Work work, Job parentJob, Job subJob, boolean ignoreTimeout) {
-        if (null == subJob) {
-            if (null != parentJob) {
-                parentJob.update(work.consume(), "SKIPPED: " + name);
-                Log.info("AutoML skipping " + name);
+    void submit(TrainingStep step, Job parentJob) {
+        if (step.canRun()) {
+            Job job = step.makeJob();
+            if (job == null) {
+                skip(step._description, step.getWork(), parentJob);
+            } else {
+                submit(job, step.getWork(), parentJob, step._ignoreConstraints);
             }
-            return;
         }
-        eventLog().debug(stage, name + " started");
-        _jobs.add(subJob);
+    }
+
+    void submit(Job job, Work work, Job parentJob, boolean ignoreTimeout) {
+        String jobDescription = job._result == null ? job._description : job._result.toString()+" ["+job._description+"]";
+        eventLog().debug(Stage.ModelTraining, jobDescription + " started");
+        _jobs.add(job);
 
         long lastWorkedSoFar = 0;
         long lastTotalGridModelsBuilt = 0;
 
-        while (subJob.isRunning()) {
+        while (job.isRunning()) {
             if (null != parentJob) {
                 if (parentJob.stop_requested()) {
-                    eventLog().debug(stage, "AutoML job cancelled; skipping " + name);
-                    subJob.stop();
+                    eventLog().debug(Stage.ModelTraining, "AutoML job cancelled; skipping " + jobDescription);
+                    job.stop();
                 }
                 if (!ignoreTimeout && _runCountdown.timedOut()) {
-                    eventLog().debug(stage, "AutoML: out of time; skipping " + name);
-                    subJob.stop();
+                    eventLog().debug(Stage.ModelTraining, "AutoML: out of time; skipping " + jobDescription);
+                    job.stop();
                 }
             }
-            long workedSoFar = Math.round(subJob.progress() * work.share);
+            long workedSoFar = Math.round(job.progress() * work.share);
 
             if (null != parentJob) {
-                parentJob.update(Math.round(workedSoFar - lastWorkedSoFar), name);
+                parentJob.update(Math.round(workedSoFar - lastWorkedSoFar), jobDescription);
             }
 
-            if (AutoML.JobType.HyperparamSearch == work.type) {
-                Grid<?> grid = (Grid)subJob._result.get();
+            if (JobType.HyperparamSearch == work.type) {
+                Grid<?> grid = (Grid)job._result.get();
                 int totalGridModelsBuilt = grid.getModelCount();
                 if (totalGridModelsBuilt > lastTotalGridModelsBuilt) {
-                    eventLog().debug(stage, "Built: " + totalGridModelsBuilt + " models for search: " + name);
+                    eventLog().debug(Stage.ModelTraining, "Built: " + totalGridModelsBuilt + " models for search: " + jobDescription);
                     this.addModels(grid.getModelKeys());
                     lastTotalGridModelsBuilt = totalGridModelsBuilt;
                 }
@@ -98,28 +111,28 @@ class TrainingStepsExecutor extends Iced<TrainingStepsExecutor> {
         }
 
         // pick up any stragglers:
-        if (AutoML.JobType.HyperparamSearch == work.type) {
-            if (subJob.isCrashed()) {
-                eventLog().warn(stage, name + " failed: " + subJob.ex().toString());
-            } else if (subJob.get() == null) {
-                eventLog().info(stage, name + " cancelled");
+        if (JobType.HyperparamSearch == work.type) {
+            if (job.isCrashed()) {
+                eventLog().warn(Stage.ModelTraining, jobDescription + " failed: " + job.ex().toString());
+            } else if (job.get() == null) {
+                eventLog().info(Stage.ModelTraining, jobDescription + " cancelled");
             } else {
-                Grid<?> grid = (Grid) subJob.get();
+                Grid<?> grid = (Grid) job.get();
                 int totalGridModelsBuilt = grid.getModelCount();
                 if (totalGridModelsBuilt > lastTotalGridModelsBuilt) {
-                    eventLog().debug(stage, "Built: " + totalGridModelsBuilt + " models for search: " + name);
+                    eventLog().debug(Stage.ModelTraining, "Built: " + totalGridModelsBuilt + " models for search: " + jobDescription);
                     this.addModels(grid.getModelKeys());
                 }
-                eventLog().debug(stage, name + " complete");
+                eventLog().debug(Stage.ModelTraining, jobDescription + " complete");
             }
-        } else if (AutoML.JobType.ModelBuild == work.type) {
-            if (subJob.isCrashed()) {
-                eventLog().warn(stage, name + " failed: " + subJob.ex().toString());
-            } else if (subJob.get() == null) {
-                eventLog().info(stage, name + " cancelled");
+        } else if (JobType.ModelBuild == work.type) {
+            if (job.isCrashed()) {
+                eventLog().warn(Stage.ModelTraining, jobDescription + " failed: " + job.ex().toString());
+            } else if (job.get() == null) {
+                eventLog().info(Stage.ModelTraining, jobDescription + " cancelled");
             } else {
-                eventLog().debug(stage, name + " complete");
-                this.addModel((Model) subJob.get());
+                eventLog().debug(Stage.ModelTraining, jobDescription + " complete");
+                this.addModel((Model) job.get());
             }
         }
 
@@ -128,7 +141,7 @@ class TrainingStepsExecutor extends Iced<TrainingStepsExecutor> {
             parentJob.update(work.share - lastWorkedSoFar);
         }
         work.consume();
-        _jobs.remove(subJob);
+        _jobs.remove(job);
     }
 
 

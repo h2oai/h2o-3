@@ -8,32 +8,38 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-class WorkAllocations extends Iced<WorkAllocations> {
+public class WorkAllocations extends Iced<WorkAllocations> {
 
-  static class Work extends Iced<Work> {
+  public enum JobType {
+    Unknown,
+    ModelBuild,
+    HyperparamSearch
+  }
+
+  public static class Work extends Iced<Work> {
     Algo algo;
     int count;
-    AutoML.JobType type;
+    JobType type;
     int share;
 
-    Work(Algo algo, int count, AutoML.JobType type, int share) {
+    Work(Algo algo, int count, JobType type, int share) {
       this.algo = algo;
       this.count = count;
       this.type = type;
       this.share = share;
     }
 
-    int consume() {
+    public int consume() {
       return consume(1);
     }
 
-    int consume(int amount) {
+    public int consume(int amount) {
       int c = Math.min(this.count, amount);
       this.count -= c;
       return c * this.share;
     }
 
-    int consumeAll() {
+    public int consumeAll() {
       return consume(Integer.MAX_VALUE);
     }
   }
@@ -41,7 +47,7 @@ class WorkAllocations extends Iced<WorkAllocations> {
   private boolean canAllocate = true;
   private Work[] allocations = new Work[0];
 
-  WorkAllocations allocate(Algo algo, int count, AutoML.JobType type, int workShare) {
+  WorkAllocations allocate(Algo algo, int count, JobType type, int workShare) {
     if (!canAllocate) throw new IllegalStateException("Can't allocate new work.");
 
     allocations = ArrayUtils.append(allocations, new Work(algo, count, type, workShare));
@@ -62,7 +68,7 @@ class WorkAllocations extends Iced<WorkAllocations> {
     allocations = filtered.toArray(new Work[0]);
   }
 
-  Work getAllocation(Algo algo, AutoML.JobType workType) {
+  public Work getAllocation(Algo algo, JobType workType) {
     for (Work alloc : allocations) {
       if (alloc.algo == algo && alloc.type == workType) return alloc;
     }
