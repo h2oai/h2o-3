@@ -54,3 +54,25 @@ Example
 
     Likelihood ratio test=5.17  on 1 df, p=0.023
     n= 172, number of events= 75
+
+
+
+   .. code-block:: python
+
+    import h2o
+    from h2o.estimators.coxph import H2OCoxProportionalHazardsEstimator
+    h2o.init()
+
+    # import the heart dataset
+    heart = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+
+    # set the parameters
+    coxph = H2OCoxProportionalHazardsEstimator(start_column="start", 
+                                               stop_column="stop", 
+                                               ties="breslow")
+
+    # train your model
+    coxph.train(x="age", y="event", training_frame=heart)
+
+    # view the model details
+    coxph
