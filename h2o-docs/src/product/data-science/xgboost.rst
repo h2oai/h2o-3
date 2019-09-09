@@ -230,6 +230,16 @@ The following additional parameters can be configured when ``booster=dart``:
 - ``one_drop``
 - ``skip_drop``
 
+GPU Support
+~~~~~~~~~~~
+
+GPU support is available in H2O's XGBoost if the following requirements are met:
+
+- NVIDIA GPUs (GPU Cloud, DGX Station, DGX-1, or DGX-2)
+- CUDA 8
+
+You can monitor your GPU utilization via the ``nvidia-smi`` command. Refer to https://developer.nvidia.com/nvidia-system-management-interface for more information.
+
 Limitations
 ~~~~~~~~~~~
 
@@ -241,9 +251,9 @@ This section provides a list of XGBoost limitations - some of which will be addr
 
 The list of limitations include:
 
-  1. XGBoost is not supported on Windows.
+  - XGBoost is not supported on Windows.
 
-  2. The list of supported platforms includes:
+  - The list of supported platforms includes:
  
     +----------+-----------------+-----+-----+-----------------------+
     | Platform | Minimal XGBoost | OMP | GPU | Compilation OS        |
@@ -257,9 +267,9 @@ The list of limitations include:
 
     **Note**: Minimal XGBoost configuration includes support for a single CPU.
 
-  3. Because we are using native XGBoost libraries that depend on OS/platform libraries, it is possible that on older operating systems, XGBoost will not be able to find all necessary binary dependencies, and will not be initialized and available.
+  -  Because we are using native XGBoost libraries that depend on OS/platform libraries, it is possible that on older operating systems, XGBoost will not be able to find all necessary binary dependencies, and will not be initialized and available.
 
-  4. XGBoost GPU libraries are compiled against CUDA 8, which is a necessary runtime requirement in order to utilize XGBoost GPU support.
+  -  XGBoost GPU libraries are compiled against CUDA 8, which is a necessary runtime requirement in order to utilize XGBoost GPU support.
 
 Disabling XGBoost
 ~~~~~~~~~~~~~~~~~

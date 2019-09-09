@@ -5,6 +5,8 @@ General
 
 When saving an H2O binary model with ``h2o.saveModel`` (R), ``h2o.save_model`` (Python), or in Flow, you will only be able to load and use that saved binary model with the same version of H2O that you used to train your model. H2O binary models are not compatible across H2O versions. If you update your H2O version, then you will need to retrain your model. For production, you can save your model as a :ref:`POJO/MOJO <about-pojo-mojo>`. These artifacts are not tied to a particular version of H2O because they are just plain Java code and do not require an H2O cluster to be running.
 
+--------------
+
 **How do I score using an exported JSON model?**
 
 Since JSON is just a representation format, it cannot be directly
@@ -196,7 +198,27 @@ vec that loads the file when necessary, and returns a key.
 
 **Does H2O support GPUs?**
 
-H2O supports GPUs as part of our H2O4GPU offering. Refer to the `H2O4GPU README <https://github.com/h2oai/h2o4gpu/blob/master/README.md>` for more information about H2O4GPU.
+GPU support is available in H2O's XGBoost if the following requirements are met:
+
+- NVIDIA GPUs (GPU Cloud, DGX Station, DGX-1, or DGX-2)
+- CUDA 8
+
+You can also monitor your GPU utilization via the ``nvidia-smi`` command. Refer to https://developer.nvidia.com/nvidia-system-management-interface for more information.
+
+In addition to XGBoost H2O also supports GPUs as part of our H2O4GPU offering. Refer to the `H2O4GPU README <https://github.com/h2oai/h2o4gpu/blob/master/README.md>`__ for more information about H2O4GPU.
+
+--------------
+
+**Can we make use of GPUs with AutoML?** 
+
+XGBoost models in AutoML can make use of GPUs. Keep in mind that the following requirements must be met:
+
+- NVIDIA GPUs (GPU Cloud, DGX Station, DGX-1, or DGX-2)
+- CUDA 8
+
+And again, you can monitor your GPU utilization via the ``nvidia-smi`` command. Refer to https://developer.nvidia.com/nvidia-system-management-interface for more information.
+
+--------------
 
 **How can I continue working on a model in H2O after restarting?**
 
