@@ -472,7 +472,7 @@ def call(final pipelineContext) {
         stageName: "XGB on ${xgbEnv.name}", target: "test-xgb-smoke-${xgbEnv.targetName}-jenkins",
         timeoutValue: 15, component: pipelineContext.getBuildConfig().COMPONENT_ANY,
         additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_JAVA], pythonVersion: '3.5',
-        image: pipelineContext.getBuildConfig().getXGBImageForEnvironment(osName, xgbEnv),
+        image: pipelineContext.getBuildConfig().getXGBImageForEnvironment(osName, xgbEnv.targetName),
         nodeLabel: pipelineContext.getBuildConfig().getXGBNodeLabelForEnvironment(xgbEnv)
       ]
       if (xgbEnv.tgetName == pipelineContext.getBuildConfig().XGB_TARGET_GPU) {
