@@ -148,6 +148,10 @@ class BuildConfig {
   String getBenchmarkNodeLabel() {
     return nodeLabels.getBenchmarkNodeLabel()
   }
+  
+  String getGPUBenchmarkNodeLabel() {
+    return nodeLabels.getGPUBenchmarkNodeLabel()
+  }
 
   String getGPUNodeLabel() {
     return nodeLabels.getGPUNodeLabel()
