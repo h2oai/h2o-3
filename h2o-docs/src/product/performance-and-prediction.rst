@@ -1,4 +1,3 @@
-Performance and Prediction
 ==========================
 
 Model Performance
@@ -28,6 +27,57 @@ R2 (R Squared)
 
 The R2 value represents the degree that the predicted value and the actual value move in unison. The R2 value varies between 0 and 1 where 0 represents no correlation between the predicted and actual value and 1 represents complete correlation.
 
+Examples:
+
+.. example-code::
+   .. code-block:: r
+
+    # import the cars dataset:
+    cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # set the factor:
+    cars[,3] <- as.factor(cars[,3])
+
+    # split into train and test sets:
+    c.sid <- h2o.runif(cars)
+    cars.train <- h2o.assign(cars[c.sid > .2,], "cars.train")
+    cars.test <- h2o.assign(cars[c.sid <= .2,], "cars.test")
+
+    # build and train the model:
+    cars.glm <- h2o.glm(x = 3:7, y = 2, training_frame = cars.train)
+    cars.glm.valid <- h2o.glm(x = 3:7, y = 2, training_frame = cars.train, validation_frame = cars.test)
+
+    # find the r2 value:
+    r2.basic <- h2o.r2(cars.glm)
+    
+
+   .. code-block:: python
+   
+    # import the H2OGradientBoostingEstimator and cars dataset:
+    from h2o.estimators import H2OGradientBoostingEstimator
+    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # set the factor:
+    cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+
+    # set the training and validation sets:
+    r = cars[0].runif()
+    train = cars[r > .2]
+    valid = cars[r <= .2]
+
+    # set the parameters:
+    response_col = "economy_20mpg"
+    distribution = "bernoulli"
+    predictors = ["displacement","power","weight","acceleration","year"]
+
+    # build and train the model:
+    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, fold_assignment="Random")
+    gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
+
+    # find the r2 value:
+    gbm.r2() 
+
+
 MSE (Mean Squared Error)
 ########################
 
@@ -39,6 +89,58 @@ MSE equation:
 
   .. math::
     MSE = \frac{1}{N} \sum_{i=1}^{N}(y_i -\hat{y}_i)^2
+
+Examlples:    
+
+.. example-code::
+   .. code-block:: r
+
+    # import the cars dataset:
+    cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # set the factor:
+    cars[,3] <- as.factor(cars[,3])
+
+    # set the training and validation sets:
+    c.sid <- h2o.runif(cars)
+    cars.train <- h2o.assign(cars[c.sid > .2,], "cars.train")
+    cars.test <- h2o.assign(cars[c.sid <= .2,], "cars.test")
+
+    # build and train the model:
+    cars.glm <- h2o.glm(x = 3:7, y = 2, training_frame = cars.train)
+    cars.glm.valid <- h2o.glm(x = 3:7, y = 2, training_frame = cars.train, validation_frame = cars.test)
+
+    # find the mse value:
+    mse.basic <- h2o.mse(cars.glm)
+    mse.basic
+
+
+   .. code-block:: python
+
+    # import H2OGradientBoostingEstimator and the cars dataset:
+    from h2o.estimators import H2OGradientBoostingEstimator
+    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # set the factor:
+    cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+
+    # set the training and validation sets:
+    r = cars[0].runif()
+    train = cars[r > .2]
+    valid = cars[r <= .2]
+
+    # set the parameters:
+    response_col = "economy_20mpg"
+    distribution = "bernoulli"
+    predictors = ["displacement","power","weight","acceleration","year"]
+
+    # build and train the model:
+    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, fold_assignment="Random")
+    gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
+
+    # find the mse value:
+    gbm.mse(train=True, valid=False, xval=False)
+
 
 RMSE (Root Mean Squared Error)
 ##############################
@@ -55,6 +157,60 @@ Where:
  - *N* is the total number of rows (observations) of your corresponding dataframe.
  - *y* is the actual target value.
  - :math:`\hat{y}` is the predicted target value.
+
+Examples:
+
+.. example-code::
+   .. code-block:: r
+
+    # import the prostate dataset:
+    pros <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+
+    # set the factors:
+    pros[,2] <- as.factor(pros[,2])
+    pros[,4] <- as.factor(pros[,4])
+    pros[,5] <- as.factor(pros[,5])
+    pros[,6] <- as.factor(pros[,6])
+    pros[,9] <- as.factor(pros[,9])
+
+    # split the training and validation sets:
+    p.sid <- h2o.runif(pros, seed=1234)
+    pros.train <- h2o.assign(pros[p.sid > .2, ], "pros.train")
+    pros.test <- h2o.assign(pros[p.sid <= .2, ], "pros.test")
+
+    # build and train the model:
+    pros.gbm.valid.xval <- h2o.gbm(x = 3:9, y = 2, training_frame = pros.train, validation_frame = pros.test, nfolds = 2)
+
+    # find the rmse value:
+    rmse.valid.xval.T <- h2o.rmse(pros.gbm.valid.xval,train=TRUE,valid=TRUE,xval=TRUE)
+    rmse.valid.xval.T 
+
+   .. code-block:: python
+   
+    # import H2OGradientBoostingEstimator and the cars dataset:
+    from h2o.estimators import H2OGradientBoostingEstimator
+    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # set the factor:
+    cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+
+    # split the training and validation sets:
+    r = cars[0].runif()
+    train = cars[r > .2]
+    valid = cars[r <= .2]
+
+    # set the parameters:
+    response_col = "economy_20mpg"
+    distribution = "bernoulli"
+    predictors = ["displacement","power","weight","acceleration","year"]
+
+    # build and train the model:
+    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, fold_assignment="Random")
+    gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
+
+    # find the rmse value:
+    gbm.rmse(train=True, valid=False, xval=False)
+
 
 RMSLE (Root Mean Squared Logarithmic Error)
 ###########################################
@@ -116,6 +272,61 @@ The Gini index itself is independent of the model and only depends on the Lorenz
 .. figure:: images/lorenz_curve.png
   :alt: Lorenz curve
 
+Examples:
+
+.. example-code::
+   .. code-block:: r
+
+    # import the prostate dataset:
+    pros <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+
+    # set the factors:
+    pros[,2] <- as.factor(pros[,2])
+    pros[,4] <- as.factor(pros[,4])
+    pros[,5] <- as.factor(pros[,5])
+    pros[,6] <- as.factor(pros[,6])
+    pros[,9] <- as.factor(pros[,9])
+
+    # split the training and validation sets:
+    p.sid <- h2o.runif(pros, seed=1234)
+    pros.train <- h2o.assign(pros[p.sid > .2, ], "pros.train")
+    pros.test <- h2o.assign(pros[p.sid <= .2, ], "pros.test")
+
+    # build and train the model:
+    pros.gbm.valid.xval <- h2o.gbm(x = 3:9, y = 2, training_frame = pros.train, validation_frame = pros.test, nfolds = 2)
+
+    # find the gini coefficient:
+    giniCoef.valid.xval.T <- h2o.giniCoef(pros.gbm.valid.xval,train=TRUE,valid=TRUE,xval=TRUE)
+    giniCoef.valid.xval.T
+
+
+   .. code-block:: python
+    
+    # import H2OGradientBoosting Estimator and the cars dataset:
+    from h2o.estimators import H2OGradientBoostingEstimator
+    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # set the factor:
+    cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+
+    # split the training and validation sets:
+    r = cars[0].runif()
+    train = cars[r > .2]
+    valid = cars[r <= .2] 
+
+    # set the parameters:
+    response_col = "economy_20mpg"
+    distribution = "bernoulli"
+    predictors = ["displacement","power","weight","acceleration","year"]
+
+    # build and train the model:
+    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, fold_assignment="Random")
+    gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
+
+    # find the gini coefficient:
+    gbm.gini(train=True, valid=False, xval=False)
+
+
 Absolute MCC (Matthews Correlation Coefficient)
 ###############################################
 
@@ -123,6 +334,40 @@ Setting the ``absolute_mcc`` parameter sets the threshold for the model's confus
 
 .. math::
 	MCC = \frac{TP \; x \; TN \; - FP \; x \; FN}{\sqrt{(TP+FP)(TP+FN)(TN+FP)(TN+FN)}}
+
+Examples:
+
+.. example-code::
+   .. code-block:: r
+
+
+
+   .. code-block:: python
+
+    # import H2OGradientBoostingEstimator and the cars dataset:
+    from h2o.estimators import H2OGradientBoostingEstimator
+    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # set the factor:
+    cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+
+    # split the training and validation sets:
+    r = cars[0].runif()
+    train = cars[r > .2]
+    valid = cars[r <= .2]
+
+    # set the parameters:
+    response_col = "economy_20mpg"
+    distribution = "bernoulli"
+    predictors = ["displacement","power","weight","acceleration","year"]
+
+    # build and train the model:
+    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, fold_assignment="Random")
+    gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
+
+    # find the absolute mcc value:
+    gbm.mcc(train=True, valid=False, xval=False)
+
 
 F1
 ##
@@ -136,6 +381,39 @@ Where:
 
  - *precision* is the positive observations (true positives) the model correctly identified from all the observations it labeled as positive (the true positives + the false positives).
  - *recall* is the positive observations (true positives) the model correctly identified from all the actual positive cases (the true positives + the false negatives).
+
+Examples:
+
+.. example-code::
+   .. code-block:: r
+
+
+
+   .. code-block:: python
+
+    # import H2OGradientBoostingEstimator and the cars dataset:
+    from h2o.estimators import H2OGradientBoostingEstimator
+    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # set the factor:
+    cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+
+    # split the training and validation sets:
+    r = cars[0].runif()
+    train = cars[r > .2]
+    valid = cars[r <= .2] 
+
+    # set the parameters:
+    response_col = "economy_20mpg"
+    distribution = "bernoulli"
+    predictors = ["displacement","power","weight","acceleration","year"]
+
+    # build and train the model:
+    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, fold_assignment="Random")
+    gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
+
+    # find the F1 value:
+    gbm.F1(train=True, valid=False, xval=False)
 
 F0.5
 ####
@@ -152,6 +430,39 @@ Where:
  - *precision* is the positive observations (true positives) the model correctly identified from all the observations it labeled as positive (the true positives + the false positives).
  - *recall* is the positive observations (true positives) the model correctly identified from all the actual positive cases (the true positives + the false negatives).
 
+Examples:
+
+.. example-code::
+   .. code-block:: r
+
+
+
+   .. code-block:: python
+
+    # import H2OGradientBoostingEstimator and the cars dataset:
+    from h2o.estimators import H2OGradientBoostingEstimator
+    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # set the factor:
+    cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+
+    # split the training and validation sets:
+    r = cars[0].runif()
+    train = cars[r > .2]
+    valid = cars[r <= .2]
+
+    # set the parameters:
+    response_col = "economy_20mpg"
+    distribution = "bernoulli"
+    predictors = ["displacement","power","weight","acceleration","year"]
+
+    # build and train the model:
+    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, fold_assignment="Random")
+    gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
+
+    # find the F0.5 value:
+    gbm.F0point5(train=True, valid=False, xval=False)
+
 
 F2
 ##
@@ -160,6 +471,39 @@ The F2 score is the weighted harmonic mean of the precision and recall (given a 
 
 .. math::
 	F2 = 5 \;\Big(\; \frac{(precision) \; (recall)}{4\;precision + recall}\; \Big)
+
+Examples:
+
+.. example-code::
+   .. code-block:: r
+
+
+
+   .. code-block:: python
+
+    # import H2OGradientBoostingEstimator and the cars dataset:
+    from h2o.estimators import H2OGradientBoostingEstimator
+    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # set the factor:
+    cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+
+    # split the training and validation sets:
+    r = cars[0].runif()
+    train = cars[r > .2]
+    valid = cars[r <= .2]
+
+    # set the parameters:
+    response_col = "economy_20mpg"
+    distribution = "bernoulli"
+    predictors = ["displacement","power","weight","acceleration","year"]
+
+    # build and train the model:
+    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, fold_assignment="Random")
+    gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
+
+    # find the F2 value:
+    gbm.F2(train=True, valid=False, xval=False)
 
 Accuracy
 ########
@@ -170,6 +514,39 @@ Accuracy equation:
 
   .. math::
     Accuracy = \Big(\; \frac{\text{number correctly predicted}}{\text{number of observations}}\; \Big)
+
+Examples:
+
+.. example-code::
+   .. code-block:: r
+
+
+
+   .. code-block:: python
+
+    # import H2OGradientBoostingEstimator and the cars dataset:
+    from h2o.estimators import H2OGradientBoostingEstimator
+    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # set the factor:
+    cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+
+    # split the training and validation sets:
+    r = cars[0].runif()
+    train = cars[r > .2]
+    valid = cars[r <= .2]
+
+    # set the parameters:
+    response_col = "economy_20mpg"
+    distribution = "bernoulli"
+    predictors = ["displacement","power","weight","acceleration","year"] 
+
+    # build and train the model:
+    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, fold_assignment="Random")
+    gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)   
+
+    # find the accuracy value:
+    gbm.accuracy(train=True, valid=False, xval=False)
 
 Logloss
 #######
@@ -195,12 +572,121 @@ Where:
  - *p* is the predicted value (uncalibrated probability) assigned to a given row (observation).
  - *y* is the actual target value.
 
+Examples:
+
+.. example-code::
+   .. code-block:: r
+
+    # import prostate dataset:
+    pros <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+
+    # set the factors:
+    pros[,2] <- as.factor(pros[,2])
+    pros[,4] <- as.factor(pros[,4])
+    pros[,5] <- as.factor(pros[,5])
+    pros[,6] <- as.factor(pros[,6])
+    pros[,9] <- as.factor(pros[,9])
+
+    # split the training and validation sets:
+    p.sid <- h2o.runif(pros, seed=1234)
+    pros.train <- h2o.assign(pros[p.sid > .2, ], "pros.train")
+    pros.test <- h2o.assign(pros[p.sid <= .2, ], "pros.test")
+
+    # build and train the model:
+    pros.gbm.valid.xval <- h2o.gbm(x = 3:9, y = 2, training_frame = pros.train, validation_frame = pros.test, nfolds = 2)
+
+    # find the logloss value:
+    logloss.valid.xval.T <- h2o.logloss(pros.gbm.valid.xval,train=TRUE,valid=TRUE,xval=TRUE)
+    logloss.valid.xval.T   
+
+
+   .. code-block:: python
+   
+    # import H2OGradientBoostingEstimator and the cars dataset:
+    from h2o.estimators import H2OGradientBoostingEstimator
+    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # set the factor:
+    cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+
+    # split the training and validation sets:
+    r = cars[0].runif()
+    train = cars[r > .2]
+    valid = cars[r <= .2]
+
+    # set the parameters:
+    esponse_col = "economy_20mpg"
+    distribution = "bernoulli"
+    predictors = ["displacement","power","weight","acceleration","year"] 
+
+    # build and train the model:
+    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, fold_assignment="Random")
+    gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)  
+
+    # find the logloss value:
+    gbm.logloss(train=True, valid=False, xval=True)
+
+
 AUC (Area Under the ROC Curve)
 ##############################
 
 This model metric is used to evaluate how well a binary classification model is able to distinguish between true positives and false positives. An AUC of 1 indicates a perfect classifier, while an AUC of .5 indicates a poor classifier, whose performance is no better than random guessing. H2O uses the trapezoidal rule to approximate the area under the ROC curve. 
 
 H2O uses the trapezoidal rule to approximate the area under the ROC curve. (**Tip**: AUC is usually not the best metric for an imbalanced binary target because a high number of True Negatives can cause the AUC to look inflated. For an imbalanced binary target, we recommend AUCPR or MCC.)
+
+Example:
+
+.. example-code::
+   .. code-block:: r
+
+    # import prostate dataset:
+    pros <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+
+    # set the factors:
+    pros[,2] <- as.factor(pros[,2])
+    pros[,4] <- as.factor(pros[,4])
+    pros[,5] <- as.factor(pros[,5])
+    pros[,6] <- as.factor(pros[,6])
+    pros[,9] <- as.factor(pros[,9])
+
+    # split the training and validation sets:
+    p.sid <- h2o.runif(pros, seed=1234)
+    pros.train <- h2o.assign(pros[p.sid > .2, ], "pros.train")
+    pros.test <- h2o.assign(pros[p.sid <= .2, ], "pros.test")
+
+    # build and train the model:
+    pros.gbm.valid.xval <- h2o.gbm(x = 3:9, y = 2, training_frame = pros.train, validation_frame = pros.test, nfolds = 2)
+
+    # find the auc value:
+    auc.valid.xval.T <- h2o.auc(pros.gbm.valid.xval,train=TRUE,valid=TRUE,xval=TRUE)
+    auc.valid.xval.T
+
+
+   .. code-block:: python
+
+    # import H2OGradientBoostingEstimator and the cars dataset:
+    from h2o.estimators import H2OGradientBoostingEstimator
+    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # set the factor:
+    cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+
+    # split the training and validation sets:
+    r = cars[0].runif()
+    train = cars[r > .2]
+    valid = cars[r <= .2] 
+
+    # set the parameters:
+    response_col = "economy_20mpg"
+    distribution = "bernoulli"
+    predictors = ["displacement","power","weight","acceleration","year"]
+
+    # build and train the model:
+    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, fold_assignment="Random")
+    gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
+
+    # find the auc value:
+    gbm.auc(train=True, valid=False, xval=True)
 
 AUCPR (Area Under the Precision-Recall Curve)
 #############################################
