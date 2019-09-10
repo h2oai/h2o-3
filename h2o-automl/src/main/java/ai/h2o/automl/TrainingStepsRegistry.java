@@ -1,11 +1,12 @@
 package ai.h2o.automl;
 
-import hex.Model;
+import ai.h2o.automl.EventLogEntry.Stage;
 import water.DKV;
 import water.Iced;
 import water.Key;
 import water.nbhm.NonBlockingHashMap;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -37,6 +38,11 @@ public class TrainingStepsRegistry extends Iced<TrainingStepsRegistry> {
             _name = name;
             _ids = ids;
         }
+
+        @Override
+        public String toString() {
+            return "{"+_name+" : "+(_ids == null ? _alias : Arrays.toString(_ids))+"}";
+        }
     }
 
     private static StepsDescription[] defaultExecutionOrder = {
@@ -63,11 +69,12 @@ public class TrainingStepsRegistry extends Iced<TrainingStepsRegistry> {
     }
 
     public TrainingStep[] getOrderedSteps(StepsDescription[] executionOrder) {
+        aml().eventLog().info(Stage.Workflow, "Loading execution steps "+Arrays.toString(executionOrder));
         List<TrainingStep> orderedSteps = new ArrayList<>();
         for (StepsDescription descr : executionOrder) {
             Class<TrainingSteps> clazz = stepsByName.get(descr._name);
             if (clazz == null) {
-                // log
+                aml().eventLog().warn(Stage.Workflow, "Could not find TrainingSteps class for "+descr._name);
                 continue;
             }
             try {
@@ -77,9 +84,8 @@ public class TrainingStepsRegistry extends Iced<TrainingStepsRegistry> {
                 } else if (descr._ids != null) {
                     orderedSteps.addAll(Arrays.asList(steps.getSteps(descr._ids)));
                 }
-            } catch (Exception e) {
-                //log
-                continue;
+            } catch (NoSuchMethodException|IllegalAccessException|InstantiationException|InvocationTargetException e) {
+                throw new RuntimeException(e);
             }
         }
         return orderedSteps.toArray(new TrainingStep[0]);

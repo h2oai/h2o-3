@@ -534,7 +534,7 @@ public class AutoMLTest extends water.TestUtil {
 
       Key[] modelKeys = aml.leaderboard().getModelKeys();
       Map<Algo, List<Key<Model>>> keysByAlgo = new HashMap<>();
-      for (Algo algo : Algo.values()) keysByAlgo.put(algo, new ArrayList<Key<Model>>());
+      for (Algo algo : Algo.values()) keysByAlgo.put(algo, new ArrayList<>());
       for (Key k : modelKeys) {
         if (k.toString().startsWith("XRT")) {
           keysByAlgo.get(Algo.DRF).add(k);

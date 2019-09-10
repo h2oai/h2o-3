@@ -186,7 +186,7 @@ public class AutoMLBuildSpec extends Iced {
       project_cached = build_control.project_name;
       return project_cached;
     }
-    project_cached = "automl_" + project_cached;
+    project_cached = "automl_"+input_spec.training_frame+"_"+input_spec.response_column;
     return project_cached;
   }
 }
