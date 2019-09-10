@@ -279,6 +279,27 @@ class H2OBinomialModel(ModelBase):
         :param bool xval: If True, return the TPR value for each of the cross-validated splits.
 
         :returns: The TPR values for the specified key(s).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> r = cars[0].runif()
+        >>> train = cars[r > .2]
+        >>> valid = cars[r <=.2]
+        >>> response_col = "economy_20mpg"
+        >>> distribution = "bernoulli"
+        >>> predictors = ["displacement", "power", "weight", "acceleration", "year"]
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3,
+        ...                                    distribution=distribution,
+        ...                                    fold_assignment="Random")
+        >>> gbm.train(y=response_col,
+        ...           x=predictors,
+        ...           validation_frame=valid,
+        ...           training_frame=train)
+        >>> gbm.tpr(train=False, valid=False, xval=False) # <- Default: return training metric
+        >>> gbm.tpr(train=True, valid=True, xval=True)
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
@@ -301,6 +322,27 @@ class H2OBinomialModel(ModelBase):
         :param bool xval: If True, return the TNR value for each of the cross-validated splits.
 
         :returns: The TNR values for the specified key(s).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> r = cars[0].runif()
+        >>> train = cars[r > .2]
+        >>> valid = cars[r <=.2]
+        >>> response_col = "economy_20mpg"
+        >>> distribution = "bernoulli"
+        >>> predictors = ["displacement", "power", "weight", "acceleration", "year"]
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3,
+        ...                                    distribution=distribution,
+        ...                                    fold_assignment="Random")
+        >>> gbm.train(y=response_col,
+        ...           x=predictors,
+        ...           validation_frame=valid,
+        ...           training_frame=train)
+        >>> gbm.tnr(train=False, valid=False, xval=False) # <- Default: return training metric
+        >>> gbm.tnr(train=True, valid=True, xval=True)
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
@@ -323,6 +365,27 @@ class H2OBinomialModel(ModelBase):
         :param bool xval: If True, return the FNR value for each of the cross-validated splits.
 
         :returns: The FNR values for the specified key(s).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> r = cars[0].runif()
+        >>> train = cars[r > .2]
+        >>> valid = cars[r <= .2]
+        >>> response_col = "economy_20mpg"
+        >>> distribution = "bernoulli"
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> from h2o.estimators import H2OGradientBoostingEstimator
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3,
+        ...                                    distribution=distribution,
+        ...                                    fold_assignment="Random")
+        >>> gbm.train(y=response_col,
+        ...           x=predictors,
+        ...           validation_frame=valid,
+        ...           training_frame=train)
+        >>> gbm.fnr(train=False, valid=False, xval=False) # <- Default: return training metric
+        >>> gbm.fnr(train=True, valid=True, xval=True)
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
@@ -345,6 +408,27 @@ class H2OBinomialModel(ModelBase):
         :param bool xval: If True, return the FPR value for each of the cross-validated splits.
 
         :returns: The FPR values for the specified key(s).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> r = cars[0].runif()
+        >>> train = cars[r > .2]
+        >>> valid = cars[r <= .2]
+        >>> response_col = "economy_20mpg"
+        >>> distribution = "bernoulli"
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> from h2o.estimators import H2OGradientBoostingEstimator
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3,
+        ...                                    distribution=distribution,
+        ...                                    fold_assignment="Random")
+        >>> gbm.train(y=response_col,
+        ...           x=predictors,
+        ...           validation_frame=valid,
+        ...           training_frame=train)
+        >>> gbm.frp(train=False, valid=False, xval=False) # <- Default: return training metric
+        >>> gbm.fpr(train=True, valid=True, xval=True)
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
@@ -367,6 +451,27 @@ class H2OBinomialModel(ModelBase):
         :param bool xval: If True, return the recall value for each of the cross-validated splits.
 
         :returns: The recall values for the specified key(s).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> r = cars[0].runif()
+        >>> train = cars[r > .2]
+        >>> valid = cars[r <= .2]
+        >>> response_col = "economy_20mpg"
+        >>> distribution = "bernoulli"
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> from h2o.estimators import H2OGradientBoostingEstimator
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3,
+        ...                                    distribution=distribution,
+        ...                                    fold_assignment="Random")
+        >>> gbm.train(y=response_col,
+        ...           x=predictors,
+        ...           validation_frame=valid,
+        ...           training_frame=train)
+        >>> gbm.recall(train=False, valid=False, xval=False) # <- Default: return training metric
+        >>> gbm.recall(train=True, valid=True, xval=True)
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
@@ -389,6 +494,27 @@ class H2OBinomialModel(ModelBase):
         :param bool xval: If True, return the sensitivity value for each of the cross-validated splits.
 
         :returns: The sensitivity values for the specified key(s).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> r = cars[0].runif()
+        >>> train = cars[r > .2]
+        >>> valid = cars[r <= .2]
+        >>> response_col = "economy_20mpg"
+        >>> distribution = "bernoulli"
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> from h2o.estimators import H2OGradientBoostingEstimator
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3,
+        ...                                    distribution=distribution,
+        ...                                    fold_assignment="Random")
+        >>> gbm.train(y=response_col,
+        ...           x=predictors,
+        ...           validation_frame=valid,
+        ...           training_frame=train)
+        >>> gbm.sensitivity(train=False, valid=False, xval=False) # <- Default: return training metric
+        >>> gbm.sensitivity(train=True, valid=True, xval=True)
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
@@ -411,6 +537,27 @@ class H2OBinomialModel(ModelBase):
         :param bool xval: If True, return the fallout value for each of the cross-validated splits.
 
         :returns: The fallout values for the specified key(s).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> r = cars[0].runif()
+        >>> train = cars[r > .2]
+        >>> valid = cars[r <= .2]
+        >>> response_col = "economy_20mpg"
+        >>> distribution = "bernoulli"
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> from h2o.estimators import H2OGradientBoostingEstimator
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3,
+        ...                                    distribution=distribution,
+        ...                                    fold_assignment="Random")
+        >>> gbm.train(y=response_col,
+        ...           x=predictors,
+        ...           validation_frame=valid,
+        ...           training_frame=train)
+        >>> gbm.fallout(train=False, valid=False, xval=False) # <- Default: return training metric
+        >>> gbm.fallout(train=True, valid=True, xval=True)
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
@@ -433,6 +580,27 @@ class H2OBinomialModel(ModelBase):
         :param bool xval: If True, return the miss rate value for each of the cross-validated splits.
 
         :returns: The miss rate values for the specified key(s).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> r = cars[0].runif()
+        >>> train = cars[r > .2]
+        >>> valid = cars[r <= .2]
+        >>> response_col = "economy_20mpg"
+        >>> distribution = "bernoulli"
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> from h2o.estimators import H2OGradientBoostingEstimator
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3,
+        ...                                    distribution=distribution,
+        ...                                    fold_assignment="Random")
+        >>> gbm.train(y=response_col,
+        ...           x=predictors,
+        ...           validation_frame=valid,
+        ...           training_frame=train)
+        >>> gbm.missrate(train=False, valid=False, xval=False) # <- Default: return training metric
+        >>> gbm.missrate(train=True, valid=True, xval=True)
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
@@ -564,6 +732,27 @@ class H2OBinomialModel(ModelBase):
         :param bool xval: If True, return the mean per class error value for each of the cross-validated splits.
 
         :returns: The mean per class error values for the specified key(s).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> r = cars[0].runif()
+        >>> train = cars[r > .2]
+        >>> valid = cars[r <= .2]
+        >>> response_col = "economy_20mpg"
+        >>> distribution = "bernoulli"
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> from h2o.estimators import H2OGradientBoostingEstimator
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3,
+        ...                                    distribution=distribution,
+        ...                                    fold_assignment="Random")
+        >>> gbm.train(y=response_col,
+        ...           x=predictors,
+        ...           validation_frame=valid,
+        ...           training_frame=train)
+        >>> gbm.mean_per_class_error(train=False, valid=False, xval=False) # <- Default: return training metric
+        >>> gbm.mean_per_class_error(train=True, valid=True, xval=True)
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
