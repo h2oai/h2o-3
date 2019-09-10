@@ -31,7 +31,7 @@ public class ModelMetricsSupervised extends ModelMetrics {
     protected final int _nclasses;
 
     public MetricBuilderSupervised(int nclasses, String[] domain) {
-      assert domain==null || domain.length >= nclasses; // Domain can be larger than the number of classes, if the score set includes "junk" levels
+      //assert domain==null || domain.length >= nclasses; // Domain can be larger than the number of classes, if the score set includes "junk" levels
       _nclasses = nclasses;
       _domain = domain;
       _work = new double[_nclasses+1];
