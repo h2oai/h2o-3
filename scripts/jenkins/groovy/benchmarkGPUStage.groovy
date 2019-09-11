@@ -27,8 +27,6 @@ def call(final pipelineContext, final stageConfig) {
         export HOME=/home/jenkins
         export USER=jenkins
         export GRADLE_USER_HOME='/home/jenkins/.gradle'
-
-        export PATH=/usr/lib/jvm/java-8-oracle/bin:/bin:/usr/local/nvidia/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
         
         locale
         env
