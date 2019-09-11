@@ -17,6 +17,8 @@ def call(final pipelineContext, final stageConfig) {
     }
   }
 
+  pipelineContext.getUtils().unpackTestPackage(this, pipelineContext.getBuildConfig(), pipelineContext.getBuildConfig().COMPONENT_R, stageConfig.stageDir)
+
   def prepareBenchmarkFolderConfig = pipelineContext.getPrepareBenchmarkDirStruct(this, ML_BENCHMARK_ROOT)
   def benchmarkFolderConfig = prepareBenchmarkFolderConfig(stageConfig.customData.algorithm, env.GIT_SHA, env.BRANCH_NAME)
   GString outputPath = "${env.workspace}/${pipelineContext.getUtils().stageNameToDirName(stageConfig.stageName)}/${benchmarkFolderConfig.getOutputDir()}"
