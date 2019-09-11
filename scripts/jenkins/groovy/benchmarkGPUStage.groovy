@@ -21,6 +21,7 @@ def call(final pipelineContext, final stageConfig) {
   def benchmarkFolderConfig = prepareBenchmarkFolderConfig(stageConfig.customData.algorithm, env.GIT_SHA, env.BRANCH_NAME)
   GString outputPath = "${env.workspace}/${pipelineContext.getUtils().stageNameToDirName(stageConfig.stageName)}/${benchmarkFolderConfig.getOutputDir()}"
   sh "rm -rf ${outputPath} && mkdir -p ${outputPath}"
+  final String h2o3dir = "${stageConfig.stageDir}/h2o-3"
 
   stageConfig.customBuildAction = """
         export HOME=/home/jenkins
