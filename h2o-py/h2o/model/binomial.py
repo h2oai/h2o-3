@@ -427,7 +427,7 @@ class H2OBinomialModel(ModelBase):
         ...           x=predictors,
         ...           validation_frame=valid,
         ...           training_frame=train)
-        >>> gbm.frp(train=False, valid=False, xval=False) # <- Default: return training metric
+        >>> gbm.fpr(train=False, valid=False, xval=False) # <- Default: return training metric
         >>> gbm.fpr(train=True, valid=True, xval=True)
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
@@ -845,7 +845,7 @@ class H2OBinomialModel(ModelBase):
 
         :examples:
 
-        >>> air = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
         >>> airlines["Year"] = airlines["Year"].asfactor()
         >>> airlines["Month"] = airlines["Month"].asfactor()
         >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
@@ -865,7 +865,7 @@ class H2OBinomialModel(ModelBase):
         ...               validation_frame=valid)
         >>> air_gbm.plot(type="roc", train=True, server=True)
         >>> air_gbm.plot(type="roc", valid=True, server=True)
-        >>> perf = air_gbm.model_performance(air_test)
+        >>> perf = air_gbm.model_performance(valid)
         >>> perf.plot(type="roc", server=True)
         >>> perf.plot
         """
@@ -998,7 +998,7 @@ class H2OBinomialModel(ModelBase):
         ...           validation_frame=valid,
         ...           training_frame=train)
         >>> gbm.confusion_matrix(train=False, valid=False, xval=False) # <- Default: return training metric value
-        >>> gbm.confusion_matric(train=True, valid=True, xval=True)
+        >>> gbm.confusion_matrix(train=True, valid=True, xval=True)
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
