@@ -30,7 +30,6 @@ def call(final pipelineContext, final stageConfig) {
         
         locale
         env
-        
         cd ${WORKSPACE}/${h2o3dir}
         
         pwd
@@ -51,6 +50,9 @@ def call(final pipelineContext, final stageConfig) {
         export BENCHMARK_ALGORITHM=${stageConfig.customData.algorithm}
         export BUILD_ID=${env.BUILD_ID}
         export H2O_JAR_PATH=${H2O_ROOT}/build/h2o.jar
+        
+        echo "Installing R package"
+        R CMD INSTALL ${h2o3dir}/h2o-r/R/src/contrib/h2o*.tar.gz
         
         echo "Running Make"
         
