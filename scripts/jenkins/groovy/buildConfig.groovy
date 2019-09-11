@@ -260,23 +260,6 @@ class BuildConfig {
     return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-${imageComponentName}-${version}:${DEFAULT_IMAGE_VERSION_TAG}"
   }
 
-  String getXGBNodeLabelForEnvironment(final Map xgbEnv) {
-    switch (xgbEnv.targetName) {
-      case XGB_TARGET_GPU:
-        return nodeLabels.getGPUNodeLabel()
-      case XGB_TARGET_OMP:
-        return nodeLabels.getDefaultNodeLabel()
-      case XGB_TARGET_MINIMAL:
-        return nodeLabels.getDefaultNodeLabel()
-      default:
-        throw new IllegalArgumentException("xgbEnv.targetName ${xgbEnv.targetName} not supported")
-    }
-  }
-
-  String getExpectedImageVersion(final String image) {
-    return EXPECTED_IMAGE_VERSIONS[image]
-  }
-
   String getStashNameForTestPackage(final String platform) {
     return String.format("%s-%s", TEST_PACKAGE_STASH_NAME_PREFIX, platform)
   }

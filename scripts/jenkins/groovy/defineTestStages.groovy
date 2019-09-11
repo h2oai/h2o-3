@@ -248,7 +248,7 @@ def call(final pipelineContext) {
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
       customData: [algorithm: 'xgb'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
       nodeLabel: pipelineContext.getBuildConfig().getGPUBenchmarkNodeLabel(),
-      image: pipelineContext.getBuildConfig().getXGBImageForEnvironment('ubuntu', 'gpu')
+      image: pipelineContext.getBuildConfig().getXGBImageForEnvironment('ubuntu18', 'gpu')
     ],
 //    [
 //      stageName: 'Vanilla XGB Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
@@ -473,7 +473,7 @@ def call(final pipelineContext) {
         timeoutValue: 15, component: pipelineContext.getBuildConfig().COMPONENT_ANY,
         additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_JAVA], pythonVersion: '3.5',
         image: pipelineContext.getBuildConfig().getXGBImageForEnvironment(osName, xgbEnv.targetName),
-        nodeLabel: pipelineContext.getBuildConfig().getXGBNodeLabelForEnvironment(xgbEnv)
+        nodeLabel: xgbEnv.nodeLabel
       ]
       if (xgbEnv.tgetName == pipelineContext.getBuildConfig().XGB_TARGET_GPU) {
         stageDefinition['executionScript'] = 'h2o-3/scripts/jenkins/groovy/xgbGPUStage.groovy'
