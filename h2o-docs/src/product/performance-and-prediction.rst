@@ -340,6 +340,27 @@ Examples:
 .. example-code::
    .. code-block:: r
 
+    # import the prostate dataset:
+    pros <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+
+    # set the factors:
+    pros[,2] <- as.factor(pros[,2])
+    pros[,4] <- as.factor(pros[,4])
+    pros[,5] <- as.factor(pros[,5])
+    pros[,6] <- as.factor(pros[,6])
+    pros[,9] <- as.factor(pros[,9])
+
+    # split the training and validation sets:
+    p.sid <- h2o.runif(pros, seed=1234)
+    pros.train <- h2o.assign(pros[p.sid > .2, ], "pros.train")
+    pros.test <- h2o.assign(pros[p.sid <= .2, ], "pros.test")
+
+    # build and train the model:
+    pros.gbm.valid.xval <- h2o.gbm(x = 3:9, y = 2, training_frame = pros.train, validation_frame = pros.test, nfolds = 2)
+
+    # find the absolute mcc value:
+    perf <- h2o.performance(pros.gbm.valid.xval, pros)
+    h2o.mcc(perf)
 
 
    .. code-block:: python
@@ -387,6 +408,27 @@ Examples:
 .. example-code::
    .. code-block:: r
 
+    # import the prostate dataset:
+    pros <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+
+    # set the parameters:
+    pros[,2] <- as.factor(pros[,2])
+    pros[,4] <- as.factor(pros[,4])
+    pros[,5] <- as.factor(pros[,5])
+    pros[,6] <- as.factor(pros[,6])
+    pros[,9] <- as.factor(pros[,9])
+
+    # split the training and validation sets:
+    p.sid <- h2o.runif(pros, seed=1234)
+    pros.train <- h2o.assign(pros[p.sid > .2, ], "pros.train")
+    pros.test <- h2o.assign(pros[p.sid <= .2, ], "pros.test")
+
+    # build and train the model:
+    pros.gbm.valid.xval <- h2o.gbm(x = 3:9, y = 2, training_frame = pros.train, validation_frame = pros.test, nfolds = 2)
+
+    # find the F1 value:
+    perf <- h2o.performance(pros.gbm.valid.xval, pros)
+    h2o.F1(perf)
 
 
    .. code-block:: python
@@ -435,6 +477,27 @@ Examples:
 .. example-code::
    .. code-block:: r
 
+    # import the prostate dataset:
+    pros <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+
+    # set the factors:
+    pros[,2] <- as.factor(pros[,2])
+    pros[,4] <- as.factor(pros[,4])
+    pros[,5] <- as.factor(pros[,5])
+    pros[,6] <- as.factor(pros[,6])
+    pros[,9] <- as.factor(pros[,9])
+
+    # split the training and validation sets:
+    p.sid <- h2o.runif(pros, seed=1234)
+    pros.train <- h2o.assign(pros[p.sid > .2, ], "pros.train")
+    pros.test <- h2o.assign(pros[p.sid <= .2, ], "pros.test")
+
+    # build and train the model:
+    pros.gbm.valid.xval <- h2o.gbm(x = 3:9, y = 2, training_frame = pros.train, validation_frame = pros.test, nfolds = 2)
+
+    # find the F0.5 value:
+    perf <- h2o.performance(pros.gbm.valid.xval, pros)
+    h2o.F0point5(perf)
 
 
    .. code-block:: python
@@ -477,6 +540,27 @@ Examples:
 .. example-code::
    .. code-block:: r
 
+    # import the prostate dataset:
+    pros <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+
+    # set the factors:
+    pros[,2] <- as.factor(pros[,2])
+    pros[,4] <- as.factor(pros[,4])
+    pros[,5] <- as.factor(pros[,5])
+    pros[,6] <- as.factor(pros[,6])
+    pros[,9] <- as.factor(pros[,9])
+
+    # split the training and validation sets:
+    p.sid <- h2o.runif(pros, seed=1234)
+    pros.train <- h2o.assign(pros[p.sid > .2, ], "pros.train")
+    pros.test <- h2o.assign(pros[p.sid <= .2, ], "pros.test")
+
+    # build and train the model:
+    pros.gbm.valid.xval <- h2o.gbm(x = 3:9, y = 2, training_frame = pros.train, validation_frame = pros.test, nfolds = 2)
+
+    # find the F2 value:
+    perf <- h2o.performance(pros.gbm.valid.xval, pros)
+    h2o.F2(perf)
 
 
    .. code-block:: python
@@ -520,6 +604,27 @@ Examples:
 .. example-code::
    .. code-block:: r
 
+    # import the prostate dataset:
+    pros <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+
+    # set the factors:
+    pros[,2] <- as.factor(pros[,2])
+    pros[,4] <- as.factor(pros[,4])
+    pros[,5] <- as.factor(pros[,5])
+    pros[,6] <- as.factor(pros[,6])
+    pros[,9] <- as.factor(pros[,9])
+
+    # split the training and validation sets:
+    p.sid <- h2o.runif(pros, seed=1234)
+    pros.train <- h2o.assign(pros[p.sid > .2, ], "pros.train")
+    pros.test <- h2o.assign(pros[p.sid <= .2, ], "pros.test")
+
+    # build and train the model:
+    pros.gbm.valid.xval <- h2o.gbm(x = 3:9, y = 2, training_frame = pros.train, validation_frame = pros.test, nfolds = 2)
+
+    # find the accuracy value:
+    perf <- h2o.performance(pros.gbm.valid.xval, pros)
+    h2o.accuracy(perf)
 
 
    .. code-block:: python
